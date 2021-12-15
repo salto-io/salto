@@ -20,7 +20,7 @@ import { ACCOUNTING_CODE_ITEM_TYPE, PRODUCT_RATE_PLAN_TYPE } from '../constants'
 import { FilterCreator } from '../filter'
 
 const { isDefined } = values
-const { toAsyncIterable, awu } = collections.asynciterable
+const { toAsyncIterable } = collections.asynciterable
 
 const addFinanceInformationDependencies = (
   inst: InstanceElement,
@@ -70,17 +70,19 @@ const addFinanceInformationDependencies = (
  * (an object field in ProductRatePlan->ProductRatePlanCharges)
  */
 const filterCreator: FilterCreator = () => ({
-  // TODO: in onDeploy - create the deleted fields in the pattern of '.*AccountingCodeType'
+  // TODO: in preDeploy - create the deleted fields in the pattern of '.*AccountingCodeType'
   // from the 'type' value of the referred AccountingCodeItem in the fields in the pattern of
   // '.*AccountingCode'.
   onFetch: async (elements: Element[]): Promise<void> => {
     const instances = elements.filter(isInstanceElement)
 
-    const productRatePlanInstances = instances
-      .filter(inst => inst.elemID.typeName === PRODUCT_RATE_PLAN_TYPE)
+    const productRatePlanInstances = instances.filter(
+      inst => inst.elemID.typeName === PRODUCT_RATE_PLAN_TYPE
+    )
 
-    const accountingCodeItems = await awu(instances).filter(inst =>
-      inst.elemID.typeName === ACCOUNTING_CODE_ITEM_TYPE).toArray() as InstanceElement[]
+    const accountingCodeItems = instances.filter(
+      inst => inst.elemID.typeName === ACCOUNTING_CODE_ITEM_TYPE
+    )
 
     if (_.isEmpty(productRatePlanInstances) || _.isEmpty(accountingCodeItems)) {
       return

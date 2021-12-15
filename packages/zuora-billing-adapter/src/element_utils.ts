@@ -18,7 +18,7 @@ import {
   isInstanceElement, Element, isObjectType, isField, Field, InstanceElement, ObjectType,
 } from '@salto-io/adapter-api'
 import {
-  CUSTOM_FIELD, CUSTOM_OBJECT, ZUORA_CUSTOM_SUFFIX, METADATA_TYPE, STANDARD_OBJECT,
+  CUSTOM_FIELD, CUSTOM_OBJECT, ZUORA_CUSTOM_SUFFIX, METADATA_TYPE, STANDARD_OBJECT, OBJECT_TYPE,
 } from './constants'
 
 const { awu } = collections.asynciterable
@@ -43,12 +43,12 @@ export const getObjectDefs = async (elements: Element[]): Promise<ObjectType[]> 
   await awu(elements).filter(isObjectDef).toArray() as ObjectType[]
 
 // This function is used to find references of standard and custom objects in workflows and tasks.
-// Custom Objects referred there as 'default__<annotations.type>'.
+// Custom Objects referred there as 'default__<annotations.objectType>'.
 // It is used in workflow_and_tasks_references filter and object_references filter.
 export const getTypeNameAsReferenced = async (type: Element): Promise<string> => (
   isObjectType(type) && await metadataType(type) === CUSTOM_OBJECT
-    ? `default__${type.annotations.type}`.toLowerCase()
-    : type.elemID.name.toLowerCase()
+    ? `default__${type.annotations[OBJECT_TYPE]}`.toLowerCase()
+    : type.annotations[OBJECT_TYPE].toLowerCase()
 )
 
 export const isCustomField = (field: Field): boolean => (

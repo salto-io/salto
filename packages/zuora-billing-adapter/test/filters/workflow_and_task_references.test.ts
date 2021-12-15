@@ -22,7 +22,7 @@ import { client as clientUtils, filterUtils } from '@salto-io/adapter-components
 import { DetailedDependency } from '@salto-io/adapter-utils'
 import ZuoraClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
-import { ZUORA_BILLING, WORKFLOW_DETAILED_TYPE, TASK_TYPE, STANDARD_OBJECT, METADATA_TYPE, WORKFLOW_EXPORT_TYPE } from '../../src/constants'
+import { ZUORA_BILLING, WORKFLOW_DETAILED_TYPE, TASK_TYPE, STANDARD_OBJECT, METADATA_TYPE, WORKFLOW_EXPORT_TYPE, OBJECT_TYPE } from '../../src/constants'
 import filterCreator from '../../src/filters/workflow_and_task_references'
 
 /* eslint-disable camelcase */
@@ -276,12 +276,14 @@ describe('Workflow and task references filter', () => {
         },
         annotations: {
           [METADATA_TYPE]: STANDARD_OBJECT,
+          [OBJECT_TYPE]: 'account',
         },
       }),
       new ObjectType({
         elemID: new ElemID(ZUORA_BILLING, 'RefundInvoicePayment'),
         annotations: {
           [METADATA_TYPE]: STANDARD_OBJECT,
+          [OBJECT_TYPE]: 'RefundInvoicePayment',
         },
       }),
       new ObjectType({
@@ -291,6 +293,7 @@ describe('Workflow and task references filter', () => {
         },
         annotations: {
           [METADATA_TYPE]: STANDARD_OBJECT,
+          [OBJECT_TYPE]: 'Billingrun',
         },
       }),
       new ObjectType({
@@ -302,6 +305,7 @@ describe('Workflow and task references filter', () => {
         },
         annotations: {
           [METADATA_TYPE]: STANDARD_OBJECT,
+          [OBJECT_TYPE]: 'Refund',
         },
       }),
       new ObjectType({
@@ -312,6 +316,7 @@ describe('Workflow and task references filter', () => {
         },
         annotations: {
           [METADATA_TYPE]: STANDARD_OBJECT,
+          [OBJECT_TYPE]: 'Invoice',
         },
       }),
     ]

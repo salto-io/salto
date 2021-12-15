@@ -17,7 +17,7 @@ import { ObjectType, ElemID, InstanceElement, Element, ReferenceExpression, Buil
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import ZuoraClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
-import { ZUORA_BILLING, TASK_TYPE, STANDARD_OBJECT, METADATA_TYPE, SETTINGS_TYPE_PREFIX } from '../../src/constants'
+import { ZUORA_BILLING, TASK_TYPE, STANDARD_OBJECT, METADATA_TYPE, SETTINGS_TYPE_PREFIX, OBJECT_TYPE } from '../../src/constants'
 import filterCreator from '../../src/filters/object_references'
 
 /* eslint-disable camelcase */
@@ -102,6 +102,7 @@ describe('object references filter', () => {
         },
         annotations: {
           [METADATA_TYPE]: STANDARD_OBJECT,
+          [OBJECT_TYPE]: 'account',
         },
       }),
     ]

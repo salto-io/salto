@@ -93,14 +93,12 @@ const filterCreator: FilterCreator = () => ({
       .addIndex({
         name: 'typeLowercaseLookup',
         filter: isObjectDef,
-        // id name changes are currently not allowed so it's ok to use the elem id
         key: async type => [await getTypeNameAsReferenced(type)],
         map: type => type.elemID,
       })
       .addIndex({
         name: 'fieldLowercaseLookup',
         filter: isField,
-        // id name changes are currently not allowed so it's ok to use the elem id
         key: async field => [
           await getTypeNameAsReferenced(field.parent), field.elemID.name.toLowerCase(),
         ],

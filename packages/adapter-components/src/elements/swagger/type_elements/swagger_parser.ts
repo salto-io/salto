@@ -115,7 +115,7 @@ type V2Def = { schema: OpenAPIV2.Schema }
 const toSchemaV2 = (def?: V2Def): (undefined | OpenAPIV2.Schema) =>
   def?.schema
 
-type V3Def = OpenAPIV3.ReferenceObject | OpenAPIV3.ResponseObject |OpenAPIV3.RequestBodyObject
+type V3Def = OpenAPIV3.ReferenceObject | OpenAPIV3.ResponseObject | OpenAPIV3.RequestBodyObject
 
 const toSchemaV3 = (
   def?: V3Def
@@ -138,7 +138,7 @@ export enum SwaggerVersion {
   V3
 }
 
-export const getSwaggerVersion = (swagger: LoadedSwagger): SwaggerVersion => {
+const getSwaggerVersion = (swagger: LoadedSwagger): SwaggerVersion => {
   if (!(isV2(swagger.document) || isV3(swagger.document))) {
     // unreachable because of the swagger-parser validations
     throw new Error(`unsupported swagger version ${_.get(swagger.document, 'swagger') ?? _.get(swagger.document, 'openapi')}`)

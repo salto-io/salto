@@ -17,6 +17,7 @@ import { ActionName, ObjectType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { OpenAPIV3 } from 'openapi-types'
+import { AdapterApiConfig } from '../../../config/shared'
 import { DeploymentRequestsByAction } from '../../../config/request'
 import { DEPLOYMENT_ANNOTATIONS, OPERATION_TO_ANNOTATION } from '../../../deployment'
 import { LoadedSwagger } from '../swagger'
@@ -57,7 +58,7 @@ export const addDeploymentAnnotationsFromSwagger = (
 ): void => {
   const { document } = swagger
   if (!isV3(document)) {
-    throw new Error('Deployment currently only support open api V3')
+    throw new Error('Deployment currently only supports open api V3')
   }
 
   const baseUrls = document.servers?.map(
@@ -99,7 +100,7 @@ export const addDeploymentAnnotationsFromSwagger = (
  * @param swagger The swagger to use to extract with what operations are supported on each value
  * @param endpointDetails The details of of what endpoints to use for each action
  */
-export const addDeploymentAnnotations = (
+const addDeploymentAnnotationsToType = (
   type: ObjectType,
   swaggers: LoadedSwagger[],
   endpointDetails: DeploymentRequestsByAction,
@@ -112,4 +113,25 @@ export const addDeploymentAnnotations = (
     field.annotations[DEPLOYMENT_ANNOTATIONS.UPDATABLE] = false
   })
   swaggers.forEach(swagger => addDeploymentAnnotationsFromSwagger(type, swagger, endpointDetails))
+}
+
+/**
+ * Add the deployment annotations to the given object type based on the schemas in the swagger
+ *
+ * @param type The object type to annotate
+ * @param swagger The swagger to use to extract with what operations are supported on each value
+ * @param endpointDetails The details of of what endpoints to use for each action
+ */
+export const addDeploymentAnnotations = (
+  types: ObjectType[],
+  swaggers: LoadedSwagger[],
+  apiDefinitions: AdapterApiConfig,
+): void => {
+  types.forEach(
+    type => addDeploymentAnnotationsToType(
+      type,
+      swaggers,
+      apiDefinitions.types[type.elemID.name]?.deployRequests ?? {}
+    )
+  )
 }

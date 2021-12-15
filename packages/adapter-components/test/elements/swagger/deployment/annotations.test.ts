@@ -15,14 +15,14 @@
 */
 import { BuiltinTypes, ElemID, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { AdapterApiConfig } from '../../../../src/config/shared'
 import { DEPLOYMENT_ANNOTATIONS } from '../../../../src/deployment'
-import { DeploymentRequestsByAction } from '../../../../src/config'
 import { addDeploymentAnnotations, LoadedSwagger } from '../../../../src/elements/swagger'
 
 describe('addDeploymentAnnotations', () => {
   let type: ObjectType
   let mockSwagger: LoadedSwagger
-  let endpoint: DeploymentRequestsByAction
+  let apiDefinitions: AdapterApiConfig
 
   beforeEach(() => {
     type = new ObjectType({
@@ -32,14 +32,25 @@ describe('addDeploymentAnnotations', () => {
         notCreatableField: { refType: BuiltinTypes.STRING },
       },
     })
-    endpoint = {
-      add: {
-        url: '/rest/test/endpoint',
-        method: 'post',
+    apiDefinitions = {
+      typeDefaults: {
+        transformation: {
+          idFields: ['.'],
+        },
       },
-      remove: {
-        url: '/rest/test/endpoint',
-        method: 'delete',
+      types: {
+        test: {
+          deployRequests: {
+            add: {
+              url: '/rest/test/endpoint',
+              method: 'post',
+            },
+            remove: {
+              url: '/rest/test/endpoint',
+              method: 'delete',
+            },
+          },
+        },
       },
     }
 
@@ -105,13 +116,14 @@ describe('addDeploymentAnnotations', () => {
       },
     } as unknown as LoadedSwagger
 
-    expect(() => addDeploymentAnnotations(type, [invalidSwagger], endpoint)).toThrow(
-      'Deployment currently only support open api V3'
+    expect(() => addDeploymentAnnotations([type], [invalidSwagger], apiDefinitions)).toThrow(
+      'Deployment currently only supports open api V3'
     )
   })
 
   it('When there is no endpoint for the type should do nothing should add the annotation to the type', () => {
-    addDeploymentAnnotations(type, [mockSwagger], {})
+    apiDefinitions.types.test = {}
+    addDeploymentAnnotations([type], [mockSwagger], apiDefinitions)
     expect(type.annotations).toEqual({
       [DEPLOYMENT_ANNOTATIONS.CREATABLE]: false,
       [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
@@ -122,7 +134,7 @@ describe('addDeploymentAnnotations', () => {
   it('When there is no endpoint in the swagger for the type should add the annotation to the type', () => {
     const swaggerClone = _.cloneDeep(mockSwagger)
     swaggerClone.document.paths = {}
-    addDeploymentAnnotations(type, [swaggerClone], endpoint)
+    addDeploymentAnnotations([type], [swaggerClone], apiDefinitions)
     expect(type.annotations).toEqual({
       [DEPLOYMENT_ANNOTATIONS.CREATABLE]: false,
       [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
@@ -131,10 +143,11 @@ describe('addDeploymentAnnotations', () => {
   })
 
   it('When endpoint is undefined should add the annotation to the type', () => {
-    const endpointClone = _.cloneDeep(endpoint)
-    endpointClone.add = undefined
-    endpointClone.remove = undefined
-    addDeploymentAnnotations(type, [mockSwagger], endpointClone)
+    const { deployRequests } = apiDefinitions.types.test;
+    (deployRequests as { add: unknown }).add = undefined;
+    (deployRequests as { remove: unknown }).remove = undefined
+
+    addDeploymentAnnotations([type], [mockSwagger], apiDefinitions)
     expect(type.annotations).toEqual({
       [DEPLOYMENT_ANNOTATIONS.CREATABLE]: false,
       [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
@@ -143,7 +156,7 @@ describe('addDeploymentAnnotations', () => {
   })
 
   it('Should add the appropriate annotations', () => {
-    addDeploymentAnnotations(type, [mockSwagger], endpoint)
+    addDeploymentAnnotations([type], [mockSwagger], apiDefinitions)
     expect(type.fields.creatableField.annotations).toEqual({
       [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
     })

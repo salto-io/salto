@@ -15,6 +15,7 @@
 */
 import { BuiltinTypes, ElemID, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { DEPLOYMENT_ANNOTATIONS } from '../../../../src/deployment'
 import { DeploymentRequestsByAction } from '../../../../src/config'
 import { addDeploymentAnnotations, LoadedSwagger } from '../../../../src/elements/swagger'
 
@@ -104,45 +105,56 @@ describe('addDeploymentAnnotations', () => {
       },
     } as unknown as LoadedSwagger
 
-    expect(() => addDeploymentAnnotations(type, invalidSwagger, endpoint)).toThrow(
+    expect(() => addDeploymentAnnotations(type, [invalidSwagger], endpoint)).toThrow(
       'Deployment currently only support open api V3'
     )
   })
 
-  it('When there is no endpoint for the type should do nothing', () => {
-    const beforeType = type.clone()
-    addDeploymentAnnotations(type, mockSwagger, {})
-    expect(type.isEqual(beforeType)).toBeTruthy()
+  it('When there is no endpoint for the type should do nothing should add the annotation to the type', () => {
+    addDeploymentAnnotations(type, [mockSwagger], {})
+    expect(type.annotations).toEqual({
+      [DEPLOYMENT_ANNOTATIONS.CREATABLE]: false,
+      [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
+      [DEPLOYMENT_ANNOTATIONS.DELETABLE]: false,
+    })
   })
 
-  it('When there is no endpoint in the swagger for the type should do nothing', () => {
+  it('When there is no endpoint in the swagger for the type should add the annotation to the type', () => {
     const swaggerClone = _.cloneDeep(mockSwagger)
     swaggerClone.document.paths = {}
-    const beforeType = type.clone()
-    addDeploymentAnnotations(type, swaggerClone, endpoint)
-    expect(type.isEqual(beforeType)).toBeTruthy()
+    addDeploymentAnnotations(type, [swaggerClone], endpoint)
+    expect(type.annotations).toEqual({
+      [DEPLOYMENT_ANNOTATIONS.CREATABLE]: false,
+      [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
+      [DEPLOYMENT_ANNOTATIONS.DELETABLE]: false,
+    })
   })
 
-  it('When endpoint is undefined should do nothing', () => {
+  it('When endpoint is undefined should add the annotation to the type', () => {
     const endpointClone = _.cloneDeep(endpoint)
     endpointClone.add = undefined
     endpointClone.remove = undefined
-    const beforeType = type.clone()
-    addDeploymentAnnotations(type, mockSwagger, endpointClone)
-    expect(type.isEqual(beforeType)).toBeTruthy()
+    addDeploymentAnnotations(type, [mockSwagger], endpointClone)
+    expect(type.annotations).toEqual({
+      [DEPLOYMENT_ANNOTATIONS.CREATABLE]: false,
+      [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
+      [DEPLOYMENT_ANNOTATIONS.DELETABLE]: false,
+    })
   })
 
   it('Should add the appropriate annotations', () => {
-    addDeploymentAnnotations(type, mockSwagger, endpoint)
+    addDeploymentAnnotations(type, [mockSwagger], endpoint)
     expect(type.fields.creatableField.annotations).toEqual({
-      creatable: true,
+      [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
     })
 
-    expect(type.fields.notCreatableField.annotations).toEqual({})
+    expect(type.fields.notCreatableField.annotations).toEqual({
+      [DEPLOYMENT_ANNOTATIONS.CREATABLE]: false,
+      [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
+    })
 
     expect(type.annotations).toEqual({
-      creatable: true,
-      deletable: true,
+      [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
     })
   })
 })

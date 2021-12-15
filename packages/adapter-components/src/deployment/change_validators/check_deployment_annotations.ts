@@ -16,7 +16,7 @@
 import { Change, ChangeError, ChangeValidator, getChangeElement, isInstanceChange, Element, isRemovalChange, InstanceElement, ElemID } from '@salto-io/adapter-api'
 import { transformValues } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
-import { DEPLOYMENT_ANNOTATIONS } from '../annotations'
+import { OPERATION_TO_ANNOTATION } from '../annotations'
 import { getDiffInstance } from '../diff'
 
 const { awu } = collections.asynciterable
@@ -27,9 +27,8 @@ const detailedErrorMessage = (action: Change['action'], path: ElemID): string =>
   `Salto does not support "${action}" of ${path.getFullName()}`
 
 const isDeploymentSupported = (element: Element, action: Change['action']): boolean =>
-  (action === 'add' && element.annotations[DEPLOYMENT_ANNOTATIONS.CREATABLE])
-    || (action === 'modify' && element.annotations[DEPLOYMENT_ANNOTATIONS.UPDATABLE])
-    || (action === 'remove' && element.annotations[DEPLOYMENT_ANNOTATIONS.DELETABLE])
+  element.annotations[OPERATION_TO_ANNOTATION[action]]
+  || element.annotations[OPERATION_TO_ANNOTATION[action]] === undefined
 
 const getUnsupportedPaths = async (change: Change<InstanceElement>): Promise<ElemID[]> => {
   const unsupportedPaths: ElemID[] = []

@@ -31,7 +31,8 @@ const filterIrrelevantValues = async (
     strict: false,
     allowEmpty: true,
     transformFunc: ({ value, field }) => {
-      if (field !== undefined && !field.annotations[OPERATION_TO_ANNOTATION[action]]) {
+      // The === false is because if the value is undefined, we don't want to filter it out
+      if (field?.annotations[OPERATION_TO_ANNOTATION[action]] === false) {
         return undefined
       }
       return value

@@ -15,12 +15,14 @@
 */
 import { Change, ElemID, getChangeElement, InstanceElement, isEqualValues, isModificationChange } from '@salto-io/adapter-api'
 import { resolvePath, setPath, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 
 const removePath = (instance: InstanceElement, path: ElemID): void => {
   setPath(instance, path, undefined)
   const parentPath = path.createParentID()
-  if (path.nestingLevel > 1 && _.isEmpty(resolvePath(instance, parentPath))) {
+  if (path.nestingLevel > 1
+    && _.isEmpty(_.pickBy(resolvePath(instance, parentPath), values.isDefined))) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     removePath(instance, parentPath)
   }

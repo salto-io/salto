@@ -18,7 +18,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { OpenAPIV3 } from 'openapi-types'
 import { DeploymentRequestsByAction } from '../../../config/request'
-import { OPERATION_TO_ANNOTATION } from '../../../deployment'
+import { DEPLOYMENT_ANNOTATIONS, OPERATION_TO_ANNOTATION } from '../../../deployment'
 import { LoadedSwagger } from '../swagger'
 import { extractProperties, isReferenceObject, isV3, SwaggerVersion, toSchema } from '../type_elements/swagger_parser'
 
@@ -50,14 +50,7 @@ const getSwaggerEndpoint = (url: string, baseUrls: string[]): string => {
   return matchingBase === undefined ? url : url.slice(matchingBase.length)
 }
 
-/**
- * Add the deployment annotations to the given object type based on the schemas in the swagger
- *
- * @param type The object type to annotate
- * @param swagger The swagger to use to extract with what operations are supported on each value
- * @param endpointDetails The details of of what endpoints to use for each action
- */
-export const addDeploymentAnnotations = (
+export const addDeploymentAnnotationsFromSwagger = (
   type: ObjectType,
   swagger: LoadedSwagger,
   endpointDetails: DeploymentRequestsByAction,
@@ -82,7 +75,7 @@ export const addDeploymentAnnotations = (
       return
     }
 
-    type.annotations[OPERATION_TO_ANNOTATION[operation as ActionName]] = true
+    delete type.annotations[OPERATION_TO_ANNOTATION[operation as ActionName]]
 
     const fields = getFieldsNames(
       swagger,
@@ -92,8 +85,31 @@ export const addDeploymentAnnotations = (
     fields.forEach(fieldName => {
       const field = type.fields[fieldName]
       if (field !== undefined) {
-        field.annotations[OPERATION_TO_ANNOTATION[operation as ActionName]] = true
+        delete field.annotations[OPERATION_TO_ANNOTATION[operation as ActionName]]
       }
     })
   })
+}
+
+
+/**
+ * Add the deployment annotations to the given object type based on the schemas in the swagger
+ *
+ * @param type The object type to annotate
+ * @param swagger The swagger to use to extract with what operations are supported on each value
+ * @param endpointDetails The details of of what endpoints to use for each action
+ */
+export const addDeploymentAnnotations = (
+  type: ObjectType,
+  swaggers: LoadedSwagger[],
+  endpointDetails: DeploymentRequestsByAction,
+): void => {
+  type.annotations[DEPLOYMENT_ANNOTATIONS.CREATABLE] = false
+  type.annotations[DEPLOYMENT_ANNOTATIONS.UPDATABLE] = false
+  type.annotations[DEPLOYMENT_ANNOTATIONS.DELETABLE] = false
+  Object.values(type.fields).forEach(field => {
+    field.annotations[DEPLOYMENT_ANNOTATIONS.CREATABLE] = false
+    field.annotations[DEPLOYMENT_ANNOTATIONS.UPDATABLE] = false
+  })
+  swaggers.forEach(swagger => addDeploymentAnnotationsFromSwagger(type, swagger, endpointDetails))
 }

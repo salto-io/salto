@@ -54,7 +54,7 @@ describe('deployChange', () => {
       remove: {
         url: '/test/endpoint/{instanceId}',
         method: 'delete',
-        urlVarsToFields: {
+        urlParamsToFields: {
           instanceId: 'id',
         },
       },

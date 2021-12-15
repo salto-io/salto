@@ -14,9 +14,10 @@
 * limitations under the License.
 */
 import { Change, ChangeError, ChangeValidator, getChangeElement, isInstanceChange, Element, isRemovalChange, InstanceElement, ElemID } from '@salto-io/adapter-api'
-import { getDiffInstance, transformValues } from '@salto-io/adapter-utils'
+import { transformValues } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import { DEPLOYMENT_ANNOTATIONS } from '../annotations'
+import { getDiffInstance } from '../diff'
 
 const { awu } = collections.asynciterable
 

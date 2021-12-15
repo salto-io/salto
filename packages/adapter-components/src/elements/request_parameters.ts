@@ -88,13 +88,13 @@ const computeDependsOnURLs = (
   return potentialParams.map(p => url.replace(ARG_PLACEHOLDER_MATCHER, p))
 }
 
-export const replaceUrlVarsValues = (url: string, varsValues: Record<string, unknown>): string =>
+export const replaceUrlParams = (url: string, paramValues: Record<string, unknown>): string =>
   url.replace(
     ARG_PLACEHOLDER_MATCHER,
     val => {
-      const replacement = varsValues[val.slice(1, -1)] ?? val
+      const replacement = paramValues[val.slice(1, -1)] ?? val
       if (!isPrimitiveValue(replacement)) {
-        throw new Error(`Cannot replace arg ${val} in ${url} with non-primitive value ${replacement}`)
+        throw new Error(`Cannot replace param ${val} in ${url} with non-primitive value ${replacement}`)
       }
       return replacement.toString()
     }
@@ -107,7 +107,7 @@ export const computeGetArgs: ComputeGetArgsFunc = (
 ) => {
   // Replace known url params
   const baseUrl = requestContext !== undefined
-    ? replaceUrlVarsValues(args.url, requestContext)
+    ? replaceUrlParams(args.url, requestContext)
     : args.url
 
   const urls = computeDependsOnURLs(

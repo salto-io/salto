@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { getDiffInstance } from '../src/diff'
+import { getDiffInstance } from '../../src/deployment/diff'
 
 describe('getDiffInstance', () => {
   it('should return different primitive values', () => {

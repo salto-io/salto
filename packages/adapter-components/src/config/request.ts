@@ -67,10 +67,10 @@ export type FetchRequestConfig = BaseRequestConfig & {
   paginationField?: string
 }
 
-export type UrlVars = Record<string, string>
+export type UrlParams = Record<string, string>
 
 export type DeployRequestConfig = BaseRequestConfig & {
-  urlVarsToFields?: UrlVars
+  urlParamsToFields?: UrlParams
   method: 'post' | 'put' | 'delete' | 'patch'
 }
 
@@ -165,7 +165,7 @@ export const createRequestConfigs = (
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['get', 'post', 'put', 'delete', 'patch'] }),
         },
       },
-      urlVarsToFields: {
+      urlParamsToFields: {
         refType: new MapType(BuiltinTypes.STRING),
       },
     },

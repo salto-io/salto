@@ -14,9 +14,8 @@
 * limitations under the License.
 */
 import { Change, ElemID, getChangeElement, InstanceElement, isEqualValues, isModificationChange } from '@salto-io/adapter-api'
+import { resolvePath, setPath, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { resolvePath, setPath } from './utils'
-import { walkOnElement, WALK_NEXT_STEP } from './walk_element'
 
 const removePath = (instance: InstanceElement, path: ElemID): void => {
   setPath(instance, path, undefined)
@@ -36,7 +35,7 @@ export const getDiffInstance = (change: Change<InstanceElement>): InstanceElemen
     walkOnElement({
       element: change.data.before,
       func: ({ value, path }) => {
-        if (_.isPlainObject(value) && Array.isArray(value)) {
+        if (_.isPlainObject(value) || Array.isArray(value)) {
           return WALK_NEXT_STEP.RECURSE
         }
 

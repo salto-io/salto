@@ -124,7 +124,7 @@ salesforce {
 | [metadata](#metadata-configuration-options)                 | Fetch all metdata                                | Specified the metadata fetch
 | [data](#data-management-configuration-options) | {} (do not manage data)       | Data management configuration object names will not be fetched in case they are matched in includeObjects
 | fetchAllCustomSettings                                      | true                                             | Whether to fetch all the custom settings instances. When false, it is still possible to choose specific custom settings instances via the `data` option
-| optionalFeatures (#optional-features)                       | {} (all enabled)                                 | Granular control over which features are enabled in the adapter, by default all features are enabled in order to get the most information. can be used to turn off features that cause problems until they are solved
+| [optionalFeatures](#optional-features)                      | {} (all enabled)                                 | Granular control over which features are enabled in the adapter, by default all features are enabled in order to get the most information. can be used to turn off features that cause problems until they are solved
 
 ## Metadata configuration options
 

@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { ElemID, CORE_ANNOTATIONS, BuiltinTypes, ListType } from '@salto-io/adapter-api'
+import { ElemID, BuiltinTypes, ListType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { JIRA } from './constants'
 
@@ -570,25 +570,23 @@ const apiDefinitionsType = createMatchingObjectType<JiraApiConfig>({
   },
 })
 
-export const configType = createMatchingObjectType<JiraConfig>({
+export const DEFAULT_CONFIG: JiraConfig = {
+  fetch: {
+    includeTypes: DEFAULT_INCLUDE_ENDPOINTS,
+  },
+  apiDefinitions: DEFAULT_API_DEFINITIONS,
+}
+
+export const configType = createMatchingObjectType<Partial<JiraConfig>>({
   elemID: new ElemID(JIRA),
   fields: {
     client: { refType: createClientConfigType(JIRA) },
-    fetch: {
-      refType: createUserFetchConfigType(JIRA),
-      annotations: {
-        _required: true,
-        [CORE_ANNOTATIONS.DEFAULT]: {
-          includeTypes: DEFAULT_INCLUDE_ENDPOINTS,
-        },
-      },
-    },
-    apiDefinitions: {
-      refType: apiDefinitionsType,
-      annotations: {
-        _required: true,
-        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_API_DEFINITIONS,
-      },
+    fetch: { refType: createUserFetchConfigType(JIRA) },
+    apiDefinitions: { refType: apiDefinitionsType },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.DEFAULT]: {
+      fetch: DEFAULT_CONFIG.fetch,
     },
   },
 })

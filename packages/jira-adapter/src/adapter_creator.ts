@@ -16,13 +16,13 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  InstanceElement, Adapter,
+  InstanceElement, Adapter, Values,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import JiraClient from './client/client'
 import JiraAdapter from './adapter'
 import { Credentials, basicAuthCredentialsType } from './auth'
-import { configType, JiraConfig, getApiDefinitions } from './config'
+import { configType, JiraConfig, getApiDefinitions, DEFAULT_CONFIG } from './config'
 import { createConnection, validateCredentials } from './client/connection'
 
 const log = logger(module)
@@ -32,8 +32,6 @@ const { validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } = confi
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => (
   config.value as Credentials
 )
-
-type JiraConfigInstance = InstanceElement & { value: InstanceElement['value'] & JiraConfig }
 
 const validateFetchConfig = (config?: JiraConfig['fetch']): void => {
   if (
@@ -45,12 +43,8 @@ const validateFetchConfig = (config?: JiraConfig['fetch']): void => {
   }
 }
 
-function validateConfig(config?: Readonly<InstanceElement>): asserts config is JiraConfigInstance {
-  if (config === undefined) {
-    throw new Error('configuration must not be empty')
-  }
-
-  const { client, apiDefinitions, fetch } = config.value
+function validateConfig(config: Values): asserts config is JiraConfig {
+  const { client, apiDefinitions, fetch } = config
 
   validateClientConfig('client', client)
   if (!_.isPlainObject(apiDefinitions)) {
@@ -67,7 +61,8 @@ function validateConfig(config?: Readonly<InstanceElement>): asserts config is J
 }
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): JiraConfig => {
-  validateConfig(config)
+  const fullConfig = _.merge(DEFAULT_CONFIG, config?.value ?? {})
+  validateConfig(fullConfig)
 
   // Hack to make sure this is coupled with the type definition of JiraConfig
   const adapterConfig: Record<keyof Required<JiraConfig>, null> = {
@@ -75,11 +70,11 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
     client: null,
     fetch: null,
   }
-  Object.keys(config.value)
+  Object.keys(fullConfig)
     .filter(k => !Object.keys(adapterConfig).includes(k))
     .forEach(k => log.debug('Unknown config property was found: %s', k))
 
-  return config.value
+  return fullConfig
 }
 
 export const adapter: Adapter = {

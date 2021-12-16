@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions } from '@salto-io/adapter-api'
-import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
-import { logDuration } from '@salto-io/adapter-utils'
+import { FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, Element, getChangeElement, isAdditionChange, isInstanceChange } from '@salto-io/adapter-api'
+import { config as configUtils, elements as elementUtils, client as clientUtils, deployment } from '@salto-io/adapter-components'
+import { logDuration, resolveChangeElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import JiraClient from './client/client'
 import changeValidator from './change_validator'
@@ -26,11 +26,13 @@ import fieldReferences from './filters/field_references'
 import referenceBySelfLinkFilter from './filters/references_by_self_link'
 import issueTypeSchemeReferences from './filters/issue_type_scheme_references'
 import authenticatedPermissionFilter from './filters/authenticated_permission'
+import addDeploymentAnnotationsFilter from './filters/add_deployment_annotations'
 import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
 
-const { generateTypes, getAllInstances } = elementUtils.swagger
+const { generateTypes, getAllInstances, loadSwagger } = elementUtils.swagger
 const { createPaginator, getWithOffsetAndLimit } = clientUtils
+const { deployChange } = deployment
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
@@ -38,6 +40,7 @@ export const DEFAULT_FILTERS = [
   referenceBySelfLinkFilter,
   issueTypeSchemeReferences,
   authenticatedPermissionFilter,
+  addDeploymentAnnotationsFilter,
 ]
 
 export interface JiraAdapterParams {
@@ -47,10 +50,11 @@ export interface JiraAdapterParams {
 }
 
 export default class JiraAdapter implements AdapterOperations {
-  private createFiltersRunner: () => Required<Filter>
+  private createFiltersRunner: () => Promise<Required<Filter>>
   private client: JiraClient
   private userConfig: JiraConfig
   private paginator: clientUtils.Paginator
+  private swaggers?: elementUtils.swagger.LoadedSwagger[]
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -65,9 +69,23 @@ export default class JiraAdapter implements AdapterOperations {
       customEntryExtractor: removeScopedObjects,
     })
     this.paginator = paginator
-    this.createFiltersRunner = () => (
-      filtersRunner({ client, paginator, config }, filterCreators)
+    this.createFiltersRunner = async () => (
+      filtersRunner({
+        client,
+        paginator,
+        config: { ...config, swaggers: await this.getSwaggers() },
+      }, filterCreators)
     )
+  }
+
+  private async getSwaggers(): Promise<elementUtils.swagger.LoadedSwagger[]> {
+    if (this.swaggers === undefined) {
+      this.swaggers = await Promise.all(
+        getApiDefinitions(this.userConfig.apiDefinitions)
+          .map(apiDef => loadSwagger(apiDef.swagger.url))
+      )
+    }
+    return this.swaggers
   }
 
   @logDuration('generating types from swagger')
@@ -75,11 +93,14 @@ export default class JiraAdapter implements AdapterOperations {
     allTypes: TypeMap
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>
   }> {
+    const swaggers = await this.getSwaggers()
     // Note - this is a temporary way of handling multiple swagger defs in the same adapter
     // this will be replaced by built-in infrastructure support for multiple swagger defs
     // in the configuration
     const results = await Promise.all(
-      getApiDefinitions(this.userConfig.apiDefinitions).map(config => generateTypes(JIRA, config))
+      getApiDefinitions(this.userConfig.apiDefinitions).map(
+        (config, i) => generateTypes(JIRA, config, undefined, swaggers[i])
+      )
     )
     return _.merge({}, ...results)
   }
@@ -122,7 +143,7 @@ export default class JiraAdapter implements AdapterOperations {
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
-    await this.createFiltersRunner().onFetch(elements)
+    await (await this.createFiltersRunner()).onFetch(elements)
     return { elements }
   }
 
@@ -130,9 +151,47 @@ export default class JiraAdapter implements AdapterOperations {
    * Deploy configuration elements to the given account.
    */
   @logDuration('deploying account configuration')
-  // eslint-disable-next-line class-methods-use-this
-  async deploy(): Promise<DeployResult> {
-    throw new Error('Not implemented.')
+  async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
+    const changesToDeploy = changeGroup.changes
+      .filter(isInstanceChange)
+      .map(change => ({
+        action: change.action,
+        data: _.mapValues(change.data, (element: Element) => element.clone()),
+      })) as Change<InstanceElement>[]
+
+    const runner = await this.createFiltersRunner()
+    await runner.preDeploy(changesToDeploy)
+
+    const result = await Promise.all(
+      changesToDeploy.map(async change => {
+        try {
+          const response = await deployChange(
+            await resolveChangeElement(change, ({ ref }) => ref.value),
+            this.client,
+            this.userConfig.apiDefinitions
+              .types[getChangeElement(change).elemID.typeName]?.deployRequests,
+          )
+          if (isAdditionChange(change) && !Array.isArray(response)) {
+            getChangeElement(change).value.id = response.id
+          }
+          return change
+        } catch (err) {
+          if (!_.isError(err)) {
+            throw err
+          }
+          return err
+        }
+      })
+    )
+
+    const [errors, appliedChanges] = _.partition(result, _.isError)
+
+    await runner.onDeploy(appliedChanges)
+
+    return {
+      appliedChanges,
+      errors,
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this

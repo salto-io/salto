@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { ElemID, CORE_ANNOTATIONS, BuiltinTypes, ListType } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { JIRA } from './constants'
 
 const { createClientConfigType } = clientUtils
@@ -906,6 +906,4 @@ export const getApiDefinitions = (config: JiraApiConfig): configUtils.AdapterSwa
   ]
 }
 
-export type FilterContext = Pick<JiraConfig, 'fetch' | 'apiDefinitions'> & {
-  swaggers: elements.swagger.LoadedSwagger[]
-}
+export type FilterContext = Pick<JiraConfig, 'fetch' | 'apiDefinitions'>

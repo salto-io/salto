@@ -28,7 +28,6 @@ describe('referenceBySelfLinkFilter', () => {
       paginator,
       config: {
         ...await getDefaultAdapterConfig(),
-        swaggers: [],
       },
     }) as typeof filter
   })

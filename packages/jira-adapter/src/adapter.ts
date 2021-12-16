@@ -26,11 +26,15 @@ import fieldReferences from './filters/field_references'
 import referenceBySelfLinkFilter from './filters/references_by_self_link'
 import issueTypeSchemeReferences from './filters/issue_type_scheme_references'
 import authenticatedPermissionFilter from './filters/authenticated_permission'
-import addDeploymentAnnotationsFilter from './filters/add_deployment_annotations'
 import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
 
-const { generateTypes, getAllInstances, loadSwagger } = elementUtils.swagger
+const {
+  generateTypes,
+  getAllInstances,
+  loadSwagger,
+  addDeploymentAnnotations,
+} = elementUtils.swagger
 const { createPaginator, getWithOffsetAndLimit } = clientUtils
 const { deployChange } = deployment
 const log = logger(module)
@@ -40,7 +44,6 @@ export const DEFAULT_FILTERS = [
   referenceBySelfLinkFilter,
   issueTypeSchemeReferences,
   authenticatedPermissionFilter,
-  addDeploymentAnnotationsFilter,
 ]
 
 export interface JiraAdapterParams {
@@ -73,7 +76,7 @@ export default class JiraAdapter implements AdapterOperations {
       filtersRunner({
         client,
         paginator,
-        config: { ...config, swaggers: await this.getSwaggers() },
+        config,
       }, filterCreators)
     )
   }
@@ -144,6 +147,14 @@ export default class JiraAdapter implements AdapterOperations {
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
     await (await this.createFiltersRunner()).onFetch(elements)
+
+    // This needs to happen after the onFetch since some filters
+    // may add fields that deployment annotation should be added to
+    addDeploymentAnnotations(
+      elements.filter(isObjectType),
+      await this.getSwaggers(),
+      this.userConfig.apiDefinitions,
+    )
     return { elements }
   }
 

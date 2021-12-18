@@ -454,7 +454,7 @@ describe('adapter', () => {
                         url: '/groups/{groupId}',
                         method: 'put',
                         dataField: 'group',
-                        urlVarsToFields: {
+                        urlParamsToFields: {
                           groupId: 'id',
                         },
                       },
@@ -462,7 +462,7 @@ describe('adapter', () => {
                         url: '/groups/{groupId}',
                         method: 'delete',
                         dataField: 'group',
-                        urlVarsToFields: {
+                        urlParamsToFields: {
                           groupId: 'id',
                         },
                       },

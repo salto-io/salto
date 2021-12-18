@@ -17,7 +17,7 @@ import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { InstanceElement, isObjectType, isInstanceElement, ReferenceExpression, isRemovalChange,
-  AdapterOperations, toChange, ObjectType, ElemID } from '@salto-io/adapter-api'
+  AdapterOperations, toChange, ObjectType, ElemID, getChangeElement } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import mockReplies from './mock_replies.json'
 import { adapter } from '../src/adapter_creator'
@@ -419,12 +419,16 @@ describe('adapter', () => {
   describe('deploy', () => {
     let operations: AdapterOperations
     const groupType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'group') })
+    const brandType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'brand') })
     beforeEach(() => {
       mockDeployChange.mockImplementation(async change => {
         if (isRemovalChange(change)) {
           throw new Error('some error')
         }
-        return { id: 2 }
+        if (getChangeElement<InstanceElement>(change).elemID.typeName === 'group') {
+          return { group: { id: 1 } }
+        }
+        return { key: 2 }
       })
       operations = adapter.operations({
         credentials: new InstanceElement(
@@ -437,35 +441,43 @@ describe('adapter', () => {
           configType,
           {
             [FETCH_CONFIG]: {
-              includeTypes: ['group', 'groups'],
+              includeTypes: ['group', 'groups', 'brand', 'brands'],
             },
             [API_DEFINITIONS_CONFIG]: {
               types: {
                 group: {
+                  deployRequests: {
+                    add: {
+                      url: '/groups',
+                      deployAsField: 'group',
+                      method: 'post',
+                    },
+                    modify: {
+                      url: '/groups/{groupId}',
+                      method: 'put',
+                      deployAsField: 'group',
+                      urlParamsToFields: {
+                        groupId: 'id',
+                      },
+                    },
+                    remove: {
+                      url: '/groups/{groupId}',
+                      method: 'delete',
+                      deployAsField: 'group',
+                      urlParamsToFields: {
+                        groupId: 'id',
+                      },
+                    },
+                  },
+                },
+                brand: {
                   transformation: {
-                    sourceTypeName: 'groups__groups',
-                    deployRequests: {
-                      add: {
-                        url: '/groups',
-                        dataField: 'group',
-                        method: 'post',
-                      },
-                      modify: {
-                        url: '/groups/{groupId}',
-                        method: 'put',
-                        dataField: 'group',
-                        urlParamsToFields: {
-                          groupId: 'id',
-                        },
-                      },
-                      remove: {
-                        url: '/groups/{groupId}',
-                        method: 'delete',
-                        dataField: 'group',
-                        urlParamsToFields: {
-                          groupId: 'id',
-                        },
-                      },
+                    serviceIdField: 'key',
+                  },
+                  deployRequests: {
+                    add: {
+                      url: '/brands',
+                      method: 'post',
                     },
                   },
                 },
@@ -477,6 +489,14 @@ describe('adapter', () => {
                     dataField: 'groups',
                   },
                 },
+                brands: {
+                  request: {
+                    url: '/brands',
+                  },
+                  transformation: {
+                    dataField: 'brands',
+                  },
+                },
               },
             },
           }
@@ -486,18 +506,30 @@ describe('adapter', () => {
     })
 
     it('should return the applied changes', async () => {
+      const ref = new ReferenceExpression(
+        new ElemID(ZENDESK_SUPPORT, 'test', 'instance', 'ins'),
+        { externalId: 5 },
+      )
+      const modificationChange = toChange({
+        before: new InstanceElement('inst4', brandType, { externalId: 4 }),
+        after: new InstanceElement('inst4', brandType, { externalId: 5 }),
+      })
       const deployRes = await operations.deploy({
         changeGroup: {
           groupID: 'group',
           changes: [
             toChange({ after: new InstanceElement('inst', groupType) }),
             toChange({ before: new InstanceElement('inst2', groupType) }),
+            toChange({ after: new InstanceElement('inst3', brandType, { ref }) }),
+            modificationChange,
           ],
         },
       })
 
       expect(deployRes.appliedChanges).toEqual([
-        toChange({ after: new InstanceElement('inst', groupType, { id: 2 }) }),
+        toChange({ after: new InstanceElement('inst', groupType, { id: 1 }) }),
+        toChange({ after: new InstanceElement('inst3', brandType, { key: 2, ref: expect.any(ReferenceExpression) }) }),
+        modificationChange,
       ])
     })
 
@@ -515,6 +547,9 @@ describe('adapter', () => {
       expect(deployRes.errors).toEqual([
         new Error('some error'),
       ])
+    })
+    it('should have change validator', () => {
+      expect(operations.deployModifiers?.changeValidator).toBeDefined()
     })
   })
 })

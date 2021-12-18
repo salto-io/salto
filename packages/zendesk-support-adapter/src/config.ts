@@ -447,7 +447,6 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     transformation: {
       sourceTypeName: 'sharing_agreements__sharing_agreements',
       fieldTypeOverrides: [
-        { fieldName: 'partner_name', fieldType: 'string', restrictions: { enforce_value: false, values: ['jira', null] } },
         { fieldName: 'status', fieldType: 'string', restrictions: { enforce_value: true, values: ['accepted', 'declined', 'pending', 'inactive'] } },
         { fieldName: 'type', fieldType: 'string', restrictions: { enforce_value: true, values: ['inbound', 'outbound'] } },
       ],
@@ -925,6 +924,35 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
     transformation: {
       dataField: '.',
+      standaloneFields: [{ fieldName: 'variants' }],
+    },
+    deployRequests: {
+      add: {
+        url: '/dynamic_content/items',
+        deployAsField: 'item',
+        method: 'post',
+      },
+      modify: {
+        url: '/dynamic_content/items/{dynamicContentItemId}',
+        method: 'put',
+        deployAsField: 'item',
+        urlParamsToFields: {
+          dynamicContentItemId: 'id',
+        },
+      },
+      remove: {
+        url: '/dynamic_content/items/{dynamicContentItemId}',
+        method: 'delete',
+        deployAsField: 'item',
+        urlParamsToFields: {
+          dynamicContentItemId: 'id',
+        },
+      },
+    },
+  },
+  dynamic_content_item__variants: {
+    transformation: {
+      idFields: ['locale_id'],
     },
   },
   locales: {

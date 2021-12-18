@@ -107,6 +107,11 @@ const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition<
     target: { type: 'locale' },
   },
   {
+    src: { field: 'default_locale_id' },
+    serializationStrategy: 'id',
+    target: { type: 'locale' },
+  },
+  {
     src: { field: 'macro_id' },
     serializationStrategy: 'id',
     target: { type: 'macro' },

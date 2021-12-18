@@ -20,7 +20,7 @@ import { PlanItem, Plan, preview, DeployResult, ItemStatus, deploy } from '@salt
 import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
-import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts } from './common/services'
+import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts } from './common/accounts'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { outputLine, errorOutputLine } from '../outputer'
 import { header, formatExecutionPlan, deployPhaseHeader, cancelDeployOutput, formatItemDone, formatItemError, formatCancelAction, formatActionInProgress, formatActionStart, deployPhaseEpilogue, formatStateRecencies } from '../formatter'

@@ -15,7 +15,7 @@
 */
 import { DetailedChange, ElemID, Value } from '@salto-io/adapter-api'
 import * as mocks from '../mocks'
-import { getAndValidateActiveAccounts } from '../../src/commands/common/services'
+import { getAndValidateActiveAccounts } from '../../src/commands/common/accounts'
 import { getConfigOverrideChanges } from '../../src/commands/common/config_override'
 
 describe('Commands commons tests', () => {

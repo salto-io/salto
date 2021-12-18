@@ -336,7 +336,7 @@ describe('local workspace', () => {
     })
   })
 
-  describe('load workout with existing services, including different account name', () => {
+  describe('load workspsace with existing services, including different account name', () => {
     beforeAll(() => {
       const getConf = repoDirStore.get as jest.Mock
       getConf.mockResolvedValue({ buffer: `

@@ -103,7 +103,7 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
   workspace,
 }): Promise<CliExitCode> => {
   const { login, serviceName, authType, account } = input
-  if (account && !(naclCase(account) === account)) {
+  if (account !== undefined && !(naclCase(account) === account)) {
     errorOutputLine(`Invalid account name: ${account}, account name may only include letters, digits or underscores`, output)
     return CliExitCode.UserInputError
   }

@@ -24,7 +24,7 @@ import {
   CORE_ANNOTATIONS, AdapterOperationsContext, FetchResult,
 } from '@salto-io/adapter-api'
 import {
-  applyInstancesDefaults, resolvePath, flattenElementStr,
+  applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { merger, elementSource, expressions, Workspace, pathIndex, updateElementsWithAlternativeAccount, createAdapterReplacedID } from '@salto-io/workspace'
@@ -376,7 +376,7 @@ const fetchAndProcessMergeErrors = async (
     // resolve is used as a clone that keeps references between clones intact
     const configClones = (await expressions.resolve(
       configs,
-      stateElements,
+      buildElementsSourceFromElements([]),
       true
     )).filter(isInstanceElement)
     await updateElementsWithAlternativeAccount(
@@ -695,6 +695,7 @@ export const fetchChanges = async (
   accountsToAdapters: Record<string, AdapterOperations>,
   workspaceElements: elementSource.ElementsSource,
   stateElements: elementSource.ElementsSource,
+  // As part of SALTO-1661, parameters here should be replaced with named parameters
   accountToServiceNameMap: Record<string, string>,
   currentConfigs: InstanceElement[],
   progressEmitter?: EventEmitter<FetchProgressEvents>
@@ -909,8 +910,9 @@ export const createElemIdGetter = async (
   // we get from the map back to fit the service name.
   return (serviceName: string, serviceIds: ServiceIds, name: string): ElemID => {
     const elemID = serviceIdToStateElemId[toServiceIdsString(serviceIds)]
-      || new ElemID(serviceName, name)
-    return createAdapterReplacedID(elemID, serviceName)
+    return elemID !== undefined
+      ? createAdapterReplacedID(elemID, serviceName)
+      : new ElemID(serviceName, name)
   }
 }
 

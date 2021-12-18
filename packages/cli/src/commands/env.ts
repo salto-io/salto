@@ -27,7 +27,7 @@ import {
 import Prompts from '../prompts'
 import { cliApproveIsolateBeforeMultiEnv } from '../callbacks'
 import { outputLine, errorOutputLine } from '../outputer'
-import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts } from './common/services'
+import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts } from './common/accounts'
 import { ConfigOverrideArg, CONFIG_OVERRIDE_OPTION, getConfigOverrideChanges } from './common/config_override'
 import { getWorkspaceTelemetryTags } from '../workspace/workspace'
 

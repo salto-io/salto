@@ -44,15 +44,6 @@ type NewStateData = {
 
 export type StateData = OldStateData | NewStateData
 
-// This function is temporary for the transition to multiple services.
-// Remove this when no longer used, SALTO-1661
-export const getUpdateDate = (data: StateData): RemoteMap<Date> => {
-  if ('servicesUpdateDate' in data) {
-    return data.servicesUpdateDate
-  }
-  return data.accountsUpdateDate
-}
-
 export interface State extends ElementsSource {
   set(element: Element): Promise<void>
   remove(id: ElemID): Promise<void>

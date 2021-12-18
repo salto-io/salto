@@ -68,11 +68,15 @@ const updateRefTypeWithId = (refType: TypeReference, accountName: string): void 
     _.set(refType, 'elemID', createAdapterReplacedID(refType.elemID, accountName))
     return
   }
-  refType.value = refType.value.clone()
   if (isContainerType(refType.value)) {
+    refType.value = refType.value.clone()
     recursivelyUpdateContainerType(refType.value, accountName)
   } else {
-    _.set(refType.value, 'elemID', createAdapterReplacedID(refType.value.elemID, accountName))
+    const newElemID = createAdapterReplacedID(refType.value.elemID, accountName)
+    if (!newElemID.isEqual(refType.value.elemID)) {
+      refType.value = refType.value.clone()
+      _.set(refType.value, 'elemID', createAdapterReplacedID(refType.value.elemID, accountName))
+    }
   }
   _.set(refType, 'elemID', refType.value.elemID)
 }

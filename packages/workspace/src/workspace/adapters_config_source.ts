@@ -83,6 +83,28 @@ export type AdaptersConfigSourceArgs = {
   configOverrides?: DetailedChange[]
 }
 
+export const calculateAdditionalConfigTypes = async (
+  configElementsSource: ReadOnlyElementsSource,
+  configTypeIDs: ElemID[],
+  adapter: string,
+  account: string,
+): Promise<ObjectType[]> => {
+  const additionalConfigs: Record<string, ObjectType[]> = {}
+  await awu(configTypeIDs).forEach(async configTypeID => {
+    if (
+      !(await configElementsSource.get(configTypeID))
+      && additionalConfigs[configTypeID.getFullName()] === undefined
+    ) {
+      const accountConfigType = (await configElementsSource.get(
+        createAdapterReplacedID(configTypeID, adapter)
+      )).clone()
+      await updateElementsWithAlternativeAccount([accountConfigType], account, adapter)
+      additionalConfigs[configTypeID.getFullName()] = accountConfigType
+    }
+  })
+  return Object.values(additionalConfigs).flat()
+}
+
 export const buildAdaptersConfigSource = async ({
   naclSource,
   ignoreFileChanges,
@@ -170,20 +192,16 @@ export const buildAdaptersConfigSource = async ({
       applyConfigOverrides(conf)
       return conf
     },
-
     setAdapter: async (account, adapter, configs) => {
-      const additionalConfigs: InstanceElement[] = []
-      await awu([configs].flat()).forEach(async config => {
-        const configTypeID = config.refType.elemID
-        if (!(await elementsSource.get(configTypeID))) {
-          const accountConfigType = (await elementsSource.get(
-            createAdapterReplacedID(config.refType.elemID, adapter)
-          )).clone()
-          await updateElementsWithAlternativeAccount([accountConfigType], account, adapter)
-          additionalConfigs.push(accountConfigType)
-        }
-      })
-      elementsSource = buildElementsSourceFromElements(additionalConfigs, elementsSource)
+      elementsSource = buildElementsSourceFromElements(
+        await calculateAdditionalConfigTypes(
+          elementsSource,
+          [configs].flat().map(config => config.refType.elemID),
+          adapter,
+          account,
+        ),
+        elementsSource
+      )
       const configsToUpdate = collections.array.makeArray(configs).map(e => e.clone())
       const currConfWithoutOverrides = await getConfigWithoutOverrides(account)
       // Could happen at the initialization of an account.

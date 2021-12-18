@@ -16,7 +16,8 @@
 import { Element, ElemID } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { updatePathIndex, overridePathIndex, PathIndex } from '../path_index'
-import { getUpdateDate, State, StateData } from './state'
+import { RemoteMap } from '../remote_map'
+import { State, StateData } from './state'
 
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 
@@ -24,6 +25,15 @@ const { awu } = collections.asynciterable
 
 type InMemoryState = State & {
   setVersion(version: string): Promise<void>
+}
+
+// This function is temporary for the transition to multiple services.
+// Remove this when no longer used, SALTO-1661
+const getUpdateDate = (data: StateData): RemoteMap<Date> => {
+  if ('servicesUpdateDate' in data) {
+    return data.servicesUpdateDate
+  }
+  return data.accountsUpdateDate
 }
 
 export const buildInMemState = (

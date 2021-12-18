@@ -20,7 +20,7 @@ import { Element, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { exists, readTextFile, mkdirp, rm, rename, readZipFile, replaceContents, generateZipString } from '@salto-io/file'
 import { flattenElementStr, safeJsonStringify } from '@salto-io/adapter-utils'
-import { serialization, pathIndex, state, remoteMap, getUpdateDate } from '@salto-io/workspace'
+import { serialization, pathIndex, state, remoteMap } from '@salto-io/workspace'
 import { hash, collections } from '@salto-io/lowerdash'
 import origGlob from 'glob'
 import semver from 'semver'
@@ -43,6 +43,16 @@ export const ZIPPED_STATE_EXTENSION = '.jsonl.zip'
 export const filePathGlob = (currentFilePrefix: string): string => (
   `${currentFilePrefix}.*([!.])${ZIPPED_STATE_EXTENSION}`
 )
+
+// This function is temporary for the transition to multiple services.
+// Remove this when no longer used, SALTO-1661
+const getUpdateDate = (data: state.StateData): remoteMap.RemoteMap<Date> => {
+  if ('servicesUpdateDate' in data) {
+    return data.servicesUpdateDate
+  }
+  return data.accountsUpdateDate
+}
+
 const findStateFiles = async (currentFilePrefix: string): Promise<string[]> => {
   const stateFiles = await glob(filePathGlob(currentFilePrefix))
   const oldStateFiles = await glob(`${currentFilePrefix}@(${ZIPPED_STATE_EXTENSION}|${STATE_EXTENSION})`)

@@ -26,7 +26,7 @@ import Prompts from '../prompts'
 import { getWorkspaceTelemetryTags, updateWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
 import { getApprovedChanges } from '../callbacks'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
-import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts } from './common/services'
+import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts } from './common/accounts'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
 
 const log = logger(module)

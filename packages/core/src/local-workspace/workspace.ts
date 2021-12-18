@@ -19,8 +19,8 @@ import uuidv4 from 'uuid/v4'
 import { DetailedChange, ObjectType } from '@salto-io/adapter-api'
 import { exists, isEmptyDir, rm } from '@salto-io/file'
 import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl, remoteMap,
-  configSource as cs, staticFiles, dirStore, WorkspaceComponents, errors,
-  COMMON_ENV_PREFIX, isValidEnvName, EnvironmentSource, EnvConfig, updateElementsWithAlternativeAccount } from '@salto-io/workspace'
+  configSource as cs, staticFiles, dirStore, WorkspaceComponents, errors, elementSource,
+  COMMON_ENV_PREFIX, isValidEnvName, EnvironmentSource, EnvConfig, adaptersConfigSource } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { localDirectoryStore } from './dir_store'
 import { CONFIG_DIR_NAME, getConfigDir, getLocalStoragePath } from '../app_config'
@@ -192,15 +192,19 @@ const credentialsSource = (localStorage: string): cs.ConfigSource =>
 
 const getAdapterConfigsPerAccount = async (envs: EnvConfig[]): Promise<ObjectType[]> => {
   const configTypesByAccount = await getAdaptersConfigTypesMap()
+  const configElementSource = elementSource.createInMemoryElementSource(
+    Object.values(configTypesByAccount).flat()
+  )
   const differentlyNamedAccounts = Object.fromEntries(envs
     .flatMap(env => Object.entries(env.accountToServiceName ?? {}))
-    .filter(entry => entry[0] !== entry[1]))
+    .filter(([accountName, serviceName]) => accountName !== serviceName))
   await awu(Object.keys(differentlyNamedAccounts)).forEach(async account => {
-    const configCopies = configTypesByAccount[differentlyNamedAccounts[account]]
-      .map(element => element.clone())
-    await updateElementsWithAlternativeAccount(configCopies, account,
-      differentlyNamedAccounts[account])
-    configTypesByAccount[account] = configCopies
+    const adapter = differentlyNamedAccounts[account]
+    const adapterConfigs = configTypesByAccount[adapter]
+    const additionalConfigs = await adaptersConfigSource.calculateAdditionalConfigTypes(
+      configElementSource, adapterConfigs.map(conf => conf.elemID), adapter, account
+    )
+    configTypesByAccount[account] = additionalConfigs
   })
   return Object.values(configTypesByAccount).flat()
 }

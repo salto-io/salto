@@ -114,7 +114,7 @@ const wsCleanDef = createWorkspaceCommand({
       },
       {
         name: 'accountConfig',
-        alias: 'serviceConfig',
+        alias: 'g',
         description: 'Restore account configuration to default',
         type: 'boolean',
         default: false,

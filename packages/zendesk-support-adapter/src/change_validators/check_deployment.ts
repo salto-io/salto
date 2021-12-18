@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Change, ChangeError, ChangeValidator, getChangeElement, isInstanceChange, Element, ElemID } from '@salto-io/adapter-api'
-import { values, collections } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import { config as configUtils } from '@salto-io/adapter-components'
 
 const { awu } = collections.asynciterable
@@ -26,10 +26,7 @@ const detailedErrorMessage = (action: Change['action'], path: ElemID): string =>
 
 const isDeploymentSupported = (
   action: Change['action'], config: configUtils.DeploymentRequestsByAction
-): boolean =>
-  ((action === 'add' && config) && (config.add !== undefined))
-    || (action === 'modify' && (config.modify !== undefined))
-    || (action === 'remove' && (config.remove !== undefined))
+): boolean => config[action] !== undefined
 
 export const checkDeploymentValidator: ChangeValidator = async (
   changes, deployConfig
@@ -55,6 +52,5 @@ export const checkDeploymentValidator: ChangeValidator = async (
       return []
     })
     .flat()
-    .filter(values.isDefined)
     .toArray()
 )

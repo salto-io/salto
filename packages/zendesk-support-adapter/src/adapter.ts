@@ -114,8 +114,8 @@ export default class ZendeskAdapter implements AdapterOperations {
   }
 
   /**
- * Deploy configuration elements to the given account.
- */
+   * Deploy configuration elements to the given account.
+   */
   @logDuration('deploying account configuration')
   async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
     const changesToDeploy = changeGroup.changes
@@ -135,18 +135,18 @@ export default class ZendeskAdapter implements AdapterOperations {
           .types[getChangeElement(change).elemID.typeName]
         try {
           const response = await deployChange(
-            await resolveChangeElement(change as Change<InstanceElement>, ({ ref }) => ref.value),
+            await resolveChangeElement(change, ({ ref }) => ref.value),
             this.client,
             deployRequests,
           )
-          if (isAdditionChange(change) && isInstanceChange(change) && !Array.isArray(response)) {
+          if (isAdditionChange(change) && !Array.isArray(response)) {
             const transformationConfig = configUtils.getConfigWithDefault(
               transformation,
               apiDefinitions.typeDefaults.transformation,
             )
             const idField = transformationConfig.serviceIdField ?? 'id'
-            const dataField = deployRequests?.add?.dataField
-            getChangeElement(change).value.id = dataField
+            const dataField = deployRequests?.add?.deployAsField
+            getChangeElement(change).value[idField] = dataField
               ? (response[dataField] as Record<string, unknown>)[idField]
               : response[idField]
           }

@@ -63,13 +63,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     deployRequests: {
       add: {
         url: '/groups',
-        dataField: 'group',
+        deployAsField: 'group',
         method: 'post',
       },
       modify: {
         url: '/groups/{groupId}',
         method: 'put',
-        dataField: 'group',
+        deployAsField: 'group',
         urlParamsToFields: {
           groupId: 'id',
         },
@@ -77,7 +77,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       remove: {
         url: '/groups/{groupId}',
         method: 'delete',
-        dataField: 'group',
+        deployAsField: 'group',
         urlParamsToFields: {
           groupId: 'id',
         },
@@ -98,13 +98,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     deployRequests: {
       add: {
         url: '/custom_roles',
-        dataField: 'custom_role',
+        deployAsField: 'custom_role',
         method: 'post',
       },
       modify: {
         url: '/custom_roles/{customRoleId}',
         method: 'put',
-        dataField: 'custom_role',
+        deployAsField: 'custom_role',
         urlParamsToFields: {
           customRoleId: 'id',
         },
@@ -112,7 +112,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       remove: {
         url: '/custom_roles/{customRoleId}',
         method: 'delete',
-        dataField: 'custom_role',
+        deployAsField: 'custom_role',
         urlParamsToFields: {
           customRoleId: 'id',
         },
@@ -126,13 +126,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     deployRequests: {
       add: {
         url: '/organizations',
-        dataField: 'organization',
+        deployAsField: 'organization',
         method: 'post',
       },
       modify: {
         url: '/organizations/{organizationId}',
         method: 'put',
-        dataField: 'organization',
+        deployAsField: 'organization',
         urlParamsToFields: {
           organizationId: 'id',
         },
@@ -140,7 +140,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       remove: {
         url: '/organizations/{organizationId}',
         method: 'delete',
-        dataField: 'organization',
+        deployAsField: 'organization',
         urlParamsToFields: {
           organizationId: 'id',
         },
@@ -156,13 +156,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     deployRequests: {
       add: {
         url: '/views',
-        dataField: 'view',
+        deployAsField: 'view',
         method: 'post',
       },
       modify: {
         url: '/views/{viewId}',
         method: 'put',
-        dataField: 'view',
+        deployAsField: 'view',
         urlParamsToFields: {
           viewId: 'id',
         },
@@ -170,7 +170,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       remove: {
         url: '/views/{viewId}',
         method: 'delete',
-        dataField: 'view',
+        deployAsField: 'view',
         urlParamsToFields: {
           viewId: 'id',
         },
@@ -186,13 +186,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     deployRequests: {
       add: {
         url: '/triggers',
-        dataField: 'trigger',
+        deployAsField: 'trigger',
         method: 'post',
       },
       modify: {
         url: '/triggers/{triggerId}',
         method: 'put',
-        dataField: 'trigger',
+        deployAsField: 'trigger',
         urlParamsToFields: {
           triggerId: 'id',
         },
@@ -200,7 +200,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       remove: {
         url: '/triggers/{triggerId}',
         method: 'delete',
-        dataField: 'trigger',
+        deployAsField: 'trigger',
         urlParamsToFields: {
           triggerId: 'id',
         },
@@ -215,13 +215,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     deployRequests: {
       add: {
         url: '/trigger_categories',
-        dataField: 'trigger_category',
+        deployAsField: 'trigger_category',
         method: 'post',
       },
       modify: {
         url: '/trigger_categories/{triggerCategoryId}',
         method: 'patch',
-        dataField: 'trigger_category',
+        deployAsField: 'trigger_category',
         urlParamsToFields: {
           triggerCategoryId: 'id',
         },
@@ -229,7 +229,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       remove: {
         url: '/trigger_categories/{triggerCategoryId}',
         method: 'delete',
-        dataField: 'trigger_category',
+        deployAsField: 'trigger_category',
         urlParamsToFields: {
           triggerCategoryId: 'id',
         },
@@ -245,13 +245,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     deployRequests: {
       add: {
         url: '/automations',
-        dataField: 'automation',
+        deployAsField: 'automation',
         method: 'post',
       },
       modify: {
         url: '/automations/{automationId}',
         method: 'put',
-        dataField: 'automation',
+        deployAsField: 'automation',
         urlParamsToFields: {
           automationId: 'id',
         },
@@ -259,7 +259,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       remove: {
         url: '/automations/{automationId}',
         method: 'delete',
-        dataField: 'automation',
+        deployAsField: 'automation',
         urlParamsToFields: {
           automationId: 'id',
         },
@@ -275,13 +275,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     deployRequests: {
       add: {
         url: '/slas/policies',
-        dataField: 'sla_policy',
+        deployAsField: 'sla_policy',
         method: 'post',
       },
       modify: {
         url: '/slas/policies/{slaPolicyId}',
         method: 'put',
-        dataField: 'sla_policy',
+        deployAsField: 'sla_policy',
         urlParamsToFields: {
           slaPolicyId: 'id',
         },
@@ -289,7 +289,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       remove: {
         url: '/slas/policies/{slaPolicyId}',
         method: 'delete',
-        dataField: 'sla_policy',
+        deployAsField: 'sla_policy',
         urlParamsToFields: {
           slaPolicyId: 'id',
         },
@@ -310,13 +310,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     deployRequests: {
       add: {
         url: '/targets',
-        dataField: 'target',
+        deployAsField: 'target',
         method: 'post',
       },
       modify: {
         url: '/targets/{targetId}',
         method: 'put',
-        dataField: 'target',
+        deployAsField: 'target',
         urlParamsToFields: {
           targetId: 'id',
         },
@@ -324,7 +324,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       remove: {
         url: '/targets/{targetId}',
         method: 'delete',
-        dataField: 'target',
+        deployAsField: 'target',
         urlParamsToFields: {
           targetId: 'id',
         },
@@ -340,13 +340,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     deployRequests: {
       add: {
         url: '/macros',
-        dataField: 'macro',
+        deployAsField: 'macro',
         method: 'post',
       },
       modify: {
         url: '/macros/{macroId}',
         method: 'put',
-        dataField: 'macro',
+        deployAsField: 'macro',
         urlParamsToFields: {
           macroId: 'id',
         },
@@ -354,7 +354,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       remove: {
         url: '/macros/{macroId}',
         method: 'delete',
-        dataField: 'macro',
+        deployAsField: 'macro',
         urlParamsToFields: {
           macroId: 'id',
         },
@@ -387,13 +387,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     deployRequests: {
       add: {
         url: '/brands',
-        dataField: 'brand',
+        deployAsField: 'brand',
         method: 'post',
       },
       modify: {
         url: '/brands/{brandId}',
         method: 'put',
-        dataField: 'brand',
+        deployAsField: 'brand',
         urlParamsToFields: {
           brandId: 'id',
         },
@@ -401,7 +401,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       remove: {
         url: '/brands/{brandId}',
         method: 'delete',
-        dataField: 'brand',
+        deployAsField: 'brand',
         urlParamsToFields: {
           brandId: 'id',
         },
@@ -422,13 +422,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     deployRequests: {
       add: {
         url: '/business_hours/schedules',
-        dataField: 'schedule',
+        deployAsField: 'schedule',
         method: 'post',
       },
       modify: {
         url: '/business_hours/schedules/{scheduleId}',
         method: 'put',
-        dataField: 'schedule',
+        deployAsField: 'schedule',
         urlParamsToFields: {
           scheduleId: 'id',
         },
@@ -436,7 +436,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       remove: {
         url: '/business_hours/schedules/{scheduleId}',
         method: 'delete',
-        dataField: 'schedule',
+        deployAsField: 'schedule',
         urlParamsToFields: {
           scheduleId: 'id',
         },
@@ -455,13 +455,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     deployRequests: {
       add: {
         url: '/sharing_agreements',
-        dataField: 'sharing_agreement',
+        deployAsField: 'sharing_agreement',
         method: 'post',
       },
       modify: {
         url: '/sharing_agreements/{sharingAgreementId}',
         method: 'put',
-        dataField: 'sharing_agreement',
+        deployAsField: 'sharing_agreement',
         urlParamsToFields: {
           sharingAgreementId: 'id',
         },
@@ -469,7 +469,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       remove: {
         url: '/sharing_agreements/{sharingAgreementId}',
         method: 'delete',
-        dataField: 'sharing_agreement',
+        deployAsField: 'sharing_agreement',
         urlParamsToFields: {
           sharingAgreementId: 'id',
         },
@@ -478,7 +478,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   },
   support_address: {
     transformation: {
-      sourceTypeName: 'recipient_addresses__recipient_addresses',
+      sourceTypeName: 'support_addresses__recipient_addresses',
       fieldTypeOverrides: [
         { fieldName: 'cname_status', fieldType: 'string', restrictions: { enforce_value: true, values: ['unknown', 'verified', 'failed'] } },
         { fieldName: 'dns_results', fieldType: 'string', restrictions: { enforce_value: true, values: ['verified', 'failed'] } },
@@ -491,13 +491,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     deployRequests: {
       add: {
         url: '/recipient_addresses',
-        dataField: 'recipient_address',
+        deployAsField: 'recipient_address',
         method: 'post',
       },
       modify: {
         url: '/recipient_addresses/{supportAddressId}',
         method: 'put',
-        dataField: 'recipient_address',
+        deployAsField: 'recipient_address',
         urlParamsToFields: {
           supportAddressId: 'id',
         },
@@ -505,7 +505,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       remove: {
         url: '/recipient_addresses/{supportAddressId}',
         method: 'delete',
-        dataField: 'recipient_address',
+        deployAsField: 'recipient_address',
         urlParamsToFields: {
           supportAddressId: 'id',
         },
@@ -519,13 +519,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     deployRequests: {
       add: {
         url: '/ticket_forms',
-        dataField: 'ticket_form',
+        deployAsField: 'ticket_form',
         method: 'post',
       },
       modify: {
         url: '/ticket_forms/{ticketFormId}',
         method: 'put',
-        dataField: 'ticket_form',
+        deployAsField: 'ticket_form',
         urlParamsToFields: {
           ticketFormId: 'id',
         },
@@ -533,7 +533,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       remove: {
         url: '/ticket_forms/{ticketFormId}',
         method: 'delete',
-        dataField: 'ticket_form',
+        deployAsField: 'ticket_form',
         urlParamsToFields: {
           ticketFormId: 'id',
         },
@@ -550,13 +550,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     deployRequests: {
       add: {
         url: '/ticket_fields',
-        dataField: 'ticket_field',
+        deployAsField: 'ticket_field',
         method: 'post',
       },
       modify: {
         url: '/ticket_fields/{ticketFieldId}',
         method: 'put',
-        dataField: 'ticket_field',
+        deployAsField: 'ticket_field',
         urlParamsToFields: {
           ticketFieldId: 'id',
         },
@@ -564,7 +564,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       remove: {
         url: '/ticket_fields/{ticketFieldId}',
         method: 'delete',
-        dataField: 'ticket_field',
+        deployAsField: 'ticket_field',
         urlParamsToFields: {
           ticketFieldId: 'id',
         },
@@ -583,13 +583,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     deployRequests: {
       add: {
         url: '/user_fields',
-        dataField: 'user_field',
+        deployAsField: 'user_field',
         method: 'post',
       },
       modify: {
         url: '/user_fields/{userFieldId}',
         method: 'put',
-        dataField: 'user_field',
+        deployAsField: 'user_field',
         urlParamsToFields: {
           userFieldId: 'id',
         },
@@ -597,7 +597,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       remove: {
         url: '/user_fields/{userFieldId}',
         method: 'delete',
-        dataField: 'user_field',
+        deployAsField: 'user_field',
         urlParamsToFields: {
           userFieldId: 'id',
         },
@@ -616,13 +616,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     deployRequests: {
       add: {
         url: '/organization_fields',
-        dataField: 'organization_field',
+        deployAsField: 'organization_field',
         method: 'post',
       },
       modify: {
         url: '/organization_fields/{organizationFieldId}',
         method: 'put',
-        dataField: 'organization_field',
+        deployAsField: 'organization_field',
         urlParamsToFields: {
           organizationFieldId: 'id',
         },
@@ -630,7 +630,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       remove: {
         url: '/organization_fields/{organizationFieldId}',
         method: 'delete',
-        dataField: 'organization_field',
+        deployAsField: 'organization_field',
         urlParamsToFields: {
           organizationFieldId: 'id',
         },
@@ -644,13 +644,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     deployRequests: {
       add: {
         url: '/routing/attributes',
-        dataField: 'attribute',
+        deployAsField: 'attribute',
         method: 'post',
       },
       modify: {
         url: '/routing/attributes/{attributeId}',
         method: 'put',
-        dataField: 'attribute',
+        deployAsField: 'attribute',
         urlParamsToFields: {
           attributeId: 'id',
         },
@@ -658,7 +658,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       remove: {
         url: '/routing/attributes/{attributeId}',
         method: 'delete',
-        dataField: 'attribute',
+        deployAsField: 'attribute',
         urlParamsToFields: {
           attributeId: 'id',
         },
@@ -681,13 +681,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     deployRequests: {
       add: {
         url: '/workspaces',
-        dataField: 'workspace',
+        deployAsField: 'workspace',
         method: 'post',
       },
       modify: {
         url: '/workspaces/{workspaceId}',
         method: 'put',
-        dataField: 'workspace',
+        deployAsField: 'workspace',
         urlParamsToFields: {
           workspaceId: 'id',
         },
@@ -695,7 +695,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       remove: {
         url: '/workspaces/{workspaceId}',
         method: 'delete',
-        dataField: 'workspace',
+        deployAsField: 'workspace',
         urlParamsToFields: {
           workspaceId: 'id',
         },
@@ -713,13 +713,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       add: {
         // TODO - we should handle it in a filter
         url: '/apps/installations',
-        dataField: 'installation',
+        deployAsField: 'installation',
         method: 'post',
       },
       modify: {
         url: '/apps/installations/{appInstallationId}',
         method: 'put',
-        dataField: 'installation',
+        deployAsField: 'installation',
         urlParamsToFields: {
           appInstallationId: 'id',
         },
@@ -727,7 +727,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       remove: {
         url: '/apps/installations/{appInstallationId}',
         method: 'delete',
-        dataField: 'installation',
+        deployAsField: 'installation',
         urlParamsToFields: {
           appInstallationId: 'id',
         },
@@ -748,13 +748,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     deployRequests: {
       add: {
         url: '/oauth/clients',
-        dataField: 'client',
+        deployAsField: 'client',
         method: 'post',
       },
       modify: {
         url: '/oauth/clients/{oauthClientId}',
         method: 'put',
-        dataField: 'client',
+        deployAsField: 'client',
         urlParamsToFields: {
           oauthClientId: 'id',
         },
@@ -762,7 +762,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       remove: {
         url: '/oauth/clients/{oauthClientId}',
         method: 'delete',
-        dataField: 'client',
+        deployAsField: 'client',
         urlParamsToFields: {
           oauthClientId: 'id',
         },
@@ -783,7 +783,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       modify: {
         url: '/account/settings',
         method: 'put',
-        dataField: 'settings',
+        deployAsField: 'settings',
       },
     },
   },
@@ -948,11 +948,12 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
   },
   // eslint-disable-next-line camelcase
-  recipient_addresses: {
+  support_addresses: {
     request: {
       url: '/recipient_addresses',
     },
     transformation: {
+      sourceTypeName: 'recipient_addresses',
       dataField: 'recipient_addresses',
     },
   },

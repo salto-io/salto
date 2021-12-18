@@ -71,7 +71,7 @@ export type UrlParams = Record<string, string>
 
 export type DeployRequestConfig = BaseRequestConfig & {
   urlParamsToFields?: UrlParams
-  dataField?: string
+  deployAsField?: string
   method: 'post' | 'put' | 'delete' | 'patch'
 }
 
@@ -169,7 +169,7 @@ export const createRequestConfigs = (
       urlParamsToFields: {
         refType: new MapType(BuiltinTypes.STRING),
       },
-      dataField: {
+      deployAsField: {
         refType: BuiltinTypes.STRING,
       },
     },

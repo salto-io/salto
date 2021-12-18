@@ -42,11 +42,6 @@ describe('checkDeploymentValidator', () => {
     )
   })
 
-  // const apiDefinitions = deployConfig?.value?.apiDefinitions
-  //     const typeConfig = apiDefinitions?.types?.[instance.elemID.typeName]?.deployRequests ?? {}
-  //     const typeDefaultConfig = apiDefinitions?.typeDefaults?.deployRequests ?? {}
-  //     const config = configUtils.getConfigWithDefault(typeConfig, typeDefaultConfig)
-
   it('should not return an error when the changed element is not an instance', async () => {
     const errors = await checkDeploymentValidator([
       toChange({ after: type }),

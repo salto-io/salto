@@ -20,7 +20,7 @@ After installing, make sure you create the symlink as homebrew suggests:
 ```
 sudo ln -sfn /opt/homebrew/opt/openjdk@11/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk-11.jdk
 ```
-and then follow the instructions on how to set the current java version using `java_home`.
+and then follow [the instructions](https://dzone.com/articles/installing-openjdk-11-on-macos) on how to set the current java version using `java_home`.
 ### Build instructions
 ```
 yarn

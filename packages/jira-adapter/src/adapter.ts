@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, Element, getChangeElement, isAdditionChange, isInstanceChange } from '@salto-io/adapter-api'
+import { FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, getChangeElement, isAdditionChange, isInstanceChange } from '@salto-io/adapter-api'
 import { config as configUtils, elements as elementUtils, client as clientUtils, deployment } from '@salto-io/adapter-components'
-import { logDuration, resolveChangeElement } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, logDuration, resolveChangeElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import JiraClient from './client/client'
 import changeValidator from './change_validator'
@@ -52,12 +52,17 @@ export interface JiraAdapterParams {
   config: JiraConfig
 }
 
+type AdapterSwaggers = {
+  platform: elementUtils.swagger.LoadedSwagger
+  jira: elementUtils.swagger.LoadedSwagger
+}
+
 export default class JiraAdapter implements AdapterOperations {
   private createFiltersRunner: () => Promise<Required<Filter>>
   private client: JiraClient
   private userConfig: JiraConfig
   private paginator: clientUtils.Paginator
-  private swaggers?: elementUtils.swagger.LoadedSwagger[]
+  private swaggers?: AdapterSwaggers
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -81,14 +86,16 @@ export default class JiraAdapter implements AdapterOperations {
     )
   }
 
-  private async getSwaggers(): Promise<elementUtils.swagger.LoadedSwagger[]> {
+  private async getSwaggers(): Promise<AdapterSwaggers> {
     if (this.swaggers === undefined) {
-      this.swaggers = await Promise.all(
-        getApiDefinitions(this.userConfig.apiDefinitions)
-          .map(apiDef => loadSwagger(apiDef.swagger.url))
+      this.swaggers = Object.fromEntries(
+        await Promise.all(
+          Object.entries(getApiDefinitions(this.userConfig.apiDefinitions))
+            .map(async ([key, config]) => [key, await loadSwagger(config.swagger.url)])
+        )
       )
     }
-    return this.swaggers
+    return this.swaggers as AdapterSwaggers
   }
 
   @logDuration('generating types from swagger')
@@ -97,12 +104,18 @@ export default class JiraAdapter implements AdapterOperations {
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>
   }> {
     const swaggers = await this.getSwaggers()
+    const apiDefinitions = getApiDefinitions(this.userConfig.apiDefinitions)
     // Note - this is a temporary way of handling multiple swagger defs in the same adapter
     // this will be replaced by built-in infrastructure support for multiple swagger defs
     // in the configuration
     const results = await Promise.all(
-      getApiDefinitions(this.userConfig.apiDefinitions).map(
-        (config, i) => generateTypes(JIRA, config, undefined, swaggers[i])
+      Object.keys(swaggers).map(
+        key => generateTypes(
+          JIRA,
+          apiDefinitions[key as keyof AdapterSwaggers],
+          undefined,
+          swaggers[key as keyof AdapterSwaggers]
+        )
       )
     )
     return _.merge({}, ...results)
@@ -152,7 +165,7 @@ export default class JiraAdapter implements AdapterOperations {
     // may add fields that deployment annotation should be added to
     addDeploymentAnnotations(
       elements.filter(isObjectType),
-      await this.getSwaggers(),
+      Object.values(await this.getSwaggers()),
       this.userConfig.apiDefinitions,
     )
     return { elements }
@@ -163,12 +176,12 @@ export default class JiraAdapter implements AdapterOperations {
    */
   @logDuration('deploying account configuration')
   async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
-    const changesToDeploy = changeGroup.changes
+    const changesToDeploy = await Promise.all(changeGroup.changes
       .filter(isInstanceChange)
-      .map(change => ({
-        action: change.action,
-        data: _.mapValues(change.data, (element: Element) => element.clone()),
-      })) as Change<InstanceElement>[]
+      .map(change => applyFunctionToChangeData<Change<InstanceElement>>(
+        change,
+        instance => instance.clone()
+      )))
 
     const runner = await this.createFiltersRunner()
     await runner.preDeploy(changesToDeploy)

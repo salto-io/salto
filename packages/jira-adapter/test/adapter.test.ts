@@ -39,6 +39,7 @@ jest.mock('@salto-io/adapter-components', () => {
         ...actual.elements.swagger,
         generateTypes: jest.fn().mockImplementation(actual.elements.swagger.generateTypes),
         getAllInstances: jest.fn().mockImplementation(actual.elements.swagger.getAllInstances),
+        addDeploymentAnnotations: jest.fn(),
       },
     },
   }
@@ -58,11 +59,11 @@ describe('adapter', () => {
     })
   })
   describe('deploy', () => {
-    let deployChangeMock: jest.Mock
-
     const type = new ObjectType({ elemID: new ElemID(JIRA, 'obj') })
     beforeEach(() => {
-      deployChangeMock = deployment.deployChange as jest.Mock
+      const deployChangeMock = deployment.deployChange as jest.MockedFunction<
+       typeof deployment.deployChange
+      >
       deployChangeMock.mockImplementation(async change => {
         if (isRemovalChange(change)) {
           throw new Error('some error')

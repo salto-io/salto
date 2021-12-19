@@ -898,12 +898,15 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
   },
 })
 
-export const getApiDefinitions = (config: JiraApiConfig): configUtils.AdapterSwaggerApiConfig[] => {
+export const getApiDefinitions = (config: JiraApiConfig): {
+  platform: configUtils.AdapterSwaggerApiConfig
+  jira: configUtils.AdapterSwaggerApiConfig
+} => {
   const baseConfig = _.omit(config, ['platformSwagger', 'jiraSwagger'])
-  return [
-    { ...baseConfig, swagger: config.platformSwagger },
-    { ...baseConfig, swagger: config.jiraSwagger },
-  ]
+  return {
+    platform: { ...baseConfig, swagger: config.platformSwagger },
+    jira: { ...baseConfig, swagger: config.jiraSwagger },
+  }
 }
 
 export type FilterContext = Pick<JiraConfig, 'fetch' | 'apiDefinitions'>

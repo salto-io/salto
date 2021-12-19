@@ -111,6 +111,7 @@ const filter: FilterCreator = () => ({
         type: await inst.getType(),
         pathID: inst.elemID,
         transformFunc: transformSelfLinkToReference(elementsBySelfLink),
+        strict: false,
       }) ?? inst.value
     })
   },

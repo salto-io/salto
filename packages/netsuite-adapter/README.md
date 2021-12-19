@@ -11,6 +11,16 @@ OpenJDK - http://jdk.java.net/archive/ (explanation at https://dzone.com/article
 JDK - https://www.oracle.com/java/technologies/javase-jdk11-downloads.html
 ```
 
+#### M1 Macs
+If you have an M1 mac, you'll need to use homebrew to install the JDK,
+```shell
+$ brew install openjdk@11
+```
+After installing, make sure you create the symlink as homebrew suggests:
+```
+sudo ln -sfn /opt/homebrew/opt/openjdk@11/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk-11.jdk
+```
+and then follow the instructions on how to set the current java version using `java_home`.
 ### Build instructions
 ```
 yarn

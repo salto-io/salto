@@ -44,11 +44,13 @@ const { awu } = collections.asynciterable
 const { dumpElements } = parser
 
 const SALESFORCE_SERVICE_NAME = 'salesforce'
-const ALTERNATIVE_SALESFORCE_ACCOUNT_NAME = 'e2esalesforce'
+// uncomment this to test and the line under "describe.each" to run
+// multi test on an alternative account.
+// const ALTERNATIVE_SALESFORCE_ACCOUNT_NAME = 'e2esalesforce'
 
 describe.each([
   SALESFORCE_SERVICE_NAME,
-  ALTERNATIVE_SALESFORCE_ACCOUNT_NAME,
+  // ALTERNATIVE_SALESFORCE_ACCOUNT_NAME,
 ])('.add($accountName)', accountName => {
   const accounts = accountName === SALESFORCE_SERVICE_NAME ? undefined : [accountName]
   jest.setTimeout(15 * 60 * 1000)

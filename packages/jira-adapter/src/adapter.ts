@@ -25,6 +25,7 @@ import { FilterCreator, Filter, filtersRunner } from './filter'
 import fieldReferences from './filters/field_references'
 import referenceBySelfLinkFilter from './filters/references_by_self_link'
 import issueTypeSchemeReferences from './filters/issue_type_scheme_references'
+import authenticatedPermissionFilter from './filters/authenticated_permission'
 import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
 
@@ -36,6 +37,7 @@ export const DEFAULT_FILTERS = [
   fieldReferences,
   referenceBySelfLinkFilter,
   issueTypeSchemeReferences,
+  authenticatedPermissionFilter,
 ]
 
 export interface JiraAdapterParams {

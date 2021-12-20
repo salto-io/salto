@@ -90,10 +90,10 @@ export const filtersRunner = <
     deploy: async changes => (
       awu(filtersWith('deploy')).reduce(
         async (total, current) => {
-          const res = await current.deploy(total.leftoverChanges)
+          const { deployResult, leftoverChanges } = await current.deploy(total.leftoverChanges)
           return {
-            deployResult: concatObjects([total.deployResult, res.deployResult]),
-            leftoverChanges: res.leftoverChanges,
+            deployResult: concatObjects([total.deployResult, deployResult]),
+            leftoverChanges,
           }
         },
         {

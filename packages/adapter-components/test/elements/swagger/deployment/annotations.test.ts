@@ -13,24 +13,52 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+<<<<<<< HEAD
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
+=======
+import SwaggerParser from '@apidevtools/swagger-parser'
+import { BuiltinTypes, ElemID, Field, ListType, ObjectType } from '@salto-io/adapter-api'
+import { mockFunction } from '@salto-io/test-utils'
+>>>>>>> 8ba274425 (addDeploymentAnnotations now supports inner types)
 import _ from 'lodash'
 import { AdapterApiConfig } from '../../../../src/config/shared'
 import { addDeploymentAnnotations, LoadedSwagger } from '../../../../src/elements/swagger'
 
 describe('addDeploymentAnnotations', () => {
   let type: ObjectType
+  let innerListType: ObjectType
+  let innerType: ObjectType
   let mockSwagger: LoadedSwagger
   let apiDefinitions: AdapterApiConfig
 
   beforeEach(() => {
+    innerListType = new ObjectType({
+      elemID: new ElemID('adapter', 'innerListType'),
+      fields: {
+        innerField: { refType: BuiltinTypes.STRING },
+      },
+    })
+
+    innerType = new ObjectType({
+      elemID: new ElemID('adapter', 'innerType'),
+      fields: {
+        innerField: { refType: BuiltinTypes.STRING },
+        circular: { refType: innerListType },
+      },
+    })
+
+    innerListType.fields.circular = new Field(innerListType, 'circular', innerType)
+
     type = new ObjectType({
       elemID: new ElemID('adapter', 'test'),
       fields: {
         creatableField: { refType: BuiltinTypes.STRING },
         notCreatableField: { refType: BuiltinTypes.STRING },
+        innerList: { refType: new ListType(innerListType) },
+        inner: { refType: innerType },
       },
     })
+
     apiDefinitions = {
       typeDefaults: {
         transformation: {
@@ -85,6 +113,15 @@ describe('addDeploymentAnnotations', () => {
                           type: 'string',
                           readOnly: true,
                         },
+                        innerList: {
+                          type: 'array',
+                          items: {
+                            $ref: '#/components/schemas/innerListType',
+                          },
+                        },
+                        inner: {
+                          $ref: '#/components/schemas/innerType',
+                        },
                       },
                     },
                   },
@@ -98,11 +135,44 @@ describe('addDeploymentAnnotations', () => {
         },
         definitions: {},
       },
-      parser: {},
+      parser: {
+        $refs: {
+          get: mockFunction<SwaggerParser.$Refs['get']>().mockImplementation(ref => {
+            if (ref === '#/components/schemas/innerListType') {
+              return {
+                type: 'object',
+                properties: {
+                  innerField: {
+                    type: 'string',
+                  },
+                  circular: {
+                    $ref: '#/components/schemas/innerType',
+                  },
+                },
+              }
+            }
+
+            if (ref === '#/components/schemas/innerType') {
+              return {
+                type: 'object',
+                properties: {
+                  innerField: {
+                    type: 'string',
+                  },
+                  circular: {
+                    $ref: '#/components/schemas/innerListType',
+                  },
+                },
+              }
+            }
+            return undefined
+          }),
+        },
+      },
     } as unknown as LoadedSwagger
   })
 
-  it('When open api version is not v3 should throw an error', () => {
+  it('When open api version is not v3 should throw an error', async () => {
     const invalidSwagger = {
       document: {
         swagger: '2.0',
@@ -115,14 +185,15 @@ describe('addDeploymentAnnotations', () => {
       },
     } as unknown as LoadedSwagger
 
-    expect(() => addDeploymentAnnotations([type], [invalidSwagger], apiDefinitions)).toThrow(
-      'Deployment currently only supports open api V3'
-    )
+    await expect(addDeploymentAnnotations([type], [invalidSwagger], apiDefinitions))
+      .rejects.toThrow(
+        'Deployment currently only supports open api V3'
+      )
   })
 
-  it('When there is no endpoint for the type should do nothing should add the annotation to the type', () => {
+  it('When there is no endpoint for the type should do nothing should add the annotation to the type', async () => {
     apiDefinitions.types.test = {}
-    addDeploymentAnnotations([type], [mockSwagger], apiDefinitions)
+    await addDeploymentAnnotations([type], [mockSwagger], apiDefinitions)
     expect(type.annotations).toEqual({
       [CORE_ANNOTATIONS.CREATABLE]: false,
       [CORE_ANNOTATIONS.UPDATABLE]: false,
@@ -130,10 +201,10 @@ describe('addDeploymentAnnotations', () => {
     })
   })
 
-  it('When there is no endpoint in the swagger for the type should add the annotation to the type', () => {
+  it('When there is no endpoint in the swagger for the type should add the annotation to the type', async () => {
     const swaggerClone = _.cloneDeep(mockSwagger)
     swaggerClone.document.paths = {}
-    addDeploymentAnnotations([type], [swaggerClone], apiDefinitions)
+    await addDeploymentAnnotations([type], [swaggerClone], apiDefinitions)
     expect(type.annotations).toEqual({
       [CORE_ANNOTATIONS.CREATABLE]: false,
       [CORE_ANNOTATIONS.UPDATABLE]: false,
@@ -141,12 +212,12 @@ describe('addDeploymentAnnotations', () => {
     })
   })
 
-  it('When endpoint is undefined should add the annotation to the type', () => {
+  it('When endpoint is undefined should add the annotation to the type', async () => {
     const { deployRequests } = apiDefinitions.types.test;
     (deployRequests as { add: unknown }).add = undefined;
     (deployRequests as { remove: unknown }).remove = undefined
 
-    addDeploymentAnnotations([type], [mockSwagger], apiDefinitions)
+    await addDeploymentAnnotations([type], [mockSwagger], apiDefinitions)
     expect(type.annotations).toEqual({
       [CORE_ANNOTATIONS.CREATABLE]: false,
       [CORE_ANNOTATIONS.UPDATABLE]: false,
@@ -154,10 +225,25 @@ describe('addDeploymentAnnotations', () => {
     })
   })
 
-  it('Should add the appropriate annotations', () => {
-    addDeploymentAnnotations([type], [mockSwagger], apiDefinitions)
+  it('Should add the appropriate annotations', async () => {
+    await addDeploymentAnnotations([type, innerListType, innerType], [mockSwagger], apiDefinitions)
     expect(type.fields.creatableField.annotations).toEqual({
+<<<<<<< HEAD
       [CORE_ANNOTATIONS.UPDATABLE]: false,
+=======
+      [DEPLOYMENT_ANNOTATIONS.CREATABLE]: true,
+      [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
+    })
+
+    expect(type.fields.inner.annotations).toEqual({
+      [DEPLOYMENT_ANNOTATIONS.CREATABLE]: true,
+      [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
+    })
+
+    expect(type.fields.innerList.annotations).toEqual({
+      [DEPLOYMENT_ANNOTATIONS.CREATABLE]: true,
+      [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
+>>>>>>> 8ba274425 (addDeploymentAnnotations now supports inner types)
     })
 
     expect(type.fields.notCreatableField.annotations).toEqual({
@@ -166,7 +252,28 @@ describe('addDeploymentAnnotations', () => {
     })
 
     expect(type.annotations).toEqual({
+<<<<<<< HEAD
       [CORE_ANNOTATIONS.UPDATABLE]: false,
+=======
+      [DEPLOYMENT_ANNOTATIONS.CREATABLE]: true,
+      [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
+      [DEPLOYMENT_ANNOTATIONS.DELETABLE]: true,
+    })
+
+    expect(innerListType.fields.innerField.annotations).toEqual({
+      [DEPLOYMENT_ANNOTATIONS.CREATABLE]: true,
+      [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
+    })
+
+    expect(innerListType.fields.circular.annotations).toEqual({
+      [DEPLOYMENT_ANNOTATIONS.CREATABLE]: true,
+      [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
+    })
+
+    expect(innerType.fields.circular.annotations).toEqual({
+      [DEPLOYMENT_ANNOTATIONS.CREATABLE]: true,
+      [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
+>>>>>>> 8ba274425 (addDeploymentAnnotations now supports inner types)
     })
   })
 })

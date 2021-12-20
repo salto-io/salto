@@ -13,37 +13,31 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ActionName, CORE_ANNOTATIONS, ObjectType } from '@salto-io/adapter-api'
+import { ActionName, CORE_ANNOTATIONS, isListType, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { OpenAPIV3 } from 'openapi-types'
+import { collections } from '@salto-io/lowerdash'
 import { AdapterApiConfig } from '../../../config/shared'
 import { DeploymentRequestsByAction } from '../../../config/request'
 import { LoadedSwagger } from '../swagger'
-import { extractProperties, isReferenceObject, isV3, SwaggerVersion, toSchema } from '../type_elements/swagger_parser'
 import { OPERATION_TO_ANNOTATION } from '../../../deployment/annotations'
+import { extractProperties, isArraySchemaObject, isReferenceObject, isV3, SchemaObject, SchemaOrReference, SwaggerVersion, toSchema } from '../type_elements/swagger_parser'
+
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
-const getFieldsNames = (
+const getFields = (
   swagger: LoadedSwagger,
-  operation: OpenAPIV3.OperationObject,
-): string[] => {
-  const schemaOrRef = toSchema(SwaggerVersion.V3, operation.requestBody)
-  if (schemaOrRef === undefined) {
-    return []
-  }
-
+  schemaOrRef: SchemaOrReference,
+): Record<string, SchemaObject> => {
   const schema = isReferenceObject(schemaOrRef)
     ? swagger.parser.$refs.get(schemaOrRef.$ref)
     : schemaOrRef
 
   const fields = extractProperties(schema, swagger.parser.$refs).allProperties
-  const editableFieldNames = _(fields)
-    .pickBy(val => !('readOnly' in val) || !val.readOnly)
-    .keys()
-    .value()
-  return editableFieldNames
+  const editableFields = _.pickBy(fields, val => !('readOnly' in val) || !val.readOnly)
+  return editableFields
 }
 
 const getSwaggerEndpoint = (url: string, baseUrls: string[]): string => {
@@ -51,11 +45,52 @@ const getSwaggerEndpoint = (url: string, baseUrls: string[]): string => {
   return matchingBase === undefined ? url : url.slice(matchingBase.length)
 }
 
-export const addDeploymentAnnotationsFromSwagger = (
+const setTypeAnnotations = async (
+  type: ObjectType,
+  schema: SchemaOrReference,
+  swagger: LoadedSwagger,
+  action: ActionName,
+  annotatedTypes: Set<string>
+): Promise<void> => {
+  if (annotatedTypes.has(type.elemID.getFullName())) {
+    return
+  }
+
+  annotatedTypes.add(type.elemID.getFullName())
+
+  const fields = getFields(
+    swagger,
+    schema
+  )
+
+  await awu(Object.entries(fields)).forEach(async ([name, properties]) => {
+    const field = type.fields[name]
+
+    if (field === undefined) {
+      return
+    }
+    field.annotations[OPERATION_TO_ANNOTATION[action]] = true
+
+    const fieldType = await field.getType()
+
+    if (isObjectType(fieldType)) {
+      await setTypeAnnotations(fieldType, properties, swagger, action, annotatedTypes)
+    }
+
+    if (isListType(fieldType)) {
+      const innerType = await fieldType.getInnerType()
+      if (isArraySchemaObject(properties) && isObjectType(innerType)) {
+        await setTypeAnnotations(innerType, properties.items, swagger, action, annotatedTypes)
+      }
+    }
+  })
+}
+
+export const addDeploymentAnnotationsFromSwagger = async (
   type: ObjectType,
   swagger: LoadedSwagger,
   endpointDetails: DeploymentRequestsByAction,
-): void => {
+): Promise<void> => {
   const { document } = swagger
   if (!isV3(document)) {
     throw new Error('Deployment currently only supports open api V3')
@@ -66,7 +101,7 @@ export const addDeploymentAnnotationsFromSwagger = (
     server => new URL(server.url.startsWith('//') ? `http:${server.url}` : server.url).pathname
   ).filter(baseUrl => baseUrl !== '/') ?? []
 
-  Object.entries(endpointDetails).forEach(([operation, endpoint]) => {
+  await awu(Object.entries(endpointDetails)).forEach(async ([operation, endpoint]) => {
     if (endpoint === undefined) {
       return
     }
@@ -76,19 +111,17 @@ export const addDeploymentAnnotationsFromSwagger = (
       return
     }
 
-    delete type.annotations[OPERATION_TO_ANNOTATION[operation as ActionName]]
+    type.annotations[OPERATION_TO_ANNOTATION[operation as ActionName]] = true
 
-    const fields = getFieldsNames(
-      swagger,
-      swagger.document.paths[endpointUrl][endpoint.method]
+    const schema = toSchema(
+      SwaggerVersion.V3,
+      swagger.document.paths[endpointUrl][endpoint.method].requestBody
     )
 
-    fields.forEach(fieldName => {
-      const field = type.fields[fieldName]
-      if (field !== undefined) {
-        delete field.annotations[OPERATION_TO_ANNOTATION[operation as ActionName]]
-      }
-    })
+    if (schema === undefined) {
+      return
+    }
+    await setTypeAnnotations(type, schema, swagger, operation as ActionName, new Set())
   })
 }
 
@@ -100,19 +133,31 @@ export const addDeploymentAnnotationsFromSwagger = (
  * @param swagger The swagger to use to extract with what operations are supported on each value
  * @param endpointDetails The details of of what endpoints to use for each action
  */
-const addDeploymentAnnotationsToType = (
+const addDeploymentAnnotationsToType = async (
   type: ObjectType,
   swaggers: LoadedSwagger[],
   endpointDetails: DeploymentRequestsByAction,
-): void => {
-  type.annotations[CORE_ANNOTATIONS.CREATABLE] = false
-  type.annotations[CORE_ANNOTATIONS.UPDATABLE] = false
-  type.annotations[CORE_ANNOTATIONS.DELETABLE] = false
+): Promise<void> => {
+  type.annotations[CORE_ANNOTATIONS.CREATABLE] = Boolean(
+    type.annotations[CORE_ANNOTATIONS.CREATABLE]
+  )
+  type.annotations[CORE_ANNOTATIONS.UPDATABLE] = Boolean(
+    type.annotations[CORE_ANNOTATIONS.UPDATABLE]
+  )
+  type.annotations[CORE_ANNOTATIONS.DELETABLE] = Boolean(
+    type.annotations[CORE_ANNOTATIONS.DELETABLE]
+  )
   Object.values(type.fields).forEach(field => {
-    field.annotations[CORE_ANNOTATIONS.CREATABLE] = false
-    field.annotations[CORE_ANNOTATIONS.UPDATABLE] = false
+    field.annotations[CORE_ANNOTATIONS.CREATABLE] = Boolean(
+      field.annotations[CORE_ANNOTATIONS.CREATABLE]
+    )
+    field.annotations[CORE_ANNOTATIONS.UPDATABLE] = Boolean(
+      field.annotations[CORE_ANNOTATIONS.UPDATABLE]
+    )
   })
-  swaggers.forEach(swagger => addDeploymentAnnotationsFromSwagger(type, swagger, endpointDetails))
+  await Promise.all(
+    swaggers.map(swagger => addDeploymentAnnotationsFromSwagger(type, swagger, endpointDetails))
+  )
 }
 
 /**
@@ -122,16 +167,16 @@ const addDeploymentAnnotationsToType = (
  * @param swagger The swagger to use to extract with what operations are supported on each value
  * @param endpointDetails The details of of what endpoints to use for each action
  */
-export const addDeploymentAnnotations = (
+export const addDeploymentAnnotations = async (
   types: ObjectType[],
   swaggers: LoadedSwagger[],
   apiDefinitions: AdapterApiConfig,
-): void => {
-  types.forEach(
+): Promise<void> => {
+  await Promise.all(types.map(
     type => addDeploymentAnnotationsToType(
       type,
       swaggers,
       apiDefinitions.types[type.elemID.name]?.deployRequests ?? {}
     )
-  )
+  ))
 }

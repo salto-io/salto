@@ -13,14 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { JIRA } from '../../src/constants'
 import authenticatedPermissionFilter from '../../src/filters/authenticated_permission'
 import { mockClient, getDefaultAdapterConfig } from '../utils'
 
 describe('authenticatedPermissionFilter', () => {
-  let filter: filterUtils.Filter
+  let filter: filterUtils.FilterWith<'onFetch'>
   let instance: InstanceElement
   let type: ObjectType
   beforeEach(async () => {
@@ -29,12 +29,13 @@ describe('authenticatedPermissionFilter', () => {
       client,
       paginator,
       config: await getDefaultAdapterConfig(),
-    })
+    }) as typeof filter
 
     const sharePermissionType = new ObjectType({
       elemID: new ElemID(JIRA, 'SharePermission'),
       fields: {
         type: { refType: BuiltinTypes.STRING },
+        other: { refType: BuiltinTypes.STRING },
       },
     })
 
@@ -54,19 +55,29 @@ describe('authenticatedPermissionFilter', () => {
     )
   })
 
-  it('should replace "loggedin" to "authenticated" in SharePermission instances', async () => {
-    await filter.onFetch?.([instance])
+  it('should replace the value of type from "loggedin" to "authenticated" in SharePermission', async () => {
+    await filter.onFetch([instance])
     expect(instance.value).toEqual({ permissions: { type: 'authenticated' } })
   })
-  it('should not replace non "loggedin"', async () => {
+  it('should not replace the value of type that is not "loggedin" in SharePermission', async () => {
     instance.value.permissions.type = 'notLoggedIn'
-    await filter.onFetch?.([instance])
+    await filter.onFetch([instance])
     expect(instance.value).toEqual({ permissions: { type: 'notLoggedIn' } })
   })
 
-  it('should not replace "loggedin" if type is not SharePermission', async () => {
-    delete type.fields.permissions
-    await filter.onFetch?.([instance])
+  it('should not replace the value "loggedin" of type if the field type is not SharePermission', async () => {
+    type.fields.permissions = new Field(type, 'permissions', BuiltinTypes.UNKNOWN)
+    await filter.onFetch([instance])
     expect(instance.value).toEqual({ permissions: { type: 'loggedin' } })
+  })
+
+  it('should not replace the value "loggedin" of field that is not "type" in SharePermission', async () => {
+    instance.value.permissions.type = 'notLoggedIn'
+    instance.value.permissions.other = 'loggedIn'
+    await filter.onFetch([instance])
+    expect(instance.value).toEqual({ permissions: {
+      type: 'notLoggedIn',
+      other: 'loggedIn',
+    } })
   })
 })

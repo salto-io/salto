@@ -16,14 +16,13 @@
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { createChangeValidator } from '@salto-io/adapter-utils'
 import { deployment } from '@salto-io/adapter-components'
-import { checkDeploymentValidator } from './change_validators/check_deployment'
 
 const {
-  deployTypesNotSupportedValidator,
+  deployTypesNotSupportedValidator, checkDeploymentBasedOnConfigValidator,
 } = deployment.changeValidators
 
 const validators: ChangeValidator[] = [
-  checkDeploymentValidator,
+  checkDeploymentBasedOnConfigValidator,
   deployTypesNotSupportedValidator,
 ]
 

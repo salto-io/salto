@@ -16,3 +16,4 @@
 export { deployTypesNotSupportedValidator } from './deploy_types_not_supported'
 export { deployNotSupportedValidator } from './deploy_not_supported'
 export { checkDeploymentAnnotationsValidator } from './check_deployment_annotations'
+export { checkDeploymentValidator as checkDeploymentBasedOnConfigValidator } from './check_deployment'

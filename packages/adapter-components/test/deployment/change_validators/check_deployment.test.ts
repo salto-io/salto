@@ -14,17 +14,16 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { ZENDESK_SUPPORT } from '../../src/constants'
-import { checkDeploymentValidator } from '../../src/change_validators/check_deployment'
+import { checkDeploymentValidator } from '../../../src/deployment/change_validators/check_deployment'
 
 describe('checkDeploymentValidator', () => {
   let type: ObjectType
   let config: InstanceElement
   beforeEach(() => {
-    type = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'test') })
+    type = new ObjectType({ elemID: new ElemID('dum', 'test') })
     config = new InstanceElement(
       'instance',
-      new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'config') }),
+      new ObjectType({ elemID: new ElemID('dum', 'config') }),
       {
         apiDefinitions: {
           types: {
@@ -52,7 +51,7 @@ describe('checkDeploymentValidator', () => {
   it('should return an error when type does not support deploy', async () => {
     const instance = new InstanceElement(
       'test2',
-      new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'test2') }),
+      new ObjectType({ elemID: new ElemID('dum', 'test2') }),
     )
     const errors = await checkDeploymentValidator(
       [toChange({ after: instance })],

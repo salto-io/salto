@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   FetchResult, AdapterOperations, DeployResult, Element, DeployModifiers,
   FetchOptions, DeployOptions, Change, getChangeElement, isAdditionChange,
-  isInstanceChange, InstanceElement,
+  isInstanceChange, InstanceElement, Values,
 } from '@salto-io/adapter-api'
 import {
   client as clientUtils,
@@ -139,16 +139,26 @@ export default class ZendeskAdapter implements AdapterOperations {
             this.client,
             deployRequests,
           )
-          if (isAdditionChange(change) && !Array.isArray(response)) {
-            const transformationConfig = configUtils.getConfigWithDefault(
-              transformation,
-              apiDefinitions.typeDefaults.transformation,
-            )
-            const idField = transformationConfig.serviceIdField ?? 'id'
-            const dataField = deployRequests?.add?.deployAsField
-            getChangeElement(change).value[idField] = dataField
-              ? (response[dataField] as Record<string, unknown>)[idField]
-              : response[idField]
+          if (isAdditionChange(change)) {
+            if (_.isArray(response)) {
+              log.warn(
+                'Received an array for the response of the deploy. Action: add. ID: %s',
+                getChangeElement(change).elemID.getFullName()
+              )
+            } else {
+              const transformationConfig = configUtils.getConfigWithDefault(
+                transformation,
+                apiDefinitions.typeDefaults.transformation,
+              )
+              const idField = transformationConfig.serviceIdField ?? 'id'
+              const dataField = deployRequests?.add?.deployAsField
+              const idValue = dataField
+                ? (response?.[dataField] as Values)?.[idField]
+                : response?.[idField]
+              if (idValue) {
+                getChangeElement(change).value[idField] = idValue
+              }
+            }
           }
           return change
         } catch (err) {

@@ -15,7 +15,7 @@
 */
 import { Change, ChangeError, ChangeValidator, getChangeElement, isInstanceChange, Element, ElemID } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { config as configUtils } from '@salto-io/adapter-components'
+import { DeploymentRequestsByAction, getConfigWithDefault } from '../../config'
 
 const { awu } = collections.asynciterable
 
@@ -25,7 +25,7 @@ const detailedErrorMessage = (action: Change['action'], path: ElemID): string =>
   `Salto does not support "${action}" of ${path.getFullName()}`
 
 const isDeploymentSupported = (
-  action: Change['action'], config: configUtils.DeploymentRequestsByAction
+  action: Change['action'], config: DeploymentRequestsByAction
 ): boolean => config[action] !== undefined
 
 export const checkDeploymentValidator: ChangeValidator = async (
@@ -40,7 +40,7 @@ export const checkDeploymentValidator: ChangeValidator = async (
       const apiDefinitions = deployConfig?.value?.apiDefinitions
       const typeConfig = apiDefinitions?.types?.[instance.elemID.typeName]?.deployRequests ?? {}
       const typeDefaultConfig = apiDefinitions?.typeDefaults?.deployRequests ?? {}
-      const config = configUtils.getConfigWithDefault(typeConfig, typeDefaultConfig)
+      const config = getConfigWithDefault(typeConfig, typeDefaultConfig)
       if (!isDeploymentSupported(change.action, config)) {
         return [{
           elemID: instance.elemID,

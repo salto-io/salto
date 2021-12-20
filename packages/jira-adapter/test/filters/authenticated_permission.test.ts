@@ -55,23 +55,23 @@ describe('authenticatedPermissionFilter', () => {
     )
   })
 
-  it('should replace the value of type from "loggedin" to "authenticated" in SharePermission', async () => {
+  it('should replace SharePermission.type from "loggedin" to "authenticated"', async () => {
     await filter.onFetch([instance])
     expect(instance.value).toEqual({ permissions: { type: 'authenticated' } })
   })
-  it('should not replace the value of type that is not "loggedin" in SharePermission', async () => {
+  it('should not replace when SharePermission.type is not "loggedin"', async () => {
     instance.value.permissions.type = 'notLoggedIn'
     await filter.onFetch([instance])
     expect(instance.value).toEqual({ permissions: { type: 'notLoggedIn' } })
   })
 
-  it('should not replace the value "loggedin" of type if the field type is not SharePermission', async () => {
+  it('should not replace when field type isnt SharePermission', async () => {
     type.fields.permissions = new Field(type, 'permissions', BuiltinTypes.UNKNOWN)
     await filter.onFetch([instance])
     expect(instance.value).toEqual({ permissions: { type: 'loggedin' } })
   })
 
-  it('should not replace the value "loggedin" of field that is not "type" in SharePermission', async () => {
+  it('should not replace when field name isnt "type"', async () => {
     instance.value.permissions.type = 'notLoggedIn'
     instance.value.permissions.other = 'loggedIn'
     await filter.onFetch([instance])

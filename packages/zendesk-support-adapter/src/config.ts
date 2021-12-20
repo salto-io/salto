@@ -57,15 +57,84 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     transformation: {
       sourceTypeName: 'groups__groups',
     },
+    deployRequests: {
+      add: {
+        url: '/groups',
+        deployAsField: 'group',
+        method: 'post',
+      },
+      modify: {
+        url: '/groups/{groupId}',
+        method: 'put',
+        deployAsField: 'group',
+        urlParamsToFields: {
+          groupId: 'id',
+        },
+      },
+      remove: {
+        url: '/groups/{groupId}',
+        method: 'delete',
+        deployAsField: 'group',
+        urlParamsToFields: {
+          groupId: 'id',
+        },
+      },
+    },
   },
   custom_role: {
     transformation: {
       sourceTypeName: 'custom_roles__custom_roles',
     },
+    deployRequests: {
+      add: {
+        url: '/custom_roles',
+        deployAsField: 'custom_role',
+        method: 'post',
+      },
+      modify: {
+        url: '/custom_roles/{customRoleId}',
+        method: 'put',
+        deployAsField: 'custom_role',
+        urlParamsToFields: {
+          customRoleId: 'id',
+        },
+      },
+      remove: {
+        url: '/custom_roles/{customRoleId}',
+        method: 'delete',
+        deployAsField: 'custom_role',
+        urlParamsToFields: {
+          customRoleId: 'id',
+        },
+      },
+    },
   },
   organization: {
     transformation: {
       sourceTypeName: 'organizations__organizations',
+    },
+    deployRequests: {
+      add: {
+        url: '/organizations',
+        deployAsField: 'organization',
+        method: 'post',
+      },
+      modify: {
+        url: '/organizations/{organizationId}',
+        method: 'put',
+        deployAsField: 'organization',
+        urlParamsToFields: {
+          organizationId: 'id',
+        },
+      },
+      remove: {
+        url: '/organizations/{organizationId}',
+        method: 'delete',
+        deployAsField: 'organization',
+        urlParamsToFields: {
+          organizationId: 'id',
+        },
+      },
     },
   },
   view: {
@@ -74,6 +143,29 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       idFields: ['title', 'id'],
       fileNameFields: ['title'],
     },
+    deployRequests: {
+      add: {
+        url: '/views',
+        deployAsField: 'view',
+        method: 'post',
+      },
+      modify: {
+        url: '/views/{viewId}',
+        method: 'put',
+        deployAsField: 'view',
+        urlParamsToFields: {
+          viewId: 'id',
+        },
+      },
+      remove: {
+        url: '/views/{viewId}',
+        method: 'delete',
+        deployAsField: 'view',
+        urlParamsToFields: {
+          viewId: 'id',
+        },
+      },
+    },
   },
   trigger: {
     transformation: {
@@ -81,12 +173,57 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       idFields: ['title', 'id'],
       fileNameFields: ['title'],
     },
+    deployRequests: {
+      add: {
+        url: '/triggers',
+        deployAsField: 'trigger',
+        method: 'post',
+      },
+      modify: {
+        url: '/triggers/{triggerId}',
+        method: 'put',
+        deployAsField: 'trigger',
+        urlParamsToFields: {
+          triggerId: 'id',
+        },
+      },
+      remove: {
+        url: '/triggers/{triggerId}',
+        method: 'delete',
+        deployAsField: 'trigger',
+        urlParamsToFields: {
+          triggerId: 'id',
+        },
+      },
+    },
   },
   trigger_category: {
     transformation: {
       sourceTypeName: 'trigger_categories__trigger_categories',
-      idFields: ['name', 'id'],
       fileNameFields: ['name'],
+    },
+    deployRequests: {
+      add: {
+        url: '/trigger_categories',
+        deployAsField: 'trigger_category',
+        method: 'post',
+      },
+      modify: {
+        url: '/trigger_categories/{triggerCategoryId}',
+        method: 'patch',
+        deployAsField: 'trigger_category',
+        urlParamsToFields: {
+          triggerCategoryId: 'id',
+        },
+      },
+      remove: {
+        url: '/trigger_categories/{triggerCategoryId}',
+        method: 'delete',
+        deployAsField: 'trigger_category',
+        urlParamsToFields: {
+          triggerCategoryId: 'id',
+        },
+      },
     },
   },
   automation: {
@@ -95,12 +232,58 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       idFields: ['title', 'id'],
       fileNameFields: ['title'],
     },
+    deployRequests: {
+      add: {
+        url: '/automations',
+        deployAsField: 'automation',
+        method: 'post',
+      },
+      modify: {
+        url: '/automations/{automationId}',
+        method: 'put',
+        deployAsField: 'automation',
+        urlParamsToFields: {
+          automationId: 'id',
+        },
+      },
+      remove: {
+        url: '/automations/{automationId}',
+        method: 'delete',
+        deployAsField: 'automation',
+        urlParamsToFields: {
+          automationId: 'id',
+        },
+      },
+    },
   },
   sla_policy: {
     transformation: {
       sourceTypeName: 'sla_policies__sla_policies',
       idFields: ['title', 'id'],
       fileNameFields: ['title'],
+    },
+    deployRequests: {
+      add: {
+        url: '/slas/policies',
+        deployAsField: 'sla_policy',
+        method: 'post',
+      },
+      modify: {
+        url: '/slas/policies/{slaPolicyId}',
+        method: 'put',
+        deployAsField: 'sla_policy',
+        urlParamsToFields: {
+          slaPolicyId: 'id',
+        },
+      },
+      remove: {
+        url: '/slas/policies/{slaPolicyId}',
+        method: 'delete',
+        deployAsField: 'sla_policy',
+        urlParamsToFields: {
+          slaPolicyId: 'id',
+        },
+      },
     },
   },
   sla_policy_definition: {
@@ -114,12 +297,58 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       sourceTypeName: 'targets__targets',
       idFields: ['title', 'type'], // looks like title is unique so not adding id
     },
+    deployRequests: {
+      add: {
+        url: '/targets',
+        deployAsField: 'target',
+        method: 'post',
+      },
+      modify: {
+        url: '/targets/{targetId}',
+        method: 'put',
+        deployAsField: 'target',
+        urlParamsToFields: {
+          targetId: 'id',
+        },
+      },
+      remove: {
+        url: '/targets/{targetId}',
+        method: 'delete',
+        deployAsField: 'target',
+        urlParamsToFields: {
+          targetId: 'id',
+        },
+      },
+    },
   },
   macro: {
     transformation: {
       sourceTypeName: 'macros__macros',
       idFields: ['title', 'id'],
       fileNameFields: ['title'],
+    },
+    deployRequests: {
+      add: {
+        url: '/macros',
+        deployAsField: 'macro',
+        method: 'post',
+      },
+      modify: {
+        url: '/macros/{macroId}',
+        method: 'put',
+        deployAsField: 'macro',
+        urlParamsToFields: {
+          macroId: 'id',
+        },
+      },
+      remove: {
+        url: '/macros/{macroId}',
+        method: 'delete',
+        deployAsField: 'macro',
+        urlParamsToFields: {
+          macroId: 'id',
+        },
+      },
     },
   },
   macro_action: {
@@ -141,6 +370,32 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   brand: {
     transformation: {
       sourceTypeName: 'brands__brands',
+      fieldTypeOverrides: [
+        { fieldName: 'help_center_state', fieldType: 'string', restrictions: { enforce_value: true, values: ['enabled', 'disabled', 'restricted'] } },
+      ],
+    },
+    deployRequests: {
+      add: {
+        url: '/brands',
+        deployAsField: 'brand',
+        method: 'post',
+      },
+      modify: {
+        url: '/brands/{brandId}',
+        method: 'put',
+        deployAsField: 'brand',
+        urlParamsToFields: {
+          brandId: 'id',
+        },
+      },
+      remove: {
+        url: '/brands/{brandId}',
+        method: 'delete',
+        deployAsField: 'brand',
+        urlParamsToFields: {
+          brandId: 'id',
+        },
+      },
     },
   },
   locale: {
@@ -154,20 +409,123 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     transformation: {
       sourceTypeName: 'business_hours_schedules__schedules',
     },
+    deployRequests: {
+      add: {
+        url: '/business_hours/schedules',
+        deployAsField: 'schedule',
+        method: 'post',
+      },
+      modify: {
+        url: '/business_hours/schedules/{scheduleId}',
+        method: 'put',
+        deployAsField: 'schedule',
+        urlParamsToFields: {
+          scheduleId: 'id',
+        },
+      },
+      remove: {
+        url: '/business_hours/schedules/{scheduleId}',
+        method: 'delete',
+        deployAsField: 'schedule',
+        urlParamsToFields: {
+          scheduleId: 'id',
+        },
+      },
+    },
   },
   sharing_agreement: {
     transformation: {
       sourceTypeName: 'sharing_agreements__sharing_agreements',
+      fieldTypeOverrides: [
+        { fieldName: 'status', fieldType: 'string', restrictions: { enforce_value: true, values: ['accepted', 'declined', 'pending', 'inactive'] } },
+        { fieldName: 'type', fieldType: 'string', restrictions: { enforce_value: true, values: ['inbound', 'outbound'] } },
+      ],
+    },
+    deployRequests: {
+      add: {
+        url: '/sharing_agreements',
+        deployAsField: 'sharing_agreement',
+        method: 'post',
+      },
+      modify: {
+        url: '/sharing_agreements/{sharingAgreementId}',
+        method: 'put',
+        deployAsField: 'sharing_agreement',
+        urlParamsToFields: {
+          sharingAgreementId: 'id',
+        },
+      },
+      remove: {
+        url: '/sharing_agreements/{sharingAgreementId}',
+        method: 'delete',
+        deployAsField: 'sharing_agreement',
+        urlParamsToFields: {
+          sharingAgreementId: 'id',
+        },
+      },
     },
   },
   recipient_address: {
     transformation: {
       sourceTypeName: 'recipient_addresses__recipient_addresses',
+      fieldTypeOverrides: [
+        { fieldName: 'cname_status', fieldType: 'string', restrictions: { enforce_value: true, values: ['unknown', 'verified', 'failed'] } },
+        { fieldName: 'dns_results', fieldType: 'string', restrictions: { enforce_value: true, values: ['verified', 'failed'] } },
+        { fieldName: 'domain_verification_status', fieldType: 'string', restrictions: { enforce_value: true, values: ['unknown', 'verified', 'failed'] } },
+        { fieldName: 'forwarding_status', fieldType: 'string', restrictions: { enforce_value: true, values: ['unknown', 'waiting', 'verified', 'failed'] } },
+        { fieldName: 'spf_status', fieldType: 'string', restrictions: { enforce_value: true, values: ['unknown', 'verified', 'failed'] } },
+      ],
+    },
+    deployRequests: {
+      add: {
+        url: '/recipient_addresses',
+        deployAsField: 'recipient_address',
+        method: 'post',
+      },
+      modify: {
+        url: '/recipient_addresses/{supportAddressId}',
+        method: 'put',
+        deployAsField: 'recipient_address',
+        urlParamsToFields: {
+          supportAddressId: 'id',
+        },
+      },
+      remove: {
+        url: '/recipient_addresses/{supportAddressId}',
+        method: 'delete',
+        deployAsField: 'recipient_address',
+        urlParamsToFields: {
+          supportAddressId: 'id',
+        },
+      },
     },
   },
   ticket_form: {
     transformation: {
       sourceTypeName: 'ticket_forms__ticket_forms',
+    },
+    deployRequests: {
+      add: {
+        url: '/ticket_forms',
+        deployAsField: 'ticket_form',
+        method: 'post',
+      },
+      modify: {
+        url: '/ticket_forms/{ticketFormId}',
+        method: 'put',
+        deployAsField: 'ticket_form',
+        urlParamsToFields: {
+          ticketFormId: 'id',
+        },
+      },
+      remove: {
+        url: '/ticket_forms/{ticketFormId}',
+        method: 'delete',
+        deployAsField: 'ticket_form',
+        urlParamsToFields: {
+          ticketFormId: 'id',
+        },
+      },
     },
   },
   ticket_field: {
@@ -177,12 +535,61 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       fileNameFields: ['type', 'title'],
       standaloneFields: [{ fieldName: 'custom_field_options' }],
     },
+    deployRequests: {
+      add: {
+        url: '/ticket_fields',
+        deployAsField: 'ticket_field',
+        method: 'post',
+      },
+      modify: {
+        url: '/ticket_fields/{ticketFieldId}',
+        method: 'put',
+        deployAsField: 'ticket_field',
+        urlParamsToFields: {
+          ticketFieldId: 'id',
+        },
+      },
+      remove: {
+        url: '/ticket_fields/{ticketFieldId}',
+        method: 'delete',
+        deployAsField: 'ticket_field',
+        urlParamsToFields: {
+          ticketFieldId: 'id',
+        },
+      },
+    },
   },
   user_field: {
     transformation: {
       sourceTypeName: 'user_fields__user_fields',
       idFields: ['key'],
       standaloneFields: [{ fieldName: 'custom_field_options' }],
+      fieldTypeOverrides: [
+        { fieldName: 'type', fieldType: 'string', restrictions: { enforce_value: true, values: ['checkbox', 'date', 'decimal', 'dropdown', 'integer', 'regexp', 'text', 'textarea'] } },
+      ],
+    },
+    deployRequests: {
+      add: {
+        url: '/user_fields',
+        deployAsField: 'user_field',
+        method: 'post',
+      },
+      modify: {
+        url: '/user_fields/{userFieldId}',
+        method: 'put',
+        deployAsField: 'user_field',
+        urlParamsToFields: {
+          userFieldId: 'id',
+        },
+      },
+      remove: {
+        url: '/user_fields/{userFieldId}',
+        method: 'delete',
+        deployAsField: 'user_field',
+        urlParamsToFields: {
+          userFieldId: 'id',
+        },
+      },
     },
   },
   organization_field: {
@@ -190,11 +597,60 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       sourceTypeName: 'organization_fields__organization_fields',
       idFields: ['key'],
       standaloneFields: [{ fieldName: 'custom_field_options' }],
+      fieldTypeOverrides: [
+        { fieldName: 'type', fieldType: 'string', restrictions: { enforce_value: true, values: ['checkbox', 'date', 'decimal', 'dropdown', 'integer', 'regexp', 'text', 'textarea'] } },
+      ],
+    },
+    deployRequests: {
+      add: {
+        url: '/organization_fields',
+        deployAsField: 'organization_field',
+        method: 'post',
+      },
+      modify: {
+        url: '/organization_fields/{organizationFieldId}',
+        method: 'put',
+        deployAsField: 'organization_field',
+        urlParamsToFields: {
+          organizationFieldId: 'id',
+        },
+      },
+      remove: {
+        url: '/organization_fields/{organizationFieldId}',
+        method: 'delete',
+        deployAsField: 'organization_field',
+        urlParamsToFields: {
+          organizationFieldId: 'id',
+        },
+      },
     },
   },
   routing_attribute: {
     transformation: {
       sourceTypeName: 'routing_attributes__attributes',
+    },
+    deployRequests: {
+      add: {
+        url: '/routing/attributes',
+        deployAsField: 'attribute',
+        method: 'post',
+      },
+      modify: {
+        url: '/routing/attributes/{attributeId}',
+        method: 'put',
+        deployAsField: 'attribute',
+        urlParamsToFields: {
+          attributeId: 'id',
+        },
+      },
+      remove: {
+        url: '/routing/attributes/{attributeId}',
+        method: 'delete',
+        deployAsField: 'attribute',
+        urlParamsToFields: {
+          attributeId: 'id',
+        },
+      },
     },
   },
   routing_attribute_definition: {
@@ -210,6 +666,29 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       idFields: ['title', 'id'],
       fileNameFields: ['title'],
     },
+    deployRequests: {
+      add: {
+        url: '/workspaces',
+        deployAsField: 'workspace',
+        method: 'post',
+      },
+      modify: {
+        url: '/workspaces/{workspaceId}',
+        method: 'put',
+        deployAsField: 'workspace',
+        urlParamsToFields: {
+          workspaceId: 'id',
+        },
+      },
+      remove: {
+        url: '/workspaces/{workspaceId}',
+        method: 'delete',
+        deployAsField: 'workspace',
+        urlParamsToFields: {
+          workspaceId: 'id',
+        },
+      },
+    },
   },
   app_installation: {
     transformation: {
@@ -217,6 +696,29 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       fieldsToOmit: [...FIELDS_TO_OMIT, { fieldName: 'updated', fieldType: 'string' }],
       idFields: ['settings.name', 'id'],
       fileNameFields: ['settings.name'],
+    },
+    deployRequests: {
+      add: {
+        url: '/apps/installations',
+        deployAsField: 'installation',
+        method: 'post',
+      },
+      modify: {
+        url: '/apps/installations/{appInstallationId}',
+        method: 'put',
+        deployAsField: 'installation',
+        urlParamsToFields: {
+          appInstallationId: 'id',
+        },
+      },
+      remove: {
+        url: '/apps/installations/{appInstallationId}',
+        method: 'delete',
+        deployAsField: 'installation',
+        urlParamsToFields: {
+          appInstallationId: 'id',
+        },
+      },
     },
   },
   app_owned: {
@@ -228,6 +730,29 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     transformation: {
       sourceTypeName: 'oauth_clients__clients',
     },
+    deployRequests: {
+      add: {
+        url: '/oauth/clients',
+        deployAsField: 'client',
+        method: 'post',
+      },
+      modify: {
+        url: '/oauth/clients/{oauthClientId}',
+        method: 'put',
+        deployAsField: 'client',
+        urlParamsToFields: {
+          oauthClientId: 'id',
+        },
+      },
+      remove: {
+        url: '/oauth/clients/{oauthClientId}',
+        method: 'delete',
+        deployAsField: 'client',
+        urlParamsToFields: {
+          oauthClientId: 'id',
+        },
+      },
+    },
   },
   oauth_global_client: {
     transformation: {
@@ -238,6 +763,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     transformation: {
       sourceTypeName: 'account_settings__settings',
       isSingleton: true,
+    },
+    deployRequests: {
+      modify: {
+        url: '/account/settings',
+        method: 'put',
+        deployAsField: 'settings',
+      },
     },
   },
   resource_collection: {
@@ -379,6 +911,29 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     transformation: {
       dataField: '.',
     },
+    deployRequests: {
+      add: {
+        url: '/dynamic_content/items',
+        deployAsField: 'item',
+        method: 'post',
+      },
+      modify: {
+        url: '/dynamic_content/items/{dynamicContentItemId}',
+        method: 'put',
+        deployAsField: 'item',
+        urlParamsToFields: {
+          dynamicContentItemId: 'id',
+        },
+      },
+      remove: {
+        url: '/dynamic_content/items/{dynamicContentItemId}',
+        method: 'delete',
+        deployAsField: 'item',
+        urlParamsToFields: {
+          dynamicContentItemId: 'id',
+        },
+      },
+    },
   },
   locales: {
     request: {
@@ -406,6 +961,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       url: '/recipient_addresses',
     },
     transformation: {
+      sourceTypeName: 'recipient_addresses',
       dataField: 'recipient_addresses',
     },
   },

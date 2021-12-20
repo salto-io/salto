@@ -311,15 +311,14 @@ describe('element selector', () => {
     ]
     const selectedElements = await selectElements({
       elements,
-      selectors: ['salesforce.v*ue.INSTANCE.hellO.World', 'netsuitE.v*', 'Hubspot.V*.attR.Something'],
+      selectors: ['salesforce.v*ue.instance.hellO.World', 'netsuitE.v*', 'Hubspot.V*.attr.Something'],
       caseInsensitive: true,
     })
     expect(selectedElements).toEqual([elements[0], elements[3], elements[4]])
   })
 })
 
-// eslint-disable-next-line jest/no-disabled-tests
-describe.skip('validation tests', () => {
+describe('validation tests', () => {
   it('should throw error when invalid selector is given', () => {
     const invalidFilters = ['salesforce.Account.*', 'salesforce', '']
     expect(() => {
@@ -332,40 +331,9 @@ describe.skip('validation tests', () => {
       createElementSelector('')
     }).toThrow(new Error('Illegal element selector does not contain adapter expression: ""'))
     expect(createElementSelectors(invalidFilters).invalidSelectors).toEqual(invalidFilters)
-  })
-
-  it('should throw error if exact element id filter matches nothing', async () => {
-    const elements = [
-      new ElemID('salesforce', 'ApexClass', 'instance', 'American'),
-      new ElemID('salesforce', 'othertype'),
-      new ElemID('salesforce', 'othertype', 'instance', 'American', 'Australian'),
-      new ElemID('otheradapter', 'ApexClass', 'instance', 'Bob'),
-      new ElemID('otheradapter', 'ApexClass', 'instance', 'bob2'),
-      new ElemID('salesforce', 'ApexClass', 'instance', 'Im eric chan'),
-      new ElemID('salesforce', 'ApexClass', 'instance', 'eric'),
-      new ElemID('salesforce', 'ApexClass', 'instance', 'Im eric'),
-      new ElemID('salesforce', 'ApexClass', 'instance', 'eric chan'),
-    ]
-    return expect(selectElements({ elements,
-      selectors: ['salesforce.*', 'otheradapter.ApexClass.instance.bob2',
-        'otheradapter.Apexclass.instance.bob3', 'otheradapter.Apexclass.instance.bob4'] }))
-      .rejects.toThrow(new Error('The following salto ids were not found: otheradapter.Apexclass.instance.bob3,otheradapter.Apexclass.instance.bob4'))
-  })
-  it('should throw error if no filter matches anything', async () => {
-    const elements = [
-      new ElemID('salesforce', 'ApexClass', 'instance', 'American'),
-      new ElemID('salesforce', 'othertype'),
-      new ElemID('salesforce', 'othertype', 'instance', 'American', 'Australian'),
-      new ElemID('otheradapter', 'ApexClass', 'instance', 'Bob'),
-      new ElemID('otheradapter', 'ApexClass', 'instance', 'bob2'),
-      new ElemID('salesforce', 'ApexClass', 'instance', 'Im eric chan'),
-      new ElemID('salesforce', 'ApexClass', 'instance', 'eric'),
-      new ElemID('salesforce', 'ApexClass', 'instance', 'Im eric'),
-      new ElemID('salesforce', 'ApexClass', 'instance', 'eric chan'),
-    ]
-    return expect(selectElements({ elements,
-      selectors: ['nonexistantadapter.ApexClass.instance.*',
-        'anothernonexistantadapter.*'] })).rejects.toThrow(new Error('No salto ids matched the provided selectors nonexistantadapter.ApexClass.instance.*,anothernonexistantadapter.*'))
+    expect(() => {
+      createElementSelector('dummy.someType.')
+    }).toThrow(new Error('Illegal element selector is not a valid element ID: "dummy.someType."'))
   })
 })
 describe('select elements recursively', () => {

@@ -93,6 +93,14 @@ export const getSalesforceOAuthCreds = (creds: OauthAccessTokenCredentials): Ins
   )
 }
 
+export const getSalesforceClient = (credentials: UsernamePasswordCredentials): SalesforceClient => (
+  new SalesforceClient({
+    credentials: new UsernamePasswordCredentials(credentials),
+    // Default to purge on delete to avoid leaving definitions in the recycle bin
+    config: { deploy: { purgeOnDelete: true } },
+  })
+)
+
 export const addElements = async <T extends InstanceElement | ObjectType>(
   client: SalesforceClient,
   elements: T[]

@@ -28,6 +28,8 @@ import fieldReferencesFilter from './filters/field_references'
 import objectDefsFilter from './filters/object_defs'
 import objectDefSplitFilter from './filters/object_def_split'
 import workflowAndTaskReferencesFilter from './filters/workflow_and_task_references'
+import objectReferencesFilter from './filters/object_references'
+import financeInformationReferencesFilter from './filters/finance_information_references'
 import unorderedListsFilter from './filters/unordered_lists'
 import changeValidator from './change_validator'
 import { ZUORA_BILLING, LIST_ALL_SETTINGS_TYPE, SETTINGS_TYPE_PREFIX, CUSTOM_OBJECT_DEFINITION_TYPE } from './constants'
@@ -50,6 +52,10 @@ export const DEFAULT_FILTERS = [
 
   // fieldReferencesFilter should run after all elements were created
   fieldReferencesFilter,
+
+  objectReferencesFilter,
+
+  financeInformationReferencesFilter,
 
   // objectDefSplitFilter should run at the end - splits elements to divide to multiple files
   objectDefSplitFilter,

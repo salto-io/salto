@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ElemID, CORE_ANNOTATIONS, ListType, BuiltinTypes, InstanceElement } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
-import { ZUORA_BILLING, CUSTOM_OBJECT_DEFINITION_TYPE, LIST_ALL_SETTINGS_TYPE, SETTINGS_TYPE_PREFIX } from './constants'
+import { ZUORA_BILLING, CUSTOM_OBJECT_DEFINITION_TYPE, LIST_ALL_SETTINGS_TYPE, SETTINGS_TYPE_PREFIX, TASK_TYPE, WORKFLOW_DETAILED_TYPE, WORKFLOW_EXPORT_TYPE, PRODUCT_RATE_PLAN_TYPE, ACCOUNTING_CODE_ITEM_TYPE } from './constants'
 
 const { createClientConfigType } = clientUtils
 const { createUserFetchConfigType, createSwaggerAdapterApiConfigType } = configUtils
@@ -31,7 +31,11 @@ export type ZuoraClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientR
 export type ZuoraFetchConfig = configUtils.UserFetchConfig & {
   settingsIncludeTypes?: string[]
 }
-export type ZuoraApiConfig = configUtils.AdapterSwaggerApiConfig
+export type ZuoraApiConfig = configUtils.AdapterSwaggerApiConfig & {
+  settingsSwagger?: {
+    typeNameOverrides?: configUtils.TypeNameOverrideConfig[]
+  }
+}
 
 export type ZuoraConfig = {
   [CLIENT_CONFIG]?: ZuoraClientConfig
@@ -56,7 +60,7 @@ export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
 ]
 
 const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
-  WorkflowExport: {
+  [WORKFLOW_EXPORT_TYPE]: {
     request: {
       // for now relying on the specific param name from the swagger (workflow_id),
       // if it changes this should be updated accordingly
@@ -81,7 +85,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
       paginationField: 'pagination.next_page',
     },
   },
-  DetailedWorkflow: {
+  [WORKFLOW_DETAILED_TYPE]: {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'status', fieldType: 'string' },
@@ -92,6 +96,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'eventCategory', fieldType: 'number' },
+      ],
+      fieldsToHide: [
+        { fieldName: 'id', fieldType: 'string' },
       ],
     },
   },
@@ -113,8 +120,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
       paginationField: 'next',
     },
   },
-  Task: {
+  [TASK_TYPE]: {
     transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'delay', fieldType: 'number' },
+      ],
       fieldsToHide: [
         { fieldName: 'id', fieldType: 'number' },
       ],
@@ -166,7 +176,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
       dataField: 'products',
     },
   },
-  AccountingCodeItem: {
+  [ACCOUNTING_CODE_ITEM_TYPE]: {
     transformation: {
       idFields: ['type', 'name'],
       fieldsToHide: [
@@ -179,7 +189,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
       idFields: ['sku'],
       fileNameFields: ['name'],
       fieldTypeOverrides: [
-        { fieldName: 'productRatePlans', fieldType: 'list<ProductRatePlanType>' },
+        { fieldName: 'productRatePlans', fieldType: `list<${PRODUCT_RATE_PLAN_TYPE}>` },
       ],
       fieldsToHide: [
         { fieldName: 'id', fieldType: 'string' },
@@ -189,7 +199,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
       ],
     },
   },
-  ProductRatePlanType: {
+  [PRODUCT_RATE_PLAN_TYPE]: {
     transformation: {
       fieldsToHide: [
         { fieldName: 'id', fieldType: 'string' },
@@ -262,10 +272,16 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
         { pathParam: 'id', from: { type: `${SETTINGS_TYPE_PREFIX}PaymentGateways`, field: 'id' } },
       ],
     },
+    transformation: {
+      idFields: ['gatewayName'],
+    },
   },
   [`${SETTINGS_TYPE_PREFIX}Gateway`]: {
     transformation: {
       idFields: ['gatewayName'],
+      fieldsToHide: [
+        { fieldName: 'id', fieldType: 'string' },
+      ],
     },
   },
   [`${SETTINGS_TYPE_PREFIX}Currency`]: {
@@ -276,16 +292,53 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
   [`${SETTINGS_TYPE_PREFIX}PaymentTerm`]: {
     transformation: {
       idFields: ['type', 'name'],
+      fieldsToHide: [
+        { fieldName: 'id', fieldType: 'string' },
+      ],
     },
   },
   [`${SETTINGS_TYPE_PREFIX}ReasonCode`]: {
     transformation: {
       idFields: ['reasonCodeTransactionType', 'reasonCodeName'],
+      fieldsToHide: [
+        { fieldName: 'id', fieldType: 'string' },
+      ],
     },
   },
   [`${SETTINGS_TYPE_PREFIX}RevenueEventType`]: {
     transformation: {
       idFields: ['systemId'],
+      fieldsToHide: [
+        { fieldName: 'id', fieldType: 'string' },
+      ],
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}Segment`]: {
+    transformation: {
+      idFields: ['segmentName'],
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}SegmentationRule`]: {
+    transformation: {
+      fieldsToHide: [
+        { fieldName: 'id', fieldType: 'string' },
+      ],
+    },
+  },
+  // this type has only 'additionalProperties',
+  // but because we want to replace 'segmentName' with a reference it can't be nested
+  [`${SETTINGS_TYPE_PREFIX}RuleDetail`]: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'segmentId', fieldType: 'string' },
+        { fieldName: 'segmentName', fieldType: 'string' },
+        { fieldName: 'transactionType', fieldType: 'string' },
+      ],
+      // omitting and not hiding because the type is used inside an array, and can cause
+      // merge conflicts
+      fieldsToOmit: [
+        { fieldName: 'segmentId' },
+      ],
     },
   },
   [`${SETTINGS_TYPE_PREFIX}revenueRecognitionRuleDtos`]: {
@@ -296,9 +349,82 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
       ],
     },
   },
+  [`${SETTINGS_TYPE_PREFIX}RevenueRecognitionRule`]: {
+    transformation: {
+      fieldsToHide: [
+        { fieldName: 'id', fieldType: 'string' },
+      ],
+    },
+  },
   [`${SETTINGS_TYPE_PREFIX}Role`]: {
     transformation: {
       idFields: ['category', 'name'],
+      fieldsToHide: [
+        { fieldName: 'id', fieldType: 'string' },
+      ],
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}Attribute`]: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'id', fieldType: 'string' },
+      ],
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}Codes`]: {
+    transformation: {
+      idFields: ['code'],
+      fieldsToHide: [
+        { fieldName: 'id', fieldType: 'string' },
+      ],
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}TaxCode`]: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'taxCompanyId', fieldType: 'string' },
+      ],
+      fieldsToHide: [
+        { fieldName: 'id', fieldType: 'string' },
+      ],
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}TaxEngines`]: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'taxEngines', fieldType: `list<${SETTINGS_TYPE_PREFIX}TaxEngine>` },
+      ],
+      standaloneFields: [
+        { fieldName: 'taxEngines' },
+      ],
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}TaxEngine`]: {
+    transformation: {
+      fieldsToHide: [
+        { fieldName: 'id', fieldType: 'string' },
+      ],
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}TaxCompany`]: {
+    transformation: {
+      fieldsToHide: [
+        { fieldName: 'id', fieldType: 'string' },
+      ],
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}UnitOfMeasure`]: {
+    transformation: {
+      fieldsToHide: [
+        { fieldName: 'id', fieldType: 'string' },
+      ],
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}DiscountSetting`]: {
+    transformation: {
+      fieldsToHide: [
+        { fieldName: 'id', fieldType: 'string' },
+      ],
     },
   },
   [`${SETTINGS_TYPE_PREFIX}RolesPage`]: {
@@ -330,6 +456,16 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
       ],
     },
   },
+  [`${SETTINGS_TYPE_PREFIX}CommunicationProfile`]: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'string' },
+      ],
+      fieldsToHide: [
+        { fieldName: 'id', fieldType: 'string' },
+      ],
+    },
+  },
   [`${SETTINGS_TYPE_PREFIX}AllNotifications`]: {
     request: {
       url: '/settings/communication-profiles/{id}/notifications',
@@ -352,6 +488,98 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
       ],
     },
   },
+  [`${SETTINGS_TYPE_PREFIX}HostedPaymentPage`]: {
+    transformation: {
+      fieldsToHide: [
+        { fieldName: 'id', fieldType: 'string' },
+      ],
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}AccountingRules`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}BillingCycleType`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}BillingListPriceBase`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}BillingPeriod`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}BillingPeriodStart`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}BillingRules`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}ChargeModel`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}ChargeType`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}DocPrefix`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}FxCurrency`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}NumberAndSku`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}PaymentMethods`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}PaymentRules`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}RevenueRecognitionModels`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}RevenueRecognitionStatus`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}RevenueStartDate`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}SubscriptionSetting`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
 }
 
 const DEFAULT_SWAGGER_CONFIG: ZuoraApiConfig['swagger'] = {
@@ -360,8 +588,8 @@ const DEFAULT_SWAGGER_CONFIG: ZuoraApiConfig['swagger'] = {
     { originalName: 'events__event_triggers@uub', newName: 'EventTriggers' },
     { originalName: 'notifications__email_templates@uub', newName: 'NotificationEmailTemplates' },
     { originalName: 'notifications__notification_definitions@uub', newName: 'NotificationDefinitions' },
-    { originalName: 'workflows___workflow_id___export@uu_00123u_00125uu', newName: 'WorkflowExport' },
-    { originalName: 'GETAccountingCodeItemWithoutSuccessType', newName: 'AccountingCodeItem' },
+    { originalName: 'workflows___workflow_id___export@uu_00123u_00125uu', newName: WORKFLOW_EXPORT_TYPE },
+    { originalName: 'GETAccountingCodeItemWithoutSuccessType', newName: ACCOUNTING_CODE_ITEM_TYPE },
     { originalName: 'GETAccountingCodesType', newName: 'AccountingCodes' },
     { originalName: 'GETAccountingPeriodsType', newName: 'AccountingPeriods' },
     { originalName: 'GETAccountingPeriodWithoutSuccessType', newName: 'AccountingPeriod' },
@@ -370,6 +598,7 @@ const DEFAULT_SWAGGER_CONFIG: ZuoraApiConfig['swagger'] = {
     { originalName: 'GetHostedPagesType', newName: 'HostedPages' },
     { originalName: 'GetHostedPageType', newName: 'HostedPage' },
     { originalName: 'GETPaymentGatwaysResponse', newName: 'PaymentGateways' },
+    { originalName: 'GETAPaymentGatwayResponse', newName: 'PaymentGatewayResponse' },
     { originalName: 'GETPublicEmailTemplateResponse', newName: 'PublicEmailTemplate' },
     { originalName: 'GETPublicNotificationDefinitionResponse', newName: 'PublicNotificationDefinition' },
     { originalName: 'GETSequenceSetResponse', newName: 'SequenceSet' },
@@ -377,15 +606,22 @@ const DEFAULT_SWAGGER_CONFIG: ZuoraApiConfig['swagger'] = {
     { originalName: 'GetWorkflowsResponse', newName: 'Workflows' },
     { originalName: 'ListAllSettingsResponse', newName: LIST_ALL_SETTINGS_TYPE },
     { originalName: 'GETProductType', newName: 'ProductType' },
-    { originalName: 'GETProductRatePlanType', newName: 'ProductRatePlanType' },
+    { originalName: 'GETProductRatePlanType', newName: PRODUCT_RATE_PLAN_TYPE },
   ],
   additionalTypes: [
     { typeName: 'StandardObject', cloneFrom: 'CustomObject' },
   ],
 }
 
+const SETTINGS_SWAGGER_CONFIG: ZuoraApiConfig['settingsSwagger'] = {
+  typeNameOverrides: [
+    { originalName: 'settings__tax_engines@uub', newName: `${SETTINGS_TYPE_PREFIX}TaxEngines` },
+  ],
+}
+
 export const DEFAULT_API_DEFINITIONS: ZuoraApiConfig = {
   swagger: DEFAULT_SWAGGER_CONFIG,
+  settingsSwagger: SETTINGS_SWAGGER_CONFIG,
   typeDefaults: {
     transformation: {
       idFields: DEFAULT_ID_FIELDS,
@@ -438,6 +674,7 @@ export const DEFAULT_SETTINGS_INCLUDE_TYPES = [
   'SegmentationRules',
   'SubscriptionSetting',
   'UnitsOfMeasureList',
+  'TaxEngines',
 ]
 
 export const DEFAULT_INCLUDE_TYPES = [
@@ -452,7 +689,7 @@ export const DEFAULT_INCLUDE_TYPES = [
   'PaymentGateways',
   'SequenceSets',
   'StandardObject',
-  'WorkflowExport',
+  WORKFLOW_EXPORT_TYPE,
 ]
 
 export const configType = createMatchingObjectType<ZuoraConfig>({

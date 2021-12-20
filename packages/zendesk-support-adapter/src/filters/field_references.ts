@@ -197,7 +197,7 @@ const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition<
  */
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
-    await referenceUtils.addReferences<ReferenceContextStrategyName>({
+    await referenceUtils.addReferences({
       elements,
       defs: fieldNameToTypeMappingDefs,
       fieldsToGroupBy: ['id', 'name'],

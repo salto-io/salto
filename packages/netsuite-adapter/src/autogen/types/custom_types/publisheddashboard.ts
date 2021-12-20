@@ -51,7 +51,7 @@ const publisheddashboard_dashboards_dashboard_centercolumn_analytics = new Objec
     name: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 50 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 50 }),
       },
     }, /* Original description: This field value can be up to 50 characters long. */
     height: {
@@ -261,7 +261,7 @@ const publisheddashboard_dashboards_dashboard_centercolumn_customsearch = new Ob
     title: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 40 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 40 }),
       },
     }, /* Original description: This field value can be up to 40 characters long. */
   },
@@ -763,6 +763,78 @@ const publisheddashboard_dashboards_dashboard_centercolumn_list = new ObjectType
 
 publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_list)
 
+const publisheddashboard_dashboards_dashboard_centercolumn_pdganttchartElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_pdganttchart')
+
+const publisheddashboard_dashboards_dashboard_centercolumn_pdganttchart = new ObjectType({
+  elemID: publisheddashboard_dashboards_dashboard_centercolumn_pdganttchartElemID,
+  annotations: {
+  },
+  fields: {
+    isminimized: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
+})
+
+publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_pdganttchart)
+
+const publisheddashboard_dashboards_dashboard_centercolumn_pdinfoElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_pdinfo')
+
+const publisheddashboard_dashboards_dashboard_centercolumn_pdinfo = new ObjectType({
+  elemID: publisheddashboard_dashboards_dashboard_centercolumn_pdinfoElemID,
+  annotations: {
+  },
+  fields: {
+    isminimized: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
+})
+
+publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_pdinfo)
+
+const publisheddashboard_dashboards_dashboard_centercolumn_pdplElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_pdpl')
+
+const publisheddashboard_dashboards_dashboard_centercolumn_pdpl = new ObjectType({
+  elemID: publisheddashboard_dashboards_dashboard_centercolumn_pdplElemID,
+  annotations: {
+  },
+  fields: {
+    isminimized: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
+})
+
+publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_pdpl)
+
+const publisheddashboard_dashboards_dashboard_centercolumn_pdquicklinksElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_pdquicklinks')
+
+const publisheddashboard_dashboards_dashboard_centercolumn_pdquicklinks = new ObjectType({
+  elemID: publisheddashboard_dashboards_dashboard_centercolumn_pdquicklinksElemID,
+  annotations: {
+  },
+  fields: {
+    isminimized: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
+})
+
+publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_pdquicklinks)
+
 const publisheddashboard_dashboards_dashboard_centercolumn_quicksearchElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_quicksearch')
 
 const publisheddashboard_dashboards_dashboard_centercolumn_quicksearch = new ObjectType({
@@ -1170,11 +1242,31 @@ const publisheddashboard_dashboards_dashboard_centercolumn_trendgraph = new Obje
       annotations: {
       },
     }, /* Original description: This field is available when the kpi value is present in snapshot_type_custom.   This field is mandatory when the kpi value is present in snapshot_type_custom.   This field accepts references to the savedsearch custom type. */
+    savedsearch2: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      annotations: {
+      },
+    }, /* Original description: This field is available when the kpi2 value is present in snapshot_type_custom.   This field is mandatory when the kpi2 value is present in snapshot_type_custom.   This field accepts references to the savedsearch custom type. */
+    savedsearch3: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      annotations: {
+      },
+    }, /* Original description: This field is available when the kpi3 value is present in snapshot_type_custom.   This field is mandatory when the kpi3 value is present in snapshot_type_custom.   This field accepts references to the savedsearch custom type. */
     isminimized: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
+    kpi2: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see the following lists:   snapshot_type_trendgraph   snapshot_type_custom */
+    kpi3: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see the following lists:   snapshot_type_trendgraph   snapshot_type_custom */
     backgroundtype: {
       refType: createRefToElmWithValue(enums.portlet_trendgraph_backgroundtype),
       annotations: {
@@ -1186,6 +1278,16 @@ const publisheddashboard_dashboards_dashboard_centercolumn_trendgraph = new Obje
       },
     }, /* Original description: For information about possible values, see portlet_trendgraph_charttheme.   The default value is 'GLOBAL_THEME'. */
     customseriescolor: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was rgb   RGB field types must be set to a valid 6–digit hexadecimal value between #000000 and #FFFFFF. The # prefix is optional. */),
+      annotations: {
+      },
+    },
+    customseriescolor2: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was rgb   RGB field types must be set to a valid 6–digit hexadecimal value between #000000 and #FFFFFF. The # prefix is optional. */),
+      annotations: {
+      },
+    },
+    customseriescolor3: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was rgb   RGB field types must be set to a valid 6–digit hexadecimal value between #000000 and #FFFFFF. The # prefix is optional. */),
       annotations: {
       },
@@ -1270,6 +1372,26 @@ const publisheddashboard_dashboards_dashboard_centercolumn = new ObjectType({
     },
     list: {
       refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_list)),
+      annotations: {
+      },
+    },
+    pdganttchart: {
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_pdganttchart)),
+      annotations: {
+      },
+    },
+    pdinfo: {
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_pdinfo)),
+      annotations: {
+      },
+    },
+    pdpl: {
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_pdpl)),
+      annotations: {
+      },
+    },
+    pdquicklinks: {
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_pdquicklinks)),
       annotations: {
       },
     },
@@ -1476,7 +1598,7 @@ export const publisheddashboard = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 30 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 30 }),
       },
     }, /* Original description: This field value can be up to 30 characters long.   This field accepts references to the string custom type. */
     center: {
@@ -1498,7 +1620,7 @@ export const publisheddashboard = new ObjectType({
     notes: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 4000 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 4000 }),
       },
     }, /* Original description: This field value can be up to 4000 characters long.   This field accepts references to the string custom type. */
     dashboards: {

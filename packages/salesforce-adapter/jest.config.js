@@ -35,6 +35,7 @@ module.exports = deepMerge(
         statements: 95,
       },
     },
+    setupFilesAfterEnv: ["jest-extended/all"],
   },
 )
 

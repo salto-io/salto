@@ -28,7 +28,7 @@ describe('config_ducktype', () => {
       expect(types).toBeInstanceOf(MapType)
       const typesInner = await types.getInnerType() as ObjectType
       expect(typesInner).toBeInstanceOf(ObjectType)
-      expect(new Set(Object.keys(typesInner.fields))).toEqual(new Set(['request', 'transformation']))
+      expect(new Set(Object.keys(typesInner.fields))).toEqual(new Set(['request', 'transformation', 'deployRequests']))
       const request = await typesInner.fields.request.getType() as ObjectType
       const transformation = await typesInner.fields.transformation.getType() as ObjectType
       expect(request).toBeInstanceOf(ObjectType)
@@ -60,7 +60,7 @@ describe('config_ducktype', () => {
       expect(types).toBeInstanceOf(MapType)
       const typesInner = await types.getInnerType() as ObjectType
       expect(typesInner).toBeInstanceOf(ObjectType)
-      expect(new Set(Object.keys(typesInner.fields))).toEqual(new Set(['request', 'transformation']))
+      expect(new Set(Object.keys(typesInner.fields))).toEqual(new Set(['request', 'transformation', 'deployRequests']))
       const request = await typesInner.fields.request.getType() as ObjectType
       const transformation = await typesInner.fields.transformation.getType() as ObjectType
       expect(request).toBeInstanceOf(ObjectType)
@@ -141,32 +141,6 @@ describe('config_ducktype', () => {
           },
         },
       )).toThrow(new Error('Duplicate fieldsToOmit params found in PATH for the following types: abc'))
-    })
-    // TODO: remove this test once singleton types are implemented in ducktype
-    it('should throw if isSingleton flag is on', () => {
-      expect(() => validateDuckTypeApiDefinitionConfig(
-        'PATH',
-        {
-          typeDefaults: {
-            transformation: {
-              idFields: ['a', 'b'],
-            },
-          },
-          types: {
-            abc: {
-              transformation: {
-                idFields: ['something', 'else'],
-              },
-            },
-            aaa: {
-              transformation: {
-                idFields: ['something'],
-                isSingleton: true,
-              },
-            },
-          },
-        },
-      )).toThrow(new Error('transformation.isSingleton flag is not supported in this adapter'))
     })
   })
 

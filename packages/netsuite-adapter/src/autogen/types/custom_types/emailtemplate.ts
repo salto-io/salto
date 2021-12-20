@@ -43,7 +43,7 @@ export const emailtemplate = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 60 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 60 }),
       },
     }, /* Original description: This field value can be up to 60 characters long. */
     mediaitem: {
@@ -54,7 +54,7 @@ export const emailtemplate = new ObjectType({
     description: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 1000 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 1000 }),
       },
     }, /* Original description: This field value can be up to 1000 characters long. */
     recordtype: {
@@ -70,7 +70,7 @@ export const emailtemplate = new ObjectType({
     subject: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 199 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 199 }),
       },
     }, /* Original description: This field value can be up to 199 characters long. */
     isprivate: {

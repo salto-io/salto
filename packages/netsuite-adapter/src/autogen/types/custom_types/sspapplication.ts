@@ -46,7 +46,7 @@ const sspapplication_entrypoints_entrypoint = new ObjectType({
     entryparameter: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 60 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 60 }),
       },
     }, /* Original description: This field value can be up to 60 characters long. */
   },
@@ -128,7 +128,7 @@ export const sspapplication = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 40 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 40 }),
       },
     }, /* Original description: This field value can be up to 40 characters long. */
     status: {
@@ -141,7 +141,7 @@ export const sspapplication = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 999 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 999 }),
       },
     }, /* Original description: This field value can be up to 999 characters long. */
     appfolder: {
@@ -154,13 +154,13 @@ export const sspapplication = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 40 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 40 }),
       },
     }, /* Original description: This field value can be up to 40 characters long.   The default value is '1.0'. */
     description: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 3999 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 3999 }),
       },
     }, /* Original description: This field value can be up to 3999 characters long. */
     isinactive: {

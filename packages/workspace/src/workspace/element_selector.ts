@@ -140,9 +140,15 @@ export const createElementSelector = (selector: string,
   if (!typeNameSelector) {
     throw new Error(`Illegal element selector does not contain type name: "${selector}"`)
   }
-  if (idTypeSelector && !(ElemIDTypes.includes(idTypeSelector.toLowerCase()))) {
+  if (idTypeSelector && !(ElemIDTypes.includes(idTypeSelector))) {
     throw new Error(`Illegal element selector includes illegal type name: "${idTypeSelector}". Full selector is: "${selector}"`)
   }
+  try {
+    ElemID.fromFullName(selector)
+  } catch (e) {
+    throw new Error(`Illegal element selector is not a valid element ID: "${selector}"`)
+  }
+
   return {
     adapterSelector: createRegex(adapterSelector, caseInSensitive),
     typeNameSelector: createRegex(typeNameSelector, caseInSensitive),

@@ -40,7 +40,7 @@ const centercategory_links_link = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
-    }, /* Original description: This field is mandatory when the linkid value is not defined.   This field accepts references to the following custom types:   workflowactionscript   usereventscript   scriptdeployment   suitelet   scheduledscript   savedsearch   restlet   portlet   massupdatescript   mapreducescript   customtransactiontype   customrecordtype   clientscript   centertab   centerlink   bundleinstallationscript */
+    }, /* Original description: This field is mandatory when the linkid value is not defined.   This field accepts references to the following custom types:   workflowactionscript   usereventscript   scriptdeployment   suitelet   scheduledscript   savedsearch   restlet   portlet   massupdatescript   mapreducescript   customtransactiontype   customrecordtype   customlist   clientscript   centertab   centerlink   bundleinstallationscript */
     linktasktype: {
       refType: createRefToElmWithValue(enums.centercategory_tasktype),
       annotations: {
@@ -110,7 +110,7 @@ export const centercategory = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 99 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 99 }),
       },
     }, /* Original description: This field value can be up to 99 characters long.   This field accepts references to the string custom type. */
     links: {

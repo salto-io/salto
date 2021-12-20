@@ -27,8 +27,8 @@ export type ReferenceSerializationStrategy = {
   lookupIndexName?: string
 }
 
-type ReferenceSerializationStrategyName = 'fullValue' | 'id' | 'name'
-const ReferenceSerializationStrategyLookup: Record<
+export type ReferenceSerializationStrategyName = 'fullValue' | 'id' | 'name'
+export const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName, ReferenceSerializationStrategy
 > = {
   fullValue: {
@@ -137,10 +137,17 @@ export type ReferenceResolverFinder<T extends string> = (
  * Generates a function that filters the relevant resolvers for a given field.
  */
 export const generateReferenceResolverFinder = <
-  T extends string
->(defs: FieldReferenceDefinition<T>[]): ReferenceResolverFinder<T> => {
+  T extends string,
+  GerericFieldReferenceDefinition extends FieldReferenceDefinition<T>
+>(
+    defs: GerericFieldReferenceDefinition[],
+    fieldReferenceResolverCreator?:
+      (def: GerericFieldReferenceDefinition) => FieldReferenceResolver<T>
+  ): ReferenceResolverFinder<T> => {
   const referenceDefinitions = defs.map(
-    def => FieldReferenceResolver.create<T>(def)
+    def => (fieldReferenceResolverCreator
+      ? fieldReferenceResolverCreator(def)
+      : FieldReferenceResolver.create<T>(def))
   )
 
   const matchersByFieldName = _(referenceDefinitions)

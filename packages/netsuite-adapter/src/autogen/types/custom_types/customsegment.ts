@@ -346,6 +346,67 @@ const customsegment_segmentapplication_items = new ObjectType({
 
 customsegmentInnerTypes.push(customsegment_segmentapplication_items)
 
+const customsegment_segmentapplication_otherrecords_applications_applicationElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_otherrecords_applications_application')
+
+const customsegment_segmentapplication_otherrecords_applications_application = new ObjectType({
+  elemID: customsegment_segmentapplication_otherrecords_applications_applicationElemID,
+  annotations: {
+  },
+  fields: {
+    id: {
+      refType: createRefToElmWithValue(enums.customsegment_otherrecords_application_id),
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    }, /* Original description: For information about possible values, see customsegment_otherrecords_application_id. */
+    isapplied: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    }, /* Original description: The default value is F. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
+})
+
+customsegmentInnerTypes.push(customsegment_segmentapplication_otherrecords_applications_application)
+
+const customsegment_segmentapplication_otherrecords_applicationsElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_otherrecords_applications')
+
+const customsegment_segmentapplication_otherrecords_applications = new ObjectType({
+  elemID: customsegment_segmentapplication_otherrecords_applicationsElemID,
+  annotations: {
+  },
+  fields: {
+    application: {
+      refType: createRefToElmWithValue(new ListType(customsegment_segmentapplication_otherrecords_applications_application)),
+      annotations: {
+      },
+    },
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
+})
+
+customsegmentInnerTypes.push(customsegment_segmentapplication_otherrecords_applications)
+
+const customsegment_segmentapplication_otherrecordsElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_otherrecords')
+
+const customsegment_segmentapplication_otherrecords = new ObjectType({
+  elemID: customsegment_segmentapplication_otherrecordsElemID,
+  annotations: {
+  },
+  fields: {
+    applications: {
+      refType: createRefToElmWithValue(customsegment_segmentapplication_otherrecords_applications),
+      annotations: {
+      },
+    },
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
+})
+
+customsegmentInnerTypes.push(customsegment_segmentapplication_otherrecords)
+
 const customsegment_segmentapplication_transactionbody_applications_applicationElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_transactionbody_applications_application')
 
 const customsegment_segmentapplication_transactionbody_applications_application = new ObjectType({
@@ -505,6 +566,11 @@ const customsegment_segmentapplication = new ObjectType({
       annotations: {
       },
     },
+    otherrecords: {
+      refType: createRefToElmWithValue(customsegment_segmentapplication_otherrecords),
+      annotations: {
+      },
+    },
     transactionbody: {
       refType: createRefToElmWithValue(customsegment_segmentapplication_transactionbody),
       annotations: {
@@ -539,7 +605,7 @@ export const customsegment = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 40 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 40 }),
       },
     }, /* Original description: This field value can be up to 40 characters long. */
     recordtype: {
@@ -561,13 +627,13 @@ export const customsegment = new ObjectType({
     description: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 999 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 999 }),
       },
     }, /* Original description: This field value can be up to 999 characters long. */
     help: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 999 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 999 }),
       },
     }, /* Original description: This field value can be up to 999 characters long. */
     hasglimpact: {

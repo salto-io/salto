@@ -285,10 +285,12 @@ describe('adapter', () => {
           'Settings_SubscriptionSetting',
           'Settings_TaxCode',
           'Settings_TaxCompany',
+          'Settings_TaxEngine',
+          'Settings_TaxEngines',
           'Settings_UnitOfMeasure',
           'WorkflowExport',
         ])
-        expect(elements.filter(isInstanceElement)).toHaveLength(141)
+        expect(elements.filter(isInstanceElement)).toHaveLength(144)
         expect(await awu(elements).filter(isObjectDef).toArray()).toHaveLength(2)
         expect([...new Set(
           await awu(elements).filter(isObjectDef).map(e => e.elemID.name).toArray()

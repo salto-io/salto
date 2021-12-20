@@ -53,7 +53,6 @@ describe('adapter creator', () => {
     expect((adapter.authenticationMethods.oauth as OAuthMethod).createFromOauthResponse(
       {
         clientId: 'client',
-        clientSecret: 'secret',
         port: 8080,
         subdomain: 'abc',
       },

@@ -18,7 +18,7 @@ import { client as clientUtils, filterUtils } from '@salto-io/adapter-components
 import filterCreator from '../../src/filters/field_references'
 import ZuoraClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
-import { ZUORA_BILLING } from '../../src/constants'
+import { SETTINGS_TYPE_PREFIX, TASK_TYPE, WORKFLOW_DETAILED_TYPE, ZUORA_BILLING } from '../../src/constants'
 
 
 describe('Field references filter', () => {
@@ -54,13 +54,13 @@ describe('Field references filter', () => {
   })
 
   const workflowType = new ObjectType({
-    elemID: new ElemID(ZUORA_BILLING, 'Workflow'),
+    elemID: new ElemID(ZUORA_BILLING, WORKFLOW_DETAILED_TYPE),
     fields: {
       id: { refType: BuiltinTypes.NUMBER },
     },
   })
   const taskType = new ObjectType({
-    elemID: new ElemID(ZUORA_BILLING, 'Task'),
+    elemID: new ElemID(ZUORA_BILLING, TASK_TYPE),
     fields: {
       id: { refType: BuiltinTypes.NUMBER },
     },
@@ -92,6 +92,30 @@ describe('Field references filter', () => {
       revenueRecognitionRuleName: { refType: BuiltinTypes.STRING },
     },
   })
+  const currencyType = new ObjectType({
+    elemID: new ElemID(ZUORA_BILLING, `${SETTINGS_TYPE_PREFIX}Currency`),
+    fields: {
+      currencyCode: { refType: BuiltinTypes.STRING },
+    },
+  })
+  const productRatePlanChargePricingType = new ObjectType({
+    elemID: new ElemID(ZUORA_BILLING, 'GETProductRatePlanChargePricingType'),
+    fields: {
+      currency: { refType: BuiltinTypes.STRING },
+    },
+  })
+  const segmentType = new ObjectType({
+    elemID: new ElemID(ZUORA_BILLING, `${SETTINGS_TYPE_PREFIX}Segment`),
+    fields: {
+      segmentName: { refType: BuiltinTypes.STRING },
+    },
+  })
+  const ruleDetailType = new ObjectType({
+    elemID: new ElemID(ZUORA_BILLING, `${SETTINGS_TYPE_PREFIX}RuleDetail`),
+    fields: {
+      segmentName: { refType: BuiltinTypes.STRING },
+    },
+  })
 
   const generateElements = (
   ): Element[] => ([
@@ -112,6 +136,14 @@ describe('Field references filter', () => {
     new InstanceElement('chargeType66', productRatePlanChargeType, { revenueRecognitionRuleName: 'unknown rule' }),
     someOtherType,
     new InstanceElement('otherType55', someOtherType, { revenueRecognitionRuleName: 'rule5 name' }),
+    currencyType,
+    new InstanceElement('USD', currencyType, { currencyCode: 'USD' }),
+    productRatePlanChargePricingType,
+    new InstanceElement('pricing', productRatePlanChargePricingType, { currency: 'USD' }),
+    segmentType,
+    new InstanceElement('segment', segmentType, { segmentName: 'segment' }),
+    ruleDetailType,
+    new InstanceElement('rule', ruleDetailType, { segmentName: 'segment' }),
   ])
 
   describe('on fetch', () => {
@@ -127,9 +159,9 @@ describe('Field references filter', () => {
         e => isInstanceElement(e) && e.refType.elemID.name === 'Linkage'
       )[0] as InstanceElement
       expect(link.value.source_workflow_id).toBeInstanceOf(ReferenceExpression)
-      expect(link.value.source_workflow_id?.elemID.getFullName()).toEqual('zuora_billing.Workflow.instance.workflow123')
+      expect(link.value.source_workflow_id?.elemID.getFullName()).toEqual(`zuora_billing.${WORKFLOW_DETAILED_TYPE}.instance.workflow123`)
       expect(link.value.target_task_id).toBeInstanceOf(ReferenceExpression)
-      expect(link.value.target_task_id?.elemID.getFullName()).toEqual('zuora_billing.Task.instance.task22')
+      expect(link.value.target_task_id?.elemID.getFullName()).toEqual(`zuora_billing.${TASK_TYPE}.instance.task22`)
 
       const chargeTypes = elements.filter(
         e => isInstanceElement(e)
@@ -138,6 +170,22 @@ describe('Field references filter', () => {
       ) as InstanceElement[]
       expect(chargeTypes[0].value.revenueRecognitionRuleName).toBeInstanceOf(ReferenceExpression)
       expect(chargeTypes[0].value.revenueRecognitionRuleName.elemID.getFullName()).toEqual('zuora_billing.Settings_RevenueRecognitionRule.instance.rule5')
+
+      const pricingInstance = elements.find(
+        e => isInstanceElement(e)
+        && e.refType.elemID.name === 'GETProductRatePlanChargePricingType'
+        && e.elemID.name === 'pricing'
+      ) as InstanceElement
+      expect(pricingInstance.value.currency).toBeInstanceOf(ReferenceExpression)
+      expect(pricingInstance.value.currency.elemID.getFullName()).toEqual(`zuora_billing.${SETTINGS_TYPE_PREFIX}Currency.instance.USD`)
+
+      const ruleDetailInstance = elements.find(
+        e => isInstanceElement(e)
+        && e.refType.elemID.name === `${SETTINGS_TYPE_PREFIX}RuleDetail`
+        && e.elemID.name === 'rule'
+      ) as InstanceElement
+      expect(ruleDetailInstance.value.segmentName).toBeInstanceOf(ReferenceExpression)
+      expect(ruleDetailInstance.value.segmentName.elemID.getFullName()).toEqual(`zuora_billing.${SETTINGS_TYPE_PREFIX}Segment.instance.segment`)
     })
 
     it('should not resolve fields in unexpected types even if field name matches', () => {

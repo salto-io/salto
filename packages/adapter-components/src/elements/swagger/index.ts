@@ -16,3 +16,5 @@
 export { getAllInstances, extractPageEntriesByNestedField } from './instance_elements'
 export { generateTypes, ParsedTypes } from './type_elements/element_generator'
 export { toPrimitiveType, ADDITIONAL_PROPERTIES_FIELD, SchemaObject, SchemasAndRefs, SchemaOrReference } from './type_elements/swagger_parser'
+export { loadSwagger, LoadedSwagger } from './swagger'
+export { addDeploymentAnnotations } from './deployment/annotations'

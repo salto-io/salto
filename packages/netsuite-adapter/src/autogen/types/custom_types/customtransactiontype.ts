@@ -203,7 +203,7 @@ const customtransactiontype_statuses_status = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 480 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 480 }),
       },
     }, /* Original description: This field value can be up to 480 characters long.   This field accepts references to the string custom type. */
     id: {
@@ -259,7 +259,7 @@ export const customtransactiontype = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 96 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 96 }),
       },
     }, /* Original description: This field value can be up to 96 characters long.   This field accepts references to the string custom type. */
     subliststyle: {

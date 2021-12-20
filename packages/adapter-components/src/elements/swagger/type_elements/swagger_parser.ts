@@ -20,6 +20,7 @@ import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import SwaggerParser from '@apidevtools/swagger-parser'
 import { OpenAPI, OpenAPIV2, IJsonSchema, OpenAPIV3 } from 'openapi-types'
+import { loadSwagger, LoadedSwagger } from '../swagger'
 
 const { isDefined } = lowerdashValues
 const { makeArray } = collections.array
@@ -99,7 +100,7 @@ const isV2 = (doc: OpenAPI.Document): doc is OpenAPIV2.Document => {
   const version = _.get(doc, 'swagger')
   return _.isString(version) && version.startsWith('2.')
 }
-const isV3 = (doc: OpenAPI.Document): doc is OpenAPIV3.Document => {
+export const isV3 = (doc: OpenAPI.Document): doc is OpenAPIV3.Document => {
   const version = _.get(doc, 'openapi')
   return _.isString(version) && version.startsWith('3.')
 }
@@ -109,44 +110,62 @@ export type SchemasAndRefs = {
   refs: SwaggerRefs
 }
 
-export const getParsedDefs = async (swaggerPath: string):
-  Promise<SchemasAndRefs> => {
-  const parser = new SwaggerParser()
-  const parsedSwagger: OpenAPI.Document = await parser.bundle(swaggerPath)
+type V2Def = { schema: OpenAPIV2.Schema }
 
-  const toSchemaV2 = (def?: OpenAPIV2.OperationObject): (undefined | OpenAPIV2.Schema) => (
-    def?.responses?.[200]?.schema
-  )
+const toSchemaV2 = (def?: V2Def): (undefined | OpenAPIV2.Schema) =>
+  def?.schema
 
-  const toSchemaV3 = (
-    def?: OpenAPIV3.OperationObject
-  ): undefined | OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject => {
-    const response = def?.responses?.[200]
-    if (isReferenceObject(response)) {
-      return response
-    }
+type V3Def = OpenAPIV3.ReferenceObject | OpenAPIV3.ResponseObject | OpenAPIV3.RequestBodyObject
 
-    if (response?.content) {
-      const mediaType = _.first(Object.values(response.content))
-      if (isDefined(mediaType) && _.isObjectLike(mediaType)) {
-        return (mediaType as OpenAPIV3.MediaTypeObject).schema
-      }
-    }
-    return undefined
+const toSchemaV3 = (
+  def?: V3Def
+): undefined | OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject => {
+  if (isReferenceObject(def)) {
+    return def
   }
 
-  if (!(isV2(parsedSwagger) || isV3(parsedSwagger))) {
+  if (def?.content) {
+    const mediaType = _.first(Object.values(def.content))
+    if (isDefined(mediaType) && _.isObjectLike(mediaType)) {
+      return (mediaType as OpenAPIV3.MediaTypeObject).schema
+    }
+  }
+  return undefined
+}
+
+export enum SwaggerVersion {
+  V2,
+  V3
+}
+
+const getSwaggerVersion = (swagger: LoadedSwagger): SwaggerVersion => {
+  if (!(isV2(swagger.document) || isV3(swagger.document))) {
     // unreachable because of the swagger-parser validations
-    throw new Error(`unsupported swagger version ${_.get(parsedSwagger, 'swagger') ?? _.get(parsedSwagger, 'openapi')}`)
+    throw new Error(`unsupported swagger version ${_.get(swagger.document, 'swagger') ?? _.get(swagger.document, 'openapi')}`)
   }
-  const toSchema = isV2(parsedSwagger) ? toSchemaV2 : toSchemaV3
+
+  return isV2(swagger.document) ? SwaggerVersion.V2 : SwaggerVersion.V3
+}
+
+export const toSchema = (
+  swaggerVersion: SwaggerVersion,
+  def?: V3Def | V2Def
+): SchemaOrReference | undefined => (
+  swaggerVersion === SwaggerVersion.V2 ? toSchemaV2(def as V2Def) : toSchemaV3(def as V3Def)
+)
+
+export const getParsedDefs = async (swaggerPath: string, loadedSwagger?: LoadedSwagger):
+  Promise<SchemasAndRefs> => {
+  const swagger = loadedSwagger ?? await loadSwagger(swaggerPath)
+
+  const swaggerVersion = getSwaggerVersion(swagger)
   const responseSchemas = _.pickBy(
-    _.mapValues(parsedSwagger.paths, def => toSchema(def.get)),
+    _.mapValues(swagger.document.paths, def => toSchema(swaggerVersion, def.get?.responses?.[200])),
     isDefined,
   )
   return {
     schemas: responseSchemas,
-    refs: parser.$refs,
+    refs: swagger.parser.$refs,
   }
 }
 

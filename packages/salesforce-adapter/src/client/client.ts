@@ -93,7 +93,13 @@ const isAlreadyDeletedError = (error: SfError): boolean => (
 
 export type ErrorFilter = (error: Error) => boolean
 
-const isSFDCUnhandledException = (error: Error): boolean => error.name !== 'sf:UNKNOWN_EXCEPTION'
+const NON_TRANSIENT_ERROR_TYPES = [
+  'sf:UNKNOWN_EXCEPTION',
+  'sf:INVALID_TYPE',
+]
+const isSFDCUnhandledException = (error: Error): boolean => (
+  !NON_TRANSIENT_ERROR_TYPES.includes(error.name)
+)
 
 const validateCRUDResult = (isDelete: boolean): decorators.InstanceMethodDecorator =>
   decorators.wrapMethodWith(

@@ -175,7 +175,7 @@ export const workbook = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 50 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 50 }),
       },
     }, /* Original description: This field value can be up to 50 characters long.   This field accepts references to the string custom type. */
     definition: {

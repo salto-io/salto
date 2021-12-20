@@ -306,7 +306,7 @@ export const addressForm = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 99 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 99 }),
       },
     }, /* Original description: This attribute value can be up to 99 characters long. */
     name: {

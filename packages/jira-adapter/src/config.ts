@@ -50,6 +50,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   Configuration: {
     transformation: {
       dataField: '.',
+      isSingleton: true,
     },
   },
   PageBeanDashboard: {
@@ -502,6 +503,16 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
     transformation: {
       dataField: '.',
+    },
+  },
+  AttachmentSettings: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  Permissions_permissions: {
+    transformation: {
+      isSingleton: true,
     },
   },
 

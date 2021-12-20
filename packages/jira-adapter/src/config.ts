@@ -328,12 +328,54 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           toField: 'components',
           context: [{ name: 'projectIdOrKey', fromField: 'id' }],
         },
+        {
+          type: 'ContainerOfWorkflowSchemeAssociations',
+          toField: 'workflowScheme',
+          context: [{ name: 'projectId', fromField: 'id' }],
+        },
+        {
+          type: 'PermissionScheme',
+          toField: 'permissionScheme',
+          context: [{ name: 'projectId', fromField: 'id' }],
+        },
+        {
+          type: 'NotificationScheme',
+          toField: 'notificationScheme',
+          context: [{ name: 'projectId', fromField: 'id' }],
+        },
+        {
+          type: 'PageBeanIssueTypeScreenSchemesProjects',
+          toField: 'issueTypeScreenScheme',
+          context: [{ name: 'projectId', fromField: 'id' }],
+        },
+        {
+          type: 'PageBeanFieldConfigurationSchemeProjects',
+          toField: 'fieldConfigurationScheme',
+          context: [{ name: 'projectId', fromField: 'id' }],
+        },
       ],
     },
   },
   Project: {
     transformation: {
-      fieldTypeOverrides: [{ fieldName: 'components', fieldType: 'list<ComponentWithIssueCount>' }],
+      fieldTypeOverrides: [
+        { fieldName: 'components', fieldType: 'list<ComponentWithIssueCount>' },
+        { fieldName: 'workflowScheme', fieldType: 'list<WorkflowSchemeAssociations>' },
+        { fieldName: 'permissionScheme', fieldType: 'list<PermissionScheme>' },
+        { fieldName: 'notificationScheme', fieldType: 'list<NotificationScheme>' },
+        { fieldName: 'issueTypeScreenScheme', fieldType: 'list<IssueTypeScreenSchemesProjects>' },
+        { fieldName: 'fieldConfigurationScheme', fieldType: 'list<FieldConfigurationSchemeProjects>' },
+      ],
+    },
+  },
+  ContainerOfWorkflowSchemeAssociations: {
+    request: {
+      url: '/rest/api/3/workflowscheme/project?projectId={projectId}',
+    },
+  },
+  WorkflowSchemeAssociations: {
+    transformation: {
+      fieldsToOmit: [{ fieldName: 'projectIds' }],
     },
   },
   ComponentWithIssueCount: {
@@ -341,6 +383,40 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldsToOmit: [{ fieldName: 'issueCount' }],
     },
   },
+  PermissionScheme: {
+    request: {
+      url: '/rest/api/3/project/{projectId}/permissionscheme',
+    },
+  },
+  NotificationScheme: {
+    request: {
+      url: '/rest/api/3/project/{projectId}/notificationscheme',
+    },
+  },
+  PageBeanIssueTypeScreenSchemesProjects: {
+    request: {
+      url: '/rest/api/3/issuetypescreenscheme/project?projectId={projectId}',
+    },
+  },
+
+  IssueTypeScreenSchemesProjects: {
+    transformation: {
+      fieldsToOmit: [{ fieldName: 'projectIds' }],
+    },
+  },
+
+  PageBeanFieldConfigurationSchemeProjects: {
+    request: {
+      url: '/rest/api/3/fieldconfigurationscheme/project?projectId={projectId}',
+    },
+  },
+
+  FieldConfigurationSchemeProjects: {
+    transformation: {
+      fieldsToOmit: [{ fieldName: 'projectIds' }],
+    },
+  },
+
   PageBeanScreen: {
     request: {
       url: '/rest/api/3/screens',
@@ -505,6 +581,8 @@ export const DEFAULT_INCLUDE_ENDPOINTS: string[] = [
   'PageBeanIssueTypeScreenScheme',
   'PageBeanIssueTypeScreenSchemeItem',
   'PageBeanNotificationScheme',
+  'PageBeanIssueTypeScreenSchemesProjects',
+  'PageBeanFieldConfigurationSchemeProjects',
   'Permissions',
   'PermissionSchemes',
   'rest__api__3__priority',

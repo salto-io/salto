@@ -65,10 +65,26 @@ const issueTypeSchemeType = new ObjectType({
   },
 })
 
+const issueTypeScreenSchemeType = new ObjectType({
+  elemID: new ElemID(JIRA, 'IssueTypeScreenScheme'),
+  fields: {
+    id: { refType: BuiltinTypes.STRING },
+  },
+})
+
+const fieldConfigurationSchemeType = new ObjectType({
+  elemID: new ElemID(JIRA, 'FieldConfigurationScheme'),
+  fields: {
+    id: { refType: BuiltinTypes.STRING },
+  },
+})
+
 export const mockTypes = {
   Board: boardType,
   Project: projectType,
   IssueTypeScheme: issueTypeSchemeType,
+  IssueTypeScreenScheme: issueTypeScreenSchemeType,
+  FieldConfigurationScheme: fieldConfigurationSchemeType,
 }
 
 export const mockInstances = {
@@ -100,5 +116,17 @@ export const instanceCreators = {
       name,
       mockTypes.IssueTypeScheme,
       { issueTypes: issueTypesReferences.map(reference => ({ issueTypeId: reference })) }
+    ),
+  issueTypeScreenScheme: (id: string, name = 'mockIssueTypeScreenScheme') =>
+    new InstanceElement(
+      name,
+      mockTypes.IssueTypeScreenScheme,
+      { id }
+    ),
+  fieldConfigurationScheme: (id: string, name = 'mockFieldConfigurationScheme') =>
+    new InstanceElement(
+      name,
+      mockTypes.FieldConfigurationScheme,
+      { id }
     ),
 }

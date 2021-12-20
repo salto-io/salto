@@ -119,10 +119,10 @@ export const buildAdaptersConfigSource = async ({
     const overridesForInstance = configOverridesById[conf.elemID.adapter] ?? []
     applyDetailedChanges(conf, overridesForInstance)
   }
-
+  const updatedConfigTypes = [...configTypes]
   const changes = await naclSource.load({ ignoreFileChanges })
 
-  let elementsSource = buildElementsSourceFromElements(configTypes, naclSource)
+  let elementsSource = buildElementsSourceFromElements(updatedConfigTypes, naclSource)
 
   const validationErrorsMap = await remoteMapCreator<ValidationError[]>({
     namespace: VALIDATION_ERRORS_NAMESPACE,
@@ -193,15 +193,19 @@ export const buildAdaptersConfigSource = async ({
       return conf
     },
     setAdapter: async (account, adapter, configs) => {
-      elementsSource = buildElementsSourceFromElements(
-        await calculateAdditionalConfigTypes(
+      if (account !== adapter) {
+        const additionalConfigs = await calculateAdditionalConfigTypes(
           elementsSource,
           [configs].flat().map(config => config.refType.elemID),
           adapter,
           account,
-        ),
-        elementsSource
-      )
+        )
+        updatedConfigTypes.push(...additionalConfigs)
+        elementsSource = buildElementsSourceFromElements(
+          updatedConfigTypes,
+          naclSource
+        )
+      }
       const configsToUpdate = collections.array.makeArray(configs).map(e => e.clone())
       const currConfWithoutOverrides = await getConfigWithoutOverrides(account)
       // Could happen at the initialization of an account.

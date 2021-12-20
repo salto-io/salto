@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { Field, Element, isInstanceElement, Value, Values, ReferenceExpression, InstanceElement, ElemID } from '@salto-io/adapter-api'
-import { TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import { GetLookupNameFunc, GetLookupNameFuncArgs, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerDashValues, collections, multiIndex } from '@salto-io/lowerdash'
 import {
@@ -173,7 +173,7 @@ export const replaceReferenceValues = async <
  */
 export const addReferences = async <
   T extends string,
-  GerericFieldReferenceDefinition extends FieldReferenceDefinition<T>
+  GenericFieldReferenceDefinition extends FieldReferenceDefinition<T>
 >({
   elements,
   defs,
@@ -183,14 +183,14 @@ export const addReferences = async <
   fieldReferenceResolverCreator,
 }: {
   elements: Element[]
-  defs: GerericFieldReferenceDefinition[]
+  defs: GenericFieldReferenceDefinition[]
   fieldsToGroupBy?: string[]
   contextStrategyLookup?: Record<T, ContextFunc>
   isEqualValue?: ValueIsEqualFunc
   fieldReferenceResolverCreator?:
-    (def: GerericFieldReferenceDefinition) => FieldReferenceResolver<T>
+    (def: GenericFieldReferenceDefinition) => FieldReferenceResolver<T>
 }): Promise<void> => {
-  const resolverFinder = generateReferenceResolverFinder<T, GerericFieldReferenceDefinition>(
+  const resolverFinder = generateReferenceResolverFinder<T, GenericFieldReferenceDefinition>(
     defs, fieldReferenceResolverCreator
   )
   const instances = elements.filter(isInstanceElement)
@@ -223,4 +223,48 @@ export const addReferences = async <
     })
   })
   log.debug('added references in the following fields: %s', [...fieldsWithResolvedReferences])
+}
+
+export const generateLookupFunc = <
+  T extends string,
+  GenericFieldReferenceDefinition extends FieldReferenceDefinition<T>
+>(defs: GenericFieldReferenceDefinition[]): GetLookupNameFunc => {
+  const resolverFinder = generateReferenceResolverFinder(defs)
+
+  const determineLookupStrategy = async (args: GetLookupNameFuncArgs):
+    Promise<ReferenceSerializationStrategy | undefined> => {
+    if (args.field === undefined) {
+      log.debug('could not determine field for path %s', args.path?.getFullName())
+      return undefined
+    }
+    const strategies = (await resolverFinder(args.field))
+      .map(def => def.serializationStrategy)
+
+    if (strategies.length === 0) {
+      log.debug('could not find matching strategy for field %s', args.field.elemID.getFullName())
+      return undefined
+    }
+
+    if (strategies.length > 1) {
+      log.debug(
+        'found %d matching strategies for field %s - using the first one',
+        strategies.length,
+        args.field.elemID.getFullName(),
+      )
+    }
+
+    return strategies[0]
+  }
+
+  return async ({ ref, path, field }) => {
+    const strategy = await determineLookupStrategy({ ref, path, field })
+    if (strategy !== undefined) {
+      return strategy.serialize({ ref, field })
+    }
+
+    if (isInstanceElement(ref.value)) {
+      return ref.value.value
+    }
+    return ref.value
+  }
 }

@@ -58,11 +58,10 @@ type AdapterSwaggers = {
 }
 
 export default class JiraAdapter implements AdapterOperations {
-  private createFiltersRunner: () => Promise<Required<Filter>>
+  private createFiltersRunner: () => Required<Filter>
   private client: JiraClient
   private userConfig: JiraConfig
   private paginator: clientUtils.Paginator
-  private swaggers?: AdapterSwaggers
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -77,7 +76,7 @@ export default class JiraAdapter implements AdapterOperations {
       customEntryExtractor: removeScopedObjects,
     })
     this.paginator = paginator
-    this.createFiltersRunner = async () => (
+    this.createFiltersRunner = () => (
       filtersRunner({
         client,
         paginator,
@@ -86,24 +85,20 @@ export default class JiraAdapter implements AdapterOperations {
     )
   }
 
-  private async getSwaggers(): Promise<AdapterSwaggers> {
-    if (this.swaggers === undefined) {
-      this.swaggers = Object.fromEntries(
-        await Promise.all(
-          Object.entries(getApiDefinitions(this.userConfig.apiDefinitions))
-            .map(async ([key, config]) => [key, await loadSwagger(config.swagger.url)])
-        )
+  private async generateSwaggers(): Promise<AdapterSwaggers> {
+    return Object.fromEntries(
+      await Promise.all(
+        Object.entries(getApiDefinitions(this.userConfig.apiDefinitions))
+          .map(async ([key, config]) => [key, await loadSwagger(config.swagger.url)])
       )
-    }
-    return this.swaggers as AdapterSwaggers
+    )
   }
 
   @logDuration('generating types from swagger')
-  private async getAllTypes(): Promise<{
+  private async getAllTypes(swaggers: AdapterSwaggers): Promise<{
     allTypes: TypeMap
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>
   }> {
-    const swaggers = await this.getSwaggers()
     const apiDefinitions = getApiDefinitions(this.userConfig.apiDefinitions)
     // Note - this is a temporary way of handling multiple swagger defs in the same adapter
     // this will be replaced by built-in infrastructure support for multiple swagger defs
@@ -147,8 +142,9 @@ export default class JiraAdapter implements AdapterOperations {
   @logDuration('fetching account configuration')
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch jira account configuration..')
+    const swaggers = await this.generateSwaggers()
     progressReporter.reportProgress({ message: 'Fetching types' })
-    const { allTypes, parsedConfigs } = await this.getAllTypes()
+    const { allTypes, parsedConfigs } = await this.getAllTypes(swaggers)
     progressReporter.reportProgress({ message: 'Fetching instances' })
     const instances = await this.getInstances(allTypes, parsedConfigs)
 
@@ -159,13 +155,13 @@ export default class JiraAdapter implements AdapterOperations {
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
-    await (await this.createFiltersRunner()).onFetch(elements)
+    await this.createFiltersRunner().onFetch(elements)
 
     // This needs to happen after the onFetch since some filters
     // may add fields that deployment annotation should be added to
     addDeploymentAnnotations(
       elements.filter(isObjectType),
-      Object.values(await this.getSwaggers()),
+      Object.values(swaggers),
       this.userConfig.apiDefinitions,
     )
     return { elements }
@@ -183,7 +179,7 @@ export default class JiraAdapter implements AdapterOperations {
         instance => instance.clone()
       )))
 
-    const runner = await this.createFiltersRunner()
+    const runner = this.createFiltersRunner()
     await runner.preDeploy(changesToDeploy)
 
     const result = await Promise.all(

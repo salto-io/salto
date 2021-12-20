@@ -16,7 +16,7 @@
 import { logger } from '@salto-io/logging'
 import { collections, strings, multiIndex, promises, values as lowerdashValues } from '@salto-io/lowerdash'
 import {
-  ADAPTER, Element, Field, ObjectType, TypeElement, isObjectType, isInstanceElement, ElemID,
+  Element, Field, ObjectType, TypeElement, isObjectType, isInstanceElement, ElemID,
   BuiltinTypes, CORE_ANNOTATIONS, TypeMap, InstanceElement, Values, ReadOnlyElementsSource,
   ReferenceExpression, ListType, Change, getChangeElement, isField, isObjectTypeChange,
   isAdditionOrRemovalChange, isFieldChange, isRemovalChange, isInstanceChange, toChange,
@@ -424,7 +424,6 @@ const createObjectType = async ({
   systemFields?: string[]
 }): Promise<ObjectType> => {
   const serviceIds = {
-    [ADAPTER]: SALESFORCE,
     [API_NAME]: name,
     [METADATA_TYPE]: CUSTOM_OBJECT,
   }

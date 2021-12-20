@@ -60,25 +60,25 @@ jest.mock('@salto-io/core', () => ({
   updateCredentials: jest.fn().mockResolvedValue(true),
   getLoginStatuses: jest.fn().mockImplementation((
     _workspace: Workspace,
-    serviceNames: string[],
+    accountNames: string[],
   ) => {
     const loginStatuses: Record<string, LoginStatus> = {}
-    serviceNames.forEach(serviceName => {
-      if (serviceName === 'salesforce') {
-        loginStatuses[serviceName] = {
+    accountNames.forEach(accountName => {
+      if (accountName === 'salesforce') {
+        loginStatuses[accountName] = {
           isLoggedIn: true,
-          configTypeOptions: mocks.mockAdapterAuthentication(mocks.mockConfigType(serviceName)),
+          configTypeOptions: mocks.mockAdapterAuthentication(mocks.mockConfigType(accountName)),
         }
-      } else if (serviceName === 'oauthAdapter') {
-        loginStatuses[serviceName] = {
+      } else if (accountName === 'oauthAdapter') {
+        loginStatuses[accountName] = {
           isLoggedIn: true,
-          configTypeOptions: mocks.mockOauthCredentialsType(serviceName, { url: '',
+          configTypeOptions: mocks.mockOauthCredentialsType(accountName, { url: '',
             oauthRequiredFields: [''] }),
         }
       } else {
-        loginStatuses[serviceName] = {
+        loginStatuses[accountName] = {
           isLoggedIn: false,
-          configTypeOptions: mocks.mockAdapterAuthentication(mocks.mockConfigType(serviceName)),
+          configTypeOptions: mocks.mockAdapterAuthentication(mocks.mockConfigType(accountName)),
         }
       }
     })
@@ -107,7 +107,7 @@ describe('service command group', () => {
   beforeEach(() => {
     cliArgs = mocks.mockCliArgs()
     output = cliArgs.output
-    workspace = mocks.mockWorkspace({ services: ['salesforce', 'hubspot', 'oauthAdapter'] })
+    workspace = mocks.mockWorkspace({ accounts: ['salesforce', 'hubspot', 'oauthAdapter'] })
   })
   describe('list command', () => {
     let cliCommandArgs: mocks.MockCommandArgs
@@ -129,7 +129,7 @@ describe('service command group', () => {
             output.stdout.content.split('Additional supported services are:')[1].includes(privateName))).toBeTruthy()
         })
         it('should print configured services under configured services', () => {
-          expect(output.stdout.content).toContain('The configured services are:')
+          expect(output.stdout.content).toContain('The configured accounts are:')
           expect(output.stdout.content.split('Additional supported services are:')[0]).toContain('salesforce')
         })
         it('should print other services under additional services', () => {
@@ -168,7 +168,7 @@ describe('service command group', () => {
         Promise.resolve(mockGetCredentialsFromUser(obj)))
     }))
     describe('when the workspace loads successfully', () => {
-      describe('when called with already configured service', () => {
+      describe('when called with already configured account', () => {
         beforeEach(async () => {
           await addAction({
             ...cliCommandArgs,
@@ -183,6 +183,60 @@ describe('service command group', () => {
 
         it('should print already added', () => {
           expect(output.stderr.content).toContain('salesforce was already added to this environment')
+        })
+      })
+
+      describe('When called with invalid accountName', () => {
+        beforeEach(async () => {
+          await addAction({
+            ...cliCommandArgs,
+            input: {
+              serviceName: 'salesforce',
+              account: 'falsd;l;l;l',
+              authType: 'basic',
+              login: true,
+            },
+            workspace,
+          })
+        })
+        it('should throw error', () => {
+          expect(output.stderr.content).toContain('Invalid account name')
+        })
+      })
+
+      describe('When called with empty accountName', () => {
+        beforeEach(async () => {
+          await addAction({
+            ...cliCommandArgs,
+            input: {
+              serviceName: 'salesforce',
+              account: '',
+              authType: 'basic',
+              login: true,
+            },
+            workspace,
+          })
+        })
+        it('should throw error', () => {
+          expect(output.stderr.content).toContain('empty string')
+        })
+      })
+
+      describe('When called with var as accountName', () => {
+        beforeEach(async () => {
+          await addAction({
+            ...cliCommandArgs,
+            input: {
+              serviceName: 'salesforce',
+              account: 'var',
+              authType: 'basic',
+              login: true,
+            },
+            workspace,
+          })
+        })
+        it('should throw error', () => {
+          expect(output.stderr.content).toContain('may not be "var"')
         })
       })
 
@@ -357,7 +411,7 @@ describe('service command group', () => {
           it('should return user input error', async () => {
             expect(errCode).toBe(CliExitCode.UserInputError)
           })
-          it('should not print private services', async () => {
+          it('should not print private accounts', async () => {
             expect(getPrivateAdaptersNames().some(privateName =>
               output.stdout.content.includes(privateName))).toBeFalsy()
           })
@@ -378,7 +432,7 @@ describe('service command group', () => {
           it('should return user input error', async () => {
             expect(errCode).toBe(CliExitCode.UserInputError)
           })
-          it('should not print private services', async () => {
+          it('should not print private accounts', async () => {
             expect(getPrivateAdaptersNames().some(privateName =>
               output.stdout.content.includes(privateName))).toBeFalsy()
           })
@@ -397,12 +451,12 @@ describe('service command group', () => {
         Promise.resolve(mockGetCredentialsFromUser(obj)))
     }))
     describe('when the workspace loads successfully', () => {
-      describe('when called with already logged in service', () => {
+      describe('when called with already logged in account', () => {
         beforeEach(async () => {
           await loginAction({
             ...cliCommandArgs,
             input: {
-              serviceName: 'salesforce',
+              accountName: 'salesforce',
               authType: 'basic',
             },
             workspace,
@@ -425,12 +479,12 @@ describe('service command group', () => {
         })
       })
 
-      describe('when called with not configured service', () => {
+      describe('when called with not configured account', () => {
         beforeEach(async () => {
           await loginAction({
             ...cliCommandArgs,
             input: {
-              serviceName: 'notConfigured',
+              accountName: 'notConfigured',
               authType: 'basic',
             },
             workspace,
@@ -449,7 +503,7 @@ describe('service command group', () => {
           await loginAction({
             ...cliCommandArgs,
             input: {
-              serviceName: 'salesforce',
+              accountName: 'salesforce',
               authType: 'oauth',
             },
             workspace,
@@ -468,7 +522,7 @@ describe('service command group', () => {
           await loginAction({
             ...cliCommandArgs,
             input: {
-              serviceName: 'oauthAdapter',
+              accountName: 'oauthAdapter',
               authType: 'oauth',
             },
             workspace,
@@ -489,12 +543,12 @@ describe('service command group', () => {
           expect(output.stdout.content).toContain('Login information successfully updated')
         })
       })
-      describe('when called with configured but not logged in service', () => {
+      describe('when called with configured but not logged in account', () => {
         beforeEach(async () => {
           await loginAction({
             ...cliCommandArgs,
             input: {
-              serviceName: 'salesforce',
+              accountName: 'salesforce',
               authType: 'basic',
             },
             workspace,
@@ -517,7 +571,7 @@ describe('service command group', () => {
           await loginAction({
             ...cliCommandArgs,
             input: {
-              serviceName: 'salesforce',
+              accountName: 'salesforce',
               authType: 'basic',
             },
             workspace,
@@ -528,7 +582,7 @@ describe('service command group', () => {
           await loginAction({
             ...cliCommandArgs,
             input: {
-              serviceName: 'netsuite',
+              accountName: 'netsuite',
               authType: 'basic',
               env: mocks.withEnvironmentParam,
             },

@@ -375,7 +375,7 @@ describe('formatter', () => {
       it('should contain the local change', () => {
         expect(output).toMatch(/.*old.*=>.*local/)
       })
-      it('should contain the service change', () => {
+      it('should contain the account change', () => {
         expect(output).toMatch(/.*old.*=>.*new/)
       })
     })

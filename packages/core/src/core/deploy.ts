@@ -31,7 +31,6 @@ const deployAction = (
   const changes = [...planItem.changes()]
   const adapterName = getChangeElement(changes[0]).elemID.adapter
   const adapter = adapters[adapterName]
-
   if (!adapter) {
     throw new Error(`Missing adapter for ${adapterName}`)
   }

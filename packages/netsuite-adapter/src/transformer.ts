@@ -16,7 +16,7 @@
 import {
   ElemID, Field, InstanceElement, isPrimitiveType, ObjectType, PrimitiveType,
   PrimitiveTypes, Values, isObjectType, isPrimitiveValue, StaticFile, ElemIdGetter,
-  ADAPTER, OBJECT_SERVICE_ID, OBJECT_NAME, toServiceIdsString, ServiceIds,
+  OBJECT_SERVICE_ID, OBJECT_NAME, toServiceIdsString, ServiceIds,
   isInstanceElement,
 } from '@salto-io/adapter-api'
 import { MapKeyFunc, mapKeysRecursive, TransformFunc, transformValues, GetLookupNameFunc, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
@@ -51,10 +51,8 @@ export const createInstanceElement = async (customizationInfo: CustomizationInfo
     }
     const serviceIdFieldName = isCustomType(type.elemID) ? SCRIPT_ID : PATH
     const serviceIds: ServiceIds = {
-      [ADAPTER]: NETSUITE,
       [serviceIdFieldName]: transformedValues[serviceIdFieldName],
       [OBJECT_SERVICE_ID]: toServiceIdsString({
-        [ADAPTER]: NETSUITE,
         [OBJECT_NAME]: type.elemID.getFullName(),
       }),
     }

@@ -18,6 +18,7 @@ import { applyDetailedChanges, buildElementsSourceFromElements, detailedCompare,
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import path from 'path'
+import { createAdapterReplacedID, updateElementsWithAlternativeAccount } from '../element_adapter_rename'
 import { mergeSingleElement } from '../merger'
 import { serialize } from '../serializer'
 import { deserializeValidationErrors } from '../serializer/elements'
@@ -36,6 +37,7 @@ export const CONFIG_PATH = ['salto.config', 'adapters']
 export type AdaptersConfigSource = {
   getAdapter(adapter: string, defaultValue?: InstanceElement): Promise<InstanceElement | undefined>
   setAdapter(
+    account: string,
     adapter: string,
     config: Readonly<InstanceElement> | Readonly<InstanceElement>[]
   ): Promise<void>
@@ -81,6 +83,28 @@ export type AdaptersConfigSourceArgs = {
   configOverrides?: DetailedChange[]
 }
 
+export const calculateAdditionalConfigTypes = async (
+  configElementsSource: ReadOnlyElementsSource,
+  configTypeIDs: ElemID[],
+  adapter: string,
+  account: string,
+): Promise<ObjectType[]> => {
+  const additionalConfigs: Record<string, ObjectType[]> = {}
+  await awu(configTypeIDs).forEach(async configTypeID => {
+    if (
+      !(await configElementsSource.get(configTypeID))
+      && additionalConfigs[configTypeID.getFullName()] === undefined
+    ) {
+      const accountConfigType = (await configElementsSource.get(
+        createAdapterReplacedID(configTypeID, adapter)
+      )).clone()
+      await updateElementsWithAlternativeAccount([accountConfigType], account, adapter)
+      additionalConfigs[configTypeID.getFullName()] = accountConfigType
+    }
+  })
+  return Object.values(additionalConfigs).flat()
+}
+
 export const buildAdaptersConfigSource = async ({
   naclSource,
   ignoreFileChanges,
@@ -95,10 +119,10 @@ export const buildAdaptersConfigSource = async ({
     const overridesForInstance = configOverridesById[conf.elemID.adapter] ?? []
     applyDetailedChanges(conf, overridesForInstance)
   }
-
+  const updatedConfigTypes = [...configTypes]
   const changes = await naclSource.load({ ignoreFileChanges })
 
-  const elementsSource = buildElementsSourceFromElements(configTypes, naclSource)
+  let elementsSource = buildElementsSourceFromElements(updatedConfigTypes, naclSource)
 
   const validationErrorsMap = await remoteMapCreator<ValidationError[]>({
     namespace: VALIDATION_ERRORS_NAMESPACE,
@@ -168,11 +192,23 @@ export const buildAdaptersConfigSource = async ({
       applyConfigOverrides(conf)
       return conf
     },
-
-    setAdapter: async (adapter, configs) => {
+    setAdapter: async (account, adapter, configs) => {
+      if (account !== adapter) {
+        const additionalConfigs = await calculateAdditionalConfigTypes(
+          elementsSource,
+          [configs].flat().map(config => config.refType.elemID),
+          adapter,
+          account,
+        )
+        updatedConfigTypes.push(...additionalConfigs)
+        elementsSource = buildElementsSourceFromElements(
+          updatedConfigTypes,
+          naclSource
+        )
+      }
       const configsToUpdate = collections.array.makeArray(configs).map(e => e.clone())
-      const currConfWithoutOverrides = await getConfigWithoutOverrides(adapter)
-      // Could happen at the initialization of a service.
+      const currConfWithoutOverrides = await getConfigWithoutOverrides(account)
+      // Could happen at the initialization of an account.
       if (currConfWithoutOverrides === undefined) {
         await overwriteNacl(configsToUpdate)
         await updateValidationErrorsCache(validationErrorsMap, elementsSource, naclSource)
@@ -187,7 +223,7 @@ export const buildAdaptersConfigSource = async ({
       validateConfigChanges(configChanges)
 
       await overwriteNacl(configsToUpdate)
-      const overridesForInstance = configOverridesById[adapter]
+      const overridesForInstance = configOverridesById[account]
       if (overridesForInstance !== undefined) {
         // configs includes the configuration overrides which we wouldn't want
         // to save so here we remove the configuration overrides from the NaCl

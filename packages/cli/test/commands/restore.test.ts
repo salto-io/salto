@@ -36,7 +36,7 @@ jest.mock('@salto-io/core', () => ({
 }))
 
 describe('restore command', () => {
-  const services = ['salesforce']
+  const accounts = ['salesforce']
   let cliCommandArgs: mocks.MockCommandArgs
   let telemetry: mocks.MockTelemetry
   let output: mocks.MockCliOutput
@@ -69,7 +69,7 @@ describe('restore command', () => {
           detailedPlan: false,
           listPlannedChanges: false,
           mode: 'default',
-          services,
+          accounts,
         },
         workspace,
       })
@@ -99,7 +99,7 @@ describe('restore command', () => {
           detailedPlan: false,
           listPlannedChanges: false,
           mode: 'default',
-          services,
+          accounts,
         },
         workspace,
       })
@@ -138,7 +138,7 @@ describe('restore command', () => {
           detailedPlan: false,
           listPlannedChanges: false,
           mode: 'default',
-          services,
+          accounts,
         },
         workspace,
       })
@@ -154,7 +154,7 @@ describe('restore command', () => {
           detailedPlan: false,
           listPlannedChanges: false,
           mode: 'default',
-          services,
+          accounts,
           env: mocks.withEnvironmentParam,
         },
         workspace,
@@ -176,7 +176,7 @@ describe('restore command', () => {
           detailedPlan: false,
           listPlannedChanges: false,
           mode: 'default',
-          services,
+          accounts,
         },
         workspace,
       })
@@ -216,7 +216,7 @@ describe('restore command', () => {
         detailedPlan: false,
         listPlannedChanges: false,
         mode: 'default',
-        services,
+        accounts,
       },
       workspace,
     })
@@ -232,7 +232,7 @@ describe('restore command', () => {
           detailedPlan: false,
           listPlannedChanges: false,
           mode: 'default',
-          services,
+          accounts,
           elementSelectors: ['++'],
         },
         workspace: mocks.mockWorkspace({}),
@@ -248,7 +248,7 @@ describe('restore command', () => {
           detailedPlan: false,
           listPlannedChanges: false,
           mode: 'default',
-          services,
+          accounts,
           elementSelectors: ['salto.*'],
         },
         workspace: mocks.mockWorkspace({}),
@@ -270,7 +270,7 @@ describe('restore command', () => {
           detailedPlan: false,
           listPlannedChanges: false,
           mode: 'default',
-          services,
+          accounts,
         },
         workspace,
       })
@@ -292,7 +292,7 @@ describe('restore command', () => {
           detailedPlan: false,
           listPlannedChanges: false,
           mode: 'default',
-          services,
+          accounts,
         },
         workspace,
       })
@@ -314,7 +314,7 @@ describe('restore command', () => {
           detailedPlan: false,
           listPlannedChanges: false,
           mode: 'default',
-          services,
+          accounts,
         },
         workspace,
       })

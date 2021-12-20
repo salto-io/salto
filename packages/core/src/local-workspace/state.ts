@@ -26,9 +26,6 @@ import origGlob from 'glob'
 import semver from 'semver'
 import { promisify } from 'util'
 
-import { adapterCreators } from '../core/adapters'
-
-
 import { version } from '../generated/version.json'
 
 const { awu } = collections.asynciterable
@@ -43,10 +40,19 @@ const log = logger(module)
 export const STATE_EXTENSION = '.jsonl'
 export const ZIPPED_STATE_EXTENSION = '.jsonl.zip'
 
-const supportedAdapters = Object.keys(adapterCreators)
-const filePathGlob = (currentFilePrefix: string): string => (
-  `${currentFilePrefix}.@(${supportedAdapters.join('|')})${ZIPPED_STATE_EXTENSION}`
+export const filePathGlob = (currentFilePrefix: string): string => (
+  `${currentFilePrefix}.*([!.])${ZIPPED_STATE_EXTENSION}`
 )
+
+// This function is temporary for the transition to multiple services.
+// Remove this when no longer used, SALTO-1661
+const getUpdateDate = (data: state.StateData): remoteMap.RemoteMap<Date> => {
+  if ('servicesUpdateDate' in data) {
+    return data.servicesUpdateDate
+  }
+  return data.accountsUpdateDate
+}
+
 const findStateFiles = async (currentFilePrefix: string): Promise<string[]> => {
   const stateFiles = await glob(filePathGlob(currentFilePrefix))
   const oldStateFiles = await glob(`${currentFilePrefix}@(${ZIPPED_STATE_EXTENSION}|${STATE_EXTENSION})`)
@@ -108,16 +114,16 @@ export const localState = (
     await stateData.pathIndex.setAll(
       pathIndexData ? pathIndex.deserializedPathsIndex(pathIndexData) : []
     )
-    const updateDatesByService = _.mapValues(
+    const updateDatesByAccount = _.mapValues(
       updateDateData
         .map(entry => (entry ? JSON.parse(entry) : {}))
         .filter(entry => !_.isEmpty(entry))
         .reduce((entry1, entry2) => Object.assign(entry1, entry2), {}) as Record<string, string>,
       dateStr => new Date(dateStr)
     )
-    await stateData.servicesUpdateDate.clear()
-    await stateData.servicesUpdateDate.setAll(awu(
-      Object.entries(updateDatesByService).map(([key, value]) => ({ key, value }))
+    await getUpdateDate(stateData)?.clear()
+    await getUpdateDate(stateData)?.setAll(awu(
+      Object.entries(updateDatesByAccount).map(([key, value]) => ({ key, value }))
     ))
     const currentVersion = semver.minSatisfying(versions, '*') ?? undefined
     if (currentVersion) {
@@ -173,27 +179,27 @@ export const localState = (
 
   const inMemState = state.buildInMemState(loadStateData)
 
-  const createStateTextPerService = async (): Promise<Record<string, string>> => {
+  const createStateTextPerAccount = async (): Promise<Record<string, string>> => {
     const elements = await awu(await inMemState.getAll()).toArray()
-    const elementsByService = _.groupBy(elements, element => element.elemID.adapter)
-    const serviceToElementStrings = _.mapValues(elementsByService,
-      serviceElements => serialize(serviceElements))
-    const serviceToDates = await inMemState.getServicesUpdateDates()
-    const serviceToPathIndex = pathIndex.serializePathIndexByService(
+    const elementsByAccount = _.groupBy(elements, element => element.elemID.adapter)
+    const accountToElementStrings = _.mapValues(elementsByAccount,
+      accountElements => serialize(accountElements))
+    const accountToDates = await inMemState.getAccountsUpdateDates()
+    const accountToPathIndex = pathIndex.serializePathIndexByAccount(
       await awu((await inMemState.getPathIndex()).entries()).toArray()
     )
     log.debug(`finished dumping state text [#elements=${elements.length}]`)
-    return _.mapValues(serviceToElementStrings, (serviceElements, service) =>
-      [serviceElements || '[]', safeJsonStringify({ [service]: serviceToDates[service] } || {}),
-        serviceToPathIndex[service] || '[]', version].join(EOL))
+    return _.mapValues(accountToElementStrings, (accountElements, account) =>
+      [accountElements || '[]', safeJsonStringify({ [account]: accountToDates[account] } || {}),
+        accountToPathIndex[account] || '[]', version].join(EOL))
   }
   const getContentAndHash = async (): Promise<ContentsAndHash> => {
     if (contentsAndHash === undefined) {
-      const stateTextPerService = await createStateTextPerService()
-      const contents = await awu(Object.keys(stateTextPerService))
-        .map(async service => [
-          `${currentFilePrefix}.${service}${ZIPPED_STATE_EXTENSION}`,
-          await generateZipString(stateTextPerService[service]),
+      const stateTextPerAccount = await createStateTextPerAccount()
+      const contents = await awu(Object.keys(stateTextPerAccount))
+        .map(async account => [
+          `${currentFilePrefix}.${account}${ZIPPED_STATE_EXTENSION}`,
+          await generateZipString(stateTextPerAccount[account]),
         ] as [string, string]).toArray()
       contentsAndHash = {
         contents,
@@ -218,17 +224,17 @@ export const localState = (
       await inMemState.remove(id)
       setDirty()
     },
-    override: async (element: AsyncIterable<Element>, services?: string[]): Promise<void> => {
-      await inMemState.override(element, services)
+    override: async (element: AsyncIterable<Element>, accounts?: string[]): Promise<void> => {
+      await inMemState.override(element, accounts)
       setDirty()
     },
     overridePathIndex: async (unmergedElements: Element[]): Promise<void> => {
       await inMemState.overridePathIndex(unmergedElements)
       setDirty()
     },
-    updatePathIndex: async (unmergedElements: Element[], servicesToMaintain: string[]):
+    updatePathIndex: async (unmergedElements: Element[], accountsToMaintain: string[]):
      Promise<void> => {
-      await inMemState.updatePathIndex(unmergedElements, servicesToMaintain)
+      await inMemState.updatePathIndex(unmergedElements, accountsToMaintain)
       setDirty()
     },
     rename: async (newPrefix: string): Promise<void> => {

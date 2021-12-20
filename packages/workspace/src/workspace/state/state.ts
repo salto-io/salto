@@ -22,7 +22,19 @@ import { serialize, deserializeSingleElement } from '../../serializer/elements'
 
 export type StateMetadataKey = 'version' | 'hash'
 
-export type StateData = {
+// This distinction is temporary for the transition to multiple services.
+// Remove this when no longer used, SALTO-1661
+type OldStateData = {
+  elements: RemoteElementSource
+  // The date of the last fetch
+  accountsUpdateDate: RemoteMap<Date>
+  pathIndex: PathIndex
+  saltoMetadata: RemoteMap<string, StateMetadataKey>
+}
+
+// This distinction is temporary for the transition to multiple services.
+// Remove this when no longer used, SALTO-1661
+type NewStateData = {
   elements: RemoteElementSource
   // The date of the last fetch
   servicesUpdateDate: RemoteMap<Date>
@@ -30,14 +42,20 @@ export type StateData = {
   saltoMetadata: RemoteMap<string, StateMetadataKey>
 }
 
+export type StateData = OldStateData | NewStateData
+
 export interface State extends ElementsSource {
   set(element: Element): Promise<void>
   remove(id: ElemID): Promise<void>
-  override(elements: AsyncIterable<Element>, services?: string[]): Promise<void>
+  override(elements: AsyncIterable<Element>, accounts?: string[]): Promise<void>
+  getAccountsUpdateDates(): Promise<Record<string, Date>>
+  // getServicesUpdateDates is deprecated, kept for backwards compatibility.
+  // use getAccountsUpdateDates.
+  // Remove this when no longer used, SALTO-1661
   getServicesUpdateDates(): Promise<Record<string, Date>>
-  existingServices(): Promise<string[]>
+  existingAccounts(): Promise<string[]>
   overridePathIndex(unmergedElements: Element[]): Promise<void>
-  updatePathIndex(unmergedElements: Element[], servicesToMaintain: string[]): Promise<void>
+  updatePathIndex(unmergedElements: Element[], accountsToMaintain: string[]): Promise<void>
   getPathIndex(): Promise<PathIndex>
   getHash(): Promise<string | undefined>
   setHash(hash: string): Promise<void>
@@ -68,7 +86,7 @@ Promise<StateData> => ({
     deserialize: async data => JSON.parse(data),
     persistent,
   }),
-  servicesUpdateDate: await remoteMapCreator<Date>({
+  accountsUpdateDate: await remoteMapCreator<Date>({
     namespace: createStateNamespace(envName, 'service_update_date'),
     serialize: date => date.toISOString(),
     deserialize: async data => new Date(data),

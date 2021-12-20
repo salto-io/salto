@@ -26,7 +26,7 @@ import Prompts from '../prompts'
 import { getWorkspaceTelemetryTags, updateWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
 import { getApprovedChanges } from '../callbacks'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
-import { ServicesArg, SERVICES_OPTION, getAndValidateActiveServices } from './common/services'
+import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts } from './common/accounts'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
 
 const log = logger(module)
@@ -56,7 +56,7 @@ type RestoreArgs = {
     detailedPlan: boolean
     listPlannedChanges: boolean
     mode: nacl.RoutingMode
-} & ServicesArg & EnvArg
+} & AccountsArg & EnvArg
 
 const applyLocalChangesToWorkspace = async (
   changes: LocalChange[],
@@ -125,7 +125,7 @@ export const action: WorkspaceCommandAction<RestoreArgs> = async ({
 }): Promise<CliExitCode> => {
   const {
     elementSelectors = [], force, dryRun,
-    detailedPlan, listPlannedChanges, services, mode,
+    detailedPlan, listPlannedChanges, accounts, mode,
   } = input
   const { validSelectors, invalidSelectors } = createElementSelectors(elementSelectors)
   if (!_.isEmpty(invalidSelectors)) {
@@ -133,9 +133,9 @@ export const action: WorkspaceCommandAction<RestoreArgs> = async ({
     return CliExitCode.UserInputError
   }
   await validateAndSetEnv(workspace, input, output)
-  const activeServices = getAndValidateActiveServices(workspace, services)
+  const activeAccounts = getAndValidateActiveAccounts(workspace, accounts)
   const stateRecencies = await Promise.all(
-    activeServices.map(service => workspace.getStateRecency(service))
+    activeAccounts.map(account => workspace.getStateRecency(account))
   )
   // Print state recencies
   outputLine(formatStateRecencies(stateRecencies), output)
@@ -150,7 +150,7 @@ export const action: WorkspaceCommandAction<RestoreArgs> = async ({
   outputLine(EOL, output)
   outputLine(formatStepStart(Prompts.RESTORE_CALC_DIFF_START), output)
 
-  const changes = await restore(workspace, activeServices, validSelectors)
+  const changes = await restore(workspace, activeAccounts, validSelectors)
   if (listPlannedChanges || dryRun) {
     await printRestorePlan(changes, detailedPlan, output)
   }
@@ -219,7 +219,7 @@ Static resources are not supported for this operation as their content is not ke
         description: 'Print a summary of the planned changes',
         type: 'boolean',
       },
-      SERVICES_OPTION,
+      ACCOUNTS_OPTION,
       ENVIRONMENT_OPTION,
       {
         name: 'mode',

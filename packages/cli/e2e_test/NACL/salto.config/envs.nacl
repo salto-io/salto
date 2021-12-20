@@ -1,8 +1,0 @@
-envs {
-   envs = [
-    {
-      name = "default"
-      services = ["salesforce"]
-    }
-  ]
-}

@@ -51,7 +51,7 @@ jest.mock('@salto-io/core', () => ({
   loadLocalWorkspace: jest.fn().mockImplementation(() => mocks.mockWorkspace({})),
 }))
 describe('fetch command', () => {
-  const services = ['salesforce']
+  const accounts = ['salesforce']
   let cliCommandArgs: mocks.MockCommandArgs
   let telemetry: mocks.MockTelemetry
   let cliTelemetry: CliTelemetry
@@ -78,7 +78,7 @@ describe('fetch command', () => {
           input: {
             force: true,
             mode: 'default',
-            services,
+            accounts,
             stateOnly: false,
             regenerateSaltoIds: false,
           },
@@ -101,7 +101,7 @@ describe('fetch command', () => {
           input: {
             force: true,
             mode: 'default',
-            services,
+            accounts,
             stateOnly: false,
             regenerateSaltoIds: false,
           },
@@ -131,7 +131,7 @@ describe('fetch command', () => {
         const mockFetchWithEmitter: jest.Mock = jest.fn((
           _workspace,
           progressEmitter: EventEmitter<FetchProgressEvents>,
-          _services,
+          _accounts,
         ) => {
           const getChangesEmitter = new StepEmitter()
           progressEmitter.emit('changesWillBeFetched', getChangesEmitter, ['adapterName'])
@@ -158,7 +158,7 @@ describe('fetch command', () => {
             shouldUpdateConfig: mockUpdateConfig,
             mode: 'default',
             shouldCalcTotalSize: true,
-            services,
+            accounts,
             stateOnly: false,
             regenerateSaltoIds: false,
           })
@@ -184,7 +184,7 @@ describe('fetch command', () => {
             workspace,
             force: true,
             output,
-            services,
+            accounts,
             cliTelemetry,
             fetch: mockFetch,
             getApprovedChanges: mockEmptyApprove,
@@ -222,7 +222,7 @@ describe('fetch command', () => {
           fetchArgs = {
             workspace,
             force: false,
-            services,
+            accounts,
             cliTelemetry,
             output,
             fetch: mockFetchWithChanges,
@@ -239,14 +239,15 @@ describe('fetch command', () => {
           mockShouldUpdateConfig.mockResolvedValueOnce(Promise.resolve(true))
           result = await fetchCommand(fetchArgs)
           expect(result).toBe(CliExitCode.Success)
-          expect(fetchArgs.workspace.updateServiceConfig).toHaveBeenCalledWith('salesforce', [newConfig])
+          expect(fetchArgs.workspace.updateAccountConfig).toHaveBeenCalledWith('salesforce',
+            [newConfig], 'salesforce')
         })
 
         it('should not write config when abort was requested', async () => {
           mockShouldUpdateConfig.mockResolvedValueOnce(Promise.resolve(false))
           result = await fetchCommand(fetchArgs)
           expect(result).toBe(CliExitCode.UserInputError)
-          expect(fetchArgs.workspace.updateServiceConfig).not.toHaveBeenCalled()
+          expect(fetchArgs.workspace.updateAccountConfig).not.toHaveBeenCalled()
         })
       })
       describe('with upstream changes', () => {
@@ -267,7 +268,7 @@ describe('fetch command', () => {
             result = await fetchCommand({
               workspace,
               force: true,
-              services,
+              accounts,
               cliTelemetry,
               output,
               fetch: mockFetchWithChanges,
@@ -293,7 +294,7 @@ describe('fetch command', () => {
             result = await fetchCommand({
               workspace,
               force: true,
-              services,
+              accounts,
               cliTelemetry,
               output,
               fetch: mockFetchWithChanges,
@@ -319,7 +320,7 @@ describe('fetch command', () => {
             result = await fetchCommand({
               workspace,
               force: true,
-              services,
+              accounts,
               cliTelemetry,
               output,
               fetch: mockFetchWithChanges,
@@ -345,7 +346,7 @@ describe('fetch command', () => {
             result = await fetchCommand({
               workspace,
               force: true,
-              services,
+              accounts,
               cliTelemetry,
               output,
               fetch: mockFetchWithChanges,
@@ -369,7 +370,7 @@ describe('fetch command', () => {
             it('should throw an error', () => expect(fetchCommand({
               workspace: mocks.mockWorkspace({}),
               force: true,
-              services,
+              accounts,
               cliTelemetry,
               output,
               fetch: mockFetchWithChanges,
@@ -388,7 +389,7 @@ describe('fetch command', () => {
               result = await fetchCommand({
                 workspace,
                 force: true,
-                services,
+                accounts,
                 cliTelemetry,
                 output,
                 fetch: mockFetchWithChanges,
@@ -417,7 +418,7 @@ describe('fetch command', () => {
               result = await fetchCommand({
                 workspace,
                 force: true,
-                services,
+                accounts,
                 cliTelemetry,
                 output,
                 fetch: mockFetchWithChanges,
@@ -442,7 +443,7 @@ describe('fetch command', () => {
             await fetchCommand({
               workspace,
               force: false,
-              services,
+              accounts,
               cliTelemetry,
               output,
               fetch: mockFetchWithChanges,
@@ -470,7 +471,7 @@ describe('fetch command', () => {
               await fetchCommand({
                 workspace,
                 force: false,
-                services,
+                accounts,
                 cliTelemetry,
                 output,
                 fetch: mockFetchWithChanges,
@@ -501,7 +502,7 @@ describe('fetch command', () => {
               const res = await fetchCommand({
                 workspace,
                 force: false,
-                services,
+                accounts,
                 cliTelemetry,
                 output,
                 fetch: mockFetchWithChanges,
@@ -531,7 +532,7 @@ describe('fetch command', () => {
               const res = await fetchCommand({
                 workspace,
                 force: false,
-                services,
+                accounts,
                 cliTelemetry,
                 output,
                 fetch: mockFetchWithChanges,
@@ -582,7 +583,7 @@ describe('fetch command', () => {
             mode: 'default',
             shouldCalcTotalSize: true,
             stateOnly: false,
-            services: [],
+            accounts: [],
             regenerateSaltoIds: false,
           })
         })
@@ -596,13 +597,18 @@ describe('fetch command', () => {
       })
     })
   })
-  describe('multienv - new service in env, with existing common elements', () => {
+  describe('multienv - new account in env, with existing common elements', () => {
     let workspace: mocks.MockWorkspace
     beforeEach(() => {
       workspace = mocks.mockWorkspace({})
-      workspace.hasElementsInServices.mockResolvedValue(true)
+      workspace.hasElementsInAccounts.mockResolvedValue(true)
       workspace.getStateRecency.mockResolvedValue(
-        { serviceName: 'salesforce', status: 'Nonexistent', date: undefined }
+        {
+          serviceName: 'salesforce',
+          accountName: 'salesforce',
+          status: 'Nonexistent',
+          date: undefined,
+        }
       )
       jest.spyOn(fetchCmd, 'fetchCommand').mockImplementationOnce(() => Promise.resolve(
         CliExitCode.Success
@@ -624,7 +630,7 @@ describe('fetch command', () => {
         input: {
           force: false,
           mode: 'default',
-          services,
+          accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
         },
@@ -645,7 +651,7 @@ describe('fetch command', () => {
         input: {
           force: false,
           mode: 'override',
-          services,
+          accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
         },
@@ -665,7 +671,7 @@ describe('fetch command', () => {
         input: {
           force: false,
           mode: 'default',
-          services,
+          accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
         },
@@ -684,7 +690,7 @@ describe('fetch command', () => {
         input: {
           force: true,
           mode: 'override',
-          services,
+          accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
         },
@@ -695,19 +701,19 @@ describe('fetch command', () => {
       expect(fetchCmd.fetchCommand).toHaveBeenCalledTimes(1)
       expect((fetchCmd.fetchCommand as jest.Mock).mock.calls[0][0].mode).toEqual('override')
     })
-    it('should not prompt if already ran service', async () => {
+    it('should not prompt if already ran account', async () => {
       jest.spyOn(callbacks, 'getChangeToAlignAction').mockImplementationOnce(
         () => Promise.resolve('no')
       )
       workspace.getStateRecency.mockResolvedValue(
-        { serviceName: 'salesforce', status: 'Valid', date: new Date() }
+        { serviceName: 'salesforce', accountName: 'salesforce', status: 'Valid', date: new Date() }
       )
       await action({
         ...cliCommandArgs,
         input: {
           force: false,
           mode: 'default',
-          services,
+          accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
         },
@@ -727,7 +733,7 @@ describe('fetch command', () => {
         input: {
           force: false,
           mode: 'align',
-          services,
+          accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
         },
@@ -741,13 +747,13 @@ describe('fetch command', () => {
       jest.spyOn(callbacks, 'getChangeToAlignAction').mockImplementation(
         () => Promise.resolve('no')
       )
-      workspace.hasElementsInServices.mockResolvedValue(false)
+      workspace.hasElementsInAccounts.mockResolvedValue(false)
       await action({
         ...cliCommandArgs,
         input: {
           force: false,
           mode: 'default',
-          services,
+          accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
         },
@@ -758,14 +764,15 @@ describe('fetch command', () => {
       expect((fetchCmd.fetchCommand as jest.Mock).mock.calls[0][0].mode).toEqual('default')
     })
 
-    it('should not prompt if only one of the services is new', async () => {
+    it('should not prompt if only one of the accounts is new', async () => {
       jest.spyOn(callbacks, 'getChangeToAlignAction').mockImplementationOnce(
         () => Promise.resolve('no')
       )
-      workspace.getStateRecency.mockImplementation(async serviceName => ({
-        serviceName,
-        status: serviceName === 'salesforce' ? 'Nonexistent' : 'Valid',
-        date: serviceName === 'salesforce' ? undefined : new Date(),
+      workspace.getStateRecency.mockImplementation(async accountName => ({
+        serviceName: accountName,
+        accountName,
+        status: accountName === 'salesforce' ? 'Nonexistent' : 'Valid',
+        date: accountName === 'salesforce' ? undefined : new Date(),
       }))
       await action({
         ...cliCommandArgs,
@@ -791,7 +798,7 @@ describe('fetch command', () => {
         input: {
           force: true,
           mode: 'default',
-          services,
+          accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
         },
@@ -806,7 +813,7 @@ describe('fetch command', () => {
         input: {
           force: true,
           mode: 'default',
-          services,
+          accounts,
           stateOnly: false,
           env: mocks.withEnvironmentParam,
           regenerateSaltoIds: false,
@@ -821,7 +828,7 @@ describe('fetch command', () => {
         input: {
           force: false,
           mode: 'default',
-          services,
+          accounts,
           stateOnly: false,
           env: 'envThatDoesNotExist',
           regenerateSaltoIds: false,
@@ -856,7 +863,7 @@ describe('fetch command', () => {
         input: {
           force: true,
           mode: 'default',
-          services,
+          accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
           fromEnv: env,
@@ -869,7 +876,7 @@ describe('fetch command', () => {
       const usedArgs = mockFetchFromWorkspace.mock.calls[0][0]
       expect(usedArgs.workspace).toEqual(workspace)
       expect(usedArgs.otherWorkspace).toEqual(sourceWS)
-      expect(usedArgs.services).toEqual(services)
+      expect(usedArgs.accounts).toEqual(accounts)
       expect(usedArgs.env).toEqual(env)
     })
 
@@ -882,7 +889,7 @@ describe('fetch command', () => {
         input: {
           force: true,
           mode: 'default',
-          services,
+          accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
           fromEnv: 'what*env*er',
@@ -899,7 +906,7 @@ describe('fetch command', () => {
         input: {
           force: true,
           mode: 'default',
-          services,
+          accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
           fromEnv: 'what*env*er',
@@ -916,7 +923,7 @@ describe('fetch command', () => {
         input: {
           force: true,
           mode: 'default',
-          services,
+          accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
           fromWorkspace: 'path/to/nowhere',

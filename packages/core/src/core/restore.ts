@@ -52,14 +52,14 @@ export const createRestoreChanges = async (
   index: remoteMap.RemoteMap<pathIndex.Path[]>,
   referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
   elementSelectors: ElementSelector[] = [],
-  services?: readonly string[]
+  accounts?: readonly string[]
 ): Promise<DetailedChange[]> => {
   const changes = await createDiffChanges(
     workspaceElements,
     state,
     referenceSourcesIndex,
     elementSelectors,
-    [id => (services?.includes(id.adapter) ?? true) || id.adapter === ElemID.VARIABLES_NAMESPACE],
+    [id => (accounts?.includes(id.adapter) ?? true) || id.adapter === ElemID.VARIABLES_NAMESPACE]
   )
   const detailedChanges = await awu(changes)
     .flatMap(change => splitChangeByPath(change, index))

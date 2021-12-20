@@ -165,10 +165,14 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
     innerTypeOrRef: TypeOrRef<T>
   ) {
     super({
-      elemID: new ElemID('', `${LIST_ID_PREFIX}<${innerTypeOrRef.elemID.getFullName()}>`),
+      elemID: ListType.createElemID(innerTypeOrRef),
     })
     this.refInnerType = getRefType(innerTypeOrRef)
     this.setRefInnerType(innerTypeOrRef)
+  }
+
+  static createElemID(innerTypeOrRef: TypeOrRef): ElemID {
+    return new ElemID('', `${LIST_ID_PREFIX}<${innerTypeOrRef.elemID.getFullName()}>`)
   }
 
   isEqual(other: ListType): boolean {
@@ -223,10 +227,14 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
     innerTypeOrRef: TypeOrRef<T>
   ) {
     super({
-      elemID: new ElemID('', `${MAP_ID_PREFIX}<${innerTypeOrRef.elemID.getFullName()}>`),
+      elemID: MapType.createElemID(innerTypeOrRef),
     })
     this.refInnerType = getRefType(innerTypeOrRef)
     this.setRefInnerType(innerTypeOrRef)
+  }
+
+  static createElemID(innerTypeOrRef: TypeOrRef): ElemID {
+    return new ElemID('', `${MAP_ID_PREFIX}<${innerTypeOrRef.elemID.getFullName()}>`)
   }
 
   isEqual(other: MapType): boolean {

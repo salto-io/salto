@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ObjectType, Element, BuiltinTypes, ElemIdGetter, ADAPTER, OBJECT_SERVICE_ID, toServiceIdsString, OBJECT_NAME, Values, createRefToElmWithValue } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, Element, BuiltinTypes, ElemIdGetter, OBJECT_SERVICE_ID, toServiceIdsString, OBJECT_NAME, Values, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { elements as elementsComponents } from '@salto-io/adapter-components'
 import _ from 'lodash'
@@ -115,10 +115,8 @@ const createInstances = async (
     const name = elemIdGetter !== undefined ? elemIdGetter(
       NETSUITE,
       {
-        [ADAPTER]: NETSUITE,
         [serviceIdFieldName]: identifierValue,
         [OBJECT_SERVICE_ID]: toServiceIdsString({
-          [ADAPTER]: NETSUITE,
           [OBJECT_NAME]: type.elemID.getFullName(),
         }),
       },

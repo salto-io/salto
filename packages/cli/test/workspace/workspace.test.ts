@@ -25,7 +25,7 @@ import { getCliTelemetry } from '../../src/telemetry'
 import { version } from '../../src/generated/version.json'
 
 const mockWsFunctions = {
-  services: mockFunction<Workspace['services']>().mockReturnValue(['salesforce']),
+  accounts: mockFunction<Workspace['accounts']>().mockReturnValue(['salesforce']),
   envs: mockFunction<Workspace['envs']>().mockReturnValue(['default']),
   currentEnv: mockFunction<Workspace['currentEnv']>().mockReturnValue('default'),
   errors: mockFunction<Workspace['errors']>().mockResolvedValue(mockErrors([])),
@@ -40,6 +40,7 @@ const mockWsFunctions = {
   ),
   getTotalSize: mockFunction<Workspace['getTotalSize']>(),
   getStateRecency: mockFunction<Workspace['getStateRecency']>().mockResolvedValue({
+    accountName: 'salesforce',
     serviceName: 'salesforce',
     date: new Date(),
     status: 'Valid',

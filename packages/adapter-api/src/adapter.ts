@@ -53,7 +53,8 @@ export type DeployOptions = {
 
 export type PostFetchOptions = {
   currentAdapterElements: Element[]
-  elementsByAdapter: Readonly<Record<string, ReadonlyArray<Readonly<Element>>>>
+  elementsByAccount: Readonly<Record<string, ReadonlyArray<Readonly<Element>>>>
+  accountToServiceNameMap?: Record<string, string>
   progressReporter: ProgressReporter
 }
 
@@ -118,7 +119,6 @@ export type Adapter = {
 }
 
 export const OBJECT_SERVICE_ID = 'object_service_id'
-export const ADAPTER = 'adapter'
 export const OBJECT_NAME = 'object_name'
 export const FIELD_NAME = 'field_name'
 export const INSTANCE_NAME = 'instance_name'

@@ -63,7 +63,6 @@ expect.extend({
 export type ReplacementPair = [string | RegExp, string]
 
 const { parse } = parser
-const services = ['salesforce']
 
 const mockCliOutput = (): CliOutput =>
   ({ stdout: new MockWriteStream(), stderr: new MockWriteStream() })
@@ -131,15 +130,20 @@ export const runInit = async (
   })
 }
 
-export const runAddSalesforceService = async (workspacePath: string): Promise<void> => {
+export const runAddSalesforceService = async (workspacePath: string,
+  accountName?: string): Promise<void> => {
   await runCommand({
-    workspacePath, args: ['service', 'add', 'salesforce'],
+    workspacePath,
+    args: accountName
+      ? ['service', 'add', 'salesforce', '--account', accountName]
+      : ['service', 'add', 'salesforce'],
   })
 }
 
-export const runSalesforceLogin = async (workspacePath: string): Promise<void> => {
+export const runSalesforceLogin = async (workspacePath: string,
+  accountName: string): Promise<void> => {
   await runCommand({
-    workspacePath, args: ['service', 'login', 'salesforce'],
+    workspacePath, args: ['service', 'login', accountName],
   })
 }
 
@@ -225,7 +229,7 @@ export const runClean = async ({
     ...cleanArgs.cache === false ? ['--no-cache'] : [],
     ...cleanArgs.staticResources === false ? ['--no-static-resources'] : [],
     ...cleanArgs.credentials ? ['--credentials'] : [],
-    ...cleanArgs.serviceConfig ? ['--service-config'] : [],
+    ...cleanArgs.accountConfig ? ['--account-config'] : [],
   ]
   return runCommand({
     workspacePath,
@@ -240,9 +244,12 @@ export const loadValidWorkspace = async (fetchOutputDir: string): Promise<Worksp
   return workspace
 }
 
-export const runPreviewGetPlan = async (fetchOutputDir: string): Promise<Plan> => {
+export const runPreviewGetPlan = async (
+  fetchOutputDir: string,
+  accounts?: string[]
+): Promise<Plan> => {
   const workspace = await loadLocalWorkspace(fetchOutputDir)
-  return preview(workspace, services)
+  return preview(workspace, accounts)
 }
 
 const getChangedElementName = (change: Change): string => getChangeElement(change).elemID.name
@@ -268,8 +275,11 @@ export const verifyChanges = (plan: Plan,
   expect(changes).toEqual(expectedChanges.sort(compareChanges))
 }
 
-export const runEmptyPreview = async (fetchOutputDir: string): Promise<void> => {
-  const plan = await runPreviewGetPlan(fetchOutputDir)
+export const runEmptyPreview = async (
+  fetchOutputDir: string,
+  accounts?: string[]
+): Promise<void> => {
+  const plan = await runPreviewGetPlan(fetchOutputDir, accounts)
   verifyChanges(plan, [])
 }
 

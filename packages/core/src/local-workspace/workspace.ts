@@ -16,20 +16,22 @@
 import _ from 'lodash'
 import path from 'path'
 import uuidv4 from 'uuid/v4'
-import { DetailedChange } from '@salto-io/adapter-api'
+import { DetailedChange, ObjectType } from '@salto-io/adapter-api'
 import { exists, isEmptyDir, rm } from '@salto-io/file'
 import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl, remoteMap,
-  configSource as cs, staticFiles, dirStore, WorkspaceComponents, errors,
-  COMMON_ENV_PREFIX, isValidEnvName, EnvironmentSource } from '@salto-io/workspace'
+  configSource as cs, staticFiles, dirStore, WorkspaceComponents, errors, elementSource,
+  COMMON_ENV_PREFIX, isValidEnvName, EnvironmentSource, EnvConfig, adaptersConfigSource } from '@salto-io/workspace'
+import { collections } from '@salto-io/lowerdash'
 import { localDirectoryStore } from './dir_store'
 import { CONFIG_DIR_NAME, getConfigDir, getLocalStoragePath } from '../app_config'
 import { localState } from './state'
 import { workspaceConfigSource } from './workspace_config'
 import { buildLocalStaticFilesCache } from './static_files_cache'
 import { createRemoteMapCreator } from './remote_map'
-import { getAdaptersConfigTypes } from '../core/adapters'
+import { getAdaptersConfigTypesMap } from '../core/adapters'
 import { buildLocalAdaptersConfigSource } from './adapters_config'
 
+const { awu } = collections.asynciterable
 const { configSource } = cs
 const { FILE_EXTENSION, naclFilesSource, ENVS_PREFIX } = nacl
 const { buildStaticFilesSource } = staticFiles
@@ -188,6 +190,25 @@ const credentialsSource = (localStorage: string): cs.ConfigSource =>
     encoding: 'utf8',
   }))
 
+const getAdapterConfigsPerAccount = async (envs: EnvConfig[]): Promise<ObjectType[]> => {
+  const configTypesByAccount = await getAdaptersConfigTypesMap()
+  const configElementSource = elementSource.createInMemoryElementSource(
+    Object.values(configTypesByAccount).flat()
+  )
+  const differentlyNamedAccounts = Object.fromEntries(envs
+    .flatMap(env => Object.entries(env.accountToServiceName ?? {}))
+    .filter(([accountName, serviceName]) => accountName !== serviceName))
+  await awu(Object.keys(differentlyNamedAccounts)).forEach(async account => {
+    const adapter = differentlyNamedAccounts[account]
+    const adapterConfigs = configTypesByAccount[adapter]
+    const additionalConfigs = await adaptersConfigSource.calculateAdditionalConfigTypes(
+      configElementSource, adapterConfigs.map(conf => conf.elemID), adapter, account
+    )
+    configTypesByAccount[account] = additionalConfigs
+  })
+  return Object.values(configTypesByAccount).flat()
+}
+
 export const loadLocalWorkspace = async (
   lookupDir: string, configOverrides?: DetailedChange[], persistent = true
 ): Promise<Workspace> => {
@@ -196,6 +217,7 @@ export const loadLocalWorkspace = async (
     throw new NotAWorkspaceError()
   }
   const workspaceConfig = await workspaceConfigSource(baseDir, undefined)
+  const { envs } = await workspaceConfig.getWorkspaceConfig()
   const cacheDirName = path.join(workspaceConfig.localStorage, CACHE_DIR_NAME)
   const remoteMapCreator = createRemoteMapCreator(cacheDirName)
   const adaptersConfig = await buildLocalAdaptersConfigSource(
@@ -203,16 +225,16 @@ export const loadLocalWorkspace = async (
     workspaceConfig.localStorage,
     remoteMapCreator,
     persistent,
-    await getAdaptersConfigTypes(),
+    await getAdapterConfigsPerAccount(envs),
     configOverrides,
   )
-  const envs = (await workspaceConfig.getWorkspaceConfig()).envs.map(e => e.name)
+  const envNames = envs.map(e => e.name)
   const credentials = credentialsSource(workspaceConfig.localStorage)
 
   const elemSources = await loadLocalElementsSources(
     baseDir,
     workspaceConfig.localStorage,
-    envs,
+    envNames,
     remoteMapCreator,
     persistent
   )
@@ -243,7 +265,7 @@ export const loadLocalWorkspace = async (
       }
       return ws.demoteAll()
     },
-    clear: async (args: Omit<WorkspaceComponents, 'serviceConfig'>) => {
+    clear: async (args: Omit<WorkspaceComponents, 'accountConfig'>) => {
       await ws.clear(args)
       const envsDir = path.join(baseDir, ENVS_PREFIX)
       if (await isEmptyDir.notFoundAsUndefined(envsDir)) {
@@ -281,7 +303,7 @@ Promise<Workspace> => {
     localStorage,
     remoteMapCreator,
     persistentMode,
-    await getAdaptersConfigTypes(),
+    Object.values(await getAdaptersConfigTypesMap()).flat(),
   )
   const credentials = credentialsSource(localStorage)
   const elemSources = await loadLocalElementsSources(

@@ -17,13 +17,13 @@ import path from 'path'
 import wu from 'wu'
 import tmp from 'tmp-promise'
 import { strings, collections } from '@salto-io/lowerdash'
-import { copyFile, rm, mkdirp, exists, readFile } from '@salto-io/file'
+import { copyFile, rm, mkdirp, exists, readFile, writeFile } from '@salto-io/file'
 import { testHelpers as salesforceTestHelpers, SalesforceClient, UsernamePasswordCredentials } from '@salto-io/salesforce-adapter'
 import { Plan, SALTO_HOME_VAR } from '@salto-io/core'
 import { Workspace, parser } from '@salto-io/workspace'
 // eslint-disable-next-line no-restricted-imports
 import {
-  API_NAME, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, SALESFORCE, SALESFORCE_CUSTOM_SUFFIX,
+  API_NAME, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, SALESFORCE_CUSTOM_SUFFIX,
   API_NAME_SEPARATOR, OBJECTS_PATH, METADATA_TYPE, CUSTOM_FIELD,
 } from '@salto-io/salesforce-adapter/dist/src/constants'
 import {
@@ -47,21 +47,24 @@ import { instanceExists, objectExists, getSalesforceCredsInstance, getSalesforce
 const { awu } = collections.asynciterable
 // let lastPlan: Plan
 let credsLease: CredsLease<UsernamePasswordCredentials>
-
+const ALTERNATIVE_SALESFORCE_ACCOUNT_NAME = 'e2esalesforce'
+const SALESFORCE_SERVICE_NAME = 'salesforce'
 const apiNameAnno = (
   obj: string,
   field: string
 ): Record<string, string> => ({ [API_NAME]: [obj, field].join(API_NAME_SEPARATOR) })
 
-describe('cli e2e', () => {
+describe.each([
+  SALESFORCE_SERVICE_NAME,
+  ALTERNATIVE_SALESFORCE_ACCOUNT_NAME,
+])('.add($accountName)', accountName => {
   jest.setTimeout(15 * 60 * 1000)
-
+  // in the case that account name is just normal salesforce
+  // we want to go through the default behavior, so we send undefined, instead of ['salesforce']
+  const accounts = accountName === SALESFORCE_SERVICE_NAME ? undefined : [accountName]
   afterAll(workspaceHelpersCleanup)
 
-  const addModelNaclFile = `${__dirname}/../../e2e_test/NACL/add.nacl`
   const workspaceConfigFile = `${__dirname}/../../e2e_test/NACL/salto.config/workspace.nacl`
-  const envsConfigFile = `${__dirname}/../../e2e_test/NACL/salto.config/envs.nacl`
-  const salesforceConfigFile = `${__dirname}/../../e2e_test/NACL/salto.config/salesforce.nacl`
   const localWorkspaceConfigFile = `${__dirname}/../../e2e_test/NACL/salto.config/local/workspaceUser.nacl`
   const NEW_INSTANCE_BASE_ELEM_NAME = 'NewInstanceName'
   const NEW_INSTANCE2_BASE_ELEM_NAME = 'NewInstance2Name'
@@ -96,17 +99,17 @@ describe('cli e2e', () => {
     fetchOutputDir = `${homePath}/NACL/test_fetch`
     localStorageDir = `${homePath}/.salto/test_fetch`
     localWorkspaceDir = `${homePath}/e2e-375e3f65-be66-4fdc-a561-4c4f9735db94`
-    statePath = `${fetchOutputDir}/salto.config/states/default.salesforce.jsonl.zip`
+    statePath = `${fetchOutputDir}/salto.config/states/default.${accountName}.jsonl.zip`
     newInstanceElemName = NEW_INSTANCE_BASE_ELEM_NAME + randomString
     newInstance2ElemName = NEW_INSTANCE2_BASE_ELEM_NAME + randomString
     newInstanceFullName = `${NEW_INSTANCE_BASE_ELEM_NAME}${randomString}`
     newInstance2FullName = `${NEW_INSTANCE2_BASE_ELEM_NAME}${randomString}`
     newObjectElemName = NEW_OBJECT_BASE_ELEM_NAME + randomString
     newObjectApiName = `${newObjectElemName}${SALESFORCE_CUSTOM_SUFFIX}`
-    newObjectStandardFieldRelativePath = `${SALESFORCE}/${OBJECTS_PATH}/${newObjectElemName}/${newObjectElemName}StandardFields.nacl`
-    newObjectAnnotationsRelativePath = `${SALESFORCE}/${OBJECTS_PATH}/${newObjectElemName}/${newObjectElemName}Annotations.nacl`
-    newObjectCustomFieldRelativePath = `${SALESFORCE}/${OBJECTS_PATH}/${newObjectElemName}/${newObjectElemName}CustomFields.nacl`
-    tmpNaclFileRelativePath = `${SALESFORCE}/${OBJECTS_PATH}/${newObjectElemName}.nacl`
+    newObjectStandardFieldRelativePath = `${accountName}/${OBJECTS_PATH}/${newObjectElemName}/${newObjectElemName}StandardFields.nacl`
+    newObjectAnnotationsRelativePath = `${accountName}/${OBJECTS_PATH}/${newObjectElemName}/${newObjectElemName}Annotations.nacl`
+    newObjectCustomFieldRelativePath = `${accountName}/${OBJECTS_PATH}/${newObjectElemName}/${newObjectElemName}CustomFields.nacl`
+    tmpNaclFileRelativePath = `${accountName}/${OBJECTS_PATH}/${newObjectElemName}.nacl`
 
     process.env[SALTO_HOME_VAR] = homePath
     credsLease = await salesforceTestHelpers().credentials()
@@ -123,11 +126,21 @@ describe('cli e2e', () => {
     jest.spyOn(callbacksImpl, 'getCredentialsFromUser').mockResolvedValue(getSalesforceCredsInstance(credsLease.value))
     await mkdirp(`${fetchOutputDir}/salto.config`)
     await mkdirp(`${fetchOutputDir}/salto.config/adapters`)
-    await mkdirp(`${fetchOutputDir}/salto.config/adapters/salesforce`)
+    await mkdirp(`${fetchOutputDir}/salto.config/adapters/${accountName}`)
     await mkdirp(localStorageDir)
     await mkdirp(localWorkspaceDir)
     await copyFile(workspaceConfigFile, `${fetchOutputDir}/salto.config/workspace.nacl`)
-    await copyFile(envsConfigFile, `${fetchOutputDir}/salto.config/envs.nacl`)
+    await writeFile(`${fetchOutputDir}/salto.config/envs.nacl`, `envs {
+      envs = [
+       {
+         name = "default"
+         accounts = ["${accountName}"]
+         accountToServiceName = {
+           ${accountName} = "salesforce"
+         }
+       }
+     ]
+   }`)
     await copyFile(localWorkspaceConfigFile, `${localWorkspaceDir}/workspaceUser.nacl`)
     await rm(fullPath(tmpNaclFileRelativePath))
     if (await objectExists(client, newObjectApiName)) {
@@ -139,7 +152,7 @@ describe('cli e2e', () => {
     if (await instanceExists(client, ROLE, newInstance2FullName)) {
       await client.delete(ROLE, newInstance2FullName)
     }
-    await runSalesforceLogin(fetchOutputDir)
+    await runSalesforceLogin(fetchOutputDir, accountName)
     await runFetch(fetchOutputDir)
   })
 
@@ -182,11 +195,11 @@ describe('cli e2e', () => {
       expect(await exists(statePath)).toBe(true)
     })
     it('should not hide Types folder', async () => {
-      expect(await exists(`${fetchOutputDir}/salesforce/Types`))
+      expect(await exists(`${fetchOutputDir}/${accountName}/Types`))
         .toBe(true)
     })
     afterAll(async () => {
-      await runEmptyPreview(fetchOutputDir)
+      await runEmptyPreview(fetchOutputDir, accounts)
     })
   })
 
@@ -194,14 +207,45 @@ describe('cli e2e', () => {
     let workspace: Workspace
     let deployPlan: Plan
     beforeAll(async () => {
-      await copyFile(addModelNaclFile, fullPath(tmpNaclFileRelativePath))
+      await writeFile(fullPath(tmpNaclFileRelativePath), `type ${accountName}.NewObjectName {
+        annotations {
+          serviceid metadataType {
+          }
+        }
+        metadataType = "CustomObject"
+        ${accountName}.Text Alpha {
+          label = "Alpha"
+          _required = false
+        }
+        ${accountName}.Text Beta {
+          label = "Beta"
+          _required = false
+        }
+      }
+      
+      ${accountName}.Role NewInstanceName {
+        description = "To Be Modified"
+        name = "New Role Instance"
+      }
+      
+      ${accountName}.Role NewInstance2Name {
+        description = var.desc
+        name = "Another new Role Instance"
+        mayForecastManagerShare = var.isStaging
+      }
+      
+      vars {
+        desc = ${accountName}.Role.instance.NewInstanceName.description
+        isStaging = false
+        age = 60
+      }`)
       await editNaclFile(fullPath(tmpNaclFileRelativePath), [
         // Replace all occurrences
         [new RegExp(NEW_OBJECT_BASE_ELEM_NAME, 'g'), newObjectElemName],
         [new RegExp(NEW_INSTANCE_BASE_ELEM_NAME, 'g'), newInstanceElemName],
         [new RegExp(NEW_INSTANCE2_BASE_ELEM_NAME, 'g'), newInstance2ElemName],
       ])
-      deployPlan = await runPreviewGetPlan(fetchOutputDir)
+      deployPlan = await runPreviewGetPlan(fetchOutputDir, accounts)
       await runDeploy({ workspacePath: fetchOutputDir })
       workspace = await loadValidWorkspace(fetchOutputDir)
     })
@@ -218,9 +262,10 @@ describe('cli e2e', () => {
         { description: 'To Be Modified' })).toBe(true)
     })
     it('should update the object in the Nacl file', async () => {
+      const elements = await awu(await (await workspace.elements()).getAll()).toArray()
       const newObject = await verifyObject(
-        await awu(await (await workspace.elements()).getAll()).toArray(),
-        SALESFORCE,
+        elements,
+        accountName,
         newObjectElemName,
         {
           [API_NAME]: BuiltinTypes.SERVICE_ID,
@@ -238,12 +283,13 @@ describe('cli e2e', () => {
     })
     it('should update the instance in the Nacl file', async () => {
       await verifyInstance(
-        await (await workspace.elements()).getAll(), SALESFORCE, ROLE, newInstanceElemName,
-        { description: 'To Be Modified', [INSTANCE_FULL_NAME_FIELD]: newInstanceFullName }
+        await (await workspace.elements()).getAll(), accountName,
+        ROLE, newInstanceElemName, { description: 'To Be Modified',
+          [INSTANCE_FULL_NAME_FIELD]: newInstanceFullName }
       )
     })
     afterAll(async () => {
-      await runEmptyPreview(fetchOutputDir)
+      await runEmptyPreview(fetchOutputDir, accounts)
     })
   })
 
@@ -255,7 +301,7 @@ describe('cli e2e', () => {
         ['Beta__c', 'Modified__c'],
         ['To Be Modified', 'I Am Modified'],
       ])
-      deployPlan = await runPreviewGetPlan(fetchOutputDir)
+      deployPlan = await runPreviewGetPlan(fetchOutputDir, accounts)
       await runDeploy({ workspacePath: fetchOutputDir })
     })
     it('should have "modify" changes', async () => {
@@ -276,10 +322,9 @@ describe('cli e2e', () => {
         { description: 'I Am Modified' })).toBe(true)
     })
     afterAll(async () => {
-      await runEmptyPreview(fetchOutputDir)
+      await runEmptyPreview(fetchOutputDir, accounts)
     })
   })
-  // eslint-disable-next-line
   describe('fetch expecting no changes', () => {
     let workspace: Workspace
     beforeAll(async () => {
@@ -287,9 +332,10 @@ describe('cli e2e', () => {
       workspace = await loadValidWorkspace(fetchOutputDir)
     })
     it('should fetch the new object standard fields and annotations to the correct files', async () => {
+      const elements = await awu(await (await workspace.elements()).getAll()).toArray()
       const newObject = await verifyObject(
-        await awu(await (await workspace.elements()).getAll()).toArray(),
-        SALESFORCE,
+        elements,
+        accountName,
         newObjectElemName,
         {
           [API_NAME]: BuiltinTypes.SERVICE_ID,
@@ -326,12 +372,12 @@ describe('cli e2e', () => {
     it('should have no change in the instance', async () => {
       await verifyInstance(
         (await (await workspace.elements()).getAll()),
-        SALESFORCE, ROLE, newInstanceElemName,
+        accountName, ROLE, newInstanceElemName,
         { description: 'I Am Modified', [INSTANCE_FULL_NAME_FIELD]: newInstanceFullName }
       )
     })
     afterAll(async () => {
-      await runEmptyPreview(fetchOutputDir)
+      await runEmptyPreview(fetchOutputDir, accounts)
     })
   })
 
@@ -360,12 +406,13 @@ describe('cli e2e', () => {
         fetchOutputDir,
         false,
         undefined,
-        [`salesforce.fetch.target=["${CUSTOM_OBJECT}"]`]
+        [`${accountName}.fetch.target=["${CUSTOM_OBJECT}"]`]
       )
 
       const workspace = await loadValidWorkspace(fetchOutputDir)
-      fetchedObject = await workspace.getValue(new ElemID(SALESFORCE, newObjectElemName))
-      fetchedRole = await workspace.getValue(new ElemID(SALESFORCE, ROLE, 'instance', newInstanceElemName))
+      fetchedObject = await workspace.getValue(new ElemID(accountName,
+        newObjectElemName))
+      fetchedRole = await workspace.getValue(new ElemID(accountName, ROLE, 'instance', newInstanceElemName))
     })
     it('should update elements that were part of the partial fetch', () => {
       expect(fetchedObject).toBeInstanceOf(ObjectType)
@@ -386,7 +433,7 @@ describe('cli e2e', () => {
       await rm(fullPath(newObjectStandardFieldRelativePath))
       await rm(fullPath(newObjectCustomFieldRelativePath))
       // We have to run preview before the deploy to get the plan
-      deployPlan = await runPreviewGetPlan(fetchOutputDir)
+      deployPlan = await runPreviewGetPlan(fetchOutputDir, accounts)
       await runDeploy({ workspacePath: fetchOutputDir })
     })
     it('should have "remove" changes', async () => {
@@ -403,7 +450,7 @@ describe('cli e2e', () => {
       expect(await instanceExists(client, ROLE, newInstanceFullName)).toBe(false)
     })
     afterAll(async () => {
-      await runEmptyPreview(fetchOutputDir)
+      await runEmptyPreview(fetchOutputDir, accounts)
     })
   })
   describe('multi-env after initial fetch', () => {
@@ -424,16 +471,16 @@ describe('cli e2e', () => {
 
     it('should not prompt when creating env with force=true', async () => {
       await runCreateEnv(fetchOutputDir, 'env2', true)
-      expect(await exists(`${fetchOutputDir}/salesforce`)).toBe(true)
-      expect(await exists(`${fetchOutputDir}/envs/default/salesforce`)).toBe(false)
+      expect(await exists(`${fetchOutputDir}/${accountName}`)).toBe(true)
+      expect(await exists(`${fetchOutputDir}/envs/default/${accountName}`)).toBe(false)
       expect(await exists(`${fetchOutputDir}/envs/env2`)).toBe(false)
       expect(callbacksImpl.cliApproveIsolateBeforeMultiEnv).not.toHaveBeenCalled()
     })
 
     it('should move everything to the first env when isolating before 2nd env', async () => {
       await runCreateEnv(fetchOutputDir, 'env2')
-      expect(await exists(`${fetchOutputDir}/envs/default/salesforce`)).toBe(true)
-      expect(await exists(`${fetchOutputDir}/salesforce`)).toBe(false)
+      expect(await exists(`${fetchOutputDir}/envs/default/${accountName}`)).toBe(true)
+      expect(await exists(`${fetchOutputDir}/${accountName}`)).toBe(false)
       expect(await exists(`${fetchOutputDir}/envs/env2`)).toBe(false)
       expect(callbacksImpl.cliApproveIsolateBeforeMultiEnv).toHaveBeenCalled()
     })
@@ -442,15 +489,48 @@ describe('cli e2e', () => {
     // Note: this should be the last test to run, as it will clear out parts of the workspace
     let salesforceConfPath: string
     beforeAll(async () => {
-      salesforceConfPath = `${fetchOutputDir}/salto.config/adapters/salesforce/salesforce.nacl`
-      await copyFile(salesforceConfigFile, `${fetchOutputDir}/salto.config/adapters/salesforce/salesforce.nacl`)
+      salesforceConfPath = `${fetchOutputDir}/salto.config/adapters/${accountName}/${accountName}.nacl`
+      await writeFile(`${fetchOutputDir}/salto.config/adapters/${accountName}/${accountName}.nacl`,
+        `${accountName} {
+        fetch = {
+          exclude = [
+            {
+              metadataType = "Report"
+            },
+            {
+              metadataType = "ReportType"
+            },
+            {
+              metadataType = "ReportFolder"
+            },
+            {
+              metadataType = "Dashboard"
+            },
+            {
+              metadataType = "DashboardFolder"
+            },
+            {
+              metadataType = "Profile"
+            },
+            {
+              metadataType = "EmailTemplate"
+            },
+          ]
+        }
+        maxItemsInRetrieveRequest = 2500
+        client = {
+          maxConcurrentApiRequests = {
+            retrieve = 3
+          }
+        }
+      }`)
     })
 
     it('should clear out only the requested parts - nacl', async () => {
-      expect(`${fetchOutputDir}/envs/default/salesforce`).toExist()
+      expect(`${fetchOutputDir}/envs/default/${accountName}`).toExist()
       expect(`${fetchOutputDir}/envs/default/static-resources`).toExist()
-      expect(`${fetchOutputDir}/salesforce`).not.toExist() // not checking common folder for now
-      expect(`${fetchOutputDir}/salto.config/states/default.salesforce.jsonl.zip`).toExist()
+      expect(`${fetchOutputDir}/${accountName}`).not.toExist() // not checking common folder for now
+      expect(`${fetchOutputDir}/salto.config/states/default.${accountName}.jsonl.zip`).toExist()
       await runClean({
         workspacePath: fetchOutputDir,
         cleanArgs: {
@@ -459,20 +539,20 @@ describe('cli e2e', () => {
           staticResources: false,
         },
       })
-      expect(`${fetchOutputDir}/envs/default/salesforce`).not.toExist()
+      expect(`${fetchOutputDir}/envs/default/${accountName}`).not.toExist()
       expect(`${fetchOutputDir}/envs/default/static-resources`).toExist()
-      expect(`${fetchOutputDir}/salto.config/states/default.salesforce.jsonl.zip`).toExist()
+      expect(`${fetchOutputDir}/salto.config/states/default.${accountName}.jsonl.zip`).toExist()
     })
 
     it('should clear out only the requested parts - state + static resources', async () => {
       expect(`${fetchOutputDir}/envs/default/static-resources`).toExist()
-      expect(`${fetchOutputDir}/salto.config/states/default.salesforce.jsonl.zip`).toExist()
+      expect(`${fetchOutputDir}/salto.config/states/default.${accountName}.jsonl.zip`).toExist()
       await runClean({
         workspacePath: fetchOutputDir,
         cleanArgs: {},
       })
       expect(`${fetchOutputDir}/envs`).not.toExist()
-      expect(`${fetchOutputDir}/salto.config/states/default.salesforce.jsonl.zip`).not.toExist()
+      expect(`${fetchOutputDir}/salto.config/states/default.${accountName}.jsonl.zip`).not.toExist()
     })
 
     it('should clear out only the requested parts - service config', async () => {
@@ -484,7 +564,7 @@ describe('cli e2e', () => {
           state: false,
           cache: false,
           staticResources: false,
-          serviceConfig: true,
+          accountConfig: true,
         },
       })
       expect(await readFile(salesforceConfPath)).not.toEqual(salesforceConfBefore)

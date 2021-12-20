@@ -28,13 +28,14 @@ import * as mockElements from './common/elements'
 import * as mockPlan from './common/plan'
 import { createElementSource } from './common/helpers'
 import { mockConfigType, mockEmptyConfigType, mockWorkspace, mockConfigInstance } from './common/workspace'
+import { getLoginStatuses } from '../src/api'
 
 const { awu } = collections.asynciterable
 const mockService = 'salto'
 const emptyMockService = 'salto2'
 const mockServiceWithInstall = 'adapterWithInstallMethod'
 
-const SERVICES = [mockService, emptyMockService]
+const ACCOUNTS = [mockService, emptyMockService]
 
 jest.mock('../src/core/fetch', () => ({
   ...jest.requireActual<{}>('../src/core/fetch'),
@@ -122,7 +123,7 @@ describe('api.ts', () => {
         unmergedElements: fetchedElements,
         elements: fetchedElements,
         mergeErrors: [],
-        adapterNameToConfigMessage: {},
+        accountNameToConfigMessage: {},
       })
     })
 
@@ -138,7 +139,7 @@ describe('api.ts', () => {
         stateOverride = jest.spyOn(ws.state(), 'override')
         mockGetAdaptersCreatorConfigs = jest.spyOn(adapters, 'getAdaptersCreatorConfigs')
         mockFetchChanges.mockClear()
-        await api.fetch(ws, undefined, SERVICES)
+        await api.fetch(ws, undefined, ACCOUNTS)
       })
 
       it('should call fetch changes', () => {
@@ -176,7 +177,7 @@ describe('api.ts', () => {
         await api.fetch(ws, undefined, [mockService])
       })
 
-      it('should call fetch changes with first service only', () => {
+      it('should call fetch changes with first account only', () => {
         expect(mockFetchChanges).toHaveBeenCalled()
       })
       it('should override state but also include existing elements', async () => {
@@ -199,7 +200,7 @@ describe('api.ts', () => {
       mockedGetPlan = jest.spyOn(plan, 'getPlan')
       mockGetPlanResult = mockPlan.getPlan()
       mockedGetPlan.mockResolvedValue(mockGetPlanResult)
-      result = await api.preview(mockWorkspace({}), SERVICES)
+      result = await api.preview(mockWorkspace({}), ACCOUNTS)
     })
 
     afterAll(() => {
@@ -249,7 +250,7 @@ describe('api.ts', () => {
             .map(change => (isAdditionChange(change) ? cloneAndAddAnnotation(change) : change)),
           errors: [],
         }))
-        result = await api.deploy(ws, actionPlan, jest.fn(), SERVICES)
+        result = await api.deploy(ws, actionPlan, jest.fn(), ACCOUNTS)
       })
 
       it('should call adapter deploy function', async () => {
@@ -323,7 +324,7 @@ describe('api.ts', () => {
           appliedChanges: changeGroup.changes.filter(isModificationChange),
           errors: [new Error('cannot add new employee')],
         }))
-        result = await api.deploy(ws, actionPlan, jest.fn(), SERVICES)
+        result = await api.deploy(ws, actionPlan, jest.fn(), ACCOUNTS)
       })
 
       it('should return error for the failed part', () => {
@@ -356,7 +357,7 @@ describe('api.ts', () => {
         const newConf = mockConfigInstance.clone()
         newConf.value.password = 'bla'
         await api.updateCredentials(ws, newConf)
-        expect(ws.updateServiceCredentials).toHaveBeenCalledTimes(1)
+        expect(ws.updateAccountCredentials).toHaveBeenCalledTimes(1)
       })
       it('should call validateCredentials', async () => {
         const newConf = mockConfigInstance.clone()
@@ -369,15 +370,15 @@ describe('api.ts', () => {
     })
 
     describe('validateCredentials', () => {
-      it('should throw if passed unknown adapter name', () => {
+      it('should throw if passed unknown account name', () => {
         const newConfType = new ObjectType({
-          elemID: new ElemID('unknownService'),
+          elemID: new ElemID('unknownAccount'),
           fields: mockConfigType.fields,
         })
         const newConf = new InstanceElement(ElemID.CONFIG_NAME, newConfType,
           mockConfigInstance.value)
         return expect(api.verifyCredentials(newConf)).rejects
-          .toThrow('unknown adapter: unknownService')
+          .toThrow('unknown adapter: unknownAccount')
       })
       it('should call validateConfig of adapterCreator', async () => {
         const newConf = mockConfigInstance.clone()
@@ -390,8 +391,8 @@ describe('api.ts', () => {
     })
 
     describe('addAdapter', () => {
-      it('should set adapter config', async () => {
-        const serviceName = 'test'
+      const serviceName = 'test'
+      beforeAll(() => {
         adapterCreators[serviceName] = {
           authenticationMethods: {
             basic: { credentialsType: new ObjectType({ elemID: new ElemID(serviceName) }) },
@@ -399,9 +400,19 @@ describe('api.ts', () => {
           operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
           validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
         }
+      })
+
+      it('should set adapter config', async () => {
         const wsp = mockWorkspace({})
         await api.addAdapter(wsp, serviceName)
-        expect((wsp.addService as jest.Mock).call).toHaveLength(1)
+        expect((wsp.addAccount as jest.Mock).call).toHaveLength(1)
+      })
+
+      it('should update workspace config if different account name provided', async () => {
+        const wsp = mockWorkspace({})
+        await api.addAdapter(wsp, serviceName, `${serviceName}account`)
+        expect((wsp.addAccount as jest.Mock).call).toHaveLength(1)
+        expect((wsp.updateAccountConfig as jest.Mock).call).toHaveLength(1)
       })
     })
 
@@ -409,7 +420,7 @@ describe('api.ts', () => {
       const newConf = mockConfigInstance.clone()
       newConf.value.password = 'bla'
       await api.updateCredentials(ws, newConf)
-      expect((ws.updateServiceConfig as jest.Mock).call).toHaveLength(1)
+      expect((ws.updateAccountConfig as jest.Mock).call).toHaveLength(1)
     })
   })
 
@@ -488,7 +499,7 @@ describe('api.ts', () => {
         elements: fetchedElements,
         mergeErrors: [],
         updatedConfig: {},
-        adapterNameToConfigMessage: {},
+        accountNameToConfigMessage: {},
       })
     })
 
@@ -505,7 +516,7 @@ describe('api.ts', () => {
         await api.fetchFromWorkspace({
           otherWorkspace: ws,
           workspace: ows,
-          services: SERVICES,
+          accounts: ACCOUNTS,
           env: 'default',
         })
       })
@@ -515,7 +526,7 @@ describe('api.ts', () => {
       })
     })
 
-    describe('Fetch one service out of two.', () => {
+    describe('Fetch one account out of two.', () => {
       let ws: workspace.Workspace
       let ows: workspace.Workspace
       beforeAll(async () => {
@@ -525,24 +536,24 @@ describe('api.ts', () => {
         await api.fetchFromWorkspace({
           otherWorkspace: ws,
           workspace: ows,
-          services: [mockService],
+          accounts: [mockService],
           env: 'default',
         })
       })
 
-      it('should call fetch changes with first service only', () => {
+      it('should call fetch changes with first account only', () => {
         expect(mockFetchChangesFromWorkspace).toHaveBeenCalled()
       })
     })
 
-    describe('default services', () => {
+    describe('default accounts', () => {
       let ws: workspace.Workspace
       let ows: workspace.Workspace
 
 
       beforeAll(async () => {
-        ws = mockWorkspace({ services: ['salto', 'salesforce'] })
-        ows = mockWorkspace({ services: ['salto', 'netsuite'] })
+        ws = mockWorkspace({ accounts: ['salto', 'salesforce'] })
+        ows = mockWorkspace({ accounts: ['salto', 'netsuite'] })
         mockFetchChangesFromWorkspace.mockClear()
         await api.fetchFromWorkspace({
           otherWorkspace: ws,
@@ -551,9 +562,9 @@ describe('api.ts', () => {
         })
       })
 
-      it('should use services that are in the current workspace as defaults', () => {
-        const servicesUsed = mockFetchChangesFromWorkspace.mock.calls[0][1]
-        expect(servicesUsed).toEqual(['salto', 'netsuite'])
+      it('should use accounts that are in the current workspace as defaults', () => {
+        const accountsUsed = mockFetchChangesFromWorkspace.mock.calls[0][1]
+        expect(accountsUsed).toEqual(['salto', 'netsuite'])
       })
     })
   })
@@ -589,6 +600,21 @@ describe('api.ts', () => {
 
     it('should return changes', () => {
       expect(changes).toEqual(expectedChanges)
+    })
+  })
+  describe('getLoginStatuses', () => {
+    it('returns login status for each account', async () => {
+      const ws = mockWorkspace({
+        accounts: ['salto1', 'salto2'],
+        accountToServiceName: {
+          salto1: 'salto',
+          salto2: 'salto',
+        },
+      })
+      const statuses = await getLoginStatuses(ws)
+      expect(Object.keys(statuses).length).toEqual(2)
+      expect(Object.keys(statuses)).toContain('salto1')
+      expect(Object.keys(statuses)).toContain('salto2')
     })
   })
 })

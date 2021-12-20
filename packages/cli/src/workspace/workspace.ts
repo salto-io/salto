@@ -58,7 +58,7 @@ export type LoadWorkspaceOptions = {
   recommendStateStatus: boolean
   spinnerCreator: SpinnerCreator
   sessionEnv?: string
-  services?: string[]
+  accounts?: string[]
   ignoreUnresolvedRefs?: boolean
   configOverrides?: DetailedChange[]
 }

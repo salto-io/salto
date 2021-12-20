@@ -315,19 +315,19 @@ type MockWorkspaceArgs = {
   uid?: string
   name?: string
   envs?: string[]
-  services?: string[]
+  accounts?: string[]
 }
 export const mockWorkspace = ({
   uid = '123',
   name = '',
   envs = ['active', 'inactive'],
-  services = ['salesforce', 'hubspot'],
+  accounts = ['salesforce', 'hubspot'],
 }: MockWorkspaceArgs): MockWorkspace => {
   const state = wsState.buildInMemState(
     async () => ({
       elements: createInMemoryElementSource(elements()),
       pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
-      servicesUpdateDate: new InMemoryRemoteMap(),
+      accountsUpdateDate: new InMemoryRemoteMap(),
       saltoMetadata: new InMemoryRemoteMap([
         { key: 'version', value: currentVersion },
       ] as {key: wsState.StateMetadataKey; value: string}[]),
@@ -342,11 +342,16 @@ export const mockWorkspace = ({
     state: mockFunction<Workspace['state']>().mockReturnValue(state),
     envs: mockFunction<Workspace['envs']>().mockReturnValue(envs),
     currentEnv: mockFunction<Workspace['currentEnv']>().mockReturnValue(envs[0]),
-    services: mockFunction<Workspace['services']>().mockReturnValue(services),
+    accounts: mockFunction<Workspace['accounts']>().mockReturnValue(accounts),
+    services: mockFunction<Workspace['services']>().mockReturnValue(accounts),
+    accountCredentials: mockFunction<Workspace['accountCredentials']>().mockResolvedValue({}),
     servicesCredentials: mockFunction<Workspace['servicesCredentials']>().mockResolvedValue({}),
+    accountConfig: mockFunction<Workspace['accountConfig']>().mockResolvedValue(undefined),
     serviceConfig: mockFunction<Workspace['serviceConfig']>().mockResolvedValue(undefined),
+    accountConfigPaths: mockFunction<Workspace['accountConfigPaths']>().mockResolvedValue([]),
     serviceConfigPaths: mockFunction<Workspace['serviceConfigPaths']>().mockResolvedValue([]),
     isEmpty: mockFunction<Workspace['isEmpty']>().mockResolvedValue(false),
+    hasElementsInAccounts: mockFunction<Workspace['hasElementsInAccounts']>().mockResolvedValue(true),
     hasElementsInServices: mockFunction<Workspace['hasElementsInServices']>().mockResolvedValue(true),
     hasElementsInEnv: mockFunction<Workspace['hasElementsInEnv']>().mockResolvedValue(false),
     envOfFile: mockFunction<Workspace['envOfFile']>().mockReturnValue(''),
@@ -370,6 +375,8 @@ export const mockWorkspace = ({
     getNaclFile: mockFunction<Workspace['getNaclFile']>(),
     setNaclFiles: mockFunction<Workspace['setNaclFiles']>(),
     removeNaclFiles: mockFunction<Workspace['removeNaclFiles']>(),
+    getServiceFromAccountName: mockFunction<Workspace['getServiceFromAccountName']>()
+      .mockImplementation(account => account),
     getSourceMap: mockFunction<Workspace['getSourceMap']>().mockResolvedValue(new parser.SourceMap()),
     getSourceRanges: mockFunction<Workspace['getSourceRanges']>().mockResolvedValue([]),
     getElementReferencedFiles: mockFunction<Workspace['getElementReferencedFiles']>().mockResolvedValue([]),
@@ -383,15 +390,23 @@ export const mockWorkspace = ({
     flush: mockFunction<Workspace['flush']>(),
     clone: mockFunction<Workspace['clone']>(),
     clear: mockFunction<Workspace['clear']>(),
+    addAccount: mockFunction<Workspace['addAccount']>(),
     addService: mockFunction<Workspace['addService']>(),
     addEnvironment: mockFunction<Workspace['addEnvironment']>(),
     deleteEnvironment: mockFunction<Workspace['deleteEnvironment']>(),
     renameEnvironment: mockFunction<Workspace['renameEnvironment']>(),
     setCurrentEnv: mockFunction<Workspace['setCurrentEnv']>(),
+    updateAccountCredentials: mockFunction<Workspace['updateAccountCredentials']>(),
     updateServiceCredentials: mockFunction<Workspace['updateServiceCredentials']>(),
+    updateAccountConfig: mockFunction<Workspace['updateAccountConfig']>(),
     updateServiceConfig: mockFunction<Workspace['updateServiceConfig']>(),
     getStateRecency: mockFunction<Workspace['getStateRecency']>().mockImplementation(
-      async serviceName => ({ serviceName, status: 'Nonexistent', date: undefined })
+      async accountName => ({
+        serviceName: accountName,
+        accountName,
+        status: 'Nonexistent',
+        date: undefined,
+      })
     ),
     promote: mockFunction<Workspace['promote']>(),
     demote: mockFunction<Workspace['demote']>(),
@@ -650,7 +665,7 @@ export const deploy = async (
   _workspace: Workspace,
   actionPlan: Plan,
   reportProgress: (action: PlanItem, step: string, details?: string) => void,
-  _services: string[],
+  _accounts: string[],
 ): Promise<DeployResult> => {
   let numOfChangesReported = 0
   wu(actionPlan.itemsByEvalOrder()).forEach(change => {

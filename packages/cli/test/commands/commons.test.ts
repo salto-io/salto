@@ -15,35 +15,35 @@
 */
 import { DetailedChange, ElemID, Value } from '@salto-io/adapter-api'
 import * as mocks from '../mocks'
-import { getAndValidateActiveServices } from '../../src/commands/common/services'
+import { getAndValidateActiveAccounts } from '../../src/commands/common/accounts'
 import { getConfigOverrideChanges } from '../../src/commands/common/config_override'
 
 describe('Commands commons tests', () => {
-  describe('getAndValidateActiveServices with workspace with services', () => {
-    const mockWorkspace = mocks.mockWorkspace({ services: ['service1', 'service2', 'service3'] })
+  describe('getAndValidateActiveAccounts with workspace with services', () => {
+    const mockWorkspace = mocks.mockWorkspace({ accounts: ['service1', 'service2', 'service3'] })
 
-    it('Should return the workspaces\' services if no input services provided', () => {
-      const result = getAndValidateActiveServices(mockWorkspace, undefined)
-      expect(result).toEqual(mockWorkspace.services())
+    it('Should return the workspaces\' accounts if no input accounts provided', () => {
+      const result = getAndValidateActiveAccounts(mockWorkspace, undefined)
+      expect(result).toEqual(mockWorkspace.accounts())
     })
 
-    it('Should return the specified services is it exists in the Workspace', () => {
-      const result = getAndValidateActiveServices(mockWorkspace, ['service1', 'service3'])
+    it('Should return the specified accounts is it exists in the Workspace', () => {
+      const result = getAndValidateActiveAccounts(mockWorkspace, ['service1', 'service3'])
       expect(result).toEqual(['service1', 'service3'])
     })
 
-    it('Should throw an errir if the service does not exist in the workspace', () => {
-      expect(() => getAndValidateActiveServices(mockWorkspace, ['wtfService'])).toThrow()
+    it('Should throw an error if the account does not exist in the workspace', () => {
+      expect(() => getAndValidateActiveAccounts(mockWorkspace, ['wtfService'])).toThrow()
     })
   })
-  describe('getAndValidateActiveServices with workspace with no services', () => {
-    const mockWorkspace = mocks.mockWorkspace({ services: [] })
-    it('Should throw an error if no input services provided', () => {
-      expect(() => getAndValidateActiveServices(mockWorkspace, undefined)).toThrow()
+  describe('getAndValidateActiveAccounts with workspace with no accounts', () => {
+    const mockWorkspace = mocks.mockWorkspace({ accounts: [] })
+    it('Should throw an error if no input accounts provided', () => {
+      expect(() => getAndValidateActiveAccounts(mockWorkspace, undefined)).toThrow()
     })
 
-    it('Should throw an error if input services were provided', () => {
-      expect(() => getAndValidateActiveServices(mockWorkspace, ['wtfService'])).toThrow()
+    it('Should throw an error if input accounts were provided', () => {
+      expect(() => getAndValidateActiveAccounts(mockWorkspace, ['wtfService'])).toThrow()
     })
   })
   describe('getConfigOverrideChanges', () => {

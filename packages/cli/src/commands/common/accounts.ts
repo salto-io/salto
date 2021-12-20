@@ -17,32 +17,32 @@ import _ from 'lodash'
 import { Workspace } from '@salto-io/workspace'
 import { KeyedOption } from '../../types'
 
-export type ServicesArg = {
-    services?: string[]
+export type AccountsArg = {
+    accounts?: string[]
 }
 
-export const SERVICES_OPTION: KeyedOption<ServicesArg> = {
-  name: 'services',
+export const ACCOUNTS_OPTION: KeyedOption<AccountsArg> = {
+  name: 'accounts',
   alias: 's',
   required: false,
-  description: 'Specific services to perform this action for (default=all)',
+  description: 'Specific accounts to perform this action for (default=all)',
   type: 'stringsList',
 }
 
-export const getAndValidateActiveServices = (
+export const getAndValidateActiveAccounts = (
   workspace: Workspace,
-  inputServices?: string[]
+  inputAccounts?: string[]
 ): string[] => {
-  const workspaceServices = workspace.services()
-  if (workspaceServices.length === 0) {
+  const workspaceAccounts = workspace.accounts()
+  if (workspaceAccounts.length === 0) {
     throw new Error(`No services are configured for env=${workspace.currentEnv()}. Use 'salto service add'.`)
   }
-  if (inputServices === undefined) {
-    return [...workspaceServices]
+  if (inputAccounts === undefined) {
+    return [...workspaceAccounts]
   }
-  const diffServices = _.difference(inputServices, workspaceServices)
-  if (diffServices.length > 0) {
-    throw new Error(`Not all services (${diffServices}) are set up for this workspace`)
+  const diffAccounts = _.difference(inputAccounts, workspaceAccounts)
+  if (diffAccounts.length > 0) {
+    throw new Error(`Not all accounts (${diffAccounts}) are set up for this workspace`)
   }
-  return inputServices
+  return inputAccounts
 }

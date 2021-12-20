@@ -16,6 +16,7 @@
 import { Element, ElemID } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { updatePathIndex, overridePathIndex, PathIndex } from '../path_index'
+import { RemoteMap } from '../remote_map'
 import { State, StateData } from './state'
 
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
@@ -24,6 +25,15 @@ const { awu } = collections.asynciterable
 
 type InMemoryState = State & {
   setVersion(version: string): Promise<void>
+}
+
+// This function is temporary for the transition to multiple services.
+// Remove this when no longer used, SALTO-1661
+const getUpdateDate = (data: StateData): RemoteMap<Date> => {
+  if ('servicesUpdateDate' in data) {
+    return data.servicesUpdateDate
+  }
+  return data.accountsUpdateDate
 }
 
 export const buildInMemState = (
@@ -36,6 +46,10 @@ export const buildInMemState = (
       innerStateData = loadData()
     }
     return innerStateData
+  }
+  const getAccountsUpdateDates = async (): Promise<Record<string, Date>> => {
+    const stateDataVal = await awu(getUpdateDate(await stateData()).entries()).toArray()
+    return Object.fromEntries(stateDataVal.map(e => [e.key, e.value]))
   }
   const setHashImpl = async (newHash: string): Promise<void> => (await stateData())
     .saltoMetadata.set('hash', newHash)
@@ -52,20 +66,18 @@ export const buildInMemState = (
       await stateData()).elements.setAll(elements),
     remove: async (id: ElemID): Promise<void> => (await stateData()).elements.delete(id),
     isEmpty: async (): Promise<boolean> => (await stateData()).elements.isEmpty(),
-    override: async (elements: AsyncIterable<Element>, services?: string[]): Promise<void> => {
+    override: async (elements: AsyncIterable<Element>, accounts?: string[]): Promise<void> => {
       const data = await stateData()
-      const newServices = services ?? await awu(data.servicesUpdateDate.keys()).toArray()
+      const newAccounts = accounts ?? await awu(getUpdateDate(data).keys()).toArray()
       await data.elements.overide(elements)
-      await data.servicesUpdateDate.setAll(
-        awu(newServices.map(s => ({ key: s, value: new Date(Date.now()) })))
+      await getUpdateDate(data).setAll(
+        awu(newAccounts.map(s => ({ key: s, value: new Date(Date.now()) })))
       )
     },
-    getServicesUpdateDates: async (): Promise<Record<string, Date>> => {
-      const stateDataVal = await awu((await stateData()).servicesUpdateDate.entries()).toArray()
-      return Object.fromEntries(stateDataVal.map(e => [e.key, e.value]))
-    },
-    existingServices: async (): Promise<string[]> =>
-      awu((await stateData()).servicesUpdateDate.keys()).toArray(),
+    getAccountsUpdateDates,
+    getServicesUpdateDates: getAccountsUpdateDates,
+    existingAccounts: async (): Promise<string[]> =>
+      awu(getUpdateDate(await stateData()).keys()).toArray(),
     overridePathIndex: async (unmergedElements: Element[]): Promise<void> => {
       const currentStateData = await stateData()
       await overridePathIndex(currentStateData.pathIndex, unmergedElements)
@@ -85,7 +97,7 @@ export const buildInMemState = (
       const currentStateData = await stateData()
       await currentStateData.elements.clear()
       await currentStateData.pathIndex.clear()
-      await currentStateData.servicesUpdateDate.clear()
+      await getUpdateDate(currentStateData).clear()
       await currentStateData.saltoMetadata.clear()
     },
     flush: async () => {
@@ -95,7 +107,7 @@ export const buildInMemState = (
       const currentStateData = await stateData()
       await currentStateData.elements.flush()
       await currentStateData.pathIndex.flush()
-      await currentStateData.servicesUpdateDate.flush()
+      await getUpdateDate(currentStateData).flush()
       await currentStateData.saltoMetadata.flush()
     },
     rename: () => Promise.resolve(),

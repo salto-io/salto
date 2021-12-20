@@ -31,7 +31,7 @@ import { getApprovedChanges as cliGetApprovedChanges, shouldUpdateConfig as cliS
 import { getWorkspaceTelemetryTags, updateStateOnly, applyChangesToWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { ENVIRONMENT_OPTION, EnvArg, validateAndSetEnv } from './common/env'
-import { SERVICES_OPTION, ServicesArg, getAndValidateActiveServices } from './common/services'
+import { ACCOUNTS_OPTION, AccountsArg, getAndValidateActiveAccounts } from './common/accounts'
 
 const log = logger(module)
 const { series } = promises.array
@@ -57,7 +57,7 @@ export type FetchCommandArgs = {
   shouldUpdateConfig: ShouldUpdateConfigFunc
   shouldCalcTotalSize: boolean
   stateOnly: boolean
-  services: string[]
+  accounts: string[]
   regenerateSaltoIds: boolean
 }
 
@@ -65,20 +65,20 @@ const createFetchFromWorkspaceCommand = (
   fetchFromWorkspaceFunc: FetchFromWorkspaceFunc,
   otherWorkspacePath: string,
   env : string
-): FetchFunc => async (workspace, progressEmitter, services) => {
+): FetchFunc => async (workspace, progressEmitter, accounts) => {
   let otherWorkspace: Workspace
   try {
     otherWorkspace = await loadLocalWorkspace(otherWorkspacePath, [], false)
   } catch (err) {
     throw new Error(`Failed to load source workspace: ${err.message ?? err}`)
   }
-  return fetchFromWorkspaceFunc({ workspace, otherWorkspace, progressEmitter, services, env })
+  return fetchFromWorkspaceFunc({ workspace, otherWorkspace, progressEmitter, accounts, env })
 }
 
 export const fetchCommand = async (
   {
     workspace, force, mode,
-    getApprovedChanges, shouldUpdateConfig, services,
+    getApprovedChanges, shouldUpdateConfig, accounts,
     cliTelemetry, output, fetch, shouldCalcTotalSize,
     stateOnly, regenerateSaltoIds,
   }: FetchCommandArgs): Promise<CliExitCode> => {
@@ -143,7 +143,7 @@ export const fetchCommand = async (
   const fetchResult = await fetch(
     workspace,
     fetchProgress,
-    services,
+    accounts,
     regenerateSaltoIds,
   )
 
@@ -161,18 +161,22 @@ export const fetchCommand = async (
       wu(fetchResult.configChanges.itemsByEvalOrder()).map(planItem => async () => {
         const [change] = planItem.changes()
         const newConfig = getChangeElement(change)
-        const adapterName = newConfig.elemID.adapter
+        const accountName = newConfig.elemID.adapter
         if (!isInstanceElement(newConfig)) {
-          log.error('Got non instance config from adapter %s - %o', adapterName, newConfig)
+          log.error('Got non instance config from adapter %s - %o', accountName, newConfig)
           return false
         }
         const shouldWriteToConfig = force || await shouldUpdateConfig(
           output,
-          fetchResult.adapterNameToConfigMessage?.[adapterName] || '',
+          fetchResult.accountNameToConfigMessage?.[accountName] || '',
           planItem,
         )
         if (shouldWriteToConfig) {
-          await workspace.updateServiceConfig(adapterName, fetchResult.updatedConfig[adapterName])
+          await workspace.updateAccountConfig(
+            workspace.getServiceFromAccountName(accountName),
+            fetchResult.updatedConfig[accountName],
+            accountName
+          )
         }
         return !shouldWriteToConfig
       })
@@ -218,17 +222,19 @@ export const fetchCommand = async (
 const shouldRecommendAlignMode = async (
   workspace: Workspace,
   stateRecencies: StateRecency[],
-  inputServices?: ReadonlyArray<string>,
+  inputAccounts?: ReadonlyArray<string>,
 ): Promise<boolean> => {
-  const newlyAddedServices = stateRecencies
+  const newlyAddedAccounts = stateRecencies
     .filter(recency => (
-      inputServices === undefined
-      || inputServices.includes(recency.serviceName)
+      inputAccounts === undefined
+      || inputAccounts.includes(recency.accountName ?? recency.serviceName)
     ))
 
   return (
-    newlyAddedServices.every(recency => recency.status === 'Nonexistent')
-    && workspace.hasElementsInServices(newlyAddedServices.map(recency => recency.serviceName))
+    newlyAddedAccounts.every(recency => recency.status === 'Nonexistent')
+    && workspace.hasElementsInAccounts(newlyAddedAccounts.map(
+      recency => recency.accountName ?? recency.serviceName
+    ))
   )
 }
 
@@ -239,7 +245,7 @@ type FetchArgs = {
   regenerateSaltoIds: boolean
   fromWorkspace?: string
   fromEnv?: string
-} & ServicesArg & EnvArg
+} & AccountsArg & EnvArg
 
 export const action: WorkspaceCommandAction<FetchArgs> = async ({
   input,
@@ -249,7 +255,7 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
   spinnerCreator,
   workspace,
 }): Promise<CliExitCode> => {
-  const { force, stateOnly, services, mode, regenerateSaltoIds, fromWorkspace, fromEnv } = input
+  const { force, stateOnly, accounts, mode, regenerateSaltoIds, fromWorkspace, fromEnv } = input
   if (
     [fromEnv, fromWorkspace].some(values.isDefined)
     && ![fromEnv, fromWorkspace].every(values.isDefined)
@@ -260,9 +266,9 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
   }
   const { shouldCalcTotalSize } = config
   await validateAndSetEnv(workspace, input, output)
-  const activeServices = getAndValidateActiveServices(workspace, services)
+  const activeAccounts = getAndValidateActiveAccounts(workspace, accounts)
   const stateRecencies = await Promise.all(
-    activeServices.map(service => workspace.getStateRecency(service))
+    activeAccounts.map(account => workspace.getStateRecency(account))
   )
   // Print state recencies
   outputLine(formatStateRecencies(stateRecencies), output)
@@ -275,7 +281,7 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
   }
 
   let useAlignMode = false
-  if (!force && mode !== 'align' && await shouldRecommendAlignMode(workspace, stateRecencies, activeServices)) {
+  if (!force && mode !== 'align' && await shouldRecommendAlignMode(workspace, stateRecencies, activeAccounts)) {
     const userChoice = await getChangeToAlignAction(mode, output)
     if (userChoice === 'cancel operation') {
       log.info('Canceling operation based on user input')
@@ -300,7 +306,7 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
     ) : apiFetch,
     getApprovedChanges: cliGetApprovedChanges,
     shouldUpdateConfig: cliShouldUpdateConfig,
-    services: activeServices,
+    accounts: activeAccounts,
     mode: useAlignMode ? 'align' : mode,
     shouldCalcTotalSize,
     stateOnly,
@@ -327,7 +333,7 @@ const fetchDef = createWorkspaceCommand({
         description: 'Update just the state file and not the NaCLs',
         type: 'boolean',
       },
-      SERVICES_OPTION,
+      ACCOUNTS_OPTION,
       ENVIRONMENT_OPTION,
       {
         name: 'mode',

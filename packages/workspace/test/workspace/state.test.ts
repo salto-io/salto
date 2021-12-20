@@ -28,10 +28,10 @@ describe('state', () => {
   const elem = new ObjectType({ elemID, path: ['test', 'new'] })
   let pathIndex: PathIndex
   const updateDate = new Date()
-  const servicesUpdateDate = { [adapter]: updateDate }
+  const accountsUpdateDate = { [adapter]: updateDate }
   const loadStateData = async (): Promise<StateData> => ({
     elements: createInMemoryElementSource([elem]),
-    servicesUpdateDate: new InMemoryRemoteMap([{ key: adapter, value: updateDate }]),
+    accountsUpdateDate: new InMemoryRemoteMap([{ key: adapter, value: updateDate }]),
     pathIndex,
     saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),
   })
@@ -75,13 +75,13 @@ describe('state', () => {
       const newElem = new ObjectType({ elemID: newElemID, path: ['test', 'newElem'] })
       await state.override(awu([newElem]), [newAdapter])
       expect(await awu(await state.getAll()).toArray()).toEqual([newElem])
-      expect(Object.keys(await state.getServicesUpdateDates())).toEqual([newAdapter, adapter])
+      expect(Object.keys(await state.getAccountsUpdateDates())).toEqual([newAdapter, adapter])
     })
-    it('getServicesUpdateDates', async () => {
-      expect(await state.getServicesUpdateDates()).toEqual(servicesUpdateDate)
+    it('getAccountsUpdateDates', async () => {
+      expect(await state.getAccountsUpdateDates()).toEqual(accountsUpdateDate)
     })
-    it('existingServices', async () => {
-      expect(await state.existingServices()).toEqual([adapter])
+    it('existingAccounts', async () => {
+      expect(await state.existingAccounts()).toEqual([adapter])
     })
     it('getPathIndex', async () => {
       expect(await state.getPathIndex()).toEqual(pathIndex)
@@ -110,7 +110,7 @@ describe('state', () => {
       await state.clear()
       expect(await awu(await state.getAll()).toArray()).toHaveLength(0)
       expect((await awu((await state.getPathIndex()).keys()).toArray()).length).toEqual(0)
-      expect(await state.getServicesUpdateDates()).toEqual({})
+      expect(await state.getAccountsUpdateDates()).toEqual({})
     })
 
     it('flush should do nothing', async () => {

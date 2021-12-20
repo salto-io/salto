@@ -24,7 +24,7 @@ export const CONFIG_OVERRIDE_OPTION: KeyedOption<ConfigOverrideArg> = {
   name: 'config',
   alias: 'C',
   required: false,
-  description: 'Overriding values for configuration (format: <service>.<path>=<value>)',
+  description: 'Overriding values for configuration (format: <account>.<path>=<value>)',
   type: 'stringsList',
 }
 
@@ -64,7 +64,7 @@ const getConfigOverridesFromEnv = (): DetailedChange[] => (
 const createChangeFromArg = (overrideArg: string): DetailedChange => {
   const match = overrideArg.match(/^(\w+)\.([\w.]+)=(.+)$/)
   if (match === null) {
-    throw new Error(`Invalid format for config override: ${overrideArg}. should be <service>.<path>=<value>`)
+    throw new Error(`Invalid format for config override: ${overrideArg}. should be <account>.<path>=<value>`)
   }
   const [adapter, idPath, value] = match.slice(1)
   const id = new ElemID(

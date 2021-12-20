@@ -270,7 +270,7 @@ export const transformElementAnnotations = async <T extends Element>(
   type: await elementAnnotationTypes(element, elementsSource),
   transformFunc,
   strict,
-  pathID: (isType(element) ? element.elemID.createNestedID('attr') : element.elemID),
+  pathID: isType(element) ? element.elemID.createNestedID('attr') : element.elemID,
   elementsSource,
   allowEmpty,
   isTopLevel: false,
@@ -312,12 +312,13 @@ export const transformElement = async <T extends Element>(
       pathID: element.elemID,
       allowEmpty,
     }) || {}
+
     newElement = new InstanceElement(
       element.elemID.name,
       element.refType,
       transformedValues,
       element.path,
-      transformedAnnotations,
+      transformedAnnotations
     )
     return newElement as T
   }
@@ -655,7 +656,7 @@ export const flattenElementStr = (element: Element): Element => {
     inst.refType,
     flatValues(inst.value),
     inst.path?.map(flatStr),
-    flatValues(inst.annotations),
+    flatValues(inst.annotations)
   )
 
   if (isField(element)) return flattenField(element)

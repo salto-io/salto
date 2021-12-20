@@ -14,8 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, isInstanceElement, ListType, createRefToElmWithValue } from '@salto-io/adapter-api'
-import { addReferences } from '../../src/references/field_references'
+import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, isInstanceElement, ListType, createRefToElmWithValue, Field } from '@salto-io/adapter-api'
+import { GetLookupNameFunc } from '@salto-io/adapter-utils'
+import { addReferences, generateLookupFunc } from '../../src/references/field_references'
 import { FieldReferenceDefinition } from '../../src/references/reference_mapping'
 import { ContextValueMapperFunc, ContextFunc, neighborContextGetter } from '../../src/references'
 
@@ -343,6 +344,82 @@ describe('Field references', () => {
       )[0] as InstanceElement
       expect(inst.value.subjectAndValues[0].valueList[0].value).toBeInstanceOf(ReferenceExpression)
       expect(inst.value.subjectAndValues[0].valueList[0].value.elemID.getFullName()).toEqual('myAdapter.brand.instance.brand1')
+    })
+  })
+
+  describe('generateLookupNameFunc', () => {
+    let lookupNameFunc: GetLookupNameFunc
+    const fieldNameToTypeMappingDefs: FieldReferenceDefinition<'parentSubject' | 'parentValue' | 'neighborRef' | 'fail'>[] = [
+      {
+        src: { field: 'api_client_id', parentTypes: ['api_access_profile'] },
+        serializationStrategy: 'id',
+        target: { type: 'api_client' },
+      },
+      {
+        src: { field: 'api_collection_ids', parentTypes: ['api_access_profile'] },
+        serializationStrategy: 'name',
+        target: { type: 'api_collection' },
+      },
+      {
+        src: { field: 'api_collection_ids', parentTypes: ['api_access_profile'] },
+        serializationStrategy: 'id',
+        target: { type: 'api_collection' },
+      },
+    ]
+
+    beforeAll(async () => {
+      lookupNameFunc = generateLookupFunc(fieldNameToTypeMappingDefs)
+    })
+
+    it('should resolve using id strategy when rule is matched', async () => {
+      const res = await lookupNameFunc({
+        ref: new ReferenceExpression(
+          new ElemID('adapter', 'api_client', 'instance', 'instance'),
+          new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'api_client') }), { id: 2, name: 'name' }),
+        ),
+        field: new Field(new ObjectType({ elemID: new ElemID('adapter', 'api_access_profile') }), 'api_client_id', BuiltinTypes.NUMBER),
+        path: new ElemID('adapter', 'somePath'),
+      })
+
+      expect(res).toEqual(2)
+    })
+
+    it('should resolve using the first strategy when multiple strategies are matched', async () => {
+      const res = await lookupNameFunc({
+        ref: new ReferenceExpression(
+          new ElemID('adapter', 'api_collection', 'instance', 'instance'),
+          new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'api_collection') }), { id: 2, name: 'name' }),
+        ),
+        field: new Field(new ObjectType({ elemID: new ElemID('adapter', 'api_access_profile') }), 'api_collection_ids', BuiltinTypes.NUMBER),
+        path: new ElemID('adapter', 'somePath'),
+      })
+
+      expect(res).toEqual('name')
+    })
+
+    it('should resolve using full value strategy when no rule is matched', async () => {
+      const res = await lookupNameFunc({
+        ref: new ReferenceExpression(
+          new ElemID('adapter', 'someType', 'instance', 'instance'),
+          new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'someType') }), { id: 2, name: 'name' }),
+        ),
+        field: new Field(new ObjectType({ elemID: new ElemID('adapter', 'someType') }), 'api_collection_ids', BuiltinTypes.NUMBER),
+        path: new ElemID('adapter', 'somePath'),
+      })
+
+      expect(res).toEqual({ id: 2, name: 'name' })
+    })
+
+    it('should resolve using full value strategy when field is undefined', async () => {
+      const res = await lookupNameFunc({
+        ref: new ReferenceExpression(
+          new ElemID('adapter', 'someType', 'instance', 'instance'),
+          { id: 2, name: 'name' },
+        ),
+        path: new ElemID('adapter', 'somePath'),
+      })
+
+      expect(res).toEqual({ id: 2, name: 'name' })
     })
   })
   describe('failure modes', () => {

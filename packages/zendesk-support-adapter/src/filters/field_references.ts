@@ -63,7 +63,7 @@ export const contextStrategyLookup: Record<
   parentValue: neighborContextFunc({ contextFieldName: 'value', levelsUp: 2, contextValueMapper: getValueLookupType }),
 }
 
-const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition<
+export const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition<
   ReferenceContextStrategyName
 >[] = [
   {

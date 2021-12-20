@@ -24,6 +24,7 @@ import {
   elements as elementUtils,
   deployment as deploymentUtils,
   config as configUtils,
+  references as referencesUtils,
 } from '@salto-io/adapter-components'
 import { logDuration, resolveChangeElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -33,7 +34,7 @@ import { ZendeskConfig } from './config'
 import { ZENDESK_SUPPORT } from './constants'
 import changeValidator from './change_validator'
 import { paginate } from './client/pagination'
-import fieldReferencesFilter from './filters/field_references'
+import fieldReferencesFilter, { fieldNameToTypeMappingDefs } from './filters/field_references'
 import unorderedListsFilter from './filters/unordered_lists'
 
 const log = logger(module)
@@ -135,7 +136,9 @@ export default class ZendeskAdapter implements AdapterOperations {
           .types[getChangeElement(change).elemID.typeName]
         try {
           const response = await deployChange(
-            await resolveChangeElement(change, ({ ref }) => ref.value),
+            await resolveChangeElement(
+              change, referencesUtils.generateLookupFunc(fieldNameToTypeMappingDefs)
+            ),
             this.client,
             deployRequests,
           )

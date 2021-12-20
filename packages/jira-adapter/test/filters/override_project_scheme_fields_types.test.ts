@@ -16,17 +16,16 @@
 import { createRefToElmWithValue, Element, ElemID, ObjectType, TypeReference } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { getDefaultAdapterConfig, mockClient } from '../utils'
-import issueTypeSchemeReferences from '../../src/filters/override_project_scheme_fields_types'
+import overrideProjectSchemeFields from '../../src/filters/override_project_scheme_fields_types'
 import { JIRA } from '../../src/constants'
 
 describe('overrideProjectSchemeFields', () => {
   const MOCK_REF_TYPE = new TypeReference(new ElemID('', ''))
 
   let runFilter: (...elements: Element[]) => Promise<Element[]>
-
   beforeAll(async () => {
     const { client, paginator } = mockClient()
-    const filter = issueTypeSchemeReferences({
+    const filter = overrideProjectSchemeFields({
       client,
       paginator,
       config: await getDefaultAdapterConfig(),

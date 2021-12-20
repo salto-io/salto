@@ -55,7 +55,7 @@ export type ProjectInstance = InstanceElement & {
   }
 }
 
-type SchemeReferences = {
+type SchemeFieldsValues = {
   workflowScheme: ReferenceExpression
   permissionScheme: ReferenceExpression
   notificationScheme: ReferenceExpression
@@ -134,7 +134,7 @@ const filter: FilterCreator = () => ({
           return new ReferenceExpression(schemeElemId)
         }
 
-        const fieldReferences: SchemeReferences = {
+        const fieldsValues: SchemeFieldsValues = {
           workflowScheme: project.value.workflowScheme[0].workflowScheme,
           permissionScheme: project.value.permissionScheme[0],
           notificationScheme: project.value.notificationScheme[0],
@@ -142,8 +142,8 @@ const filter: FilterCreator = () => ({
           issueTypeScreenScheme: getIssueTypeScreenSchemeValue(),
         }
         Object
-          .entries(fieldReferences)
-          .forEach(([fieldName, reference]) => { project.value[fieldName] = reference })
+          .entries(fieldsValues)
+          .forEach(([fieldName, fieldValue]) => { project.value[fieldName] = fieldValue })
       })
   },
 })

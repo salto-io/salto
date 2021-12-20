@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { checkDeploymentValidator } from '../../../src/deployment/change_validators/check_deployment'
+import { checkDeploymentBasedOnConfigValidator } from '../../../src/deployment/change_validators/check_deployment_based_on_config'
 
-describe('checkDeploymentValidator', () => {
+describe('checkDeploymentBasedOnConfigValidator', () => {
   let type: ObjectType
   let config: InstanceElement
   beforeEach(() => {
@@ -42,7 +42,7 @@ describe('checkDeploymentValidator', () => {
   })
 
   it('should not return an error when the changed element is not an instance', async () => {
-    const errors = await checkDeploymentValidator([
+    const errors = await checkDeploymentBasedOnConfigValidator([
       toChange({ after: type }),
     ])
     expect(errors).toEqual([])
@@ -53,7 +53,7 @@ describe('checkDeploymentValidator', () => {
       'test2',
       new ObjectType({ elemID: new ElemID('dum', 'test2') }),
     )
-    const errors = await checkDeploymentValidator(
+    const errors = await checkDeploymentBasedOnConfigValidator(
       [toChange({ after: instance })],
       config,
     )
@@ -67,7 +67,7 @@ describe('checkDeploymentValidator', () => {
 
   it('should return an error when type does not support specific', async () => {
     const instance = new InstanceElement('test', type)
-    const errors = await checkDeploymentValidator(
+    const errors = await checkDeploymentBasedOnConfigValidator(
       [toChange({ before: instance })],
       config,
     )
@@ -81,7 +81,7 @@ describe('checkDeploymentValidator', () => {
 
   it('should not return an error when operation is supported', async () => {
     const instance = new InstanceElement('test', type)
-    const errors = await checkDeploymentValidator(
+    const errors = await checkDeploymentBasedOnConfigValidator(
       [toChange({ after: instance })],
       config,
     )

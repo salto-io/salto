@@ -142,7 +142,7 @@ export default class ZendeskAdapter implements AdapterOperations {
           if (isAdditionChange(change)) {
             if (_.isArray(response)) {
               log.warn(
-                'Received an array for the response of the deploy. Action: add. ID: %s',
+                'Received an array for the response of the deploy. Do not update the id of the element. Action: add. ID: %s',
                 getChangeElement(change).elemID.getFullName()
               )
             } else {
@@ -155,7 +155,7 @@ export default class ZendeskAdapter implements AdapterOperations {
               const idValue = dataField
                 ? (response?.[dataField] as Values)?.[idField]
                 : response?.[idField]
-              if (idValue) {
+              if (idValue !== undefined) {
                 getChangeElement(change).value[idField] = idValue
               }
             }

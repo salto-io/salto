@@ -80,9 +80,9 @@ describe('adapter', () => {
           ),
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
-        // expect(elements).toHaveLength(268)
-        // expect(elements.filter(isObjectType)).toHaveLength(152)
-        // expect(elements.filter(isInstanceElement)).toHaveLength(116)
+        expect(elements).toHaveLength(268)
+        expect(elements.filter(isObjectType)).toHaveLength(152)
+        expect(elements.filter(isInstanceElement)).toHaveLength(116)
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'zendesk_support.account_setting',
           'zendesk_support.account_setting.instance',
@@ -580,7 +580,7 @@ describe('adapter', () => {
         toChange({ after: new InstanceElement('inst', groupType) }),
       ])
     })
-    it('should not update id field if it is not exist in the response', async () => {
+    it('should not update id field if it does not exist in the response', async () => {
       mockDeployChange.mockImplementation(async () => ({ test: 2 }))
       const deployRes = await operations.deploy({
         changeGroup: {

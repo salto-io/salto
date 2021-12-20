@@ -28,7 +28,7 @@ const isDeploymentSupported = (
   action: Change['action'], config: DeploymentRequestsByAction
 ): boolean => config[action] !== undefined
 
-export const checkDeploymentValidator: ChangeValidator = async (
+export const checkDeploymentBasedOnConfigValidator: ChangeValidator = async (
   changes, deployConfig
 ) => (
   awu(changes)

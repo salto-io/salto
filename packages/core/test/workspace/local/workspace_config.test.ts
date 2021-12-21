@@ -209,9 +209,10 @@ describe('workspace local config', () => {
     })
     it('transforms into new config', async () => {
       (await configSource.getWorkspaceConfig()).envs.forEach(env => {
+        expect(env.name).toBeDefined()
         if (env.name === 'othersEnv') {
           expect(env.accountToServiceName).toEqual({
-            netsuite: 'net',
+            netsuite: 'netsuite',
             workato: 'workato',
           })
         }

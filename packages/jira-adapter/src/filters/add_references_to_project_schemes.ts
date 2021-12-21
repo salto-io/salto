@@ -13,7 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, InstanceElement, isInstanceElement, ReferenceExpression, Value } from '@salto-io/adapter-api'
+import {
+  Element,
+  InstanceElement,
+  isInstanceElement,
+  isReferenceExpression,
+  ReferenceExpression,
+  Value,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
@@ -30,7 +37,8 @@ type FieldConfigurationSchemeInstance = InstanceElement & {
 }
 
 type FieldConfigurationSchemeProjects = {
-    fieldConfigurationScheme: FieldConfigurationSchemeValue
+  fieldConfigurationScheme?: FieldConfigurationSchemeValue
+  projectIds: string[]
 }
 
 type IssueTypeScreenSchemeValue = {
@@ -60,7 +68,7 @@ type SchemeFieldsValues = {
   permissionScheme: ReferenceExpression
   notificationScheme: ReferenceExpression
   issueTypeScreenScheme: ReferenceExpression | IssueTypeScreenSchemeValue
-  fieldConfigurationScheme: ReferenceExpression | FieldConfigurationSchemeValue
+  fieldConfigurationScheme: ReferenceExpression | FieldConfigurationSchemeValue | string
 }
 
 
@@ -68,7 +76,7 @@ export const isProjectInstance = (element: InstanceElement): element is ProjectI
   const isArrayWithSingleReference = (value: unknown): boolean =>
     _.isArray(value)
     && value.length === 1
-    && value[0] instanceof ReferenceExpression
+    && isReferenceExpression(value[0])
   const hasIssueTypeScreenSchemeField = (): boolean => {
     const isIssueTypeScreenSchemeProjects = (value: Value): boolean =>
       _.isString(value.issueTypeScreenScheme?.id)
@@ -78,7 +86,7 @@ export const isProjectInstance = (element: InstanceElement): element is ProjectI
   }
   const hasFieldConfigurationSchemeField = (): boolean => {
     const isFieldConfigurationSchemeProjects = (value: Value): boolean =>
-      _.isString(value.fieldConfigurationScheme?.id)
+      _.isArray(value.projectIds) && value.projectIds.every(_.isString)
     const fieldConfigurationSchemeField = element.value.fieldConfigurationScheme
     return _.isArray(fieldConfigurationSchemeField)
         && fieldConfigurationSchemeField.every(isFieldConfigurationSchemeProjects)
@@ -87,20 +95,63 @@ export const isProjectInstance = (element: InstanceElement): element is ProjectI
   return element.elemID.typeName === 'Project'
       && hasIssueTypeScreenSchemeField()
       && hasFieldConfigurationSchemeField()
-      && element.value.workflowScheme[0]?.workflowScheme instanceof ReferenceExpression
+      && isReferenceExpression(element.value.workflowScheme[0]?.workflowScheme)
       && isArrayWithSingleReference(element.value.permissionScheme)
       && isArrayWithSingleReference(element.value.notificationScheme)
+}
+const isFieldConfigurationSchemeInstance = (element: InstanceElement)
+  : element is FieldConfigurationSchemeInstance =>
+  element.elemID.typeName === 'FieldConfigurationScheme' && _.isString(element.value.id)
+const isIssueTypeScreenSchemeInstance = (element: InstanceElement)
+  : element is IssueTypeScreenSchemeInstance =>
+  element.elemID.typeName === 'IssueTypeScreenScheme' && _.isString(element.value.id)
+
+const setReferences = (
+  project: ProjectInstance,
+  fieldConfigurationSchemeById: _.Dictionary<FieldConfigurationSchemeInstance>,
+  issueTypeScreenSchemeById: _.Dictionary<IssueTypeScreenSchemeInstance>
+): void => {
+  const getFieldConfigurationSchemeValue = (instance: ProjectInstance)
+    : ReferenceExpression | FieldConfigurationSchemeValue | string => {
+    const fieldConfigurationSchemeProjects = instance.value.fieldConfigurationScheme[0]
+    /* When the project uses the default FieldConfigurationScheme, this value doesnt exist */
+    if (fieldConfigurationSchemeProjects.fieldConfigurationScheme === undefined) {
+      return 'default'
+    }
+    const schemeId = fieldConfigurationSchemeProjects.fieldConfigurationScheme.id
+    const schemeElemId = fieldConfigurationSchemeById[schemeId]?.elemID
+    if (schemeElemId === undefined) {
+      log.warn('Could not set reference to unknown FieldConfigurationScheme with id %s', schemeId)
+      return fieldConfigurationSchemeProjects.fieldConfigurationScheme
+    }
+    return new ReferenceExpression(schemeElemId)
+  }
+  const getIssueTypeScreenSchemeValue = (instance: ProjectInstance)
+    : ReferenceExpression | IssueTypeScreenSchemeValue => {
+    const issueTypeScreenSchemeProjects = instance.value.issueTypeScreenScheme[0]
+    const schemeId = issueTypeScreenSchemeProjects.issueTypeScreenScheme.id
+    const schemeElemId = issueTypeScreenSchemeById[schemeId]?.elemID
+    if (schemeElemId === undefined) {
+      log.warn('Could not set reference to unknown IssueTypeScreenScheme with id %s', schemeId)
+      return issueTypeScreenSchemeProjects.issueTypeScreenScheme
+    }
+    return new ReferenceExpression(schemeElemId)
+  }
+
+  const fieldsValues: SchemeFieldsValues = {
+    workflowScheme: project.value.workflowScheme[0].workflowScheme,
+    permissionScheme: project.value.permissionScheme[0],
+    notificationScheme: project.value.notificationScheme[0],
+    fieldConfigurationScheme: getFieldConfigurationSchemeValue(project),
+    issueTypeScreenScheme: getIssueTypeScreenSchemeValue(project),
+  }
+  Object
+    .entries(fieldsValues)
+    .forEach(([fieldName, fieldValue]) => { project.value[fieldName] = fieldValue })
 }
 
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
-    const isFieldConfigurationSchemeInstance = (element: InstanceElement)
-      : element is FieldConfigurationSchemeInstance =>
-      element.elemID.typeName === 'FieldConfigurationScheme' && _.isString(element.value.id)
-    const isIssueTypeScreenSchemeInstance = (element: InstanceElement)
-      : element is IssueTypeScreenSchemeInstance =>
-      element.elemID.typeName === 'IssueTypeScreenScheme' && _.isString(element.value.id)
-
     const instances = elements.filter(isInstanceElement)
     const fieldConfigurationSchemeById = _.keyBy(
       instances.filter(isFieldConfigurationSchemeInstance),
@@ -112,39 +163,8 @@ const filter: FilterCreator = () => ({
     )
     instances
       .filter(isProjectInstance)
-      .forEach(project => {
-        const getFieldConfigurationValue = ()
-          : ReferenceExpression | FieldConfigurationSchemeValue => {
-          const schemeId = project.value.fieldConfigurationScheme[0].fieldConfigurationScheme.id
-          const schemeElemId = fieldConfigurationSchemeById[schemeId]?.elemID
-          if (schemeElemId === undefined) {
-            log.warn('Could not set reference to unknown FieldConfigurationScheme with id %s', schemeId)
-            return project.value.fieldConfigurationScheme[0].fieldConfigurationScheme
-          }
-          return new ReferenceExpression(schemeElemId)
-        }
-        const getIssueTypeScreenSchemeValue = ()
-          : ReferenceExpression | IssueTypeScreenSchemeValue => {
-          const schemeId = project.value.issueTypeScreenScheme[0].issueTypeScreenScheme.id
-          const schemeElemId = issueTypeScreenSchemeById[schemeId]?.elemID
-          if (schemeElemId === undefined) {
-            log.warn('Could not set reference to unknown IssueTypeScreenScheme with id %s', schemeId)
-            return project.value.issueTypeScreenScheme[0].issueTypeScreenScheme
-          }
-          return new ReferenceExpression(schemeElemId)
-        }
-
-        const fieldsValues: SchemeFieldsValues = {
-          workflowScheme: project.value.workflowScheme[0].workflowScheme,
-          permissionScheme: project.value.permissionScheme[0],
-          notificationScheme: project.value.notificationScheme[0],
-          fieldConfigurationScheme: getFieldConfigurationValue(),
-          issueTypeScreenScheme: getIssueTypeScreenSchemeValue(),
-        }
-        Object
-          .entries(fieldsValues)
-          .forEach(([fieldName, fieldValue]) => { project.value[fieldName] = fieldValue })
-      })
+      .forEach(project =>
+        setReferences(project, fieldConfigurationSchemeById, issueTypeScreenSchemeById))
   },
 })
 

@@ -412,12 +412,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
   },
 
-  FieldConfigurationSchemeProjects: {
-    transformation: {
-      fieldsToOmit: [{ fieldName: 'projectIds' }],
-    },
-  },
-
   PageBeanScreen: {
     request: {
       url: '/rest/api/3/screens',

@@ -61,7 +61,7 @@ describe('addReferencesToProjectSchemes', () => {
         issueTypeScreenScheme:
           [{ issueTypeScreenScheme: { id: ISSUE_TYPE_SCREEN_SCHEME_ID } }],
         fieldConfigurationScheme:
-          [{ fieldConfigurationScheme: { id: FIELD_CONFIGURATION_SCHEME_ID } }],
+          [{ fieldConfigurationScheme: { id: FIELD_CONFIGURATION_SCHEME_ID }, projectIds: ['100'] }],
       },
     )
     expect(projectInstance).toSatisfy(isProjectInstance)
@@ -110,5 +110,20 @@ describe('addReferencesToProjectSchemes', () => {
         .toEqual(new ReferenceExpression(issueTypeScreenSchemeInstance.elemID))
       expect(projectInstance.value.fieldConfigurationScheme).toEqual(innerValue)
     })
+  })
+
+  it('should set Project.fieldConfigurationScheme to "default" when the project uses the default FieldConfigurationScheme', async () => {
+    delete projectInstance.value.fieldConfigurationScheme[0].fieldConfigurationScheme
+    await runFilter(
+      projectInstance,
+      issueTypeScreenSchemeInstance,
+      fieldConfigurationSchemeInstance
+    )
+    expect(projectInstance.value.workflowScheme).toEqual(WORKFLOW_SCHEME_REF)
+    expect(projectInstance.value.permissionScheme).toEqual(PERMISSION_SCHEME_REF)
+    expect(projectInstance.value.notificationScheme).toEqual(NOTIFICATION_SCHEME_REF)
+    expect(projectInstance.value.issueTypeScreenScheme)
+      .toEqual(new ReferenceExpression(issueTypeScreenSchemeInstance.elemID))
+    expect(projectInstance.value.fieldConfigurationScheme).toEqual('default')
   })
 })

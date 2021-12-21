@@ -30,15 +30,25 @@ const { makeArray } = collections.array
 
 const CAPTURED_SERVICE_ID = 'serviceId'
 const CAPTURED_TYPE = 'type'
+const CAPTURED_APPID = 'appid'
+const CAPTURED_BUNDLEID = 'bundleid'
+
+const TYPE_REGEX = `type=(?<${CAPTURED_TYPE}>[a-z_]+), `
+const APPID_REGEX = `appid=(?<${CAPTURED_APPID}>[a-z_\\.]+), `
+const BUNDLEID_REGEX = `bundleid=(?<${CAPTURED_BUNDLEID}>\\d+), `
+const SERVICE_ID_REGEX = `${SCRIPT_ID}=(?<${CAPTURED_SERVICE_ID}>[a-z0-9_]+(\\.[a-z0-9_]+)*)`
+
 // e.g. '[scriptid=customworkflow1]' & '[scriptid=customworkflow1.workflowstate17.workflowaction33]'
 //  & '[type=customsegment, scriptid=cseg1]'
-const scriptIdReferenceRegex = new RegExp(`\\[(type=(?<${CAPTURED_TYPE}>[a-z_]+), )?${SCRIPT_ID}=(?<${CAPTURED_SERVICE_ID}>[a-z0-9_]+(\\.[a-z0-9_]+)*)]`, 'g')
+const scriptIdReferenceRegex = new RegExp(`\\[(${BUNDLEID_REGEX})?(${APPID_REGEX})?(${TYPE_REGEX})?${SERVICE_ID_REGEX}]`, 'g')
 // e.g. '[/Templates/filename.html]' & '[/SuiteScripts/script.js]'
 const pathReferenceRegex = new RegExp(`^\\[(?<${CAPTURED_SERVICE_ID}>\\/.+)]$`)
 
 type ServiceIdInfo = {
   [CAPTURED_SERVICE_ID]: string
   [CAPTURED_TYPE]?: string
+  [CAPTURED_APPID]?: string
+  [CAPTURED_BUNDLEID]?: string
   isFullMatch: boolean
 }
 
@@ -86,6 +96,8 @@ const captureServiceIdInfo = (value: string): ServiceIdInfo[] => {
     .map(serviceIdRef => ({
       [CAPTURED_SERVICE_ID]: serviceIdRef[CAPTURED_SERVICE_ID],
       [CAPTURED_TYPE]: serviceIdRef[CAPTURED_TYPE],
+      [CAPTURED_APPID]: serviceIdRef[CAPTURED_APPID],
+      [CAPTURED_BUNDLEID]: serviceIdRef[CAPTURED_BUNDLEID],
       isFullMatch,
     }))
 }
@@ -124,6 +136,19 @@ const customTypeServiceIdsToElemIds = async (
     elementsSource: typesElementSourceWrapper(),
   })
   return serviceIdsToElemIds
+}
+
+const shouldExtractToGenereatedDependency = (serviceIdInfoRecord: ServiceIdInfo): boolean => {
+  if (serviceIdInfoRecord[CAPTURED_APPID] != null
+    || serviceIdInfoRecord[CAPTURED_BUNDLEID] != null) {
+    return true
+  }
+
+  if (serviceIdInfoRecord.isFullMatch) {
+    return false
+  }
+
+  return true
 }
 
 export const getInstanceServiceIdRecords = async (
@@ -165,14 +190,14 @@ const replaceReferenceValues = async (
       }
 
       if (path?.isAttrID() && path.createParentID().name === CORE_ANNOTATIONS.PARENT) {
-        if (serviceIdInfoRecord.isFullMatch) {
+        if (!shouldExtractToGenereatedDependency(serviceIdInfoRecord)) {
           returnValue = new ReferenceExpression(elemID.createBaseID().parent)
           return
         }
         dependenciesToAdd.push(elemID.createBaseID().parent)
         return
       }
-      if (serviceIdInfoRecord.isFullMatch) {
+      if (!shouldExtractToGenereatedDependency(serviceIdInfoRecord)) {
         returnValue = new ReferenceExpression(elemID)
         return
       }

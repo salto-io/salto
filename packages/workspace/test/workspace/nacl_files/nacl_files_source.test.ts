@@ -258,6 +258,28 @@ describe('Nacl Files Source', () => {
       )).load({ ignoreFileChanges: true })
       expect(mockDirStore.list as jest.Mock).not.toHaveBeenCalled()
     })
+    it('should only access the HASH_KEY in rocksdb when ignore file changes is set', async () => {
+      mockDirStore.list = jest.fn().mockImplementation(async () => awu([]))
+      const retrievedKeys: string[] = []
+      await (await naclFilesSource(
+        '',
+        mockDirStore,
+        mockedStaticFilesSource,
+        <T, K extends string>() => {
+          const origMap = new InMemoryRemoteMap<T, K>()
+          const wrappedMap = {
+            ...origMap,
+            get: (key: K) => {
+              retrievedKeys.push(key)
+              return origMap.get(key)
+            },
+          } as unknown as RemoteMap<T, K>
+          return Promise.resolve(wrappedMap)
+        },
+        true
+      )).load({ ignoreFileChanges: true })
+      expect(retrievedKeys).toEqual([naclFileSourceModule.HASH_KEY])
+    })
   })
 
   describe('rename', () => {

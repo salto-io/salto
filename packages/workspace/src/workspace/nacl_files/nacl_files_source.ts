@@ -529,9 +529,9 @@ const buildNaclFilesSource = (
       sourceName,
       persistent
     )
-    const preChangeHash = await currentState.parsedNaclFiles.getHash()
     const modifiedNaclFiles: NaclFile[] = []
     if (!ignoreFileChanges) {
+      const preChangeHash = await currentState.parsedNaclFiles.getHash()
       const cacheFilenames = await currentState.parsedNaclFiles.list()
       const naclFilenames = new Set(await naclFilesStore.list())
       const fileNames = new Set()
@@ -562,6 +562,7 @@ const buildNaclFilesSource = (
       result.changes.preChangeHash = preChangeHash
       return result
     }
+    const preChangeHash = await currentState.metadata.get(HASH_KEY)
     return {
       changes: { changes: [], cacheValid: true, preChangeHash, postChangeHash: preChangeHash },
       state: currentState,

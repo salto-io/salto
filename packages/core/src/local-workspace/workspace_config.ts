@@ -85,6 +85,7 @@ export const workspaceConfigSource = async (
             accountToServiceName: Object.fromEntries(
               env.services.map((service: string) => [service, service])
             ),
+            name: env.name,
           }
         }
         return env

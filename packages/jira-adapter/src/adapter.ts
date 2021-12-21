@@ -191,8 +191,12 @@ export default class JiraAdapter implements AdapterOperations {
             this.userConfig.apiDefinitions
               .types[getChangeElement(change).elemID.typeName]?.deployRequests,
           )
-          if (isAdditionChange(change) && !Array.isArray(response)) {
-            getChangeElement(change).value.id = response.id
+          if (isAdditionChange(change)) {
+            if (!Array.isArray(response)) {
+              getChangeElement(change).value.id = response.id
+            } else {
+              log.warn('Received unexpected response from deployChange: %o', response)
+            }
           }
           return change
         } catch (err) {

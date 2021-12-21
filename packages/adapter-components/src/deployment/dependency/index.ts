@@ -13,7 +13,4 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export * as changeValidators from './change_validators'
-export * as dependency from './dependency'
-export * from './deployment'
-export * from './annotations'
+export { removeStandaloneFieldDependency } from './remove_standalone_field_dependency'

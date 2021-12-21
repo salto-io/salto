@@ -138,7 +138,7 @@ const customTypeServiceIdsToElemIds = async (
   return serviceIdsToElemIds
 }
 
-const needsDependecy = (serviceIdInfoRecord: ServiceIdInfo): boolean => {
+const shouldExtractToGenereatedDependency = (serviceIdInfoRecord: ServiceIdInfo): boolean => {
   if (serviceIdInfoRecord[CAPTURED_APPID] != null
     || serviceIdInfoRecord[CAPTURED_BUNDLEID] != null) {
     return true
@@ -190,14 +190,14 @@ const replaceReferenceValues = async (
       }
 
       if (path?.isAttrID() && path.createParentID().name === CORE_ANNOTATIONS.PARENT) {
-        if (!needsDependecy(serviceIdInfoRecord)) {
+        if (!shouldExtractToGenereatedDependency(serviceIdInfoRecord)) {
           returnValue = new ReferenceExpression(elemID.createBaseID().parent)
           return
         }
         dependenciesToAdd.push(elemID.createBaseID().parent)
         return
       }
-      if (!needsDependecy(serviceIdInfoRecord)) {
+      if (!shouldExtractToGenereatedDependency(serviceIdInfoRecord)) {
         returnValue = new ReferenceExpression(elemID)
         return
       }

@@ -299,7 +299,7 @@ export const mockDirStore = (
     getTotalSize: jest.fn(),
     clone: () => mockDirStore(exclude),
     getFullPath: filename => filename,
-    doesIncludePath: jest.fn().mockResolvedValue(true),
+    isPathIncluded: jest.fn().mockResolvedValue(true),
   }
 }
 

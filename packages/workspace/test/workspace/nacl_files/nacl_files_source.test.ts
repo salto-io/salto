@@ -128,7 +128,7 @@ describe('Nacl Files Source', () => {
       getTotalSize: () => Promise.resolve(0),
       clone: () => mockDirStore,
       getFullPath: filename => filename,
-      doesIncludePath: jest.fn(),
+      isPathIncluded: jest.fn(),
     }
     mockedStaticFilesSource = mockStaticFilesSource()
     mockCache = createParseResultCache(
@@ -529,7 +529,7 @@ describe('Nacl Files Source', () => {
     })
   })
 
-  describe('doesIncludePath', () => {
+  describe('isPathIncluded', () => {
     let src: NaclFilesSource
     const staticFileSource = mockStaticFilesSource([
       new StaticFile({
@@ -548,24 +548,24 @@ describe('Nacl Files Source', () => {
       )
     })
     it('should mark a path of a nacl file as included', () => {
-      (mockDirStore.doesIncludePath as jest.Mock).mockReturnValue(true)
-      expect(src.doesIncludePath('whateves.nacl')).toEqual({
+      (mockDirStore.isPathIncluded as jest.Mock).mockReturnValue(true)
+      expect(src.isPathIncluded('whateves.nacl')).toEqual({
         included: true,
-        isStatic: false,
+        isNacl: true,
       })
     })
 
     it('should mark a static file as included', () => {
-      (mockDirStore.doesIncludePath as jest.Mock).mockReturnValue(false)
-      expect(src.doesIncludePath('static-files/fff.txt')).toEqual({
+      (mockDirStore.isPathIncluded as jest.Mock).mockReturnValue(false)
+      expect(src.isPathIncluded('static-files/fff.txt')).toEqual({
         included: true,
-        isStatic: true,
+        isNacl: false,
       })
     })
 
     it('should mark a missing file as not included', () => {
-      (mockDirStore.doesIncludePath as jest.Mock).mockReturnValue(false)
-      expect(src.doesIncludePath('whateves.nacl')).toEqual({
+      (mockDirStore.isPathIncluded as jest.Mock).mockReturnValue(false)
+      expect(src.isPathIncluded('whateves.nacl')).toEqual({
         included: false,
       })
     })

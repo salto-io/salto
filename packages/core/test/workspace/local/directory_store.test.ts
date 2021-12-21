@@ -417,7 +417,7 @@ describe('localDirectoryStore', () => {
     })
   })
 
-  describe('doesIncludePath', () => {
+  describe('isPathIncluded', () => {
     const baseDir = '/base'
     const fileFilter = (filePath: string): boolean => path.extname(filePath) === '.nacl'
     const directoryFilter = (filePath: string): boolean => (
@@ -426,16 +426,16 @@ describe('localDirectoryStore', () => {
     const naclFileStore = localDirectoryStore({ baseDir, encoding, fileFilter, directoryFilter })
 
     it('should return true for file which are in the path and passes both the directory and file filters', () => {
-      expect(naclFileStore.doesIncludePath(path.resolve(baseDir, 'sup.nacl'))).toBeTruthy()
+      expect(naclFileStore.isPathIncluded(path.resolve(baseDir, 'sup.nacl'))).toBeTruthy()
     })
     it('should return false for file which are in the path and do not path the files filter', () => {
-      expect(naclFileStore.doesIncludePath(path.resolve(baseDir, 'sup.exe'))).toBeFalsy()
+      expect(naclFileStore.isPathIncluded(path.resolve(baseDir, 'sup.exe'))).toBeFalsy()
     })
     it('should return false for file which are in the path and do not path the directory filter', () => {
-      expect(naclFileStore.doesIncludePath(path.resolve(baseDir, 'exclude', 'sup.nacl'))).toBeFalsy()
+      expect(naclFileStore.isPathIncluded(path.resolve(baseDir, 'exclude', 'sup.nacl'))).toBeFalsy()
     })
     it('should return false for files which are not in the path', () => {
-      expect(naclFileStore.doesIncludePath(path.resolve('/nope', 'sup.nacl'))).toBeFalsy()
+      expect(naclFileStore.isPathIncluded(path.resolve('/nope', 'sup.nacl'))).toBeFalsy()
     })
   })
 })

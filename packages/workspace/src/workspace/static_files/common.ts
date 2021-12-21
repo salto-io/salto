@@ -33,7 +33,7 @@ export type StaticFilesSource = {
   getTotalSize: () => Promise<number>
   clone: () => StaticFilesSource
   delete: (staticFile: StaticFile) => Promise<void>
-  doesIncludePath: (path: string) => boolean
+  isPathIncluded: (path: string) => boolean
 }
 
 export class MissingStaticFile extends InvalidStaticFile {

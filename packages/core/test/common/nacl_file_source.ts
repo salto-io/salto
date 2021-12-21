@@ -47,6 +47,6 @@ export const createMockNaclFileSource = (): MockInterface<nacl.NaclFilesSource> 
   load: mockFunction<nacl.NaclFilesSource['load']>(),
   getSearchableNames: mockFunction<nacl.NaclFilesSource['getSearchableNames']>(),
   getStaticFile: mockFunction<nacl.NaclFilesSource['getStaticFile']>(),
-  doesIncludePath: mockFunction<nacl.NaclFilesSource['doesIncludePath']>(),
+  isPathIncluded: mockFunction<nacl.NaclFilesSource['isPathIncluded']>(),
 
 })

@@ -144,7 +144,7 @@ export type MultiEnvSource = {
   getSearchableNamesOfEnv: (env: string) => Promise<string[]>
   flush: () => Promise<void>
   rename: (name: string) => Promise<void>
-  getFileEnvs: (filePath: string) => {envName: string; isStatic?: boolean}[]
+  getFileEnvs: (filePath: string) => {envName: string; isNacl?: boolean}[]
 }
 
 const buildMultiEnvSource = (
@@ -311,9 +311,13 @@ const buildMultiEnvSource = (
 
   const getSourceForNaclFile = (
     fullName: string
-  ): {source: NaclFilesSource; relPath: string} => {
+  ): {source: NaclFilesSource; relPath: string; prefix: string} => {
     const prefix = getSourceNameForNaclFile(fullName)
-    return { relPath: getRelativePath(fullName, prefix), source: getSourceFromEnvName(prefix) }
+    return {
+      relPath: getRelativePath(fullName, prefix),
+      source: getSourceFromEnvName(prefix),
+      prefix,
+    }
   }
 
   const buildFullPath = (envName: string, relPath: string): string => (
@@ -569,16 +573,15 @@ const buildMultiEnvSource = (
     }))
   }
 
-  const getFileEnvs = (filePath: string): {envName: string; isStatic?: boolean}[] => {
+  const getFileEnvs = (filePath: string): {envName: string; isNacl?: boolean}[] => {
     const source = getSourceForNaclFile(filePath)
-    const envPrefix = getSourceNameForNaclFile(filePath)
-    const { included, isStatic } = source.source.doesIncludePath(source.relPath)
+    const { included, isNacl } = source.source.isPathIncluded(source.relPath)
     if (!included) {
       return []
     }
-    return envPrefix === commonSourceName
-      ? Object.keys(envSources()).map(envName => ({ envName, isStatic }))
-      : [{ envName: envPrefix, isStatic }]
+    return source.prefix === commonSourceName
+      ? Object.keys(envSources()).map(envName => ({ envName, isNacl }))
+      : [{ envName: source.prefix, isNacl }]
   }
 
   return {

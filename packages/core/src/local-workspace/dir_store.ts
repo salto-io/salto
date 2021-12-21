@@ -30,11 +30,10 @@ const DELETE_CONCURRENCY = 100
 const RENAME_CONCURRENCY = 100
 
 type FileMap<T extends dirStore.ContentType> = Record<string, dirStore.File<T>>
-
+type FilePathFilter = (filePath: string) => boolean
 export const createExtensionFileFilter = (
   extension: string
-) : (filePath: string
-) => boolean => (
+) : FilePathFilter => (
   (filePath: string) => path.extname(filePath) === extension
 )
 
@@ -44,7 +43,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   nameSuffix?: string,
   accessiblePath = '',
   encoding?: BufferEncoding,
-  fileFilter?: (path: string) => boolean,
+  fileFilter?: FilePathFilter,
   directoryFilter?: (path: string) => boolean,
   initUpdated?: FileMap<T>,
   initDeleted? : string[],
@@ -59,11 +58,17 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   const getAccessibleFullPath = (): string =>
     path.join(currentBaseDir, accessiblePath)
 
-  const getRelativeFileName = (filename: string): string => {
+  const isContainedInDirStore = (filename: string): boolean => {
     const accessibleFullPath = getAccessibleFullPath()
     const isAbsolute = path.isAbsolute(filename)
+    return !path.relative(
+      accessibleFullPath,
+      isAbsolute ? filename : getAbsFileName(filename)
+    ).startsWith(`..${path.sep}`)
+  }
 
-    if (path.relative(accessibleFullPath, isAbsolute ? filename : getAbsFileName(filename)).startsWith(`..${path.sep}`)) {
+  const getRelativeFileName = (filename: string): string => {
+    if (!isContainedInDirStore(filename)) {
       throw new Error(`Filepath not contained in dir store base dir: ${filename}`)
     }
 
@@ -182,20 +187,18 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       .map(f => () => removeDirIfEmpty(getAbsFileName(f))))
   }
 
-  const doesIncludePath = (filePath: string): boolean => {
+  const isPathIncluded = (filePath: string): boolean => {
     const absPath = getAbsFileName(filePath)
+    if (!isContainedInDirStore(absPath)) {
+      return false
+    }
     if (fileFilter && !fileFilter(absPath)) {
       return false
     }
-    if (directoryFilter && !directoryFilter(filePath)) {
+    if (directoryFilter && !directoryFilter(absPath)) {
       return false
     }
-    try {
-      getRelativeFileName(absPath)
-      return true
-    } catch {
-      return false
-    }
+    return true
   }
 
   return {
@@ -293,7 +296,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       _.cloneDeep(deleted)
     ),
     getFullPath: filename => getAbsFileName(filename),
-    doesIncludePath,
+    isPathIncluded,
   }
 }
 

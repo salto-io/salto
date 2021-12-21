@@ -93,7 +93,7 @@ export type NaclFilesSource<Changes=ChangeSet<Change>> = Omit<ElementsSource, 'c
     filePath: string,
     encoding: BufferEncoding,
   ) => Promise<StaticFile | undefined>
-  doesIncludePath: (filePath: string) => {included: boolean; isStatic?: boolean}
+  isPathIncluded: (filePath: string) => {included: boolean; isNacl?: boolean}
 }
 
 type NaclFilesState = {
@@ -946,12 +946,12 @@ const buildNaclFilesSource = (
       }
       return undefined
     },
-    doesIncludePath: filePath => {
-      if (naclFilesStore.doesIncludePath(filePath)) {
-        return { included: true, isStatic: false }
+    isPathIncluded: filePath => {
+      if (naclFilesStore.isPathIncluded(filePath)) {
+        return { included: true, isNacl: true }
       }
-      if (staticFilesSource.doesIncludePath(filePath)) {
-        return { included: true, isStatic: true }
+      if (staticFilesSource.isPathIncluded(filePath)) {
+        return { included: true, isNacl: false }
       }
       return { included: false }
     },

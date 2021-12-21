@@ -49,7 +49,7 @@ describe('Nacl Files Source', () => {
       getTotalSize: () => Promise.resolve(0),
       clone: () => mockDirStore,
       getFullPath: filename => filename,
-      doesIncludePath: jest.fn().mockResolvedValue(true),
+      isPathIncluded: jest.fn().mockResolvedValue(true),
     }
     mockedStaticFilesSource = mockStaticFilesSource()
   })

@@ -20,10 +20,9 @@ import { DetailedChange, ObjectType } from '@salto-io/adapter-api'
 import { exists, isEmptyDir, rm } from '@salto-io/file'
 import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl, remoteMap,
   configSource as cs, staticFiles, dirStore, WorkspaceComponents, errors, elementSource,
-  COMMON_ENV_PREFIX, isValidEnvName, EnvironmentSource, EnvConfig, adaptersConfigSource
-} from '@salto-io/workspace'
-import { localDirectoryStore, createExtensionFileFilter } from './dir_store'
+  COMMON_ENV_PREFIX, isValidEnvName, EnvironmentSource, EnvConfig, adaptersConfigSource } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
+import { localDirectoryStore, createExtensionFileFilter } from './dir_store'
 import { CONFIG_DIR_NAME, getConfigDir, getLocalStoragePath } from '../app_config'
 import { localState } from './state'
 import { workspaceConfigSource } from './workspace_config'

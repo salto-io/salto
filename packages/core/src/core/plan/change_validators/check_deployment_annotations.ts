@@ -13,10 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeError, ChangeValidator, getChangeElement, isInstanceChange, Element, isRemovalChange, InstanceElement, ElemID } from '@salto-io/adapter-api'
+import { Change, ChangeError, ChangeValidator, getChangeElement, isInstanceChange, Element, isRemovalChange, InstanceElement, ElemID, OPERATION_TO_ANNOTATION } from '@salto-io/adapter-api'
 import { transformValues } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
-import { OPERATION_TO_ANNOTATION } from '../annotations'
 import { getDiffInstance } from '../diff'
 
 const { awu } = collections.asynciterable
@@ -77,7 +76,7 @@ export const checkDeploymentAnnotationsValidator: ChangeValidator = async change
 
       return unsupportedPaths.map(path => ({
         elemID: instance.elemID,
-        severity: 'Error',
+        severity: 'Warning',
         message: ERROR_MESSAGE,
         detailedMessage: detailedErrorMessage(change.action, path),
       }))

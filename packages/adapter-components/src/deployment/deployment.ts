@@ -14,13 +14,12 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ActionName, Change, getChangeElement, InstanceElement } from '@salto-io/adapter-api'
+import { ActionName, Change, getChangeElement, InstanceElement, OPERATION_TO_ANNOTATION } from '@salto-io/adapter-api'
 import { transformElement } from '@salto-io/adapter-utils'
 import { replaceUrlParams } from '../elements/request_parameters'
 import { HTTPWriteClientInterface } from '../client/http_client'
 import { DeploymentRequestsByAction } from '../config/request'
 import { ResponseValue } from '../client'
-import { OPERATION_TO_ANNOTATION } from './annotations'
 
 const filterIrrelevantValues = async (
   instance: InstanceElement,

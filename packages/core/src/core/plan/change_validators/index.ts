@@ -20,11 +20,14 @@ import { promises } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { getAdapterChangeValidators, AdapterConfigGetter } from '../../adapters'
 import { changeValidator as unresolvedReferencesValidator } from './unresolved_references'
+import { checkDeploymentAnnotationsValidator } from './check_deployment_annotations'
+
 
 const { mapValuesAsync } = promises.object
 
 const DEFAULT_CHANGE_VALIDATORS = [
   unresolvedReferencesValidator,
+  checkDeploymentAnnotationsValidator,
 ]
 
 const getChangeValidators = (adapters: Record<string, AdapterOperations>):

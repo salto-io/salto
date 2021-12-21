@@ -13,12 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { HTTPWriteClientInterface } from '../../src/client/http_client'
 import { deployChange } from '../../src/deployment/deployment'
 import { DeploymentRequestsByAction } from '../../src/config/request'
-import { DEPLOYMENT_ANNOTATIONS } from '../../src/deployment'
 
 describe('deployChange', () => {
   let type: ObjectType
@@ -33,7 +32,7 @@ describe('deployChange', () => {
         id: { refType: BuiltinTypes.STRING },
         creatableField: {
           refType: BuiltinTypes.STRING,
-          annotations: { [DEPLOYMENT_ANNOTATIONS.CREATABLE]: true },
+          annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
         },
       },
     })

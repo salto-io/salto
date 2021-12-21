@@ -13,10 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { AdapterApiConfig } from '../../../../src/config/shared'
-import { DEPLOYMENT_ANNOTATIONS } from '../../../../src/deployment'
 import { addDeploymentAnnotations, LoadedSwagger } from '../../../../src/elements/swagger'
 
 describe('addDeploymentAnnotations', () => {
@@ -125,9 +124,9 @@ describe('addDeploymentAnnotations', () => {
     apiDefinitions.types.test = {}
     addDeploymentAnnotations([type], [mockSwagger], apiDefinitions)
     expect(type.annotations).toEqual({
-      [DEPLOYMENT_ANNOTATIONS.CREATABLE]: false,
-      [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
-      [DEPLOYMENT_ANNOTATIONS.DELETABLE]: false,
+      [CORE_ANNOTATIONS.CREATABLE]: false,
+      [CORE_ANNOTATIONS.UPDATABLE]: false,
+      [CORE_ANNOTATIONS.DELETABLE]: false,
     })
   })
 
@@ -136,9 +135,9 @@ describe('addDeploymentAnnotations', () => {
     swaggerClone.document.paths = {}
     addDeploymentAnnotations([type], [swaggerClone], apiDefinitions)
     expect(type.annotations).toEqual({
-      [DEPLOYMENT_ANNOTATIONS.CREATABLE]: false,
-      [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
-      [DEPLOYMENT_ANNOTATIONS.DELETABLE]: false,
+      [CORE_ANNOTATIONS.CREATABLE]: false,
+      [CORE_ANNOTATIONS.UPDATABLE]: false,
+      [CORE_ANNOTATIONS.DELETABLE]: false,
     })
   })
 
@@ -149,25 +148,25 @@ describe('addDeploymentAnnotations', () => {
 
     addDeploymentAnnotations([type], [mockSwagger], apiDefinitions)
     expect(type.annotations).toEqual({
-      [DEPLOYMENT_ANNOTATIONS.CREATABLE]: false,
-      [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
-      [DEPLOYMENT_ANNOTATIONS.DELETABLE]: false,
+      [CORE_ANNOTATIONS.CREATABLE]: false,
+      [CORE_ANNOTATIONS.UPDATABLE]: false,
+      [CORE_ANNOTATIONS.DELETABLE]: false,
     })
   })
 
   it('Should add the appropriate annotations', () => {
     addDeploymentAnnotations([type], [mockSwagger], apiDefinitions)
     expect(type.fields.creatableField.annotations).toEqual({
-      [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
+      [CORE_ANNOTATIONS.UPDATABLE]: false,
     })
 
     expect(type.fields.notCreatableField.annotations).toEqual({
-      [DEPLOYMENT_ANNOTATIONS.CREATABLE]: false,
-      [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
+      [CORE_ANNOTATIONS.CREATABLE]: false,
+      [CORE_ANNOTATIONS.UPDATABLE]: false,
     })
 
     expect(type.annotations).toEqual({
-      [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
+      [CORE_ANNOTATIONS.UPDATABLE]: false,
     })
   })
 })

@@ -14,5 +14,5 @@
 * limitations under the License.
 */
 export { neighborContextGetter, ContextFunc, ContextValueMapperFunc } from './context'
-export { addReferences, replaceReferenceValues } from './field_references'
+export { addReferences, replaceReferenceValues, generateLookupFunc } from './field_references'
 export { ReferenceSerializationStrategy, ReferenceSerializationStrategyName, ReferenceSerializationStrategyLookup, FieldReferenceDefinition, FieldReferenceResolver, ReferenceResolverFinder, ReferenceTargetDefinition, ExtendedReferenceTargetDefinition } from './reference_mapping'

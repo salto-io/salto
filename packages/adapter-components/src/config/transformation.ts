@@ -60,6 +60,8 @@ export type TransformationConfig = {
   dataField?: string
   // set to true if the defined instance element has only one instance
   isSingleton?: boolean
+  // The identifier field for the service
+  serviceIdField?: string
 }
 
 export type TransformationDefaultConfig = types.PickyRequired<Partial<Omit<TransformationConfig, 'isSingleton'>>, 'idFields'>

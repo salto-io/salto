@@ -16,9 +16,11 @@
 import _ from 'lodash'
 import { isDefined } from './values'
 
-export const concatObjects = <T extends Record<string, unknown[] | undefined>>(objects: T[]): T => (
+export const concatObjects = <
+  T extends Record<string, ReadonlyArray<unknown> | unknown[] | undefined>
+>(objects: T[]): T => (
   _.mapValues(
     _.groupBy(objects.flatMap(Object.entries), ([key]) => key),
     lists => lists.map(([_key, list]) => list).filter(isDefined).flat()
   ) as T
-)
+  )

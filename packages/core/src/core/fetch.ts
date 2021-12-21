@@ -737,17 +737,21 @@ export const fetchChanges = async (
   })
 }
 
-const createEmptyFetchChangeDueToError = (errMsg: string): FetchChangesResult => ({
-  changes: [],
-  elements: [],
-  mergeErrors: [],
-  unmergedElements: [],
-  updatedConfig: {},
-  errors: [{
-    message: errMsg,
-    severity: 'Error',
-  }],
-})
+const createEmptyFetchChangeDueToError = (errMsg: string): FetchChangesResult => {
+  log.warn(`creating empty fetch result due to ${errMsg}`)
+  return {
+    changes: [],
+    elements: [],
+    mergeErrors: [],
+    unmergedElements: [],
+    updatedConfig: {},
+    errors: [{
+      message: errMsg,
+      severity: 'Error',
+    }],
+  }
+}
+
 export const fetchChangesFromWorkspace = async (
   otherWorkspace: Workspace,
   fetchAccounts: string[],

@@ -16,18 +16,32 @@
 import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { InstanceElement, isObjectType, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
+import { InstanceElement, isObjectType, isInstanceElement, ReferenceExpression, isRemovalChange,
+  AdapterOperations, toChange, ObjectType, ElemID, getChangeElement } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import mockReplies from './mock_replies.json'
 import { adapter } from '../src/adapter_creator'
 import { usernamePasswordCredentialsType } from '../src/auth'
 import { configType, FETCH_CONFIG, DEFAULT_TYPES, API_DEFINITIONS_CONFIG } from '../src/config'
+import { ZENDESK_SUPPORT } from '../src/constants'
 
 type MockReply = {
   url: string
   params: Record<string, string>
   response: unknown
 }
+
+const mockDeployChange = jest.fn()
+jest.mock('@salto-io/adapter-components', () => {
+  const actual = jest.requireActual('@salto-io/adapter-components')
+  return {
+    ...actual,
+    deployment: {
+      ...actual.deployment,
+      deployChange: jest.fn((...args) => mockDeployChange(...args)),
+    },
+  }
+})
 
 describe('adapter', () => {
   let mockAxiosAdapter: MockAdapter
@@ -112,7 +126,7 @@ describe('adapter', () => {
           'zendesk_support.apps_owned',
           'zendesk_support.automation',
           'zendesk_support.automation.instance.Close_ticket_4_days_after_status_is_set_to_solved_1500016953642@sssssssssu',
-          'zendesk_support.automation.instance.Close_ticket_4_days_after_status_is_set_to_solved_1500027162481@sssssssssu',
+          'zendesk_support.automation.instance.Close_ticket_5_days_after_status_is_set_to_solved_1500027162481@sssssssssu',
           'zendesk_support.automation.instance.Pending_notification_24_hours_1500016953662@sssu',
           'zendesk_support.automation.instance.Pending_notification_5_days_1500016953682@sssu',
           'zendesk_support.automation__actions',
@@ -124,8 +138,8 @@ describe('adapter', () => {
           'zendesk_support.brands',
           'zendesk_support.business_hours_schedule',
           'zendesk_support.business_hours_schedule.instance.New_schedule_1900000004365@su',
-          'zendesk_support.business_hours_schedule.instance.Schedule_2_1500001035461@su',
           'zendesk_support.business_hours_schedule.instance.Schedule_2_1500001036042@su',
+          'zendesk_support.business_hours_schedule.instance.Schedule_3_1500001035461@su',
           'zendesk_support.business_hours_schedule__intervals',
           'zendesk_support.business_hours_schedules',
           'zendesk_support.custom_role',
@@ -149,8 +163,8 @@ describe('adapter', () => {
           'zendesk_support.locale.instance.he',
           'zendesk_support.locales',
           'zendesk_support.macro',
-          'zendesk_support.macro.instance.Close_and_redirect_to_topics_1500016953922@ssssu',
           'zendesk_support.macro.instance.Close_and_redirect_to_topics_1900002626825@ssssu',
+          'zendesk_support.macro.instance.Close_and_redirect_to_topics_edited_1500016953922@sssssu',
           'zendesk_support.macro.instance.Customer_not_responding_1500016953962@ssu',
           'zendesk_support.macro.instance.Customer_not_responding__copy__with_rich_text_1500027465822@sssjksssu',
           'zendesk_support.macro.instance.Downgrade_and_inform_1500016953942@ssu',
@@ -338,11 +352,12 @@ describe('adapter', () => {
           'zendesk_support.workspace__conditions__any',
           'zendesk_support.workspace__selected_macros',
           'zendesk_support.workspaces',
+
         ])
 
         const recipientAddress = elements.filter(isInstanceElement).find(e => e.elemID.getFullName().startsWith('zendesk_support.recipient_address.instance.myBrand'))
         expect(recipientAddress).toBeDefined()
-        expect(recipientAddress?.value).toEqual({
+        expect(recipientAddress?.value).toMatchObject({
           id: 1500000743022,
           default: true,
           name: 'myBrand',
@@ -403,8 +418,20 @@ describe('adapter', () => {
   })
 
   describe('deploy', () => {
-    it('should throw not implemented', async () => {
-      const operations = adapter.operations({
+    let operations: AdapterOperations
+    const groupType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'group') })
+    const brandType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'brand') })
+    beforeEach(() => {
+      mockDeployChange.mockImplementation(async change => {
+        if (isRemovalChange(change)) {
+          throw new Error('some error')
+        }
+        if (getChangeElement<InstanceElement>(change).elemID.typeName === 'group') {
+          return { group: { id: 1 } }
+        }
+        return { key: 2 }
+      })
+      operations = adapter.operations({
         credentials: new InstanceElement(
           'config',
           usernamePasswordCredentialsType,
@@ -415,13 +442,157 @@ describe('adapter', () => {
           configType,
           {
             [FETCH_CONFIG]: {
-              includeTypes: [...Object.keys(DEFAULT_TYPES)].sort(),
+              includeTypes: ['group', 'groups', 'brand', 'brands'],
+            },
+            [API_DEFINITIONS_CONFIG]: {
+              types: {
+                group: {
+                  deployRequests: {
+                    add: {
+                      url: '/groups',
+                      deployAsField: 'group',
+                      method: 'post',
+                    },
+                    modify: {
+                      url: '/groups/{groupId}',
+                      method: 'put',
+                      deployAsField: 'group',
+                      urlParamsToFields: {
+                        groupId: 'id',
+                      },
+                    },
+                    remove: {
+                      url: '/groups/{groupId}',
+                      method: 'delete',
+                      deployAsField: 'group',
+                      urlParamsToFields: {
+                        groupId: 'id',
+                      },
+                    },
+                  },
+                },
+                brand: {
+                  transformation: {
+                    serviceIdField: 'key',
+                  },
+                  deployRequests: {
+                    add: {
+                      url: '/brands',
+                      method: 'post',
+                    },
+                  },
+                },
+                groups: {
+                  request: {
+                    url: '/groups',
+                  },
+                  transformation: {
+                    dataField: 'groups',
+                  },
+                },
+                brands: {
+                  request: {
+                    url: '/brands',
+                  },
+                  transformation: {
+                    dataField: 'brands',
+                  },
+                },
+              },
             },
           }
         ),
         elementsSource: buildElementsSourceFromElements([]),
       })
-      await expect(operations.deploy({ changeGroup: { groupID: '', changes: [] } })).rejects.toThrow(new Error('Not implemented.'))
+    })
+
+    it('should return the applied changes', async () => {
+      const ref = new ReferenceExpression(
+        new ElemID(ZENDESK_SUPPORT, 'test', 'instance', 'ins'),
+        { externalId: 5 },
+      )
+      const modificationChange = toChange({
+        before: new InstanceElement('inst4', brandType, { externalId: 4 }),
+        after: new InstanceElement('inst4', brandType, { externalId: 5 }),
+      })
+      const deployRes = await operations.deploy({
+        changeGroup: {
+          groupID: 'group',
+          changes: [
+            toChange({ after: new InstanceElement('inst', groupType) }),
+            toChange({ before: new InstanceElement('inst2', groupType) }),
+            toChange({ after: new InstanceElement('inst3', brandType, { ref }) }),
+            modificationChange,
+          ],
+        },
+      })
+
+      expect(deployRes.appliedChanges).toEqual([
+        toChange({ after: new InstanceElement('inst', groupType, { id: 1 }) }),
+        toChange({ after: new InstanceElement('inst3', brandType, { key: 2, ref: expect.any(ReferenceExpression) }) }),
+        modificationChange,
+      ])
+    })
+
+    it('should return the errors', async () => {
+      const deployRes = await operations.deploy({
+        changeGroup: {
+          groupID: 'group',
+          changes: [
+            toChange({ after: new InstanceElement('inst', groupType) }),
+            toChange({ before: new InstanceElement('inst2', groupType) }),
+          ],
+        },
+      })
+
+      expect(deployRes.errors).toEqual([
+        new Error('some error'),
+      ])
+    })
+    it('should have change validator', () => {
+      expect(operations.deployModifiers?.changeValidator).toBeDefined()
+    })
+    it('should not update id if deployChange result is an array', async () => {
+      mockDeployChange.mockImplementation(async () => [{ id: 2 }])
+      const deployRes = await operations.deploy({
+        changeGroup: {
+          groupID: 'group',
+          changes: [
+            toChange({ after: new InstanceElement('inst', groupType) }),
+          ],
+        },
+      })
+      expect(deployRes.appliedChanges).toEqual([
+        toChange({ after: new InstanceElement('inst', groupType) }),
+      ])
+    })
+    it('should not update id if the response is primitive', async () => {
+      mockDeployChange.mockImplementation(async () => 2)
+      const deployRes = await operations.deploy({
+        changeGroup: {
+          groupID: 'group',
+          changes: [
+            toChange({ after: new InstanceElement('inst', groupType) }),
+          ],
+        },
+      })
+      expect(deployRes.appliedChanges).toEqual([
+        toChange({ after: new InstanceElement('inst', groupType) }),
+      ])
+    })
+    it('should not update id field if it does not exist in the response', async () => {
+      mockDeployChange.mockImplementation(async () => ({ test: 2 }))
+      const deployRes = await operations.deploy({
+        changeGroup: {
+          groupID: 'group',
+          changes: [
+            toChange({ after: new InstanceElement('inst', groupType) }),
+          ],
+        },
+      })
+      expect(deployRes.appliedChanges).toEqual([
+        toChange({ after: new InstanceElement('inst', groupType) }),
+      ])
     })
   })
 })

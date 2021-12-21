@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { Change, DeployResult, ElemID, ObjectType, toChange } from '@salto-io/adapter-api'
 import { objects } from '@salto-io/lowerdash'
 import each from 'jest-each'
-import { Filter, FilterCreator, filtersRunner } from '../src/filter'
+import { Filter, FilterCreator, filtersRunner, FilterWith } from '../src/filter'
 
 const { concatObjects } = objects
 
@@ -70,6 +71,35 @@ describe('filtersRunner', () => {
       expect(orderedOperations[1]).not.toHaveBeenCalled()
       await filterRunnerPromise
       expect(orderedOperations[1]).toHaveBeenCalled()
+    })
+  })
+
+  describe('deploy', () => {
+    let filterRes: { leftoverChanges: Change[]; deployResult: DeployResult }
+
+    beforeEach(async () => {
+      const filter: FilterWith<{}, 'deploy'> = {
+        deploy: async changes => ({
+          deployResult: {
+            appliedChanges: [changes[0]],
+            errors: [new Error(changes.length.toString())],
+          },
+          leftoverChanges: changes.slice(1),
+        }),
+      }
+
+      const filterRunner = filtersRunner({}, [() => filter, () => filter])
+      const typeChange = toChange({ after: new ObjectType({ elemID: new ElemID('adapter', 'type') }) })
+      filterRes = await filterRunner.deploy([typeChange, typeChange, typeChange])
+    })
+
+    it('should return the changes that were not deployed', () => {
+      expect(filterRes.leftoverChanges).toHaveLength(1)
+    })
+
+    it('should return the merged deploy results', () => {
+      expect(filterRes.deployResult.appliedChanges).toHaveLength(2)
+      expect(filterRes.deployResult.errors).toEqual([new Error('3'), new Error('2')])
     })
   })
 })

@@ -28,7 +28,7 @@ export const CORE_ANNOTATIONS = {
   CREATED_AT: '_created_at',
   CHANGED_BY: '_changed_by',
   CHANGED_AT: '_changed_at',
-  CREATABLE: 'creatable',
-  UPDATABLE: 'updatable',
-  DELETABLE: 'deletable',
+  CREATABLE: '_creatable',
+  UPDATABLE: '_updatable',
+  DELETABLE: '_deletable',
 }

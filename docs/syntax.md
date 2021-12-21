@@ -288,6 +288,9 @@ Currently the following core annotations are supported:
 - [_created_at](#_created_at)
 - [_changed_by](#_changed_by)
 - [_changed_at](#_changed_at)
+- [_creatable](#_created_at)
+- [_updatable](#_changed_by)
+- [_deletable](#_changed_at)
 
 #### `_required`
 This annotation is used on field blocks to specify that an instance must contain a value for this field.
@@ -543,6 +546,60 @@ type salto.example {
     value = 5
     _changed_at = "2021-05-02T00:00:00.000Z"
   }
+}
+```
+
+#### _creatable
+This is a hidden boolean annotation (will not be seen in NaCl) that is used to set whether creating new instances with the type or fields is supported.
+
+Type: `boolean`
+Default: `true`
+Applicable to: Types, Fields
+
+Example:
+```HCL
+type salto.example {
+  number nonCreatableField {
+    _creatable = false
+  }
+  number creatableField {
+    _creatable = true
+  }
+  _creatable = true
+}
+```
+
+#### _updatable
+This is a hidden boolean annotation (will not be seen in NaCl) that is used to set whether a modification of an instance or a certain value in an instance is supported.
+
+Type: `boolean`
+Default: `true`
+Applicable to: Types, Fields
+
+Example:
+```HCL
+type salto.example {
+  number nonUpdatableField {
+    _updatable = false
+  }
+  number updatableField {
+    _updatable = true
+  }
+  _updatable = true
+}
+```
+
+#### _deletable
+This is a hidden boolean annotation (will not be seen in NaCl) that is used to set whether a deletion of an instance is supported.
+
+Type: `boolean`
+Default: `true`
+Applicable to: Types
+
+Example:
+```HCL
+type salto.example {
+  _deletable = false
 }
 ```
 

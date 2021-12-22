@@ -44,7 +44,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   accessiblePath = '',
   encoding?: BufferEncoding,
   fileFilter?: FilePathFilter,
-  directoryFilter?: (path: string) => boolean,
+  directoryFilter?: FilePathFilter,
   initUpdated?: FileMap<T>,
   initDeleted? : string[],
 ): dirStore.SyncDirectoryStore<T> => {
@@ -306,8 +306,8 @@ type LocalDirectoryStoreParams = {
   nameSuffix?: string
   accessiblePath?: string
   encoding?: 'utf8'
-  fileFilter?: (path: string) => boolean
-  directoryFilter?: (path: string) => boolean
+  fileFilter?: FilePathFilter
+  directoryFilter?: FilePathFilter
 }
 
 export function localDirectoryStore(params: Omit<LocalDirectoryStoreParams, 'encoding'>):

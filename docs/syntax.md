@@ -550,7 +550,7 @@ type salto.example {
 ```
 
 #### _creatable
-This is a hidden boolean annotation (will not be seen in NaCl) that is used to set whether creating new instances with the type or fields is supported.
+This is a hidden boolean annotation (will not be seen in NaCl) that is used to set whether creating instances of a type or certain value in it is supported.
 
 Type: `boolean`
 Default: `true`
@@ -578,7 +578,7 @@ salto.example valid {
 }
 ```
 
-For the following new instance, an error will be thrown on deploy:
+For the following new instance, a warning will be shown in the deploy preview:
 ```HCL
 salto.example invalid {
   creatableField = 1
@@ -640,7 +640,7 @@ salto.updatable valid {
 }
 ```
 
-For the following instance change, an warning will be shown to the user before deploying:
+For the following instance change, a warning will be shown to the user before deploying:
 ```HCL
 // before
 salto.updatable invalid {
@@ -655,7 +655,7 @@ salto.updatable invalid {
 }
 ```
 
-For the following instance change, an error will be thrown to the user on deploy:
+For the following instance change, an error will be shown to the user on deploy and the change will not be deployed:
 ```HCL
 // before
 salto.notUpdatable invalid {
@@ -698,7 +698,7 @@ salto.deletable instance {
 }
 ```
 
-For the deletion of the following instance, an error will be thrown on deploy:
+For the deletion of the following instance, an error will be shown to the user and the change will not be deployed:
 ```HCL
 salto.notDeletable instance {
   someField = 2

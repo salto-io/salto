@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { ElemID, CORE_ANNOTATIONS, BuiltinTypes, ListType } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ListType } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { JIRA } from './constants'
 
@@ -361,6 +361,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'components', fieldType: 'list<ComponentWithIssueCount>' },
+        /**
+         * This is the correct values returned from recurseInto.
+         * This types will be changed to matching scheme types
+         * in override_project_scheme_fields_types.ts
+         */
         { fieldName: 'workflowScheme', fieldType: 'list<WorkflowSchemeAssociations>' },
         { fieldName: 'permissionScheme', fieldType: 'list<PermissionScheme>' },
         { fieldName: 'notificationScheme', fieldType: 'list<NotificationScheme>' },
@@ -586,8 +591,8 @@ export const DEFAULT_INCLUDE_ENDPOINTS: string[] = [
   'PageBeanIssueTypeScreenScheme',
   'PageBeanIssueTypeScreenSchemeItem',
   'PageBeanNotificationScheme',
-  'PageBeanIssueTypeScreenSchemesProjects',
-  'PageBeanFieldConfigurationSchemeProjects',
+  // 'PageBeanIssueTypeScreenSchemesProjects',
+  // 'PageBeanFieldConfigurationSchemeProjects',
   'Permissions',
   'PermissionSchemes',
   'rest__api__3__priority',

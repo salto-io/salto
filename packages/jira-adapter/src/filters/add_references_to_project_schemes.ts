@@ -53,7 +53,7 @@ type IssueTypeScreenSchemeProjects = {
   issueTypeScreenScheme: IssueTypeScreenSchemeValue
 }
 
-export type ProjectInstance = InstanceElement & {
+type ProjectInstance = InstanceElement & {
   value: InstanceElement['value'] & {
     workflowScheme: {workflowScheme: ReferenceExpression}[]
     permissionScheme: ReferenceExpression[]
@@ -100,50 +100,60 @@ export const isProjectInstance = (element: InstanceElement): element is ProjectI
       && isArrayWithSingleReference(element.value.notificationScheme)
 }
 const isFieldConfigurationSchemeInstance = (element: InstanceElement)
-  : element is FieldConfigurationSchemeInstance =>
+  : element is FieldConfigurationSchemeInstance => (
   element.elemID.typeName === 'FieldConfigurationScheme' && _.isString(element.value.id)
+)
+
 const isIssueTypeScreenSchemeInstance = (element: InstanceElement)
-  : element is IssueTypeScreenSchemeInstance =>
+  : element is IssueTypeScreenSchemeInstance => (
   element.elemID.typeName === 'IssueTypeScreenScheme' && _.isString(element.value.id)
+)
+
+const getFieldConfigurationSchemeValue = (
+  project: ProjectInstance,
+  fieldConfigurationSchemeById: Record<string, FieldConfigurationSchemeInstance>
+): ReferenceExpression | FieldConfigurationSchemeValue | string => {
+  const fieldConfigurationSchemeProjects = project.value.fieldConfigurationScheme[0]
+  /* When the project uses the default FieldConfigurationScheme, this value doesnt exist */
+  if (fieldConfigurationSchemeProjects.fieldConfigurationScheme === undefined) {
+    return 'default'
+  }
+  const schemeId = fieldConfigurationSchemeProjects.fieldConfigurationScheme.id
+  const schemeElemId = fieldConfigurationSchemeById[schemeId]?.elemID
+  if (schemeElemId === undefined) {
+    log.warn('Could not set reference to unknown FieldConfigurationScheme with id %s', schemeId)
+    return fieldConfigurationSchemeProjects.fieldConfigurationScheme
+  }
+  return new ReferenceExpression(schemeElemId)
+}
+
+const getIssueTypeScreenSchemeValue = (
+  project: ProjectInstance,
+  issueTypeScreenSchemeById: Record<string, IssueTypeScreenSchemeInstance>
+): ReferenceExpression | IssueTypeScreenSchemeValue => {
+  const issueTypeScreenSchemeProjects = project.value.issueTypeScreenScheme[0]
+  const schemeId = issueTypeScreenSchemeProjects.issueTypeScreenScheme.id
+  const schemeElemId = issueTypeScreenSchemeById[schemeId]?.elemID
+  if (schemeElemId === undefined) {
+    log.warn('Could not set reference to unknown IssueTypeScreenScheme with id %s', schemeId)
+    return issueTypeScreenSchemeProjects.issueTypeScreenScheme
+  }
+  return new ReferenceExpression(schemeElemId)
+}
 
 const setReferences = (
   project: ProjectInstance,
-  fieldConfigurationSchemeById: _.Dictionary<FieldConfigurationSchemeInstance>,
-  issueTypeScreenSchemeById: _.Dictionary<IssueTypeScreenSchemeInstance>
+  fieldConfigurationSchemeById: Record<string, FieldConfigurationSchemeInstance>,
+  issueTypeScreenSchemeById: Record<string, IssueTypeScreenSchemeInstance>
 ): void => {
-  const getFieldConfigurationSchemeValue = (instance: ProjectInstance)
-    : ReferenceExpression | FieldConfigurationSchemeValue | string => {
-    const fieldConfigurationSchemeProjects = instance.value.fieldConfigurationScheme[0]
-    /* When the project uses the default FieldConfigurationScheme, this value doesnt exist */
-    if (fieldConfigurationSchemeProjects.fieldConfigurationScheme === undefined) {
-      return 'default'
-    }
-    const schemeId = fieldConfigurationSchemeProjects.fieldConfigurationScheme.id
-    const schemeElemId = fieldConfigurationSchemeById[schemeId]?.elemID
-    if (schemeElemId === undefined) {
-      log.warn('Could not set reference to unknown FieldConfigurationScheme with id %s', schemeId)
-      return fieldConfigurationSchemeProjects.fieldConfigurationScheme
-    }
-    return new ReferenceExpression(schemeElemId)
-  }
-  const getIssueTypeScreenSchemeValue = (instance: ProjectInstance)
-    : ReferenceExpression | IssueTypeScreenSchemeValue => {
-    const issueTypeScreenSchemeProjects = instance.value.issueTypeScreenScheme[0]
-    const schemeId = issueTypeScreenSchemeProjects.issueTypeScreenScheme.id
-    const schemeElemId = issueTypeScreenSchemeById[schemeId]?.elemID
-    if (schemeElemId === undefined) {
-      log.warn('Could not set reference to unknown IssueTypeScreenScheme with id %s', schemeId)
-      return issueTypeScreenSchemeProjects.issueTypeScreenScheme
-    }
-    return new ReferenceExpression(schemeElemId)
-  }
-
   const fieldsValues: SchemeFieldsValues = {
     workflowScheme: project.value.workflowScheme[0].workflowScheme,
     permissionScheme: project.value.permissionScheme[0],
     notificationScheme: project.value.notificationScheme[0],
-    fieldConfigurationScheme: getFieldConfigurationSchemeValue(project),
-    issueTypeScreenScheme: getIssueTypeScreenSchemeValue(project),
+    fieldConfigurationScheme:
+      getFieldConfigurationSchemeValue(project, fieldConfigurationSchemeById),
+    issueTypeScreenScheme:
+      getIssueTypeScreenSchemeValue(project, issueTypeScreenSchemeById),
   }
   Object
     .entries(fieldsValues)

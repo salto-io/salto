@@ -13,15 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ActionName, ObjectType } from '@salto-io/adapter-api'
+import { ActionName, CORE_ANNOTATIONS, ObjectType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { OpenAPIV3 } from 'openapi-types'
 import { AdapterApiConfig } from '../../../config/shared'
 import { DeploymentRequestsByAction } from '../../../config/request'
-import { DEPLOYMENT_ANNOTATIONS, OPERATION_TO_ANNOTATION } from '../../../deployment'
 import { LoadedSwagger } from '../swagger'
 import { extractProperties, isReferenceObject, isV3, SwaggerVersion, toSchema } from '../type_elements/swagger_parser'
+import { OPERATION_TO_ANNOTATION } from '../../../deployment/annotations'
 
 const log = logger(module)
 
@@ -105,12 +105,12 @@ const addDeploymentAnnotationsToType = (
   swaggers: LoadedSwagger[],
   endpointDetails: DeploymentRequestsByAction,
 ): void => {
-  type.annotations[DEPLOYMENT_ANNOTATIONS.CREATABLE] = false
-  type.annotations[DEPLOYMENT_ANNOTATIONS.UPDATABLE] = false
-  type.annotations[DEPLOYMENT_ANNOTATIONS.DELETABLE] = false
+  type.annotations[CORE_ANNOTATIONS.CREATABLE] = false
+  type.annotations[CORE_ANNOTATIONS.UPDATABLE] = false
+  type.annotations[CORE_ANNOTATIONS.DELETABLE] = false
   Object.values(type.fields).forEach(field => {
-    field.annotations[DEPLOYMENT_ANNOTATIONS.CREATABLE] = false
-    field.annotations[DEPLOYMENT_ANNOTATIONS.UPDATABLE] = false
+    field.annotations[CORE_ANNOTATIONS.CREATABLE] = false
+    field.annotations[CORE_ANNOTATIONS.UPDATABLE] = false
   })
   swaggers.forEach(swagger => addDeploymentAnnotationsFromSwagger(type, swagger, endpointDetails))
 }

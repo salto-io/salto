@@ -14,12 +14,13 @@
 * limitations under the License.
 */
 import { Change, ChangeError, ChangeValidator, getChangeElement, isInstanceChange, Element, isRemovalChange, InstanceElement, ElemID } from '@salto-io/adapter-api'
+import { deployment } from '@salto-io/adapter-components'
 import { transformValues } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
-import { OPERATION_TO_ANNOTATION } from '../annotations'
 import { getDiffInstance } from '../diff'
 
 const { awu } = collections.asynciterable
+const { OPERATION_TO_ANNOTATION } = deployment
 
 const ERROR_MESSAGE = 'Operation not supported'
 
@@ -77,7 +78,7 @@ export const checkDeploymentAnnotationsValidator: ChangeValidator = async change
 
       return unsupportedPaths.map(path => ({
         elemID: instance.elemID,
-        severity: 'Error',
+        severity: 'Warning',
         message: ERROR_MESSAGE,
         detailedMessage: detailedErrorMessage(change.action, path),
       }))

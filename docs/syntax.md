@@ -288,6 +288,9 @@ Currently the following core annotations are supported:
 - [_created_at](#_created_at)
 - [_changed_by](#_changed_by)
 - [_changed_at](#_changed_at)
+- [_creatable](#_created_at)
+- [_updatable](#_changed_by)
+- [_deletable](#_changed_at)
 
 #### `_required`
 This annotation is used on field blocks to specify that an instance must contain a value for this field.
@@ -543,6 +546,162 @@ type salto.example {
     value = 5
     _changed_at = "2021-05-02T00:00:00.000Z"
   }
+}
+```
+
+#### _creatable
+This is a hidden boolean annotation (will not be seen in NaCl) that is used to set whether creating instances of a type or certain value in it is supported.
+
+Type: `boolean`
+Default: `true`
+Applicable to: Types, Fields
+
+Example:
+
+For the type
+```HCL
+type salto.example {
+  number nonCreatableField {
+    _creatable = false
+  }
+  number creatableField {
+    _creatable = true
+  }
+  _creatable = true
+}
+```
+
+The following new instance will be deployed without any error:
+```HCL
+salto.example valid {
+  creatableField = 1
+}
+```
+
+For the following new instance, a warning will be shown in the deploy preview:
+```HCL
+salto.example invalid {
+  creatableField = 1
+  nonCreatableField = 1
+}
+```
+
+#### _updatable
+This is a hidden boolean annotation (will not be seen in NaCl) that is used to set whether a modification of an instance or a certain value in an instance is supported.
+
+Type: `boolean`
+Default: `true`
+Applicable to: Types, Fields
+
+Example:
+For the types
+```HCL
+type salto.updatable {
+  number nonUpdatableField {
+    _updatable = false
+  }
+  number updatableField {
+    _updatable = true
+  }
+  _updatable = true
+}
+
+type salto.notUpdatable {
+  number someField {
+  }
+  _updatable = false
+}
+```
+
+The following instance changes will be deployed without any error:
+```HCL
+// before
+salto.updatable valid {
+  updatableField = 1
+}
+
+// after
+salto.updatable valid {
+  updatableField = 2
+}
+```
+
+```HCL
+// before
+salto.updatable valid {
+  nonUpdatableField = 1
+  updatableField = 1
+}
+
+// after
+salto.updatable valid {
+  nonUpdatableField = 1
+  updatableField = 2
+}
+```
+
+For the following instance change, a warning will be shown to the user before deploying:
+```HCL
+// before
+salto.updatable invalid {
+  nonUpdatableField = 1
+  updatableField = 1
+}
+
+// after
+salto.updatable invalid {
+  nonUpdatableField = 2
+  updatableField = 2
+}
+```
+
+For the following instance change, an error will be shown to the user on deploy and the change will not be deployed:
+```HCL
+// before
+salto.notUpdatable invalid {
+  someField = 1
+}
+
+// after
+salto.notUpdatable invalid {
+  someField = 2
+}
+```
+
+#### _deletable
+This is a hidden boolean annotation (will not be seen in NaCl) that is used to set whether a deletion of an instance is supported.
+
+Type: `boolean`
+Default: `true`
+Applicable to: Types
+
+Example:
+For the types
+```HCL
+type salto.deletable {
+  number someField {
+  }
+  _deletable = false
+}
+
+type salto.notDeletable {
+  number someField {
+  }
+  _deletable = true
+}
+```
+
+The deletion of the following instance will be deployed without any error:
+```HCL
+salto.deletable instance {
+  someField = 2
+}
+```
+
+For the deletion of the following instance, an error will be shown to the user and the change will not be deployed:
+```HCL
+salto.notDeletable instance {
+  someField = 2
 }
 ```
 

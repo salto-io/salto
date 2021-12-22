@@ -13,18 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ActionName } from '@salto-io/adapter-api'
+import { ActionName, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 
-export type DeploymentAnnotation = 'creatable' | 'updatable' | 'deletable'
-
-export const DEPLOYMENT_ANNOTATIONS: Record<string, DeploymentAnnotation> = {
-  CREATABLE: 'creatable',
-  UPDATABLE: 'updatable',
-  DELETABLE: 'deletable',
-}
-
-export const OPERATION_TO_ANNOTATION: Record<ActionName, DeploymentAnnotation> = {
-  add: DEPLOYMENT_ANNOTATIONS.CREATABLE,
-  modify: DEPLOYMENT_ANNOTATIONS.UPDATABLE,
-  remove: DEPLOYMENT_ANNOTATIONS.DELETABLE,
+export const OPERATION_TO_ANNOTATION: Record<ActionName, string> = {
+  add: CORE_ANNOTATIONS.CREATABLE,
+  modify: CORE_ANNOTATIONS.UPDATABLE,
+  remove: CORE_ANNOTATIONS.DELETABLE,
 }

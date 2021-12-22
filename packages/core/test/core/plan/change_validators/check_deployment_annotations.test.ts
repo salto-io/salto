@@ -13,9 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { DEPLOYMENT_ANNOTATIONS } from '../../../src/deployment/annotations'
-import { checkDeploymentAnnotationsValidator } from '../../../src/deployment/change_validators/check_deployment_annotations'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { checkDeploymentAnnotationsValidator } from '../../../../src/core/plan/change_validators/check_deployment_annotations'
 
 describe('checkDeploymentAnnotationsValidator', () => {
   let type: ObjectType
@@ -26,22 +25,22 @@ describe('checkDeploymentAnnotationsValidator', () => {
       fields: {
         updatableField: {
           refType: BuiltinTypes.STRING,
-          annotations: { [DEPLOYMENT_ANNOTATIONS.CREATABLE]: false },
+          annotations: { [CORE_ANNOTATIONS.CREATABLE]: false },
         },
         notUpdatableField: {
           refType: BuiltinTypes.STRING,
           annotations: {
-            [DEPLOYMENT_ANNOTATIONS.CREATABLE]: false,
-            [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
+            [CORE_ANNOTATIONS.CREATABLE]: false,
+            [CORE_ANNOTATIONS.UPDATABLE]: false,
           },
         },
       },
       annotations: {
-        [DEPLOYMENT_ANNOTATIONS.CREATABLE]: false,
+        [CORE_ANNOTATIONS.CREATABLE]: false,
       },
     })
 
-    type.fields.inner = new Field(type, 'inner', type, { [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: true })
+    type.fields.inner = new Field(type, 'inner', type, { [CORE_ANNOTATIONS.UPDATABLE]: true })
 
     instance = new InstanceElement(
       'instance',
@@ -84,7 +83,7 @@ describe('checkDeploymentAnnotationsValidator', () => {
     ])
     expect(errors).toEqual([{
       elemID: instance.elemID,
-      severity: 'Error',
+      severity: 'Warning',
       message: 'Operation not supported',
       detailedMessage: `Salto does not support "modify" of ${instance.elemID.createNestedID('notUpdatableField').getFullName()}`,
     }])
@@ -98,7 +97,7 @@ describe('checkDeploymentAnnotationsValidator', () => {
     ])
     expect(errors).toEqual([{
       elemID: instance.elemID,
-      severity: 'Error',
+      severity: 'Warning',
       message: 'Operation not supported',
       detailedMessage: `Salto does not support "modify" of ${instance.elemID.createNestedID('inner', 'notUpdatableField').getFullName()}`,
     }])

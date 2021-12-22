@@ -49,13 +49,16 @@ export const INSTALLED_PACKAGE_METADATA = 'InstalledPackage'
 const packageChangeError = async (
   action: ActionName,
   element: Element,
-  detailedMessage = `Cannot ${action} ${element.elemID.idType} because it is part of a package`,
-): Promise<ChangeError> => ({
-  elemID: element.elemID,
-  severity: 'Error',
-  message: `Cannot change a managed package using Salto. Package namespace: ${(await getNamespace(element))}`,
-  detailedMessage,
-})
+  detailedMessage?: string,
+): Promise<ChangeError> => {
+  const packageNamespace = await getNamespace(element)
+  return ({
+    elemID: element.elemID,
+    severity: 'Error',
+    message: `Cannot change a managed package using Salto. Package namespace: ${packageNamespace}`,
+    detailedMessage: detailedMessage ?? `Cannot ${action} ${element.elemID.getFullName()} because it is part of a package namespace: ${packageNamespace}`,
+  })
+}
 
 const isInstalledPackageVersionChange = async (
   { before, after }: { before: InstanceElement; after: InstanceElement }
@@ -81,7 +84,7 @@ const changeValidator: ChangeValidator = async changes => {
     .map(obj => packageChangeError(
       'remove',
       obj,
-      'Cannot remove type because some of its fields belong to a managed package',
+      `Cannot remove type with id ${obj.elemID.getFullName()} because some of its fields belong to a managed package`,
     ))
     .toArray()
 
@@ -92,7 +95,7 @@ const changeValidator: ChangeValidator = async changes => {
     .map(change => packageChangeError(
       change.action,
       getChangeElement(change),
-      'Cannot change installed package version',
+      `Cannot change installed package version with id: ${getChangeElement(change).elemID.getFullName()}`,
     ))
     .toArray()
 

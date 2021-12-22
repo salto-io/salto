@@ -16,8 +16,8 @@
 import wu from 'wu'
 import { collections, values } from '@salto-io/lowerdash'
 import {
-  getChangeElement, DependencyChanger, dependencyChange, isInstanceElement,
-  CORE_ANNOTATIONS, isReferenceExpression, ChangeId, InstanceElement, Change,
+  getChangeElement, DependencyChanger, dependencyChange, CORE_ANNOTATIONS,
+  isReferenceExpression, ChangeId, InstanceElement, Change, isInstanceChange,
 } from '@salto-io/adapter-api'
 
 const { makeArray } = collections.array
@@ -31,26 +31,19 @@ type CircularDepsPair = {
 export const removeStandaloneFieldDependency: DependencyChanger = async (
   changes, deps
 ) => {
-  const instancesChanges = collections.iterable.groupBy(
-    wu(changes).filter(([_id, change]) => isInstanceElement(getChangeElement(change))),
-    ([_id, change]) => getChangeElement(change).elemID.getFullName(),
-  )
   const circularReferences: CircularDepsPair[] = []
-  wu(instancesChanges).forEach(([_id, instanceChanges]) => {
-    instanceChanges.forEach(change => {
-      const nodeId = change[0]
-      const references = deps.get(nodeId)
-      wu(references ?? []).forEach(refId => {
-        const refChange = changes.get(refId)
-        if (refChange
-          && isInstanceElement(getChangeElement(refChange))
-          && (deps.get(refId) ?? new Set()).has(nodeId)) {
-          circularReferences.push({
-            src: { nodeId, change: change[1] as Change<InstanceElement> },
-            dst: { nodeId: refId, change: refChange as Change<InstanceElement> },
-          })
-        }
-      })
+  wu(deps).forEach(([id, references]) => {
+    wu(references ?? []).forEach(refId => {
+      const change = changes.get(id)
+      const refChange = changes.get(refId)
+      if (change && isInstanceChange(change)
+        && refChange && isInstanceChange(refChange)
+        && (deps.get(refId) ?? new Set()).has(id)) {
+        circularReferences.push({
+          src: { nodeId: id, change: change as Change<InstanceElement> },
+          dst: { nodeId: refId, change: refChange as Change<InstanceElement> },
+        })
+      }
     })
   })
   return circularReferences.map(pair => {

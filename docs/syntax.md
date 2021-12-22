@@ -557,6 +557,8 @@ Default: `true`
 Applicable to: Types, Fields
 
 Example:
+
+For the type
 ```HCL
 type salto.example {
   number nonCreatableField {
@@ -569,6 +571,21 @@ type salto.example {
 }
 ```
 
+The following new instance will be deployed without any error:
+```HCL
+salto.example valid {
+  creatableField = 1
+}
+```
+
+For the following new instance, an error will be thrown from a change validator on deploy:
+```HCL
+salto.example invalid {
+  creatableField = 1
+  nonCreatableField = 1
+}
+```
+
 #### _updatable
 This is a hidden boolean annotation (will not be seen in NaCl) that is used to set whether a modification of an instance or a certain value in an instance is supported.
 
@@ -577,6 +594,7 @@ Default: `true`
 Applicable to: Types, Fields
 
 Example:
+For the type
 ```HCL
 type salto.example {
   number nonUpdatableField {
@@ -589,6 +607,48 @@ type salto.example {
 }
 ```
 
+The following instance changes will be deployed without any error:
+```HCL
+// before
+salto.example valid {
+  updatableField = 1
+}
+
+// after
+salto.example valid {
+  updatableField = 2
+}
+```
+
+```HCL
+// before
+salto.example valid {
+  nonUpdatableField = 1
+  updatableField = 1
+}
+
+// after
+salto.example valid {
+  nonUpdatableField = 1
+  updatableField = 2
+}
+```
+
+For the following instance change, an error will be thrown from a change validator on deploy:
+```HCL
+// before
+salto.example valid {
+  nonUpdatableField = 1
+  updatableField = 1
+}
+
+// after
+salto.example valid {
+  nonUpdatableField = 2
+  updatableField = 2
+}
+```
+
 #### _deletable
 This is a hidden boolean annotation (will not be seen in NaCl) that is used to set whether a deletion of an instance is supported.
 
@@ -597,9 +657,32 @@ Default: `true`
 Applicable to: Types
 
 Example:
+For the types
 ```HCL
-type salto.example {
+type salto.deletable {
+  number someField {
+  }
   _deletable = false
+}
+
+type salto.nonDeletable {
+  number someField {
+  }
+  _deletable = true
+}
+```
+
+The deletion of the following instance will be deployed without any error:
+```HCL
+salto.deletable instance {
+  someField = 2
+}
+```
+
+For the deletion of the following instance, an error will be thrown from a change validator:
+```HCL
+salto.nonDeletable instance {
+  someField = 2
 }
 ```
 

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ActionName, CORE_ANNOTATIONS, ObjectType, OPERATION_TO_ANNOTATION } from '@salto-io/adapter-api'
+import { ActionName, CORE_ANNOTATIONS, ObjectType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { OpenAPIV3 } from 'openapi-types'
@@ -21,6 +21,7 @@ import { AdapterApiConfig } from '../../../config/shared'
 import { DeploymentRequestsByAction } from '../../../config/request'
 import { LoadedSwagger } from '../swagger'
 import { extractProperties, isReferenceObject, isV3, SwaggerVersion, toSchema } from '../type_elements/swagger_parser'
+import { OPERATION_TO_ANNOTATION } from '../../../deployment/annotations'
 
 const log = logger(module)
 

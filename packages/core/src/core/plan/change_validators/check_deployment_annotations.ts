@@ -13,12 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeError, ChangeValidator, getChangeElement, isInstanceChange, Element, isRemovalChange, InstanceElement, ElemID, OPERATION_TO_ANNOTATION } from '@salto-io/adapter-api'
+import { Change, ChangeError, ChangeValidator, getChangeElement, isInstanceChange, Element, isRemovalChange, InstanceElement, ElemID } from '@salto-io/adapter-api'
+import { deployment } from '@salto-io/adapter-components'
 import { transformValues } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import { getDiffInstance } from '../diff'
 
 const { awu } = collections.asynciterable
+const { OPERATION_TO_ANNOTATION } = deployment
 
 const ERROR_MESSAGE = 'Operation not supported'
 

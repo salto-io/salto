@@ -15,3 +15,4 @@
 */
 export * as changeValidators from './change_validators'
 export * from './deployment'
+export * from './annotations'

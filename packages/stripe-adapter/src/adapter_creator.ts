@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
   InstanceElement, Adapter,
@@ -24,8 +23,8 @@ import StripeAdapter from './adapter'
 import {
   Credentials, accessTokenCredentialsType,
 } from './auth'
-import { configType, StripeConfig, CLIENT_CONFIG, DEFAULT_API_DEFINITIONS, API_DEFINITIONS_CONFIG,
-  StripeApiConfig, FETCH_CONFIG, StripeFetchConfig, DEFAULT_INCLUDE_TYPES } from './config'
+import { configType, StripeConfig, CLIENT_CONFIG, API_DEFINITIONS_CONFIG,
+  FETCH_CONFIG, DEFAULT_CONFIG } from './config'
 import { createConnection } from './client/connection'
 
 const log = logger(module)
@@ -37,28 +36,23 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
 })
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): StripeConfig => {
-  const apiDefinitions: StripeApiConfig = _.defaults(
-    {}, config?.value?.apiDefinitions, DEFAULT_API_DEFINITIONS
-  )
-  const fetch: StripeFetchConfig = _.defaults(
-    {}, config?.value?.fetch, { includeTypes: DEFAULT_INCLUDE_TYPES },
-  )
+  const fullConfig = configUtils.mergeWithDefaultConfig(DEFAULT_CONFIG, config?.value)
 
-  validateClientConfig(CLIENT_CONFIG, config?.value?.client)
-  validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
+  validateClientConfig(CLIENT_CONFIG, fullConfig.client)
+  validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, fullConfig.apiDefinitions)
   validateSwaggerFetchConfig(
     FETCH_CONFIG,
     API_DEFINITIONS_CONFIG,
-    fetch,
-    apiDefinitions
+    fullConfig.fetch,
+    fullConfig.apiDefinitions
   )
 
   const adapterConfig: { [K in keyof Required<StripeConfig>]: StripeConfig[K] } = {
-    client: config?.value?.client,
-    fetch: config?.value?.fetch,
-    apiDefinitions,
+    client: fullConfig.client,
+    fetch: fullConfig.fetch,
+    apiDefinitions: fullConfig.apiDefinitions,
   }
-  Object.keys(config?.value ?? {})
+  Object.keys(fullConfig)
     .filter(k => !Object.keys(adapterConfig).includes(k))
     .forEach(k => log.debug('Unknown config property was found: %s', k))
   return adapterConfig

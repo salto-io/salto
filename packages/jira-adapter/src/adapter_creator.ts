@@ -61,7 +61,7 @@ function validateConfig(config: Values): asserts config is JiraConfig {
 }
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): JiraConfig => {
-  const fullConfig = _.merge(DEFAULT_CONFIG, config?.value ?? {})
+  const fullConfig = configUtils.mergeWithDefaultConfig(DEFAULT_CONFIG, config?.value)
   validateConfig(fullConfig)
 
   // Hack to make sure this is coupled with the type definition of JiraConfig

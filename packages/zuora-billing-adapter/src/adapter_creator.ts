@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
   InstanceElement, Adapter,
@@ -23,9 +22,8 @@ import ZuoraClient from './client/client'
 import ZuoraAdapter from './adapter'
 import { Credentials, oauthClientCredentialsType, isSandboxSubdomain, toZuoraBaseUrl } from './auth'
 import {
-  configType, ZuoraConfig, CLIENT_CONFIG, DEFAULT_API_DEFINITIONS, API_DEFINITIONS_CONFIG,
-  ZuoraApiConfig, FETCH_CONFIG, ZuoraFetchConfig, DEFAULT_INCLUDE_TYPES,
-  DEFAULT_SETTINGS_INCLUDE_TYPES,
+  configType, ZuoraConfig, CLIENT_CONFIG, API_DEFINITIONS_CONFIG,
+  FETCH_CONFIG, DEFAULT_CONFIG,
 } from './config'
 import { createConnection } from './client/connection'
 
@@ -49,32 +47,23 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
 }
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): ZuoraConfig => {
-  const apiDefinitions: ZuoraApiConfig = _.defaults(
-    {}, config?.value?.apiDefinitions, DEFAULT_API_DEFINITIONS
-  )
+  const fullConfig = configUtils.mergeWithDefaultConfig(DEFAULT_CONFIG, config?.value)
 
-  const fetch: ZuoraFetchConfig = _.defaults(
-    {}, config?.value?.fetch, {
-      includeTypes: DEFAULT_INCLUDE_TYPES,
-      settingsIncludeTypes: DEFAULT_SETTINGS_INCLUDE_TYPES,
-    },
-  )
-
-  validateClientConfig(CLIENT_CONFIG, config?.value?.client)
-  validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
+  validateClientConfig(CLIENT_CONFIG, fullConfig.client)
+  validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, fullConfig.apiDefinitions)
   validateSwaggerFetchConfig(
     FETCH_CONFIG,
     API_DEFINITIONS_CONFIG,
-    fetch,
-    apiDefinitions
+    fullConfig.fetch,
+    fullConfig.apiDefinitions
   )
 
   const adapterConfig: { [K in keyof Required<ZuoraConfig>]: ZuoraConfig[K] } = {
-    client: config?.value?.client,
-    fetch: config?.value?.fetch,
-    apiDefinitions,
+    client: fullConfig.client,
+    fetch: fullConfig.fetch,
+    apiDefinitions: fullConfig.apiDefinitions,
   }
-  Object.keys(config?.value ?? {})
+  Object.keys(fullConfig)
     .filter(k => !Object.keys(adapterConfig).includes(k))
     .forEach(k => log.debug('Unknown config property was found: %s', k))
   return adapterConfig

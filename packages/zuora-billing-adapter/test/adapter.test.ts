@@ -362,6 +362,7 @@ describe('adapter', () => {
             {
               [FETCH_CONFIG]: {
                 includeTypes: DEFAULT_INCLUDE_TYPES,
+                settingsIncludeTypes: [],
               },
               [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
             }
@@ -406,6 +407,7 @@ describe('adapter', () => {
             {
               [FETCH_CONFIG]: {
                 includeTypes: DEFAULT_INCLUDE_TYPES.filter(t => t !== 'StandardObject'),
+                settingsIncludeTypes: [],
               },
               [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
             }

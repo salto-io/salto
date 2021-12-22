@@ -585,9 +585,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
     apiDefinitions: { refType: apiDefinitionsType },
   },
   annotations: {
-    [CORE_ANNOTATIONS.DEFAULT]: {
-      fetch: DEFAULT_CONFIG.fetch,
-    },
+    [CORE_ANNOTATIONS.DEFAULT]: _.omit(DEFAULT_CONFIG, 'apiDefinitions'),
   },
 })
 

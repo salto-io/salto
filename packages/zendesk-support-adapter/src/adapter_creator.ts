@@ -13,17 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, Adapter, Values, OAuthRequestParameters, OauthAccessTokenResponse } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import ZendeskAdapter from './adapter'
 import { Credentials, oauthAccessTokenCredentialsType, oauthRequestParametersType, usernamePasswordCredentialsType } from './auth'
 import {
-  configType, ZendeskConfig, CLIENT_CONFIG, FETCH_CONFIG, DEFAULT_TYPES, DEFAULT_ID_FIELDS,
-  FIELDS_TO_OMIT,
-  validateFetchConfig,
+  configType, ZendeskConfig, CLIENT_CONFIG, FETCH_CONFIG, validateFetchConfig,
   API_DEFINITIONS_CONFIG,
+  DEFAULT_CONFIG,
 } from './config'
 import ZendeskClient from './client/client'
 import { createConnection } from './client/connection'
@@ -78,28 +76,17 @@ const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters 
 })
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): ZendeskConfig => {
-  const configValue = config?.value ?? {}
-  const apiDefinitions: configUtils.AdapterDuckTypeApiConfig = _.defaults(
-    {}, configValue.apiDefinitions, {
-      typeDefaults: {
-        transformation: {
-          idFields: DEFAULT_ID_FIELDS,
-          fieldsToOmit: FIELDS_TO_OMIT,
-        },
-      },
-      types: DEFAULT_TYPES,
-    }
-  )
+  const configValue = configUtils.mergeWithDefaultConfig(DEFAULT_CONFIG, config?.value)
 
   const adapterConfig: { [K in keyof Required<ZendeskConfig>]: ZendeskConfig[K] } = {
     client: configValue.client,
     fetch: configValue.fetch,
-    apiDefinitions,
+    apiDefinitions: configValue.apiDefinitions,
   }
 
   validateClientConfig(CLIENT_CONFIG, adapterConfig.client)
-  validateFetchConfig(FETCH_CONFIG, adapterConfig.fetch, apiDefinitions)
-  validateDuckTypeApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
+  validateFetchConfig(FETCH_CONFIG, adapterConfig.fetch, configValue.apiDefinitions)
+  validateDuckTypeApiDefinitionConfig(API_DEFINITIONS_CONFIG, configValue.apiDefinitions)
 
   Object.keys(configValue)
     .filter(k => !Object.keys(adapterConfig).includes(k))

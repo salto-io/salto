@@ -135,6 +135,23 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   },
 }
 
+export const DEFAULT_CONFIG = {
+  [FETCH_CONFIG]: {
+    includeTypes: [
+      ...Object.keys(_.pickBy(DEFAULT_TYPES, def => def.request !== undefined)),
+    ].sort(),
+  },
+  [API_DEFINITIONS_CONFIG]: {
+    typeDefaults: {
+      transformation: {
+        idFields: DEFAULT_ID_FIELDS,
+        fieldsToOmit: FIELDS_TO_OMIT,
+      },
+    },
+    types: DEFAULT_TYPES,
+  },
+}
+
 export const configType = new ObjectType({
   elemID: new ElemID(WORKATO),
   fields: {
@@ -150,29 +167,13 @@ export const configType = new ObjectType({
           },
         },
       ),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-        [CORE_ANNOTATIONS.DEFAULT]: {
-          includeTypes: [
-            ...Object.keys(_.pickBy(DEFAULT_TYPES, def => def.request !== undefined)),
-          ].sort(),
-        },
-      },
     },
     [API_DEFINITIONS_CONFIG]: {
       refType: createDucktypeAdapterApiConfigType({ adapter: WORKATO }),
-      annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: {
-          typeDefaults: {
-            transformation: {
-              idFields: DEFAULT_ID_FIELDS,
-              fieldsToOmit: FIELDS_TO_OMIT,
-            },
-          },
-          types: DEFAULT_TYPES,
-        },
-      },
     },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.DEFAULT]: _.omit(DEFAULT_CONFIG, API_DEFINITIONS_CONFIG),
   },
 })
 

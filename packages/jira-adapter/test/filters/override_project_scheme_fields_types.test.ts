@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { createRefToElmWithValue, Element, ElemID, ObjectType, TypeReference } from '@salto-io/adapter-api'
+import { BuiltinTypes, createRefToElmWithValue, Element, ElemID, ObjectType, TypeReference } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { getDefaultAdapterConfig, mockClient } from '../utils'
 import overrideProjectSchemeFields from '../../src/filters/override_project_scheme_fields_types'
@@ -79,6 +79,6 @@ describe('overrideProjectSchemeFields', () => {
     expect(projectType.fields.issueTypeScreenScheme.refType)
       .toEqual(createRefToElmWithValue(issueTypeScreenSchemeType))
     expect(projectType.fields.fieldConfigurationScheme.refType)
-      .toEqual(createRefToElmWithValue(fieldConfigurationSchemeType))
+      .toEqual(createRefToElmWithValue(BuiltinTypes.UNKNOWN))
   })
 })

@@ -236,6 +236,7 @@ export type Workspace = {
   getSearchableNamesOfEnv(env?: string): Promise<string[]>
   listUnresolvedReferences(completeFromEnv?: string): Promise<UnresolvedElemIDs>
   getElementSourceOfPath(filePath: string, includeHidden?: boolean): Promise<ReadOnlyElementsSource>
+  getFileEnvs(filePath: string): {envName: string; isStatic?: boolean}[]
 }
 
 type SingleState = {
@@ -1275,6 +1276,7 @@ export const loadWorkspace = async (
         ? adaptersConfig.getElements()
         : elementsImpl(includeHidden)
     ),
+    getFileEnvs: filePath => naclFilesSource.getFileEnvs(filePath),
   }
 }
 

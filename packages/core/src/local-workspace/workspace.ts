@@ -22,7 +22,7 @@ import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl, rem
   configSource as cs, staticFiles, dirStore, WorkspaceComponents, errors, elementSource,
   COMMON_ENV_PREFIX, isValidEnvName, EnvironmentSource, EnvConfig, adaptersConfigSource } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
-import { localDirectoryStore } from './dir_store'
+import { localDirectoryStore, createExtensionFileFilter } from './dir_store'
 import { CONFIG_DIR_NAME, getConfigDir, getLocalStoragePath } from '../app_config'
 import { localState } from './state'
 import { workspaceConfigSource } from './workspace_config'
@@ -75,7 +75,7 @@ export const getNaclFilesSourceParams = (
     baseDir: sourceBaseDir,
     name,
     encoding: 'utf8',
-    fileFilter: `*${FILE_EXTENSION}`,
+    fileFilter: createExtensionFileFilter(FILE_EXTENSION),
     directoryFilter: dirPathToIgnore,
   })
 

@@ -30,6 +30,12 @@ const DELETE_CONCURRENCY = 100
 const RENAME_CONCURRENCY = 100
 
 type FileMap<T extends dirStore.ContentType> = Record<string, dirStore.File<T>>
+type FilePathFilter = (filePath: string) => boolean
+export const createExtensionFileFilter = (
+  extension: string
+) : FilePathFilter => (
+  (filePath: string) => path.extname(filePath) === extension
+)
 
 const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   baseDir: string,
@@ -37,8 +43,8 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   nameSuffix?: string,
   accessiblePath = '',
   encoding?: BufferEncoding,
-  fileFilter?: string,
-  directoryFilter?: (path: string) => boolean,
+  fileFilter?: FilePathFilter,
+  directoryFilter?: FilePathFilter,
   initUpdated?: FileMap<T>,
   initDeleted? : string[],
 ): dirStore.SyncDirectoryStore<T> => {
@@ -52,11 +58,17 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   const getAccessibleFullPath = (): string =>
     path.join(currentBaseDir, accessiblePath)
 
-  const getRelativeFileName = (filename: string): string => {
+  const isContainedInDirStore = (filename: string): boolean => {
     const accessibleFullPath = getAccessibleFullPath()
     const isAbsolute = path.isAbsolute(filename)
+    return !path.relative(
+      accessibleFullPath,
+      isAbsolute ? filename : getAbsFileName(filename)
+    ).startsWith(`..${path.sep}`)
+  }
 
-    if (path.relative(accessibleFullPath, isAbsolute ? filename : getAbsFileName(filename)).startsWith(`..${path.sep}`)) {
+  const getRelativeFileName = (filename: string): string => {
+    if (!isContainedInDirStore(filename)) {
       throw new Error(`Filepath not contained in dir store base dir: ${filename}`)
     }
 
@@ -68,7 +80,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   const listDirFiles = async (listDirectories = false):
   Promise<string[]> => (await fileUtils.exists(getAccessibleFullPath())
     ? readdirp.promise(getAccessibleFullPath(), {
-      fileFilter: fileFilter || (() => true),
+      fileFilter: fileFilter ? (e => fileFilter(e.fullPath)) : (() => true),
       directoryFilter: e => e.basename[0] !== '.'
         && (!directoryFilter || directoryFilter(e.fullPath)),
       type: listDirectories ? 'directories' : 'files',
@@ -175,6 +187,20 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       .map(f => () => removeDirIfEmpty(getAbsFileName(f))))
   }
 
+  const isPathIncluded = (filePath: string): boolean => {
+    const absPath = getAbsFileName(filePath)
+    if (!isContainedInDirStore(absPath)) {
+      return false
+    }
+    if (fileFilter && !fileFilter(absPath)) {
+      return false
+    }
+    if (directoryFilter && !directoryFilter(absPath)) {
+      return false
+    }
+    return true
+  }
+
   return {
     list,
     isEmpty,
@@ -269,8 +295,8 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       _.cloneDeep(updated),
       _.cloneDeep(deleted)
     ),
-    getFullPath: filename =>
-      getAbsFileName(filename),
+    getFullPath: filename => getAbsFileName(filename),
+    isPathIncluded,
   }
 }
 
@@ -280,8 +306,8 @@ type LocalDirectoryStoreParams = {
   nameSuffix?: string
   accessiblePath?: string
   encoding?: 'utf8'
-  fileFilter?: string
-  directoryFilter?: (path: string) => boolean
+  fileFilter?: FilePathFilter
+  directoryFilter?: FilePathFilter
 }
 
 export function localDirectoryStore(params: Omit<LocalDirectoryStoreParams, 'encoding'>):

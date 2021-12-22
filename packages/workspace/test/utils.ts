@@ -76,6 +76,9 @@ export const mockStaticFilesSource = (staticFiles: StaticFile[] = []): StaticFil
   getTotalSize: jest.fn(),
   clear: jest.fn(),
   delete: jest.fn(),
+  isPathIncluded: jest.fn().mockImplementation(
+    filePath => staticFiles.find(f => f.filepath === filePath) !== undefined
+  ),
 })
 
 export const persistentMockCreateRemoteMap = (): RemoteMapCreator => {

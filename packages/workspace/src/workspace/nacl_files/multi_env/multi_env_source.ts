@@ -144,6 +144,7 @@ export type MultiEnvSource = {
   getSearchableNamesOfEnv: (env: string) => Promise<string[]>
   flush: () => Promise<void>
   rename: (name: string) => Promise<void>
+  getFileEnvs: (filePath: string) => {envName: string; isNacl?: boolean}[]
 }
 
 const buildMultiEnvSource = (
@@ -310,9 +311,13 @@ const buildMultiEnvSource = (
 
   const getSourceForNaclFile = (
     fullName: string
-  ): {source: NaclFilesSource; relPath: string} => {
+  ): {source: NaclFilesSource; relPath: string; prefix: string} => {
     const prefix = getSourceNameForNaclFile(fullName)
-    return { relPath: getRelativePath(fullName, prefix), source: getSourceFromEnvName(prefix) }
+    return {
+      relPath: getRelativePath(fullName, prefix),
+      source: getSourceFromEnvName(prefix),
+      prefix,
+    }
   }
 
   const buildFullPath = (envName: string, relPath: string): string => (
@@ -568,6 +573,17 @@ const buildMultiEnvSource = (
     }))
   }
 
+  const getFileEnvs = (filePath: string): {envName: string; isNacl?: boolean}[] => {
+    const source = getSourceForNaclFile(filePath)
+    const { included, isNacl } = source.source.isPathIncluded(source.relPath)
+    if (!included) {
+      return []
+    }
+    return source.prefix === commonSourceName
+      ? Object.keys(envSources()).map(envName => ({ envName, isNacl }))
+      : [{ envName: source.prefix, isNacl }]
+  }
+
   return {
     getNaclFile,
     updateNaclFiles,
@@ -684,6 +700,7 @@ const buildMultiEnvSource = (
       return naclSource === undefined ? [] : naclSource.getSearchableNames()
     },
     getStaticFile,
+    getFileEnvs,
   }
 }
 

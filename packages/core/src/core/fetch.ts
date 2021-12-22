@@ -37,10 +37,12 @@ import { getAdaptersCreatorConfigs } from './adapters'
 
 const { awu, groupByAsync } = collections.asynciterable
 const { mapValuesAsync } = promises.object
+const { withLimitedConcurrency } = promises.array
 const { mergeElements } = merger
 const log = logger(module)
 const { isDefined } = values
 
+const MAX_SPLIT_CONCURRENCY = 2000
 type ChangeAuthorInformation = {
   changedBy?: string
   changedAt?: string
@@ -804,9 +806,9 @@ export const fetchChangesFromWorkspace = async (
     .toArray()
 
   const otherPathIndex = await otherWorkspace.state(env).getPathIndex()
-  const unmergedElements = await awu(fullElements).map(
-    elem => pathIndex.splitElementByPath(elem, otherPathIndex)
-  ).flat().toArray()
+  const unmergedElements = (await withLimitedConcurrency(wu(fullElements).map(
+    elem => () => pathIndex.splitElementByPath(elem, otherPathIndex)
+  ), MAX_SPLIT_CONCURRENCY)).flat()
   return createFetchChanges({
     adapterNames: fetchAccounts,
     currentConfigs,

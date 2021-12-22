@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { createRefToElmWithValue, Element, isObjectType, isType } from '@salto-io/adapter-api'
+import { BuiltinTypes, createRefToElmWithValue, Element, isObjectType, isType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
@@ -46,8 +46,13 @@ const filter: FilterCreator = () => ({
       'permissionScheme',
       'notificationScheme',
       'issueTypeScreenScheme',
-      'fieldConfigurationScheme',
     )
+    /**
+     * This should avoid the warning for DefaultFieldConfiguration value.
+     * Remove after {@link https://salto-io.atlassian.net/browse/SALTO-1809} is implemented.
+     * */
+    projectType.fields.fieldConfigurationScheme
+      .refType = createRefToElmWithValue(BuiltinTypes.UNKNOWN)
   },
 })
 

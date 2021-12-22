@@ -28,16 +28,17 @@ export const cleanWorkspace = async (
   workspace: Workspace,
   cleanArgs: WorkspaceComponents,
 ): Promise<void> => {
-  await workspace.clear(_.omit(cleanArgs, 'serviceConfig'))
-  if (cleanArgs.serviceConfig === true) {
-    await awu(workspace.services()).forEach(async service => {
-      const defaultConfig = await getDefaultAdapterConfig(service)
+  await workspace.clear(_.omit(cleanArgs, 'accountConfig'))
+  if (cleanArgs.accountConfig === true) {
+    await awu(workspace.accounts()).forEach(async account => {
+      const service = workspace.getServiceFromAccountName(account)
+      const defaultConfig = await getDefaultAdapterConfig(service, account)
       if (defaultConfig === undefined) {
         // some services, like hubspot, don't have configs to restore
-        log.info('Cannot restore config for service %s', service)
+        log.info('Cannot restore config for account %s', account)
         return
       }
-      await workspace.updateServiceConfig(service, defaultConfig)
+      await workspace.updateAccountConfig(service, defaultConfig, account)
     })
   }
   await workspace.flush()

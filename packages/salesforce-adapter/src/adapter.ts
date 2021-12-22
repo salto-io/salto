@@ -352,7 +352,6 @@ export default class SalesforceAdapter implements AdapterOperations {
       elements: metadataInstancesElements,
       configChanges: metadataInstancesConfigInstances,
     } = await metadataInstancesPromise
-
     const elements = [
       ...fieldTypes, ...hardCodedTypes, ...metadataTypes, ...metadataInstancesElements,
     ]

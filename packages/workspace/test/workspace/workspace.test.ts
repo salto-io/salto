@@ -39,10 +39,8 @@ import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import { Workspace, initWorkspace, loadWorkspace, EnvironmentSource,
   COMMON_ENV_PREFIX, UnresolvedElemIDs, UpdateNaclFilesResult, isValidEnvName } from '../../src/workspace/workspace'
-import {
-  DeleteCurrentEnvError, UnknownEnvError, EnvDuplicationError,
-  ServiceDuplicationError, InvalidEnvNameError, Errors, MAX_ENV_NAME_LEN,
-} from '../../src/workspace/errors'
+import { DeleteCurrentEnvError, UnknownEnvError, EnvDuplicationError,
+  AccountDuplicationError, InvalidEnvNameError, Errors, MAX_ENV_NAME_LEN, UnknownAccountError, InvalidAccountNameError } from '../../src/workspace/errors'
 import { StaticFilesSource } from '../../src/workspace/static_files'
 import * as dump from '../../src/parser/dump'
 import { mockDirStore } from '../common/nacl_file_store'
@@ -85,8 +83,13 @@ const mockWorkspaceConfigSource = (conf?: Values,
   secondaryEnv?: boolean): WorkspaceConfigSource => ({
   getWorkspaceConfig: jest.fn().mockImplementation(() => ({
     envs: [
-      { name: 'default', services },
-      ...(secondaryEnv ? [{ name: 'inactive', services: [...services, 'hubspot'] }] : []),
+      { name: 'default',
+        accounts: services,
+        accountToServiceName: Object.fromEntries(services.map(service => [service, service])) },
+      ...(secondaryEnv ? [{ name: 'inactive',
+        accounts: [...services, 'hubspot'],
+        accountToServiceName: { hubspot: 'hubspot',
+          ...Object.fromEntries(services.map(service => [service, service])) } }] : []),
     ],
     uid: '',
     name: 'test',
@@ -129,8 +132,8 @@ const createState = (
 ): State => buildInMemState(async () => ({
   elements: createInMemoryElementSource(elements),
   pathIndex: new InMemoryRemoteMap<Path[]>(),
-  servicesUpdateDate: new InMemoryRemoteMap(),
   referenceSources: new InMemoryRemoteMap(),
+  accountsUpdateDate: new InMemoryRemoteMap(),
   saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),
 }), persistent)
 const createWorkspace = async (
@@ -2047,7 +2050,7 @@ describe('workspace', () => {
         () => Promise.resolve(new InMemoryRemoteMap()),
       )
       expect((workspaceConf.setWorkspaceConfig as jest.Mock).mock.calls[0][0]).toEqual(
-        { name: 'ws-name', uid: 'uid', envs: [{ name: 'default' }], currentEnv: 'default' }
+        { name: 'ws-name', uid: 'uid', envs: [{ name: 'default', accountToServiceName: {} }], currentEnv: 'default' }
       )
       expect(workspace.name).toEqual('ws-name')
     })
@@ -2067,7 +2070,7 @@ describe('workspace', () => {
       const ws = await createWorkspace(undefined, undefined, mockWorkspaceConfigSource(
         { staleStateThresholdMinutes: durationAfterLastModificationMinutes + 1 }
       ))
-      ws.state().getServicesUpdateDates = jest.fn().mockImplementation(
+      ws.state().getAccountsUpdateDates = jest.fn().mockImplementation(
         () => Promise.resolve({ salesforce: modificationDate })
       )
       const recency = await ws.getStateRecency('salesforce')
@@ -2078,7 +2081,7 @@ describe('workspace', () => {
       const ws = await createWorkspace(undefined, undefined, mockWorkspaceConfigSource(
         { staleStateThresholdMinutes: durationAfterLastModificationMinutes - 1 }
       ))
-      ws.state().getServicesUpdateDates = jest.fn().mockImplementation(
+      ws.state().getAccountsUpdateDates = jest.fn().mockImplementation(
         () => Promise.resolve({ salesforce: modificationDate })
       )
       const recency = await ws.getStateRecency('salesforce')
@@ -2087,7 +2090,7 @@ describe('workspace', () => {
     })
     it('should return nonexistent when the state does not exist', async () => {
       const ws = await createWorkspace()
-      ws.state().getServicesUpdateDates = jest.fn().mockImplementation(() => Promise.resolve({}))
+      ws.state().getAccountsUpdateDates = jest.fn().mockImplementation(() => Promise.resolve({}))
       const recency = await ws.getStateRecency('salesforce')
       expect(recency.status).toBe('Nonexistent')
       expect(recency.date).toBe(undefined)
@@ -2155,7 +2158,7 @@ describe('workspace', () => {
 
     it('should change workspace state', async () => {
       await workspace.setCurrentEnv('inactive')
-      expect(workspace.services()).toEqual([...services, 'hubspot'])
+      expect(workspace.accounts().sort()).toEqual([...services, 'hubspot'].sort())
     })
 
     it('should persist', async () => {
@@ -2527,22 +2530,28 @@ describe('workspace', () => {
     })
   })
 
-  describe('addService', () => {
+  describe('addAccount', () => {
     let workspaceConf: WorkspaceConfigSource
     let workspace: Workspace
 
     beforeEach(async () => {
       workspaceConf = mockWorkspaceConfigSource()
       workspace = await createWorkspace(undefined, undefined, workspaceConf)
-      await workspace.addService('new')
+      await workspace.addAccount('salto', 'new')
     })
 
     it('should change workspace state', async () => {
-      expect(workspace.services().includes('new')).toBeTruthy()
+      expect(workspace.accounts().includes('new')).toBeTruthy()
     })
 
-    it('should throw service duplication error', async () => {
-      await expect(workspace.addService('new')).rejects.toThrow(ServiceDuplicationError)
+    it('should throw account duplication error', async () => {
+      await expect(workspace.addAccount('salto', 'new')).rejects.toThrow(AccountDuplicationError)
+    })
+
+    it('should throw invalidAccountNameError', async () => {
+      await expect(workspace.addAccount('salto', 'new;;')).rejects.toThrow(InvalidAccountNameError)
+      await expect(workspace.addAccount('salto', 'new account')).rejects.toThrow(InvalidAccountNameError)
+      await expect(workspace.addAccount('salto', 'new.')).rejects.toThrow(InvalidAccountNameError)
     })
 
     it('should persist', () => {
@@ -2555,7 +2564,7 @@ describe('workspace', () => {
     })
   })
 
-  describe('updateServiceCredentials', () => {
+  describe('updateAccountCredentials', () => {
     let credsSource: ConfigSource
     let workspace: Workspace
     const newCreds = new InstanceElement(
@@ -2567,7 +2576,7 @@ describe('workspace', () => {
     beforeEach(async () => {
       credsSource = mockCredentialsSource()
       workspace = await createWorkspace(undefined, undefined, undefined, undefined, credsSource)
-      await workspace.updateServiceCredentials(services[0], newCreds)
+      await workspace.updateAccountCredentials(services[0], newCreds)
     })
 
     it('should persist', () => {
@@ -2579,7 +2588,7 @@ describe('workspace', () => {
     })
   })
 
-  describe('updateServiceConfig', () => {
+  describe('updateAccountConfig', () => {
     let adaptersConf: AdaptersConfigSource
     let workspace: Workspace
     const newConf = new InstanceElement(services[0],
@@ -2588,7 +2597,7 @@ describe('workspace', () => {
     beforeEach(async () => {
       adaptersConf = mockAdaptersConfigSource()
       workspace = await createWorkspace(undefined, undefined, undefined, adaptersConf)
-      await workspace.updateServiceConfig(services[0], newConf)
+      await workspace.updateAccountConfig(services[0], newConf, services[0])
     })
 
     it('should persist', () => {
@@ -2597,11 +2606,12 @@ describe('workspace', () => {
         adaptersConf.setAdapter as jest.Mock
       ).mock.calls[0]
       expect(setAdapterParams[0]).toEqual('salesforce')
-      expect(setAdapterParams[1]).toEqual(newConf)
+      expect(setAdapterParams[1]).toEqual('salesforce')
+      expect(setAdapterParams[2]).toEqual(newConf)
     })
   })
 
-  describe('servicesCredentials', () => {
+  describe('accountCredentials', () => {
     let credsSource: ConfigSource
     let workspace: Workspace
 
@@ -2619,12 +2629,12 @@ describe('workspace', () => {
     })
 
     it('should get creds', async () => {
-      await workspace.servicesCredentials()
+      await workspace.accountCredentials()
       expect(credsSource.get).toHaveBeenCalledTimes(1)
     })
 
     it('should get creds partials', async () => {
-      await workspace.servicesCredentials(services)
+      await workspace.accountCredentials(services)
       expect(credsSource.get).toHaveBeenCalledTimes(1)
     })
   })
@@ -2784,8 +2794,8 @@ describe('workspace', () => {
         {
           getWorkspaceConfig: jest.fn().mockImplementation(() => ({
             envs: [
-              { name: 'default', services: ['test'] },
-              { name: 'full', services: ['test'] },
+              { name: 'default', accounts: ['test'], accountToServiceName: { test: 'test' } },
+              { name: 'full', accounts: ['test'], accountToServiceName: { test: 'test' } },
             ],
             uid: '',
             name: 'test',
@@ -3200,8 +3210,8 @@ describe('workspace', () => {
         {
           getWorkspaceConfig: jest.fn().mockImplementation(() => ({
             envs: [
-              { name: 'default', services: ['salto'] },
-              { name: 'inactive', services: ['salto'] },
+              { name: 'default', accounts: ['salto'] },
+              { name: 'inactive', accounts: ['salto'] },
             ],
             uid: '',
             name: 'test',
@@ -3334,6 +3344,50 @@ describe('workspace', () => {
         { source: 'env' }
       )).toArray()
       expect(ids.map(id => id.getFullName())).toEqual(['adapter.default'])
+    })
+  })
+  describe('getServiceFromAccountName', () => {
+    let ws: Workspace
+    beforeEach(async () => {
+      ws = await createWorkspace(
+        undefined,
+        undefined,
+        {
+          getWorkspaceConfig: jest.fn().mockImplementation(() => ({
+            envs: [
+              { name: 'default', accountToServiceName: { salto2: 'salto', salto1: 'salto' } },
+            ],
+            uid: '',
+            name: 'test',
+            currentEnv: 'default',
+          })),
+          setWorkspaceConfig: jest.fn(),
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          '': {
+            naclFiles: createMockNaclFileSource([]),
+          },
+          default: {
+            naclFiles: createMockNaclFileSource(
+              []
+            ),
+            state: createState([]),
+          },
+        }
+      )
+    })
+
+    it('gets correct service from account name', () => {
+      expect(ws.getServiceFromAccountName('salto2')).toEqual('salto')
+      expect(ws.getServiceFromAccountName('salto1')).toEqual('salto')
+    })
+
+    it('throws exception on non-existant account name', () => {
+      expect(() => ws.getServiceFromAccountName('salto'))
+        .toThrow(new UnknownAccountError('salto'))
     })
   })
 })

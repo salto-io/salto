@@ -93,6 +93,7 @@ export type NaclFilesSource<Changes=ChangeSet<Change>> = Omit<ElementsSource, 'c
     filePath: string,
     encoding: BufferEncoding,
   ) => Promise<StaticFile | undefined>
+  isPathIncluded: (filePath: string) => {included: boolean; isNacl?: boolean}
 }
 
 type NaclFilesState = {
@@ -529,9 +530,9 @@ const buildNaclFilesSource = (
       sourceName,
       persistent
     )
-    const preChangeHash = await currentState.parsedNaclFiles.getHash()
     const modifiedNaclFiles: NaclFile[] = []
     if (!ignoreFileChanges) {
+      const preChangeHash = await currentState.parsedNaclFiles.getHash()
       const cacheFilenames = await currentState.parsedNaclFiles.list()
       const naclFilenames = new Set(await naclFilesStore.list())
       const fileNames = new Set()
@@ -562,6 +563,7 @@ const buildNaclFilesSource = (
       result.changes.preChangeHash = preChangeHash
       return result
     }
+    const preChangeHash = await currentState.metadata.get(HASH_KEY)
     return {
       changes: { changes: [], cacheValid: true, preChangeHash, postChangeHash: preChangeHash },
       state: currentState,
@@ -945,6 +947,16 @@ const buildNaclFilesSource = (
       }
       return undefined
     },
+    isPathIncluded: filePath => {
+      if (naclFilesStore.isPathIncluded(filePath)) {
+        return { included: true, isNacl: true }
+      }
+      if (staticFilesSource.isPathIncluded(filePath)) {
+        return { included: true, isNacl: false }
+      }
+      return { included: false }
+    },
+
   }
 }
 

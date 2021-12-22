@@ -18,6 +18,7 @@ import { getDeepInnerType, getField, getFieldType } from '../src/utils'
 import { ObjectType, ListType, isElement, isField, isListType, isMapType, MapType, PrimitiveType, PrimitiveTypes, ReadOnlyElementsSource } from '../src/elements'
 import { ElemID } from '../src/element_id'
 import { BuiltinTypes } from '../src/builtins'
+import { isSaltoElementError } from '../src/error'
 
 const { awu } = collections.asynciterable
 
@@ -256,6 +257,21 @@ describe('Test utils.ts & isXXX in elements.ts', () => {
         expect(await getField(mockObjectType, ['nonExistentField'])).toBeUndefined()
         expect(await getFieldType(mockObjectType, ['nonExistentField'])).toBeUndefined()
       })
+    })
+  })
+  describe('test error verification', () => {
+    it('should return true when given an error that has elemID', () => {
+      expect(isSaltoElementError({
+        message: '',
+        severity: 'Error',
+        elemID: new ElemID(''),
+      })).toBeTruthy()
+    })
+    it('should return false when given an error that does not have elemID', () => {
+      expect(isSaltoElementError({
+        message: '',
+        severity: 'Error',
+      })).toBeFalsy()
     })
   })
 })

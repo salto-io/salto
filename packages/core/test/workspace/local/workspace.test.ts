@@ -336,6 +336,45 @@ describe('local workspace', () => {
     })
   })
 
+  describe('load workspsace with existing services, including different account name', () => {
+    beforeAll(() => {
+      const getConf = repoDirStore.get as jest.Mock
+      getConf.mockResolvedValue({ buffer: `
+      salto {
+        uid = "98bb902f-a144-42da-9672-f36e312e8e09"
+        name = "test"
+        envs = [
+            {
+              name = "default"
+              accountToServiceName = {
+                salto2 = "salesforce"
+                salto1 = "salesforce"
+              }
+            },
+        ]
+        currentEnv = "default"
+      }
+      `,
+      filename: '' })
+    })
+
+    it('should call loadLocalWorkspace with correct input for different account names', async () => {
+      const repoIsEmpty = repoDirStore.isEmpty as jest.Mock
+      repoIsEmpty.mockResolvedValueOnce(false)
+      const envIsEmpty = envDirStore.isEmpty as jest.Mock
+      envIsEmpty.mockResolvedValueOnce(false)
+      const mockLoad = ws.loadWorkspace as jest.Mock
+      await loadLocalWorkspace('.')
+      expect(mockLoad).toHaveBeenCalledTimes(1)
+      const envSources: ws.EnvironmentsSources = mockLoad.mock.calls[0][3]
+      expect(Object.keys(envSources.sources)).toHaveLength(2)
+      expect(mockCreateDirStore).toHaveBeenCalledTimes(9)
+      const dirStoresBaseDirs = mockCreateDirStore.mock.calls.map(c => c[0])
+        .map(params => toWorkspaceRelative(params))
+      expect(dirStoresBaseDirs).toContain(path.join(ENVS_PREFIX, 'default'))
+    })
+  })
+
   describe('clear', () => {
     let lastWorkspace: Value
     beforeEach(() => {

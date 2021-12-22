@@ -25,7 +25,7 @@ export const mockState = (
   buildInMemState(async () => ({
     elements: createInMemoryElementSource(elements),
     pathIndex: new InMemoryRemoteMap<Path[]>(),
-    servicesUpdateDate: new InMemoryRemoteMap(),
+    accountsUpdateDate: new InMemoryRemoteMap(),
     saltoVersion: '0.0.1',
     saltoMetadata: new InMemoryRemoteMap(),
   }))

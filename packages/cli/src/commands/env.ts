@@ -27,7 +27,7 @@ import {
 import Prompts from '../prompts'
 import { cliApproveIsolateBeforeMultiEnv } from '../callbacks'
 import { outputLine, errorOutputLine } from '../outputer'
-import { ServicesArg, SERVICES_OPTION, getAndValidateActiveServices } from './common/services'
+import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts } from './common/accounts'
 import { ConfigOverrideArg, CONFIG_OVERRIDE_OPTION, getConfigOverrideChanges } from './common/config_override'
 import { getWorkspaceTelemetryTags } from '../workspace/workspace'
 
@@ -84,20 +84,20 @@ type EnvDiffArgs = {
   detailedPlan: boolean
   hidden: boolean
   state: boolean
-} & ServicesArg
+} & AccountsArg
 
 export const diffAction: WorkspaceCommandAction<EnvDiffArgs> = async ({
   input,
   output,
   workspace,
 }): Promise<CliExitCode> => {
-  const { detailedPlan, elementSelector = [], hidden, state, fromEnv, toEnv, services } = input
+  const { detailedPlan, elementSelector = [], hidden, state, fromEnv, toEnv, accounts } = input
   const { validSelectors, invalidSelectors } = createElementSelectors(elementSelector)
   if (!_.isEmpty(invalidSelectors)) {
     errorOutputLine(formatInvalidFilters(invalidSelectors), output)
     return CliExitCode.UserInputError
   }
-  const actualServices = getAndValidateActiveServices(workspace, services)
+  const actualAccounts = getAndValidateActiveAccounts(workspace, accounts)
   if (!(workspace.envs().includes(fromEnv))) {
     errorOutputLine(`Unknown environment ${fromEnv}`, output)
     return CliExitCode.UserInputError
@@ -115,7 +115,7 @@ export const diffAction: WorkspaceCommandAction<EnvDiffArgs> = async ({
     toEnv,
     hidden,
     state,
-    actualServices,
+    actualAccounts,
     validSelectors,
   )
   outputLine(await formatEnvDiff(changes, detailedPlan, toEnv, fromEnv), output)
@@ -170,7 +170,7 @@ const envDiffDef = createWorkspaceCommand({
         required: false,
         description: 'Use the latest state files to compare the environments',
       },
-      SERVICES_OPTION,
+      ACCOUNTS_OPTION,
     ],
   },
   action: diffAction,

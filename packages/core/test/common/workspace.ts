@@ -22,7 +22,7 @@ import { mockState } from './state'
 const mockService = 'salto'
 const emptyMockService = 'salto2'
 
-export const SERVICES = [mockService, emptyMockService]
+export const ACCOUNTS = [mockService, emptyMockService]
 
 export const configID = new ElemID(mockService)
 export const emptyConfigID = new ElemID(emptyMockService)
@@ -65,20 +65,22 @@ export const mockWorkspace = ({
   name = undefined,
   index = [],
   stateElements = undefined,
-  services = SERVICES,
+  accounts = ACCOUNTS,
   errors = [],
-  serviceConfigs = {},
+  accountConfigs = {},
+  accountToServiceName = {},
 }: {
   elements?: Element[]
   name?: string
   index?: workspace.remoteMap.RemoteMapEntry<workspace.pathIndex.Path[]>[]
   stateElements?: Element[]
-  services?: string[]
+  accounts?: string[]
   errors?: SaltoError[]
-  serviceConfigs?: Record<string, InstanceElement>
+  accountConfigs?: Record<string, InstanceElement>
   getValue?: Promise<Value | undefined>
+  accountToServiceName?: Record<string, string>
 }): workspace.Workspace => {
-  const state = mockState(SERVICES, stateElements || elements, index)
+  const state = mockState(ACCOUNTS, stateElements || elements, index)
   return {
     elements: jest.fn().mockImplementation(
       async () => elementSource.createInMemoryElementSource(elements)
@@ -86,21 +88,26 @@ export const mockWorkspace = ({
     name,
     envs: () => ['default'],
     currentEnv: () => 'default',
-    services: () => services,
+    services: () => accounts,
+    accounts: () => accounts,
     state: jest.fn().mockReturnValue(state),
     updateNaclFiles: jest.fn(),
     flush: jest.fn(),
-    servicesCredentials: jest.fn().mockResolvedValue({
+    accountCredentials: jest.fn().mockResolvedValue({
       [mockService]: mockConfigInstance,
       [emptyMockService]: mockEmptyConfigInstance,
     }),
-    serviceConfig: (serviceName: string) => serviceConfigs[serviceName],
+    accountConfig: (accountName: string) => accountConfigs[accountName],
     getWorkspaceErrors: jest.fn().mockResolvedValue(errors),
+    getServiceFromAccountName: (account: string) => accountToServiceName[account] ?? account,
     addService: jest.fn(),
     updateServiceCredentials: jest.fn(),
     updateServiceConfig: jest.fn(),
     getReferenceSourcesIndex: mockFunction<workspace.Workspace['getReferenceSourcesIndex']>(),
     getReferenceTargetsIndex: mockFunction<workspace.Workspace['getReferenceSourcesIndex']>(),
+    addAccount: jest.fn(),
+    updateAccountCredentials: jest.fn(),
+    updateAccountConfig: jest.fn(),
     clear: jest.fn(),
     getElementIdsBySelectors: jest.fn(),
     hasErrors: () => errors.length > 0,

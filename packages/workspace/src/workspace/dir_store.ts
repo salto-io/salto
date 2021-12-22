@@ -36,6 +36,7 @@ export type DirectoryStore<T extends ContentType> = {
   clone(): DirectoryStore<T>
   isEmpty(): Promise<boolean>
   getFullPath(filename: string): string
+  isPathIncluded(filePath: string): boolean
 }
 
 export type SyncDirectoryStore<T extends ContentType> = DirectoryStore<T> & {

@@ -52,11 +52,13 @@ export { cleanWorkspace } from './core/clean'
 const { awu } = collections.asynciterable
 const log = logger(module)
 
+const { mapValuesAsync } = promises.object
+
 const getAdapterFromLoginConfig = (loginConfig: Readonly<InstanceElement>): Adapter =>
   adapterCreators[loginConfig.elemID.adapter]
 
 export const verifyCredentials = async (
-  loginConfig: Readonly<InstanceElement>
+  loginConfig: Readonly<InstanceElement>,
 ): Promise<AccountId> => {
   const adapterCreator = getAdapterFromLoginConfig(loginConfig)
   if (adapterCreator) {
@@ -67,30 +69,37 @@ export const verifyCredentials = async (
 
 export const updateCredentials = async (
   workspace: Workspace,
-  newConfig: Readonly<InstanceElement>
+  newConfig: Readonly<InstanceElement>,
+  account?: string
 ): Promise<void> => {
   await verifyCredentials(newConfig)
-  await workspace.updateServiceCredentials(newConfig.elemID.adapter, newConfig)
+  await workspace.updateAccountCredentials(account ?? newConfig.elemID.adapter, newConfig)
   log.debug(`persisted new configs for adapter: ${newConfig.elemID.adapter}`)
 }
 
-const shouldElementBeIncluded = (services: ReadonlyArray<string>) =>
+const shouldElementBeIncluded = (accounts: ReadonlyArray<string>) =>
   (id: ElemID): boolean => (
-    services.includes(id.adapter)
-    // Variables belong to all of the services
+    accounts.includes(id.adapter)
+    // Variables belong to all of the accounts
     || id.adapter === ElemID.VARIABLES_NAMESPACE
   )
 
+const getAccountToServiceNameMap = (workspace: Workspace,
+  accounts: string[]): Record<string, string> =>
+  Object.fromEntries(accounts.map(account =>
+    [account, workspace.getServiceFromAccountName(account)]))
+
 export const preview = async (
   workspace: Workspace,
-  services = workspace.services(),
+  accounts = workspace.accounts(),
 ): Promise<Plan> => {
   const stateElements = workspace.state()
   const adapters = await getAdapters(
-    services,
-    await workspace.servicesCredentials(services),
-    workspace.serviceConfig.bind(workspace),
-    await workspace.elements()
+    accounts,
+    await workspace.accountCredentials(accounts),
+    workspace.accountConfig.bind(workspace),
+    await workspace.elements(),
+    getAccountToServiceNameMap(workspace, accounts),
   )
   return getPlan({
     before: stateElements,
@@ -98,8 +107,8 @@ export const preview = async (
     changeValidators: getChangeValidators(adapters),
     dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers(adapters)),
     customGroupIdFunctions: getAdapterChangeGroupIdFunctions(adapters),
-    topLevelFilters: [shouldElementBeIncluded(services)],
-    adapterGetConfig: await getAdaptersConfig(adapters, workspace.serviceConfig.bind(workspace)),
+    topLevelFilters: [shouldElementBeIncluded(accounts)],
+    adapterGetConfig: await getAdaptersConfig(adapters, workspace.accountConfig.bind(workspace)),
   })
 }
 
@@ -113,14 +122,15 @@ export const deploy = async (
   workspace: Workspace,
   actionPlan: Plan,
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
-  services = workspace.services(),
+  accounts = workspace.accounts(),
 ): Promise<DeployResult> => {
   const changedElements = elementSource.createInMemoryElementSource()
   const adapters = await getAdapters(
-    services,
-    await workspace.servicesCredentials(services),
-    workspace.serviceConfig.bind(workspace),
-    await workspace.elements()
+    accounts,
+    await workspace.accountCredentials(accounts),
+    workspace.accountConfig.bind(workspace),
+    await workspace.elements(),
+    getAccountToServiceNameMap(workspace, accounts)
   )
 
   const getUpdatedElement = async (change: Change): Promise<ChangeDataType> => {
@@ -177,12 +187,12 @@ export type FetchResult = {
   success: boolean
   configChanges?: Plan
   updatedConfig : Record<string, InstanceElement[]>
-  adapterNameToConfigMessage?: Record<string, string>
+  accountNameToConfigMessage?: Record<string, string>
 }
 export type FetchFunc = (
   workspace: Workspace,
   progressEmitter?: EventEmitter<FetchProgressEvents>,
-  services?: string[],
+  accounts?: string[],
   ignoreStateElemIdMapping?: boolean,
 ) => Promise<FetchResult>
 
@@ -190,6 +200,7 @@ export type FetchFromWorkspaceFuncParams = {
   workspace: Workspace
   otherWorkspace: Workspace
   progressEmitter?: EventEmitter<FetchProgressEvents>
+  accounts?: string[]
   services?: string[]
   env: string
 }
@@ -199,53 +210,55 @@ const updateStateWithFetchResults = async (
   workspace: Workspace,
   mergedElements: Element[],
   unmergedElements: Element[],
-  fetchedServices: string[]
+  fetchedAccounts: string[]
 ): Promise<void> => {
-  const fetchElementsFilter = shouldElementBeIncluded(fetchedServices)
+  const fetchElementsFilter = shouldElementBeIncluded(fetchedAccounts)
   const stateElementsNotCoveredByFetch = await awu(await workspace.state().getAll())
     .filter(element => !fetchElementsFilter(element.elemID)).toArray()
   await workspace.state()
     .override(awu(mergedElements)
-      .concat(stateElementsNotCoveredByFetch), fetchedServices)
+      .concat(stateElementsNotCoveredByFetch), fetchedAccounts)
   await workspace.state().updatePathIndex(unmergedElements,
-    (await workspace.state().existingServices()).filter(key => !fetchedServices.includes(key)))
+    (await workspace.state().existingAccounts()).filter(key => !fetchedAccounts.includes(key)))
   log.debug(`finish to override state with ${mergedElements.length} elements`)
 }
 
 export const fetch: FetchFunc = async (
   workspace,
   progressEmitter?,
-  services?,
+  accounts?,
   ignoreStateElemIdMapping?,
 ) => {
   log.debug('fetch starting..')
-  const fetchServices = services ?? workspace.services()
+  const fetchAccounts = accounts ?? workspace.accounts()
+  const accountToServiceNameMap = getAccountToServiceNameMap(workspace, workspace.accounts())
   const {
     currentConfigs,
     adaptersCreatorConfigs,
   } = await getFetchAdapterAndServicesSetup(
     workspace,
-    fetchServices,
-    ignoreStateElemIdMapping
+    fetchAccounts,
+    accountToServiceNameMap,
+    ignoreStateElemIdMapping,
   )
-
-  const adapters = initAdapters(adaptersCreatorConfigs)
+  const accountToAdapter = initAdapters(adaptersCreatorConfigs, accountToServiceNameMap)
 
   if (progressEmitter) {
     progressEmitter.emit('adaptersDidInitialize')
   }
   const {
     changes, elements, mergeErrors, errors, updatedConfig,
-    configChanges, adapterNameToConfigMessage, unmergedElements,
+    configChanges, accountNameToConfigMessage, unmergedElements,
   } = await fetchChanges(
-    adapters,
+    accountToAdapter,
     await workspace.elements(),
     workspace.state(),
+    accountToServiceNameMap,
     currentConfigs,
     progressEmitter,
   )
   log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
-  await updateStateWithFetchResults(workspace, elements, unmergedElements, fetchServices)
+  await updateStateWithFetchResults(workspace, elements, unmergedElements, fetchAccounts)
   return {
     changes,
     fetchErrors: errors,
@@ -253,7 +266,7 @@ export const fetch: FetchFunc = async (
     success: true,
     configChanges,
     updatedConfig,
-    adapterNameToConfigMessage,
+    accountNameToConfigMessage,
   }
 }
 
@@ -261,23 +274,25 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
   workspace,
   otherWorkspace,
   progressEmitter,
+  accounts,
   services,
   env,
 }: FetchFromWorkspaceFuncParams) => {
   log.debug('fetch starting from workspace..')
-  const fetchServices = services ?? workspace.services()
+  const fetchAccounts = services ?? accounts ?? workspace.accounts()
 
   const { currentConfigs } = await getFetchAdapterAndServicesSetup(
     workspace,
-    fetchServices,
+    fetchAccounts,
+    getAccountToServiceNameMap(workspace, fetchAccounts),
   )
 
   const {
     changes, elements, mergeErrors, errors,
-    configChanges, adapterNameToConfigMessage, unmergedElements,
+    configChanges, accountNameToConfigMessage, unmergedElements,
   } = await fetchChangesFromWorkspace(
     otherWorkspace,
-    fetchServices,
+    fetchAccounts,
     await workspace.elements(),
     workspace.state(),
     currentConfigs,
@@ -286,7 +301,7 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
   )
 
   log.debug(`${elements.length} elements were fetched from a remote workspace [mergedErrors=${mergeErrors.length}]`)
-  await updateStateWithFetchResults(workspace, elements, unmergedElements, fetchServices)
+  await updateStateWithFetchResults(workspace, elements, unmergedElements, fetchAccounts)
   return {
     changes,
     fetchErrors: errors,
@@ -294,7 +309,7 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
     success: true,
     updatedConfig: {},
     configChanges,
-    adapterNameToConfigMessage,
+    accountNameToConfigMessage,
     progressEmitter,
   }
 }
@@ -303,18 +318,18 @@ export type LocalChange = Omit<FetchChange, 'pendingChanges'>
 
 export const restore = async (
   workspace: Workspace,
-  servicesFilters?: string[],
+  accountFilters?: string[],
   elementSelectors: ElementSelector[] = [],
 ): Promise<LocalChange[]> => {
   log.debug('restore starting..')
-  const fetchServices = servicesFilters ?? workspace.services()
+  const fetchAccounts = accountFilters ?? workspace.accounts()
   const changes = await createRestoreChanges(
     await workspace.elements(),
     workspace.state(),
     await workspace.state().getPathIndex(),
     await workspace.getReferenceSourcesIndex(),
     elementSelectors,
-    fetchServices
+    fetchAccounts
   )
   return changes.map(change => ({ change, serviceChanges: [change] }))
 }
@@ -325,10 +340,10 @@ export const diff = async (
   toEnv: string,
   includeHidden = false,
   useState = false,
-  servicesFilters?: string[],
+  accountFilters?: string[],
   elementSelectors: ElementSelector[] = [],
 ): Promise<LocalChange[]> => {
-  const diffServices = servicesFilters ?? workspace.services()
+  const diffAccounts = accountFilters ?? workspace.accounts()
   const fromElements = useState
     ? workspace.state(fromEnv)
     : await workspace.elements(includeHidden, fromEnv)
@@ -341,7 +356,7 @@ export const diff = async (
     fromElements,
     await workspace.getReferenceSourcesIndex(),
     elementSelectors,
-    [shouldElementBeIncluded(diffServices)]
+    [shouldElementBeIncluded(diffAccounts)]
   )
 
   return diffChanges.map(change => ({ change, serviceChanges: [change] }))
@@ -378,14 +393,15 @@ export const installAdapter = async (adapterName: string):
 export const addAdapter = async (
   workspace: Workspace,
   adapterName: string,
+  accountName?: string,
 ): Promise<AdapterAuthentication> => {
   const adapter = getAdapterCreator(adapterName)
-  await workspace.addService(adapterName)
-
-  if (_.isUndefined((await workspace.serviceConfig(adapterName)))) {
-    const defaultConfig = await getDefaultAdapterConfig(adapterName)
+  await workspace.addAccount(adapterName, accountName)
+  const adapterAccountName = accountName ?? adapterName
+  if (_.isUndefined((await workspace.accountConfig(adapterAccountName)))) {
+    const defaultConfig = await getDefaultAdapterConfig(adapterName, adapterAccountName)
     if (!_.isUndefined(defaultConfig)) {
-      await workspace.updateServiceConfig(adapterName, defaultConfig)
+      await workspace.updateAccountConfig(adapterName, defaultConfig, adapterAccountName)
     }
   }
   return adapter.authenticationMethods
@@ -394,17 +410,24 @@ export const addAdapter = async (
 export type LoginStatus = { configTypeOptions: AdapterAuthentication; isLoggedIn: boolean }
 export const getLoginStatuses = async (
   workspace: Workspace,
-  adapterNames = workspace.services(),
+  accounts = workspace.accounts(),
 ): Promise<Record<string, LoginStatus>> => {
-  const creds = await workspace.servicesCredentials(adapterNames)
-  const logins = _.mapValues(getAdaptersCredentialsTypes(adapterNames),
+  const creds = await workspace.accountCredentials(accounts)
+  const accountToServiceMap = Object.fromEntries(accounts.map(account => [
+    account, workspace.getServiceFromAccountName(account),
+  ]))
+  const relevantServices = _.uniq(Object.values(accountToServiceMap))
+  const logins = await mapValuesAsync(
+    getAdaptersCredentialsTypes(relevantServices),
     async (configTypeOptions, adapter) =>
       ({
         configTypeOptions,
         isLoggedIn: !!creds[adapter],
-      }))
-
-  return promises.object.resolveValues(logins)
+      })
+  )
+  return Object.fromEntries(accounts.map(
+    account => [account, logins[accountToServiceMap[account]]]
+  ))
 }
 
 export const getSupportedServiceAdapterNames = (): string[] => Object.keys(adapterCreators)

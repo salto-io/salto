@@ -77,6 +77,7 @@ dirStore.SyncDirectoryStore<T> => {
     isEmpty: mockFunction<dirStore.SyncDirectoryStore<T>['isEmpty']>(),
     getFullPath: mockFunction<dirStore.SyncDirectoryStore<T>['getFullPath']>().mockImplementation(filepath => `full-${filepath}`),
     getSync: mockFunction<dirStore.SyncDirectoryStore<T>['getSync']>(),
+    isPathIncluded: mockFunction<dirStore.SyncDirectoryStore<T>['isPathIncluded']>(),
   }
 }
 
@@ -191,7 +192,7 @@ Promise<Workspace> => {
             await awu(await commonNaclFilesSource.getAll()).toArray()
           ),
           pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
-          servicesUpdateDate: new InMemoryRemoteMap(),
+          accountsUpdateDate: new InMemoryRemoteMap(),
           saltoVersion: '0.0.1',
           saltoMetadata: new InMemoryRemoteMap(),
         })),
@@ -207,7 +208,7 @@ Promise<Workspace> => {
         state: state.buildInMemState(async () => ({
           elements: createInMemoryElementSource([]),
           pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
-          servicesUpdateDate: new InMemoryRemoteMap(),
+          accountsUpdateDate: new InMemoryRemoteMap(),
           saltoVersion: '0.0.1',
           saltoMetadata: new InMemoryRemoteMap(),
         })),
@@ -217,8 +218,8 @@ Promise<Workspace> => {
   const mockConfSource = {
     getWorkspaceConfig: jest.fn().mockImplementation(() => ({
       envs: [
-        { name: 'default', services: [] },
-        { name: 'inactive', services: [] },
+        { name: 'default', accounts: [], accountToServiceName: {} },
+        { name: 'inactive', accounts: [], accountToServiceName: {} },
       ],
       uid: '',
       name: 'test',

@@ -20,7 +20,7 @@ import { PlanItem, Plan, preview, DeployResult, ItemStatus, deploy } from '@salt
 import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
-import { ServicesArg, SERVICES_OPTION, getAndValidateActiveServices } from './common/services'
+import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts } from './common/accounts'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { outputLine, errorOutputLine } from '../outputer'
 import { header, formatExecutionPlan, deployPhaseHeader, cancelDeployOutput, formatItemDone, formatItemError, formatCancelAction, formatActionInProgress, formatActionStart, deployPhaseEpilogue, formatStateRecencies } from '../formatter'
@@ -74,7 +74,7 @@ type DeployArgs = {
   force: boolean
   dryRun: boolean
   detailedPlan: boolean
-} & ServicesArg & EnvArg
+} & AccountsArg & EnvArg
 
 const deployPlan = async (
   actionPlan: Plan,
@@ -82,7 +82,7 @@ const deployPlan = async (
   cliTelemetry: CliTelemetry,
   output: CliOutput,
   force: boolean,
-  services?: string[],
+  accounts?: string[],
 ): Promise<DeployResult> => {
   const actions: Record<string, Action> = {}
   const endAction = (itemName: string): void => {
@@ -147,7 +147,7 @@ const deployPlan = async (
       actionPlan,
       (item: PlanItem, step: ItemStatus, details?: string) =>
         updateAction(item, step, details),
-      services,
+      accounts,
     ) : { success: true, errors: [] }
   const nonErroredActions = Object.keys(actions)
     .filter(action =>
@@ -175,11 +175,11 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
   spinnerCreator,
   workspace,
 }): Promise<CliExitCode> => {
-  const { force, dryRun, detailedPlan, services } = input
+  const { force, dryRun, detailedPlan, accounts } = input
   await validateAndSetEnv(workspace, input, output)
-  const actualServices = getAndValidateActiveServices(workspace, services)
+  const actualAccounts = getAndValidateActiveAccounts(workspace, accounts)
   const stateRecencies = await Promise.all(
-    actualServices.map(service => workspace.getStateRecency(service))
+    actualAccounts.map(account => workspace.getStateRecency(account))
   )
   // Print state recencies
   outputLine(formatStateRecencies(stateRecencies), output)
@@ -198,7 +198,7 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
     return CliExitCode.AppError
   }
 
-  const actionPlan = await preview(workspace, actualServices)
+  const actionPlan = await preview(workspace, actualAccounts)
   await printPlan(actionPlan, output, workspace, detailedPlan)
 
   const result = dryRun ? { success: true, errors: [] } : await deployPlan(
@@ -207,7 +207,7 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
     cliTelemetry,
     output,
     force,
-    actualServices,
+    actualAccounts,
   )
   let cliExitCode = result.success ? CliExitCode.Success : CliExitCode.AppError
   if (!_.isUndefined(result.changes)) {
@@ -227,7 +227,7 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
 const deployDef = createWorkspaceCommand({
   properties: {
     name: 'deploy',
-    description: 'Update the upstream services from the workspace configuration elements',
+    description: 'Update the upstream accounts from the workspace configuration elements',
     keyedOptions: [
       {
         name: 'force',
@@ -247,7 +247,7 @@ const deployDef = createWorkspaceCommand({
         description: 'Print detailed plan including value changes',
         type: 'boolean',
       },
-      SERVICES_OPTION,
+      ACCOUNTS_OPTION,
       ENVIRONMENT_OPTION,
     ],
   },

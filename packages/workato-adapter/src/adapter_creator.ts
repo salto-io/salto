@@ -20,9 +20,10 @@ import { client as clientUtils, config as configUtils } from '@salto-io/adapter-
 import WorkatoAdapter from './adapter'
 import { Credentials, usernameTokenCredentialsType } from './auth'
 import {
-  configType, WorkatoConfig, CLIENT_CONFIG, FETCH_CONFIG, DEFAULT_TYPES, DEFAULT_ID_FIELDS,
+  configType, WorkatoConfig, CLIENT_CONFIG, DEFAULT_TYPES, DEFAULT_ID_FIELDS,
   FIELDS_TO_OMIT,
   validateFetchConfig,
+  FETCH_CONFIG,
 } from './config'
 import WorkatoClient from './client/client'
 import { createConnection } from './client/connection'

@@ -108,14 +108,14 @@ const wsCleanDef = createWorkspaceCommand({
       {
         name: 'credentials',
         alias: 'l',
-        description: 'Clear the service login credentials',
+        description: 'Clear the account login credentials',
         type: 'boolean',
         default: false,
       },
       {
-        name: 'serviceConfig',
+        name: 'accountConfig',
         alias: 'g',
-        description: 'Restore service configuration to default',
+        description: 'Restore account configuration to default',
         type: 'boolean',
         default: false,
       },

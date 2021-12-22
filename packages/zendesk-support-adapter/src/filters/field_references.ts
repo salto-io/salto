@@ -63,7 +63,7 @@ export const contextStrategyLookup: Record<
   parentValue: neighborContextFunc({ contextFieldName: 'value', levelsUp: 2, contextValueMapper: getValueLookupType }),
 }
 
-const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition<
+export const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition<
   ReferenceContextStrategyName
 >[] = [
   {
@@ -103,6 +103,11 @@ const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition<
   },
   {
     src: { field: 'locale_ids' },
+    serializationStrategy: 'id',
+    target: { type: 'locale' },
+  },
+  {
+    src: { field: 'default_locale_id' },
     serializationStrategy: 'id',
     target: { type: 'locale' },
   },

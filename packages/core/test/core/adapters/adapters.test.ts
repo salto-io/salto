@@ -24,7 +24,7 @@ import {
   initAdapters, getAdaptersCredentialsTypes, getAdaptersCreatorConfigs,
   getDefaultAdapterConfig,
   adapterCreators,
-  getAdaptersConfigTypes,
+  getAdaptersConfigTypesMap,
 } from '../../../src/core/adapters'
 
 jest.mock('@salto-io/workspace', () => ({
@@ -52,7 +52,7 @@ jest.mock('../../../src/core/adapters/creators', () => {
 })
 describe('adapters.ts', () => {
   const { authenticationMethods } = adapter
-  const services = ['salesforce']
+  const accounts = ['salesforce']
   const sfConfig = new InstanceElement(
     ElemID.CONFIG_NAME,
     authenticationMethods.basic.credentialsType,
@@ -68,12 +68,12 @@ describe('adapters.ts', () => {
     let credentials: Record<string, AdapterAuthentication>
 
     it('should return config for defined adapter', () => {
-      credentials = getAdaptersCredentialsTypes(services)
+      credentials = getAdaptersCredentialsTypes(accounts)
       expect(credentials.salesforce).toEqual(authenticationMethods)
     })
 
     it('should throw error for non defined adapter', () => {
-      expect(() => getAdaptersCredentialsTypes(services.concat('fake'))).toThrow()
+      expect(() => getAdaptersCredentialsTypes(accounts.concat('fake'))).toThrow()
     })
   })
 
@@ -102,13 +102,13 @@ describe('adapters.ts', () => {
 
     it('should call createDefaultInstanceFromType when getDefaultConfig is undefined', async () => {
       delete mockAdapter.getDefaultConfig
-      const defaultConfigs = await getDefaultAdapterConfig('mockAdapter')
+      const defaultConfigs = await getDefaultAdapterConfig('mockAdapter', 'mockAdapter')
       expect(createDefaultInstanceFromType).toHaveBeenCalled()
       expect(defaultConfigs).toHaveLength(1)
       expect(defaultConfigs?.[0].value).toEqual({ val: 'aaa' })
     })
     it('should use getDefaultConfig when defined', async () => {
-      const defaultConfigs = await getDefaultAdapterConfig('mockAdapter')
+      const defaultConfigs = await getDefaultAdapterConfig('mockAdapter', 'mockAdapter')
       expect(mockAdapter.getDefaultConfig).toHaveBeenCalled()
       expect(defaultConfigs).toHaveLength(1)
       expect(defaultConfigs?.[0].value).toEqual({ val: 'bbb' })
@@ -134,9 +134,9 @@ describe('adapters.ts', () => {
     })
 
     it('should return the config type and its sub-types', async () => {
-      const types = await getAdaptersConfigTypes()
-      expect(types).toContain(mockConfigType)
-      expect(types).toContain(mockConfigSubType)
+      const types = await getAdaptersConfigTypesMap()
+      expect(types.mockAdapter).toContain(mockConfigType)
+      expect(types.mockAdapter).toContain(mockConfigSubType)
     })
   })
 
@@ -148,7 +148,8 @@ describe('adapters.ts', () => {
         [serviceName],
         { [sfConfig.elemID.adapter]: sfConfig },
         async () => undefined,
-        buildElementsSourceFromElements([])
+        buildElementsSourceFromElements([]),
+        { [serviceName]: serviceName }
       )
       expect(result[serviceName]).toEqual(
         expect.objectContaining({
@@ -169,6 +170,7 @@ describe('adapters.ts', () => {
         { [sfConfig.elemID.adapter]: sfConfig },
         async name => (name === sfConfig.elemID.adapter ? sfConfig : undefined),
         buildElementsSourceFromElements([]),
+        { [serviceName]: serviceName },
       )
       expect(result[serviceName]).toEqual(
         expect.objectContaining({
@@ -190,6 +192,7 @@ describe('adapters.ts', () => {
           new ObjectType({ elemID: new ElemID(serviceName, 'type1') }),
           new ObjectType({ elemID: new ElemID('dummy', 'type2') }),
         ]),
+        { [serviceName]: serviceName },
       )
       const elementsSource = result[serviceName]?.elementsSource
       expect(elementsSource).toBeDefined()
@@ -209,13 +212,16 @@ describe('adapters.ts', () => {
 
   describe('init adapter', () => {
     it('should return adapter when config is defined', () => {
-      const adapters = initAdapters({
-        salesforce: {
-          credentials: sfConfig,
-          config: undefined,
-          elementsSource: utils.buildElementsSourceFromElements([]),
+      const adapters = initAdapters(
+        {
+          salesforce: {
+            credentials: sfConfig,
+            config: undefined,
+            elementsSource: utils.buildElementsSourceFromElements([]),
+          },
         },
-      })
+        { salesforce: 'salesforce' },
+      )
       expect(adapters.salesforce).toBeDefined()
     })
 
@@ -223,7 +229,7 @@ describe('adapters.ts', () => {
       const credentials: InstanceElement | undefined = undefined
       expect(() => initAdapters(
         {
-          [services[0]]: {
+          [accounts[0]]: {
             credentials: (credentials as unknown as InstanceElement),
             elementsSource: utils.buildElementsSourceFromElements([]),
           },

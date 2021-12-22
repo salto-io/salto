@@ -52,7 +52,6 @@ const getServiceConnectionDetails = (
         ({ id: inst.elemID, applicationName: inst.value.application as string }),
       ])
   )
-
   const connectionDetailsByService = _.mapValues(
     serviceConnectionConfig,
     connectionNames => Object.fromEntries(
@@ -137,13 +136,23 @@ const addReferencesForConnectionRecipes = async (
 const filter: FilterCreator = ({ config }) => ({
   onPostFetch: async ({
     currentAdapterElements,
-    elementsByAdapter,
+    elementsByAccount,
+    accountToServiceNameMap,
   }: PostFetchOptions): Promise<void> => {
     const { serviceConnectionNames } = config[FETCH_CONFIG]
     if (serviceConnectionNames === undefined || _.isEmpty(serviceConnectionNames)) {
       return
     }
-
+    const supportedAdapters = Object.keys(accountToServiceNameMap ?? {})
+    if (serviceConnectionNames !== undefined) {
+      const unsupportedAccounts = Object.keys(serviceConnectionNames).filter(
+        adapterName => !supportedAdapters.includes(adapterName)
+      )
+      if (unsupportedAccounts.length > 0) {
+        log.error(`The following account names don't exist in the workspace: ${unsupportedAccounts}. Existing accounts are ${supportedAdapters}.`)
+        return
+      }
+    }
     const serviceConnectionDetails = getServiceConnectionDetails(
       serviceConnectionNames,
       currentAdapterElements
@@ -163,7 +172,7 @@ const filter: FilterCreator = ({ config }) => ({
     )
 
     await awu(Object.entries(serviceConnectionDetails))
-      .forEach(async ([serviceName, connections]) => {
+      .forEach(async ([accountName, connections]) => {
         await awu(Object.values(connections)).forEach(async ({ id, applicationName }) => {
           const relevantRecipeCodes = filterRelevantRecipeCodes(
             id,
@@ -173,8 +182,8 @@ const filter: FilterCreator = ({ config }) => ({
           await addReferencesForConnectionRecipes(
             relevantRecipeCodes,
             applicationName,
-            serviceName,
-            elementsByAdapter[serviceName] ?? [],
+            (accountToServiceNameMap ?? {})[accountName],
+            elementsByAccount[accountName] ?? [],
           )
         })
       })

@@ -17,7 +17,7 @@
 import path from 'path'
 import { nacl, staticFiles, adaptersConfigSource as acs, remoteMap } from '@salto-io/workspace'
 import { DetailedChange, ObjectType } from '@salto-io/adapter-api'
-import { localDirectoryStore } from './dir_store'
+import { localDirectoryStore, createExtensionFileFilter } from './dir_store'
 import { buildLocalStaticFilesCache } from './static_files_cache'
 
 const createNaclSource = async (
@@ -29,7 +29,7 @@ const createNaclSource = async (
   const naclFilesStore = localDirectoryStore({
     baseDir,
     accessiblePath: path.join(...acs.CONFIG_PATH),
-    fileFilter: `*${nacl.FILE_EXTENSION}`,
+    fileFilter: createExtensionFileFilter(nacl.FILE_EXTENSION),
     encoding: 'utf8',
   })
 

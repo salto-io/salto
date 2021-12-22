@@ -60,9 +60,21 @@ export class InvalidEnvNameError extends Error {
   }
 }
 
-export class ServiceDuplicationError extends Error {
-  constructor(service: string) {
-    super(`${service} is already defined in this workspace`)
+export class InvalidAccountNameError extends Error {
+  constructor(accountName: string) {
+    super(`${accountName} is an invalid account name.\nAccount names should include only alphanumeric characters or '_'`)
+  }
+}
+
+export class AccountDuplicationError extends Error {
+  constructor(account: string) {
+    super(`${account} is already defined in this workspace`)
+  }
+}
+
+export class UnknownAccountError extends Error {
+  constructor(account: string) {
+    super(`${account} is not defined as an account in this workspace`)
   }
 }
 

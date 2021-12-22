@@ -58,6 +58,7 @@ describe('Static Files', () => {
         clone: () => mockDirStore,
         getSync: jest.fn(),
         getFullPath: filename => filename,
+        isPathIncluded: jest.fn().mockResolvedValue(true),
       }
       staticFilesSource = buildStaticFilesSource(
         mockDirStore,

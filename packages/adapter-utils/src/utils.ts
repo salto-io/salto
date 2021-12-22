@@ -513,14 +513,14 @@ export const restoreChangeElement = async (
   )
 )
 
-export const resolveChangeElement = (
-  change: Change,
+export const resolveChangeElement = <T extends ChangeDataType = ChangeDataType>(
+  change: Change<T>,
   getLookUpName: GetLookupNameFunc,
   resolveValuesFunc = resolveValues,
-): Promise<Change> => applyFunctionToChangeData(
-  change,
-  changeData => resolveValuesFunc(changeData, getLookUpName)
-)
+): Promise<Change<T>> => applyFunctionToChangeData(
+    change,
+    changeData => resolveValuesFunc(changeData, getLookUpName)
+  )
 
 export const findElements = (elements: Iterable<Element>, id: ElemID): Iterable<Element> => (
   wu(elements).filter(e => e.elemID.isEqual(id))

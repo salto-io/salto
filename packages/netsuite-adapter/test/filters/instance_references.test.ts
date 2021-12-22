@@ -96,6 +96,9 @@ describe('instance_references filter', () => {
           refToScriptIdOfAnotherType: '[type=transactionbodycustomfield, scriptid=cseg_1]',
           stringWithMultipleRef: '[type=customsegment, scriptid=cseg_1]|STDBODYCUSTOMER|[type=customsegment, scriptid=cseg_1]|[scriptid=top_level.one_nesting.two_nesting]',
           stringWithMultipleNonExistingRef: '[type=nonExistingType, scriptid=nonExist]:STDBODYCUSTOMER:[scriptid=nonExisting.one_nesting]',
+          refWithAppId: '[appid=foo.bar, scriptid=top_level]',
+          refToCustomSegmentWithAppId: '[appid=foo.bar, type=customsegment, scriptid=cseg_1]',
+          refWithBundleId: '[bundleid=123, scriptid=top_level]',
         },
         undefined,
         {
@@ -251,6 +254,45 @@ describe('instance_references filter', () => {
         .toEqual('[type=transactionbodycustomfield, scriptid=cseg_1]')
     })
 
+    it('should not replace appid and scriptid references', async () => {
+      await filterCreator({
+        client: {} as NetsuiteClient,
+        elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+      }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
+
+
+      expect(instanceWithRefs.value.refWithAppId)
+        .toEqual('[appid=foo.bar, scriptid=top_level]')
+    })
+
+    it('should not replace appid, type and scriptid references', async () => {
+      await filterCreator({
+        client: {} as NetsuiteClient,
+        elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+      }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
+
+
+      expect(instanceWithRefs.value.refToCustomSegmentWithAppId)
+        .toEqual('[appid=foo.bar, type=customsegment, scriptid=cseg_1]')
+    })
+
+    it('should not replace bundleid and scriptid references', async () => {
+      await filterCreator({
+        client: {} as NetsuiteClient,
+        elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+      }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
+
+
+      expect(instanceWithRefs.value.refWithBundleId)
+        .toEqual('[bundleid=123, scriptid=top_level]')
+    })
+
     it('should not replace path references for unresolved ref', async () => {
       await filterCreator({
         client: {} as NetsuiteClient,
@@ -315,7 +357,7 @@ describe('instance_references filter', () => {
         .toEqual('[type=customsegment, scriptid=cseg_1]|STDBODYCUSTOMER|[type=customsegment, scriptid=cseg_1]|[scriptid=top_level.one_nesting.two_nesting]')
 
       expect(instanceWithRefs.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES])
-        .toHaveLength(2)
+        .toHaveLength(3)
       expect(instanceWithRefs.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES])
         .toEqual([
           { reference: new ReferenceExpression(
@@ -323,6 +365,9 @@ describe('instance_references filter', () => {
           ) },
           { reference: new ReferenceExpression(
             workflowInstance.elemID.createNestedID('workflowstates', 'workflowstate', '0', 'workflowactions', '0', 'setfieldvalueaction', '0', SCRIPT_ID)
+          ) },
+          { reference: new ReferenceExpression(
+            workflowInstance.elemID.createNestedID(SCRIPT_ID)
           ) },
         ])
     })

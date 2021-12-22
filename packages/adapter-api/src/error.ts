@@ -28,3 +28,6 @@ export type SaltoError = {
 export type SaltoElementError = SaltoError & {
     elemID: ElemID
 }
+
+export const isSaltoElementError = (error: SaltoError | SaltoElementError):
+    error is SaltoElementError => 'elemID' in error

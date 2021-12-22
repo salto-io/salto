@@ -68,7 +68,7 @@ export default class Prompts {
     return `Could not initiate workspace: ${msg}\n`
   }
 
-  private static readonly SERVICE_ADD_HELP = 'Use `salto service add <service-name>` to add services to the environment'
+  private static readonly SERVICE_ADD_HELP = 'Use `salto service add <service-name>` to add accounts to the environment'
 
   public static initCompleted(): string {
     return `Initiated empty workspace
@@ -76,7 +76,7 @@ ${Prompts.SERVICE_ADD_HELP}
 `
   }
 
-  public static readonly FETCH_HEADER = 'Fetching and applying changes from the service(s)'
+  public static readonly FETCH_HEADER = 'Fetching and applying changes from the account(s)'
   public static readonly FETCH_SUB_HEADER = `This might take a few minutes. You can go grab your favorite beverage.
 The steps are: I. Fetching configs, II. Calculating difference and III. Applying the changes`
   public static readonly FETCH_GET_CHANGES_START = (adapters: string[]): string => `Fetching the latest configs from: ${adapters}`
@@ -123,39 +123,39 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
   public static readonly SHOULD_CANCEL_WITH_NONEXISTENT_STATE = 'It is highly recommended to run salto fetch before deploying, to ensure the deploy plan takes into account the current state - do you want to cancel?'
 
   public static readonly NONEXISTENT_STATE = (
-    serviceName: string
-  ): string => `Currently, the state of the ${serviceName} service is unknown to Salto.`
+    accountName: string
+  ): string => `Currently, the state of the ${accountName} account is unknown to Salto.`
 
-  public static readonly STATE_RECENCY = (serviceName: string, date: Date): string =>
-    `The last time you fetched the state of the ${serviceName} service was ${moment.duration(
+  public static readonly STATE_RECENCY = (accountName: string, date: Date): string =>
+    `The last time you fetched the state of the ${accountName} account was ${moment.duration(
       Date.now() - date.getTime()
     ).humanize()} ago.`
 
   public static readonly FETCH_SHOULD_ALIGN_FETCH_MODE = (
     fetchMode: string
-  ): string => 'It is recommended to fetch in \'align\' mode when fetching an environment for the first time and the fetched services already have elements in other environments.'
+  ): string => 'It is recommended to fetch in \'align\' mode when fetching an environment for the first time and the fetched accounts already have elements in other environments.'
    + ` Do you want to change the fetch mode from '${fetchMode}' to 'align'?`
 
   public static readonly FETCH_CHANGING_FETCH_MODE_TO_ALIGN = 'Changing fetch mode to \'align\''
   public static readonly FETCH_NOT_CHANGING_FETCH_MODE = 'Ok, not changing fetch mode'
 
   public static readonly CANCELED = 'Canceling...'
-  public static readonly CREDENTIALS_HEADER = (serviceName: string): string => `Please enter your ${serviceName} credentials:`
+  public static readonly CREDENTIALS_HEADER = (accountName: string): string => `Please enter your ${accountName} credentials:`
   public static readonly GO_TO_BROWSER = (url: string): string => `Please follow the steps for authenticating in your browser. If a new tab has not opened automatically, please go to ${url}`
   public static readonly SERVICE_HOW_ADD = (serviceName: string): string => `Use \`salto service add ${serviceName}\` to add the service to the environment`
-  public static readonly SERVICE_ADDED = (serviceName: string): string => `${serviceName} was added to the environment`
-  public static readonly SERVICES_LOGIN_UPDATED = 'Login information successfully updated!'
-  public static readonly SERVICES_LOGIN_OVERRIDE = '** This will override the current login information **'
-  public static readonly SERVICE_LOGIN_FAILED = (serviceName: string, errorMessage: string): string => `Could not login to ${serviceName}: ${errorMessage}`
-  public static readonly SERVICE_LOGIN_FAILED_TRY_AGAIN = (serviceName: string): string => `To try again run: \`salto service login ${serviceName}\``
+  public static readonly ACCOUNT_ADDED = (accountName: string): string => `${accountName} was added to the environment`
+  public static readonly ACCOUNTS_LOGIN_UPDATED = 'Login information successfully updated!'
+  public static readonly ACCOUNTS_LOGIN_OVERRIDE = '** This will override the current login information **'
+  public static readonly ACCOUNT_LOGIN_FAILED = (accountName: string, errorMessage: string): string => `Could not login to ${accountName}: ${errorMessage}`
+  public static readonly ACCOUNT_LOGIN_FAILED_TRY_AGAIN = (accountName: string): string => `To try again run: \`salto service login ${accountName}\``
   public static readonly SERVICE_ADD_FAILED_TRY_AGAIN = (serviceName: string): string => `To try again run: \`salto service add ${serviceName}\``
-  public static readonly SERVICE_CONFIGURED = (serviceName: string): string => `${serviceName} is configured in this environment`
-  public static readonly SERVICE_NOT_CONFIGURED = (serviceName: string): string => `${serviceName} is not configured in this environment`
-  public static readonly CONFIGURED_SERVICES_TITLE = 'The configured services are:'
+  public static readonly ACCOUNT_CONFIGURED = (accountName: string): string => `${accountName} is configured in this environment`
+  public static readonly ACCOUNT_NOT_CONFIGURED = (accountName: string): string => `${accountName} is not configured in this environment`
+  public static readonly CONFIGURED_ACCOUNTS_TITLE = 'The configured accounts are:'
   public static readonly ADDITIONAL_SUPPORTED_SERVICES_TITLE = 'Additional supported services are:'
-  public static readonly NO_CONFIGURED_SERVICES = 'There are not configured services in this environment'
-  public static readonly NO_ADDITIONAL_CONFIGURED_SERVICES = 'There are no additional configurable services for this environment'
-  public static readonly SERVICE_ALREADY_ADDED = (serviceName: string): string => `${serviceName} was already added to this environment`
+  public static readonly NO_CONFIGURED_ACCOUNTS = 'There are not configured accounts in this environment'
+  public static readonly NO_ADDITIONAL_CONFIGURED_ACCOUNTS = 'There are no additional configurable accounts for this environment'
+  public static readonly ACCOUNT_ALREADY_ADDED = (accountName: string): string => `${accountName} was already added to this environment`
   public static readonly SERVICE_NAME_NOT_VALID = (serviceName: string, supportedServiceAdapters:string[]): string => `${serviceName} is not a valid service name, available service names are:\n${supportedServiceAdapters.join('\n')}`
   public static readonly WORKING_ON_ENV = 'The active environment is'
   public static readonly NO_CURRENT_ENV = 'No active environment is currently set'
@@ -335,14 +335,14 @@ ${Prompts.LIST_IDS(ids)}
     error: string
   ): string => `Failed to clone the specified elements to the target environments: ${error}`
 
-  public static readonly UNKNOWN_STATE_SALTO_VERSION = 'Can not determine the Salto version that was when the state of the services was last fetched. It is highly recommended to run the fetch command before proceeding - do you want to cancel?'
+  public static readonly UNKNOWN_STATE_SALTO_VERSION = 'Can not determine the Salto version that was when the state of the accounts was last fetched. It is highly recommended to run the fetch command before proceeding - do you want to cancel?'
   public static readonly OLD_STATE_SALTO_VERSION = (
     stateSaltoVersion: string
-  ): string => `The state of the services was last fetched using Salto's version ${stateSaltoVersion}. It is highly recommended to run the fetch command again before proceeding - do you want to cancel?`
+  ): string => `The state of the accounts was last fetched using Salto's version ${stateSaltoVersion}. It is highly recommended to run the fetch command again before proceeding - do you want to cancel?`
 
   public static readonly NEW_STATE_SALTO_VERSION = (
     stateSaltoVersion: string
-  ): string => `The state of the services was last fetched using Salto's version ${stateSaltoVersion} which is newer than the current installed Salto version. It is highly recommended to upgrade the current Salto version - do you want to cancel?`
+  ): string => `The state of the accounts was last fetched using Salto's version ${stateSaltoVersion} which is newer than the current installed Salto version. It is highly recommended to upgrade the current Salto version - do you want to cancel?`
 
   public static readonly CLEAN_WORKSPACE_SUMMARY = (
     parts: string[]

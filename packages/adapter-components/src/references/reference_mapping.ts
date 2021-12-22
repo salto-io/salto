@@ -138,11 +138,11 @@ export type ReferenceResolverFinder<T extends string> = (
  */
 export const generateReferenceResolverFinder = <
   T extends string,
-  GerericFieldReferenceDefinition extends FieldReferenceDefinition<T>
+  GenericFieldReferenceDefinition extends FieldReferenceDefinition<T>
 >(
-    defs: GerericFieldReferenceDefinition[],
+    defs: GenericFieldReferenceDefinition[],
     fieldReferenceResolverCreator?:
-      (def: GerericFieldReferenceDefinition) => FieldReferenceResolver<T>
+      (def: GenericFieldReferenceDefinition) => FieldReferenceResolver<T>
   ): ReferenceResolverFinder<T> => {
   const referenceDefinitions = defs.map(
     def => (fieldReferenceResolverCreator

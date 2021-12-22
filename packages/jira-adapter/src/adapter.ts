@@ -27,6 +27,7 @@ import referenceBySelfLinkFilter from './filters/references_by_self_link'
 import issueTypeSchemeReferences from './filters/issue_type_scheme_references'
 import addReferencesToProjectSchemes from './filters/add_references_to_project_schemes'
 import overrideProjectSchemeFieldsTypes from './filters/override_project_scheme_fields_types'
+import authenticatedPermissionFilter from './filters/authenticated_permission'
 import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
 
@@ -38,6 +39,7 @@ export const DEFAULT_FILTERS = [
   fieldReferences,
   referenceBySelfLinkFilter,
   issueTypeSchemeReferences,
+  authenticatedPermissionFilter,
   addReferencesToProjectSchemes,
   overrideProjectSchemeFieldsTypes,
 ]

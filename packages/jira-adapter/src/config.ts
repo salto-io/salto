@@ -591,8 +591,6 @@ export const DEFAULT_INCLUDE_ENDPOINTS: string[] = [
   'PageBeanIssueTypeScreenScheme',
   'PageBeanIssueTypeScreenSchemeItem',
   'PageBeanNotificationScheme',
-  // 'PageBeanIssueTypeScreenSchemesProjects',
-  // 'PageBeanFieldConfigurationSchemeProjects',
   'Permissions',
   'PermissionSchemes',
   'rest__api__3__priority',
@@ -647,25 +645,23 @@ const apiDefinitionsType = createMatchingObjectType<JiraApiConfig>({
   },
 })
 
-export const configType = createMatchingObjectType<JiraConfig>({
+export const DEFAULT_CONFIG: JiraConfig = {
+  fetch: {
+    includeTypes: DEFAULT_INCLUDE_ENDPOINTS,
+  },
+  apiDefinitions: DEFAULT_API_DEFINITIONS,
+}
+
+export const configType = createMatchingObjectType<Partial<JiraConfig>>({
   elemID: new ElemID(JIRA),
   fields: {
     client: { refType: createClientConfigType(JIRA) },
-    fetch: {
-      refType: createUserFetchConfigType(JIRA),
-      annotations: {
-        _required: true,
-        [CORE_ANNOTATIONS.DEFAULT]: {
-          includeTypes: DEFAULT_INCLUDE_ENDPOINTS,
-        },
-      },
-    },
-    apiDefinitions: {
-      refType: apiDefinitionsType,
-      annotations: {
-        _required: true,
-        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_API_DEFINITIONS,
-      },
+    fetch: { refType: createUserFetchConfigType(JIRA) },
+    apiDefinitions: { refType: apiDefinitionsType },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.DEFAULT]: {
+      fetch: DEFAULT_CONFIG.fetch,
     },
   },
 })

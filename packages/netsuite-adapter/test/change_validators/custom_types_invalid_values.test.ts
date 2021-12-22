@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
-import invalidValuesValidator from '../../src/change_validators/invalid_values'
+import invalidValuesValidator from '../../src/change_validators/custom_types_invalid_values'
 import { customTypes } from '../../src/types'
 import { SCRIPT_ID, ROLE, ADDRESS_FORM } from '../../src/constants'
 

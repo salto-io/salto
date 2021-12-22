@@ -45,7 +45,7 @@ const invalidValues: InvalidValue[] = [
     value: 'SELECTED',
     error: {
       severity: 'Error',
-      detailedMessage: 'role.subsidiaryoption cannot be deployed with value "SELECTED"',
+      detailedMessage: 'role.subsidiaryoption cannot be deployed with value "SELECTED", please deploy it with another value and edit in NetSuite UI',
     },
   },
 ]
@@ -55,7 +55,6 @@ const changeValidator: ChangeValidator = async changes => {
     changes
       .filter(isAdditionOrModificationChange)
       .filter(isInstanceChange)
-      // TODO: should we check non-CustomTypes too?
       .filter(change => isCustomType(getChangeElement(change).refType.elemID)),
     change => getChangeElement(change).elemID.typeName
   )

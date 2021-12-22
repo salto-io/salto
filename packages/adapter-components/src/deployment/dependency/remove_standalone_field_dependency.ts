@@ -14,44 +14,37 @@
 * limitations under the License.
 */
 import wu from 'wu'
-import { collections, values } from '@salto-io/lowerdash'
 import {
-  getChangeElement, DependencyChanger, dependencyChange, CORE_ANNOTATIONS,
-  isReferenceExpression, ChangeId, InstanceElement, Change, isInstanceChange,
+  getChangeElement, DependencyChanger, dependencyChange,
+  isReferenceExpression, ChangeId, isInstanceElement,
 } from '@salto-io/adapter-api'
-
-const { makeArray } = collections.array
-
-type ChangeNode = { nodeId: ChangeId; change: Change<InstanceElement> }
-type CircularDepsPair = {
-  src: ChangeNode
-  dst: ChangeNode
-}
+import { getParents } from '@salto-io/adapter-utils'
 
 export const removeStandaloneFieldDependency: DependencyChanger = async (
   changes, deps
 ) => {
-  const circularReferences: CircularDepsPair[] = []
-  wu(deps).forEach(([id, references]) => {
-    wu(references ?? []).forEach(refId => {
-      const change = changes.get(id)
-      const refChange = changes.get(refId)
-      if (change && isInstanceChange(change)
-        && refChange && isInstanceChange(refChange)
-        && (deps.get(refId) ?? new Set()).has(id)) {
-        circularReferences.push({
-          src: { nodeId: id, change: change as Change<InstanceElement> },
-          dst: { nodeId: refId, change: refChange as Change<InstanceElement> },
-        })
-      }
-    })
-  })
-  return circularReferences.map(pair => {
-    const searchedId = getChangeElement(pair.dst.change).elemID.getFullName()
-    if (makeArray(getChangeElement(pair.src.change).annotations[CORE_ANNOTATIONS.PARENT])
-      .find(e => isReferenceExpression(e) && e.elemID.getFullName() === searchedId)) {
-      return dependencyChange('remove', pair.dst.nodeId, pair.src.nodeId)
+  const isChangeFromParentToChild = ([src, target]: [ChangeId, ChangeId]): boolean => {
+    const sourceChange = changes.get(src)
+    const targetChange = changes.get(target)
+    if (sourceChange == null || targetChange == null) {
+      return false
     }
-    return undefined
-  }).filter(values.isDefined)
+    const sourceElement = getChangeElement(sourceChange)
+    const targetElement = getChangeElement(targetChange)
+    if (!isInstanceElement(sourceElement) || !isInstanceElement(targetElement)) {
+      return false
+    }
+    return getParents(targetElement)
+      .find(e => isReferenceExpression(e) && e.elemID.isEqual(sourceElement.elemID)) != null
+  }
+
+  const allDependencies = wu(deps)
+    .map(([source, targets]) => wu(targets)
+      .filter(target => deps.get(target)?.has(source) === true)
+      .map(target => [source, target]))
+    .flatten(true)
+
+  return allDependencies
+    .filter(isChangeFromParentToChild)
+    .map(([source, target]) => dependencyChange('remove', source, target))
 }

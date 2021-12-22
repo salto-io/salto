@@ -481,6 +481,56 @@ jira {
                 },
               ]
             },
+            {
+              type = "ContainerOfWorkflowSchemeAssociations"
+              toField = "workflowScheme"
+              context = [
+                {
+                  name = "projectId"
+                  fromField = "id"
+                },
+              ]
+            },
+            {
+              type = "PermissionScheme"
+              toField = "permissionScheme"
+              context = [
+                {
+                  name = "projectId"
+                  fromField = "id"
+                },
+              ]
+            },
+            {
+              type = "NotificationScheme"
+              toField = "notificationScheme"
+              context = [
+                {
+                  name = "projectId"
+                  fromField = "id"
+                },
+              ]
+            },
+            {
+              type = "PageBeanIssueTypeScreenSchemesProjects"
+              toField = "issueTypeScreenScheme"
+              context = [
+                {
+                  name = "projectId"
+                  fromField = "id"
+                },
+              ]
+            },
+            {
+              type = "PageBeanFieldConfigurationSchemeProjects"
+              toField = "fieldConfigurationScheme"
+              context = [
+                {
+                  name = "projectId"
+                  fromField = "id"
+                },
+              ]
+            },
           ]
         }
       }
@@ -490,6 +540,40 @@ jira {
             {
               fieldName = "components"
               fieldType = "list<ComponentWithIssueCount>"
+            },
+            {
+              fieldName = "workflowScheme"
+              fieldType = "list<WorkflowSchemeAssociations>"
+            },
+            {
+              fieldName = "permissionScheme"
+              fieldType = "list<PermissionScheme>"
+            },
+            {
+              fieldName = "notificationScheme"
+              fieldType = "list<NotificationScheme>"
+            },
+            {
+              fieldName = "issueTypeScreenScheme"
+              fieldType = "list<IssueTypeScreenSchemesProjects>"
+            },
+            {
+              fieldName = "fieldConfigurationScheme"
+              fieldType = "list<FieldConfigurationSchemeProjects>"
+            },
+          ]
+        }
+      }
+      ContainerOfWorkflowSchemeAssociations = {
+        request = {
+          url = "/rest/api/3/workflowscheme/project?projectId={projectId}"
+        }
+      }
+      WorkflowSchemeAssociations = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "projectIds"
             },
           ]
         }
@@ -501,6 +585,35 @@ jira {
               fieldName = "issueCount"
             },
           ]
+        }
+      }
+      PermissionScheme = {
+        request = {
+          url = "/rest/api/3/project/{projectId}/permissionscheme"
+        }
+      }
+      NotificationScheme = {
+        request = {
+          url = "/rest/api/3/project/{projectId}/notificationscheme"
+        }
+      }
+      PageBeanIssueTypeScreenSchemesProjects = {
+        request = {
+          url = "/rest/api/3/issuetypescreenscheme/project?projectId={projectId}"
+        }
+      }
+      IssueTypeScreenSchemesProjects = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "projectIds"
+            },
+          ]
+        }
+      }
+      PageBeanFieldConfigurationSchemeProjects = {
+        request = {
+          url = "/rest/api/3/fieldconfigurationscheme/project?projectId={projectId}"
         }
       }
       PageBeanScreen = {

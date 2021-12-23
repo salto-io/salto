@@ -101,22 +101,21 @@ describe('adapter creator', () => {
     })
 
     describe('without config', () => {
-      it('should return jira operations', () => {
-        expect(adapter.operations({
-          elementsSource,
-          credentials: credentialsInstance,
-        })).toBeInstanceOf(JiraAdapter)
+      it('should fail to create operations', () => {
+        expect(
+          () => adapter.operations({ elementsSource, credentials: credentialsInstance })
+        ).toThrow()
       })
     })
 
-    describe('with an invalid fetch config', () => {
+    describe('without fetch config', () => {
       it('should fail to create operations', () => {
         expect(() => adapter.operations({
           elementsSource,
           credentials: credentialsInstance,
           config: createConfigInstance({
             ...defaultConfig,
-            fetch: 2,
+            fetch: undefined,
           } as unknown as JiraConfig),
         })).toThrow()
       })
@@ -129,7 +128,7 @@ describe('adapter creator', () => {
           credentials: credentialsInstance,
           config: createConfigInstance({
             ...defaultConfig,
-            apiDefinitions: 2,
+            apiDefinitions: { typeDefaults: 2 },
           } as unknown as JiraConfig),
         })).toThrow()
       })

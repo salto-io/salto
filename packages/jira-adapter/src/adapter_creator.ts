@@ -53,7 +53,7 @@ function validateConfig(config: Values): asserts config is JiraConfig {
   // Note - this is a temporary way of handling multiple swagger defs in the same adapter
   // this will be replaced by built-in infrastructure support for multiple swagger defs
   // in the configuration
-  getApiDefinitions(apiDefinitions).forEach(swaggerDef => {
+  Object.values(getApiDefinitions(apiDefinitions)).forEach(swaggerDef => {
     validateSwaggerApiDefinitionConfig('apiDefinitions', swaggerDef)
   })
   validateSwaggerFetchConfig('fetch', 'apiDefinitions', fetch, apiDefinitions)
@@ -61,7 +61,13 @@ function validateConfig(config: Values): asserts config is JiraConfig {
 }
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): JiraConfig => {
-  const fullConfig = _.merge(DEFAULT_CONFIG, config?.value ?? {})
+  const fullConfig = {
+    ...(config?.value ?? {}),
+    apiDefinitions: configUtils.mergeWithDefaultConfig(
+      DEFAULT_CONFIG.apiDefinitions,
+      config?.value.apiDefinitions
+    ),
+  }
   validateConfig(fullConfig)
 
   // Hack to make sure this is coupled with the type definition of JiraConfig

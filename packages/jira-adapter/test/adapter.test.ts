@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdapterOperations, ObjectType, ElemID, ProgressReporter, FetchResult, InstanceElement } from '@salto-io/adapter-api'
-import { elements } from '@salto-io/adapter-components'
+import { AdapterOperations, ObjectType, ElemID, ProgressReporter, FetchResult, InstanceElement, toChange, isRemovalChange, getChangeElement } from '@salto-io/adapter-api'
+import { deployment, elements } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockFunction } from '@salto-io/test-utils'
 import { adapter as adapterCreator } from '../src/adapter_creator'
@@ -22,18 +22,24 @@ import { DEFAULT_INCLUDE_ENDPOINTS, DEFAULT_API_DEFINITIONS } from '../src/confi
 import { JIRA } from '../src/constants'
 import { createCredentialsInstance, createConfigInstance } from './utils'
 
+
 const { generateTypes, getAllInstances } = elements.swagger
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
   return {
     ...actual,
+    deployment: {
+      ...actual.deployment,
+      deployChange: jest.fn().mockImplementation(actual.elements.swagger.deployChange),
+    },
     elements: {
       ...actual.elements,
       swagger: {
         ...actual.elements.swagger,
         generateTypes: jest.fn().mockImplementation(actual.elements.swagger.generateTypes),
         getAllInstances: jest.fn().mockImplementation(actual.elements.swagger.getAllInstances),
+        addDeploymentAnnotations: jest.fn(),
       },
     },
   }
@@ -53,10 +59,63 @@ describe('adapter', () => {
     })
   })
   describe('deploy', () => {
-    it('should throw not implemented', async () => {
-      await expect(
-        adapter.deploy({ changeGroup: { groupID: '', changes: [] } })
-      ).rejects.toThrow(new Error('Not implemented.'))
+    const type = new ObjectType({ elemID: new ElemID(JIRA, 'obj') })
+    beforeEach(() => {
+      const deployChangeMock = deployment.deployChange as jest.MockedFunction<
+       typeof deployment.deployChange
+      >
+      deployChangeMock.mockImplementation(async change => {
+        if (isRemovalChange(change)) {
+          throw new Error('some error')
+        }
+        return { id: 2 }
+      })
+    })
+
+    it('should return the applied changes', async () => {
+      const deployRes = await adapter.deploy({
+        changeGroup: {
+          groupID: 'group',
+          changes: [
+            toChange({ before: new InstanceElement('inst1', type), after: new InstanceElement('inst1', type) }),
+            toChange({ before: new InstanceElement('inst2', type) }),
+          ],
+        },
+      })
+
+      expect(deployRes.appliedChanges).toEqual([
+        toChange({ before: new InstanceElement('inst1', type), after: new InstanceElement('inst1', type) }),
+      ])
+    })
+
+    it('should return the errors', async () => {
+      const deployRes = await adapter.deploy({
+        changeGroup: {
+          groupID: 'group',
+          changes: [
+            toChange({ after: new InstanceElement('inst1', type) }),
+            toChange({ before: new InstanceElement('inst2', type) }),
+          ],
+        },
+      })
+
+      expect(deployRes.errors).toEqual([
+        new Error('some error'),
+      ])
+    })
+
+    it('should add the new id on addition', async () => {
+      const instance = new InstanceElement('instance', new ObjectType({ elemID: new ElemID(JIRA, 'obj') }))
+      const { appliedChanges } = await adapter.deploy({
+        changeGroup: {
+          groupID: 'group',
+          changes: [
+            toChange({ after: instance }),
+          ],
+        },
+      })
+
+      expect((getChangeElement(appliedChanges[0]) as InstanceElement)?.value.id).toEqual(2)
     })
   })
   describe('deployModifiers', () => {
@@ -102,7 +161,9 @@ describe('adapter', () => {
           swagger: expect.objectContaining({
             url: 'https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json',
           }),
-        })
+        }),
+        undefined,
+        expect.any(Object)
       )
       expect(generateTypes).toHaveBeenCalledWith(
         JIRA,
@@ -110,7 +171,9 @@ describe('adapter', () => {
           swagger: expect.objectContaining({
             url: 'https://developer.atlassian.com/cloud/jira/software/swagger.v3.json',
           }),
-        })
+        }),
+        undefined,
+        expect.any(Object)
       )
     })
     it('should return all types and instances returned from the infrastructure', () => {

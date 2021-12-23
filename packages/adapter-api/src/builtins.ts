@@ -141,6 +141,14 @@ export const BuiltinTypes = {
       [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
     },
   }),
+  HIDDEN_BOOLEAN: new PrimitiveType({
+    elemID: new ElemID(GLOBAL_ADAPTER, 'hidden_boolean'),
+    primitive: PrimitiveTypes.BOOLEAN,
+    annotationRefsOrTypes: StandardCoreAnnotationTypes,
+    annotations: {
+      [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+    },
+  }),
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
@@ -177,6 +185,9 @@ export const InstanceAnnotationTypes: TypeMap = {
 export const CoreAnnotationTypes: TypeMap = {
   ...InstanceAnnotationTypes,
   ...StandardCoreAnnotationTypes,
+  [CORE_ANNOTATIONS.CREATABLE]: BuiltinTypes.HIDDEN_BOOLEAN,
+  [CORE_ANNOTATIONS.UPDATABLE]: BuiltinTypes.HIDDEN_BOOLEAN,
+  [CORE_ANNOTATIONS.DELETABLE]: BuiltinTypes.HIDDEN_BOOLEAN,
 }
 
 export const getRestriction = (

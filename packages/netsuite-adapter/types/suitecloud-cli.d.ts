@@ -64,4 +64,6 @@ declare module '@salto-io/suitecloud-cli' {
   export const SdkDownloadService: SdkDownloadServiceI
 
   export const SdkProperties: SdkPropertiesI
+
+  export const SDK_VERSION: string
 }

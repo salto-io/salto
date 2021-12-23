@@ -2,45 +2,6 @@
 ## Default Configuration
 ```hcl
 jira {
-  fetch = {
-    includeTypes = [
-      "rest__api__3__application_properties@uuuuuub",
-      "rest__api__3__applicationrole",
-      "AttachmentSettings",
-      "Configuration",
-      "rest__api__3__configuration__timetracking__list",
-      "PageBeanDashboard",
-      "PageBeanField",
-      "PageBeanFieldConfigurationDetails",
-      "PageBeanFieldConfigurationScheme",
-      "PageBeanFieldConfigurationIssueTypeItem",
-      "PageBeanFilterDetails",
-      "IssueTypeDetails",
-      "IssueLinkTypes",
-      "SecuritySchemes",
-      "PageBeanIssueTypeScheme",
-      "PageBeanIssueTypeSchemeMapping",
-      "PageBeanIssueTypeScreenScheme",
-      "PageBeanIssueTypeScreenSchemeItem",
-      "PageBeanNotificationScheme",
-      "Permissions",
-      "PermissionSchemes",
-      "rest__api__3__priority",
-      "rest__api__3__projectCategory",
-      "PageBeanProject",
-      "rest__api__3__project__type",
-      "rest__api__3__resolution",
-      "rest__api__3__role",
-      "PageBeanScreen",
-      "PageBeanScreenScheme",
-      "rest__api__3__status",
-      "rest__api__3__statuscategory",
-      "PageBeanWorkflow",
-      "PageBeanWorkflowScheme",
-      "ServerInformation",
-      "agile__1_0__board@uuvuu",
-    ]
-  }
   apiDefinitions = {
     platformSwagger = {
       url = "https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json"

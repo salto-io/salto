@@ -13,10 +13,4 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ActionName, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-
-export const OPERATION_TO_ANNOTATION: Record<ActionName, string> = {
-  add: CORE_ANNOTATIONS.CREATABLE,
-  modify: CORE_ANNOTATIONS.UPDATABLE,
-  remove: CORE_ANNOTATIONS.DELETABLE,
-}
+export { removeStandaloneFieldDependency } from './remove_standalone_field_dependency'

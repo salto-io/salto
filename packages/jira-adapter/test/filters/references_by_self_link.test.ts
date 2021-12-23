@@ -26,7 +26,9 @@ describe('referenceBySelfLinkFilter', () => {
     filter = referenceBySelfLinkFilter({
       client,
       paginator,
-      config: await getDefaultAdapterConfig(),
+      config: {
+        ...await getDefaultAdapterConfig(),
+      },
     }) as typeof filter
   })
 

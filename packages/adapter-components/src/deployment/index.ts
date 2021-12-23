@@ -14,5 +14,6 @@
 * limitations under the License.
 */
 export * as changeValidators from './change_validators'
-export * from './annotations'
+export * as dependency from './dependency'
 export * from './deployment'
+export * from './annotations'

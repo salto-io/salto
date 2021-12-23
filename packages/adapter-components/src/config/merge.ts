@@ -13,10 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ActionName, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { Values } from '@salto-io/adapter-api'
+import _ from 'lodash'
 
-export const OPERATION_TO_ANNOTATION: Record<ActionName, string> = {
-  add: CORE_ANNOTATIONS.CREATABLE,
-  modify: CORE_ANNOTATIONS.UPDATABLE,
-  remove: CORE_ANNOTATIONS.DELETABLE,
-}
+export const mergeWithDefaultConfig = (defaultConfig: Values, config?: Values): Values => (
+  _.mergeWith(
+    _.cloneDeep(defaultConfig),
+    config ?? {},
+    (_firstVal, secondValue) => (Array.isArray(secondValue) ? secondValue : undefined)
+  )
+)

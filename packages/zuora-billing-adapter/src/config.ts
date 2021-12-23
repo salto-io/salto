@@ -692,7 +692,15 @@ export const DEFAULT_INCLUDE_TYPES = [
   WORKFLOW_EXPORT_TYPE,
 ]
 
-export const configType = createMatchingObjectType<ZuoraConfig>({
+export const DEFAULT_CONFIG = {
+  [FETCH_CONFIG]: {
+    includeTypes: DEFAULT_INCLUDE_TYPES,
+    settingsIncludeTypes: DEFAULT_SETTINGS_INCLUDE_TYPES,
+  },
+  [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
+}
+
+export const configType = createMatchingObjectType<Partial<ZuoraConfig>>({
   elemID: new ElemID(ZUORA_BILLING),
   fields: {
     [CLIENT_CONFIG]: {
@@ -703,23 +711,15 @@ export const configType = createMatchingObjectType<ZuoraConfig>({
         ZUORA_BILLING,
         { settingsIncludeTypes: { refType: new ListType(BuiltinTypes.STRING) } },
       ),
-      annotations: {
-        _required: true,
-        [CORE_ANNOTATIONS.DEFAULT]: {
-          includeTypes: DEFAULT_INCLUDE_TYPES,
-          settingsIncludeTypes: DEFAULT_SETTINGS_INCLUDE_TYPES,
-        },
-      },
     },
     [API_DEFINITIONS_CONFIG]: {
       refType: createSwaggerAdapterApiConfigType({
         adapter: ZUORA_BILLING,
       }),
-      annotations: {
-        _required: true,
-        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_API_DEFINITIONS,
-      },
     },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.DEFAULT]: _.omit(DEFAULT_CONFIG, API_DEFINITIONS_CONFIG),
   },
 })
 

@@ -421,6 +421,7 @@ describe('adapter', () => {
     let operations: AdapterOperations
     const groupType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'group') })
     const brandType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'brand') })
+    const anotherType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'anotherType') })
     beforeEach(() => {
       mockDeployChange.mockImplementation(async change => {
         if (isRemovalChange(change)) {
@@ -428,6 +429,9 @@ describe('adapter', () => {
         }
         if (getChangeElement<InstanceElement>(change).elemID.typeName === 'group') {
           return { group: { id: 1 } }
+        }
+        if (getChangeElement<InstanceElement>(change).elemID.typeName === 'brand') {
+          return { brand: { key: 2 } }
         }
         return { key: 2 }
       })
@@ -482,6 +486,17 @@ describe('adapter', () => {
                     },
                   },
                 },
+                anotherType: {
+                  transformation: {
+                    serviceIdField: 'key',
+                  },
+                  deployRequests: {
+                    add: {
+                      url: '/anotherType',
+                      method: 'post',
+                    },
+                  },
+                },
                 groups: {
                   request: {
                     url: '/groups',
@@ -522,6 +537,7 @@ describe('adapter', () => {
             toChange({ after: new InstanceElement('inst', groupType) }),
             toChange({ before: new InstanceElement('inst2', groupType) }),
             toChange({ after: new InstanceElement('inst3', brandType, { ref }) }),
+            toChange({ after: new InstanceElement('inst4', anotherType) }),
             modificationChange,
           ],
         },
@@ -530,6 +546,7 @@ describe('adapter', () => {
       expect(deployRes.appliedChanges).toEqual([
         toChange({ after: new InstanceElement('inst', groupType, { id: 1 }) }),
         toChange({ after: new InstanceElement('inst3', brandType, { key: 2, ref: expect.any(ReferenceExpression) }) }),
+        toChange({ after: new InstanceElement('inst4', anotherType, { key: 2 }) }),
         modificationChange,
       ])
     })

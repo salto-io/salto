@@ -13,13 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-<<<<<<< HEAD
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
-=======
 import SwaggerParser from '@apidevtools/swagger-parser'
-import { BuiltinTypes, ElemID, Field, ListType, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
->>>>>>> 8ba274425 (addDeploymentAnnotations now supports inner types)
 import _ from 'lodash'
 import { AdapterApiConfig } from '../../../../src/config/shared'
 import { addDeploymentAnnotations, LoadedSwagger } from '../../../../src/elements/swagger'
@@ -28,6 +24,7 @@ describe('addDeploymentAnnotations', () => {
   let type: ObjectType
   let innerListType: ObjectType
   let innerType: ObjectType
+  let mapType: ObjectType
   let mockSwagger: LoadedSwagger
   let apiDefinitions: AdapterApiConfig
 
@@ -47,6 +44,13 @@ describe('addDeploymentAnnotations', () => {
       },
     })
 
+    mapType = new ObjectType({
+      elemID: new ElemID('adapter', 'mapType'),
+      fields: {
+        innerField: { refType: BuiltinTypes.STRING },
+      },
+    })
+
     innerListType.fields.circular = new Field(innerListType, 'circular', innerType)
 
     type = new ObjectType({
@@ -56,6 +60,7 @@ describe('addDeploymentAnnotations', () => {
         notCreatableField: { refType: BuiltinTypes.STRING },
         innerList: { refType: new ListType(innerListType) },
         inner: { refType: innerType },
+        additionalProperties: { refType: new MapType(mapType) },
       },
     })
 
@@ -121,6 +126,14 @@ describe('addDeploymentAnnotations', () => {
                         },
                         inner: {
                           $ref: '#/components/schemas/innerType',
+                        },
+                      },
+                      additionalProperties: {
+                        type: 'object',
+                        properties: {
+                          innerField: {
+                            type: 'string',
+                          },
                         },
                       },
                     },
@@ -226,24 +239,25 @@ describe('addDeploymentAnnotations', () => {
   })
 
   it('Should add the appropriate annotations', async () => {
-    await addDeploymentAnnotations([type, innerListType, innerType], [mockSwagger], apiDefinitions)
+    await addDeploymentAnnotations(
+      [type, innerListType, innerType, mapType],
+      [mockSwagger],
+      apiDefinitions,
+    )
     expect(type.fields.creatableField.annotations).toEqual({
-<<<<<<< HEAD
       [CORE_ANNOTATIONS.UPDATABLE]: false,
-=======
-      [DEPLOYMENT_ANNOTATIONS.CREATABLE]: true,
-      [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
     })
 
     expect(type.fields.inner.annotations).toEqual({
-      [DEPLOYMENT_ANNOTATIONS.CREATABLE]: true,
-      [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
+      [CORE_ANNOTATIONS.UPDATABLE]: false,
     })
 
     expect(type.fields.innerList.annotations).toEqual({
-      [DEPLOYMENT_ANNOTATIONS.CREATABLE]: true,
-      [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
->>>>>>> 8ba274425 (addDeploymentAnnotations now supports inner types)
+      [CORE_ANNOTATIONS.UPDATABLE]: false,
+    })
+
+    expect(type.fields.additionalProperties.annotations).toEqual({
+      [CORE_ANNOTATIONS.UPDATABLE]: false,
     })
 
     expect(type.fields.notCreatableField.annotations).toEqual({
@@ -252,28 +266,23 @@ describe('addDeploymentAnnotations', () => {
     })
 
     expect(type.annotations).toEqual({
-<<<<<<< HEAD
       [CORE_ANNOTATIONS.UPDATABLE]: false,
-=======
-      [DEPLOYMENT_ANNOTATIONS.CREATABLE]: true,
-      [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
-      [DEPLOYMENT_ANNOTATIONS.DELETABLE]: true,
     })
 
     expect(innerListType.fields.innerField.annotations).toEqual({
-      [DEPLOYMENT_ANNOTATIONS.CREATABLE]: true,
-      [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
+      [CORE_ANNOTATIONS.UPDATABLE]: false,
     })
 
     expect(innerListType.fields.circular.annotations).toEqual({
-      [DEPLOYMENT_ANNOTATIONS.CREATABLE]: true,
-      [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
+      [CORE_ANNOTATIONS.UPDATABLE]: false,
     })
 
     expect(innerType.fields.circular.annotations).toEqual({
-      [DEPLOYMENT_ANNOTATIONS.CREATABLE]: true,
-      [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
->>>>>>> 8ba274425 (addDeploymentAnnotations now supports inner types)
+      [CORE_ANNOTATIONS.UPDATABLE]: false,
+    })
+
+    expect(mapType.fields.innerField.annotations).toEqual({
+      [CORE_ANNOTATIONS.UPDATABLE]: false,
     })
   })
 })

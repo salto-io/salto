@@ -15,27 +15,22 @@
 */
 import wu from 'wu'
 import {
-  getChangeElement, DependencyChanger, dependencyChange,
-  isReferenceExpression, ChangeId, isInstanceElement,
+  getChangeElement, DependencyChanger, dependencyChange, isReferenceExpression, ChangeId,
 } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
 
 export const removeStandaloneFieldDependency: DependencyChanger = async (
   changes, deps
 ) => {
-  const isChangeFromParentToChild = ([src, target]: [ChangeId, ChangeId]): boolean => {
+  const isDependnecyFromParentToChild = ([src, target]: [ChangeId, ChangeId]): boolean => {
     const sourceChange = changes.get(src)
     const targetChange = changes.get(target)
-    if (sourceChange == null || targetChange == null) {
+    if (sourceChange === undefined || targetChange === undefined) {
       return false
     }
-    const sourceElement = getChangeElement(sourceChange)
-    const targetElement = getChangeElement(targetChange)
-    if (!isInstanceElement(sourceElement) || !isInstanceElement(targetElement)) {
-      return false
-    }
-    return getParents(targetElement)
-      .find(e => isReferenceExpression(e) && e.elemID.isEqual(sourceElement.elemID)) != null
+    return getParents(getChangeElement(targetChange))
+      .find(e => isReferenceExpression(e)
+        && e.elemID.isEqual(getChangeElement(sourceChange).elemID)) != null
   }
 
   const allDependencies = wu(deps)
@@ -45,6 +40,6 @@ export const removeStandaloneFieldDependency: DependencyChanger = async (
     .flatten(true)
 
   return allDependencies
-    .filter(isChangeFromParentToChild)
+    .filter(isDependnecyFromParentToChild)
     .map(([source, target]) => dependencyChange('remove', source, target))
 }

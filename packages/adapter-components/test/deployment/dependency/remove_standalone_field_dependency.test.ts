@@ -114,22 +114,6 @@ describe('dependency changers', () => {
       dependencyChanges = [...await removeStandaloneFieldDependency(inputChanges, inputDeps)]
       expect(dependencyChanges).toHaveLength(0)
     })
-    it('should not remove if the annotation is on ObjectTypes', async () => {
-      const newChildType = childType.clone()
-      newChildType.annotations[CORE_ANNOTATIONS.PARENT] = [
-        new ReferenceExpression(parentType.elemID),
-      ]
-      const inputChanges = new Map([
-        [0, toChange({ after: parentType })],
-        [1, toChange({ after: newChildType })],
-      ])
-      const inputDeps = new Map<collections.set.SetId, Set<collections.set.SetId>>([
-        [0, new Set([1])],
-        [1, new Set([0])],
-      ])
-      dependencyChanges = [...await removeStandaloneFieldDependency(inputChanges, inputDeps)]
-      expect(dependencyChanges).toHaveLength(0)
-    })
     it('should not remove if the dep is only one way', async () => {
       const inputChanges = new Map([
         [0, toChange({ after: parentInstance })],

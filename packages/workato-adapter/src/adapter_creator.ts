@@ -35,16 +35,21 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
 })
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): WorkatoConfig => {
-  const configValue = configUtils.mergeWithDefaultConfig(DEFAULT_CONFIG, config?.value ?? {})
+  const configValue = config?.value ?? {}
+
+  const apiDefinitions = configUtils.mergeWithDefaultConfig(
+    DEFAULT_CONFIG.apiDefinitions,
+    config?.value.apiDefinitions
+  ) as configUtils.AdapterDuckTypeApiConfig
 
   const adapterConfig: { [K in keyof Required<WorkatoConfig>]: WorkatoConfig[K] } = {
     client: configValue.client,
     fetch: configValue.fetch,
-    apiDefinitions: configValue.apiDefinitions,
+    apiDefinitions,
   }
 
   validateClientConfig(CLIENT_CONFIG, adapterConfig.client)
-  validateFetchConfig(FETCH_CONFIG, adapterConfig.fetch, configValue.apiDefinitions)
+  validateFetchConfig(FETCH_CONFIG, adapterConfig.fetch, apiDefinitions)
 
   Object.keys(configValue)
     .filter(k => !Object.keys(adapterConfig).includes(k))

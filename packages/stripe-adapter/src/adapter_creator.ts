@@ -18,13 +18,14 @@ import {
   InstanceElement, Adapter,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import _ from 'lodash'
 import StripeClient from './client/client'
 import StripeAdapter from './adapter'
 import {
   Credentials, accessTokenCredentialsType,
 } from './auth'
 import { configType, StripeConfig, CLIENT_CONFIG, API_DEFINITIONS_CONFIG,
-  FETCH_CONFIG, DEFAULT_CONFIG } from './config'
+  FETCH_CONFIG, DEFAULT_CONFIG, StripeApiConfig } from './config'
 import { createConnection } from './client/connection'
 
 const log = logger(module)
@@ -36,23 +37,30 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
 })
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): StripeConfig => {
-  const fullConfig = configUtils.mergeWithDefaultConfig(DEFAULT_CONFIG, config?.value)
+  const apiDefinitions = configUtils.mergeWithDefaultConfig(
+    DEFAULT_CONFIG.apiDefinitions,
+    config?.value.apiDefinitions
+  ) as StripeApiConfig
 
-  validateClientConfig(CLIENT_CONFIG, fullConfig.client)
-  validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, fullConfig.apiDefinitions)
+  const fetch = _.defaults(
+    {}, config?.value.fetch, DEFAULT_CONFIG[FETCH_CONFIG],
+  )
+
+  validateClientConfig(CLIENT_CONFIG, config?.value?.client)
+  validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
   validateSwaggerFetchConfig(
     FETCH_CONFIG,
     API_DEFINITIONS_CONFIG,
-    fullConfig.fetch,
-    fullConfig.apiDefinitions
+    fetch,
+    apiDefinitions
   )
 
   const adapterConfig: { [K in keyof Required<StripeConfig>]: StripeConfig[K] } = {
-    client: fullConfig.client,
-    fetch: fullConfig.fetch,
-    apiDefinitions: fullConfig.apiDefinitions,
+    client: config?.value?.client,
+    fetch: config?.value?.fetch,
+    apiDefinitions,
   }
-  Object.keys(fullConfig)
+  Object.keys(config?.value ?? {})
     .filter(k => !Object.keys(adapterConfig).includes(k))
     .forEach(k => log.debug('Unknown config property was found: %s', k))
   return adapterConfig

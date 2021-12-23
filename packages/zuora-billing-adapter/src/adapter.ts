@@ -118,7 +118,7 @@ export default class ZuoraAdapter implements AdapterOperations {
   private async getBillingSettingsTypes({
     parsedConfigs, allTypes,
   }: elementUtils.swagger.ParsedTypes): Promise<elementUtils.swagger.ParsedTypes> {
-    if (_.isEmpty(this.userConfig[FETCH_CONFIG].settingsIncludeTypes)) {
+    if (this.userConfig[FETCH_CONFIG].settingsIncludeTypes === undefined) {
       return { allTypes: {}, parsedConfigs: {} }
     }
 

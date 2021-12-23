@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions } from '@salto-io/adapter-api'
-import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
-import { logDuration } from '@salto-io/adapter-utils'
+import { FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, getChangeElement, isAdditionChange, isInstanceChange } from '@salto-io/adapter-api'
+import { config as configUtils, elements as elementUtils, client as clientUtils, deployment } from '@salto-io/adapter-components'
+import { applyFunctionToChangeData, logDuration, resolveChangeElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import JiraClient from './client/client'
 import changeValidator from './change_validator'
@@ -29,8 +29,14 @@ import authenticatedPermissionFilter from './filters/authenticated_permission'
 import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
 
-const { generateTypes, getAllInstances } = elementUtils.swagger
+const {
+  generateTypes,
+  getAllInstances,
+  loadSwagger,
+  addDeploymentAnnotations,
+} = elementUtils.swagger
 const { createPaginator, getWithOffsetAndLimit } = clientUtils
+const { deployChange } = deployment
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
@@ -44,6 +50,11 @@ export interface JiraAdapterParams {
   filterCreators?: FilterCreator[]
   client: JiraClient
   config: JiraConfig
+}
+
+type AdapterSwaggers = {
+  platform: elementUtils.swagger.LoadedSwagger
+  jira: elementUtils.swagger.LoadedSwagger
 }
 
 export default class JiraAdapter implements AdapterOperations {
@@ -66,20 +77,41 @@ export default class JiraAdapter implements AdapterOperations {
     })
     this.paginator = paginator
     this.createFiltersRunner = () => (
-      filtersRunner({ client, paginator, config }, filterCreators)
+      filtersRunner({
+        client,
+        paginator,
+        config,
+      }, filterCreators)
+    )
+  }
+
+  private async generateSwaggers(): Promise<AdapterSwaggers> {
+    return Object.fromEntries(
+      await Promise.all(
+        Object.entries(getApiDefinitions(this.userConfig.apiDefinitions))
+          .map(async ([key, config]) => [key, await loadSwagger(config.swagger.url)])
+      )
     )
   }
 
   @logDuration('generating types from swagger')
-  private async getAllTypes(): Promise<{
+  private async getAllTypes(swaggers: AdapterSwaggers): Promise<{
     allTypes: TypeMap
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>
   }> {
+    const apiDefinitions = getApiDefinitions(this.userConfig.apiDefinitions)
     // Note - this is a temporary way of handling multiple swagger defs in the same adapter
     // this will be replaced by built-in infrastructure support for multiple swagger defs
     // in the configuration
     const results = await Promise.all(
-      getApiDefinitions(this.userConfig.apiDefinitions).map(config => generateTypes(JIRA, config))
+      Object.keys(swaggers).map(
+        key => generateTypes(
+          JIRA,
+          apiDefinitions[key as keyof AdapterSwaggers],
+          undefined,
+          swaggers[key as keyof AdapterSwaggers]
+        )
+      )
     )
     return _.merge({}, ...results)
   }
@@ -110,8 +142,9 @@ export default class JiraAdapter implements AdapterOperations {
   @logDuration('fetching account configuration')
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch jira account configuration..')
+    const swaggers = await this.generateSwaggers()
     progressReporter.reportProgress({ message: 'Fetching types' })
-    const { allTypes, parsedConfigs } = await this.getAllTypes()
+    const { allTypes, parsedConfigs } = await this.getAllTypes(swaggers)
     progressReporter.reportProgress({ message: 'Fetching instances' })
     const instances = await this.getInstances(allTypes, parsedConfigs)
 
@@ -123,6 +156,14 @@ export default class JiraAdapter implements AdapterOperations {
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
     await this.createFiltersRunner().onFetch(elements)
+
+    // This needs to happen after the onFetch since some filters
+    // may add fields that deployment annotation should be added to
+    addDeploymentAnnotations(
+      elements.filter(isObjectType),
+      Object.values(swaggers),
+      this.userConfig.apiDefinitions,
+    )
     return { elements }
   }
 
@@ -130,9 +171,51 @@ export default class JiraAdapter implements AdapterOperations {
    * Deploy configuration elements to the given account.
    */
   @logDuration('deploying account configuration')
-  // eslint-disable-next-line class-methods-use-this
-  async deploy(): Promise<DeployResult> {
-    throw new Error('Not implemented.')
+  async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
+    const changesToDeploy = await Promise.all(changeGroup.changes
+      .filter(isInstanceChange)
+      .map(change => applyFunctionToChangeData<Change<InstanceElement>>(
+        change,
+        instance => instance.clone()
+      )))
+
+    const runner = this.createFiltersRunner()
+    await runner.preDeploy(changesToDeploy)
+
+    const result = await Promise.all(
+      changesToDeploy.map(async change => {
+        try {
+          const response = await deployChange(
+            await resolveChangeElement(change, ({ ref }) => ref.value),
+            this.client,
+            this.userConfig.apiDefinitions
+              .types[getChangeElement(change).elemID.typeName]?.deployRequests,
+          )
+          if (isAdditionChange(change)) {
+            if (!Array.isArray(response)) {
+              getChangeElement(change).value.id = response.id
+            } else {
+              log.warn('Received unexpected response from deployChange: %o', response)
+            }
+          }
+          return change
+        } catch (err) {
+          if (!_.isError(err)) {
+            throw err
+          }
+          return err
+        }
+      })
+    )
+
+    const [errors, appliedChanges] = _.partition(result, _.isError)
+
+    await runner.onDeploy(appliedChanges)
+
+    return {
+      appliedChanges,
+      errors,
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this

@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { ElemID, BuiltinTypes, ListType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ElemID, CORE_ANNOTATIONS, BuiltinTypes, ListType } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { JIRA } from './constants'
 
@@ -59,6 +59,22 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       paginationField: 'startAt',
       queryParams: {
         expand: 'description,owner,viewUrl,favouritedCount,sharePermissions',
+      },
+    },
+  },
+  Dashboard: {
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/dashboard',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/dashboard/{id}',
+        method: 'put',
+      },
+      remove: {
+        url: '/rest/api/3/dashboard/{id}',
+        method: 'delete',
       },
     },
   },
@@ -120,6 +136,31 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'contextProjects', fieldType: 'list<CustomFieldContextProjectMapping>' },
       ],
     },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/field',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/field/{fieldId}',
+        method: 'put',
+        urlParamsToFields: {
+          fieldId: 'id',
+        },
+      },
+      remove: {
+        url: '/rest/api/3/field/{id}',
+        method: 'delete',
+      },
+    },
+  },
+  ApplicationProperty: {
+    deployRequests: {
+      modify: {
+        url: '/rest/api/3/application-properties/{id}',
+        method: 'put',
+      },
+    },
   },
   PageBeanCustomFieldContext: {
     request: {
@@ -143,6 +184,26 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'options', fieldType: 'list<CustomFieldContextOption>' },
       ],
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/field/{fieldId}/context',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/field/{fieldId}/context/{contextId}',
+        method: 'put',
+        urlParamsToFields: {
+          contextId: 'id',
+        },
+      },
+      remove: {
+        url: '/rest/api/3/field/{fieldId}/context/{contextId}',
+        method: 'delete',
+        urlParamsToFields: {
+          contextId: 'id',
+        },
+      },
     },
   },
   PageBeanCustomFieldContextOption: {
@@ -231,6 +292,20 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'columns', fieldType: 'list<ColumnItem>' },
       ],
     },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/filter',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/filter/{id}',
+        method: 'put',
+      },
+      remove: {
+        url: '/rest/api/3/filter/{id}',
+        method: 'delete',
+      },
+    },
   },
   PageBeanIssueTypeScheme: {
     request: {
@@ -248,6 +323,26 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   IssueTypeScheme: {
     transformation: {
       fieldTypeOverrides: [{ fieldName: 'issueTypes', fieldType: 'list<IssueTypeSchemeMapping>' }],
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/issuetypescheme',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/issuetypescheme/{issueTypeSchemeId}',
+        method: 'put',
+        urlParamsToFields: {
+          issueTypeSchemeId: 'id',
+        },
+      },
+      remove: {
+        url: '/rest/api/3/issuetypescheme/{issueTypeSchemeId}',
+        method: 'delete',
+        urlParamsToFields: {
+          issueTypeSchemeId: 'id',
+        },
+      },
     },
   },
   PageBeanIssueTypeSchemeMapping: {
@@ -277,6 +372,30 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   IssueTypeScreenScheme: {
     transformation: {
       fieldTypeOverrides: [{ fieldName: 'items', fieldType: 'list<IssueTypeScreenSchemeItem>' }],
+    },
+    request: {
+      url: '/rest/api/3/issuetypescreenscheme',
+      paginationField: 'startAt',
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/issuetypescreenscheme',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/issuetypescreenscheme/{issueTypeScreenSchemeId}',
+        method: 'put',
+        urlParamsToFields: {
+          issueTypeScreenSchemeId: 'id',
+        },
+      },
+      remove: {
+        url: '/rest/api/3/issuetypescreenscheme/{issueTypeScreenSchemeId}',
+        method: 'delete',
+        urlParamsToFields: {
+          issueTypeScreenSchemeId: 'id',
+        },
+      },
     },
   },
   PageBeanIssueTypeScreenSchemeItem: {
@@ -312,6 +431,34 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       },
     },
   },
+  PermissionScheme: {
+    request: {
+      url: '/rest/api/3/permissionscheme',
+      queryParams: {
+        expand: 'all',
+      },
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/permissionscheme',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/permissionscheme/{schemeId}',
+        method: 'put',
+        urlParamsToFields: {
+          schemeId: 'id',
+        },
+      },
+      remove: {
+        url: '/rest/api/3/permissionscheme/{schemeId}',
+        method: 'delete',
+        urlParamsToFields: {
+          schemeId: 'id',
+        },
+      },
+    },
+  },
   ProjectType: {
     transformation: {
       idFields: ['key'],
@@ -335,6 +482,26 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   Project: {
     transformation: {
       fieldTypeOverrides: [{ fieldName: 'components', fieldType: 'list<ComponentWithIssueCount>' }],
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/project',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/project/{projectIdOrKey}',
+        method: 'put',
+        urlParamsToFields: {
+          projectIdOrKey: 'id',
+        },
+      },
+      remove: {
+        url: '/rest/api/3/project/{projectIdOrKey}',
+        method: 'delete',
+        urlParamsToFields: {
+          projectIdOrKey: 'id',
+        },
+      },
     },
   },
   ComponentWithIssueCount: {
@@ -366,6 +533,26 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'tabs', fieldType: 'list<ScreenableTab>' },
         { fieldName: 'availableFields', fieldType: 'list<ScreenableField>' },
       ],
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/screens',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/screens/{screenId}',
+        method: 'put',
+        urlParamsToFields: {
+          screenId: 'id',
+        },
+      },
+      remove: {
+        url: '/rest/api/3/screens/{screenId}',
+        method: 'delete',
+        urlParamsToFields: {
+          screenId: 'id',
+        },
+      },
     },
   },
   'rest__api__3__screens___screenId___tabs@uuuuuuuu_00123_00125uu': {
@@ -414,11 +601,41 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     transformation: {
       idFields: ['id.name'],
     },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/workflow',
+        method: 'post',
+      },
+      // Works only for inactive workflows
+      remove: {
+        url: '/rest/api/3/workflow/{entityId}',
+        method: 'delete',
+        urlParamsToFields: {
+          entityId: 'id',
+        },
+      },
+    },
   },
   PageBeanWorkflowScheme: {
     request: {
       url: '/rest/api/3/workflowscheme',
       paginationField: 'startAt',
+    },
+  },
+  WorkflowScheme: {
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/workflowscheme',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/workflowscheme/{id}',
+        method: 'put',
+      },
+      remove: {
+        url: '/rest/api/3/workflowscheme/{id}',
+        method: 'delete',
+      },
     },
   },
   IssueTypeDetails: {
@@ -427,6 +644,20 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
     transformation: {
       dataField: '.',
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/issuetype',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/issuetype/{id}',
+        method: 'put',
+      },
+      remove: {
+        url: '/rest/api/3/issuetype/{id}',
+        method: 'delete',
+      },
     },
   },
   AttachmentSettings: {
@@ -463,6 +694,82 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'config', fieldType: 'list<agile__1_0__board___boardId___configuration@uuvuuuu_00123_00125uu>' },
       ],
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/agile/1.0/board',
+        method: 'post',
+      },
+      remove: {
+        url: '/rest/agile/1.0/board/{boardId}',
+        method: 'delete',
+        urlParamsToFields: {
+          boardId: 'id',
+        },
+      },
+    },
+  },
+
+  IssueLinkType: {
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/issueLinkType',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/issueLinkType/{issueLinkTypeId}',
+        method: 'put',
+        urlParamsToFields: {
+          issueLinkTypeId: 'id',
+        },
+      },
+      remove: {
+        url: '/rest/api/3/issueLinkType/{issueLinkTypeId}',
+        method: 'delete',
+        urlParamsToFields: {
+          issueLinkTypeId: 'id',
+        },
+      },
+    },
+  },
+
+  ProjectRole: {
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/role',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/role/{id}',
+        method: 'put',
+      },
+      remove: {
+        url: '/rest/api/3/role/{id}',
+        method: 'delete',
+      },
+    },
+  },
+
+  ScreenScheme: {
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/screenscheme',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/screenscheme/{screenSchemeId}',
+        method: 'put',
+        urlParamsToFields: {
+          screenSchemeId: 'id',
+        },
+      },
+      remove: {
+        url: '/rest/api/3/screenscheme/{screenSchemeId}',
+        method: 'delete',
+        urlParamsToFields: {
+          screenSchemeId: 'id',
+        },
+      },
     },
   },
 
@@ -591,12 +898,15 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
   },
 })
 
-export const getApiDefinitions = (config: JiraApiConfig): configUtils.AdapterSwaggerApiConfig[] => {
+export const getApiDefinitions = (config: JiraApiConfig): {
+  platform: configUtils.AdapterSwaggerApiConfig
+  jira: configUtils.AdapterSwaggerApiConfig
+} => {
   const baseConfig = _.omit(config, ['platformSwagger', 'jiraSwagger'])
-  return [
-    { ...baseConfig, swagger: config.platformSwagger },
-    { ...baseConfig, swagger: config.jiraSwagger },
-  ]
+  return {
+    platform: { ...baseConfig, swagger: config.platformSwagger },
+    jira: { ...baseConfig, swagger: config.jiraSwagger },
+  }
 }
 
 export type FilterContext = Pick<JiraConfig, 'fetch' | 'apiDefinitions'>

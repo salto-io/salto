@@ -18,7 +18,7 @@ import changeValidator from '../src/change_validator'
 import { JIRA } from '../src/constants'
 
 describe('change validator creator', () => {
-  describe('deployNotSupportedValidator', () => {
+  describe('checkDeploymentAnnotationsValidator', () => {
     it('should not fail if there are no deploy changes', async () => {
       expect(await changeValidator([])).toEqual([])
     })
@@ -31,14 +31,14 @@ describe('change validator creator', () => {
         {
           elemID: new ElemID(JIRA, 'obj'),
           severity: 'Error',
-          message: 'Deploy is not supported in adapter jira.',
-          detailedMessage: 'Deploy is not supported.',
+          message: 'Deployment of non-instance elements is not supported in adapter jira',
+          detailedMessage: 'Salto does not support deployment of jira.obj',
         },
         {
           elemID: new ElemID(JIRA, 'obj2'),
           severity: 'Error',
-          message: 'Deploy is not supported in adapter jira.',
-          detailedMessage: 'Deploy is not supported.',
+          message: 'Deployment of non-instance elements is not supported in adapter jira',
+          detailedMessage: 'Salto does not support deployment of jira.obj2',
         },
       ])
     })

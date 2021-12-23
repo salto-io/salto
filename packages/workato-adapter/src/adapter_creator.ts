@@ -13,17 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, Adapter } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import WorkatoAdapter from './adapter'
 import { Credentials, usernameTokenCredentialsType } from './auth'
 import {
-  configType, WorkatoConfig, CLIENT_CONFIG, DEFAULT_TYPES, DEFAULT_ID_FIELDS,
-  FIELDS_TO_OMIT,
-  validateFetchConfig,
+  configType, WorkatoConfig, CLIENT_CONFIG, validateFetchConfig,
   FETCH_CONFIG,
+  DEFAULT_CONFIG,
 } from './config'
 import WorkatoClient from './client/client'
 import { createConnection } from './client/connection'
@@ -38,17 +36,11 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): WorkatoConfig => {
   const configValue = config?.value ?? {}
-  const apiDefinitions: configUtils.AdapterDuckTypeApiConfig = _.defaults(
-    {}, configValue.apiDefinitions, {
-      typeDefaults: {
-        transformation: {
-          idFields: DEFAULT_ID_FIELDS,
-          fieldsToOmit: FIELDS_TO_OMIT,
-        },
-      },
-      types: DEFAULT_TYPES,
-    }
-  )
+
+  const apiDefinitions = configUtils.mergeWithDefaultConfig(
+    DEFAULT_CONFIG.apiDefinitions,
+    config?.value.apiDefinitions
+  ) as configUtils.AdapterDuckTypeApiConfig
 
   const adapterConfig: { [K in keyof Required<WorkatoConfig>]: WorkatoConfig[K] } = {
     client: configValue.client,

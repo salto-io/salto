@@ -13,19 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
   InstanceElement, Adapter,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import _ from 'lodash'
 import StripeClient from './client/client'
 import StripeAdapter from './adapter'
 import {
   Credentials, accessTokenCredentialsType,
 } from './auth'
-import { configType, StripeConfig, CLIENT_CONFIG, DEFAULT_API_DEFINITIONS, API_DEFINITIONS_CONFIG,
-  StripeApiConfig, FETCH_CONFIG, StripeFetchConfig, DEFAULT_INCLUDE_TYPES } from './config'
+import { configType, StripeConfig, CLIENT_CONFIG, API_DEFINITIONS_CONFIG,
+  FETCH_CONFIG, DEFAULT_CONFIG, StripeApiConfig } from './config'
 import { createConnection } from './client/connection'
 
 const log = logger(module)
@@ -37,11 +37,13 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
 })
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): StripeConfig => {
-  const apiDefinitions: StripeApiConfig = _.defaults(
-    {}, config?.value?.apiDefinitions, DEFAULT_API_DEFINITIONS
-  )
-  const fetch: StripeFetchConfig = _.defaults(
-    {}, config?.value?.fetch, { includeTypes: DEFAULT_INCLUDE_TYPES },
+  const apiDefinitions = configUtils.mergeWithDefaultConfig(
+    DEFAULT_CONFIG.apiDefinitions,
+    config?.value.apiDefinitions
+  ) as StripeApiConfig
+
+  const fetch = _.defaults(
+    {}, config?.value.fetch, DEFAULT_CONFIG[FETCH_CONFIG],
   )
 
   validateClientConfig(CLIENT_CONFIG, config?.value?.client)

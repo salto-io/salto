@@ -13,19 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
   InstanceElement, Adapter,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import _ from 'lodash'
 import ZuoraClient from './client/client'
 import ZuoraAdapter from './adapter'
 import { Credentials, oauthClientCredentialsType, isSandboxSubdomain, toZuoraBaseUrl } from './auth'
 import {
-  configType, ZuoraConfig, CLIENT_CONFIG, DEFAULT_API_DEFINITIONS, API_DEFINITIONS_CONFIG,
-  ZuoraApiConfig, FETCH_CONFIG, ZuoraFetchConfig, DEFAULT_INCLUDE_TYPES,
-  DEFAULT_SETTINGS_INCLUDE_TYPES,
+  configType, ZuoraConfig, CLIENT_CONFIG, API_DEFINITIONS_CONFIG,
+  FETCH_CONFIG, DEFAULT_CONFIG, ZuoraApiConfig,
 } from './config'
 import { createConnection } from './client/connection'
 
@@ -49,15 +48,13 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
 }
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): ZuoraConfig => {
-  const apiDefinitions: ZuoraApiConfig = _.defaults(
-    {}, config?.value?.apiDefinitions, DEFAULT_API_DEFINITIONS
-  )
+  const apiDefinitions = configUtils.mergeWithDefaultConfig(
+    DEFAULT_CONFIG.apiDefinitions,
+    config?.value.apiDefinitions
+  ) as ZuoraApiConfig
 
-  const fetch: ZuoraFetchConfig = _.defaults(
-    {}, config?.value?.fetch, {
-      includeTypes: DEFAULT_INCLUDE_TYPES,
-      settingsIncludeTypes: DEFAULT_SETTINGS_INCLUDE_TYPES,
-    },
+  const fetch = _.defaults(
+    {}, config?.value.fetch, DEFAULT_CONFIG[FETCH_CONFIG],
   )
 
   validateClientConfig(CLIENT_CONFIG, config?.value?.client)

@@ -17,6 +17,7 @@ import { ElemID, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import _ from 'lodash'
 import { STRIPE } from './constants'
 
 const { createClientConfigType } = clientUtils
@@ -120,7 +121,14 @@ const ALL_SUPPORTED_TYPES = [
 // noinspection UnnecessaryLocalVariableJS
 export const DEFAULT_INCLUDE_TYPES = ALL_SUPPORTED_TYPES
 
-export const configType = createMatchingObjectType<StripeConfig>({
+export const DEFAULT_CONFIG = {
+  [FETCH_CONFIG]: {
+    includeTypes: DEFAULT_INCLUDE_TYPES,
+  },
+  [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
+}
+
+export const configType = createMatchingObjectType<Partial<StripeConfig>>({
   elemID: new ElemID(STRIPE),
   fields: {
     [CLIENT_CONFIG]: {
@@ -128,22 +136,15 @@ export const configType = createMatchingObjectType<StripeConfig>({
     },
     [FETCH_CONFIG]: {
       refType: createUserFetchConfigType(STRIPE),
-      annotations: {
-        _required: true,
-        [CORE_ANNOTATIONS.DEFAULT]: {
-          includeTypes: DEFAULT_INCLUDE_TYPES,
-        },
-      },
     },
     [API_DEFINITIONS_CONFIG]: {
       refType: createSwaggerAdapterApiConfigType({
         adapter: STRIPE,
       }),
-      annotations: {
-        _required: true,
-        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_API_DEFINITIONS,
-      },
     },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.DEFAULT]: _.omit(DEFAULT_CONFIG, API_DEFINITIONS_CONFIG),
   },
 })
 

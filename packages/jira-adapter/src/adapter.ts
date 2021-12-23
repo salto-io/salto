@@ -26,6 +26,7 @@ import fieldReferences from './filters/field_references'
 import referenceBySelfLinkFilter from './filters/references_by_self_link'
 import issueTypeSchemeReferences from './filters/issue_type_scheme_references'
 import authenticatedPermissionFilter from './filters/authenticated_permission'
+import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
 import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
 
@@ -44,6 +45,7 @@ export const DEFAULT_FILTERS = [
   referenceBySelfLinkFilter,
   issueTypeSchemeReferences,
   authenticatedPermissionFilter,
+  hiddenValuesInListsFilter,
 ]
 
 export interface JiraAdapterParams {

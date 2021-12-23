@@ -116,6 +116,7 @@ export interface DeployResult {
   success: boolean
   errors: DeployError[]
   changes?: Iterable<FetchChange>
+  appliedChanges?: Iterable<Change>
 }
 
 export const deploy = async (
@@ -125,6 +126,7 @@ export const deploy = async (
   accounts = workspace.accounts(),
 ): Promise<DeployResult> => {
   const changedElements = elementSource.createInMemoryElementSource()
+  const appliedChangesResult: Change[] = []
   const adapters = await getAdapters(
     accounts,
     await workspace.accountCredentials(accounts),
@@ -150,6 +152,7 @@ export const deploy = async (
 
   const postDeployAction = async (appliedChanges: ReadonlyArray<Change>): Promise<void> => {
     await promises.array.series(appliedChanges.map(change => async () => {
+      appliedChangesResult.push(change)
       const updatedElement = await getUpdatedElement(change)
       if (change.action === 'remove' && !isFieldChange(change)) {
         await workspace.state().remove(updatedElement.elemID)
@@ -174,6 +177,7 @@ export const deploy = async (
   return {
     success: !errored,
     changes,
+    appliedChanges: appliedChangesResult,
     errors: errored ? errors : [],
   }
 }

@@ -32,7 +32,7 @@ export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
   { fieldName: 'url', fieldType: 'string' },
   { fieldName: 'count', fieldType: 'number' },
 ]
-export const FIELDS_TO_HIDE: configUtils.FieldToOmitType[] = [
+export const FIELDS_TO_HIDE: configUtils.FieldToHideType[] = [
   { fieldName: 'id', fieldType: 'number' },
   { fieldName: 'created_at', fieldType: 'string' },
   { fieldName: 'updated_at', fieldType: 'string' },
@@ -87,13 +87,11 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   custom_role: {
     transformation: {
       sourceTypeName: 'custom_roles__custom_roles',
-      fieldsToOmit: [
-        // From Zendesk docs - always 0
+      fieldsToOmit: FIELDS_TO_OMIT.concat([
+        // always 0 - https://developer.zendesk.com/api-reference/ticketing/account-configuration/custom_roles/#json-format
         { fieldName: 'role_type', fieldType: 'number' },
-      ],
-      fieldsToHide: [
         { fieldName: 'team_member_count', fieldType: 'number' },
-      ],
+      ]),
     },
     deployRequests: {
       add: {
@@ -485,7 +483,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
         { fieldName: 'forwarding_status', fieldType: 'string', restrictions: { enforce_value: true, values: ['unknown', 'waiting', 'verified', 'failed'] } },
         { fieldName: 'spf_status', fieldType: 'string', restrictions: { enforce_value: true, values: ['unknown', 'verified', 'failed'] } },
       ],
-      fieldsToHide: [{ fieldName: 'domain_verification_code' }],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'domain_verification_code' }),
     },
     deployRequests: {
       add: {
@@ -709,7 +707,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   app_installation: {
     transformation: {
       sourceTypeName: 'app_installations__installations',
-      fieldsToOmit: [...FIELDS_TO_OMIT, { fieldName: 'updated', fieldType: 'string' }],
+      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'updated', fieldType: 'string' }),
       idFields: ['settings.name', 'id'],
       fileNameFields: ['settings.name'],
     },
@@ -746,7 +744,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     transformation: {
       sourceTypeName: 'oauth_clients__clients',
       idFields: ['identifier'],
-      fieldsToHide: [{ fieldName: 'secret', fieldType: 'string' }],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'secret', fieldType: 'string' }),
     },
     deployRequests: {
       add: {
@@ -956,6 +954,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   },
   dynamic_content_item__variants: {
     transformation: {
+      // Will be changed after SALTO-1687 + SALTO-1688
       idFields: ['locale_id'],
     },
   },

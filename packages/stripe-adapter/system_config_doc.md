@@ -2,16 +2,6 @@
 ## Default Configuration
 ```hcl
 stripe {
-  fetch = {
-    includeTypes = [
-      "country_specs",
-      "coupons",
-      "products",
-      "reporting__report_types",
-      "tax_rates",
-      "webhook_endpoints",
-    ]
-  }
   apiDefinitions = {
     swagger = {
       url = "https://raw.githubusercontent.com/stripe/openapi/master/openapi/spec3.yaml"

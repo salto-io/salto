@@ -2,64 +2,6 @@
 ## Default Configuration
 ```hcl
 zuora_billing {
-  fetch = {
-    includeTypes = [
-      "AccountingCodes",
-      "AccountingPeriods",
-      "CatalogProduct",
-      "CustomObject",
-      "EventTriggers",
-      "HostedPages",
-      "NotificationDefinitions",
-      "NotificationEmailTemplates",
-      "PaymentGateways",
-      "SequenceSets",
-      "StandardObject",
-      "WorkflowExport",
-    ]
-    settingsIncludeTypes = [
-      "AccountingRules",
-      "AgingBucket",
-      "AllNotifications",
-      "AllPaymentTerms",
-      "AllRevenueRecognition",
-      "AllTaxCode",
-      "ApplicationRules",
-      "BatchAlias",
-      "BillingCycleType",
-      "BillingListPriceBase",
-      "BillingPeriod",
-      "BillingPeriodStart",
-      "BillingRules",
-      "ChargeModel",
-      "ChargeType",
-      "CommunicationProfiles",
-      "Currencies",
-      "DiscountSettings",
-      "DocPrefix",
-      "FxCurrency",
-      "GatewayResponse",
-      "GetTaxCompanies",
-      "GlSegments",
-      "HostedPaymentPages",
-      "NumberAndSku",
-      "PaymentGateways",
-      "PaymentMethods",
-      "PaymentRetryRules",
-      "PaymentRules",
-      "ReasonCodes",
-      "RevenueEventTypes",
-      "RevenueRecognitionModels",
-      "revenueRecognitionRuleDtos",
-      "RevenueRecognitionStatus",
-      "RevenueStartDate",
-      "RolesPage",
-      "SegmentationRules",
-      "SubscriptionSetting",
-      "UnitsOfMeasureList",
-      "TaxEngines",
-    ]
-  }
   apiDefinitions = {
     swagger = {
       url = "https://assets.zuora.com/zuora-documentation/swagger.yaml"

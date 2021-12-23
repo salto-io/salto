@@ -2,44 +2,6 @@
 ## Default Configuration
 ```hcl
 zendesk_support {
-  fetch = {
-    includeTypes = [
-      "account_settings",
-      "app_installations",
-      "apps_owned",
-      "automations",
-      "brands",
-      "business_hours_schedules",
-      "custom_roles",
-      "dynamic_content_item",
-      "groups",
-      "locales",
-      "macro_categories",
-      "macros",
-      "macros_actions",
-      "macros_definitions",
-      "monitored_twitter_handles",
-      "oauth_clients",
-      "oauth_global_clients",
-      "organization_fields",
-      "organizations",
-      "recipient_addresses",
-      "resource_collections",
-      "routing_attribute_definitions",
-      "routing_attributes",
-      "sharing_agreements",
-      "sla_policies",
-      "sla_policies_definitions",
-      "targets",
-      "ticket_fields",
-      "ticket_forms",
-      "trigger_categories",
-      "triggers",
-      "user_fields",
-      "views",
-      "workspaces",
-    ]
-  }
   apiDefinitions = {
     typeDefaults = {
       request = {

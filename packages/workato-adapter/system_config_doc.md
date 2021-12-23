@@ -2,19 +2,6 @@
 ## Default Configuration
 ```hcl
 workato {
-  fetch = {
-    includeTypes = [
-      "api_access_profile",
-      "api_client",
-      "api_collection",
-      "api_endpoint",
-      "connection",
-      "folder",
-      "property",
-      "recipe",
-      "role",
-    ]
-  }
   apiDefinitions = {
     typeDefaults = {
       transformation = {

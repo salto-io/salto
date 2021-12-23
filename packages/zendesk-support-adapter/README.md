@@ -19,5 +19,5 @@ Salto supports authenticating with Zendesk using either a combination of user-na
 
 ## Known limitations
 * Sunshine APIs (including custom objects) are not yet supported. Please reach out if interested.
-* Many resources do not have strong uniqueness requirements in Zendesk, so in order to effectively compare environments we made some assumptions on fields that we believed that should be unique (mainly the instance name). That assumption might leads to conflicts that cause elements to be dropped if multiple items of certain type have the same name.
-We should also mention that, if needed, there can be a different config that is not multiple-environments friendly, but can show the entire configuration within a single env. Please reach out if interested.
+* Many resources do not have strong uniqueness requirements in Zendesk, so we made some assumptions in order to effectively compare environments. If your account has resources with identical names or titles (e.g. two views with the same title), these elements may receive the same ID and be omitted from the workspace as a result. 
+  * If you have such name overlaps and would still like to manage these elements with Salto, it is possible to adjust the configuration in order to support that. Please reach out if interested.

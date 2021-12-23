@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ActionName, CORE_ANNOTATIONS, isListType, isMapType, isObjectType, ObjectType } from '@salto-io/adapter-api'
+import { ActionName, CORE_ANNOTATIONS, isListType, isMapType, isObjectType, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
@@ -49,6 +49,32 @@ const getSwaggerEndpoint = (url: string, baseUrls: string[]): string => {
   return matchingBase === undefined ? url : url.slice(matchingBase.length)
 }
 
+const getInnerSchemaAndType = async (
+  type: TypeElement,
+  schema: SchemaOrReference,
+): Promise<{ schema: SchemaOrReference; type: ObjectType } | undefined> => {
+  if (isObjectType(type)) {
+    return { schema, type }
+  }
+
+  if (isMapType(type)) {
+    const innerType = await type.getInnerType()
+    if (isObjectType(innerType)) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      return getInnerSchemaAndType(innerType, schema)
+    }
+  }
+
+  if (isListType(type)) {
+    const innerType = await type.getInnerType()
+    if (isArraySchemaObject(schema) && isObjectType(innerType)) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      return getInnerSchemaAndType(innerType, schema.items)
+    }
+  }
+  return undefined
+}
+
 const setTypeAnnotations = async (
   type: ObjectType,
   schema: SchemaOrReference,
@@ -74,23 +100,14 @@ const setTypeAnnotations = async (
 
     const fieldType = await field.getType()
 
-    if (isObjectType(fieldType)) {
-      await setTypeAnnotations(fieldType, properties, swagger, action, annotatedTypes)
+    const schemaAndType = await getInnerSchemaAndType(fieldType, properties)
+    if (schemaAndType === undefined) {
+      return
     }
 
-    if (isMapType(fieldType)) {
-      const innerType = await fieldType.getInnerType()
-      if (isObjectType(innerType)) {
-        await setTypeAnnotations(innerType, properties, swagger, action, annotatedTypes)
-      }
-    }
+    const { schema: innerSchema, type: innerType } = schemaAndType
 
-    if (isListType(fieldType)) {
-      const innerType = await fieldType.getInnerType()
-      if (isArraySchemaObject(properties) && isObjectType(innerType)) {
-        await setTypeAnnotations(innerType, properties.items, swagger, action, annotatedTypes)
-      }
-    }
+    await setTypeAnnotations(innerType, innerSchema, swagger, action, annotatedTypes)
   })
 }
 

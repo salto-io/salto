@@ -40,7 +40,8 @@
     "bottleneck": "^2.19.5",
     "lodash": "^4.17.21",
     "qs": "^6.10.1",
-    "soap": "^0.37.0"
+    "soap": "^0.37.0",
+    "wu": "^2.1.0"
   },
   "devDependencies": {
     "@salto-io/test-utils": "0.3.6",

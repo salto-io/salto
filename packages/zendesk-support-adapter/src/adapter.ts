@@ -107,7 +107,6 @@ export default class ZendeskAdapter implements AdapterOperations {
     progressReporter.reportProgress({ message: 'Fetching types and instances' })
     const elements = await this.getElements()
 
-
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
     await (await this.createFiltersRunner()).onFetch(elements)
@@ -187,6 +186,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   public get deployModifiers(): DeployModifiers {
     return {
       changeValidator,
+      dependencyChanger: deploymentUtils.dependency.removeStandaloneFieldDependency,
     }
   }
 }

@@ -58,10 +58,17 @@ export const createCompletionsProvider = (
   ) => {
     await workspace.awaitAllUpdates()
     const saltoPos = vsPosToSaltoPos(position)
+    const definitionsTree = ctx.buildDefinitionsTree(
+      (await workspace.getNaclFile(doc.fileName))?.buffer as string,
+      await workspace.getSourceMap(doc.fileName),
+      await awu(await workspace.getElements(doc.fileName)).toArray(),
+    )
+    const fullElementSource = await workspace.getElementSourceOfPath(doc.fileName)
     const context = await ctx.getPositionContext(
-      workspace,
       doc.fileName,
-      saltoPos
+      saltoPos,
+      definitionsTree,
+      fullElementSource,
     )
     const line = doc.lineAt(position).text.substr(0, position.character)
     return buildVSCompletionItems(
@@ -85,11 +92,17 @@ export const createDefinitionsProvider = (
     if (_.isUndefined(currentToken)) {
       return []
     }
-
+    const definitionsTree = ctx.buildDefinitionsTree(
+      (await workspace.getNaclFile(doc.fileName))?.buffer as string,
+      await workspace.getSourceMap(doc.fileName),
+      await awu(await workspace.getElements(doc.fileName)).toArray(),
+    )
+    const fullElementSource = await workspace.getElementSourceOfPath(doc.fileName)
     const context = await ctx.getPositionContext(
-      workspace,
       doc.fileName,
-      vsPosToSaltoPos(position)
+      vsPosToSaltoPos(position),
+      definitionsTree,
+      fullElementSource,
     )
     return (await definitions.provideWorkspaceDefinition(workspace, context, currentToken)).map(
       def => new vscode.Location(
@@ -115,11 +128,17 @@ export const createReferenceProvider = (
     if (_.isUndefined(currentToken)) {
       return []
     }
-
+    const definitionsTree = ctx.buildDefinitionsTree(
+      (await workspace.getNaclFile(doc.fileName))?.buffer as string,
+      await workspace.getSourceMap(doc.fileName),
+      await awu(await workspace.getElements(doc.fileName)).toArray(),
+    )
+    const fullElementSource = await workspace.getElementSourceOfPath(doc.fileName)
     const context = await ctx.getPositionContext(
-      workspace,
       doc.fileName,
-      vsPosToSaltoPos(position)
+      vsPosToSaltoPos(position),
+      definitionsTree,
+      fullElementSource,
     )
     return (await usage.provideWorkspaceReferences(workspace, currentToken, context)).map(
       def => new vscode.Location(
@@ -136,9 +155,14 @@ export const createWorkspaceSymbolProvider = (
   provideWorkspaceSymbols: async (query: string): Promise<vscode.SymbolInformation[]> => {
     const locToContext = async (loc: location.SaltoElemLocation): Promise<ctx.PositionContext> => (
       ctx.getPositionContext(
-        workspace,
         loc.filename,
-        loc.range.start
+        loc.range.start,
+        ctx.buildDefinitionsTree(
+          (await workspace.getNaclFile(loc.filename))?.buffer as string,
+          await workspace.getSourceMap(loc.filename),
+          await awu(await workspace.getElements(loc.filename)).toArray(),
+        ),
+        await workspace.getElementSourceOfPath(loc.filename),
       )
     )
 

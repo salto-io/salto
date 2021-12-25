@@ -61,21 +61,25 @@ export const applyFunctionToChangeData = async <T extends Change<unknown>>(
  * @param type    The map type for determining the field types
  * @param value   The map instance for determining the field names
  */
-export const toObjectType = (type: MapType | ObjectType, value: Values): ObjectType => (
-  isObjectType(type)
-    ? type
-    : new ObjectType({
-      elemID: type.elemID,
-      fields: Object.fromEntries(Object.keys(value).map(key =>
-        [
-          key,
-          { refType: type.refInnerType },
-        ])),
-      annotationRefsOrTypes: type.annotationRefTypes,
-      annotations: type.annotations,
-      path: type.path,
-    })
-)
+export const toObjectType = (type: MapType | ObjectType, value: Values): ObjectType => {
+  if (isObjectType(type)) {
+    return type
+  }
+  if (isObjectType(type.refInnerType.type)) {
+    return type.refInnerType.type
+  }
+  return new ObjectType({
+    elemID: type.elemID,
+    fields: Object.fromEntries(Object.keys(value).map(key =>
+      [
+        key,
+        { refType: type.refInnerType },
+      ])),
+    annotationRefsOrTypes: type.annotationRefTypes,
+    annotations: type.annotations,
+    path: type.path,
+  })
+}
 
 type FieldMapperFunc = (key: string) => Field | undefined
 

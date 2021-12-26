@@ -2,6 +2,45 @@
 ## Default Configuration
 ```hcl
 jira {
+  fetch = {
+    includeTypes = [
+      "rest__api__3__application_properties@uuuuuub",
+      "rest__api__3__applicationrole",
+      "AttachmentSettings",
+      "Configuration",
+      "rest__api__3__configuration__timetracking__list",
+      "PageBeanDashboard",
+      "PageBeanField",
+      "PageBeanFieldConfigurationDetails",
+      "PageBeanFieldConfigurationScheme",
+      "PageBeanFieldConfigurationIssueTypeItem",
+      "PageBeanFilterDetails",
+      "IssueTypeDetails",
+      "IssueLinkTypes",
+      "SecuritySchemes",
+      "PageBeanIssueTypeScheme",
+      "PageBeanIssueTypeSchemeMapping",
+      "PageBeanIssueTypeScreenScheme",
+      "PageBeanIssueTypeScreenSchemeItem",
+      "PageBeanNotificationScheme",
+      "Permissions",
+      "PermissionSchemes",
+      "rest__api__3__priority",
+      "rest__api__3__projectCategory",
+      "PageBeanProject",
+      "rest__api__3__project__type",
+      "rest__api__3__resolution",
+      "rest__api__3__role",
+      "PageBeanScreen",
+      "PageBeanScreenScheme",
+      "rest__api__3__status",
+      "rest__api__3__statuscategory",
+      "PageBeanWorkflow",
+      "PageBeanWorkflowScheme",
+      "ServerInformation",
+      "agile__1_0__board@uuvuu",
+    ]
+  }
   apiDefinitions = {
     platformSwagger = {
       url = "https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json"
@@ -41,6 +80,22 @@ jira {
           paginationField = "startAt"
           queryParams = {
             expand = "description,owner,viewUrl,favouritedCount,sharePermissions"
+          }
+        }
+      }
+      Dashboard = {
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/dashboard"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/dashboard/{id}"
+            method = "put"
+          }
+          remove = {
+            url = "/rest/api/3/dashboard/{id}"
+            method = "delete"
           }
         }
       }
@@ -155,6 +210,31 @@ jira {
             },
           ]
         }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/field"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/field/{fieldId}"
+            method = "put"
+            urlParamsToFields = {
+              fieldId = "id"
+            }
+          }
+          remove = {
+            url = "/rest/api/3/field/{id}"
+            method = "delete"
+          }
+        }
+      }
+      ApplicationProperty = {
+        deployRequests = {
+          modify = {
+            url = "/rest/api/3/application-properties/{id}"
+            method = "put"
+          }
+        }
       }
       PageBeanCustomFieldContext = {
         request = {
@@ -194,6 +274,26 @@ jira {
               fieldType = "list<CustomFieldContextOption>"
             },
           ]
+        }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/field/{fieldId}/context"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/field/{fieldId}/context/{contextId}"
+            method = "put"
+            urlParamsToFields = {
+              contextId = "id"
+            }
+          }
+          remove = {
+            url = "/rest/api/3/field/{fieldId}/context/{contextId}"
+            method = "delete"
+            urlParamsToFields = {
+              contextId = "id"
+            }
+          }
         }
       }
       PageBeanCustomFieldContextOption = {
@@ -309,6 +409,20 @@ jira {
             },
           ]
         }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/filter"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/filter/{id}"
+            method = "put"
+          }
+          remove = {
+            url = "/rest/api/3/filter/{id}"
+            method = "delete"
+          }
+        }
       }
       PageBeanIssueTypeScheme = {
         request = {
@@ -336,6 +450,26 @@ jira {
               fieldType = "list<IssueTypeSchemeMapping>"
             },
           ]
+        }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/issuetypescheme"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/issuetypescheme/{issueTypeSchemeId}"
+            method = "put"
+            urlParamsToFields = {
+              issueTypeSchemeId = "id"
+            }
+          }
+          remove = {
+            url = "/rest/api/3/issuetypescheme/{issueTypeSchemeId}"
+            method = "delete"
+            urlParamsToFields = {
+              issueTypeSchemeId = "id"
+            }
+          }
         }
       }
       PageBeanIssueTypeSchemeMapping = {
@@ -380,6 +514,30 @@ jira {
             },
           ]
         }
+        request = {
+          url = "/rest/api/3/issuetypescreenscheme"
+          paginationField = "startAt"
+        }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/issuetypescreenscheme"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/issuetypescreenscheme/{issueTypeScreenSchemeId}"
+            method = "put"
+            urlParamsToFields = {
+              issueTypeScreenSchemeId = "id"
+            }
+          }
+          remove = {
+            url = "/rest/api/3/issuetypescreenscheme/{issueTypeScreenSchemeId}"
+            method = "delete"
+            urlParamsToFields = {
+              issueTypeScreenSchemeId = "id"
+            }
+          }
+        }
       }
       PageBeanIssueTypeScreenSchemeItem = {
         request = {
@@ -415,6 +573,34 @@ jira {
           url = "/rest/api/3/permissionscheme"
           queryParams = {
             expand = "all"
+          }
+        }
+      }
+      PermissionScheme = {
+        request = {
+          url = "/rest/api/3/project/{projectId}/permissionscheme"
+          queryParams = {
+            expand = "all"
+          }
+        }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/permissionscheme"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/permissionscheme/{schemeId}"
+            method = "put"
+            urlParamsToFields = {
+              schemeId = "id"
+            }
+          }
+          remove = {
+            url = "/rest/api/3/permissionscheme/{schemeId}"
+            method = "delete"
+            urlParamsToFields = {
+              schemeId = "id"
+            }
           }
         }
       }
@@ -524,6 +710,26 @@ jira {
             },
           ]
         }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/project"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/project/{projectIdOrKey}"
+            method = "put"
+            urlParamsToFields = {
+              projectIdOrKey = "id"
+            }
+          }
+          remove = {
+            url = "/rest/api/3/project/{projectIdOrKey}"
+            method = "delete"
+            urlParamsToFields = {
+              projectIdOrKey = "id"
+            }
+          }
+        }
       }
       ContainerOfWorkflowSchemeAssociations = {
         request = {
@@ -546,11 +752,6 @@ jira {
               fieldName = "issueCount"
             },
           ]
-        }
-      }
-      PermissionScheme = {
-        request = {
-          url = "/rest/api/3/project/{projectId}/permissionscheme"
         }
       }
       NotificationScheme = {
@@ -618,6 +819,26 @@ jira {
             },
           ]
         }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/screens"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/screens/{screenId}"
+            method = "put"
+            urlParamsToFields = {
+              screenId = "id"
+            }
+          }
+          remove = {
+            url = "/rest/api/3/screens/{screenId}"
+            method = "delete"
+            urlParamsToFields = {
+              screenId = "id"
+            }
+          }
+        }
       }
       rest__api__3__screens___screenId___tabs@uuuuuuuu_00123_00125uu = {
         request = {
@@ -675,11 +896,40 @@ jira {
             "id.name",
           ]
         }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/workflow"
+            method = "post"
+          }
+          remove = {
+            url = "/rest/api/3/workflow/{entityId}"
+            method = "delete"
+            urlParamsToFields = {
+              entityId = "id"
+            }
+          }
+        }
       }
       PageBeanWorkflowScheme = {
         request = {
           url = "/rest/api/3/workflowscheme"
           paginationField = "startAt"
+        }
+      }
+      WorkflowScheme = {
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/workflowscheme"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/workflowscheme/{id}"
+            method = "put"
+          }
+          remove = {
+            url = "/rest/api/3/workflowscheme/{id}"
+            method = "delete"
+          }
         }
       }
       IssueTypeDetails = {
@@ -688,6 +938,20 @@ jira {
         }
         transformation = {
           dataField = "."
+        }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/issuetype"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/issuetype/{id}"
+            method = "put"
+          }
+          remove = {
+            url = "/rest/api/3/issuetype/{id}"
+            method = "delete"
+          }
         }
       }
       AttachmentSettings = {
@@ -729,6 +993,79 @@ jira {
               fieldType = "list<agile__1_0__board___boardId___configuration@uuvuuuu_00123_00125uu>"
             },
           ]
+        }
+        deployRequests = {
+          add = {
+            url = "/rest/agile/1.0/board"
+            method = "post"
+          }
+          remove = {
+            url = "/rest/agile/1.0/board/{boardId}"
+            method = "delete"
+            urlParamsToFields = {
+              boardId = "id"
+            }
+          }
+        }
+      }
+      IssueLinkType = {
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/issueLinkType"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/issueLinkType/{issueLinkTypeId}"
+            method = "put"
+            urlParamsToFields = {
+              issueLinkTypeId = "id"
+            }
+          }
+          remove = {
+            url = "/rest/api/3/issueLinkType/{issueLinkTypeId}"
+            method = "delete"
+            urlParamsToFields = {
+              issueLinkTypeId = "id"
+            }
+          }
+        }
+      }
+      ProjectRole = {
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/role"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/role/{id}"
+            method = "put"
+          }
+          remove = {
+            url = "/rest/api/3/role/{id}"
+            method = "delete"
+          }
+        }
+      }
+      ScreenScheme = {
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/screenscheme"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/screenscheme/{screenSchemeId}"
+            method = "put"
+            urlParamsToFields = {
+              screenSchemeId = "id"
+            }
+          }
+          remove = {
+            url = "/rest/api/3/screenscheme/{screenSchemeId}"
+            method = "delete"
+            urlParamsToFields = {
+              screenSchemeId = "id"
+            }
+          }
         }
       }
       agile__1_0__board___boardId___configuration@uuvuuuu_00123_00125uu = {

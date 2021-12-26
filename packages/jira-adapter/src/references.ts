@@ -42,6 +42,46 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     serializationStrategy: 'id',
     target: { type: 'IssueType' },
   },
+  {
+    src: { field: 'id', parentTypes: ['WorkflowStatus'] },
+    serializationStrategy: 'id',
+    target: { type: 'StatusDetails' },
+  },
+  {
+    src: { field: 'id', parentTypes: ['TransitionScreenDetails'] },
+    serializationStrategy: 'id',
+    target: { type: 'Screen' },
+  },
+  {
+    src: { field: 'to', parentTypes: ['Transition'] },
+    serializationStrategy: 'id',
+    target: { type: 'StatusDetails' },
+  },
+  {
+    src: { field: 'from', parentTypes: ['Transition'] },
+    serializationStrategy: 'id',
+    target: { type: 'StatusDetails' },
+  },
+  {
+    src: { field: 'id', parentTypes: ['ProjectRoleConfig'] },
+    serializationStrategy: 'id',
+    target: { type: 'ProjectRole' },
+  },
+  {
+    src: { field: 'fieldId', parentTypes: ['PostFunctionConfiguration'] },
+    serializationStrategy: 'id',
+    target: { type: 'Field' },
+  },
+  {
+    src: { field: 'destinationFieldId', parentTypes: ['PostFunctionConfiguration'] },
+    serializationStrategy: 'id',
+    target: { type: 'Field' },
+  },
+  {
+    src: { field: 'sourceFieldId', parentTypes: ['PostFunctionConfiguration'] },
+    serializationStrategy: 'id',
+    target: { type: 'Field' },
+  },
 ]
 
 export const getLookUpName = referenceUtils.generateLookupFunc(referencesRules)

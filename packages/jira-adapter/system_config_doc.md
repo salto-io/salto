@@ -1030,10 +1030,55 @@ jira {
           }
         }
       }
+      WorkflowCondition = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "nodeType"
+            },
+          ]
+        }
+      }
+      WorkflowStatus = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "name"
+            },
+          ]
+        }
+      }
+      TransitionScreenDetails = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "name"
+            },
+          ]
+        }
+      }
+      Transition = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
       Workflow = {
         transformation = {
           idFields = [
             "id.name",
+          ]
+          serviceIdField = "entityId"
+          fieldsToOmit = [
+            {
+              fieldName = "created"
+            },
+            {
+              fieldName = "updated"
+            },
           ]
         }
         deployRequests = {
@@ -1044,9 +1089,6 @@ jira {
           remove = {
             url = "/rest/api/3/workflow/{entityId}"
             method = "delete"
-            urlParamsToFields = {
-              entityId = "id"
-            }
           }
         }
       }

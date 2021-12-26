@@ -29,6 +29,7 @@ import authenticatedPermissionFilter from './filters/authenticated_permission'
 import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
 import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
+import { getLookUpName } from './references'
 
 const {
   generateTypes,
@@ -188,7 +189,7 @@ export default class JiraAdapter implements AdapterOperations {
       changesToDeploy.map(async change => {
         try {
           const response = await deployChange(
-            await resolveChangeElement(change, ({ ref }) => ref.value),
+            await resolveChangeElement(change, getLookUpName),
             this.client,
             this.userConfig.apiDefinitions
               .types[getChangeElement(change).elemID.typeName]?.deployRequests,

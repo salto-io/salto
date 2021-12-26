@@ -159,7 +159,7 @@ export default class JiraAdapter implements AdapterOperations {
 
     // This needs to happen after the onFetch since some filters
     // may add fields that deployment annotation should be added to
-    addDeploymentAnnotations(
+    await addDeploymentAnnotations(
       elements.filter(isObjectType),
       Object.values(swaggers),
       this.userConfig.apiDefinitions,

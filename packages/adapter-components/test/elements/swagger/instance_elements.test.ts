@@ -810,6 +810,140 @@ describe('swagger_instance_elements', () => {
       ))).toBeTruthy()
     })
 
+    it('should not put existing field values under additionalProperties even if they unexpectedly contain lists', async () => {
+      const objectTypes = generateObjectTypes()
+
+      mockPaginator = mockFunction<Paginator>().mockImplementation(
+        async function *getAll(getParams, extractPageEntries) {
+          if (getParams.url === '/pet') {
+            yield [
+              {
+                id: 'mouse',
+                name: 'def',
+                primaryOwner: [
+                  { name: 'o3', bla: 'BLA', x: { nested: 'value' } },
+                ],
+              },
+            ].flatMap(extractPageEntries)
+          }
+        }
+      )
+      const res = await getAllInstances({
+        paginator: mockPaginator,
+        apiConfig: {
+          typeDefaults: {
+            transformation: {
+              idFields: ['id'],
+            },
+          },
+          types: {
+            Pet: {
+              request: {
+                url: '/pet',
+              },
+            },
+          },
+        },
+        fetchConfig: {
+          includeTypes: ['Pet'],
+        },
+        objectTypes,
+        computeGetArgs: simpleGetArgs,
+        nestedFieldFinder: returnFullEntry,
+      })
+      expect(res).toHaveLength(1)
+      expect(res.map(e => e.elemID.getFullName())).toEqual([
+        `${ADAPTER_NAME}.Pet.instance.mouse`,
+      ])
+      expect(mockPaginator).toHaveBeenCalledTimes(1)
+      expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet', recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
+
+      const petInst = res.find(e => e.elemID.name === 'mouse')
+      expect(petInst?.isEqual(new InstanceElement(
+        'mouse',
+        objectTypes.Pet,
+        {
+          id: 'mouse',
+          name: 'def',
+          primaryOwner: [
+            {
+              name: 'o3',
+              additionalProperties: {
+                bla: 'BLA',
+                x: { nested: 'value' },
+              },
+            },
+          ],
+        },
+        [ADAPTER_NAME, 'Records', 'Pet', 'mouse'],
+      ))).toBeTruthy()
+    })
+
+    it('should not put existing field values under additionalProperties even if they unexpectedly contain single vlaues', async () => {
+      const objectTypes = generateObjectTypes()
+
+      mockPaginator = mockFunction<Paginator>().mockImplementation(
+        async function *getAll(getParams, extractPageEntries) {
+          if (getParams.url === '/pet') {
+            yield [
+              {
+                id: 'mouse',
+                name: 'def',
+                owners: { name: 'o3', bla: 'BLA', x: { nested: 'value' } },
+              },
+            ].flatMap(extractPageEntries)
+          }
+        }
+      )
+      const res = await getAllInstances({
+        paginator: mockPaginator,
+        apiConfig: {
+          typeDefaults: {
+            transformation: {
+              idFields: ['id'],
+            },
+          },
+          types: {
+            Pet: {
+              request: {
+                url: '/pet',
+              },
+            },
+          },
+        },
+        fetchConfig: {
+          includeTypes: ['Pet'],
+        },
+        objectTypes,
+        computeGetArgs: simpleGetArgs,
+        nestedFieldFinder: returnFullEntry,
+      })
+      expect(res).toHaveLength(1)
+      expect(res.map(e => e.elemID.getFullName())).toEqual([
+        `${ADAPTER_NAME}.Pet.instance.mouse`,
+      ])
+      expect(mockPaginator).toHaveBeenCalledTimes(1)
+      expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet', recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
+
+      const petInst = res.find(e => e.elemID.name === 'mouse')
+      expect(petInst?.isEqual(new InstanceElement(
+        'mouse',
+        objectTypes.Pet,
+        {
+          id: 'mouse',
+          name: 'def',
+          owners: {
+            name: 'o3',
+            additionalProperties: {
+              bla: 'BLA',
+              x: { nested: 'value' },
+            },
+          },
+        },
+        [ADAPTER_NAME, 'Records', 'Pet', 'mouse'],
+      ))).toBeTruthy()
+    })
+
     describe('with types that require recursing', () => {
       let instances: InstanceElement[]
       beforeEach(async () => {
@@ -881,6 +1015,7 @@ describe('swagger_instance_elements', () => {
                       type: 'OwnerInfo',
                       toField: 'info',
                       context: [{ name: 'ownerName', fromField: 'name' }],
+                      isSingle: true,
                     },
                   ],
                 },
@@ -933,7 +1068,7 @@ describe('swagger_instance_elements', () => {
           expect.objectContaining({ url: expect.stringMatching(/\/pet\/fish\/owner\/.*\/nicknames/) })
         )
       })
-      it('should return nested value list in the instance', () => {
+      it('should return nested value list in the instance when isSingle is false and single item when isSingle=true', () => {
         expect(instances).toHaveLength(3)
         const [dog, cat, fish] = instances
         expect(dog.value).toHaveProperty(
@@ -943,14 +1078,14 @@ describe('swagger_instance_elements', () => {
               name: 'o1',
               additionalProperties: {
                 nicknames: [{ names: ['n1', 'n2'] }],
-                info: [{ numOfPets: 2 }],
+                info: { numOfPets: 2 },
               },
             },
             {
               name: 'o2',
               additionalProperties: {
                 nicknames: [{ names: ['n3'] }],
-                info: [{ numOfPets: 2 }],
+                info: { numOfPets: 2 },
               },
             },
           ]
@@ -959,8 +1094,8 @@ describe('swagger_instance_elements', () => {
         expect(fish.value).toHaveProperty(
           'owners',
           [
-            { name: 'o1', additionalProperties: { info: [{ numOfPets: 2 }] } },
-            { name: 'o2', additionalProperties: { info: [{ numOfPets: 2 }] } },
+            { name: 'o1', additionalProperties: { info: { numOfPets: 2 } } },
+            { name: 'o2', additionalProperties: { info: { numOfPets: 2 } } },
           ]
         )
       })

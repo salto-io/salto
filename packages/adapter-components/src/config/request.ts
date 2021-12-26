@@ -51,6 +51,7 @@ type RecurseIntoContext = {
 type RecurseIntoConfig = {
   toField: string
   type: string
+  isSingle?: boolean
   context: RecurseIntoContext[]
   conditions?: RecurseIntoCondition[]
 }
@@ -118,6 +119,72 @@ export const createRequestConfigs = (
     },
   })
 
+  const recurseIntoContextType = new ObjectType({
+    elemID: new ElemID(adapter, 'recurseIntoContext'),
+    fields: {
+      name: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+        },
+      },
+      fromField: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+        },
+      },
+    },
+  })
+
+  const recurseIntoConditionType = new ObjectType({
+    elemID: new ElemID(adapter, 'recurseIntoCondition'),
+    fields: {
+      match: {
+        refType: new ListType(BuiltinTypes.STRING),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+        },
+      },
+      // either fromField or fromContext is required - not enforcing in nacl for now
+      fromField: {
+        refType: BuiltinTypes.STRING,
+      },
+      fromContext: {
+        refType: BuiltinTypes.STRING,
+      },
+    },
+  })
+  const recurseIntoConfigType = new ObjectType({
+    elemID: new ElemID(adapter, 'recurseIntoConfig'),
+    fields: {
+      toField: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+        },
+      },
+      type: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+        },
+      },
+      isSingle: {
+        refType: BuiltinTypes.BOOLEAN,
+      },
+      context: {
+        refType: new ListType(recurseIntoContextType),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+        },
+      },
+      conditions: {
+        refType: new ListType(recurseIntoConditionType),
+      },
+    },
+  })
+
   const sharedEndpointFields: Record<string, FieldDefinition> = {
     url: {
       refType: BuiltinTypes.STRING,
@@ -140,6 +207,9 @@ export const createRequestConfigs = (
     },
     dependsOn: {
       refType: new ListType(dependsOnConfigType),
+    },
+    recurseInto: {
+      refType: new ListType(recurseIntoConfigType),
     },
     ...sharedEndpointFields,
     ...additionalFields,

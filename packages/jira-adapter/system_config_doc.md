@@ -44,6 +44,47 @@ jira {
           }
         }
       }
+      NotificationEvent = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
+      EventNotification = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
+      Dashboard = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/dashboard"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/dashboard/{id}"
+            method = "put"
+          }
+          remove = {
+            url = "/rest/api/3/dashboard/{id}"
+            method = "delete"
+          }
+        }
+      }
       PageBeanField = {
         request = {
           url = "/rest/api/3/field/search"
@@ -133,6 +174,11 @@ jira {
       }
       Field = {
         transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
           idFields = [
             "id",
           ]
@@ -154,6 +200,31 @@ jira {
               fieldType = "list<CustomFieldContextProjectMapping>"
             },
           ]
+        }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/field"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/field/{fieldId}"
+            method = "put"
+            urlParamsToFields = {
+              fieldId = "id"
+            }
+          }
+          remove = {
+            url = "/rest/api/3/field/{id}"
+            method = "delete"
+          }
+        }
+      }
+      ApplicationProperty = {
+        deployRequests = {
+          modify = {
+            url = "/rest/api/3/application-properties/{id}"
+            method = "put"
+          }
         }
       }
       PageBeanCustomFieldContext = {
@@ -195,6 +266,26 @@ jira {
             },
           ]
         }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/field/{fieldId}/context"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/field/{fieldId}/context/{contextId}"
+            method = "put"
+            urlParamsToFields = {
+              contextId = "id"
+            }
+          }
+          remove = {
+            url = "/rest/api/3/field/{fieldId}/context/{contextId}"
+            method = "delete"
+            urlParamsToFields = {
+              contextId = "id"
+            }
+          }
+        }
       }
       PageBeanCustomFieldContextOption = {
         request = {
@@ -226,6 +317,11 @@ jira {
             {
               fieldName = "fields"
               fieldType = "list<FieldConfigurationItem>"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
             },
           ]
         }
@@ -260,6 +356,11 @@ jira {
             {
               fieldName = "items"
               fieldType = "list<FieldConfigurationIssueTypeItem>"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
             },
           ]
         }
@@ -308,6 +409,25 @@ jira {
               fieldType = "list<ColumnItem>"
             },
           ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/filter"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/filter/{id}"
+            method = "put"
+          }
+          remove = {
+            url = "/rest/api/3/filter/{id}"
+            method = "delete"
+          }
         }
       }
       PageBeanIssueTypeScheme = {
@@ -328,6 +448,15 @@ jira {
           ]
         }
       }
+      Board_location = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
       IssueTypeScheme = {
         transformation = {
           fieldTypeOverrides = [
@@ -336,6 +465,31 @@ jira {
               fieldType = "list<IssueTypeSchemeMapping>"
             },
           ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/issuetypescheme"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/issuetypescheme/{issueTypeSchemeId}"
+            method = "put"
+            urlParamsToFields = {
+              issueTypeSchemeId = "id"
+            }
+          }
+          remove = {
+            url = "/rest/api/3/issuetypescheme/{issueTypeSchemeId}"
+            method = "delete"
+            urlParamsToFields = {
+              issueTypeSchemeId = "id"
+            }
+          }
         }
       }
       PageBeanIssueTypeSchemeMapping = {
@@ -379,6 +533,35 @@ jira {
               fieldType = "list<IssueTypeScreenSchemeItem>"
             },
           ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+        request = {
+          url = "/rest/api/3/issuetypescreenscheme"
+          paginationField = "startAt"
+        }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/issuetypescreenscheme"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/issuetypescreenscheme/{issueTypeScreenSchemeId}"
+            method = "put"
+            urlParamsToFields = {
+              issueTypeScreenSchemeId = "id"
+            }
+          }
+          remove = {
+            url = "/rest/api/3/issuetypescreenscheme/{issueTypeScreenSchemeId}"
+            method = "delete"
+            urlParamsToFields = {
+              issueTypeScreenSchemeId = "id"
+            }
+          }
         }
       }
       PageBeanIssueTypeScreenSchemeItem = {
@@ -392,6 +575,15 @@ jira {
           fieldsToOmit = [
             {
               fieldName = "issueTypeScreenSchemeId"
+            },
+          ]
+        }
+      }
+      NotificationScheme = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
             },
           ]
         }
@@ -415,6 +607,50 @@ jira {
           url = "/rest/api/3/permissionscheme"
           queryParams = {
             expand = "all"
+          }
+        }
+      }
+      PermissionGrant = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
+      PermissionScheme = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+        request = {
+          url = "/rest/api/3/permissionscheme"
+          queryParams = {
+            expand = "all"
+          }
+        }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/permissionscheme"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/permissionscheme/{schemeId}"
+            method = "put"
+            urlParamsToFields = {
+              schemeId = "id"
+            }
+          }
+          remove = {
+            url = "/rest/api/3/permissionscheme/{schemeId}"
+            method = "delete"
+            urlParamsToFields = {
+              schemeId = "id"
+            }
           }
         }
       }
@@ -445,6 +681,24 @@ jira {
           ]
         }
       }
+      RoleActor = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
+      ProjectCategory = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
       Project = {
         transformation = {
           fieldTypeOverrides = [
@@ -453,6 +707,31 @@ jira {
               fieldType = "list<ComponentWithIssueCount>"
             },
           ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/project"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/project/{projectIdOrKey}"
+            method = "put"
+            urlParamsToFields = {
+              projectIdOrKey = "id"
+            }
+          }
+          remove = {
+            url = "/rest/api/3/project/{projectIdOrKey}"
+            method = "delete"
+            urlParamsToFields = {
+              projectIdOrKey = "id"
+            }
+          }
         }
       }
       ComponentWithIssueCount = {
@@ -460,6 +739,12 @@ jira {
           fieldsToOmit = [
             {
               fieldName = "issueCount"
+            },
+            {
+              fieldName = "id"
+            },
+            {
+              fieldName = "projectId"
             },
           ]
         }
@@ -492,6 +777,15 @@ jira {
           ]
         }
       }
+      Resolution = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
       Screen = {
         transformation = {
           fieldTypeOverrides = [
@@ -504,6 +798,36 @@ jira {
               fieldType = "list<ScreenableField>"
             },
           ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+          standaloneFields = [
+            {
+              fieldName = "tabs"
+            },
+          ]
+        }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/screens"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/screens/{screenId}"
+            method = "put"
+            urlParamsToFields = {
+              screenId = "id"
+            }
+          }
+          remove = {
+            url = "/rest/api/3/screens/{screenId}"
+            method = "delete"
+            urlParamsToFields = {
+              screenId = "id"
+            }
+          }
         }
       }
       rest__api__3__screens___screenId___tabs@uuuuuuuu_00123_00125uu = {
@@ -534,6 +858,11 @@ jira {
               fieldType = "list<ScreenableField>"
             },
           ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
         }
       }
       PageBeanScreenScheme = {
@@ -562,11 +891,74 @@ jira {
             "id.name",
           ]
         }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/workflow"
+            method = "post"
+          }
+          remove = {
+            url = "/rest/api/3/workflow/{entityId}"
+            method = "delete"
+            urlParamsToFields = {
+              entityId = "id"
+            }
+          }
+        }
       }
       PageBeanWorkflowScheme = {
         request = {
           url = "/rest/api/3/workflowscheme"
           paginationField = "startAt"
+        }
+      }
+      SecurityScheme = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
+      StatusCategory = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
+      StatusDetails = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
+      WorkflowScheme = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/workflowscheme"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/workflowscheme/{id}"
+            method = "put"
+          }
+          remove = {
+            url = "/rest/api/3/workflowscheme/{id}"
+            method = "delete"
+          }
         }
       }
       IssueTypeDetails = {
@@ -575,6 +967,25 @@ jira {
         }
         transformation = {
           dataField = "."
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/issuetype"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/issuetype/{id}"
+            method = "put"
+          }
+          remove = {
+            url = "/rest/api/3/issuetype/{id}"
+            method = "delete"
+          }
         }
       }
       AttachmentSettings = {
@@ -616,9 +1027,133 @@ jira {
               fieldType = "list<agile__1_0__board___boardId___configuration@uuvuuuu_00123_00125uu>"
             },
           ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+        deployRequests = {
+          add = {
+            url = "/rest/agile/1.0/board"
+            method = "post"
+          }
+          remove = {
+            url = "/rest/agile/1.0/board/{boardId}"
+            method = "delete"
+            urlParamsToFields = {
+              boardId = "id"
+            }
+          }
+        }
+      }
+      IssueLinkType = {
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/issueLinkType"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/issueLinkType/{issueLinkTypeId}"
+            method = "put"
+            urlParamsToFields = {
+              issueLinkTypeId = "id"
+            }
+          }
+          remove = {
+            url = "/rest/api/3/issueLinkType/{issueLinkTypeId}"
+            method = "delete"
+            urlParamsToFields = {
+              issueLinkTypeId = "id"
+            }
+          }
+        }
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
+      ProjectRole = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/role"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/role/{id}"
+            method = "put"
+          }
+          remove = {
+            url = "/rest/api/3/role/{id}"
+            method = "delete"
+          }
+        }
+      }
+      Priority = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
+      SharePermission = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
+      ScreenScheme = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/screenscheme"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/screenscheme/{screenSchemeId}"
+            method = "put"
+            urlParamsToFields = {
+              screenSchemeId = "id"
+            }
+          }
+          remove = {
+            url = "/rest/api/3/screenscheme/{screenSchemeId}"
+            method = "delete"
+            urlParamsToFields = {
+              screenSchemeId = "id"
+            }
+          }
         }
       }
       agile__1_0__board___boardId___configuration@uuvuuuu_00123_00125uu = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
         request = {
           url = "/rest/agile/1.0/board/{boardId}/configuration"
         }

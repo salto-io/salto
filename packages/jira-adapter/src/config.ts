@@ -62,7 +62,35 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       },
     },
   },
+
+  NotificationEvent: {
+    transformation: {
+      fieldsToOmit: [
+        {
+          fieldName: 'id',
+        },
+      ],
+    },
+  },
+
+  EventNotification: {
+    transformation: {
+      fieldsToOmit: [
+        {
+          fieldName: 'id',
+        },
+      ],
+    },
+  },
+
   Dashboard: {
+    transformation: {
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
+    },
     deployRequests: {
       add: {
         url: '/rest/api/3/dashboard',
@@ -128,6 +156,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
   Field: {
     transformation: {
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
       idFields: ['id'],
       fieldTypeOverrides: [
         { fieldName: 'contexts', fieldType: 'list<CustomFieldContext>' },
@@ -230,6 +263,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'fields', fieldType: 'list<FieldConfigurationItem>' },
       ],
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
     },
   },
   PageBeanFieldConfigurationItem: {
@@ -254,6 +292,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   FieldConfigurationScheme: {
     transformation: {
       fieldTypeOverrides: [{ fieldName: 'items', fieldType: 'list<FieldConfigurationIssueTypeItem>' }],
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
     },
   },
   PageBeanFieldConfigurationIssueTypeItem: { // FieldConfigurationIssueTypeItem
@@ -291,6 +334,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'columns', fieldType: 'list<ColumnItem>' },
       ],
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
     },
     deployRequests: {
       add: {
@@ -320,9 +368,25 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       ],
     },
   },
+
+  Board_location: {
+    transformation: {
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
+    },
+  },
+
   IssueTypeScheme: {
     transformation: {
       fieldTypeOverrides: [{ fieldName: 'issueTypes', fieldType: 'list<IssueTypeSchemeMapping>' }],
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
     },
     deployRequests: {
       add: {
@@ -372,6 +436,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   IssueTypeScreenScheme: {
     transformation: {
       fieldTypeOverrides: [{ fieldName: 'items', fieldType: 'list<IssueTypeScreenSchemeItem>' }],
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
     },
     request: {
       url: '/rest/api/3/issuetypescreenscheme',
@@ -409,6 +478,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldsToOmit: [{ fieldName: 'issueTypeScreenSchemeId' }],
     },
   },
+
+  NotificationScheme: {
+    transformation: {
+      fieldsToHide: [{ fieldName: 'id' }],
+    },
+  },
+
   PageBeanNotificationScheme: {
     request: {
       url: '/rest/api/3/notificationscheme',
@@ -431,7 +507,25 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       },
     },
   },
+
+  PermissionGrant: {
+    transformation: {
+      fieldsToOmit: [
+        {
+          fieldName: 'id',
+        },
+      ],
+    },
+  },
+
   PermissionScheme: {
+    transformation: {
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
+    },
     request: {
       url: '/rest/api/3/permissionscheme',
       queryParams: {
@@ -479,9 +573,35 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       ],
     },
   },
+
+  RoleActor: {
+    transformation: {
+      fieldsToOmit: [
+        {
+          fieldName: 'id',
+        },
+      ],
+    },
+  },
+
+  ProjectCategory: {
+    transformation: {
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
+    },
+  },
+
   Project: {
     transformation: {
       fieldTypeOverrides: [{ fieldName: 'components', fieldType: 'list<ComponentWithIssueCount>' }],
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
     },
     deployRequests: {
       add: {
@@ -506,7 +626,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
   ComponentWithIssueCount: {
     transformation: {
-      fieldsToOmit: [{ fieldName: 'issueCount' }],
+      fieldsToOmit: [
+        { fieldName: 'issueCount' },
+        { fieldName: 'id' },
+        { fieldName: 'projectId' },
+      ],
     },
   },
   PageBeanScreen: {
@@ -527,11 +651,32 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       ],
     },
   },
+
+  Resolution: {
+    transformation: {
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
+    },
+  },
+
   Screen: {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'tabs', fieldType: 'list<ScreenableTab>' },
         { fieldName: 'availableFields', fieldType: 'list<ScreenableField>' },
+      ],
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
+      standaloneFields: [
+        {
+          fieldName: 'tabs',
+        },
       ],
     },
     deployRequests: {
@@ -574,6 +719,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'fields', fieldType: 'list<ScreenableField>' },
+      ],
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
       ],
     },
   },
@@ -622,7 +772,45 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       paginationField: 'startAt',
     },
   },
+
+  SecurityScheme: {
+    transformation: {
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
+    },
+  },
+
+  StatusCategory: {
+    transformation: {
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
+    },
+  },
+
+  StatusDetails: {
+    transformation: {
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
+    },
+  },
+
   WorkflowScheme: {
+    transformation: {
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
+    },
     deployRequests: {
       add: {
         url: '/rest/api/3/workflowscheme',
@@ -644,6 +832,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
     transformation: {
       dataField: '.',
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
     },
     deployRequests: {
       add: {
@@ -694,6 +887,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'config', fieldType: 'list<agile__1_0__board___boardId___configuration@uuvuuuu_00123_00125uu>' },
       ],
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
     },
     deployRequests: {
       add: {
@@ -731,9 +929,23 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         },
       },
     },
+    transformation: {
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
+    },
   },
 
   ProjectRole: {
+    transformation: {
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
+    },
     deployRequests: {
       add: {
         url: '/rest/api/3/role',
@@ -750,7 +962,35 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
   },
 
+  Priority: {
+    transformation: {
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
+    },
+  },
+
+  SharePermission: {
+    transformation: {
+      fieldsToOmit: [
+        {
+          fieldName: 'id',
+        },
+      ],
+    },
+  },
+
   ScreenScheme: {
+    transformation: {
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
+    },
+
     deployRequests: {
       add: {
         url: '/rest/api/3/screenscheme',
@@ -774,6 +1014,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
 
   'agile__1_0__board___boardId___configuration@uuvuuuu_00123_00125uu': {
+    transformation: {
+      fieldsToOmit: [
+        {
+          fieldName: 'id',
+        },
+      ],
+    },
     request: {
       url: '/rest/agile/1.0/board/{boardId}/configuration',
     },

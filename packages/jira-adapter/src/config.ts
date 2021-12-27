@@ -479,12 +479,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
   },
 
-  NotificationScheme: {
-    transformation: {
-      fieldsToHide: [{ fieldName: 'id' }],
-    },
-  },
-
   PageBeanNotificationScheme: {
     request: {
       url: '/rest/api/3/notificationscheme',
@@ -683,6 +677,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   NotificationScheme: {
     request: {
       url: '/rest/api/3/project/{projectId}/notificationscheme',
+    },
+    transformation: {
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   PageBeanIssueTypeScreenSchemesProjects: {

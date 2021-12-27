@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { AdapterOperations, ObjectType, ElemID, ProgressReporter, FetchResult, InstanceElement, toChange, isRemovalChange, getChangeElement, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
-import { deployment, elements } from '@salto-io/adapter-components'
+import { deployment, elements, client } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockFunction } from '@salto-io/test-utils'
 import JiraClient from '../src/client/client'
@@ -120,6 +120,13 @@ describe('adapter', () => {
     })
 
     it('should return the errors', async () => {
+      deployChangeMock.mockImplementation(async change => {
+        if (isRemovalChange(change)) {
+          throw new Error('some error')
+        }
+        throw new client.HTTPError('some error', { status: 400, data: { errorMessages: ['errorMessage'] } })
+      })
+
       const deployRes = await adapter.deploy({
         changeGroup: {
           groupID: 'group',
@@ -131,7 +138,8 @@ describe('adapter', () => {
       })
 
       expect(deployRes.errors).toEqual([
-        new Error('some error'),
+        new Error('Deployment of jira.IssueTypeSchemeMapping.instance.inst1 failed: Error: some error. errorMessage'),
+        new Error('Deployment of jira.IssueTypeSchemeMapping.instance.inst2 failed: Error: some error'),
       ])
     })
 

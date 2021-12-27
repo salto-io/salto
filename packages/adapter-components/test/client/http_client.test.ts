@@ -16,7 +16,7 @@
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { ClientRateLimitConfig } from '../../src/client/config'
-import { AdapterHTTPClient, ClientOpts, ConnectionCreator, UnauthorizedError } from '../../src/client'
+import { AdapterHTTPClient, ClientOpts, ConnectionCreator, HTTPError, UnauthorizedError } from '../../src/client'
 import { createConnection, Credentials } from './common'
 
 describe('client_http_client', () => {
@@ -77,6 +77,15 @@ describe('client_http_client', () => {
         accountId: 'ACCOUNT_ID',
       })
       await expect(client.getSinglePage({ url: '/ep' })).rejects.toThrow(UnauthorizedError)
+    })
+
+    it('should throw HTTPError on other http errors', async () => {
+      const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
+      mockAxiosAdapter.onGet('/users/me').reply(200, {
+        accountId: 'ACCOUNT_ID',
+      })
+      mockAxiosAdapter.onGet('/ep').replyOnce(400, { a: 'b' })
+      await expect(client.getSinglePage({ url: '/ep' })).rejects.toThrow(HTTPError)
     })
   })
 

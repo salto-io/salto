@@ -852,14 +852,12 @@ describe('swagger_instance_elements', () => {
         nestedFieldFinder: returnFullEntry,
       })
       expect(res).toHaveLength(1)
-      expect(res.map(e => e.elemID.getFullName())).toEqual([
-        `${ADAPTER_NAME}.Pet.instance.mouse`,
-      ])
+      const petInst = res[0]
+      expect(petInst.elemID.getFullName()).toEqual(`${ADAPTER_NAME}.Pet.instance.mouse`)
       expect(mockPaginator).toHaveBeenCalledTimes(1)
       expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet', recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
 
-      const petInst = res.find(e => e.elemID.name === 'mouse')
-      expect(petInst?.isEqual(new InstanceElement(
+      expect(petInst.isEqual(new InstanceElement(
         'mouse',
         objectTypes.Pet,
         {
@@ -919,14 +917,12 @@ describe('swagger_instance_elements', () => {
         nestedFieldFinder: returnFullEntry,
       })
       expect(res).toHaveLength(1)
-      expect(res.map(e => e.elemID.getFullName())).toEqual([
-        `${ADAPTER_NAME}.Pet.instance.mouse`,
-      ])
+      const petInst = res[0]
+      expect(petInst.elemID.getFullName()).toEqual(`${ADAPTER_NAME}.Pet.instance.mouse`)
       expect(mockPaginator).toHaveBeenCalledTimes(1)
       expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet', recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
 
-      const petInst = res.find(e => e.elemID.name === 'mouse')
-      expect(petInst?.isEqual(new InstanceElement(
+      expect(petInst.isEqual(new InstanceElement(
         'mouse',
         objectTypes.Pet,
         {

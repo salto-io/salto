@@ -25,6 +25,8 @@ import { FilterCreator, Filter, filtersRunner } from './filter'
 import fieldReferences from './filters/field_references'
 import referenceBySelfLinkFilter from './filters/references_by_self_link'
 import issueTypeSchemeReferences from './filters/issue_type_scheme_references'
+import addReferencesToProjectSchemes from './filters/add_references_to_project_schemes'
+import overrideProjectSchemeFieldsTypes from './filters/override_project_scheme_fields_types'
 import authenticatedPermissionFilter from './filters/authenticated_permission'
 import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
 import { JIRA } from './constants'
@@ -46,6 +48,8 @@ export const DEFAULT_FILTERS = [
   referenceBySelfLinkFilter,
   issueTypeSchemeReferences,
   authenticatedPermissionFilter,
+  addReferencesToProjectSchemes,
+  overrideProjectSchemeFieldsTypes,
   hiddenValuesInListsFilter,
 ]
 

@@ -206,7 +206,11 @@ export default class JiraAdapter implements AdapterOperations {
           if (!_.isError(err)) {
             throw err
           }
-          return err
+          const errorMessage = `Deployment of ${getChangeElement(change).elemID.getFullName()} failed: ${err}`
+          if (err instanceof clientUtils.HTTPError && 'errorMessages' in err.response.data) {
+            return new Error(`${errorMessage}. ${err.response.data.errorMessages}`)
+          }
+          return new Error(errorMessage)
         }
       })
     )

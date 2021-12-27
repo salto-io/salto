@@ -32,6 +32,16 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     serializationStrategy: 'id',
     target: { type: 'ScreenScheme' },
   },
+  {
+    src: { field: 'issueTypeScreenScheme', parentTypes: ['Project'] },
+    serializationStrategy: 'id',
+    target: { type: 'IssueTypeScreenScheme' },
+  },
+  {
+    src: { field: 'fieldConfigurationScheme', parentTypes: ['Project'] },
+    serializationStrategy: 'id',
+    target: { type: 'FieldConfigurationScheme' },
+  },
 ]
 
 export const getLookUpName = referenceUtils.generateLookupFunc(referencesRules)

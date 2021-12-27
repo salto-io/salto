@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, MapType, ListType, ActionName, createRestriction } from '@salto-io/adapter-api'
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { findDuplicates } from './validation_utils'
 
@@ -51,6 +52,7 @@ type RecurseIntoContext = {
 type RecurseIntoConfig = {
   toField: string
   type: string
+  isSingle?: boolean
   context: RecurseIntoContext[]
   conditions?: RecurseIntoCondition[]
 }
@@ -100,20 +102,88 @@ export const createRequestConfigs = (
       },
     },
   })
-  const dependsOnConfigType = new ObjectType({
+  const dependsOnConfigType = createMatchingObjectType<DependsOnConfig>({
     elemID: new ElemID(adapter, 'dependsOnConfig'),
     fields: {
       pathParam: {
         refType: BuiltinTypes.STRING,
         annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: true,
+          _required: true,
         },
       },
       from: {
         refType: dependsOnFromConfig,
         annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: true,
+          _required: true,
         },
+      },
+    },
+  })
+
+  const recurseIntoContextType = createMatchingObjectType<RecurseIntoContext>({
+    elemID: new ElemID(adapter, 'recurseIntoContext'),
+    fields: {
+      name: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          _required: true,
+        },
+      },
+      fromField: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          _required: true,
+        },
+      },
+    },
+  })
+
+  // either fromField or fromContext is required - not enforcing in nacl for now
+  const recurseIntoConditionType = createMatchingObjectType<
+    RecurseIntoConditionBase & Partial<RecurseIntoCondition
+  >>({
+    elemID: new ElemID(adapter, 'recurseIntoCondition'),
+    fields: {
+      match: {
+        refType: new ListType(BuiltinTypes.STRING),
+        annotations: {
+          _required: true,
+        },
+      },
+      fromField: {
+        refType: BuiltinTypes.STRING,
+      },
+      fromContext: {
+        refType: BuiltinTypes.STRING,
+      },
+    },
+  })
+  const recurseIntoConfigType = createMatchingObjectType<RecurseIntoConfig>({
+    elemID: new ElemID(adapter, 'recurseIntoConfig'),
+    fields: {
+      toField: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          _required: true,
+        },
+      },
+      type: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          _required: true,
+        },
+      },
+      isSingle: {
+        refType: BuiltinTypes.BOOLEAN,
+      },
+      context: {
+        refType: new ListType(recurseIntoContextType),
+        annotations: {
+          _required: true,
+        },
+      },
+      conditions: {
+        refType: new ListType(recurseIntoConditionType),
       },
     },
   })
@@ -140,6 +210,9 @@ export const createRequestConfigs = (
     },
     dependsOn: {
       refType: new ListType(dependsOnConfigType),
+    },
+    recurseInto: {
+      refType: new ListType(recurseIntoConfigType),
     },
     ...sharedEndpointFields,
     ...additionalFields,

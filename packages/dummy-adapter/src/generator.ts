@@ -353,7 +353,10 @@ export const generateElements = async (
   }
 
   const generateAnnotations = async (annoTypes: TypeMap, hidden = false): Promise<Values> => {
-    const anno = await mapValuesAsync(annoTypes, type => generateValue(type, hidden))
+    const anno = await mapValuesAsync(
+      _.omit(annoTypes, CORE_ANNOTATIONS.RESTRICTION) as TypeMap,
+      type => generateValue(type, hidden)
+    )
     if (hidden) {
       anno[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
     }

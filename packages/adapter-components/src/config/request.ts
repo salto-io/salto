@@ -138,7 +138,10 @@ export const createRequestConfigs = (
     },
   })
 
-  const recurseIntoConditionType = new ObjectType({
+  // either fromField or fromContext is required - not enforcing in nacl for now
+  const recurseIntoConditionType = createMatchingObjectType<
+    RecurseIntoConditionBase & Partial<RecurseIntoCondition
+  >>({
     elemID: new ElemID(adapter, 'recurseIntoCondition'),
     fields: {
       match: {
@@ -147,7 +150,6 @@ export const createRequestConfigs = (
           _required: true,
         },
       },
-      // either fromField or fromContext is required - not enforcing in nacl for now
       fromField: {
         refType: BuiltinTypes.STRING,
       },

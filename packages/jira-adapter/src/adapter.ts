@@ -29,6 +29,7 @@ import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
 import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
 import { getLookUpName } from './references'
+// eslint-disable-next-line import/no-named-as-default
 import replaceObjectWithContainedValue from './filters/replace_object_with_contained_value'
 
 const {

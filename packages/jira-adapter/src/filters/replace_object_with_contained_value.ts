@@ -62,6 +62,10 @@ const DEFAULT_CONFIG: Record<string, ReplaceObjectWithContainedValueConfig> = {
     containedValuePath: 'fieldConfigurationScheme.id',
     containedValueType: 'FieldConfigurationScheme',
   },
+  IssueTypeSchemeMapping: {
+    containedValuePath: 'issueTypeId',
+    containedValueType: 'IssueTypeDetails',
+  },
 }
 
 type ModifiedField = {

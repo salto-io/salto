@@ -18,7 +18,7 @@ import { references as referenceUtils } from '@salto-io/adapter-components'
 
 export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] = [
   {
-    src: { field: 'issueTypeId', parentTypes: ['IssueTypeSchemeMapping', 'IssueTypeScreenSchemeItem', 'FieldConfigurationIssueTypeItem'] },
+    src: { field: 'issueTypeId', parentTypes: ['IssueTypeScreenSchemeItem', 'FieldConfigurationIssueTypeItem'] },
     serializationStrategy: 'id',
     target: { type: 'IssueTypeDetails' },
   },
@@ -41,6 +41,11 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     src: { field: 'fieldConfigurationScheme', parentTypes: ['Project'] },
     serializationStrategy: 'id',
     target: { type: 'FieldConfigurationScheme' },
+  },
+  {
+    src: { field: 'issueTypes', parentTypes: ['IssueTypeScheme'] },
+    serializationStrategy: 'id',
+    target: { type: 'IssueTypeDetails' },
   },
 ]
 

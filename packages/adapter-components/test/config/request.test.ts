@@ -20,8 +20,8 @@ describe('config_request', () => {
   describe('createRequestConfigs', () => {
     it('should return default config type when no custom fields were added', async () => {
       const { fetch: { request, requestDefault } } = createRequestConfigs('myAdapter')
-      expect(Object.keys(request.fields)).toHaveLength(5)
-      expect(Object.keys(request.fields).sort()).toEqual(['dependsOn', 'paginationField', 'queryParams', 'recursiveQueryByResponseField', 'url'])
+      expect(Object.keys(request.fields)).toHaveLength(6)
+      expect(Object.keys(request.fields).sort()).toEqual(['dependsOn', 'paginationField', 'queryParams', 'recurseInto', 'recursiveQueryByResponseField', 'url'])
       expect(request.fields.url.refType.elemID.isEqual(BuiltinTypes.STRING.elemID)).toBeTruthy()
       expect(request.fields.paginationField.refType.elemID.isEqual(BuiltinTypes.STRING.elemID))
         .toBeTruthy()
@@ -40,8 +40,8 @@ describe('config_request', () => {
         recursiveQueryByResponseFieldType.refInnerType.elemID.isEqual(BuiltinTypes.STRING.elemID)
       ).toBeTruthy()
 
-      expect(Object.keys(requestDefault.fields)).toHaveLength(4)
-      expect(Object.keys(requestDefault.fields).sort()).toEqual(['dependsOn', 'paginationField', 'queryParams', 'recursiveQueryByResponseField'])
+      expect(Object.keys(requestDefault.fields)).toHaveLength(5)
+      expect(Object.keys(requestDefault.fields).sort()).toEqual(['dependsOn', 'paginationField', 'queryParams', 'recurseInto', 'recursiveQueryByResponseField'])
       expect(
         requestDefault.fields.paginationField.refType.elemID.isEqual(BuiltinTypes.STRING.elemID)
       ).toBeTruthy()
@@ -68,11 +68,11 @@ describe('config_request', () => {
         'myAdapter',
         { a: { refType: BuiltinTypes.STRING } },
       )
-      expect(Object.keys(request.fields)).toHaveLength(6)
-      expect(Object.keys(request.fields).sort()).toEqual(['a', 'dependsOn', 'paginationField', 'queryParams', 'recursiveQueryByResponseField', 'url'])
+      expect(Object.keys(request.fields)).toHaveLength(7)
+      expect(Object.keys(request.fields).sort()).toEqual(['a', 'dependsOn', 'paginationField', 'queryParams', 'recurseInto', 'recursiveQueryByResponseField', 'url'])
       expect(request.fields.a.refType.elemID.isEqual(BuiltinTypes.STRING.elemID)).toBeTruthy()
-      expect(Object.keys(requestDefault.fields)).toHaveLength(5)
-      expect(Object.keys(requestDefault.fields).sort()).toEqual(['a', 'dependsOn', 'paginationField', 'queryParams', 'recursiveQueryByResponseField'])
+      expect(Object.keys(requestDefault.fields)).toHaveLength(6)
+      expect(Object.keys(requestDefault.fields).sort()).toEqual(['a', 'dependsOn', 'paginationField', 'queryParams', 'recurseInto', 'recursiveQueryByResponseField'])
       expect(requestDefault.fields.a.refType.elemID.isEqual(BuiltinTypes.STRING.elemID))
         .toBeTruthy()
     })

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   InstanceElement, Values, ObjectType, isObjectType, ReferenceExpression, isReferenceExpression,
-  isListType, isMapType,
+  isListType, isMapType, TypeElement, PrimitiveType, MapType,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -124,6 +124,15 @@ const extractStandaloneFields = async (
   return [updatedInst, ...additionalInstances]
 }
 
+const getListDeepInnerType = async (
+  type: TypeElement,
+): Promise<ObjectType | PrimitiveType | MapType> => {
+  if (!isListType(type)) {
+    return type
+  }
+  return getListDeepInnerType(await type.getInnerType())
+}
+
 /**
  * Normalize the element's values, by nesting swagger additionalProperties under the
  * additionalProperties field in order to align with the type.
@@ -132,20 +141,34 @@ const extractStandaloneFields = async (
  */
 const normalizeElementValues = (instance: InstanceElement): Promise<InstanceElement> => {
   const transformAdditionalProps: TransformFunc = async ({ value, field, path }) => {
+    if (Array.isArray(value)) {
+      // will handle in inner call
+      return value
+    }
+
     const fieldType = path?.isEqual(instance.elemID)
       ? await instance.getType()
       : await field?.getType()
+
+    if (fieldType === undefined) {
+      return value
+    }
+    const fieldInnerType = await getListDeepInnerType(fieldType)
     if (
-      !isObjectType(fieldType)
-      || fieldType.fields[ADDITIONAL_PROPERTIES_FIELD] === undefined
-      || !isMapType(await fieldType.fields[ADDITIONAL_PROPERTIES_FIELD].getType())
+      !isObjectType(fieldInnerType)
+      || fieldInnerType.fields[ADDITIONAL_PROPERTIES_FIELD] === undefined
+      || !isMapType(await fieldInnerType.fields[ADDITIONAL_PROPERTIES_FIELD].getType())
     ) {
       return value
     }
 
-    const additionalProps = _.pickBy(
-      value,
-      (_val, key) => !Object.keys(fieldType.fields).includes(key),
+    const additionalProps = _.merge(
+      _.pickBy(
+        value,
+        (_val, key) => !Object.keys(fieldInnerType.fields).includes(key),
+      ),
+      // if the value already has additional properties, give them precedence
+      value[ADDITIONAL_PROPERTIES_FIELD],
     )
     return {
       ..._.omit(value, Object.keys(additionalProps)),
@@ -351,7 +374,9 @@ const getEntriesForType = async (
     return { entries, objType }
   }
 
-  const getExtraFieldValues = (entry: Values): Promise<[string, Values[]][]> => Promise.all(
+  const getExtraFieldValues = (
+    entry: Values
+  ): Promise<[string, Values | Values[]][]> => Promise.all(
     recurseInto
       .filter(({ conditions }) => shouldRecurseIntoEntry(entry, requestContext, conditions))
       .map(async nested => {
@@ -360,7 +385,7 @@ const getEntriesForType = async (
             contextDef => [contextDef.name, _.get(entry, contextDef.fromField)]
           )
         )
-        const nestedEntries = await getEntriesForType({
+        const { entries: nestedEntries } = await getEntriesForType({
           ...params,
           typeName: nested.type,
           requestContext: {
@@ -368,7 +393,11 @@ const getEntriesForType = async (
             ...nestedRequestContext,
           },
         })
-        return [nested.toField, nestedEntries.entries] as [string, Values[]]
+        if (nested.isSingle && nestedEntries.length === 1) {
+          return [nested.toField, nestedEntries[0]] as [string, Values]
+        }
+        log.warn(`Expected a single value in recurseInto result for ${typeName}.${nested.toField} but received: ${nestedEntries.length}, keeping as list`)
+        return [nested.toField, nestedEntries] as [string, Values[]]
       })
   )
 

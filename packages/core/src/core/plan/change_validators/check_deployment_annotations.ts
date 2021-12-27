@@ -22,7 +22,7 @@ import { getDiffInstance } from '../diff'
 const { awu } = collections.asynciterable
 const { OPERATION_TO_ANNOTATION } = deployment
 
-const ERROR_MESSAGE = 'Operation not supported'
+const ERROR_MESSAGE = (id: ElemID): string => `The change of ${id.getFullName()} is not supported and will be omitted from deploy`
 
 const detailedErrorMessage = (action: Change['action'], path: ElemID): string =>
   `Salto does not support "${action}" of ${path.getFullName()}`
@@ -31,8 +31,9 @@ const isDeploymentSupported = (element: Element, action: Change['action']): bool
   element.annotations[OPERATION_TO_ANNOTATION[action]]
   || element.annotations[OPERATION_TO_ANNOTATION[action]] === undefined
 
-const getUnsupportedPaths = async (change: Change<InstanceElement>): Promise<ElemID[]> => {
-  const unsupportedPaths: ElemID[] = []
+const getUnsupportedPaths = async (change: Change<InstanceElement>)
+: Promise<{ field: ElemID; path: ElemID}[]> => {
+  const unsupportedPaths: { field: ElemID; path: ElemID}[] = []
   const diffInstance = getDiffInstance(change)
 
   await transformValues({
@@ -43,7 +44,7 @@ const getUnsupportedPaths = async (change: Change<InstanceElement>): Promise<Ele
       if (field !== undefined
         && !isDeploymentSupported(field, change.action)
         && path !== undefined) {
-        unsupportedPaths.push(path)
+        unsupportedPaths.push({ field: field.elemID, path })
         return undefined
       }
       return value
@@ -65,7 +66,7 @@ export const checkDeploymentAnnotationsValidator: ChangeValidator = async change
         return [{
           elemID: instance.elemID,
           severity: 'Error',
-          message: ERROR_MESSAGE,
+          message: ERROR_MESSAGE(type.elemID),
           detailedMessage: detailedErrorMessage(change.action, instance.elemID),
         }]
       }
@@ -76,10 +77,10 @@ export const checkDeploymentAnnotationsValidator: ChangeValidator = async change
 
       const unsupportedPaths = await getUnsupportedPaths(change)
 
-      return unsupportedPaths.map(path => ({
+      return unsupportedPaths.map(({ path, field }) => ({
         elemID: instance.elemID,
         severity: 'Warning',
-        message: ERROR_MESSAGE,
+        message: ERROR_MESSAGE(field),
         detailedMessage: detailedErrorMessage(change.action, path),
       }))
     })

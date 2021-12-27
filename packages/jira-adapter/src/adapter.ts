@@ -28,8 +28,10 @@ import issueTypeSchemeReferences from './filters/issue_type_scheme_references'
 import addReferencesToProjectSchemes from './filters/add_references_to_project_schemes'
 import overrideProjectSchemeFieldsTypes from './filters/override_project_scheme_fields_types'
 import authenticatedPermissionFilter from './filters/authenticated_permission'
+import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
 import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
+import { getLookUpName } from './references'
 
 const {
   generateTypes,
@@ -48,6 +50,7 @@ export const DEFAULT_FILTERS = [
   authenticatedPermissionFilter,
   addReferencesToProjectSchemes,
   overrideProjectSchemeFieldsTypes,
+  hiddenValuesInListsFilter,
 ]
 
 export interface JiraAdapterParams {
@@ -190,7 +193,7 @@ export default class JiraAdapter implements AdapterOperations {
       changesToDeploy.map(async change => {
         try {
           const response = await deployChange(
-            await resolveChangeElement(change, ({ ref }) => ref.value),
+            await resolveChangeElement(change, getLookUpName),
             this.client,
             this.userConfig.apiDefinitions
               .types[getChangeElement(change).elemID.typeName]?.deployRequests,
@@ -207,7 +210,11 @@ export default class JiraAdapter implements AdapterOperations {
           if (!_.isError(err)) {
             throw err
           }
-          return err
+          const errorMessage = `Deployment of ${getChangeElement(change).elemID.getFullName()} failed: ${err}`
+          if (err instanceof clientUtils.HTTPError && 'errorMessages' in err.response.data) {
+            return new Error(`${errorMessage}. ${err.response.data.errorMessages}`)
+          }
+          return new Error(errorMessage)
         }
       })
     )

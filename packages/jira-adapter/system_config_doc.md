@@ -2,45 +2,6 @@
 ## Default Configuration
 ```hcl
 jira {
-  fetch = {
-    includeTypes = [
-      "rest__api__3__application_properties@uuuuuub",
-      "rest__api__3__applicationrole",
-      "AttachmentSettings",
-      "Configuration",
-      "rest__api__3__configuration__timetracking__list",
-      "PageBeanDashboard",
-      "PageBeanField",
-      "PageBeanFieldConfigurationDetails",
-      "PageBeanFieldConfigurationScheme",
-      "PageBeanFieldConfigurationIssueTypeItem",
-      "PageBeanFilterDetails",
-      "IssueTypeDetails",
-      "IssueLinkTypes",
-      "SecuritySchemes",
-      "PageBeanIssueTypeScheme",
-      "PageBeanIssueTypeSchemeMapping",
-      "PageBeanIssueTypeScreenScheme",
-      "PageBeanIssueTypeScreenSchemeItem",
-      "PageBeanNotificationScheme",
-      "Permissions",
-      "PermissionSchemes",
-      "rest__api__3__priority",
-      "rest__api__3__projectCategory",
-      "PageBeanProject",
-      "rest__api__3__project__type",
-      "rest__api__3__resolution",
-      "rest__api__3__role",
-      "PageBeanScreen",
-      "PageBeanScreenScheme",
-      "rest__api__3__status",
-      "rest__api__3__statuscategory",
-      "PageBeanWorkflow",
-      "PageBeanWorkflowScheme",
-      "ServerInformation",
-      "agile__1_0__board@uuvuu",
-    ]
-  }
   apiDefinitions = {
     platformSwagger = {
       url = "https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json"
@@ -83,7 +44,32 @@ jira {
           }
         }
       }
+      NotificationEvent = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
+      EventNotification = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
       Dashboard = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
         deployRequests = {
           add = {
             url = "/rest/api/3/dashboard"
@@ -188,6 +174,11 @@ jira {
       }
       Field = {
         transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
           idFields = [
             "id",
           ]
@@ -328,6 +319,11 @@ jira {
               fieldType = "list<FieldConfigurationItem>"
             },
           ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
         }
       }
       PageBeanFieldConfigurationItem = {
@@ -360,6 +356,11 @@ jira {
             {
               fieldName = "items"
               fieldType = "list<FieldConfigurationIssueTypeItem>"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
             },
           ]
         }
@@ -408,6 +409,11 @@ jira {
               fieldType = "list<ColumnItem>"
             },
           ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
         }
         deployRequests = {
           add = {
@@ -442,12 +448,26 @@ jira {
           ]
         }
       }
+      Board_location = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
       IssueTypeScheme = {
         transformation = {
           fieldTypeOverrides = [
             {
               fieldName = "issueTypes"
               fieldType = "list<IssueTypeSchemeMapping>"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
             },
           ]
         }
@@ -513,6 +533,11 @@ jira {
               fieldType = "list<IssueTypeScreenSchemeItem>"
             },
           ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
         }
         request = {
           url = "/rest/api/3/issuetypescreenscheme"
@@ -554,6 +579,15 @@ jira {
           ]
         }
       }
+      NotificationScheme = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
       PageBeanNotificationScheme = {
         request = {
           url = "/rest/api/3/notificationscheme"
@@ -576,9 +610,25 @@ jira {
           }
         }
       }
+      PermissionGrant = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
       PermissionScheme = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
         request = {
-          url = "/rest/api/3/project/{projectId}/permissionscheme"
+          url = "/rest/api/3/permissionscheme"
           queryParams = {
             expand = "all"
           }
@@ -628,55 +678,23 @@ jira {
                 },
               ]
             },
+          ]
+        }
+      }
+      RoleActor = {
+        transformation = {
+          fieldsToOmit = [
             {
-              type = "ContainerOfWorkflowSchemeAssociations"
-              toField = "workflowScheme"
-              context = [
-                {
-                  name = "projectId"
-                  fromField = "id"
-                },
-              ]
+              fieldName = "id"
             },
+          ]
+        }
+      }
+      ProjectCategory = {
+        transformation = {
+          fieldsToHide = [
             {
-              type = "PermissionScheme"
-              toField = "permissionScheme"
-              context = [
-                {
-                  name = "projectId"
-                  fromField = "id"
-                },
-              ]
-            },
-            {
-              type = "NotificationScheme"
-              toField = "notificationScheme"
-              context = [
-                {
-                  name = "projectId"
-                  fromField = "id"
-                },
-              ]
-            },
-            {
-              type = "PageBeanIssueTypeScreenSchemesProjects"
-              toField = "issueTypeScreenScheme"
-              context = [
-                {
-                  name = "projectId"
-                  fromField = "id"
-                },
-              ]
-            },
-            {
-              type = "PageBeanFieldConfigurationSchemeProjects"
-              toField = "fieldConfigurationScheme"
-              context = [
-                {
-                  name = "projectId"
-                  fromField = "id"
-                },
-              ]
+              fieldName = "id"
             },
           ]
         }
@@ -688,25 +706,10 @@ jira {
               fieldName = "components"
               fieldType = "list<ComponentWithIssueCount>"
             },
+          ]
+          fieldsToHide = [
             {
-              fieldName = "workflowScheme"
-              fieldType = "list<WorkflowSchemeAssociations>"
-            },
-            {
-              fieldName = "permissionScheme"
-              fieldType = "list<PermissionScheme>"
-            },
-            {
-              fieldName = "notificationScheme"
-              fieldType = "list<NotificationScheme>"
-            },
-            {
-              fieldName = "issueTypeScreenScheme"
-              fieldType = "list<IssueTypeScreenSchemesProjects>"
-            },
-            {
-              fieldName = "fieldConfigurationScheme"
-              fieldType = "list<FieldConfigurationSchemeProjects>"
+              fieldName = "id"
             },
           ]
         }
@@ -731,51 +734,19 @@ jira {
           }
         }
       }
-      ContainerOfWorkflowSchemeAssociations = {
-        request = {
-          url = "/rest/api/3/workflowscheme/project?projectId={projectId}"
-        }
-      }
-      WorkflowSchemeAssociations = {
-        transformation = {
-          fieldsToOmit = [
-            {
-              fieldName = "projectIds"
-            },
-          ]
-        }
-      }
       ComponentWithIssueCount = {
         transformation = {
           fieldsToOmit = [
             {
               fieldName = "issueCount"
             },
-          ]
-        }
-      }
-      NotificationScheme = {
-        request = {
-          url = "/rest/api/3/project/{projectId}/notificationscheme"
-        }
-      }
-      PageBeanIssueTypeScreenSchemesProjects = {
-        request = {
-          url = "/rest/api/3/issuetypescreenscheme/project?projectId={projectId}"
-        }
-      }
-      IssueTypeScreenSchemesProjects = {
-        transformation = {
-          fieldsToOmit = [
             {
-              fieldName = "projectIds"
+              fieldName = "id"
+            },
+            {
+              fieldName = "projectId"
             },
           ]
-        }
-      }
-      PageBeanFieldConfigurationSchemeProjects = {
-        request = {
-          url = "/rest/api/3/fieldconfigurationscheme/project?projectId={projectId}"
         }
       }
       PageBeanScreen = {
@@ -806,6 +777,15 @@ jira {
           ]
         }
       }
+      Resolution = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
       Screen = {
         transformation = {
           fieldTypeOverrides = [
@@ -816,6 +796,16 @@ jira {
             {
               fieldName = "availableFields"
               fieldType = "list<ScreenableField>"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+          standaloneFields = [
+            {
+              fieldName = "tabs"
             },
           ]
         }
@@ -868,6 +858,11 @@ jira {
               fieldType = "list<ScreenableField>"
             },
           ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
         }
       }
       PageBeanScreenScheme = {
@@ -916,7 +911,41 @@ jira {
           paginationField = "startAt"
         }
       }
+      SecurityScheme = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
+      StatusCategory = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
+      StatusDetails = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
       WorkflowScheme = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
         deployRequests = {
           add = {
             url = "/rest/api/3/workflowscheme"
@@ -938,6 +967,11 @@ jira {
         }
         transformation = {
           dataField = "."
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
         }
         deployRequests = {
           add = {
@@ -993,6 +1027,11 @@ jira {
               fieldType = "list<agile__1_0__board___boardId___configuration@uuvuuuu_00123_00125uu>"
             },
           ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
         }
         deployRequests = {
           add = {
@@ -1029,8 +1068,22 @@ jira {
             }
           }
         }
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
       }
       ProjectRole = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
         deployRequests = {
           add = {
             url = "/rest/api/3/role"
@@ -1046,7 +1099,32 @@ jira {
           }
         }
       }
+      Priority = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
+      SharePermission = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
       ScreenScheme = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
         deployRequests = {
           add = {
             url = "/rest/api/3/screenscheme"
@@ -1069,6 +1147,13 @@ jira {
         }
       }
       agile__1_0__board___boardId___configuration@uuvuuuu_00123_00125uu = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
         request = {
           url = "/rest/agile/1.0/board/{boardId}/configuration"
         }

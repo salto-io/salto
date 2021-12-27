@@ -64,6 +64,12 @@ type HttpMethodToClientParams = {
   delete: ClientBaseParams
 }
 
+export class HTTPError extends Error {
+  constructor(message: string, readonly response: Response<ResponseValue>) {
+    super(message)
+  }
+}
+
 const isMethodWithData = (params: ClientParams): params is ClientDataParams =>
   'data' in params
 
@@ -189,6 +195,9 @@ export abstract class AdapterHTTPClient<
       }
     } catch (e) {
       log.warn(`failed to ${method} ${url} ${queryParams}: ${e}, stack: ${e.stack}, data: ${safeJsonStringify(e?.response?.data)}`)
+      if (e.response !== undefined) {
+        throw new HTTPError(`Failed to ${method} ${url} with error: ${e}`, e.response)
+      }
       throw new Error(`Failed to ${method} ${url} with error: ${e}`)
     }
   }

@@ -16,25 +16,8 @@
 import { Element } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
+import { referencesRules } from '../references'
 import { FilterCreator } from '../filter'
-
-const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition<never>[] = [
-  {
-    src: { field: 'issueTypeId', parentTypes: ['IssueTypeSchemeMapping', 'IssueTypeScreenSchemeItem', 'FieldConfigurationIssueTypeItem'] },
-    serializationStrategy: 'id',
-    target: { type: 'IssueTypeDetails' },
-  },
-  {
-    src: { field: 'fieldConfigurationId', parentTypes: ['FieldConfigurationIssueTypeItem'] },
-    serializationStrategy: 'id',
-    target: { type: 'FieldConfigurationDetails' },
-  },
-  {
-    src: { field: 'screenSchemeId', parentTypes: ['IssueTypeScreenSchemeItem'] },
-    serializationStrategy: 'id',
-    target: { type: 'ScreenScheme' },
-  },
-]
 
 /**
  * Convert field values into references, based on predefined rules.
@@ -43,7 +26,7 @@ const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     await referenceUtils.addReferences({
       elements,
-      defs: fieldNameToTypeMappingDefs,
+      defs: referencesRules,
       isEqualValue: (lhs, rhs) => _.toString(lhs) === _.toString(rhs),
     })
   },

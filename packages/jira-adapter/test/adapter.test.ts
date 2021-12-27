@@ -13,10 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdapterOperations, ObjectType, ElemID, ProgressReporter, FetchResult, InstanceElement, toChange, isRemovalChange, getChangeElement } from '@salto-io/adapter-api'
+import { AdapterOperations, ObjectType, ElemID, ProgressReporter, FetchResult, InstanceElement, toChange, isRemovalChange, getChangeElement, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
 import { deployment, elements } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockFunction } from '@salto-io/test-utils'
+import JiraClient from '../src/client/client'
 import { adapter as adapterCreator } from '../src/adapter_creator'
 import { DEFAULT_INCLUDE_ENDPOINTS, DEFAULT_API_DEFINITIONS } from '../src/config'
 import { JIRA } from '../src/constants'
@@ -59,11 +60,13 @@ describe('adapter', () => {
     })
   })
   describe('deploy', () => {
-    const type = new ObjectType({ elemID: new ElemID(JIRA, 'obj') })
+    const issueTypeSchemeMappingType = new ObjectType({ elemID: new ElemID(JIRA, 'IssueTypeSchemeMapping'), fields: { issueTypeId: { refType: BuiltinTypes.STRING } } })
+    let deployChangeMock: jest.MockedFunction<typeof deployment.deployChange>
     beforeEach(() => {
-      const deployChangeMock = deployment.deployChange as jest.MockedFunction<
+      deployChangeMock = deployment.deployChange as jest.MockedFunction<
        typeof deployment.deployChange
       >
+      deployChangeMock.mockClear()
       deployChangeMock.mockImplementation(async change => {
         if (isRemovalChange(change)) {
           throw new Error('some error')
@@ -77,15 +80,43 @@ describe('adapter', () => {
         changeGroup: {
           groupID: 'group',
           changes: [
-            toChange({ before: new InstanceElement('inst1', type), after: new InstanceElement('inst1', type) }),
-            toChange({ before: new InstanceElement('inst2', type) }),
+            toChange({ before: new InstanceElement('inst1', issueTypeSchemeMappingType), after: new InstanceElement('inst1', issueTypeSchemeMappingType) }),
+            toChange({ before: new InstanceElement('inst2', issueTypeSchemeMappingType) }),
           ],
         },
       })
 
       expect(deployRes.appliedChanges).toEqual([
-        toChange({ before: new InstanceElement('inst1', type), after: new InstanceElement('inst1', type) }),
+        toChange({ before: new InstanceElement('inst1', issueTypeSchemeMappingType), after: new InstanceElement('inst1', issueTypeSchemeMappingType) }),
       ])
+    })
+
+    it('should call deployChange with the resolved elements', async () => {
+      const referencedInstance = new InstanceElement(
+        'referenced',
+        new ObjectType({ elemID: new ElemID(JIRA, 'IssueTypeDetails'), fields: { id: { refType: BuiltinTypes.STRING } } }),
+        { id: '3' }
+      )
+      await adapter.deploy({
+        changeGroup: {
+          groupID: 'group',
+          changes: [
+            toChange({
+              before: new InstanceElement('inst1', issueTypeSchemeMappingType),
+              after: new InstanceElement('inst1', issueTypeSchemeMappingType, { issueTypeId: new ReferenceExpression(referencedInstance.elemID, referencedInstance) }),
+            }),
+          ],
+        },
+      })
+
+      expect(deployChangeMock).toHaveBeenCalledWith(
+        toChange({
+          before: new InstanceElement('inst1', issueTypeSchemeMappingType),
+          after: new InstanceElement('inst1', issueTypeSchemeMappingType, { issueTypeId: '3' }),
+        }),
+        expect.any(JiraClient),
+        undefined,
+      )
     })
 
     it('should return the errors', async () => {
@@ -93,8 +124,8 @@ describe('adapter', () => {
         changeGroup: {
           groupID: 'group',
           changes: [
-            toChange({ after: new InstanceElement('inst1', type) }),
-            toChange({ before: new InstanceElement('inst2', type) }),
+            toChange({ after: new InstanceElement('inst1', issueTypeSchemeMappingType) }),
+            toChange({ before: new InstanceElement('inst2', issueTypeSchemeMappingType) }),
           ],
         },
       })

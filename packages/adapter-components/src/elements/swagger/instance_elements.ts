@@ -396,6 +396,7 @@ const getEntriesForType = async (
         if (nested.isSingle && nestedEntries.length === 1) {
           return [nested.toField, nestedEntries[0]] as [string, Values]
         }
+        log.warn(`Expected a single value in recurseInto result for ${typeName}.${nested.toField} but received: ${nestedEntries.length}, keeping as list`)
         return [nested.toField, nestedEntries] as [string, Values[]]
       })
   )

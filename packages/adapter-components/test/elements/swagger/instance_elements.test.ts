@@ -879,7 +879,7 @@ describe('swagger_instance_elements', () => {
       ))).toBeTruthy()
     })
 
-    it('should not put existing field values under additionalProperties even if they unexpectedly contain single vlaues', async () => {
+    it('should not put existing field values under additionalProperties even if they unexpectedly contain single values', async () => {
       const objectTypes = generateObjectTypes()
 
       mockPaginator = mockFunction<Paginator>().mockImplementation(
@@ -1068,7 +1068,7 @@ describe('swagger_instance_elements', () => {
           expect.objectContaining({ url: expect.stringMatching(/\/pet\/fish\/owner\/.*\/nicknames/) })
         )
       })
-      it('should return nested value list in the instance when isSingle is false and single item when isSingle=true', () => {
+      it('should return nested value list in the instance when isSingle is falsy and single item when isSingle=true', () => {
         expect(instances).toHaveLength(3)
         const [dog, cat, fish] = instances
         expect(dog.value).toHaveProperty(

@@ -201,7 +201,7 @@ export const getPositionContext = async (
   fullElementSource?: ReadOnlyElementsSource
 ): Promise<PositionContext> => {
   const partialContext = getPositionFromTree(definitionsTree, position)
-  const fullRef = partialContext.ref && fullElementSource
+  const fullRef = partialContext.ref && fullElementSource !== undefined
     ? {
       ...partialContext.ref,
       element: await getFullElement(

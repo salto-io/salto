@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Change, getChangeElement, InstanceElement, isAdditionChange } from '@salto-io/adapter-api'
-import { config, deployment, client as clientUtils } from '@salto-io/adapter-components'
+import { config, deployment, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { resolveChangeElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import JiraClient from './client/client'
@@ -30,8 +30,11 @@ export const deployChange = async (
   additionalUrlVars?: Record<string, string>
 ): Promise<void> => {
   try {
+    const changeToDeploy = await elementUtils.swagger.flattenAdditionalProperties(
+      await resolveChangeElement(change, getLookUpName)
+    )
     const response = await deployment.deployChange(
-      await resolveChangeElement(change, getLookUpName),
+      changeToDeploy,
       client,
       apiDefinitions.types[getChangeElement(change).elemID.typeName]?.deployRequests,
       fieldsToIgnore,

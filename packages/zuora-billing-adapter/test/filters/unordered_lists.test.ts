@@ -31,7 +31,7 @@ describe('Unordered lists filter', () => {
     const settingsRoleType = new ObjectType({
       elemID: new ElemID(ZUORA_BILLING, `${SETTINGS_TYPE_PREFIX}Role`),
     })
-    const withAttrs = new InstanceElement(
+    const roleWithAttrs = new InstanceElement(
       'normal',
       settingsRoleType,
       {
@@ -42,12 +42,45 @@ describe('Unordered lists filter', () => {
         ],
       },
     )
-    const empty = new InstanceElement(
+    const emptyRole = new InstanceElement(
       'empty',
       settingsRoleType,
       {},
     )
-    return [settingsRoleType, withAttrs, empty]
+
+    const settingsGatewayType = new ObjectType({
+      elemID: new ElemID(ZUORA_BILLING, `${SETTINGS_TYPE_PREFIX}Gateway`),
+    })
+    const gatewayWithAttrs = new InstanceElement(
+      'normal',
+      settingsGatewayType,
+      {
+        cardsAllowed: [
+          'def',
+          'abc',
+        ],
+        cardsAccepted: [
+          'def',
+          'abc',
+        ],
+      },
+    )
+
+    const partialGateway = new InstanceElement(
+      'empty',
+      settingsGatewayType,
+      {
+        cardsAllowed: [
+          'def',
+          'abc',
+        ],
+      },
+    )
+
+    return [
+      settingsRoleType, roleWithAttrs, emptyRole,
+      settingsGatewayType, gatewayWithAttrs, partialGateway,
+    ]
   }
 
   let elements: Element[]
@@ -89,10 +122,14 @@ describe('Unordered lists filter', () => {
       { scope: 'a', name: 'b' },
       { scope: 'c', name: 'a', activationLevel: 'l1' },
     ])
+    expect(instances[2].value.cardsAccepted).toEqual(['abc', 'def'])
+    expect(instances[2].value.cardsAllowed).toEqual(['abc', 'def'])
+    expect(instances[3].value.cardsAllowed).toEqual(['abc', 'def'])
   })
 
   it('do nothing when attributes are not specified', async () => {
     const instances = elements.filter(isInstanceElement)
     expect(instances[1].value.attributes).toBeUndefined()
+    expect(instances[3].value.cardsAccepted).toBeUndefined()
   })
 })

@@ -15,10 +15,27 @@
 */
 import _ from 'lodash'
 import {
-  Element, isInstanceElement,
+  Element, isInstanceElement, InstanceElement,
 } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { SETTINGS_TYPE_PREFIX } from '../constants'
+
+const sortRoleAttributes = (role: InstanceElement): void => {
+  if (Array.isArray(role.value.attributes)) {
+    role.value.attributes = _.sortBy(
+      role.value.attributes,
+      attr => [attr.scope, attr.name, attr.activationLevel],
+    )
+  }
+}
+
+const sortCards = (gateway: InstanceElement): void => {
+  ['cardsAllowed', 'cardsAccepted'].forEach(fieldName => {
+    if (Array.isArray(gateway.value[fieldName]) && gateway.value[fieldName].every(_.isString)) {
+      gateway.value[fieldName] = gateway.value[fieldName].slice().sort()
+    }
+  })
+}
 
 /**
  * Sort lists whose order changes between fetches, to avoid unneeded noise.
@@ -28,15 +45,12 @@ const filterCreator: FilterCreator = () => ({
     const roleInstances = (elements
       .filter(isInstanceElement)
       .filter(e => e.refType.elemID.name === `${SETTINGS_TYPE_PREFIX}Role`))
+    roleInstances.forEach(sortRoleAttributes)
 
-    roleInstances.forEach(role => {
-      if (Array.isArray(role.value.attributes)) {
-        role.value.attributes = _.sortBy(
-          role.value.attributes,
-          attr => [attr.scope, attr.name, attr.activationLevel],
-        )
-      }
-    })
+    const settingsGatewayInstances = (elements
+      .filter(isInstanceElement)
+      .filter(e => e.refType.elemID.name === `${SETTINGS_TYPE_PREFIX}Gateway`))
+    settingsGatewayInstances.forEach(sortCards)
   },
 })
 

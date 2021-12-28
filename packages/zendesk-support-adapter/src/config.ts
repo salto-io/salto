@@ -24,15 +24,18 @@ const {
   createUserFetchConfigType, createDucktypeAdapterApiConfigType, validateDuckTypeFetchConfig,
 } = configUtils
 
-export const DEFAULT_ID_FIELDS = ['name', 'id']
+export const DEFAULT_ID_FIELDS = ['name']
 export const DEFAULT_FILENAME_FIELDS = ['name']
 export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
-  { fieldName: 'created_at', fieldType: 'string' },
-  { fieldName: 'updated_at', fieldType: 'string' },
   { fieldName: 'extended_input_schema' },
   { fieldName: 'extended_output_schema' },
   { fieldName: 'url', fieldType: 'string' },
   { fieldName: 'count', fieldType: 'number' },
+]
+export const FIELDS_TO_HIDE: configUtils.FieldToHideType[] = [
+  { fieldName: 'id', fieldType: 'number' },
+  { fieldName: 'created_at', fieldType: 'string' },
+  { fieldName: 'updated_at', fieldType: 'string' },
 ]
 
 export const CLIENT_CONFIG = 'client'
@@ -84,6 +87,11 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   custom_role: {
     transformation: {
       sourceTypeName: 'custom_roles__custom_roles',
+      fieldsToOmit: FIELDS_TO_OMIT.concat([
+        // always 0 - https://developer.zendesk.com/api-reference/ticketing/account-configuration/custom_roles/#json-format
+        { fieldName: 'role_type', fieldType: 'number' },
+        { fieldName: 'team_member_count', fieldType: 'number' },
+      ]),
     },
     deployRequests: {
       add: {
@@ -140,7 +148,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   view: {
     transformation: {
       sourceTypeName: 'views__views',
-      idFields: ['title', 'id'],
+      idFields: ['title'],
       fileNameFields: ['title'],
     },
     deployRequests: {
@@ -170,7 +178,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   trigger: {
     transformation: {
       sourceTypeName: 'triggers__triggers',
-      idFields: ['title', 'id'],
+      idFields: ['title'],
       fileNameFields: ['title'],
     },
     deployRequests: {
@@ -229,7 +237,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   automation: {
     transformation: {
       sourceTypeName: 'automations__automations',
-      idFields: ['title', 'id'],
+      idFields: ['title'],
       fileNameFields: ['title'],
     },
     deployRequests: {
@@ -259,7 +267,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   sla_policy: {
     transformation: {
       sourceTypeName: 'sla_policies__sla_policies',
-      idFields: ['title', 'id'],
+      idFields: ['title'],
       fileNameFields: ['title'],
     },
     deployRequests: {
@@ -324,7 +332,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   macro: {
     transformation: {
       sourceTypeName: 'macros__macros',
-      idFields: ['title', 'id'],
+      idFields: ['title'],
       fileNameFields: ['title'],
     },
     deployRequests: {
@@ -465,9 +473,9 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       },
     },
   },
-  recipient_address: {
+  support_address: {
     transformation: {
-      sourceTypeName: 'recipient_addresses__recipient_addresses',
+      sourceTypeName: 'support_addresses__recipient_addresses',
       fieldTypeOverrides: [
         { fieldName: 'cname_status', fieldType: 'string', restrictions: { enforce_value: true, values: ['unknown', 'verified', 'failed'] } },
         { fieldName: 'dns_results', fieldType: 'string', restrictions: { enforce_value: true, values: ['verified', 'failed'] } },
@@ -475,6 +483,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
         { fieldName: 'forwarding_status', fieldType: 'string', restrictions: { enforce_value: true, values: ['unknown', 'waiting', 'verified', 'failed'] } },
         { fieldName: 'spf_status', fieldType: 'string', restrictions: { enforce_value: true, values: ['unknown', 'verified', 'failed'] } },
       ],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'domain_verification_code' }),
     },
     deployRequests: {
       add: {
@@ -531,7 +540,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   ticket_field: {
     transformation: {
       sourceTypeName: 'ticket_fields__ticket_fields',
-      idFields: ['type', 'title', 'id'],
+      idFields: ['type', 'title'],
       fileNameFields: ['type', 'title'],
       standaloneFields: [{ fieldName: 'custom_field_options' }],
     },
@@ -663,7 +672,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   workspace: {
     transformation: {
       sourceTypeName: 'workspaces__workspaces',
-      idFields: ['title', 'id'],
+      idFields: ['title'],
       fileNameFields: ['title'],
     },
     deployRequests: {
@@ -690,10 +699,15 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       },
     },
   },
+  workspace__selected_macros: {
+    transformation: {
+      fieldsToHide: FIELDS_TO_HIDE.filter(field => field.fieldName !== 'id'),
+    },
+  },
   app_installation: {
     transformation: {
       sourceTypeName: 'app_installations__installations',
-      fieldsToOmit: [...FIELDS_TO_OMIT, { fieldName: 'updated', fieldType: 'string' }],
+      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'updated', fieldType: 'string' }),
       idFields: ['settings.name', 'id'],
       fileNameFields: ['settings.name'],
     },
@@ -729,6 +743,8 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   oauth_client: {
     transformation: {
       sourceTypeName: 'oauth_clients__clients',
+      idFields: ['identifier'],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'secret', fieldType: 'string' }),
     },
     deployRequests: {
       add: {
@@ -910,6 +926,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
     transformation: {
       dataField: '.',
+      standaloneFields: [{ fieldName: 'variants' }],
     },
     deployRequests: {
       add: {
@@ -935,6 +952,12 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       },
     },
   },
+  dynamic_content_item__variants: {
+    transformation: {
+      // Will be changed after SALTO-1687 + SALTO-1688
+      idFields: ['locale_id'],
+    },
+  },
   locales: {
     request: {
       url: '/locales',
@@ -956,7 +979,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
   },
   // eslint-disable-next-line camelcase
-  recipient_addresses: {
+  support_addresses: {
     request: {
       url: '/recipient_addresses',
     },
@@ -1081,6 +1104,7 @@ export const DEFAULT_CONFIG = {
         idFields: DEFAULT_ID_FIELDS,
         fileNameFields: DEFAULT_FILENAME_FIELDS,
         fieldsToOmit: FIELDS_TO_OMIT,
+        fieldsToHide: FIELDS_TO_HIDE,
       },
     },
     types: DEFAULT_TYPES,

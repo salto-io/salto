@@ -44,12 +44,14 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
               try {
                 view.value = _.omit({
                   ...view.value,
-                  all: view.value.conditions?.all ?? [],
-                  any: view.value.conditions?.any ?? [],
-                  output: {
-                    ...(view.value.execution ?? {}),
-                    columns: view.value.execution?.columns?.map((c: Values) => c.id) ?? [],
-                  },
+                  all: (view.value.conditions.all ?? [])
+                    .map((e: Values) => ({ ...e, value: e.value.toString() })),
+                  any: (view.value.conditions.any ?? [])
+                    .map((e: Values) => ({ ...e, value: e.value.toString() })),
+                  output: _.omit({
+                    ...view.value.execution,
+                    columns: view.value.execution.columns?.map((c: Values) => c.id) ?? [],
+                  }, ['fields', 'custom_fields']),
                 }, ['conditions', 'execution'])
                 return view
               } catch (e) {

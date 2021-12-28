@@ -105,9 +105,6 @@ const createSwaggerDefinitionsBaseConfigType = (
     fields: {
       url: {
         refType: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: true,
-        },
       },
       typeNameOverrides: {
         refType: new ListType(typeNameOverrideConfig),

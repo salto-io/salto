@@ -1165,25 +1165,21 @@ export type JiraConfig = {
 
 const defaultApiDefinitionsType = createSwaggerAdapterApiConfigType({ adapter: JIRA })
 
-const apiDefinitionsType = createMatchingObjectType<JiraApiConfig>({
+const apiDefinitionsType = createMatchingObjectType<Partial<JiraApiConfig>>({
   elemID: new ElemID(JIRA, 'apiDefinitions'),
   fields: {
     apiVersion: { refType: BuiltinTypes.STRING },
     typeDefaults: {
       refType: defaultApiDefinitionsType.fields.typeDefaults.refType,
-      annotations: { _required: true },
     },
     types: {
       refType: defaultApiDefinitionsType.fields.types.refType,
-      annotations: { _required: true },
     },
     jiraSwagger: {
       refType: defaultApiDefinitionsType.fields.swagger.refType,
-      annotations: { _required: true },
     },
     platformSwagger: {
       refType: defaultApiDefinitionsType.fields.swagger.refType,
-      annotations: { _required: true },
     },
     supportedTypes: {
       refType: new ListType(BuiltinTypes.STRING),

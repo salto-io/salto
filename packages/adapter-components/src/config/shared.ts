@@ -64,15 +64,12 @@ export const createAdapterApiConfigType = ({
   }
   transformationTypes: { transformation: ObjectType; transformationDefault: ObjectType }
 }): ObjectType => {
-  const typeDefaultsConfigType = createMatchingObjectType<TypeDefaultsConfig>({
+  const typeDefaultsConfigType = createMatchingObjectType<Partial<TypeDefaultsConfig>>({
     elemID: new ElemID(adapter, 'typeDefaultsConfig'),
     fields: {
       request: { refType: requestTypes.fetch.requestDefault },
       transformation: {
         refType: transformationTypes.transformationDefault,
-        annotations: {
-          _required: true,
-        },
       },
     },
   })
@@ -88,20 +85,14 @@ export const createAdapterApiConfigType = ({
     },
   })
 
-  const adapterApiConfigType = createMatchingObjectType<AdapterApiConfig>({
+  const adapterApiConfigType = createMatchingObjectType<Partial<AdapterApiConfig>>({
     elemID: new ElemID(adapter, 'adapterApiConfig'),
     fields: {
       types: {
         refType: new MapType(typesConfigType),
-        annotations: {
-          _required: true,
-        },
       },
       typeDefaults: {
         refType: typeDefaultsConfigType,
-        annotations: {
-          _required: true,
-        },
       },
       apiVersion: {
         refType: BuiltinTypes.STRING,

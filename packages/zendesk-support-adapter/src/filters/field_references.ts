@@ -97,6 +97,11 @@ export const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition
     target: { type: 'group' },
   },
   {
+    src: { field: 'group_id' },
+    serializationStrategy: 'id',
+    target: { type: 'group' },
+  },
+  {
     src: { field: 'locale_id' },
     serializationStrategy: 'id',
     target: { type: 'locale' },
@@ -156,7 +161,6 @@ export const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition
     serializationStrategy: 'id',
     target: { type: 'view' },
   },
-
   {
     src: { field: 'id', parentTypes: ['view__restriction'] },
     serializationStrategy: 'id',
@@ -166,6 +170,11 @@ export const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition
     src: { field: 'ids', parentTypes: ['view__restriction'] },
     serializationStrategy: 'id',
     target: { typeContext: 'neighborType' },
+  },
+  {
+    src: { field: 'id', parentTypes: ['view__execution__custom_fields'] },
+    serializationStrategy: 'id',
+    target: { type: 'ticket_field' },
   },
   {
     src: { field: 'resource_id' },

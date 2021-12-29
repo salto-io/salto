@@ -71,7 +71,7 @@ export const deployActions = async (
   adapters: Record<string, AdapterOperations>,
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
   postDeployAction: (appliedChanges: ReadonlyArray<Change>) => Promise<void>
-): Promise<{ errors: DeployError[]; appliedChanges: readonly Change[]}> => {
+): Promise<{ errors: DeployError[]; appliedChanges: Change[]}> => {
   const appliedChanges: Change[] = []
   try {
     await deployPlan.walkAsync(async (itemId: PlanItemId): Promise<void> => {

@@ -116,7 +116,7 @@ export interface DeployResult {
   success: boolean
   errors: DeployError[]
   changes?: Iterable<FetchChange>
-  appliedChanges?: Iterable<Change>
+  appliedChanges?: Change[]
 }
 
 export const deploy = async (

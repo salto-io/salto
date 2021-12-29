@@ -264,18 +264,24 @@ describe('api.ts', () => {
         expect(changes[0].change.action).toEqual('add')
         expect(changes[0].change.id).toEqual(addedElem.elemID.createNestedID('attr', 'test'))
       })
+      it('should return the applied changes', () => {
+        expect(result.appliedChanges).toHaveLength(2)
+        const [addedChange, removedChange] = result.appliedChanges ?? []
+        expect(addedChange.action).toEqual('add')
+        expect(removedChange.action).toEqual('remove')
+      })
     })
     describe('with field changes', () => {
-      let changedElement: ObjectType
+      const origElement = mockElements.getAllElements().find(isObjectType) as ObjectType
+      const [removedField, origField] = Object.values(origElement.fields)
+      const changedElement = new ObjectType({
+        ...origElement,
+        annotationRefsOrTypes: origElement.annotationRefTypes,
+        fields: _.omit(origElement.fields, removedField.name),
+      })
+      const changedField = changedElement.fields[origField.name]
+
       beforeAll(async () => {
-        const origElement = mockElements.getAllElements().find(isObjectType) as ObjectType
-        const [removedField, origField] = Object.values(origElement.fields)
-        changedElement = new ObjectType({
-          ...origElement,
-          annotationRefsOrTypes: origElement.annotationRefTypes,
-          fields: _.omit(origElement.fields, removedField.name),
-        })
-        const changedField = changedElement.fields[origField.name]
         changedField.annotations.test = 1
         const actionPlan = mockPlan.createPlan(
           [[
@@ -290,6 +296,14 @@ describe('api.ts', () => {
       it('should set updated top level element to state', async () => {
         const stateElement = await ws.state().get(changedElement.elemID)
         expect(stateElement).toEqual(changedElement)
+      })
+      it('should return the applied changes', () => {
+        expect(result.appliedChanges).toHaveLength(2)
+        const [removeAppliedChange, modifyAppliedChange] = result.appliedChanges ?? []
+        expect(removeAppliedChange?.action).toEqual('remove')
+        expect(removeAppliedChange?.data).toEqual({ before: removedField })
+        expect(modifyAppliedChange?.action).toEqual('modify')
+        expect(modifyAppliedChange?.data).toEqual({ before: origField, after: changedField })
       })
     })
     describe('with partial success from the adapter', () => {
@@ -343,36 +357,6 @@ describe('api.ts', () => {
       })
       it('should update state with applied change', () => {
         expect(stateSet).toHaveBeenCalledWith(existingEmployee)
-      })
-    })
-    describe('with deploy errors', () => {
-      let newEmployee: InstanceElement
-      let existingEmployee: InstanceElement
-      beforeAll(async () => {
-        const wsElements = mockElements.getAllElements()
-        existingEmployee = wsElements.find(isInstanceElement) as InstanceElement
-        newEmployee = new InstanceElement(
-          'new',
-          existingEmployee.refType,
-          existingEmployee.value,
-        )
-        wsElements.push(newEmployee)
-        existingEmployee.value.name = 'updated name'
-        const stateElements = mockElements.getAllElements()
-        ws = mockWorkspace({ elements: wsElements, stateElements })
-
-        // Create plan where changes are in seperate groups
-        const actionPlan = await plan.getPlan({
-          before: createElementSource(stateElements),
-          after: createElementSource(wsElements),
-        })
-
-        mockAdapterOps.deploy.mockClear()
-        mockAdapterOps.deploy.mockRejectedValueOnce(new Error('something bad'))
-        result = await api.deploy(ws, actionPlan, jest.fn(), ACCOUNTS)
-      })
-      it('should return the successfully applied change, even when another fails', () => {
-        expect(result.appliedChanges).toHaveLength(1)
       })
     })
   })

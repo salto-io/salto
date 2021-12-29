@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { values, collections, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { transformElement, TransformFunc, transformValues, applyFunctionToChangeData, elementAnnotationTypes, safeJsonStringify } from '@salto-io/adapter-utils'
+import { transformElement, TransformFunc, transformValues, applyFunctionToChangeData, elementAnnotationTypes, safeJsonStringify, resolvePath } from '@salto-io/adapter-utils'
 import { CORE_ANNOTATIONS, Element, isInstanceElement, isType, TypeElement, getField,
   DetailedChange, isRemovalChange, ElemID, isObjectType, ObjectType, Values,
   isRemovalOrModificationChange, isAdditionOrModificationChange, isElement, isField,
@@ -108,7 +108,13 @@ export const getElementHiddenParts = async <T extends Element>(
       // Keep traversing as long as we might reach nested hidden parts.
       // Note: it is ok to check isAncestorOfHiddenPath before isNestedHiddenPath, because there is
       // no overlap between ancestorsOfHiddenPaths and hiddenPaths
-      path !== undefined && (isAncestorOfHiddenPath(path) || isNestedHiddenPath(path))
+      path !== undefined
+        && (
+          (isAncestorOfHiddenPath(path)
+            && (workspaceElement === undefined
+              || resolvePath(workspaceElement, path) !== undefined))
+          || isNestedHiddenPath(path)
+        )
         ? value
         : undefined
     ),

@@ -91,6 +91,55 @@ describe('mergeWithHidden', () => {
     })
   })
 
+  describe('when parent value were deleted', () => {
+    let result: MergeResult
+    beforeEach(async () => {
+      const innerType = new ObjectType({
+        elemID: new ElemID('test', 'inner'),
+        fields: {
+          hidden: {
+            refType: BuiltinTypes.STRING,
+            annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+          },
+          notHidden: {
+            refType: BuiltinTypes.STRING,
+          },
+        },
+      })
+
+      const type = new ObjectType({
+        elemID: new ElemID('adapter', 'type'),
+        fields: {
+          obj: { refType: innerType },
+        },
+      })
+
+      const stateInstance = new InstanceElement(
+        'instance',
+        type,
+        { obj: { hidden: 'hidden', notHidden: 'notHidden' } },
+      )
+
+      const workspaceInstance = new InstanceElement(
+        'instance',
+        type,
+      )
+
+      result = await mergeWithHidden(
+        awu([workspaceInstance, type, innerType]),
+        createInMemoryElementSource([stateInstance, type, innerType]),
+      )
+    })
+    it('should not have merge errors', async () => {
+      expect(await awu(result.errors.values()).flat().toArray()).toHaveLength(0)
+    })
+    it('should not add the hidden value to the instance', async () => {
+      const instance = (await awu(result.merged.values())
+        .find(isInstanceElement)) as InstanceElement
+      expect(instance.value).toEqual({})
+    })
+  })
+
   describe('hidden_string in instance annotation', () => {
     let result: MergeResult
     beforeEach(async () => {

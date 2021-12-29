@@ -62,7 +62,11 @@ export const getElementHiddenParts = async <T extends Element>(
   const hiddenFunc = isInstanceElement(stateElement) ? isHiddenValue : isHidden
   const storeHiddenPaths: TransformFunc = async ({ value, field, path }) => {
     if (await hiddenFunc(field, elementsSource)) {
-      if (path !== undefined) {
+      if (
+        path !== undefined
+        && (workspaceElement === undefined
+          || resolvePath(workspaceElement, path.createParentID()) !== undefined)
+      ) {
         hiddenPaths.add(path.getFullName())
         let ancestor = path.createParentID()
         while (!ancestorsOfHiddenPaths.has(ancestor.getFullName())) {
@@ -110,10 +114,7 @@ export const getElementHiddenParts = async <T extends Element>(
       // no overlap between ancestorsOfHiddenPaths and hiddenPaths
       path !== undefined
         && (
-          (isAncestorOfHiddenPath(path)
-            && (workspaceElement === undefined
-              || resolvePath(workspaceElement, path) !== undefined))
-          || isNestedHiddenPath(path)
+          isAncestorOfHiddenPath(path) || isNestedHiddenPath(path)
         )
         ? value
         : undefined

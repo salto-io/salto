@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, DetailedChange, ReferenceExpression } from '@salto-io/adapter-api'
+import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, DetailedChange, ReferenceExpression, Field } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
@@ -272,17 +272,23 @@ describe('api.ts', () => {
       })
     })
     describe('with field changes', () => {
-      const origElement = mockElements.getAllElements().find(isObjectType) as ObjectType
-      const [removedField, origField] = Object.values(origElement.fields)
-      const changedElement = new ObjectType({
-        ...origElement,
-        annotationRefsOrTypes: origElement.annotationRefTypes,
-        fields: _.omit(origElement.fields, removedField.name),
-      })
-      const changedField = changedElement.fields[origField.name]
-
+      let changedElement: ObjectType
+      let expectedRemovedField: Field
+      let expectedOriginalField: Field
+      let expectedChangedField: Field
       beforeAll(async () => {
+        const origElement = mockElements.getAllElements().find(isObjectType) as ObjectType
+        const [removedField, origField] = Object.values(origElement.fields)
+        expectedRemovedField = removedField
+        expectedOriginalField = origField
+        changedElement = new ObjectType({
+          ...origElement,
+          annotationRefsOrTypes: origElement.annotationRefTypes,
+          fields: _.omit(origElement.fields, removedField.name),
+        })
+        const changedField = changedElement.fields[origField.name]
         changedField.annotations.test = 1
+        expectedChangedField = changedField
         const actionPlan = mockPlan.createPlan(
           [[
             { action: 'remove', data: { before: removedField } },
@@ -301,9 +307,11 @@ describe('api.ts', () => {
         expect(result.appliedChanges).toHaveLength(2)
         const [removeAppliedChange, modifyAppliedChange] = result.appliedChanges ?? []
         expect(removeAppliedChange?.action).toEqual('remove')
-        expect(removeAppliedChange?.data).toEqual({ before: removedField })
+        expect(removeAppliedChange?.data).toEqual({ before: expectedRemovedField })
         expect(modifyAppliedChange?.action).toEqual('modify')
-        expect(modifyAppliedChange?.data).toEqual({ before: origField, after: changedField })
+        expect(modifyAppliedChange?.data).toEqual(
+          { before: expectedOriginalField, after: expectedChangedField }
+        )
       })
     })
     describe('with partial success from the adapter', () => {

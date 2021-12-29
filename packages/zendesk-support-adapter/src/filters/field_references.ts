@@ -147,6 +147,11 @@ export const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition
     target: { type: 'ticket_field' },
   },
   {
+    src: { field: 'id', parentTypes: ['view__execution__custom_fields'] },
+    serializationStrategy: 'id',
+    target: { type: 'ticket_field' },
+  },
+  {
     src: { field: 'ticket_form_id' },
     serializationStrategy: 'id',
     target: { type: 'ticket_form' },
@@ -161,6 +166,7 @@ export const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition
     serializationStrategy: 'id',
     target: { type: 'view' },
   },
+
   {
     src: { field: 'id', parentTypes: ['view__restriction'] },
     serializationStrategy: 'id',
@@ -170,11 +176,6 @@ export const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition
     src: { field: 'ids', parentTypes: ['view__restriction'] },
     serializationStrategy: 'id',
     target: { typeContext: 'neighborType' },
-  },
-  {
-    src: { field: 'id', parentTypes: ['view__execution__custom_fields'] },
-    serializationStrategy: 'id',
-    target: { type: 'ticket_field' },
   },
   {
     src: { field: 'resource_id' },

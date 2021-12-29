@@ -20,6 +20,7 @@ import {
 import { logger } from '@salto-io/logging'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { deployment as deploymentUtils } from '@salto-io/adapter-components'
+import { values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 
 const log = logger(module)
@@ -42,20 +43,22 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           if (!isRemovalChange(change)) {
             await applyFunctionToChangeData(change, view => {
               try {
-                view.value = _.omit({
-                  ...view.value,
+                view.value = {
+                  ..._.omit(view.value, ['conditions', 'execution']),
                   all: (view.value.conditions.all ?? [])
                     .map((e: Values) => ({ ...e, value: e.value.toString() })),
                   any: (view.value.conditions.any ?? [])
                     .map((e: Values) => ({ ...e, value: e.value.toString() })),
-                  output: _.omit({
-                    ...view.value.execution,
-                    columns: view.value.execution.columns?.map((c: Values) => c.id) ?? [],
-                  }, ['fields', 'custom_fields']),
-                }, ['conditions', 'execution'])
+                  output: {
+                    ..._.omit(view.value.execution, ['fields', 'custom_fields']),
+                    columns: view.value.execution.columns?.filter(_.isPlainObject)
+                      .map((c: Values) => c.id).filter(values.isDefined) ?? [],
+                  },
+                }
                 return view
               } catch (e) {
-                log.error('The view that is trying to be deployed is in invalid format')
+                log.error('View %s has an invalid format and cannot be deployed. Error: %o',
+                  getChangeElement(change).elemID.getFullName(), e)
                 throw e
               }
             })
@@ -64,7 +67,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           if (isAdditionChange(change)) {
             if (_.isArray(response)) {
               log.warn(
-                'Received an array for the response of the deploy. Do not update the id of the element. Action: add. ID: %s',
+                'Received an array for the response of the deploy. Not updating the id of the element. Action: add. ID: %s',
                 getChangeElement(change).elemID.getFullName()
               )
             } else {

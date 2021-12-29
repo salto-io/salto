@@ -333,6 +333,14 @@ describe('api.ts', () => {
       it('should return success false for the overall deploy', () => {
         expect(result.success).toBeFalsy()
       })
+      it('should return applied changes for the overall deploy', () => {
+        expect(result.appliedChanges).toHaveLength(1)
+        const appliedChanges = [...(result.appliedChanges ?? [])].filter(isModificationChange)
+        expect(appliedChanges).toHaveLength(1)
+        const [appliedChange] = appliedChanges
+        expect(appliedChange?.action).toEqual('modify')
+        expect(appliedChange?.data?.after).toEqual(existingEmployee)
+      })
       it('should update state with applied change', () => {
         expect(stateSet).toHaveBeenCalledWith(existingEmployee)
       })

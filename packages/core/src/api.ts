@@ -126,7 +126,6 @@ export const deploy = async (
   accounts = workspace.accounts(),
 ): Promise<DeployResult> => {
   const changedElements = elementSource.createInMemoryElementSource()
-  const appliedChangesResult: Change[] = []
   const adapters = await getAdapters(
     accounts,
     await workspace.accountCredentials(accounts),
@@ -152,7 +151,6 @@ export const deploy = async (
 
   const postDeployAction = async (appliedChanges: ReadonlyArray<Change>): Promise<void> => {
     await promises.array.series(appliedChanges.map(change => async () => {
-      appliedChangesResult.push(change)
       const updatedElement = await getUpdatedElement(change)
       if (change.action === 'remove' && !isFieldChange(change)) {
         await workspace.state().remove(updatedElement.elemID)
@@ -162,7 +160,9 @@ export const deploy = async (
       }
     }))
   }
-  const errors = await deployActions(actionPlan, adapters, reportProgress, postDeployAction)
+  const { errors, appliedChanges } = await deployActions(
+    actionPlan, adapters, reportProgress, postDeployAction
+  )
 
   // Add workspace elements as an additional context for resolve so that we can resolve
   // variable expressions. Adding only variables is not enough for the case of a variable
@@ -177,7 +177,7 @@ export const deploy = async (
   return {
     success: !errored,
     changes,
-    appliedChanges: appliedChangesResult,
+    appliedChanges,
     errors: errored ? errors : [],
   }
 }

@@ -845,6 +845,21 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       url: '/triggers',
     },
   },
+  // eslint-disable-next-line camelcase
+  triggers_definitions: {
+    request: {
+      url: '/triggers/definitions',
+    },
+    transformation: {
+      dataField: 'definitions',
+    },
+  },
+  trigger_definitions: {
+    transformation: {
+      sourceTypeName: 'triggers_definitions__definitions',
+      isSingleton: true,
+    },
+  },
   trigger_categories: {
     request: {
       url: '/trigger_categories',

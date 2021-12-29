@@ -345,6 +345,36 @@ describe('api.ts', () => {
         expect(stateSet).toHaveBeenCalledWith(existingEmployee)
       })
     })
+    describe('with deploy errors', () => {
+      let newEmployee: InstanceElement
+      let existingEmployee: InstanceElement
+      beforeAll(async () => {
+        const wsElements = mockElements.getAllElements()
+        existingEmployee = wsElements.find(isInstanceElement) as InstanceElement
+        newEmployee = new InstanceElement(
+          'new',
+          existingEmployee.refType,
+          existingEmployee.value,
+        )
+        wsElements.push(newEmployee)
+        existingEmployee.value.name = 'updated name'
+        const stateElements = mockElements.getAllElements()
+        ws = mockWorkspace({ elements: wsElements, stateElements })
+
+        // Create plan where changes are in seperate groups
+        const actionPlan = await plan.getPlan({
+          before: createElementSource(stateElements),
+          after: createElementSource(wsElements),
+        })
+
+        mockAdapterOps.deploy.mockClear()
+        mockAdapterOps.deploy.mockRejectedValueOnce(new Error('something bad'))
+        result = await api.deploy(ws, actionPlan, jest.fn(), ACCOUNTS)
+      })
+      it('should return the successfully applied change, even when another fails', () => {
+        expect(result.appliedChanges).toHaveLength(1)
+      })
+    })
   })
 
   describe('login', () => {

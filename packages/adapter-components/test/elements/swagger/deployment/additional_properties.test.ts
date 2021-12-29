@@ -85,6 +85,9 @@ describe('flattenAdditionalProperties', () => {
         valueWithCreatableProperties: {},
       },
       valueWithUpdatableProperties: {
+        additionalProperties: {
+          key: 'value',
+        },
       },
       valueWithoutProperties: {},
       key: 'value',

@@ -33,13 +33,13 @@ const removeAdditionalPropertiesFlat = async (
     .annotations[OPERATION_TO_ANNOTATION[action]]
   if (deploymentAnnotationValue || deploymentAnnotationValue === undefined) {
     _.assign(values, values.additionalProperties ?? {})
+    delete values.additionalProperties
   }
-  delete values.additionalProperties
 }
 
 /**
  * Remove the additional properties value we added on fetch in normalizeElementValues before deploy
- * and adds the its values to to top level values if deployable
+ * and add its values to the top level values if deployable
  */
 export const flattenAdditionalProperties = async (change: Change<InstanceElement>)
 : Promise<Change<InstanceElement>> =>

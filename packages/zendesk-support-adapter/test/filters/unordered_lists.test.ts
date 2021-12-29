@@ -17,13 +17,13 @@ import {
   ObjectType, ElemID, InstanceElement, Element, isInstanceElement, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
-import ZuoraClient from '../../src/client/client'
+import ZendeskClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
 import { ZENDESK_SUPPORT } from '../../src/constants'
 import filterCreator from '../../src/filters/unordered_lists'
 
 describe('Unordered lists filter', () => {
-  let client: ZuoraClient
+  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType
 
@@ -97,7 +97,7 @@ describe('Unordered lists filter', () => {
   let elements: Element[]
 
   beforeAll(async () => {
-    client = new ZuoraClient({
+    client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
     filter = filterCreator({

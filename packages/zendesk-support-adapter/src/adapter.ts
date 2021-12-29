@@ -35,6 +35,7 @@ import changeValidator from './change_validator'
 import { paginate } from './client/pagination'
 import fieldReferencesFilter, { fieldNameToTypeMappingDefs } from './filters/field_references'
 import unorderedListsFilter from './filters/unordered_lists'
+import viewsFilter from './filters/views'
 import defaultDeployFilter from './filters/default_deploy'
 
 const log = logger(module)
@@ -47,6 +48,7 @@ export const DEFAULT_FILTERS = [
   fieldReferencesFilter,
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,
+  viewsFilter,
   // defaultDeployFilter should be last!
   defaultDeployFilter,
 ]

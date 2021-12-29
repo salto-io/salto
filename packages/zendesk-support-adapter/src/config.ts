@@ -175,6 +175,11 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       },
     },
   },
+  view__execution__custom_fields: {
+    transformation: {
+      fieldsToHide: FIELDS_TO_HIDE.filter(field => field.fieldName !== 'id'),
+    },
+  },
   trigger: {
     transformation: {
       sourceTypeName: 'triggers__triggers',

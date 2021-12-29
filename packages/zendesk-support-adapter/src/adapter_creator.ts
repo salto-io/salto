@@ -20,8 +20,7 @@ import ZendeskAdapter from './adapter'
 import { Credentials, oauthAccessTokenCredentialsType, oauthRequestParametersType, usernamePasswordCredentialsType } from './auth'
 import {
   configType, ZendeskConfig, CLIENT_CONFIG, FETCH_CONFIG, validateFetchConfig,
-  API_DEFINITIONS_CONFIG,
-  DEFAULT_CONFIG,
+  API_DEFINITIONS_CONFIG, DEFAULT_CONFIG,
 } from './config'
 import ZendeskClient from './client/client'
 import { createConnection } from './client/connection'

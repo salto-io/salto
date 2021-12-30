@@ -834,8 +834,17 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
   Workflow: {
     transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'name', fieldType: 'string' },
+        { fieldName: 'entityId', fieldType: 'string' },
+      ],
       idFields: ['id.name'],
       serviceIdField: 'entityId',
+      fieldsToHide: [
+        {
+          fieldName: 'entityId',
+        },
+      ],
       fieldsToOmit: [
         { fieldName: 'created' },
         { fieldName: 'updated' },

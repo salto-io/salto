@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { JIRA } from '../../src/constants'
 import workflowFilter from '../../src/filters/workflow/workflow'
@@ -33,7 +33,7 @@ describe('workflowFilter', () => {
     }) as typeof filter
   })
 
-  it('should split the id field to entityId and name in Workflow type', async () => {
+  it('should delete the id field in Workflow type', async () => {
     const workflowIdType = new ObjectType({
       elemID: new ElemID(JIRA, 'WorkflowId'),
       fields: {
@@ -45,12 +45,9 @@ describe('workflowFilter', () => {
         },
       },
     })
-    workflowType.fields.name = new Field(workflowType, 'id', workflowIdType)
+    workflowType.fields.id = new Field(workflowType, 'id', workflowIdType)
     await filter.onFetch([workflowType])
     expect(workflowType.fields.id).toBeUndefined()
-    expect(workflowType.fields.entityId.annotations)
-      .toEqual({ [CORE_ANNOTATIONS.HIDDEN_VALUE]: true })
-    expect(workflowType.fields.name).toBeDefined()
   })
 
   it('should set the properties field in WorkflowStatus', async () => {

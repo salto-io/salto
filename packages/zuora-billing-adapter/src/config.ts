@@ -655,7 +655,6 @@ export const DEFAULT_SETTINGS_INCLUDE_TYPES = [
   'DiscountSettings',
   'DocPrefix',
   'FxCurrency',
-  'GatewayResponse',
   'GetTaxCompanies',
   'GlSegments',
   'HostedPaymentPages',

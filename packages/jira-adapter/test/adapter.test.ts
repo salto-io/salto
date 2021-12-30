@@ -158,6 +158,20 @@ describe('adapter', () => {
 
       expect((getChangeElement(appliedChanges[0]) as InstanceElement)?.value.id).toEqual(2)
     })
+    it('should not add the new id on addition if received an invalid response', async () => {
+      deployChangeMock.mockResolvedValue([])
+      const instance = new InstanceElement('instance', new ObjectType({ elemID: new ElemID(JIRA, 'obj') }))
+      const { appliedChanges } = await adapter.deploy({
+        changeGroup: {
+          groupID: 'group',
+          changes: [
+            toChange({ after: instance }),
+          ],
+        },
+      })
+
+      expect((getChangeElement(appliedChanges[0]) as InstanceElement)?.value.id).toBeUndefined()
+    })
   })
   describe('deployModifiers', () => {
     it('should have change validator', () => {

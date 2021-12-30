@@ -194,10 +194,11 @@ export default class JiraAdapter implements AdapterOperations {
 
     const { deployResult: { appliedChanges, errors } } = await runner.deploy(changesToDeploy)
 
-    await runner.onDeploy(appliedChanges)
+    const changesToReturn = [...appliedChanges]
+    await runner.onDeploy(changesToReturn)
 
     return {
-      appliedChanges,
+      appliedChanges: changesToReturn,
       errors,
     }
   }

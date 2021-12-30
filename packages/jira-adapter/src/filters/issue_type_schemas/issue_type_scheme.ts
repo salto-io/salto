@@ -16,13 +16,17 @@
 import { BuiltinTypes, CORE_ANNOTATIONS, Field, getChangeElement, InstanceElement, isInstanceChange, isInstanceElement, isModificationChange, isObjectType, ModificationChange, ObjectType } from '@salto-io/adapter-api'
 import { resolveChangeElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+import { promises } from '@salto-io/lowerdash'
 import { getLookUpName } from '../../references'
 import JiraClient from '../../client/client'
 import { JiraConfig } from '../../config'
 import { deployChange } from '../../deployment'
 import { FilterCreator } from '../../filter'
 
-const deployIssueTypeIdsRemovalAndAdditions = async (
+const ISSUE_TYPE_SCHEMA_NAME = 'IssueTypeScheme'
+const MAX_CONCURRENT_PROMISES = 20
+
+const deployNewAndDeletedIssueTypeIds = async (
   change: ModificationChange<InstanceElement>,
   client: JiraClient,
 ): Promise<void> => {
@@ -44,10 +48,13 @@ const deployIssueTypeIdsRemovalAndAdditions = async (
     })
   }
 
-  await Promise.all(Array.from(idsToRemove).map(id =>
-    client.delete({
-      url: `/rest/api/3/issuetypescheme/${instance.value.issueTypeSchemeId}/issuetype/${id}`,
-    })))
+  await promises.array.withLimitedConcurrency(
+    Array.from(idsToRemove).map(id => () =>
+      client.delete({
+        url: `/rest/api/3/issuetypescheme/${instance.value.issueTypeSchemeId}/issuetype/${id}`,
+      })),
+    MAX_CONCURRENT_PROMISES,
+  )
 }
 
 const deployIssueTypeIdsOrder = async (
@@ -77,13 +84,16 @@ const deployIssueTypeSchema = async (
   config: JiraConfig,
 ): Promise<void> => {
   await deployChange(change, client, config.apiDefinitions, ['issueTypeIds'])
-  await deployIssueTypeIdsRemovalAndAdditions(change, client)
+  await deployNewAndDeletedIssueTypeIds(change, client)
   await deployIssueTypeIdsOrder(change, client)
 }
 
 const filter: FilterCreator = ({ config, client }) => ({
   onFetch: async elements => {
-    const issueTypeSchemaType = elements.find(element => isObjectType(element) && element.elemID.name === 'IssueTypeScheme') as ObjectType | undefined
+    const issueTypeSchemaType = elements.find(
+      element => isObjectType(element)
+        && element.elemID.name === ISSUE_TYPE_SCHEMA_NAME
+    ) as ObjectType | undefined
     if (issueTypeSchemaType !== undefined) {
       issueTypeSchemaType.fields.issueTypeIds.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
       delete issueTypeSchemaType.fields.id
@@ -92,7 +102,7 @@ const filter: FilterCreator = ({ config, client }) => ({
 
     elements
       .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === 'IssueTypeScheme')
+      .filter(instance => instance.elemID.typeName === ISSUE_TYPE_SCHEMA_NAME)
       .forEach(instance => {
         instance.value.issueTypeSchemeId = instance.value.id
         delete instance.value.id
@@ -101,7 +111,9 @@ const filter: FilterCreator = ({ config, client }) => ({
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
-      change => isInstanceChange(change) && isModificationChange(change) && getChangeElement(change).elemID.typeName === 'IssueTypeScheme'
+      change => isInstanceChange(change)
+        && isModificationChange(change)
+        && getChangeElement(change).elemID.typeName === ISSUE_TYPE_SCHEMA_NAME
     )
 
     const result = await Promise.all(relevantChanges

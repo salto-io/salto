@@ -91,7 +91,7 @@ describe('mergeWithHidden', () => {
     })
   })
 
-  describe('when parent value were deleted', () => {
+  describe('when the parent value in the workspace is not an object', () => {
     let result: MergeResult
     beforeEach(async () => {
       const innerType = new ObjectType({
@@ -110,19 +110,32 @@ describe('mergeWithHidden', () => {
       const type = new ObjectType({
         elemID: new ElemID('adapter', 'type'),
         fields: {
-          obj: { refType: innerType },
+          obj1: { refType: innerType },
+          obj2: { refType: innerType },
+          obj3: { refType: innerType },
+          obj4: { refType: innerType },
         },
       })
 
       const stateInstance = new InstanceElement(
         'instance',
         type,
-        { obj: { hidden: 'hidden', notHidden: 'notHidden' } },
+        {
+          obj1: { hidden: 'hidden', notHidden: 'notHidden' },
+          obj2: { hidden: 'hidden', notHidden: 'notHidden' },
+          obj3: { hidden: 'hidden', notHidden: 'notHidden' },
+          obj4: { hidden: 'hidden', notHidden: 'notHidden' },
+        },
       )
 
       const workspaceInstance = new InstanceElement(
         'instance',
         type,
+        {
+          obj2: 2,
+          obj3: [],
+          obj4: { notHidden: 'notHidden2' },
+        }
       )
 
       result = await mergeWithHidden(
@@ -133,10 +146,14 @@ describe('mergeWithHidden', () => {
     it('should not have merge errors', async () => {
       expect(await awu(result.errors.values()).flat().toArray()).toHaveLength(0)
     })
-    it('should not add the hidden value to the instance', async () => {
+    it('should not add the hidden value to the instance when parent value is not an object', async () => {
       const instance = (await awu(result.merged.values())
         .find(isInstanceElement)) as InstanceElement
-      expect(instance.value).toEqual({})
+      expect(instance.value).toEqual({
+        obj2: 2,
+        obj3: [],
+        obj4: { hidden: 'hidden', notHidden: 'notHidden2' },
+      })
     })
   })
 

@@ -66,6 +66,8 @@ export const getElementHiddenParts = async <T extends Element>(
         const parentPath = path.createParentID()
         if (!parentPath.isBaseID() && workspaceElement !== undefined) {
           const workspaceValue = resolvePath(workspaceElement, parentPath)
+          // If the parent value is not an object, (e.g., deleted or replaced with a primitive),
+          // we don't want to merge hidden values from state
           if (!_.isPlainObject(workspaceValue)) {
             return undefined
           }
@@ -115,10 +117,7 @@ export const getElementHiddenParts = async <T extends Element>(
       // Keep traversing as long as we might reach nested hidden parts.
       // Note: it is ok to check isAncestorOfHiddenPath before isNestedHiddenPath, because there is
       // no overlap between ancestorsOfHiddenPaths and hiddenPaths
-      path !== undefined
-        && (
-          isAncestorOfHiddenPath(path) || isNestedHiddenPath(path)
-        )
+      path !== undefined && (isAncestorOfHiddenPath(path) || isNestedHiddenPath(path))
         ? value
         : undefined
     ),

@@ -362,7 +362,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       recurseInto: [
         {
           type: 'PageBeanIssueTypeSchemeMapping',
-          toField: 'issueTypes',
+          toField: 'issueTypeIds',
           context: [{ name: 'schemeId', fromField: 'id' }],
         },
       ],
@@ -381,12 +381,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   IssueTypeScheme: {
     transformation: {
-      fieldTypeOverrides: [{ fieldName: 'issueTypes', fieldType: 'list<IssueTypeSchemeMapping>' }],
-      fieldsToHide: [
-        {
-          fieldName: 'id',
-        },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'issueTypeIds', fieldType: 'list<IssueTypeSchemeMapping>' }],
+      serviceIdField: 'issueTypeSchemeId',
     },
     deployRequests: {
       add: {
@@ -396,16 +392,10 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       modify: {
         url: '/rest/api/3/issuetypescheme/{issueTypeSchemeId}',
         method: 'put',
-        urlParamsToFields: {
-          issueTypeSchemeId: 'id',
-        },
       },
       remove: {
         url: '/rest/api/3/issuetypescheme/{issueTypeSchemeId}',
         method: 'delete',
-        urlParamsToFields: {
-          issueTypeSchemeId: 'id',
-        },
       },
     },
   },

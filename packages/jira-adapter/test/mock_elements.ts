@@ -61,7 +61,7 @@ const issueTypeSchemeMappingType = new ObjectType({
 const issueTypeSchemeType = new ObjectType({
   elemID: new ElemID(JIRA, 'IssueTypeScheme'),
   fields: {
-    issueTypes: { refType: new ListType(issueTypeSchemeMappingType) },
+    issueTypeIds: { refType: new ListType(issueTypeSchemeMappingType) },
   },
 })
 
@@ -115,7 +115,7 @@ export const instanceCreators = {
     new InstanceElement(
       name,
       mockTypes.IssueTypeScheme,
-      { issueTypes: issueTypesReferences.map(reference => ({ issueTypeId: reference })) }
+      { issueTypeIds: issueTypesReferences.map(reference => ({ issueTypeId: reference })) }
     ),
   issueTypeScreenScheme: (id: string, name = 'mockIssueTypeScreenScheme') =>
     new InstanceElement(

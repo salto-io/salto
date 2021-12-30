@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, Change, PostFetchOptions } from '@salto-io/adapter-api'
+import { Element, Change, PostFetchOptions, DeployResult } from '@salto-io/adapter-api'
 import { types, promises, values, collections, objects } from '@salto-io/lowerdash'
 
 const { awu } = collections.asynciterable
@@ -32,10 +32,7 @@ export type Filter<T extends FilterResult | void, DeployInfo=void> = Partial<{
   onFetch(elements: Element[]): Promise<T | void>
   preDeploy(changes: Change[]): Promise<void>
   deploy(changes: Change[]): Promise<{
-    deployResult: {
-      appliedChanges: Change[]
-      errors: Error[]
-    }
+    deployResult: DeployResult
     leftoverChanges: Change[]
   }>
   onDeploy(changes: Change[], deployInfo: DeployInfo): Promise<void>
@@ -101,8 +98,8 @@ export const filtersRunner = <
         },
         {
           deployResult: {
-            appliedChanges: [] as Change[],
-            errors: [] as Error[],
+            appliedChanges: [] as ReadonlyArray<Change>,
+            errors: [] as ReadonlyArray<Error>,
           },
           leftoverChanges: changes,
         }

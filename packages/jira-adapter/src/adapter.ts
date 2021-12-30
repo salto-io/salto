@@ -30,7 +30,7 @@ import issueTypeSchemeReferences from './filters/issue_type_schemas/issue_type_s
 import issueTypeSchemeFilter from './filters/issue_type_schemas/issue_type_scheme'
 import authenticatedPermissionFilter from './filters/authenticated_permission'
 import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
-import deployFilter from './filters/deploy'
+import defaultDeployFilter from './filters/default_deploy'
 import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
 
@@ -52,7 +52,8 @@ export const DEFAULT_FILTERS = [
   overrideProjectSchemeFieldsTypes,
   hiddenValuesInListsFilter,
   fieldReferences,
-  deployFilter,
+  // Must be last
+  defaultDeployFilter,
 ]
 
 export interface JiraAdapterParams {
@@ -193,10 +194,11 @@ export default class JiraAdapter implements AdapterOperations {
 
     const { deployResult: { appliedChanges, errors } } = await runner.deploy(changesToDeploy)
 
-    await runner.onDeploy(appliedChanges)
+    const changesToReturn = [...appliedChanges]
+    await runner.onDeploy(changesToReturn)
 
     return {
-      appliedChanges,
+      appliedChanges: changesToReturn,
       errors,
     }
   }

@@ -91,6 +91,131 @@ describe('mergeWithHidden', () => {
     })
   })
 
+  describe('when the parent value in the workspace is not an object', () => {
+    let result: MergeResult
+    beforeEach(async () => {
+      const innerType = new ObjectType({
+        elemID: new ElemID('test', 'inner'),
+        fields: {
+          hidden: {
+            refType: BuiltinTypes.STRING,
+            annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+          },
+          notHidden: {
+            refType: BuiltinTypes.STRING,
+          },
+        },
+      })
+
+      const type = new ObjectType({
+        elemID: new ElemID('adapter', 'type'),
+        fields: {
+          obj1: { refType: innerType },
+          obj2: { refType: innerType },
+          obj3: { refType: innerType },
+          obj4: { refType: innerType },
+        },
+      })
+
+      const stateInstance = new InstanceElement(
+        'instance',
+        type,
+        {
+          obj1: { hidden: 'hidden', notHidden: 'notHidden' },
+          obj2: { hidden: 'hidden', notHidden: 'notHidden' },
+          obj3: { hidden: 'hidden', notHidden: 'notHidden' },
+          obj4: { hidden: 'hidden', notHidden: 'notHidden' },
+        },
+      )
+
+      const workspaceInstance = new InstanceElement(
+        'instance',
+        type,
+        {
+          obj2: 2,
+          obj3: [],
+          obj4: { notHidden: 'notHidden2' },
+        }
+      )
+
+      result = await mergeWithHidden(
+        awu([workspaceInstance, type, innerType]),
+        createInMemoryElementSource([stateInstance, type, innerType]),
+      )
+    })
+    it('should not have merge errors', async () => {
+      expect(await awu(result.errors.values()).flat().toArray()).toHaveLength(0)
+    })
+    it('should not add the hidden value to the instance when parent value is not an object', async () => {
+      const instance = (await awu(result.merged.values())
+        .find(isInstanceElement)) as InstanceElement
+      expect(instance.value).toEqual({
+        obj2: 2,
+        obj3: [],
+        obj4: { hidden: 'hidden', notHidden: 'notHidden2' },
+      })
+    })
+  })
+
+  describe('when a reference is pointing a value with hidden value', () => {
+    let result: MergeResult
+    beforeEach(async () => {
+      const innerType = new ObjectType({
+        elemID: new ElemID('test', 'inner'),
+        fields: {
+          hidden: {
+            refType: BuiltinTypes.STRING,
+            annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+          },
+        },
+      })
+
+      const type = new ObjectType({
+        elemID: new ElemID('adapter', 'type'),
+        fields: {
+          obj: { refType: innerType },
+          ref: { refType: innerType },
+        },
+      })
+
+      const stateInstance = new InstanceElement(
+        'instance',
+        type,
+        {
+          obj: { hidden: 'hidden' },
+          ref: { hidden: 'hidden' },
+        }
+      )
+
+      const workspaceInstance = new InstanceElement(
+        'instance',
+        type,
+        {
+          obj: {},
+          ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance', 'obj')),
+        }
+      )
+
+      result = await mergeWithHidden(
+        awu([workspaceInstance, type, innerType]),
+        createInMemoryElementSource([stateInstance, type, innerType]),
+      )
+    })
+    it('should not have merge errors', async () => {
+      expect(await awu(result.errors.values()).flat().toArray()).toHaveLength(0)
+    })
+    it('should not change the reference', async () => {
+      const instance = (await awu(result.merged.values())
+        .find(isInstanceElement)) as InstanceElement
+      expect(instance.value.ref).toBeInstanceOf(ReferenceExpression)
+    })
+    it('should add the hidden value to the non reference value', async () => {
+      const instance = (await awu(result.merged.values())
+        .find(isInstanceElement)) as InstanceElement
+      expect(instance.value.obj).toEqual({ hidden: 'hidden' })
+    })
+  })
+
   describe('hidden_string in instance annotation', () => {
     let result: MergeResult
     beforeEach(async () => {

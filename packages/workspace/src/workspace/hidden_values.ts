@@ -63,9 +63,10 @@ export const getElementHiddenParts = async <T extends Element>(
   const storeHiddenPaths: TransformFunc = async ({ value, field, path }) => {
     if (await hiddenFunc(field, elementsSource)) {
       if (path !== undefined) {
-        if (workspaceElement !== undefined) {
-          const workspaceValue = resolvePath(workspaceElement, path.createParentID())
-          if (workspaceValue === undefined || isReferenceExpression(workspaceValue)) {
+        const parentPath = path.createParentID()
+        if (!parentPath.isBaseID() && workspaceElement !== undefined) {
+          const workspaceValue = resolvePath(workspaceElement, parentPath)
+          if (!_.isPlainObject(workspaceValue)) {
             return undefined
           }
         }

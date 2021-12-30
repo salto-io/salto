@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, DetailedChange, ReferenceExpression } from '@salto-io/adapter-api'
+import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, DetailedChange, ReferenceExpression, Field } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
@@ -264,12 +264,23 @@ describe('api.ts', () => {
         expect(changes[0].change.action).toEqual('add')
         expect(changes[0].change.id).toEqual(addedElem.elemID.createNestedID('attr', 'test'))
       })
+      it('should return the applied changes', () => {
+        expect(result.appliedChanges).toHaveLength(2)
+        const [addedChange, removedChange] = result.appliedChanges ?? []
+        expect(addedChange.action).toEqual('add')
+        expect(removedChange.action).toEqual('remove')
+      })
     })
     describe('with field changes', () => {
       let changedElement: ObjectType
+      let expectedRemovedField: Field
+      let expectedOriginalField: Field
+      let expectedChangedField: Field
       beforeAll(async () => {
         const origElement = mockElements.getAllElements().find(isObjectType) as ObjectType
         const [removedField, origField] = Object.values(origElement.fields)
+        expectedRemovedField = removedField
+        expectedOriginalField = origField
         changedElement = new ObjectType({
           ...origElement,
           annotationRefsOrTypes: origElement.annotationRefTypes,
@@ -277,6 +288,7 @@ describe('api.ts', () => {
         })
         const changedField = changedElement.fields[origField.name]
         changedField.annotations.test = 1
+        expectedChangedField = changedField
         const actionPlan = mockPlan.createPlan(
           [[
             { action: 'remove', data: { before: removedField } },
@@ -290,6 +302,16 @@ describe('api.ts', () => {
       it('should set updated top level element to state', async () => {
         const stateElement = await ws.state().get(changedElement.elemID)
         expect(stateElement).toEqual(changedElement)
+      })
+      it('should return the applied changes', () => {
+        expect(result.appliedChanges).toHaveLength(2)
+        const [removeAppliedChange, modifyAppliedChange] = result.appliedChanges ?? []
+        expect(removeAppliedChange?.action).toEqual('remove')
+        expect(removeAppliedChange?.data).toEqual({ before: expectedRemovedField })
+        expect(modifyAppliedChange?.action).toEqual('modify')
+        expect(modifyAppliedChange?.data).toEqual(
+          { before: expectedOriginalField, after: expectedChangedField }
+        )
       })
     })
     describe('with partial success from the adapter', () => {
@@ -332,6 +354,14 @@ describe('api.ts', () => {
       })
       it('should return success false for the overall deploy', () => {
         expect(result.success).toBeFalsy()
+      })
+      it('should return applied changes for the overall deploy', () => {
+        expect(result.appliedChanges).toHaveLength(1)
+        const appliedChanges = [...(result.appliedChanges ?? [])].filter(isModificationChange)
+        expect(appliedChanges).toHaveLength(1)
+        const [appliedChange] = appliedChanges
+        expect(appliedChange?.action).toEqual('modify')
+        expect(appliedChange?.data?.after).toEqual(existingEmployee)
       })
       it('should update state with applied change', () => {
         expect(stateSet).toHaveBeenCalledWith(existingEmployee)

@@ -16,7 +16,7 @@
 import path from 'path'
 import { stack } from '@salto-io/lowerdash'
 import { safe as safeColors } from './colors'
-import quickHash, { MIN_HASH, MAX_HASH } from './quickhash'
+import quickHash, { MAX_HASH, MIN_HASH } from './quickhash'
 
 // Partial of ES6 Module
 export type LoggingModule = {
@@ -32,7 +32,9 @@ const parentDir = (numLevels: number): string => path.normalize(
   path.join(__dirname, ...Array(numLevels).fill('..'))
 )
 
-const MONOREPO_PACKAGES_DIRNAME = parentDir(4)
+const MONOREPO_PACKAGES_DIRNAME = module.filename.endsWith('.ts')
+  ? parentDir(3)
+  : parentDir(4)
 
 const usableNamespaceColors = safeColors.map(c => c.hexString)
 
@@ -63,7 +65,7 @@ const fromFilename = (
 ): Namespace => path.relative(MONOREPO_PACKAGES_DIRNAME, filename)
   .replace(/.*:/, '') // remove 'var/task/webpack:' prefix
   .replace(/^\//, '') // remove '/' prefix
-  .replace(/dist\/((src)\/)?/, '')
+  .replace(/([^/]+)\/(dist\/src|dist|src)/, '$1') // remove src directory
   .replace(/\.[^.]+$/, '') // remove extension
   .replace(/\/{2}/g, '/') // normalize double slashes to single
 

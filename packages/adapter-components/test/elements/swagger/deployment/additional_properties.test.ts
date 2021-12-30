@@ -93,4 +93,36 @@ describe('flattenAdditionalProperties', () => {
       key: 'value',
     })
   })
+
+  it('Should not change additional properties if its type is not a map', async () => {
+    const typeWithCreatableProperties = new ObjectType({
+      elemID: new ElemID('adapter', 'type1'),
+      fields: {
+        additionalProperties: {
+          refType: BuiltinTypes.STRING,
+          annotations: {
+            [CORE_ANNOTATIONS.CREATABLE]: true,
+          },
+        },
+      },
+    })
+
+
+    const instance = new InstanceElement(
+      'instance',
+      typeWithCreatableProperties,
+      {
+        additionalProperties: {
+          key: 'value',
+        },
+      }
+    )
+
+    const flattenedChange = await flattenAdditionalProperties(toChange({ after: instance }))
+    expect(getChangeElement(flattenedChange).value).toEqual({
+      additionalProperties: {
+        key: 'value',
+      },
+    })
+  })
 })

@@ -13,10 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ActionName, Change, InstanceElement, isObjectType, ObjectType, Values } from '@salto-io/adapter-api'
+import { ActionName, Change, InstanceElement, isMapType, isObjectType, ObjectType, Values } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, transformElement } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { OPERATION_TO_ANNOTATION } from '../../../deployment/annotations'
+
+const log = logger(module)
 
 
 const removeAdditionalPropertiesFlat = async (
@@ -25,14 +28,25 @@ const removeAdditionalPropertiesFlat = async (
   action: ActionName
 ): Promise<void> => {
   const additionalPropertiesField = type.fields.additionalProperties
-  if (additionalPropertiesField === undefined) {
+  if (additionalPropertiesField === undefined
+    || !isMapType(await additionalPropertiesField.getType())) {
     return
   }
 
   const deploymentAnnotationValue = additionalPropertiesField
     .annotations[OPERATION_TO_ANNOTATION[action]]
-  if (deploymentAnnotationValue || deploymentAnnotationValue === undefined) {
-    _.assign(values, values.additionalProperties ?? {})
+  if (
+    (deploymentAnnotationValue === true || deploymentAnnotationValue === undefined)
+      && values.additionalProperties !== undefined
+  ) {
+    const objectKeys = new Set(Object.keys(values))
+    const commonKeys = Object
+      .keys(values.additionalProperties)
+      .filter(key => objectKeys.has(key))
+    if (commonKeys.length !== 0) {
+      log.warn(`additional properties of type ${type.elemID.getFullName()} have common keys with the rest of the instance and will override them: ${commonKeys.join(', ')}`)
+    }
+    _.assign(values, values.additionalProperties)
     delete values.additionalProperties
   }
 }

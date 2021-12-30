@@ -20,12 +20,13 @@ import {
   ChangeValidator, Change, ChangeError, DependencyChanger, ChangeGroupIdFunction, getChangeElement,
   isAdditionOrRemovalChange, isFieldChange, ReadOnlyElementsSource, ElemID, isVariable,
   Value, isReferenceExpression, compareSpecialValues, BuiltinTypesByFullName, isAdditionChange,
-  isModificationChange, isRemovalChange, InstanceElement,
+  isModificationChange, isRemovalChange, InstanceElement, PlaceholderObjectType,
 } from '@salto-io/adapter-api'
 import { DataNodeMap, DiffNode, DiffGraph, Group, GroupDAG, DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import { expressions, elementSource } from '@salto-io/workspace'
 import { collections, values } from '@salto-io/lowerdash'
+import { transformValues } from '@salto-io/adapter-utils'
 import { PlanItem, addPlanItemAccessors, PlanItemId } from './plan_item'
 import { buildGroupedGraphFromDiffGraph, getCustomGroupIds } from './group'
 import { filterInvalidChanges } from './filter'
@@ -39,6 +40,33 @@ const { resolve, resolveReferenceExpression } = expressions
 const log = logger(module)
 
 export type IDFilter = (id: ElemID) => boolean | Promise<boolean>
+
+const shouldResolve = (value: Value): boolean => isReferenceExpression(value)
+  && (!(value.elemID.isTopLevel() || value.elemID.idType === 'field')
+    || value.elemID.idType === 'var')
+  && value.value === undefined
+
+
+const resolveRef = async (
+  valueToResolve: Value,
+  src: ReadOnlyElementsSource,
+): Promise<Value> => (shouldResolve(valueToResolve) ? transformValues({
+  values: valueToResolve,
+  type: new PlaceholderObjectType({ elemID: new ElemID('adapter', 'placeholder') }),
+  strict: false,
+  allowEmpty: true,
+  transformFunc: async ({ value }) => {
+    if (shouldResolve(value)) {
+      const resolvedValue = await resolveReferenceExpression(value, src, {})
+      if (isReferenceExpression(resolvedValue)) {
+        return resolvedValue.value
+      }
+      return resolvedValue
+    }
+    return value
+  },
+}) : valueToResolve)
+
 /**
  * Check if 2 nodes in the DAG are equals or not
  */
@@ -48,17 +76,8 @@ const compareValuesAndLazyResolveRefs = async (
   firstSrc: ReadOnlyElementsSource,
   secondSrc: ReadOnlyElementsSource
 ): Promise<boolean> => {
-  const shouldResolve = (value: Value): boolean => isReferenceExpression(value)
-    && (!(value.elemID.isTopLevel() || value.elemID.idType === 'field')
-      || value.elemID.idType === 'var')
-    && value.value === undefined
-
-  const resolvedFirst = shouldResolve(first)
-    ? await resolveReferenceExpression(first, firstSrc, {})
-    : first
-  const resolvedSecond = shouldResolve(second)
-    ? await resolveReferenceExpression(second, secondSrc, {})
-    : second
+  const resolvedFirst = await resolveRef(first, firstSrc)
+  const resolvedSecond = await resolveRef(second, secondSrc)
   const specialCompareRes = compareSpecialValues(resolvedFirst, resolvedSecond)
   if (values.isDefined(specialCompareRes)) {
     return specialCompareRes
@@ -94,7 +113,7 @@ const compareValuesAndLazyResolveRefs = async (
       )
     )
   }
-  return _.isEqual(first, second)
+  return _.isEqual(resolvedFirst, resolvedSecond)
 }
 /**
  * Check if 2 nodes in the DAG are equals or not

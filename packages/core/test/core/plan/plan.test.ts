@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { InstanceElement, getChangeElement, isInstanceElement, ChangeGroupIdFunction } from '@salto-io/adapter-api'
+import { InstanceElement, getChangeElement, isInstanceElement, ChangeGroupIdFunction, ElemID, ObjectType, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import * as mock from '../../common/elements'
 import { getFirstPlanItem, getChange } from '../../common/plan'
@@ -180,5 +180,49 @@ describe('getPlan', () => {
     it('should not call adapter functions that have no changes', () => {
       expect(dummyGroupKeyFunc).not.toHaveBeenCalled()
     })
+  })
+
+  it('when instances have inner references and there is no change should create empty plan', async () => {
+    const innerType = new ObjectType({
+      elemID: new ElemID('adapter', 'inner'),
+      fields: {
+        inner: { refType: BuiltinTypes.STRING },
+      },
+    })
+
+    const type = new ObjectType({
+      elemID: new ElemID('adapter', 'type'),
+      fields: {
+        ref: { refType: innerType },
+        inner: { refType: innerType },
+        value: { refType: BuiltinTypes.STRING },
+      },
+    })
+
+    const instance = new InstanceElement(
+      'instance',
+      type,
+      {
+        value: 'some value',
+        inner: { inner: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance', 'value')) },
+        ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance', 'inner')),
+      }
+    )
+
+    const stateInstance = new InstanceElement(
+      'instance',
+      type,
+      {
+        value: 'some value',
+        inner: { inner: 'some value' },
+        ref: { inner: 'some value' },
+      }
+    )
+
+    const plan = await getPlan({
+      before: createElementSource([stateInstance, type, innerType]),
+      after: createElementSource([instance, type, innerType]),
+    })
+    expect(plan.size).toBe(0)
   })
 })

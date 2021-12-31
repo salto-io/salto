@@ -13,18 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { toChange, ObjectType, ElemID } from '@salto-io/adapter-api'
-import changeValidator from '../src/change_validator'
+import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { config as configUtils } from '@salto-io/adapter-components'
+import createChangeValidator from '../src/change_validator'
 import { ZENDESK_SUPPORT } from '../src/constants'
 
 describe('change validator creator', () => {
   describe('deployNotSupportedValidator', () => {
     it('should not fail if there are no deploy changes', async () => {
-      expect(await changeValidator([])).toEqual([])
+      expect(await createChangeValidator({} as unknown as configUtils.AdapterDuckTypeApiConfig)([]))
+        .toEqual([])
     })
 
     it('should fail each change individually', async () => {
-      expect(await changeValidator([
+      expect(await createChangeValidator({} as unknown as configUtils.AdapterDuckTypeApiConfig)([
         toChange({ after: new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'obj') }) }),
         toChange({ before: new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'obj2') }) }),
       ])).toEqual([
@@ -39,6 +41,28 @@ describe('change validator creator', () => {
           severity: 'Error',
           message: 'Deployment of non-instance elements is not supported in adapter zendesk_support',
           detailedMessage: 'Salto does not support deployment of zendesk_support.obj2',
+        },
+      ])
+    })
+  })
+  describe('checkDeploymentBasedOnConfigValidator', () => {
+    it('should fail each change individually', async () => {
+      const type = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'obj') })
+      expect(await createChangeValidator({} as unknown as configUtils.AdapterDuckTypeApiConfig)([
+        toChange({ after: new InstanceElement('inst1', type) }),
+        toChange({ before: new InstanceElement('inst2', type) }),
+      ])).toEqual([
+        {
+          elemID: new ElemID(ZENDESK_SUPPORT, 'obj', 'instance', 'inst1'),
+          severity: 'Error',
+          message: 'Operation not supported',
+          detailedMessage: 'Salto does not support "add" of zendesk_support.obj.instance.inst1',
+        },
+        {
+          elemID: new ElemID(ZENDESK_SUPPORT, 'obj', 'instance', 'inst2'),
+          severity: 'Error',
+          message: 'Operation not supported',
+          detailedMessage: 'Salto does not support "remove" of zendesk_support.obj.instance.inst2',
         },
       ])
     })

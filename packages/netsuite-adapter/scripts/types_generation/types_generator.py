@@ -547,6 +547,7 @@ inner_types_to_export = {
     'usereventscript_scriptdeployments',
     'workflowactionscript_scriptdeployments',
     'customrecordtype_permissions_permission',
+    'workflow_workflowstates_workflowstate_workflowactions',
 }
 
 should_not_be_required = {

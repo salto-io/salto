@@ -70,7 +70,7 @@ describe('invalid values validator', () => {
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Error')
-    expect(changeErrors[0].elemID).toEqual(instance.elemID)
+    expect(changeErrors[0].elemID).toEqual(instance.elemID.createNestedID('subsidiaryoption'))
   })
 
   it('should not have error ChangeError when modifying an instance with unchanged invalid value', async () => {

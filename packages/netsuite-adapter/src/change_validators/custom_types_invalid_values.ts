@@ -45,7 +45,7 @@ const invalidValues: InvalidValue[] = [
     value: 'SELECTED',
     error: {
       severity: 'Error',
-      detailedMessage: 'role.subsidiaryoption cannot be deployed with value "SELECTED", please deploy it with another value and edit in NetSuite UI',
+      detailedMessage: 'role.subsidiaryoption cannot be deployed with value "SELECTED", please set a different value and manually edit it via the netsuite UI',
     },
   },
 ]
@@ -71,10 +71,11 @@ const changeValidator: ChangeValidator = async changes => {
         return undefined
       }
 
+      const elemID = instance.elemID.createNestedID(...path)
       return {
         ...error,
-        elemID: instance.elemID,
-        message: `Invalid value in ${typeName}.${path.join('.')}`,
+        elemID,
+        message: `Invalid value in ${elemID.getFullName()}`,
       }
     }).filter(isDefined)
   })

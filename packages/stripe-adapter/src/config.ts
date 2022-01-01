@@ -121,7 +121,7 @@ const ALL_SUPPORTED_TYPES = [
 // noinspection UnnecessaryLocalVariableJS
 export const DEFAULT_INCLUDE_TYPES = ALL_SUPPORTED_TYPES
 
-export const DEFAULT_CONFIG = {
+export const DEFAULT_CONFIG: StripeConfig = {
   [FETCH_CONFIG]: {
     includeTypes: DEFAULT_INCLUDE_TYPES,
   },

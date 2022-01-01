@@ -35,7 +35,7 @@ jest.mock('@salto-io/adapter-components', () => {
   }
 })
 
-describe('Unordered lists filter', () => {
+describe('views filter', () => {
   let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'deploy'>
   let filter: FilterType

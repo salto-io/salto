@@ -517,6 +517,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   ticket_form: {
     transformation: {
       sourceTypeName: 'ticket_forms__ticket_forms',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'position', fieldType: 'number' }),
     },
     deployRequests: {
       add: {
@@ -578,6 +579,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       sourceTypeName: 'user_fields__user_fields',
       idFields: ['key'],
       standaloneFields: [{ fieldName: 'custom_field_options' }],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'position', fieldType: 'number' }),
       fieldTypeOverrides: [
         { fieldName: 'type', fieldType: 'string', restrictions: { enforce_value: true, values: ['checkbox', 'date', 'decimal', 'dropdown', 'integer', 'regexp', 'text', 'textarea'] } },
       ],
@@ -606,11 +608,20 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       },
     },
   },
+  user_field_order: {
+    deployRequests: {
+      modify: {
+        url: '/user_fields/reorder',
+        method: 'put',
+      },
+    },
+  },
   organization_field: {
     transformation: {
       sourceTypeName: 'organization_fields__organization_fields',
       idFields: ['key'],
       standaloneFields: [{ fieldName: 'custom_field_options' }],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'position', fieldType: 'number' }),
       fieldTypeOverrides: [
         { fieldName: 'type', fieldType: 'string', restrictions: { enforce_value: true, values: ['checkbox', 'date', 'decimal', 'dropdown', 'integer', 'regexp', 'text', 'textarea'] } },
       ],
@@ -636,6 +647,14 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
         urlParamsToFields: {
           organizationFieldId: 'id',
         },
+      },
+    },
+  },
+  organization_field_order: {
+    deployRequests: {
+      modify: {
+        url: '/organization_fields/reorder',
+        method: 'put',
       },
     },
   },
@@ -1015,6 +1034,14 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
     transformation: {
       dataField: 'ticket_forms',
+    },
+  },
+  ticket_form_order: {
+    deployRequests: {
+      modify: {
+        url: '/ticket_forms/reorder',
+        method: 'put',
+      },
     },
   },
   // eslint-disable-next-line camelcase

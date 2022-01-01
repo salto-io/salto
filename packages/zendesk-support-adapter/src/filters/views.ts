@@ -15,14 +15,13 @@
 */
 import _ from 'lodash'
 import {
-  Change, getChangeElement, InstanceElement, isAdditionChange, isRemovalChange, Values,
+  Change, getChangeElement, InstanceElement, isRemovalChange, Values,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
-import { deployment as deploymentUtils } from '@salto-io/adapter-components'
 import { values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
-import { getZendeskError } from '../errors'
+import { deployChange } from '../deployment'
 
 const log = logger(module)
 
@@ -37,7 +36,6 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       changes,
       change => getChangeElement(change).elemID.typeName === VIEW_TYPE_NAME,
     )
-    const { deployRequests } = config.apiDefinitions.types[VIEW_TYPE_NAME]
     const result = await Promise.all(
       viewChanges.map(async change => {
         try {
@@ -64,26 +62,13 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
               }
             })
           }
-          const response = await deploymentUtils.deployChange(change, client, deployRequests)
-          if (isAdditionChange(change)) {
-            if (_.isArray(response)) {
-              log.warn(
-                'Received an array for the response of the deploy. Not updating the id of the element. Action: add. ID: %s',
-                getChangeElement(change).elemID.getFullName()
-              )
-            } else {
-              const idValue = (response?.view as Values)?.id
-              if (idValue !== undefined) {
-                getChangeElement(change).value.id = idValue
-              }
-            }
-          }
+          await deployChange(change, client, config.apiDefinitions)
           return change
         } catch (err) {
           if (!_.isError(err)) {
             throw err
           }
-          return getZendeskError(getChangeElement(change).elemID.getFullName(), err)
+          return err
         }
       })
     )

@@ -82,6 +82,32 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     serializationStrategy: 'id',
     target: { type: 'Field' },
   },
+
+  {
+    src: { field: 'date1', parentTypes: ['ValidatorConfiguration'] },
+    serializationStrategy: 'id',
+    target: { type: 'Field' },
+  },
+  {
+    src: { field: 'date2', parentTypes: ['ValidatorConfiguration'] },
+    serializationStrategy: 'id',
+    target: { type: 'Field' },
+  },
+  {
+    src: { field: 'fieldIds', parentTypes: ['ValidatorConfiguration'] },
+    serializationStrategy: 'id',
+    target: { type: 'Field' },
+  },
+  {
+    src: { field: 'fieldId', parentTypes: ['ValidatorConfiguration'] },
+    serializationStrategy: 'id',
+    target: { type: 'Field' },
+  },
+  {
+    src: { field: 'id', parentTypes: ['StatusRef'] },
+    serializationStrategy: 'id',
+    target: { type: 'StatusDetails' },
+  },
 ]
 
 export const getLookUpName = referenceUtils.generateLookupFunc(referencesRules)

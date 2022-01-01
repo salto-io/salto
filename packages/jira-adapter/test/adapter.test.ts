@@ -232,8 +232,8 @@ describe('adapter', () => {
       )
     })
     it('should return all types and instances returned from the infrastructure', () => {
-      // 6 is the number of types we manually generate in Workflow filter
-      expect(result.elements).toHaveLength(3 + 6)
+      // 9 is the number of types we manually generate in Workflow filter
+      expect(result.elements).toHaveLength(3 + 9)
     })
   })
 })

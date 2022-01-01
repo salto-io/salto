@@ -72,7 +72,7 @@ describe('workflowFilter', () => {
     expect(workflowRulesType.fields.conditions).toBeDefined()
   })
 
-  it('should replace postFunctionTypes and return the new types', async () => {
+  it('should replace postFunctions and validators types and and return the new types', async () => {
     const workflowRulesType = new ObjectType({
       elemID: new ElemID(JIRA, 'WorkflowRules'),
       fields: {
@@ -82,12 +82,16 @@ describe('workflowFilter', () => {
         postFunctions: {
           refType: BuiltinTypes.STRING,
         },
+        validators: {
+          refType: BuiltinTypes.STRING,
+        },
       },
     })
     const elements = [workflowRulesType]
     await filter.onFetch(elements)
-    expect(elements).toHaveLength(7)
+    expect(elements).toHaveLength(10)
     expect((await workflowRulesType.fields.postFunctions.getType()).elemID.getFullName()).toBe('List<jira.PostFunction>')
+    expect((await workflowRulesType.fields.validators.getType()).elemID.getFullName()).toBe('List<jira.Validator>')
   })
 
   it('should split the id value to entityId and name in Workflow instances', async () => {
@@ -174,146 +178,294 @@ describe('workflowFilter', () => {
     ])
   })
 
-  it('should remove name from post functions', async () => {
-    const instance = new InstanceElement(
-      'instance',
-      workflowType,
-      {
-        transitions: [
-          {
-            rules: {
-              postFunctions: [
-                {
-                  type: 'FireIssueEventFunction',
-                  configuration: {
-                    event: {
-                      id: '1',
-                      name: 'name',
+  describe('post functions', () => {
+    it('should remove name from post functions', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        workflowType,
+        {
+          transitions: [
+            {
+              rules: {
+                postFunctions: [
+                  {
+                    type: 'FireIssueEventFunction',
+                    configuration: {
+                      event: {
+                        id: '1',
+                        name: 'name',
+                      },
                     },
                   },
-                },
-                {
-                  type: 'FireIssueEventFunction',
-                  configuration: {
-                  },
-                },
-                {
-                  type: 'FireIssueEventFunction',
-                },
-                {
-                  type: 'SetIssueSecurityFromRoleFunction',
-                  configuration: {
-                    projectRole: {
-                      id: '1',
-                      name: 'name',
+                  {
+                    type: 'FireIssueEventFunction',
+                    configuration: {
                     },
                   },
-                },
-                {
-                  type: 'SetIssueSecurityFromRoleFunction',
-                  configuration: {
+                  {
+                    type: 'FireIssueEventFunction',
                   },
-                },
-                {
-                  type: 'SetIssueSecurityFromRoleFunction',
-                },
-              ],
-            },
-          },
-        ],
-      }
-    )
-    await filter.onFetch([instance])
-    expect(instance.value.transitions).toEqual([
-      {
-        rules: {
-          postFunctions: [
-            {
-              type: 'FireIssueEventFunction',
-              configuration: {
-                event: {
-                  id: '1',
-                },
+                  {
+                    type: 'SetIssueSecurityFromRoleFunction',
+                    configuration: {
+                      projectRole: {
+                        id: '1',
+                        name: 'name',
+                      },
+                    },
+                  },
+                  {
+                    type: 'SetIssueSecurityFromRoleFunction',
+                    configuration: {
+                    },
+                  },
+                  {
+                    type: 'SetIssueSecurityFromRoleFunction',
+                  },
+                ],
               },
-            },
-            {
-              type: 'FireIssueEventFunction',
-              configuration: {},
-            },
-            {
-              type: 'FireIssueEventFunction',
-            },
-
-            {
-              type: 'SetIssueSecurityFromRoleFunction',
-              configuration: {
-                projectRole: {
-                  id: '1',
-                },
-              },
-            },
-            {
-              type: 'SetIssueSecurityFromRoleFunction',
-              configuration: {
-              },
-            },
-            {
-              type: 'SetIssueSecurityFromRoleFunction',
             },
           ],
+        }
+      )
+      await filter.onFetch([instance])
+      expect(instance.value.transitions).toEqual([
+        {
+          rules: {
+            postFunctions: [
+              {
+                type: 'FireIssueEventFunction',
+                configuration: {
+                  event: {
+                    id: '1',
+                  },
+                },
+              },
+              {
+                type: 'FireIssueEventFunction',
+                configuration: {},
+              },
+              {
+                type: 'FireIssueEventFunction',
+              },
+
+              {
+                type: 'SetIssueSecurityFromRoleFunction',
+                configuration: {
+                  projectRole: {
+                    id: '1',
+                  },
+                },
+              },
+              {
+                type: 'SetIssueSecurityFromRoleFunction',
+                configuration: {
+                },
+              },
+              {
+                type: 'SetIssueSecurityFromRoleFunction',
+              },
+            ],
+          },
         },
-      },
-    ])
+      ])
+    })
+
+    it('should remove unsupported post functions', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        workflowType,
+        {
+          transitions: [
+            {
+              type: 'initial',
+              rules: {
+                postFunctions: [
+                  { type: 'AssignToCurrentUserFunction' },
+                  { type: 'UpdateIssueStatusFunction' },
+                  { type: 'unsupported' },
+                ],
+              },
+            },
+            {
+              type: 'global',
+              rules: {
+                postFunctions: [
+                  { type: 'AssignToCurrentUserFunction' },
+                  { type: 'UpdateIssueStatusFunction' },
+                  { type: 'unsupported' },
+                ],
+              },
+            },
+          ],
+        }
+      )
+      await filter.onFetch([instance])
+      expect(instance.value.transitions).toEqual([
+        {
+          type: 'initial',
+          rules: {
+            postFunctions: [
+              { type: 'AssignToCurrentUserFunction' },
+              { type: 'UpdateIssueStatusFunction' },
+            ],
+          },
+        },
+        {
+          type: 'global',
+          rules: {
+            postFunctions: [
+              { type: 'AssignToCurrentUserFunction' },
+            ],
+          },
+        },
+      ])
+    })
   })
 
-  it('should remove unsupported post functions', async () => {
-    const instance = new InstanceElement(
-      'instance',
-      workflowType,
-      {
-        transitions: [
-          {
-            type: 'initial',
-            rules: {
-              postFunctions: [
-                { type: 'AssignToCurrentUserFunction' },
-                { type: 'UpdateIssueStatusFunction' },
-                { type: 'unsupported' },
-              ],
+  describe('validators', () => {
+    it('should remove name', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        workflowType,
+        {
+          transitions: [
+            {
+              rules: {
+                validators: [
+                  {
+                    type: 'ParentStatusValidator',
+                    configuration: {
+                      parentStatuses: [{
+                        id: '1',
+                        name: 'name',
+                      }],
+                    },
+                  },
+                  {
+                    type: 'PreviousStatusValidator',
+                    configuration: {
+                      previousStatus: {
+                        id: '1',
+                        name: 'name',
+                      },
+                    },
+                  },
+                  {
+                    type: 'PreviousStatusValidator',
+                  },
+                ],
+              },
             },
+          ],
+        }
+      )
+      await filter.onFetch([instance])
+      expect(instance.value.transitions).toEqual([
+        {
+          rules: {
+            validators: [
+              {
+                type: 'ParentStatusValidator',
+                configuration: {
+                  parentStatuses: [{
+                    id: '1',
+                  }],
+                },
+              },
+              {
+                type: 'PreviousStatusValidator',
+                configuration: {
+                  previousStatus: {
+                    id: '1',
+                  },
+                },
+              },
+              {
+                type: 'PreviousStatusValidator',
+              },
+            ],
           },
-          {
-            type: 'global',
-            rules: {
-              postFunctions: [
-                { type: 'AssignToCurrentUserFunction' },
-                { type: 'UpdateIssueStatusFunction' },
-                { type: 'unsupported' },
-              ],
+        },
+      ])
+    })
+
+    it('should rename fields to fieldIds', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        workflowType,
+        {
+          transitions: [
+            {
+              rules: {
+                validators: [
+                  {
+                    type: 'ParentStatusValidator',
+                    configuration: {
+                      fields: ['1'],
+                      field: '1',
+                    },
+                  },
+                ],
+              },
             },
+          ],
+        }
+      )
+      await filter.onFetch([instance])
+      expect(instance.value.transitions).toEqual([
+        {
+          rules: {
+            validators: [
+              {
+                type: 'ParentStatusValidator',
+                configuration: {
+                  fieldIds: ['1'],
+                  fieldId: '1',
+                },
+              },
+            ],
           },
-        ],
-      }
-    )
-    await filter.onFetch([instance])
-    expect(instance.value.transitions).toEqual([
-      {
-        type: 'initial',
-        rules: {
-          postFunctions: [
-            { type: 'AssignToCurrentUserFunction' },
-            { type: 'UpdateIssueStatusFunction' },
-          ],
         },
-      },
-      {
-        type: 'global',
-        rules: {
-          postFunctions: [
-            { type: 'AssignToCurrentUserFunction' },
+      ])
+    })
+
+    it('should convert windowsDays to number', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        workflowType,
+        {
+          transitions: [
+            {
+              rules: {
+                validators: [
+                  {
+                    type: 'ParentStatusValidator',
+                    configuration: {
+                      windowsDays: '1',
+                    },
+                  },
+                ],
+              },
+            },
           ],
+        }
+      )
+      await filter.onFetch([instance])
+      expect(instance.value.transitions).toEqual([
+        {
+          rules: {
+            validators: [
+              {
+                type: 'ParentStatusValidator',
+                configuration: {
+                  windowsDays: 1,
+                },
+              },
+            ],
+          },
         },
-      },
-    ])
+      ])
+    })
   })
 })

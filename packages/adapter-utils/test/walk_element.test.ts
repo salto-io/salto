@@ -18,64 +18,97 @@ import {
   ElemID, ListType, BuiltinTypes, CORE_ANNOTATIONS, MapType,
 } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
-import { walkOnElement, WALK_NEXT_STEP, WalkOnFunc } from '../src/walk_element'
+import { walkOnElement, WALK_NEXT_STEP, WalkOnFunc, walkOnValue } from '../src/walk_element'
 
 describe('Test walk_element.ts', () => {
-  describe('walkOnElement', () => {
-    let primType: PrimitiveType
-    let listType: ListType
-    let mapType: MapType
-    let objType: ObjectType
-    let inst: InstanceElement
-    beforeEach(() => {
-      primType = new PrimitiveType({
-        elemID: new ElemID('test', 'prim'),
-        primitive: PrimitiveTypes.NUMBER,
-        annotationRefsOrTypes: { a1: BuiltinTypes.STRING },
-        annotations: { a1: 'asd' },
-      })
-      listType = new ListType(primType)
-      mapType = new MapType(primType)
-      objType = new ObjectType({
-        elemID: new ElemID('test', 'test'),
-        fields: {
-          f1: { refType: BuiltinTypes.STRING },
-          f2: {
-            refType: listType,
-            annotations: {
-              a1: 'foo',
-              [CORE_ANNOTATIONS.DEPENDS_ON]: [
-                { reference: new ReferenceExpression(primType.elemID) },
-              ],
-            },
-          },
-          f3: {
-            refType: mapType,
-            annotations: {
-              a2: 'foo',
-              [CORE_ANNOTATIONS.DEPENDS_ON]: [
-                { reference: new ReferenceExpression(primType.elemID) },
-              ],
-            },
-          },
-          f4: {
-            refType: BuiltinTypes.STRING,
-          },
-        },
-        annotationRefsOrTypes: { a2: BuiltinTypes.STRING },
-        annotations: { a2: 1 },
-      })
-      inst = new InstanceElement(
-        'test',
-        objType,
-        { f1: 'a', f2: [1, 2, 3], f3: false },
-        undefined,
-        {
-          [CORE_ANNOTATIONS.PARENT]: ['me'],
-          [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl',
-        },
-      )
+  let primType: PrimitiveType
+  let listType: ListType
+  let mapType: MapType
+  let objType: ObjectType
+  let inst: InstanceElement
+  beforeEach(() => {
+    primType = new PrimitiveType({
+      elemID: new ElemID('test', 'prim'),
+      primitive: PrimitiveTypes.NUMBER,
+      annotationRefsOrTypes: { a1: BuiltinTypes.STRING },
+      annotations: { a1: 'asd' },
     })
+    listType = new ListType(primType)
+    mapType = new MapType(primType)
+    objType = new ObjectType({
+      elemID: new ElemID('test', 'test'),
+      fields: {
+        f1: { refType: BuiltinTypes.STRING },
+        f2: {
+          refType: listType,
+          annotations: {
+            a1: 'foo',
+            [CORE_ANNOTATIONS.DEPENDS_ON]: [
+              { reference: new ReferenceExpression(primType.elemID) },
+            ],
+          },
+        },
+        f3: {
+          refType: mapType,
+          annotations: {
+            a2: 'foo',
+            [CORE_ANNOTATIONS.DEPENDS_ON]: [
+              { reference: new ReferenceExpression(primType.elemID) },
+            ],
+          },
+        },
+        f4: {
+          refType: BuiltinTypes.STRING,
+        },
+      },
+      annotationRefsOrTypes: { a2: BuiltinTypes.STRING },
+      annotations: { a2: 1 },
+    })
+    inst = new InstanceElement(
+      'test',
+      objType,
+      { f1: 'a', f2: [1, 2, 3], f3: false },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: ['me'],
+        [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl',
+      },
+    )
+  })
+
+  describe('walkOnElement', () => {
+    describe('element argument type', () => {
+      it('should not accept any value that is not an element', () => {
+        const func = mockFunction<WalkOnFunc>()
+          .mockImplementation(() => WALK_NEXT_STEP.RECURSE)
+        // @ts-expect-error walkOnElement must receive an element that has elemID
+        walkOnElement({ element: inst.value, func })
+      })
+      it('should accept an element', () => {
+        const paths: string[] = []
+        const func = mockFunction<WalkOnFunc>()
+          .mockImplementation(({ path }) => {
+            paths.push(path.getFullName())
+            return WALK_NEXT_STEP.RECURSE
+          })
+        walkOnElement({ element: inst, func })
+        expect(paths).toEqual([
+          'test.test.instance.test',
+          'test.test.instance.test._parent',
+          'test.test.instance.test._parent.0',
+          'test.test.instance.test._service_url',
+          'test.test.instance.test.f1',
+          'test.test.instance.test.f2',
+          'test.test.instance.test.f2.0',
+          'test.test.instance.test.f2.1',
+          'test.test.instance.test.f2.2',
+          'test.test.instance.test.f3',
+        ])
+      })
+    })
+  })
+
+  describe('walkOnValue', () => {
     describe('with ObjectType', () => {
       it('should walk on all the nodes in DFS pre order', async () => {
         const paths: string[] = []
@@ -84,7 +117,7 @@ describe('Test walk_element.ts', () => {
             paths.push(path.getFullName())
             return WALK_NEXT_STEP.RECURSE
           })
-        walkOnElement({ element: objType, func })
+        walkOnValue({ value: objType, elemId: objType.elemID, func })
         expect(paths).toEqual([
           'test.test',
           'test.test.attr',
@@ -114,7 +147,7 @@ describe('Test walk_element.ts', () => {
             }
             return WALK_NEXT_STEP.RECURSE
           })
-        walkOnElement({ element: objType, func })
+        walkOnValue({ value: objType, elemId: objType.elemID, func })
         expect(paths).toEqual([
           'test.test',
           'test.test.attr',
@@ -130,7 +163,7 @@ describe('Test walk_element.ts', () => {
             paths.push(path.getFullName())
             return WALK_NEXT_STEP.SKIP
           })
-        walkOnElement({ element: objType, func })
+        walkOnValue({ value: objType, elemId: objType.elemID, func })
         expect(paths).toEqual([objType.elemID.getFullName()])
       })
     })
@@ -142,7 +175,7 @@ describe('Test walk_element.ts', () => {
             paths.push(path.getFullName())
             return WALK_NEXT_STEP.RECURSE
           })
-        walkOnElement({ element: inst, func })
+        walkOnValue({ value: inst, elemId: inst.elemID, func })
         expect(paths).toEqual([
           'test.test.instance.test',
           'test.test.instance.test._parent',
@@ -163,7 +196,37 @@ describe('Test walk_element.ts', () => {
             paths.push(path.getFullName())
             return WALK_NEXT_STEP.SKIP
           })
-        walkOnElement({ element: inst, func })
+        walkOnValue({ value: inst, elemId: inst.elemID, func })
+        expect(paths).toEqual([inst.elemID.getFullName()])
+      })
+    })
+    describe('with a value', () => {
+      it('should walk on value in DFS pre order', () => {
+        const paths: string[] = []
+        const func = mockFunction<WalkOnFunc>()
+          .mockImplementation(({ path }) => {
+            paths.push(path.getFullName())
+            return WALK_NEXT_STEP.RECURSE
+          })
+        walkOnValue({ value: inst.value, elemId: inst.elemID, func })
+        expect(paths).toEqual([
+          'test.test.instance.test',
+          'test.test.instance.test.f1',
+          'test.test.instance.test.f2',
+          'test.test.instance.test.f2.0',
+          'test.test.instance.test.f2.1',
+          'test.test.instance.test.f2.2',
+          'test.test.instance.test.f3',
+        ])
+      })
+      it('should walk only on top level', async () => {
+        const paths: string[] = []
+        const func = mockFunction<WalkOnFunc>()
+          .mockImplementation(({ path }) => {
+            paths.push(path.getFullName())
+            return WALK_NEXT_STEP.SKIP
+          })
+        walkOnValue({ value: inst.value, elemId: inst.elemID, func })
         expect(paths).toEqual([inst.elemID.getFullName()])
       })
     })

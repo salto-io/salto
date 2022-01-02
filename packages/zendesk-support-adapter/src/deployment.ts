@@ -17,6 +17,7 @@ import { Change, getChangeElement, InstanceElement, isAdditionChange, Values } f
 import { config as configUtils, deployment } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
+import { getZendeskError } from './errors'
 
 const log = logger(module)
 
@@ -27,31 +28,34 @@ export const deployChange = async (
 ): Promise<void> => {
   const { deployRequests, transformation } = apiDefinitions
     .types[getChangeElement(change).elemID.typeName]
-  const response = await deployment.deployChange(
-    change,
-    client,
-    deployRequests,
-  )
-
-  if (isAdditionChange(change)) {
-    if (!Array.isArray(response)) {
-      const transformationConfig = configUtils.getConfigWithDefault(
-        transformation,
-        apiDefinitions.typeDefaults.transformation,
-      )
-      const idField = transformationConfig.serviceIdField ?? 'id'
-      const dataField = deployRequests?.add?.deployAsField
-      const idValue = dataField
-        ? (response?.[dataField] as Values)?.[idField]
-        : response?.[idField]
-      if (idValue !== undefined) {
-        getChangeElement(change).value[idField] = idValue
+  try {
+    const response = await deployment.deployChange(
+      change,
+      client,
+      deployRequests,
+    )
+    if (isAdditionChange(change)) {
+      if (!Array.isArray(response)) {
+        const transformationConfig = configUtils.getConfigWithDefault(
+          transformation,
+          apiDefinitions.typeDefaults.transformation,
+        )
+        const idField = transformationConfig.serviceIdField ?? 'id'
+        const dataField = deployRequests?.add?.deployAsField
+        const idValue = dataField
+          ? (response?.[dataField] as Values)?.[idField]
+          : response?.[idField]
+        if (idValue !== undefined) {
+          getChangeElement(change).value[idField] = idValue
+        }
+      } else {
+        log.warn(
+          'Received an array for the response of the deploy. Not updating the id of the element. Action: add. ID: %s',
+          getChangeElement(change).elemID.getFullName()
+        )
       }
-    } else {
-      log.warn(
-        'Received an array for the response of the deploy. Not updating the id of the element. Action: add. ID: %s',
-        getChangeElement(change).elemID.getFullName()
-      )
     }
+  } catch (err) {
+    throw getZendeskError(getChangeElement(change).elemID.getFullName(), err)
   }
 }

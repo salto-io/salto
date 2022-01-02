@@ -103,7 +103,7 @@ describe('ducktype_field_finder', () => {
     })
   })
 
-  describe('returnFullEntry', async () => {
+  describe('returnFullEntry', () => {
     it('should return always return undefined', async () => {
       expect(await returnFullEntry(sampleType)).toBeUndefined()
       expect(await returnFullEntry(sampleType, [

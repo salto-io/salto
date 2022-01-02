@@ -16,7 +16,7 @@
 import { RenewedLease, Pool, Lease, LeaseUpdateOpts, InstanceNotLeasedError } from '../../src/index'
 import { MockObj, createMockPool } from '../mock_repo'
 
-jest.useFakeTimers()
+jest.useFakeTimers('legacy')
 
 describe('RenewedLease', () => {
   type MyType = { x: number }

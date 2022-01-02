@@ -38,7 +38,7 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@types/jest": "^26.0.20",
+    "@types/jest": "^27.4.0",
     "@types/lodash": "^4.14.168",
     "@types/minimatch": "^3.0.3",
     "@types/pino": "^6.3.0",
@@ -53,9 +53,11 @@
     "eslint-plugin-jsx-a11y": "^6.2.1",
     "eslint-plugin-react": "^7.14.3",
     "eslint-plugin-react-hooks": "^1.7.0",
-    "jest": "^26.6.3",
-    "jest-circus": "^26.6.3",
+    "jest": "^27.4.5",
+    "jest-circus": "^27.4.5",
     "jest-junit": "^12.0.0",
+    "jest-mock": "^27.4.2",
+    "jest-util": "^27.4.2",
     "tmp-promise": "^2.0.2",
     "tsc-watch": "^2.2.1",
     "typescript": "3.9.3"

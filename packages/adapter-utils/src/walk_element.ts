@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  ElemID, Values, Value, isInstanceElement, isType, isObjectType, isElement,
+  ElemID, Values, Value, isInstanceElement, isType, isObjectType, isElement, Element,
 } from '@salto-io/adapter-api'
 
 export enum WALK_NEXT_STEP {
@@ -30,45 +30,47 @@ type WalkOnFuncArgs = {
 export type WalkOnFunc = (args: WalkOnFuncArgs) => WALK_NEXT_STEP
 class ExitWalk extends Error {}
 
-export const walkOnElement = (
+export const walkOnValue = (
   {
-    element,
+    elemId,
+    value,
     func,
   }: {
-    element: Value
+    elemId: ElemID
+    value: Value
     func: WalkOnFunc
   }
 ): void => {
-  const run = (value: Value, keyPathID: ElemID): void => {
+  const run = (current: Value, keyPathID: ElemID): void => {
     const runOnValues = (values: Values): void => {
       _.mapValues(values, (val, key) => run(val, keyPathID?.createNestedID(key)))
     }
-    const res = func({ value, path: keyPathID })
+    const res = func({ value: current, path: keyPathID })
     if (res === WALK_NEXT_STEP.EXIT) {
       throw new ExitWalk()
     }
     if (res === WALK_NEXT_STEP.SKIP) {
       return
     }
-    if (isElement(value)) {
-      if (isType(value)) {
-        run(value.annotations, value.elemID.createNestedID('attr'))
+    if (isElement(current)) {
+      if (isType(current)) {
+        run(current.annotations, current.elemID.createNestedID('attr'))
       } else {
-        runOnValues(value.annotations)
+        runOnValues(current.annotations)
       }
-      if (isObjectType(value)) {
-        run(value.fields, value.elemID.createNestedID('field'))
-      } else if (isInstanceElement(value)) {
-        runOnValues(value.value)
+      if (isObjectType(current)) {
+        run(current.fields, current.elemID.createNestedID('field'))
+      } else if (isInstanceElement(current)) {
+        runOnValues(current.value)
       }
-    } else if (_.isArray(value)) {
-      value.forEach((item, index) => run(item, keyPathID?.createNestedID(String(index))))
-    } else if (_.isPlainObject(value)) {
-      runOnValues(value)
+    } else if (_.isArray(current)) {
+      current.forEach((item, index) => run(item, keyPathID?.createNestedID(String(index))))
+    } else if (_.isPlainObject(current)) {
+      runOnValues(current)
     }
   }
   try {
-    run(element, element.elemID)
+    run(value, elemId)
   } catch (e) {
     if (e instanceof ExitWalk) {
       return
@@ -76,3 +78,13 @@ export const walkOnElement = (
     throw e
   }
 }
+
+export const walkOnElement = (
+  {
+    element,
+    func,
+  }: {
+    element: Element
+    func: WalkOnFunc
+  }
+): void => walkOnValue({ elemId: element.elemID, value: element, func })

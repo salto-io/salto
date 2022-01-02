@@ -32,7 +32,7 @@ const parentDir = (numLevels: number): string => path.normalize(
   path.join(__dirname, ...Array(numLevels).fill('..'))
 )
 
-const MONOREPO_PACKAGES_DIRNAME = module.filename.endsWith('.ts')
+export const MONOREPO_PACKAGES_DIRNAME = module.filename.endsWith('.ts')
   ? parentDir(3)
   : parentDir(4)
 
@@ -65,7 +65,7 @@ const fromFilename = (
 ): Namespace => path.relative(MONOREPO_PACKAGES_DIRNAME, filename)
   .replace(/.*:/, '') // remove 'var/task/webpack:' prefix
   .replace(/^\//, '') // remove '/' prefix
-  .replace(/([^/]+)\/(dist\/src|dist|src)/, '$1') // remove src directory
+  .replace(/^([^/]+)\/(dist\/src|dist|src)/, '$1') // remove src or dist/src directory
   .replace(/\.[^.]+$/, '') // remove extension
   .replace(/\/{2}/g, '/') // normalize double slashes to single
 

@@ -80,9 +80,9 @@ describe('adapter', () => {
           ),
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
-        expect(elements).toHaveLength(331)
-        expect(elements.filter(isObjectType)).toHaveLength(168)
-        expect(elements.filter(isInstanceElement)).toHaveLength(163)
+        expect(elements).toHaveLength(337)
+        expect(elements.filter(isObjectType)).toHaveLength(171)
+        expect(elements.filter(isInstanceElement)).toHaveLength(166)
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'zendesk_support.account_setting',
           'zendesk_support.account_setting.instance',

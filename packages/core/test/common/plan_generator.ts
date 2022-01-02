@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import wu from 'wu'
-import { ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, getChangeElement, PrimitiveType, PrimitiveTypes, Element, DependencyChanger, dependencyChange, ListType, isField, createRefToElmWithValue } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, getChangeData, PrimitiveType, PrimitiveTypes, Element, DependencyChanger, dependencyChange, ListType, isField, createRefToElmWithValue } from '@salto-io/adapter-api'
 import * as mock from './elements'
 import { getPlan, Plan } from '../../src/core/plan'
 import { createElementSource } from './helpers'
@@ -130,7 +130,7 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
     saltoOffice.fields.test = new Field(saltoOffice, 'test', BuiltinTypes.STRING)
     const depChanger: DependencyChanger = async changes => {
       const changeByElem = new Map(
-        wu(changes).map(([id, change]) => [getChangeElement(change).elemID.getFullName(), id]),
+        wu(changes).map(([id, change]) => [getChangeData(change).elemID.getFullName(), id]),
       )
       const officeChange = changeByElem.get(saltoOffice.elemID.getFullName())
       const officeFieldChange = changeByElem.get(saltoOffice.fields.test.elemID.getFullName())
@@ -168,7 +168,7 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
     const depChanger: DependencyChanger = async changes => {
       const officeFieldChangeIds = wu(changes)
         .filter(([_id, change]) => {
-          const elem = getChangeElement(change)
+          const elem = getChangeData(change)
           return isField(elem) && elem.parent.elemID.isEqual(saltoOffice.elemID)
         })
         .map(([id]) => id)
@@ -191,7 +191,7 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
     const depChanger: DependencyChanger = async changes => {
       const officeFieldChangeIds = wu(changes)
         .filter(([_id, change]) => {
-          const elem = getChangeElement(change)
+          const elem = getChangeData(change)
           return elem.elemID.getFullName() === 'salto.office.field.name'
             || elem.elemID.getFullName() === 'salto.employee.field.office'
         })

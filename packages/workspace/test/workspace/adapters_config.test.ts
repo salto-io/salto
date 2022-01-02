@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ObjectType, ElemID, DetailedChange, getChangeElement } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, ElemID, DetailedChange, getChangeData } from '@salto-io/adapter-api'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
@@ -210,7 +210,7 @@ describe('adapters config', () => {
       { value: { inner1: undefined, inner2: 2, inner3: [] } }
     ))
     const receivedChange = mockNaclFilesSource.updateNaclFiles.mock.calls[1][0][0]
-    expect(getChangeElement(receivedChange).value).toEqual({ value: { inner2: 2, inner3: [] } })
+    expect(getChangeData(receivedChange).value).toEqual({ value: { inner2: 2, inner3: [] } })
     expect(mockNaclFilesSource.flush).toHaveBeenCalled()
   })
 

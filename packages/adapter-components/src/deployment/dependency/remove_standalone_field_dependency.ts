@@ -15,7 +15,7 @@
 */
 import wu from 'wu'
 import {
-  getChangeElement, DependencyChanger, dependencyChange, isReferenceExpression, ChangeId,
+  getChangeData, DependencyChanger, dependencyChange, isReferenceExpression, ChangeId,
 } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
 
@@ -28,9 +28,9 @@ export const removeStandaloneFieldDependency: DependencyChanger = async (
     if (sourceChange === undefined || targetChange === undefined) {
       return false
     }
-    return getParents(getChangeElement(targetChange))
+    return getParents(getChangeData(targetChange))
       .find(e => isReferenceExpression(e)
-        && e.elemID.isEqual(getChangeElement(sourceChange).elemID)) != null
+        && e.elemID.isEqual(getChangeData(sourceChange).elemID)) != null
   }
 
   const allDependencies = wu(deps)

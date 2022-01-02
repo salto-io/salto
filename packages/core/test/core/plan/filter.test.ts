@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeElement, ChangeValidator, ObjectType, ElemID, InstanceElement, Field, BuiltinTypes, ChangeDataType, Change, createRefToElmWithValue, isDependencyError } from '@salto-io/adapter-api'
+import { getChangeData, ChangeValidator, ObjectType, ElemID, InstanceElement, Field, BuiltinTypes, ChangeDataType, Change, createRefToElmWithValue, isDependencyError } from '@salto-io/adapter-api'
 import wu, { WuIterable } from 'wu'
 import { mockFunction } from '@salto-io/test-utils'
 import * as mock from '../../common/elements'
@@ -26,7 +26,7 @@ describe('filterInvalidChanges', () => {
 
   const mockChangeValidator = mockFunction<ChangeValidator>().mockImplementation(
     async changes => changes
-      .map(getChangeElement)
+      .map(getChangeData)
       .filter(elem => elem.elemID.name.includes('invalid'))
       .map(({ elemID }) => ({ elemID, severity: 'Error', message: 'msg', detailedMessage: '' }))
   )
@@ -60,8 +60,8 @@ describe('filterInvalidChanges', () => {
       const oldElement = (wu(planResult.itemsByEvalOrder())
         .map(item => item.changes())
         .flatten(true) as WuIterable<Change<ChangeDataType>>)
-        .map(getChangeElement)
-        .find(changeElement => element.elemID.isEqual(changeElement.elemID))
+        .map(getChangeData)
+        .find(changeData => element.elemID.isEqual(changeData.elemID))
       expect(oldElement).toBeDefined()
     })
   })
@@ -116,7 +116,7 @@ describe('filterInvalidChanges', () => {
     const planItem = getFirstPlanItem(planResult)
     expect(planItem.items.size).toBe(1)
     const [change] = planItem.changes() as Change<ObjectType>[]
-    const parentFields = Object.keys(getChangeElement(change).fields)
+    const parentFields = Object.keys(getChangeData(change).fields)
     expect(parentFields).toContain('valid')
     expect(parentFields).not.toContain('invalid')
   })
@@ -158,7 +158,7 @@ describe('filterInvalidChanges', () => {
     expect(planItem.items.size).toBe(1)
     const [change] = planItem.changes()
     expect(change.action).toEqual('add')
-    const changedField = getChangeElement(change) as Field
+    const changedField = getChangeData(change) as Field
     expect(changedField.elemID).toEqual(saltoOffice.fields.valid.elemID)
     // It should replace the field parent with a parent that does not have invalid changes
     expect(changedField.parent.fields).not.toHaveProperty('invalid')
@@ -185,7 +185,7 @@ describe('filterInvalidChanges', () => {
     expect(planItem.items.size).toBe(1)
     const [change] = planItem.changes()
     expect(change.action).toEqual('add')
-    expect(getChangeElement(change)).toEqual(afterInvalidObj.fields.valid)
+    expect(getChangeData(change)).toEqual(afterInvalidObj.fields.valid)
   })
 
   it('should have onUpdate change errors when only some field removals are invalid', async () => {
@@ -208,7 +208,7 @@ describe('filterInvalidChanges', () => {
     expect(planItem.items.size).toBe(1)
     const [change] = planItem.changes()
     expect(change.action).toEqual('remove')
-    expect(getChangeElement(change)).toEqual(saltoOffice.fields.valid)
+    expect(getChangeData(change)).toEqual(saltoOffice.fields.valid)
   })
 
   it('should have onUpdate change errors when having invalid field modification', async () => {
@@ -240,7 +240,7 @@ describe('filterInvalidChanges', () => {
     const seatsId = saltoEmployeeInstance.elemID.createNestedID('office', 'seats')
     const mockMapValueChangeValidator = mockFunction<ChangeValidator>().mockImplementation(
       async changes => changes
-        .map(getChangeElement)
+        .map(getChangeData)
         .filter(elem => elem.elemID.isEqual(saltoEmployeeInstance.elemID))
         .map(({ elemID }) => ({
           elemID: elemID.createNestedID('office', 'seats'),
@@ -265,7 +265,7 @@ describe('filterInvalidChanges', () => {
     expect(planItem.items.size).toBe(1)
     const [change] = planItem.changes()
     expect(change.action).toEqual('modify')
-    const changeInstance = getChangeElement(change)
+    const changeInstance = getChangeData(change)
     expect(changeInstance).toBeInstanceOf(InstanceElement)
     expect(changeInstance.elemID).toEqual(saltoEmployeeInstance.elemID)
   })

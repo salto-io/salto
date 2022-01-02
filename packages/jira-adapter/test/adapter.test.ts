@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdapterOperations, ObjectType, ElemID, ProgressReporter, FetchResult, InstanceElement, toChange, isRemovalChange, getChangeElement, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
+import { AdapterOperations, ObjectType, ElemID, ProgressReporter, FetchResult, InstanceElement, toChange, isRemovalChange, getChangeData, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
 import { deployment, elements, client } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockFunction } from '@salto-io/test-utils'
@@ -156,7 +156,7 @@ describe('adapter', () => {
         },
       })
 
-      expect((getChangeElement(appliedChanges[0]) as InstanceElement)?.value.id).toEqual(2)
+      expect((getChangeData(appliedChanges[0]) as InstanceElement)?.value.id).toEqual(2)
     })
     it('should not add the new id on addition if received an invalid response', async () => {
       deployChangeMock.mockResolvedValue([])
@@ -170,7 +170,7 @@ describe('adapter', () => {
         },
       })
 
-      expect((getChangeElement(appliedChanges[0]) as InstanceElement)?.value.id).toBeUndefined()
+      expect((getChangeData(appliedChanges[0]) as InstanceElement)?.value.id).toBeUndefined()
     })
   })
   describe('deployModifiers', () => {

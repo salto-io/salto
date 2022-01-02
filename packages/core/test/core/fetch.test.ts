@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { EventEmitter } from 'pietile-eventemitter'
 import {
-  ElemID, Field, BuiltinTypes, ObjectType, getChangeElement, AdapterOperations, Element,
+  ElemID, Field, BuiltinTypes, ObjectType, getChangeData, AdapterOperations, Element,
   PrimitiveType, PrimitiveTypes, OBJECT_SERVICE_ID, InstanceElement, CORE_ANNOTATIONS,
   ListType, FieldDefinition, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ReferenceExpression,
   ReadOnlyElementsSource,
@@ -350,7 +350,7 @@ describe('fetch', () => {
           const resultChanges = Array.from(fetchChangesResult.changes)
           expect(resultChanges.length).toBe(1)
           expect(resultChanges[0].change.action).toBe('remove')
-          expect(getChangeElement(resultChanges[0].change).elemID.adapter).toBe('dummy2')
+          expect(getChangeData(resultChanges[0].change).elemID.adapter).toBe('dummy2')
         })
       })
 
@@ -489,7 +489,7 @@ describe('fetch', () => {
         it('should drop instances and type from fetch changes', () => {
           const fetchedChanges = [...fetchChangesResult.changes]
           const addedElementIds = fetchedChanges
-            .map(change => getChangeElement(change.change))
+            .map(change => getChangeData(change.change))
             .map(elem => elem.elemID.getFullName())
           expect(addedElementIds).not.toContain(dupTypeBase.elemID.getFullName())
           expect(addedElementIds).not.toContain(dupInstance.elemID.getFullName())
@@ -559,9 +559,9 @@ describe('fetch', () => {
       })
 
       it('should not remove hidden values from changes', () => {
-        expect(changes.some(c => (getChangeElement(c.change)) === hiddenChangedVal))
+        expect(changes.some(c => (getChangeData(c.change)) === hiddenChangedVal))
           .toBeTruthy()
-        expect(changes.some(c => (getChangeElement(c.change)) === hiddenValueChangedVal))
+        expect(changes.some(c => (getChangeData(c.change)) === hiddenValueChangedVal))
           .toBeTruthy()
       })
     })
@@ -663,7 +663,7 @@ describe('fetch', () => {
         expect(changes).toHaveLength(2)
       })
       it('should have path hint for new elements', () => {
-        expect(changes.map(change => getChangeElement(change.change).path).sort()).toEqual([
+        expect(changes.map(change => getChangeData(change.change).path).sort()).toEqual([
           ['path', 'base'],
           ['path', 'ext'],
         ])
@@ -1038,14 +1038,14 @@ describe('fetch', () => {
       })
 
       it('changes should be equal to the account elements', () => {
-        expect(getChangeElement(changes[0].change)).toEqual(typeWithFieldDifferentID)
+        expect(getChangeData(changes[0].change)).toEqual(typeWithFieldDifferentID)
         const expectedHiddenInstanceAlternateId = hiddenInstanceAlternateId.clone()
         expectedHiddenInstanceAlternateId.refType = _.clone(expectedHiddenInstanceAlternateId
           .refType)
         expectedHiddenInstanceAlternateId.refType.value = expect.anything()
         // refType's type property is not supposed to be transformed, so we don't assert on it.
         _.set(expectedHiddenInstanceAlternateId.refType, 'type', expect.anything())
-        expect(getChangeElement(changes[1].change)).toEqual(expectedHiddenInstanceAlternateId)
+        expect(getChangeData(changes[1].change)).toEqual(expectedHiddenInstanceAlternateId)
       })
     })
 
@@ -1553,7 +1553,7 @@ describe('fetch from workspace', () => {
         .filter(elem => elem.elemID.getFullName() === 'salto.obj')
       expect(changes).toHaveLength(unmergedDiffElement.length)
       const changesElements = changes
-        .map(change => getChangeElement(change.change))
+        .map(change => getChangeData(change.change))
       unmergedDiffElement
         .forEach(frag => expect(changesElements.filter(e => e.isEqual(frag))).toHaveLength(1))
     })

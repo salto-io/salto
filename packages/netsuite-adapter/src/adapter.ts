@@ -16,7 +16,7 @@
 import {
   FetchResult, isInstanceElement, AdapterOperations, DeployResult, DeployOptions,
   ElemIdGetter, ReadOnlyElementsSource,
-  FetchOptions, Field, BuiltinTypes, CORE_ANNOTATIONS, DeployModifiers, Change, getChangeElement,
+  FetchOptions, Field, BuiltinTypes, CORE_ANNOTATIONS, DeployModifiers, Change, getChangeData,
   Element, ProgressReporter,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
@@ -366,11 +366,11 @@ export default class NetsuiteAdapter implements AdapterOperations {
     )
 
     const ids = deployResult.appliedChanges.map(
-      change => getChangeElement(change).elemID.getFullName()
+      change => getChangeData(change).elemID.getFullName()
     )
 
     const appliedChanges = changeGroup.changes
-      .filter(change => ids.includes(getChangeElement(change).elemID.getFullName()))
+      .filter(change => ids.includes(getChangeData(change).elemID.getFullName()))
       .map(change => ({
         action: change.action,
         data: _.mapValues(change.data, (element: Element) => element.clone()),

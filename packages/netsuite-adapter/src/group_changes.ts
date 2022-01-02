@@ -15,7 +15,7 @@
 */
 import wu from 'wu'
 import {
-  Change, ChangeGroupIdFunction, ChangeId, getChangeElement, InstanceElement, isAdditionChange,
+  Change, ChangeGroupIdFunction, ChangeId, getChangeData, InstanceElement, isAdditionChange,
   isInstanceChange, isInstanceElement,
   isModificationChange,
   isReferenceExpression,
@@ -45,7 +45,7 @@ export const SUITEAPP_FILE_CABINET_GROUPS = [
 ]
 
 const getSdfWithSuiteAppGroupName = (change: Change): string => {
-  const element = getChangeElement(change)
+  const element = getChangeData(change)
   if (!isInstanceElement(element) || element.value[APPLICATION_ID] === undefined) {
     return SDF_CHANGE_GROUP_ID
   }
@@ -54,10 +54,10 @@ const getSdfWithSuiteAppGroupName = (change: Change): string => {
 
 const getChangeGroupIdsWithoutSuiteApp: ChangeGroupIdFunction = async changes => {
   const isSdfChange = (change: Change): boolean => {
-    const changeElement = getChangeElement(change)
-    return isInstanceElement(changeElement)
-      && (Object.keys(customTypes).includes(changeElement.elemID.typeName)
-        || Object.keys(fileCabinetTypes).includes(changeElement.elemID.typeName))
+    const changeData = getChangeData(change)
+    return isInstanceElement(changeData)
+      && (Object.keys(customTypes).includes(changeData.elemID.typeName)
+        || Object.keys(fileCabinetTypes).includes(changeData.elemID.typeName))
   }
   return new Map(
     wu(changes.entries())
@@ -98,7 +98,7 @@ const getChangesChunks = async (
   await awu(changes)
     .filter(change => isInstanceChange(change.change))
     .forEach(async change => {
-      const instance = getChangeElement(change.change) as InstanceElement
+      const instance = getChangeData(change.change) as InstanceElement
       const dependencies = getRecordDependencies(instance)
       if (dependencies.some(dependency => iteratedIds.has(dependency))) {
         changesChunks.push([])
@@ -112,37 +112,37 @@ const getChangesChunks = async (
 }
 
 const isSuiteAppFileCabinetModification = (change: Change): boolean => {
-  const changeElement = getChangeElement(change)
-  return isFileCabinetInstance(changeElement)
+  const changeData = getChangeData(change)
+  return isFileCabinetInstance(changeData)
   && suiteAppFileCabinet.isChangeDeployable(change)
   && isModificationChange(change)
 }
 
 const isSuiteAppFileCabinetAddition = (change: Change): boolean => {
-  const changeElement = getChangeElement(change)
-  return isFileCabinetInstance(changeElement)
+  const changeData = getChangeData(change)
+  return isFileCabinetInstance(changeData)
   && suiteAppFileCabinet.isChangeDeployable(change)
   && isAdditionChange(change)
 }
 
 const isSuiteAppFileCabinetDeletion = (change: Change): boolean => {
-  const changeElement = getChangeElement(change)
-  return isFileCabinetInstance(changeElement)
+  const changeData = getChangeData(change)
+  return isFileCabinetInstance(changeData)
   && suiteAppFileCabinet.isChangeDeployable(change)
   && isRemovalChange(change)
 }
 
 const isSdfChange = (change: Change): boolean => {
-  const changeElement = getChangeElement(change)
-  return Object.keys(customTypes).includes(changeElement.elemID.typeName)
-    || (isFileCabinetInstance(changeElement)
+  const changeData = getChangeData(change)
+  return Object.keys(customTypes).includes(changeData.elemID.typeName)
+    || (isFileCabinetInstance(changeData)
       && !suiteAppFileCabinet.isChangeDeployable(change))
 }
 
 const isSuiteAppRecordChange = async (change: Change): Promise<boolean> => {
-  const changeElement = getChangeElement(change)
-  return isInstanceElement(changeElement)
-  && isDataObjectType(await changeElement.getType())
+  const changeData = getChangeData(change)
+  return isInstanceElement(changeData)
+  && isDataObjectType(await changeData.getType())
 }
 
 const isSuiteAppRecordAddition = async (change: Change): Promise<boolean> =>

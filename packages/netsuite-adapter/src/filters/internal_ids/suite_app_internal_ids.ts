@@ -13,14 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeElement, isAdditionChange, isInstanceElement } from '@salto-io/adapter-api'
+import { getChangeData, isAdditionChange, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterWith } from '../../filter'
 
 const filterCreator = (): FilterWith<'onDeploy'> => ({
   onDeploy: async (changes, { elemIdToInternalId = {} }) => {
     changes
       .filter(isAdditionChange)
-      .map(getChangeElement)
+      .map(getChangeData)
       .filter(isInstanceElement)
       .filter(element => element.elemID.getFullName() in elemIdToInternalId)
       .forEach(element => {

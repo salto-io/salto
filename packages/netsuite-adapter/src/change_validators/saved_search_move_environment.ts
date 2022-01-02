@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { collections } from '@salto-io/lowerdash'
-import { ChangeValidator, getChangeElement, InstanceElement,
+import { ChangeValidator, getChangeData, InstanceElement,
   isInstanceChange, ChangeError, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { SAVED_SEARCH } from '../constants'
@@ -50,7 +50,7 @@ const changeValidator: ChangeValidator = async changes => (
   awu(changes)
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
-    .map(getChangeElement)
+    .map(getChangeData)
     .filter(instance => instance.elemID.typeName === SAVED_SEARCH)
     .map(getChangeError)
     .toArray()

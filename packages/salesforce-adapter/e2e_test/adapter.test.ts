@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   ObjectType, ElemID, InstanceElement, Field, Value, Element, Values, BuiltinTypes,
   isInstanceElement, isReferenceExpression, ReferenceExpression, CORE_ANNOTATIONS,
-  TypeElement, isObjectType, getRestriction, StaticFile, isStaticFile, getChangeElement,
+  TypeElement, isObjectType, getRestriction, StaticFile, isStaticFile, getChangeData,
   Change, FetchOptions, ProgressReporter,
 } from '@salto-io/adapter-api'
 import { findElement, naclCase } from '@salto-io/adapter-utils'
@@ -725,7 +725,7 @@ describe('Salesforce adapter E2E with real account', () => {
       // Test
       expect(updateResult.errors).toHaveLength(0)
       expect(updateResult.appliedChanges).toHaveLength(1)
-      expect(getChangeElement(updateResult.appliedChanges[0])).toStrictEqual(newInstance)
+      expect(getChangeData(updateResult.appliedChanges[0])).toStrictEqual(newInstance)
 
       // Checking that the saved instance identical to newInstance
       type Profile = ProfileInfo & {
@@ -2472,7 +2472,7 @@ describe('Salesforce adapter E2E with real account', () => {
         },
       })
 
-      const updatedElement = getChangeElement(modificationResult.appliedChanges[0])
+      const updatedElement = getChangeData(modificationResult.appliedChanges[0])
 
       // Verify the enable topics was changed correctly
       expect(updatedElement).toBeInstanceOf(ObjectType)
@@ -2839,7 +2839,7 @@ describe('Salesforce adapter E2E with real account', () => {
             if (deployResult.errors.length === 1) throw deployResult.errors[0]
             throw new Error(`Failed updating instance ${instance.elemID.getFullName()} with errors: ${deployResult.errors}`)
           }
-          return getChangeElement(deployResult.appliedChanges[0]) as InstanceElement
+          return getChangeData(deployResult.appliedChanges[0]) as InstanceElement
         }
 
         const verifyUpdateInstance = async (instance: InstanceElement, updatedFieldPath: string[],
@@ -3416,7 +3416,7 @@ describe('Salesforce adapter E2E with real account', () => {
             changes: [{ action: 'modify', data: { before: flow, after: newFlow } }],
           },
         })
-        flow = getChangeElement(deployResult.appliedChanges[0]) as InstanceElement
+        flow = getChangeData(deployResult.appliedChanges[0]) as InstanceElement
 
         const flowInfo = await getMetadataFromElement(client, flow)
         expect(flowInfo).toBeDefined()
@@ -3605,7 +3605,7 @@ describe('Salesforce adapter E2E with real account', () => {
             changes: [{ action: 'modify', data: { before: layout, after: newLayout } }],
           },
         })
-        layout = getChangeElement(deployResult.appliedChanges[0]) as InstanceElement
+        layout = getChangeData(deployResult.appliedChanges[0]) as InstanceElement
 
         const layoutInfo = await getMetadataFromElement(client, layout)
         expect(layoutInfo).toBeDefined()

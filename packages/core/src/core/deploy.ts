@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  AdapterOperations, getChangeElement, Change, isAdditionOrModificationChange, DeployResult,
+  AdapterOperations, getChangeData, Change, isAdditionOrModificationChange, DeployResult,
 } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { WalkError, NodeSkippedError } from '@salto-io/dag'
@@ -29,7 +29,7 @@ const deployAction = (
   adapters: Record<string, AdapterOperations>
 ): Promise<DeployResult> => {
   const changes = [...planItem.changes()]
-  const adapterName = getChangeElement(changes[0]).elemID.adapter
+  const adapterName = getChangeData(changes[0]).elemID.adapter
   const adapter = adapters[adapterName]
   if (!adapter) {
     throw new Error(`Missing adapter for ${adapterName}`)
@@ -52,12 +52,12 @@ export type StepEvents<T = void> = {
 
 const updatePlanElement = (item: PlanItem, appliedChanges: ReadonlyArray<Change>): void => {
   const planElementById = _.keyBy(
-    [...item.items.values()].map(getChangeElement),
-    changeElement => changeElement.elemID.getFullName()
+    [...item.items.values()].map(getChangeData),
+    changeData => changeData.elemID.getFullName()
   )
   appliedChanges
     .filter(isAdditionOrModificationChange)
-    .map(getChangeElement)
+    .map(getChangeData)
     .forEach(updatedElement => {
       const planElement = planElementById[updatedElement.elemID.getFullName()]
       if (planElement !== undefined) {

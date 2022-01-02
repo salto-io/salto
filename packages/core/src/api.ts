@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  Adapter, InstanceElement, ObjectType, ElemID, AccountId, getChangeElement, isField,
+  Adapter, InstanceElement, ObjectType, ElemID, AccountId, getChangeData, isField,
   Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
   isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
   SaltoError, Element, DetailedChange,
@@ -135,7 +135,7 @@ export const deploy = async (
   )
 
   const getUpdatedElement = async (change: Change): Promise<ChangeDataType> => {
-    const changeElem = getChangeElement(change)
+    const changeElem = getChangeData(change)
     if (!isField(changeElem)) {
       return changeElem
     }

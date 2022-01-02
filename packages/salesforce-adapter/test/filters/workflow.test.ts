@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import {
   ElemID, InstanceElement, ObjectType, Element, isInstanceElement, Change,
-  getChangeElement, ModificationChange, isModificationChange, Value, isListType, ListType,
+  getChangeData, ModificationChange, isModificationChange, Value, isListType, ListType,
   createRefToElmWithValue,
 } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
@@ -200,7 +200,7 @@ describe('Workflow filter', () => {
 
         it('should replace the field values with the inner instances with relative fullName', () => {
           const workflowChange = changes[0]
-          const workflowInChange = getChangeElement(workflowChange) as InstanceElement
+          const workflowInChange = getChangeData(workflowChange) as InstanceElement
           expect(workflowInChange.value[WORKFLOW_RULES_FIELD]).toEqual([
             { ...innerInstance.value, fullName: 'MyRule' },
           ])
@@ -216,7 +216,7 @@ describe('Workflow filter', () => {
           expect(changes).toHaveLength(1)
           const workflowChange = changes.find(isInstanceOfTypeChange(WORKFLOW_METADATA_TYPE))
           expect(workflowChange).toBeDefined()
-          workflowAfter = getChangeElement(workflowChange as Change<InstanceElement>)
+          workflowAfter = getChangeData(workflowChange as Change<InstanceElement>)
         })
         it('should restore the workflow field value to the original value', async () => {
           expect(workflowAfter.value[INSTANCE_FULL_NAME_FIELD]).toEqual(
@@ -254,7 +254,7 @@ describe('Workflow filter', () => {
           expect(isModificationChange(changes[0])).toBeTruthy()
         })
         it('should create workflow instance with a proper type', async () => {
-          const workflowInst = getChangeElement(changes[0])
+          const workflowInst = getChangeData(changes[0])
           const workflowType = await workflowInst.getType()
           const typeAnnotations = workflowType.annotations as MetadataTypeAnnotations
           expect(typeAnnotations.metadataType).toEqual(WORKFLOW_METADATA_TYPE)

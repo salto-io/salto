@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ModificationChange, InstanceElement, RemovalChange, ObjectType,
-  ElemID, AdditionChange, DetailedChange, BuiltinTypes, getChangeElement, TypeReference } from '@salto-io/adapter-api'
+  ElemID, AdditionChange, DetailedChange, BuiltinTypes, getChangeData, TypeReference } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
@@ -506,7 +506,7 @@ describe('Nacl Files Source', () => {
         const { changes } = (await naclFileSourceTest.updateNaclFiles([detailedChange]))
         expect(changes).toHaveLength(1)
         expect(changes[0]).toMatchObject(_.omit(detailedChange, ['id', 'path', 'data']))
-        expect(getChangeElement(changes[0]).isEqual(getChangeElement(detailedChange)))
+        expect(getChangeData(changes[0]).isEqual(getChangeData(detailedChange)))
           .toBeTruthy()
 
         const sortedAll = _.sortBy(

@@ -16,13 +16,13 @@
 import wu from 'wu'
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
-import { DependencyChanger, getChangeElement, AdapterOperations } from '@salto-io/adapter-api'
+import { DependencyChanger, getChangeData, AdapterOperations } from '@salto-io/adapter-api'
 
 type AdapterDependencyChanger = (name: string, changer: DependencyChanger) => DependencyChanger
 const adapterDependencyChanger: AdapterDependencyChanger = (name, changer) => (changes, deps) => {
   const filteredChanges = new Map(
     wu(changes.entries())
-      .filter(([_id, change]) => getChangeElement(change).elemID.adapter === name)
+      .filter(([_id, change]) => getChangeData(change).elemID.adapter === name)
   )
   const filteredDeps = new Map(
     wu(deps.entries())

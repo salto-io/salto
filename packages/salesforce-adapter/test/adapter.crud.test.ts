@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
-import { ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, createRestriction, DeployResult, getChangeElement, Values, Change, toChange, ChangeGroup, isAdditionOrModificationChange, isServiceId, INSTANCE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, createRestriction, DeployResult, getChangeData, Values, Change, toChange, ChangeGroup, isAdditionOrModificationChange, isServiceId, INSTANCE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { MockInterface, stepManager } from '@salto-io/test-utils'
 import { Package, DeployResultLocator, DeployResult as JSForceDeployResult } from 'jsforce'
 import JSZip from 'jszip'
@@ -801,7 +801,7 @@ describe('SalesforceAdapter CRUD', () => {
 
         it('should return an InstanceElement', () => {
           expect(result.appliedChanges).toHaveLength(1)
-          expect(getChangeElement(result.appliedChanges[0])).toBeInstanceOf(InstanceElement)
+          expect(getChangeData(result.appliedChanges[0])).toBeInstanceOf(InstanceElement)
         })
 
         it('should call the connection methods correctly', async () => {
@@ -1069,7 +1069,7 @@ describe('SalesforceAdapter CRUD', () => {
         })
 
         it('should not add annotations to the object type', () => {
-          const updatedObj = getChangeElement(result.appliedChanges[0]) as ObjectType
+          const updatedObj = getChangeData(result.appliedChanges[0]) as ObjectType
           expect(updatedObj).toBeDefined()
           expect(updatedObj.annotations).toEqual(newElement.annotations)
         })
@@ -1175,7 +1175,7 @@ describe('SalesforceAdapter CRUD', () => {
                 name: constants.CUSTOM_FIELD,
                 members: await Promise.all(changes
                   .filter(isAdditionOrModificationChange)
-                  .map(getChangeElement)
+                  .map(getChangeData)
                   .map(field => apiName(field))),
               })
             })
@@ -1268,8 +1268,8 @@ describe('SalesforceAdapter CRUD', () => {
 
         it('should return change applied to the element', () => {
           expect(result.appliedChanges).toHaveLength(2)
-          expect(getChangeElement(result.appliedChanges[0])).toEqual(newElement)
-          expect(getChangeElement(result.appliedChanges[1])).toEqual(newElement.fields.banana)
+          expect(getChangeData(result.appliedChanges[0])).toEqual(newElement)
+          expect(getChangeData(result.appliedChanges[1])).toEqual(newElement.fields.banana)
         })
 
         it('should deploy changes to the object and fields', async () => {

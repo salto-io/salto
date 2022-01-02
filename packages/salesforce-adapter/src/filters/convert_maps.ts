@@ -17,7 +17,7 @@
 import _ from 'lodash'
 import {
   Element, ObjectType, isContainerType, MapType, ListType, InstanceElement, CORE_ANNOTATIONS,
-  Values, isAdditionOrModificationChange, isInstanceChange, getChangeElement, Change, isMapType,
+  Values, isAdditionOrModificationChange, isInstanceChange, getChangeData, Change, isMapType,
   isListType, isInstanceElement, createRefToElmWithValue, getDeepInnerType, isObjectType,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
@@ -323,7 +323,7 @@ export const getInstanceChanges = (
   awu(changes)
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
-    .filter(async change => await metadataType(getChangeElement(change)) === targetMetadataType)
+    .filter(async change => await metadataType(getChangeData(change)) === targetMetadataType)
     .toArray()
 )
 
@@ -371,7 +371,7 @@ const filter: FilterCreator = ({ config }) => ({
       // so that we can convert the object back correctly in onDeploy
       await convertFieldsBackToLists(instanceChanges, mapFieldDef)
 
-      const instanceType = await getChangeElement(instanceChanges[0]).getType()
+      const instanceType = await getChangeData(instanceChanges[0]).getType()
       await convertFieldTypesBackToLists(instanceType, mapFieldDef)
     })
   },
@@ -389,7 +389,7 @@ const filter: FilterCreator = ({ config }) => ({
       const mapFieldDef = metadataTypeToFieldToMapDef[targetMetadataType]
       convertFieldsBackToMaps(instanceChanges, mapFieldDef)
 
-      const instanceType = await getChangeElement(instanceChanges[0]).getType()
+      const instanceType = await getChangeData(instanceChanges[0]).getType()
       // after preDeploy, the fields with lists are exactly the ones that should be converted
       // back to lists
       const nonUniqueMapFields = await awu(Object.keys(instanceType.fields)).filter(

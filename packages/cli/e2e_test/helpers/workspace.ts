@@ -18,7 +18,7 @@ import { Plan, telemetrySender, preview, loadLocalWorkspace, AppConfig } from '@
 import { parser, Workspace, WorkspaceComponents } from '@salto-io/workspace'
 import { readTextFile, writeFile } from '@salto-io/file'
 import {
-  ActionName, Change, ElemID, getChangeElement, InstanceElement, ObjectType, Values,
+  ActionName, Change, ElemID, getChangeData, InstanceElement, ObjectType, Values,
   Element, TypeMap,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
@@ -252,7 +252,7 @@ export const runPreviewGetPlan = async (
   return preview(workspace, accounts)
 }
 
-const getChangedElementName = (change: Change): string => getChangeElement(change).elemID.name
+const getChangedElementName = (change: Change): string => getChangeData(change).elemID.name
 
 type ExpectedChange = { action: ActionName; element: string }
 export const verifyChanges = (plan: Plan,

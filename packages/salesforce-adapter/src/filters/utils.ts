@@ -19,7 +19,7 @@ import {
   Element, Field, isObjectType, ObjectType, InstanceElement, isInstanceElement, isField,
   TypeElement, BuiltinTypes, ElemID, CoreAnnotationTypes, TypeMap, Value, ReadOnlyElementsSource,
   isReferenceExpression, ReferenceExpression, ChangeDataType, Change, ChangeData,
-  isAdditionOrModificationChange, isRemovalOrModificationChange, getChangeElement, CORE_ANNOTATIONS,
+  isAdditionOrModificationChange, isRemovalOrModificationChange, getChangeData, CORE_ANNOTATIONS,
   createRefToElmWithValue,
 } from '@salto-io/adapter-api'
 import { getParents, buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -302,7 +302,7 @@ export const isInstanceOfType = (type: string) => (
 
 export const isInstanceOfTypeChange = (type: string) => (
   (change: Change): Promise<boolean> => (
-    isInstanceOfType(type)(getChangeElement(change))
+    isInstanceOfType(type)(getChangeData(change))
   )
 )
 

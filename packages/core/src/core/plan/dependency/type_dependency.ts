@@ -16,7 +16,7 @@
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
 import {
-  Field, InstanceElement, isType, getChangeElement, ChangeEntry, isFieldChangeEntry,
+  Field, InstanceElement, isType, getChangeData, ChangeEntry, isFieldChangeEntry,
   isInstanceChangeEntry, DependencyChanger, DependencyChange, addReferenceDependency,
   isDependentAction,
 } from '@salto-io/adapter-api'
@@ -28,12 +28,12 @@ const isFieldOrInstanceChange = (entry: ChangeEntry): entry is FieldOrInstanceCh
 
 export const addTypeDependency: DependencyChanger = async changes => {
   const typeChanges = collections.iterable.groupBy(
-    wu(changes).filter(([_id, change]) => isType(getChangeElement(change))),
-    ([_id, change]) => getChangeElement(change).elemID.getFullName(),
+    wu(changes).filter(([_id, change]) => isType(getChangeData(change))),
+    ([_id, change]) => getChangeData(change).elemID.getFullName(),
   )
 
   const addChangeTypeDependency = ([id, change]: FieldOrInstanceChange): DependencyChange[] => (
-    (typeChanges.get(getChangeElement(change).refType.elemID.getFullName()) ?? [])
+    (typeChanges.get(getChangeData(change).refType.elemID.getFullName()) ?? [])
       .filter(
         ([_id, typeChange]) => isDependentAction(change.action, typeChange.action)
       )

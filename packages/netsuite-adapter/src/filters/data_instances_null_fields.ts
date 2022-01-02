@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeElement, InstanceElement, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
+import { getChangeData, InstanceElement, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterWith } from '../filter'
@@ -30,7 +30,7 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
       .filter(isModificationChange)
       .filter(isInstanceChange)
       .filter(async change => isDataObjectType(
-        await getChangeElement<InstanceElement>(change).getType()
+        await getChangeData<InstanceElement>(change).getType()
       ))
       .forEach(async change => {
         const nullFields = _(change.data.before.value)

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ActionName, Change, getChangeElement, InstanceElement } from '@salto-io/adapter-api'
+import { ActionName, Change, getChangeData, InstanceElement } from '@salto-io/adapter-api'
 import { transformElement } from '@salto-io/adapter-utils'
 import { replaceUrlParams } from '../elements/request_parameters'
 import { HTTPWriteClientInterface } from '../client/http_client'
@@ -58,13 +58,13 @@ export const deployChange = async (
   fieldsToIgnore: string[] = [],
   additionalUrlVars?: Record<string, string>
 ): Promise<ResponseValue | ResponseValue[]> => {
-  const instance = getChangeElement(change)
+  const instance = getChangeData(change)
   const endpoint = endpointDetails?.[change.action]
   if (endpoint === undefined) {
     throw new Error(`No endpoint of type ${change.action} for ${instance.elemID.typeName}`)
   }
   const valuesToDeploy = _.pickBy(
-    (await filterIrrelevantValues(getChangeElement(change), change.action)).value,
+    (await filterIrrelevantValues(getChangeData(change), change.action)).value,
     (_value, key) => !fieldsToIgnore.includes(key)
   )
 

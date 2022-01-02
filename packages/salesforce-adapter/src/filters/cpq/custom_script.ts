@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, ObjectType, ListType, InstanceElement, isAdditionOrModificationChange, getChangeElement, Change, ChangeDataType, isListType, Field, isPrimitiveType, isObjectTypeChange, StaticFile, isFieldChange, isAdditionChange, isInstanceElement, createRefToElmWithValue } from '@salto-io/adapter-api'
+import { Element, ObjectType, ListType, InstanceElement, isAdditionOrModificationChange, getChangeData, Change, ChangeDataType, isListType, Field, isPrimitiveType, isObjectTypeChange, StaticFile, isFieldChange, isAdditionChange, isInstanceElement, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -115,7 +115,7 @@ const getCustomScriptObjectChange = async (
 ): Promise<Change<ObjectType> | undefined> =>
   awu(changes)
     .filter(isObjectTypeChange)
-    .find(change => isCustomScriptType(getChangeElement(change) as ObjectType))
+    .find(change => isCustomScriptType(getChangeData(change) as ObjectType))
 
 const applyFuncOnCustomScriptInstanceChanges = async (
   changes: ReadonlyArray<Change<ChangeDataType>>,
@@ -147,9 +147,9 @@ const applyFuncOnCustomScriptFieldChange = async (
 ): Promise<void> => {
   await awu(changes)
     .filter<Change<Field>>(isFieldChange)
-    .filter(change => isCustomScriptType(getChangeElement(change).parent))
+    .filter(change => isCustomScriptType(getChangeData(change).parent))
     .filter(
-      async change => refListFieldNames.includes(await apiName(getChangeElement(change), true))
+      async change => refListFieldNames.includes(await apiName(getChangeData(change), true))
     )
     .forEach(change => applyFunctionToChangeData(change, fn))
 }

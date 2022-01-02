@@ -18,7 +18,7 @@ import wu from 'wu'
 import {
   Element, ObjectType, ElemID, Field, DetailedChange, BuiltinTypes, InstanceElement, ListType,
   Values, CORE_ANNOTATIONS, isInstanceElement, isType, isField, PrimitiveTypes,
-  isObjectType, ContainerType, Change, AdditionChange, getChangeElement, PrimitiveType,
+  isObjectType, ContainerType, Change, AdditionChange, getChangeData, PrimitiveType,
   Value, TypeReference, INSTANCE_ANNOTATIONS, ReferenceExpression, createRefToElmWithValue,
   SaltoError,
   StaticFile,
@@ -664,7 +664,7 @@ describe('workspace', () => {
       const elemMap = await getElemMap(await workspace.elements())
       const lead = elemMap['salesforce.lead'] as ObjectType
       expect(Object.keys(lead.fields)).not.toContain('ext_field')
-      expect(changes.default.changes.map(getChangeElement).map(c => c.elemID.getFullName()).sort())
+      expect(changes.default.changes.map(getChangeData).map(c => c.elemID.getFullName()).sort())
         .toEqual(['salesforce.lead', 'multi.loc'].sort())
     })
 
@@ -823,7 +823,7 @@ describe('workspace', () => {
       expect((primaryEnvChanges.find(c => c.action === 'add') as AdditionChange<Element>).data.after)
         .toEqual(newAddedObject)
       const multiLocChange = primaryEnvChanges
-        .find(c => getChangeElement(c).elemID.isEqual(multiLocElemID))
+        .find(c => getChangeData(c).elemID.isEqual(multiLocElemID))
       expect(multiLocChange).toEqual({
         action: 'modify',
         data: {

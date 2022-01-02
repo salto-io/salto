@@ -56,8 +56,6 @@
     "jest": "^27.4.5",
     "jest-circus": "^27.4.5",
     "jest-each": "^26.6.2",
-    "jest-mock": "^27.4.2",
-    "jest-util": "^27.4.2",
     "typescript": "3.9.3"
   }
 }

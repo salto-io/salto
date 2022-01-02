@@ -15,38 +15,37 @@
 */
 import {
   BuiltinTypesByFullName,
+  ContainerType,
   createRefToElmWithValue,
   Element,
   Field,
   InstanceElement,
+  isContainerType,
   isInstanceElement,
   isListType,
   isMapType,
   isObjectType,
-  isType,
   ListType,
   MapType,
+  ObjectType,
   TypeElement,
 } from '@salto-io/adapter-api'
 import { TransformFunc, transformValues } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 
 const { awu } = collections.asynciterable
+const { isDefined } = values
 const log = logger(module)
 
-type ContainerValueType = {
-  type: string | ContainerValueType
-  container: 'list' | 'map'
-}
-
-type ContainedValueType = string | ContainerValueType
+export type ContainerFactory = (innerType: ObjectType) => ContainerType
 
 export type ReplaceObjectWithContainedValueConfig = {
   containedValuePath: string
-  containedValueType: ContainedValueType
+  containedValueType: string
+  containerFactory?: ContainerFactory
 }
 
 const DEFAULT_CONFIG: Record<string, ReplaceObjectWithContainedValueConfig> = {
@@ -73,36 +72,21 @@ type ModifiedField = {
   newType: TypeElement
 }
 
-const isContainerValueType = (containedValueType: ContainedValueType)
-  : containedValueType is ContainerValueType => !_.isString(containedValueType)
 
-
-function getContainedValueType(
-  typeElementByName: Record<string, TypeElement>,
-  containedValueType: ContainedValueType
-): TypeElement | undefined {
-  const getContainedValueContainerType = (containerValueType: ContainerValueType)
-    : TypeElement | undefined => {
-    const innerType = getContainedValueType(typeElementByName, containerValueType.type)
-    if (innerType === undefined) {
-      return undefined
-    }
-    return containerValueType.container === 'list'
-      ? new ListType(innerType)
-      : new MapType(innerType)
-  }
-
-  const getContainedValueObjectType = (typeName: string): TypeElement | undefined => (
-    typeElementByName[typeName] ?? BuiltinTypesByFullName[typeName]
-  )
-  return isContainerValueType(containedValueType)
-    ? getContainedValueContainerType(containedValueType)
-    : getContainedValueObjectType(containedValueType)
+const getContainedValueType = (
+  typeByName: Record<string, ObjectType>,
+  config: ReplaceObjectWithContainedValueConfig,
+): TypeElement => {
+  const containedValueType = typeByName[config.containedValueType]
+    ?? BuiltinTypesByFullName[config.containedValueType]
+  return isDefined(config.containerFactory)
+    ? config.containerFactory(containedValueType)
+    : containedValueType
 }
 
 
-const transformFunction = async (
-  typeElementByName: Record<string, TypeElement>,
+const replaceObjectWithContainedValueFunction = async (
+  typeByName: Record<string, ObjectType>,
   modifiedFields: ModifiedField[],
   configByTypeName: Record<string, ReplaceObjectWithContainedValueConfig>,
 ): Promise<TransformFunc> => async ({ field, value }) => {
@@ -110,14 +94,14 @@ const transformFunction = async (
     return value
   }
   const fieldType = await field.getType()
-  const fieldTypeName = isListType(fieldType) || isMapType(fieldType)
+  const fieldTypeName = isContainerType(fieldType)
     ? fieldType.refInnerType.elemID.typeName
     : fieldType.elemID.typeName
   const config = configByTypeName[fieldTypeName]
   if (config === undefined) {
     return value
   }
-  const containedValueType = getContainedValueType(typeElementByName, config.containedValueType)
+  const containedValueType = getContainedValueType(typeByName, config)
   if (containedValueType === undefined) {
     log.warn('Contained value type not found: %s', config.containedValueType)
     return value
@@ -140,9 +124,9 @@ const transformFunction = async (
   return newVal
 }
 
-export const replaceObjectWithContainedValue = async (
+const replaceObjectWithContainedValue = async (
   instance: InstanceElement,
-  typeElementByName: Record<string, TypeElement>,
+  typeByName: Record<string, ObjectType>,
   modifiedFields: ModifiedField[],
   configByTypeName: Record<string, ReplaceObjectWithContainedValueConfig>
 ): Promise<void> => {
@@ -151,8 +135,8 @@ export const replaceObjectWithContainedValue = async (
     type: await instance.getType(),
     strict: false,
     allowEmpty: true,
-    transformFunc: await transformFunction(
-      typeElementByName,
+    transformFunc: await replaceObjectWithContainedValueFunction(
+      typeByName,
       modifiedFields,
       configByTypeName,
     ),
@@ -173,13 +157,16 @@ const setFieldType = async (modifiedField: ModifiedField): Promise<void> => {
 
 /**
  * Replaces object values by type with a contained value.
- * Note: Supports List and Map types. The inner type will change to the containedValueType.
+ * Notes:
+ * ------
+ * - Should only be used on non deployable types, to avoid deploy problems.
+ * - Supports List and Map types. The inner type will change to the containedValueType.
  */
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[], configByTypeName = DEFAULT_CONFIG) => {
     const modifiedFields: ModifiedField[] = []
-    const typeElementByName = _.keyBy(
-      elements.filter(isType),
+    const typeByName = _.keyBy(
+      elements.filter(isObjectType),
       e => e.elemID.typeName
     )
     await awu(elements)
@@ -187,7 +174,7 @@ const filter: FilterCreator = () => ({
       .forEach(instance =>
         replaceObjectWithContainedValue(
           instance,
-          typeElementByName,
+          typeByName,
           modifiedFields,
           configByTypeName
         ))

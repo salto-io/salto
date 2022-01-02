@@ -19,7 +19,8 @@ import {
   createRefToElmWithValue,
   ElemID,
   InstanceElement,
-  ListType, MapType,
+  ListType,
+  MapType,
   ObjectType,
 } from '@salto-io/adapter-api'
 import { JIRA } from '../../src/constants'
@@ -119,13 +120,8 @@ describe('replaceObjectWithContainedValue', () => {
       },
       ObjectWithListOfListsField: {
         containedValuePath: 'lists',
-        containedValueType: {
-          container: 'list',
-          type: {
-            container: 'list',
-            type: 'string',
-          },
-        },
+        containedValueType: 'string',
+        containerFactory: (innerType => new ListType(new ListType(innerType))),
       },
       NoContainedValueAtPath: {
         containedValuePath: 'name',

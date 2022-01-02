@@ -15,15 +15,16 @@
 */
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { createChangeValidator } from '@salto-io/adapter-utils'
-import { deployment } from '@salto-io/adapter-components'
+import { config as configUtils, deployment } from '@salto-io/adapter-components'
 
 const {
-  deployTypesNotSupportedValidator, checkDeploymentBasedOnConfigValidator,
+  deployTypesNotSupportedValidator, createCheckDeploymentBasedOnConfigValidator,
 } = deployment.changeValidators
 
-const validators: ChangeValidator[] = [
-  checkDeploymentBasedOnConfigValidator,
-  deployTypesNotSupportedValidator,
-]
-
-export default createChangeValidator(validators)
+export default (apiConfig: configUtils.AdapterDuckTypeApiConfig): ChangeValidator => {
+  const validators: ChangeValidator[] = [
+    deployTypesNotSupportedValidator,
+    createCheckDeploymentBasedOnConfigValidator(apiConfig),
+  ]
+  return createChangeValidator(validators)
+}

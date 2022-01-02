@@ -29,9 +29,9 @@ import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
 import { FilterCreator, Filter, filtersRunner } from './filter'
-import { ZendeskConfig } from './config'
+import { API_DEFINITIONS_CONFIG, ZendeskConfig } from './config'
 import { ZENDESK_SUPPORT } from './constants'
-import changeValidator from './change_validator'
+import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
 import fieldReferencesFilter, { fieldNameToTypeMappingDefs } from './filters/field_references'
 import unorderedListsFilter from './filters/unordered_lists'
@@ -153,7 +153,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   // eslint-disable-next-line class-methods-use-this
   public get deployModifiers(): DeployModifiers {
     return {
-      changeValidator,
+      changeValidator: createChangeValidator(this.userConfig[API_DEFINITIONS_CONFIG]),
       dependencyChanger: deploymentUtils.dependency.removeStandaloneFieldDependency,
     }
   }

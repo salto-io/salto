@@ -728,6 +728,11 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       fieldsToHide: FIELDS_TO_HIDE.filter(field => field.fieldName !== 'id'),
     },
   },
+  workspace__apps: {
+    transformation: {
+      fieldsToHide: FIELDS_TO_HIDE.filter(field => field.fieldName !== 'id'),
+    },
+  },
   app_installation: {
     transformation: {
       sourceTypeName: 'app_installations__installations',

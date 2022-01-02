@@ -21,7 +21,7 @@ import { mockWorkspace } from './workspace'
 
 const { awu } = collections.asynciterable
 describe('workspace', () => {
-  const workspaceBaseDir = path.resolve(`${__dirname}/../../test/test-nacls`)
+  const workspaceBaseDir = path.resolve(`${__dirname}/../test/test-nacls`)
   const naclFileName = path.join(workspaceBaseDir, 'all.nacl')
   const validation1FileName = path.join(workspaceBaseDir, 'validation1.nacl')
   const validation2FileName = path.join(workspaceBaseDir, 'validation2.nacl')

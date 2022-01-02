@@ -16,16 +16,38 @@
 import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { InstanceElement, isInstanceElement, ObjectType, ElemID, MapType, ListType, BuiltinTypes } from '@salto-io/adapter-api'
-import { elements as elementUtils } from '@salto-io/adapter-components'
+import {
+  BuiltinTypes,
+  ElemID,
+  InstanceElement,
+  isInstanceElement,
+  ListType,
+  MapType,
+  ObjectType,
+} from '@salto-io/adapter-api'
 import * as adapterComponents from '@salto-io/adapter-components'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements, naclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { adapter } from '../src/adapter_creator'
 import { oauthClientCredentialsType } from '../src/auth'
-import { configType, getUpdatedConfig, FETCH_CONFIG, API_DEFINITIONS_CONFIG, DEFAULT_INCLUDE_TYPES, DEFAULT_API_DEFINITIONS, DEFAULT_SETTINGS_INCLUDE_TYPES } from '../src/config'
+import {
+  API_DEFINITIONS_CONFIG,
+  configType,
+  DEFAULT_API_DEFINITIONS,
+  DEFAULT_INCLUDE_TYPES,
+  DEFAULT_SETTINGS_INCLUDE_TYPES,
+  FETCH_CONFIG,
+  getUpdatedConfig,
+} from '../src/config'
 import mockReplies from './mock_replies.json'
-import { ZUORA_BILLING, CUSTOM_OBJECT_DEFINITION_TYPE, CUSTOM_OBJECT, STANDARD_OBJECT, LIST_ALL_SETTINGS_TYPE } from '../src/constants'
+import {
+  CUSTOM_OBJECT,
+  CUSTOM_OBJECT_DEFINITION_TYPE,
+  LIST_ALL_SETTINGS_TYPE,
+  STANDARD_OBJECT,
+  ZUORA_BILLING,
+} from '../src/constants'
 import { isObjectDef } from '../src/element_utils'
 
 const { awu } = collections.asynciterable
@@ -67,118 +89,117 @@ const getObjectDefTypes = (): Record<string, ObjectType> => {
   )
 }
 
-const generateMockTypes: typeof elementUtils.swagger.generateTypes = async (
-  adapterName, config, schemasAndRefs
-) => {
-  if (schemasAndRefs !== undefined) {
-    const res = await jest.requireActual('@salto-io/adapter-components').elements.swagger.generateTypes(adapterName, config, schemasAndRefs)
-    return res
-  }
-  return {
-    allTypes: {
-      ...Object.fromEntries(DEFAULT_INCLUDE_TYPES.map(
-        type => [naclCase(type), new ObjectType({ elemID: new ElemID(ZUORA_BILLING, type) })]
-      )),
-      ...getObjectDefTypes(),
-      [LIST_ALL_SETTINGS_TYPE]: new ObjectType({
-        elemID: new ElemID(ZUORA_BILLING, LIST_ALL_SETTINGS_TYPE),
-        fields: {
-          settings: { refType: new ListType(BuiltinTypes.UNKNOWN) },
-        },
-      }),
-      Workflows: new ObjectType({
-        elemID: new ElemID(ZUORA_BILLING, 'Workflows'),
-        fields: {
-          data: { refType: new ListType(new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'Workflow') })) },
-          pagination: { refType: BuiltinTypes.UNKNOWN },
-        },
-      }),
-      EventTriggers: new ObjectType({
-        elemID: new ElemID(ZUORA_BILLING, 'EventTriggers'),
-        fields: {
-          data: { refType: new ListType(new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'EventTrigger') })) },
-        },
-      }),
-      NotificationDefinitions: new ObjectType({
-        elemID: new ElemID(ZUORA_BILLING, 'NotificationDefinitions'),
-        fields: {
-          data: { refType: new ListType(new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'PublicNotificationDefinition') })) },
-        },
-      }),
-      NotificationEmailTemplates: new ObjectType({
-        elemID: new ElemID(ZUORA_BILLING, 'NotificationEmailTemplates'),
-        fields: {
-          data: { refType: new ListType(new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'PublicEmailTemplate') })) },
-        },
-      }),
-    },
-    parsedConfigs: {
-      CatalogProduct: {
-        request: {
-          url: '/v1/catalog/products',
-        },
-      },
-      CustomObject: {
-        request: {
-          url: '/objects/definitions/default',
-        },
-      },
-      AccountingCodes: {
-        request: {
-          url: '/v1/accounting-codes',
-        },
-      },
-      AccountingPeriods: {
-        request: {
-          url: '/v1/accounting-periods',
-        },
-      },
-      HostedPages: {
-        request: {
-          url: '/v1/hostedpages',
-        },
-      },
-      NotificationDefinitions: {
-        request: {
-          url: '/notifications/notification-definitions',
-        },
-      },
-      NotificationEmailTemplates: {
-        request: {
-          url: '/notifications/email-templates',
-        },
-      },
-      PaymentGateways: {
-        request: {
-          url: '/v1/paymentgateways',
-        },
-      },
-      SequenceSets: {
-        request: {
-          url: '/v1/sequence-sets',
-        },
-      },
-      WorkflowExport: {
-        request: {
-          url: '/workflows/{workflow_id}/export',
-        },
-      },
-      Workflows: {
-        request: {
-          url: '/workflows',
-        },
-      },
-      ListAllSettings: {
-        request: {
-          url: '/settings/listing',
-        },
-      },
-    },
-  }
-}
-
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
+  const generateMockTypes: typeof elementUtils.swagger.generateTypes = async (
+    adapterName, config, schemasAndRefs
+  ) => {
+    if (schemasAndRefs !== undefined) {
+      const res = await jest.requireActual('@salto-io/adapter-components').elements.swagger.generateTypes(adapterName, config, schemasAndRefs)
+      return res
+    }
+    return {
+      allTypes: {
+        ...Object.fromEntries(DEFAULT_INCLUDE_TYPES.map(
+          type => [naclCase(type), new ObjectType({ elemID: new ElemID(ZUORA_BILLING, type) })]
+        )),
+        ...getObjectDefTypes(),
+        [LIST_ALL_SETTINGS_TYPE]: new ObjectType({
+          elemID: new ElemID(ZUORA_BILLING, LIST_ALL_SETTINGS_TYPE),
+          fields: {
+            settings: { refType: new ListType(BuiltinTypes.UNKNOWN) },
+          },
+        }),
+        Workflows: new ObjectType({
+          elemID: new ElemID(ZUORA_BILLING, 'Workflows'),
+          fields: {
+            data: { refType: new ListType(new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'Workflow') })) },
+            pagination: { refType: BuiltinTypes.UNKNOWN },
+          },
+        }),
+        EventTriggers: new ObjectType({
+          elemID: new ElemID(ZUORA_BILLING, 'EventTriggers'),
+          fields: {
+            data: { refType: new ListType(new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'EventTrigger') })) },
+          },
+        }),
+        NotificationDefinitions: new ObjectType({
+          elemID: new ElemID(ZUORA_BILLING, 'NotificationDefinitions'),
+          fields: {
+            data: { refType: new ListType(new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'PublicNotificationDefinition') })) },
+          },
+        }),
+        NotificationEmailTemplates: new ObjectType({
+          elemID: new ElemID(ZUORA_BILLING, 'NotificationEmailTemplates'),
+          fields: {
+            data: { refType: new ListType(new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'PublicEmailTemplate') })) },
+          },
+        }),
+      },
+      parsedConfigs: {
+        CatalogProduct: {
+          request: {
+            url: '/v1/catalog/products',
+          },
+        },
+        CustomObject: {
+          request: {
+            url: '/objects/definitions/default',
+          },
+        },
+        AccountingCodes: {
+          request: {
+            url: '/v1/accounting-codes',
+          },
+        },
+        AccountingPeriods: {
+          request: {
+            url: '/v1/accounting-periods',
+          },
+        },
+        HostedPages: {
+          request: {
+            url: '/v1/hostedpages',
+          },
+        },
+        NotificationDefinitions: {
+          request: {
+            url: '/notifications/notification-definitions',
+          },
+        },
+        NotificationEmailTemplates: {
+          request: {
+            url: '/notifications/email-templates',
+          },
+        },
+        PaymentGateways: {
+          request: {
+            url: '/v1/paymentgateways',
+          },
+        },
+        SequenceSets: {
+          request: {
+            url: '/v1/sequence-sets',
+          },
+        },
+        WorkflowExport: {
+          request: {
+            url: '/workflows/{workflow_id}/export',
+          },
+        },
+        Workflows: {
+          request: {
+            url: '/workflows',
+          },
+        },
+        ListAllSettings: {
+          request: {
+            url: '/settings/listing',
+          },
+        },
+      },
+    }
+  }
   return {
     ...actual,
     elements: {

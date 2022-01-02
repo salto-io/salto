@@ -22,7 +22,7 @@ describe('Test go to definitions', () => {
   let naclFileContent: string
 
   beforeAll(async () => {
-    const naclPath = path.resolve(`${__dirname}/../../test/test-nacls/all.nacl`)
+    const naclPath = path.resolve(`${__dirname}/../test/test-nacls/all.nacl`)
     naclFileContent = fs.readFileSync(naclPath).toString()
   })
 

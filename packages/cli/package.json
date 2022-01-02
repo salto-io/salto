@@ -96,6 +96,7 @@
     "source-map-loader": "^0.2.4",
     "supertest": "^5.0.0",
     "tmp-promise": "^2.0.2",
+    "ts-jest": "^27.1.2",
     "typescript": "3.9.3",
     "wait-for-expect": "^3.0.2",
     "webpack": "^5.11.0",

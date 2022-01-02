@@ -19,15 +19,14 @@ import { ZUORA_BILLING } from '../../src/constants'
 import { getStandardObjectElements } from '../../src/transformers/standard_objects'
 import { DEFAULT_API_DEFINITIONS } from '../../src/config'
 
-const getMockInstances: typeof elementUtils.swagger.getAllInstances = async () => (
-  [new InstanceElement(
-    'a',
-    new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'CustomObjectDefinition') })
-  )]
-)
-
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
+  const getMockInstances: typeof elementUtils.swagger.getAllInstances = async () => (
+    [new InstanceElement(
+      'a',
+      new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'CustomObjectDefinition') })
+    )]
+  )
   return {
     ...actual,
     elements: {

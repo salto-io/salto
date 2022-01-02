@@ -28,7 +28,7 @@ describe('Test go to definitions', () => {
   let workspace: EditorWorkspace
   let definitionsTree: PositionContext
   let fullElementSource: ReadOnlyElementsSource | undefined
-  const baseDir = path.resolve(`${__dirname}/../../test/test-nacls`)
+  const baseDir = path.resolve(`${__dirname}/../test/test-nacls`)
   const naclFileName = path.join(baseDir, 'all.nacl')
 
   beforeAll(async () => {

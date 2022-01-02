@@ -713,7 +713,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     transformation: {
       sourceTypeName: 'app_installations__installations',
       fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'updated', fieldType: 'string' }),
-      idFields: ['settings.name', 'id'],
+      idFields: ['settings.name'],
       fileNameFields: ['settings.name'],
     },
     deployRequests: {
@@ -843,6 +843,20 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   triggers: {
     request: {
       url: '/triggers',
+    },
+  },
+  trigger_definitions: {
+    request: {
+      url: '/triggers/definitions',
+    },
+    transformation: {
+      dataField: 'definitions',
+    },
+  },
+  trigger_definition: {
+    transformation: {
+      sourceTypeName: 'trigger_definitions__definitions',
+      isSingleton: true,
     },
   },
   trigger_categories: {

@@ -894,7 +894,6 @@ zendesk_support {
           ]
           idFields = [
             "settings.name",
-            "id",
           ]
           fileNameFields = [
             "settings.name",

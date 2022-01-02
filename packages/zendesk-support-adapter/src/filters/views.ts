@@ -22,6 +22,7 @@ import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { deployment as deploymentUtils } from '@salto-io/adapter-components'
 import { values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
+import { getZendeskError } from '../errors'
 
 const log = logger(module)
 
@@ -82,7 +83,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           if (!_.isError(err)) {
             throw err
           }
-          return err
+          return getZendeskError(getChangeElement(change).elemID.getFullName(), err)
         }
       })
     )

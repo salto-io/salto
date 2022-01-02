@@ -20,6 +20,7 @@ import {
 import { logger } from '@salto-io/logging'
 import { deployment as deploymentUtils, config as configUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
+import { getZendeskError } from '../errors'
 
 const log = logger(module)
 
@@ -61,7 +62,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           if (!_.isError(err)) {
             throw err
           }
-          return err
+          return getZendeskError(getChangeElement(change).elemID.getFullName(), err)
         }
       })
     )

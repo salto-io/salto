@@ -468,4 +468,44 @@ describe('workflowFilter', () => {
       ])
     })
   })
+
+  it('should not convert invalid workflow', async () => {
+    const instance = new InstanceElement(
+      'instance',
+      workflowType,
+      {
+        transitions: [
+          {
+            rules: {
+              postFunctions: 'invalid',
+              validators: [
+                {
+                  type: 'ParentStatusValidator',
+                  configuration: {
+                    windowsDays: '1',
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      }
+    )
+    await filter.onFetch([instance])
+    expect(instance.value.transitions).toEqual([
+      {
+        rules: {
+          postFunctions: 'invalid',
+          validators: [
+            {
+              type: 'ParentStatusValidator',
+              configuration: {
+                windowsDays: '1',
+              },
+            },
+          ],
+        },
+      },
+    ])
+  })
 })

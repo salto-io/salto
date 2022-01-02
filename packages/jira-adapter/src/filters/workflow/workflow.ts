@@ -28,10 +28,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Element, Field, InstanceElement, isInstanceElement, isObjectType, ListType, MapType, Values } from '@salto-io/adapter-api'
+import { BuiltinTypes, Element, Field, isInstanceElement, isObjectType, ListType, MapType } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
+import Ajv from 'ajv'
+import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { postFunctionType, types as postFunctionTypes } from './post_functions_types'
+import { Rules, Status, Validator, Workflow, WORKFLOW_SCHEMA } from './types'
 import { validatorType, types as validatorTypes } from './validators_types'
+
+const log = logger(module)
 
 // Taken from https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-workflows/#api-rest-api-3-workflow-post
 const SUPPORTED_POST_FUNCTIONS_TYPES = [
@@ -57,45 +63,47 @@ const SUPPORTED_ONLY_INITIAL_POST_FUNCTION = [
 
 const WORKFLOW_TYPE_NAME = 'Workflow'
 
-const transformStatus = (status: Values): void => {
+const transformStatus = (status: Status): void => {
   status.properties = status.properties?.additionalProperties
   // This is not deployable and we get another property
   // of "jira.issue.editable" with the same value
   delete status.properties?.issueEditable
 }
 
-const transformPostFunctions = (rules: Values, transitionType: string): void => {
+const transformPostFunctions = (rules: Rules, transitionType?: string): void => {
   rules.postFunctions
-    ?.filter(({ type }: Values) => type === 'FireIssueEventFunction')
-    .forEach((postFunc: Values) => {
+    ?.filter(({ type }) => type === 'FireIssueEventFunction')
+    .forEach(postFunc => {
       // This is not deployable and the id property provides the same info
       delete postFunc.configuration?.event?.name
     })
 
     rules.postFunctions
-      ?.filter(({ type }: Values) => type === 'SetIssueSecurityFromRoleFunction')
-      .forEach((postFunc: Values) => {
+      ?.filter(({ type }) => type === 'SetIssueSecurityFromRoleFunction')
+      .forEach(postFunc => {
         // This is not deployable and the id property provides the same info
         delete postFunc.configuration?.projectRole?.name
       })
 
     rules.postFunctions = rules.postFunctions?.filter(
-      (postFunction: Values) => (transitionType === 'initial'
-        ? SUPPORTED_ONLY_INITIAL_POST_FUNCTION.includes(postFunction.type)
-        : SUPPORTED_POST_FUNCTIONS_TYPES.includes(postFunction.type)),
+      postFunction => (transitionType === 'initial'
+        ? SUPPORTED_ONLY_INITIAL_POST_FUNCTION.includes(postFunction.type ?? '')
+        : SUPPORTED_POST_FUNCTIONS_TYPES.includes(postFunction.type ?? '')),
     )
 }
 
-const transformValidator = (validator: Values): void => {
+const transformValidator = (validator: Validator): void => {
   const config = validator.configuration
   if (config === undefined) {
     return
   }
 
-  config.windowsDays = config.windowsDays && parseInt(config.windowsDays, 10)
+  config.windowsDays = _.isString(config.windowsDays)
+    ? parseInt(config.windowsDays, 10)
+    : config.windowsDays
 
   // The name value is not deployable and the id property provides the same info
-  config.parentStatuses?.forEach((status: Values) => { delete status.name })
+  config.parentStatuses?.forEach(status => { delete status.name })
   delete config.previousStatus?.name
 
   if (config.field !== undefined) {
@@ -109,23 +117,23 @@ const transformValidator = (validator: Values): void => {
   }
 }
 
-const transformRules = (rules: Values, transitionType: string): void => {
+const transformRules = (rules: Rules, transitionType?: string): void => {
   rules.conditions = rules.conditionsTree
   delete rules.conditionsTree
   transformPostFunctions(rules, transitionType)
   rules.validators?.forEach(transformValidator)
 }
 
-const transformWorkflowInstance = (instance: InstanceElement): void => {
-  instance.value.entityId = instance.value.id?.entityId
-  instance.value.name = instance.value.id?.name
-  delete instance.value.id
+const transformWorkflowInstance = (workflowValues: Workflow): void => {
+  workflowValues.entityId = workflowValues.id?.entityId
+  workflowValues.name = workflowValues.id?.name
+  delete workflowValues.id
 
-  instance.value.statuses?.forEach(transformStatus)
+  workflowValues.statuses?.forEach(transformStatus)
 
-  instance.value.transitions
-    ?.filter((transition: Values) => transition.rules !== undefined)
-    .forEach((transition: Values) => transformRules(transition.rules, transition.type))
+  workflowValues.transitions
+    ?.filter(transition => transition.rules !== undefined)
+    .forEach(transition => transformRules(transition.rules as Rules, transition.type))
 }
 
 // This filter transforms the workflow values structure so it will fit its deployment endpoint
@@ -138,26 +146,39 @@ const filter: FilterCreator = () => ({
     }
 
     const workflowStatusType = types.find(element => element.elemID.name === 'WorkflowStatus')
-    if (workflowStatusType !== undefined) {
+    if (workflowStatusType === undefined) {
+      log.warn('WorkflowStatus type was not received in fetch')
+    } else {
       workflowStatusType.fields.properties = new Field(workflowStatusType, 'properties', new MapType(BuiltinTypes.STRING))
     }
 
     const workflowRulesType = types.find(element => element.elemID.name === 'WorkflowRules')
-    if (workflowRulesType !== undefined) {
+
+    if (workflowRulesType === undefined) {
+      log.warn('WorkflowRules type was not received in fetch')
+    } else {
       workflowRulesType.fields.conditions = new Field(workflowRulesType, 'conditions', await workflowRulesType.fields.conditionsTree.getType())
       delete workflowRulesType.fields.conditionsTree
 
       workflowRulesType.fields.postFunctions = new Field(workflowRulesType, 'postFunctions', new ListType(postFunctionType))
       workflowRulesType.fields.validators = new Field(workflowRulesType, 'validators', new ListType(validatorType))
     }
-
     elements.push(...postFunctionTypes)
     elements.push(...validatorTypes)
+
+    const ajv = new Ajv({ allErrors: true, strict: false })
 
     elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
-      .forEach(transformWorkflowInstance)
+      .filter(instance => {
+        if (!ajv.validate<Workflow>(WORKFLOW_SCHEMA, instance.value)) {
+          log.warn(`Received an invalid workflow ${instance.elemID.getFullName()}, errors: ${ajv.errorsText()}`)
+          return false
+        }
+        return true
+      })
+      .forEach(instance => transformWorkflowInstance(instance.value))
   },
 })
 

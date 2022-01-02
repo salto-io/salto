@@ -45,7 +45,7 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
   {
     src: { field: 'id', parentTypes: ['WorkflowStatus'] },
     serializationStrategy: 'id',
-    target: { type: 'StatusDetails' },
+    target: { type: 'Status' },
   },
   {
     src: { field: 'id', parentTypes: ['TransitionScreenDetails'] },
@@ -55,12 +55,12 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
   {
     src: { field: 'to', parentTypes: ['Transition'] },
     serializationStrategy: 'id',
-    target: { type: 'StatusDetails' },
+    target: { type: 'Status' },
   },
   {
     src: { field: 'from', parentTypes: ['Transition'] },
     serializationStrategy: 'id',
-    target: { type: 'StatusDetails' },
+    target: { type: 'Status' },
   },
   {
     src: { field: 'id', parentTypes: ['ProjectRoleConfig'] },
@@ -106,7 +106,7 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
   {
     src: { field: 'id', parentTypes: ['StatusRef'] },
     serializationStrategy: 'id',
-    target: { type: 'StatusDetails' },
+    target: { type: 'Status' },
   },
 ]
 

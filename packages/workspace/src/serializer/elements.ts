@@ -145,7 +145,8 @@ export const serialize = <T = Element>(
     if (isElement(e.value)) {
       return saltoClassReplacer(new ReferenceExpression(e.value.elemID))
     }
-    return e.value
+    // eslint-disable-next-line no-use-before-define
+    return _.cloneDeepWith(e.value, replacer)
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const resolveCircles = (v: any): any => (

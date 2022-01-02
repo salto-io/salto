@@ -14,35 +14,34 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { checkDeploymentBasedOnConfigValidator } from '../../../src/deployment/change_validators/check_deployment_based_on_config'
+import { AdapterApiConfig } from '../../../src/config/shared'
+import { createCheckDeploymentBasedOnConfigValidator } from '../../../src/deployment/change_validators/check_deployment_based_on_config'
 
 describe('checkDeploymentBasedOnConfigValidator', () => {
   let type: ObjectType
-  let config: InstanceElement
-  beforeEach(() => {
-    type = new ObjectType({ elemID: new ElemID('dum', 'test') })
-    config = new InstanceElement(
-      'instance',
-      new ObjectType({ elemID: new ElemID('dum', 'config') }),
-      {
-        apiDefinitions: {
-          types: {
-            test: {
-              deployRequests: {
-                add: {
-                  url: '/test',
-                  method: 'post',
-                },
-              },
-            },
+  const apiConfig: AdapterApiConfig = {
+    typeDefaults: {
+      transformation: {
+        idFields: ['id'],
+      },
+    },
+    types: {
+      test: {
+        deployRequests: {
+          add: {
+            url: '/test',
+            method: 'post',
           },
         },
-      }
-    )
+      },
+    },
+  }
+  beforeEach(() => {
+    type = new ObjectType({ elemID: new ElemID('dum', 'test') })
   })
 
   it('should not return an error when the changed element is not an instance', async () => {
-    const errors = await checkDeploymentBasedOnConfigValidator([
+    const errors = await createCheckDeploymentBasedOnConfigValidator(apiConfig)([
       toChange({ after: type }),
     ])
     expect(errors).toEqual([])
@@ -53,9 +52,8 @@ describe('checkDeploymentBasedOnConfigValidator', () => {
       'test2',
       new ObjectType({ elemID: new ElemID('dum', 'test2') }),
     )
-    const errors = await checkDeploymentBasedOnConfigValidator(
+    const errors = await createCheckDeploymentBasedOnConfigValidator(apiConfig)(
       [toChange({ after: instance })],
-      config,
     )
     expect(errors).toEqual([{
       elemID: instance.elemID,
@@ -67,9 +65,8 @@ describe('checkDeploymentBasedOnConfigValidator', () => {
 
   it('should return an error when type does not support specific', async () => {
     const instance = new InstanceElement('test', type)
-    const errors = await checkDeploymentBasedOnConfigValidator(
+    const errors = await createCheckDeploymentBasedOnConfigValidator(apiConfig)(
       [toChange({ before: instance })],
-      config,
     )
     expect(errors).toEqual([{
       elemID: instance.elemID,
@@ -81,9 +78,8 @@ describe('checkDeploymentBasedOnConfigValidator', () => {
 
   it('should not return an error when operation is supported', async () => {
     const instance = new InstanceElement('test', type)
-    const errors = await checkDeploymentBasedOnConfigValidator(
+    const errors = await createCheckDeploymentBasedOnConfigValidator(apiConfig)(
       [toChange({ after: instance })],
-      config,
     )
     expect(errors).toEqual([])
   })

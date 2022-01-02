@@ -13,18 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator } from '@salto-io/adapter-api'
-import { createChangeValidator } from '@salto-io/adapter-utils'
-import { config as configUtils, deployment } from '@salto-io/adapter-components'
+import _ from 'lodash'
+import { EOL } from 'os'
+import { client as clientUtils } from '@salto-io/adapter-components'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 
-const {
-  deployTypesNotSupportedValidator, createCheckDeploymentBasedOnConfigValidator,
-} = deployment.changeValidators
-
-export default (apiConfig: configUtils.AdapterDuckTypeApiConfig): ChangeValidator => {
-  const validators: ChangeValidator[] = [
-    deployTypesNotSupportedValidator,
-    createCheckDeploymentBasedOnConfigValidator(apiConfig),
-  ]
-  return createChangeValidator(validators)
+export const getZendeskError = (fullName: string, error: Error): Error => {
+  if (!(error instanceof clientUtils.HTTPError)) {
+    return error
+  }
+  const baseErrorMessage = `Deployment of ${fullName} failed: ${error}`
+  const errorMessage = (!_.isPlainObject(error.response.data))
+    ? baseErrorMessage
+    : [baseErrorMessage, safeJsonStringify(error.response.data, undefined, 2)].join(EOL)
+  return new Error(errorMessage)
 }

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { values, collections, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { transformElement, TransformFunc, transformValues, applyFunctionToChangeData, elementAnnotationTypes, safeJsonStringify } from '@salto-io/adapter-utils'
+import { transformElement, TransformFunc, transformValues, applyFunctionToChangeData, elementAnnotationTypes, safeJsonStringify, resolvePath } from '@salto-io/adapter-utils'
 import { CORE_ANNOTATIONS, Element, isInstanceElement, isType, TypeElement, getField,
   DetailedChange, isRemovalChange, ElemID, isObjectType, ObjectType, Values,
   isRemovalOrModificationChange, isAdditionOrModificationChange, isElement, isField,
@@ -63,6 +63,15 @@ export const getElementHiddenParts = async <T extends Element>(
   const storeHiddenPaths: TransformFunc = async ({ value, field, path }) => {
     if (await hiddenFunc(field, elementsSource)) {
       if (path !== undefined) {
+        const parentPath = path.createParentID()
+        if (!parentPath.isBaseID() && workspaceElement !== undefined) {
+          const workspaceValue = resolvePath(workspaceElement, parentPath)
+          // If the parent value is not an object, (e.g., deleted or replaced with a primitive),
+          // we don't want to merge hidden values from state
+          if (!_.isPlainObject(workspaceValue)) {
+            return undefined
+          }
+        }
         hiddenPaths.add(path.getFullName())
         let ancestor = path.createParentID()
         while (!ancestorsOfHiddenPaths.has(ancestor.getFullName())) {

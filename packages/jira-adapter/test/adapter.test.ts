@@ -60,7 +60,7 @@ describe('adapter', () => {
     })
   })
   describe('deploy', () => {
-    const issueTypeSchemeMappingType = new ObjectType({ elemID: new ElemID(JIRA, 'IssueTypeSchemeMapping'), fields: { issueTypeId: { refType: BuiltinTypes.STRING } } })
+    const fieldConfigurationIssueTypeItemType = new ObjectType({ elemID: new ElemID(JIRA, 'FieldConfigurationIssueTypeItem'), fields: { issueTypeId: { refType: BuiltinTypes.STRING } } })
     let deployChangeMock: jest.MockedFunction<typeof deployment.deployChange>
     beforeEach(() => {
       deployChangeMock = deployment.deployChange as jest.MockedFunction<
@@ -80,14 +80,14 @@ describe('adapter', () => {
         changeGroup: {
           groupID: 'group',
           changes: [
-            toChange({ before: new InstanceElement('inst1', issueTypeSchemeMappingType), after: new InstanceElement('inst1', issueTypeSchemeMappingType) }),
-            toChange({ before: new InstanceElement('inst2', issueTypeSchemeMappingType) }),
+            toChange({ before: new InstanceElement('inst1', fieldConfigurationIssueTypeItemType), after: new InstanceElement('inst1', fieldConfigurationIssueTypeItemType) }),
+            toChange({ before: new InstanceElement('inst2', fieldConfigurationIssueTypeItemType) }),
           ],
         },
       })
 
       expect(deployRes.appliedChanges).toEqual([
-        toChange({ before: new InstanceElement('inst1', issueTypeSchemeMappingType), after: new InstanceElement('inst1', issueTypeSchemeMappingType) }),
+        toChange({ before: new InstanceElement('inst1', fieldConfigurationIssueTypeItemType), after: new InstanceElement('inst1', fieldConfigurationIssueTypeItemType) }),
       ])
     })
 
@@ -102,8 +102,8 @@ describe('adapter', () => {
           groupID: 'group',
           changes: [
             toChange({
-              before: new InstanceElement('inst1', issueTypeSchemeMappingType),
-              after: new InstanceElement('inst1', issueTypeSchemeMappingType, { issueTypeId: new ReferenceExpression(referencedInstance.elemID, referencedInstance) }),
+              before: new InstanceElement('inst1', fieldConfigurationIssueTypeItemType),
+              after: new InstanceElement('inst1', fieldConfigurationIssueTypeItemType, { issueTypeId: new ReferenceExpression(referencedInstance.elemID, referencedInstance) }),
             }),
           ],
         },
@@ -111,11 +111,13 @@ describe('adapter', () => {
 
       expect(deployChangeMock).toHaveBeenCalledWith(
         toChange({
-          before: new InstanceElement('inst1', issueTypeSchemeMappingType),
-          after: new InstanceElement('inst1', issueTypeSchemeMappingType, { issueTypeId: '3' }),
+          before: new InstanceElement('inst1', fieldConfigurationIssueTypeItemType),
+          after: new InstanceElement('inst1', fieldConfigurationIssueTypeItemType, { issueTypeId: '3' }),
         }),
         expect.any(JiraClient),
         undefined,
+        [],
+        undefined
       )
     })
 
@@ -131,15 +133,15 @@ describe('adapter', () => {
         changeGroup: {
           groupID: 'group',
           changes: [
-            toChange({ after: new InstanceElement('inst1', issueTypeSchemeMappingType) }),
-            toChange({ before: new InstanceElement('inst2', issueTypeSchemeMappingType) }),
+            toChange({ after: new InstanceElement('inst1', fieldConfigurationIssueTypeItemType) }),
+            toChange({ before: new InstanceElement('inst2', fieldConfigurationIssueTypeItemType) }),
           ],
         },
       })
 
       expect(deployRes.errors).toEqual([
-        new Error('Deployment of jira.IssueTypeSchemeMapping.instance.inst1 failed: Error: some error. errorMessage'),
-        new Error('Deployment of jira.IssueTypeSchemeMapping.instance.inst2 failed: Error: some error'),
+        new Error('Deployment of jira.FieldConfigurationIssueTypeItem.instance.inst1 failed: Error: some error. errorMessage'),
+        new Error('Deployment of jira.FieldConfigurationIssueTypeItem.instance.inst2 failed: Error: some error'),
       ])
     })
 
@@ -155,6 +157,20 @@ describe('adapter', () => {
       })
 
       expect((getChangeElement(appliedChanges[0]) as InstanceElement)?.value.id).toEqual(2)
+    })
+    it('should not add the new id on addition if received an invalid response', async () => {
+      deployChangeMock.mockResolvedValue([])
+      const instance = new InstanceElement('instance', new ObjectType({ elemID: new ElemID(JIRA, 'obj') }))
+      const { appliedChanges } = await adapter.deploy({
+        changeGroup: {
+          groupID: 'group',
+          changes: [
+            toChange({ after: instance }),
+          ],
+        },
+      })
+
+      expect((getChangeElement(appliedChanges[0]) as InstanceElement)?.value.id).toBeUndefined()
     })
   })
   describe('deployModifiers', () => {

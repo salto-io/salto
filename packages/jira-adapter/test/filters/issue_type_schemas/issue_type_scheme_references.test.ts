@@ -16,9 +16,9 @@
 import 'jest-extended'
 import { filterUtils } from '@salto-io/adapter-components'
 import { Element, ElemID, ReferenceExpression } from '@salto-io/adapter-api'
-import { getDefaultAdapterConfig, mockClient } from '../utils'
-import issueTypeSchemeReferences from '../../src/filters/issue_type_scheme_references'
-import { instanceCreators } from '../mock_elements'
+import { getDefaultAdapterConfig, mockClient } from '../../utils'
+import issueTypeSchemeReferences from '../../../src/filters/issue_type_schemas/issue_type_scheme_references'
+import { instanceCreators } from '../../mock_elements'
 
 describe('issueTypeSchemeReferences', () => {
   const ISSUE_TYPES_REFERENCES = [
@@ -40,10 +40,10 @@ describe('issueTypeSchemeReferences', () => {
     }
   })
 
-  it('should convert the value of the "issueTypes" field to list of references', async () => {
+  it('should convert the value of the "issueTypeIds" field to list of references', async () => {
     const issueTypeScheme = instanceCreators.issueTypeScheme('TestScheme', ISSUE_TYPES_REFERENCES)
     const elements = await runFilter(issueTypeScheme)
     expect(elements).toEqual([issueTypeScheme])
-    expect(issueTypeScheme.value.issueTypes).toIncludeSameMembers(ISSUE_TYPES_REFERENCES)
+    expect(issueTypeScheme.value.issueTypeIds).toIncludeSameMembers(ISSUE_TYPES_REFERENCES)
   })
 })

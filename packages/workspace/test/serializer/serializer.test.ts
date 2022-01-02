@@ -192,9 +192,20 @@ describe('State/cache serialization', () => {
     isSettings: true,
   })
 
+  const innerRefsInstance = new InstanceElement(
+    'innerRefsInstance',
+    model,
+  )
+
+  innerRefsInstance.value.c = 2
+  innerRefsInstance.value.b = {
+    b: new ReferenceExpression(innerRefsInstance.elemID.createNestedID('c'), 2, innerRefsInstance),
+  }
+  innerRefsInstance.value.a = new ReferenceExpression(innerRefsInstance.elemID.createNestedID('b'), innerRefsInstance.value.b, innerRefsInstance)
+
   const elements = [strType, numType, boolType, model, strListType, strMapType, variable,
     instance, subInstance, refInstance, refInstance2, refInstance3, templateRefInstance,
-    functionRefInstance, settings, config]
+    functionRefInstance, settings, config, innerRefsInstance]
 
   it('should serialize and deserialize without relying on the constructor name', async () => {
     const serialized = serialize([subInstance])
@@ -253,12 +264,24 @@ describe('State/cache serialization', () => {
     const refInst3 = deserialized.find(
       e => e.elemID.getFullName() === refInstance3.elemID.getFullName()
     ) as InstanceElement
+    const innerRefsInst = deserialized.find(
+      e => e.elemID.getFullName() === innerRefsInstance.elemID.getFullName()
+    ) as InstanceElement
     expect(refInst.value.name).toEqual('I am a var')
     expect(refInst.value.num).toEqual(7)
     expect(refInst2.value.name).toBeInstanceOf(ReferenceExpression)
     expect(refInst2.value.name.elemID.getFullName()).toEqual(instance.elemID.getFullName())
     expect(refInst3.value.name).toBeInstanceOf(ReferenceExpression)
     expect(refInst3.value.name.elemID.getFullName()).toEqual(instance.elemID.getFullName())
+    expect(innerRefsInst.value).toEqual({
+      a: {
+        b: 2,
+      },
+      b: {
+        b: 2,
+      },
+      c: 2,
+    })
   })
 
   it('should create the same result for the same input regardless of elements order', () => {

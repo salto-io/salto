@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, getChangeElement, isAdditionChange, isInstanceChange } from '@salto-io/adapter-api'
-import { config as configUtils, elements as elementUtils, client as clientUtils, deployment } from '@salto-io/adapter-components'
-import { applyFunctionToChangeData, logDuration, resolveChangeElement } from '@salto-io/adapter-utils'
+import { FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange } from '@salto-io/adapter-api'
+import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { applyFunctionToChangeData, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import JiraClient from './client/client'
 import changeValidator from './change_validator'
@@ -24,14 +24,15 @@ import { JiraConfig, getApiDefinitions } from './config'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import fieldReferences from './filters/field_references'
 import referenceBySelfLinkFilter from './filters/references_by_self_link'
-import issueTypeSchemeReferences from './filters/issue_type_scheme_references'
 import addReferencesToProjectSchemes from './filters/add_references_to_project_schemes'
 import overrideProjectSchemeFieldsTypes from './filters/override_project_scheme_fields_types'
+import issueTypeSchemeReferences from './filters/issue_type_schemas/issue_type_scheme_references'
+import issueTypeSchemeFilter from './filters/issue_type_schemas/issue_type_scheme'
 import authenticatedPermissionFilter from './filters/authenticated_permission'
 import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
+import defaultDeployFilter from './filters/default_deploy'
 import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
-import { getLookUpName } from './references'
 
 const {
   generateTypes,
@@ -40,17 +41,19 @@ const {
   addDeploymentAnnotations,
 } = elementUtils.swagger
 const { createPaginator, getWithOffsetAndLimit } = clientUtils
-const { deployChange } = deployment
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
-  fieldReferences,
   referenceBySelfLinkFilter,
   issueTypeSchemeReferences,
+  issueTypeSchemeFilter,
   authenticatedPermissionFilter,
   addReferencesToProjectSchemes,
   overrideProjectSchemeFieldsTypes,
   hiddenValuesInListsFilter,
+  fieldReferences,
+  // Must be last
+  defaultDeployFilter,
 ]
 
 export interface JiraAdapterParams {
@@ -189,42 +192,13 @@ export default class JiraAdapter implements AdapterOperations {
     const runner = this.createFiltersRunner()
     await runner.preDeploy(changesToDeploy)
 
-    const result = await Promise.all(
-      changesToDeploy.map(async change => {
-        try {
-          const response = await deployChange(
-            await resolveChangeElement(change, getLookUpName),
-            this.client,
-            this.userConfig.apiDefinitions
-              .types[getChangeElement(change).elemID.typeName]?.deployRequests,
-          )
-          if (isAdditionChange(change)) {
-            if (!Array.isArray(response)) {
-              getChangeElement(change).value.id = response.id
-            } else {
-              log.warn('Received unexpected response from deployChange: %o', response)
-            }
-          }
-          return change
-        } catch (err) {
-          if (!_.isError(err)) {
-            throw err
-          }
-          const errorMessage = `Deployment of ${getChangeElement(change).elemID.getFullName()} failed: ${err}`
-          if (err instanceof clientUtils.HTTPError && 'errorMessages' in err.response.data) {
-            return new Error(`${errorMessage}. ${err.response.data.errorMessages}`)
-          }
-          return new Error(errorMessage)
-        }
-      })
-    )
+    const { deployResult: { appliedChanges, errors } } = await runner.deploy(changesToDeploy)
 
-    const [errors, appliedChanges] = _.partition(result, _.isError)
-
-    await runner.onDeploy(appliedChanges)
+    const changesToReturn = [...appliedChanges]
+    await runner.onDeploy(changesToReturn)
 
     return {
-      appliedChanges,
+      appliedChanges: changesToReturn,
       errors,
     }
   }

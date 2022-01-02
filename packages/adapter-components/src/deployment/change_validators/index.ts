@@ -15,4 +15,4 @@
 */
 export { deployTypesNotSupportedValidator } from './deploy_types_not_supported'
 export { deployNotSupportedValidator } from './deploy_not_supported'
-export { checkDeploymentBasedOnConfigValidator } from './check_deployment_based_on_config'
+export { createCheckDeploymentBasedOnConfigValidator } from './check_deployment_based_on_config'

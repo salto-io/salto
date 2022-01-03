@@ -18,7 +18,7 @@ import {
   isInstanceElement, ReferenceExpression, ModificationChange,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
-import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../../../src/config'
+import { DEFAULT_CONFIG } from '../../../src/config'
 import ZendeskClient from '../../../src/client/client'
 import { ZENDESK_SUPPORT } from '../../../src/constants'
 import { paginate } from '../../../src/client/pagination'
@@ -58,12 +58,7 @@ describe('ticket form reorder filter', () => {
         client,
         paginationFuncCreator: paginate,
       }),
-      config: {
-        fetch: {
-          includeTypes: [],
-        },
-        apiDefinitions: DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
-      },
+      config: DEFAULT_CONFIG,
     }) as FilterType
   })
 

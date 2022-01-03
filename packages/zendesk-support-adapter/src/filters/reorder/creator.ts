@@ -45,12 +45,12 @@ export const createReorderFilterCreator = (
     if (objType === undefined) {
       return
     }
-    const instances = _.sortBy(
+    const instancesReferences = _.sortBy(
       elements
         .filter(isInstanceElement)
         .filter(e => e.elemID.typeName === typeName),
       inst => inst.value.position
-    ).map(refInst => new ReferenceExpression(refInst.elemID))
+    ).map(refInst => new ReferenceExpression(refInst.elemID, refInst))
     const typeNameNaclCase = pathNaclCase(orderTypeName)
     const type = new ObjectType({
       elemID: new ElemID(ZENDESK_SUPPORT, orderTypeName),
@@ -65,10 +65,10 @@ export const createReorderFilterCreator = (
     const instance = new InstanceElement(
       ElemID.CONFIG_NAME,
       type,
-      { [orderFieldName]: instances },
+      { [orderFieldName]: instancesReferences },
       [ZENDESK_SUPPORT, RECORDS_PATH, typeName, typeNameNaclCase],
     )
-    elements.push(...[type, instance])
+    elements.push(type, instance)
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const orderTypeName = createOrderTypeName(typeName)

@@ -725,12 +725,12 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   },
   workspace__selected_macros: {
     transformation: {
-      fieldsToHide: FIELDS_TO_HIDE.filter(field => field.fieldName !== 'id'),
+      fieldsToHide: [],
     },
   },
   workspace__apps: {
     transformation: {
-      fieldsToHide: FIELDS_TO_HIDE.filter(field => field.fieldName !== 'id'),
+      fieldsToHide: [],
     },
   },
   app_installation: {

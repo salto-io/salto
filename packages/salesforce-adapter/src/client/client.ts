@@ -201,7 +201,7 @@ const oauthConnection = (params: OauthConnectionParams): Connection => {
     requestModule: createRequestModuleFunction(params.retryOptions),
   })
 
-  conn.on('refresh', (accessToken, _res) => {
+  conn.on('refresh', accessToken => {
     log.debug('accessToken has been refreshed', { accessToken: toMD5(accessToken) })
   })
 

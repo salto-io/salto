@@ -1108,7 +1108,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   // not included yet: satisfaction_reason (returns 403), sunshine apis
 }
 
-export const DEFAULT_CONFIG = {
+export const DEFAULT_CONFIG: ZendeskConfig = {
   [FETCH_CONFIG]: {
     includeTypes: [
       ...Object.keys(_.pickBy(DEFAULT_TYPES, def => def.request !== undefined)),

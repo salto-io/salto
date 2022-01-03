@@ -383,6 +383,8 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   brand: {
     transformation: {
       sourceTypeName: 'brands__brands',
+      // We currently not supporting in attachements
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'logo' }),
       fieldTypeOverrides: [
         { fieldName: 'help_center_state', fieldType: 'string', restrictions: { enforce_value: true, values: ['enabled', 'disabled', 'restricted'] } },
       ],
@@ -517,7 +519,6 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   ticket_form: {
     transformation: {
       sourceTypeName: 'ticket_forms__ticket_forms',
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'position', fieldType: 'number' }),
     },
     deployRequests: {
       add: {
@@ -579,7 +580,6 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       sourceTypeName: 'user_fields__user_fields',
       idFields: ['key'],
       standaloneFields: [{ fieldName: 'custom_field_options' }],
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'position', fieldType: 'number' }),
       fieldTypeOverrides: [
         { fieldName: 'type', fieldType: 'string', restrictions: { enforce_value: true, values: ['checkbox', 'date', 'decimal', 'dropdown', 'integer', 'regexp', 'text', 'textarea'] } },
       ],
@@ -621,7 +621,6 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       sourceTypeName: 'organization_fields__organization_fields',
       idFields: ['key'],
       standaloneFields: [{ fieldName: 'custom_field_options' }],
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'position', fieldType: 'number' }),
       fieldTypeOverrides: [
         { fieldName: 'type', fieldType: 'string', restrictions: { enforce_value: true, values: ['checkbox', 'date', 'decimal', 'dropdown', 'integer', 'regexp', 'text', 'textarea'] } },
       ],

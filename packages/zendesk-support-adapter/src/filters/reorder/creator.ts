@@ -50,7 +50,12 @@ export const createReorderFilterCreator = (
         .filter(isInstanceElement)
         .filter(e => e.elemID.typeName === typeName),
       inst => inst.value.position
-    ).map(refInst => new ReferenceExpression(refInst.elemID, refInst))
+    )
+      .map(inst => {
+        delete inst.value.position
+        return inst
+      })
+      .map(refInst => new ReferenceExpression(refInst.elemID, refInst))
     const typeNameNaclCase = pathNaclCase(orderTypeName)
     const type = new ObjectType({
       elemID: new ElemID(ZENDESK_SUPPORT, orderTypeName),

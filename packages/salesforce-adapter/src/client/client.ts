@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { EOL } from 'os'
 import requestretry, { RequestRetryOptions, RetryStrategies } from 'requestretry'
 import Bottleneck from 'bottleneck'
-import { collections, decorators } from '@salto-io/lowerdash'
+import { collections, decorators, hash } from '@salto-io/lowerdash'
 import {
   Connection as RealConnection, MetadataObject, DescribeGlobalSObjectResult, FileProperties,
   MetadataInfo, SaveResult, DescribeSObjectResult, DeployResult, RetrieveRequest, RetrieveResult,
@@ -37,6 +37,7 @@ import { UsernamePasswordCredentials, OauthAccessTokenCredentials, Credentials,
 import Connection from './jsforce'
 
 const { makeArray } = collections.array
+const { toMD5 } = hash
 
 const log = logger(module)
 const { logDecorator, throttle, requiresLogin, createRateLimitersFromConfig } = clientUtils
@@ -180,8 +181,14 @@ type OauthConnectionParams = {
   isSandbox: boolean
 }
 
-const oauthConnection = (params: OauthConnectionParams): Connection =>
-  new RealConnection({
+const oauthConnection = (params: OauthConnectionParams): Connection => {
+  log.debug('creating OAuth connection', {
+    instanceUrl: params.instanceUrl,
+    accessToken: toMD5(params.accessToken),
+    refreshToken: toMD5(params.refreshToken),
+  })
+
+  const conn = new RealConnection({
     oauth2: {
       clientId: params.clientId,
       clientSecret: params.clientSecret,
@@ -193,6 +200,13 @@ const oauthConnection = (params: OauthConnectionParams): Connection =>
     refreshToken: params.refreshToken,
     requestModule: createRequestModuleFunction(params.retryOptions),
   })
+
+  conn.on('refresh', (accessToken, _res) => {
+    log.debug('accessToken has been refreshed', { accessToken: toMD5(accessToken) })
+  })
+
+  return conn
+}
 
 const realConnection = (
   isSandbox: boolean,
@@ -304,7 +318,10 @@ export const loginFromCredentialsAndReturnOrgId = async (
     return (await connection.login(creds.username, creds.password + (creds.apiToken ?? ''))).organizationId
   }
   // Oauth connection doesn't require further login
-  return (await connection.identity()).organization_id
+  const identityInfo = await connection.identity()
+  log.debug(`connected salesforce user: ${identityInfo.username}`, { identityInfo })
+
+  return identityInfo.organization_id
 }
 
 export const getConnectionDetails = async (

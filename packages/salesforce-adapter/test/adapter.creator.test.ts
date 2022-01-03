@@ -44,7 +44,7 @@ describe('SalesforceAdapter creator', () => {
     clientId: 'id',
     clientSecret: 'secret',
     instanceUrl: 'instance_url',
-    isSandbox: false,
+    sandbox: false,
     authType: 'oauth',
   }
   const oauthCredentials = new InstanceElement(
@@ -101,7 +101,7 @@ describe('SalesforceAdapter creator', () => {
         refreshToken: oauthConfigObj.refreshToken,
         accessToken: oauthConfigObj.accessToken,
         instanceUrl: oauthConfigObj.instanceUrl,
-        isSandbox: oauthConfigObj.isSandbox,
+        isSandbox: oauthConfigObj.sandbox,
         clientSecret: oauthConfigObj.clientSecret,
         clientId: oauthConfigObj.clientId,
       }))

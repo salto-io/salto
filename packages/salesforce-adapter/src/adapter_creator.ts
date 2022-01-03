@@ -41,7 +41,7 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
       refreshToken: config.value.refreshToken,
       instanceUrl: config.value.instanceUrl,
       accessToken: config.value.accessToken,
-      isSandbox: config.value.isSandbox,
+      isSandbox: config.value.sandbox,
       clientId: config.value.clientId,
       clientSecret: config.value.clientSecret,
     })

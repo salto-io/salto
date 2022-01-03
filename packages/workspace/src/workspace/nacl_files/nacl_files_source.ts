@@ -563,9 +563,13 @@ const buildNaclFilesSource = (
       result.changes.preChangeHash = preChangeHash
       return result
     }
-    const preChangeHash = await currentState.metadata.get(HASH_KEY)
     return {
-      changes: { changes: [], cacheValid: true, preChangeHash, postChangeHash: preChangeHash },
+      changes: {
+        changes: [],
+        cacheValid: true,
+        preChangeHash: undefined,
+        postChangeHash: undefined,
+      },
       state: currentState,
     }
   }

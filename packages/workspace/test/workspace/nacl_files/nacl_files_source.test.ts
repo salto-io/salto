@@ -259,7 +259,7 @@ describe('Nacl Files Source', () => {
       )).load({ ignoreFileChanges: true })
       expect(mockDirStore.list as jest.Mock).not.toHaveBeenCalled()
     })
-    it('should only access the HASH_KEY in rocksdb when ignore file changes is set', async () => {
+    it('should not access rocks db when ignore file changes flag is set', async () => {
       mockDirStore.list = jest.fn().mockImplementation(async () => awu([]))
       const retrievedKeys: string[] = []
       await (await naclFilesSource(
@@ -279,7 +279,7 @@ describe('Nacl Files Source', () => {
         },
         true
       )).load({ ignoreFileChanges: true })
-      expect(retrievedKeys).toEqual([naclFileSourceModule.HASH_KEY])
+      expect(retrievedKeys).toEqual([])
     })
   })
 

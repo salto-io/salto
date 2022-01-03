@@ -28,7 +28,7 @@ import addReferencesToProjectSchemes from './filters/add_references_to_project_s
 import overrideProjectSchemeFieldsTypes from './filters/override_project_scheme_fields_types'
 import issueTypeSchemeReferences from './filters/issue_type_schemas/issue_type_scheme_references'
 import issueTypeSchemeFilter from './filters/issue_type_schemas/issue_type_scheme'
-import authenticatedPermissionFilter from './filters/authenticated_permission'
+import sharePermissionFilter from './filters/share_permission'
 import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
 import defaultDeployFilter from './filters/default_deploy'
 import workflowFilter from './filters/workflow/workflow'
@@ -46,13 +46,13 @@ const log = logger(module)
 
 export const DEFAULT_FILTERS = [
   workflowFilter,
-  referenceBySelfLinkFilter,
   issueTypeSchemeReferences,
   issueTypeSchemeFilter,
-  authenticatedPermissionFilter,
+  sharePermissionFilter,
   addReferencesToProjectSchemes,
   overrideProjectSchemeFieldsTypes,
   hiddenValuesInListsFilter,
+  referenceBySelfLinkFilter,
   fieldReferences,
   // Must be last
   defaultDeployFilter,

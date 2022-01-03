@@ -16,22 +16,23 @@
 import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { JIRA } from '../../src/constants'
-import authenticatedPermissionFilter from '../../src/filters/authenticated_permission'
+import sharePermissionFilter from '../../src/filters/share_permission'
 import { mockClient, getDefaultAdapterConfig } from '../utils'
 
-describe('authenticatedPermissionFilter', () => {
+describe('sharePermissionFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
   let instance: InstanceElement
   let type: ObjectType
+  let sharePermissionType: ObjectType
   beforeEach(async () => {
     const { client, paginator } = mockClient()
-    filter = authenticatedPermissionFilter({
+    filter = sharePermissionFilter({
       client,
       paginator,
       config: await getDefaultAdapterConfig(),
     }) as typeof filter
 
-    const sharePermissionType = new ObjectType({
+    sharePermissionType = new ObjectType({
       elemID: new ElemID(JIRA, 'SharePermission'),
       fields: {
         type: { refType: BuiltinTypes.STRING },
@@ -79,5 +80,47 @@ describe('authenticatedPermissionFilter', () => {
       type: 'notLoggedIn',
       other: 'loggedIn',
     } })
+  })
+
+  it('should remove everything but the id in project', async () => {
+    instance.value.permissions.type = 'project'
+    instance.value.permissions.project = {
+      id: 1,
+      other: 2,
+    }
+    await filter.onFetch([instance])
+    expect(instance.value).toEqual({
+      permissions: {
+        type: 'project',
+        project: {
+          id: 1,
+        },
+      },
+    })
+  })
+
+  it('should remove everything but the id in projectRole', async () => {
+    instance.value.permissions.type = 'role'
+    instance.value.permissions.role = {
+      id: 1,
+      other: 2,
+    }
+    await filter.onFetch([instance])
+    expect(instance.value).toEqual({
+      permissions: {
+        type: 'role',
+        role: {
+          id: 1,
+        },
+      },
+    })
+  })
+
+  it('should add to fetch the relevant types', async () => {
+    const elements = [sharePermissionType]
+    await filter.onFetch(elements)
+    expect((await sharePermissionType.fields.role.getType()).elemID.getFullName()).toBe('jira.ProjectRolePermission')
+    expect((await sharePermissionType.fields.project.getType()).elemID.getFullName()).toBe('jira.ProjectPermission')
+    expect(elements).toHaveLength(3)
   })
 })

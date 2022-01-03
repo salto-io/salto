@@ -84,8 +84,8 @@ describe('ticket form reorder filter', () => {
       expect(ticketFormOrderInstance?.elemID.name).toEqual(ElemID.CONFIG_NAME)
       expect((ticketFormOrderInstance as InstanceElement)?.value)
         .toEqual({ ticket_form_ids: [
-          new ReferenceExpression(inst1.elemID),
-          new ReferenceExpression(inst2.elemID),
+          new ReferenceExpression(inst1.elemID, inst1),
+          new ReferenceExpression(inst2.elemID, inst2),
         ] })
     })
     it('should not create new elements if there are no ticket form', async () => {

@@ -934,9 +934,6 @@ zendesk_support {
               fieldName = "id"
               fieldType = "number"
             },
-            {
-              fieldName = "domain_verification_code"
-            },
           ]
         }
         deployRequests = {

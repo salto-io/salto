@@ -536,7 +536,6 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       sourceTypeName: 'ticket_forms__ticket_forms',
       fieldsToHide: FIELDS_TO_HIDE.concat([
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'domain_verification_code' },
       ]),
     },
     deployRequests: {

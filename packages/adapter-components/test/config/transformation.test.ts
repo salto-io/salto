@@ -27,9 +27,6 @@ describe('config_transformation', () => {
       expect(idFieldsType.refInnerType.elemID.isEqual(BuiltinTypes.STRING.elemID)).toBeTruthy()
 
       expect(Object.keys(transformationDefault.fields).sort()).toEqual(['dataField', 'fieldTypeOverrides', 'fieldsToHide', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
-      expect(transformationDefault.fields.idFields.annotations[CORE_ANNOTATIONS.REQUIRED]).toEqual(
-        true
-      )
       const idFieldsDefaultType = await transformationDefault.fields.idFields.getType() as ListType
       expect(idFieldsDefaultType).toBeInstanceOf(ListType)
       expect(idFieldsType.refInnerType.elemID.isEqual(BuiltinTypes.STRING.elemID)).toBeTruthy()

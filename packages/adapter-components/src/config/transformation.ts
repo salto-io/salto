@@ -142,9 +142,6 @@ export const createTransformationConfigTypes = (
     fields: {
       idFields: {
         refType: new ListType(BuiltinTypes.STRING),
-        annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: true,
-        },
       },
       ...sharedTransformationFields,
     },

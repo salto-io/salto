@@ -14,55 +14,25 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import {
-  Change, getChangeElement, InstanceElement, isAdditionChange, Values,
-} from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
-import { deployment as deploymentUtils, config as configUtils } from '@salto-io/adapter-components'
+import { Change, InstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import { getZendeskError } from '../errors'
-
-const log = logger(module)
+import { deployChange } from '../deployment'
 
 /**
  * Deploys all the changes that were not deployed by the previous filters
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const { apiDefinitions } = config
     const result = await Promise.all(
       changes.map(async change => {
-        const { deployRequests, transformation } = apiDefinitions
-          .types[getChangeElement(change).elemID.typeName]
         try {
-          const response = await deploymentUtils.deployChange(change, client, deployRequests)
-          if (isAdditionChange(change)) {
-            if (_.isArray(response)) {
-              log.warn(
-                'Received an array for the response of the deploy. Do not update the id of the element. Action: add. ID: %s',
-                getChangeElement(change).elemID.getFullName()
-              )
-            } else {
-              const transformationConfig = configUtils.getConfigWithDefault(
-                transformation,
-                apiDefinitions.typeDefaults.transformation,
-              )
-              const idField = transformationConfig.serviceIdField ?? 'id'
-              const dataField = deployRequests?.add?.deployAsField
-              const idValue = dataField
-                ? (response?.[dataField] as Values)?.[idField]
-                : response?.[idField]
-              if (idValue !== undefined) {
-                getChangeElement(change).value[idField] = idValue
-              }
-            }
-          }
+          await deployChange(change, client, config.apiDefinitions)
           return change
         } catch (err) {
           if (!_.isError(err)) {
             throw err
           }
-          return getZendeskError(getChangeElement(change).elemID.getFullName(), err)
+          return err
         }
       })
     )

@@ -80,9 +80,9 @@ describe('adapter', () => {
           ),
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
-        expect(elements).toHaveLength(331)
-        expect(elements.filter(isObjectType)).toHaveLength(168)
-        expect(elements.filter(isInstanceElement)).toHaveLength(163)
+        expect(elements).toHaveLength(337)
+        expect(elements.filter(isObjectType)).toHaveLength(171)
+        expect(elements.filter(isInstanceElement)).toHaveLength(166)
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'zendesk_support.account_setting',
           'zendesk_support.account_setting.instance',
@@ -228,6 +228,8 @@ describe('adapter', () => {
           'zendesk_support.organization_field__custom_field_options.instance.dropdown_26__v1',
           'zendesk_support.organization_field__custom_field_options.instance.dropdown_26__v2',
           'zendesk_support.organization_field__custom_field_options.instance.dropdown_26__v3',
+          'zendesk_support.organization_field_order',
+          'zendesk_support.organization_field_order.instance',
           'zendesk_support.organization_fields',
           'zendesk_support.organizations',
           'zendesk_support.resource_collection',
@@ -308,6 +310,8 @@ describe('adapter', () => {
           'zendesk_support.ticket_form.instance.Form_12@s',
           'zendesk_support.ticket_form.instance.Form_13@s',
           'zendesk_support.ticket_form.instance.Form_6436@s',
+          'zendesk_support.ticket_form_order',
+          'zendesk_support.ticket_form_order.instance',
           'zendesk_support.ticket_forms',
           'zendesk_support.trigger',
           'zendesk_support.trigger.instance.Auto_assign_to_first_email_responding_agent@bsssss',
@@ -379,6 +383,8 @@ describe('adapter', () => {
           'zendesk_support.user_field__custom_field_options.instance.dropdown_25__Choice1',
           'zendesk_support.user_field__custom_field_options.instance.dropdown_25__another_choice@uuus',
           'zendesk_support.user_field__custom_field_options.instance.dropdown_25__bla',
+          'zendesk_support.user_field_order',
+          'zendesk_support.user_field_order.instance',
           'zendesk_support.user_fields',
           'zendesk_support.view',
           'zendesk_support.view.instance.All_unsolved_tickets@s',

@@ -383,6 +383,8 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   brand: {
     transformation: {
       sourceTypeName: 'brands__brands',
+      // We currently not supporting in attachements
+      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'logo' }),
       fieldTypeOverrides: [
         { fieldName: 'help_center_state', fieldType: 'string', restrictions: { enforce_value: true, values: ['enabled', 'disabled', 'restricted'] } },
       ],
@@ -606,6 +608,14 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       },
     },
   },
+  user_field_order: {
+    deployRequests: {
+      modify: {
+        url: '/user_fields/reorder',
+        method: 'put',
+      },
+    },
+  },
   organization_field: {
     transformation: {
       sourceTypeName: 'organization_fields__organization_fields',
@@ -636,6 +646,14 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
         urlParamsToFields: {
           organizationFieldId: 'id',
         },
+      },
+    },
+  },
+  organization_field_order: {
+    deployRequests: {
+      modify: {
+        url: '/organization_fields/reorder',
+        method: 'put',
       },
     },
   },
@@ -706,7 +724,12 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   },
   workspace__selected_macros: {
     transformation: {
-      fieldsToHide: FIELDS_TO_HIDE.filter(field => field.fieldName !== 'id'),
+      fieldsToHide: [],
+    },
+  },
+  workspace__apps: {
+    transformation: {
+      fieldsToHide: [],
     },
   },
   app_installation: {
@@ -1017,6 +1040,14 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       dataField: 'ticket_forms',
     },
   },
+  ticket_form_order: {
+    deployRequests: {
+      modify: {
+        url: '/ticket_forms/reorder',
+        method: 'put',
+      },
+    },
+  },
   // eslint-disable-next-line camelcase
   ticket_fields: {
     request: {
@@ -1108,7 +1139,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   // not included yet: satisfaction_reason (returns 403), sunshine apis
 }
 
-export const DEFAULT_CONFIG = {
+export const DEFAULT_CONFIG: ZendeskConfig = {
   [FETCH_CONFIG]: {
     includeTypes: [
       ...Object.keys(_.pickBy(DEFAULT_TYPES, def => def.request !== undefined)),

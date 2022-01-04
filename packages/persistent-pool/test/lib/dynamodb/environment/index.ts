@@ -60,6 +60,8 @@ export default class Environment extends BaseDynaliteEnvironment {
 
   async teardown(): Promise<void> {
     await super.teardown()
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     const realEnv = this.global.dynamoEnv.real
     if (realEnv) {
       const { dynamo, tableName } = realEnv

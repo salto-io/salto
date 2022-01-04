@@ -196,7 +196,7 @@ describe('test operations on remote db', () => {
     })
   })
   describe('clear', () => {
-    describe('when called in writeable remote map', async () => {
+    describe('when called in writeable remote map', () => {
       beforeEach(async () => {
         await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
         expect(await awu(remoteMap.keys()).toArray()).not.toHaveLength(0)

@@ -22,7 +22,7 @@ module.exports = deepMerge(
     displayName: 'test-utils',
     rootDir: `${__dirname}`,
     collectCoverageFrom: [
-      '!<rootDir>/dist/index.js',
+      '!<rootDir>/index.ts',
     ],
     coverageThreshold: {
       global: {

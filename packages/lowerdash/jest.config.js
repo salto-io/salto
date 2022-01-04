@@ -22,7 +22,7 @@ module.exports = deepMerge(
     displayName: 'lowerdash',
     rootDir: `${__dirname}`,
     collectCoverageFrom: [
-      '!<rootDir>/dist/index.js',
+      '!<rootDir>/index.ts',
     ],
     coverageThreshold: {
       global: {

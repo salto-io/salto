@@ -41,7 +41,7 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
       refreshToken: config.value.refreshToken,
       instanceUrl: config.value.instanceUrl,
       accessToken: config.value.accessToken,
-      isSandbox: config.value.isSandbox,
+      isSandbox: config.value.sandbox,
       clientId: config.value.clientId,
       clientSecret: config.value.clientSecret,
     })
@@ -103,7 +103,7 @@ SalesforceConfig => {
 }
 
 export const createUrlFromUserInput = (value: Values): string => {
-  const endpoint = value.isSandbox ? 'test' : 'login'
+  const endpoint = value.sandbox ? 'test' : 'login'
   return `https://${endpoint}.salesforce.com/services/oauth2/authorize?response_type=token&client_id=${value.consumerKey}&scope=refresh_token%20full&redirect_uri=http://localhost:${value.port}`
 }
 
@@ -173,7 +173,7 @@ export const adapter: Adapter = {
       credentialsType: accessTokenCredentialsType,
       oauthRequestParameters,
       createFromOauthResponse: (oldConfig: Values, response: OauthAccessTokenResponse) => ({
-        isSandbox: oldConfig.isSandbox,
+        sandbox: oldConfig.sandbox,
         clientId: oldConfig.consumerKey,
         clientSecret: oldConfig.consumerSecret,
         accessToken: response.fields.accessToken,

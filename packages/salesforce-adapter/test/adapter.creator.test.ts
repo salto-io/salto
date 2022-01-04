@@ -44,7 +44,7 @@ describe('SalesforceAdapter creator', () => {
     clientId: 'id',
     clientSecret: 'secret',
     instanceUrl: 'instance_url',
-    isSandbox: false,
+    sandbox: false,
     authType: 'oauth',
   }
   const oauthCredentials = new InstanceElement(
@@ -101,7 +101,7 @@ describe('SalesforceAdapter creator', () => {
         refreshToken: oauthConfigObj.refreshToken,
         accessToken: oauthConfigObj.accessToken,
         instanceUrl: oauthConfigObj.instanceUrl,
-        isSandbox: oauthConfigObj.isSandbox,
+        isSandbox: oauthConfigObj.sandbox,
         clientSecret: oauthConfigObj.clientSecret,
         clientId: oauthConfigObj.clientId,
       }))
@@ -122,7 +122,7 @@ describe('SalesforceAdapter creator', () => {
     it('creates the right object from the response', () => {
       const creds = (adapter.authenticationMethods.oauth as OAuthMethod).createFromOauthResponse(
         {
-          isSandbox: false,
+          sandbox: false,
           consumerKey: oauthConfigObj.clientId,
           consumerSecret: oauthConfigObj.clientSecret,
         },
@@ -133,7 +133,7 @@ describe('SalesforceAdapter creator', () => {
         } },
       )
       expect(creds).toEqual({
-        isSandbox: false,
+        sandbox: false,
         accessToken: oauthConfigObj.accessToken,
         instanceUrl: oauthConfigObj.instanceUrl,
         clientSecret: oauthConfigObj.clientSecret,

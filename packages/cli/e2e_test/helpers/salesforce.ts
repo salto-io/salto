@@ -78,7 +78,7 @@ export const getSalesforceOAuthCreds = (creds: OauthAccessTokenCredentials): Ins
     accessToken: creds.accessToken,
     refreshToken: creds.refreshToken,
     instanceUrl: creds.instanceUrl,
-    isSandbox: creds.isSandbox,
+    sandbox: creds.isSandbox,
     clientId: creds.clientId,
     clientSecret: creds.clientSecret,
     authType: 'oauth',

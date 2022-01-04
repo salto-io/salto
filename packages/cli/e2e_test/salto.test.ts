@@ -64,8 +64,8 @@ describe.each([
   const accounts = accountName === SALESFORCE_SERVICE_NAME ? undefined : [accountName]
   afterAll(workspaceHelpersCleanup)
 
-  const workspaceConfigFile = `${__dirname}/../../e2e_test/NACL/salto.config/workspace.nacl`
-  const localWorkspaceConfigFile = `${__dirname}/../../e2e_test/NACL/salto.config/local/workspaceUser.nacl`
+  const workspaceConfigFile = `${__dirname}/../e2e_test/NACL/salto.config/workspace.nacl`
+  const localWorkspaceConfigFile = `${__dirname}/../e2e_test/NACL/salto.config/local/workspaceUser.nacl`
   const NEW_INSTANCE_BASE_ELEM_NAME = 'NewInstanceName'
   const NEW_INSTANCE2_BASE_ELEM_NAME = 'NewInstance2Name'
   const NEW_OBJECT_BASE_ELEM_NAME = 'NewObjectName'

@@ -32,7 +32,7 @@ const parentDir = (numLevels: number): string => path.normalize(
   path.join(__dirname, ...Array(numLevels).fill('..'))
 )
 
-const MONOREPO_PACKAGES_DIRNAME = module.filename.endsWith('.ts')
+const MONOREPO_PACKAGES_DIRNAME = module.filename?.endsWith('.ts')
   ? parentDir(3)
   : parentDir(4)
 

@@ -32,7 +32,7 @@ const parentDir = (numLevels: number): string => path.normalize(
   path.join(__dirname, ...Array(numLevels).fill('..'))
 )
 
-export const MONOREPO_PACKAGES_DIRNAME = module.filename.endsWith('.ts')
+const MONOREPO_PACKAGES_DIRNAME = module.filename.endsWith('.ts')
   ? parentDir(3)
   : parentDir(4)
 
@@ -106,4 +106,9 @@ export const namespaceNormalizer = (
 
   // last resort - not very meaningful
   return uniteNamespaceFragments(String(id))
+}
+
+
+export const exportedForTesting = {
+  MONOREPO_PACKAGES_DIRNAME,
 }

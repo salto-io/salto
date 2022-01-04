@@ -13,7 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { MONOREPO_PACKAGES_DIRNAME, namespaceNormalizer, toHexColor } from '../../src/internal/namespace'
+import { exportedForTesting, namespaceNormalizer, toHexColor } from '../../src/internal/namespace'
+
+const { MONOREPO_PACKAGES_DIRNAME } = exportedForTesting
 
 describe('namespace', () => {
   describe('toHexColor', () => {

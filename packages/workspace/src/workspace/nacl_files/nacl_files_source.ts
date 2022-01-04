@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { Element, ElemID, Value, DetailedChange, isElement, getChangeElement, isObjectType,
+import { Element, ElemID, Value, DetailedChange, isElement, getChangeData, isObjectType,
   isInstanceElement, isIndexPathPart, isReferenceExpression, isContainerType, isVariable, Change,
   placeholderReadonlyElementsSource, ObjectType, isModificationChange,
   isObjectTypeChange, toChange, isAdditionChange, StaticFile, isStaticFile } from '@salto-io/adapter-api'
@@ -307,7 +307,7 @@ const buildNaclFilesState = async ({
     changes: Change[]
   ): Promise<void> => {
     const getRelevantNamesFromChange = (change: Change): string[] => {
-      const element = getChangeElement(change)
+      const element = getChangeData(change)
       const fieldsNames = isObjectType(element)
         ? getFieldsElemIDsFullName(element)
         : []
@@ -682,7 +682,7 @@ const buildNaclFilesSource = (
 
     const removeDanglingStaticFiles = async (fileChanges: DetailedChange[]): Promise<void> => {
       await awu(fileChanges).filter(change => change.action === 'remove')
-        .map(getChangeElement)
+        .map(getChangeData)
         .map(getNestedStaticFiles)
         .flat()
         .forEach(file => staticFilesSource.delete(file))

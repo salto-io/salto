@@ -16,14 +16,14 @@
 import _ from 'lodash'
 import {
   Values, isObjectType, TypeElement, ObjectType, PrimitiveType, Field, InstanceElement,
-  Element, isType, isField, isInstanceElement, getChangeElement, Value, ElemID, DetailedChange,
+  Element, isType, isField, isInstanceElement, getChangeData, Value, ElemID, DetailedChange,
 } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { ElementsSource } from '../../elements_source'
 
 export class InvalidProjectionError extends Error {
   constructor(change: DetailedChange, reason: string) {
-    super(`Can not project ${getChangeElement(change).elemID}: ${reason}`)
+    super(`Can not project ${getChangeData(change).elemID}: ${reason}`)
   }
 }
 

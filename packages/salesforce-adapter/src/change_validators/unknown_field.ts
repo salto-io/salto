@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ChangeDataType, ChangeError, Field, getChangeElement, isAdditionOrModificationChange,
+  ChangeDataType, ChangeError, Field, getChangeData, isAdditionOrModificationChange,
   ChangeValidator, isField,
 } from '@salto-io/adapter-api'
 import { Types } from '../transformers/transformer'
@@ -39,7 +39,7 @@ const createChangeError = (field: Field): ChangeError =>
 const changeValidator: ChangeValidator = async changes => (
   changes
     .filter(isAdditionOrModificationChange)
-    .map(getChangeElement)
+    .map(getChangeData)
     .filter(isUnknownField)
     .map(createChangeError)
 )

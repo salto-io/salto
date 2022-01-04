@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  TypeElement, ObjectType, InstanceElement, isAdditionChange, getChangeElement, Change,
+  TypeElement, ObjectType, InstanceElement, isAdditionChange, getChangeData, Change,
   ElemIdGetter, FetchResult, AdapterOperations, DeployResult, FetchOptions, DeployOptions,
   ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
@@ -379,7 +379,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       .map(change => resolveChangeElement(change, getLookUpName))
       .toArray()
 
-    await awu(resolvedChanges).filter(isAdditionChange).map(getChangeElement).forEach(addDefaults)
+    await awu(resolvedChanges).filter(isAdditionChange).map(getChangeData).forEach(addDefaults)
     const filtersRunner = this.createFiltersRunner()
     await filtersRunner.preDeploy(resolvedChanges)
 
@@ -396,7 +396,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     await filtersRunner.onDeploy(appliedChangesBeforeRestore)
 
     const sourceElements = _.keyBy(
-      changeGroup.changes.map(getChangeElement),
+      changeGroup.changes.map(getChangeData),
       elem => elem.elemID.getFullName(),
     )
 

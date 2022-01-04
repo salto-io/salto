@@ -17,7 +17,7 @@ import _ from 'lodash'
 import path from 'path'
 import wu from 'wu'
 
-import { Element, ElemID, getChangeElement,
+import { Element, ElemID, getChangeData,
   DetailedChange, Change, ChangeDataType, StaticFile } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { promises, collections, values, objects } from '@salto-io/lowerdash'
@@ -67,7 +67,7 @@ export class UnknownEnvironmentError extends Error {
 
 export class UnsupportedNewEnvChangeError extends Error {
   constructor(change: DetailedChange) {
-    const changeElemID = getChangeElement(change).elemID.getFullName()
+    const changeElemID = getChangeData(change).elemID.getFullName()
     const message = 'Adding a new environment only support add changes.'
       + `Received change of type ${change.action} for ${changeElemID}`
     super(message)

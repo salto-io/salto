@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import path from 'path'
-import { getChangeElement, isElement, ObjectType, ElemID, Element, isType, isAdditionChange, DetailedChange, Value, StaticFile, isStaticFile, isReferenceExpression, TypeReference } from '@salto-io/adapter-api'
+import { getChangeData, isElement, ObjectType, ElemID, Element, isType, isAdditionChange, DetailedChange, Value, StaticFile, isStaticFile, isReferenceExpression, TypeReference } from '@salto-io/adapter-api'
 import { AdditionDiff, ActionName } from '@salto-io/dag'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -80,7 +80,7 @@ export const getChangeLocations = (
       }
     }
     // Fallback to using the path from the element itself
-    const naclFilePath = change.path ?? getChangeElement(change).path
+    const naclFilePath = change.path ?? getChangeData(change).path
     const endOfFileLocation = { col: 1, line: Infinity, byte: Infinity }
     return [{
       filename: createFileNameFromPath(naclFilePath),

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, Element, ReferenceExpression, isObjectType, ChangeDataType, Change, toChange, AdditionChange, ModificationChange, getChangeElement, Field } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, Element, ReferenceExpression, isObjectType, ChangeDataType, Change, toChange, AdditionChange, ModificationChange, getChangeData, Field } from '@salto-io/adapter-api'
 import { FilterWith } from '../../../src/filter'
 import SalesforceClient from '../../../src/client/client'
 import mockClient from '../../client'
@@ -300,7 +300,7 @@ describe('lookup_object filter', () => {
         it('Should not change in object modifications', () => {
           const configAttrChange = changes
             .find(change =>
-              getChangeElement(change).elemID.isEqual(mockConfigurationAttributeElemID))
+              getChangeData(change).elemID.isEqual(mockConfigurationAttributeElemID))
           expect(configAttrChange).toBeDefined()
           const afterData = (configAttrChange as ModificationChange<ObjectType>).data.after
           expect(afterData.fields[CPQ_DEFAULT_OBJECT_FIELD].annotations.valueSet[0].fullName)
@@ -322,7 +322,7 @@ describe('lookup_object filter', () => {
         it('Should in fields modifications map back to the service name instead of api if theres mapping and keep same if not', () => {
           const configAttrFieldChange = changes
             .find(change =>
-              getChangeElement(change).elemID
+              getChangeData(change).elemID
                 .isEqual(mockConfigurationAttribute.fields[CPQ_DEFAULT_OBJECT_FIELD].elemID))
           expect(configAttrFieldChange).toBeDefined()
           const afterData = (configAttrFieldChange as ModificationChange<Field>).data.after
@@ -337,7 +337,7 @@ describe('lookup_object filter', () => {
       describe('Field lookup', () => {
         it('Should not change in object modifications', () => {
           const priceSchedulingChange = changes
-            .find(change => getChangeElement(change).elemID.isEqual(mockPriceScheduleElemID))
+            .find(change => getChangeData(change).elemID.isEqual(mockPriceScheduleElemID))
           expect(priceSchedulingChange).toBeDefined()
           const afterData = (priceSchedulingChange as ModificationChange<ObjectType>).data.after
           expect(afterData.fields[CPQ_CONSTRAINT_FIELD].annotations.valueSet[0].fullName)
@@ -358,7 +358,7 @@ describe('lookup_object filter', () => {
         })
         it('Should in field modigication map back to the service name instead of api if theres mapping and keep same if not', () => {
           const priceSchedulingFieldChange = changes
-            .find(change => getChangeElement(change).elemID
+            .find(change => getChangeData(change).elemID
               .isEqual(mockPriceSchedule.fields[CPQ_CONSTRAINT_FIELD].elemID))
           expect(priceSchedulingFieldChange).toBeDefined()
           const afterData = (priceSchedulingFieldChange as ModificationChange<Field>).data.after
@@ -387,7 +387,7 @@ describe('lookup_object filter', () => {
         it('Should map back to the service name instead of api if theres mapping and keep same if not', () => {
           const configAttrChange = changes
             .find(change =>
-              getChangeElement(change).elemID.isEqual(mockConfigurationAttributeElemID))
+              getChangeData(change).elemID.isEqual(mockConfigurationAttributeElemID))
           const afterData = (configAttrChange as AdditionChange<ObjectType>).data.after
           expect(afterData.fields[CPQ_DEFAULT_OBJECT_FIELD].annotations.valueSet[0].fullName)
             .toEqual(CPQ_QUOTE_NO_PRE)
@@ -400,7 +400,7 @@ describe('lookup_object filter', () => {
       describe('Field lookup', () => {
         it('Should map back to the service name instead of api if theres mapping and keep same if not', () => {
           const priceSchedulingChange = changes
-            .find(change => getChangeElement(change).elemID.isEqual(mockPriceScheduleElemID))
+            .find(change => getChangeData(change).elemID.isEqual(mockPriceScheduleElemID))
           expect(priceSchedulingChange).toBeDefined()
           const afterData = (priceSchedulingChange as AdditionChange<ObjectType>).data.after
           expect(afterData.fields[CPQ_CONSTRAINT_FIELD].annotations.valueSet[0].fullName)
@@ -442,7 +442,7 @@ describe('lookup_object filter', () => {
         it('Should not change on object modifications', () => {
           const configAttrChange = changes
             .find(change =>
-              getChangeElement(change).elemID.isEqual(mockConfigurationAttributeElemID))
+              getChangeData(change).elemID.isEqual(mockConfigurationAttributeElemID))
           expect(configAttrChange).toBeDefined()
           const afterData = (configAttrChange as ModificationChange<ObjectType>).data.after
           expect(afterData.fields[CPQ_DEFAULT_OBJECT_FIELD].annotations.valueSet[0].fullName)
@@ -465,7 +465,7 @@ describe('lookup_object filter', () => {
         it('Should on field modification map to full path api name if theres mapping and keep same if not', () => {
           const configAttrFieldChange = changes
             .find(change =>
-              getChangeElement(change).elemID
+              getChangeData(change).elemID
                 .isEqual(mockConfigurationAttribute.fields[CPQ_DEFAULT_OBJECT_FIELD].elemID))
           expect(configAttrFieldChange).toBeDefined()
           const afterData = (configAttrFieldChange as ModificationChange<Field>).data.after
@@ -480,7 +480,7 @@ describe('lookup_object filter', () => {
       describe('Field lookup', () => {
         it('Should not change on object modification', () => {
           const priceSchedulingChange = changes
-            .find(change => getChangeElement(change).elemID.isEqual(mockPriceScheduleElemID))
+            .find(change => getChangeData(change).elemID.isEqual(mockPriceScheduleElemID))
           expect(priceSchedulingChange).toBeDefined()
           const afterData = (priceSchedulingChange as ModificationChange<ObjectType>).data.after
           expect(afterData.fields[CPQ_CONSTRAINT_FIELD].annotations.valueSet[0].fullName)
@@ -499,7 +499,7 @@ describe('lookup_object filter', () => {
 
         it('Should on field modificiation map to api name if theres mapping and keep same if not', () => {
           const priceSchedulingChange = changes
-            .find(change => getChangeElement(change).elemID
+            .find(change => getChangeData(change).elemID
               .isEqual(mockPriceSchedule.fields[CPQ_CONSTRAINT_FIELD].elemID))
           expect(priceSchedulingChange).toBeDefined()
           const afterData = (priceSchedulingChange as ModificationChange<Field>).data.after
@@ -529,7 +529,7 @@ describe('lookup_object filter', () => {
         it('Should map to api name if theres mapping and keep same if not', () => {
           const configAttrChange = changes
             .find(change =>
-              getChangeElement(change).elemID.isEqual(mockConfigurationAttributeElemID))
+              getChangeData(change).elemID.isEqual(mockConfigurationAttributeElemID))
           expect(configAttrChange).toBeDefined()
           const afterData = (configAttrChange as ModificationChange<ObjectType>).data.after
           expect(afterData.fields[CPQ_DEFAULT_OBJECT_FIELD].annotations.valueSet[0].fullName)
@@ -543,7 +543,7 @@ describe('lookup_object filter', () => {
       describe('Field lookup', () => {
         it('Should map to api name if theres mapping and keep same if not', () => {
           const priceSchedulingChange = changes
-            .find(change => getChangeElement(change).elemID.isEqual(mockPriceScheduleElemID))
+            .find(change => getChangeData(change).elemID.isEqual(mockPriceScheduleElemID))
           expect(priceSchedulingChange).toBeDefined()
           const afterData = (priceSchedulingChange as ModificationChange<ObjectType>).data.after
           expect(afterData.fields[CPQ_CONSTRAINT_FIELD].annotations.valueSet[0].fullName)

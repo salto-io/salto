@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   Element, isInstanceElement, InstanceElement, ObjectType, ElemID, ListType, isObjectType,
-  BuiltinTypes, ReferenceExpression, Change, getChangeElement, isModificationChange,
+  BuiltinTypes, ReferenceExpression, Change, getChangeData, isModificationChange,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { pathNaclCase } from '@salto-io/adapter-utils'
@@ -79,7 +79,7 @@ export const createReorderFilterCreator = (
     const orderTypeName = createOrderTypeName(typeName)
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
-      change => getChangeElement(change).elemID.typeName === orderTypeName,
+      change => getChangeData(change).elemID.typeName === orderTypeName,
     )
     if (relevantChanges.length === 0) {
       return {

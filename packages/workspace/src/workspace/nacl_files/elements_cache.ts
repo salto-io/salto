@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, Change, isEqualElements, toChange, ElemID, isContainerType, SaltoError, ReadOnlyElementsSource, getChangeElement, isAdditionOrModificationChange, isRemovalChange, isAdditionChange } from '@salto-io/adapter-api'
+import { Element, Change, isEqualElements, toChange, ElemID, isContainerType, SaltoError, ReadOnlyElementsSource, getChangeData, isAdditionOrModificationChange, isRemovalChange, isAdditionChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import { ThenableIterable } from '@salto-io/lowerdash/src/collections/asynciterable'
@@ -83,7 +83,7 @@ const getElementsToMergeFromChanges = async (
 ): Promise<Element[]> => {
   const elementsToMerge: (Element | undefined)[] = []
   await Promise.all(srcChanges.changes.map(async change => {
-    const element = getChangeElement(change)
+    const element = getChangeData(change)
     const id = element.elemID
     if (isAdditionOrModificationChange(change)) {
       elementsToMerge.push(element)
@@ -153,7 +153,7 @@ const createFreshChangeSet = async (
 })
 
 export const getContainerTypeChanges = async (changes: Change<Element>[]): Promise<Element[]> =>
-  awu(changes).map(change => getChangeElement(change))
+  awu(changes).map(change => getChangeData(change))
     .filter(element => isContainerType(element)).toArray()
 
 export interface Flushable {
@@ -250,7 +250,7 @@ export const createMergeManager = async (flushables: Flushable[],
         const changeIds = new Set<string>()
         const potentialDeletedIds = new Set<string>()
         changeSet.changes.forEach(change => {
-          const id = getChangeElement(change).elemID
+          const id = getChangeData(change).elemID
           if (isRemovalChange(change)) {
             potentialDeletedIds.add(id.getFullName())
           }
@@ -367,7 +367,7 @@ export const createMergeManager = async (flushables: Flushable[],
       const numIdsToLog = Math.min(changes.length, MAX_LOG_ON_MERGE)
       if (numIdsToLog > 0) {
         log.debug(`Change type: ${changes[0].action}, on ${changes.length} elements. The first ${numIdsToLog} ids are: ${changes.splice(0, numIdsToLog)
-          .map(change => getChangeElement(change).elemID.getFullName()).join(', ')}`)
+          .map(change => getChangeData(change).elemID.getFullName()).join(', ')}`)
       }
     }
     const currentMergeErrors = mergedChanges.cacheValid ? Object.fromEntries(
@@ -380,7 +380,7 @@ export const createMergeManager = async (flushables: Flushable[],
       await currentElements.clear()
     } else {
       const removalChanges = mergedChanges.changes.filter(isRemovalChange)
-      await currentElements.deleteAll(removalChanges.map(change => getChangeElement(change).elemID))
+      await currentElements.deleteAll(removalChanges.map(change => getChangeData(change).elemID))
       logChanges(removalChanges)
       await currentErrors.deleteAll(
         noErrorMergeIds.filter(id => !_.isEmpty(currentMergeErrors[id]))
@@ -394,7 +394,7 @@ export const createMergeManager = async (flushables: Flushable[],
     const [additionChanges, modificationChanges] = _.partition(additionOrModificationChanges,
       isAdditionChange)
     await currentElements.setAll(additionOrModificationChanges
-      .map(change => getChangeElement(change)))
+      .map(change => getChangeData(change)))
     logChanges(additionChanges)
     logChanges(modificationChanges)
   }
@@ -520,22 +520,22 @@ export const getAfterElements = async ({
   const relevantElementIDs = _.uniqBy(
     [src1Changes, src2Changes]
       .flat()
-      .map(getChangeElement)
+      .map(getChangeData)
       .map(e => e.elemID),
     id => id.getFullName()
   )
 
   const src1ChangesByID = _.keyBy(
     src1Changes,
-    change => getChangeElement(change).elemID.getFullName()
+    change => getChangeData(change).elemID.getFullName()
   )
   const src2ChangesByID = _.keyBy(
     src2Changes,
-    change => getChangeElement(change).elemID.getFullName()
+    change => getChangeData(change).elemID.getFullName()
   )
   const changeAfterElements = [...src1Changes, ...src2Changes]
     .filter(isAdditionOrModificationChange)
-    .map(getChangeElement)
+    .map(getChangeData)
     .filter(values.isDefined)
   const unmodifiedFragments = awu(relevantElementIDs).map(async id => {
     const sr1Change = src1ChangesByID[id.getFullName()]

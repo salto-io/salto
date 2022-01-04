@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ChangeDataType, ChangeError, Field, getChangeElement, isModificationChange, ChangeValidator,
+  ChangeDataType, ChangeError, Field, getChangeData, isModificationChange, ChangeValidator,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { apiName, isCustom } from '../transformers/transformer'
@@ -31,9 +31,9 @@ const isStandardValueSet = async (picklistField: Field): Promise<boolean> => {
     && standardVSchecker(picklistField.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME].value)
 }
 
-const shouldCreateChangeError = async (changeElement: ChangeDataType): Promise<boolean> =>
-  isPicklistField(changeElement) && !isCustom(await apiName(changeElement))
-    && !(await isStandardValueSet(changeElement))
+const shouldCreateChangeError = async (changeData: ChangeDataType): Promise<boolean> =>
+  isPicklistField(changeData) && !isCustom(await apiName(changeData))
+    && !(await isStandardValueSet(changeData))
 
 const createChangeError = (field: Field): ChangeError =>
   ({
@@ -49,7 +49,7 @@ const createChangeError = (field: Field): ChangeError =>
 const changeValidator: ChangeValidator = async changes => (
   awu(changes)
     .filter(isModificationChange)
-    .map(getChangeElement)
+    .map(getChangeData)
     .filter(shouldCreateChangeError)
     // We can cast since shouldCreateChangeError only return true to fields
     .map(field => createChangeError(field as Field))

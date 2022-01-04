@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, getChangeElement, InstanceElement, MapType, ObjectType, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, getChangeData, InstanceElement, MapType, ObjectType, toChange } from '@salto-io/adapter-api'
 import { flattenAdditionalProperties } from '../../../../src/elements/swagger/deployment/additional_properties'
 
 describe('flattenAdditionalProperties', () => {
@@ -79,7 +79,7 @@ describe('flattenAdditionalProperties', () => {
     )
 
     const flattenedChange = await flattenAdditionalProperties(toChange({ after: instance }))
-    expect(getChangeElement(flattenedChange).value).toEqual({
+    expect(getChangeData(flattenedChange).value).toEqual({
       valueWithCreatableProperties: {
         key: 'value',
         valueWithCreatableProperties: {},
@@ -119,7 +119,7 @@ describe('flattenAdditionalProperties', () => {
     )
 
     const flattenedChange = await flattenAdditionalProperties(toChange({ after: instance }))
-    expect(getChangeElement(flattenedChange).value).toEqual({
+    expect(getChangeData(flattenedChange).value).toEqual({
       additionalProperties: {
         key: 'value',
       },

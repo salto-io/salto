@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, DetailedChange, getChangeElement, INSTANCE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, DetailedChange, getChangeData, INSTANCE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { mockState } from '../common/state'
 import { MergeResult } from '../../src/merger'
@@ -327,8 +327,8 @@ describe('handleHiddenChanges', () => {
         )
         expect(result.visible).toHaveLength(1)
         expect(result.hidden).toHaveLength(1)
-        visibleInstance = getChangeElement(result.visible[0])
-        hiddenInstance = getChangeElement(result.hidden[0])
+        visibleInstance = getChangeData(result.visible[0])
+        hiddenInstance = getChangeData(result.hidden[0])
       })
       it('should omit the hidden annotation from visible and add it to hidden', () => {
         expect(visibleInstance.annotations).not.toHaveProperty(INSTANCE_ANNOTATIONS.SERVICE_URL)
@@ -461,7 +461,7 @@ describe('handleHiddenChanges', () => {
         )
         expect(result.visible).toHaveLength(1)
         expect(result.hidden).toHaveLength(0)
-        filteredValue = getChangeElement(result.visible[0])
+        filteredValue = getChangeData(result.visible[0])
       })
       it('should keep the reference expression as-is', () => {
         expect(filteredValue).toBeInstanceOf(ReferenceExpression)
@@ -487,7 +487,7 @@ describe('handleHiddenChanges', () => {
         )
         expect(result.visible).toHaveLength(1)
         expect(result.hidden).toHaveLength(0)
-        filteredValue = getChangeElement(result.visible[0])
+        filteredValue = getChangeData(result.visible[0])
       })
       it('should keep the updated value as a reference expression', () => {
         expect(filteredValue).toBeInstanceOf(ReferenceExpression)

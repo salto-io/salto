@@ -17,7 +17,7 @@ import _ from 'lodash'
 import path from 'path'
 import wu from 'wu'
 import { Workspace, nacl, errors, parser, validator, COMMON_ENV_PREFIX, elementSource } from '@salto-io/workspace'
-import { Element, SaltoError, ElemID, Change, getChangeElement,
+import { Element, SaltoError, ElemID, Change, getChangeData,
   isRemovalChange, isReferenceExpression, isContainerType,
   Value, isModificationChange, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
@@ -207,13 +207,13 @@ export class EditorWorkspace {
       wu.chain(
         elementsInChangedFiles,
         elementsWithValidationErrors,
-        changes.map(c => getChangeElement(c).elemID)
+        changes.map(c => getChangeData(c).elemID)
       ).map(elemID => elemID.getFullName())
     )
     const validationErrors = await this.validateElements(elementNamesToValidate)
     const removalChangesOfTopLevels = changes
       .filter(isRemovalChange)
-      .map(c => getChangeElement(c).elemID)
+      .map(c => getChangeData(c).elemID)
     const removalChangesOfNonTopLevels = changes
       .filter(isModificationChange)
       .flatMap(c => detailedCompare(c.data.before, c.data.after, true))

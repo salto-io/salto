@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   FetchResult, AdapterOperations, DeployResult, Element, DeployModifiers,
-  FetchOptions, DeployOptions, Change, isInstanceChange, InstanceElement, getChangeElement,
+  FetchOptions, DeployOptions, Change, isInstanceChange, InstanceElement, getChangeData,
 } from '@salto-io/adapter-api'
 import {
   client as clientUtils,
@@ -146,7 +146,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     await runner.onDeploy(appliedChangesBeforeRestore)
 
     const sourceElements = _.keyBy(
-      changesToDeploy.map(getChangeElement),
+      changesToDeploy.map(getChangeData),
       elem => elem.elemID.getFullName(),
     )
 

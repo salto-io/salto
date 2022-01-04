@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ElemID, Element, isElement, InstanceElement, DetailedChange,
-  isReferenceExpression, ReferenceExpression, getChangeElement, isRemovalOrModificationChange,
+  isReferenceExpression, ReferenceExpression, getChangeData, isRemovalOrModificationChange,
   isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { applyDetailedChanges, transformElement, walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
@@ -242,7 +242,7 @@ export const updateStateElements = async (
   await Promise.all(topLevelElementsChanges.filter(isRemovalOrModificationChange)
     .map(change => stateSource.remove(change.id)))
   await Promise.all(topLevelElementsChanges.filter(isAdditionOrModificationChange)
-    .map(change => stateSource.set(getChangeElement(change))))
+    .map(change => stateSource.set(getChangeData(change))))
 
   const updatedElements = await getUpdatedTopLevelElements(stateSource, nestedElementsChanges)
   await Promise.all(updatedElements.map(element => stateSource.set(element)))

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import {
-  Field, getChangeElement, isField, isModificationChange, ChangeDataType,
+  Field, getChangeData, isField, isModificationChange, ChangeDataType,
   InstanceElement, isInstanceChange, ModificationChange, isFieldChange, isReferenceExpression,
 } from '@salto-io/adapter-api'
 
@@ -59,7 +59,7 @@ const filterCreator = (): FilterWith<'onDeploy'> => ({
     const isGlobalValueSetInstanceChange = async (
       change: ModificationChange<ChangeDataType>
     ): Promise<boolean> => (
-      isInstanceChange(change) && await metadataType(getChangeElement(change)) === GLOBAL_VALUE_SET
+      isInstanceChange(change) && await metadataType(getChangeData(change)) === GLOBAL_VALUE_SET
     )
 
     const withRemovedCustomValues = (beforeValues: PicklistValue[], afterValues: PicklistValue[]):
@@ -95,7 +95,7 @@ const filterCreator = (): FilterWith<'onDeploy'> => ({
       .filter(isFieldChange)
       .filter(isModificationChange)
       .filter(change => {
-        const field = getChangeElement(change)
+        const field = getChangeData(change)
         return (
           isRestrictedPicklistField(field)
           && !isValueSetReference(field)

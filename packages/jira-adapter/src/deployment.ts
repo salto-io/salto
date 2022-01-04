@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, getChangeElement, InstanceElement, isAdditionChange } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isAdditionChange } from '@salto-io/adapter-api'
 import { config, deployment, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { resolveChangeElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -36,21 +36,21 @@ export const deployChange = async (
     const response = await deployment.deployChange(
       changeToDeploy,
       client,
-      apiDefinitions.types[getChangeElement(change).elemID.typeName]?.deployRequests,
+      apiDefinitions.types[getChangeData(change).elemID.typeName]?.deployRequests,
       fieldsToIgnore,
       additionalUrlVars
     )
 
     if (isAdditionChange(change)) {
       if (!Array.isArray(response)) {
-        const serviceIdField = apiDefinitions.types[getChangeElement(change).elemID.typeName]?.transformation?.serviceIdField ?? 'id'
-        getChangeElement(change).value[serviceIdField] = response[serviceIdField]
+        const serviceIdField = apiDefinitions.types[getChangeData(change).elemID.typeName]?.transformation?.serviceIdField ?? 'id'
+        getChangeData(change).value[serviceIdField] = response[serviceIdField]
       } else {
         log.warn('Received unexpected response from deployChange: %o', response)
       }
     }
   } catch (err) {
-    const errorMessage = `Deployment of ${getChangeElement(change).elemID.getFullName()} failed: ${err}`
+    const errorMessage = `Deployment of ${getChangeData(change).elemID.getFullName()} failed: ${err}`
     if (err instanceof clientUtils.HTTPError && 'errorMessages' in err.response.data) {
       throw new Error(`${errorMessage}. ${err.response.data.errorMessages}`)
     }

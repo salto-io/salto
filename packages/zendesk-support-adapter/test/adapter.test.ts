@@ -17,7 +17,7 @@ import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { InstanceElement, isObjectType, isInstanceElement, ReferenceExpression, isRemovalChange,
-  AdapterOperations, toChange, ObjectType, ElemID, getChangeElement } from '@salto-io/adapter-api'
+  AdapterOperations, toChange, ObjectType, ElemID, getChangeData } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import mockReplies from './mock_replies.json'
 import { adapter } from '../src/adapter_creator'
@@ -498,10 +498,10 @@ describe('adapter', () => {
         if (isRemovalChange(change)) {
           throw new Error('some error')
         }
-        if (getChangeElement<InstanceElement>(change).elemID.typeName === 'group') {
+        if (getChangeData<InstanceElement>(change).elemID.typeName === 'group') {
           return { group: { id: 1 } }
         }
-        if (getChangeElement<InstanceElement>(change).elemID.typeName === 'brand') {
+        if (getChangeData<InstanceElement>(change).elemID.typeName === 'brand') {
           return { brand: { key: 2 } }
         }
         return { key: 2 }

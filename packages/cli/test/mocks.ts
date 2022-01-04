@@ -17,7 +17,7 @@ import wu from 'wu'
 import _ from 'lodash'
 import { DataNodeMap, Group } from '@salto-io/dag'
 import {
-  BuiltinTypes, Change, Element, ElemID, getChangeElement, InstanceElement,
+  BuiltinTypes, Change, Element, ElemID, getChangeData, InstanceElement,
   ObjectType, CORE_ANNOTATIONS, SaltoError, Values, ListType, DetailedChange,
   AdapterAuthentication, OAuthRequestParameters, OauthAccessTokenResponse,
   createRefToElmWithValue,
@@ -512,7 +512,7 @@ const toPlanItem = (
   subChanges: Change[],
   detailed: DetailedChange[]
 ): PlanItem => ({
-  groupKey: getChangeElement(parent).elemID.getFullName(),
+  groupKey: getChangeData(parent).elemID.getFullName(),
   items: new Map<string, Change>(
     [parent, ...subChanges].map(c => [_.uniqueId(), c])
   ),

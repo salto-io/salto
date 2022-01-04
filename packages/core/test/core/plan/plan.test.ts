@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { InstanceElement, getChangeElement, isInstanceElement, ChangeGroupIdFunction, ElemID, ObjectType, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
+import { InstanceElement, getChangeData, isInstanceElement, ChangeGroupIdFunction, ElemID, ObjectType, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import * as mock from '../../common/elements'
 import { getFirstPlanItem, getChange } from '../../common/plan'
@@ -51,7 +51,7 @@ describe('getPlan', () => {
     expect(planItem.items.size).toBe(1)
     const change = getChange(planItem, newElement.elemID)
     expect(change.action).toBe('add')
-    expect(getChangeElement(change)).toEqual(newElement)
+    expect(getChangeData(change)).toEqual(newElement)
   })
 
   it('should create plan with remove change', async () => {

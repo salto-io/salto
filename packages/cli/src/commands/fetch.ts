@@ -16,7 +16,7 @@
 import { EOL } from 'os'
 import _ from 'lodash'
 import wu from 'wu'
-import { getChangeElement, isInstanceElement, AdapterOperationName, Progress } from '@salto-io/adapter-api'
+import { getChangeData, isInstanceElement, AdapterOperationName, Progress } from '@salto-io/adapter-api'
 import { fetch as apiFetch, FetchFunc, FetchChange, FetchProgressEvents, StepEmitter,
   PlanItem, FetchFromWorkspaceFunc, loadLocalWorkspace, fetchFromWorkspace } from '@salto-io/core'
 import { Workspace, nacl, StateRecency } from '@salto-io/workspace'
@@ -160,7 +160,7 @@ export const fetchCommand = async (
     const abortRequests = await series(
       wu(fetchResult.configChanges.itemsByEvalOrder()).map(planItem => async () => {
         const [change] = planItem.changes()
-        const newConfig = getChangeElement(change)
+        const newConfig = getChangeData(change)
         const accountName = newConfig.elemID.adapter
         if (!isInstanceElement(newConfig)) {
           log.error('Got non instance config from adapter %s - %o', accountName, newConfig)

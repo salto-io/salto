@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, DeployResult, getChangeElement, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isStaticFile } from '@salto-io/adapter-api'
+import { Change, DeployResult, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isStaticFile } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { chunks, promises, values } from '@salto-io/lowerdash'
@@ -142,7 +142,7 @@ export const isChangeDeployable = (
     return false
   }
 
-  const changedElement = getChangeElement(change)
+  const changedElement = getChangeData(change)
   if (!isFileCabinetType(changedElement.refType.elemID)) {
     return false
   }
@@ -356,7 +356,7 @@ Promise<FileResult[]> => {
     change: Change<InstanceElement>,
     pathToId: Record<string, number>
   ): FileCabinetInstanceDetails | Error => {
-    const instance = getChangeElement(change)
+    const instance = getChangeData(change)
     const dirname = path.dirname(instance.value.path)
     if (dirname !== '/' && !(dirname in pathToId)) {
       return new Error(`Directory ${dirname} was not found when attempting to deploy a file with path ${instance.value.path}`)
@@ -395,7 +395,7 @@ Promise<FileResult[]> => {
     if (details instanceof Error) {
       return details
     }
-    const instance = getChangeElement(change)
+    const instance = getChangeData(change)
     if (pathToId[instance.value.path] === undefined) {
       log.warn(`Failed to find the internal id of the file ${instance.value.path}`)
       return new Error(`Failed to find the internal id of the file ${instance.value.path}`)
@@ -452,7 +452,7 @@ Promise<FileResult[]> => {
         .value()
 
       deployChanges.forEach(deployedChange => {
-        pathToId[getChangeElement(deployedChange.change).value.path] = deployedChange.res as number
+        pathToId[getChangeData(deployedChange.change).value.path] = deployedChange.res as number
       })
 
       return {
@@ -494,7 +494,7 @@ Promise<FileResult[]> => {
     type: 'add' | 'delete'
   ): Promise<DeployResult> => {
     const changesGroups = _(changes)
-      .groupBy(change => getChangeElement(change).value.path.split('/').length)
+      .groupBy(change => getChangeData(change).value.path.split('/').length)
       .entries()
       .sortBy(([depth]) => depth)
       .value()

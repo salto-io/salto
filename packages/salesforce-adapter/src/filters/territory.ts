@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isInstanceElement, InstanceElement, getChangeElement, Change, isInstanceChange, isAdditionOrModificationChange } from '@salto-io/adapter-api'
+import { Element, isInstanceElement, InstanceElement, getChangeData, Change, isInstanceChange, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { isMetadataObjectType, metadataType, apiName } from '../transformers/transformer'
@@ -83,14 +83,14 @@ const filterCreator: FilterCreator = () => ({
     await awu(changes)
       .map(isTerritoryRelatedChange)
       .filter(isDefined)
-      .map(getChangeElement)
+      .map(getChangeData)
       .forEach(async elm => setTerritoryDeployPkgStructure(elm))
   },
   onDeploy: async changes => {
     await awu(changes)
       .map(isTerritoryRelatedChange)
       .filter(isDefined)
-      .map(getChangeElement)
+      .map(getChangeData)
       .forEach(elem => {
         delete elem.annotations[CONTENT_FILENAME_OVERRIDE]
       })

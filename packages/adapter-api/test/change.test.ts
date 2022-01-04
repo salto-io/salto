@@ -16,7 +16,7 @@
 import { ObjectType, InstanceElement, PrimitiveType, PrimitiveTypes, Field } from '../src/elements'
 import { ElemID } from '../src/element_id'
 import { BuiltinTypes } from '../src/builtins'
-import { getChangeElement, Change, isInstanceChange, isObjectTypeChange, isFieldChange, toChange, isAdditionChange, isRemovalChange, isModificationChange, getAllChangeElements } from '../src/change'
+import { getChangeData, Change, isInstanceChange, isObjectTypeChange, isFieldChange, toChange, isAdditionChange, isRemovalChange, isModificationChange, getAllChangeData } from '../src/change'
 import { TypeReference } from '../src/values'
 
 describe('change.ts', () => {
@@ -31,52 +31,52 @@ describe('change.ts', () => {
   })
   const inst = new InstanceElement('inst', new TypeReference(obj.elemID, obj), { field: 'val' })
 
-  it('should getChangeElement for removal change', () => {
-    const elem = getChangeElement({
+  it('should getChangeData for removal change', () => {
+    const elem = getChangeData({
       action: 'remove',
       data: { before: obj },
     })
     expect(elem).toBe(obj)
   })
 
-  it('should getChangeElement for add change', () => {
-    const elem = getChangeElement({
+  it('should getChangeData for add change', () => {
+    const elem = getChangeData({
       action: 'add',
       data: { after: inst },
     })
     expect(elem).toBe(inst)
   })
 
-  it('should getChangeElement for modification change', () => {
+  it('should getChangeData for modification change', () => {
     const { field } = obj.fields
-    const elem = getChangeElement({
+    const elem = getChangeData({
       action: 'modify',
       data: { before: field, after: field },
     })
     expect(elem).toBe(field)
   })
 
-  it('should getAllChangeElements for removal change', () => {
-    const elems = getAllChangeElements({
+  it('should getAllChangeData for removal change', () => {
+    const elems = getAllChangeData({
       action: 'remove',
       data: { before: obj },
     })
     expect(elems).toEqual([obj])
   })
 
-  it('should getAllChangeElements for add change', () => {
-    const elems = getAllChangeElements({
+  it('should getAllChangeData for add change', () => {
+    const elems = getAllChangeData({
       action: 'add',
       data: { after: inst },
     })
     expect(elems).toEqual([inst])
   })
 
-  it('should getAllChangeElements for modification change', () => {
+  it('should getAllChangeData for modification change', () => {
     const { field } = obj.fields
     const otherField = field.clone()
     otherField.name = 'other'
-    const elems = getAllChangeElements({
+    const elems = getAllChangeData({
       action: 'modify',
       data: { before: field, after: otherField },
     })

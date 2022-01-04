@@ -22,7 +22,7 @@ import SalesforceAdapter, {
   OauthAccessTokenCredentials,
 } from '@salto-io/salesforce-adapter'
 import _ from 'lodash'
-import { InstanceElement, ElemID, ObjectType, ChangeGroup, getChangeElement } from '@salto-io/adapter-api'
+import { InstanceElement, ElemID, ObjectType, ChangeGroup, getChangeData } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 
 export const naclNameToSFName = (objName: string): string => `${objName}__c`
@@ -116,7 +116,7 @@ export const addElements = async <T extends InstanceElement | ObjectType>(
   if (deployResult.errors.length > 0) {
     throw new Error(`Failed to remove elements with: ${deployResult.errors.join('\n')}`)
   }
-  const updatedElements = deployResult.appliedChanges.map(getChangeElement)
+  const updatedElements = deployResult.appliedChanges.map(getChangeData)
   return updatedElements as T[]
 }
 

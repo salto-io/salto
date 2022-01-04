@@ -16,7 +16,7 @@
 import wu from 'wu'
 import _ from 'lodash'
 import {
-  ChangeValidator, getChangeElement, isModificationChange, InstanceElement, isInstanceChange,
+  ChangeValidator, getChangeData, isModificationChange, InstanceElement, isInstanceChange,
   ModificationChange,
   ElemID,
   ChangeError,
@@ -73,7 +73,7 @@ const getRemovedListItems = async (change: ModificationChange<InstanceElement>):
     ([path, beforeIds]) =>
       wu(beforeIds).filter(beforeId => !idsUnderListsAfter.get(path).has(beforeId))
   ).flatten().toArray()
-  return { removedListItems, elemID: getChangeElement(change).elemID }
+  return { removedListItems, elemID: getChangeData(change).elemID }
 }
 
 const changeValidator: ChangeValidator = async changes => {

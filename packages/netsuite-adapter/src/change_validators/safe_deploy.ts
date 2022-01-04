@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { isInstanceChange, InstanceElement, Element,
   ProgressReporter, ChangeError, Change, isInstanceElement, isEqualElements,
-  getChangeElement, ModificationChange,
+  getChangeData, ModificationChange,
   isRemovalChange, isModificationChange, isAdditionChange, AdditionChange, RemovalChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { buildNetsuiteQuery, convertToQueryParams, NetsuiteQuery, NetsuiteQueryParameters } from '../query'
@@ -81,10 +81,10 @@ const getMatchingServiceInstances = async (
 
 const toChangeWarning = (change: Change<InstanceElement>): ChangeError => (
   {
-    elemID: getChangeElement(change).elemID,
+    elemID: getChangeData(change).elemID,
     severity: 'Warning',
     message: 'Continuing the deploy proccess will override changes made in the service to this element.',
-    detailedMessage: `The element ${getChangeElement(change).elemID.name}, which you are attempting to ${change.action}, has recently changed in the service.`,
+    detailedMessage: `The element ${getChangeData(change).elemID.name}, which you are attempting to ${change.action}, has recently changed in the service.`,
   }
 )
 
@@ -138,14 +138,14 @@ const changeValidator: QueryChangeValidator = async (
     .toArray()
 
   const serviceInstances = await getMatchingServiceInstances(
-    instanceChanges.map(getChangeElement),
+    instanceChanges.map(getChangeData),
     fetchByQuery
   )
 
   const isOverridingChange = (
     change: Change<InstanceElement>
   ): boolean => {
-    const matchingServiceInstance = serviceInstances[getChangeElement(change).elemID.getFullName()]
+    const matchingServiceInstance = serviceInstances[getChangeData(change).elemID.getFullName()]
     return (isModificationOverridingChange(change, matchingServiceInstance)
     || isRemovalOverridingChange(change, matchingServiceInstance)
     || isAdditionOverridingChange(change, matchingServiceInstance)

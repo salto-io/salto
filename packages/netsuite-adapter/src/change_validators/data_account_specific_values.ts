@@ -17,7 +17,7 @@ import { collections } from '@salto-io/lowerdash'
 import {
   ChangeError,
   ChangeValidator,
-  getChangeElement,
+  getChangeData,
   InstanceElement,
   isAdditionChange,
   isAdditionOrModificationChange,
@@ -52,7 +52,7 @@ const changeValidator: ChangeValidator = async changes => (
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
     .filter(async change => isDataObjectType(
-      await getChangeElement<InstanceElement>(change).getType()
+      await getChangeData<InstanceElement>(change).getType()
     ))
     .map(async change => {
       if (isAdditionChange(change)) {
@@ -65,7 +65,7 @@ const changeValidator: ChangeValidator = async changes => (
       await removeIdenticalValues(modificationChange)
       return modificationChange
     })
-    .map(change => getChangeElement<InstanceElement>(change))
+    .map(change => getChangeData<InstanceElement>(change))
     .filter(hasUnresolvedAccountSpecificValue)
     .map((instance): ChangeError => ({
       elemID: instance.elemID,

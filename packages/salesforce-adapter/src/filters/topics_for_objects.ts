@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, Element, Values, getAnnotationValue, isObjectTypeChange, InstanceElement,
-  isAdditionOrModificationChange, getChangeElement, isAdditionChange, isModificationChange,
+  isAdditionOrModificationChange, getChangeData, isAdditionChange, isModificationChange,
   ElemID, toChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
@@ -94,12 +94,12 @@ const filterCreator: FilterCreator = (): FilterWith<'onFetch' | 'onDeploy'> => (
     const customObjectChanges = await awu(changes)
       .filter(isObjectTypeChange)
       .filter(isAdditionOrModificationChange)
-      .filter(change => isCustomObject(getChangeElement(change)))
+      .filter(change => isCustomObject(getChangeData(change)))
       .toArray()
 
     const newObjects = customObjectChanges
       .filter(isAdditionChange)
-      .map(getChangeElement)
+      .map(getChangeData)
     // Add default value for new custom objects that have not specified a value
     newObjects
       .filter(obj => _.isEmpty(getTopicsForObjects(obj)))
@@ -113,7 +113,7 @@ const filterCreator: FilterCreator = (): FilterWith<'onFetch' | 'onDeploy'> => (
       .filter(change => (
         !_.isEqual(getTopicsForObjects(change.data.before), getTopicsForObjects(change.data.after))
       ))
-      .map(getChangeElement)
+      .map(getChangeData)
 
     const topicsToSet = [...newObjectTopicsToSet, ...changedObjectTopics]
     if (topicsToSet.length === 0) {

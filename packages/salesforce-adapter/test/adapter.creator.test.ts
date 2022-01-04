@@ -122,7 +122,7 @@ describe('SalesforceAdapter creator', () => {
     it('creates the right object from the response', () => {
       const creds = (adapter.authenticationMethods.oauth as OAuthMethod).createFromOauthResponse(
         {
-          isSandbox: false,
+          sandbox: false,
           consumerKey: oauthConfigObj.clientId,
           consumerSecret: oauthConfigObj.clientSecret,
         },
@@ -133,7 +133,7 @@ describe('SalesforceAdapter creator', () => {
         } },
       )
       expect(creds).toEqual({
-        isSandbox: false,
+        sandbox: false,
         accessToken: oauthConfigObj.accessToken,
         instanceUrl: oauthConfigObj.instanceUrl,
         clientSecret: oauthConfigObj.clientSecret,

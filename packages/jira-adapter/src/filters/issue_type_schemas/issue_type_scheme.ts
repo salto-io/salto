@@ -20,7 +20,7 @@ import { promises } from '@salto-io/lowerdash'
 import { getLookUpName } from '../../references'
 import JiraClient from '../../client/client'
 import { JiraConfig } from '../../config'
-import { deployChange } from '../../deployment'
+import { deployChange, deployChanges } from '../../deployment'
 import { FilterCreator } from '../../filter'
 
 const ISSUE_TYPE_SCHEMA_NAME = 'IssueTypeScheme'
@@ -116,34 +116,22 @@ const filter: FilterCreator = ({ config, client }) => ({
         && getChangeData(change).elemID.typeName === ISSUE_TYPE_SCHEMA_NAME
     )
 
-    const result = await Promise.all(relevantChanges
-      .filter(isInstanceChange)
-      .map(async change => {
-        try {
-          await deployIssueTypeSchema(
-            await resolveChangeElement(
-              change,
-              getLookUpName
-            ) as ModificationChange<InstanceElement>,
-            client,
-            config,
-          )
-          return change
-        } catch (err) {
-          if (!_.isError(err)) {
-            throw err
-          }
-          return err
-        }
-      }))
 
-    const [errors, appliedChanges] = _.partition(result, _.isError)
+    const deployResult = await deployChanges(
+      relevantChanges,
+      async change => deployIssueTypeSchema(
+        await resolveChangeElement(
+          change,
+          getLookUpName
+        ) as ModificationChange<InstanceElement>,
+        client,
+        config
+      )
+    )
+
     return {
       leftoverChanges,
-      deployResult: {
-        errors,
-        appliedChanges,
-      },
+      deployResult,
     }
   },
 })

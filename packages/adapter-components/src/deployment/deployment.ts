@@ -57,7 +57,7 @@ export const deployChange = async (
   endpointDetails?: DeploymentRequestsByAction,
   fieldsToIgnore: string[] = [],
   additionalUrlVars?: Record<string, string>
-): Promise<ResponseValue | ResponseValue[]> => {
+): Promise<ResponseValue | ResponseValue[] | undefined> => {
   const instance = getChangeData(change)
   const endpoint = endpointDetails?.[change.action]
   if (endpoint === undefined) {
@@ -77,7 +77,11 @@ export const deployChange = async (
   const data = endpoint.deployAsField
     ? { [endpoint.deployAsField]: valuesToDeploy }
     : valuesToDeploy
-  const response = await client[endpoint.method]({ url, data })
 
+  if (_.isEmpty(valuesToDeploy)) {
+    return undefined
+  }
+
+  const response = await client[endpoint.method]({ url, data })
   return response.data
 }

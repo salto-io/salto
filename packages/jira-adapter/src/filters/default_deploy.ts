@@ -14,33 +14,19 @@
 * limitations under the License.
 */
 import { isInstanceChange } from '@salto-io/adapter-api'
-import _ from 'lodash'
-import { deployChange } from '../deployment'
+import { deployChange, deployChanges } from '../deployment'
 import { FilterCreator } from '../filter'
 
 const filter: FilterCreator = ({ client, config }) => ({
   deploy: async changes => {
-    const result = await Promise.all(
-      changes.filter(isInstanceChange).map(async change => {
-        try {
-          await deployChange(change, client, config.apiDefinitions)
-          return change
-        } catch (err) {
-          if (!_.isError(err)) {
-            throw err
-          }
-          return err
-        }
-      })
+    const deployResult = await deployChanges(
+      changes.filter(isInstanceChange),
+      change => deployChange(change, client, config.apiDefinitions)
     )
 
-    const [errors, appliedChanges] = _.partition(result, _.isError)
     return {
       leftoverChanges: [],
-      deployResult: {
-        errors,
-        appliedChanges,
-      },
+      deployResult,
     }
   },
 })

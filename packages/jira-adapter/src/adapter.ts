@@ -22,7 +22,7 @@ import JiraClient from './client/client'
 import changeValidator from './change_validator'
 import { JiraConfig, getApiDefinitions } from './config'
 import { FilterCreator, Filter, filtersRunner } from './filter'
-import fieldReferences from './filters/field_references'
+import referenceRulesFilter from './filters/references_rules'
 import referenceBySelfLinkFilter from './filters/references_by_self_link'
 import removeSelfFilter from './filters/remove_self'
 import issueTypeSchemeReferences from './filters/issue_type_schemas/issue_type_scheme_references'
@@ -33,6 +33,9 @@ import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
 import projectFilter from './filters/project'
 import defaultDeployFilter from './filters/default_deploy'
 import workflowFilter from './filters/workflow/workflow'
+import fieldsStructureFilter from './filters/fields/fields_structure'
+import fieldsDeploymentFilter from './filters/fields/fields_deployment'
+import fieldsReferencesFilter from './filters/fields/fields_references'
 import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
 
@@ -52,10 +55,13 @@ export const DEFAULT_FILTERS = [
   sharePermissionFilter,
   boardFilter,
   projectFilter,
+  fieldsStructureFilter,
+  fieldsReferencesFilter,
+  fieldsDeploymentFilter,
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,
-  fieldReferences,
+  referenceRulesFilter,
   hiddenValuesInListsFilter,
   // Must be last
   defaultDeployFilter,

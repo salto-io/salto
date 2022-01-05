@@ -24,6 +24,7 @@ import { JiraConfig, getApiDefinitions } from './config'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import fieldReferences from './filters/field_references'
 import referenceBySelfLinkFilter from './filters/references_by_self_link'
+import removeSelfFilter from './filters/remove_self'
 import addReferencesToProjectSchemes from './filters/add_references_to_project_schemes'
 import overrideProjectSchemeFieldsTypes from './filters/override_project_scheme_fields_types'
 import issueTypeSchemeReferences from './filters/issue_type_schemas/issue_type_scheme_references'
@@ -55,6 +56,8 @@ export const DEFAULT_FILTERS = [
   overrideProjectSchemeFieldsTypes,
   hiddenValuesInListsFilter,
   referenceBySelfLinkFilter,
+  // Must run after referenceBySelfLinkFilter
+  removeSelfFilter,
   fieldReferences,
   // Must be last
   defaultDeployFilter,

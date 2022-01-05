@@ -58,7 +58,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       url: '/rest/api/3/dashboard/search',
       paginationField: 'startAt',
       queryParams: {
-        expand: 'description,owner,viewUrl,favouritedCount,sharePermissions',
+        expand: 'description,owner,sharePermissions',
       },
     },
   },
@@ -89,6 +89,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         {
           fieldName: 'id',
         },
+      ],
+      fieldsToOmit: [
+        { fieldName: 'isFavourite' },
       ],
     },
     deployRequests: {
@@ -188,6 +191,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
   },
   ApplicationProperty: {
+    transformation: {
+      fieldsToOmit: [
+        {
+          fieldName: 'key',
+        },
+      ],
+    },
     deployRequests: {
       modify: {
         url: '/rest/api/3/application-properties/{id}',
@@ -315,7 +325,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     request: {
       url: '/rest/api/3/filter/search',
       queryParams: {
-        expand: 'description,owner,jql,searchUrl,viewUrl,sharePermissions,subscriptions',
+        expand: 'description,owner,jql,sharePermissions,subscriptions',
       },
       paginationField: 'startAt',
       recurseInto: [

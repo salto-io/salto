@@ -16,7 +16,7 @@
 import wu from 'wu'
 import _ from 'lodash'
 import { Group } from '@salto-io/dag'
-import { isListType, Change, ChangeDataType, toChange, ObjectType, ElemID, getChangeElement } from '@salto-io/adapter-api'
+import { isListType, Change, ChangeDataType, toChange, ObjectType, ElemID, getChangeData } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import * as mock from '../../common/elements'
 import { getFirstPlanItem } from '../../common/plan'
@@ -206,7 +206,7 @@ describe('PlanItem', () => {
       modifiedPlanItem = await filterPlanItem(
         planItem,
         async change => {
-          const fullName = getChangeElement(change).elemID.getFullName()
+          const fullName = getChangeData(change).elemID.getFullName()
           if (fullName === 'salto.modify') {
             return applyFunctionToChangeData(change, elem => {
               const clone = elem.clone()
@@ -223,20 +223,20 @@ describe('PlanItem', () => {
     })
     it('should replace the changes with modified changes', () => {
       const modified = wu(modifiedPlanItem.changes())
-        .find(change => getChangeElement(change).elemID.getFullName() === 'salto.modify')
+        .find(change => getChangeData(change).elemID.getFullName() === 'salto.modify')
       expect(modified).toBeDefined()
-      expect(getChangeElement(modified as Change).annotations.str).toEqual('modified!')
+      expect(getChangeData(modified as Change).annotations.str).toEqual('modified!')
     })
     it('should filter out changes where before and after were set as undefined', () => {
       const dropped = wu(modifiedPlanItem.changes())
-        .find(change => getChangeElement(change).elemID.getFullName() === 'salto.filter')
+        .find(change => getChangeData(change).elemID.getFullName() === 'salto.filter')
       expect(dropped).not.toBeDefined()
     })
     it('should keep changes that were not modified by the callback', () => {
       const kept = wu(modifiedPlanItem.changes())
-        .find(change => getChangeElement(change).elemID.getFullName() === 'salto.keep')
+        .find(change => getChangeData(change).elemID.getFullName() === 'salto.keep')
       expect(kept).toBeDefined()
-      expect(getChangeElement(kept as Change).annotations.str).toEqual('keep')
+      expect(getChangeData(kept as Change).annotations.str).toEqual('keep')
     })
     it('should not modify the original plan item', () => {
       expect(planItem).toEqual(copyItem)

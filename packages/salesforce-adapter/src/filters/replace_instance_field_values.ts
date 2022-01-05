@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isInstanceElement, InstanceElement, getChangeElement, Change, Field, ReadOnlyElementsSource, isObjectType } from '@salto-io/adapter-api'
+import { Element, isInstanceElement, InstanceElement, getChangeData, Change, Field, ReadOnlyElementsSource, isObjectType } from '@salto-io/adapter-api'
 import { transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -133,7 +133,7 @@ const filter: FilterCreator = ({ config }) => ({
       value: field => toShortId(getInternalId(field)),
     })
     await replaceInstancesValues(
-      changes.map(getChangeElement),
+      changes.map(getChangeData),
       apiNameToIdLookup
     )
   },
@@ -144,7 +144,7 @@ const filter: FilterCreator = ({ config }) => ({
       value: apiName,
     })
     await replaceInstancesValues(
-      changes.map(getChangeElement),
+      changes.map(getChangeData),
       idToApiNameLookUp
     )
   },

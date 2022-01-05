@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/jira-adapter",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "license": "Apache-2.0",
   "description": "Salto JIRA adapter",
   "repository": {
@@ -30,15 +30,15 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.3.7",
-    "@salto-io/adapter-components": "0.3.7",
-    "@salto-io/adapter-utils": "0.3.7",
-    "@salto-io/logging": "0.3.7",
-    "@salto-io/lowerdash": "0.3.7",
+    "@salto-io/adapter-api": "0.3.8",
+    "@salto-io/adapter-components": "0.3.8",
+    "@salto-io/adapter-utils": "0.3.8",
+    "@salto-io/logging": "0.3.8",
+    "@salto-io/lowerdash": "0.3.8",
     "lodash": "^4.17.21"
   },
   "devDependencies": {
-    "@salto-io/test-utils": "0.3.7",
+    "@salto-io/test-utils": "0.3.8",
     "@types/jest": "^27.4.0",
     "@types/lodash": "^4.14.168",
     "@typescript-eslint/eslint-plugin": "4.22.1",

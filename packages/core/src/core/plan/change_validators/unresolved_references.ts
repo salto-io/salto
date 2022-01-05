@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeElement, Element, ElemID, SaltoErrorSeverity, isReferenceExpression } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, Element, ElemID, SaltoErrorSeverity, isReferenceExpression } from '@salto-io/adapter-api'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { values, collections } from '@salto-io/lowerdash'
 import { expressions } from '@salto-io/workspace'
@@ -36,7 +36,7 @@ const getUnresolvedReferences = (element: Element): ElemID[] => {
 
 export const changeValidator: ChangeValidator = async changes => (
   awu(changes)
-    .map(getChangeElement)
+    .map(getChangeData)
     .map(async element => {
       const unresolvedReferences = getUnresolvedReferences(element)
       if (unresolvedReferences.length === 0) {

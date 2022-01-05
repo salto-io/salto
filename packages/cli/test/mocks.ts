@@ -17,7 +17,7 @@ import wu from 'wu'
 import _ from 'lodash'
 import { DataNodeMap, Group } from '@salto-io/dag'
 import {
-  BuiltinTypes, Change, Element, ElemID, getChangeElement, InstanceElement,
+  BuiltinTypes, Change, Element, ElemID, getChangeData, InstanceElement,
   ObjectType, CORE_ANNOTATIONS, SaltoError, Values, ListType, DetailedChange,
   AdapterAuthentication, OAuthRequestParameters, OauthAccessTokenResponse,
   createRefToElmWithValue,
@@ -455,13 +455,13 @@ export const mockOauthCredentialsType = (adapterName: string,
       fields: {
         consumerKey: { refType: BuiltinTypes.STRING },
         port: { refType: BuiltinTypes.NUMBER },
-        isSandbox: { refType: BuiltinTypes.BOOLEAN },
+        sandbox: { refType: BuiltinTypes.BOOLEAN },
       },
     }),
     createOAuthRequest: jest.fn().mockReturnValue(oauthParameters),
     createFromOauthResponse: jest.fn().mockImplementation((oldConfig: Values,
       response: OauthAccessTokenResponse) => ({
-      isSandbox: oldConfig.isSandbox,
+      sandbox: oldConfig.sandbox,
       accessToken: response.fields.accessToken,
       instanceUrl: response.fields.instanceUrl,
     })),
@@ -512,7 +512,7 @@ const toPlanItem = (
   subChanges: Change[],
   detailed: DetailedChange[]
 ): PlanItem => ({
-  groupKey: getChangeElement(parent).elemID.getFullName(),
+  groupKey: getChangeData(parent).elemID.getFullName(),
   items: new Map<string, Change>(
     [parent, ...subChanges].map(c => [_.uniqueId(), c])
   ),

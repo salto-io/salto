@@ -10,20 +10,11 @@ zendesk_support {
       transformation = {
         idFields = [
           "name",
-          "id",
         ]
         fileNameFields = [
           "name",
         ]
         fieldsToOmit = [
-          {
-            fieldName = "created_at"
-            fieldType = "string"
-          },
-          {
-            fieldName = "updated_at"
-            fieldType = "string"
-          },
           {
             fieldName = "extended_input_schema"
           },
@@ -39,12 +30,36 @@ zendesk_support {
             fieldType = "number"
           },
         ]
+        fieldsToHide = [
+          {
+            fieldName = "created_at"
+            fieldType = "string"
+          },
+          {
+            fieldName = "updated_at"
+            fieldType = "string"
+          },
+        ]
       }
     }
     types = {
       group = {
         transformation = {
           sourceTypeName = "groups__groups"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
         deployRequests = {
           add = {
@@ -73,6 +88,44 @@ zendesk_support {
       custom_role = {
         transformation = {
           sourceTypeName = "custom_roles__custom_roles"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+            {
+              fieldName = "role_type"
+              fieldType = "number"
+            },
+            {
+              fieldName = "team_member_count"
+              fieldType = "number"
+            },
+          ]
         }
         deployRequests = {
           add = {
@@ -101,6 +154,20 @@ zendesk_support {
       organization = {
         transformation = {
           sourceTypeName = "organizations__organizations"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
         deployRequests = {
           add = {
@@ -131,10 +198,23 @@ zendesk_support {
           sourceTypeName = "views__views"
           idFields = [
             "title",
-            "id",
           ]
           fileNameFields = [
             "title",
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
           ]
         }
         deployRequests = {
@@ -166,10 +246,23 @@ zendesk_support {
           sourceTypeName = "triggers__triggers"
           idFields = [
             "title",
-            "id",
           ]
           fileNameFields = [
             "title",
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
           ]
         }
         deployRequests = {
@@ -202,6 +295,19 @@ zendesk_support {
           fileNameFields = [
             "name",
           ]
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+            },
+          ]
         }
         deployRequests = {
           add = {
@@ -232,10 +338,23 @@ zendesk_support {
           sourceTypeName = "automations__automations"
           idFields = [
             "title",
-            "id",
           ]
           fileNameFields = [
             "title",
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
           ]
         }
         deployRequests = {
@@ -267,10 +386,23 @@ zendesk_support {
           sourceTypeName = "sla_policies__sla_policies"
           idFields = [
             "title",
-            "id",
           ]
           fileNameFields = [
             "title",
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
           ]
         }
         deployRequests = {
@@ -301,6 +433,20 @@ zendesk_support {
         transformation = {
           sourceTypeName = "sla_policies_definitions__definitions"
           isSingleton = true
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
       }
       target = {
@@ -309,6 +455,20 @@ zendesk_support {
           idFields = [
             "title",
             "type",
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
           ]
         }
         deployRequests = {
@@ -340,10 +500,23 @@ zendesk_support {
           sourceTypeName = "macros__macros"
           idFields = [
             "title",
-            "id",
           ]
           fileNameFields = [
             "title",
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
           ]
         }
         deployRequests = {
@@ -373,22 +546,83 @@ zendesk_support {
       macro_action = {
         transformation = {
           sourceTypeName = "macros_actions__actions"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
       }
       macro_category = {
         transformation = {
           sourceTypeName = "macros_categories__categories"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
       }
       macro_definition = {
         transformation = {
           sourceTypeName = "macros_definitions__definitions"
           isSingleton = true
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
       }
       brand = {
         transformation = {
           sourceTypeName = "brands__brands"
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+            {
+              fieldName = "logo"
+            },
+          ]
           fieldTypeOverrides = [
             {
               fieldName = "help_center_state"
@@ -401,6 +635,20 @@ zendesk_support {
                   "restricted",
                 ]
               }
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
             },
           ]
         }
@@ -437,11 +685,39 @@ zendesk_support {
           fileNameFields = [
             "locale",
           ]
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
       }
       business_hours_schedule = {
         transformation = {
           sourceTypeName = "business_hours_schedules__schedules"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
         deployRequests = {
           add = {
@@ -496,6 +772,20 @@ zendesk_support {
               }
             },
           ]
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
         deployRequests = {
           add = {
@@ -521,9 +811,9 @@ zendesk_support {
           }
         }
       }
-      recipient_address = {
+      support_address = {
         transformation = {
-          sourceTypeName = "recipient_addresses__recipient_addresses"
+          sourceTypeName = "support_addresses__recipient_addresses"
           fieldTypeOverrides = [
             {
               fieldName = "cname_status"
@@ -586,6 +876,23 @@ zendesk_support {
               }
             },
           ]
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+            {
+              fieldName = "domain_verification_code"
+            },
+          ]
         }
         deployRequests = {
           add = {
@@ -614,6 +921,20 @@ zendesk_support {
       ticket_form = {
         transformation = {
           sourceTypeName = "ticket_forms__ticket_forms"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
         deployRequests = {
           add = {
@@ -645,7 +966,6 @@ zendesk_support {
           idFields = [
             "type",
             "title",
-            "id",
           ]
           fileNameFields = [
             "type",
@@ -654,6 +974,20 @@ zendesk_support {
           standaloneFields = [
             {
               fieldName = "custom_field_options"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
             },
           ]
         }
@@ -679,6 +1013,24 @@ zendesk_support {
               ticketFieldId = "id"
             }
           }
+        }
+      }
+      ticket_field__custom_field_options = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
       }
       user_field = {
@@ -711,6 +1063,20 @@ zendesk_support {
               }
             },
           ]
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
         deployRequests = {
           add = {
@@ -733,6 +1099,32 @@ zendesk_support {
             urlParamsToFields = {
               userFieldId = "id"
             }
+          }
+        }
+      }
+      user_field__custom_field_options = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+        }
+      }
+      user_field_order = {
+        deployRequests = {
+          modify = {
+            url = "/user_fields/reorder"
+            method = "put"
           }
         }
       }
@@ -766,6 +1158,20 @@ zendesk_support {
               }
             },
           ]
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
         deployRequests = {
           add = {
@@ -791,9 +1197,65 @@ zendesk_support {
           }
         }
       }
+      organization_field__custom_field_options = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+        }
+      }
+      organization_field_order = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+        }
+        deployRequests = {
+          modify = {
+            url = "/organization_fields/reorder"
+            method = "put"
+          }
+        }
+      }
       routing_attribute = {
         transformation = {
           sourceTypeName = "routing_attributes__attributes"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
         deployRequests = {
           add = {
@@ -824,6 +1286,20 @@ zendesk_support {
           sourceTypeName = "routing_attribute_definitions__definitions"
           hasDynamicFields = true
           isSingleton = true
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
       }
       workspace = {
@@ -831,10 +1307,23 @@ zendesk_support {
           sourceTypeName = "workspaces__workspaces"
           idFields = [
             "title",
-            "id",
           ]
           fileNameFields = [
             "title",
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
           ]
         }
         deployRequests = {
@@ -861,10 +1350,22 @@ zendesk_support {
           }
         }
       }
+      workspace__selected_macros = {
+        transformation = {
+          fieldsToHide = [
+          ]
+        }
+      }
+      workspace__apps = {
+        transformation = {
+          fieldsToHide = [
+          ]
+        }
+      }
       app_installation = {
         transformation = {
           sourceTypeName = "app_installations__installations"
-          fieldsToOmit = [
+          fieldsToHide = [
             {
               fieldName = "created_at"
               fieldType = "string"
@@ -873,6 +1374,12 @@ zendesk_support {
               fieldName = "updated_at"
               fieldType = "string"
             },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldsToOmit = [
             {
               fieldName = "extended_input_schema"
             },
@@ -925,12 +1432,47 @@ zendesk_support {
       }
       app_owned = {
         transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
           sourceTypeName = "apps_owned__apps"
         }
       }
       oauth_client = {
         transformation = {
           sourceTypeName = "oauth_clients__clients"
+          idFields = [
+            "identifier",
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+            {
+              fieldName = "secret"
+              fieldType = "string"
+            },
+          ]
         }
         deployRequests = {
           add = {
@@ -959,12 +1501,40 @@ zendesk_support {
       oauth_global_client = {
         transformation = {
           sourceTypeName = "oauth_global_clients__global_clients"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
       }
       account_setting = {
         transformation = {
           sourceTypeName = "account_settings__settings"
           isSingleton = true
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
         deployRequests = {
           modify = {
@@ -977,11 +1547,39 @@ zendesk_support {
       resource_collection = {
         transformation = {
           sourceTypeName = "resource_collections__resource_collections"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
       }
       monitored_twitter_handle = {
         transformation = {
           sourceTypeName = "monitored_twitter_handles__monitored_twitter_handles"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
       }
       groups = {
@@ -1022,6 +1620,34 @@ zendesk_support {
       triggers = {
         request = {
           url = "/triggers"
+        }
+      }
+      trigger_definitions = {
+        request = {
+          url = "/triggers/definitions"
+        }
+        transformation = {
+          dataField = "definitions"
+        }
+      }
+      trigger_definition = {
+        transformation = {
+          sourceTypeName = "trigger_definitions__definitions"
+          isSingleton = true
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
       }
       trigger_categories = {
@@ -1074,6 +1700,20 @@ zendesk_support {
         transformation = {
           dataField = "."
           isSingleton = true
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
       }
       macro_categories = {
@@ -1082,11 +1722,41 @@ zendesk_support {
         }
         transformation = {
           isSingleton = true
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
       }
       macros_definitions = {
         request = {
           url = "/macros/definitions"
+        }
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
       }
       brands = {
@@ -1103,6 +1773,25 @@ zendesk_support {
         }
         transformation = {
           dataField = "."
+          standaloneFields = [
+            {
+              fieldName = "variants"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
         deployRequests = {
           add = {
@@ -1128,6 +1817,27 @@ zendesk_support {
           }
         }
       }
+      dynamic_content_item__variants = {
+        transformation = {
+          idFields = [
+            "locale_id",
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+        }
+      }
       locales = {
         request = {
           url = "/locales"
@@ -1146,7 +1856,7 @@ zendesk_support {
           url = "/sharing_agreements"
         }
       }
-      recipient_addresses = {
+      support_addresses = {
         request = {
           url = "/recipient_addresses"
         }
@@ -1163,6 +1873,14 @@ zendesk_support {
           dataField = "ticket_forms"
         }
       }
+      ticket_form_order = {
+        deployRequests = {
+          modify = {
+            url = "/ticket_forms/reorder"
+            method = "put"
+          }
+        }
+      }
       ticket_fields = {
         request = {
           url = "/ticket_fields"
@@ -1171,6 +1889,20 @@ zendesk_support {
           dataField = "ticket_fields"
           fileNameFields = [
             "title",
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
           ]
         }
       }

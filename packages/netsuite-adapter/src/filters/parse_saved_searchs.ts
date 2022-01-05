@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { getChangeElement, InstanceElement, isInstanceChange, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
+import { getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { SAVED_SEARCH } from '../constants'
 import { FilterCreator } from '../filter'
@@ -68,7 +68,7 @@ const filterCreator: FilterCreator = ({ elementsSource }) => ({
   preDeploy: async changes => {
     changes
       .filter(isInstanceChange)
-      .map(getChangeElement)
+      .map(getChangeData)
       .filter(instance => instance.elemID.typeName === SAVED_SEARCH)
       .forEach(instance => removeValuesFromInstance(instance))
   },

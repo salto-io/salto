@@ -15,20 +15,20 @@
 */
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
-import { DependencyChange, isInstanceChangeEntry, InstanceElement, ChangeEntry, DependencyChanger, getChangeElement, isField, isDependentAction, addReferenceDependency } from '@salto-io/adapter-api'
+import { DependencyChange, isInstanceChangeEntry, InstanceElement, ChangeEntry, DependencyChanger, getChangeData, isField, isDependentAction, addReferenceDependency } from '@salto-io/adapter-api'
 
 const { awu } = collections.asynciterable
 
 export const addInstanceToFieldsDependency: DependencyChanger = async changes => {
   const fieldChanges = collections.iterable.groupBy(
-    wu(changes).filter(([_id, change]) => isField(getChangeElement(change))),
-    ([_id, change]) => getChangeElement(change).elemID.getFullName(),
+    wu(changes).filter(([_id, change]) => isField(getChangeData(change))),
+    ([_id, change]) => getChangeData(change).elemID.getFullName(),
   )
 
   const addChangeFieldDependency = async (
     [id, change]: ChangeEntry<InstanceElement>,
   ): Promise<DependencyChange[]> => {
-    const fieldsElemIDs = Object.values((await getChangeElement(change).getType()).fields)
+    const fieldsElemIDs = Object.values((await getChangeData(change).getType()).fields)
       .map(field => field.elemID.getFullName())
     return fieldsElemIDs.flatMap(fieldName => fieldChanges.get(fieldName) ?? [])
       .filter(([_id, fieldChange]) => isDependentAction(change.action, fieldChange.action))

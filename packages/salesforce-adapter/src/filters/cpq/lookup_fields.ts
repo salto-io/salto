@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, ObjectType, ReferenceExpression, Value, Change, ChangeDataType, isAdditionOrModificationChange, getChangeElement, isObjectTypeChange, Field, isAdditionChange, isFieldChange } from '@salto-io/adapter-api'
+import { Element, ObjectType, ReferenceExpression, Value, Change, ChangeDataType, isAdditionOrModificationChange, getChangeData, isObjectTypeChange, Field, isAdditionChange, isFieldChange } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -218,8 +218,8 @@ const getCustomObjectWithMappingLookupChanges = (
     .filter(isAdditionOrModificationChange)
     .filter(isObjectTypeChange)
     .filter(async change =>
-      (await isCustomObject(getChangeElement(change)))
-        && doesObjectHaveValuesMappingLookup(await apiName(getChangeElement(change))))
+      (await isCustomObject(getChangeData(change)))
+        && doesObjectHaveValuesMappingLookup(await apiName(getChangeData(change))))
     .toArray()
 )
 
@@ -230,10 +230,10 @@ const applyFuncOnCustomFieldWithMappingLookupChange = async (
   (awu(changes)
     .filter<Change<Field>>(isFieldChange)
     .filter(async change => {
-      const changeElement = getChangeElement(change)
-      const parentApiName = await apiName(changeElement.parent)
+      const changeData = getChangeData(change)
+      const parentApiName = await apiName(changeData.parent)
       return doesObjectHaveValuesMappingLookup(parentApiName)
-        && LOOKUP_FIELDS[parentApiName][await apiName(changeElement, true)]?.valuesMapping
+        && LOOKUP_FIELDS[parentApiName][await apiName(changeData, true)]?.valuesMapping
           !== undefined
     })
     .forEach(async change => applyFunctionToChangeData(change, fn)))

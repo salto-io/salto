@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections, hash, strings, promises } from '@salto-io/lowerdash'
 import {
-  getChangeElement, DeployResult, Change, isPrimitiveType, InstanceElement, Value, PrimitiveTypes,
+  getChangeData, DeployResult, Change, isPrimitiveType, InstanceElement, Value, PrimitiveTypes,
   ModificationChange, Field, ObjectType, isObjectType, Values, isAdditionChange, isRemovalChange,
   isModificationChange,
   TypeElement,
@@ -393,7 +393,7 @@ const deployModifyChanges = async (
 export const isInstanceOfCustomObjectChange = async (
   change: Change
 ): Promise<boolean> => (
-  isInstanceOfCustomObject(getChangeElement(change))
+  isInstanceOfCustomObject(getChangeData(change))
 )
 
 export const isCustomObjectInstanceChanges = (
@@ -413,7 +413,7 @@ export const deployCustomObjectInstancesGroup = async (
   dataManagement?: DataManagement,
 ): Promise<DeployResult> => {
   try {
-    const instances = changes.map(change => getChangeElement(change))
+    const instances = changes.map(change => getChangeData(change))
     const instanceTypes = [...new Set(await awu(instances)
       .map(async inst => apiName(await inst.getType())).toArray())]
     if (instanceTypes.length > 1) {

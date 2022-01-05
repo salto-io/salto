@@ -16,7 +16,7 @@
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
 import {
-  getChangeElement, isReferenceExpression, ChangeDataType, Change, ChangeEntry, DependencyChange,
+  getChangeData, isReferenceExpression, ChangeDataType, Change, ChangeEntry, DependencyChange,
   addReferenceDependency, addParentDependency, isDependentAction, DependencyChanger, isObjectType,
   ElemID,
 } from '@salto-io/adapter-api'
@@ -30,7 +30,7 @@ const getParentIds = (elem: ChangeDataType): Set<string> => new Set(
 )
 
 const getChangeElemId = (change: Change<ChangeDataType>): string => (
-  getChangeElement(change).elemID.getFullName()
+  getChangeData(change).elemID.getFullName()
 )
 
 export const addReferencesDependency: DependencyChanger = async changes => {
@@ -42,7 +42,7 @@ export const addReferencesDependency: DependencyChanger = async changes => {
   const addChangeDependency = (
     [id, change]: ChangeEntry
   ): Iterable<DependencyChange> => {
-    const elem = getChangeElement(change)
+    const elem = getChangeData(change)
     const parents = getParentIds(elem)
     const elemId = elem.elemID.getFullName()
     // Because fields are separate nodes in the graph, for object types we should only consider

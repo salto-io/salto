@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ElemID, getChangeElement, isReferenceExpression, Element, isModificationChange, toChange, isObjectTypeChange, isRemovalOrModificationChange, isAdditionOrModificationChange } from '@salto-io/adapter-api'
+import { Change, ElemID, getChangeData, isReferenceExpression, Element, isModificationChange, toChange, isObjectTypeChange, isRemovalOrModificationChange, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -87,7 +87,7 @@ const getReferenceTargetIndexUpdates = (
 ): RemoteMapEntry<ElemID[]>[] => {
   const indexUpdates: RemoteMapEntry<ElemID[]>[] = []
 
-  const references = changeToReferences[getChangeElement(change).elemID.getFullName()]
+  const references = changeToReferences[getChangeData(change).elemID.getFullName()]
     .currentAndNew
   const baseIdToReferences = _(references)
     .groupBy(reference => reference.referenceSource.createBaseID().parent.getFullName())
@@ -95,7 +95,7 @@ const getReferenceTargetIndexUpdates = (
     .value()
 
   if (isObjectTypeChange(change)) {
-    const type = getChangeElement(change)
+    const type = getChangeData(change)
 
     const allFields = isModificationChange(change)
       ? {
@@ -112,7 +112,7 @@ const getReferenceTargetIndexUpdates = (
         }))
     )
   }
-  const elemId = getChangeElement(change).elemID.getFullName()
+  const elemId = getChangeData(change).elemID.getFullName()
   indexUpdates.push({
     key: elemId,
     value: changeToReferences[elemId].currentAndNew
@@ -183,7 +183,7 @@ const updateReferenceSourcesIndex = async (
 
   const changedReferenceSources = new Set(
     changes
-      .map(getChangeElement)
+      .map(getChangeData)
       .map(elem => elem.elemID.getFullName())
   )
 
@@ -250,7 +250,7 @@ export const updateReferenceIndexes = async (
 
   const changeToReferences = Object.fromEntries(relevantChanges
     .map(change => [
-      getChangeElement(change).elemID.getFullName(),
+      getChangeData(change).elemID.getFullName(),
       getReferencesFromChange(change),
     ]))
 

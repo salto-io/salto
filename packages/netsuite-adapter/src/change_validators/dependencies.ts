@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  Change, ChangeError, getChangeElement, InstanceElement, isInstanceElement, SaltoErrorSeverity,
+  Change, ChangeError, getChangeData, InstanceElement, isInstanceElement, SaltoErrorSeverity,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { findDependingInstancesFromRefs } from '../reference_dependencies'
@@ -46,7 +46,7 @@ export const validateDependsOnInvalidElement = async (
   }
 
   return awu(changes)
-    .map(getChangeElement)
+    .map(getChangeData)
     .filter(isInstanceElement)
     .filter(instance => !inputInvalidElementIds.includes(instance.elemID.getFullName()))
     .filter(isInvalid)

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ChangeValidator, getChangeElement, isModificationChange, InstanceElement, isInstanceChange,
+  ChangeValidator, getChangeData, isModificationChange, InstanceElement, isInstanceChange,
   ModificationChange,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
@@ -24,7 +24,7 @@ import { CUSTOM_LIST } from '../constants'
 const { makeArray } = collections.array
 
 const isCustomListChange = (change: ModificationChange<InstanceElement>): boolean =>
-  getChangeElement(change).refType.elemID.isEqual(customTypes[CUSTOM_LIST].elemID)
+  getChangeData(change).refType.elemID.isEqual(customTypes[CUSTOM_LIST].elemID)
 
 const hasItemRemoval = (change: ModificationChange<InstanceElement>): boolean => {
   const beforeCustomList = change.data.before
@@ -42,7 +42,7 @@ const changeValidator: ChangeValidator = async changes => (
     .filter(isInstanceChange)
     .filter(isCustomListChange)
     .filter(hasItemRemoval)
-    .map(getChangeElement)
+    .map(getChangeData)
     .map(({ elemID }) => ({
       elemID,
       severity: 'Error',

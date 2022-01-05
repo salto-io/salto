@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, getChangeElement, InstanceElement, isModificationChange, isRemovalChange, ChangeError, ChangeValidator, ActionName, isInstanceChange, isFieldChange, isObjectType } from '@salto-io/adapter-api'
+import { Element, getChangeData, InstanceElement, isModificationChange, isRemovalChange, ChangeError, ChangeValidator, ActionName, isInstanceChange, isFieldChange, isObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { apiName, isCustomObject, metadataType } from '../transformers/transformer'
@@ -69,14 +69,14 @@ const isInstalledPackageVersionChange = async (
 
 const changeValidator: ChangeValidator = async changes => {
   const addRemoveErrors = await awu(changes)
-    .filter(async change => await isCustomObject(getChangeElement(change)) || isFieldChange(change))
-    .filter(change => hasNamespace(getChangeElement(change)))
-    .map(change => packageChangeError(change.action, getChangeElement(change)))
+    .filter(async change => await isCustomObject(getChangeData(change)) || isFieldChange(change))
+    .filter(change => hasNamespace(getChangeData(change)))
+    .map(change => packageChangeError(change.action, getChangeData(change)))
     .toArray()
 
   const removeObjectWithPackageFieldsErrors = awu(changes)
     .filter(isRemovalChange)
-    .map(getChangeElement)
+    .map(getChangeData)
     .filter(isObjectType)
     .filter(async obj =>
       !(await hasNamespace(obj))
@@ -94,8 +94,8 @@ const changeValidator: ChangeValidator = async changes => {
     .filter(change => isInstalledPackageVersionChange(change.data))
     .map(change => packageChangeError(
       change.action,
-      getChangeElement(change),
-      `Cannot change installed package version with id: ${getChangeElement(change).elemID.getFullName()}`,
+      getChangeData(change),
+      `Cannot change installed package version with id: ${getChangeData(change).elemID.getFullName()}`,
     ))
     .toArray()
 

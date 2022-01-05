@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeElement, InstanceElement, toChange } from '@salto-io/adapter-api'
+import { getChangeData, InstanceElement, toChange } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/account_specific_values'
 import { ACCOUNT_SPECIFIC_VALUE, APPLICATION_ID } from '../../src/constants'
 import { addressForm } from '../../src/autogen/types/custom_types/addressForm'
@@ -35,6 +35,6 @@ describe('account_specific_values filter', () => {
     )
     const change = toChange({ after: instance })
     await filterCreator().preDeploy([change])
-    expect(getChangeElement(change).value).toEqual({ a: 2, c: { e: 3 }, [APPLICATION_ID]: 'a.b.c' })
+    expect(getChangeData(change).value).toEqual({ a: 2, c: { e: 3 }, [APPLICATION_ID]: 'a.b.c' })
   })
 })

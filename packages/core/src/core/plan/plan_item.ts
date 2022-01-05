@@ -16,7 +16,7 @@
 import wu from 'wu'
 
 import { NodeId, Group, ActionName } from '@salto-io/dag'
-import { Change, getChangeElement, DetailedChange } from '@salto-io/adapter-api'
+import { Change, getChangeData, DetailedChange } from '@salto-io/adapter-api'
 import { detailedCompare } from '@salto-io/adapter-utils'
 import { values, collections } from '@salto-io/lowerdash'
 
@@ -32,7 +32,7 @@ export type PlanItem = Group<Change> & {
 
 const getGroupAction = (group: Group<Change>): ActionName => {
   const changeTypes = wu(group.items.values())
-    .filter(change => getChangeElement(change).elemID.isTopLevel())
+    .filter(change => getChangeData(change).elemID.isTopLevel())
     .map(change => change.action)
     .unique()
     .toArray()
@@ -51,7 +51,7 @@ export const addPlanItemAccessors = (group: Group<Change>): PlanItem => Object.a
   detailedChanges() {
     return wu(group.items.values())
       .map(change => {
-        const elem = getChangeElement(change)
+        const elem = getChangeData(change)
         if (change.action !== 'modify') {
           return { ...change, id: elem.elemID }
         }

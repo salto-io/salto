@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeError, ChangeValidator, getChangeElement, isInstanceChange, Element, ElemID } from '@salto-io/adapter-api'
+import { Change, ChangeError, ChangeValidator, getChangeData, isInstanceChange, Element, ElemID } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { AdapterApiConfig, DeploymentRequestsByAction } from '../../config'
 
@@ -35,7 +35,7 @@ ChangeValidator => async changes => (
       if (!isInstanceChange(change)) {
         return []
       }
-      const instance = getChangeElement(change)
+      const instance = getChangeData(change)
       const typeConfig = apiConfig?.types?.[instance.elemID.typeName]?.deployRequests ?? {}
       if (!isDeploymentSupported(change.action, typeConfig)) {
         return [{

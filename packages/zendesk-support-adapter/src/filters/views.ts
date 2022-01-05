@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  Change, getChangeElement, InstanceElement, isRemovalChange, Values,
+  Change, getChangeData, InstanceElement, isRemovalChange, Values,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
@@ -34,7 +34,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [viewChanges, leftoverChanges] = _.partition(
       changes,
-      change => getChangeElement(change).elemID.typeName === VIEW_TYPE_NAME,
+      change => getChangeData(change).elemID.typeName === VIEW_TYPE_NAME,
     )
     const result = await Promise.all(
       viewChanges.map(async change => {
@@ -57,7 +57,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
                 return view
               } catch (e) {
                 log.error('View %s has an invalid format and cannot be deployed. Error: %o',
-                  getChangeElement(change).elemID.getFullName(), e)
+                  getChangeData(change).elemID.getFullName(), e)
                 throw e
               }
             })

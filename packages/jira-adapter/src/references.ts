@@ -20,12 +20,12 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
   {
     src: { field: 'issueTypeId', parentTypes: ['IssueTypeScreenSchemeItem', 'FieldConfigurationIssueTypeItem'] },
     serializationStrategy: 'id',
-    target: { type: 'IssueTypeDetails' },
+    target: { type: 'IssueType' },
   },
   {
     src: { field: 'fieldConfigurationId', parentTypes: ['FieldConfigurationIssueTypeItem'] },
     serializationStrategy: 'id',
-    target: { type: 'FieldConfigurationDetails' },
+    target: { type: 'FieldConfiguration' },
   },
   {
     src: { field: 'screenSchemeId', parentTypes: ['IssueTypeScreenSchemeItem'] },
@@ -35,12 +35,12 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
   {
     src: { field: 'defaultIssueTypeId', parentTypes: ['IssueTypeScheme'] },
     serializationStrategy: 'id',
-    target: { type: 'IssueTypeDetails' },
+    target: { type: 'IssueType' },
   },
   {
     src: { field: 'issueTypeIds', parentTypes: ['IssueTypeScheme'] },
     serializationStrategy: 'id',
-    target: { type: 'IssueTypeDetails' },
+    target: { type: 'IssueType' },
   },
 ]
 

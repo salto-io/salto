@@ -128,7 +128,8 @@ export const resolveReferenceExpression = async (
   const resolvedRootElement = resolveRoot ? await resolveElement(
     rootElement,
     elementsSource,
-    workingSetElements
+    workingSetElements,
+    resolveRoot
   ) : undefined
 
   const value = resolvePath(rootElement, fullElemID)

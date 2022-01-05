@@ -14,12 +14,11 @@
 * limitations under the License.
 */
 import { Element } from '@salto-io/adapter-api'
-import 'jest-extended'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { Credentials } from '../src/auth'
 import { credsLease, realAdapter } from './adapter'
 
-jest.setTimeout(10 * 1000)
+jest.setTimeout(30 * 1000)
 
 describe('Jira E2E', () => {
   let fetchedElements: Element[]

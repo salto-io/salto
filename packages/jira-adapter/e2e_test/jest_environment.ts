@@ -14,10 +14,14 @@
 * limitations under the License.
 */
 import {
-  createEnvUtils, CredsSpec, SaltoE2EJestEnvironment, JestEnvironmentConstructorArgs,
+  createEnvUtils,
+  CredsSpec,
+  JestEnvironmentConstructorArgs,
+  SaltoE2EJestEnvironment,
 } from '@salto-io/e2e-credentials-store'
 import { logger } from '@salto-io/logging'
 import { Credentials } from '../src/auth'
+
 
 const log = logger(module)
 
@@ -39,7 +43,7 @@ export const credsSpec = (envName?: string): CredsSpec<Required<Credentials>> =>
       }
     },
     validate: async (_creds: Credentials): Promise<void> => {
-      // TODO validate when connecting with real credentials
+      // Irrelevant
     },
     typeName: 'jira',
     globalProp: envName ? `jira_${envName}` : 'jira',

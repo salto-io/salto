@@ -44,7 +44,7 @@ const adapter: Adapter<Args, Credentials> = {
     token: args.token,
   }),
   validateCredentials: async () => {
-    // TODO validate when connecting with real credentials
+    // Irrelevant
   },
 }
 

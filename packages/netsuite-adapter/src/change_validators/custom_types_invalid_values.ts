@@ -45,7 +45,7 @@ const invalidValues: InvalidValue[] = [
     value: 'SELECTED',
     error: {
       severity: 'Error',
-      detailedMessage: 'role.subsidiaryoption cannot be deployed with value "SELECTED", please set a different value and manually edit it via the netsuite UI',
+      detailedMessage: 'role.subsidiaryoption cannot be deployed with value "SELECTED", please set a different value and manually edit it via the NetSuite UI',
     },
   },
 ]

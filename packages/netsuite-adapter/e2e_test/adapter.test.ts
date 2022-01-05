@@ -509,11 +509,9 @@ describe('Netsuite adapter E2E with real account', () => {
           workflowToCreate.elemID
         ) as InstanceElement
         expect(fetchedWorkflow.value.name).toEqual(randomString)
-        const toStateReference = Object.values(
-          Object.values(
-            fetchedWorkflow.value.workflowstates?.workflowstate as Values
-          )[0]?.workflowtransitions?.workflowtransition as Values
-        )[0]?.tostate
+        expect(fetchedWorkflow.value.workflowstates?.workflowstate).toEqual({})
+        const toStateReference = fetchedWorkflow.value.workflowstates?.workflowstate?.[0]
+          ?.workflowtransitions?.workflowtransition?.[0]?.tostate
         expect(toStateReference).toBeDefined()
         expect(isReferenceExpression(toStateReference)
         && toStateReference.elemID.isEqual(

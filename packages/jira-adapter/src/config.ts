@@ -114,7 +114,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       url: '/rest/api/3/field/search',
       paginationField: 'startAt',
       queryParams: {
-        expand: 'searcherKey',
+        expand: 'searcherKey,isLocked',
       },
       recurseInto: [
         {
@@ -159,11 +159,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
   Field: {
     transformation: {
-      fieldsToHide: [
-        {
-          fieldName: 'id',
-        },
-      ],
+      // fieldsToHide: [
+      //   {
+      //     fieldName: 'id',
+      //   },
+      // ],
       idFields: ['id'],
       fieldTypeOverrides: [
         { fieldName: 'contexts', fieldType: 'list<CustomFieldContext>' },
@@ -292,12 +292,27 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'fields', fieldType: 'list<FieldConfigurationItem>' },
+        { fieldName: 'id', fieldType: 'number' },
       ],
       fieldsToHide: [
         {
           fieldName: 'id',
         },
       ],
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/fieldconfiguration',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/fieldconfiguration/{id}',
+        method: 'put',
+      },
+      remove: {
+        url: '/rest/api/3/fieldconfiguration/{id}',
+        method: 'delete',
+      },
     },
   },
   PageBeanFieldConfigurationItem: {

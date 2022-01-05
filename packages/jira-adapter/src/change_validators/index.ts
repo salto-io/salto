@@ -16,6 +16,7 @@
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { createChangeValidator } from '@salto-io/adapter-utils'
+import { unsupportedFieldConfigurationsValidator } from './field_configuration'
 
 const {
   deployTypesNotSupportedValidator,
@@ -23,6 +24,7 @@ const {
 
 const validators: ChangeValidator[] = [
   deployTypesNotSupportedValidator,
+  unsupportedFieldConfigurationsValidator,
 ]
 
 export default createChangeValidator(validators)

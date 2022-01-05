@@ -19,7 +19,7 @@ import { config as configUtils, elements as elementUtils, client as clientUtils,
 import { applyFunctionToChangeData, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import JiraClient from './client/client'
-import changeValidator from './change_validator'
+import changeValidator from './change_validators'
 import { JiraConfig, getApiDefinitions } from './config'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import fieldReferencesFilter from './filters/field_references'
@@ -32,6 +32,7 @@ import boardFilter from './filters/board'
 import screenFilter from './filters/screen/screen'
 import screenableTabFilter from './filters/screen/screenable_tab'
 import issueTypeScreenSchemeFilter from './filters/issue_type_screen_scheme'
+import fieldConfigurationFilter from './filters/field_configuration'
 import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
 import projectFilter from './filters/project'
 import defaultInstancesDeployFilter from './filters/default_instances_deploy'
@@ -64,6 +65,7 @@ export const DEFAULT_FILTERS = [
   screenFilter,
   screenableTabFilter,
   issueTypeScreenSchemeFilter,
+  fieldConfigurationFilter,
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,

@@ -30,8 +30,8 @@ type Resolver<T> = (
   v: T,
   elementsSource: ReadOnlyElementsSource,
   workingSetElements: Record<string, WorkingSetElement>,
-  visited?: Set<string>,
-  resolveRoot?: boolean
+  resolveRoot: boolean,
+  visited?: Set<string>
 ) => Promise<Value>
 
 export class UnresolvedReference {
@@ -64,8 +64,8 @@ const resolveMaybeExpression: Resolver<Value> = async (
   value: Value,
   elementsSource: ReadOnlyElementsSource,
   workingSetElements: Record<string, WorkingSetElement>,
+  resolveRoot: boolean,
   visited: Set<string> = new Set<string>(),
-  resolveRoot = false
 ): Promise<Value> => {
   if (isReferenceExpression(value)) {
     // eslint-disable-next-line no-use-before-define
@@ -83,8 +83,8 @@ const resolveMaybeExpression: Resolver<Value> = async (
       value,
       elementsSource,
       workingSetElements,
-      visited,
-      resolveRoot
+      resolveRoot,
+      visited
     )
   }
 
@@ -93,7 +93,8 @@ const resolveMaybeExpression: Resolver<Value> = async (
     return (await resolveElement(
       value,
       elementsSource,
-      workingSetElements
+      workingSetElements,
+      resolveRoot
     )) ?? value
   }
   return value
@@ -151,14 +152,14 @@ export const resolveReferenceExpression = async (
         value.value,
         elementsSource,
         workingSetElements,
-        visited,
-        resolveRoot
+        resolveRoot,
+        visited
       ) ?? value.value,
       resolvedRootElement,
     )
   }
   return (expression as ReferenceExpression).createWithValue(
-    await resolveMaybeExpression(value, elementsSource, workingSetElements, visited, resolveRoot)
+    await resolveMaybeExpression(value, elementsSource, workingSetElements, resolveRoot, visited)
       ?? value,
     resolvedRootElement,
   )
@@ -168,12 +169,12 @@ resolveTemplateExpression = async (
   expression: TemplateExpression,
   elementsSource: ReadOnlyElementsSource,
   workingSetElements: Record<string, WorkingSetElement>,
+  resolveRoot: boolean,
   visited: Set<string> = new Set<string>(),
-  resolveRoot = false
 ): Promise<Value> => (await awu(expression.parts)
   .map(async p => {
     const res = await resolveMaybeExpression(
-      p, elementsSource, workingSetElements, visited, resolveRoot
+      p, elementsSource, workingSetElements, resolveRoot, visited
     )
     return res ? res?.value ?? res : p
   }).toArray())
@@ -183,7 +184,7 @@ const resolveElement = async <T extends Element>(
   elementToResolve: T,
   elementsSource: ReadOnlyElementsSource,
   workingSetElements: Record<string, WorkingSetElement>,
-  resolveRoot = false
+  resolveRoot: boolean
 ): Promise<T> => {
   const clonedRefs: Record<string, ReferenceExpression> = {}
   const referenceCloner: TransformFunc = ({ value }) => {
@@ -196,8 +197,8 @@ const resolveElement = async <T extends Element>(
       value,
       elementsSource,
       workingSetElements,
+      resolveRoot && !isTypeReference(value),
       undefined,
-      resolveRoot && !isTypeReference(value)
     )
   }
 
@@ -282,8 +283,8 @@ const resolveElement = async <T extends Element>(
       element.value,
       elementsSource,
       workingSetElements,
-      new Set(),
-      resolveRoot
+      resolveRoot,
+      new Set()
     )
   }
 
@@ -292,8 +293,8 @@ const resolveElement = async <T extends Element>(
       ref,
       elementsSource,
       workingSetElements,
-      new Set(),
-      resolveRoot
+      resolveRoot,
+      new Set()
     )
     ref.value = resolvedRef.value
     ref.topLevelParent = resolvedRef.topLevelParent

@@ -94,7 +94,7 @@ describe('adapter', () => {
     it('should call deployChange with the resolved elements', async () => {
       const referencedInstance = new InstanceElement(
         'referenced',
-        new ObjectType({ elemID: new ElemID(JIRA, 'IssueTypeDetails'), fields: { id: { refType: BuiltinTypes.STRING } } }),
+        new ObjectType({ elemID: new ElemID(JIRA, 'IssueType'), fields: { id: { refType: BuiltinTypes.STRING } } }),
         { id: '3' }
       )
       await adapter.deploy({

@@ -132,7 +132,6 @@ export const addDeploymentAnnotationsFromSwagger = async (
     }
     const endpointUrl = getSwaggerEndpoint(endpoint.url, baseUrls)
     if (swagger.document.paths[endpointUrl]?.[endpoint.method] === undefined) {
-      log.warn(`${type.elemID.getFullName()} endpoint ${endpointUrl} not found in swagger`)
       return
     }
 

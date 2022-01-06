@@ -509,13 +509,12 @@ describe('Netsuite adapter E2E with real account', () => {
           workflowToCreate.elemID
         ) as InstanceElement
         expect(fetchedWorkflow.value.name).toEqual(randomString)
-        expect(fetchedWorkflow.value.workflowstates?.workflowstate).toEqual({})
-        const toStateReference = fetchedWorkflow.value.workflowstates?.workflowstate?.[0]
-          ?.workflowtransitions?.workflowtransition?.[0]?.tostate
+        // eslint-disable-next-line max-len
+        const toStateReference = fetchedWorkflow.value.workflowstates?.workflowstate?.workflowstate_state1?.workflowtransitions?.workflowtransition?.workflowtransition_transition1?.tostate
         expect(toStateReference).toBeDefined()
         expect(isReferenceExpression(toStateReference)
         && toStateReference.elemID.isEqual(
-          fetchedWorkflow.elemID.createNestedID('workflowstates', 'workflowstate', '1', SCRIPT_ID)
+          fetchedWorkflow.elemID.createNestedID('workflowstates', 'workflowstate', 'workflowstate_state2', SCRIPT_ID)
         )).toBe(true)
       })
 

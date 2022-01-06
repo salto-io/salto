@@ -19,7 +19,7 @@ import {
   Change,
   ChangeError,
   ChangeValidator,
-  getChangeElement,
+  getChangeData,
   InstanceElement,
   isAdditionOrModificationChange,
   isInstanceChange,
@@ -62,7 +62,7 @@ const getInvalidValuesChangeErrors = (
   }
 
   return instanceChanges[typeName].map(change => {
-    const instance = getChangeElement(change)
+    const instance = getChangeData(change)
     if (_.get(instance.value, path) !== value
       || (isModificationChange(change) && _.get(change.data.before.value, path) === value)) {
       return undefined
@@ -82,8 +82,8 @@ const changeValidator: ChangeValidator = async changes => {
     changes
       .filter(isAdditionOrModificationChange)
       .filter(isInstanceChange)
-      .filter(change => isCustomType(getChangeElement(change).refType.elemID)),
-    change => getChangeElement(change).elemID.typeName
+      .filter(change => isCustomType(getChangeData(change).refType.elemID)),
+    change => getChangeData(change).elemID.typeName
   )
 
   return invalidValues.flatMap(

@@ -1057,6 +1057,33 @@ describe('parsing errors', () => {
         expect(element.annotations.making).toEqual('all his nowhere plans')
       })
     })
+    describe('when the string is not terminated due to an escape char', () => {
+      const nacl = `
+      type nowhere.man {
+        sitting = "in his no-where land\\\"
+        making = "all his nowhere plans"
+      }
+      `
+      let res: ParseResult
+      beforeAll(async () => {
+        res = await parse(Buffer.from(nacl), 'file.nacl', {})
+      })
+      it('should throw an error', () => {
+        expect(res.errors).toHaveLength(1)
+        expect(res.errors[0].subject).toEqual({
+          start: { line: 3, col: 19, byte: 44 },
+          end: { line: 3, col: 42, byte: 67 },
+          filename: 'file.nacl',
+        })
+        expect(res.errors[0].message).toBe('Unterminated string literal')
+        expect(res.errors[0].summary).toBe('Unterminated string literal')
+      })
+      it('should parse items after the unterminated string', async () => {
+        expect(res.elements).toHaveLength(1)
+        const element = (await awu(res.elements).toArray())[0] as ObjectType
+        expect(element.annotations.making).toEqual('all his nowhere plans')
+      })
+    })
   })
   describe('function definition errors', () => {
     describe('unknown function name', () => {

@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  Change, getChangeElement, InstanceElement, isRemovalChange, Values,
+  Change, getChangeData, InstanceElement, isRemovalChange, Values,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
@@ -31,23 +31,23 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [workspaceChanges, leftoverChanges] = _.partition(
       changes,
-      change => getChangeElement(change).elemID.typeName === WORKSPACE_TYPE_NAME,
+      change =>
+        (getChangeData(change).elemID.typeName === WORKSPACE_TYPE_NAME)
+        && !isRemovalChange(change),
     )
     const result = await Promise.all(
       workspaceChanges.map(async change => {
         try {
-          if (!isRemovalChange(change)) {
-            await applyFunctionToChangeData(change, workspace => {
-              workspace.value = {
-                ..._.omit(workspace.value, ['selected_macros']),
-                macros: (workspace.value.selected_macros ?? [])
-                  .filter(_.isPlainObject)
-                  .map((e: Values) => e.id)
-                  .filter(values.isDefined),
-              }
-              return workspace
-            })
-          }
+          await applyFunctionToChangeData(change, workspace => {
+            workspace.value = {
+              ..._.omit(workspace.value, ['selected_macros']),
+              macros: (workspace.value.selected_macros ?? [])
+                .filter(_.isPlainObject)
+                .map((e: Values) => e.id)
+                .filter(values.isDefined),
+            }
+            return workspace
+          })
           await deployChange(change, client, config.apiDefinitions)
           return change
         } catch (err) {

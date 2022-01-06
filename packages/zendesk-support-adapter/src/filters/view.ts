@@ -34,34 +34,34 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [viewChanges, leftoverChanges] = _.partition(
       changes,
-      change => getChangeData(change).elemID.typeName === VIEW_TYPE_NAME,
+      change =>
+        (getChangeData(change).elemID.typeName === VIEW_TYPE_NAME)
+        && !isRemovalChange(change),
     )
     const result = await Promise.all(
       viewChanges.map(async change => {
         try {
-          if (!isRemovalChange(change)) {
-            await applyFunctionToChangeData(change, view => {
-              try {
-                view.value = {
-                  ..._.omit(view.value, ['conditions', 'execution']),
-                  all: (view.value.conditions.all ?? [])
-                    .map((e: Values) => ({ ...e, value: e.value.toString() })),
-                  any: (view.value.conditions.any ?? [])
-                    .map((e: Values) => ({ ...e, value: e.value.toString() })),
-                  output: {
-                    ..._.omit(view.value.execution, ['fields', 'custom_fields']),
-                    columns: view.value.execution.columns?.filter(_.isPlainObject)
-                      .map((c: Values) => c.id).filter(values.isDefined) ?? [],
-                  },
-                }
-                return view
-              } catch (e) {
-                log.error('View %s has an invalid format and cannot be deployed. Error: %o',
-                  getChangeData(change).elemID.getFullName(), e)
-                throw e
+          await applyFunctionToChangeData(change, view => {
+            try {
+              view.value = {
+                ..._.omit(view.value, ['conditions', 'execution']),
+                all: (view.value.conditions.all ?? [])
+                  .map((e: Values) => ({ ...e, value: e.value.toString() })),
+                any: (view.value.conditions.any ?? [])
+                  .map((e: Values) => ({ ...e, value: e.value.toString() })),
+                output: {
+                  ..._.omit(view.value.execution, ['fields', 'custom_fields']),
+                  columns: view.value.execution.columns?.filter(_.isPlainObject)
+                    .map((c: Values) => c.id).filter(values.isDefined) ?? [],
+                },
               }
-            })
-          }
+              return view
+            } catch (e) {
+              log.error('View %s has an invalid format and cannot be deployed. Error: %o',
+                getChangeData(change).elemID.getFullName(), e)
+              throw e
+            }
+          })
           await deployChange(change, client, config.apiDefinitions)
           return change
         } catch (err) {

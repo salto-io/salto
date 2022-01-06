@@ -183,17 +183,10 @@ describe('workspace filter', () => {
     clonedWorkspace.value.id = id
     mockDeployChange.mockImplementation(async () => ({}))
     const res = await filter.deploy([{ action: 'remove', data: { before: clonedWorkspace } }])
-    expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith(
-      { action: 'remove', data: { before: clonedWorkspace } },
-      expect.anything(),
-      expect.anything()
-    )
-    expect(res.leftoverChanges).toHaveLength(0)
+    expect(mockDeployChange).toHaveBeenCalledTimes(0)
+    expect(res.leftoverChanges).toHaveLength(1)
     expect(res.deployResult.errors).toHaveLength(0)
-    expect(res.deployResult.appliedChanges).toHaveLength(1)
-    expect(res.deployResult.appliedChanges)
-      .toEqual([{ action: 'remove', data: { before: clonedWorkspace } }])
+    expect(res.deployResult.appliedChanges).toHaveLength(0)
   })
   it('should use empty list for any and columns if they do not exist', async () => {
     const id = 2
@@ -217,16 +210,14 @@ describe('workspace filter', () => {
       .toEqual([{ action: 'add', data: { after: clonedWorkspaceToDeploy } }])
   })
   it('should return error if deployChange failed', async () => {
-    const id = 2
     mockDeployChange.mockImplementation(async () => {
       throw new Error('err')
     })
     const clonedWorkspace = workspace.clone()
-    clonedWorkspace.value.id = id
-    const res = await filter.deploy([{ action: 'remove', data: { before: clonedWorkspace } }])
+    const res = await filter.deploy([{ action: 'add', data: { after: clonedWorkspace } }])
     expect(mockDeployChange).toHaveBeenCalledTimes(1)
     expect(mockDeployChange).toHaveBeenCalledWith(
-      { action: 'remove', data: { before: clonedWorkspace } },
+      { action: 'add', data: { after: clonedWorkspace } },
       expect.anything(),
       expect.anything()
     )

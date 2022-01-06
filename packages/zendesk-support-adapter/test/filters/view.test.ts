@@ -256,17 +256,10 @@ describe('views filter', () => {
     clonedView.value.id = id
     mockDeployChange.mockImplementation(async () => ({}))
     const res = await filter.deploy([{ action: 'remove', data: { before: clonedView } }])
-    expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith(
-      { action: 'remove', data: { before: clonedView } },
-      expect.anything(),
-      expect.anything()
-    )
-    expect(res.leftoverChanges).toHaveLength(0)
+    expect(mockDeployChange).toHaveBeenCalledTimes(0)
+    expect(res.leftoverChanges).toHaveLength(1)
     expect(res.deployResult.errors).toHaveLength(0)
-    expect(res.deployResult.appliedChanges).toHaveLength(1)
-    expect(res.deployResult.appliedChanges)
-      .toEqual([{ action: 'remove', data: { before: clonedView } }])
+    expect(res.deployResult.appliedChanges).toHaveLength(0)
   })
   it('should throw exception if the view we about to deploy is invalied', async () => {
     const invalidView = new InstanceElement(

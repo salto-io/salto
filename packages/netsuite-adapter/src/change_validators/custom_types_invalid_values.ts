@@ -16,8 +16,11 @@
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import {
+  Change,
+  ChangeError,
   ChangeValidator,
   getChangeElement,
+  InstanceElement,
   isAdditionOrModificationChange,
   isInstanceChange,
   isModificationChange,
@@ -50,6 +53,30 @@ const invalidValues: InvalidValue[] = [
   },
 ]
 
+const getInvalidValuesChangeErrors = (
+  { typeName, path, value, error }: InvalidValue,
+  instanceChanges: Record<string, Change<InstanceElement>[]>
+): ChangeError[] => {
+  if (!(typeName in instanceChanges)) {
+    return []
+  }
+
+  return instanceChanges[typeName].map(change => {
+    const instance = getChangeElement(change)
+    if (_.get(instance.value, path) !== value
+      || (isModificationChange(change) && _.get(change.data.before.value, path) === value)) {
+      return undefined
+    }
+
+    const elemID = instance.elemID.createNestedID(...path)
+    return {
+      ...error,
+      elemID,
+      message: `Invalid value in ${elemID.getFullName()}`,
+    }
+  }).filter(isDefined)
+}
+
 const changeValidator: ChangeValidator = async changes => {
   const instanceChanges = _.groupBy(
     changes
@@ -59,26 +86,9 @@ const changeValidator: ChangeValidator = async changes => {
     change => getChangeElement(change).elemID.typeName
   )
 
-  return invalidValues.flatMap(({ typeName, path, value, error }) => {
-    if (!(typeName in instanceChanges)) {
-      return []
-    }
-
-    return instanceChanges[typeName].map(change => {
-      const instance = getChangeElement(change)
-      if (_.get(instance.value, path) !== value
-        || (isModificationChange(change) && _.get(change.data.before.value, path) === value)) {
-        return undefined
-      }
-
-      const elemID = instance.elemID.createNestedID(...path)
-      return {
-        ...error,
-        elemID,
-        message: `Invalid value in ${elemID.getFullName()}`,
-      }
-    }).filter(isDefined)
-  })
+  return invalidValues.flatMap(
+    invalidValue => getInvalidValuesChangeErrors(invalidValue, instanceChanges)
+  )
 }
 
 export default changeValidator

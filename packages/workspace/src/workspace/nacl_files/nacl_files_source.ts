@@ -920,13 +920,11 @@ const buildNaclFilesSource = (
     ),
     updateNaclFiles,
     setNaclFiles: async (...naclFiles) => {
-      const preChangeHash = (await getState()).parsedNaclFiles.getHash()
       await setNaclFiles(...naclFiles)
       const res = await buildNaclFilesStateInner(
         await parseNaclFiles(naclFiles, (await getState()).parsedNaclFiles, functions)
       )
       state = Promise.resolve(res.state)
-      res.changes.preChangeHash = await preChangeHash
       return res.changes
     },
     getSourceMap,

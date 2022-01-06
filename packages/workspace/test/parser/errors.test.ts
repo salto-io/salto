@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+
 import { PrimitiveType, PrimitiveTypes, InstanceElement, ObjectType, ElemID } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { parse, ParseResult } from '../../src/parser'
@@ -1058,12 +1059,14 @@ describe('parsing errors', () => {
       })
     })
     describe('when the string is not terminated due to an escape char', () => {
+      /* eslint-disable no-useless-escape */
       const nacl = `
       type nowhere.man {
         sitting = "in his no-where land\\\"
         making = "all his nowhere plans"
       }
       `
+      /* eslint-enable no-useless-escape */
       let res: ParseResult
       beforeAll(async () => {
         res = await parse(Buffer.from(nacl), 'file.nacl', {})

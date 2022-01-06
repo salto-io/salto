@@ -16,7 +16,7 @@
 import { ActionName, CORE_ANNOTATIONS, isListType, isMapType, isObjectType, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import { AdapterApiConfig } from '../../../config/shared'
 import { DeploymentRequestsByAction } from '../../../config/request'
 import { LoadedSwagger } from '../swagger'
@@ -115,7 +115,9 @@ export const addDeploymentAnnotationsFromSwagger = async (
   type: ObjectType,
   swagger: LoadedSwagger,
   endpointDetails: DeploymentRequestsByAction,
-): Promise<void> => {
+): Promise<Record<string, boolean>> => {
+  const endpointToIsExist: Record<string, boolean> = {}
+
   const { document } = swagger
   if (!isV3(document)) {
     throw new Error('Deployment currently only supports open api V3')
@@ -130,10 +132,13 @@ export const addDeploymentAnnotationsFromSwagger = async (
     if (endpoint === undefined) {
       return
     }
+
     const endpointUrl = getSwaggerEndpoint(endpoint.url, baseUrls)
     if (swagger.document.paths[endpointUrl]?.[endpoint.method] === undefined) {
+      endpointToIsExist[endpoint.url] = false
       return
     }
+    endpointToIsExist[endpoint.url] = true
 
     delete type.annotations[OPERATION_TO_ANNOTATION[operation as ActionName]]
 
@@ -148,6 +153,8 @@ export const addDeploymentAnnotationsFromSwagger = async (
     }
     await setTypeAnnotations(type, schema, swagger, operation as ActionName, new Set())
   })
+
+  return endpointToIsExist
 }
 
 
@@ -163,8 +170,22 @@ const addDeploymentAnnotationsToType = async (
   swaggers: LoadedSwagger[],
   endpointDetails: DeploymentRequestsByAction,
 ): Promise<void> => {
-  await awu(swaggers)
-    .forEach(swagger => addDeploymentAnnotationsFromSwagger(type, swagger, endpointDetails))
+  const endpointsToIsExistDetails = await awu(swaggers)
+    .map(swagger => addDeploymentAnnotationsFromSwagger(type, swagger, endpointDetails))
+    .toArray();
+
+  [
+    endpointDetails.add?.url,
+    endpointDetails.modify?.url,
+    endpointDetails.remove?.url,
+  ].filter(values.isDefined)
+    .filter(
+      url => endpointsToIsExistDetails
+        .every(endpointsToIsExist => !endpointsToIsExist[url])
+    )
+    .forEach(url => {
+      log.warn(`${type.elemID.getFullName()} endpoint ${url} not found in swagger`)
+    })
 }
 
 /**

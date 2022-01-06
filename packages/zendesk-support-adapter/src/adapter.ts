@@ -39,6 +39,7 @@ import viewsFilter from './filters/views'
 import ticketFormOrderFilter from './filters/reorder/ticket_form'
 import userFieldOrderFilter from './filters/reorder/user_field'
 import organizationFieldOrderFilter from './filters/reorder/organization_field'
+import businessHoursScheduleFilter from './filters/business_hours_schedule'
 import defaultDeployFilter from './filters/default_deploy'
 
 const log = logger(module)
@@ -55,6 +56,7 @@ export const DEFAULT_FILTERS = [
   ticketFormOrderFilter,
   userFieldOrderFilter,
   organizationFieldOrderFilter,
+  businessHoursScheduleFilter,
   // defaultDeployFilter should be last!
   defaultDeployFilter,
 ]

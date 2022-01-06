@@ -14,16 +14,30 @@
 * limitations under the License.
 */
 import { Values } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
+import Joi from 'joi'
+
+const log = logger(module)
 
 type Id = {
   name?: string
   entityId?: string
 }
 
+const idSchema = Joi.object({
+  name: Joi.string().optional(),
+  entityId: Joi.string().optional(),
+}).unknown(true)
+
 type ConfigRef = {
   id?: string
   name?: string
 }
+
+const configRefSchema = Joi.object({
+  id: Joi.string().optional(),
+  name: Joi.string().optional(),
+}).unknown(true)
 
 type ValidatorConfiguration = {
   windowsDays?: number | string
@@ -35,21 +49,46 @@ type ValidatorConfiguration = {
   fieldIds?: string[]
 }
 
+const validatorConfigurationSchema = Joi.object({
+  windowsDays: Joi.alternatives(
+    Joi.number().integer(),
+    Joi.string(),
+  ).optional(),
+  fieldId: Joi.string().optional(),
+  parentStatuses: Joi.array().items(configRefSchema).optional(),
+  previousStatus: configRefSchema.optional(),
+  field: Joi.string().optional(),
+  fields: Joi.array().items(Joi.string()).optional(),
+  fieldIds: Joi.array().items(Joi.string()).optional(),
+}).unknown(true)
+
 type PostFunctionConfiguration = {
   projectRole?: ConfigRef
   event?: ConfigRef
 }
 
+const postFunctionConfigurationSchema = Joi.object({
+  projectRole: configRefSchema.optional(),
+  event: configRefSchema.optional(),
+}).unknown(true)
 
 export type Validator = {
   configuration?: ValidatorConfiguration
 }
 
+const validatorSchema = Joi.object({
+  configuration: validatorConfigurationSchema.optional(),
+}).unknown(true)
 
 type PostFunction = {
   type?: string
   configuration?: PostFunctionConfiguration
 }
+
+const postFunctionSchema = Joi.object({
+  type: Joi.string().optional(),
+  configuration: postFunctionConfigurationSchema.optional(),
+}).unknown(true)
 
 export type Rules = {
   validators?: Validator[]
@@ -57,14 +96,31 @@ export type Rules = {
   conditionsTree?: unknown
   conditions?: unknown
 }
+
+const rulesSchema = Joi.object({
+  validators: Joi.array().items(validatorSchema).optional(),
+  postFunctions: Joi.array().items(postFunctionSchema).optional(),
+  conditionsTree: Joi.any().optional(),
+  conditions: Joi.any().optional(),
+}).unknown(true)
+
 type Transitions = {
   type?: string
   rules?: Rules
 }
 
+const transitionsSchema = Joi.object({
+  type: Joi.string().optional(),
+  rules: rulesSchema.optional(),
+}).unknown(true)
+
 export type Status = {
   properties?: Values
 }
+
+const statusSchema = Joi.object({
+  properties: Joi.object().optional(),
+}).unknown(true)
 
 export type Workflow = {
   id?: Id
@@ -74,165 +130,19 @@ export type Workflow = {
   statuses?: Status[]
 }
 
-// Was generated with https://github.com/YousefED/typescript-json-schema
-export const WORKFLOW_SCHEMA = {
-  $schema: 'http://json-schema.org/draft-07/schema#',
-  definitions: {
-    Values: {
-      additionalProperties: {
-      },
-      type: 'object',
-    },
-  },
-  properties: {
-    entityId: {
-      type: 'string',
-    },
-    id: {
-      properties: {
-        entityId: {
-          type: 'string',
-        },
-        name: {
-          type: 'string',
-        },
-      },
-      type: 'object',
-    },
-    name: {
-      type: 'string',
-    },
-    statuses: {
-      items: {
-        properties: {
-          properties: {
-            $ref: '#/definitions/Values',
-          },
-        },
-        type: 'object',
-      },
-      type: 'array',
-    },
-    transitions: {
-      items: {
-        properties: {
-          rules: {
-            properties: {
-              conditions: {
-              },
-              conditionsTree: {
-              },
-              postFunctions: {
-                items: {
-                  properties: {
-                    configuration: {
-                      properties: {
-                        event: {
-                          properties: {
-                            id: {
-                              type: 'string',
-                            },
-                            name: {
-                              type: 'string',
-                            },
-                          },
-                          type: 'object',
-                        },
-                        projectRole: {
-                          properties: {
-                            id: {
-                              type: 'string',
-                            },
-                            name: {
-                              type: 'string',
-                            },
-                          },
-                          type: 'object',
-                        },
-                      },
-                      type: 'object',
-                    },
-                    type: {
-                      type: 'string',
-                    },
-                  },
-                  type: 'object',
-                },
-                type: 'array',
-              },
-              validators: {
-                items: {
-                  properties: {
-                    configuration: {
-                      properties: {
-                        field: {
-                          type: 'string',
-                        },
-                        fieldId: {
-                          type: 'string',
-                        },
-                        fieldIds: {
-                          items: {
-                            type: 'string',
-                          },
-                          type: 'array',
-                        },
-                        fields: {
-                          items: {
-                            type: 'string',
-                          },
-                          type: 'array',
-                        },
-                        parentStatuses: {
-                          items: {
-                            properties: {
-                              id: {
-                                type: 'string',
-                              },
-                              name: {
-                                type: 'string',
-                              },
-                            },
-                            type: 'object',
-                          },
-                          type: 'array',
-                        },
-                        previousStatus: {
-                          properties: {
-                            id: {
-                              type: 'string',
-                            },
-                            name: {
-                              type: 'string',
-                            },
-                          },
-                          type: 'object',
-                        },
-                        windowsDays: {
-                          type: [
-                            'string',
-                            'number',
-                          ],
-                        },
-                      },
-                      type: 'object',
-                    },
-                  },
-                  type: 'object',
-                },
-                type: 'array',
-              },
-            },
-            type: 'object',
-          },
-          type: {
-            type: 'string',
-          },
-        },
-        type: 'object',
-      },
-      type: 'array',
-    },
-  },
-  type: 'object',
+const workflowSchema = Joi.object({
+  id: idSchema.optional(),
+  entityId: Joi.string().optional(),
+  name: Joi.string().optional(),
+  transitions: Joi.array().items(transitionsSchema).optional(),
+  statuses: Joi.array().items(statusSchema).optional(),
+}).unknown(true)
+
+export const isWorkflow = (obj: unknown): obj is Workflow => {
+  const { error } = workflowSchema.validate(obj)
+  if (error !== undefined) {
+    log.warn(`Received an invalid workflow: ${error.message}`)
+    return false
+  }
+  return true
 }

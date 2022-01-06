@@ -30,11 +30,10 @@
 */
 import { BuiltinTypes, Element, Field, isInstanceElement, isObjectType, ListType, MapType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import Ajv from 'ajv'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { postFunctionType, types as postFunctionTypes } from './post_functions_types'
-import { Rules, Status, Validator, Workflow, WORKFLOW_SCHEMA } from './types'
+import { isWorkflow, Rules, Status, Validator, Workflow } from './types'
 import { validatorType, types as validatorTypes } from './validators_types'
 
 const log = logger(module)
@@ -166,18 +165,10 @@ const filter: FilterCreator = () => ({
     elements.push(...postFunctionTypes)
     elements.push(...validatorTypes)
 
-    const ajv = new Ajv({ allErrors: true, strict: false })
-
     elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
-      .filter(instance => {
-        if (!ajv.validate<Workflow>(WORKFLOW_SCHEMA, instance.value)) {
-          log.warn(`Received an invalid workflow ${instance.elemID.getFullName()}, errors: ${ajv.errorsText()}`)
-          return false
-        }
-        return true
-      })
+      .filter(instance => isWorkflow(instance.value))
       .forEach(instance => transformWorkflowInstance(instance.value))
   },
 })

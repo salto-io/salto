@@ -182,17 +182,20 @@ describe('adapter', () => {
   describe('fetch', () => {
     let progressReporter: ProgressReporter
     let result: FetchResult
+    let platformTestType: ObjectType
+    let jiraTestType: ObjectType
+    let testInstance: InstanceElement
     beforeEach(async () => {
       progressReporter = {
         reportProgress: mockFunction<ProgressReporter['reportProgress']>(),
       }
-      const platformTestType = new ObjectType({
+      platformTestType = new ObjectType({
         elemID: new ElemID(JIRA, 'platform'),
       })
-      const jiraTestType = new ObjectType({
+      jiraTestType = new ObjectType({
         elemID: new ElemID(JIRA, 'jira'),
       })
-      const testInstance = new InstanceElement('test', jiraTestType);
+      testInstance = new InstanceElement('test', jiraTestType);
 
       (generateTypes as jest.MockedFunction<typeof generateTypes>)
         .mockResolvedValueOnce({
@@ -232,7 +235,9 @@ describe('adapter', () => {
       )
     })
     it('should return all types and instances returned from the infrastructure', () => {
-      expect(result.elements).toHaveLength(3)
+      expect(result.elements).toContain(platformTestType)
+      expect(result.elements).toContain(jiraTestType)
+      expect(result.elements).toContain(testInstance)
     })
   })
 })

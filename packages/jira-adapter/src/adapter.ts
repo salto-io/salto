@@ -31,6 +31,7 @@ import issueTypeSchemeFilter from './filters/issue_type_schemas/issue_type_schem
 import authenticatedPermissionFilter from './filters/authenticated_permission'
 import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
 import defaultDeployFilter from './filters/default_deploy'
+import workflowFilter from './filters/workflow/workflow'
 import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
 
@@ -44,6 +45,7 @@ const { createPaginator, getWithOffsetAndLimit } = clientUtils
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
+  workflowFilter,
   referenceBySelfLinkFilter,
   issueTypeSchemeReferences,
   issueTypeSchemeFilter,

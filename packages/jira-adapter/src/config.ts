@@ -804,9 +804,51 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       },
     },
   },
+  WorkflowCondition: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'nodeType' },
+      ],
+    },
+  },
+  WorkflowStatus: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'name' },
+      ],
+    },
+  },
+  TransitionScreenDetails: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'name' },
+      ],
+    },
+  },
+  Transition: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'id' },
+      ],
+    },
+  },
   Workflow: {
     transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'name', fieldType: 'string' },
+        { fieldName: 'entityId', fieldType: 'string' },
+      ],
       idFields: ['id.name'],
+      serviceIdField: 'entityId',
+      fieldsToHide: [
+        {
+          fieldName: 'entityId',
+        },
+      ],
+      fieldsToOmit: [
+        { fieldName: 'created' },
+        { fieldName: 'updated' },
+      ],
     },
     deployRequests: {
       add: {
@@ -817,9 +859,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/workflow/{entityId}',
         method: 'delete',
-        urlParamsToFields: {
-          entityId: 'id',
-        },
       },
     },
   },

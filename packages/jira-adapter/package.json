@@ -35,6 +35,7 @@
     "@salto-io/adapter-utils": "0.3.8",
     "@salto-io/logging": "0.3.8",
     "@salto-io/lowerdash": "0.3.8",
+    "joi": "^17.4.0",
     "lodash": "^4.17.21"
   },
   "devDependencies": {

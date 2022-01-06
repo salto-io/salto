@@ -310,22 +310,6 @@ const withCreatorLock = async (fn: (() => Promise<void>)): Promise<void> => {
   await creatorLock.acquire('createInProgress', fn)
 }
 
-const createDBIfNotExist = async (loc: string): Promise<void> => {
-  const newDb: rocksdb = getRemoteDbImpl()(loc)
-  try {
-    await promisify(newDb.open.bind(newDb, { readOnly: true }))()
-    await promisify(newDb.close.bind(newDb))()
-  } catch (e) {
-    if (newDb.status === 'new') {
-      await withCreatorLock(async () => {
-        log.info('DB does not exist. Creating on %s', loc)
-        await promisify(newDb.open.bind(newDb))()
-        await promisify(newDb.close.bind(newDb))()
-      })
-    }
-  }
-}
-
 const getOpenDBConnection = async (
   loc: string,
   isReadOnly: boolean
@@ -577,6 +561,21 @@ remoteMap.RemoteMapCreator => {
       delKeys.add(key)
       locationCache.del(key)
     }
+    const createDBIfNotExist = async (loc: string): Promise<void> => {
+      const newDb: rocksdb = getRemoteDbImpl()(loc)
+      try {
+        await promisify(newDb.open.bind(newDb, { readOnly: true }))()
+        await promisify(newDb.close.bind(newDb))()
+      } catch (e) {
+        if (newDb.status === 'new') {
+          await withCreatorLock(async () => {
+            log.info('DB does not exist. Creating on %s', loc)
+            await promisify(newDb.open.bind(newDb))()
+            await promisify(newDb.close.bind(newDb))()
+          })
+        }
+      }
+    }
     const createDBConnections = async (): Promise<void> => {
       tmpDBConnections[location] = tmpDBConnections[location] ?? {}
       if (tmpDB === undefined) {
@@ -724,6 +723,19 @@ remoteMap.ReadOnlyRemoteMapCreator => {
         ...(opts.after ? { after: keyToDBKey(opts.after) } : {}),
       }
       return createIterator(keyPrefix, normalizedOpts, db)
+    }
+    const createDBIfNotExist = async (loc: string): Promise<void> => {
+      const newDb: rocksdb = getRemoteDbImpl()(loc)
+      if (await fileUtils.isEmptyDir.notFoundAsUndefined(loc) === false) {
+        await promisify(newDb.open.bind(newDb, { readOnly: true }))()
+        await promisify(newDb.close.bind(newDb))()
+      } else {
+        await withCreatorLock(async () => {
+          log.info('DB does not exist. Creating on %s', loc)
+          await promisify(newDb.open.bind(newDb))()
+          await promisify(newDb.close.bind(newDb))()
+        })
+      }
     }
     const createDBConnection = async (): Promise<void> => {
       readonlyDBConnectionsPerRemoteMap[location] = readonlyDBConnectionsPerRemoteMap[location]

@@ -13,10 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element } from '@salto-io/adapter-api'
+import { Element, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { Credentials } from '../src/auth'
 import { credsLease, realAdapter } from './adapter'
+import { DEFAULT_API_DEFINITIONS } from '../src/config'
+import 'jest-extended'
 
 jest.setTimeout(30 * 1000)
 
@@ -40,7 +42,28 @@ describe('Jira E2E', () => {
     }
   })
 
-  it('should fetch elements', () => {
-    expect(fetchedElements).not.toBeEmpty()
+  describe('should fetch types', () => {
+    let fetchedTypes: string[]
+
+    beforeAll(() => {
+      fetchedTypes = fetchedElements
+        .filter(isObjectType)
+        .map(e => e.elemID.typeName)
+    })
+    it.each(Object.keys(DEFAULT_API_DEFINITIONS.types))('%s', expectedType => {
+      expect(fetchedTypes).toContain(expectedType)
+    })
+  })
+  it('should fetch project with schemes', () => {
+    const projectInstance = fetchedElements
+      .filter(isInstanceElement)
+      .find(e => e.elemID.typeName === 'Project')
+    expect(projectInstance?.value).toContainKeys([
+      'workflowScheme',
+      'permissionScheme',
+      'notificationScheme',
+      'issueTypeScreenScheme',
+      'fieldConfigurationScheme',
+    ])
   })
 })

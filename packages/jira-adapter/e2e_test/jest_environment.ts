@@ -43,7 +43,7 @@ export const credsSpec = (envName?: string): CredsSpec<Required<Credentials>> =>
       }
     },
     validate: async (_creds: Credentials): Promise<void> => {
-      // Irrelevant
+      // TODO
     },
     typeName: 'jira',
     globalProp: envName ? `jira_${envName}` : 'jira',

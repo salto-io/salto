@@ -33,7 +33,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { postFunctionType, types as postFunctionTypes } from './post_functions_types'
-import { isWorkflow, Rules, Status, Validator, Workflow } from './types'
+import { isWorkflowInstance, Rules, Status, Validator, Workflow } from './types'
 import { validatorType, types as validatorTypes } from './validators_types'
 
 const log = logger(module)
@@ -168,7 +168,7 @@ const filter: FilterCreator = () => ({
     elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
-      .filter(instance => isWorkflow(instance.value))
+      .filter(isWorkflowInstance)
       .forEach(instance => transformWorkflowInstance(instance.value))
   },
 })

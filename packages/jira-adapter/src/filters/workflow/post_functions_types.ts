@@ -15,7 +15,9 @@
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { elements } from '@salto-io/adapter-components'
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { JIRA } from '../../constants'
+import { PostFunction } from './types'
 
 const postFunctionEventType = new ObjectType({
   elemID: new ElemID(JIRA, 'PostFunctionEvent'),
@@ -82,7 +84,7 @@ const postFunctionConfigurationType = new ObjectType({
   path: [JIRA, elements.TYPES_PATH, 'PostFunctionConfiguration'],
 })
 
-export const postFunctionType = new ObjectType({
+export const postFunctionType = createMatchingObjectType<PostFunction>({
   elemID: new ElemID(JIRA, 'PostFunction'),
   fields: {
     type: { refType: BuiltinTypes.STRING },

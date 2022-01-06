@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Values } from '@salto-io/adapter-api'
+import { InstanceElement, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
 
@@ -80,7 +80,7 @@ const validatorSchema = Joi.object({
   configuration: validatorConfigurationSchema.optional(),
 }).unknown(true)
 
-type PostFunction = {
+export type PostFunction = {
   type?: string
   configuration?: PostFunctionConfiguration
 }
@@ -138,8 +138,9 @@ const workflowSchema = Joi.object({
   statuses: Joi.array().items(statusSchema).optional(),
 }).unknown(true)
 
-export const isWorkflow = (obj: unknown): obj is Workflow => {
-  const { error } = workflowSchema.validate(obj)
+export const isWorkflowInstance = (instance: InstanceElement)
+: instance is InstanceElement & { value: InstanceElement['value'] & Workflow } => {
+  const { error } = workflowSchema.validate(instance.value)
   if (error !== undefined) {
     log.warn(`Received an invalid workflow: ${error.message}`)
     return false

@@ -18,6 +18,7 @@ import { filterUtils } from '@salto-io/adapter-components'
 import { JIRA } from '../../src/constants'
 import workflowFilter from '../../src/filters/workflow/workflow'
 import { mockClient, getDefaultAdapterConfig } from '../utils'
+import { EXPECTED_POST_FUNCTIONS, WITH_POST_FUNCTIONS, WITH_UNSUPPORTED_POST_FUNCTIONS, WITH_VALIDATORS } from './workflow_values'
 
 describe('workflowFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
@@ -89,7 +90,7 @@ describe('workflowFilter', () => {
     })
     const elements = [workflowRulesType]
     await filter.onFetch(elements)
-    expect(elements).toHaveLength(10)
+    expect(elements.length).toBeGreaterThan(1)
     expect((await workflowRulesType.fields.postFunctions.getType()).elemID.getFullName()).toBe('List<jira.PostFunction>')
     expect((await workflowRulesType.fields.validators.getType()).elemID.getFullName()).toBe('List<jira.Validator>')
   })
@@ -183,91 +184,11 @@ describe('workflowFilter', () => {
       const instance = new InstanceElement(
         'instance',
         workflowType,
-        {
-          transitions: [
-            {
-              rules: {
-                postFunctions: [
-                  {
-                    type: 'FireIssueEventFunction',
-                    configuration: {
-                      event: {
-                        id: '1',
-                        name: 'name',
-                      },
-                    },
-                  },
-                  {
-                    type: 'FireIssueEventFunction',
-                    configuration: {
-                    },
-                  },
-                  {
-                    type: 'FireIssueEventFunction',
-                  },
-                  {
-                    type: 'SetIssueSecurityFromRoleFunction',
-                    configuration: {
-                      projectRole: {
-                        id: '1',
-                        name: 'name',
-                      },
-                    },
-                  },
-                  {
-                    type: 'SetIssueSecurityFromRoleFunction',
-                    configuration: {
-                    },
-                  },
-                  {
-                    type: 'SetIssueSecurityFromRoleFunction',
-                  },
-                ],
-              },
-            },
-          ],
-        }
+        WITH_POST_FUNCTIONS
       )
       await filter.onFetch([instance])
       expect(instance.value.transitions).toEqual([
-        {
-          rules: {
-            postFunctions: [
-              {
-                type: 'FireIssueEventFunction',
-                configuration: {
-                  event: {
-                    id: '1',
-                  },
-                },
-              },
-              {
-                type: 'FireIssueEventFunction',
-                configuration: {},
-              },
-              {
-                type: 'FireIssueEventFunction',
-              },
-
-              {
-                type: 'SetIssueSecurityFromRoleFunction',
-                configuration: {
-                  projectRole: {
-                    id: '1',
-                  },
-                },
-              },
-              {
-                type: 'SetIssueSecurityFromRoleFunction',
-                configuration: {
-                },
-              },
-              {
-                type: 'SetIssueSecurityFromRoleFunction',
-              },
-            ],
-          },
-        },
+        EXPECTED_POST_FUNCTIONS,
       ])
     })
 
@@ -275,30 +196,7 @@ describe('workflowFilter', () => {
       const instance = new InstanceElement(
         'instance',
         workflowType,
-        {
-          transitions: [
-            {
-              type: 'initial',
-              rules: {
-                postFunctions: [
-                  { type: 'AssignToCurrentUserFunction' },
-                  { type: 'UpdateIssueStatusFunction' },
-                  { type: 'unsupported' },
-                ],
-              },
-            },
-            {
-              type: 'global',
-              rules: {
-                postFunctions: [
-                  { type: 'AssignToCurrentUserFunction' },
-                  { type: 'UpdateIssueStatusFunction' },
-                  { type: 'unsupported' },
-                ],
-              },
-            },
-          ],
-        }
+        WITH_UNSUPPORTED_POST_FUNCTIONS
       )
       await filter.onFetch([instance])
       expect(instance.value.transitions).toEqual([
@@ -328,37 +226,7 @@ describe('workflowFilter', () => {
       const instance = new InstanceElement(
         'instance',
         workflowType,
-        {
-          transitions: [
-            {
-              rules: {
-                validators: [
-                  {
-                    type: 'ParentStatusValidator',
-                    configuration: {
-                      parentStatuses: [{
-                        id: '1',
-                        name: 'name',
-                      }],
-                    },
-                  },
-                  {
-                    type: 'PreviousStatusValidator',
-                    configuration: {
-                      previousStatus: {
-                        id: '1',
-                        name: 'name',
-                      },
-                    },
-                  },
-                  {
-                    type: 'PreviousStatusValidator',
-                  },
-                ],
-              },
-            },
-          ],
-        }
+        WITH_VALIDATORS,
       )
       await filter.onFetch([instance])
       expect(instance.value.transitions).toEqual([

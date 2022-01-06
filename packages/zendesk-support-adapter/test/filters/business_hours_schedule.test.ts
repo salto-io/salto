@@ -17,7 +17,7 @@ import {
   ObjectType, ElemID, InstanceElement,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
-import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../../src/config'
+import { DEFAULT_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
 import { ZENDESK_SUPPORT } from '../../src/constants'
@@ -62,12 +62,7 @@ describe('business hours schedule filter', () => {
         client,
         paginationFuncCreator: paginate,
       }),
-      config: {
-        fetch: {
-          includeTypes: [],
-        },
-        apiDefinitions: DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
-      },
+      config: DEFAULT_CONFIG,
     }) as FilterType
   })
 

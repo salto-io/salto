@@ -15,14 +15,17 @@
 */
 import _ from 'lodash'
 import {
-  Change, getChangeElement, InstanceElement, isAdditionChange, isModificationChange, Values,
+  Change, getChangeData, InstanceElement, isAdditionChange, isModificationChange, Values,
 } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import { deployChange } from '../deployment'
+import { deployChange, deployChanges } from '../deployment'
 import { getZendeskError } from '../errors'
 import ZendeskClient from '../client/client'
 
 const BUSINESS_HOURS_SCHEDULE_TYPE_NAME = 'business_hours_schedule'
+
+const log = logger(module)
 
 type Interval = {
   // eslint-disable-next-line camelcase
@@ -40,7 +43,7 @@ const isValidIntervals = (intervals: Values[]): intervals is Interval[] => (
 )
 
 const shouldDeployIntervals = (change: Change<InstanceElement>): boolean => {
-  if (isAdditionChange(change) && (getChangeElement(change).value.intervals !== undefined)) {
+  if (isAdditionChange(change) && (getChangeData(change).value.intervals !== undefined)) {
     return true
   }
   if (isModificationChange(change)
@@ -52,16 +55,20 @@ const shouldDeployIntervals = (change: Change<InstanceElement>): boolean => {
 
 const deployIntervals = async (client: ZendeskClient, change: Change<InstanceElement>):
 Promise<void> => {
-  const changedElement = getChangeElement(change)
+  const changedElement = getChangeData(change)
   const { intervals } = changedElement.value
-  if (shouldDeployIntervals(change) && isValidIntervals(intervals)) {
-    try {
-      await client.put({
-        url: `/business_hours/schedules/${changedElement.value.id}/workweek`,
-        data: { workweek: { intervals } },
-      })
-    } catch (e) {
-      throw getZendeskError(`${changedElement.elemID.getFullName()}.intervals`, e)
+  if (shouldDeployIntervals(change)) {
+    if (isValidIntervals(intervals)) {
+      try {
+        await client.put({
+          url: `/business_hours/schedules/${changedElement.value.id}/workweek`,
+          data: { workweek: { intervals } },
+        })
+      } catch (e) {
+        throw getZendeskError(`${changedElement.elemID.getFullName()}.intervals`, e)
+      }
+    } else {
+      log.error(`Failed to deploy intervals on ${changedElement.elemID.getFullName()} since the intervals were in invalid format`)
     }
   }
 }
@@ -73,28 +80,16 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [scheduleChanges, leftoverChanges] = _.partition(
       changes,
-      change => getChangeElement(change).elemID.typeName === BUSINESS_HOURS_SCHEDULE_TYPE_NAME,
+      change => getChangeData(change).elemID.typeName === BUSINESS_HOURS_SCHEDULE_TYPE_NAME,
     )
-    const result = await Promise.all(
-      scheduleChanges.map(async change => {
-        try {
-          await deployChange(change, client, config.apiDefinitions)
-          await deployIntervals(client, change)
-          return change
-        } catch (err) {
-          if (!_.isError(err)) {
-            throw err
-          }
-          return err
-        }
-      })
+    const deployResult = await deployChanges(
+      scheduleChanges,
+      async change => {
+        await deployChange(change, client, config.apiDefinitions)
+        await deployIntervals(client, change)
+      }
     )
-
-    const [errors, appliedChanges] = _.partition(result, _.isError)
-    return {
-      deployResult: { appliedChanges, errors },
-      leftoverChanges,
-    }
+    return { deployResult, leftoverChanges }
   },
 })
 

@@ -394,7 +394,6 @@ export const loadWorkspace = async (
           mergedRecoveryMode,
         ),
       }
-      await initializedState.mergeManager.init()
       return initializedState
     }
 
@@ -608,10 +607,7 @@ export const loadWorkspace = async (
     const relevantEnvs = awu(envs())
       .filter(async name =>
         (workspaceChanges[name]?.changes ?? []).length > 0
-        || (stateOnlyChanges[name]?.changes ?? []).length > 0
-        // Even without changes, it's possible that things moved between common and env
-        || workspaceChanges[name]?.postChangeHash
-          !== await stateToBuild.mergeManager.getHash(MULTI_ENV_SOURCE_PREFIX + name))
+        || (stateOnlyChanges[name]?.changes ?? []).length > 0)
 
     await relevantEnvs.forEach(async envName => { await updateWorkspace(envName) })
     return stateToBuild

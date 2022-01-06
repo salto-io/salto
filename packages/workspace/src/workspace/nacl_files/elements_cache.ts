@@ -162,7 +162,6 @@ export interface Flushable {
 }
 
 export interface ElementMergeManager {
-  init: () => Promise<void>
   flush: () => Promise<boolean>
   clear: () => Promise<void>
   mergeComponents: (updateParams: CacheChangeSetUpdate) => Promise<ChangeSet<Change>>
@@ -177,6 +176,7 @@ export const createMergeManager = async (flushables: Flushable[],
   sources: Record<string, ReadOnlyElementsSource>,
   mapCreator: RemoteMapCreator, namespace: string, persistent: boolean,
   recoveryOperation?: string): Promise<ElementMergeManager> => {
+  let initiated = false
   const fullNamespace = namespace + MERGE_MANAGER_SUFFIX
   if (Object.keys(fullNamespace).includes(fullNamespace)) {
     return namespaceToManager[fullNamespace]
@@ -398,16 +398,28 @@ export const createMergeManager = async (flushables: Flushable[],
     logChanges(additionChanges)
     logChanges(modificationChanges)
   }
+
+
   const lock = new AsyncLock()
-  const mergeManager = {
-    init: async () => lock.acquire(MERGER_LOCK, async () => {
-      if (await hashes.get(MERGER_LOCK) === FLUSH_IN_PROGRESS) {
-        log.warn(`Clearing all databases under namespace: ${namespace} due to previous incomplete operation.`)
-        await clearImpl()
+
+  const ensureInitiated = <TArgs extends unknown[], TReturn>(
+    func: (...args: TArgs) => Promise<TReturn>
+  ): (...args: TArgs) => Promise<TReturn> => async (...args: TArgs) => {
+      if (!initiated) {
+        await lock.acquire(MERGER_LOCK, async () => {
+          if (await hashes.get(MERGER_LOCK) === FLUSH_IN_PROGRESS) {
+            log.warn(`Clearing all databases under namespace: ${namespace} due to previous incomplete operation.`)
+            await clearImpl()
+          }
+        })
+        initiated = true
       }
-    }),
-    clear: () => lock.acquire(MERGER_LOCK, clearImpl),
-    flush: async () =>
+      return func(...args)
+    }
+
+  const mergeManager = {
+    clear: ensureInitiated(() => lock.acquire(MERGER_LOCK, clearImpl)),
+    flush: ensureInitiated(async () =>
       lock.acquire(MERGER_LOCK, async () => {
         log.debug(`Started flushing hashes under namespace ${namespace}.`)
         await hashes.set(MERGER_LOCK, FLUSH_IN_PROGRESS)
@@ -418,8 +430,10 @@ export const createMergeManager = async (flushables: Flushable[],
         await hashes.flush()
         log.debug(`Successfully flushed hashes under namespace ${namespace}.`)
         return hasChanged
-      }),
-    mergeComponents: async (cacheUpdate: CacheChangeSetUpdate) => lock.acquire(MERGER_LOCK,
+      })),
+    mergeComponents: ensureInitiated(async (
+      cacheUpdate: CacheChangeSetUpdate
+    ) => lock.acquire(MERGER_LOCK,
       async () => {
         log.debug(`Merging components: ${cacheUpdate.src1Prefix}, ${cacheUpdate.src2Prefix}`)
         const changeResult = await updateCache(cacheUpdate)
@@ -439,9 +453,13 @@ export const createMergeManager = async (flushables: Flushable[],
           currentErrors: cacheUpdate.currentErrors,
         })
         return changeResult.mergedChanges
-      }),
-    getHash: (prefix: string) => hashes.get(getSourceHashKey(prefix)),
-    setHash: (prefix: string, value: string) => hashes.set(getSourceHashKey(prefix), value),
+      })),
+    getHash: ensureInitiated(
+      (prefix: string) => hashes.get(getSourceHashKey(prefix))
+    ),
+    setHash: ensureInitiated(
+      (prefix: string, value: string) => hashes.set(getSourceHashKey(prefix), value)
+    ),
   }
   namespaceToManager[fullNamespace] = mergeManager
   return mergeManager

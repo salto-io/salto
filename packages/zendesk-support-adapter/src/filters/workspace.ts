@@ -20,7 +20,7 @@ import {
 import { values } from '@salto-io/lowerdash'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
-import { deployChange } from '../deployment'
+import { deployChange, deployChanges } from '../deployment'
 
 const WORKSPACE_TYPE_NAME = 'workspace'
 
@@ -35,35 +35,23 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         (getChangeData(change).elemID.typeName === WORKSPACE_TYPE_NAME)
         && !isRemovalChange(change),
     )
-    const result = await Promise.all(
-      workspaceChanges.map(async change => {
-        try {
-          await applyFunctionToChangeData(change, workspace => {
-            workspace.value = {
-              ..._.omit(workspace.value, ['selected_macros']),
-              macros: (workspace.value.selected_macros ?? [])
-                .filter(_.isPlainObject)
-                .map((e: Values) => e.id)
-                .filter(values.isDefined),
-            }
-            return workspace
-          })
-          await deployChange(change, client, config.apiDefinitions)
-          return change
-        } catch (err) {
-          if (!_.isError(err)) {
-            throw err
+    const deployResult = await deployChanges(
+      workspaceChanges,
+      async change => {
+        await applyFunctionToChangeData(change, workspace => {
+          workspace.value = {
+            ..._.omit(workspace.value, ['selected_macros']),
+            macros: (workspace.value.selected_macros ?? [])
+              .filter(_.isPlainObject)
+              .map((e: Values) => e.id)
+              .filter(values.isDefined),
           }
-          return err
-        }
-      })
+          return workspace
+        })
+        await deployChange(change, client, config.apiDefinitions)
+      }
     )
-
-    const [errors, appliedChanges] = _.partition(result, _.isError)
-    return {
-      deployResult: { appliedChanges, errors },
-      leftoverChanges,
-    }
+    return { deployResult, leftoverChanges }
   },
 })
 

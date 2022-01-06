@@ -299,6 +299,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       ],
     },
   },
+
   FieldsConfigurationIssueTypeItem: {
     request: {
       url: '/rest/api/3/fieldconfigurationscheme/mapping?fieldConfigurationSchemeId={schemeId}',
@@ -417,7 +418,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       recurseInto: [
         {
           type: 'IssueTypeScreenSchemeItems',
-          toField: 'items',
+          toField: 'issueTypeMappings',
           context: [{ name: 'schemeId', fromField: 'id' }],
         },
       ],
@@ -425,7 +426,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
   IssueTypeScreenScheme: {
     transformation: {
-      fieldTypeOverrides: [{ fieldName: 'items', fieldType: 'list<IssueTypeScreenSchemeItem>' }],
+      fieldTypeOverrides: [{ fieldName: 'issueTypeMappings', fieldType: 'list<IssueTypeScreenSchemeItem>' }],
       fieldsToHide: [
         {
           fieldName: 'id',
@@ -487,8 +488,16 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     request: {
       url: '/rest/api/3/permissionscheme',
       queryParams: {
-        expand: 'all',
+        expand: 'permissions,user',
       },
+    },
+  },
+
+  PermissionHolder: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'user', fieldType: 'User' },
+      ],
     },
   },
 
@@ -600,6 +609,20 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/projectCategory',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/projectCategory/{id}',
+        method: 'put',
+      },
+      remove: {
+        url: '/rest/api/3/projectCategory/{id}',
+        method: 'delete',
+      },
     },
   },
 
@@ -928,6 +951,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
     transformation: {
       dataField: '.',
+      fieldTypeOverrides: [
+        { fieldName: 'untranslatedName', fieldType: 'string' },
+      ],
+      fieldsToOmit: [
+        { fieldName: 'subtask' },
+      ],
       fieldsToHide: [
         {
           fieldName: 'id',

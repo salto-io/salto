@@ -405,6 +405,7 @@ export class Types {
     [FIELD_ANNOTATIONS.TRACK_TRENDING]: BuiltinTypes.BOOLEAN,
     [FIELD_ANNOTATIONS.TRACK_FEED_HISTORY]: BuiltinTypes.BOOLEAN,
     [FIELD_ANNOTATIONS.DEPRECATED]: BuiltinTypes.BOOLEAN,
+    [FIELD_ANNOTATIONS.TRACK_HISTORY]: BuiltinTypes.BOOLEAN,
   }
 
   // Type mapping for custom objects

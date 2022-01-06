@@ -186,6 +186,7 @@ export const FIELD_ANNOTATIONS = {
   VALUE_SET: 'valueSet',
   DEFAULT_VALUE: 'defaultValue',
   FORMULA_TREAT_BLANKS_AS: 'formulaTreatBlanksAs',
+  TRACK_HISTORY: 'trackHistory',
   CREATABLE: 'createable',
   UPDATEABLE: 'updateable',
   // indicates whether a field is queryable by SOQL (default true)

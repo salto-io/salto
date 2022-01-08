@@ -839,6 +839,31 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         },
       ],
     },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/screens/{screenId}/tabs',
+        method: 'post',
+        urlParamsToFields: {
+          screenId: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/rest/api/3/screens/{screenId}/tabs/{tabId}',
+        method: 'put',
+        urlParamsToFields: {
+          screenId: '_parent.0.id',
+          tabId: 'id',
+        },
+      },
+      remove: {
+        url: '/rest/api/3/screens/{screenId}/tabs/{tabId}',
+        method: 'delete',
+        urlParamsToFields: {
+          screenId: '_parent.0.id',
+          tabId: 'id',
+        },
+      },
+    },
   },
   ScreenSchemes: {
     request: {

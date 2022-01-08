@@ -22,6 +22,8 @@ import { DeploymentRequestsByAction } from '../config/request'
 import { ResponseValue } from '../client'
 import { OPERATION_TO_ANNOTATION } from './annotations'
 
+const FIELD_PATH_DELIMITER = '.'
+
 const filterIrrelevantValues = async (
   instance: InstanceElement,
   action: ActionName
@@ -70,7 +72,13 @@ export const deployChange = async (
 
   const urlVarsValues = {
     ...instance.value,
-    ..._.mapValues(endpoint.urlParamsToFields ?? {}, fieldName => instance.value[fieldName]),
+    ..._.mapValues(
+      endpoint.urlParamsToFields ?? {},
+      fieldName => _.get(
+        { ...instance.value, ...instance.annotations },
+        fieldName.split(FIELD_PATH_DELIMITER)
+      )
+    ),
     ...(additionalUrlVars ?? {}),
   }
   const url = replaceUrlParams(endpoint.url, urlVarsValues)

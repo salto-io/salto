@@ -29,6 +29,8 @@ import issueTypeSchemeReferences from './filters/issue_type_schemas/issue_type_s
 import issueTypeSchemeFilter from './filters/issue_type_schemas/issue_type_scheme'
 import sharePermissionFilter from './filters/share_permission'
 import boardFilter from './filters/board'
+import screenFilter from './filters/screen/screen'
+import screenableTabFilter from './filters/screen/screenable_tab'
 import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
 import projectFilter from './filters/project'
 import defaultInstancesDeployFilter from './filters/default_instances_deploy'
@@ -58,6 +60,8 @@ export const DEFAULT_FILTERS = [
   fieldStructureFilter,
   fieldTypeReferencesFilter,
   fieldDeploymentFilter,
+  screenFilter,
+  screenableTabFilter,
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,

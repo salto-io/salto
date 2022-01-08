@@ -20,7 +20,7 @@ import { buildNetsuiteQuery, notQuery } from '../../src/query'
 import mockClient, { DUMMY_CREDENTIALS } from './sdf_client'
 import {
   APPLICATION_ID,
-  FILE_CABINET_PATH_SEPARATOR, INSTALLED_SUITEAPPS,
+  FILE_CABINET_PATH_SEPARATOR, INSTALLED_SUITEAPPS, WORKFLOW,
 } from '../../src/constants'
 import SdfClient, {
   ATTRIBUTES_FILE_SUFFIX,
@@ -82,6 +82,37 @@ const MOCK_MANIFEST_VALID_DEPENDENCIES = `<manifest projecttype="ACCOUNTCUSTOMIZ
     <feature required="true">SUBSIDIARIES</feature>
     <feature required="true">RECEIVABLES</feature>
   </features>
+  <objects>
+    <object>custentity2edited</object>
+    <object>custentity13</object>
+    <object>custentity_14</object>
+    <object>custentity10</object>
+    <object>custentitycust_active</object>
+    <object>custentity11</object>
+    <object>custentity_slt_tax_reg</object>
+  </objects>
+  <files>
+    <file>/SuiteScripts/clientScript_2_0.js</file>
+  </files>
+</dependencies>
+</manifest>`
+
+const MOCK_MANIFEST_WITH_REQUIRED_DEPENDENCIES = `<manifest projecttype="ACCOUNTCUSTOMIZATION">
+<projectname>TempSdfProject-56067b34-18db-4372-a35b-e2ed2c3aaeb3</projectname>
+<frameworkversion>1.0</frameworkversion>
+<dependencies>
+  <features>
+    <feature required="true">ADVANCEDEXPENSEMANAGEMENT</feature>
+    <feature required="true">SFA</feature>
+    <feature required="true">MULTICURRENCYVENDOR</feature>
+    <feature required="true">ACCOUNTING</feature>
+    <feature required="true">SUBSCRIPTIONBILLING</feature>
+    <feature required="true">ADDRESSCUSTOMIZATION</feature>
+    <feature required="true">WMSSYSTEM</feature>
+    <feature required="true">SUBSIDIARIES</feature>
+    <feature required="true">RECEIVABLES</feature>
+    <feature required="true">BILLINGACCOUNTS</feature>
+  <feature required="true">EXPREPORTS</feature></features>
   <objects>
     <object>custentity2edited</object>
     <object>custentity13</object>
@@ -1360,6 +1391,19 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
+    })
+
+    it('should add required dependencies to manifest.xml', async () => {
+      mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
+      const workflowScriptId = 'workflow2'
+      const workflowCustInfo: CustomTypeInfo = {
+        typeName: WORKFLOW,
+        values: { key: '__STDRECORDSUBSIDIARYDEFAULTACCTCORPCARDEXP__' },
+        scriptId: workflowScriptId,
+      }
+
+      await client.deploy([workflowCustInfo])
+      expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_WITH_REQUIRED_DEPENDENCIES)
     })
   })
 })

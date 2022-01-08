@@ -34,6 +34,7 @@ import shellQuote from 'shell-quote'
 import {
   APPLICATION_ID,
   FILE_CABINET_PATH_SEPARATOR,
+  WORKFLOW,
 } from '../constants'
 import {
   DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES,
@@ -54,6 +55,7 @@ import {
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
+const { isDefined, lookupValue } = values
 const log = logger(module)
 
 const FAILED_TYPE_NAME_TO_REAL_NAME: Record<string, string> = {
@@ -94,8 +96,31 @@ export const MINUTE_IN_MILLISECONDS = 1000 * 60
 const SINGLE_OBJECT_RETRIES = 3
 const READ_CONCURRENCY = 100
 
+const featuresBlockWithContent = (content: string): string => `<features>${content}</features>`
+
 const INVALID_DEPENDENCIES = ['ADVANCEDEXPENSEMANAGEMENT', 'SUBSCRIPTIONBILLING', 'WMSSYSTEM', 'BILLINGACCOUNTS']
-const INVALID_DEPENDENCIES_PATTERN = new RegExp(`^.*(<feature required=".*">${INVALID_DEPENDENCIES.join('|')})</feature>.*\n`, 'gm')
+
+const dependenciesPattern = (dependencies: string[]): RegExp =>
+  new RegExp(`^.*(<feature required=".*">${dependencies.join('|')})</feature>.*\n`, 'gm')
+const requiredFeature = (dependency: string): string => `<feature required="true">${dependency}</feature>`
+
+type RequiredDependencyValueCondition = 'fullLookup' | 'byValue' | 'byPath'
+
+type RequiredDependency = {
+  typeName: string
+  dependency: string
+  value?: Value
+  path?: string[]
+  condition?: RequiredDependencyValueCondition
+}
+
+const REQUIRED_DEPENDENCIES: RequiredDependency[] = [
+  {
+    typeName: WORKFLOW,
+    dependency: 'EXPREPORTS',
+    value: 'STDRECORDSUBSIDIARYDEFAULTACCTCORPCARDEXP',
+  },
+]
 
 const baseExecutionPath = os.tmpdir()
 
@@ -665,7 +690,7 @@ export default class SdfClient {
               failedPaths.push(`^${folder}.*`)
               return undefined
             }))
-    )).filter(values.isDefined)
+    )).filter(isDefined)
     return {
       listedPaths: actionResults.flatMap(actionResult => makeArray(actionResult.data)),
       failedPaths,
@@ -794,7 +819,7 @@ export default class SdfClient {
       }
       throw new Error(`Failed to deploy invalid customizationInfo: ${customizationInfo}`)
     }))
-    await this.runDeployCommands(project)
+    await this.runDeployCommands(project, customizationInfos)
     await this.projectCleanup(project.projectName, project.authId)
   }
 
@@ -803,13 +828,59 @@ export default class SdfClient {
     // This function should be removed once the bug is fixed.
     const manifestPath = osPath.join(projectPath, 'src', 'manifest.xml')
     const manifestContent = await readFile(manifestPath)
-    const fixedManifestContent = manifestContent.toString().replace(INVALID_DEPENDENCIES_PATTERN, '')
+    const fixedManifestContent = manifestContent.toString().replace(dependenciesPattern(INVALID_DEPENDENCIES), '')
     await writeFile(manifestPath, fixedManifestContent)
   }
 
-  private async runDeployCommands({ executor, projectPath, type }: Project): Promise<void> {
+  private static async addRequiredDependencies(
+    projectPath: string,
+    customizationInfos: CustomizationInfo[]
+  ): Promise<void> {
+    const requiredDependencies = REQUIRED_DEPENDENCIES.map(
+      ({ typeName, dependency, value, path, condition }) => {
+        const custInfoWithDependency = customizationInfos
+          .find(custInfo => {
+            if (typeName !== custInfo.typeName) {
+              return false
+            }
+            if (_.isUndefined(value)) {
+              return true
+            }
+            switch (condition) {
+              case 'byPath':
+                return path && _.get(custInfo.values, path) === value
+              case 'byValue':
+                return lookupValue(custInfo.values, val => _.isEqual(val, value))
+              default:
+                return lookupValue(custInfo.values,
+                  val => _.isEqual(val, value)
+                  || (_.isString(val) && _.isString(value) && val.includes(value)))
+            }
+          })
+        return custInfoWithDependency ? dependency : undefined
+      }
+    ).filter(isDefined)
+
+    if (requiredDependencies.length === 0) {
+      return
+    }
+
+    const manifestPath = osPath.join(projectPath, 'src', 'manifest.xml')
+    const manifestContent = await readFile(manifestPath)
+    const fixedManifestContent = manifestContent.toString()
+      .replace(dependenciesPattern(requiredDependencies), '')
+      .replace(RegExp(featuresBlockWithContent('(.*)'), 'gs'),
+        featuresBlockWithContent(`$1${requiredDependencies.map(requiredFeature).join('\n')}`))
+    await writeFile(manifestPath, fixedManifestContent)
+  }
+
+  private async runDeployCommands(
+    { executor, projectPath, type }: Project,
+    customizationInfos: CustomizationInfo[]
+  ): Promise<void> {
     await this.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {}, executor)
     await SdfClient.cleanInvalidDependencies(projectPath)
+    await SdfClient.addRequiredDependencies(projectPath, customizationInfos)
     await this.executeProjectAction(
       COMMANDS.DEPLOY_PROJECT,
       // SuiteApp project type can't contain account specific values

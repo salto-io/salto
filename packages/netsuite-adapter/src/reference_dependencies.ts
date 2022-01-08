@@ -22,11 +22,17 @@ import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import wu from 'wu'
 import {
   CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT, DATASET, NETSUITE, TRANSACTION_COLUMN_CUSTOM_FIELD,
-  TRANSACTION_BODY_CUSTOM_FIELD, WORKBOOK,
+  TRANSACTION_BODY_CUSTOM_FIELD, WORKBOOK, WORKFLOW,
 } from './constants'
 
 const { awu } = collections.asynciterable
 const { isDefined } = lowerDashValues
+
+const INVALID_DEPENDENCY_TYPES = {
+  [WORKFLOW]: [
+    'savedsearch',
+  ],
+}
 
 export const findDependingInstancesFromRefs = async (
   instance: InstanceElement
@@ -96,9 +102,9 @@ export const getAllReferencedInstances = async (
  * of deploy and writing them in the manifest.xml doesn't suffice.
  * Here we add manually all of the quirks we identified.
  */
-export const getRequiredReferencedInstances = (
+export const getRequiredReferencedInstances = async (
   sourceInstances: ReadonlyArray<InstanceElement>
-): ReadonlyArray<InstanceElement> => {
+): Promise<ReadonlyArray<InstanceElement>> => {
   const getReferencedInstance = (value: Value, type?: string): InstanceElement | undefined => (
     (isReferenceExpression(value)
       && isInstanceElement(value.topLevelParent)
@@ -107,27 +113,31 @@ export const getRequiredReferencedInstances = (
       : undefined
   )
 
-  const getInstanceRequiredDependency = (
+  const getInstanceRequiredDependency = async (
     instance: InstanceElement
-  ): InstanceElement | undefined => {
+  ): Promise<ReadonlyArray<InstanceElement | undefined>> => {
     switch (instance.elemID.typeName) {
       case CUSTOM_RECORD_TYPE:
-        return getReferencedInstance(instance.value.customsegment, CUSTOM_SEGMENT)
+        return [getReferencedInstance(instance.value.customsegment, CUSTOM_SEGMENT)]
       case CUSTOM_SEGMENT:
-        return getReferencedInstance(instance.value.recordtype, CUSTOM_RECORD_TYPE)
+        return [getReferencedInstance(instance.value.recordtype, CUSTOM_RECORD_TYPE)]
       case WORKBOOK:
-        return getReferencedInstance(instance.value.dependencies?.dependency, DATASET)
+        return [getReferencedInstance(instance.value.dependencies?.dependency, DATASET)]
       case TRANSACTION_COLUMN_CUSTOM_FIELD:
-        return getReferencedInstance(instance.value.sourcefrom) // might reference a lot of types
+        return [getReferencedInstance(instance.value.sourcefrom)] // might reference a lot of types
       case TRANSACTION_BODY_CUSTOM_FIELD:
-        return getReferencedInstance(instance.value.sourcefrom) // might reference a lot of types
+        return [getReferencedInstance(instance.value.sourcefrom)] // might reference a lot of types
+      case WORKFLOW:
+        return (await getAllReferencedInstances([instance]))
+          .filter(inst => !INVALID_DEPENDENCY_TYPES[WORKFLOW].includes(inst.elemID.typeName))
       default:
-        return undefined
+        return []
     }
   }
-  const requiredReferencedInstances = sourceInstances
-    .map(getInstanceRequiredDependency)
+  const requiredReferencedInstances = await awu(sourceInstances)
+    .flatMap(getInstanceRequiredDependency)
     .filter(isDefined)
+    .toArray()
 
   return Array.from(new Set(sourceInstances.concat(requiredReferencedInstances)))
 }

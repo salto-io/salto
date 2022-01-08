@@ -16,7 +16,7 @@
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, StaticFile } from '@salto-io/adapter-api'
 import {
   CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT, DATASET, ENTITY_CUSTOM_FIELD, FILE, PATH, SCRIPT_ID, WORKBOOK,
-  TRANSACTION_COLUMN_CUSTOM_FIELD, TRANSACTION_BODY_CUSTOM_FIELD,
+  TRANSACTION_COLUMN_CUSTOM_FIELD, TRANSACTION_BODY_CUSTOM_FIELD, WORKFLOW, ROLE, SAVED_SEARCH,
 } from '../src/constants'
 import { customTypes, fileCabinetTypes } from '../src/types'
 import {
@@ -120,40 +120,64 @@ describe('reference dependencies', () => {
         ),
       })
 
+    const customRole = new InstanceElement('customrole1000', customTypes[ROLE], {
+      [SCRIPT_ID]: 'customrole1000',
+    })
+
+    const savedSearch = new InstanceElement('customsearch482', customTypes[SAVED_SEARCH], {
+      [SCRIPT_ID]: 'customsearch482',
+    })
+
+    const workflowInstance = new InstanceElement('workflow', customTypes[WORKFLOW], {
+      [SCRIPT_ID]: 'workflow1',
+      initcontexts: new ReferenceExpression(customRole.elemID.createNestedID(SCRIPT_ID),
+        customRole.value[SCRIPT_ID], customRole),
+      initsavedsearchcondition: new ReferenceExpression(
+        savedSearch.elemID.createNestedID(SCRIPT_ID),
+        savedSearch.value[SCRIPT_ID],
+        savedSearch
+      ),
+    })
+
     it('should not add dependencies that are not required', async () => {
-      const result = getRequiredReferencedInstances([instanceWithManyRefs])
+      const result = await getRequiredReferencedInstances([instanceWithManyRefs])
       expect(result).toEqual([instanceWithManyRefs])
     })
 
     it('should add CUSTOM_SEGMENT dependency of CUSTOM_RECORD_TYPE', async () => {
-      const result = getRequiredReferencedInstances([customRecordTypeInstance])
+      const result = await getRequiredReferencedInstances([customRecordTypeInstance])
       expect(result).toEqual([customRecordTypeInstance, customSegmentInstance])
     })
 
     it('should add CUSTOM_RECORD_TYPE dependency of CUSTOM_SEGMENT', async () => {
-      const result = getRequiredReferencedInstances([customSegmentInstance])
+      const result = await getRequiredReferencedInstances([customSegmentInstance])
       expect(result).toEqual([customSegmentInstance, customRecordTypeInstance])
     })
 
     it('should add DATASET dependency of WORKBOOK', async () => {
-      const result = getRequiredReferencedInstances([workbookInstance])
+      const result = await getRequiredReferencedInstances([workbookInstance])
       expect(result).toEqual([workbookInstance, datasetInstance])
     })
 
     it('should add dependency of TRANSACTION_COLUMN_CUSTOM_FIELD', async () => {
-      const result = getRequiredReferencedInstances([transactionColumnCustomFieldInstance])
+      const result = await getRequiredReferencedInstances([transactionColumnCustomFieldInstance])
       expect(result).toEqual([transactionColumnCustomFieldInstance, instance])
     })
 
     it('should add dependency of TRANSACTION_BODY_CUSTOM_FIELD', async () => {
-      const result = getRequiredReferencedInstances([transactionBodyCustomFieldInstance])
+      const result = await getRequiredReferencedInstances([transactionBodyCustomFieldInstance])
       expect(result).toEqual([transactionBodyCustomFieldInstance, instance])
+    })
+
+    it('should add dependency of WORKFLOW', async () => {
+      const result = await getRequiredReferencedInstances([workflowInstance])
+      expect(result).toEqual([workflowInstance, customRole])
     })
 
     it('should not add dependencies that already exist', async () => {
       const input = [customRecordTypeInstance, customSegmentInstance, workbookInstance,
         datasetInstance, transactionColumnCustomFieldInstance, instance]
-      const result = getRequiredReferencedInstances(input)
+      const result = await getRequiredReferencedInstances(input)
       expect(result).toEqual(input)
     })
 
@@ -166,7 +190,7 @@ describe('reference dependencies', () => {
           ),
         })
 
-      const result = getRequiredReferencedInstances(
+      const result = await getRequiredReferencedInstances(
         [customRecordTypeInstance, customRecordTypeInstance2]
       )
       expect(result)

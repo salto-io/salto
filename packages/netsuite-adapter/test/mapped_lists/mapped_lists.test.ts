@@ -76,7 +76,11 @@ describe('mapped lists', () => {
     )
 
     await awu(workflowInnerTypes).forEach(t => convertFieldsTypesFromListToMap(t))
-    transformedInstance = await convertInstanceListsToMaps(instance)
+    transformedInstance = instance.clone()
+    transformedInstance.value = await convertInstanceListsToMaps(
+      instance.value,
+      await instance.getType()
+    ) ?? instance.value
     transformedBackInstance = await convertInstanceMapsToLists(transformedInstance)
 
     await awu(workflowInnerTypes).forEach(t => convertFieldsTypesFromListToMap(t))
@@ -195,8 +199,7 @@ describe('mapped lists', () => {
         },
       },
     )
-    const transformed = await convertInstanceListsToMaps(inst)
-    expect(transformed.value).toEqual(inst.value)
+    expect(await convertInstanceListsToMaps(inst.value, await inst.getType())).toEqual(inst.value)
   })
 
   describe('isMappedList', () => {

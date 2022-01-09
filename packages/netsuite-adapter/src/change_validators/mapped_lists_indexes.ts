@@ -14,52 +14,54 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import {
-  ChangeError, ChangeValidator, ElemID, getChangeElement, isInstanceChange, Values,
+  ChangeError, ChangeValidator, getChangeData, isInstanceChange,
 } from '@salto-io/adapter-api'
 import { INDEX } from '../constants'
-import { getMappedLists } from '../mapped_lists/mapped_lists'
+import { getMappedLists, MappedList } from '../mapped_lists/mapped_lists'
+
+const { isDefined } = values
 
 const { awu } = collections.asynciterable
 
-const getIndexesErrorMessages = (
-  { path, value }: { path: ElemID; value: Values }
-): { elemID: ElemID; errorMessage: string }[] => {
+const toChangeErrors = (
+  { path, value }: MappedList
+): ChangeError[] => {
   const items = Object.entries(value)
   const indexes = new Set(_.range(items.length))
 
-  const errorMessages: { elemID: ElemID; errorMessage: string }[] = []
-  items.forEach(([key, item]) => {
+  return items.map(([key, item]) => {
     const keyElemID = path.createNestedID(key)
     if (item[INDEX] === undefined) {
-      errorMessages.push({ elemID: keyElemID, errorMessage: `${key} has no 'index' attribute` })
-    } else if (!_.isInteger(item[INDEX])) {
-      errorMessages.push({ elemID: keyElemID, errorMessage: 'index is not an integer' })
-    } else if (item[INDEX] < 0 || item[INDEX] >= items.length) {
-      errorMessages.push({ elemID: keyElemID, errorMessage: 'index is out of range' })
-    } else if (!indexes.has(item[INDEX])) {
-      errorMessages.push({ elemID: path, errorMessage: `some items has the same index value (index = ${item[INDEX]})` })
-    } else {
-      indexes.delete(item[INDEX])
+      return { elemID: keyElemID, errorMessage: `${key} has no 'index' attribute` }
     }
-  })
-
-  return errorMessages
-}
-
-const changeValidator: ChangeValidator = async changes => (
-  awu(changes)
-    .filter(isInstanceChange)
-    .map(getChangeElement)
-    .flatMap(getMappedLists)
-    .flatMap(getIndexesErrorMessages)
-    .map(async ({ elemID, errorMessage }): Promise<ChangeError> => ({
+    if (!_.isInteger(item[INDEX])) {
+      return { elemID: keyElemID, errorMessage: 'index is not an integer' }
+    }
+    if (item[INDEX] < 0 || item[INDEX] >= items.length) {
+      return { elemID: keyElemID, errorMessage: 'index is out of range' }
+    }
+    if (!indexes.has(item[INDEX])) {
+      return { elemID: path, errorMessage: `some items has the same index value (index = ${item[INDEX]})` }
+    }
+    indexes.delete(item[INDEX])
+    return undefined
+  }).filter(isDefined)
+    .map(({ elemID, errorMessage }) => ({
       elemID,
       severity: 'Error',
       message: 'invalid index attribute in a mapped list',
       detailedMessage: errorMessage,
     }))
+}
+
+const changeValidator: ChangeValidator = async changes => (
+  awu(changes)
+    .filter(isInstanceChange)
+    .map(getChangeData)
+    .flatMap(getMappedLists)
+    .flatMap(toChangeErrors)
     .toArray()
 )
 

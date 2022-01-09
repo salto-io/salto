@@ -121,6 +121,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       addParentFolder,
       parseSavedSearch,
       convertLists,
+      // convertListsToMaps must run after convertLists
       convertListsToMaps,
       consistentValues,
       replaceInstanceReferencesFilter,

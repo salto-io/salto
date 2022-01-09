@@ -31,16 +31,16 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
     await awu(elements)
       .filter(isObjectType)
-      .forEach(
-        async type => convertFieldsTypesFromListToMap(type)
-      )
+      .forEach(convertFieldsTypesFromListToMap)
 
     await awu(elements)
       .filter(isInstanceElement)
       .forEach(
         async inst => {
-          const transformedInstance = await convertInstanceListsToMaps(inst)
-          inst.value = transformedInstance.value
+          inst.value = await convertInstanceListsToMaps(
+            inst.value,
+            await inst.getType()
+          ) ?? inst.value
         }
       )
   },

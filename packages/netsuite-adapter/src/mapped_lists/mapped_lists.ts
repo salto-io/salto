@@ -28,6 +28,11 @@ const { awu } = collections.asynciterable
 
 const log = logger(module)
 
+export type MappedList = {
+  path: ElemID
+  value: Values
+}
+
 export const convertFieldsTypesFromListToMap = async (
   element: ObjectType,
 ): Promise<void> => {
@@ -78,10 +83,12 @@ const transformMappedLists: TransformFunc = async ({ value, field, path }) => {
 }
 
 export const convertInstanceListsToMaps = async (
-  instance: InstanceElement,
-): Promise<InstanceElement> =>
-  transformElement({
-    element: instance,
+  values: Value,
+  type: ObjectType
+): Promise<Values | undefined> =>
+  transformValues({
+    values,
+    type,
     transformFunc: transformMappedLists,
     strict: false,
   })
@@ -97,8 +104,8 @@ export const isMappedList = async (value: Value, field: Field): Promise<boolean>
 
 export const getMappedLists = async (
   instance: InstanceElement
-): Promise<{ path: ElemID; value: Values }[]> => {
-  const mappedLists: { path: ElemID; value: Values }[] = []
+): Promise<MappedList[]> => {
+  const mappedLists: MappedList[] = []
   const lookForMappedLists: TransformFunc = async ({ value, field, path }) => {
     if (field && await isMappedList(value, field)) {
       mappedLists.push({ path: path ?? instance.elemID, value })

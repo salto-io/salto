@@ -1362,6 +1362,14 @@ zendesk_support {
           ]
         }
       }
+      workspace_order = {
+        deployRequests = {
+          modify = {
+            url = "/workspaces/reorder"
+            method = "put"
+          }
+        }
+      }
       app_installation = {
         transformation = {
           sourceTypeName = "app_installations__installations"

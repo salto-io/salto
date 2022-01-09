@@ -15,12 +15,12 @@
 */
 import _ from 'lodash'
 import {
-  AdapterOperations, getChangeElement, Change, isAdditionOrModificationChange, DeployResult,
+  AdapterOperations, getChangeData, Change, isAdditionOrModificationChange, DeployResult,
 } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { WalkError, NodeSkippedError } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
-import { Plan, PlanItem, PlanItemId } from './plan'
+import { Plan, PlanItem, PlanItemId } from '../plan'
 
 const log = logger(module)
 
@@ -29,7 +29,7 @@ const deployAction = (
   adapters: Record<string, AdapterOperations>
 ): Promise<DeployResult> => {
   const changes = [...planItem.changes()]
-  const adapterName = getChangeElement(changes[0]).elemID.adapter
+  const adapterName = getChangeData(changes[0]).elemID.adapter
   const adapter = adapters[adapterName]
   if (!adapter) {
     throw new Error(`Missing adapter for ${adapterName}`)
@@ -52,12 +52,12 @@ export type StepEvents<T = void> = {
 
 const updatePlanElement = (item: PlanItem, appliedChanges: ReadonlyArray<Change>): void => {
   const planElementById = _.keyBy(
-    [...item.items.values()].map(getChangeElement),
-    changeElement => changeElement.elemID.getFullName()
+    [...item.items.values()].map(getChangeData),
+    changeData => changeData.elemID.getFullName()
   )
   appliedChanges
     .filter(isAdditionOrModificationChange)
-    .map(getChangeElement)
+    .map(getChangeData)
     .forEach(updatedElement => {
       const planElement = planElementById[updatedElement.elemID.getFullName()]
       if (planElement !== undefined) {
@@ -71,13 +71,15 @@ export const deployActions = async (
   adapters: Record<string, AdapterOperations>,
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
   postDeployAction: (appliedChanges: ReadonlyArray<Change>) => Promise<void>
-): Promise<DeployError[]> => {
+): Promise<{ errors: DeployError[]; appliedChanges: Change[]}> => {
+  const appliedChanges: Change[] = []
   try {
     await deployPlan.walkAsync(async (itemId: PlanItemId): Promise<void> => {
       const item = deployPlan.getItem(itemId) as PlanItem
       reportProgress(item, 'started')
       try {
         const result = await deployAction(item, adapters)
+        result.appliedChanges.forEach(appliedChange => appliedChanges.push(appliedChange))
         // Update element with changes so references to it
         // will have an updated version throughout the deploy plan
         updatePlanElement(item, result.appliedChanges)
@@ -99,7 +101,7 @@ export const deployActions = async (
         throw error
       }
     })
-    return []
+    return { errors: [], appliedChanges }
   } catch (error) {
     const deployErrors: DeployError[] = []
     if (error instanceof WalkError) {
@@ -118,6 +120,6 @@ export const deployActions = async (
         })
       }
     }
-    return deployErrors
+    return { errors: deployErrors, appliedChanges }
   }
 }

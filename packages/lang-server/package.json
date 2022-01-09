@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/lang-server",
-  "version": "0.3.6",
+  "version": "0.3.8",
   "license": "Apache-2.0",
   "description": "Salto lang server",
   "repository": {
@@ -31,17 +31,17 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.3.6",
-    "@salto-io/adapter-utils": "0.3.6",
-    "@salto-io/lowerdash": "0.3.6",
-    "@salto-io/workspace": "0.3.6",
+    "@salto-io/adapter-api": "0.3.8",
+    "@salto-io/adapter-utils": "0.3.8",
+    "@salto-io/lowerdash": "0.3.8",
+    "@salto-io/workspace": "0.3.8",
     "fuse.js": "^6.4.1",
     "lodash": "^4.17.21",
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@salto-io/test-utils": "0.3.6",
-    "@types/jest": "^26.0.20",
+    "@salto-io/test-utils": "0.3.8",
+    "@types/jest": "^27.4.0",
     "@types/node": "^12.7.1",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",
@@ -53,8 +53,8 @@
     "eslint-plugin-jsx-a11y": "^6.2.1",
     "eslint-plugin-react": "^7.14.3",
     "eslint-plugin-react-hooks": "^1.7.0",
-    "jest": "^26.6.3",
-    "jest-circus": "^26.6.3",
+    "jest": "^27.4.5",
+    "jest-circus": "^27.4.5",
     "jest-each": "^26.6.2",
     "typescript": "3.9.3"
   }

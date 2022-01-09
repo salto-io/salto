@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, InstanceElement, isObjectType, BuiltinTypes, toChange, Change, getChangeElement, isInstanceChange } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, isObjectType, BuiltinTypes, toChange, Change, getChangeData, isInstanceChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { metadataType, apiName, MetadataTypeAnnotations } from '../../src/transformers/transformer'
 import * as constants from '../../src/constants'
@@ -103,13 +103,13 @@ describe('Topics for objects filter', () => {
         await filter.preDeploy(changes)
       })
       it('should add topics annotation to new types that do not have it', () => {
-        expect(getChangeElement(changes[0]).annotations).toHaveProperty(
+        expect(getChangeData(changes[0]).annotations).toHaveProperty(
           TOPICS_FOR_OBJECTS_ANNOTATION,
           { [ENABLE_TOPICS]: false },
         )
       })
       it('should not add topics to existing types that do not have it', () => {
-        expect(getChangeElement(changes[3]).annotations).not.toHaveProperty(
+        expect(getChangeData(changes[3]).annotations).not.toHaveProperty(
           TOPICS_FOR_OBJECTS_ANNOTATION
         )
       })
@@ -117,7 +117,7 @@ describe('Topics for objects filter', () => {
         expect(changes).toHaveLength(6)
         const topicsInstanceChanges = changes.slice(4)
         expect(topicsInstanceChanges.map(change => change.action)).toEqual(['add', 'add'])
-        const instances = topicsInstanceChanges.map(getChangeElement) as InstanceElement[]
+        const instances = topicsInstanceChanges.map(getChangeData) as InstanceElement[]
         expect(
           await Promise.all(instances.map(inst => apiName(inst)))
         ).toEqual(['Test2__c', 'Test3__c'])

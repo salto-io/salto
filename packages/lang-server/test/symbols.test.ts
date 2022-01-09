@@ -14,23 +14,34 @@
 * limitations under the License.
 */
 import * as path from 'path'
+import { collections } from '@salto-io/lowerdash'
 
+import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { EditorWorkspace } from '../src/workspace'
-import { getPositionContext } from '../src/context'
+import { getPositionContext, PositionContext, buildDefinitionsTree } from '../src/context'
 import { SaltoSymbolKind, createSaltoSymbol } from '../src/symbols'
 import { mockWorkspace } from './workspace'
 
+const { awu } = collections.asynciterable
 describe('Cursor context resolver', () => {
   let workspace: EditorWorkspace
+  let definitionsTree: PositionContext
+  let fullElementSource: ReadOnlyElementsSource | undefined
   const baseDir = path.resolve(`${__dirname}/../../test/test-nacls`)
   const naclFilename = path.join(baseDir, 'all.nacl')
   beforeAll(async () => {
     workspace = new EditorWorkspace(baseDir, await mockWorkspace([naclFilename]))
+    definitionsTree = buildDefinitionsTree(
+      (await workspace.getNaclFile(naclFilename))?.buffer as string,
+      await workspace.getSourceMap(naclFilename),
+      await awu(await workspace.getElements(naclFilename)).toArray(),
+    )
+    fullElementSource = await workspace.getElementSourceOfPath(naclFilename)
   })
 
   it('should create type symbol', async () => {
     const pos = { line: 1, col: 4 }
-    const ctx = await getPositionContext(workspace, naclFilename, pos)
+    const ctx = await getPositionContext(naclFilename, pos, definitionsTree, fullElementSource)
     const symbol = createSaltoSymbol(ctx)
     expect(symbol.name).toBe('str')
     expect(symbol.type).toBe(SaltoSymbolKind.Type)
@@ -38,7 +49,7 @@ describe('Cursor context resolver', () => {
 
   it('should create annotation symbol', async () => {
     const pos = { line: 51, col: 10 }
-    const ctx = await getPositionContext(workspace, naclFilename, pos)
+    const ctx = await getPositionContext(naclFilename, pos, definitionsTree, fullElementSource)
     const symbol = createSaltoSymbol(ctx)
     expect(symbol.name).toBe('label')
     expect(symbol.type).toBe(SaltoSymbolKind.Annotation)
@@ -46,7 +57,7 @@ describe('Cursor context resolver', () => {
 
   it('should create field symbol', async () => {
     const pos = { line: 50, col: 10 }
-    const ctx = await getPositionContext(workspace, naclFilename, pos)
+    const ctx = await getPositionContext(naclFilename, pos, definitionsTree, fullElementSource)
     const symbol = createSaltoSymbol(ctx)
     expect(symbol.name).toBe('model')
     expect(symbol.type).toBe(SaltoSymbolKind.Field)
@@ -54,7 +65,7 @@ describe('Cursor context resolver', () => {
 
   it('should create instance symbol', async () => {
     const pos = { line: 87, col: 10 }
-    const ctx = await getPositionContext(workspace, naclFilename, pos)
+    const ctx = await getPositionContext(naclFilename, pos, definitionsTree, fullElementSource)
     const symbol = createSaltoSymbol(ctx)
     expect(symbol.name).toBe('weekend_car')
     expect(symbol.type).toBe(SaltoSymbolKind.Instance)
@@ -62,7 +73,7 @@ describe('Cursor context resolver', () => {
 
   it('should create attribute symbol', async () => {
     const pos = { line: 88, col: 10 }
-    const ctx = await getPositionContext(workspace, naclFilename, pos)
+    const ctx = await getPositionContext(naclFilename, pos, definitionsTree, fullElementSource)
     const symbol = createSaltoSymbol(ctx)
     expect(symbol.name).toBe('reason')
     expect(symbol.type).toBe(SaltoSymbolKind.Attribute)
@@ -70,7 +81,7 @@ describe('Cursor context resolver', () => {
 
   it('should create array symbol', async () => {
     const pos = { line: 139, col: 6 }
-    const ctx = await getPositionContext(workspace, naclFilename, pos)
+    const ctx = await getPositionContext(naclFilename, pos, definitionsTree, fullElementSource)
     const symbol = createSaltoSymbol(ctx)
     expect(symbol.name).toBe('nicknames')
     expect(symbol.type).toBe(SaltoSymbolKind.Array)
@@ -78,7 +89,7 @@ describe('Cursor context resolver', () => {
 
   it('should create array item symbol', async () => {
     const pos = { line: 139, col: 19 }
-    const ctx = await getPositionContext(workspace, naclFilename, pos)
+    const ctx = await getPositionContext(naclFilename, pos, definitionsTree, fullElementSource)
     const symbol = createSaltoSymbol(ctx)
     expect(symbol.name).toBe('[0]')
     expect(symbol.type).toBe(SaltoSymbolKind.Attribute)
@@ -86,7 +97,7 @@ describe('Cursor context resolver', () => {
 
   it('should create array item symbol for lit of list', async () => {
     const pos = { line: 140, col: 23 }
-    const ctx = await getPositionContext(workspace, naclFilename, pos)
+    const ctx = await getPositionContext(naclFilename, pos, definitionsTree, fullElementSource)
     const symbol = createSaltoSymbol(ctx)
     expect(symbol.name).toBe('[0]')
     expect(symbol.type).toBe(SaltoSymbolKind.Attribute)
@@ -94,7 +105,7 @@ describe('Cursor context resolver', () => {
 
   it('should create file symbol', async () => {
     const pos = { line: 135, col: 0 }
-    const ctx = await getPositionContext(workspace, naclFilename, pos)
+    const ctx = await getPositionContext(naclFilename, pos, definitionsTree, fullElementSource)
     const symbol = createSaltoSymbol(ctx)
     expect(symbol.name).toBe('global')
     expect(symbol.type).toBe(SaltoSymbolKind.File)
@@ -102,7 +113,7 @@ describe('Cursor context resolver', () => {
 
   it('should use the fullname as name if the fullname flag is set', async () => {
     const pos = { line: 87, col: 10 }
-    const ctx = await getPositionContext(workspace, naclFilename, pos)
+    const ctx = await getPositionContext(naclFilename, pos, definitionsTree, fullElementSource)
     const symbol = createSaltoSymbol(ctx, true)
     expect(symbol.name).toBe('vs.loan.instance.weekend_car')
     expect(symbol.type).toBe(SaltoSymbolKind.Instance)
@@ -112,7 +123,7 @@ describe('Cursor context resolver', () => {
     'should return global as the name when the fullname flag is set and context is global',
     async () => {
       const pos = { line: 135, col: 0 }
-      const ctx = await getPositionContext(workspace, naclFilename, pos)
+      const ctx = await getPositionContext(naclFilename, pos, definitionsTree, fullElementSource)
       const symbol = createSaltoSymbol(ctx)
       expect(symbol.name).toBe('global')
       expect(symbol.type).toBe(SaltoSymbolKind.File)

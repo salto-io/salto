@@ -16,37 +16,51 @@
 import _ from 'lodash'
 import {
   FetchResult, AdapterOperations, DeployResult, Element, DeployModifiers,
-  FetchOptions, DeployOptions, Change, getChangeElement, isAdditionChange,
-  isInstanceChange, InstanceElement, Values,
+  FetchOptions, DeployOptions, Change, isInstanceChange, InstanceElement, getChangeData,
 } from '@salto-io/adapter-api'
 import {
   client as clientUtils,
   elements as elementUtils,
   deployment as deploymentUtils,
-  config as configUtils,
   references as referencesUtils,
 } from '@salto-io/adapter-components'
-import { logDuration, resolveChangeElement } from '@salto-io/adapter-utils'
+import { logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
 import { FilterCreator, Filter, filtersRunner } from './filter'
-import { ZendeskConfig } from './config'
+import { API_DEFINITIONS_CONFIG, ZendeskConfig } from './config'
 import { ZENDESK_SUPPORT } from './constants'
-import changeValidator from './change_validator'
+import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
 import fieldReferencesFilter, { fieldNameToTypeMappingDefs } from './filters/field_references'
 import unorderedListsFilter from './filters/unordered_lists'
+import viewFilter from './filters/view'
+import workspaceFilter from './filters/workspace'
+import ticketFormOrderFilter from './filters/reorder/ticket_form'
+import userFieldOrderFilter from './filters/reorder/user_field'
+import organizationFieldOrderFilter from './filters/reorder/organization_field'
+import businessHoursScheduleFilter from './filters/business_hours_schedule'
+import defaultDeployFilter from './filters/default_deploy'
 
 const log = logger(module)
 const { createPaginator } = clientUtils
 const { findDataField, simpleGetArgs } = elementUtils
 const { getAllElements } = elementUtils.ducktype
-const { deployChange } = deploymentUtils
+const { awu } = collections.asynciterable
 
 export const DEFAULT_FILTERS = [
   fieldReferencesFilter,
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,
+  viewFilter,
+  workspaceFilter,
+  ticketFormOrderFilter,
+  userFieldOrderFilter,
+  organizationFieldOrderFilter,
+  businessHoursScheduleFilter,
+  // defaultDeployFilter should be last!
+  defaultDeployFilter,
 ]
 
 export interface ZendeskAdapterParams {
@@ -126,66 +140,30 @@ export default class ZendeskAdapter implements AdapterOperations {
       })) as Change<InstanceElement>[]
 
     const runner = await this.createFiltersRunner()
-    await runner.preDeploy(changesToDeploy)
+    const lookupFunc = referencesUtils.generateLookupFunc(fieldNameToTypeMappingDefs)
+    const resolvedChanges = await awu(changesToDeploy)
+      .map(change => resolveChangeElement(change, lookupFunc))
+      .toArray()
+    await runner.preDeploy(resolvedChanges)
+    const { deployResult } = await runner.deploy(resolvedChanges)
+    const appliedChangesBeforeRestore = [...deployResult.appliedChanges]
+    await runner.onDeploy(appliedChangesBeforeRestore)
 
-    const { apiDefinitions } = this.userConfig
-    const result = await Promise.all(
-      changesToDeploy.map(async change => {
-        const { deployRequests, transformation } = apiDefinitions
-          .types[getChangeElement(change).elemID.typeName]
-        try {
-          const response = await deployChange(
-            await resolveChangeElement(
-              change, referencesUtils.generateLookupFunc(fieldNameToTypeMappingDefs)
-            ),
-            this.client,
-            deployRequests,
-          )
-          if (isAdditionChange(change)) {
-            if (_.isArray(response)) {
-              log.warn(
-                'Received an array for the response of the deploy. Do not update the id of the element. Action: add. ID: %s',
-                getChangeElement(change).elemID.getFullName()
-              )
-            } else {
-              const transformationConfig = configUtils.getConfigWithDefault(
-                transformation,
-                apiDefinitions.typeDefaults.transformation,
-              )
-              const idField = transformationConfig.serviceIdField ?? 'id'
-              const dataField = deployRequests?.add?.deployAsField
-              const idValue = dataField
-                ? (response?.[dataField] as Values)?.[idField]
-                : response?.[idField]
-              if (idValue !== undefined) {
-                getChangeElement(change).value[idField] = idValue
-              }
-            }
-          }
-          return change
-        } catch (err) {
-          if (!_.isError(err)) {
-            throw err
-          }
-          return err
-        }
-      })
+    const sourceElements = _.keyBy(
+      changesToDeploy.map(getChangeData),
+      elem => elem.elemID.getFullName(),
     )
 
-    const [errors, appliedChanges] = _.partition(result, _.isError)
-
-    await runner.onDeploy(appliedChanges)
-
-    return {
-      appliedChanges,
-      errors,
-    }
+    const appliedChanges = await awu(appliedChangesBeforeRestore)
+      .map(change => restoreChangeElement(change, sourceElements, lookupFunc))
+      .toArray()
+    return { appliedChanges, errors: deployResult.errors }
   }
 
   // eslint-disable-next-line class-methods-use-this
   public get deployModifiers(): DeployModifiers {
     return {
-      changeValidator,
+      changeValidator: createChangeValidator(this.userConfig[API_DEFINITIONS_CONFIG]),
       dependencyChanger: deploymentUtils.dependency.removeStandaloneFieldDependency,
     }
   }

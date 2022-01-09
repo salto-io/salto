@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { values, collections } from '@salto-io/lowerdash'
-import { Change, ChangeGroupIdFunction, getChangeElement, ChangeGroupId, ChangeId, InstanceElement } from '@salto-io/adapter-api'
+import { Change, ChangeGroupIdFunction, getChangeData, ChangeGroupId, ChangeId, InstanceElement } from '@salto-io/adapter-api'
 import { apiName } from './transformers/transformer'
 import { isInstanceOfCustomObjectChange } from './custom_object_instances_deploy'
 
@@ -24,7 +24,7 @@ type ChangeIdFunction = (change: Change) => Promise<string | undefined> | string
 
 const instanceOfCustomObjectChangeToGroupId: ChangeIdFunction = async change => (
   await isInstanceOfCustomObjectChange(change)
-    ? `${change.action}_${await apiName(await (getChangeElement(change) as InstanceElement).getType())}_instances`
+    ? `${change.action}_${await apiName(await (getChangeData(change) as InstanceElement).getType())}_instances`
     : undefined
 )
 

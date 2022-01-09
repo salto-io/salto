@@ -54,7 +54,13 @@ describe.skip('extension e2e', () => {
   it('should suggest type and instances completions', async () => {
     const pos = { line: 10, col: 0 }
     const filename = 'extra.nacl'
-    const ctx = await context.getPositionContext(workspace, filename, pos)
+    const definitionsTree = context.buildDefinitionsTree(
+      (await workspace.getNaclFile(filename))?.buffer as string,
+      await workspace.getSourceMap(filename),
+      await awu(await workspace.getElements(filename)).toArray(),
+    )
+    const fullElementSource = await workspace.getElementSourceOfPath(filename)
+    const ctx = await context.getPositionContext(filename, pos, definitionsTree, fullElementSource)
     const suggestions = await provider.provideWorkspaceCompletionItems(workspace, ctx, '', pos)
     expect(suggestions.map(s => s.label).sort()).toEqual(
       ['boolean', 'number', '@salto-io/core', '@salto-io/core_complex', '@salto-io/core_complex2', '@salto-io/core_num', '@salto-io/core_number',
@@ -79,7 +85,18 @@ describe.skip('extension e2e', () => {
     async () => {
       const pos = { line: 6, col: 9 }
       const filename = 'extra.nacl'
-      const ctx = await context.getPositionContext(workspace, filename, pos)
+      const definitionsTree = context.buildDefinitionsTree(
+        (await workspace.getNaclFile(filename))?.buffer as string,
+        await workspace.getSourceMap(filename),
+        await awu(await workspace.getElements(filename)).toArray(),
+      )
+      const fullElementSource = await workspace.getElementSourceOfPath(filename)
+      const ctx = await context.getPositionContext(
+        filename,
+        pos,
+        definitionsTree,
+        fullElementSource
+      )
       const defs = await definitions.provideWorkspaceDefinition(workspace, ctx, { value: '@salto-io/core_complex', type: 'word' })
       expect(defs.length).toBe(2)
       expect(defs[0].fullname).toBe('@salto-io/core.complex')

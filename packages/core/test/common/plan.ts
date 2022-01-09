@@ -15,7 +15,7 @@
 */
 import wu from 'wu'
 import {
-  Change, ObjectType, isObjectType, ElemID, getChangeElement,
+  Change, ObjectType, isObjectType, ElemID, getChangeData,
 } from '@salto-io/adapter-api'
 import { Group, DAG } from '@salto-io/dag'
 import { Plan, PlanItem, PlanItemId } from '../../src/core/plan'
@@ -25,7 +25,7 @@ import { getAllElements } from './elements'
 export const createPlan = (changeGroups: Change[][]): Plan => {
   const toGroup = (changes: Change[]): Group<Change> => ({
     groupKey: changes.length > 0
-      ? getChangeElement(changes[0]).elemID.createTopLevelParentID().parent.getFullName()
+      ? getChangeData(changes[0]).elemID.createTopLevelParentID().parent.getFullName()
       : '',
     items: new Map(changes.map((change, idx) => [`${idx}`, change])),
   })
@@ -55,4 +55,4 @@ export const getFirstPlanItem = (plan: Plan): PlanItem =>
 
 export const getChange = (item: PlanItem, elemID: ElemID): Change =>
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  wu(item.changes()).find(change => getChangeElement(change).elemID.isEqual(elemID))!
+  wu(item.changes()).find(change => getChangeData(change).elemID.isEqual(elemID))!

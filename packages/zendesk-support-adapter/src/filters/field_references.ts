@@ -97,6 +97,11 @@ export const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition
     target: { type: 'group' },
   },
   {
+    src: { field: 'group_id' },
+    serializationStrategy: 'id',
+    target: { type: 'group' },
+  },
+  {
     src: { field: 'locale_id' },
     serializationStrategy: 'id',
     target: { type: 'locale' },
@@ -122,6 +127,21 @@ export const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition
     target: { type: 'macro' },
   },
   {
+    src: { field: 'ticket_form_ids', parentTypes: ['ticket_form_order'] },
+    serializationStrategy: 'id',
+    target: { type: 'ticket_form' },
+  },
+  {
+    src: { field: 'organization_field_ids', parentTypes: ['organization_field_order'] },
+    serializationStrategy: 'id',
+    target: { type: 'organization_field' },
+  },
+  {
+    src: { field: 'user_field_ids', parentTypes: ['user_field_order'] },
+    serializationStrategy: 'id',
+    target: { type: 'user_field' },
+  },
+  {
     src: { field: 'id', parentTypes: ['workspace__selected_macros'] },
     serializationStrategy: 'id',
     target: { type: 'macro' },
@@ -138,6 +158,11 @@ export const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition
   },
   {
     src: { field: 'ticket_field_ids' },
+    serializationStrategy: 'id',
+    target: { type: 'ticket_field' },
+  },
+  {
+    src: { field: 'id', parentTypes: ['view__execution__custom_fields'] },
     serializationStrategy: 'id',
     target: { type: 'ticket_field' },
   },

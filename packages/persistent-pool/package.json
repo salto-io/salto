@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/persistent-pool",
-  "version": "0.3.6",
+  "version": "0.3.8",
   "license": "Apache-2.0",
   "description": "Keeps a persistent pool of objects",
   "repository": {
@@ -27,13 +27,13 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@salto-io/logging": "0.3.6",
-    "@salto-io/lowerdash": "0.3.6",
+    "@salto-io/logging": "0.3.8",
+    "@salto-io/lowerdash": "0.3.8",
     "aws-sdk": "^2.863.0",
     "uuid": "^3.3.3"
   },
   "devDependencies": {
-    "@types/jest": "^26.0.20",
+    "@types/jest": "^27.4.0",
     "@types/lodash": "^4.14.168",
     "@types/node": "^12.7.1",
     "@types/uuid": "^3.4.6",
@@ -47,10 +47,10 @@
     "eslint-plugin-jsx-a11y": "^6.2.1",
     "eslint-plugin-react": "^7.14.3",
     "eslint-plugin-react-hooks": "^1.7.0",
-    "jest": "^26.6.3",
-    "jest-circus": "^26.6.3",
+    "jest": "^27.4.5",
+    "jest-circus": "^27.4.5",
     "jest-dynalite": "^3.3.1",
-    "jest-environment-node": "^26.6.2",
+    "jest-environment-node": "^27.4.4",
     "jest-junit": "^12.0.0",
     "typescript": "3.9.3"
   }

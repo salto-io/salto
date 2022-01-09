@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import path from 'path'
-import { Element, ElemID, BuiltinTypes, ObjectType, DetailedChange, Change, getChangeElement, StaticFile } from '@salto-io/adapter-api'
+import { Element, ElemID, BuiltinTypes, ObjectType, DetailedChange, Change, getChangeData, StaticFile } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import * as utils from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -392,8 +392,8 @@ describe('multi env source', () => {
       ).toArray()
       expect(
         _.sortBy(elementChanges[primarySourceName]
-          .changes, c => getChangeElement(c).elemID.getFullName())
-      ).toEqual(_.sortBy(detailedChanges, c => getChangeElement(c).elemID.getFullName())
+          .changes, c => getChangeData(c).elemID.getFullName())
+      ).toEqual(_.sortBy(detailedChanges, c => getChangeData(c).elemID.getFullName())
         .map(dc => _.omit(dc, ['path', 'id'])))
       expect(sortElemArray(elements)).toEqual(sortElemArray([commonObject, newEnvFragment]))
     })

@@ -53,7 +53,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       isSingleton: true,
     },
   },
-  PageBeanDashboard: {
+  Dashboards: {
     request: {
       url: '/rest/api/3/dashboard/search',
       paginationField: 'startAt',
@@ -106,7 +106,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       },
     },
   },
-  PageBeanField: {
+  Fields: {
     request: {
       url: '/rest/api/3/field/search',
       paginationField: 'startAt',
@@ -245,7 +245,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       paginationField: 'startAt',
     },
   },
-  PageBeanFieldConfigurationDetails: {
+  FieldConfigurations: {
     request: {
       url: '/rest/api/3/fieldconfiguration',
       paginationField: 'startAt',
@@ -258,7 +258,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       ],
     },
   },
-  FieldConfigurationDetails: {
+  FieldConfiguration: {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'fields', fieldType: 'list<FieldConfigurationItem>' },
@@ -276,13 +276,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       paginationField: 'startAt',
     },
   },
-  PageBeanFieldConfigurationScheme: { // FieldConfigurationScheme
+  FieldsConfigurationScheme: {
     request: {
       url: '/rest/api/3/fieldconfigurationscheme',
       paginationField: 'startAt',
       recurseInto: [
         {
-          type: 'PageBeanFieldConfigurationIssueTypeItem',
+          type: 'FieldsConfigurationIssueTypeItem',
           toField: 'items',
           context: [{ name: 'schemeId', fromField: 'id' }],
         },
@@ -299,7 +299,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       ],
     },
   },
-  PageBeanFieldConfigurationIssueTypeItem: { // FieldConfigurationIssueTypeItem
+  FieldsConfigurationIssueTypeItem: {
     request: {
       url: '/rest/api/3/fieldconfigurationscheme/mapping?fieldConfigurationSchemeId={schemeId}',
       paginationField: 'startAt',
@@ -310,7 +310,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldsToOmit: [{ fieldName: 'fieldConfigurationSchemeId' }],
     },
   },
-  PageBeanFilterDetails: {
+  Filters: {
     request: {
       url: '/rest/api/3/filter/search',
       queryParams: {
@@ -329,7 +329,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       ],
     },
   },
-  FilterDetails: {
+  Filter: {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'columns', fieldType: 'list<ColumnItem>' },
@@ -355,14 +355,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       },
     },
   },
-  PageBeanIssueTypeScheme: {
+  IssueTypeSchemes: {
     request: {
       url: '/rest/api/3/issuetypescheme',
       paginationField: 'startAt',
       recurseInto: [
         {
-          type: 'PageBeanIssueTypeSchemeMapping',
-          toField: 'issueTypes',
+          type: 'IssueTypeSchemeMappings',
+          toField: 'issueTypeIds',
           context: [{ name: 'schemeId', fromField: 'id' }],
         },
       ],
@@ -381,12 +381,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   IssueTypeScheme: {
     transformation: {
-      fieldTypeOverrides: [{ fieldName: 'issueTypes', fieldType: 'list<IssueTypeSchemeMapping>' }],
-      fieldsToHide: [
-        {
-          fieldName: 'id',
-        },
-      ],
+      fieldTypeOverrides: [{ fieldName: 'issueTypeIds', fieldType: 'list<IssueTypeSchemeMapping>' }],
+      serviceIdField: 'issueTypeSchemeId',
     },
     deployRequests: {
       add: {
@@ -396,20 +392,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       modify: {
         url: '/rest/api/3/issuetypescheme/{issueTypeSchemeId}',
         method: 'put',
-        urlParamsToFields: {
-          issueTypeSchemeId: 'id',
-        },
       },
       remove: {
         url: '/rest/api/3/issuetypescheme/{issueTypeSchemeId}',
         method: 'delete',
-        urlParamsToFields: {
-          issueTypeSchemeId: 'id',
-        },
       },
     },
   },
-  PageBeanIssueTypeSchemeMapping: {
+  IssueTypeSchemeMappings: {
     request: {
       url: '/rest/api/3/issuetypescheme/mapping?issueTypeSchemeId={schemeId}',
       paginationField: 'startAt',
@@ -420,13 +410,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldsToOmit: [{ fieldName: 'issueTypeSchemeId' }],
     },
   },
-  PageBeanIssueTypeScreenScheme: {
+  IssueTypeScreenSchemes: {
     request: {
       url: '/rest/api/3/issuetypescreenscheme',
       paginationField: 'startAt',
       recurseInto: [
         {
-          type: 'PageBeanIssueTypeScreenSchemeItem',
+          type: 'IssueTypeScreenSchemeItems',
           toField: 'items',
           context: [{ name: 'schemeId', fromField: 'id' }],
         },
@@ -467,7 +457,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       },
     },
   },
-  PageBeanIssueTypeScreenSchemeItem: {
+  IssueTypeScreenSchemeItems: {
     request: {
       url: '/rest/api/3/issuetypescreenscheme/mapping?issueTypeScreenSchemeId={schemeId}',
       paginationField: 'startAt',
@@ -479,7 +469,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
   },
 
-  PageBeanNotificationScheme: {
+  NotificationSchemes: {
     request: {
       url: '/rest/api/3/notificationscheme',
       queryParams: {
@@ -552,7 +542,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       idFields: ['key'],
     },
   },
-  PageBeanProject: {
+  Projects: {
     request: {
       url: '/rest/api/3/project/search',
       queryParams: {
@@ -700,7 +690,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
   },
 
-  PageBeanScreen: {
+  Screens: {
     request: {
       url: '/rest/api/3/screens',
       paginationField: 'startAt',
@@ -794,18 +784,18 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       ],
     },
   },
-  PageBeanScreenScheme: {
+  ScreenSchemes: {
     request: {
       url: '/rest/api/3/screenscheme',
       paginationField: 'startAt',
     },
   },
-  rest__api__3__status: {
+  Statuses: {
     transformation: {
       dataField: '.',
     },
   },
-  PageBeanWorkflow: {
+  Workflows: {
     request: {
       url: '/rest/api/3/workflow/search',
       paginationField: 'startAt',
@@ -814,9 +804,51 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       },
     },
   },
+  WorkflowCondition: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'nodeType' },
+      ],
+    },
+  },
+  WorkflowStatus: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'name' },
+      ],
+    },
+  },
+  TransitionScreenDetails: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'name' },
+      ],
+    },
+  },
+  Transition: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'id' },
+      ],
+    },
+  },
   Workflow: {
     transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'name', fieldType: 'string' },
+        { fieldName: 'entityId', fieldType: 'string' },
+      ],
       idFields: ['id.name'],
+      serviceIdField: 'entityId',
+      fieldsToHide: [
+        {
+          fieldName: 'entityId',
+        },
+      ],
+      fieldsToOmit: [
+        { fieldName: 'created' },
+        { fieldName: 'updated' },
+      ],
     },
     deployRequests: {
       add: {
@@ -827,13 +859,10 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/workflow/{entityId}',
         method: 'delete',
-        urlParamsToFields: {
-          entityId: 'id',
-        },
       },
     },
   },
-  PageBeanWorkflowScheme: {
+  WorkflowSchemes: {
     request: {
       url: '/rest/api/3/workflowscheme',
       paginationField: 'startAt',
@@ -860,7 +889,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
   },
 
-  StatusDetails: {
+  Status: {
     transformation: {
       fieldsToHide: [
         {
@@ -893,7 +922,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       },
     },
   },
-  IssueTypeDetails: {
+  IssueType: {
     request: {
       url: '/rest/api/3/issuetype',
     },
@@ -932,7 +961,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
 
   // Jira API
-  'agile__1_0__board@uuvuu': {
+  Boards: {
     request: {
       url: '/rest/agile/1.0/board',
       paginationField: 'startAt',
@@ -1097,12 +1126,138 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
   platformSwagger: {
     url: 'https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json',
+    typeNameOverrides: [
+      {
+        originalName: 'FilterDetails',
+        newName: 'Filter',
+      },
+      {
+        originalName: 'IssueTypeDetails',
+        newName: 'IssueType',
+      },
+      {
+        originalName: 'StatusDetails',
+        newName: 'Status',
+      },
+      {
+        originalName: 'rest__api__3__application_properties@uuuuuub',
+        newName: 'ApplicationProperties',
+      },
+      {
+        originalName: 'rest__api__3__applicationrole',
+        newName: 'ApplicationRoles',
+      },
+      {
+        originalName: 'rest__api__3__configuration__timetracking__list',
+        newName: 'TimeTrackingProviders',
+      },
+      {
+        originalName: 'PageBeanDashboard',
+        newName: 'Dashboards',
+      },
+      {
+        originalName: 'PageBeanField',
+        newName: 'Fields',
+      },
+      {
+        originalName: 'PageBeanFieldConfigurationDetails',
+        newName: 'FieldConfigurations',
+      },
+      {
+        originalName: 'FieldConfigurationDetails',
+        newName: 'FieldConfiguration',
+      },
+      {
+        originalName: 'PageBeanFieldConfigurationScheme',
+        newName: 'FieldsConfigurationScheme',
+      },
+      {
+        originalName: 'PageBeanFieldConfigurationIssueTypeItem',
+        newName: 'FieldsConfigurationIssueTypeItem',
+      },
+      {
+        originalName: 'PageBeanFilterDetails',
+        newName: 'Filters',
+      },
+      {
+        originalName: 'PageBeanIssueTypeScheme',
+        newName: 'IssueTypeSchemes',
+      },
+      {
+        originalName: 'PageBeanIssueTypeSchemeMapping',
+        newName: 'IssueTypeSchemeMappings',
+      },
+      {
+        originalName: 'PageBeanIssueTypeScreenScheme',
+        newName: 'IssueTypeScreenSchemes',
+      },
+      {
+        originalName: 'PageBeanIssueTypeScreenSchemeItem',
+        newName: 'IssueTypeScreenSchemeItems',
+      },
+      {
+        originalName: 'PageBeanNotificationScheme',
+        newName: 'NotificationSchemes',
+      },
+      {
+        originalName: 'rest__api__3__priority',
+        newName: 'Priorities',
+      },
+      {
+        originalName: 'rest__api__3__projectCategory',
+        newName: 'ProjectCategories',
+      },
+      {
+        originalName: 'PageBeanProject',
+        newName: 'Projects',
+      },
+      {
+        originalName: 'rest__api__3__project__type',
+        newName: 'ProjectTypes',
+      },
+      {
+        originalName: 'rest__api__3__resolution',
+        newName: 'Resolutions',
+      },
+      {
+        originalName: 'rest__api__3__role',
+        newName: 'Roles',
+      },
+      {
+        originalName: 'PageBeanScreen',
+        newName: 'Screens',
+      },
+      {
+        originalName: 'PageBeanScreenScheme',
+        newName: 'ScreenSchemes',
+      },
+      {
+        originalName: 'rest__api__3__status',
+        newName: 'Statuses',
+      },
+      {
+        originalName: 'rest__api__3__statuscategory',
+        newName: 'StatusCategories',
+      },
+      {
+        originalName: 'PageBeanWorkflow',
+        newName: 'Workflows',
+      },
+      {
+        originalName: 'PageBeanWorkflowScheme',
+        newName: 'WorkflowSchemes',
+      },
+    ],
   },
   jiraSwagger: {
     url: 'https://developer.atlassian.com/cloud/jira/software/swagger.v3.json',
     typeNameOverrides: [
       {
-        originalName: 'agile__1_0__board_values@uuvuuu',
+        originalName: 'agile__1_0__board@uuvuu',
+        newName: 'Boards',
+      },
+      {
+        originalName: 'Boards_values',
         newName: 'Board',
       },
     ],
@@ -1118,43 +1273,43 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
 
 export const DEFAULT_INCLUDE_ENDPOINTS: string[] = [
   // platform api
-  'rest__api__3__application_properties@uuuuuub', // ApplicationProperty
-  'rest__api__3__applicationrole',
+  'ApplicationProperties',
+  'ApplicationRoles',
   'AttachmentSettings',
   'Configuration',
-  'rest__api__3__configuration__timetracking__list', // TimeTrackingProvider
-  'PageBeanDashboard',
-  'PageBeanField',
-  'PageBeanFieldConfigurationDetails',
-  'PageBeanFieldConfigurationScheme',
-  'PageBeanFieldConfigurationIssueTypeItem',
-  'PageBeanFilterDetails',
-  'IssueTypeDetails',
+  'TimeTrackingProviders',
+  'Dashboards',
+  'Fields',
+  'FieldConfigurations',
+  'FieldsConfigurationScheme',
+  'FieldsConfigurationIssueTypeItem',
+  'Filters',
+  'IssueType',
   'IssueLinkTypes',
   'SecuritySchemes',
-  'PageBeanIssueTypeScheme',
-  'PageBeanIssueTypeSchemeMapping',
-  'PageBeanIssueTypeScreenScheme',
-  'PageBeanIssueTypeScreenSchemeItem',
-  'PageBeanNotificationScheme',
+  'IssueTypeSchemes',
+  'IssueTypeSchemeMappings',
+  'IssueTypeScreenSchemes',
+  'IssueTypeScreenSchemeItems',
+  'NotificationSchemes',
   'Permissions',
   'PermissionSchemes',
-  'rest__api__3__priority',
-  'rest__api__3__projectCategory',
-  'PageBeanProject',
-  'rest__api__3__project__type',
-  'rest__api__3__resolution',
-  'rest__api__3__role',
-  'PageBeanScreen',
-  'PageBeanScreenScheme',
-  'rest__api__3__status',
-  'rest__api__3__statuscategory',
-  'PageBeanWorkflow',
-  'PageBeanWorkflowScheme',
+  'Priorities',
+  'ProjectCategories',
+  'Projects',
+  'ProjectTypes',
+  'Resolutions',
+  'Roles',
+  'Screens',
+  'ScreenSchemes',
+  'Statuses',
+  'StatusCategories',
+  'Workflows',
+  'WorkflowSchemes',
   'ServerInformation',
 
   // jira api
-  'agile__1_0__board@uuvuu',
+  'Boards',
 ]
 
 export type JiraConfig = {
@@ -1165,25 +1320,21 @@ export type JiraConfig = {
 
 const defaultApiDefinitionsType = createSwaggerAdapterApiConfigType({ adapter: JIRA })
 
-const apiDefinitionsType = createMatchingObjectType<JiraApiConfig>({
+const apiDefinitionsType = createMatchingObjectType<Partial<JiraApiConfig>>({
   elemID: new ElemID(JIRA, 'apiDefinitions'),
   fields: {
     apiVersion: { refType: BuiltinTypes.STRING },
     typeDefaults: {
       refType: defaultApiDefinitionsType.fields.typeDefaults.refType,
-      annotations: { _required: true },
     },
     types: {
       refType: defaultApiDefinitionsType.fields.types.refType,
-      annotations: { _required: true },
     },
     jiraSwagger: {
       refType: defaultApiDefinitionsType.fields.swagger.refType,
-      annotations: { _required: true },
     },
     platformSwagger: {
       refType: defaultApiDefinitionsType.fields.swagger.refType,
-      annotations: { _required: true },
     },
     supportedTypes: {
       refType: new ListType(BuiltinTypes.STRING),

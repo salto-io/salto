@@ -20,10 +20,7 @@ import {
 } from '@salto-io/adapter-api'
 import { resolvePath } from '@salto-io/adapter-utils'
 import { parser } from '@salto-io/workspace'
-import { collections } from '@salto-io/lowerdash'
-import { EditorWorkspace } from './workspace'
 
-const { awu } = collections.asynciterable
 type PositionContextType = 'global'|'instance'|'type'|'field'
 
 export interface EditorPosition {
@@ -198,24 +195,19 @@ const getPositionFromTree = (
 }
 
 export const getPositionContext = async (
-  workspace: EditorWorkspace,
   filename: string,
-  position: EditorPosition
+  position: EditorPosition,
+  definitionsTree: PositionContext,
+  fullElementSource?: ReadOnlyElementsSource
 ): Promise<PositionContext> => {
-  const definitionsTree = buildDefinitionsTree(
-    // TODO: check what to do if buffer is undefined
-    (await workspace.getNaclFile(filename))?.buffer as string,
-    await workspace.getSourceMap(filename),
-    await awu(await workspace.getElements(filename)).toArray(),
-  )
   const partialContext = getPositionFromTree(definitionsTree, position)
-  const fullRef = (partialContext.ref)
+  const fullRef = partialContext.ref && fullElementSource !== undefined
     ? {
       ...partialContext.ref,
       element: await getFullElement(
-        await workspace.getElementSourceOfPath(filename),
+        fullElementSource,
         partialContext.ref.element
       ),
-    } : undefined
+    } : partialContext.ref
   return { ...partialContext, ref: fullRef, range: { ...partialContext.range, filePath: filename } }
 }

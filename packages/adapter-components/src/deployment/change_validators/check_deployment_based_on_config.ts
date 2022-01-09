@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeError, ChangeValidator, getChangeElement, isInstanceChange, Element, ElemID } from '@salto-io/adapter-api'
+import { Change, ChangeError, ChangeValidator, getChangeData, isInstanceChange, Element, ElemID } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { DeploymentRequestsByAction, getConfigWithDefault } from '../../config'
+import { AdapterApiConfig, DeploymentRequestsByAction } from '../../config'
 
 const { awu } = collections.asynciterable
 
@@ -28,20 +28,16 @@ const isDeploymentSupported = (
   action: Change['action'], config: DeploymentRequestsByAction
 ): boolean => config[action] !== undefined
 
-export const checkDeploymentBasedOnConfigValidator: ChangeValidator = async (
-  changes, deployConfig
-) => (
+export const createCheckDeploymentBasedOnConfigValidator = (apiConfig: AdapterApiConfig):
+ChangeValidator => async changes => (
   awu(changes)
     .map(async (change: Change<Element>): Promise<(ChangeError | undefined)[]> => {
       if (!isInstanceChange(change)) {
         return []
       }
-      const instance = getChangeElement(change)
-      const apiDefinitions = deployConfig?.value?.apiDefinitions
-      const typeConfig = apiDefinitions?.types?.[instance.elemID.typeName]?.deployRequests ?? {}
-      const typeDefaultConfig = apiDefinitions?.typeDefaults?.deployRequests ?? {}
-      const config = getConfigWithDefault(typeConfig, typeDefaultConfig)
-      if (!isDeploymentSupported(change.action, config)) {
+      const instance = getChangeData(change)
+      const typeConfig = apiConfig?.types?.[instance.elemID.typeName]?.deployRequests ?? {}
+      if (!isDeploymentSupported(change.action, typeConfig)) {
         return [{
           elemID: instance.elemID,
           severity: 'Error',

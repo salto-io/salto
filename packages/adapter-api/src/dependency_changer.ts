@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { NodeId } from '@salto-io/dag'
-import { Change, ChangeDataType, getChangeElement } from './change'
+import { Change, ChangeDataType, getChangeData } from './change'
 import { Field, InstanceElement, ObjectType, isField, isInstanceElement, isObjectType } from './elements'
 
 export type ChangeId = NodeId
@@ -59,15 +59,15 @@ export const addParentDependency = (
 
 export type ChangeEntry<T = ChangeDataType> = [ChangeId, Change<T>]
 export const isFieldChangeEntry = (entry: ChangeEntry): entry is ChangeEntry<Field> => (
-  isField(getChangeElement(entry[1]))
+  isField(getChangeData(entry[1]))
 )
 export const isInstanceChangeEntry = (
   entry: ChangeEntry
 ): entry is ChangeEntry<InstanceElement> => (
-  isInstanceElement(getChangeElement(entry[1]))
+  isInstanceElement(getChangeData(entry[1]))
 )
 export const isObjectTypeChangeEntry = (
   entry: ChangeEntry
 ): entry is ChangeEntry<ObjectType> => (
-  isObjectType(getChangeElement(entry[1]))
+  isObjectType(getChangeData(entry[1]))
 )

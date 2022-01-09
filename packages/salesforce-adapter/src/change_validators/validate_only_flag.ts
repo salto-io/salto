@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, ElemID, getChangeElement, ChangeError } from '@salto-io/adapter-api'
+import { ChangeValidator, ElemID, getChangeData, ChangeError } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { isInstanceOfCustomObjectChange } from '../custom_object_instances_deploy'
 
@@ -37,7 +37,7 @@ const changeValidator: ChangeValidator = async (changes, adapterConfig) => {
 
   return awu(changes)
     .filter(isInstanceOfCustomObjectChange)
-    .map(getChangeElement)
+    .map(getChangeData)
     .map(changeInstance => createChangeError(changeInstance.elemID))
     .toArray()
 }

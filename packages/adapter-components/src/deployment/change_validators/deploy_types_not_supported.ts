@@ -13,11 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeElement, isObjectType } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isObjectType } from '@salto-io/adapter-api'
 
 export const deployTypesNotSupportedValidator: ChangeValidator = async changes => (
   changes
-    .map(getChangeElement)
+    .map(getChangeData)
     .filter(isObjectType)
     .map(objectType => ({
       elemID: objectType.elemID,

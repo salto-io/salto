@@ -50,6 +50,10 @@ stripe {
             fieldName = "created"
             fieldType = "number"
           },
+          {
+            fieldName = "updated"
+            fieldType = "number"
+          },
         ]
       }
     }
@@ -103,6 +107,20 @@ stripe {
         }
         transformation = {
           dataField = "data"
+        }
+      }
+      reporting_report_type = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "data_available_end"
+              fieldType = "number"
+            },
+            {
+              fieldName = "data_available_start"
+              fieldType = "number"
+            },
+          ]
         }
       }
       tax_rate = {

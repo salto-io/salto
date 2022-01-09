@@ -16,18 +16,18 @@
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
 import {
-  getChangeElement, Field, DependencyChanger, ChangeEntry, DependencyChange,
+  getChangeData, Field, DependencyChanger, ChangeEntry, DependencyChange,
   addParentDependency, isFieldChangeEntry, isDependentAction, isObjectTypeChangeEntry,
 } from '@salto-io/adapter-api'
 
 export const addFieldToObjectDependency: DependencyChanger = async changes => {
   const objectChanges = collections.iterable.groupBy(
     wu(changes).filter(isObjectTypeChangeEntry),
-    ([_id, change]) => getChangeElement(change).elemID.getFullName(),
+    ([_id, change]) => getChangeData(change).elemID.getFullName(),
   )
 
   const addObjectDependency = ([id, change]: ChangeEntry<Field>): DependencyChange[] => (
-    (objectChanges.get(getChangeElement(change).parent.elemID.getFullName()) ?? [])
+    (objectChanges.get(getChangeData(change).parent.elemID.getFullName()) ?? [])
       .filter(([_id, objectChange]) => isDependentAction(change.action, objectChange.action))
       .map(([objectChangeId]) => addParentDependency(id, objectChangeId))
   )

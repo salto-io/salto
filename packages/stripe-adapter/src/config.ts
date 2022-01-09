@@ -27,6 +27,7 @@ const DEFAULT_ID_FIELDS = ['id']
 export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
   { fieldName: 'object', fieldType: 'string' },
   { fieldName: 'created', fieldType: 'number' },
+  { fieldName: 'updated', fieldType: 'number' },
 ]
 
 export const CLIENT_CONFIG = 'client'
@@ -80,6 +81,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: StripeApiConfig['types'] = {
       dataField: 'data',
     },
   },
+  reporting_report_type: {
+    transformation: {
+      fieldsToHide: [
+        { fieldName: 'data_available_end', fieldType: 'number' },
+        { fieldName: 'data_available_start', fieldType: 'number' },
+      ],
+    },
+  },
   tax_rate: {
     transformation: {
       idFields: ['display_name', 'id', 'country', 'percentage'],
@@ -121,7 +130,7 @@ const ALL_SUPPORTED_TYPES = [
 // noinspection UnnecessaryLocalVariableJS
 export const DEFAULT_INCLUDE_TYPES = ALL_SUPPORTED_TYPES
 
-export const DEFAULT_CONFIG = {
+export const DEFAULT_CONFIG: StripeConfig = {
   [FETCH_CONFIG]: {
     includeTypes: DEFAULT_INCLUDE_TYPES,
   },

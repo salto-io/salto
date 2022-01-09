@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  ObjectType, Field, getChangeElement, CORE_ANNOTATIONS, isAdditionChange,
+  ObjectType, Field, getChangeData, CORE_ANNOTATIONS, isAdditionChange,
   isFieldChange, InstanceElement, ElemID, Change,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
@@ -108,7 +108,7 @@ const addMissingPermissions = async (
 }
 
 const isAdminProfileChange = async (change: Change): Promise<boolean> => {
-  const changeElem = getChangeElement(change)
+  const changeElem = getChangeData(change)
   return isInstanceOfType(PROFILE_METADATA_TYPE)(changeElem)
     && await apiName(changeElem) === ADMIN_PROFILE
 }
@@ -124,13 +124,13 @@ const filterCreator: FilterCreator = () => {
       const allAdditions = changes.filter(isAdditionChange)
 
       const newCustomObjects = await awu(allAdditions)
-        .map(getChangeElement)
+        .map(getChangeData)
         .filter(isCustomObject)
         .toArray() as ObjectType[]
 
       const newFields = [
         ...newCustomObjects.flatMap(objType => Object.values(objType.fields)),
-        ...allAdditions.filter(isFieldChange).map(getChangeElement),
+        ...allAdditions.filter(isFieldChange).map(getChangeData),
       ].filter(shouldSetDefaultPermissions)
 
       if (newCustomObjects.length === 0 && newFields.length === 0) {
@@ -140,7 +140,7 @@ const filterCreator: FilterCreator = () => {
       const adminProfileChange = await awu(changes).find(isAdminProfileChange)
 
       const adminProfile = adminProfileChange !== undefined
-        ? getChangeElement(adminProfileChange) as InstanceElement
+        ? getChangeData(adminProfileChange) as InstanceElement
         : createAdminProfile()
 
       await addMissingPermissions(adminProfile, 'object', newCustomObjects)

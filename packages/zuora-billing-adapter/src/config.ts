@@ -655,7 +655,6 @@ export const DEFAULT_SETTINGS_INCLUDE_TYPES = [
   'DiscountSettings',
   'DocPrefix',
   'FxCurrency',
-  'GatewayResponse',
   'GetTaxCompanies',
   'GlSegments',
   'HostedPaymentPages',
@@ -692,7 +691,7 @@ export const DEFAULT_INCLUDE_TYPES = [
   WORKFLOW_EXPORT_TYPE,
 ]
 
-export const DEFAULT_CONFIG = {
+export const DEFAULT_CONFIG: ZuoraConfig = {
   [FETCH_CONFIG]: {
     includeTypes: DEFAULT_INCLUDE_TYPES,
     settingsIncludeTypes: DEFAULT_SETTINGS_INCLUDE_TYPES,

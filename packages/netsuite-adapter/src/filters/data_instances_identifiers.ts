@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, getChangeElement, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { IDENTIFIER_FIELD } from '../data_elements/types'
@@ -27,7 +27,7 @@ const filterCreator = (): FilterWith<'preDeploy'> => ({
     await awu(changes)
       .filter(isInstanceChange)
       .filter(async change => isDataObjectType(
-        await getChangeElement<InstanceElement>(change).getType()
+        await getChangeData<InstanceElement>(change).getType()
       ))
       .forEach(change =>
         applyFunctionToChangeData<Change<InstanceElement>>(

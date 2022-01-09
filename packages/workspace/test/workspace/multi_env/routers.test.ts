@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { detailedCompare } from '@salto-io/adapter-utils'
-import { ElemID, Field, BuiltinTypes, ObjectType, ListType, InstanceElement, DetailedChange, PrimitiveType, PrimitiveTypes, isField, getChangeElement, Change, ReferenceExpression, INSTANCE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ElemID, Field, BuiltinTypes, ObjectType, ListType, InstanceElement, DetailedChange, PrimitiveType, PrimitiveTypes, isField, getChangeData, Change, ReferenceExpression, INSTANCE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { ModificationDiff, RemovalDiff, AdditionDiff } from '@salto-io/dag'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
 import { routeChanges, routePromote, routeDemote, routeCopyTo, getMergeableParentID, routeRemoveFrom } from '../../../src/workspace/nacl_files/multi_env/routers'
@@ -401,12 +401,12 @@ describe('default fetch routing', () => {
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, envSources, 'default')
     expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(1)
-    const commonChangeElement = routedChanges.commonSource
+    const commonChangeData = routedChanges.commonSource
         && (routedChanges.commonSource[0] as RemovalDiff<ObjectType>).data.before
-    const envChangeElement = routedChanges.envSources?.[primarySrcName]
+    const envChangeData = routedChanges.envSources?.[primarySrcName]
         && (routedChanges.envSources?.[primarySrcName][0] as RemovalDiff<ObjectType>).data.before
-    expect(commonChangeElement).toEqual(commonObj)
-    expect(envChangeElement).toEqual(envObj)
+    expect(commonChangeData).toEqual(commonObj)
+    expect(envChangeData).toEqual(envObj)
     expect(routedChanges.envSources?.[secSrcName]).toHaveLength(1)
   })
   it('should route add changes of values of env specific elements to the '
@@ -510,7 +510,7 @@ describe('align fetch routing', () => {
     expect(routedChanges.commonSource).toHaveLength(0)
     const primaryChange = routedChanges.envSources?.[primarySrcName][0]
     expect(primaryChange?.id).toEqual(partiallyCommonObjCommon.fields.commonField.elemID)
-    expect(isField(getChangeElement(primaryChange as Change<Field>))).toBeTruthy()
+    expect(isField(getChangeData(primaryChange as Change<Field>))).toBeTruthy()
     expect(_.isEmpty(_.omit(routedChanges.envSources, [primarySrcName]))).toBeTruthy()
   })
 
@@ -596,9 +596,9 @@ describe('align fetch routing', () => {
     )
     expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
-    const envChangeElement = routedChanges.envSources?.[primarySrcName]
+    const envChangeData = routedChanges.envSources?.[primarySrcName]
         && (routedChanges.envSources?.[primarySrcName][0] as RemovalDiff<ObjectType>).data.before
-    expect(envChangeElement).toEqual(envObj)
+    expect(envChangeData).toEqual(envObj)
     expect(_.isEmpty(_.omit(routedChanges.envSources, [primarySrcName]))).toBeTruthy()
   })
   it('should route add changes of values of env specific elements to the env', async () => {
@@ -645,7 +645,7 @@ describe('align fetch routing', () => {
     expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
     const envChange = routedChanges.envSources?.[primarySrcName]?.[0] as DetailedChange
     expect(envChange.action).toEqual('add')
-    const envChangeInstance = getChangeElement(envChange) as InstanceElement
+    const envChangeInstance = getChangeData(envChange) as InstanceElement
     expect(envChangeInstance).toBeInstanceOf(InstanceElement)
     expect(envChangeInstance.annotations).toHaveProperty(
       INSTANCE_ANNOTATIONS.GENERATED_DEPENDENCIES,
@@ -759,12 +759,12 @@ describe('override fetch routing', () => {
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, envSources, 'override')
     expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(1)
-    const commonChangeElement = routedChanges.commonSource
+    const commonChangeData = routedChanges.commonSource
         && (routedChanges.commonSource[0] as RemovalDiff<ObjectType>).data.before
-    const envChangeElement = routedChanges.envSources?.[primarySrcName]
+    const envChangeData = routedChanges.envSources?.[primarySrcName]
         && (routedChanges.envSources?.[primarySrcName][0] as RemovalDiff<ObjectType>).data.before
-    expect(commonChangeElement).toEqual(commonObj)
-    expect(envChangeElement).toEqual(envObj)
+    expect(commonChangeData).toEqual(commonObj)
+    expect(envChangeData).toEqual(envObj)
     expect(routedChanges.envSources?.[secSrcName]).toHaveLength(1)
   })
   it('should route add changes of values of env specific elements to the env', async () => {

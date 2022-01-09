@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/workspace",
-  "version": "0.3.6",
+  "version": "0.3.8",
   "license": "Apache-2.0",
   "description": "Salto workspace",
   "repository": {
@@ -31,10 +31,10 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.3.6",
-    "@salto-io/adapter-utils": "0.3.6",
-    "@salto-io/logging": "0.3.6",
-    "@salto-io/lowerdash": "0.3.6",
+    "@salto-io/adapter-api": "0.3.8",
+    "@salto-io/adapter-utils": "0.3.8",
+    "@salto-io/logging": "0.3.8",
+    "@salto-io/lowerdash": "0.3.8",
     "async-lock": "^1.2.4",
     "is-promise": "4.0.0",
     "lodash": "^4.17.21",
@@ -43,10 +43,10 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@salto-io/dag": "0.3.6",
-    "@salto-io/salesforce-adapter": "0.3.6",
-    "@salto-io/test-utils": "0.3.6",
-    "@types/jest": "^26.0.20",
+    "@salto-io/dag": "0.3.8",
+    "@salto-io/salesforce-adapter": "0.3.8",
+    "@salto-io/test-utils": "0.3.8",
+    "@types/jest": "^27.4.0",
     "@types/lodash": "^4.14.168",
     "@types/moo": "^0.5.0",
     "@types/nearley": "^2.11.0",
@@ -63,8 +63,8 @@
     "eslint-plugin-jsx-a11y": "^6.2.1",
     "eslint-plugin-react": "^7.14.3",
     "eslint-plugin-react-hooks": "^1.7.0",
-    "jest": "^26.6.3",
-    "jest-circus": "^26.6.3",
+    "jest": "^27.4.5",
+    "jest-circus": "^27.4.5",
     "jest-each": "^26.6.2",
     "jest-junit": "^12.0.0",
     "tsc-watch": "^2.2.1",

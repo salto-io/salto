@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ChangeError, Field, getChangeElement,
+  ChangeError, Field, getChangeData,
   ChangeValidator, isModificationChange, ModificationChange, Change, isFieldChange,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
@@ -25,7 +25,7 @@ const { awu } = collections.asynciterable
 
 
 const isStandardFieldChange = (change: Change<Field>): boolean =>
-  (!isCustom(getChangeElement(change).elemID.getFullName()))
+  (!isCustom(getChangeData(change).elemID.getFullName()))
 
 
 const isLabelModification = (change: ModificationChange<Field>): boolean => {
@@ -49,10 +49,10 @@ const changeValidator: ChangeValidator = async changes => (
   awu(changes)
     .filter(isModificationChange)
     .filter(isFieldChange)
-    .filter(change => isFieldOfCustomObject(getChangeElement(change)))
+    .filter(change => isFieldOfCustomObject(getChangeData(change)))
     .filter(isStandardFieldChange)
     .filter(isLabelModification)
-    .map(getChangeElement)
+    .map(getChangeData)
     .map(createChangeError)
     .toArray()
 )

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import path from 'path'
 import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
-  Value, toChange, isRemovalChange, getChangeElement,
+  Value, toChange, isRemovalChange, getChangeData,
   ReadOnlyElementsSource, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { applyDetailedChanges, naclCase, resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
@@ -394,7 +394,6 @@ export const loadWorkspace = async (
           mergedRecoveryMode,
         ),
       }
-      await initializedState.mergeManager.init()
       return initializedState
     }
 
@@ -476,23 +475,23 @@ export const loadWorkspace = async (
 
         const stateRemovedElementChanges = (workspaceChanges[envName] ?? createEmptyChangeSet())
           .changes.filter(change => isRemovalChange(change)
-            && getChangeElement(change).elemID.isTopLevel())
+            && getChangeData(change).elemID.isTopLevel())
         // To preserve the old ws functionality - hidden values should be added to the workspace
         // cache only if their top level element is in the nacls, or they are marked as hidden
         // (SAAS-2639)
         const [stateChangesForExistingNaclElements, dropedStateOnlyChange] = await partition(
           partialStateChanges.changes,
           async change => {
-            const changeElement = getChangeElement(change)
-            const changeID = changeElement.elemID
+            const changeData = getChangeData(change)
+            const changeID = changeData.elemID
             return isRemovalChange(change)
             || await (await source.getElementsSource(envName)).get(changeID)
-            || isHidden(changeElement, state(envName))
+            || isHidden(changeData, state(envName))
           }
         )
 
-        log.debug('droped hidden changes due to missing nacl element for ids:',
-          dropedStateOnlyChange.map(getChangeElement).map(elem => elem.elemID.getFullName()))
+        log.debug('dropped hidden changes due to missing nacl element for ids:',
+          dropedStateOnlyChange.map(getChangeData).map(elem => elem.elemID.getFullName()))
 
         return {
           changes: stateChangesForExistingNaclElements
@@ -508,7 +507,7 @@ export const loadWorkspace = async (
       const workspaceChangedElements = Object.fromEntries(
         await awu(workspaceChanges[envName]?.changes ?? [])
           .map(async change => {
-            const workspaceElement = getChangeElement(change)
+            const workspaceElement = getChangeData(change)
             const hiddenOnlyElement = isRemovalChange(change)
               ? undefined
               : await getElementHiddenParts(
@@ -573,8 +572,8 @@ export const loadWorkspace = async (
 
       const changedElements = changes
         .filter(isAdditionOrModificationChange)
-        .map(getChangeElement)
-      const changeIDs = changes.map(getChangeElement).map(elem => elem.elemID)
+        .map(getChangeData)
+      const changeIDs = changes.map(getChangeData).map(elem => elem.elemID)
       if (validate) {
         const {
           errors: validationErrors,
@@ -608,10 +607,7 @@ export const loadWorkspace = async (
     const relevantEnvs = awu(envs())
       .filter(async name =>
         (workspaceChanges[name]?.changes ?? []).length > 0
-        || (stateOnlyChanges[name]?.changes ?? []).length > 0
-        // Even without changes, it's possible that things moved between common and env
-        || workspaceChanges[name]?.postChangeHash
-          !== await stateToBuild.mergeManager.getHash(MULTI_ENV_SOURCE_PREFIX + name))
+        || (stateOnlyChanges[name]?.changes ?? []).length > 0)
 
     await relevantEnvs.forEach(async envName => { await updateWorkspace(envName) })
     return stateToBuild

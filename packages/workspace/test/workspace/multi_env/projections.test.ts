@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, PrimitiveType, PrimitiveTypes, InstanceElement, Field, BuiltinTypes, ListType, DetailedChange, getChangeElement } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, PrimitiveType, PrimitiveTypes, InstanceElement, Field, BuiltinTypes, ListType, DetailedChange, getChangeData } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { AdditionDiff, ModificationDiff, RemovalDiff } from '@salto-io/dag/dist'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
@@ -233,7 +233,7 @@ describe('projections', () => {
       const projected = await projectChange(change, source)
       expect(projected).toHaveLength(1)
       expect(projected[0].action).toBe('add')
-      const changeData = getChangeElement(projected[0])
+      const changeData = getChangeData(projected[0])
       expect(changeData).toEqual(newPartialInstance.value.nested2)
     })
     it('should not project an add change for an existing fragment for instances', async () => {
@@ -317,7 +317,7 @@ describe('projections', () => {
       const projected = await projectChange(change, source)
       expect(projected).toHaveLength(1)
       expect(projected[0].action).toBe('add')
-      const changeData = getChangeElement(projected[0])
+      const changeData = getChangeData(projected[0])
       expect(changeData).toEqual(objectType.annotations.nested2)
     })
     it('should not project an add change for an existing fragment for object types', async () => {
@@ -398,7 +398,7 @@ describe('projections', () => {
       const projected = await projectChange(change, source)
       expect(projected).toHaveLength(1)
       expect(projected[0].action).toBe('add')
-      const changeData = getChangeElement(projected[0])
+      const changeData = getChangeData(projected[0])
       expect(changeData).toEqual(primitiveType.annotations.nested2)
     })
     it('should not project an add change for an existing fragment for primitive types', async () => {

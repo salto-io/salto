@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  ChangeValidator, getChangeElement, InstanceElement, ChangeError, isMapType, MapType, isObjectType,
+  ChangeValidator, getChangeData, InstanceElement, ChangeError, isMapType, MapType, isObjectType,
 } from '@salto-io/adapter-api'
 import { TransformFunc, transformValues, resolveValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -85,7 +85,7 @@ const getMapKeyErrors = async (
 const changeValidator: ChangeValidator = async changes => (
   awu(await getInstanceChanges(changes, PROFILE_METADATA_TYPE))
     .flatMap(async change => getMapKeyErrors(
-      await resolveValues(getChangeElement(change), getLookUpName)
+      await resolveValues(getChangeData(change), getLookUpName)
     )).toArray()
 )
 

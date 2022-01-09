@@ -14,14 +14,14 @@
 * limitations under the License.
 */
 import {
-  ChangeValidator, getChangeElement, Change,
+  ChangeValidator, getChangeData, Change,
 } from '@salto-io/adapter-api'
 import { fileCabinetTopLevelFolders } from '../client/constants'
 import { isFileCabinetInstance } from '../types'
 import * as suiteAppFileCabinet from '../suiteapp_file_cabinet'
 
 const isChangeSupported = (change: Change): boolean => {
-  const element = getChangeElement(change)
+  const element = getChangeData(change)
   if (!isFileCabinetInstance(element)) {
     return true
   }
@@ -33,7 +33,7 @@ const isChangeSupported = (change: Change): boolean => {
 const changeValidator: ChangeValidator = async changes => (
   changes
     .filter(change => !isChangeSupported(change))
-    .map(getChangeElement)
+    .map(getChangeData)
     .map(inst => ({
       elemID: inst.elemID,
       severity: 'Error',

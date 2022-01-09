@@ -24,15 +24,17 @@ const {
   createUserFetchConfigType, createDucktypeAdapterApiConfigType, validateDuckTypeFetchConfig,
 } = configUtils
 
-export const DEFAULT_ID_FIELDS = ['name', 'id']
+export const DEFAULT_ID_FIELDS = ['name']
 export const DEFAULT_FILENAME_FIELDS = ['name']
 export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
-  { fieldName: 'created_at', fieldType: 'string' },
-  { fieldName: 'updated_at', fieldType: 'string' },
   { fieldName: 'extended_input_schema' },
   { fieldName: 'extended_output_schema' },
   { fieldName: 'url', fieldType: 'string' },
   { fieldName: 'count', fieldType: 'number' },
+]
+export const FIELDS_TO_HIDE: configUtils.FieldToHideType[] = [
+  { fieldName: 'created_at', fieldType: 'string' },
+  { fieldName: 'updated_at', fieldType: 'string' },
 ]
 
 export const CLIENT_CONFIG = 'client'
@@ -56,6 +58,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   group: {
     transformation: {
       sourceTypeName: 'groups__groups',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
     deployRequests: {
       add: {
@@ -84,6 +87,12 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   custom_role: {
     transformation: {
       sourceTypeName: 'custom_roles__custom_roles',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToOmit: FIELDS_TO_OMIT.concat([
+        // always 0 - https://developer.zendesk.com/api-reference/ticketing/account-configuration/custom_roles/#json-format
+        { fieldName: 'role_type', fieldType: 'number' },
+        { fieldName: 'team_member_count', fieldType: 'number' },
+      ]),
     },
     deployRequests: {
       add: {
@@ -112,6 +121,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   organization: {
     transformation: {
       sourceTypeName: 'organizations__organizations',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
     deployRequests: {
       add: {
@@ -140,8 +150,9 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   view: {
     transformation: {
       sourceTypeName: 'views__views',
-      idFields: ['title', 'id'],
+      idFields: ['title'],
       fileNameFields: ['title'],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
     deployRequests: {
       add: {
@@ -170,8 +181,9 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   trigger: {
     transformation: {
       sourceTypeName: 'triggers__triggers',
-      idFields: ['title', 'id'],
+      idFields: ['title'],
       fileNameFields: ['title'],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
     deployRequests: {
       add: {
@@ -201,6 +213,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     transformation: {
       sourceTypeName: 'trigger_categories__trigger_categories',
       fileNameFields: ['name'],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id' }),
     },
     deployRequests: {
       add: {
@@ -229,8 +242,9 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   automation: {
     transformation: {
       sourceTypeName: 'automations__automations',
-      idFields: ['title', 'id'],
+      idFields: ['title'],
       fileNameFields: ['title'],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
     deployRequests: {
       add: {
@@ -259,8 +273,9 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   sla_policy: {
     transformation: {
       sourceTypeName: 'sla_policies__sla_policies',
-      idFields: ['title', 'id'],
+      idFields: ['title'],
       fileNameFields: ['title'],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
     deployRequests: {
       add: {
@@ -290,12 +305,14 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     transformation: {
       sourceTypeName: 'sla_policies_definitions__definitions',
       isSingleton: true,
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
   target: {
     transformation: {
       sourceTypeName: 'targets__targets',
       idFields: ['title', 'type'], // looks like title is unique so not adding id
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
     deployRequests: {
       add: {
@@ -324,8 +341,9 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   macro: {
     transformation: {
       sourceTypeName: 'macros__macros',
-      idFields: ['title', 'id'],
+      idFields: ['title'],
       fileNameFields: ['title'],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
     deployRequests: {
       add: {
@@ -354,25 +372,31 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   macro_action: {
     transformation: {
       sourceTypeName: 'macros_actions__actions',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
   macro_category: {
     transformation: {
       sourceTypeName: 'macros_categories__categories',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
   macro_definition: {
     transformation: {
       sourceTypeName: 'macros_definitions__definitions',
       isSingleton: true,
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
   brand: {
     transformation: {
       sourceTypeName: 'brands__brands',
+      // We currently not supporting in attachements
+      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'logo' }),
       fieldTypeOverrides: [
         { fieldName: 'help_center_state', fieldType: 'string', restrictions: { enforce_value: true, values: ['enabled', 'disabled', 'restricted'] } },
       ],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
     deployRequests: {
       add: {
@@ -403,11 +427,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       sourceTypeName: 'locales__locales',
       idFields: ['locale'],
       fileNameFields: ['locale'],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
   business_hours_schedule: {
     transformation: {
       sourceTypeName: 'business_hours_schedules__schedules',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
     deployRequests: {
       add: {
@@ -440,6 +466,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
         { fieldName: 'status', fieldType: 'string', restrictions: { enforce_value: true, values: ['accepted', 'declined', 'pending', 'inactive'] } },
         { fieldName: 'type', fieldType: 'string', restrictions: { enforce_value: true, values: ['inbound', 'outbound'] } },
       ],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
     deployRequests: {
       add: {
@@ -465,9 +492,9 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       },
     },
   },
-  recipient_address: {
+  support_address: {
     transformation: {
-      sourceTypeName: 'recipient_addresses__recipient_addresses',
+      sourceTypeName: 'support_addresses__recipient_addresses',
       fieldTypeOverrides: [
         { fieldName: 'cname_status', fieldType: 'string', restrictions: { enforce_value: true, values: ['unknown', 'verified', 'failed'] } },
         { fieldName: 'dns_results', fieldType: 'string', restrictions: { enforce_value: true, values: ['verified', 'failed'] } },
@@ -475,6 +502,10 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
         { fieldName: 'forwarding_status', fieldType: 'string', restrictions: { enforce_value: true, values: ['unknown', 'waiting', 'verified', 'failed'] } },
         { fieldName: 'spf_status', fieldType: 'string', restrictions: { enforce_value: true, values: ['unknown', 'verified', 'failed'] } },
       ],
+      fieldsToHide: FIELDS_TO_HIDE.concat([
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'domain_verification_code' },
+      ]),
     },
     deployRequests: {
       add: {
@@ -503,6 +534,9 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   ticket_form: {
     transformation: {
       sourceTypeName: 'ticket_forms__ticket_forms',
+      fieldsToHide: FIELDS_TO_HIDE.concat([
+        { fieldName: 'id', fieldType: 'number' },
+      ]),
     },
     deployRequests: {
       add: {
@@ -531,9 +565,10 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   ticket_field: {
     transformation: {
       sourceTypeName: 'ticket_fields__ticket_fields',
-      idFields: ['type', 'title', 'id'],
+      idFields: ['type', 'title'],
       fileNameFields: ['type', 'title'],
       standaloneFields: [{ fieldName: 'custom_field_options' }],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
     deployRequests: {
       add: {
@@ -559,6 +594,11 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       },
     },
   },
+  ticket_field__custom_field_options: {
+    transformation: {
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+    },
+  },
   user_field: {
     transformation: {
       sourceTypeName: 'user_fields__user_fields',
@@ -567,6 +607,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       fieldTypeOverrides: [
         { fieldName: 'type', fieldType: 'string', restrictions: { enforce_value: true, values: ['checkbox', 'date', 'decimal', 'dropdown', 'integer', 'regexp', 'text', 'textarea'] } },
       ],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
     deployRequests: {
       add: {
@@ -592,6 +633,19 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       },
     },
   },
+  user_field__custom_field_options: {
+    transformation: {
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+    },
+  },
+  user_field_order: {
+    deployRequests: {
+      modify: {
+        url: '/user_fields/reorder',
+        method: 'put',
+      },
+    },
+  },
   organization_field: {
     transformation: {
       sourceTypeName: 'organization_fields__organization_fields',
@@ -600,6 +654,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       fieldTypeOverrides: [
         { fieldName: 'type', fieldType: 'string', restrictions: { enforce_value: true, values: ['checkbox', 'date', 'decimal', 'dropdown', 'integer', 'regexp', 'text', 'textarea'] } },
       ],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
     deployRequests: {
       add: {
@@ -625,9 +680,26 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       },
     },
   },
+  organization_field__custom_field_options: {
+    transformation: {
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+    },
+  },
+  organization_field_order: {
+    transformation: {
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+    },
+    deployRequests: {
+      modify: {
+        url: '/organization_fields/reorder',
+        method: 'put',
+      },
+    },
+  },
   routing_attribute: {
     transformation: {
       sourceTypeName: 'routing_attributes__attributes',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
     deployRequests: {
       add: {
@@ -658,13 +730,15 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       sourceTypeName: 'routing_attribute_definitions__definitions',
       hasDynamicFields: true,
       isSingleton: true,
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
   workspace: {
     transformation: {
       sourceTypeName: 'workspaces__workspaces',
-      idFields: ['title', 'id'],
+      idFields: ['title'],
       fileNameFields: ['title'],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
     deployRequests: {
       add: {
@@ -690,11 +764,22 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       },
     },
   },
+  workspace__selected_macros: {
+    transformation: {
+      fieldsToHide: [],
+    },
+  },
+  workspace__apps: {
+    transformation: {
+      fieldsToHide: [],
+    },
+  },
   app_installation: {
     transformation: {
       sourceTypeName: 'app_installations__installations',
-      fieldsToOmit: [...FIELDS_TO_OMIT, { fieldName: 'updated', fieldType: 'string' }],
-      idFields: ['settings.name', 'id'],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'updated', fieldType: 'string' }),
+      idFields: ['settings.name'],
       fileNameFields: ['settings.name'],
     },
     deployRequests: {
@@ -723,12 +808,18 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   },
   app_owned: {
     transformation: {
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       sourceTypeName: 'apps_owned__apps',
     },
   },
   oauth_client: {
     transformation: {
       sourceTypeName: 'oauth_clients__clients',
+      idFields: ['identifier'],
+      fieldsToHide: FIELDS_TO_HIDE.concat([
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'secret', fieldType: 'string' },
+      ]),
     },
     deployRequests: {
       add: {
@@ -757,12 +848,14 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   oauth_global_client: {
     transformation: {
       sourceTypeName: 'oauth_global_clients__global_clients',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
   account_setting: {
     transformation: {
       sourceTypeName: 'account_settings__settings',
       isSingleton: true,
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
     deployRequests: {
       modify: {
@@ -775,11 +868,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   resource_collection: {
     transformation: {
       sourceTypeName: 'resource_collections__resource_collections',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
   monitored_twitter_handle: {
     transformation: {
       sourceTypeName: 'monitored_twitter_handles__monitored_twitter_handles',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
 
@@ -822,6 +917,21 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   triggers: {
     request: {
       url: '/triggers',
+    },
+  },
+  trigger_definitions: {
+    request: {
+      url: '/triggers/definitions',
+    },
+    transformation: {
+      dataField: 'definitions',
+    },
+  },
+  trigger_definition: {
+    transformation: {
+      sourceTypeName: 'trigger_definitions__definitions',
+      isSingleton: true,
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
   trigger_categories: {
@@ -878,6 +988,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       // no unique identifier for individual items
       dataField: '.',
       isSingleton: true,
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
   // eslint-disable-next-line camelcase
@@ -887,12 +998,16 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
     transformation: {
       isSingleton: true,
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
   // eslint-disable-next-line camelcase
   macros_definitions: { // has some overlaps with macro_actions
     request: {
       url: '/macros/definitions',
+    },
+    transformation: {
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
   brands: {
@@ -910,6 +1025,8 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
     transformation: {
       dataField: '.',
+      standaloneFields: [{ fieldName: 'variants' }],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
     deployRequests: {
       add: {
@@ -935,6 +1052,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       },
     },
   },
+  dynamic_content_item__variants: {
+    transformation: {
+      // Will be changed after SALTO-1687 + SALTO-1688
+      idFields: ['locale_id'],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+    },
+  },
   locales: {
     request: {
       url: '/locales',
@@ -956,7 +1080,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
   },
   // eslint-disable-next-line camelcase
-  recipient_addresses: {
+  support_addresses: {
     request: {
       url: '/recipient_addresses',
     },
@@ -975,6 +1099,14 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       dataField: 'ticket_forms',
     },
   },
+  ticket_form_order: {
+    deployRequests: {
+      modify: {
+        url: '/ticket_forms/reorder',
+        method: 'put',
+      },
+    },
+  },
   // eslint-disable-next-line camelcase
   ticket_fields: {
     request: {
@@ -983,6 +1115,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     transformation: {
       dataField: 'ticket_fields',
       fileNameFields: ['title'],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
   // eslint-disable-next-line camelcase
@@ -1066,7 +1199,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   // not included yet: satisfaction_reason (returns 403), sunshine apis
 }
 
-export const DEFAULT_CONFIG = {
+export const DEFAULT_CONFIG: ZendeskConfig = {
   [FETCH_CONFIG]: {
     includeTypes: [
       ...Object.keys(_.pickBy(DEFAULT_TYPES, def => def.request !== undefined)),
@@ -1081,6 +1214,7 @@ export const DEFAULT_CONFIG = {
         idFields: DEFAULT_ID_FIELDS,
         fileNameFields: DEFAULT_FILENAME_FIELDS,
         fieldsToOmit: FIELDS_TO_OMIT,
+        fieldsToHide: FIELDS_TO_HIDE,
       },
     },
     types: DEFAULT_TYPES,

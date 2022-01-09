@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Change, CORE_ANNOTATIONS, Element, Field, getChangeElement, InstanceElement, isAdditionChange, isInstanceElement, isObjectType, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, Change, CORE_ANNOTATIONS, Element, Field, getChangeData, InstanceElement, isAdditionChange, isInstanceElement, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
@@ -123,7 +123,7 @@ const getSupportedInstances = (elements: Element[]): InstanceElement[] =>
 const getAdditionInstances = (changes: Change[]): InstanceElement[] =>
   getSupportedInstances(changes
     .filter(isAdditionChange)
-    .map(getChangeElement))
+    .map(getChangeData))
 
 /**
  * This filter adds the internal id to instances.
@@ -157,7 +157,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
       return
     }
     const instances = getSupportedInstances(changes
-      .map(getChangeElement))
+      .map(getChangeData))
     instances.forEach(element => {
       delete element.value.internalId
     })

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  Adapter, InstanceElement, ObjectType, ElemID, AccountId, getChangeElement, isField,
+  Adapter, InstanceElement, ObjectType, ElemID, AccountId, getChangeData, isField,
   Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
   isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
   SaltoError, Element, DetailedChange,
@@ -116,6 +116,7 @@ export interface DeployResult {
   success: boolean
   errors: DeployError[]
   changes?: Iterable<FetchChange>
+  appliedChanges?: Change[]
 }
 
 export const deploy = async (
@@ -134,7 +135,7 @@ export const deploy = async (
   )
 
   const getUpdatedElement = async (change: Change): Promise<ChangeDataType> => {
-    const changeElem = getChangeElement(change)
+    const changeElem = getChangeData(change)
     if (!isField(changeElem)) {
       return changeElem
     }
@@ -159,7 +160,9 @@ export const deploy = async (
       }
     }))
   }
-  const errors = await deployActions(actionPlan, adapters, reportProgress, postDeployAction)
+  const { errors, appliedChanges } = await deployActions(
+    actionPlan, adapters, reportProgress, postDeployAction
+  )
 
   // Add workspace elements as an additional context for resolve so that we can resolve
   // variable expressions. Adding only variables is not enough for the case of a variable
@@ -174,6 +177,7 @@ export const deploy = async (
   return {
     success: !errored,
     changes,
+    appliedChanges,
     errors: errored ? errors : [],
   }
 }

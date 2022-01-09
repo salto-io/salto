@@ -15,7 +15,7 @@
 */
 
 import { ElemID, InstanceElement, StaticFile, ChangeDataType, DeployResult,
-  getChangeElement, FetchOptions, ObjectType, Change } from '@salto-io/adapter-api'
+  getChangeData, FetchOptions, ObjectType, Change } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
@@ -543,7 +543,7 @@ describe('Adapter', () => {
         const result = await adapterAdd(instance)
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        const post = getChangeElement(result.appliedChanges[0]) as InstanceElement
+        const post = getChangeData(result.appliedChanges[0]) as InstanceElement
 
         const expectedResolvedInstance = instance.clone()
         expectedResolvedInstance.value.description = 'description value'
@@ -556,7 +556,7 @@ describe('Adapter', () => {
         const result = await adapterAdd(fileInstance)
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        const post = getChangeElement(result.appliedChanges[0]) as InstanceElement
+        const post = getChangeData(result.appliedChanges[0]) as InstanceElement
         expect(client.deploy).toHaveBeenCalledWith(
           [await toCustomizationInfo(fileInstance)],
           undefined,
@@ -568,7 +568,7 @@ describe('Adapter', () => {
         const result = await adapterAdd(folderInstance)
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        const post = getChangeElement(result.appliedChanges[0]) as InstanceElement
+        const post = getChangeData(result.appliedChanges[0]) as InstanceElement
         expect(client.deploy).toHaveBeenCalledWith(
           [await toCustomizationInfo(folderInstance)],
           undefined,
@@ -628,7 +628,7 @@ describe('Adapter', () => {
         const result = await adapterUpdate(instance, instance.clone())
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        const post = getChangeElement(result.appliedChanges[0]) as InstanceElement
+        const post = getChangeData(result.appliedChanges[0]) as InstanceElement
 
         const expectedResolvedInstance = instance.clone()
         expectedResolvedInstance.value.description = 'description value'
@@ -644,7 +644,7 @@ describe('Adapter', () => {
         const result = await adapterUpdate(fileInstance, fileInstance.clone())
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        const post = getChangeElement(result.appliedChanges[0]) as InstanceElement
+        const post = getChangeData(result.appliedChanges[0]) as InstanceElement
         expect(client.deploy).toHaveBeenCalledWith(
           [await toCustomizationInfo(fileInstance)],
           undefined,
@@ -656,7 +656,7 @@ describe('Adapter', () => {
         const result = await adapterUpdate(folderInstance, folderInstance.clone())
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        const post = getChangeElement(result.appliedChanges[0]) as InstanceElement
+        const post = getChangeData(result.appliedChanges[0]) as InstanceElement
         expect(client.deploy).toHaveBeenCalledWith(
           [await toCustomizationInfo(folderInstance)],
           undefined,
@@ -673,7 +673,7 @@ describe('Adapter', () => {
         const result = await adapterUpdate(instance, after)
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        const post = getChangeElement(result.appliedChanges[0]) as InstanceElement
+        const post = getChangeData(result.appliedChanges[0]) as InstanceElement
 
         const expectedResolvedAfter = after.clone()
         expectedResolvedAfter.value.description = 'edited description value'

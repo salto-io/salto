@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeError, Field, getAllChangeElements, isModificationChange, ChangeValidator,
-  getChangeElement, isFieldChange, ModificationChange, ElemID, isReferenceExpression } from '@salto-io/adapter-api'
+import { Change, ChangeError, Field, getAllChangeData, isModificationChange, ChangeValidator,
+  getChangeData, isFieldChange, ModificationChange, ElemID, isReferenceExpression } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { apiName, isCustom } from '../transformers/transformer'
 import { isPicklistField, hasValueSetNameAnnotation } from '../filters/value_set'
@@ -25,7 +25,7 @@ import { GLOBAL_VALUE_SET } from '../filters/global_value_sets'
 const { awu } = collections.asynciterable
 
 const isGlobalPicklistChange = async (change: Change): Promise<boolean> => {
-  const [before, after] = getAllChangeElements(change)
+  const [before, after] = getAllChangeData(change)
   return isPicklistField(before) && isPicklistField(after) && isCustom(await apiName(before))
   && !hasValueSetNameAnnotation(before) && hasValueSetNameAnnotation(after)
 }
@@ -52,7 +52,7 @@ const createChangeErrors = ({ pickListField, gvsElemID }:
 }
 
 const referencedGvsElemID = (change: ModificationChange<Field>): ElemID | undefined => {
-  const referencedGvs = getChangeElement(change).annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
+  const referencedGvs = getChangeData(change).annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
   if (isReferenceExpression(referencedGvs)) {
     const referencedValue = referencedGvs.value
     if (isInstanceOfType(GLOBAL_VALUE_SET)(referencedValue)) {
@@ -68,7 +68,7 @@ const referencedGvsElemID = (change: ModificationChange<Field>): ElemID | undefi
 const changeValidator: ChangeValidator = async changes => {
   const isGVSInstance = isInstanceOfType(GLOBAL_VALUE_SET)
   const gvsIDs = new Set(await awu(changes)
-    .map(getChangeElement)
+    .map(getChangeData)
     .filter(isGVSInstance)
     .map(c => c.elemID.getFullName())
     .toArray())
@@ -78,7 +78,7 @@ const changeValidator: ChangeValidator = async changes => {
     .map(async change => {
       const gvsElemID = referencedGvsElemID(change)
       return {
-        pickListField: getChangeElement(change),
+        pickListField: getChangeData(change),
         gvsElemID: (gvsElemID && gvsIDs.has(gvsElemID.getFullName())) ? gvsElemID : undefined,
       }
     })

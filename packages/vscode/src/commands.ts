@@ -19,7 +19,10 @@ import open from 'open'
 
 import { copy as copyToClipboard } from 'copy-paste'
 import { context, serviceUrl, workspace as ws } from '@salto-io/lang-server'
+import { collections } from '@salto-io/lowerdash'
 import { vsPosToSaltoPos } from './adapters'
+
+const { awu } = collections.asynciterable
 
 export const createCopyReferenceCommand = (
   workspace: ws.EditorWorkspace
@@ -29,13 +32,20 @@ export const createCopyReferenceCommand = (
   if (_.isUndefined(editor)) {
     return
   }
+  const definitionsTree = context.buildDefinitionsTree(
+    (await workspace.getNaclFile(editor.document.fileName))?.buffer as string,
+    await workspace.getSourceMap(editor.document.fileName),
+    await awu(await workspace.getElements(editor.document.fileName)).toArray(),
+  )
+  const fullElementSource = await workspace.getElementSourceOfPath(editor.document.fileName)
   const position = editor.selection.active
   await workspace.awaitAllUpdates()
   const saltoPos = vsPosToSaltoPos(position)
   const ctx = await context.getPositionContext(
-    workspace,
     editor.document.fileName,
-    saltoPos
+    saltoPos,
+    definitionsTree,
+    fullElementSource,
   )
   if (ctx.ref) {
     const copyText = ctx.ref.path.length > 0
@@ -55,10 +65,17 @@ const getServiceUrl = async (workspace: ws.EditorWorkspace): Promise<URL | undef
   const position = editor.selection.active
   await workspace.awaitAllUpdates()
   const saltoPos = vsPosToSaltoPos(position)
+  const definitionsTree = context.buildDefinitionsTree(
+    (await workspace.getNaclFile(editor.document.fileName))?.buffer as string,
+    await workspace.getSourceMap(editor.document.fileName),
+    await awu(await workspace.getElements(editor.document.fileName)).toArray(),
+  )
+  const fullElementSource = await workspace.getElementSourceOfPath(editor.document.fileName)
   const ctx = await context.getPositionContext(
-    workspace,
     editor.document.fileName,
-    saltoPos
+    saltoPos,
+    definitionsTree,
+    fullElementSource,
   )
 
   return serviceUrl.getServiceUrl(workspace, ctx)

@@ -242,7 +242,7 @@ export const accessTokenCredentialsType = new ObjectType({
   fields: {
     accessToken: { refType: BuiltinTypes.STRING },
     instanceUrl: { refType: BuiltinTypes.STRING },
-    isSandbox: { refType: BuiltinTypes.BOOLEAN },
+    sandbox: { refType: BuiltinTypes.BOOLEAN },
   },
 })
 
@@ -261,7 +261,7 @@ export const oauthRequestParameters = new ObjectType({
       refType: BuiltinTypes.NUMBER,
       annotations: { message: 'Port provided in the redirect URI' },
     },
-    isSandbox: {
+    sandbox: {
       refType: BuiltinTypes.BOOLEAN,
       annotations: { message: 'Is connection to a sandbox?' },
     },

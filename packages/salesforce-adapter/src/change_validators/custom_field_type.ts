@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ChangeError, Field, getChangeElement, isAdditionOrModificationChange,
+  ChangeError, Field, getChangeData, isAdditionOrModificationChange,
   ChangeValidator, Change, isAdditionChange, isFieldChange,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
@@ -24,7 +24,7 @@ import { isFieldOfCustomObject, fieldTypeName } from '../transformers/transforme
 const { awu } = collections.asynciterable
 
 const isInvalidTypeChange = async (change: Change<Field>): Promise<boolean> => {
-  const afterFieldType = fieldTypeName(getChangeElement(change).refType.elemID.name)
+  const afterFieldType = fieldTypeName(getChangeData(change).refType.elemID.name)
   const isAfterTypeAllowed = CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES.includes(afterFieldType)
   if (isAfterTypeAllowed) {
     return false
@@ -50,9 +50,9 @@ const createChangeError = (field: Field): ChangeError => ({
 const changeValidator: ChangeValidator = async changes => awu(changes)
   .filter(isAdditionOrModificationChange)
   .filter(isFieldChange)
-  .filter(change => isFieldOfCustomObject(getChangeElement(change)))
+  .filter(change => isFieldOfCustomObject(getChangeData(change)))
   .filter(isInvalidTypeChange)
-  .map(getChangeElement)
+  .map(getChangeData)
   .map(createChangeError)
   .toArray()
 

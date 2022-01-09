@@ -232,11 +232,13 @@ const buildMultiEnvSource = (
       getRemoteMapNamespace('multi_env_mergeManager'),
       persistent,
       mergedRecoveryMode)
-      await mergeManager.init()
     }
     const current = {
       states,
       mergeManager,
+    }
+    if (Object.values(envChanges).every(changeSet => changeSet.changes.length === 0)) {
+      return { state: current, changes: {} }
     }
     const changesInCommon = (envChanges[commonSourceName]
       ?.changes ?? []).length > 0

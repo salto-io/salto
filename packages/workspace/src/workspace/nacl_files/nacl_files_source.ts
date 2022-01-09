@@ -563,9 +563,13 @@ const buildNaclFilesSource = (
       result.changes.preChangeHash = preChangeHash
       return result
     }
-    const preChangeHash = await currentState.metadata.get(HASH_KEY)
     return {
-      changes: { changes: [], cacheValid: true, preChangeHash, postChangeHash: preChangeHash },
+      changes: {
+        changes: [],
+        cacheValid: true,
+        preChangeHash: undefined,
+        postChangeHash: undefined,
+      },
       state: currentState,
     }
   }
@@ -916,13 +920,11 @@ const buildNaclFilesSource = (
     ),
     updateNaclFiles,
     setNaclFiles: async (...naclFiles) => {
-      const preChangeHash = (await getState()).parsedNaclFiles.getHash()
       await setNaclFiles(...naclFiles)
       const res = await buildNaclFilesStateInner(
         await parseNaclFiles(naclFiles, (await getState()).parsedNaclFiles, functions)
       )
       state = Promise.resolve(res.state)
-      res.changes.preChangeHash = await preChangeHash
       return res.changes
     },
     getSourceMap,

@@ -56,16 +56,29 @@ describe('test cache manager', () => {
     })
 
     it('If flush was unsuccessful, clears on init', async () => {
+      const mapCreator = persistentMockCreateRemoteMap()
+      const origManager = await createMergeManager(
+        flushables, {},
+        mapCreator,
+        NAMESPACE,
+        true
+      )
       flushables[1].flush = () => {
         throw new Error('Error within flush')
       }
       try {
-        await manager.flush()
+        await origManager.flush()
         throw new Error('Flush should throw exception!')
       } catch {
         // Do nothing
       }
-      await manager.init()
+      const nextManager = await createMergeManager(
+        flushables, {},
+        mapCreator,
+        NAMESPACE,
+        true
+      )
+      await nextManager.getHash('')
       await Promise.all(flushables.map(async flushable => {
         expect(flushable.clear).toHaveBeenCalled()
       }))

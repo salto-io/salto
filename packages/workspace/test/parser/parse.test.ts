@@ -201,7 +201,13 @@ describe('Salto parser', () => {
       type salesforce.references {
         toVar = var.name3
         toVal = salesforce.test.instance.inst.name
-      }       `
+      }       
+      
+      type salesforce.escapedDashBeforeQuote {
+        str = "you can't run away \\\\"
+      }
+      
+      `
     beforeAll(async () => {
       const parsed = await parse(Buffer.from(body), 'none', functions)
       elements = await awu(parsed.elements).filter(element => !isContainerType(element))
@@ -214,7 +220,7 @@ describe('Salto parser', () => {
 
     describe('parse result', () => {
       it('should have all types', () => {
-        expect(elements.length).toBe(21)
+        expect(elements.length).toBe(22)
         expect(genericTypes.length).toBe(2)
       })
     })
@@ -686,6 +692,17 @@ describe('Salto parser', () => {
 
       it('should parse references to variables as VariableExpressions', () => {
         expect(refObj.annotations.toVar).toBeInstanceOf(VariableExpression)
+      })
+    })
+
+    describe('escape quote', () => {
+      let escapeObj: ObjectType
+      beforeAll(() => {
+        escapeObj = elements[21] as ObjectType
+      })
+
+      it('should parsed the double escaped string', () => {
+        expect(escapeObj.annotations.str).toEqual('you can\'t run away \\')
       })
     })
   })

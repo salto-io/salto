@@ -71,16 +71,6 @@ export const getAllChangeData = <T>(change: Change<T>): T[] => (
   ].filter(isDefined)
 )
 
-/**
- * @deprecated
- */
-export const getChangeElement = getChangeData
-
-/**
- * @deprecated
- */
-export const getAllChangeElements = getAllChangeData
-
 export const isInstanceChange = <T extends Change<unknown>>(change: T):
   change is T & Change<InstanceElement> => (
     isInstanceElement(getChangeData(change))

@@ -25,6 +25,7 @@ import saveSearchMoveEnvironment from './change_validators/saved_search_move_env
 import fileValidator from './change_validators/file_changes'
 import immutableChangesValidator from './change_validators/immutable_changes'
 import subInstancesValidator from './change_validators/subinstances'
+import customTypesInvalidValuesValidator from './change_validators/custom_types_invalid_values'
 import safeDeployValidator, { FetchByQueryFunc } from './change_validators/safe_deploy'
 import { validateDependsOnInvalidElement } from './change_validators/dependencies'
 
@@ -39,6 +40,7 @@ const changeValidators: ChangeValidator[] = [
   removeListItemValidator,
   fileValidator,
   subInstancesValidator,
+  customTypesInvalidValuesValidator,
 ]
 
 const nonSuiteAppValidators: ChangeValidator[] = [

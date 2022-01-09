@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { exportedForTesting, namespaceNormalizer, toHexColor } from '../../src/internal/namespace'
-
-const { MONOREPO_PACKAGES_DIRNAME } = exportedForTesting
+import {
+  toHexColor, namespaceNormalizer,
+} from '../../src/internal/namespace'
 
 describe('namespace', () => {
   describe('toHexColor', () => {
@@ -38,10 +38,6 @@ describe('namespace', () => {
         it('should return the correct namespace', () => {
           expect(normalizeNamespace(module))
             .toEqual('logging/test/internal/namespace.test')
-        })
-        it('should return the correct namespace for typescript module', () => {
-          expect(normalizeNamespace({ id: `${MONOREPO_PACKAGES_DIRNAME}/test-package/src/path/to/module.ts` }))
-            .toEqual('test-package/path/to/module')
         })
         it('should return the correct namespace with extra fragments', () => {
           expect(normalizeNamespace(module, ['foo', 'bar']))

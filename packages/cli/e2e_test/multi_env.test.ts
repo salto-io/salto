@@ -49,9 +49,9 @@ const SALESFORCE_SERVICE_NAME = 'salesforce'
 // const ALTERNATIVE_SALESFORCE_ACCOUNT_NAME = 'e2esalesforce'
 
 describe.each([
-  SALESFORCE_SERVICE_NAME,
-  // ALTERNATIVE_SALESFORCE_ACCOUNT_NAME,
-])('.add($accountName)', accountName => {
+  [SALESFORCE_SERVICE_NAME],
+  // [ALTERNATIVE_SALESFORCE_ACCOUNT_NAME],
+])('cli e2e multi env with account name %s', accountName => {
   const accounts = accountName === SALESFORCE_SERVICE_NAME ? undefined : [accountName]
   jest.setTimeout(15 * 60 * 1000)
 

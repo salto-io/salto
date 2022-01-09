@@ -18,7 +18,7 @@ import { InstanceElement, toChange } from '@salto-io/adapter-api'
 import mappedListsIndexesValidator from '../../src/change_validators/mapped_lists_indexes'
 import { SCRIPT_ID } from '../../src/constants'
 import { workflow, workflowInnerTypes } from '../../src/autogen/types/custom_types/workflow'
-import { convertFieldsTypesToMap } from '../../src/mapped_lists/mapped_lists'
+import { convertFieldsTypesFromListToMap } from '../../src/mapped_lists/mapped_lists'
 
 const { awu } = collections.asynciterable
 
@@ -46,7 +46,7 @@ describe('mapped lists indexes validator', () => {
   )
   let instance: InstanceElement
   beforeAll(async () => {
-    await awu(workflowInnerTypes).forEach(t => convertFieldsTypesToMap(t))
+    await awu(workflowInnerTypes).forEach(t => convertFieldsTypesFromListToMap(t))
   })
   beforeEach(() => {
     instance = origInstance.clone()
@@ -99,9 +99,29 @@ describe('mapped lists indexes validator', () => {
       [toChange({ before: instance, after })]
     )
     expect(changeErrors).toHaveLength(4)
-    expect(changeErrors[0].detailedMessage).toEqual('custworkflow1 has no \'index\' attribute')
-    expect(changeErrors[1].detailedMessage).toEqual('index is not an integer')
-    expect(changeErrors[2].detailedMessage).toEqual('index is out of range')
-    expect(changeErrors[3].detailedMessage).toEqual('some items has the same index value (index = 2)')
+    expect(changeErrors[0]).toEqual({
+      elemID: after.elemID.createNestedID('workflowcustomfields', 'workflowcustomfield', 'custworkflow1'),
+      severity: 'Error',
+      message: 'invalid index attribute in a mapped list',
+      detailedMessage: 'custworkflow1 has no \'index\' attribute',
+    })
+    expect(changeErrors[1]).toEqual({
+      elemID: after.elemID.createNestedID('workflowcustomfields', 'workflowcustomfield', 'custworkflow2'),
+      severity: 'Error',
+      message: 'invalid index attribute in a mapped list',
+      detailedMessage: 'index is not an integer',
+    })
+    expect(changeErrors[2]).toEqual({
+      elemID: after.elemID.createNestedID('workflowcustomfields', 'workflowcustomfield', 'custworkflow3'),
+      severity: 'Error',
+      message: 'invalid index attribute in a mapped list',
+      detailedMessage: 'index is out of range',
+    })
+    expect(changeErrors[3]).toEqual({
+      elemID: after.elemID.createNestedID('workflowcustomfields', 'workflowcustomfield'),
+      severity: 'Error',
+      message: 'invalid index attribute in a mapped list',
+      detailedMessage: 'some items has the same index value (index = 2)',
+    })
   })
 })

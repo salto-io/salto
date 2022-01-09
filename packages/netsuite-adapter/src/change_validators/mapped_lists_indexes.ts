@@ -27,20 +27,21 @@ const getIndexesErrorMessages = (
   { path, value }: { path: ElemID; value: Values }
 ): { elemID: ElemID; errorMessage: string }[] => {
   const items = Object.entries(value)
-  const indexes = items.map((_item, index) => index)
+  const indexes = new Set(_.range(items.length))
 
   const errorMessages: { elemID: ElemID; errorMessage: string }[] = []
   items.forEach(([key, item]) => {
+    const keyElemID = path.createNestedID(key)
     if (item[INDEX] === undefined) {
-      errorMessages.push({ elemID: path.createNestedID(key), errorMessage: `${key} has no 'index' attribute` })
+      errorMessages.push({ elemID: keyElemID, errorMessage: `${key} has no 'index' attribute` })
     } else if (!_.isInteger(item[INDEX])) {
-      errorMessages.push({ elemID: path.createNestedID(key), errorMessage: 'index is not an integer' })
+      errorMessages.push({ elemID: keyElemID, errorMessage: 'index is not an integer' })
     } else if (item[INDEX] < 0 || item[INDEX] >= items.length) {
-      errorMessages.push({ elemID: path.createNestedID(key), errorMessage: 'index is out of range' })
-    } else if (!indexes.includes(item[INDEX])) {
+      errorMessages.push({ elemID: keyElemID, errorMessage: 'index is out of range' })
+    } else if (!indexes.has(item[INDEX])) {
       errorMessages.push({ elemID: path, errorMessage: `some items has the same index value (index = ${item[INDEX]})` })
     } else {
-      _.pull(indexes, item[INDEX])
+      indexes.delete(item[INDEX])
     }
   })
 

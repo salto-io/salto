@@ -17,7 +17,7 @@ import { InstanceElement } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/convert_lists_to_maps'
 import { workflow, workflowInnerTypes } from '../../src/autogen/types/custom_types/workflow'
 
-describe('convert_lists filter', () => {
+describe('convert lists to maps filter', () => {
   const instanceName = 'instanceName'
   let instance: InstanceElement
   beforeAll(async () => {

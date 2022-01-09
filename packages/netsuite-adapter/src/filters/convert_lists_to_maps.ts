@@ -17,7 +17,7 @@ import {
   isInstanceElement, isObjectType,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { convertFieldsTypesToMap, convertToMappedList } from '../mapped_lists/mapped_lists'
+import { convertFieldsTypesFromListToMap, convertInstanceListsToMaps } from '../mapped_lists/mapped_lists'
 import { FilterWith } from '../filter'
 
 const { awu } = collections.asynciterable
@@ -29,18 +29,20 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
    * @param elements the already fetched elements
    */
   onFetch: async elements => {
-    const types = awu(elements).filter(isObjectType)
-    await types.forEach(
-      async type => convertFieldsTypesToMap(type)
-    )
+    await awu(elements)
+      .filter(isObjectType)
+      .forEach(
+        async type => convertFieldsTypesFromListToMap(type)
+      )
 
-    const instances = awu(elements).filter(isInstanceElement)
-    await instances.forEach(
-      async inst => {
-        const transformedInstance = await convertToMappedList(inst)
-        inst.value = transformedInstance.value
-      }
-    )
+    await awu(elements)
+      .filter(isInstanceElement)
+      .forEach(
+        async inst => {
+          const transformedInstance = await convertInstanceListsToMaps(inst)
+          inst.value = transformedInstance.value
+        }
+      )
   },
 })
 

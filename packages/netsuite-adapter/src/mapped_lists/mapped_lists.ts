@@ -28,7 +28,7 @@ const { awu } = collections.asynciterable
 
 const log = logger(module)
 
-export const convertFieldsTypesToMap = async (
+export const convertFieldsTypesFromListToMap = async (
   element: ObjectType,
 ): Promise<void> => {
   await awu(Object.entries(element.fields)).forEach(async ([fieldName, field]) => {
@@ -67,19 +67,17 @@ const transformMappedLists: TransformFunc = async ({ value, field, path }) => {
   }
 
   if (value.find(item => item[mapFieldName] === undefined)) {
-    log.debug(`not all items of ${path?.getFullName()} have mapFieldName key: ${mapFieldName}`)
+    log.warn(`not all items of ${path?.getFullName()} have mapFieldName key: ${mapFieldName}`)
     return value
   }
 
-  const mappedList: Values = {}
-  value.forEach((item, index) => {
-    mappedList[item[mapFieldName]] = { ...item, [INDEX]: index }
-  })
-
-  return mappedList
+  return _(value)
+    .map((item, index) => ({ ...item, [INDEX]: index }))
+    .keyBy(item => item[mapFieldName])
+    .value()
 }
 
-export const convertToMappedList = async (
+export const convertInstanceListsToMaps = async (
   instance: InstanceElement,
 ): Promise<InstanceElement> =>
   transformElement({
@@ -94,12 +92,7 @@ export const isMappedList = async (value: Value, field: Field): Promise<boolean>
     return false
   }
 
-  const fieldType = await field.getType()
-  if (!isContainerType(fieldType)) {
-    return false
-  }
-
-  return true
+  return isContainerType(await field.getType())
 }
 
 export const getMappedLists = async (
@@ -135,9 +128,9 @@ const convertToList: TransformFunc = async ({ value, field }) => {
     field.refType = createRefToElmWithValue(new ListType(await fieldType.getInnerType()))
   }
 
-  const objectAsList = _.sortBy(Object.values(value), [INDEX])
+  const objectAsList = _.sortBy(Object.values(value), INDEX)
     .filter(_.isObject)
-    .map(item => _.omit(item, [INDEX]))
+    .map(item => _.omit(item, INDEX))
 
   return objectAsList
 }

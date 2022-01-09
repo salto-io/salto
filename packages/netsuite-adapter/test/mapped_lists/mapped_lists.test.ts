@@ -15,13 +15,13 @@
 */
 import { collections } from '@salto-io/lowerdash'
 import { BuiltinTypes, createRefToElmWithValue, ElemID, Field, FieldMap, InstanceElement, isListType, isMapType, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
-import { convertFieldsTypesToMap, convertInstanceMapsToLists, convertToMappedList, getMappedLists, isMappedList } from '../src/mapped_lists/mapped_lists'
-import { workflow, workflowInnerTypes } from '../src/autogen/types/custom_types/workflow'
-import { LIST_MAPPED_BY_FIELD, NETSUITE, SCRIPT_ID } from '../src/constants'
+import { convertFieldsTypesFromListToMap, convertInstanceMapsToLists, convertInstanceListsToMaps, getMappedLists, isMappedList } from '../../src/mapped_lists/mapped_lists'
+import { workflow, workflowInnerTypes } from '../../src/autogen/types/custom_types/workflow'
+import { LIST_MAPPED_BY_FIELD, NETSUITE, SCRIPT_ID } from '../../src/constants'
 
 const { awu } = collections.asynciterable
 
-describe('convert_lists filter', () => {
+describe('mapped lists', () => {
   let instance: InstanceElement
   let transformedInstance: InstanceElement
   let transformedBackInstance: InstanceElement
@@ -75,11 +75,11 @@ describe('convert_lists filter', () => {
       }
     )
 
-    await awu(workflowInnerTypes).forEach(t => convertFieldsTypesToMap(t))
-    transformedInstance = await convertToMappedList(instance)
+    await awu(workflowInnerTypes).forEach(t => convertFieldsTypesFromListToMap(t))
+    transformedInstance = await convertInstanceListsToMaps(instance)
     transformedBackInstance = await convertInstanceMapsToLists(transformedInstance)
 
-    await awu(workflowInnerTypes).forEach(t => convertFieldsTypesToMap(t))
+    await awu(workflowInnerTypes).forEach(t => convertFieldsTypesFromListToMap(t))
   })
 
   it('should modify ObjectTypes fields', async () => {
@@ -161,7 +161,7 @@ describe('convert_lists filter', () => {
     })
   })
 
-  it('should not convert list if the inner type is not ao ObjectType', async () => {
+  it('should not convert list if the inner type is not an ObjectType', async () => {
     const elemID = new ElemID(NETSUITE, 'newType')
     const type = new ObjectType({
       elemID,
@@ -171,7 +171,7 @@ describe('convert_lists filter', () => {
         },
       },
     })
-    await convertFieldsTypesToMap(type)
+    await convertFieldsTypesFromListToMap(type)
     const { primitiveList } = type.fields
     expect(isListType(await primitiveList.getType())).toBeTruthy()
     expect(primitiveList.annotations).toEqual({})
@@ -195,7 +195,7 @@ describe('convert_lists filter', () => {
         },
       },
     )
-    const transformed = await convertToMappedList(inst)
+    const transformed = await convertInstanceListsToMaps(inst)
     expect(transformed.value).toEqual(inst.value)
   })
 

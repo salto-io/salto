@@ -80,9 +80,9 @@ describe('adapter', () => {
           ),
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
-        expect(elements).toHaveLength(337)
-        expect(elements.filter(isObjectType)).toHaveLength(171)
-        expect(elements.filter(isInstanceElement)).toHaveLength(166)
+        expect(elements).toHaveLength(339)
+        expect(elements.filter(isObjectType)).toHaveLength(172)
+        expect(elements.filter(isInstanceElement)).toHaveLength(167)
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'zendesk_support.account_setting',
           'zendesk_support.account_setting.instance',
@@ -420,6 +420,8 @@ describe('adapter', () => {
           'zendesk_support.workspace__conditions__all',
           'zendesk_support.workspace__conditions__any',
           'zendesk_support.workspace__selected_macros',
+          'zendesk_support.workspace_order',
+          'zendesk_support.workspace_order.instance',
           'zendesk_support.workspaces',
         ])
 

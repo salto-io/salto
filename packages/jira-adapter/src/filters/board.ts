@@ -14,20 +14,17 @@
 * limitations under the License.
 */
 import { Element, isInstanceElement } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
-
-const { awu } = collections.asynciterable
 
 /**
  * Change Board type structure to fit the deployment endpoint
  */
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
-    await awu(elements)
+    elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === 'Board')
-      .forEach(async instance => {
+      .forEach(instance => {
         instance.value.filterId = instance.value.config?.filter?.id
         delete instance.value.config?.filter
       })

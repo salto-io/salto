@@ -16,7 +16,7 @@
 export { Plan, PlanItem } from './src/core/plan'
 export { FetchChange, FetchProgressEvents, StepEmitter, FetchChangeMetadata } from './src/core/fetch'
 export * from './src/api'
-export { ItemStatus } from './src/core/deploy'
+export { ItemStatus, summarizeDeployChanges, DeploySummaryResult, DetailedChangeDeploySummaryResult } from './src/core/deploy'
 export { getAdaptersCredentialsTypes, getDefaultAdapterConfig, getAdaptersConfigTypes } from './src/core/adapters/adapters'
 export { createDiffChanges, getEnvsDeletionsDiff } from './src/core/diff'
 export { RenameElementIdError } from './src/core/rename'

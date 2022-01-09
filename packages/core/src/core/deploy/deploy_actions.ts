@@ -20,7 +20,7 @@ import {
 import { detailedCompare, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { WalkError, NodeSkippedError } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
-import { Plan, PlanItem, PlanItemId } from './plan'
+import { Plan, PlanItem, PlanItemId } from '../plan'
 
 const log = logger(module)
 

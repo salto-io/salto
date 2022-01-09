@@ -310,22 +310,6 @@ const withCreatorLock = async (fn: (() => Promise<void>)): Promise<void> => {
   await creatorLock.acquire('createInProgress', fn)
 }
 
-const createDBIfNotExist = async (loc: string): Promise<void> => {
-  const newDb: rocksdb = getRemoteDbImpl()(loc)
-  try {
-    await promisify(newDb.open.bind(newDb, { readOnly: true }))()
-    await promisify(newDb.close.bind(newDb))()
-  } catch (e) {
-    if (newDb.status === 'new') {
-      await withCreatorLock(async () => {
-        log.info('DB does not exist. Creating on %s', loc)
-        await promisify(newDb.open.bind(newDb))()
-        await promisify(newDb.close.bind(newDb))()
-      })
-    }
-  }
-}
-
 const getOpenDBConnection = async (
   loc: string,
   isReadOnly: boolean
@@ -577,6 +561,28 @@ remoteMap.RemoteMapCreator => {
       delKeys.add(key)
       locationCache.del(key)
     }
+    const createDBIfNotExist = async (loc: string): Promise<void> => {
+      const newDb: rocksdb = getRemoteDbImpl()(loc)
+      const readOnly = !persistent
+      try {
+        await promisify(newDb.open.bind(newDb, { readOnly }))()
+        await promisify(newDb.close.bind(newDb))()
+      } catch (e) {
+        if (newDb.status === 'new' && readOnly) {
+          await withCreatorLock(async () => {
+            log.info('DB does not exist. Creating on %s', loc)
+            try {
+              await promisify(newDb.open.bind(newDb))()
+              await promisify(newDb.close.bind(newDb))()
+            } catch (err) {
+              throw new Error(`Failed to open DB in write mode - ${loc}. Error: ${err}`)
+            }
+          })
+        } else {
+          throw e
+        }
+      }
+    }
     const createDBConnections = async (): Promise<void> => {
       tmpDBConnections[location] = tmpDBConnections[location] ?? {}
       if (tmpDB === undefined) {
@@ -733,7 +739,6 @@ remoteMap.ReadOnlyRemoteMapCreator => {
       }
       const connectionPromise = (async () => {
         currentConnectionsCount += 1
-        await createDBIfNotExist(location)
         return getOpenDBConnection(location, true)
       })()
       readonlyDBConnectionsPerRemoteMap[location][uniqueId] = connectionPromise

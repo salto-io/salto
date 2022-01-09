@@ -563,16 +563,23 @@ remoteMap.RemoteMapCreator => {
     }
     const createDBIfNotExist = async (loc: string): Promise<void> => {
       const newDb: rocksdb = getRemoteDbImpl()(loc)
+      const readOnly = !persistent
       try {
-        await promisify(newDb.open.bind(newDb, { readOnly: true }))()
+        await promisify(newDb.open.bind(newDb, { readOnly }))()
         await promisify(newDb.close.bind(newDb))()
       } catch (e) {
-        if (newDb.status === 'new') {
+        if (newDb.status === 'new' && readOnly) {
           await withCreatorLock(async () => {
             log.info('DB does not exist. Creating on %s', loc)
-            await promisify(newDb.open.bind(newDb))()
-            await promisify(newDb.close.bind(newDb))()
+            try {
+              await promisify(newDb.open.bind(newDb))()
+              await promisify(newDb.close.bind(newDb))()
+            } catch (err) {
+              throw new Error(`Failed to open DB in write mode - ${loc}. Error: ${err}`)
+            }
           })
+        } else {
+          throw e
         }
       }
     }
@@ -724,17 +731,13 @@ remoteMap.ReadOnlyRemoteMapCreator => {
       }
       return createIterator(keyPrefix, normalizedOpts, db)
     }
-    const createDBIfNotExist = async (loc: string): Promise<void> => {
+    const checkDBExists = async (loc: string): Promise<void> => {
       const newDb: rocksdb = getRemoteDbImpl()(loc)
-      if (await fileUtils.isEmptyDir.notFoundAsUndefined(loc) === false) {
+      try {
         await promisify(newDb.open.bind(newDb, { readOnly: true }))()
         await promisify(newDb.close.bind(newDb))()
-      } else {
-        await withCreatorLock(async () => {
-          log.info('DB does not exist. Creating on %s', loc)
-          await promisify(newDb.open.bind(newDb))()
-          await promisify(newDb.close.bind(newDb))()
-        })
+      } catch (e) {
+        throw new Error(`Failed to open DB in read only mode - ${loc}. Error: ${e}`)
       }
     }
     const createDBConnection = async (): Promise<void> => {
@@ -745,7 +748,7 @@ remoteMap.ReadOnlyRemoteMapCreator => {
       }
       const connectionPromise = (async () => {
         currentConnectionsCount += 1
-        await createDBIfNotExist(location)
+        await checkDBExists(location)
         return getOpenDBConnection(location, true)
       })()
       readonlyDBConnectionsPerRemoteMap[location][uniqueId] = connectionPromise

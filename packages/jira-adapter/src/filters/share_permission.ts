@@ -33,7 +33,6 @@ import { transformValues } from '@salto-io/adapter-utils'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import _ from 'lodash'
 import { JIRA } from '../constants'
 import { FilterCreator } from '../filter'
 
@@ -76,11 +75,11 @@ const transformSharePermissionValues = (sharePermissionValues: Values): void => 
   sharePermissionValues.type = sharePermissionValues.type === 'loggedin' ? 'authenticated' : sharePermissionValues.type
 
   if (sharePermissionValues.project !== undefined) {
-    sharePermissionValues.project = _.pick(sharePermissionValues.project, 'id')
+    sharePermissionValues.project = { id: sharePermissionValues.project?.id }
   }
 
   if (sharePermissionValues.role !== undefined) {
-    sharePermissionValues.role = _.pick(sharePermissionValues.role, 'id')
+    sharePermissionValues.role = { id: sharePermissionValues.role?.id }
   }
 }
 
@@ -94,7 +93,7 @@ const filter: FilterCreator = () => ({
     await awu(elements)
       .filter(isInstanceElement)
       .forEach(async instance => {
-        instance.value = await transformValues({
+        await transformValues({
           values: instance.value,
           type: await instance.getType(),
           strict: false,
@@ -102,10 +101,11 @@ const filter: FilterCreator = () => ({
           transformFunc: async ({ value, field }) => {
             if ((await field?.getType())?.elemID.typeName === 'SharePermission') {
               transformSharePermissionValues(value)
+              return undefined
             }
             return value
           },
-        }) ?? {}
+        })
       })
   },
 })

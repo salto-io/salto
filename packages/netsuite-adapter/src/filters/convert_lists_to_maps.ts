@@ -20,18 +20,30 @@ import { collections } from '@salto-io/lowerdash'
 import { convertFieldsTypesFromListToMap, convertInstanceListsToMaps } from '../mapped_lists/utils'
 import { FilterWith } from '../filter'
 import { isCustomType } from '../types'
+import { innerCustomTypes } from '../autogen/types'
 
 const { awu } = collections.asynciterable
 
 const filterCreator = (): FilterWith<'onFetch'> => ({
   /**
-   * Upon fetch, convert values of list type to maps
+   * Upon fetch, do the following:
+   * - convert ListType fields to MapType
+   * - adds an annotation to the fields mantioned above that indicates
+   *   the inner field to use as mapping key
+   * - convert instances' values in the fields mantioned above from lists to maps
+   *   by the mapping key mantioned above
+   *
+   * NOTICE: This filter works on CustomType types & instances only.
+   * The reverse conversion happens in sdfDeploy
    *
    * @param elements the already fetched elements
    */
   onFetch: async elements => {
+    const innerCustomTypesSet = new Set(innerCustomTypes)
+
     await awu(elements)
       .filter(isObjectType)
+      .filter(type => isCustomType(type.elemID) || innerCustomTypesSet.has(type))
       .forEach(convertFieldsTypesFromListToMap)
 
     await awu(elements)

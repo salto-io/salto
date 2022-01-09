@@ -42,8 +42,8 @@ CredsSpec<Required<UsernamePasswordCredentials>> => {
     validate: async (_creds: UsernamePasswordCredentials): Promise<void> => {
       // TODO validate when connecting with real credentials
     },
-    typeName: 'zendesk_suppoort',
-    globalProp: envName ? `zendesk_suppoort_${envName}` : 'zendesk_suppoort',
+    typeName: 'zendesk_support',
+    globalProp: envName ? `zendesk_support_${envName}` : 'zendesk_support',
   }
 }
 

@@ -142,6 +142,11 @@ export const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition
     target: { type: 'user_field' },
   },
   {
+    src: { field: 'ids', parentTypes: ['workspace_order'] },
+    serializationStrategy: 'id',
+    target: { type: 'workspace' },
+  },
+  {
     src: { field: 'id', parentTypes: ['workspace__selected_macros'] },
     serializationStrategy: 'id',
     target: { type: 'macro' },

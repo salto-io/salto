@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, getChangeElement, InstanceElement, isAdditionChange, Values } from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { Change, ChangeDataType, DeployResult, getChangeData, InstanceElement, isAdditionChange, Values } from '@salto-io/adapter-api'
 import { config as configUtils, deployment } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
@@ -27,7 +28,7 @@ export const deployChange = async (
   apiDefinitions: configUtils.AdapterApiConfig,
 ): Promise<void> => {
   const { deployRequests, transformation } = apiDefinitions
-    .types[getChangeElement(change).elemID.typeName]
+    .types[getChangeData(change).elemID.typeName]
   try {
     const response = await deployment.deployChange(
       change,
@@ -46,16 +47,41 @@ export const deployChange = async (
           ? (response?.[dataField] as Values)?.[idField]
           : response?.[idField]
         if (idValue !== undefined) {
-          getChangeElement(change).value[idField] = idValue
+          getChangeData(change).value[idField] = idValue
         }
       } else {
         log.warn(
           'Received an array for the response of the deploy. Not updating the id of the element. Action: add. ID: %s',
-          getChangeElement(change).elemID.getFullName()
+          getChangeData(change).elemID.getFullName()
         )
       }
     }
   } catch (err) {
-    throw getZendeskError(getChangeElement(change).elemID.getFullName(), err)
+    throw getZendeskError(getChangeData(change).elemID.getFullName(), err)
+  }
+}
+
+export const deployChanges = async <T extends Change<ChangeDataType>>(
+  changes: T[],
+  deployChangeFunc: (change: T) => Promise<void>
+): Promise<DeployResult> => {
+  const result = await Promise.all(
+    changes.map(async change => {
+      try {
+        await deployChangeFunc(change)
+        return change
+      } catch (err) {
+        if (!_.isError(err)) {
+          throw err
+        }
+        return err
+      }
+    })
+  )
+
+  const [errors, appliedChanges] = _.partition(result, _.isError)
+  return {
+    errors,
+    appliedChanges,
   }
 }

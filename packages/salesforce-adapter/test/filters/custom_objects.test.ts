@@ -18,7 +18,7 @@ import {
   ElemID, ObjectType, ServiceIds, BuiltinTypes, Element, InstanceElement, isObjectType,
   CORE_ANNOTATIONS, Value, isInstanceElement,
   ReferenceExpression, isListType, FieldDefinition, toChange, Change, ModificationChange,
-  getChangeElement,
+  getChangeData,
   isServiceId,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -1663,7 +1663,7 @@ describe('Custom Objects filter', () => {
           )
         })
         it('should mark the created custom object as a wrapper and not populate annotation values', () => {
-          const inst = getChangeElement(changes[0]) as InstanceElement
+          const inst = getChangeData(changes[0]) as InstanceElement
           expect(inst.value).not.toHaveProperty(LABEL)
           expect(inst.value).toHaveProperty(DEPLOY_WRAPPER_INSTANCE_MARKER, true)
         })
@@ -1701,7 +1701,7 @@ describe('Custom Objects filter', () => {
         it('should omit side effect removals', async () => {
           expect(changes).toHaveLength(1)
           expect(changes[0].action).toEqual('remove')
-          const removedElem = getChangeElement(changes[0])
+          const removedElem = getChangeData(changes[0])
           expect(removedElem).toBeInstanceOf(InstanceElement)
           expect(await metadataType(removedElem)).toEqual(CUSTOM_OBJECT)
         })

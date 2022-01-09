@@ -16,17 +16,17 @@
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
 import {
-  getChangeElement, DependencyChanger, ChangeEntry, DependencyChange, dependencyChange,
+  getChangeData, DependencyChanger, ChangeEntry, DependencyChange, dependencyChange,
 } from '@salto-io/adapter-api'
 
 export const addAfterRemoveDependency: DependencyChanger = async changes => {
   const removeChanges = collections.iterable.groupBy(
     wu(changes).filter(([_id, change]) => change.action === 'remove'),
-    ([_id, change]) => getChangeElement(change).elemID.getFullName(),
+    ([_id, change]) => getChangeData(change).elemID.getFullName(),
   )
 
   const addChangeDependency = ([id, change]: ChangeEntry): DependencyChange[] => (
-    (removeChanges.get(getChangeElement(change).elemID.getFullName()) ?? [])
+    (removeChanges.get(getChangeData(change).elemID.getFullName()) ?? [])
       .map(([removeChangeId]) => dependencyChange('add', id, removeChangeId))
   )
 

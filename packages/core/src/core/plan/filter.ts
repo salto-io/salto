@@ -17,7 +17,7 @@ import wu from 'wu'
 import _ from 'lodash'
 
 import { DataNodeMap, DiffGraph, DiffNode, NodeId } from '@salto-io/dag'
-import { ChangeError, ElementMap, InstanceElement, TypeElement, ChangeValidator, getChangeElement, ElemID, ObjectType, ChangeDataType, Element, isAdditionOrModificationChange, isField, isObjectType, ReadOnlyElementsSource, SaltoErrorSeverity, DependencyError } from '@salto-io/adapter-api'
+import { ChangeError, ElementMap, InstanceElement, TypeElement, ChangeValidator, getChangeData, ElemID, ObjectType, ChangeDataType, Element, isAdditionOrModificationChange, isField, isObjectType, ReadOnlyElementsSource, SaltoErrorSeverity, DependencyError } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 
@@ -128,7 +128,7 @@ export const filterInvalidChanges = async (
     }
 
     const nodeIdToElemId = (nodeId: NodeId): ElemID => (
-      getChangeElement(diffGraph.getData(nodeId)).elemID
+      getChangeData(diffGraph.getData(nodeId)).elemID
     )
 
     const createDependencyErr = (causeID: ElemID, droppedID: ElemID): DependencyError => {
@@ -148,7 +148,7 @@ export const filterInvalidChanges = async (
 
     const nodeIdsToOmit = wu(diffGraph.keys()).filter(nodeId => {
       const change = diffGraph.getData(nodeId)
-      const changeElem = getChangeElement(change)
+      const changeElem = getChangeData(change)
       return nodeElemIdsToOmit.has(changeElem.elemID.getFullName())
     }).toArray()
 
@@ -201,7 +201,7 @@ export const filterInvalidChanges = async (
 
   const changesByAdapter = collections.iterable.groupBy(
     wu(diffGraph.keys()).map(changeId => diffGraph.getData(changeId)),
-    change => getChangeElement(change).elemID.adapter,
+    change => getChangeData(change).elemID.adapter,
   )
 
   const changeErrors = await awu(changesByAdapter.entries())

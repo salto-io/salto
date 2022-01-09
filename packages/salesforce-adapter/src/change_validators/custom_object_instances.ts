@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  ChangeValidator, getChangeElement, isModificationChange,
+  ChangeValidator, getChangeData, isModificationChange,
   InstanceElement, ChangeError, isAdditionChange,
 } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
@@ -84,7 +84,7 @@ const changeValidator: ChangeValidator = async changes => {
     .filter(isInstanceOfCustomObjectChange)
     .filter(isAdditionChange)
     .flatMap(change => getCreateErrorsForNonCreatableFields(
-      getChangeElement(change) as InstanceElement
+      getChangeData(change) as InstanceElement
     ))
     .toArray()
 

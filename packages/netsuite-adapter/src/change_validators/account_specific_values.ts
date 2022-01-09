@@ -18,7 +18,7 @@ import { values, collections } from '@salto-io/lowerdash'
 import {
   ChangeError,
   ChangeValidator,
-  getChangeElement,
+  getChangeData,
   InstanceElement,
   isAdditionOrModificationChange,
   isInstanceChange,
@@ -53,7 +53,7 @@ const changeValidator: ChangeValidator = async changes => (
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
     .map(async change => {
-      const instance = getChangeElement(change)
+      const instance = getChangeData(change)
       if (!isCustomType(instance.refType.elemID)) {
         return undefined
       }

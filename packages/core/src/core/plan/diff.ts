@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ElemID, getChangeElement, InstanceElement, isEqualValues, isModificationChange } from '@salto-io/adapter-api'
+import { Change, ElemID, getChangeData, InstanceElement, isEqualValues, isModificationChange } from '@salto-io/adapter-api'
 import { resolvePath, setPath, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -29,7 +29,7 @@ const removePath = (instance: InstanceElement, path: ElemID): void => {
 }
 
 export const getDiffInstance = (change: Change<InstanceElement>): InstanceElement => {
-  const instance = getChangeElement(change)
+  const instance = getChangeData(change)
 
   const diffInstance = instance.clone()
 

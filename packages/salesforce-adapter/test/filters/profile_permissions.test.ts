@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, CORE_ANNOTATIONS, toChange, InstanceElement, Change, getChangeElement, FieldDefinition, Values, TypeReference, createRefToElmWithValue } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, CORE_ANNOTATIONS, toChange, InstanceElement, Change, getChangeData, FieldDefinition, Values, TypeReference, createRefToElmWithValue } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/profile_permissions'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
@@ -79,7 +79,7 @@ describe('Object Permissions filter', () => {
       describe('admin profile change', () => {
         let adminProfile: InstanceElement
         beforeAll(() => {
-          adminProfile = getChangeElement(changes[2]) as InstanceElement
+          adminProfile = getChangeData(changes[2]) as InstanceElement
         })
         it('should be a profile instance', async () => {
           expect(adminProfile).toBeInstanceOf(InstanceElement)
@@ -174,7 +174,7 @@ describe('Object Permissions filter', () => {
       describe('admin profile change', () => {
         let adminProfile: InstanceElement
         beforeAll(() => {
-          adminProfile = getChangeElement(changes[2]) as InstanceElement
+          adminProfile = getChangeData(changes[2]) as InstanceElement
         })
         it('should be a profile instance', async () => {
           expect(adminProfile).toBeInstanceOf(InstanceElement)

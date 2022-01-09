@@ -17,7 +17,7 @@ import wu from 'wu'
 import _ from 'lodash'
 import {
   Element, isObjectType, isInstanceElement, ChangeDataType, isField, isPrimitiveType,
-  ChangeValidator, Change, ChangeError, DependencyChanger, ChangeGroupIdFunction, getChangeElement,
+  ChangeValidator, Change, ChangeError, DependencyChanger, ChangeGroupIdFunction, getChangeData,
   isAdditionOrRemovalChange, isFieldChange, ReadOnlyElementsSource, ElemID, isVariable,
   Value, isReferenceExpression, compareSpecialValues, BuiltinTypesByFullName, isAdditionChange,
   isModificationChange, isRemovalChange, InstanceElement, PlaceholderObjectType,
@@ -219,7 +219,7 @@ const addDifferentElements = (
     afterElem?: ChangeDataType
   ): void => {
     const change = toChange(beforeElem, afterElem)
-    const elem = getChangeElement(change)
+    const elem = getChangeData(change)
     outputGraph.addNode(changeId(elem, change.action), [], change)
   }
 
@@ -385,14 +385,14 @@ const removeRedundantFieldChanges = (
       const objTypeAddOrRemove = new Set(
         wu(group.items.values())
           .filter(isAdditionOrRemovalChange)
-          .map(getChangeElement)
+          .map(getChangeData)
           .filter(isObjectType)
           .map(obj => obj.elemID.getFullName())
       )
       const isRedundantFieldChange = (change: Change<ChangeDataType>): boolean => (
         isAdditionOrRemovalChange(change)
         && isFieldChange(change)
-        && objTypeAddOrRemove.has(getChangeElement(change).parent.elemID.getFullName())
+        && objTypeAddOrRemove.has(getChangeData(change).parent.elemID.getFullName())
       )
       const filteredItems = new Map(
         wu(group.items.entries()).filter(([_id, change]) => !isRedundantFieldChange(change))

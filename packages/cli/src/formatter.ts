@@ -18,7 +18,7 @@ import { EOL } from 'os'
 import chalk from 'chalk'
 import wu, { WuIterable } from 'wu'
 import {
-  Element, isInstanceElement, Values, Change, Value, getChangeElement, ElemID,
+  Element, isInstanceElement, Values, Change, Value, getChangeData, ElemID,
   isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes, ReferenceExpression,
   ActionName, ChangeError, SaltoError, isElement, TypeMap, DetailedChange, ChangeDataType,
   isStaticFile,
@@ -161,7 +161,7 @@ const formatChangeData = async (change: DetailedChange): Promise<string> => {
     // Dummy changes are only headers, so add a ":"
     return ':'
   }
-  if (change.action === 'remove' || isStaticFile(getChangeElement(change))) {
+  if (change.action === 'remove' || isStaticFile(getChangeData(change))) {
     // No need to emit any details about a remove change
     return ''
   }
@@ -186,7 +186,7 @@ const formatCountPlanItemTypes = (plan: Plan): string => {
   const items = (wu(plan.itemsByEvalOrder())
     .map(item => item.changes())
     .flatten(true) as WuIterable<Change<ChangeDataType>>)
-    .map(getChangeElement)
+    .map(getChangeData)
     .map(({ elemID }) => ({
       type: elemID.createTopLevelParentID().parent.idType,
       name: elemID.createTopLevelParentID().parent.getFullName(),

@@ -18,7 +18,7 @@ import { collections, strings, multiIndex, promises, values as lowerdashValues }
 import {
   Element, Field, ObjectType, TypeElement, isObjectType, isInstanceElement, ElemID,
   BuiltinTypes, CORE_ANNOTATIONS, TypeMap, InstanceElement, Values, ReadOnlyElementsSource,
-  ReferenceExpression, ListType, Change, getChangeElement, isField, isObjectTypeChange,
+  ReferenceExpression, ListType, Change, getChangeData, isField, isObjectTypeChange,
   isAdditionOrRemovalChange, isFieldChange, isRemovalChange, isInstanceChange, toChange,
   createRefToElmWithValue,
 } from '@salto-io/adapter-api'
@@ -637,7 +637,7 @@ const shouldIncludeFieldChange = (fieldsToSkip: ReadonlyArray<string>) => (
     if (!isFieldChange(fieldChange)) {
       return false
     }
-    const field = getChangeElement(fieldChange)
+    const field = getChangeData(fieldChange)
     const isRelevantField = (
       isField(field) && !isLocalOnly(field) && !fieldsToSkip.includes(await apiName(field, true))
     )
@@ -714,7 +714,7 @@ const createCustomObjectInstance = (values: MetadataValues): InstanceElement => 
 }
 
 const getCustomObjectFromChange = async (change: Change): Promise<ObjectType> => {
-  const elem = getChangeElement(change)
+  const elem = getChangeData(change)
   if (isObjectType(elem) && await isCustomObject(elem)) {
     return elem
   }
@@ -734,7 +734,7 @@ const isCustomObjectChildInstance = async (instance: InstanceElement): Promise<b
   Object.values(NESTED_INSTANCE_VALUE_TO_TYPE_NAME).includes(await metadataType(instance))
 
 const isCustomObjectRelatedChange = async (change: Change): Promise<boolean> => {
-  const elem = getChangeElement(change)
+  const elem = getChangeData(change)
   return (await isCustomObject(elem))
   || (isField(elem) && await isFieldOfCustomObject(elem))
   || (
@@ -751,7 +751,7 @@ const createCustomObjectChange = async (
 ): Promise<Change<InstanceElement>> => {
   const objectChange = await awu(changes)
     .filter(isObjectTypeChange)
-    .find(change => isCustomObject(getChangeElement(change)))
+    .find(change => isCustomObject(getChangeData(change)))
 
   if (objectChange !== undefined && objectChange.action === 'remove') {
     // if we remove the custom object we don't really need the field changes
@@ -830,7 +830,7 @@ const createCustomObjectChange = async (
 }
 
 const getParentCustomObjectName = async (change: Change): Promise<string | undefined> => {
-  const parent = await awu(getParents(getChangeElement(change))).find(isCustomObject)
+  const parent = await awu(getParents(getChangeData(change))).find(isCustomObject)
   return parent === undefined ? undefined : apiName(parent)
 }
 
@@ -996,7 +996,7 @@ const filterCreator: FilterCreator = ({ client, config }) => {
     onDeploy: async changes => {
       const appliedCustomObjectApiNames = await awu(changes)
         .filter(isInstanceOfTypeChange(CUSTOM_OBJECT))
-        .map(change => apiName(getChangeElement(change)))
+        .map(change => apiName(getChangeData(change)))
         .toArray()
 
       const appliedOriginalChanges = appliedCustomObjectApiNames.flatMap(

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { AccountId, Change, getChangeElement, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
+import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
@@ -114,7 +114,7 @@ export default class NetsuiteClient {
     changes: ReadonlyArray<Change<InstanceElement>>,
     deployReferencedElements: boolean
   ): Promise<DeployResult> {
-    const changedInstances = changes.map(getChangeElement)
+    const changedInstances = changes.map(getChangeData)
     const customizationInfos = await awu(await NetsuiteClient.getAllRequiredReferencedInstances(
       changedInstances,
       deployReferencedElements
@@ -122,7 +122,7 @@ export default class NetsuiteClient {
       .map(instance => toCustomizationInfo(instance))
       .toArray()
 
-    const suiteAppId = getChangeElement(changes[0]).value[APPLICATION_ID]
+    const suiteAppId = getChangeData(changes[0]).value[APPLICATION_ID]
 
     try {
       await this.sdfClient.deploy(customizationInfos, suiteAppId)
@@ -155,7 +155,7 @@ export default class NetsuiteClient {
 
   private async deployRecords(changes: Change[], groupID: string): Promise<DeployResult> {
     const instanceChanges = changes.filter(isInstanceChange)
-    const instances = instanceChanges.map(getChangeElement)
+    const instances = instanceChanges.map(getChangeData)
 
     const deployResults = await this.runDeployRecordsOperation(instances, groupID)
 

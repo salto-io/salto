@@ -18,7 +18,7 @@ import { Workspace, nacl, createElementSelectors } from '@salto-io/workspace'
 import { EOL } from 'os'
 import { logger } from '@salto-io/logging'
 import { CommandConfig, LocalChange, restore, Tags } from '@salto-io/core'
-import { getChangeElement, isStaticFile, isAdditionChange } from '@salto-io/adapter-api'
+import { getChangeData, isStaticFile, isAdditionChange } from '@salto-io/adapter-api'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
 import { header, formatDetailedChanges, formatInvalidFilters, formatStepStart, formatRestoreFinish, formatStepCompleted, formatStepFailed, formatStateRecencies, formatAppliedChanges, formatShowWarning, formatListRecord } from '../formatter'
@@ -79,12 +79,12 @@ const applyLocalChangesToWorkspace = async (
   // Addition of static file is irrelevant because Salto doesn't save a copy of static files,
   // so restoring added files (=deletion) will work
   const nonRestorableChanges = changes.filter(change =>
-    (isStaticFile(getChangeElement(change.change)) && !isAdditionChange(change.change)))
+    (isStaticFile(getChangeData(change.change)) && !isAdditionChange(change.change)))
   if (!_.isEmpty(nonRestorableChanges)) {
     outputLine(EOL, output)
     outputLine(formatShowWarning(Prompts.STATIC_RESOURCES_NOT_SUPPORTED), output)
     nonRestorableChanges.forEach(change => {
-      outputLine(formatListRecord(getChangeElement(change.change).filepath), output)
+      outputLine(formatListRecord(getChangeData(change.change).filepath), output)
     })
   }
 

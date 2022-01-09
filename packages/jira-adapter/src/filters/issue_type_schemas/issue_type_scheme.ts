@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, Field, getChangeElement, InstanceElement, isInstanceChange, isInstanceElement, isModificationChange, isObjectType, ModificationChange, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, Field, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isModificationChange, isObjectType, ModificationChange, ObjectType } from '@salto-io/adapter-api'
 import { resolveChangeElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { promises } from '@salto-io/lowerdash'
@@ -38,7 +38,7 @@ const deployNewAndDeletedIssueTypeIds = async (
   const idsToRemove = change.data.before.value.issueTypeIds
     ?.filter((id: string) => !afterIds.has(id)) ?? []
 
-  const instance = getChangeElement(change)
+  const instance = getChangeData(change)
   if (idsToAdd.length > 0) {
     await client.put({
       url: `/rest/api/3/issuetypescheme/${instance.value.issueTypeSchemeId}/issuetype`,
@@ -69,7 +69,7 @@ const deployIssueTypeIdsOrder = async (
     return
   }
   await client.put({
-    url: `/rest/api/3/issuetypescheme/${getChangeElement(change).value.issueTypeSchemeId}/issuetype/move`,
+    url: `/rest/api/3/issuetypescheme/${getChangeData(change).value.issueTypeSchemeId}/issuetype/move`,
     data: {
       issueTypeIds: change.data.after.value.issueTypeIds,
       position: 'First',
@@ -113,7 +113,7 @@ const filter: FilterCreator = ({ config, client }) => ({
       changes,
       change => isInstanceChange(change)
         && isModificationChange(change)
-        && getChangeElement(change).elemID.typeName === ISSUE_TYPE_SCHEMA_NAME
+        && getChangeData(change).elemID.typeName === ISSUE_TYPE_SCHEMA_NAME
     )
 
     const result = await Promise.all(relevantChanges

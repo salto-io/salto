@@ -20,12 +20,12 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
   {
     src: { field: 'issueTypeId', parentTypes: ['IssueTypeScreenSchemeItem', 'FieldConfigurationIssueTypeItem'] },
     serializationStrategy: 'id',
-    target: { type: 'IssueTypeDetails' },
+    target: { type: 'IssueType' },
   },
   {
     src: { field: 'fieldConfigurationId', parentTypes: ['FieldConfigurationIssueTypeItem'] },
     serializationStrategy: 'id',
-    target: { type: 'FieldConfigurationDetails' },
+    target: { type: 'FieldConfiguration' },
   },
   {
     src: { field: 'screenSchemeId', parentTypes: ['IssueTypeScreenSchemeItem'] },
@@ -35,12 +35,78 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
   {
     src: { field: 'defaultIssueTypeId', parentTypes: ['IssueTypeScheme'] },
     serializationStrategy: 'id',
-    target: { type: 'IssueTypeDetails' },
+    target: { type: 'IssueType' },
   },
   {
     src: { field: 'issueTypeIds', parentTypes: ['IssueTypeScheme'] },
     serializationStrategy: 'id',
-    target: { type: 'IssueTypeDetails' },
+    target: { type: 'IssueType' },
+  },
+  {
+    src: { field: 'id', parentTypes: ['WorkflowStatus'] },
+    serializationStrategy: 'id',
+    target: { type: 'Status' },
+  },
+  {
+    src: { field: 'id', parentTypes: ['TransitionScreenDetails'] },
+    serializationStrategy: 'id',
+    target: { type: 'Screen' },
+  },
+  {
+    src: { field: 'to', parentTypes: ['Transition'] },
+    serializationStrategy: 'id',
+    target: { type: 'Status' },
+  },
+  {
+    src: { field: 'from', parentTypes: ['Transition'] },
+    serializationStrategy: 'id',
+    target: { type: 'Status' },
+  },
+  {
+    src: { field: 'id', parentTypes: ['ProjectRoleConfig'] },
+    serializationStrategy: 'id',
+    target: { type: 'ProjectRole' },
+  },
+  {
+    src: { field: 'fieldId', parentTypes: ['PostFunctionConfiguration'] },
+    serializationStrategy: 'id',
+    target: { type: 'Field' },
+  },
+  {
+    src: { field: 'destinationFieldId', parentTypes: ['PostFunctionConfiguration'] },
+    serializationStrategy: 'id',
+    target: { type: 'Field' },
+  },
+  {
+    src: { field: 'sourceFieldId', parentTypes: ['PostFunctionConfiguration'] },
+    serializationStrategy: 'id',
+    target: { type: 'Field' },
+  },
+
+  {
+    src: { field: 'date1', parentTypes: ['ValidatorConfiguration'] },
+    serializationStrategy: 'id',
+    target: { type: 'Field' },
+  },
+  {
+    src: { field: 'date2', parentTypes: ['ValidatorConfiguration'] },
+    serializationStrategy: 'id',
+    target: { type: 'Field' },
+  },
+  {
+    src: { field: 'fieldIds', parentTypes: ['ValidatorConfiguration'] },
+    serializationStrategy: 'id',
+    target: { type: 'Field' },
+  },
+  {
+    src: { field: 'fieldId', parentTypes: ['ValidatorConfiguration'] },
+    serializationStrategy: 'id',
+    target: { type: 'Field' },
+  },
+  {
+    src: { field: 'id', parentTypes: ['StatusRef'] },
+    serializationStrategy: 'id',
+    target: { type: 'Status' },
   },
 ]
 

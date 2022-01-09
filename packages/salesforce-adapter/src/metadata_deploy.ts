@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { DeployResult, Change, getChangeElement, isRemovalChange, isModificationChange, isInstanceChange, isContainerType, isAdditionChange } from '@salto-io/adapter-api'
+import { DeployResult, Change, getChangeData, isRemovalChange, isModificationChange, isInstanceChange, isContainerType, isAdditionChange } from '@salto-io/adapter-api'
 import { DeployResult as SFDeployResult, DeployMessage } from 'jsforce'
 
 import SalesforceClient from './client/client'
@@ -50,7 +50,7 @@ const addNestedInstancesToPackageManifest = async (
   change: Change<MetadataInstanceElement>,
   addNestedAfterInstances: boolean,
 ): Promise<MetadataIdsMap> => {
-  const changeElem = getChangeElement(change)
+  const changeElem = getChangeData(change)
 
   const getNestedInstanceApiName = async (name: string): Promise<string> => (
     nestedTypeInfo.isNestedApiNameRelative
@@ -113,7 +113,7 @@ const addChangeToPackage = async (
   change: Change<MetadataInstanceElement>,
   nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>
 ): Promise<MetadataIdsMap> => {
-  const instance = getChangeElement(change)
+  const instance = getChangeData(change)
   const isWrapperInstance = _.get(instance.value, DEPLOY_WRAPPER_INSTANCE_MARKER) === true
 
   const addInstanceToManifest = !isWrapperInstance
@@ -211,7 +211,7 @@ const processDeployResponse = (
 }
 
 const getChangeError = async (change: Change): Promise<string | undefined> => {
-  const changeElem = getChangeElement(change)
+  const changeElem = getChangeData(change)
   if (await apiName(changeElem) === undefined) {
     return `Cannot ${change.action} element because it has no api name`
   }
@@ -245,7 +245,7 @@ const validateChanges = async (
 
   const errors = invalidChanges
     .map(({ change, error }) => (
-      new Error(`${getChangeElement(change).elemID.getFullName()}: ${error}}`)
+      new Error(`${getChangeData(change).elemID.getFullName()}: ${error}}`)
     ))
 
   return {
@@ -273,7 +273,7 @@ export const deployMetadata = async (
   const changeToDeployedIds: Record<string, MetadataIdsMap> = {}
   await awu(validChanges).forEach(async change => {
     const deployedIds = await addChangeToPackage(pkg, change, nestedMetadataTypes)
-    changeToDeployedIds[getChangeElement(change).elemID.getFullName()] = deployedIds
+    changeToDeployedIds[getChangeData(change).elemID.getFullName()] = deployedIds
   })
 
   const pkgData = await pkg.getZip()
@@ -287,7 +287,7 @@ export const deployMetadata = async (
   )
 
   const isSuccessfulChange = (change: Change<MetadataInstanceElement>): boolean => {
-    const changeElem = getChangeElement(change)
+    const changeElem = getChangeData(change)
     const changeDeployedIds = changeToDeployedIds[changeElem.elemID.getFullName()]
     // TODO - this logic is not perfect, it might produce false positives when there are
     // child xml instances (because we pass in everything with a single change)

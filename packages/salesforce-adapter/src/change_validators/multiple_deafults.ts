@@ -15,7 +15,7 @@
 */
 
 import {
-  ChangeError, getChangeElement, ChangeValidator, isAdditionOrModificationChange,
+  ChangeError, getChangeData, ChangeValidator, isAdditionOrModificationChange,
   isInstanceChange, Field, InstanceElement,
   isFieldChange, isListType, TypeElement, isMapType, Value, Values, isReferenceExpression,
 } from '@salto-io/adapter-api'
@@ -132,7 +132,7 @@ const changeValidator: ChangeValidator = async changes => {
   const instanceChangesErrors = await awu(changes)
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
-    .map(getChangeElement)
+    .map(getChangeData)
     .flatMap(getInstancesMultipleDefaultsErrors)
     .toArray()
 
@@ -140,7 +140,7 @@ const changeValidator: ChangeValidator = async changes => {
   const picklistChangesErrors = await awu(changes)
     .filter(isAdditionOrModificationChange)
     .filter(isFieldChange)
-    .map(getChangeElement)
+    .map(getChangeData)
     .filter(isFieldOfCustomObject)
     .filter(isFieldWithValueSet)
     .flatMap(getPicklistMultipleDefaultsErrors)

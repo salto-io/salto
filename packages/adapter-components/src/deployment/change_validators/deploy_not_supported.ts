@@ -13,13 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeElement } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData } from '@salto-io/adapter-api'
 
 export const deployNotSupportedValidator: ChangeValidator = async changes => (
   changes.map(change => ({
-    elemID: getChangeElement(change).elemID,
+    elemID: getChangeData(change).elemID,
     severity: 'Error',
-    message: `Deploy is not supported in adapter ${getChangeElement(change).elemID.adapter}.`,
+    message: `Deploy is not supported in adapter ${getChangeData(change).elemID.adapter}.`,
     detailedMessage: 'Deploy is not supported.',
   }))
 )

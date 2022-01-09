@@ -15,7 +15,7 @@
 */
 import {
   Element, InstanceElement, isInstanceElement, isObjectType,
-  ObjectType, getChangeElement, Change, BuiltinTypes, ElemID,
+  ObjectType, getChangeData, Change, BuiltinTypes, ElemID,
 } from '@salto-io/adapter-api'
 import { collections, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -70,7 +70,7 @@ const isWorkflowChildInstance = async (elem: Element): Promise<boolean> =>
     && Object.values(WORKFLOW_FIELD_TO_TYPE).includes(await metadataType(elem))
 
 const isWorkflowRelatedChange = async (change: Change): Promise<boolean> => {
-  const elem = getChangeElement(change)
+  const elem = getChangeData(change)
   return (await isWorkflowInstance(elem)) || isWorkflowChildInstance(elem)
 }
 
@@ -111,7 +111,7 @@ const createDummyWorkflowInstance = async (
   // using as much known information as possible
   const realFieldTypes = Object.fromEntries(
     await awu(changes)
-      .map(change => getChangeElement(change))
+      .map(change => getChangeData(change))
       .map(inst => inst.getType())
       .map(async instType => [await metadataType(instType), instType])
       .toArray()
@@ -141,7 +141,7 @@ const createDummyWorkflowInstance = async (
   })
 
   return createInstanceElement(
-    { fullName: await parentApiName(getChangeElement(changes[0])) },
+    { fullName: await parentApiName(getChangeData(changes[0])) },
     workflowType,
   )
 }
@@ -161,7 +161,7 @@ const createWorkflowChange = async (
 }
 
 const getWorkflowApiName = async (change: Change<InstanceElement>): Promise<string> => {
-  const inst = getChangeElement(change)
+  const inst = getChangeData(change)
   return await isWorkflowInstance(inst) ? apiName(inst) : parentApiName(inst)
 }
 

@@ -13,13 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, isRemovalChange, getChangeElement } from '@salto-io/adapter-api'
+import { ChangeValidator, isRemovalChange, getChangeData } from '@salto-io/adapter-api'
 import { isFileCabinetInstance } from '../types'
 
 const changeValidator: ChangeValidator = async changes => (
   changes
     .filter(isRemovalChange)
-    .map(getChangeElement)
+    .map(getChangeData)
     .filter(isFileCabinetInstance)
     .map(({ elemID }) => ({
       elemID,

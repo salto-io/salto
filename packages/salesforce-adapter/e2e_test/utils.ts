@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Value, ObjectType, ElemID, InstanceElement, Element, isObjectType, ChangeGroup, getChangeElement, DeployResult } from '@salto-io/adapter-api'
+import { Value, ObjectType, ElemID, InstanceElement, Element, isObjectType, ChangeGroup, getChangeData, DeployResult } from '@salto-io/adapter-api'
 import { filter, findElement } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import { MetadataInfo } from 'jsforce'
@@ -188,7 +188,7 @@ export const createElement = async <T extends InstanceElement | ObjectType>(
   if (verify && result.appliedChanges.length === 0) {
     throw new Error(`Failed adding element ${element.elemID.getFullName()}: no applied changes`)
   }
-  return getChangeElement(result.appliedChanges[0]) as T
+  return getChangeData(result.appliedChanges[0]) as T
 }
 
 export const createElementAndVerify = async <T extends InstanceElement | ObjectType> (

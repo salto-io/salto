@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, BuiltinTypes, DeployResult, ReferenceExpression,
-  isRemovalChange, getChangeElement, isInstanceElement, ChangeGroup, isModificationChange,
+  isRemovalChange, getChangeData, isInstanceElement, ChangeGroup, isModificationChange,
   isAdditionChange, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, Change } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { BulkLoadOperation, BulkOptions, Record as SfRecord, Batch } from 'jsforce'
@@ -383,22 +383,22 @@ describe('Custom Object Instances CRUD', () => {
         expect(result.appliedChanges).toHaveLength(2)
 
         // existingInstance appliedChange
-        const existingInstanceChangeElement = result.appliedChanges
-          .map(getChangeElement)
+        const existingInstanceChangeData = result.appliedChanges
+          .map(getChangeData)
           .find(element => element.elemID
             .isEqual(existingSettingInstance.elemID)) as InstanceElement
-        expect(existingInstanceChangeElement).toBeDefined()
-        expect(existingInstanceChangeElement.value.Name).toBeDefined()
-        expect(existingInstanceChangeElement.value.Name).toBe('TestName1')
+        expect(existingInstanceChangeData).toBeDefined()
+        expect(existingInstanceChangeData.value.Name).toBeDefined()
+        expect(existingInstanceChangeData.value.Name).toBe('TestName1')
 
         // newInstnace appliedChange
-        const newInstanceChangeElement = result.appliedChanges
-          .map(getChangeElement)
+        const newInstanceChangeData = result.appliedChanges
+          .map(getChangeData)
           .find(element => element.elemID
             .isEqual(nonExistingSettingInstance.elemID)) as InstanceElement
-        expect(newInstanceChangeElement.elemID).toEqual(nonExistingSettingInstance.elemID)
-        expect(newInstanceChangeElement.value.Name).toBeDefined()
-        expect(newInstanceChangeElement.value.Name).toBe('TestName2')
+        expect(newInstanceChangeData.elemID).toEqual(nonExistingSettingInstance.elemID)
+        expect(newInstanceChangeData.value.Name).toBeDefined()
+        expect(newInstanceChangeData.value.Name).toBe('TestName2')
       })
     })
 
@@ -476,29 +476,29 @@ describe('Custom Object Instances CRUD', () => {
             expect(result.appliedChanges).toHaveLength(2)
 
             // existingInstance appliedChange
-            const existingInstanceChangeElement = result.appliedChanges
-              .map(getChangeElement)
+            const existingInstanceChangeData = result.appliedChanges
+              .map(getChangeData)
               .find(element => element.elemID.isEqual(existingInstance.elemID)) as InstanceElement
-            expect(existingInstanceChangeElement).toBeDefined()
-            expect(existingInstanceChangeElement.value.SaltoName).toBeDefined()
-            expect(existingInstanceChangeElement.value.SaltoName).toBe('existingInstance')
+            expect(existingInstanceChangeData).toBeDefined()
+            expect(existingInstanceChangeData.value.SaltoName).toBeDefined()
+            expect(existingInstanceChangeData.value.SaltoName).toBe('existingInstance')
             // Should add result (query) Id
-            expect(existingInstanceChangeElement.value.Id).toBeDefined()
-            expect(existingInstanceChangeElement.value.Id).toEqual('queryId')
+            expect(existingInstanceChangeData.value.Id).toBeDefined()
+            expect(existingInstanceChangeData.value.Id).toEqual('queryId')
 
             // newInstnace appliedChange
-            const newInstanceChangeElement = result.appliedChanges
-              .map(getChangeElement)
+            const newInstanceChangeData = result.appliedChanges
+              .map(getChangeData)
               .find(element => element.elemID.isEqual(newInstanceWithRef.elemID)) as InstanceElement
-            expect(newInstanceChangeElement.elemID).toEqual(newInstanceWithRef.elemID)
-            expect(newInstanceChangeElement.value.SaltoName).toBeDefined()
-            expect(newInstanceChangeElement.value.SaltoName).toBe('newInstanceWithRef')
+            expect(newInstanceChangeData.elemID).toEqual(newInstanceWithRef.elemID)
+            expect(newInstanceChangeData.value.SaltoName).toBeDefined()
+            expect(newInstanceChangeData.value.SaltoName).toBe('newInstanceWithRef')
             // Should add result Id
-            expect(newInstanceChangeElement.value.Id).toBeDefined()
-            expect(newInstanceChangeElement.value.Id).toEqual('newId0')
+            expect(newInstanceChangeData.value.Id).toBeDefined()
+            expect(newInstanceChangeData.value.Id).toEqual('newId0')
 
             // Reference should stay a referece
-            expect(newInstanceChangeElement.value.AnotherField)
+            expect(newInstanceChangeData.value.AnotherField)
               .toEqual(new ReferenceExpression(mockElemID, 'Type'))
           })
         })
@@ -537,30 +537,30 @@ describe('Custom Object Instances CRUD', () => {
             expect(result.errors).toHaveLength(0)
             expect(result.appliedChanges).toHaveLength(2)
             // newInstnace appliedChange
-            const newInstanceChangeElement = result.appliedChanges
-              .map(getChangeElement)
+            const newInstanceChangeData = result.appliedChanges
+              .map(getChangeData)
               .find(element => element.elemID.isEqual(newInstanceWithRef.elemID)) as InstanceElement
-            expect(newInstanceChangeElement.elemID).toEqual(newInstanceWithRef.elemID)
-            expect(newInstanceChangeElement.value.SaltoName).toBeDefined()
-            expect(newInstanceChangeElement.value.SaltoName).toBe('newInstanceWithRef')
+            expect(newInstanceChangeData.elemID).toEqual(newInstanceWithRef.elemID)
+            expect(newInstanceChangeData.value.SaltoName).toBeDefined()
+            expect(newInstanceChangeData.value.SaltoName).toBe('newInstanceWithRef')
             // Should add result Id
-            expect(newInstanceChangeElement.value.Id).toBeDefined()
-            expect(newInstanceChangeElement.value.Id).toEqual('newId0')
+            expect(newInstanceChangeData.value.Id).toBeDefined()
+            expect(newInstanceChangeData.value.Id).toEqual('newId0')
 
-            // Reference should stay a referece
-            expect(newInstanceChangeElement.value.AnotherField)
+            // Reference should stay a reference
+            expect(newInstanceChangeData.value.AnotherField)
               .toEqual(new ReferenceExpression(mockElemID, 'Type'))
 
             // anotherNewInstance appliedChange
-            const anotherNewInstanceChangeElement = result.appliedChanges
-              .map(getChangeElement)
+            const anotherNewInstanceChangeData = result.appliedChanges
+              .map(getChangeData)
               .find(element => element.elemID.isEqual(anotherNewInstance.elemID)) as InstanceElement
-            expect(anotherNewInstanceChangeElement).toBeDefined()
-            expect(anotherNewInstanceChangeElement.value.SaltoName).toBeDefined()
-            expect(anotherNewInstanceChangeElement.value.SaltoName).toBe('anotherNewInstance')
+            expect(anotherNewInstanceChangeData).toBeDefined()
+            expect(anotherNewInstanceChangeData.value.SaltoName).toBeDefined()
+            expect(anotherNewInstanceChangeData.value.SaltoName).toBe('anotherNewInstance')
             // Should add result Id
-            expect(anotherNewInstanceChangeElement.value.Id).toBeDefined()
-            expect(anotherNewInstanceChangeElement.value.Id).toEqual('newId1')
+            expect(anotherNewInstanceChangeData.value.Id).toBeDefined()
+            expect(anotherNewInstanceChangeData.value.Id).toEqual('newId1')
           })
         })
         describe('When called with only existing instances', () => {
@@ -599,28 +599,28 @@ describe('Custom Object Instances CRUD', () => {
             expect(result.appliedChanges).toHaveLength(2)
 
             // existingInstance appliedChange
-            const existingInstanceChangeElement = result.appliedChanges
-              .map(getChangeElement)
+            const existingInstanceChangeData = result.appliedChanges
+              .map(getChangeData)
               .find(element => element.elemID.isEqual(existingInstance.elemID)) as InstanceElement
-            expect(existingInstanceChangeElement).toBeDefined()
-            expect(existingInstanceChangeElement.value.SaltoName).toBeDefined()
-            expect(existingInstanceChangeElement.value.SaltoName).toBe('existingInstance')
+            expect(existingInstanceChangeData).toBeDefined()
+            expect(existingInstanceChangeData.value.SaltoName).toBeDefined()
+            expect(existingInstanceChangeData.value.SaltoName).toBe('existingInstance')
             // Should add result Id
-            expect(existingInstanceChangeElement.value.Id).toBeDefined()
-            expect(existingInstanceChangeElement.value.Id).toEqual('queryId')
+            expect(existingInstanceChangeData.value.Id).toBeDefined()
+            expect(existingInstanceChangeData.value.Id).toEqual('queryId')
 
             // anotherExistingInstance appliedChange
-            const anotherExistingInstanceChangeElement = result.appliedChanges
-              .map(getChangeElement)
+            const anotherExistingInstanceChangeData = result.appliedChanges
+              .map(getChangeData)
               .find(element =>
                 element.elemID.isEqual(anotherExistingInstance.elemID)) as InstanceElement
-            expect(anotherExistingInstanceChangeElement.elemID)
+            expect(anotherExistingInstanceChangeData.elemID)
               .toEqual(anotherExistingInstance.elemID)
-            expect(anotherExistingInstanceChangeElement.value.SaltoName).toBeDefined()
-            expect(anotherExistingInstanceChangeElement.value.SaltoName).toBe('anotherExistingInstanceWithThing\'')
+            expect(anotherExistingInstanceChangeData.value.SaltoName).toBeDefined()
+            expect(anotherExistingInstanceChangeData.value.SaltoName).toBe('anotherExistingInstanceWithThing\'')
             // Should add result Id
-            expect(anotherExistingInstanceChangeElement.value.Id).toBeDefined()
-            expect(anotherExistingInstanceChangeElement.value.Id).toEqual('anotherQueryId')
+            expect(anotherExistingInstanceChangeData.value.Id).toBeDefined()
+            expect(anotherExistingInstanceChangeData.value.Id).toEqual('anotherQueryId')
           })
         })
         describe('When called with a large number of new instances', () => {
@@ -715,20 +715,20 @@ describe('Custom Object Instances CRUD', () => {
         it('Should have three applied add change with the right ids', () => {
           expect(result.appliedChanges).toHaveLength(3)
           expect(isAdditionChange(result.appliedChanges[0])).toBeTruthy()
-          const changeElement = getChangeElement(result.appliedChanges[0])
-          expect(changeElement).toBeDefined()
-          expect(isInstanceElement(changeElement)).toBeTruthy()
-          expect((changeElement as InstanceElement).value[constants.CUSTOM_OBJECT_ID_FIELD]).toBe('newId1')
+          const changeData = getChangeData(result.appliedChanges[0])
+          expect(changeData).toBeDefined()
+          expect(isInstanceElement(changeData)).toBeTruthy()
+          expect((changeData as InstanceElement).value[constants.CUSTOM_OBJECT_ID_FIELD]).toBe('newId1')
           expect(isAdditionChange(result.appliedChanges[1])).toBeTruthy()
-          const anotherChangeElement = getChangeElement(result.appliedChanges[1])
-          expect(anotherChangeElement).toBeDefined()
-          expect(isInstanceElement(anotherChangeElement)).toBeTruthy()
-          expect((anotherChangeElement as InstanceElement).value[constants.CUSTOM_OBJECT_ID_FIELD]).toBe('newId3')
+          const anotherChangeData = getChangeData(result.appliedChanges[1])
+          expect(anotherChangeData).toBeDefined()
+          expect(isInstanceElement(anotherChangeData)).toBeTruthy()
+          expect((anotherChangeData as InstanceElement).value[constants.CUSTOM_OBJECT_ID_FIELD]).toBe('newId3')
           expect(isAdditionChange(result.appliedChanges[2])).toBeTruthy()
-          const anotherNewChangeElement = getChangeElement(result.appliedChanges[2])
-          expect(anotherNewChangeElement).toBeDefined()
-          expect(isInstanceElement(anotherNewChangeElement)).toBeTruthy()
-          expect((anotherNewChangeElement as InstanceElement).value[constants.CUSTOM_OBJECT_ID_FIELD]).toBe('anotherQueryId')
+          const anotherNewChangeData = getChangeData(result.appliedChanges[2])
+          expect(anotherNewChangeData).toBeDefined()
+          expect(isInstanceElement(anotherNewChangeData)).toBeTruthy()
+          expect((anotherNewChangeData as InstanceElement).value[constants.CUSTOM_OBJECT_ID_FIELD]).toBe('anotherQueryId')
         })
       })
     })
@@ -754,13 +754,13 @@ describe('Custom Object Instances CRUD', () => {
           expect(result.errors).toHaveLength(0)
           expect(result.appliedChanges).toHaveLength(2)
           expect(isModificationChange(result.appliedChanges[0])).toBeTruthy()
-          const changeElement = getChangeElement(result.appliedChanges[0])
-          expect(changeElement).toBeDefined()
-          expect(isInstanceElement(changeElement)).toBeTruthy()
+          const changeData = getChangeData(result.appliedChanges[0])
+          expect(changeData).toBeDefined()
+          expect(isInstanceElement(changeData)).toBeTruthy()
           expect(isModificationChange(result.appliedChanges[1])).toBeTruthy()
-          const secondChangeElement = getChangeElement(result.appliedChanges[1])
-          expect(secondChangeElement).toBeDefined()
-          expect(isInstanceElement(secondChangeElement)).toBeTruthy()
+          const secondChangeData = getChangeData(result.appliedChanges[1])
+          expect(secondChangeData).toBeDefined()
+          expect(isInstanceElement(secondChangeData)).toBeTruthy()
         })
       })
 
@@ -775,9 +775,9 @@ describe('Custom Object Instances CRUD', () => {
           validateErrorMsg(result.errors[0].message, 'Instance')
           expect(result.appliedChanges).toHaveLength(1)
           expect(isModificationChange(result.appliedChanges[0])).toBeTruthy()
-          const changeElement = getChangeElement(result.appliedChanges[0])
-          expect(changeElement).toBeDefined()
-          expect(isInstanceElement(changeElement)).toBeTruthy()
+          const changeData = getChangeData(result.appliedChanges[0])
+          expect(changeData).toBeDefined()
+          expect(isInstanceElement(changeData)).toBeTruthy()
         })
       })
 
@@ -817,13 +817,13 @@ describe('Custom Object Instances CRUD', () => {
           expect(result.errors).toHaveLength(0)
           expect(result.appliedChanges).toHaveLength(2)
           expect(isRemovalChange(result.appliedChanges[0])).toBeTruthy()
-          const changeElement = getChangeElement(result.appliedChanges[0])
-          expect(changeElement).toBeDefined()
-          expect(isInstanceElement(changeElement)).toBeTruthy()
+          const changeData = getChangeData(result.appliedChanges[0])
+          expect(changeData).toBeDefined()
+          expect(isInstanceElement(changeData)).toBeTruthy()
           expect(isRemovalChange(result.appliedChanges[1])).toBeTruthy()
-          const secondChangeElement = getChangeElement(result.appliedChanges[1])
-          expect(secondChangeElement).toBeDefined()
-          expect(isInstanceElement(secondChangeElement)).toBeTruthy()
+          const secondChangeData = getChangeData(result.appliedChanges[1])
+          expect(secondChangeData).toBeDefined()
+          expect(isInstanceElement(secondChangeData)).toBeTruthy()
         })
       })
 
@@ -842,9 +842,9 @@ describe('Custom Object Instances CRUD', () => {
           it('should return one applied change', () => {
             expect(result.appliedChanges).toHaveLength(1)
             expect(isRemovalChange(result.appliedChanges[0])).toBeTruthy()
-            const changeElement = getChangeElement(result.appliedChanges[0])
-            expect(changeElement).toBeDefined()
-            expect(isInstanceElement(changeElement)).toBeTruthy()
+            const changeData = getChangeData(result.appliedChanges[0])
+            expect(changeData).toBeDefined()
+            expect(isInstanceElement(changeData)).toBeTruthy()
           })
         })
 

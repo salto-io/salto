@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdapterOperations, ObjectType, ElemID, ProgressReporter, FetchResult, InstanceElement, toChange, isRemovalChange, getChangeElement, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
+import { AdapterOperations, ObjectType, ElemID, ProgressReporter, FetchResult, InstanceElement, toChange, isRemovalChange, getChangeData, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
 import { deployment, elements, client } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockFunction } from '@salto-io/test-utils'
@@ -94,7 +94,7 @@ describe('adapter', () => {
     it('should call deployChange with the resolved elements', async () => {
       const referencedInstance = new InstanceElement(
         'referenced',
-        new ObjectType({ elemID: new ElemID(JIRA, 'IssueTypeDetails'), fields: { id: { refType: BuiltinTypes.STRING } } }),
+        new ObjectType({ elemID: new ElemID(JIRA, 'IssueType'), fields: { id: { refType: BuiltinTypes.STRING } } }),
         { id: '3' }
       )
       await adapter.deploy({
@@ -156,7 +156,7 @@ describe('adapter', () => {
         },
       })
 
-      expect((getChangeElement(appliedChanges[0]) as InstanceElement)?.value.id).toEqual(2)
+      expect((getChangeData(appliedChanges[0]) as InstanceElement)?.value.id).toEqual(2)
     })
     it('should not add the new id on addition if received an invalid response', async () => {
       deployChangeMock.mockResolvedValue([])
@@ -170,7 +170,7 @@ describe('adapter', () => {
         },
       })
 
-      expect((getChangeElement(appliedChanges[0]) as InstanceElement)?.value.id).toBeUndefined()
+      expect((getChangeData(appliedChanges[0]) as InstanceElement)?.value.id).toBeUndefined()
     })
   })
   describe('deployModifiers', () => {
@@ -182,17 +182,20 @@ describe('adapter', () => {
   describe('fetch', () => {
     let progressReporter: ProgressReporter
     let result: FetchResult
+    let platformTestType: ObjectType
+    let jiraTestType: ObjectType
+    let testInstance: InstanceElement
     beforeEach(async () => {
       progressReporter = {
         reportProgress: mockFunction<ProgressReporter['reportProgress']>(),
       }
-      const platformTestType = new ObjectType({
+      platformTestType = new ObjectType({
         elemID: new ElemID(JIRA, 'platform'),
       })
-      const jiraTestType = new ObjectType({
+      jiraTestType = new ObjectType({
         elemID: new ElemID(JIRA, 'jira'),
       })
-      const testInstance = new InstanceElement('test', jiraTestType);
+      testInstance = new InstanceElement('test', jiraTestType);
 
       (generateTypes as jest.MockedFunction<typeof generateTypes>)
         .mockResolvedValueOnce({
@@ -232,7 +235,9 @@ describe('adapter', () => {
       )
     })
     it('should return all types and instances returned from the infrastructure', () => {
-      expect(result.elements).toHaveLength(3)
+      expect(result.elements).toContain(platformTestType)
+      expect(result.elements).toContain(jiraTestType)
+      expect(result.elements).toContain(testInstance)
     })
   })
 })

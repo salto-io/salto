@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeElement, ElemID, Value, DetailedChange, ChangeDataType, Element, isObjectType, isPrimitiveType, isInstanceElement, isField, isAdditionChange } from '@salto-io/adapter-api'
+import { getChangeData, ElemID, Value, DetailedChange, ChangeDataType, Element, isObjectType, isPrimitiveType, isInstanceElement, isField, isAdditionChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import path from 'path'
 import { promises, values, collections } from '@salto-io/lowerdash'
@@ -107,7 +107,7 @@ const separateChangeByFiles = async (
   change: DetailedChange,
   source: NaclFilesSource
 ): Promise<DetailedChange[]> => {
-  const isEmptyChangeElm = isEmptyChangeElement(getChangeElement(change))
+  const isEmptyChangeElm = isEmptyChangeElement(getChangeData(change))
   const elementNaclFiles = await source.getElementNaclFiles(change.id)
   if (_.isEmpty(elementNaclFiles)) {
     return [change]
@@ -126,7 +126,7 @@ const separateChangeByFiles = async (
         if (
           !isEmptyChangeElm
           && !filteredChange.id.isAnnotationTypeID()
-          && isEmptyChangeElement(getChangeElement(filteredChange))
+          && isEmptyChangeElement(getChangeData(filteredChange))
         ) {
           return undefined
         }
@@ -460,7 +460,7 @@ export const routeIsolated = async (
   }
 
   const commonChangeProjection = projectElementOrValueToEnv(
-    getChangeElement(change),
+    getChangeData(change),
     currentCommonElement,
   )
   // Add the changed part of common to the target source

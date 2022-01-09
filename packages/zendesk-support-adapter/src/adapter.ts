@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   FetchResult, AdapterOperations, DeployResult, Element, DeployModifiers,
-  FetchOptions, DeployOptions, Change, isInstanceChange, InstanceElement, getChangeElement,
+  FetchOptions, DeployOptions, Change, isInstanceChange, InstanceElement, getChangeData,
 } from '@salto-io/adapter-api'
 import {
   client as clientUtils,
@@ -35,10 +35,12 @@ import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
 import fieldReferencesFilter, { fieldNameToTypeMappingDefs } from './filters/field_references'
 import unorderedListsFilter from './filters/unordered_lists'
-import viewsFilter from './filters/views'
+import viewFilter from './filters/view'
+import workspaceFilter from './filters/workspace'
 import ticketFormOrderFilter from './filters/reorder/ticket_form'
 import userFieldOrderFilter from './filters/reorder/user_field'
 import organizationFieldOrderFilter from './filters/reorder/organization_field'
+import businessHoursScheduleFilter from './filters/business_hours_schedule'
 import defaultDeployFilter from './filters/default_deploy'
 
 const log = logger(module)
@@ -51,10 +53,12 @@ export const DEFAULT_FILTERS = [
   fieldReferencesFilter,
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,
-  viewsFilter,
+  viewFilter,
+  workspaceFilter,
   ticketFormOrderFilter,
   userFieldOrderFilter,
   organizationFieldOrderFilter,
+  businessHoursScheduleFilter,
   // defaultDeployFilter should be last!
   defaultDeployFilter,
 ]
@@ -146,7 +150,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     await runner.onDeploy(appliedChangesBeforeRestore)
 
     const sourceElements = _.keyBy(
-      changesToDeploy.map(getChangeElement),
+      changesToDeploy.map(getChangeData),
       elem => elem.elemID.getFullName(),
     )
 

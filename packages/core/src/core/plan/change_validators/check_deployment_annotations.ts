@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeError, ChangeValidator, getChangeElement, isInstanceChange, Element, isRemovalChange, InstanceElement, ElemID } from '@salto-io/adapter-api'
+import { Change, ChangeError, ChangeValidator, getChangeData, isInstanceChange, Element, isRemovalChange, InstanceElement, ElemID } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { transformValues } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
@@ -60,7 +60,7 @@ export const checkDeploymentAnnotationsValidator: ChangeValidator = async change
       if (!isInstanceChange(change)) {
         return []
       }
-      const instance = getChangeElement(change)
+      const instance = getChangeData(change)
       const type = await instance.getType()
       if (!isDeploymentSupported(type, change.action)) {
         return [{

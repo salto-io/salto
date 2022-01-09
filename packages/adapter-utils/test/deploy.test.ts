@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, InstanceElement, DeployResult, getChangeElement } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, DeployResult, getChangeData } from '@salto-io/adapter-api'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { deployInstance, ChangeOperations } from '../src/deploy'
 import { toChangeGroup } from './common'
@@ -69,7 +69,7 @@ describe('deployInstance', () => {
       it('should return the applied change with the return value from the function', () => {
         expect(result.appliedChanges).toHaveLength(1)
         expect(result.appliedChanges[0].action).toEqual('add')
-        expect(getChangeElement(result.appliedChanges[0])).toBe(updatedInst)
+        expect(getChangeData(result.appliedChanges[0])).toBe(updatedInst)
       })
     })
 
@@ -104,7 +104,7 @@ describe('deployInstance', () => {
     it('should return the applied remove change', () => {
       expect(result.appliedChanges).toHaveLength(1)
       expect(result.appliedChanges[0].action).toEqual('remove')
-      expect(getChangeElement(result.appliedChanges[0])).toBe(testInst)
+      expect(getChangeData(result.appliedChanges[0])).toBe(testInst)
     })
   })
 
@@ -125,7 +125,7 @@ describe('deployInstance', () => {
     it('should return the applied change with the return value from the function', () => {
       expect(result.appliedChanges).toHaveLength(1)
       expect(result.appliedChanges[0].action).toEqual('modify')
-      expect(getChangeElement(result.appliedChanges[0])).toBe(after)
+      expect(getChangeData(result.appliedChanges[0])).toBe(after)
     })
   })
 })

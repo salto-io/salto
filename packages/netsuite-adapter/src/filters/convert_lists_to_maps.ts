@@ -17,8 +17,9 @@ import {
   isInstanceElement, isObjectType,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { convertFieldsTypesFromListToMap, convertInstanceListsToMaps } from '../mapped_lists/mapped_lists'
+import { convertFieldsTypesFromListToMap, convertInstanceListsToMaps } from '../mapped_lists/utils'
 import { FilterWith } from '../filter'
+import { isCustomType } from '../types'
 
 const { awu } = collections.asynciterable
 
@@ -35,6 +36,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
 
     await awu(elements)
       .filter(isInstanceElement)
+      .filter(inst => isCustomType(inst.refType.elemID))
       .forEach(
         async inst => {
           inst.value = await convertInstanceListsToMaps(

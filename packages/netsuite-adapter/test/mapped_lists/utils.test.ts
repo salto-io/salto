@@ -15,7 +15,7 @@
 */
 import { collections } from '@salto-io/lowerdash'
 import { BuiltinTypes, createRefToElmWithValue, ElemID, Field, FieldMap, InstanceElement, isListType, isMapType, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
-import { convertFieldsTypesFromListToMap, convertInstanceMapsToLists, convertInstanceListsToMaps, getMappedLists, isMappedList } from '../../src/mapped_lists/mapped_lists'
+import { convertFieldsTypesFromListToMap, convertInstanceMapsToLists, convertInstanceListsToMaps, getMappedLists, isMappedList } from '../../src/mapped_lists/utils'
 import { workflow, workflowInnerTypes } from '../../src/autogen/types/custom_types/workflow'
 import { LIST_MAPPED_BY_FIELD, NETSUITE, SCRIPT_ID } from '../../src/constants'
 

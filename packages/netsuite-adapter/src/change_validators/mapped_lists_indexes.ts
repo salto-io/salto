@@ -19,7 +19,7 @@ import {
   ChangeError, ChangeValidator, getChangeData, isInstanceChange,
 } from '@salto-io/adapter-api'
 import { INDEX } from '../constants'
-import { getMappedLists, MappedList } from '../mapped_lists/mapped_lists'
+import { getMappedLists, MappedList } from '../mapped_lists/utils'
 
 const { isDefined } = values
 

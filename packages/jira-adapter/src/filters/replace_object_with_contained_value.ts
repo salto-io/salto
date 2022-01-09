@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import {
   BuiltinTypesByFullName,
   ContainerType,
@@ -32,7 +33,6 @@ import {
 } from '@salto-io/adapter-api'
 import { TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
-import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 
@@ -40,7 +40,7 @@ const { awu } = collections.asynciterable
 const { isDefined } = values
 const log = logger(module)
 
-export type ContainerFactory = (innerType: ObjectType) => ContainerType
+type ContainerFactory = (innerType: ObjectType) => ContainerType
 
 export type ReplaceObjectWithContainedValueConfig = {
   containedValuePath: string

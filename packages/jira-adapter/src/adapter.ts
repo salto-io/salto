@@ -24,7 +24,6 @@ import { JiraConfig, getApiDefinitions } from './config'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import fieldReferences from './filters/field_references'
 import referenceBySelfLinkFilter from './filters/references_by_self_link'
-import issueTypeSchemeReferences from './filters/issue_type_schemas/issue_type_scheme_references'
 import issueTypeSchemeFilter from './filters/issue_type_schemas/issue_type_scheme'
 import authenticatedPermissionFilter from './filters/authenticated_permission'
 import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
@@ -32,7 +31,6 @@ import defaultDeployFilter from './filters/default_deploy'
 import workflowFilter from './filters/workflow/workflow'
 import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
-// eslint-disable-next-line import/no-named-as-default
 import replaceObjectWithContainedValue from './filters/replace_object_with_contained_value'
 
 const {
@@ -49,7 +47,6 @@ export const DEFAULT_FILTERS = [
   fieldReferences,
   workflowFilter,
   referenceBySelfLinkFilter,
-  issueTypeSchemeReferences,
   issueTypeSchemeFilter,
   authenticatedPermissionFilter,
   hiddenValuesInListsFilter,

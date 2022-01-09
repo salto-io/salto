@@ -121,7 +121,7 @@ describe('replaceObjectWithContainedValue', () => {
       ObjectWithListOfListsField: {
         containedValuePath: 'lists',
         containedValueType: 'string',
-        containerFactory: (innerType => new ListType(new ListType(innerType))),
+        containerFactory: innerType => new ListType(new ListType(innerType)),
       },
       NoContainedValueAtPath: {
         containedValuePath: 'name',

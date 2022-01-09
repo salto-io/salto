@@ -21,5 +21,6 @@
         { "path": "../logging" },
         { "path": "../lowerdash" },
         { "path": "../test-utils" },
+        { "path": "../e2e-credentials-store" },
     ]
 }

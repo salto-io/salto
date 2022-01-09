@@ -45,19 +45,18 @@ import {
 import { instanceExists, objectExists, getSalesforceCredsInstance, getSalesforceClient } from './helpers/salesforce'
 
 const { awu } = collections.asynciterable
-// let lastPlan: Plan
-let credsLease: CredsLease<UsernamePasswordCredentials>
-const ALTERNATIVE_SALESFORCE_ACCOUNT_NAME = 'e2esalesforce'
+
 const SALESFORCE_SERVICE_NAME = 'salesforce'
+const ALTERNATIVE_SALESFORCE_ACCOUNT_NAME = 'e2esalesforce'
 const apiNameAnno = (
   obj: string,
   field: string
 ): Record<string, string> => ({ [API_NAME]: [obj, field].join(API_NAME_SEPARATOR) })
 
 describe.each([
-  SALESFORCE_SERVICE_NAME,
-  ALTERNATIVE_SALESFORCE_ACCOUNT_NAME,
-])('.add($accountName)', accountName => {
+  [SALESFORCE_SERVICE_NAME],
+  [ALTERNATIVE_SALESFORCE_ACCOUNT_NAME],
+])('cli e2e with account name %s', accountName => {
   jest.setTimeout(15 * 60 * 1000)
   // in the case that account name is just normal salesforce
   // we want to go through the default behavior, so we send undefined, instead of ['salesforce']
@@ -68,8 +67,10 @@ describe.each([
   const localWorkspaceConfigFile = `${__dirname}/../../e2e_test/NACL/salto.config/local/workspaceUser.nacl`
   const NEW_INSTANCE_BASE_ELEM_NAME = 'NewInstanceName'
   const NEW_INSTANCE2_BASE_ELEM_NAME = 'NewInstance2Name'
+  const NEW_INSTANCE_WITH_STATIC_FILE_BASE_ELEM_NAME = 'NewInstanceWithStaticFile'
   const NEW_OBJECT_BASE_ELEM_NAME = 'NewObjectName'
 
+  let credsLease: CredsLease<UsernamePasswordCredentials>
   let homePath: string
   let fetchOutputDir: string
   let localStorageDir: string
@@ -79,8 +80,8 @@ describe.each([
   let tmpNaclFileRelativePath: string
   let newInstanceElemName: string
   let newInstance2ElemName: string
-  let newInstanceFullName: string
-  let newInstance2FullName: string
+  let newInstanceWithStaticFileElemName: string
+  let newStaticFilePath: string
   let newObjectElemName: string
   let newObjectApiName: string
   let newObjectStandardFieldRelativePath: string
@@ -88,6 +89,7 @@ describe.each([
   let newObjectCustomFieldRelativePath: string
 
   const ROLE = 'Role'
+  const STATIC_RESOURCE = 'StaticResource'
   let client: SalesforceClient
 
   const fullPath = (partialPath: string): string =>
@@ -102,8 +104,8 @@ describe.each([
     statePath = `${fetchOutputDir}/salto.config/states/default.${accountName}.jsonl.zip`
     newInstanceElemName = NEW_INSTANCE_BASE_ELEM_NAME + randomString
     newInstance2ElemName = NEW_INSTANCE2_BASE_ELEM_NAME + randomString
-    newInstanceFullName = `${NEW_INSTANCE_BASE_ELEM_NAME}${randomString}`
-    newInstance2FullName = `${NEW_INSTANCE2_BASE_ELEM_NAME}${randomString}`
+    newInstanceWithStaticFileElemName = NEW_INSTANCE_WITH_STATIC_FILE_BASE_ELEM_NAME + randomString
+    newStaticFilePath = `${accountName}/Records/${STATIC_RESOURCE}/${newInstanceWithStaticFileElemName}.json`
     newObjectElemName = NEW_OBJECT_BASE_ELEM_NAME + randomString
     newObjectApiName = `${newObjectElemName}${SALESFORCE_CUSTOM_SUFFIX}`
     newObjectStandardFieldRelativePath = `${accountName}/${OBJECTS_PATH}/${newObjectElemName}/${newObjectElemName}StandardFields.nacl`
@@ -146,11 +148,14 @@ describe.each([
     if (await objectExists(client, newObjectApiName)) {
       await client.delete(CUSTOM_OBJECT, newObjectApiName)
     }
-    if (await instanceExists(client, ROLE, newInstanceFullName)) {
-      await client.delete(ROLE, newInstanceFullName)
+    if (await instanceExists(client, ROLE, newInstanceElemName)) {
+      await client.delete(ROLE, newInstanceElemName)
     }
-    if (await instanceExists(client, ROLE, newInstance2FullName)) {
-      await client.delete(ROLE, newInstance2FullName)
+    if (await instanceExists(client, ROLE, newInstance2ElemName)) {
+      await client.delete(ROLE, newInstance2ElemName)
+    }
+    if (await instanceExists(client, STATIC_RESOURCE, newInstanceWithStaticFileElemName)) {
+      await client.delete(STATIC_RESOURCE, newInstanceWithStaticFileElemName)
     }
     await runSalesforceLogin(fetchOutputDir, accountName)
     await runFetch(fetchOutputDir)
@@ -160,11 +165,14 @@ describe.each([
     if (await objectExists(client, newObjectApiName)) {
       await client.delete(CUSTOM_OBJECT, newObjectApiName)
     }
-    if (await instanceExists(client, ROLE, newInstanceFullName)) {
-      await client.delete(ROLE, newInstanceFullName)
+    if (await instanceExists(client, ROLE, newInstanceElemName)) {
+      await client.delete(ROLE, newInstanceElemName)
     }
-    if (await instanceExists(client, ROLE, newInstance2FullName)) {
-      await client.delete(ROLE, newInstance2FullName)
+    if (await instanceExists(client, ROLE, newInstance2ElemName)) {
+      await client.delete(ROLE, newInstance2ElemName)
+    }
+    if (await instanceExists(client, STATIC_RESOURCE, newInstanceWithStaticFileElemName)) {
+      await client.delete(STATIC_RESOURCE, newInstanceWithStaticFileElemName)
     }
     await rm(homePath)
     if (credsLease.return) {
@@ -233,6 +241,14 @@ describe.each([
         name = "Another new Role Instance"
         mayForecastManagerShare = var.isStaging
       }
+
+      ${accountName}.StaticResource ${newInstanceWithStaticFileElemName} {
+        cacheControl = "Public"
+        contentType = "application/json"
+        description = "Some static resource"
+        fullName = "${newInstanceWithStaticFileElemName}"
+        content = file("${newStaticFilePath}")
+      }
       
       vars {
         desc = ${accountName}.Role.instance.NewInstanceName.description
@@ -245,21 +261,30 @@ describe.each([
         [new RegExp(NEW_INSTANCE_BASE_ELEM_NAME, 'g'), newInstanceElemName],
         [new RegExp(NEW_INSTANCE2_BASE_ELEM_NAME, 'g'), newInstance2ElemName],
       ])
+      const fullNewStaticFilePath = fullPath(`static-resources/${newStaticFilePath}`)
+      await mkdirp(path.dirname(fullNewStaticFilePath))
+      await writeFile(fullNewStaticFilePath, '{}')
       deployPlan = await runPreviewGetPlan(fetchOutputDir, accounts)
       await runDeploy({ workspacePath: fetchOutputDir })
       workspace = await loadValidWorkspace(fetchOutputDir)
     })
     it('should have "add" changes', async () => {
-      verifyChanges(deployPlan, [{ action: 'add', element: newObjectElemName },
+      verifyChanges(deployPlan, [
+        { action: 'add', element: newObjectElemName },
         { action: 'add', element: newInstanceElemName },
-        { action: 'add', element: newInstance2ElemName }])
+        { action: 'add', element: newInstance2ElemName },
+        { action: 'add', element: newInstanceWithStaticFileElemName },
+      ])
     })
     it('should create the object in salesforce', async () => {
       expect(await objectExists(client, newObjectApiName, ['Alpha__c', 'Beta__c'])).toBe(true)
     })
     it('should create the instance in salesforce', async () => {
-      expect(await instanceExists(client, ROLE, newInstanceFullName,
+      expect(await instanceExists(client, ROLE, newInstanceElemName,
         { description: 'To Be Modified' })).toBe(true)
+      expect(
+        await instanceExists(client, STATIC_RESOURCE, newInstanceWithStaticFileElemName)
+      ).toBeTruthy()
     })
     it('should update the object in the Nacl file', async () => {
       const elements = await awu(await (await workspace.elements()).getAll()).toArray()
@@ -285,7 +310,7 @@ describe.each([
       await verifyInstance(
         await (await workspace.elements()).getAll(), accountName,
         ROLE, newInstanceElemName, { description: 'To Be Modified',
-          [INSTANCE_FULL_NAME_FIELD]: newInstanceFullName }
+          [INSTANCE_FULL_NAME_FIELD]: newInstanceElemName }
       )
     })
     afterAll(async () => {
@@ -318,7 +343,7 @@ describe.each([
         .toBe(true)
     })
     it('should update the instance in salesforce', async () => {
-      expect(await instanceExists(client, ROLE, newInstanceFullName,
+      expect(await instanceExists(client, ROLE, newInstanceElemName,
         { description: 'I Am Modified' })).toBe(true)
     })
     afterAll(async () => {
@@ -373,7 +398,7 @@ describe.each([
       await verifyInstance(
         (await (await workspace.elements()).getAll()),
         accountName, ROLE, newInstanceElemName,
-        { description: 'I Am Modified', [INSTANCE_FULL_NAME_FIELD]: newInstanceFullName }
+        { description: 'I Am Modified', [INSTANCE_FULL_NAME_FIELD]: newInstanceElemName }
       )
     })
     afterAll(async () => {
@@ -396,7 +421,7 @@ describe.each([
       await client.upsert(CUSTOM_FIELD, updatedField)
 
       const updatedRole = {
-        fullName: newInstanceFullName,
+        fullName: newInstanceElemName,
         name: 'Updated role name',
       }
       await client.upsert(ROLE, updatedRole)
@@ -441,13 +466,14 @@ describe.each([
         { action: 'remove', element: newObjectElemName },
         { action: 'remove', element: newInstanceElemName },
         { action: 'remove', element: newInstance2ElemName },
+        { action: 'remove', element: newInstanceWithStaticFileElemName },
       ])
     })
     it('should remove the object in salesforce', async () => {
       expect(await objectExists(client, newObjectApiName)).toBe(false)
     })
     it('should remove the instance in salesforce', async () => {
-      expect(await instanceExists(client, ROLE, newInstanceFullName)).toBe(false)
+      expect(await instanceExists(client, ROLE, newInstanceElemName)).toBe(false)
     })
     afterAll(async () => {
       await runEmptyPreview(fetchOutputDir, accounts)

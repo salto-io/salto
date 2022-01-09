@@ -80,8 +80,8 @@ describe('connection creation', () => {
       const mockCalls = mockOpen.mock.calls
       const writeCalls = mockCalls.filter(args => args[0].readOnly === false)
       const readOnlyCalls = mockCalls.filter(args => args[0].readOnly === true)
-      // 2 for each connections - no connection caching in ReadOnlyRemoteMap
-      expect(readOnlyCalls).toHaveLength(4)
+      // 1 for each connections - no connection caching in ReadOnlyRemoteMap
+      expect(readOnlyCalls).toHaveLength(2)
       expect(writeCalls).toHaveLength(0)
     })
     it('should throw exception if db does not exist', async () => {

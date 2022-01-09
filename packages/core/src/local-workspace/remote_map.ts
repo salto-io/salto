@@ -731,15 +731,6 @@ remoteMap.ReadOnlyRemoteMapCreator => {
       }
       return createIterator(keyPrefix, normalizedOpts, db)
     }
-    const checkDBExists = async (loc: string): Promise<void> => {
-      const newDb: rocksdb = getRemoteDbImpl()(loc)
-      try {
-        await promisify(newDb.open.bind(newDb, { readOnly: true }))()
-        await promisify(newDb.close.bind(newDb))()
-      } catch (e) {
-        throw new Error(`Failed to open DB in read only mode - ${loc}. Error: ${e}`)
-      }
-    }
     const createDBConnection = async (): Promise<void> => {
       readonlyDBConnectionsPerRemoteMap[location] = readonlyDBConnectionsPerRemoteMap[location]
         ?? {}
@@ -748,7 +739,6 @@ remoteMap.ReadOnlyRemoteMapCreator => {
       }
       const connectionPromise = (async () => {
         currentConnectionsCount += 1
-        await checkDBExists(location)
         return getOpenDBConnection(location, true)
       })()
       readonlyDBConnectionsPerRemoteMap[location][uniqueId] = connectionPromise

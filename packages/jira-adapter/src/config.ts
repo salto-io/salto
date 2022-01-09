@@ -345,6 +345,20 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         },
       ],
     },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/fieldconfigurationscheme',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/fieldconfigurationscheme/{id}',
+        method: 'put',
+      },
+      remove: {
+        url: '/rest/api/3/fieldconfigurationscheme/{id}',
+        method: 'delete',
+      },
+    },
   },
 
   FieldsConfigurationIssueTypeItem: {

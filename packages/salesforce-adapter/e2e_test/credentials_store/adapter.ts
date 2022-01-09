@@ -14,46 +14,8 @@
 * limitations under the License.
 */
 import { Adapter } from '@salto-io/e2e-credentials-store'
-import { Connection, MetadataInfo } from 'jsforce'
-import { strings } from '@salto-io/lowerdash'
 import { validateCredentials } from '../../src/client/client'
-
-interface OauthConfig {
-  consumerKey: string
-  consumerSecret: string
-}
-
-interface OauthConfigMetadataInfo extends MetadataInfo {
-  oauthConfig: OauthConfig
-}
-
-export const createConnectedApp = async (username: string, password: string,
-  email: string, callbackUrl: string): Promise<string> => {
-  const conn = new Connection({})
-  const fullName = `SaltoApp${Math.floor(Math.random() * 10000)}`
-  const consumerSecret = strings.insecureRandomString({ length: 32 })
-  const requestMetadata = [{
-    contactEmail: email,
-    description: 'Salto oauth app',
-    fullName,
-    label: fullName,
-    oauthConfig: {
-      callbackUrl,
-      consumerSecret,
-      scopes: [
-        'Basic',
-        'Api',
-        'Web',
-        'Full',
-        'RefreshToken',
-      ],
-    },
-  }]
-  await conn.login(username, password)
-  await conn.metadata.create('ConnectedApp', requestMetadata)
-  const { consumerKey } = (await conn.metadata.read('ConnectedApp', fullName) as OauthConfigMetadataInfo).oauthConfig
-  return consumerKey
-}
+import { UsernamePasswordCredentials } from '../../src/types'
 
 type Args = {
   username: string
@@ -62,15 +24,7 @@ type Args = {
   sandbox: boolean
 }
 
-type Credentials = {
-  username: string
-  password: string
-  isSandbox: boolean
-  consumerKey?: string
-  apiToken?: string
-}
-
-const adapter: Adapter<Args, Credentials> = {
+const adapter: Adapter<Args, UsernamePasswordCredentials> = {
   name: 'salesforce',
   credentialsOpts: {
     username: {
@@ -90,13 +44,11 @@ const adapter: Adapter<Args, Credentials> = {
       default: false,
     },
   },
-  credentials: async args => ({
+  credentials: async args => new UsernamePasswordCredentials({
     username: args.username,
     password: args.password,
     apiToken: args['api-token'],
     isSandbox: args.sandbox,
-    consumerKey: await createConnectedApp(args.username, `${args.password}${args['api-token']}`,
-      'mockEmail@salto.io', 'http://localhost:8080'),
   }),
   validateCredentials: config => validateCredentials(config) as unknown as Promise<void>,
 }

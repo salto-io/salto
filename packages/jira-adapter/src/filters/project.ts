@@ -16,6 +16,8 @@
 import { Change, Element, getChangeData, isAdditionChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 
+const PROJECT_TYPE_NAME = 'Project'
+
 /**
  * Restructures Project type to fit the deployment endpoint
  */
@@ -23,7 +25,7 @@ const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === 'Project')
+      .filter(instance => instance.elemID.typeName === PROJECT_TYPE_NAME)
       .forEach(instance => {
         instance.value.leadAccountId = instance.value.lead?.accountId
         delete instance.value.lead
@@ -45,7 +47,7 @@ const filter: FilterCreator = () => ({
       .filter(isAdditionChange)
       .filter(isInstanceChange)
       .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === 'Project')
+      .filter(instance => instance.elemID.typeName === PROJECT_TYPE_NAME)
       .forEach(instance => {
         instance.value.id = instance.value.id?.toString()
       })

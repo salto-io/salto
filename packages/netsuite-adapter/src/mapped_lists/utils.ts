@@ -107,8 +107,8 @@ export const getMappedLists = async (
 ): Promise<MappedList[]> => {
   const mappedLists: MappedList[] = []
   const lookForMappedLists: TransformFunc = async ({ value, field, path }) => {
-    if (field && await isMappedList(value, field)) {
-      mappedLists.push({ path: path ?? instance.elemID, value })
+    if (path && field && await isMappedList(value, field)) {
+      mappedLists.push({ path, value })
     }
     return value
   }

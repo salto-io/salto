@@ -577,26 +577,31 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           type: 'ContainerOfWorkflowSchemeAssociations',
           toField: 'workflowScheme',
           context: [{ name: 'projectId', fromField: 'id' }],
+          isSingle: true,
         },
         {
           type: 'PermissionScheme',
           toField: 'permissionScheme',
           context: [{ name: 'projectId', fromField: 'id' }],
+          isSingle: true,
         },
         {
           type: 'NotificationScheme',
           toField: 'notificationScheme',
           context: [{ name: 'projectId', fromField: 'id' }],
+          isSingle: true,
         },
         {
           type: 'PageBeanIssueTypeScreenSchemesProjects',
           toField: 'issueTypeScreenScheme',
           context: [{ name: 'projectId', fromField: 'id' }],
+          isSingle: true,
         },
         {
           type: 'PageBeanFieldConfigurationSchemeProjects',
           toField: 'fieldConfigurationScheme',
           context: [{ name: 'projectId', fromField: 'id' }],
+          isSingle: true,
         },
       ],
     },
@@ -639,17 +644,15 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   Project: {
     transformation: {
       fieldTypeOverrides: [
+        { fieldName: 'projectKeys', fieldType: 'List<string>' },
+        { fieldName: 'entityId', fieldType: 'string' },
+        { fieldName: 'leadAccountId', fieldType: 'string' },
         { fieldName: 'components', fieldType: 'list<ComponentWithIssueCount>' },
-        /**
-         * This is the correct values returned from recurseInto.
-         * This types will be changed to matching scheme types
-         * in override_project_scheme_fields_types.ts
-         */
-        { fieldName: 'workflowScheme', fieldType: 'list<WorkflowSchemeAssociations>' },
-        { fieldName: 'permissionScheme', fieldType: 'list<PermissionScheme>' },
-        { fieldName: 'notificationScheme', fieldType: 'list<NotificationScheme>' },
-        { fieldName: 'issueTypeScreenScheme', fieldType: 'list<IssueTypeScreenSchemesProjects>' },
-        { fieldName: 'fieldConfigurationScheme', fieldType: 'list<FieldConfigurationSchemeProjects>' },
+        { fieldName: 'workflowScheme', fieldType: 'WorkflowScheme' },
+        { fieldName: 'permissionScheme', fieldType: 'PermissionScheme' },
+        { fieldName: 'notificationScheme', fieldType: 'NotificationScheme' },
+        { fieldName: 'issueTypeScreenScheme', fieldType: 'IssueTypeScreenScheme' },
+        { fieldName: 'fieldConfigurationScheme', fieldType: 'FieldConfigurationScheme' },
       ],
       fieldsToHide: [
         {

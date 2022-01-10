@@ -25,13 +25,12 @@ import { FilterCreator, Filter, filtersRunner } from './filter'
 import fieldReferences from './filters/field_references'
 import referenceBySelfLinkFilter from './filters/references_by_self_link'
 import removeSelfFilter from './filters/remove_self'
-import addReferencesToProjectSchemes from './filters/add_references_to_project_schemes'
-import overrideProjectSchemeFieldsTypes from './filters/override_project_scheme_fields_types'
 import issueTypeSchemeReferences from './filters/issue_type_schemas/issue_type_scheme_references'
 import issueTypeSchemeFilter from './filters/issue_type_schemas/issue_type_scheme'
 import sharePermissionFilter from './filters/share_permission'
 import boardFilter from './filters/board'
 import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
+import projectFilter from './filters/project'
 import defaultDeployFilter from './filters/default_deploy'
 import workflowFilter from './filters/workflow/workflow'
 import { JIRA } from './constants'
@@ -52,8 +51,7 @@ export const DEFAULT_FILTERS = [
   issueTypeSchemeFilter,
   sharePermissionFilter,
   boardFilter,
-  addReferencesToProjectSchemes,
-  overrideProjectSchemeFieldsTypes,
+  projectFilter,
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,

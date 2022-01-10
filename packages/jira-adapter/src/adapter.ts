@@ -54,11 +54,11 @@ export const DEFAULT_FILTERS = [
   boardFilter,
   addReferencesToProjectSchemes,
   overrideProjectSchemeFieldsTypes,
-  hiddenValuesInListsFilter,
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,
   fieldReferences,
+  hiddenValuesInListsFilter,
   // Must be last
   defaultDeployFilter,
 ]

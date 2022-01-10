@@ -17,8 +17,17 @@ import _ from 'lodash'
 import 'jest-extended'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { InstanceElement, isInstanceElement, Values } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import {
+  BuiltinTypes,
+  ElemID,
+  InstanceElement,
+  isInstanceElement,
+  ListType,
+  ObjectType,
+  Values,
+} from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements, naclCase } from '@salto-io/adapter-utils'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import mockReplies from './mock_replies.json'
 import { adapter } from '../src/adapter_creator'
 import { accessTokenCredentialsType } from '../src/auth'
@@ -29,6 +38,7 @@ import {
   DEFAULT_INCLUDE_TYPES,
   FETCH_CONFIG,
 } from '../src/config'
+import { STRIPE } from '../src/constants'
 
 const TESTS_TIMEOUT_SECONDS = 30
 jest.setTimeout(TESTS_TIMEOUT_SECONDS * 1000)
@@ -70,6 +80,66 @@ describe('stripe swagger adapter', () => {
     return elements.filter(isInstanceElement)
   }
   beforeAll(() => {
+    const singularObjectTypesByName = Object.fromEntries(SINGULAR_TYPES.map(type => [
+      type,
+      new ObjectType({
+        elemID: new ElemID(STRIPE, type),
+        fields: { id: { refType: BuiltinTypes.STRING } },
+      })]))
+    const generateMockTypes: typeof elementUtils.swagger.generateTypes = async () => (
+      {
+        allTypes: {
+          ...singularObjectTypesByName,
+          ...Object.fromEntries(DEFAULT_INCLUDE_TYPES.map(
+            type => [naclCase(type), new ObjectType({ elemID: new ElemID(STRIPE, type),
+              fields: { data: {
+                refType: new ListType(singularObjectTypesByName[type]),
+              } } })]
+          )),
+        },
+        parsedConfigs: {
+          products: {
+            request: {
+              url: '/v1/products',
+            },
+          },
+          coupons: {
+            request: {
+              url: '/v1/coupons',
+            },
+          },
+          plans: {
+            request: {
+              url: '/v1/plans',
+            },
+          },
+          prices: {
+            request: {
+              url: '/v1/prices',
+            },
+          },
+          country_specs: {
+            request: {
+              url: '/v1/country_specs',
+            },
+          },
+          reporting__report_types: {
+            request: {
+              url: '/v1/reporting/report_types',
+            },
+          },
+          tax_rates: {
+            request: {
+              url: '/v1/tax_rates',
+            },
+          },
+          webhook_endpoints: {
+            request: {
+              url: '/v1/webhook_endpoints',
+            },
+          },
+        },
+      })
     jest.mock('@salto-io/adapter-components', () => {
       const actual = jest.requireActual('@salto-io/adapter-components')
       return {
@@ -78,7 +148,7 @@ describe('stripe swagger adapter', () => {
           ...actual.elements,
           swagger: {
             ...actual.elements.swagger,
-            generateTypes: jest.fn().mockImplementation(actual.elements.swagger.generateTypes),
+            generateTypes: jest.fn().mockImplementation(generateMockTypes),
             getAllInstances:
               jest.fn().mockImplementation(actual.elements.swagger.getAllInstances),
           },

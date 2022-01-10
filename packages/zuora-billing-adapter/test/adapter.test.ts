@@ -95,8 +95,7 @@ jest.mock('@salto-io/adapter-components', () => {
     adapterName, config, schemasAndRefs
   ) => {
     if (schemasAndRefs !== undefined) {
-      const res = await jest.requireActual('@salto-io/adapter-components').elements.swagger.generateTypes(adapterName, config, schemasAndRefs)
-      return res
+      return actual.elements.swagger.generateTypes(adapterName, config, schemasAndRefs)
     }
     return {
       allTypes: {

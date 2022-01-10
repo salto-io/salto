@@ -115,8 +115,8 @@ export const addDeploymentAnnotationsFromSwagger = async (
   type: ObjectType,
   swagger: LoadedSwagger,
   endpointDetails: DeploymentRequestsByAction,
-): Promise<Record<string, boolean>> => {
-  const endpointToIsExist: Record<string, boolean> = {}
+): Promise<Set<string>> => {
+  const foundEndpoint = new Set<string>()
 
   const { document } = swagger
   if (!isV3(document)) {
@@ -135,10 +135,9 @@ export const addDeploymentAnnotationsFromSwagger = async (
 
     const endpointUrl = getSwaggerEndpoint(endpoint.url, baseUrls)
     if (swagger.document.paths[endpointUrl]?.[endpoint.method] === undefined) {
-      endpointToIsExist[endpoint.url] = false
       return
     }
-    endpointToIsExist[endpoint.url] = true
+    foundEndpoint.add(endpoint.url)
 
     delete type.annotations[OPERATION_TO_ANNOTATION[operation as ActionName]]
 
@@ -154,7 +153,7 @@ export const addDeploymentAnnotationsFromSwagger = async (
     await setTypeAnnotations(type, schema, swagger, operation as ActionName, new Set())
   })
 
-  return endpointToIsExist
+  return foundEndpoint
 }
 
 
@@ -170,7 +169,7 @@ const addDeploymentAnnotationsToType = async (
   swaggers: LoadedSwagger[],
   endpointDetails: DeploymentRequestsByAction,
 ): Promise<void> => {
-  const endpointsToIsExistDetails = await awu(swaggers)
+  const foundEndpointsDetails = await awu(swaggers)
     .map(swagger => addDeploymentAnnotationsFromSwagger(type, swagger, endpointDetails))
     .toArray();
 
@@ -180,8 +179,8 @@ const addDeploymentAnnotationsToType = async (
     endpointDetails.remove?.url,
   ].filter(values.isDefined)
     .filter(
-      url => endpointsToIsExistDetails
-        .every(endpointsToIsExist => !endpointsToIsExist[url])
+      url => foundEndpointsDetails
+        .every(foundEndpoints => !foundEndpoints.has(url))
     )
     .forEach(url => {
       log.warn(`${type.elemID.getFullName()} endpoint ${url} not found in swagger`)

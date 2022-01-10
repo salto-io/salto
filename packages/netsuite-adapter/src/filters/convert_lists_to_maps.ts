@@ -30,7 +30,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
    * - convert ListType fields to MapType
    * - adds an annotation to the fields mentioned above that indicates
    *   the inner field to use as mapping key
-   * - convert instances' values in the fields mantioned above from lists to maps
+   * - convert instances' values in the fields mentioned above from lists to maps
    *   by the mapping key mantioned above
    *
    * NOTICE: This filter works on CustomType types & instances only.

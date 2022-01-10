@@ -22,7 +22,7 @@ import { mockWorkspace } from './workspace'
 
 describe('workspace query locations', () => {
   let workspace: EditorWorkspace
-  const baseDir = path.resolve(`${__dirname}/../../test/test-nacls/`)
+  const baseDir = path.resolve(`${__dirname}/../test/test-nacls/`)
   const naclFileName = path.join(baseDir, 'all.nacl')
 
   beforeAll(async () => {

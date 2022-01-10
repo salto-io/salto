@@ -22,7 +22,7 @@ module.exports = deepMerge(
     displayName: 'adapter-api',
     rootDir: `${__dirname}`,
     collectCoverageFrom: [
-      '!<rootDir>/dist/index.js',
+      '!<rootDir>/index.ts',
     ],
     coverageThreshold: {
       // Slowly start increasing here, never decrease!

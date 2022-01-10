@@ -13,33 +13,26 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-module.exports = {
-  verbose: true,
-  testEnvironment: 'node',
-  name: 'persistent-pool',
-  displayName: 'persistent-pool',
-  rootDir: `${__dirname}`,
-  testMatch: ['<rootDir>/dist/test/**/*.test.js'],
-  testRunner: "jest-circus/runner",
-  collectCoverage: true,
-  coverageReporters: ['json', 'lcov', 'text', 'clover', 'json-summary'],
-  collectCoverageFrom: [
-    'dist/**/*.js',
-    'dist/**/*.jsx',
-    '!**/node_modules/**',
-    '!*.config.js',
-    '!coverage/**',
-    '!dist/test/**',
-    '!<rootDir>/dist/src/index.js',
-  ],
-  testEnvironment: './dist/test/lib/dynamodb/environment',
-  coverageThreshold: {
-    global: {
-      branches: 100,
-      functions: 100,
-      lines: 100,
-      statements: 100,
+const deepMerge = require('../../build_utils/deep_merge')
+
+module.exports = deepMerge(
+  require('../../jest.base.config.js'),
+  {
+    name: 'persistent-pool',
+    displayName: 'persistent-pool',
+    rootDir: `${__dirname}`,
+    collectCoverageFrom: [
+      '!<rootDir>/src/index.ts',
+    ],
+    testEnvironment: './dist/test/lib/dynamodb/environment',
+    coverageThreshold: {
+      global: {
+        branches: 100,
+        functions: 100,
+        lines: 100,
+        statements: 100,
+      },
     },
-  },
-}
+  }
+)
 

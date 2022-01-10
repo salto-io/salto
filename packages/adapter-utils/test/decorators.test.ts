@@ -16,7 +16,7 @@
 import { logger } from '@salto-io/logging'
 import { logDuration } from '../src/decorators'
 
-const logging = logger('adapter-utils/decorators')
+const logging = logger('adapter-utils/src/decorators')
 
 class TestCls {
   a: number

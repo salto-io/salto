@@ -22,7 +22,7 @@ import testParams from './test_params'
 
 const { awu } = collections.asynciterable
 const mockProgressReporter = { reportProgress: jest.fn() }
-const EXTRA_NACL_PATH = path.join(__dirname, '../../test/mocks')
+const EXTRA_NACL_PATH = path.join(__dirname, '../test/mocks')
 describe('elements generator', () => {
   describe('consistency', () => {
     it('should create the same set of elements when invoked with the same seed and params', async () => {

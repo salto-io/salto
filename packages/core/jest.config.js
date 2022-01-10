@@ -22,8 +22,8 @@ module.exports = deepMerge(
     displayName: 'salto',
     rootDir: `${__dirname}`,
     collectCoverageFrom: [
-      '!**/hcl.js', // Generated parser file
-      '!<rootDir>/dist/index.js',
+      '!**/hcl.ts', // Generated parser file
+      '!<rootDir>/index.ts',
     ],
     coverageThreshold: {
       // Slowly start increasing here, never decrease!

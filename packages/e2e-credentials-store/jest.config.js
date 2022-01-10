@@ -22,7 +22,7 @@ module.exports = deepMerge(
     displayName: 'e2e-credentials-store',
     rootDir: `${__dirname}`,
     collectCoverageFrom: [
-      '!<rootDir>/dist/index.js',
+      '!<rootDir>/index.ts',
     ],
     testEnvironment: 'jest-dynalite/dist/environment',
     coverageThreshold: {

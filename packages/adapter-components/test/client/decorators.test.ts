@@ -16,7 +16,7 @@
 import { logger } from '@salto-io/logging'
 import { logDecorator, requiresLogin } from '../../src/client'
 
-const logging = logger('adapter-components/client/decorators')
+const logging = logger('adapter-components/src/client/decorators')
 
 class TestCls {
   a: string

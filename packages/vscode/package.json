@@ -155,6 +155,7 @@
         "jest-util": "^27.4.2",
         "readdirp": "^3.1.1",
         "tmp-promise": "^2.0.2",
+        "ts-jest": "^27.1.2",
         "typescript": "3.9.3",
         "vsce": "^1.66.0",
         "vscode-test": "^1.0.2"

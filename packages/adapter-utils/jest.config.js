@@ -22,7 +22,7 @@ module.exports = deepMerge(
         displayName: 'adapter-utils',
         rootDir: `${__dirname}`,
         collectCoverageFrom: [
-            '!<rootDir>/dist/index.js',
+            '!<rootDir>/index.ts',
         ],
         // todo: raise the coverageThreshold once more code is implemented
         coverageThreshold: {

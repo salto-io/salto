@@ -25,7 +25,7 @@ module.exports = deepMerge(
       ? '@salto-io/jira-adapter/dist/e2e_test/jest_environment'
       : undefined,
     collectCoverageFrom: [
-      '!<rootDir>/dist/index.js',
+      '!<rootDir>/index.ts',
     ],
     coverageThreshold: {
       'global': {

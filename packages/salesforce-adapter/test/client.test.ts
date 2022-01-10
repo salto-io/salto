@@ -32,7 +32,7 @@ import { mockRetrieveResult, mockRetrieveLocator, mockFileProperties } from './c
 const { array, asynciterable } = collections
 const { makeArray } = array
 const { mapAsync, toArrayAsync } = asynciterable
-const logging = logger('salesforce-adapter/client/client')
+const logging = logger('salesforce-adapter/src/client/client')
 
 describe('salesforce client', () => {
   beforeEach(() => {

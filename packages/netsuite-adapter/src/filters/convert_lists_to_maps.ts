@@ -28,7 +28,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
   /**
    * Upon fetch, do the following:
    * - convert ListType fields to MapType
-   * - adds an annotation to the fields mantioned above that indicates
+   * - adds an annotation to the fields mentioned above that indicates
    *   the inner field to use as mapping key
    * - convert instances' values in the fields mantioned above from lists to maps
    *   by the mapping key mantioned above

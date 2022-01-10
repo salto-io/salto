@@ -18,7 +18,7 @@ import { filterUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../../utils'
 import { DEFAULT_CONFIG } from '../../../src/config'
 import { JIRA } from '../../../src/constants'
-import fieldsReferencesFilter, { getFieldsLookUpName } from '../../../src/filters/fields/fields_references'
+import fieldsReferencesFilter, { getFieldsLookUpName } from '../../../src/filters/fields/field_references'
 
 describe('fields_references', () => {
   let filter: filterUtils.FilterWith<'onFetch'>

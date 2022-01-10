@@ -13,17 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, Change, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isMapType, isModificationChange, isObjectType, ModificationChange, ObjectType, toChange, Value, Values } from '@salto-io/adapter-api'
+import { AdditionChange, Change, getChangeData, InstanceElement, isAdditionChange, isMapType, isModificationChange, isObjectType, ModificationChange, ObjectType, toChange, Value, Values } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { config } from '@salto-io/adapter-components'
-import { deployChange } from '../../deployment'
+import { defaultDeployChange } from '../../deployment'
 import JiraClient from '../../client/client'
 import { setContextOptions, setOptionTypeDeploymentAnnotations } from './context_options'
 import { setDefaultValueTypeDeploymentAnnotations } from './default_values'
 import { setContextField, setIssueTypesDeploymentAnnotations, setProjectsDeploymentAnnotations } from './issues_and_projects'
+import { setDeploymentAnnotations } from './utils'
 
 const { awu } = collections.asynciterable
+
+const FIELDS_TO_IGNORE = ['defaultValue', 'options']
 
 const toContextInstance = (
   context: Values,
@@ -93,16 +96,15 @@ const deployContextChange = async (
   client: JiraClient,
   apiDefinitions: config.AdapterApiConfig,
 ): Promise<void> => {
-  const fieldsToAlwaysIgnore = ['defaultValue', 'options']
-  await deployChange(
+  await defaultDeployChange({
     change,
     client,
     apiDefinitions,
-    // 'issueTypeIds', 'projectIds' can be deploy in the same endpoint as create
+    // 'issueTypeIds', 'projectIds' can be deployed in the same endpoint as create
     // but for modify there are different endpoints for them
-    isAdditionChange(change) ? fieldsToAlwaysIgnore : [...fieldsToAlwaysIgnore, 'issueTypeIds', 'projectIds'],
-    { fieldId: parentField.value.id }
-  )
+    fieldsToIgnore: isAdditionChange(change) ? FIELDS_TO_IGNORE : [...FIELDS_TO_IGNORE, 'issueTypeIds', 'projectIds'],
+    additionalUrlVars: { fieldId: parentField.value.id },
+  })
 
   await setContextField(change, 'issueTypeIds', 'issuetype', parentField, client)
   await setContextField(change, 'projectIds', 'project', parentField, client)
@@ -139,20 +141,18 @@ export const deployContexts = async (
     ...removalContextsChanges,
     ...getContextChanges(fieldChange, contextType),
   ]).filter(contextChange => (
-    isModificationChange(contextChange)
-      ? !contextChange.data.before.isEqual(contextChange.data.after)
-      : true))
-    .forEach(async contextChange => {
-      await deployContextChange(contextChange, fieldInstance, client, apiDefinitions)
-    })
+    !isModificationChange(contextChange)
+    || contextChange.data.before.isEqual(contextChange.data.after)
+  )).forEach(async contextChange => {
+    await deployContextChange(contextChange, fieldInstance, client, apiDefinitions)
+  })
 }
 
 
 export const setContextDeploymentAnnotations = async (
   fieldType: ObjectType,
 ): Promise<void> => {
-  fieldType.fields.contexts.annotations[CORE_ANNOTATIONS.CREATABLE] = true
-  fieldType.fields.contexts.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
+  setDeploymentAnnotations(fieldType, 'contexts')
   const contextType = await getContextType(fieldType)
 
   await setDefaultValueTypeDeploymentAnnotations(contextType)

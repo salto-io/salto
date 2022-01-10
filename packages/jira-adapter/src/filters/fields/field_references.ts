@@ -17,7 +17,9 @@ import { Element, Field, isInstanceElement, isObjectType, ObjectType, ReferenceE
 import { GetLookupNameFunc, naclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
+import { FIELD_TYPE_NAME } from './utils'
 
+// Converts the fields values from reference back to value
 export const getFieldsLookUpName: GetLookupNameFunc = ({
   ref, path,
 }) => {
@@ -31,7 +33,7 @@ const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === 'Field')
+      .filter(instance => instance.elemID.typeName === FIELD_TYPE_NAME)
       .forEach(instance => {
         Object.values(instance.value.contexts ?? {}).forEach((context: Value) => {
           const optionsElemId = instance.elemID.createNestedID('contexts', naclCase(context.name), 'options')
@@ -40,7 +42,7 @@ const filter: FilterCreator = () => ({
             .keyBy(option => option.id)
             .value()
 
-          _.mapValues(context.options ?? {}, option => {
+          _(context.options ?? {}).values().forEach(option => {
             const referencedOption = optionsById[option.optionId]
             if (referencedOption !== undefined) {
               option.optionId = new ReferenceExpression(
@@ -70,10 +72,9 @@ const filter: FilterCreator = () => ({
         })
       })
 
-    const optionType = elements.find(
-      element => isObjectType(element)
-        && element.elemID.typeName === 'CustomFieldContextOption'
-    ) as ObjectType | undefined
+    const optionType = elements
+      .filter(isObjectType)
+      .find(element => element.elemID.typeName === 'CustomFieldContextOption')
 
     const defaultValueType = elements.find(
       element => isObjectType(element)

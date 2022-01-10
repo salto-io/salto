@@ -33,9 +33,9 @@ import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
 import projectFilter from './filters/project'
 import defaultDeployFilter from './filters/default_deploy'
 import workflowFilter from './filters/workflow/workflow'
-import fieldsStructureFilter from './filters/fields/fields_structure'
-import fieldsDeploymentFilter from './filters/fields/fields_deployment'
-import fieldsReferencesFilter from './filters/fields/fields_references'
+import fieldStructureFilter from './filters/fields/field_structure'
+import fieldDeploymentFilter from './filters/fields/field_deployment'
+import fieldReferencesFilter from './filters/fields/field_references'
 import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
 
@@ -55,9 +55,9 @@ export const DEFAULT_FILTERS = [
   sharePermissionFilter,
   boardFilter,
   projectFilter,
-  fieldsStructureFilter,
-  fieldsReferencesFilter,
-  fieldsDeploymentFilter,
+  fieldStructureFilter,
+  fieldReferencesFilter,
+  fieldDeploymentFilter,
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,

@@ -19,7 +19,7 @@ import { MockInterface } from '@salto-io/test-utils'
 import { mockClient } from '../../utils'
 import { DEFAULT_CONFIG } from '../../../src/config'
 import { JIRA } from '../../../src/constants'
-import fieldsDeploymentFilter from '../../../src/filters/fields/fields_deployment'
+import fieldsDeploymentFilter from '../../../src/filters/fields/field_deployment'
 import JiraClient from '../../../src/client/client'
 import { deployContexts } from '../../../src/filters/fields/contexts'
 

@@ -13,10 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, CORE_ANNOTATIONS, getChangeData, InstanceElement, isModificationChange, ObjectType } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isModificationChange, ObjectType } from '@salto-io/adapter-api'
 import { resolveChangeElement } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { getLookUpName } from '../../references'
+import { setDeploymentAnnotations } from './utils'
 
 // Works for issuesIds and projectsIds
 export const setContextField = async (
@@ -30,6 +31,8 @@ export const setContextField = async (
   if (!isModificationChange(resolvedChange)) {
     // In create the issue types and projects ids are created
     // with the same request the context is created with
+    // In remove, all the values are removed with the same request
+    // so no need to do anything here
     return
   }
   const contextInstance = getChangeData(resolvedChange)
@@ -58,10 +61,6 @@ export const setContextField = async (
   }
 }
 
-const setDeploymentAnnotations = (contextType: ObjectType, fieldName: string): void => {
-  contextType.fields[fieldName].annotations[CORE_ANNOTATIONS.CREATABLE] = true
-  contextType.fields[fieldName].annotations[CORE_ANNOTATIONS.UPDATABLE] = true
-}
-
 export const setProjectsDeploymentAnnotations = (contextType: ObjectType): void => setDeploymentAnnotations(contextType, 'projectIds')
+
 export const setIssueTypesDeploymentAnnotations = (contextType: ObjectType): void => setDeploymentAnnotations(contextType, 'issueTypeIds')

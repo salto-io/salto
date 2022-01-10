@@ -20,7 +20,7 @@ import { promises } from '@salto-io/lowerdash'
 import { getLookUpName } from '../../references'
 import JiraClient from '../../client/client'
 import { JiraConfig } from '../../config'
-import { deployChange, deployChanges } from '../../deployment'
+import { defaultDeployChange, deployChanges } from '../../deployment'
 import { FilterCreator } from '../../filter'
 
 const ISSUE_TYPE_SCHEMA_NAME = 'IssueTypeScheme'
@@ -83,7 +83,7 @@ const deployIssueTypeSchema = async (
   client: JiraClient,
   config: JiraConfig,
 ): Promise<void> => {
-  await deployChange(change, client, config.apiDefinitions, ['issueTypeIds'])
+  await defaultDeployChange({ change, client, apiDefinitions: config.apiDefinitions, fieldsToIgnore: ['issueTypeIds'] })
   await deployNewAndDeletedIssueTypeIds(change, client)
   await deployIssueTypeIdsOrder(change, client)
 }

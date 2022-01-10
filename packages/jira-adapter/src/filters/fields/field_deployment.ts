@@ -13,20 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, Element, getChangeData, InstanceElement, isInstanceChange, isObjectType, isRemovalChange, ObjectType } from '@salto-io/adapter-api'
+import { Change, Element, getChangeData, InstanceElement, isInstanceChange, isObjectType, isRemovalChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { FilterContext } from '../../config'
 import JiraClient from '../../client/client'
 import { FilterCreator } from '../../filter'
 import { deployContexts, setContextDeploymentAnnotations } from './contexts'
 import { updateDefaultValues } from './default_values'
-import { deployChange, deployChanges } from '../../deployment'
+import { defaultDeployChange, deployChanges } from '../../deployment'
+import { FIELD_TYPE_NAME } from './utils'
+
 
 const deployField = async (
   change: Change<InstanceElement>,
   client: JiraClient,
-  config: FilterContext): Promise<void> => {
-  await deployChange(change, client, config.apiDefinitions, ['contexts'])
+  config: FilterContext,
+): Promise<void> => {
+  await defaultDeployChange({ change, client, apiDefinitions: config.apiDefinitions, fieldsToIgnore: ['contexts'] })
 
   if (isRemovalChange(change)) {
     return
@@ -42,7 +45,7 @@ const deployField = async (
 
 const filter: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]) => {
-    const fieldType = elements.find(e => isObjectType(e) && e.elemID.name === 'Field') as ObjectType | undefined
+    const fieldType = elements.filter(isObjectType).find(e => e.elemID.name === FIELD_TYPE_NAME)
     if (fieldType !== undefined) {
       await setContextDeploymentAnnotations(fieldType)
     }
@@ -51,11 +54,12 @@ const filter: FilterCreator = ({ client, config }) => ({
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
-      change => isInstanceChange(change) && getChangeData(change).elemID.typeName === 'Field'
+      change => isInstanceChange(change)
+        && getChangeData(change).elemID.typeName === FIELD_TYPE_NAME
     )
 
     const deployResult = await deployChanges(
-      relevantChanges as Change<InstanceElement>[],
+      relevantChanges.filter(isInstanceChange),
       change => deployField(change, client, config)
     )
 

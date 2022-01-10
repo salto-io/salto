@@ -13,13 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, Change, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isMapType, isObjectType, isReferenceExpression, isRemovalChange, ModificationChange, ObjectType, Value, Values } from '@salto-io/adapter-api'
+import { AdditionChange, Change, getChangeData, InstanceElement, isAdditionChange, isMapType, isObjectType, isReferenceExpression, isRemovalChange, ModificationChange, ObjectType, Value, Values } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { resolveValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { getLookUpName } from '../../references'
+import { setDeploymentAnnotations } from './utils'
 
 const log = logger(module)
 
@@ -70,20 +71,29 @@ const getOptionChanges = (
   }
 }
 
+// Transform option back to the format expected by Jira API
 const transformOption = (option: Values): Values => _.pickBy({
   ..._.omit(option, 'position'),
   optionId: isReferenceExpression(option.optionId) ? option.optionId.value.id : option.optionId,
 }, values.isDefined)
 
+type UpdateContextOptionsParams = {
+  addedOptions: Value[]
+  modifiedOptions: Value[]
+  removedOptions: Value[]
+  client: clientUtils.HTTPWriteClientInterface
+  baseUrl: string
+  contextChange: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>
+}
 
-const updateContextOptions = async (
-  addedOptions: Value[],
-  modifiedOptions: Value[],
-  removedOptions: Value[],
-  client: clientUtils.HTTPWriteClientInterface,
-  baseUrl: string,
-  contextChange: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
-): Promise<void> => {
+const updateContextOptions = async ({
+  addedOptions,
+  modifiedOptions,
+  removedOptions,
+  client,
+  baseUrl,
+  contextChange,
+}: UpdateContextOptionsParams): Promise<void> => {
   if (addedOptions.length !== 0) {
     const resp = await client.post({
       url: baseUrl,
@@ -93,7 +103,7 @@ const updateContextOptions = async (
     })
 
     if (Array.isArray(resp.data)) {
-      log.error('Received unexpected response from Jira API: %o', resp.data)
+      log.error('Received unexpected array response from Jira API: %o', resp.data)
       throw new Error('Received unexpected response from Jira API')
     }
 
@@ -158,25 +168,27 @@ export const setContextOptions = async (
 
   const { added, modified, removed } = getOptionChanges(contextChange)
 
+  const [addedWithRefs, addedWithoutRefs] = _.partition(added, hasReferences)
+
   const url = `/rest/api/3/field/${parentField.value.id}/context/${getChangeData(contextChange).value.id}/option`
-  await updateContextOptions(
-    added.filter(option => !hasReferences(option)),
-    modified,
-    removed,
+  await updateContextOptions({
+    addedOptions: addedWithoutRefs,
+    modifiedOptions: modified,
+    removedOptions: removed,
     client,
-    url,
+    baseUrl: url,
     contextChange,
-  )
-  // Because the cascading options is dependent on the other options,
+  })
+  // Because the cascading options are dependent on the other options,
   // we need to deploy them after the other options
-  await updateContextOptions(
-    added.filter(hasReferences),
-    [],
-    [],
+  await updateContextOptions({
+    addedOptions: addedWithRefs,
+    modifiedOptions: [],
+    removedOptions: [],
     client,
-    url,
+    baseUrl: url,
     contextChange,
-  )
+  })
 
   await reorderContextOptions(contextChange, client, url)
 }
@@ -184,8 +196,7 @@ export const setContextOptions = async (
 export const setOptionTypeDeploymentAnnotations = async (
   fieldContextType: ObjectType,
 ): Promise<void> => {
-  fieldContextType.fields.options.annotations[CORE_ANNOTATIONS.CREATABLE] = true
-  fieldContextType.fields.options.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
+  setDeploymentAnnotations(fieldContextType, 'options')
 
   const optionMapType = await fieldContextType.fields.options?.getType()
   if (!isMapType(optionMapType)) {
@@ -198,8 +209,7 @@ export const setOptionTypeDeploymentAnnotations = async (
 
   ['value', 'optionId', 'disabled', 'position'].forEach((fieldName: string) => {
     if (fieldName in optionType.fields) {
-      optionType.fields[fieldName].annotations[CORE_ANNOTATIONS.CREATABLE] = true
-      optionType.fields[fieldName].annotations[CORE_ANNOTATIONS.UPDATABLE] = true
+      setDeploymentAnnotations(optionType, fieldName)
     }
   })
 }

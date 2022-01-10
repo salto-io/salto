@@ -14,11 +14,12 @@
 * limitations under the License.
 */
 
-import { Change, compareSpecialValues, CORE_ANNOTATIONS, getChangeData, InstanceElement, isModificationChange, isObjectType, ObjectType, Value, Values } from '@salto-io/adapter-api'
+import { Change, compareSpecialValues, getChangeData, InstanceElement, isModificationChange, isObjectType, ObjectType, Value, Values } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { resolveChangeElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { getLookUpName } from '../../references'
+import { setDeploymentAnnotations } from './utils'
 
 const EDITABLE_FIELD_NAMES = [
   'type',
@@ -90,7 +91,7 @@ export const updateDefaultValues = async (
     Object.values(fieldInstance.value.contexts ?? {}).map((context: Value) => context.id)
   )
   // Removing from the list defaults values that were deleted because the whole context
-  // were deleted and thus can't be updated
+  // was deleted and thus can't be updated
   const valuesToSet = mergedValues.filter(
     defaultValue => afterContextIds.has(defaultValue.contextId),
   )
@@ -112,16 +113,14 @@ export const setDefaultValueTypeDeploymentAnnotations = async (
 ): Promise<void> => {
   const defaultValueType = await fieldContextType.fields.defaultValue?.getType()
   if (!isObjectType(defaultValueType)) {
-    throw new Error(`type of ${fieldContextType.fields.defaultValue?.elemID.getFullName()} is not an object type`)
+    throw new Error(`type ${defaultValueType.elemID.getFullName()} of ${fieldContextType.fields.defaultValue?.elemID.getFullName()} is not an object type`)
   }
 
-  fieldContextType.fields.defaultValue.annotations[CORE_ANNOTATIONS.CREATABLE] = true
-  fieldContextType.fields.defaultValue.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
+  setDeploymentAnnotations(fieldContextType, 'defaultValue')
 
   EDITABLE_FIELD_NAMES.forEach((fieldName: string) => {
     if (fieldName in defaultValueType.fields) {
-      defaultValueType.fields[fieldName].annotations[CORE_ANNOTATIONS.CREATABLE] = true
-      defaultValueType.fields[fieldName].annotations[CORE_ANNOTATIONS.UPDATABLE] = true
+      setDeploymentAnnotations(defaultValueType, fieldName)
     }
   })
 }

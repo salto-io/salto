@@ -14,14 +14,14 @@
 * limitations under the License.
 */
 import { isInstanceChange } from '@salto-io/adapter-api'
-import { deployChange, deployChanges } from '../deployment'
+import { defaultDeployChange, deployChanges } from '../deployment'
 import { FilterCreator } from '../filter'
 
 const filter: FilterCreator = ({ client, config }) => ({
   deploy: async changes => {
     const deployResult = await deployChanges(
       changes.filter(isInstanceChange),
-      change => deployChange(change, client, config.apiDefinitions)
+      change => defaultDeployChange({ change, client, apiDefinitions: config.apiDefinitions })
     )
 
     return {

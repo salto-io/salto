@@ -31,7 +31,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
    * - adds an annotation to the fields mentioned above that indicates
    *   the inner field to use as mapping key
    * - convert instances' values in the fields mentioned above from lists to maps
-   *   by the mapping key mantioned above
+   *   by the mapping key mentioned above
    *
    * NOTICE: This filter works on CustomType types & instances only.
    * The reverse conversion happens in sdfDeploy

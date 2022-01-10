@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {namespaceNormalizer, toHexColor,} from '../../src/internal/namespace'
+import { namespaceNormalizer, toHexColor } from '../../src/internal/namespace'
 
 describe('namespace', () => {
   describe('toHexColor', () => {

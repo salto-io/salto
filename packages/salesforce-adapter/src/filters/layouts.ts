@@ -75,17 +75,6 @@ const filterCreator: FilterCreator = ({ config }) => ({
       return
     }
 
-    // const layouts = [...findInstances(elements, LAYOUT_TYPE_ID)]
-    // const apiNameToCustomObject = await generateApiNameToCustomObject(elements)
-
-    // await awu(layouts).forEach(async layout => {
-    //   const [layoutObjName, layoutName] = await layoutObjAndName(layout)
-    //   const layoutObj = apiNameToCustomObject.get(layoutObjName)
-    //   if (layoutObj === undefined) {
-    //     log.debug('Could not find object %s for layout %s', layoutObjName, layoutName)
-    //     return
-    //   }
-
     const referenceElements = buildElementsSourceForFetch(elements, config)
     const apiNameToCustomObject = await multiIndex.keyByAsync({
       iter: await referenceElements.getAll(),

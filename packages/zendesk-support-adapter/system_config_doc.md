@@ -701,8 +701,33 @@ zendesk_support {
           ]
         }
       }
+      business_hours_schedules = {
+        request = {
+          url = "/business_hours/schedules"
+          recurseInto = [
+            {
+              type = "business_hours_schedule_holiday"
+              toField = "holidays"
+              context = [
+                {
+                  name = "scheduleId"
+                  fromField = "id"
+                },
+              ]
+            },
+          ]
+        }
+        transformation = {
+          dataField = "schedules"
+        }
+      }
       business_hours_schedule = {
         transformation = {
+          standaloneFields = [
+            {
+              fieldName = "holidays"
+            },
+          ]
           sourceTypeName = "business_hours_schedules__schedules"
           fieldsToHide = [
             {
@@ -1241,6 +1266,11 @@ zendesk_support {
       }
       routing_attribute = {
         transformation = {
+          standaloneFields = [
+            {
+              fieldName = "values"
+            },
+          ]
           sourceTypeName = "routing_attributes__attributes"
           fieldsToHide = [
             {
@@ -1253,7 +1283,7 @@ zendesk_support {
             },
             {
               fieldName = "id"
-              fieldType = "number"
+              fieldType = "string"
             },
           ]
         }
@@ -1854,9 +1884,27 @@ zendesk_support {
           dataField = "locales"
         }
       }
-      business_hours_schedules = {
+      business_hours_schedule_holiday = {
         request = {
-          url = "/business_hours/schedules"
+          url = "/business_hours/schedules/{scheduleId}/holidays"
+        }
+        transformation = {
+          sourceTypeName = "business_hours_schedule__holidays"
+          dataField = "holidays"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
       }
       sharing_agreements = {
@@ -1924,9 +1972,44 @@ zendesk_support {
           url = "/organization_fields"
         }
       }
+      routing_attribute_value = {
+        request = {
+          url = "/routing/attributes/{attributeId}/values"
+        }
+        transformation = {
+          sourceTypeName = "routing_attribute__values"
+          dataField = "attribute_values"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "string"
+            },
+          ]
+        }
+      }
       routing_attributes = {
         request = {
           url = "/routing/attributes"
+          recurseInto = [
+            {
+              type = "routing_attribute_value"
+              toField = "values"
+              context = [
+                {
+                  name = "attributeId"
+                  fromField = "id"
+                },
+              ]
+            },
+          ]
         }
       }
       routing_attribute_definitions = {

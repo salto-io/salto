@@ -108,7 +108,7 @@ describe('ducktype_transformer', () => {
         },
       })
       expect(instanceElements.toInstance).toHaveBeenCalledTimes(2)
-      expect(instanceElements.toInstance).toHaveBeenCalledWith({
+      expect(instanceElements.toInstance).toHaveBeenNthCalledWith(1, {
         entry: { name: 'bla1' },
         type: res[0],
         transformationConfigByType: {},
@@ -116,9 +116,9 @@ describe('ducktype_transformer', () => {
           idFields: ['name'],
           fileNameFields: ['also_name'],
         },
-        defaultName: 'unnamed_0',
+        defaultName: 'unnamed_0_0',
       })
-      expect(instanceElements.toInstance).toHaveBeenCalledWith({
+      expect(instanceElements.toInstance).toHaveBeenNthCalledWith(2, {
         entry: { missing: 'something' },
         type: res[0],
         transformationConfigByType: {},
@@ -126,7 +126,7 @@ describe('ducktype_transformer', () => {
           idFields: ['name'],
           fileNameFields: ['also_name'],
         },
-        defaultName: 'unnamed_1',
+        defaultName: 'unnamed_0_1',
       })
     })
 
@@ -181,7 +181,7 @@ describe('ducktype_transformer', () => {
         },
       })
       expect(instanceElements.toInstance).toHaveBeenCalledTimes(2)
-      expect(instanceElements.toInstance).toHaveBeenCalledWith({
+      expect(instanceElements.toInstance).toHaveBeenNthCalledWith(1, {
         entry: { name: 'bla1' },
         type: res[0],
         transformationConfigByType: {
@@ -193,9 +193,9 @@ describe('ducktype_transformer', () => {
           idFields: ['name'],
           fileNameFields: ['also_name'],
         },
-        defaultName: 'unnamed_0',
+        defaultName: 'unnamed_0_0',
       })
-      expect(instanceElements.toInstance).toHaveBeenCalledWith({
+      expect(instanceElements.toInstance).toHaveBeenNthCalledWith(2, {
         entry: { missing: 'something' },
         type: res[0],
         transformationConfigByType: {
@@ -207,7 +207,7 @@ describe('ducktype_transformer', () => {
           idFields: ['name'],
           fileNameFields: ['also_name'],
         },
-        defaultName: 'unnamed_1',
+        defaultName: 'unnamed_0_1',
       })
     })
 
@@ -260,7 +260,7 @@ describe('ducktype_transformer', () => {
         },
       })
       expect(instanceElements.toInstance).toHaveBeenCalledTimes(2)
-      expect(instanceElements.toInstance).toHaveBeenCalledWith({
+      expect(instanceElements.toInstance).toHaveBeenNthCalledWith(1, {
         entry: { name: 'bla1' },
         type: res[1],
         transformationConfigByType: {},
@@ -270,7 +270,7 @@ describe('ducktype_transformer', () => {
         },
         defaultName: 'unnamed_0_0',
       })
-      expect(instanceElements.toInstance).toHaveBeenCalledWith({
+      expect(instanceElements.toInstance).toHaveBeenNthCalledWith(2, {
         entry: { missing: 'something' },
         type: res[1],
         transformationConfigByType: {},
@@ -278,7 +278,7 @@ describe('ducktype_transformer', () => {
           idFields: ['name'],
           fileNameFields: ['also_name'],
         },
-        defaultName: 'unnamed_1_0',
+        defaultName: 'unnamed_0_1',
       })
     })
 

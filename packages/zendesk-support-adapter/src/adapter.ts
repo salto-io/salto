@@ -40,6 +40,7 @@ import workspaceFilter from './filters/workspace'
 import ticketFormOrderFilter from './filters/reorder/ticket_form'
 import userFieldOrderFilter from './filters/reorder/user_field'
 import organizationFieldOrderFilter from './filters/reorder/organization_field'
+import workspaceOrderFilter from './filters/reorder/workspace'
 import businessHoursScheduleFilter from './filters/business_hours_schedule'
 import defaultDeployFilter from './filters/default_deploy'
 
@@ -58,6 +59,7 @@ export const DEFAULT_FILTERS = [
   ticketFormOrderFilter,
   userFieldOrderFilter,
   organizationFieldOrderFilter,
+  workspaceOrderFilter,
   businessHoursScheduleFilter,
   // defaultDeployFilter should be last!
   defaultDeployFilter,

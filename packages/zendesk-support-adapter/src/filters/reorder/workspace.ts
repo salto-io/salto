@@ -13,25 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-const deepMerge = require('../../build_utils/deep_merge')
+import { createReorderFilterCreator } from './creator'
 
-module.exports = deepMerge(
-  require('../../jest.base.config.js'),
-  {
-    name: '@salto/logging',
-    displayName: '@salto/logging',
-    rootDir: `${__dirname}`,
-    collectCoverageFrom: [
-      '!<rootDir>/index.ts',
-    ],
-    coverageThreshold: {
-      global: {
-        branches: 100,
-        functions: 100,
-        lines: 100,
-        statements: 100,
-      },
-    },
-  }
-)
+/**
+ * Add workspace order element with all the workspaces ordered
+ */
+const filterCreator = createReorderFilterCreator({
+  typeName: 'workspace',
+  orderFieldName: 'ids',
+})
 
+export default filterCreator

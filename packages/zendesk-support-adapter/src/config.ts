@@ -774,6 +774,14 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       fieldsToHide: [],
     },
   },
+  workspace_order: {
+    deployRequests: {
+      modify: {
+        url: '/workspaces/reorder',
+        method: 'put',
+      },
+    },
+  },
   app_installation: {
     transformation: {
       sourceTypeName: 'app_installations__installations',

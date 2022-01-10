@@ -16,7 +16,7 @@
 import * as core from '@salto-io/core'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
-import { cleanAction } from '../../src/commands/workspace'
+import { cleanAction, cacheUpdateAction } from '../../src/commands/workspace'
 import { CliExitCode } from '../../src/types'
 
 jest.mock('@salto-io/core', () => ({
@@ -28,7 +28,6 @@ jest.mock('@salto-io/core', () => ({
 describe('workspace command group', () => {
   let cliArgs: mocks.MockCliArgs
   let output: mocks.MockCliOutput
-  let cliCommandArgs: mocks.MockCommandArgs
 
   beforeEach(async () => {
     cliArgs = mocks.mockCliArgs()
@@ -37,6 +36,7 @@ describe('workspace command group', () => {
 
   describe('clean command', () => {
     const commandName = 'clean'
+    let cliCommandArgs: mocks.MockCommandArgs
 
     beforeEach(async () => {
       cliCommandArgs = mocks.mockCliCommandArgs(commandName, cliArgs)
@@ -208,6 +208,32 @@ describe('workspace command group', () => {
         })
         expect(output.stdout.content.search('Starting to clean')).toBeGreaterThan(0)
         expect(output.stdout.content.search('Finished cleaning')).toBeGreaterThan(0)
+      })
+    })
+  })
+
+  describe('cache command group', () => {
+    describe('cache update command', () => {
+      const commandName = 'update'
+      let cliCommandArgs: mocks.MockCommandArgs
+      let workspace: mocks.MockWorkspace
+      let result: CliExitCode
+
+      beforeEach(async () => {
+        cliCommandArgs = mocks.mockCliCommandArgs(commandName, cliArgs)
+        workspace = mocks.mockWorkspace({})
+        result = await cacheUpdateAction({
+          ...cliCommandArgs,
+          input: {},
+          workspace,
+        })
+      })
+
+      it('should flush the workspace', () => {
+        expect(workspace.flush).toHaveBeenCalled()
+      })
+      it('should return success', () => {
+        expect(result).toEqual(CliExitCode.Success)
       })
     })
   })

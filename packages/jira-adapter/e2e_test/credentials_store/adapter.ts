@@ -14,43 +14,38 @@
 * limitations under the License.
 */
 import { Adapter } from '@salto-io/e2e-credentials-store'
-import { validateCredentials } from '../../src/client/client'
-import { UsernamePasswordCredentials } from '../../src/types'
+import { Credentials } from '../../src/auth'
 
 type Args = {
-  username: string
-  password: string
-  'api-token'?: string
-  sandbox: boolean
+  baseUrl: string
+  user: string
+  token: string
 }
 
-const adapter: Adapter<Args, UsernamePasswordCredentials> = {
-  name: 'salesforce',
+const adapter: Adapter<Args, Credentials> = {
+  name: 'jira',
   credentialsOpts: {
-    username: {
+    baseUrl: {
       type: 'string',
       demand: true,
     },
-    password: {
+    user: {
       type: 'string',
       demand: true,
     },
-    'api-token': {
+    token: {
       type: 'string',
-      demand: false,
-    },
-    sandbox: {
-      type: 'boolean',
-      default: false,
+      demand: true,
     },
   },
-  credentials: async args => new UsernamePasswordCredentials({
-    username: args.username,
-    password: args.password,
-    apiToken: args['api-token'],
-    isSandbox: args.sandbox,
+  credentials: async args => ({
+    baseUrl: args.baseUrl,
+    user: args.user,
+    token: args.token,
   }),
-  validateCredentials: config => validateCredentials(config) as unknown as Promise<void>,
+  validateCredentials: async () => {
+    // TODO
+  },
 }
 
 export default adapter

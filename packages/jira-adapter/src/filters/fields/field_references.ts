@@ -13,13 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, Field, isInstanceElement, isObjectType, ObjectType, ReferenceExpression, Value } from '@salto-io/adapter-api'
+import { Element, Field, isInstanceElement, isObjectType, ObjectType, ReferenceExpression, Value, Values } from '@salto-io/adapter-api'
 import { GetLookupNameFunc, naclCase } from '@salto-io/adapter-utils'
-import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { FIELD_TYPE_NAME } from './utils'
 
-// Converts the fields values from reference back to value
 export const getFieldsLookUpName: GetLookupNameFunc = ({
   ref, path,
 }) => {
@@ -37,37 +35,29 @@ const filter: FilterCreator = () => ({
       .forEach(instance => {
         Object.values(instance.value.contexts ?? {}).forEach((context: Value) => {
           const optionsElemId = instance.elemID.createNestedID('contexts', naclCase(context.name), 'options')
-          const optionsById = _(context.options ?? {})
-            .values()
-            .keyBy(option => option.id)
-            .value()
 
-          _(context.options ?? {}).values().forEach(option => {
-            const referencedOption = optionsById[option.optionId]
-            if (referencedOption !== undefined) {
-              option.optionId = new ReferenceExpression(
-                optionsElemId.createNestedID(naclCase(referencedOption.value)),
-                referencedOption
-              )
-            }
-          })
+          const referencedDefaultOption = (Object.values(context.options ?? {}) as Values[])
+            .find((option: Values) => option.id === context.defaultValue?.optionId)
 
-          const referencedDefaultOption = optionsById[context.defaultValue?.optionId]
           if (referencedDefaultOption !== undefined) {
+            const defaultOptionElemId = optionsElemId
+              .createNestedID(naclCase(referencedDefaultOption.value))
             context.defaultValue.optionId = new ReferenceExpression(
-              optionsElemId.createNestedID(naclCase(referencedDefaultOption.value)),
+              defaultOptionElemId,
               referencedDefaultOption,
             )
-          }
 
-          const referencedCascadingDefaultOption = optionsById[
-            context.defaultValue?.cascadingOptionId
-          ]
-          if (referencedCascadingDefaultOption !== undefined) {
-            context.defaultValue.cascadingOptionId = new ReferenceExpression(
-              optionsElemId.createNestedID(naclCase(referencedCascadingDefaultOption.value)),
-              referencedCascadingDefaultOption,
-            )
+
+            const referencedCascadingDefaultOption = (
+              Object.values(referencedDefaultOption.cascadingOptions ?? {}) as Values[]
+            ).find((option: Values) => option.id === context.defaultValue?.cascadingOptionId)
+
+            if (referencedCascadingDefaultOption !== undefined) {
+              context.defaultValue.cascadingOptionId = new ReferenceExpression(
+                defaultOptionElemId.createNestedID('cascadingOptions', naclCase(referencedCascadingDefaultOption.value)),
+                referencedCascadingDefaultOption,
+              )
+            }
           }
         })
       })
@@ -82,7 +72,6 @@ const filter: FilterCreator = () => ({
     ) as ObjectType | undefined
 
     if (optionType !== undefined && defaultValueType !== undefined) {
-      optionType.fields.optionId = new Field(optionType, 'optionId', optionType)
       defaultValueType.fields.optionId = new Field(defaultValueType, 'optionId', optionType)
       defaultValueType.fields.cascadingOptionId = new Field(defaultValueType, 'optionId', optionType)
     }

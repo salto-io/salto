@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -62,29 +62,46 @@ const addProjectsToContexts = (
   instance: InstanceElement,
   idToContext: Record<string, Values>
 ): void => {
-  (instance.value.contextIssueTypes ?? [])
-    .filter((issueType: Values) => !issueType.isAnyIssueType)
-    .forEach((issueType: Values) => {
-      if (idToContext[issueType.contextId].issueTypeIds === undefined) {
-        idToContext[issueType.contextId].issueTypeIds = []
+  (instance.value.contextProjects ?? [])
+    .filter((project: Values) => !project.isGlobalContext)
+    .forEach((project: Values) => {
+      if (idToContext[project.contextId].projectIds === undefined) {
+        idToContext[project.contextId].projectIds = []
       }
-      idToContext[issueType.contextId].issueTypeIds.push(issueType.issueTypeId)
+      idToContext[project.contextId].projectIds.push(project.projectId)
     })
 
-  delete instance.value.contextIssueTypes
+  delete instance.value.contextProjects
+}
+
+const addCascadingOptionsToOptions = (instance: InstanceElement): void => {
+  instance.value.contexts
+    ?.filter((context: Values) => context.options !== undefined)
+    .forEach((context: Values) => {
+      const idToOption = _.keyBy(context.options, option => option.id)
+
+      context.options
+        .filter((option: Values) => option.optionId !== undefined)
+        .forEach((option: Values) => {
+          if (idToOption[option.optionId].cascadingOptions === undefined) {
+            idToOption[option.optionId].cascadingOptions = {}
+          }
+          idToOption[option.optionId].cascadingOptions[naclCase(option.value)] = {
+            ..._.omit(option, 'optionId'),
+            position: Object.keys(idToOption[option.optionId].cascadingOptions).length,
+          }
+        })
+
+      context.options = context.options.filter((option: Values) => option.optionId === undefined)
+    })
 }
 
 const transformOptionsToMap = (instance: InstanceElement): void => {
   instance.value.contexts
     ?.filter((context: Values) => context.options !== undefined)
     .forEach((context: Values) => {
-      const optionsWithIndex = _(context.options)
-        .groupBy(option => option.optionId)
-        .values()
-        .flatMap(options => options.map((option, position) => ({ ...option, position })))
-        // To put the cascading options in the end of the list
-        .sortBy(option => option.optionId !== undefined)
-        .value()
+      const optionsWithIndex = context.options
+        .map((option: Values, position: number) => ({ ...option, position }))
 
       context.options = _.keyBy(optionsWithIndex, option => naclCase(option.value))
     })
@@ -108,6 +125,7 @@ const filter: FilterCreator = () => ({
         addIssueTypesToContexts(instance, idToContext)
         addProjectsToContexts(instance, idToContext)
 
+        addCascadingOptionsToOptions(instance)
         transformOptionsToMap(instance)
         instance.value.contexts = instance.value.contexts
           && _.keyBy(instance.value.contexts, context => naclCase(context.name))
@@ -135,6 +153,7 @@ const filter: FilterCreator = () => ({
       fieldContextType.fields.options = new Field(fieldType, 'options', new MapType(fieldContextOptionType))
 
       fieldContextOptionType.fields.position = new Field(fieldContextOptionType, 'position', BuiltinTypes.NUMBER)
+      fieldContextOptionType.fields.cascadingOptions = new Field(fieldContextOptionType, 'cascadingOptions', new MapType(fieldContextOptionType))
     }
   },
 })

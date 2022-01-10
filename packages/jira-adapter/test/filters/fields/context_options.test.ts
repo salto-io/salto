@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, InstanceElement, MapType, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, InstanceElement, MapType, ObjectType, toChange } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { setContextOptions, setOptionTypeDeploymentAnnotations } from '../../../src/filters/fields/context_options'
@@ -127,34 +127,18 @@ describe('context options', () => {
             value: 'p2',
             disabled: true,
             position: 1,
-          },
-          c11: {
-            value: 'c11',
-            disabled: false,
-            optionId: new ReferenceExpression(
-              contextInstance.elemID.createNestedID('options', 'p2'),
-              {
-                id: '10047',
-                value: 'p2',
-                disabled: true,
+            cascadingOptions: {
+              c11: {
+                value: 'c11',
+                disabled: false,
                 position: 1,
-              }
-            ),
-            position: 1,
-          },
-          c12: {
-            value: 'c12',
-            disabled: false,
-            optionId: new ReferenceExpression(
-              contextInstance.elemID.createNestedID('options', 'p2'),
-              {
-                id: '10047',
-                value: 'p2',
-                disabled: true,
-                position: 1,
-              }
-            ),
-            position: 0,
+              },
+              c12: {
+                value: 'c12',
+                disabled: false,
+                position: 0,
+              },
+            },
           },
         }
         client.post.mockResolvedValue({
@@ -199,8 +183,8 @@ describe('context options', () => {
             ],
           },
         })
-        expect(contextInstanceAfter.value.options.c11.id).toEqual('4')
-        expect(contextInstanceAfter.value.options.c12.id).toEqual('5')
+        expect(contextInstanceAfter.value.options.p2.cascadingOptions.c11.id).toEqual('4')
+        expect(contextInstanceAfter.value.options.p2.cascadingOptions.c12.id).toEqual('5')
       })
 
       it('should call the modify endpoint with the modified options', () => {

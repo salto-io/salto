@@ -104,7 +104,7 @@ describe('fields_structure', () => {
     })
   })
 
-  it('should transform options to map and add indexes', async () => {
+  it('should transform options to map and add postions and cascadingOptions', async () => {
     const instance = new InstanceElement(
       'instance',
       fieldType,
@@ -158,35 +158,35 @@ describe('fields_structure', () => {
               id: '1',
               value: 'someValue',
               position: 0,
+              cascadingOptions: {
+                someValue3: {
+                  id: '3',
+                  value: 'someValue3',
+                  position: 0,
+                },
+                someValue4: {
+                  id: '4',
+                  value: 'someValue4',
+                  position: 1,
+                },
+              },
             },
             someValue2: {
               id: '2',
               value: 'someValue2',
               position: 1,
-            },
-            someValue3: {
-              id: '3',
-              value: 'someValue3',
-              optionId: '1',
-              position: 0,
-            },
-            someValue4: {
-              id: '4',
-              value: 'someValue4',
-              optionId: '1',
-              position: 1,
-            },
-            someValue5: {
-              id: '5',
-              value: 'someValue5',
-              optionId: '2',
-              position: 0,
-            },
-            someValue6: {
-              id: '6',
-              value: 'someValue6',
-              optionId: '2',
-              position: 1,
+              cascadingOptions: {
+                someValue5: {
+                  id: '5',
+                  value: 'someValue5',
+                  position: 0,
+                },
+                someValue6: {
+                  id: '6',
+                  value: 'someValue6',
+                  position: 1,
+                },
+              },
             },
           },
         },

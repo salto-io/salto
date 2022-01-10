@@ -13,11 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, Change, getChangeData, InstanceElement, isAdditionChange, isMapType, isObjectType, isReferenceExpression, isRemovalChange, ModificationChange, ObjectType, Value, Values } from '@salto-io/adapter-api'
+import { AdditionChange, Change, getChangeData, InstanceElement, isAdditionChange, isMapType, isObjectType, isRemovalChange, ModificationChange, ObjectType, Value, Values } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { resolveValues } from '@salto-io/adapter-utils'
+import { naclCase, resolveValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections, values } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { getLookUpName } from '../../references'
 import { setDeploymentAnnotations } from './utils'
@@ -26,15 +26,27 @@ const log = logger(module)
 
 const { awu } = collections.asynciterable
 
-const getOptionsFromContext = (context: InstanceElement): Values[] => (
-  _(context.value.options ?? {})
+const convertOptionsToList = (options: Values): Values[] => (
+  _(options)
     .values()
     .sortBy(option => option.position)
+    .map(option => _.omit(option, 'position'))
     .value()
 )
 
+const getOptionsFromContext = (context: InstanceElement): Values[] => [
+  ...(Object.values(context.value.options ?? {}) as Values[])
+    .flatMap((option: Values) => convertOptionsToList(option.cascadingOptions)
+      .map(cascadingOption => ({
+        ...cascadingOption,
+        optionId: option.id,
+        parentValue: option.value,
+      }))),
+  ...convertOptionsToList(context.value.options ?? {}),
+]
+
 const getOptionChanges = (
-  contextChange: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
+  contextChange: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
 ): {
   added: Value[]
   modified: Value[]
@@ -72,10 +84,9 @@ const getOptionChanges = (
 }
 
 // Transform option back to the format expected by Jira API
-const transformOption = (option: Values): Values => _.pickBy({
-  ..._.omit(option, 'position'),
-  optionId: isReferenceExpression(option.optionId) ? option.optionId.value.id : option.optionId,
-}, values.isDefined)
+const transformOption = (option: Values): Values => ({
+  ..._.omit(option, ['position', 'parentValue', 'cascadingOptions']),
+})
 
 type UpdateContextOptionsParams = {
   addedOptions: Value[]
@@ -108,8 +119,14 @@ const updateContextOptions = async ({
     }
 
     if (Array.isArray(resp.data.options)) {
+      const idToOption = _.keyBy(contextChange.data.after.value.options, option => option.id)
       resp.data.options.forEach(newOption => {
-        contextChange.data.after.value.options[newOption.value].id = newOption.id
+        if (newOption.optionId !== undefined) {
+          idToOption[newOption.optionId]
+            .cascadingOptions[naclCase(newOption.value)].id = newOption.id
+        } else {
+          contextChange.data.after.value.options[naclCase(newOption.value)].id = newOption.id
+        }
       })
     }
   }
@@ -154,9 +171,6 @@ const reorderContextOptions = async (
   ))
 }
 
-const hasReferences = (option: Values): boolean =>
-  !_.isEmpty(_.pickBy(option, value => isReferenceExpression(value)))
-
 export const setContextOptions = async (
   contextChange: Change<InstanceElement>,
   parentField: InstanceElement,
@@ -168,21 +182,29 @@ export const setContextOptions = async (
 
   const { added, modified, removed } = getOptionChanges(contextChange)
 
-  const [addedWithRefs, addedWithoutRefs] = _.partition(added, hasReferences)
+  const [addedWithParentId, addedWithoutParentId] = _.partition(
+    added,
+    option => option.optionId !== undefined || option.parentValue === undefined
+  )
 
   const url = `/rest/api/3/field/${parentField.value.id}/context/${getChangeData(contextChange).value.id}/option`
   await updateContextOptions({
-    addedOptions: addedWithoutRefs,
+    addedOptions: addedWithParentId,
     modifiedOptions: modified,
     removedOptions: removed,
     client,
     baseUrl: url,
     contextChange,
   })
+
+  addedWithoutParentId.forEach((option: Values) => {
+    option.optionId = getChangeData(contextChange).value.options[naclCase(option.parentValue)].id
+  })
+
   // Because the cascading options are dependent on the other options,
   // we need to deploy them after the other options
   await updateContextOptions({
-    addedOptions: addedWithRefs,
+    addedOptions: addedWithoutParentId,
     modifiedOptions: [],
     removedOptions: [],
     client,
@@ -207,7 +229,7 @@ export const setOptionTypeDeploymentAnnotations = async (
     throw new Error(`Expected inner type of field options ${fieldContextType.fields.options.elemID.getFullName()} to be an object type`)
   }
 
-  ['value', 'optionId', 'disabled', 'position'].forEach((fieldName: string) => {
+  ['value', 'optionId', 'disabled', 'position', 'cascadingOptions'].forEach((fieldName: string) => {
     if (fieldName in optionType.fields) {
       setDeploymentAnnotations(optionType, fieldName)
     }

@@ -47,20 +47,12 @@ describe('fields_references', () => {
               a1: {
                 id: '1',
                 value: 'a1',
-              },
-              a2: {
-                id: '2',
-                value: 'a2',
-              },
-              c1: {
-                id: '3',
-                value: 'c1',
-                optionId: '1',
-              },
-              c2: {
-                id: '3',
-                value: 'c1',
-                optionId: '2',
+                cascadingOptions: {
+                  c1: {
+                    id: '3',
+                    value: 'c1',
+                  },
+                },
               },
             },
             defaultValue: {
@@ -74,16 +66,11 @@ describe('fields_references', () => {
 
     await filter.onFetch([instance])
 
-    expect(instance.value.contexts.name.options.c1.optionId).toBeInstanceOf(ReferenceExpression)
-    expect(instance.value.contexts.name.options.c1.optionId.elemID.getFullName()).toBe('jira.Field.instance.instance.contexts.name.options.a1')
-    expect(instance.value.contexts.name.options.c2.optionId).toBeInstanceOf(ReferenceExpression)
-    expect(instance.value.contexts.name.options.c2.optionId.elemID.getFullName()).toBe('jira.Field.instance.instance.contexts.name.options.a2')
-
     expect(instance.value.contexts.name.defaultValue.optionId).toBeInstanceOf(ReferenceExpression)
     expect(instance.value.contexts.name.defaultValue.optionId.elemID.getFullName()).toBe('jira.Field.instance.instance.contexts.name.options.a1')
     expect(instance.value.contexts.name.defaultValue.cascadingOptionId)
       .toBeInstanceOf(ReferenceExpression)
-    expect(instance.value.contexts.name.defaultValue.cascadingOptionId.elemID.getFullName()).toBe('jira.Field.instance.instance.contexts.name.options.c1')
+    expect(instance.value.contexts.name.defaultValue.cascadingOptionId.elemID.getFullName()).toBe('jira.Field.instance.instance.contexts.name.options.a1.cascadingOptions.c1')
   })
 
   it('Should do nothing when there are no contexts', async () => {
@@ -129,7 +116,6 @@ describe('fields_references', () => {
 
     await filter.onFetch([fieldType, optionType, defaultValueType])
 
-    expect(await optionType.fields.optionId.getType()).toBe(optionType)
     expect(await defaultValueType.fields.optionId.getType()).toBe(optionType)
     expect(await defaultValueType.fields.cascadingOptionId.getType()).toBe(optionType)
   })

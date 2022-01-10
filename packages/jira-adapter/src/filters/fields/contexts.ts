@@ -137,12 +137,13 @@ export const deployContexts = async (
 
   const fieldInstance = getChangeData(fieldChange)
 
-  await awu([
+  const contextChanges = [
     ...removalContextsChanges,
     ...getContextChanges(fieldChange, contextType),
-  ]).filter(contextChange => (
+  ]
+  await awu(contextChanges).filter(contextChange => (
     !isModificationChange(contextChange)
-    || contextChange.data.before.isEqual(contextChange.data.after)
+    || !contextChange.data.before.isEqual(contextChange.data.after)
   )).forEach(async contextChange => {
     await deployContextChange(contextChange, fieldInstance, client, apiDefinitions)
   })

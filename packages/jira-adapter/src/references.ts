@@ -128,6 +128,11 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     serializationStrategy: 'id',
     target: { type: 'ProjectRole' },
   },
+  {
+    src: { field: 'filterId', parentTypes: ['Board'] },
+    serializationStrategy: 'id',
+    target: { type: 'Filter' },
+  },
 ]
 
 export const getLookUpName = referenceUtils.generateLookupFunc(referencesRules)

@@ -1002,6 +1002,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           type: 'agile__1_0__board___boardId___configuration@uuvuuuu_00123_00125uu',
           toField: 'config',
           context: [{ name: 'boardId', fromField: 'id' }],
+          isSingle: true,
         },
       ],
     },
@@ -1010,7 +1011,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   Board: {
     transformation: {
       fieldTypeOverrides: [
-        { fieldName: 'config', fieldType: 'list<agile__1_0__board___boardId___configuration@uuvuuuu_00123_00125uu>' },
+        { fieldName: 'config', fieldType: 'agile__1_0__board___boardId___configuration@uuvuuuu_00123_00125uu' },
+        { fieldName: 'filterId', fieldType: 'string' },
       ],
       fieldsToHide: [
         {

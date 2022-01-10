@@ -29,6 +29,7 @@ import overrideProjectSchemeFieldsTypes from './filters/override_project_scheme_
 import issueTypeSchemeReferences from './filters/issue_type_schemas/issue_type_scheme_references'
 import issueTypeSchemeFilter from './filters/issue_type_schemas/issue_type_scheme'
 import sharePermissionFilter from './filters/share_permission'
+import boardFilter from './filters/board'
 import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
 import defaultDeployFilter from './filters/default_deploy'
 import workflowFilter from './filters/workflow/workflow'
@@ -49,6 +50,7 @@ export const DEFAULT_FILTERS = [
   issueTypeSchemeReferences,
   issueTypeSchemeFilter,
   sharePermissionFilter,
+  boardFilter,
   addReferencesToProjectSchemes,
   overrideProjectSchemeFieldsTypes,
   hiddenValuesInListsFilter,

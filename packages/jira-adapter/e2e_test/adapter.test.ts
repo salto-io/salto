@@ -63,7 +63,6 @@ describe('Jira E2E', () => {
       'permissionScheme',
       'notificationScheme',
       'issueTypeScreenScheme',
-      'fieldConfigurationScheme',
     ])
   })
 })

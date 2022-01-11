@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { BuiltinTypes, Element, InstanceElement, isInstanceElement, isObjectType, PrimitiveType, Values, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, Element, InstanceElement, isObjectType, PrimitiveType, Values, ObjectType } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
@@ -43,7 +43,7 @@ type GetEntriesParams = {
   computeGetArgs: ComputeGetArgsFunc
   typesConfig: Record<string, TypeDuckTypeConfig>
   typeDefaultConfig: TypeDuckTypeDefaultsConfig
-  contextElements?: Record<string, InstanceElement[]>
+  contextElements?: Record<string, Element[]>
   requestContext?: Record<string, unknown>
 }
 
@@ -86,6 +86,7 @@ const getEntriesForType = async (
     )).flat()
   }
   const entriesValues = (await getEntries(requestContext))
+    // escape "field" names that contain '.'
     .map(values => _.mapKeys(values, (_val, key) => naclCase(key)))
 
   const transformationConfigByType = _.pickBy(
@@ -142,28 +143,30 @@ const getEntriesForType = async (
 
   const { recurseInto } = requestWithDefaults
   const getExtraFieldValues = async (instance: InstanceElement):
-  Promise<Record<string, Entries>> => _.omitBy(Object.fromEntries(await Promise.all(
-    (recurseInto ?? [])
-      .filter(({ conditions }) => shouldRecurseIntoEntry(
-        instance.value, requestContext, conditions
-      ))
-      .map(async nested => {
-        const nestedRequestContext = Object.fromEntries(
-          nested.context.map(
-            contextDef => [contextDef.name, _.get(instance.value, contextDef.fromField)]
+  Promise<Record<string, Entries>> => Object.fromEntries(
+    (await Promise.all(
+      (recurseInto ?? [])
+        .filter(({ conditions }) => shouldRecurseIntoEntry(
+          instance.value, requestContext, conditions
+        ))
+        .map(async nested => {
+          const nestedRequestContext = Object.fromEntries(
+            nested.context.map(
+              contextDef => [contextDef.name, _.get(instance.value, contextDef.fromField)]
+            )
           )
-        )
-        const nestedEntries = (await getEntriesForType({
-          ...params,
-          typeName: nested.type,
-          requestContext: {
-            ...requestContext ?? {},
-            ...nestedRequestContext,
-          },
-        }))
-        return [nested.toField, nestedEntries]
-      })
-  )), _.isEmpty)
+          const nestedEntries = (await getEntriesForType({
+            ...params,
+            typeName: nested.type,
+            requestContext: {
+              ...requestContext ?? {},
+              ...nestedRequestContext,
+            },
+          }))
+          return [nested.toField, nestedEntries]
+        })
+    )).filter(([_fieldName, nestedEntries]) => !_.isEmpty(nestedEntries))
+  )
   let hasExtraFields = false
   await Promise.all(instances.map(async inst => {
     const extraFields = await getExtraFieldValues(inst)
@@ -189,7 +192,7 @@ const getEntriesForType = async (
       inst.elemID.name, newType, inst.value, inst.path, inst.annotations,
     )),
     type: newType,
-    nestedTypes: [...newNestedTypes, type],
+    nestedTypes: newNestedTypes.concat(nestedFieldDetails ? type : []),
   }
 }
 
@@ -224,10 +227,7 @@ export const getTypeAndInstances = async ({
     nestedFieldFinder,
     typeDefaultConfig,
     typesConfig,
-    contextElements: _.pickBy(
-      contextElements,
-      values => values.every(isInstanceElement)
-    ) as Record<string, InstanceElement[]>,
+    contextElements,
   })
   const elements = [entries.type, ...entries.nestedTypes, ...entries.instances]
   const transformationConfigByType = _.pickBy(

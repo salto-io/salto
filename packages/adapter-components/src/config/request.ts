@@ -49,7 +49,7 @@ type RecurseIntoContext = {
   fromField: string
 }
 
-export type RecurseIntoConfig = {
+type RecurseIntoConfig = {
   toField: string
   type: string
   isSingle?: boolean

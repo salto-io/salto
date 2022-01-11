@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import { getTypeAndInstances, getAllElements } from '../../../src/elements/ducktype'
 import * as typeElements from '../../../src/elements/ducktype/type_elements'
@@ -22,7 +22,7 @@ import * as instanceElements from '../../../src/elements/ducktype/instance_eleme
 import * as transformer from '../../../src/elements/ducktype/transformer'
 import { Paginator } from '../../../src/client'
 import { TypeDuckTypeConfig, TypeDuckTypeDefaultsConfig } from '../../../src/config'
-import { simpleGetArgs, returnFullEntry } from '../../../src/elements'
+import { simpleGetArgs, returnFullEntry, computeGetArgs } from '../../../src/elements'
 import { findDataField } from '../../../src/elements/field_finder'
 
 describe('ducktype_transformer', () => {
@@ -366,6 +366,97 @@ describe('ducktype_transformer', () => {
         },
         nestedFieldFinder: returnFullEntry,
       })).rejects.toThrow(new Error('Could not fetch type myType, singleton types should not have more than one instance'))
+    })
+    it('should return recurseInto values in the instances', async () => {
+      jest.spyOn(typeElements, 'generateType').mockRestore()
+      jest.spyOn(instanceElements, 'toInstance').mockRestore()
+      const res = await getTypeAndInstances({
+        adapterName: 'something',
+        paginator: mockFunction<Paginator>().mockImplementation(async function *get(params) {
+          if (params.url === '/folders') {
+            yield [{ id: 1, name: 'folder1' }, { id: 2, name: 'folder2' }]
+          }
+          if (params.url === '/folders/1/subfolders') {
+            yield [{ id: 3, name: 'subfolder1' }]
+          }
+          if (params.url === '/folders/2/subfolders') {
+            yield [{ id: 4, name: 'subfolder2' }]
+          }
+        }),
+        computeGetArgs,
+        typeName: 'folder',
+        typesConfig: {
+          folder: {
+            request: {
+              url: '/folders',
+              recurseInto: [
+                {
+                  type: 'subfolder',
+                  toField: 'subfolders',
+                  context: [{ name: 'folderId', fromField: 'id' }],
+                },
+              ],
+            },
+            transformation: {
+              standaloneFields: [{ fieldName: 'subfolders' }],
+            },
+          },
+          subfolder: {
+            request: {
+              url: '/folders/{folderId}/subfolders',
+            },
+            transformation: {
+              sourceTypeName: 'folder__subfolders',
+            },
+          },
+        },
+        typeDefaultConfig: {
+          transformation: {
+            idFields: ['name'],
+            fileNameFields: ['also_name'],
+          },
+        },
+        nestedFieldFinder: returnFullEntry,
+      })
+      expect(res).toHaveLength(6)
+      expect(res.map(e => e.elemID.getFullName())).toEqual([
+        'something.folder',
+        'something.subfolder',
+        'something.folder.instance.folder1',
+        'something.folder.instance.folder2',
+        'something.subfolder.instance.folder1__subfolder1',
+        'something.subfolder.instance.folder2__subfolder2',
+      ])
+      const folder1 = res.find(e =>
+        e.elemID.getFullName() === 'something.folder.instance.folder1') as InstanceElement
+      const folder2 = res.find(e =>
+        e.elemID.getFullName() === 'something.folder.instance.folder2') as InstanceElement
+      const subfolder1 = res.find(
+        e => e.elemID.getFullName() === 'something.subfolder.instance.folder1__subfolder1'
+      ) as InstanceElement
+      const subfolder2 = res.find(
+        e => e.elemID.getFullName() === 'something.subfolder.instance.folder2__subfolder2'
+      ) as InstanceElement
+      expect(folder1.value)
+        .toEqual({
+          id: 1,
+          name: 'folder1',
+          subfolders: [new ReferenceExpression(subfolder1.elemID)],
+        })
+      expect(folder2.value)
+        .toEqual({
+          id: 2,
+          name: 'folder2',
+          subfolders: [new ReferenceExpression(subfolder2.elemID)],
+        })
+      expect(subfolder1.value).toEqual({ id: 3, name: 'subfolder1' })
+      expect(subfolder1.annotations).toEqual({ [CORE_ANNOTATIONS.PARENT]: [
+        new ReferenceExpression(folder1.elemID, folder1),
+      ] })
+      expect(subfolder2.value).toEqual({ id: 4, name: 'subfolder2' })
+      expect(subfolder2.annotations).toEqual({ [CORE_ANNOTATIONS.PARENT]: [
+        new ReferenceExpression(folder2.elemID, folder2),
+      ] })
     })
   })
 

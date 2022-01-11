@@ -13,19 +13,32 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Element, Field, isInstanceElement, ListType, MapType } from '@salto-io/adapter-api'
+import { AdditionChange, BuiltinTypes, Element, Field, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isInstanceElement, ListType, MapType, toChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
+import { resolveValues } from '@salto-io/adapter-utils'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { postFunctionType, types as postFunctionTypes } from './post_functions_types'
-import { isWorkflowInstance, Rules, Status, Validator, Workflow } from './types'
+import { isWorkflowInstance, Rules, Status, Validator, Workflow, WorkflowInstance } from './types'
 import { validatorType, types as validatorTypes } from './validators_types'
+import JiraClient from '../../client/client'
+import { JiraConfig } from '../../config'
+import { getLookUpName } from '../../reference_mapping'
+import { defaultDeployChange, deployChanges } from '../../deployment'
 
 const log = logger(module)
 
+export const UNDEPLOYALBE_VALIDATOR_TYPES = [
+  'com.onresolve.jira.groovy.groovyrunner__script-workflow-validators',
+]
+
+export const UNDEPLOYALBE_POST_FUNCTION_TYPES = [
+  'com.onresolve.jira.groovy.groovyrunner__script-postfunction',
+]
+
 // Taken from https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-workflows/#api-rest-api-3-workflow-post
-const SUPPORTED_POST_FUNCTIONS_TYPES = [
+const FETCHED_POST_FUNCTIONS_TYPES = [
   'FireIssueEventFunction',
   'AssignToCurrentUserFunction',
   'AssignToLeadFunction',
@@ -37,14 +50,16 @@ const SUPPORTED_POST_FUNCTIONS_TYPES = [
   'TriggerWebhookFunction',
   'UpdateIssueCustomFieldPostFunction',
   'UpdateIssueFieldFunction',
+  ...UNDEPLOYALBE_POST_FUNCTION_TYPES,
 ]
 
-const SUPPORTED_ONLY_INITIAL_POST_FUNCTION = [
+const FETCHED_ONLY_INITIAL_POST_FUNCTION = [
   'UpdateIssueStatusFunction',
   'CreateCommentFunction',
   'IssueStoreFunction',
-  ...SUPPORTED_POST_FUNCTIONS_TYPES,
+  ...FETCHED_POST_FUNCTIONS_TYPES,
 ]
+
 
 const WORKFLOW_TYPE_NAME = 'Workflow'
 
@@ -72,8 +87,8 @@ const transformPostFunctions = (rules: Rules, transitionType?: string): void => 
 
     rules.postFunctions = rules.postFunctions?.filter(
       postFunction => (transitionType === 'initial'
-        ? SUPPORTED_ONLY_INITIAL_POST_FUNCTION.includes(postFunction.type ?? '')
-        : SUPPORTED_POST_FUNCTIONS_TYPES.includes(postFunction.type ?? '')),
+        ? FETCHED_ONLY_INITIAL_POST_FUNCTION.includes(postFunction.type ?? '')
+        : FETCHED_POST_FUNCTIONS_TYPES.includes(postFunction.type ?? '')),
     )
 }
 
@@ -121,8 +136,73 @@ const transformWorkflowInstance = (workflowValues: Workflow): void => {
     .forEach(transition => transformRules(transition.rules as Rules, transition.type))
 }
 
+/**
+ * When creating a workflow, the initial transition is always created
+ * with an extra PermissionValidator with CREATE_ISSUES permission key.
+ * Currently the API does not allow us to remove it but we can at least make sure to
+ * not create an additional one if one validator like that is already appears in the nacl.
+ */
+const removeCreateIssuePermissionValidator = (instance: WorkflowInstance): void => {
+  instance.value.transitions
+    ?.filter(transition => transition.type === 'initial')
+    .forEach(transition => {
+      const createIssuePermissionValidatorIndex = _.findLastIndex(
+        transition.rules?.validators ?? [],
+        validator => _.isEqual(
+          validator,
+          {
+            type: 'PermissionValidator',
+            configuration: {
+              permissionKey: 'CREATE_ISSUES',
+            },
+          },
+        ),
+      )
+
+      _.pullAt(
+        transition.rules?.validators ?? [],
+        createIssuePermissionValidatorIndex,
+      )
+    })
+}
+
+const removeUnsupportedRules = (instance: WorkflowInstance): void => {
+  instance.value.transitions
+    ?.forEach(transition => {
+      if (transition.rules?.postFunctions !== undefined) {
+        transition.rules.postFunctions = transition.rules.postFunctions.filter(
+          postFunction => !UNDEPLOYALBE_POST_FUNCTION_TYPES.includes(postFunction.type ?? ''),
+        )
+      }
+
+      if (transition.rules?.validators !== undefined) {
+        transition.rules.validators = transition.rules.validators.filter(
+          validator => !UNDEPLOYALBE_VALIDATOR_TYPES.includes(validator.type ?? ''),
+        )
+      }
+    })
+}
+
+const deployWorkflow = async (
+  change: AdditionChange<InstanceElement>,
+  client: JiraClient,
+  config: JiraConfig,
+): Promise<void> => {
+  const instance = await resolveValues(getChangeData(change), getLookUpName)
+  if (isWorkflowInstance(instance)) {
+    removeCreateIssuePermissionValidator(instance)
+    removeUnsupportedRules(instance)
+  }
+  await defaultDeployChange({
+    change: toChange({ after: instance }),
+    client,
+    apiDefinitions: config.apiDefinitions,
+  })
+  getChangeData(change).value.entityId = instance.value.entityId
+}
+
 // This filter transforms the workflow values structure so it will fit its deployment endpoint
-const filter: FilterCreator = () => ({
+const filter: FilterCreator = ({ config, client }) => ({
   onFetch: async (elements: Element[]) => {
     const workflowType = findObject(elements, WORKFLOW_TYPE_NAME)
     if (workflowType !== undefined) {
@@ -155,6 +235,27 @@ const filter: FilterCreator = () => ({
       .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
       .filter(isWorkflowInstance)
       .forEach(instance => transformWorkflowInstance(instance.value))
+  },
+  deploy: async changes => {
+    const [relevantChanges, leftoverChanges] = _.partition(
+      changes,
+      change => isInstanceChange(change)
+        && isAdditionChange(change)
+        && getChangeData(change).elemID.typeName === 'Workflow'
+    )
+
+
+    const deployResult = await deployChanges(
+      relevantChanges
+        .filter(isInstanceChange)
+        .filter(isAdditionChange),
+      async change => deployWorkflow(change, client, config)
+    )
+
+    return {
+      leftoverChanges,
+      deployResult,
+    }
   },
 })
 

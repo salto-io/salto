@@ -153,3 +153,73 @@ export const WITH_VALIDATORS = {
     },
   ],
 }
+
+export const WITH_PERMISSION_VALIDATORS = {
+  transitions: [
+    {
+      type: 'initial',
+      rules: {
+        validators: [
+          {
+            type: 'PermissionValidator',
+            configuration: {
+              permissionKey: 'CREATE_ISSUES',
+            },
+          },
+          {
+            type: 'PreviousStatusValidator',
+            configuration: {
+              previousStatus: {
+                id: '1',
+                name: 'name',
+              },
+            },
+          },
+          {
+            type: 'PermissionValidator',
+            configuration: {
+              permissionKey: 'CREATE_ISSUES',
+            },
+          },
+          {
+            type: 'PermissionValidator',
+            configuration: {
+              permissionKey: 'OTHER',
+            },
+          },
+        ],
+      },
+    },
+  ],
+}
+
+export const WITH_SCRIPT_RUNNERS = {
+  transitions: [
+    {
+      rules: {
+        validators: [
+          {
+            type: 'com.onresolve.jira.groovy.groovyrunner__script-workflow-validators',
+          },
+          {
+            type: 'other',
+          },
+          {
+            val: 'val',
+          },
+        ],
+        postFunctions: [
+          {
+            type: 'com.onresolve.jira.groovy.groovyrunner__script-postfunction',
+          },
+          {
+            type: 'other',
+          },
+          {
+            val: 'val',
+          },
+        ],
+      },
+    },
+  ],
+}

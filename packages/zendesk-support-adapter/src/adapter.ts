@@ -46,7 +46,7 @@ import defaultDeployFilter from './filters/default_deploy'
 
 const log = logger(module)
 const { createPaginator } = clientUtils
-const { findDataField, simpleGetArgs } = elementUtils
+const { findDataField, computeGetArgs } = elementUtils
 const { getAllElements } = elementUtils.ducktype
 const { awu } = collections.asynciterable
 
@@ -108,7 +108,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       includeTypes: this.userConfig.fetch.includeTypes,
       paginator: this.paginator,
       nestedFieldFinder: findDataField,
-      computeGetArgs: simpleGetArgs,
+      computeGetArgs,
       typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
     })
   }

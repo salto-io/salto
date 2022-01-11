@@ -20,7 +20,8 @@ import {
 import { pathNaclCase, naclCase, transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { RECORDS_PATH } from './constants'
-import { TransformationConfig, TransformationDefaultConfig, getConfigWithDefault } from '../config'
+import { TransformationConfig, TransformationDefaultConfig, getConfigWithDefault,
+  RecurseIntoCondition, isRecurseIntoConditionByField } from '../config'
 
 const log = logger(module)
 
@@ -127,3 +128,16 @@ export const toBasicInstance = async ({
       : undefined,
   )
 }
+
+export const shouldRecurseIntoEntry = (
+  entry: Values,
+  context?: Record<string, unknown>,
+  conditions?: RecurseIntoCondition[]
+): boolean => (
+  (conditions ?? []).every(condition => {
+    const compareValue = isRecurseIntoConditionByField(condition)
+      ? _.get(entry, condition.fromField)
+      : _.get(context, condition.fromContext)
+    return condition.match.some(m => new RegExp(m).test(compareValue))
+  })
+)

@@ -22,7 +22,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import mockReplies from './mock_replies.json'
 import { adapter } from '../src/adapter_creator'
 import { usernamePasswordCredentialsType } from '../src/auth'
-import { configType, FETCH_CONFIG, DEFAULT_TYPES, API_DEFINITIONS_CONFIG } from '../src/config'
+import { configType, FETCH_CONFIG, API_DEFINITIONS_CONFIG, DEFAULT_INCLUDE_ENDPOINTS } from '../src/config'
 import { ZENDESK_SUPPORT } from '../src/constants'
 
 type MockReply = {
@@ -74,15 +74,15 @@ describe('adapter', () => {
             configType,
             {
               [FETCH_CONFIG]: {
-                includeTypes: [...Object.keys(DEFAULT_TYPES)].sort(),
+                includeTypes: DEFAULT_INCLUDE_ENDPOINTS.sort(),
               },
             }
           ),
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
-        expect(elements).toHaveLength(339)
-        expect(elements.filter(isObjectType)).toHaveLength(172)
-        expect(elements.filter(isInstanceElement)).toHaveLength(167)
+        expect(elements).toHaveLength(349)
+        expect(elements.filter(isObjectType)).toHaveLength(176)
+        expect(elements.filter(isInstanceElement)).toHaveLength(173)
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'zendesk_support.account_setting',
           'zendesk_support.account_setting.instance',
@@ -144,6 +144,9 @@ describe('adapter', () => {
           'zendesk_support.business_hours_schedule.instance.Schedule_2@s',
           'zendesk_support.business_hours_schedule.instance.Schedule_3@s',
           'zendesk_support.business_hours_schedule__intervals',
+          'zendesk_support.business_hours_schedule_holiday',
+          'zendesk_support.business_hours_schedule_holiday.instance.New_schedule_s__Holiday1@umuu',
+          'zendesk_support.business_hours_schedule_holiday.instance.Schedule_3_s__Holi2@umuu',
           'zendesk_support.business_hours_schedules',
           'zendesk_support.custom_role',
           'zendesk_support.custom_role.instance.Advisor',
@@ -248,6 +251,13 @@ describe('adapter', () => {
           'zendesk_support.routing_attribute_definition__conditions_any__operators',
           'zendesk_support.routing_attribute_definition__conditions_any__values',
           'zendesk_support.routing_attribute_definitions',
+          'zendesk_support.routing_attribute_value',
+          'zendesk_support.routing_attribute_value.instance.Language__Italian',
+          'zendesk_support.routing_attribute_value.instance.Language__Spanish',
+          'zendesk_support.routing_attribute_value.instance.Location__San_Francisco@uus',
+          'zendesk_support.routing_attribute_value.instance.Location__Tel_Aviv@uus',
+          'zendesk_support.routing_attribute_value__conditions',
+          'zendesk_support.routing_attribute_value__conditions__all',
           'zendesk_support.routing_attributes',
           'zendesk_support.sharing_agreements',
           'zendesk_support.sla_policies',

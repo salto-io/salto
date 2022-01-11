@@ -430,8 +430,24 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
+  business_hours_schedules: {
+    request: {
+      url: '/business_hours/schedules',
+      recurseInto: [
+        {
+          type: 'business_hours_schedule_holiday',
+          toField: 'holidays',
+          context: [{ name: 'scheduleId', fromField: 'id' }],
+        },
+      ],
+    },
+    transformation: {
+      dataField: 'schedules',
+    },
+  },
   business_hours_schedule: {
     transformation: {
+      standaloneFields: [{ fieldName: 'holidays' }],
       sourceTypeName: 'business_hours_schedules__schedules',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
@@ -698,8 +714,9 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   },
   routing_attribute: {
     transformation: {
+      standaloneFields: [{ fieldName: 'values' }],
       sourceTypeName: 'routing_attributes__attributes',
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'string' }),
     },
     deployRequests: {
       add: {
@@ -1076,9 +1093,14 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
   },
   // eslint-disable-next-line camelcase
-  business_hours_schedules: {
+  business_hours_schedule_holiday: {
     request: {
-      url: '/business_hours/schedules',
+      url: '/business_hours/schedules/{scheduleId}/holidays',
+    },
+    transformation: {
+      sourceTypeName: 'business_hours_schedule__holidays',
+      dataField: 'holidays',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
   // eslint-disable-next-line camelcase
@@ -1138,10 +1160,27 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       url: '/organization_fields',
     },
   },
+  routing_attribute_value: {
+    request: {
+      url: '/routing/attributes/{attributeId}/values',
+    },
+    transformation: {
+      sourceTypeName: 'routing_attribute__values',
+      dataField: 'attribute_values',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'string' }),
+    },
+  },
   // eslint-disable-next-line camelcase
   routing_attributes: {
     request: {
       url: '/routing/attributes',
+      recurseInto: [
+        {
+          type: 'routing_attribute_value',
+          toField: 'values',
+          context: [{ name: 'attributeId', fromField: 'id' }],
+        },
+      ],
     },
   },
   // eslint-disable-next-line camelcase
@@ -1207,11 +1246,47 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   // not included yet: satisfaction_reason (returns 403), sunshine apis
 }
 
+export const DEFAULT_INCLUDE_ENDPOINTS: string[] = [
+  'account_settings',
+  'app_installations',
+  'apps_owned',
+  'automations',
+  'brands',
+  'business_hours_schedules',
+  'custom_roles',
+  'dynamic_content_item',
+  'groups',
+  'locales',
+  'macro_categories',
+  'macros',
+  'macros_actions',
+  'macros_definitions',
+  'monitored_twitter_handles',
+  'oauth_clients',
+  'oauth_global_clients',
+  'organization_fields',
+  'organizations',
+  'resource_collections',
+  'routing_attribute_definitions',
+  'routing_attributes',
+  'sharing_agreements',
+  'sla_policies',
+  'sla_policies_definitions',
+  'support_addresses',
+  'targets',
+  'ticket_fields',
+  'ticket_forms',
+  'trigger_categories',
+  'trigger_definitions',
+  'triggers',
+  'user_fields',
+  'views',
+  'workspaces',
+]
+
 export const DEFAULT_CONFIG: ZendeskConfig = {
   [FETCH_CONFIG]: {
-    includeTypes: [
-      ...Object.keys(_.pickBy(DEFAULT_TYPES, def => def.request !== undefined)),
-    ].sort(),
+    includeTypes: DEFAULT_INCLUDE_ENDPOINTS,
   },
   [API_DEFINITIONS_CONFIG]: {
     typeDefaults: {

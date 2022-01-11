@@ -19,7 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
-import multipleDefaultsValidator from '../../src/change_validators/multiple_deafults'
+import multipleDefaultsValidator from '../../src/change_validators/multiple_defaults'
 import { createField } from '../utils'
 import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE } from '../../src/constants'
 

@@ -21,45 +21,31 @@ import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { Paginator, ResponseValue } from '../../client'
 import { generateType } from './type_elements'
 import { toInstance } from './instance_elements'
-import { TypeConfig, getConfigWithDefault, RecurseIntoCondition, isRecurseIntoConditionByField } from '../../config'
+import { TypeConfig, getConfigWithDefault } from '../../config'
 import { FindNestedFieldFunc } from '../field_finder'
 import { TypeDuckTypeDefaultsConfig, TypeDuckTypeConfig } from '../../config/ducktype'
 import { ComputeGetArgsFunc } from '../request_parameters'
 import { getElementsWithContext } from '../element_getter'
 import { extractStandaloneFields } from './standalone_field_extractor'
 import { fixFieldTypes } from '../type_elements'
+import { shouldRecurseIntoEntry } from '../instance_elements'
 
 const { makeArray } = collections.array
 const { toArrayAsync, awu } = collections.asynciterable
 const { isDefined } = lowerdashValues
 const log = logger(module)
 
-type RequestContexts = Record<string, Record<string, unknown>>
-
 type GetEntriesParams = {
   adapterName: string
   typeName: string
   paginator: Paginator
+  nestedFieldFinder: FindNestedFieldFunc
+  computeGetArgs: ComputeGetArgsFunc
   typesConfig: Record<string, TypeDuckTypeConfig>
   typeDefaultConfig: TypeDuckTypeDefaultsConfig
   contextElements?: Record<string, InstanceElement[]>
-  requestContexts?: RequestContexts
-  nestedFieldFinder: FindNestedFieldFunc
-  computeGetArgs: ComputeGetArgsFunc
+  requestContext?: Record<string, unknown>
 }
-
-const shouldRecurseIntoEntry = (
-  entry: Values,
-  context?: Record<string, unknown>,
-  conditions?: RecurseIntoCondition[]
-): boolean => (
-  (conditions ?? []).every(condition => {
-    const compareValue = isRecurseIntoConditionByField(condition)
-      ? _.get(entry, condition.fromField)
-      : _.get(context, condition.fromContext)
-    return condition.match.some(m => new RegExp(m).test(compareValue))
-  })
-)
 
 type Entries = {
   instances: InstanceElement[]
@@ -69,10 +55,10 @@ type Entries = {
 
 const getEntriesForType = async (
   params: GetEntriesParams
-): Promise<Record<string, Entries>> => {
+): Promise<Entries> => {
   const {
     typeName, paginator, typesConfig, typeDefaultConfig, contextElements,
-    requestContexts, nestedFieldFinder, computeGetArgs, adapterName,
+    requestContext, nestedFieldFinder, computeGetArgs, adapterName,
   } = params
   const typeConfig = typesConfig[typeName]
   if (typeConfig === undefined) {
@@ -91,38 +77,29 @@ const getEntriesForType = async (
 
   const requestWithDefaults = getConfigWithDefault(request, typeDefaultConfig.request ?? {})
 
-  const getEntries = async (requestContext: Values | undefined): Promise<Values[]> => {
-    const getArgs = computeGetArgs(requestWithDefaults, contextElements, requestContext)
+  const getEntries = async (context: Values | undefined): Promise<Values[]> => {
+    const getArgs = computeGetArgs(requestWithDefaults, contextElements, context)
     return (await Promise.all(
       getArgs.map(async args => (await toArrayAsync(
         paginator(args, page => makeArray(page) as ResponseValue[])
       )).flat())
     )).flat()
   }
-  const entriesValues = await Promise.all(Object.entries((requestContexts ?? { '': undefined }))
-    .map(async ([id, requestContext]) =>
-      ({ id, context: requestContext, values: await getEntries(requestContext) })))
+  const entriesValues = (await getEntries(requestContext))
+    .map(values => _.mapKeys(values, (_val, key) => naclCase(key)))
+
   const transformationConfigByType = _.pickBy(
     _.mapValues(typesConfig, def => def.transformation),
     isDefined,
   )
   const transformationDefaultConfig = typeDefaultConfig.transformation
 
-  // escape "field" names that contain '.'
-  const naclEntries = entriesValues
-    .map(e => ({
-      ...e,
-      values: e.values.map(
-        values => _.mapKeys(values, (_val, key) => naclCase(key))
-      ),
-    }))
-
   // types with dynamic fields will be associated with the dynamic_keys type
 
   const { type, nestedTypes } = generateType({
     adapterName,
     name: typeName,
-    entries: naclEntries.flatMap(e => e.values),
+    entries: entriesValues,
     hasDynamicFields: hasDynamicFields === true,
     transformationConfigByType,
     transformationDefaultConfig,
@@ -134,24 +111,32 @@ const getEntriesForType = async (
     log.debug(`storing full entries for ${type.elemID.name}`)
   }
 
-  const idToInstances = Object.fromEntries((await awu(naclEntries)
-    .map(async (entry, index) => [entry.id, await awu(makeArray(
-      entry.values.flatMap(value =>
-        (nestedFieldDetails !== undefined ? value[nestedFieldDetails.field.name] : value))
-    )).map(
-      async (nestedEntry, nesteIndex) => toInstance({
-        entry: nestedEntry,
-        type: nestedFieldDetails !== undefined ? nestedFieldDetails.type : type,
-        transformationConfigByType,
-        transformationDefaultConfig,
-        defaultName: `unnamed_${index}_${nesteIndex}`, // TODO improve
-        hasDynamicFields,
-      })
-    ).filter(isDefined).toArray()]).toArray()) as [string, InstanceElement[]][])
+  const instances = await awu(entriesValues).flatMap(async (entry, index) => {
+    if (nestedFieldDetails !== undefined) {
+      return awu(makeArray(entry[nestedFieldDetails.field.name])).map(
+        (nestedEntry, nesteIndex) => toInstance({
+          entry: nestedEntry,
+          type: nestedFieldDetails.type,
+          transformationConfigByType,
+          transformationDefaultConfig,
+          defaultName: `unnamed_${index}_${nesteIndex}`, // TODO improve
+          hasDynamicFields,
+        })
+      ).filter(isDefined).toArray()
+    }
 
-  const instanceElements = Object.values(idToInstances).flat()
-  if (type.isSettings && instanceElements.length > 1) {
-    log.warn(`Expected one instance for singleton type: ${type.elemID.name} but received: ${instanceElements.length}`)
+    return [await toInstance({
+      entry,
+      type,
+      transformationConfigByType,
+      transformationDefaultConfig,
+      defaultName: `unnamed_${index}`, // TODO improve
+      hasDynamicFields,
+    })].filter(isDefined)
+  }).toArray()
+
+  if (type.isSettings && instances.length > 1) {
+    log.warn(`Expected one instance for singleton type: ${type.elemID.name} but received: ${instances.length}`)
     throw new Error(`Could not fetch type ${type.elemID.name}, singleton types should not have more than one instance`)
   }
 
@@ -160,29 +145,27 @@ const getEntriesForType = async (
   Promise<Record<string, Entries>> => _.omitBy(Object.fromEntries(await Promise.all(
     (recurseInto ?? [])
       .filter(({ conditions }) => shouldRecurseIntoEntry(
-        instance.value, (requestContexts ?? {})[instance.elemID.getFullName()], conditions
+        instance.value, requestContext, conditions
       ))
       .map(async nested => {
-        const nestedRequestContext = {
-          [instance.elemID.getFullName()]: Object.fromEntries(
-            nested.context.map(
-              contextDef => [contextDef.name, _.get(instance.value, contextDef.fromField)]
-            )
-          ),
-        }
+        const nestedRequestContext = Object.fromEntries(
+          nested.context.map(
+            contextDef => [contextDef.name, _.get(instance.value, contextDef.fromField)]
+          )
+        )
         const nestedEntries = (await getEntriesForType({
           ...params,
           typeName: nested.type,
-          requestContexts: {
-            ...requestContexts ?? {},
+          requestContext: {
+            ...requestContext ?? {},
             ...nestedRequestContext,
           },
-        }))[instance.elemID.getFullName()]
-        return [nested.toField, nestedEntries] as unknown as [string, Entries]
+        }))
+        return [nested.toField, nestedEntries]
       })
   )), _.isEmpty)
   let hasExtraFields = false
-  await Promise.all(instanceElements.map(async inst => {
+  await Promise.all(instances.map(async inst => {
     const extraFields = await getExtraFieldValues(inst)
     Object.entries(extraFields ?? {}).forEach(([fieldName, extraEntries]) => {
       hasExtraFields = true
@@ -191,30 +174,23 @@ const getEntriesForType = async (
     })
   }))
   if (!hasExtraFields) {
-    return _.mapValues(
-      idToInstances,
-      instances => ({ instances, type, nestedTypes })
-    )
+    return { instances, type, nestedTypes }
   }
-  const newTypeName = instanceElements[0].refType.elemID.name
   const { type: newType, nestedTypes: newNestedTypes } = generateType({
     adapterName,
-    name: newTypeName,
-    entries: instanceElements.map(inst => inst.value),
+    name: (nestedFieldDetails?.type ?? type).elemID.typeName,
+    entries: instances.map(inst => inst.value),
     hasDynamicFields: hasDynamicFields === true,
     transformationConfigByType,
     transformationDefaultConfig,
   })
-  return _.mapValues(
-    idToInstances,
-    instances => ({
-      instances: instances.map(inst => new InstanceElement(
-        inst.elemID.name, newType, inst.value, inst.path, inst.annotations,
-      )),
-      type: newType,
-      nestedTypes: [...newNestedTypes, type],
-    })
-  )
+  return {
+    instances: instances.map(inst => new InstanceElement(
+      inst.elemID.name, newType, inst.value, inst.path, inst.annotations,
+    )),
+    type: newType,
+    nestedTypes: [...newNestedTypes, type],
+  }
 }
 
 /**
@@ -253,7 +229,7 @@ export const getTypeAndInstances = async ({
       values => values.every(isInstanceElement)
     ) as Record<string, InstanceElement[]>,
   })
-  const elements = Object.values(entries).flatMap(e => [e.type, ...e.nestedTypes, ...e.instances])
+  const elements = [entries.type, ...entries.nestedTypes, ...entries.instances]
   const transformationConfigByType = _.pickBy(
     _.mapValues(typesConfig, def => def.transformation),
     isDefined,

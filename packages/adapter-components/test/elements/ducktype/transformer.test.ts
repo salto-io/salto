@@ -116,7 +116,7 @@ describe('ducktype_transformer', () => {
           idFields: ['name'],
           fileNameFields: ['also_name'],
         },
-        defaultName: 'unnamed_0_0',
+        defaultName: 'unnamed_0',
       })
       expect(instanceElements.toInstance).toHaveBeenNthCalledWith(2, {
         entry: { missing: 'something' },
@@ -126,7 +126,7 @@ describe('ducktype_transformer', () => {
           idFields: ['name'],
           fileNameFields: ['also_name'],
         },
-        defaultName: 'unnamed_0_1',
+        defaultName: 'unnamed_1',
       })
     })
 
@@ -193,7 +193,7 @@ describe('ducktype_transformer', () => {
           idFields: ['name'],
           fileNameFields: ['also_name'],
         },
-        defaultName: 'unnamed_0_0',
+        defaultName: 'unnamed_0',
       })
       expect(instanceElements.toInstance).toHaveBeenNthCalledWith(2, {
         entry: { missing: 'something' },
@@ -207,7 +207,7 @@ describe('ducktype_transformer', () => {
           idFields: ['name'],
           fileNameFields: ['also_name'],
         },
-        defaultName: 'unnamed_0_1',
+        defaultName: 'unnamed_1',
       })
     })
 
@@ -278,7 +278,7 @@ describe('ducktype_transformer', () => {
           idFields: ['name'],
           fileNameFields: ['also_name'],
         },
-        defaultName: 'unnamed_0_1',
+        defaultName: 'unnamed_1_0',
       })
     })
 

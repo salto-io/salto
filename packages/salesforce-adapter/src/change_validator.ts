@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { createChangeValidator } from '@salto-io/adapter-utils'
 import packageValidator from './change_validators/package'
@@ -25,18 +26,30 @@ import profileMapKeysValidator from './change_validators/profile_map_keys'
 import multipleDefaultsValidator from './change_validators/multiple_deafults'
 import picklistPromoteValidator from './change_validators/picklist_promote'
 import validateOnlyFlagValidator from './change_validators/validate_only_flag'
+import { SalesforceConfig, ChangeValidatorName } from './types'
 
-const changeValidators: ChangeValidator[] = [
-  packageValidator,
-  picklistStandardFieldValidator,
-  customObjectInstancesValidator,
-  unknownFieldValidator,
-  customFieldTypeValidator,
-  standardFieldLabelValidator,
-  profileMapKeysValidator,
-  multipleDefaultsValidator,
-  picklistPromoteValidator,
-  validateOnlyFlagValidator,
-]
+export const changeValidators: Record<ChangeValidatorName, ChangeValidator> = {
+  managedPackage: packageValidator,
+  picklistStandardField: picklistStandardFieldValidator,
+  customObjectInstances: customObjectInstancesValidator,
+  unknownField: unknownFieldValidator,
+  customFieldType: customFieldTypeValidator,
+  standardFieldLabel: standardFieldLabelValidator,
+  profileMapKeys: profileMapKeysValidator,
+  multipleDefaults: multipleDefaultsValidator,
+  picklistPromote: picklistPromoteValidator,
+  validateOnlyFlag: validateOnlyFlagValidator,
+}
 
-export default createChangeValidator(changeValidators)
+
+const createSalesforceChangeValidator = (config: SalesforceConfig): ChangeValidator => {
+  const [activeValidators, disabledValidators] = _.partition(
+    Object.entries(changeValidators),
+    ([name]) => config.validators?.[name as ChangeValidatorName] ?? true,
+  )
+  return createChangeValidator(
+    activeValidators.map(([_name, validator]) => validator),
+    disabledValidators.map(([_name, validator]) => validator),
+  )
+}
+export default createSalesforceChangeValidator

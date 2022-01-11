@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
   InstanceElement, Adapter, OAuthRequestParameters, OauthAccessTokenResponse,
@@ -24,11 +25,11 @@ import { configType, usernamePasswordCredentialsType, oauthRequestParameters,
   isAccessTokenConfig, SalesforceConfig, accessTokenCredentialsType,
   UsernamePasswordCredentials, Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG,
   SalesforceClientConfig, RetryStrategyName, FETCH_CONFIG, MAX_ITEMS_IN_RETRIEVE_REQUEST,
-  USE_OLD_PROFILES } from './types'
+  USE_OLD_PROFILES, ChangeValidatorConfig } from './types'
 import { validateFetchParameters } from './fetch_profile/fetch_profile'
 import { ConfigValidationError } from './config_validation'
 import { updateDeprecatedConfiguration } from './deprecated_config'
-import changeValidator from './change_validator'
+import createChangeValidator, { changeValidators } from './change_validator'
 import { getChangeGroupIds } from './group_changes'
 import { ConfigChange } from './config_change'
 
@@ -85,15 +86,35 @@ SalesforceConfig => {
     }
   }
 
+  const validateValidatorsConfig = (validators: ChangeValidatorConfig | undefined): void => {
+    if (validators !== undefined && !_.isPlainObject(validators)) {
+      throw new ConfigValidationError(['validators'], 'Enabled validators configuration must be an object if it is defined')
+    }
+    if (_.isPlainObject(validators)) {
+      const validValidatorsNames = Object.keys(changeValidators)
+      Object.entries(validators as {}).forEach(([key, value]) => {
+        if (!validValidatorsNames.includes(key)) {
+          throw new ConfigValidationError(['validators', key], `Validator ${key} does not exist, expected one of ${validValidatorsNames.join(',')}`)
+        }
+        if (!_.isBoolean(value)) {
+          throw new ConfigValidationError(['validators', key], 'Value must be true or false')
+        }
+      })
+    }
+  }
+
   validateFetchParameters(config?.value?.[FETCH_CONFIG] ?? {}, [FETCH_CONFIG])
 
   validateClientConfig(config?.value?.client)
+
+  validateValidatorsConfig(config?.value?.validators)
 
   const adapterConfig: { [K in keyof Required<SalesforceConfig>]: SalesforceConfig[K] } = {
     fetch: config?.value?.[FETCH_CONFIG],
     maxItemsInRetrieveRequest: config?.value?.[MAX_ITEMS_IN_RETRIEVE_REQUEST],
     useOldProfiles: config?.value?.[USE_OLD_PROFILES],
     client: config?.value?.[CLIENT_CONFIG],
+    validators: config?.value?.validators,
   }
   Object.keys(config?.value ?? {})
     .filter(k => !Object.keys(adapterConfig).includes(k))
@@ -158,7 +179,7 @@ export const adapter: Adapter = {
 
       deploy: salesforceAdapter.deploy.bind(salesforceAdapter),
       deployModifiers: {
-        changeValidator,
+        changeValidator: createChangeValidator(config),
         getChangeGroupIds,
       },
     }

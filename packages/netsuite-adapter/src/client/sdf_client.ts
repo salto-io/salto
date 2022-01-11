@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { collections, decorators, objects, promises, values } from '@salto-io/lowerdash'
+import { collections, decorators, objects as lowerdashObjects, promises, values, strings } from '@salto-io/lowerdash'
 import { Values, AccountId, Value } from '@salto-io/adapter-api'
 import { mkdirp, readDir, readFile, writeFile, rm, rename } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
@@ -34,6 +34,7 @@ import shellQuote from 'shell-quote'
 import {
   APPLICATION_ID,
   FILE_CABINET_PATH_SEPARATOR,
+  SCRIPT_ID,
   WORKFLOW,
 } from '../constants'
 import {
@@ -56,6 +57,8 @@ import {
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
 const { isDefined, lookupValue } = values
+const { matchAll } = strings
+const { concatObjects } = lowerdashObjects
 const log = logger(module)
 
 const FAILED_TYPE_NAME_TO_REAL_NAME: Record<string, string> = {
@@ -96,13 +99,10 @@ export const MINUTE_IN_MILLISECONDS = 1000 * 60
 const SINGLE_OBJECT_RETRIES = 3
 const READ_CONCURRENCY = 100
 
-const featuresBlockWithContent = (content: string): string => `<features>${content}</features>`
-
+const TEXT_ATTRIBUTE = '#text'
+const REQUIRED_ATTRIBUTE = '@_required'
 const INVALID_DEPENDENCIES = ['ADVANCEDEXPENSEMANAGEMENT', 'SUBSCRIPTIONBILLING', 'WMSSYSTEM', 'BILLINGACCOUNTS']
-
-const dependenciesPattern = (dependencies: string[]): RegExp =>
-  new RegExp(`^.*(<feature required=".*">${dependencies.join('|')})</feature>.*\n`, 'gm')
-const requiredFeature = (dependency: string): string => `<feature required="true">${dependency}</feature>`
+const REFERENCED_OBJECT_REGEX = new RegExp(`${SCRIPT_ID}=(?<${SCRIPT_ID}>[a-z0-9_]+(\\.[a-z0-9_]+)*)`, 'g')
 
 type RequiredDependencyValueCondition = 'fullLookup' | 'byValue' | 'byPath'
 
@@ -114,7 +114,7 @@ type RequiredDependency = {
   condition?: RequiredDependencyValueCondition
 }
 
-const REQUIRED_DEPENDENCIES: RequiredDependency[] = [
+const REQUIRED_FEATURES: RequiredDependency[] = [
   {
     typeName: WORKFLOW,
     dependency: 'EXPREPORTS',
@@ -200,6 +200,87 @@ type ObjectsChunk = {
   ids: string[]
   index: number
   total: number
+}
+
+const getRequiredFeatures = (customizationInfos: CustomizationInfo[]): string[] =>
+  REQUIRED_FEATURES.map(
+    ({ typeName, dependency, value, path, condition }) => {
+      const custInfoWithDependency = customizationInfos
+        .find(custInfo => {
+          if (typeName !== custInfo.typeName) {
+            return false
+          }
+          if (_.isUndefined(value)) {
+            return true
+          }
+          switch (condition) {
+            case 'byPath':
+              return path && _.get(custInfo.values, path) === value
+            case 'byValue':
+              return lookupValue(custInfo.values, val => _.isEqual(val, value))
+            default:
+              return lookupValue(custInfo.values,
+                val => _.isEqual(val, value)
+                || (_.isString(val) && _.isString(value) && val.includes(value)))
+          }
+        })
+      return custInfoWithDependency ? dependency : undefined
+    }
+  ).filter(isDefined)
+
+const getRequiredObjects = (customizationInfos: CustomizationInfo[]): string[] =>
+  _.uniq(customizationInfos.flatMap(custInfo => {
+    const objName = custInfo.values[ATTRIBUTE_PREFIX + SCRIPT_ID]
+    const requiredObjects: string[] = []
+    lookupValue(custInfo.values, val => {
+      if (!_.isString(val)) {
+        return
+      }
+
+      requiredObjects.push(...[...matchAll(val, REFERENCED_OBJECT_REGEX)]
+        .map(r => r.groups)
+        .filter(isDefined)
+        .map(group => group[SCRIPT_ID])
+        .filter(scriptId => scriptId !== objName
+          && !scriptId.startsWith(`${objName}.`)))
+    })
+    return requiredObjects
+  }))
+
+const fixDependenciesObject = (dependencies: Value): void => {
+  dependencies.features = dependencies.features ?? {}
+  dependencies.features.feature = dependencies.features.feature ?? []
+  dependencies.objects = dependencies.objects ?? {}
+  dependencies.objects.object = dependencies.objects.object ?? []
+}
+
+const addRequiredDependencies = (
+  dependencies: Value,
+  customizationInfos: CustomizationInfo[]
+): void => {
+  const requiredFeatures = getRequiredFeatures(customizationInfos)
+  const requiredObjects = getRequiredObjects(customizationInfos)
+  if (requiredFeatures.length === 0 && requiredObjects.length === 0) {
+    return
+  }
+
+  const { features, objects } = dependencies
+  features.feature = _.union(
+    features.feature,
+    requiredFeatures.map(feature => ({ [REQUIRED_ATTRIBUTE]: 'true', [TEXT_ATTRIBUTE]: feature }))
+  )
+  objects.object = _.union(objects.object, requiredObjects)
+}
+
+const cleanInvalidDependencies = (dependencies: Value): void => {
+  // This is done due to an SDF bug described in SALTO-1107.
+  // This function should be removed once the bug is fixed.
+  const fixedFeatureList = _.differenceBy(
+    makeArray(dependencies.features.feature),
+    INVALID_DEPENDENCIES.map(dep => ({ [TEXT_ATTRIBUTE]: dep })),
+    item => item[TEXT_ATTRIBUTE]
+  )
+  dependencies.features.feature = fixedFeatureList
 }
 
 export default class SdfClient {
@@ -457,10 +538,10 @@ export default class SdfClient {
     )
 
     const failedTypes = {
-      unexpectedError: objects.concatObjects(
+      unexpectedError: concatObjects(
         importResult.map(res => res.failedTypes.unexpectedError)
       ),
-      lockedError: objects.concatObjects(
+      lockedError: concatObjects(
         importResult.map(res => res.failedTypes.lockedError)
       ),
     }
@@ -823,54 +904,32 @@ export default class SdfClient {
     await this.projectCleanup(project.projectName, project.authId)
   }
 
-  private static async cleanInvalidDependencies(projectPath: string): Promise<void> {
-    // This is done due to an SDF bug described in SALTO-1107.
-    // This function should be removed once the bug is fixed.
-    const manifestPath = osPath.join(projectPath, 'src', 'manifest.xml')
-    const manifestContent = await readFile(manifestPath)
-    const fixedManifestContent = manifestContent.toString().replace(dependenciesPattern(INVALID_DEPENDENCIES), '')
-    await writeFile(manifestPath, fixedManifestContent)
-  }
-
-  private static async addRequiredDependencies(
+  private static async fixManifest(
     projectPath: string,
     customizationInfos: CustomizationInfo[]
   ): Promise<void> {
-    const requiredDependencies = REQUIRED_DEPENDENCIES.map(
-      ({ typeName, dependency, value, path, condition }) => {
-        const custInfoWithDependency = customizationInfos
-          .find(custInfo => {
-            if (typeName !== custInfo.typeName) {
-              return false
-            }
-            if (_.isUndefined(value)) {
-              return true
-            }
-            switch (condition) {
-              case 'byPath':
-                return path && _.get(custInfo.values, path) === value
-              case 'byValue':
-                return lookupValue(custInfo.values, val => _.isEqual(val, value))
-              default:
-                return lookupValue(custInfo.values,
-                  val => _.isEqual(val, value)
-                  || (_.isString(val) && _.isString(value) && val.includes(value)))
-            }
-          })
-        return custInfoWithDependency ? dependency : undefined
-      }
-    ).filter(isDefined)
+    const manifestPath = osPath.join(projectPath, 'src', 'manifest.xml')
+    const manifestContent = (await readFile(manifestPath)).toString()
+    const manifestXml = xmlParser.parse(manifestContent, { ignoreAttributes: false })
 
-    if (requiredDependencies.length === 0) {
+    if (!_.isPlainObject(manifestXml.manifest.dependencies)) {
+      log.warn('manifest.xml is missing dependencies tag')
       return
     }
 
-    const manifestPath = osPath.join(projectPath, 'src', 'manifest.xml')
-    const manifestContent = await readFile(manifestPath)
-    const fixedManifestContent = manifestContent.toString()
-      .replace(dependenciesPattern(requiredDependencies), '')
-      .replace(RegExp(featuresBlockWithContent('(.*)'), 'gs'),
-        featuresBlockWithContent(`$1${requiredDependencies.map(requiredFeature).join('\n')}`))
+    const { dependencies } = manifestXml.manifest
+    fixDependenciesObject(dependencies)
+    cleanInvalidDependencies(dependencies)
+    addRequiredDependencies(dependencies, customizationInfos)
+
+    // eslint-disable-next-line new-cap
+    const fixedDependencies = new xmlParser.j2xParser({
+      ignoreAttributes: false,
+      format: true,
+    }).parse({ dependencies })
+    const fixedManifestContent = manifestContent.replace(
+      new RegExp('<dependencies>.*</dependencies>\\n?', 'gs'), fixedDependencies
+    )
     await writeFile(manifestPath, fixedManifestContent)
   }
 
@@ -879,8 +938,7 @@ export default class SdfClient {
     customizationInfos: CustomizationInfo[]
   ): Promise<void> {
     await this.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {}, executor)
-    await SdfClient.cleanInvalidDependencies(projectPath)
-    await SdfClient.addRequiredDependencies(projectPath, customizationInfos)
+    await SdfClient.fixManifest(projectPath, customizationInfos)
     await this.executeProjectAction(
       COMMANDS.DEPLOY_PROJECT,
       // SuiteApp project type can't contain account specific values

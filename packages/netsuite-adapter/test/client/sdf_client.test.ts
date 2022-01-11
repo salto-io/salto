@@ -102,17 +102,14 @@ const MOCK_MANIFEST_WITH_REQUIRED_DEPENDENCIES = `<manifest projecttype="ACCOUNT
 <frameworkversion>1.0</frameworkversion>
 <dependencies>
   <features>
-    <feature required="true">ADVANCEDEXPENSEMANAGEMENT</feature>
     <feature required="true">SFA</feature>
     <feature required="true">MULTICURRENCYVENDOR</feature>
     <feature required="true">ACCOUNTING</feature>
-    <feature required="true">SUBSCRIPTIONBILLING</feature>
     <feature required="true">ADDRESSCUSTOMIZATION</feature>
-    <feature required="true">WMSSYSTEM</feature>
     <feature required="true">SUBSIDIARIES</feature>
     <feature required="true">RECEIVABLES</feature>
-    <feature required="true">BILLINGACCOUNTS</feature>
-  <feature required="true">EXPREPORTS</feature></features>
+    <feature required="true">EXPREPORTS</feature>
+  </features>
   <objects>
     <object>custentity2edited</object>
     <object>custentity13</object>
@@ -121,6 +118,7 @@ const MOCK_MANIFEST_WITH_REQUIRED_DEPENDENCIES = `<manifest projecttype="ACCOUNT
     <object>custentitycust_active</object>
     <object>custentity11</object>
     <object>custentity_slt_tax_reg</object>
+    <object>somescriptid</object>
   </objects>
   <files>
     <file>/SuiteScripts/clientScript_2_0.js</file>
@@ -1398,7 +1396,10 @@ describe('netsuite client', () => {
       const workflowScriptId = 'workflow2'
       const workflowCustInfo: CustomTypeInfo = {
         typeName: WORKFLOW,
-        values: { key: '__STDRECORDSUBSIDIARYDEFAULTACCTCORPCARDEXP__' },
+        values: {
+          key: '__STDRECORDSUBSIDIARYDEFAULTACCTCORPCARDEXP__',
+          ref: '[scriptid=somescriptid]',
+        },
         scriptId: workflowScriptId,
       }
 

@@ -179,6 +179,7 @@ const getEntriesForType = async (
   if (!hasExtraFields) {
     return { instances, type, nestedTypes }
   }
+  // We generare the type again since we added more fields to the instances from the recurse into
   const { type: newType, nestedTypes: newNestedTypes } = generateType({
     adapterName,
     name: (nestedFieldDetails?.type ?? type).elemID.typeName,
@@ -235,6 +236,7 @@ export const getTypeAndInstances = async ({
     isDefined,
   )
 
+  // We currently don't support extracting standalone fields from the types we recursed into
   await extractStandaloneFields({
     adapterName,
     elements,

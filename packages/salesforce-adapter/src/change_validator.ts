@@ -26,7 +26,7 @@ import profileMapKeysValidator from './change_validators/profile_map_keys'
 import multipleDefaultsValidator from './change_validators/multiple_deafults'
 import picklistPromoteValidator from './change_validators/picklist_promote'
 import validateOnlyFlagValidator from './change_validators/validate_only_flag'
-import { SalesforceConfig, ChangeValidatorName } from './types'
+import { ChangeValidatorName, ChangeValidatorConfig } from './types'
 
 export const changeValidators: Record<ChangeValidatorName, ChangeValidator> = {
   managedPackage: packageValidator,
@@ -42,10 +42,10 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidator> = {
 }
 
 
-const createSalesforceChangeValidator = (config: SalesforceConfig): ChangeValidator => {
+const createSalesforceChangeValidator = (config?: ChangeValidatorConfig): ChangeValidator => {
   const [activeValidators, disabledValidators] = _.partition(
     Object.entries(changeValidators),
-    ([name]) => config.validators?.[name as ChangeValidatorName] ?? true,
+    ([name]) => config?.[name as ChangeValidatorName] ?? true,
   )
   return createChangeValidator(
     activeValidators.map(([_name, validator]) => validator),

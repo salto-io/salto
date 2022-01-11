@@ -24,7 +24,7 @@ import { JIRA } from '../src/constants'
 import { createCredentialsInstance, createConfigInstance } from './utils'
 
 
-const { generateTypes, getAllInstances } = elements.swagger
+const { generateTypes, getAllInstances, loadSwagger } = elements.swagger
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -38,8 +38,9 @@ jest.mock('@salto-io/adapter-components', () => {
       ...actual.elements,
       swagger: {
         ...actual.elements.swagger,
-        generateTypes: jest.fn().mockImplementation(actual.elements.swagger.generateTypes),
-        getAllInstances: jest.fn().mockImplementation(actual.elements.swagger.getAllInstances),
+        generateTypes: jest.fn().mockImplementation(() => { throw new Error('generateTypes called without a mock') }),
+        getAllInstances: jest.fn().mockImplementation(() => { throw new Error('getAllInstances called without a mock') }),
+        loadSwagger: jest.fn().mockImplementation(() => { throw new Error('loadSwagger called without a mock') }),
         addDeploymentAnnotations: jest.fn(),
       },
     },
@@ -208,11 +209,16 @@ describe('adapter', () => {
         });
 
       (getAllInstances as jest.MockedFunction<typeof getAllInstances>)
-        .mockResolvedValue([testInstance])
+        .mockResolvedValue([testInstance]);
+      (loadSwagger as jest.MockedFunction<typeof loadSwagger>)
+        .mockResolvedValue({ document: {}, parser: {} } as elements.swagger.LoadedSwagger)
 
       result = await adapter.fetch({ progressReporter })
     })
     it('should generate types for the platform and the jira apis', () => {
+      expect(loadSwagger).toHaveBeenCalledTimes(2)
+      expect(loadSwagger).toHaveBeenCalledWith('https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json')
+      expect(loadSwagger).toHaveBeenCalledWith('https://developer.atlassian.com/cloud/jira/software/swagger.v3.json')
       expect(generateTypes).toHaveBeenCalledWith(
         JIRA,
         expect.objectContaining({

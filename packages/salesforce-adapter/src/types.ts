@@ -18,6 +18,7 @@ import {
   ElemID, ObjectType, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, ListType, createRestriction,
   FieldDefinition, MapType,
 } from '@salto-io/adapter-api'
+import { values } from '@salto-io/lowerdash'
 import * as constants from './constants'
 
 export const CLIENT_CONFIG = 'client'
@@ -285,6 +286,12 @@ export class UsernamePasswordCredentials {
   apiToken?: string
   isSandbox: boolean
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isUsernamePasswordCredentials = (creds: any): creds is UsernamePasswordCredentials =>
+  values.isDefined(creds.username)
+  && values.isDefined(creds.password)
+  && values.isDefined(creds.isSandbox)
 
 export class OauthAccessTokenCredentials {
   constructor({ instanceUrl, accessToken, refreshToken, isSandbox, clientId, clientSecret }: {

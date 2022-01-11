@@ -31,9 +31,9 @@ import { Options, RequestCallback } from 'request'
 import { AccountId, Value } from '@salto-io/adapter-api'
 import { CUSTOM_OBJECT_ID_FIELD, DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRTY_OPTIONS, DEFAULT_MAX_CONCURRENT_API_REQUESTS, SALESFORCE } from '../constants'
 import { CompleteSaveResult, SfError, SalesforceRecord } from './types'
-import { UsernamePasswordCredentials, OauthAccessTokenCredentials, Credentials,
+import { isUsernamePasswordCredentials, OauthAccessTokenCredentials,
   SalesforceClientConfig, ClientRateLimitConfig, ClientRetryConfig, ClientPollingConfig,
-  CustomObjectsDeployRetryConfig, ReadMetadataChunkSizeConfig } from '../types'
+  Credentials, CustomObjectsDeployRetryConfig, ReadMetadataChunkSizeConfig } from '../types'
 import Connection from './jsforce'
 
 const { makeArray } = collections.array
@@ -314,7 +314,7 @@ const createConnectionFromCredentials = (
 
 export const loginFromCredentialsAndReturnOrgId = async (
   connection: Connection, creds: Credentials): Promise<string> => {
-  if (creds instanceof UsernamePasswordCredentials) {
+  if (isUsernamePasswordCredentials(creds)) {
     return (await connection.login(creds.username, creds.password + (creds.apiToken ?? ''))).organizationId
   }
   // Oauth connection doesn't require further login

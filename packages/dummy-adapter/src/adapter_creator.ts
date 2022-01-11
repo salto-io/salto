@@ -28,7 +28,8 @@ export const configType = new ObjectType({
       [CORE_ANNOTATIONS.DEFAULT]: defValue,
     },
   })),
-  extraNaclPath: { refType: BuiltinTypes.STRING } },
+  extraNaclPath: { refType: BuiltinTypes.STRING },
+  generateEnvName: { refType: BuiltinTypes.STRING } },
 })
 
 export const adapter: Adapter = {

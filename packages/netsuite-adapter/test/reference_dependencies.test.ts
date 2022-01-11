@@ -16,7 +16,6 @@
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, StaticFile } from '@salto-io/adapter-api'
 import {
   CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT, DATASET, ENTITY_CUSTOM_FIELD, FILE, PATH, SCRIPT_ID, WORKBOOK,
-  TRANSACTION_COLUMN_CUSTOM_FIELD, TRANSACTION_BODY_CUSTOM_FIELD,
 } from '../src/constants'
 import { customTypes, fileCabinetTypes } from '../src/types'
 import {
@@ -104,22 +103,6 @@ describe('reference dependencies', () => {
         },
       })
 
-    const transactionColumnCustomFieldInstance = new InstanceElement('instance',
-      customTypes[TRANSACTION_COLUMN_CUSTOM_FIELD], {
-        [SCRIPT_ID]: 'custcol_my_script_id',
-        sourcefrom: new ReferenceExpression(
-          instance.elemID, 'val', instance
-        ),
-      })
-
-    const transactionBodyCustomFieldInstance = new InstanceElement('instance',
-      customTypes[TRANSACTION_BODY_CUSTOM_FIELD], {
-        [SCRIPT_ID]: 'custbody_my_script_id',
-        sourcefrom: new ReferenceExpression(
-          instance.elemID, 'val', instance
-        ),
-      })
-
     it('should not add dependencies that are not required', async () => {
       const result = getRequiredReferencedInstances([instanceWithManyRefs])
       expect(result).toEqual([instanceWithManyRefs])
@@ -140,19 +123,9 @@ describe('reference dependencies', () => {
       expect(result).toEqual([workbookInstance, datasetInstance])
     })
 
-    it('should add dependency of TRANSACTION_COLUMN_CUSTOM_FIELD', async () => {
-      const result = getRequiredReferencedInstances([transactionColumnCustomFieldInstance])
-      expect(result).toEqual([transactionColumnCustomFieldInstance, instance])
-    })
-
-    it('should add dependency of TRANSACTION_BODY_CUSTOM_FIELD', async () => {
-      const result = getRequiredReferencedInstances([transactionBodyCustomFieldInstance])
-      expect(result).toEqual([transactionBodyCustomFieldInstance, instance])
-    })
-
     it('should not add dependencies that already exist', async () => {
       const input = [customRecordTypeInstance, customSegmentInstance, workbookInstance,
-        datasetInstance, transactionColumnCustomFieldInstance, instance]
+        datasetInstance, instance]
       const result = getRequiredReferencedInstances(input)
       expect(result).toEqual(input)
     })

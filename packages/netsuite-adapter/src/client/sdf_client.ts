@@ -912,7 +912,7 @@ export default class SdfClient {
     const manifestContent = (await readFile(manifestPath)).toString()
     const manifestXml = xmlParser.parse(manifestContent, { ignoreAttributes: false })
 
-    if (!_.isPlainObject(manifestXml.manifest.dependencies)) {
+    if (!_.isPlainObject(manifestXml.manifest?.dependencies)) {
       log.warn('manifest.xml is missing dependencies tag')
       return
     }

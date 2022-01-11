@@ -45,8 +45,9 @@ const adapter: Adapter<Args, Credentials> = {
     password: args.password,
     subdomain: args.subdomain,
   }),
-  validateCredentials: credentials =>
-    clientUtils.validateCredentials(credentials, { createConnection }) as unknown as Promise<void>,
+  validateCredentials: async credentials => {
+    await clientUtils.validateCredentials(credentials, { createConnection })
+  },
 }
 
 export default adapter

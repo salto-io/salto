@@ -17,7 +17,7 @@ import { creds, CredsLease } from '@salto-io/e2e-credentials-store'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from '../src/client/client'
 import ZendeskAdapter, { ZendeskAdapterParams } from '../src/adapter'
-import { DEFAULT_CONFIG, ZendeskConfig } from '../src/config'
+import { DEFAULT_CONFIG } from '../src/config'
 import { Credentials } from '../src/auth'
 import { credsSpec } from './jest_environment'
 
@@ -33,13 +33,13 @@ export type Opts = {
   credentials: Credentials
 }
 
-export const realAdapter = ({ adapterParams, credentials }: Opts, config?: ZendeskConfig):
+export const realAdapter = ({ adapterParams, credentials }: Opts, config = DEFAULT_CONFIG):
 Reals => {
   const client = (
     (adapterParams && adapterParams.client)
-    || new ZendeskClient({ credentials, config: config?.client })
+    || new ZendeskClient({ credentials, config: config.client })
   )
-  const adapter = new ZendeskAdapter({ client, config: config ?? DEFAULT_CONFIG })
+  const adapter = new ZendeskAdapter({ client, config })
   return { client, adapter }
 }
 

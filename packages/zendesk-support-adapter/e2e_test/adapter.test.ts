@@ -19,13 +19,15 @@ import { Change, ChangeId, Element, ElemID, InstanceElement, isInstanceElement,
   ObjectType, isObjectType, toChange, Values } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { config as configUtils } from '@salto-io/adapter-components'
-import { values } from '@salto-io/lowerdash'
+import { values, collections } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { DEFAULT_CONFIG, API_DEFINITIONS_CONFIG } from '../src/config'
 import { ZENDESK_SUPPORT } from '../src/constants'
 import { Credentials } from '../src/auth'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
+
+const { awu } = collections.asynciterable
 
 // Set long timeout as we communicate with Zendesk APIs
 jest.setTimeout(600000)
@@ -52,21 +54,18 @@ InstanceElement => {
 const deployChanges = async (
   adapterAttr: Reals, changes: Record<ChangeId, Change<InstanceElement>[]>
 ): Promise<void> => {
-  if (Object.keys(changes).length === 0) {
-    return
-  }
-  for (const [id, group] of Object.entries(changes)) {
+  await awu(Object.entries(changes)).forEach(async ([id, group]) => {
     // eslint-disable-next-line no-await-in-loop
     const deployResult = await adapterAttr.adapter.deploy({
       changeGroup: { groupID: id, changes: group },
     })
     expect(deployResult.errors).toHaveLength(0)
     expect(deployResult.appliedChanges).not.toHaveLength(0)
-  }
+  })
 }
 
 describe('Zendesk support adapter E2E', () => {
-  describe('fetch', () => {
+  describe('fetch and deploy', () => {
     let credLease: CredsLease<Credentials>
     let adapterAttr: Reals
     const testSuffix = uuidv4().slice(0, 8)
@@ -133,7 +132,7 @@ describe('Zendesk support adapter E2E', () => {
         viewInstance,
         ticketFieldInstance,
       ],
-      i => i.elemID.typeName,
+      i => i.elemID.getFullName(),
     )
 
     beforeAll(async () => {
@@ -199,9 +198,6 @@ describe('Zendesk support adapter E2E', () => {
         'user_field',
         'view',
         'workspace',
-        'ticket_form_order',
-        'user_field_order',
-        'organization_field_order',
       ]
       const typeNames = elements.filter(isObjectType).map(e => e.elemID.typeName)
       const instances = elements.filter(isInstanceElement)

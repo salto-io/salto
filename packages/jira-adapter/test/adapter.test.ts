@@ -28,16 +28,16 @@ const { generateTypes, getAllInstances, loadSwagger } = elements.swagger
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
+  // only including relevant functions
   return {
     ...actual,
     deployment: {
-      ...actual.deployment,
+      changeValidators: actual.deployment.changeValidators,
       deployChange: jest.fn().mockImplementation(actual.elements.swagger.deployChange),
     },
     elements: {
-      ...actual.elements,
       swagger: {
-        ...actual.elements.swagger,
+        flattenAdditionalProperties: actual.elements.swagger.flattenAdditionalProperties,
         generateTypes: jest.fn().mockImplementation(() => { throw new Error('generateTypes called without a mock') }),
         getAllInstances: jest.fn().mockImplementation(() => { throw new Error('getAllInstances called without a mock') }),
         loadSwagger: jest.fn().mockImplementation(() => { throw new Error('loadSwagger called without a mock') }),

@@ -15,19 +15,19 @@
 */
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
+import { mockFunction } from '@salto-io/test-utils'
 import { ClientRateLimitConfig } from '../../src/client/config'
-import { AdapterHTTPClient, ClientOpts, ConnectionCreator, HTTPError, UnauthorizedError } from '../../src/client'
+import { AdapterHTTPClient, APIConnection, ClientOpts, ConnectionCreator, HTTPError, UnauthorizedError } from '../../src/client'
 import { createConnection, Credentials } from './common'
+import { TimeoutError } from '../../src/client/http_client'
 
 describe('client_http_client', () => {
   let mockAxiosAdapter: MockAdapter
-  const mockCreateConnection: jest.MockedFunction<ConnectionCreator<Credentials>> = jest.fn(
-    createConnection
-  )
+  let mockCreateConnection: jest.MockedFunction<ConnectionCreator<Credentials>>
 
   beforeEach(() => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
-    mockCreateConnection.mockClear()
+    mockCreateConnection = jest.fn(createConnection)
   })
 
   afterEach(() => {
@@ -86,6 +86,27 @@ describe('client_http_client', () => {
       })
       mockAxiosAdapter.onGet('/ep').replyOnce(400, { a: 'b' })
       await expect(client.getSinglePage({ url: '/ep' })).rejects.toThrow(HTTPError)
+    })
+
+    it('should throw TimeoutError if received ETIMEDOUT', async () => {
+      class ETIMEDOUTError {
+        readonly code: string
+        constructor() {
+          this.code = 'ETIMEDOUT'
+        }
+      }
+      mockCreateConnection.mockReturnValue({
+        login: async () => ({
+          get: mockFunction<APIConnection['get']>().mockRejectedValue(new ETIMEDOUTError()),
+          post: mockFunction<APIConnection['post']>(),
+          put: mockFunction<APIConnection['put']>(),
+          patch: mockFunction<APIConnection['patch']>(),
+          delete: mockFunction<APIConnection['delete']>(),
+          accountId: 'ACCOUNT_ID',
+        }),
+      })
+      const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
+      await expect(client.getSinglePage({ url: '/ep' })).rejects.toThrow(TimeoutError)
     })
   })
 

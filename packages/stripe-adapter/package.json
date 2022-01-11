@@ -38,7 +38,7 @@
     "@salto-io/e2e-credentials-store": "0.3.8",
     "@salto-io/logging": "0.3.8",
     "@salto-io/lowerdash": "0.3.8",
-    "axios": "^0.21.1",
+    "axios": "^0.21.3",
     "axios-retry": "^3.1.9",
     "lodash": "^4.17.21"
   },
@@ -47,7 +47,7 @@
     "@types/lodash": "^4.14.168",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",
-    "axios": "^0.21.1",
+    "axios": "^0.21.3",
     "axios-mock-adapter": "^1.19.0",
     "eslint": "^6.2.2",
     "eslint-config-airbnb": "18.0.1",

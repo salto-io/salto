@@ -64,6 +64,20 @@ export type OptionalFeatures = {
   authorInformation?: boolean
 }
 
+export type ChangeValidatorName = (
+  'managedPackage'
+  | 'picklistStandardField'
+  | 'customObjectInstances'
+  | 'unknownField'
+  | 'customFieldType'
+  | 'standardFieldLabel'
+  | 'profileMapKeys'
+  | 'multipleDefaults'
+  | 'picklistPromote'
+  | 'validateOnlyFlag'
+)
+export type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
+
 type ObjectIdSettings = {
   objectsRegex: string
   idFields: string[]
@@ -195,6 +209,7 @@ export type SalesforceConfig = {
   [MAX_ITEMS_IN_RETRIEVE_REQUEST]?: number
   [USE_OLD_PROFILES]?: boolean
   [CLIENT_CONFIG]?: SalesforceClientConfig
+  validators?: ChangeValidatorConfig
 }
 
 type DataManagementConfigSuggestions = {
@@ -442,6 +457,22 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
   },
 })
 
+const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig>({
+  elemID: new ElemID(constants.SALESFORCE, 'changeValidatorConfig'),
+  fields: {
+    managedPackage: { refType: BuiltinTypes.BOOLEAN },
+    picklistStandardField: { refType: BuiltinTypes.BOOLEAN },
+    customObjectInstances: { refType: BuiltinTypes.BOOLEAN },
+    unknownField: { refType: BuiltinTypes.BOOLEAN },
+    customFieldType: { refType: BuiltinTypes.BOOLEAN },
+    standardFieldLabel: { refType: BuiltinTypes.BOOLEAN },
+    profileMapKeys: { refType: BuiltinTypes.BOOLEAN },
+    multipleDefaults: { refType: BuiltinTypes.BOOLEAN },
+    picklistPromote: { refType: BuiltinTypes.BOOLEAN },
+    validateOnlyFlag: { refType: BuiltinTypes.BOOLEAN },
+  },
+})
+
 const fetchConfigType = createMatchingObjectType<FetchParameters>({
   elemID: new ElemID(constants.SALESFORCE, 'fetchConfig'),
   fields: {
@@ -453,7 +484,7 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
   },
 })
 
-export const configType = new ObjectType({
+export const configType = createMatchingObjectType<SalesforceConfig>({
   elemID: configID,
   fields: {
     [FETCH_CONFIG]: {
@@ -508,14 +539,8 @@ export const configType = new ObjectType({
     [CLIENT_CONFIG]: {
       refType: clientConfigType,
     },
-    [METADATA_TYPES_SKIPPED_LIST]: {
-      refType: new ListType(BuiltinTypes.STRING),
-    },
-    [INSTANCES_REGEX_SKIPPED_LIST]: {
-      refType: new ListType(BuiltinTypes.STRING),
-    },
-    [DATA_MANAGEMENT]: {
-      refType: dataManagementType,
+    validators: {
+      refType: changeValidatorConfigType,
     },
   },
 })

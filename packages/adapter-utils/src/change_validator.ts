@@ -13,11 +13,28 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
+import { ChangeValidator } from '@salto-io/adapter-api'
+
+const log = logger(module)
 
 export const createChangeValidator = (
-  changeValidators: ReadonlyArray<ChangeValidator>
-): ChangeValidator => async (changes, adapterConfig) => (
-  _.flatten(await Promise.all(changeValidators.map(validator => validator(changes, adapterConfig))))
-)
+  changeValidators: ReadonlyArray<ChangeValidator>,
+  disabledValidators?: ReadonlyArray<ChangeValidator>,
+): ChangeValidator => async (changes, adapterConfig) => {
+  if (disabledValidators !== undefined) {
+    const disabledErrors = _.flatten(await Promise.all(
+      disabledValidators.map(validator => validator(changes, adapterConfig))
+    ))
+    disabledErrors.forEach(error => {
+      log.info(
+        'Ignoring error from disabled validator on %s: %s %s',
+        error.elemID.getFullName(), error.severity, error.detailedMessage,
+      )
+    })
+  }
+  return _.flatten(await Promise.all(
+    changeValidators.map(validator => validator(changes, adapterConfig))
+  ))
+}

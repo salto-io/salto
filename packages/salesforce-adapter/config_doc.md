@@ -116,6 +116,7 @@ salesforce {
 | maxItemsInRetrieveRequest                                | 2500                          | Limits the max number of requested items a single retrieve request
 | [fetch](#fetch-configuration-options)                    |                               | Fetch configuration 
 | [client](#client-configuration-options)                  | {} (no overrides)             | Configuration relating to the client used to interact with salesforce
+| [validators](#validator-configuration-options)           | {} (all enabled)              | Configuration for choosing which validators will be applied to deploy plans
 
 ## Fetch configuration options
 
@@ -229,9 +230,9 @@ For more details see the DeployOptions section in the [salesforce documentation 
 
 | Name                                                        | Default when undefined                           | Description
 | ------------------------------------------------------------| -------------------------------------------------| -----------
-| maxAttempts                                                    | `3`                                              | Max attempts to deploy data instances
-| retryDelay                                                        | `1000`                                | Delay (in millis) between each retry
-| retryableFailures                                                        | `FIELD_CUSTOM_VALIDATION_EXCEPTION, UNABLE_TO_LOCK_ROW`                                | Error messages for which to retry
+| maxAttempts                                                 | `3`                                              | Max attempts to deploy data instances
+| retryDelay                                                  | `1000`                                           | Delay (in millis) between each retry
+| retryableFailures                                           | `FIELD_CUSTOM_VALIDATION_EXCEPTION, UNABLE_TO_LOCK_ROW` | Error messages for which to retry
 | 
 
 ### Read metadata chunk size
@@ -239,3 +240,17 @@ For more details see the DeployOptions section in the [salesforce documentation 
 | ------------------------------------------------------------| -------------------------------------------------| -----------
 | default                                                     | `10`                                             | Default value for chunk size in readMetadata
 | overrides                                                   | Profile and PermissionSet are set to 1           | Chunk size for specific metadata types
+
+## Validator Configuration Options
+| Name                                                        | Default when undefined    | Description
+| ------------------------------------------------------------| ------------------------- | -----------
+| managedPackage                                              | true                      | Disallow changes to objects and fields that are part of a managed package
+| picklistStandardField                                       | true                      | It is forbidden to modify a picklist on a standard field. Only StandardValueSet is allowed
+| customObjectInstances                                       | true                      | Validate permissions of creating / update data records
+| unknownField                                                | true                      | Disallow deploying an unknown field type
+| customFieldType                                             | true                      | Ensure the type given to a custom field is a valid type for custom fields
+| standardFieldLabel                                          | true                      | Disallow changing a label of a standard field
+| profileMapKeys                                              | true                      | Ensure proper structure of profiles before deploying
+| multipleDefaults                                            | true                      | Check for multiple default values in picklists and other places where only one default is allowed
+| picklistPromote                                             | true                      | Disallow promoting picklist value-set to global since it cannot be done with the API
+| validateOnlyFlag                                            | true                      | Disallow deploying data records in a validation only deploy

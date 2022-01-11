@@ -252,5 +252,5 @@ For more details see the DeployOptions section in the [salesforce documentation 
 | standardFieldLabel                                          | true                      | Disallow changing a label of a standard field
 | profileMapKeys                                              | true                      | Ensure proper structure of profiles before deploying
 | multipleDefaults                                            | true                      | Check for multiple default values in picklists and other places where only one default is allowed
-| picklistPromote                                             | true                      | Promoting picklist value-set to global cannot be done with the API
+| picklistPromote                                             | true                      | Disallow promoting picklist value-set to global since it cannot be done with the API
 | validateOnlyFlag                                            | true                      | Disallow deploying data records in a validation only deploy

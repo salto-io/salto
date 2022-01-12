@@ -1888,6 +1888,33 @@ zendesk_support {
         request = {
           url = "/business_hours/schedules/{scheduleId}/holidays"
         }
+        deployRequests = {
+          add = {
+            url = "/business_hours/schedules/{scheduleId}/holidays"
+            deployAsField = "holiday"
+            method = "post"
+            urlParamsToFields = {
+              scheduleId = "_parent.0.id"
+            }
+          }
+          modify = {
+            url = "/business_hours/schedules/{scheduleId}/holidays/{holidayId}"
+            deployAsField = "holiday"
+            method = "put"
+            urlParamsToFields = {
+              holidayId = "id"
+              scheduleId = "_parent.0.id"
+            }
+          }
+          remove = {
+            url = "/business_hours/schedules/{scheduleId}/holidays/{holidayId}"
+            method = "delete"
+            urlParamsToFields = {
+              holidayId = "id"
+              scheduleId = "_parent.0.id"
+            }
+          }
+        }
         transformation = {
           sourceTypeName = "business_hours_schedule__holidays"
           dataField = "holidays"
@@ -1975,6 +2002,33 @@ zendesk_support {
       routing_attribute_value = {
         request = {
           url = "/routing/attributes/{attributeId}/values"
+        }
+        deployRequests = {
+          add = {
+            url = "/routing/attributes/{attributeId}/values"
+            deployAsField = "attribute_value"
+            method = "post"
+            urlParamsToFields = {
+              attributeId = "_parent.0.id"
+            }
+          }
+          modify = {
+            url = "/routing/attributes/{attributeId}/values/{attributeValueId}"
+            deployAsField = "attribute_value"
+            method = "put"
+            urlParamsToFields = {
+              attributeValueId = "id"
+              attributeId = "_parent.0.id"
+            }
+          }
+          remove = {
+            url = "/routing/attributes/{attributeId}/values/{attributeValueId}"
+            method = "delete"
+            urlParamsToFields = {
+              attributeValueId = "id"
+              attributeId = "_parent.0.id"
+            }
+          }
         }
         transformation = {
           sourceTypeName = "routing_attribute__values"

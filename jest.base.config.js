@@ -16,7 +16,8 @@
 module.exports = {
   globals: {
     'ts-jest': {
-      isolatedModules: true
+      isolatedModules: true,
+      babelConfig: true,
     }
   },
   preset: 'ts-jest',

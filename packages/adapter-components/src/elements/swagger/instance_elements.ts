@@ -31,6 +31,7 @@ import {
 import { findDataField, FindNestedFieldFunc } from '../field_finder'
 import { computeGetArgs as defaultComputeGetArgs, ComputeGetArgsFunc } from '../request_parameters'
 import { getElementsWithContext } from '../element_getter'
+import { TimeoutError } from '../../client/http_client'
 
 const { makeArray } = collections.array
 const { toArrayAsync, awu } = collections.asynciterable
@@ -424,7 +425,9 @@ const getInstancesForType = async (params: GetEntriesParams): Promise<InstanceEl
     })
   } catch (e) {
     log.warn(`Could not fetch ${typeName}: ${e}. %s`, e.stack)
-    if (e instanceof UnauthorizedError || e instanceof InvalidTypeConfig) {
+    if (e instanceof UnauthorizedError
+      || e instanceof InvalidTypeConfig
+      || e instanceof TimeoutError) {
       throw e
     }
     return []

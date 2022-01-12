@@ -70,6 +70,9 @@ export class HTTPError extends Error {
   }
 }
 
+export class TimeoutError extends Error {
+}
+
 const isMethodWithData = (params: ClientParams): params is ClientDataParams =>
   'data' in params
 
@@ -195,6 +198,9 @@ export abstract class AdapterHTTPClient<
       }
     } catch (e) {
       log.warn(`failed to ${method} ${url} ${queryParams}: ${e}, stack: ${e.stack}, data: ${safeJsonStringify(e?.response?.data)}`)
+      if (e.code === 'ETIMEDOUT') {
+        throw new TimeoutError(`Failed to ${method} ${url} with error: ${e}`)
+      }
       if (e.response !== undefined) {
         throw new HTTPError(`Failed to ${method} ${url} with error: ${e}`, e.response)
       }

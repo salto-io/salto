@@ -31,6 +31,7 @@ import sharePermissionFilter from './filters/share_permission'
 import boardFilter from './filters/board'
 import screenFilter from './filters/screen/screen'
 import screenableTabFilter from './filters/screen/screenable_tab'
+import issueTypeScreenSchemeFilter from './filters/issue_type_screen_scheme'
 import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
 import projectFilter from './filters/project'
 import defaultInstancesDeployFilter from './filters/default_instances_deploy'
@@ -62,6 +63,7 @@ export const DEFAULT_FILTERS = [
   fieldDeploymentFilter,
   screenFilter,
   screenableTabFilter,
+  issueTypeScreenSchemeFilter,
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,

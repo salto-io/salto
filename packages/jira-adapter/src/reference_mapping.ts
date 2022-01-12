@@ -166,6 +166,16 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     serializationStrategy: 'id',
     target: { type: 'NotificationScheme' },
   },
+  {
+    src: { field: 'availableFields', parentTypes: ['Screen'] },
+    serializationStrategy: 'id',
+    target: { type: 'Field' },
+  },
+  {
+    src: { field: 'fields', parentTypes: ['ScreenableTab'] },
+    serializationStrategy: 'id',
+    target: { type: 'Field' },
+  },
 ]
 
 const lookupNameFuncs: GetLookupNameFunc[] = [

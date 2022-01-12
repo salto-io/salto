@@ -54,7 +54,7 @@ describe('deployChange', () => {
         url: '/test/endpoint/{instanceId}',
         method: 'delete',
         urlParamsToFields: {
-          instanceId: 'id',
+          instanceId: 'obj.id',
         },
       },
     }
@@ -82,14 +82,14 @@ describe('deployChange', () => {
       status: 200,
       data: {},
     })
-    instance.value.id = 1
+    instance.value.obj = { id: 1 }
     await deployChange(
       toChange({ before: instance }),
       httpClient,
       endpoint
     )
 
-    expect(instance.value.id).toBe(1)
+    expect(instance.value.obj.id).toBe(1)
     expect(httpClient.delete).toHaveBeenCalledWith(expect.objectContaining({
       url: '/test/endpoint/1',
     }))

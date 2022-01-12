@@ -32,6 +32,7 @@ jest.mock('@salto-io/adapter-components', () => {
   return {
     ...actual,
     deployment: {
+      ...actual.deployment,
       changeValidators: actual.deployment.changeValidators,
       deployChange: jest.fn().mockImplementation(actual.elements.swagger.deployChange),
     },

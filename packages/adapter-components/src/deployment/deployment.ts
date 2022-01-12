@@ -15,12 +15,14 @@
 */
 import _ from 'lodash'
 import { ActionName, Change, getChangeData, InstanceElement } from '@salto-io/adapter-api'
-import { transformElement } from '@salto-io/adapter-utils'
+import { resolvePath, transformElement } from '@salto-io/adapter-utils'
 import { replaceUrlParams } from '../elements/request_parameters'
 import { HTTPWriteClientInterface } from '../client/http_client'
 import { DeploymentRequestsByAction } from '../config/request'
 import { ResponseValue } from '../client'
 import { OPERATION_TO_ANNOTATION } from './annotations'
+
+const FIELD_PATH_DELIMITER = '.'
 
 const filterIrrelevantValues = async (
   instance: InstanceElement,
@@ -70,7 +72,13 @@ export const deployChange = async (
 
   const urlVarsValues = {
     ...instance.value,
-    ..._.mapValues(endpoint.urlParamsToFields ?? {}, fieldName => instance.value[fieldName]),
+    ..._.mapValues(
+      endpoint.urlParamsToFields ?? {},
+      fieldName => resolvePath(
+        instance,
+        instance.elemID.createNestedID(...fieldName.split(FIELD_PATH_DELIMITER))
+      )
+    ),
     ...(additionalUrlVars ?? {}),
   }
   const url = replaceUrlParams(endpoint.url, urlVarsValues)

@@ -513,11 +513,11 @@ export const restoreChangeElement = async (
   )
 )
 
-export const resolveChangeElement = <T extends ChangeDataType = ChangeDataType>(
-  change: Change<T>,
+export const resolveChangeElement = <T extends Change<ChangeDataType> = Change<ChangeDataType>>(
+  change: T,
   getLookUpName: GetLookupNameFunc,
   resolveValuesFunc = resolveValues,
-): Promise<Change<T>> => applyFunctionToChangeData(
+): Promise<T> => applyFunctionToChangeData(
     change,
     changeData => resolveValuesFunc(changeData, getLookUpName)
   )

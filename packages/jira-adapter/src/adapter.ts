@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange } from '@salto-io/adapter-api'
-import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { config as configUtils, elements as elementUtils, client as clientUtils, deployment as deploymentUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import JiraClient from './client/client'
@@ -29,6 +29,8 @@ import issueTypeSchemeReferences from './filters/issue_type_schemas/issue_type_s
 import issueTypeSchemeFilter from './filters/issue_type_schemas/issue_type_scheme'
 import sharePermissionFilter from './filters/share_permission'
 import boardFilter from './filters/board'
+import screenFilter from './filters/screen/screen'
+import screenableTabFilter from './filters/screen/screenable_tab'
 import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
 import projectFilter from './filters/project'
 import defaultInstancesDeployFilter from './filters/default_instances_deploy'
@@ -58,6 +60,8 @@ export const DEFAULT_FILTERS = [
   fieldStructureFilter,
   fieldTypeReferencesFilter,
   fieldDeploymentFilter,
+  screenFilter,
+  screenableTabFilter,
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,
@@ -216,6 +220,9 @@ export default class JiraAdapter implements AdapterOperations {
 
   // eslint-disable-next-line class-methods-use-this
   get deployModifiers(): AdapterOperations['deployModifiers'] {
-    return { changeValidator }
+    return {
+      changeValidator,
+      dependencyChanger: deploymentUtils.dependency.removeStandaloneFieldDependency,
+    }
   }
 }

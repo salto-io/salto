@@ -259,6 +259,7 @@ const addRequiredDependencies = (
   customizationInfos: CustomizationInfo[]
 ): void => {
   const requiredFeatures = getRequiredFeatures(customizationInfos)
+    .map(feature => ({ [REQUIRED_ATTRIBUTE]: 'true', [TEXT_ATTRIBUTE]: feature }))
   const requiredObjects = getRequiredObjects(customizationInfos)
   if (requiredFeatures.length === 0 && requiredObjects.length === 0) {
     return
@@ -266,8 +267,13 @@ const addRequiredDependencies = (
 
   const { features, objects } = dependencies
   features.feature = _.union(
-    features.feature,
-    requiredFeatures.map(feature => ({ [REQUIRED_ATTRIBUTE]: 'true', [TEXT_ATTRIBUTE]: feature }))
+    // remove required features that are set to "required=false"
+    _.differenceBy(
+      makeArray(features.feature),
+      requiredFeatures,
+      item => item[TEXT_ATTRIBUTE]
+    ),
+    requiredFeatures
   )
   objects.object = _.union(objects.object, requiredObjects)
 }

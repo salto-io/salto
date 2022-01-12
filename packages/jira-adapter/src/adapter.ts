@@ -22,7 +22,7 @@ import JiraClient from './client/client'
 import changeValidator from './change_validator'
 import { JiraConfig, getApiDefinitions } from './config'
 import { FilterCreator, Filter, filtersRunner } from './filter'
-import fieldReferences from './filters/field_references'
+import fieldReferencesFilter from './filters/field_references'
 import referenceBySelfLinkFilter from './filters/references_by_self_link'
 import removeSelfFilter from './filters/remove_self'
 import issueTypeSchemeReferences from './filters/issue_type_schemas/issue_type_scheme_references'
@@ -31,8 +31,11 @@ import sharePermissionFilter from './filters/share_permission'
 import boardFilter from './filters/board'
 import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
 import projectFilter from './filters/project'
-import defaultDeployFilter from './filters/default_deploy'
+import defaultInstancesDeployFilter from './filters/default_instances_deploy'
 import workflowFilter from './filters/workflow/workflow'
+import fieldStructureFilter from './filters/fields/field_structure_filter'
+import fieldDeploymentFilter from './filters/fields/field_deployment_filter'
+import fieldTypeReferencesFilter from './filters/fields/field_type_references_filter'
 import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
 
@@ -52,13 +55,16 @@ export const DEFAULT_FILTERS = [
   sharePermissionFilter,
   boardFilter,
   projectFilter,
+  fieldStructureFilter,
+  fieldTypeReferencesFilter,
+  fieldDeploymentFilter,
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,
-  fieldReferences,
+  fieldReferencesFilter,
   hiddenValuesInListsFilter,
   // Must be last
-  defaultDeployFilter,
+  defaultInstancesDeployFilter,
 ]
 
 export interface JiraAdapterParams {

@@ -114,7 +114,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       url: '/rest/api/3/field/search',
       paginationField: 'startAt',
       queryParams: {
-        expand: 'key,searcherKey',
+        expand: 'searcherKey',
       },
       recurseInto: [
         {
@@ -222,10 +222,30 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       ],
     },
   },
+
+  CustomFieldContextOption: {
+    transformation: {
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
+    },
+  },
+
   CustomFieldContext: {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'options', fieldType: 'list<CustomFieldContextOption>' },
+      ],
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
+      fieldsToOmit: [
+        { fieldName: 'isGlobalContext' },
+        { fieldName: 'isAnyIssueType' },
       ],
     },
     deployRequests: {

@@ -17,11 +17,12 @@ import { BuiltinTypes, CORE_ANNOTATIONS, Field, getChangeData, InstanceElement, 
 import { resolveChangeElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { promises } from '@salto-io/lowerdash'
-import { getLookUpName } from '../../references'
+import { getLookUpName } from '../../reference_mapping'
 import JiraClient from '../../client/client'
 import { JiraConfig } from '../../config'
-import { deployChange } from '../../deployment'
+import { defaultDeployChange, deployChanges } from '../../deployment'
 import { FilterCreator } from '../../filter'
+import { getDiffIds } from '../../diff'
 
 const ISSUE_TYPE_SCHEMA_NAME = 'IssueTypeScheme'
 const MAX_CONCURRENT_PROMISES = 20
@@ -30,26 +31,23 @@ const deployNewAndDeletedIssueTypeIds = async (
   change: ModificationChange<InstanceElement>,
   client: JiraClient,
 ): Promise<void> => {
-  const beforeIds = new Set(change.data.before.value.issueTypeIds)
-  const afterIds = new Set(change.data.after.value.issueTypeIds)
-
-  const idsToAdd = change.data.after.value.issueTypeIds
-    ?.filter((id: string) => !beforeIds.has(id)) ?? []
-  const idsToRemove = change.data.before.value.issueTypeIds
-    ?.filter((id: string) => !afterIds.has(id)) ?? []
+  const { addedIds, removedIds } = getDiffIds(
+    change.data.before.value.issueTypeIds ?? [],
+    change.data.after.value.issueTypeIds ?? []
+  )
 
   const instance = getChangeData(change)
-  if (idsToAdd.length > 0) {
+  if (addedIds.length > 0) {
     await client.put({
       url: `/rest/api/3/issuetypescheme/${instance.value.issueTypeSchemeId}/issuetype`,
       data: {
-        issueTypeIds: Array.from(idsToAdd),
+        issueTypeIds: Array.from(addedIds),
       },
     })
   }
 
   await promises.array.withLimitedConcurrency(
-    Array.from(idsToRemove).map(id => () =>
+    Array.from(removedIds).map(id => () =>
       client.delete({
         url: `/rest/api/3/issuetypescheme/${instance.value.issueTypeSchemeId}/issuetype/${id}`,
       })),
@@ -83,7 +81,7 @@ const deployIssueTypeSchema = async (
   client: JiraClient,
   config: JiraConfig,
 ): Promise<void> => {
-  await deployChange(change, client, config.apiDefinitions, ['issueTypeIds'])
+  await defaultDeployChange({ change, client, apiDefinitions: config.apiDefinitions, fieldsToIgnore: ['issueTypeIds'] })
   await deployNewAndDeletedIssueTypeIds(change, client)
   await deployIssueTypeIdsOrder(change, client)
 }
@@ -116,34 +114,22 @@ const filter: FilterCreator = ({ config, client }) => ({
         && getChangeData(change).elemID.typeName === ISSUE_TYPE_SCHEMA_NAME
     )
 
-    const result = await Promise.all(relevantChanges
-      .filter(isInstanceChange)
-      .map(async change => {
-        try {
-          await deployIssueTypeSchema(
-            await resolveChangeElement(
-              change,
-              getLookUpName
-            ) as ModificationChange<InstanceElement>,
-            client,
-            config,
-          )
-          return change
-        } catch (err) {
-          if (!_.isError(err)) {
-            throw err
-          }
-          return err
-        }
-      }))
 
-    const [errors, appliedChanges] = _.partition(result, _.isError)
+    const deployResult = await deployChanges(
+      relevantChanges,
+      async change => deployIssueTypeSchema(
+        await resolveChangeElement(
+          change,
+          getLookUpName
+        ) as ModificationChange<InstanceElement>,
+        client,
+        config
+      )
+    )
+
     return {
       leftoverChanges,
-      deployResult: {
-        errors,
-        appliedChanges,
-      },
+      deployResult,
     }
   },
 })

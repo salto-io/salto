@@ -13,22 +13,34 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, getChangeData, InstanceElement, isAdditionChange } from '@salto-io/adapter-api'
+import { Change, ChangeDataType, DeployResult, getChangeData, InstanceElement, isAdditionChange } from '@salto-io/adapter-api'
 import { config, deployment, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { resolveChangeElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import _ from 'lodash'
 import JiraClient from './client/client'
-import { getLookUpName } from './references'
+import { getLookUpName } from './reference_mapping'
 
 const log = logger(module)
 
-export const deployChange = async (
-  change: Change<InstanceElement>,
-  client: JiraClient,
-  apiDefinitions: config.AdapterApiConfig,
-  fieldsToIgnore: string[] = [],
+type DeployChangeParam = {
+  change: Change<InstanceElement>
+  client: JiraClient
+  apiDefinitions: config.AdapterApiConfig
+  fieldsToIgnore?: string[]
   additionalUrlVars?: Record<string, string>
-): Promise<void> => {
+}
+
+/**
+ * Deploy change with the standard "add", "modify", "remove" endpoints
+ */
+export const defaultDeployChange = async ({
+  change,
+  client,
+  apiDefinitions,
+  fieldsToIgnore = [],
+  additionalUrlVars,
+}: DeployChangeParam): Promise<void> => {
   try {
     const changeToDeploy = await elementUtils.swagger.flattenAdditionalProperties(
       await resolveChangeElement(change, getLookUpName)
@@ -44,7 +56,9 @@ export const deployChange = async (
     if (isAdditionChange(change)) {
       if (!Array.isArray(response)) {
         const serviceIdField = apiDefinitions.types[getChangeData(change).elemID.typeName]?.transformation?.serviceIdField ?? 'id'
-        getChangeData(change).value[serviceIdField] = response[serviceIdField]
+        if (response?.[serviceIdField] !== undefined) {
+          getChangeData(change).value[serviceIdField] = response[serviceIdField]
+        }
       } else {
         log.warn('Received unexpected response from deployChange: %o', response)
       }
@@ -55,5 +69,33 @@ export const deployChange = async (
       throw new Error(`${errorMessage}. ${err.response.data.errorMessages}`)
     }
     throw Error(errorMessage)
+  }
+}
+
+/**
+ * Runs a deploy function of a single change on many changes and returns the deploy results
+ */
+export const deployChanges = async <T extends Change<ChangeDataType>>(
+  changes: T[],
+  deployChangeFunc: (change: T) => Promise<void>
+): Promise<DeployResult> => {
+  const result = await Promise.all(
+    changes.map(async change => {
+      try {
+        await deployChangeFunc(change)
+        return change
+      } catch (err) {
+        if (!_.isError(err)) {
+          throw err
+        }
+        return err
+      }
+    })
+  )
+
+  const [errors, appliedChanges] = _.partition(result, _.isError)
+  return {
+    errors,
+    appliedChanges,
   }
 }

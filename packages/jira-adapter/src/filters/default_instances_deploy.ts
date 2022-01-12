@@ -14,36 +14,19 @@
 * limitations under the License.
 */
 import { isInstanceChange } from '@salto-io/adapter-api'
-import _ from 'lodash'
-import { deployChange } from '../deployment'
+import { defaultDeployChange, deployChanges } from '../deployment'
 import { FilterCreator } from '../filter'
 
-/**
- * Convert field values into references, based on predefined rules.
- */
 const filter: FilterCreator = ({ client, config }) => ({
   deploy: async changes => {
-    const result = await Promise.all(
-      changes.filter(isInstanceChange).map(async change => {
-        try {
-          await deployChange(change, client, config.apiDefinitions)
-          return change
-        } catch (err) {
-          if (!_.isError(err)) {
-            throw err
-          }
-          return err
-        }
-      })
+    const deployResult = await deployChanges(
+      changes.filter(isInstanceChange),
+      change => defaultDeployChange({ change, client, apiDefinitions: config.apiDefinitions })
     )
 
-    const [errors, appliedChanges] = _.partition(result, _.isError)
     return {
       leftoverChanges: [],
-      deployResult: {
-        errors,
-        appliedChanges,
-      },
+      deployResult,
     }
   },
 })

@@ -13,7 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
+import { GetLookupNameFunc } from '@salto-io/adapter-utils'
+import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 
 
 export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] = [
@@ -38,9 +41,14 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     target: { type: 'IssueType' },
   },
   {
-    src: { field: 'issueTypeIds', parentTypes: ['IssueTypeScheme'] },
+    src: { field: 'issueTypeIds', parentTypes: ['IssueTypeScheme', 'CustomFieldContext'] },
     serializationStrategy: 'id',
     target: { type: 'IssueType' },
+  },
+  {
+    src: { field: 'projectIds', parentTypes: ['CustomFieldContext'] },
+    serializationStrategy: 'id',
+    target: { type: 'Project' },
   },
   {
     src: { field: 'id', parentTypes: ['WorkflowStatus'] },
@@ -160,4 +168,13 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
   },
 ]
 
-export const getLookUpName = referenceUtils.generateLookupFunc(referencesRules)
+const lookupNameFuncs: GetLookupNameFunc[] = [
+  getFieldsLookUpName,
+  referenceUtils.generateLookupFunc(referencesRules),
+]
+
+export const getLookUpName: GetLookupNameFunc = async args => (
+  lookupNameFuncs
+    .map(lookupFunc => lookupFunc(args))
+    .find(res => !isReferenceExpression(res))
+)

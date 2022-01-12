@@ -13,21 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, BuiltinTypes, CORE_ANNOTATIONS, Field, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isModificationChange, isObjectType, ListType, ModificationChange, ReferenceExpression, Values } from '@salto-io/adapter-api'
+import { AdditionChange, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isModificationChange, isObjectType, ModificationChange, ReferenceExpression } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { defaultDeployChange, deployChanges } from '../../deployment'
 import { FilterCreator } from '../../filter'
 import JiraClient from '../../client/client'
 import { JiraConfig } from '../../config'
+import { covertFields } from './fields'
 
 const { awu } = collections.asynciterable
 
 const SCREEN_TYPE_NAME = 'Screen'
-
-const log = logger(module)
 
 const verifyTabsResolved = (
   instance: InstanceElement
@@ -98,29 +95,12 @@ const filter: FilterCreator = ({ config, client }) => ({
       .find(
         type => type.elemID.name === SCREEN_TYPE_NAME
       )
-    if (screenType === undefined) {
-      log.warn(`${SCREEN_TYPE_NAME} type was not found`)
-    } else {
+    if (screenType !== undefined) {
       screenType.fields.tabs.annotations[CORE_ANNOTATIONS.CREATABLE] = true
       screenType.fields.tabs.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
-
-      screenType.fields.availableFields = new Field(screenType, 'availableFields', new ListType(BuiltinTypes.STRING))
     }
 
-    elements
-      .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === SCREEN_TYPE_NAME)
-      .forEach(instance => {
-        instance.value.availableFields = instance.value.availableFields
-          ?.filter((field: Values) => {
-            if (field.id === undefined) {
-              log.warn(`Received available field without id ${safeJsonStringify(field)} in instance ${instance.elemID.getFullName()}`)
-              return false
-            }
-            return true
-          })
-          .map(({ id }: Values) => id)
-      })
+    covertFields(elements, SCREEN_TYPE_NAME, 'availableFields')
   },
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(

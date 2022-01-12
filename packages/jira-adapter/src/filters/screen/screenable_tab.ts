@@ -13,9 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, BuiltinTypes, CORE_ANNOTATIONS, Field, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isModificationChange, isObjectType, ListType, ModificationChange, Values } from '@salto-io/adapter-api'
+import { AdditionChange, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isModificationChange, isObjectType, ModificationChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { getParents, resolveChangeElement } from '@salto-io/adapter-utils'
 import { defaultDeployChange, deployChanges } from '../../deployment'
@@ -23,12 +22,11 @@ import { FilterCreator } from '../../filter'
 import JiraClient from '../../client/client'
 import { JiraConfig } from '../../config'
 import { getLookUpName } from '../../reference_mapping'
+import { covertFields } from './fields'
 
 const { awu } = collections.asynciterable
 
 const SCREEN_TAB_TYPE_NAME = 'ScreenableTab'
-
-const log = logger(module)
 
 const deployTabFields = async (
   change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
@@ -110,27 +108,17 @@ const deployScreenTab = async (
 
 const filter: FilterCreator = ({ config, client }) => ({
   onFetch: async elements => {
-    const types = elements.filter(isObjectType)
+    covertFields(elements, SCREEN_TAB_TYPE_NAME, 'fields')
 
-    const screenTabType = types
-      .find(
-        type => type.elemID.name === SCREEN_TAB_TYPE_NAME
-      )
-    if (screenTabType === undefined) {
-      log.warn(`${SCREEN_TAB_TYPE_NAME} type was not found`)
-    } else {
-      screenTabType.fields.fields = new Field(screenTabType, 'fields', new ListType(BuiltinTypes.STRING), {
+    const screenTabType = elements.filter(isObjectType).find(
+      type => type.elemID.name === SCREEN_TAB_TYPE_NAME
+    )
+    if (screenTabType !== undefined) {
+      screenTabType.fields.fields.annotations = {
         [CORE_ANNOTATIONS.CREATABLE]: true,
         [CORE_ANNOTATIONS.UPDATABLE]: true,
-      })
+      }
     }
-
-    elements
-      .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === SCREEN_TAB_TYPE_NAME)
-      .forEach(instance => {
-        instance.value.fields = instance.value.fields?.map(({ id }: Values) => id)
-      })
   },
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(

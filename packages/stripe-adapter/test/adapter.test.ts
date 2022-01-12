@@ -17,8 +17,17 @@ import _ from 'lodash'
 import 'jest-extended'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { InstanceElement, isInstanceElement, Values } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import {
+  BuiltinTypes,
+  ElemID,
+  InstanceElement,
+  isInstanceElement,
+  ListType,
+  ObjectType,
+  Values,
+} from '@salto-io/adapter-api'
+import * as adapterComponents from '@salto-io/adapter-components'
+import { buildElementsSourceFromElements, naclCase } from '@salto-io/adapter-utils'
 import mockReplies from './mock_replies.json'
 import { adapter } from '../src/adapter_creator'
 import { accessTokenCredentialsType } from '../src/auth'
@@ -29,19 +38,36 @@ import {
   DEFAULT_INCLUDE_TYPES,
   FETCH_CONFIG,
 } from '../src/config'
+import { STRIPE } from '../src/constants'
 
 const TESTS_TIMEOUT_SECONDS = 30
 jest.setTimeout(TESTS_TIMEOUT_SECONDS * 1000)
 
+jest.mock('@salto-io/adapter-components', () => {
+  const actual = jest.requireActual('@salto-io/adapter-components')
+  return {
+    ...actual,
+    elements: {
+      ...actual.elements,
+      swagger: {
+        ...actual.elements.swagger,
+        generateTypes: jest.fn(),
+      },
+    },
+  }
+})
+
+const mockedAdapterComponents = jest.mocked(adapterComponents, true)
+
 describe('stripe swagger adapter', () => {
+  const SINGULAR_TYPES = ['country_spec', 'coupon', 'product', 'reporting_report_type', 'tax_rate', 'webhook_endpoint']
+  const pluralToSingularTypes = _.zipObject(DEFAULT_INCLUDE_TYPES, SINGULAR_TYPES)
+
   type MockReply = {
     url: string
     params: Record<string, string>
     response: unknown
   }
-
-  const SINGULAR_TYPES = ['country_spec', 'coupon', 'product', 'reporting_report_type', 'tax_rate', 'webhook_endpoint']
-  const pluralToSingularTypes = _.zipObject(DEFAULT_INCLUDE_TYPES, SINGULAR_TYPES)
 
   const CREDENTIALS = new InstanceElement(
     'credentials',
@@ -70,21 +96,82 @@ describe('stripe swagger adapter', () => {
     return elements.filter(isInstanceElement)
   }
   beforeAll(() => {
-    jest.mock('@salto-io/adapter-components', () => {
-      const actual = jest.requireActual('@salto-io/adapter-components')
-      return {
-        ...actual,
-        elements: {
-          ...actual.elements,
-          swagger: {
-            ...actual.elements.swagger,
-            generateTypes: jest.fn().mockImplementation(actual.elements.swagger.generateTypes),
-            getAllInstances:
-              jest.fn().mockImplementation(actual.elements.swagger.getAllInstances),
+    const priceType = new ObjectType({
+      elemID: new ElemID(STRIPE, 'price'),
+      fields: { id: { refType: BuiltinTypes.STRING } },
+    })
+    const pricesType = new ObjectType({
+      elemID: new ElemID(STRIPE, 'prices'),
+      fields: { data: {
+        refType: new ListType(priceType),
+      } },
+    })
+    const singularObjectTypesByName = Object.fromEntries(SINGULAR_TYPES.map(type => [
+      type,
+      new ObjectType({
+        elemID: new ElemID(STRIPE, type),
+        fields: { id: { refType: BuiltinTypes.STRING } },
+      })]))
+    const mockTypes = {
+      allTypes: {
+        ...singularObjectTypesByName,
+        price: priceType,
+        prices: pricesType,
+        ...Object.fromEntries(DEFAULT_INCLUDE_TYPES.map(
+          pluralType => [naclCase(pluralType), new ObjectType({
+            elemID: new ElemID(STRIPE, pluralType),
+            fields: {
+              data: {
+                refType: new ListType(singularObjectTypesByName[pluralToSingularTypes[pluralType]]),
+              },
+            },
+          })]
+        )),
+      },
+      parsedConfigs: {
+        products: {
+          request: {
+            url: '/v1/products',
           },
         },
-      }
-    })
+        coupons: {
+          request: {
+            url: '/v1/coupons',
+          },
+        },
+        plans: {
+          request: {
+            url: '/v1/plans',
+          },
+        },
+        prices: {
+          request: {
+            url: '/v1/prices',
+          },
+        },
+        country_specs: {
+          request: {
+            url: '/v1/country_specs',
+          },
+        },
+        reporting__report_types: {
+          request: {
+            url: '/v1/reporting/report_types',
+          },
+        },
+        tax_rates: {
+          request: {
+            url: '/v1/tax_rates',
+          },
+        },
+        webhook_endpoints: {
+          request: {
+            url: '/v1/webhook_endpoints',
+          },
+        },
+      },
+    }
+    mockedAdapterComponents.elements.swagger.generateTypes.mockReturnValue(mockTypes)
 
     const mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' });
     (mockReplies as MockReply[]).forEach(({ url, params, response }) => {

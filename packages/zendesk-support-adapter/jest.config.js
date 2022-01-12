@@ -24,6 +24,9 @@ module.exports = deepMerge(
     collectCoverageFrom: [
       '!<rootDir>/index.ts',
     ],
+    testEnvironment: process.env.RUN_E2E_TESTS
+    ? '@salto-io/zendesk-support-adapter/dist/e2e_test/jest_environment'
+    : undefined,
     coverageThreshold: {
       'global': {
         branches: 85,
@@ -34,4 +37,3 @@ module.exports = deepMerge(
     },
   },
 )
-

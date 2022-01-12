@@ -21,3 +21,42 @@ Salto supports authenticating with Zendesk using either a combination of user-na
 * Sunshine APIs (including custom objects) are not yet supported. Please reach out if interested.
 * Many resources do not have strong uniqueness requirements in Zendesk, so we made some assumptions in order to effectively compare environments. If your account has resources with identical names or titles (e.g. two views with the same title), these elements may receive the same ID and be omitted from the workspace as a result. 
   * If you have such name overlaps and would still like to manage these elements with Salto, it is possible to adjust the configuration in order to support that. Please reach out if interested.
+
+## E2E tests
+
+E2E tests need real Zendesk Support credentials to run.
+
+### Using a specific set of credentials
+
+Add the following environment variables to bash_profile:
+```bash
+export ZENDESK_SUPPORT_USERNAME='XXXX'
+export ZENDESK_SUPPORT_PASSWORD='XXXX'
+export ZENDESK_SUPPORT_SUBDOMAIN='XXXX'
+```
+
+### Using the shared credentials pool
+
+The credentials pool can be used to run the E2E tests concurrently on multiple Zendesk support accounts.
+
+The pool is used if the `ZENDESK_SUPPORT_` environment variables are not defined. You can also force its use by defining the environment variable `USE_CRED_POOL=1`.
+
+#### AWS credentials for the pool
+
+The pool uses Amazon DynamoDB, and needs read/write/list permissions for the `e2e_permissions` table.
+
+Make sure your [AWS credentials are set](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html), e.g, as environment variables:
+```bash
+export AWS_ACCESS_KEY_ID='XXXX'
+export AWS_SECRET_ACCESS_KEY='XXXX'
+```
+
+#### Managing the pool using CLI
+
+To add your credentials to the pool, use the `cred-store` CLI located at the `e2e_test` directory of the project:
+
+```bash
+./e2e_test/cred_store register zendesk_support 'my-credentials-id' --username='my@user.com' --password='MYPASSWORD' --subdomain='acme'
+```
+
+Enter `--help` to see other uses for the `cred-store` utility - listing, removing and managing sets of credentials.

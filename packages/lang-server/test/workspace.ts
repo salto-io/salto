@@ -189,7 +189,7 @@ Promise<Workspace> => {
         ),
         state: state.buildInMemState(async () => ({
           elements: createInMemoryElementSource(
-            await awu(await commonNaclFilesSource.getAll()).toArray()
+            await awu(commonNaclFilesSource.getAll()).toArray()
           ),
           pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
           accountsUpdateDate: new InMemoryRemoteMap(),

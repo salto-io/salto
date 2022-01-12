@@ -202,10 +202,10 @@ describe('adapters.ts', () => {
       expect(await elementsSource.get(objectType.elemID)).toBeDefined()
       expect(await elementsSource.get(new ElemID('dummy', 'type2'))).toBeUndefined()
 
-      expect(await collections.asynciterable.toArrayAsync(await elementsSource.getAll()))
+      expect(await collections.asynciterable.toArrayAsync(elementsSource.getAll()))
         .toEqual([objectType])
 
-      expect(await collections.asynciterable.toArrayAsync(await elementsSource.list()))
+      expect(await collections.asynciterable.toArrayAsync(elementsSource.list()))
         .toEqual([objectType.elemID])
     })
   })

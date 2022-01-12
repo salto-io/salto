@@ -74,7 +74,7 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
       })
   }
 
-  await awu(await elementsSource.getAll())
+  await awu(elementsSource.getAll())
     .filter(isInstanceElement)
     .forEach(async element => {
       await updateServiceIdIndex(element)

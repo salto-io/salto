@@ -32,7 +32,7 @@ describe('workspace', () => {
   const validate = async (workspace: EditorWorkspace, elements: number):
   Promise<void> => {
     const wsElements = await workspace.elements
-    expect(wsElements && (await awu(await wsElements.getAll()).toArray()).length).toBe(elements)
+    expect(wsElements && (await awu(wsElements.getAll()).toArray()).length).toBe(elements)
   }
   it('should initiate a workspace', async () => {
     const workspace = new EditorWorkspace(workspaceBaseDir, await mockWorkspace([naclFileName]))

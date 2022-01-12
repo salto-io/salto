@@ -582,7 +582,7 @@ const buildNaclFilesSource = (
     if (_.isUndefined(state)) {
       return buildInitState(ignoreFileChanges)
     }
-    const current = await state
+    const current = state
     return buildNaclFilesState({
       newNaclFiles: parsedNaclFiles,
       currentState: current,
@@ -675,7 +675,7 @@ const buildNaclFilesSource = (
   }
 
   const updateNaclFiles = async (changes: DetailedChange[]): Promise<ChangeSet<Change>> => {
-    const preChangeHash = await (await state)?.parsedNaclFiles.getHash()
+    const preChangeHash = await (state)?.parsedNaclFiles.getHash()
     const getNaclFileData = async (filename: string): Promise<string> => {
       const naclFile = await naclFilesStore.get(filename)
       return naclFile ? naclFile.buffer : ''
@@ -763,13 +763,13 @@ const buildNaclFilesSource = (
       const res = await buildNaclFilesStateInner(updatedNaclFiles)
       state = res.state
       res.changes.preChangeHash = preChangeHash
-      res.changes.postChangeHash = await ((await state).parsedNaclFiles.getHash())
+      res.changes.postChangeHash = await (state.parsedNaclFiles.getHash())
       return res.changes
     }
     return { changes: [],
       cacheValid: true,
       preChangeHash,
-      postChangeHash: await ((await state)?.parsedNaclFiles.getHash()) }
+      postChangeHash: await (state?.parsedNaclFiles.getHash()) }
   }
 
   return {
@@ -885,7 +885,7 @@ const buildNaclFilesSource = (
         persistent,
         currentState.parsedNaclFiles
       )
-      await newCurrentState.mergedElements.setAll(await currentState.mergedElements.getAll())
+      await newCurrentState.mergedElements.setAll(currentState.mergedElements.getAll())
       await currentState.mergedElements.clear()
       await newCurrentState.elementsIndex.setAll(
         currentState.elementsIndex.entries()

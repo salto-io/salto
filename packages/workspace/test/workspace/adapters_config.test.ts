@@ -77,7 +77,7 @@ describe('adapters config', () => {
 
     mockNaclFilesSource.load.mockResolvedValue({ changes: [], cacheValid: true })
 
-    mockNaclFilesSource.getAll.mockResolvedValue(awu([]))
+    mockNaclFilesSource.getAll.mockImplementation(() => awu([]))
 
     const configOverrides: DetailedChange[] = [
       {

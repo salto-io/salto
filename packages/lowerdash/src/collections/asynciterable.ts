@@ -19,6 +19,7 @@ import * as values from '../values'
 
 type Thenable<T> = T | Promise<T>
 export type ThenableIterable<T> = Iterable<T> | AsyncIterable<T>
+export type IterablePromise<T> = Promise<ThenableIterable<T>>
 
 const isAsyncIterable = <T>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -92,8 +93,9 @@ export async function *toAsyncIterable<T>(iterable: ThenableIterable<T>): AsyncI
   }
 }
 
-export async function *depromisifyIterable<T>(itr: Promise<ThenableIterable<T>>): AsyncIterable<T> {
-  for await (const item of await itr as AsyncIterable<T>) {
+export async function *iterablePromiseToIterable<T>(itr: IterablePromise<T>): AsyncIterable<T> {
+  const awaitedItr = await itr
+  for await (const item of awaitedItr as AsyncIterable<T>) {
     yield item
   }
 }

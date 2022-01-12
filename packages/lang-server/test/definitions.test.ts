@@ -36,7 +36,7 @@ describe('Test go to definitions', () => {
     definitionsTree = buildDefinitionsTree(
       (await workspace.getNaclFile(naclFileName))?.buffer as string,
       await workspace.getSourceMap(naclFileName),
-      await awu(await workspace.getElements(naclFileName)).toArray(),
+      await awu(workspace.getElements(naclFileName)).toArray(),
     )
     fullElementSource = await workspace.getElementSourceOfPath(naclFileName)
   })

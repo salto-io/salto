@@ -115,7 +115,7 @@ describe('local state', () => {
     })
 
     it('reads all from both files but not from files with an additional suffix', async () => {
-      const elements = await awu(await state.getAll()).toArray()
+      const elements = await awu(state.getAll()).toArray()
       expect(elements).toHaveLength(4)
       const salesforceState = findReadZipFileCall('multiple_files.salesforce.jsonl.zip')
       const netsuiteState = findReadZipFileCall('multiple_files.netsuite.jsonl.zip')
@@ -176,7 +176,7 @@ describe('local state', () => {
     })
 
     it('should return an empty array if there is no saved state', async () => {
-      const result = await awu(await state.getAll()).toArray()
+      const result = await awu(state.getAll()).toArray()
       expect(result.length).toBe(0)
     })
 
@@ -184,7 +184,7 @@ describe('local state', () => {
       const newElem = new ObjectType({ elemID: new ElemID('mock_adapter', 'new') })
       await state.set(newElem)
       await state.override(awu([mockElement]))
-      const retrievedState = await awu(await state.getAll()).toArray()
+      const retrievedState = await awu(state.getAll()).toArray()
       expect(retrievedState.length).toBe(1)
       const retrievedStateObjectType = retrievedState[0] as ObjectType
       expect(retrievedStateObjectType.isEqual(mockElement)).toBe(true)
@@ -192,7 +192,7 @@ describe('local state', () => {
 
     it('should set state successfully, retrieve it and get the same result', async () => {
       await state.set(mockElement)
-      const retrievedState = await awu(await state.getAll()).toArray()
+      const retrievedState = await awu(state.getAll()).toArray()
       expect(retrievedState.length).toBe(1)
       const retrievedStateObjectType = retrievedState[0] as ObjectType
       expect(retrievedStateObjectType.isEqual(mockElement)).toBe(true)
@@ -215,25 +215,25 @@ describe('local state', () => {
       const newElem = new ObjectType({ elemID: new ElemID('mock_adapter', 'new') })
       await state.set(newElem)
 
-      const fromState = await awu(await state.getAll()).toArray()
+      const fromState = await awu(state.getAll()).toArray()
       expect(fromState.length).toBe(2)
       expect(fromState[0].elemID.name).toBe('new')
     })
 
     it('should remove from state', async () => {
       await state.set(mockElement)
-      let fromState = await awu(await state.getAll()).toArray()
+      let fromState = await awu(state.getAll()).toArray()
       expect(fromState.length).toBe(1)
 
       await state.remove(mockElement.elemID)
-      fromState = await awu(await state.getAll()).toArray()
+      fromState = await awu(state.getAll()).toArray()
       expect(fromState.length).toBe(0)
     })
   })
 
   it('should read valid state file', async () => {
     const state = localState('full', '', remoteMapCreator)
-    const elements = await awu(await state.getAll()).toArray()
+    const elements = await awu(state.getAll()).toArray()
     expect(elements).toHaveLength(2)
     expect(await state.getStateSaltoVersion()).toBe('0.0.1')
   })
@@ -284,7 +284,7 @@ describe('local state', () => {
 
     beforeEach(async () => {
       state = localState('deprecated_file_zip', '', remoteMapCreator)
-      await state.getAll() // force read file
+      state.getAll() // force read file
     })
 
     it('should read deprecated file and delete it on write', async () => {

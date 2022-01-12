@@ -123,7 +123,7 @@ export const createElemIDReplacedElementsSource = (
 ): ReadOnlyElementsSource => (
   account === adapter
     ? elementsSource : ({
-      getAll: async () => awu(await elementsSource.getAll()).map(async element => {
+      getAll: () => awu(elementsSource.getAll()).map(async element => {
         await updateElementsWithAlternativeAccount([element], adapter, account, elementsSource)
         return element
       }),
@@ -134,8 +134,8 @@ export const createElemIDReplacedElementsSource = (
         }
         return element
       },
-      list: async () =>
-        awu(await elementsSource.list()).map(id => createAdapterReplacedID(id, adapter)),
+      list: () =>
+        awu(elementsSource.list()).map(id => createAdapterReplacedID(id, adapter)),
       has: async id => {
         const transformedId = createAdapterReplacedID(id, account)
         return elementsSource.has(transformedId)
@@ -151,7 +151,7 @@ const filterElementsSource = (
   return {
     getAll: () => {
       async function *getElements(): AsyncIterable<Element> {
-        for await (const element of await elementsSource.getAll()) {
+        for await (const element of elementsSource.getAll()) {
           if (isRelevantID(element.elemID)) {
             yield element
           }
@@ -162,7 +162,7 @@ const filterElementsSource = (
     get: async id => (isRelevantID(id) ? elementsSource.get(id) : undefined),
     list: () => {
       async function *getIds(): AsyncIterable<ElemID> {
-        for await (const element of await elementsSource.getAll()) {
+        for await (const element of elementsSource.getAll()) {
           if (isRelevantID(element.elemID)) {
             yield element.elemID
           }

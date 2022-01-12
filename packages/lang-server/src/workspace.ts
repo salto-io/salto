@@ -26,7 +26,7 @@ import { detailedCompare, walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@sal
 
 const { validateElements } = validator
 
-const { awu, depromisifyIterable } = collections.asynciterable
+const { awu, iterablePromiseToIterable } = collections.asynciterable
 export type WorkspaceOperation<T> = (workspace: Workspace) => Promise<T>
 
 export class EditorWorkspace {
@@ -299,7 +299,7 @@ export class EditorWorkspace {
   }
 
   getElements(filename: string): AsyncIterable<Element> {
-    return depromisifyIterable((async () =>
+    return iterablePromiseToIterable((async () =>
       await (await this.workspace.getParsedNaclFile(this
         .workspaceFilename(filename)))?.elements() ?? []
     )())

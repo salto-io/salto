@@ -45,10 +45,10 @@ describe('state', () => {
       state = buildInMemState(loadStateData)
     })
     it('getAll', async () => {
-      expect(await awu(await state.getAll()).toArray()).toEqual([elem])
+      expect(await awu(state.getAll()).toArray()).toEqual([elem])
     })
     it('list', async () => {
-      expect(await awu(await state.list()).toArray()).toEqual([elemID])
+      expect(await awu(state.list()).toArray()).toEqual([elemID])
     })
     it('isEmpty', async () => {
       expect(await state.isEmpty()).toEqual(false)
@@ -74,7 +74,7 @@ describe('state', () => {
       const newElemID = new ElemID(newAdapter, 'newElem')
       const newElem = new ObjectType({ elemID: newElemID, path: ['test', 'newElem'] })
       await state.override(awu([newElem]), [newAdapter])
-      expect(await awu(await state.getAll()).toArray()).toEqual([newElem])
+      expect(await awu(state.getAll()).toArray()).toEqual([newElem])
       expect(Object.keys(await state.getAccountsUpdateDates())).toEqual([newAdapter, adapter])
     })
     it('getAccountsUpdateDates', async () => {
@@ -108,7 +108,7 @@ describe('state', () => {
 
     it('clear should clear all data', async () => {
       await state.clear()
-      expect(await awu(await state.getAll()).toArray()).toHaveLength(0)
+      expect(await awu(state.getAll()).toArray()).toHaveLength(0)
       expect((await awu((await state.getPathIndex()).keys()).toArray()).length).toEqual(0)
       expect(await state.getAccountsUpdateDates()).toEqual({})
     })

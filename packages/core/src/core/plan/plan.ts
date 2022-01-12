@@ -283,7 +283,7 @@ const addDifferentElements = (
     }
     return 0
   }
-  await awu(iterateTogether(await getFilteredElements(before), await getFilteredElements(after),
+  await awu(iterateTogether(getFilteredElements(before), getFilteredElements(after),
     cmp))
     .map(handleSpecialIds)
     .forEach(addElementsNodes)
@@ -426,8 +426,8 @@ export const getPlan = async ({
   topLevelFilters = [],
   adapterGetConfig,
 }: GetPlanParameters): Promise<Plan> => {
-  const numBeforeElements = await awu(await before.list()).length()
-  const numAfterElements = await awu(await after.list()).length()
+  const numBeforeElements = await awu(before.list()).length()
+  const numAfterElements = await awu(after.list()).length()
   return log.time(async () => {
     const diffGraph = await buildDiffGraph(
       addDifferentElements(before, after, topLevelFilters, numBeforeElements + numAfterElements),

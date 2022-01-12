@@ -54,7 +54,7 @@ const filterCreator: FilterCreator = ({ config }): FilterWith<'onFetch'> => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     const referenceElements = buildElementsSourceForFetch(elements, config)
     const valueSetNameToRef = await multiIndex.keyByAsync({
-      iter: await referenceElements.getAll(),
+      iter: referenceElements.getAll(),
       filter: isInstanceOfType(GLOBAL_VALUE_SET),
       key: async inst => [await apiName(inst)],
       map: inst => inst.elemID,

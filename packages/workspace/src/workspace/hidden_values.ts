@@ -160,7 +160,7 @@ export const mergeWithHidden = async (
 ): Promise<MergeResult> => {
   const hiddenStateElements = partial
     ? awu(hiddenChangedElemIDs).map(id => state.get(id))
-    : awu(await state.getAll())
+    : awu(state.getAll())
       .filter(element => isHidden(element, state))
   const workspaceElementsWithHiddenParts = awu(workspaceElements)
     .flatMap(async (elem): Promise<Element[]> => {
@@ -463,7 +463,7 @@ const getHiddenFieldAndAnnotationValueChanges = async (
   // by only iterating the state elements and creating remove changes for values that are
   // newly hidden, some of these remove changes may be redundant (if the value we
   // are trying to hide was already removed manually from the visible element)
-  await awu(await state.getAll())
+  await awu(state.getAll())
     .filter(element => visibleElementSource.has(element.elemID))
     .forEach(async element => {
       await transformElement({

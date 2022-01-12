@@ -149,7 +149,7 @@ const getRenameReferencesChanges = async (
     return references
   }
 
-  const references = await awu(await elementsSource.getAll())
+  const references = await awu(elementsSource.getAll())
     // filtering the renamed element - its references are taken care in getRenameElementChanges
     .filter(element => !sourceElemId.isEqual(element.elemID))
     .flatMap(element => getReferences(element)).toArray()

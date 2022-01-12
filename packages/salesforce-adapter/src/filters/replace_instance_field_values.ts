@@ -53,12 +53,12 @@ const getRelevantFieldMapping = async (
   { elementsSource, key, value }: GetRelevantFieldMappingParams
 ): Promise<multiIndex.Index<[string], string>> => {
   const isReferencedCustomObject = async (elem: Element): Promise<boolean> => (
-    isCustomObject(elem)
+    await isCustomObject(elem)
     && Object.values(metadataTypeToInstanceName).includes(await apiName(elem))
   )
 
   return multiIndex.keyByAsync({
-    iter: awu(await elementsSource.getAll())
+    iter: awu(elementsSource.getAll())
       .filter(isObjectType)
       .filter(isReferencedCustomObject)
       .flatMap(obj => Object.values(obj.fields)),

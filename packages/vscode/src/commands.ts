@@ -35,7 +35,7 @@ export const createCopyReferenceCommand = (
   const definitionsTree = context.buildDefinitionsTree(
     (await workspace.getNaclFile(editor.document.fileName))?.buffer as string,
     await workspace.getSourceMap(editor.document.fileName),
-    await awu(await workspace.getElements(editor.document.fileName)).toArray(),
+    await awu(workspace.getElements(editor.document.fileName)).toArray(),
   )
   const fullElementSource = await workspace.getElementSourceOfPath(editor.document.fileName)
   const position = editor.selection.active
@@ -68,7 +68,7 @@ const getServiceUrl = async (workspace: ws.EditorWorkspace): Promise<URL | undef
   const definitionsTree = context.buildDefinitionsTree(
     (await workspace.getNaclFile(editor.document.fileName))?.buffer as string,
     await workspace.getSourceMap(editor.document.fileName),
-    await awu(await workspace.getElements(editor.document.fileName)).toArray(),
+    await awu(workspace.getElements(editor.document.fileName)).toArray(),
   )
   const fullElementSource = await workspace.getElementSourceOfPath(editor.document.fileName)
   const ctx = await context.getPositionContext(

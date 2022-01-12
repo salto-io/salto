@@ -34,7 +34,7 @@ describe('Cursor context resolver', () => {
     definitionsTree = buildDefinitionsTree(
       (await workspace.getNaclFile(naclFilename))?.buffer as string,
       await workspace.getSourceMap(naclFilename),
-      await awu(await workspace.getElements(naclFilename)).toArray(),
+      await awu(workspace.getElements(naclFilename)).toArray(),
     )
     fullElementSource = await workspace.getElementSourceOfPath(naclFilename)
   })

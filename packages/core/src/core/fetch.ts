@@ -470,7 +470,7 @@ const fetchAndProcessMergeErrors = async (
 
     log.debug(`fetched ${accountElements.length} elements from adapters`)
     const stateElementsByAccount = await groupByAsync(
-      await stateElements.getAll(),
+      stateElements.getAll(),
       elem => elem.elemID.adapter
     )
     const adaptersWithPostFetch = _.pickBy(accountsToAdapters, isAdapterOperationsWithPostFetch)
@@ -531,7 +531,7 @@ export const getAdaptersFirstFetchPartial = async (
     return new Set()
   }
   const adaptersWithElements = new Set(
-    await awu(await elements.list()).map(elemID => elemID.adapter).toArray()
+    await awu(elements.list()).map(elemID => elemID.adapter).toArray()
   )
   return collections.set.difference(partiallyFetchedAdapters, adaptersWithElements)
 }
@@ -631,8 +631,8 @@ const createFetchChanges = async ({
     getChangesEmitter.emit('completed')
     progressEmitter.emit('diffWillBeCalculated', calculateDiffEmitter)
   }
-  const isFirstFetch = await awu(await workspaceElements.list())
-    .concat(await stateElements.list())
+  const isFirstFetch = await awu(workspaceElements.list())
+    .concat(stateElements.list())
     .filter(e => !e.isConfig())
     .isEmpty()
   const changes = isFirstFetch
@@ -643,7 +643,7 @@ const createFetchChanges = async ({
       // When we init a new env, state will be empty. We fallback to the workspace
       // elements since they should be considered a part of the env and the diff
       // should be calculated with them in mind.
-      await awu(await stateElements.list()).isEmpty() ? workspaceElements : stateElements,
+      await awu(stateElements.list()).isEmpty() ? workspaceElements : stateElements,
       workspaceElements,
       partiallyFetchedAccounts,
       new Set(adapterNames)
@@ -676,7 +676,7 @@ const createFetchChanges = async ({
   const accountNameToConfigMessage = _.mapValues(accountNameToConfig, config => config.message)
 
   const elements = partiallyFetchedAccounts.size !== 0
-    ? _(await awu(await stateElements.getAll()).toArray())
+    ? _(await awu(stateElements.getAll()).toArray())
       .filter(e => partiallyFetchedAccounts.has(e.elemID.adapter))
       .unshift(...processErrorsResult.keptElements)
       .uniqBy(e => e.elemID.getFullName())
@@ -800,7 +800,7 @@ export const fetchChangesFromWorkspace = async (
   }
 
   const fullElements = await awu(
-    await (await otherWorkspace.elements(true, env)).getAll()
+    (await otherWorkspace.elements(true, env)).getAll()
   )
     .filter(elem => fetchAccounts.includes(elem.elemID.adapter))
     .toArray()
@@ -935,7 +935,7 @@ export const getFetchAdapterAndServicesSetup = async (
     ? {}
     : await mapValuesAsync(accountToServiceNameMap, async (_service, account) =>
       createElemIdGetter(
-        awu(await (await workspace.elements()).getAll()).filter(e => e.elemID.adapter === account),
+        awu((await workspace.elements()).getAll()).filter(e => e.elemID.adapter === account),
         workspace.state()
       ))
   const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(

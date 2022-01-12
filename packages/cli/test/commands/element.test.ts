@@ -1394,7 +1394,7 @@ Moving the specified elements to common.
         output = cliArgs.output
         workspace = mocks.mockWorkspace({})
 
-        allElements = await awu(await (await workspace.elements()).getAll()).toArray()
+        allElements = await awu((await workspace.elements()).getAll()).toArray()
         sourceElement = allElements.find(isInstanceElement) as InstanceElement
         const sourceElemId = sourceElement.elemID
         const targetElemId = new ElemID(sourceElemId.adapter, sourceElemId.typeName, sourceElemId.idType, 'renamed')

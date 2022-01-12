@@ -69,7 +69,7 @@ const filter: FilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]) => {
     const referenceElements = buildElementsSourceForFetch(elements, config)
     const elementsWithFields = flatMapAsync(
-      await referenceElements.getAll(),
+      referenceElements.getAll(),
       extractFlatCustomObjectFields,
     )
     const elementIndex = await multiIndex.keyByAsync({

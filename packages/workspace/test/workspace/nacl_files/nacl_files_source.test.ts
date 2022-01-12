@@ -491,7 +491,7 @@ describe('Nacl Files Source', () => {
     })
 
     it('should list all elements', async () => {
-      expect(await awu(await src.list()).toArray()).toHaveLength(1)
+      expect(await awu(src.list()).toArray()).toHaveLength(1)
     })
   })
 

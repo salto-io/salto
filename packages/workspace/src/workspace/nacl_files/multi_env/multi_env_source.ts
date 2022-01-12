@@ -37,8 +37,7 @@ import { serialize, deserializeSingleElement, deserializeMergeErrors } from '../
 import { MissingStaticFile } from '../../static_files'
 
 const log = logger(module)
-const { awu, depromisifyIterable } = collections.asynciterable
-type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
+const { awu, iterablePromiseToIterable } = collections.asynciterable
 const { series } = promises.array
 const { resolveValues, mapValuesAsync } = promises.object
 const { concatObjects } = objects
@@ -119,7 +118,7 @@ export type MultiEnvSource = {
     encoding: BufferEncoding,
     env: string
   ) => Promise<StaticFile | undefined>
-  getAll: (env?: string) => AsyncIterable<Element>
+  getAll: (env: string) => AsyncIterable<Element>
   promote: (
     env: string,
     idsToMove: ElemID[],
@@ -504,7 +503,7 @@ const buildMultiEnvSource = (
   const demoteAll = async (): Promise<EnvsChanges> => {
     const commonFileSource = commonSource()
     const routedChanges = await routeDemote(
-      await awu(await commonFileSource.list()).toArray(),
+      await awu(commonFileSource.list()).toArray(),
       commonFileSource,
       envSources(),
     )
@@ -599,30 +598,8 @@ const buildMultiEnvSource = (
     copyTo,
     sync,
     isEmpty,
-    list: (): AsyncIterable<ElemID> =>
-      awu(depromisifyIterable((async () => (await getState()).states[primarySourceName]
-        .elements.list())())),
-    isEmpty,
-    get: async (id: ElemID): Promise<Element | Value> => (
-      (await getState()).states[primarySourceName].elements.get(id)
-    ),
-    has: async (id: ElemID): Promise<boolean> => (
-      (await getState()).states[primarySourceName].elements.has(id)
-    ),
-    delete: async (id: ElemID): Promise<void> => (
-      (await getState()).states[primarySourceName].elements.delete(id)
-    ),
-    deleteAll: async (ids: ThenableIterable<ElemID>): Promise<void> => (
-      (await getState()).states[primarySourceName].elements.deleteAll(ids)
-    ),
-    set: async (elem: Element): Promise<void> => (
-      (await getState()).states[primarySourceName].elements.set(elem)
-    ),
-    setAll: async (elements: ThenableIterable<Element>): Promise<void> => (
-      (await getState()).states[primarySourceName].elements.setAll(elements)
-    ),
-    getAll: async (env: string): AsyncIterable<Element> =>
-      (getState()).states[env].elements.getAll(),
+    getAll: (env: string): AsyncIterable<Element> =>
+      iterablePromiseToIterable((async () => (await getState()).states[env].elements.getAll())()),
     listNaclFiles: async (env: string): Promise<string[]> => (
       awu(Object.entries(getActiveSources(env)))
         .flatMap(async ([prefix, source]) => (

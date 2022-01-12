@@ -30,7 +30,7 @@ describe('buildElementsSourceFromElements', () => {
 
     describe('getAll', () => {
       it('should return all the elements', async () => {
-        const receivedElements = await toArrayAsync(await elementsSource.getAll())
+        const receivedElements = await toArrayAsync(elementsSource.getAll())
         expect(receivedElements).toEqual(elements)
       })
     })
@@ -48,7 +48,7 @@ describe('buildElementsSourceFromElements', () => {
     describe('list', () => {
       it('should return all the elements ids', async () => {
         const receivedElementsIds = await collections.asynciterable
-          .toArrayAsync(await elementsSource.list())
+          .toArrayAsync(elementsSource.list())
         expect(receivedElementsIds).toEqual(elements.map(e => e.elemID))
       })
     })
@@ -91,7 +91,7 @@ describe('buildElementsSourceFromElements', () => {
       )
     })
     it('should combine elements from both sources in list', async () => {
-      const allIds = await toArrayAsync(await elementSource.list())
+      const allIds = await toArrayAsync(elementSource.list())
       expect(allIds).toContainEqual(new ElemID('adapter', 'type1'))
       expect(allIds).toContainEqual(new ElemID('adapter', 'type2'))
       expect(allIds).toContainEqual(new ElemID('adapter', 'type3'))
@@ -103,7 +103,7 @@ describe('buildElementsSourceFromElements', () => {
       expect(elem?.annotations.fallback).toEqual(false)
     })
     it('should return elements from element list over fallback source in getAll', async () => {
-      const elements = await toArrayAsync(await elementSource.getAll())
+      const elements = await toArrayAsync(elementSource.getAll())
       expect(elements).toHaveLength(3)
       const elementsByName = _.keyBy(elements, elem => elem.elemID.typeName)
       expect(elementsByName).toHaveProperty('type1')

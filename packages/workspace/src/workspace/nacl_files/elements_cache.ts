@@ -264,7 +264,7 @@ export const createMergeManager = async (flushables: Flushable[],
         srcOverrides: Record<string, Element>,
         srcChanges: Change<Element>[],
       ): Promise<AsyncIterable<Element>> => ((src && recoveryOperation === REBUILD_ON_RECOVERY)
-        ? (awu(await src.getAll())
+        ? (awu(src.getAll())
         // using the 'in' notation here since undefined for an existing key is different
         // then an undefined key (overriding a key with undefined value)
           .map(elem => (elem.elemID.getFullName() in srcOverrides
@@ -320,8 +320,7 @@ export const createMergeManager = async (flushables: Flushable[],
     const elementsToMerge = awu(src1ElementsToMerge).concat(src2ElementsToMerge)
     const newMergedElementsResult = await cacheUpdate.mergeFunc(elementsToMerge
       .filter(values.isDefined))
-    const hasCurrentElements = !(await awu(await cacheUpdate
-      .currentElements.list()).isEmpty())
+    const hasCurrentElements = !(await awu(cacheUpdate.currentElements.list()).isEmpty())
     if (!hasCurrentElements || !cacheValid) {
       return createFreshChangeSet(
         newMergedElementsResult, preChangeHash, postChangeHash, cacheValid

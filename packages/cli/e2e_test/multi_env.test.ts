@@ -323,9 +323,9 @@ describe.each([
       beforeAll(async () => {
         await runSetEnv(baseDir, ENV2_NAME)
         const workspace = await loadValidWorkspace(baseDir)
-        visibleElements = await awu(await (await workspace.elements(false)).getAll())
+        visibleElements = await awu((await workspace.elements(false)).getAll())
           .toArray()
-        elementsWithHidden = await awu(await (await workspace.elements(true)).getAll())
+        elementsWithHidden = await awu((await workspace.elements(true)).getAll())
           .toArray()
       })
 

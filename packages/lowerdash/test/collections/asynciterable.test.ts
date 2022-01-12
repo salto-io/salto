@@ -22,7 +22,7 @@ const {
   findAsync, mapAsync, toArrayAsync, toAsyncIterable, concatAsync,
   filterAsync, flattenAsync, awu, isEmptyAsync, lengthAsync, peekAsync, takeAsync,
   zipSortedAsync, someAsync, everyAsync, forEachAsync, groupByAsync,
-  keyByAsync, iterateTogether, flatMapAsync, depromisifyIterable,
+  keyByAsync, iterateTogether, flatMapAsync, iterablePromiseToIterable,
 } = asynciterable
 type BeforeAfter<T> = collections.asynciterable.BeforeAfter<T>
 
@@ -602,9 +602,9 @@ describe('asynciterable', () => {
       })
     })
   })
-  describe('test depromisifyIterable', () => {
+  describe('test iterablePromiseToIterable', () => {
     it('should await the promise and handle the iterale', async () => {
-      expect(await awu(depromisifyIterable(Promise.resolve(toAsyncIterable([1, 2, 5, 3]))))
+      expect(await awu(iterablePromiseToIterable(Promise.resolve(toAsyncIterable([1, 2, 5, 3]))))
         .toArray()).toEqual([1, 2, 5, 3])
     })
   })

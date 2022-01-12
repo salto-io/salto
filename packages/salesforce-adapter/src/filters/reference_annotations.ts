@@ -73,7 +73,7 @@ const filter: FilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]) => {
     const referenceElements = buildElementsSourceForFetch(elements, config)
     const typeToElemID = await multiIndex.keyByAsync({
-      iter: await referenceElements.getAll(),
+      iter: referenceElements.getAll(),
       filter: isMetadataTypeOrCustomObject,
       key: async obj => [await metadataType(obj), await apiName(obj)],
       map: obj => obj.elemID,

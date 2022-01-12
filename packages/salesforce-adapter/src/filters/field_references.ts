@@ -93,7 +93,7 @@ export const addReferences = async (
   const resolverFinder = generateReferenceResolverFinder(defs)
 
   const elementsWithFields = flatMapAsync(
-    await referenceElements.getAll(),
+    referenceElements.getAll(),
     extractFlatCustomObjectFields,
   )
   // TODO - when transformValues becomes async the first index can be to elemID and not the whole

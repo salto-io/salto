@@ -33,7 +33,7 @@ export const buildElementsSourceFromElements = (
     if (fallbackSource === undefined) {
       return
     }
-    for await (const elemID of await fallbackSource.list()) {
+    for await (const elemID of fallbackSource.list()) {
       if (!isIDInElementsMap(elemID)) {
         yield elemID
       }
@@ -47,7 +47,7 @@ export const buildElementsSourceFromElements = (
     if (fallbackSource === undefined) {
       return
     }
-    for await (const element of await fallbackSource.getAll()) {
+    for await (const element of fallbackSource.getAll()) {
       if (!isIDInElementsMap(element.elemID)) {
         const clonedElement = element.clone()
         await resolveTypeShallow(clonedElement, self)

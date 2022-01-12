@@ -257,7 +257,7 @@ export const selectElementIdsByTraversal = async ({
       return []
     }
     return awu(selectElementsBySelectors({
-      elementIds: awu(await source.list()),
+      elementIds: awu(source.list()),
       selectors: topLevelSelectors,
       referenceSourcesIndex,
     })).toArray()

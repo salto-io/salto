@@ -57,7 +57,7 @@ describe.skip('extension e2e', () => {
     const definitionsTree = context.buildDefinitionsTree(
       (await workspace.getNaclFile(filename))?.buffer as string,
       await workspace.getSourceMap(filename),
-      await awu(await workspace.getElements(filename)).toArray(),
+      await awu(workspace.getElements(filename)).toArray(),
     )
     const fullElementSource = await workspace.getElementSourceOfPath(filename)
     const ctx = await context.getPositionContext(filename, pos, definitionsTree, fullElementSource)
@@ -88,7 +88,7 @@ describe.skip('extension e2e', () => {
       const definitionsTree = context.buildDefinitionsTree(
         (await workspace.getNaclFile(filename))?.buffer as string,
         await workspace.getSourceMap(filename),
-        await awu(await workspace.getElements(filename)).toArray(),
+        await awu(workspace.getElements(filename)).toArray(),
       )
       const fullElementSource = await workspace.getElementSourceOfPath(filename)
       const ctx = await context.getPositionContext(

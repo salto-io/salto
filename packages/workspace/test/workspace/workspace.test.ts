@@ -178,7 +178,7 @@ const createWorkspace = async (
 const getElemMap = async (
   elements: ElementsSource
 ): Promise<Record<string, Element>> => Object.fromEntries(
-  await awu(await elements.getAll())
+  await awu(elements.getAll())
     .map(e => [e.elemID.getFullName(), e])
     .toArray()
 )
@@ -306,11 +306,11 @@ describe('workspace', () => {
             },
           },
         )
-        const currentEnvElements = await awu(await (await newWorkspace.elements()).getAll())
+        const currentEnvElements = await awu((await newWorkspace.elements()).getAll())
           .toArray()
         expect(currentEnvElements.find(e => e.elemID.isEqual(primaryEnvElemID))).toBeDefined()
         expect(currentEnvElements.find(e => e.elemID.isEqual(secondaryEnvElemID))).not.toBeDefined()
-        const inactiveEnvElements = await awu(await (await newWorkspace.elements(undefined, 'inactive'))
+        const inactiveEnvElements = await awu((await newWorkspace.elements(undefined, 'inactive'))
           .getAll()).toArray()
         expect(inactiveEnvElements.find(e => e.elemID.isEqual(primaryEnvElemID))).not.toBeDefined()
         expect(inactiveEnvElements.find(e => e.elemID.isEqual(secondaryEnvElemID))).toBeDefined()
@@ -354,11 +354,11 @@ describe('workspace', () => {
             },
           },
         )
-        const currentEnvElements = await awu(await (await newWorkspace.elements()).getAll())
+        const currentEnvElements = await awu((await newWorkspace.elements()).getAll())
           .toArray()
         expect(currentEnvElements.find(e => e.elemID.isEqual(primaryEnvElemID))).toBeDefined()
         expect(currentEnvElements.find(e => e.elemID.isEqual(secondaryEnvElemID))).not.toBeDefined()
-        const inactiveEnvElements = await awu(await (await newWorkspace.elements(false, 'inactive'))
+        const inactiveEnvElements = await awu((await newWorkspace.elements(false, 'inactive'))
           .getAll()).toArray()
         expect(inactiveEnvElements.find(e => e.elemID.isEqual(primaryEnvElemID))).not.toBeDefined()
         expect(inactiveEnvElements.find(e => e.elemID.isEqual(secondaryEnvElemID))).toBeDefined()
@@ -400,13 +400,13 @@ describe('workspace', () => {
 
     it('when is config file should return the adapters config elements', async () => {
       adaptersConfig.isConfigFile.mockReturnValue(true)
-      const ids = await awu(await (await workspace.getElementSourceOfPath('somePath')).list()).map(id => id.getFullName()).toArray()
+      const ids = await awu((await workspace.getElementSourceOfPath('somePath')).list()).map(id => id.getFullName()).toArray()
       expect(ids).toEqual([configElemId.getFullName()])
     })
 
     it('when is not a config file should return the envs elements', async () => {
       adaptersConfig.isConfigFile.mockReturnValue(false)
-      const ids = await awu(await (await workspace.getElementSourceOfPath('somePath')).list()).map(id => id.getFullName()).toArray()
+      const ids = await awu((await workspace.getElementSourceOfPath('somePath')).list()).map(id => id.getFullName()).toArray()
       expect(ids).toEqual([envsElemId.getFullName()])
     })
   })
@@ -740,12 +740,12 @@ describe('workspace', () => {
         expect(envChanges[secondarySourceName].changes).toEqual([change])
       })
       it('should not include remove element in the secondary env', async () => {
-        expect(await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName))
+        expect(await awu((await wsWithMultipleEnvs.elements(true, secondarySourceName))
           .list()).toArray())
           .toContainEqual(removedElemID)
         await wsWithMultipleEnvs
           .removeNaclFiles([`envs/${secondarySourceName}/renamed_type.nacl`])
-        expect(await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName))
+        expect(await awu((await wsWithMultipleEnvs.elements(true, secondarySourceName))
           .list()).toArray())
           .not.toContainEqual(removedElemID)
       })
@@ -894,11 +894,11 @@ describe('workspace', () => {
         expect(envChanges[secondarySourceName].changes).toEqual([change])
       })
       it('should include the new elements in the secondary env', async () => {
-        expect(await awu(await (
+        expect(await awu((
           await wsWithMultipleEnvs.elements(true, secondarySourceName)
         ).list()).toArray()).toEqual([])
         await wsWithMultipleEnvs.setNaclFiles([changedNaclFile])
-        expect(await awu(await (
+        expect(await awu((
           await wsWithMultipleEnvs.elements(true, secondarySourceName)
         ).list()).toArray()).toEqual([afterObj.elemID])
       })
@@ -1603,7 +1603,7 @@ describe('workspace', () => {
       // elements and set them along with the hidden types as the state elements
       const stateElements = await awu(
         await resolve(
-          await awu(await (await helperWorkspace.elements()).getAll()).toArray(),
+          await awu((await helperWorkspace.elements()).getAll()).toArray(),
           await helperWorkspace.elements()
         )
       ).toArray()
@@ -1889,7 +1889,7 @@ describe('workspace', () => {
 
       const updateNaclFilesResult = await workspace.updateNaclFiles([change1, change2])
       lead = findElement(
-        await awu(await (await workspace.elements()).getAll()).toArray(),
+        await awu((await workspace.elements()).getAll()).toArray(),
         new ElemID('salesforce', 'lead')
       ) as ObjectType
       expect(updateNaclFilesResult).toEqual({
@@ -2003,14 +2003,14 @@ describe('workspace', () => {
         )
       })
       it('should include added element in the secondary env', async () => {
-        expect(await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName))
+        expect(await awu((await wsWithMultipleEnvs.elements(true, secondarySourceName))
           .list()).toArray())
           .not.toContainEqual(change.id)
         expect(await wsWithMultipleEnvs.updateNaclFiles([change], 'override')).toEqual({
           naclFilesChangesCount: 2,
           stateOnlyChangesCount: 0,
         })
-        expect(await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName))
+        expect(await awu((await wsWithMultipleEnvs.elements(true, secondarySourceName))
           .list()).toArray())
           .toContainEqual(change.id)
       })
@@ -2176,11 +2176,11 @@ describe('workspace', () => {
     })
 
     it('should return the elements of the new current envs after set', async () => {
-      const defaultElemIDs = await awu(await (await workspace.elements()).getAll())
+      const defaultElemIDs = await awu((await workspace.elements()).getAll())
         .map(e => e.elemID.getFullName()).toArray()
       expect(defaultElemIDs).toHaveLength(0)
       await workspace.setCurrentEnv('inactive')
-      const inactiveElemIDs = await awu(await (await workspace.elements()).getAll())
+      const inactiveElemIDs = await awu((await workspace.elements()).getAll())
         .map(e => e.elemID.getFullName()).toArray()
       expect(inactiveElemIDs).toHaveLength(1)
       expect(inactiveElemIDs).toEqual(['salto.inactive'])
@@ -2225,7 +2225,7 @@ describe('workspace', () => {
       expect(envsNames.includes(envName)).toBeTruthy()
     })
     it('should include elements of the new source', async () => {
-      expect(await awu(await (await workspace.elements(false, envName)).getAll()).toArray())
+      expect(await awu((await workspace.elements(false, envName)).getAll()).toArray())
         .toEqual([new ObjectType({ elemID: new ElemID('salesforce', 'hearing') })])
     })
     it('should throw EnvDuplicationError', async () => {
@@ -3101,14 +3101,14 @@ describe('workspace', () => {
       it('should update the elements correctly', async () => {
         const elemIDToMove = new ElemID('salesforce', 'lead')
         expect(
-          await awu(await (await ws.elements(undefined, secondarySourceName)).list()).toArray()
+          await awu((await ws.elements(undefined, secondarySourceName)).list()).toArray()
         ).not.toContainEqual(elemIDToMove)
         await ws.promote([elemIDToMove])
         expect(
-          await awu(await (await ws.elements(undefined, secondarySourceName)).list()).toArray()
+          await awu((await ws.elements(undefined, secondarySourceName)).list()).toArray()
         ).toContainEqual(elemIDToMove)
         expect(
-          await awu(await (await ws.elements(undefined, primarySourceName)).list()).toArray()
+          await awu((await ws.elements(undefined, primarySourceName)).list()).toArray()
         ).toContainEqual(elemIDToMove)
       })
     })
@@ -3116,14 +3116,14 @@ describe('workspace', () => {
       it('should update the elements correctly', async () => {
         const elemIDToMove = new ElemID('salesforce', 'lead')
         expect(
-          await awu(await (await ws.elements(undefined, secondarySourceName)).list()).toArray()
+          await awu((await ws.elements(undefined, secondarySourceName)).list()).toArray()
         ).not.toContainEqual(elemIDToMove)
         await ws.copyTo([elemIDToMove], [secondarySourceName])
         expect(
-          await awu(await (await ws.elements(undefined, secondarySourceName)).list()).toArray()
+          await awu((await ws.elements(undefined, secondarySourceName)).list()).toArray()
         ).toContainEqual(elemIDToMove)
         expect(
-          await awu(await (await ws.elements(undefined, primarySourceName)).list()).toArray()
+          await awu((await ws.elements(undefined, primarySourceName)).list()).toArray()
         ).toContainEqual(elemIDToMove)
       })
     })
@@ -3138,7 +3138,7 @@ describe('workspace', () => {
           [secondarySourceName]
         )
         const elements = await awu(
-          await (await ws.elements(undefined, secondarySourceName)).list()
+          (await ws.elements(undefined, secondarySourceName)).list()
         ).toArray()
         expect(elements).not.toContainEqual(elemIDToRemove)
         expect(elements).toContainEqual(elemIDToAdd)

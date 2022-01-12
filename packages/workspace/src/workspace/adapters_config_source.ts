@@ -60,7 +60,7 @@ const updateValidationErrorsCache = async (
   naclSource: NaclFilesSource,
 ): Promise<void> => {
   const validationErrors = await validateElements(
-    await awu(await naclSource.getAll()).toArray(),
+    await awu(naclSource.getAll()).toArray(),
     elementsSource
   )
 

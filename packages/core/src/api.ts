@@ -217,7 +217,7 @@ const updateStateWithFetchResults = async (
   fetchedAccounts: string[]
 ): Promise<void> => {
   const fetchElementsFilter = shouldElementBeIncluded(fetchedAccounts)
-  const stateElementsNotCoveredByFetch = await awu(await workspace.state().getAll())
+  const stateElementsNotCoveredByFetch = await awu(workspace.state().getAll())
     .filter(element => !fetchElementsFilter(element.elemID)).toArray()
   await workspace.state()
     .override(awu(mergedElements)

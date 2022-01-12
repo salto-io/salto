@@ -21,7 +21,7 @@ import { State, StateData } from './state'
 
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 
-const { awu, depromisifyIterable } = collections.asynciterable
+const { awu, iterablePromiseToIterable } = collections.asynciterable
 
 type InMemoryState = State & {
   setVersion(version: string): Promise<void>
@@ -54,9 +54,9 @@ export const buildInMemState = (
   const setHashImpl = async (newHash: string): Promise<void> => (await stateData())
     .saltoMetadata.set('hash', newHash)
   return {
-    getAll: (): AsyncIterable<Element> => depromisifyIterable((async () => (await stateData())
+    getAll: (): AsyncIterable<Element> => iterablePromiseToIterable((async () => (await stateData())
       .elements.getAll())()),
-    list: (): AsyncIterable<ElemID> => depromisifyIterable((async () => (await stateData())
+    list: (): AsyncIterable<ElemID> => iterablePromiseToIterable((async () => (await stateData())
       .elements.list())()),
     get: async (id: ElemID): Promise<Element | undefined> => (await stateData()).elements.get(id),
     has: async (id: ElemID): Promise<boolean> => (await stateData()).elements.has(id),

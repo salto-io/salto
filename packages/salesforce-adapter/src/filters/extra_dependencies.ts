@@ -211,7 +211,7 @@ const creator: FilterCreator = ({ client, config }) => ({
           key: async elem => [await apiName(elem)],
           map: elem => elem.elemID,
         })
-        .process(awu(await allElements.getAll()).flatMap(extractFlatCustomObjectFields))
+        .process(awu(allElements.getAll()).flatMap(extractFlatCustomObjectFields))
 
       await addExtraReferences(groupedDeps, fetchedElements, elemLookup, customObjectLookup)
     },

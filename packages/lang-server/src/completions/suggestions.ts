@@ -108,7 +108,7 @@ const refNameSuggestions = async (
     case 'field':
       return isObjectType(baseElement) ? _.keys(baseElement.fields) : []
     case 'instance':
-      return getAllInstances(await elements.list(), baseID)
+      return getAllInstances(elements.list(), baseID)
     default:
       return []
   }
@@ -156,8 +156,8 @@ const referenceSuggestions = async (
   try {
     const refElemID = ElemID.fromFullName(refParts.join(ElemID.NAMESPACE_SEPARATOR))
     const refPartsResolvers: (RefPartResolver)[] = [
-      async () => getAdapterNames(await elements.list()),
-      async () => awu(getAllTypes(await elements.list(), refElemID.adapter))
+      async () => getAdapterNames(elements.list()),
+      async () => awu(getAllTypes(elements.list(), refElemID.adapter))
         .map(n => n.substring(refElemID.adapter.length + 1)),
       async () => awu(['instance', 'attr', 'field']),
       async () => refNameSuggestions(elements, refElemID),
@@ -303,7 +303,7 @@ export const typesSuggestions = async (params: SuggestionsParams): Promise<Sugge
   const contextAdapter = params.ref && params.ref.element.elemID.adapter
   const elements = params.elements || [] // may be undefined
   return awu(_.values(BuiltinTypes).map(e => e.elemID.getFullName()))
-    .concat(getAllTypes(await elements.list(), contextAdapter))
+    .concat(getAllTypes(elements.list(), contextAdapter))
 }
 
 export const typeBodySuggestions = async (params: SuggestionsParams): Promise<Suggestions> => (
@@ -333,7 +333,7 @@ export const instanceSuggestions = async (
 ): Promise<Suggestions> => {
   const elemID = ElemID.fromFullName(params.tokens[0])
   return getAllInstances(
-    await params.elements.list(),
+    params.elements.list(),
     elemID
   )
 }

@@ -103,7 +103,7 @@ export const getUsageInFile = async (
   filename: string,
   id: ElemID
 ): Promise<ElemID[]> =>
-  awu(await workspace.getElements(filename))
+  awu(workspace.getElements(filename))
     .flatMap(async e => getElemIDUsages(e, id))
     .map(fullname => ElemID.fromFullName(fullname))
     .toArray()

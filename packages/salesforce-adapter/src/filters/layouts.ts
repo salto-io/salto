@@ -88,7 +88,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
 
     const referenceElements = buildElementsSourceForFetch(elements, config)
     const apiNameToCustomObject = await multiIndex.keyByAsync({
-      iter: await referenceElements.getAll(),
+      iter: referenceElements.getAll(),
       filter: isCustomObject,
       key: async obj => [await apiName(obj)],
       map: obj => obj.elemID,

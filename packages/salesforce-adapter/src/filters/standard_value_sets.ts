@@ -228,7 +228,7 @@ export const makeFilter = (
     if (customObjectTypeElements.length > 0) {
       const svsInstances = fetchedSVSInstances !== undefined
         ? fetchedSVSInstances
-        : await awu(await config.elementsSource.getAll())
+        : await awu(config.elementsSource.getAll())
           .filter(isInstanceElement)
           .map(async inst => {
             const clone = inst.clone()

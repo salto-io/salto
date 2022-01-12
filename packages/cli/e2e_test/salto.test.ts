@@ -287,7 +287,7 @@ describe.each([
       ).toBeTruthy()
     })
     it('should update the object in the Nacl file', async () => {
-      const elements = await awu(await (await workspace.elements()).getAll()).toArray()
+      const elements = await awu((await workspace.elements()).getAll()).toArray()
       const newObject = await verifyObject(
         elements,
         accountName,
@@ -308,7 +308,7 @@ describe.each([
     })
     it('should update the instance in the Nacl file', async () => {
       await verifyInstance(
-        await (await workspace.elements()).getAll(), accountName,
+        (await workspace.elements()).getAll(), accountName,
         ROLE, newInstanceElemName, { description: 'To Be Modified',
           [INSTANCE_FULL_NAME_FIELD]: newInstanceElemName }
       )
@@ -357,7 +357,7 @@ describe.each([
       workspace = await loadValidWorkspace(fetchOutputDir)
     })
     it('should fetch the new object standard fields and annotations to the correct files', async () => {
-      const elements = await awu(await (await workspace.elements()).getAll()).toArray()
+      const elements = await awu((await workspace.elements()).getAll()).toArray()
       const newObject = await verifyObject(
         elements,
         accountName,
@@ -396,7 +396,7 @@ describe.each([
     })
     it('should have no change in the instance', async () => {
       await verifyInstance(
-        (await (await workspace.elements()).getAll()),
+        ((await workspace.elements()).getAll()),
         accountName, ROLE, newInstanceElemName,
         { description: 'I Am Modified', [INSTANCE_FULL_NAME_FIELD]: newInstanceElemName }
       )

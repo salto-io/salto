@@ -180,7 +180,7 @@ export const localState = (
   const inMemState = state.buildInMemState(loadStateData)
 
   const createStateTextPerAccount = async (): Promise<Record<string, string>> => {
-    const elements = await awu(await inMemState.getAll()).toArray()
+    const elements = await awu(inMemState.getAll()).toArray()
     const elementsByAccount = _.groupBy(elements, element => element.elemID.adapter)
     const accountToElementStrings = _.mapValues(elementsByAccount,
       accountElements => serialize(accountElements))

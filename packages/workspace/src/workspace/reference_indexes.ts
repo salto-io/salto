@@ -216,7 +216,7 @@ const updateReferenceSourcesIndex = async (
 const getAllElementsChanges = async (
   currentChanges: Change<Element>[],
   elementsSource: ElementsSource,
-): Promise<Change<Element>[]> => awu(await elementsSource.getAll())
+): Promise<Change<Element>[]> => awu(elementsSource.getAll())
   .map(element => toChange({ after: element }))
   .concat(currentChanges)
   .toArray()

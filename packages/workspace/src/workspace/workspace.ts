@@ -468,7 +468,7 @@ export const loadWorkspace = async (
         const isFirstInitFromNacls = _.isEmpty(partialStateChanges.changes)
           && (await stateToBuild.states[envName].merged.isEmpty())
         const initHiddenElementsChanges = isFirstInitFromNacls
-          ? await awu(await state(envName).getAll())
+          ? await awu(state(envName).getAll())
             .filter(element => isHidden(element, state(envName)))
             .map(elem => toChange({ after: elem })).toArray()
           : []
@@ -884,7 +884,7 @@ export const loadWorkspace = async (
   }
   const hasElementsInAccounts = async (accountNames: string[]): Promise<boolean> => {
     const source = await (await getLoadedNaclFilesSource()).getElementsSource(currentEnv())
-    return awu(await source.list()).some(elemId => accountNames.includes(elemId.adapter))
+    return awu(source.list()).some(elemId => accountNames.includes(elemId.adapter))
   }
   const updateAccountCredentials = async (account: string,
     credentialElements: Readonly<InstanceElement>): Promise<void> =>

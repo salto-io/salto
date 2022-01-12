@@ -34,7 +34,7 @@ export const createDocumentSymbolsProvider = (
     doc: vscode.TextDocument
   ) => {
     const sourceMap = await workspace.getSourceMap(doc.fileName)
-    const elements = await workspace.getElements(doc.fileName)
+    const elements = workspace.getElements(doc.fileName)
     if (sourceMap && elements) {
       const defTree = ctx.buildDefinitionsTree(
         doc.getText(),
@@ -61,7 +61,7 @@ export const createCompletionsProvider = (
     const definitionsTree = ctx.buildDefinitionsTree(
       (await workspace.getNaclFile(doc.fileName))?.buffer as string,
       await workspace.getSourceMap(doc.fileName),
-      await awu(await workspace.getElements(doc.fileName)).toArray(),
+      await awu(workspace.getElements(doc.fileName)).toArray(),
     )
     const fullElementSource = await workspace.getElementSourceOfPath(doc.fileName)
     const context = await ctx.getPositionContext(
@@ -95,7 +95,7 @@ export const createDefinitionsProvider = (
     const definitionsTree = ctx.buildDefinitionsTree(
       (await workspace.getNaclFile(doc.fileName))?.buffer as string,
       await workspace.getSourceMap(doc.fileName),
-      await awu(await workspace.getElements(doc.fileName)).toArray(),
+      await awu(workspace.getElements(doc.fileName)).toArray(),
     )
     const fullElementSource = await workspace.getElementSourceOfPath(doc.fileName)
     const context = await ctx.getPositionContext(
@@ -131,7 +131,7 @@ export const createReferenceProvider = (
     const definitionsTree = ctx.buildDefinitionsTree(
       (await workspace.getNaclFile(doc.fileName))?.buffer as string,
       await workspace.getSourceMap(doc.fileName),
-      await awu(await workspace.getElements(doc.fileName)).toArray(),
+      await awu(workspace.getElements(doc.fileName)).toArray(),
     )
     const fullElementSource = await workspace.getElementSourceOfPath(doc.fileName)
     const context = await ctx.getPositionContext(
@@ -160,7 +160,7 @@ export const createWorkspaceSymbolProvider = (
         ctx.buildDefinitionsTree(
           (await workspace.getNaclFile(loc.filename))?.buffer as string,
           await workspace.getSourceMap(loc.filename),
-          await awu(await workspace.getElements(loc.filename)).toArray(),
+          await awu(workspace.getElements(loc.filename)).toArray(),
         ),
         await workspace.getElementSourceOfPath(loc.filename),
       )

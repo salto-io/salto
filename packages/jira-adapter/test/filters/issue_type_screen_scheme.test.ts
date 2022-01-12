@@ -244,5 +244,24 @@ describe('issueTypeScreenScheme', () => {
       await filter.deploy?.([toChange({ before: beforeInstance, after: afterInstance })])
       expect(mockConnection.post).not.toHaveBeenCalled()
     })
+
+    it('should throw an error if no default item exist', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        issueTypeScreenSchemeType,
+        {
+          name: 'name2',
+          id: 'id',
+          issueTypeMappings: [
+            { issueTypeId: 'issueTypeId1', screenSchemeId: 'screenSchemeId1' },
+            { issueTypeId: 'issueTypeId2', screenSchemeId: 'screenSchemeId2' },
+          ],
+        }
+      )
+
+      const result = await filter.deploy?.([toChange({ before: instance, after: instance })])
+      expect(result?.deployResult?.appliedChanges).toEqual([])
+      expect(result?.deployResult?.errors).toHaveLength(1)
+    })
   })
 })

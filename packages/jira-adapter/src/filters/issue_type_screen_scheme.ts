@@ -88,6 +88,9 @@ const deployDefaultMapping = async (
   const defaultAfter = change.data.after.value.issueTypeMappings
     ?.find((mapping: Values) => mapping.issueTypeId === DEFAULT_ISSUE_TYPE)
 
+  if (defaultAfter?.screenSchemeId === undefined) {
+    throw new Error(`instance ${getChangeData(change).elemID.getFullName()} must have a default screen scheme`)
+  }
 
   const instance = getChangeData(change)
   if (defaultBefore?.screenSchemeId !== defaultAfter?.screenSchemeId) {

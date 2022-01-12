@@ -171,7 +171,7 @@ describe('stripe swagger adapter', () => {
         },
       },
     }
-    mockedAdapterComponents.elements.swagger.generateTypes.mockReturnValue(mockTypes)
+    mockedAdapterComponents.elements.swagger.generateTypes.mockImplementation(async () => mockTypes)
 
     const mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' });
     (mockReplies as MockReply[]).forEach(({ url, params, response }) => {

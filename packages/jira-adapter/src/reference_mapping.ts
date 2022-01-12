@@ -16,7 +16,7 @@
 import { isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
-import { getFieldsLookUpName } from './filters/fields/field_references'
+import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 
 
 export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] = [

@@ -17,16 +17,20 @@ import { AdditionChange, Change, getChangeData, InstanceElement, isAdditionChang
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { config } from '@salto-io/adapter-components'
+import { logger } from '@salto-io/logging'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { defaultDeployChange } from '../../deployment'
 import JiraClient from '../../client/client'
 import { setContextOptions, setOptionTypeDeploymentAnnotations } from './context_options'
 import { setDefaultValueTypeDeploymentAnnotations } from './default_values'
-import { setContextField, setIssueTypesDeploymentAnnotations, setProjectsDeploymentAnnotations } from './issues_and_projects'
+import { setContextField } from './issues_and_projects'
 import { setDeploymentAnnotations } from './utils'
 
 const { awu } = collections.asynciterable
 
 const FIELDS_TO_IGNORE = ['defaultValue', 'options']
+
+const log = logger(module)
 
 const toContextInstance = (
   context: Values,
@@ -47,8 +51,8 @@ const getContextChanges = (
     )
   }
 
-  const afterContexts = Object.values(change.data.after.value.contexts ?? {}) as Values[]
-  const beforeContexts = Object.values(change.data.before.value.contexts ?? {}) as Values[]
+  const afterContexts = _.values(change.data.after.value.contexts ?? {})
+  const beforeContexts = _.values(change.data.before.value.contexts ?? {})
   const afterContextsById = _.keyBy(afterContexts, context => context.id)
   const beforeContextsById = _.keyBy(beforeContexts, context => context.id)
 
@@ -118,8 +122,11 @@ const getContexts = async (
 ): Promise<InstanceElement[]> => {
   const fieldInstance = getChangeData(fieldChange)
   const resp = await client.getSinglePage({ url: `/rest/api/3/field/${fieldInstance.value.id}/contexts` })
-  return (resp.data.values as Values[])
-    .map(values => new InstanceElement(values.id, contextType, values))
+  if (!Array.isArray(resp.data.values)) {
+    log.warn(`Received unexpected response from Jira when querying contexts for instance ${getChangeData(fieldChange).elemID.getFullName()}: ${safeJsonStringify(resp.data.values)}`)
+    throw new Error(`Received unexpected response from Jira when querying contexts for instance ${getChangeData(fieldChange).elemID.getFullName()}`)
+  }
+  return resp.data.values.map(values => new InstanceElement(values.id, contextType, values))
 }
 
 export const deployContexts = async (
@@ -157,7 +164,7 @@ export const setContextDeploymentAnnotations = async (
   const contextType = await getContextType(fieldType)
 
   await setDefaultValueTypeDeploymentAnnotations(contextType)
-  setProjectsDeploymentAnnotations(contextType)
-  setIssueTypesDeploymentAnnotations(contextType)
+  setDeploymentAnnotations(contextType, 'projectIds')
+  setDeploymentAnnotations(contextType, 'issueTypeIds')
   await setOptionTypeDeploymentAnnotations(contextType)
 }

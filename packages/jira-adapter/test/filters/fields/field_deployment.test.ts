@@ -18,7 +18,7 @@ import { deployment, filterUtils, client as clientUtils } from '@salto-io/adapte
 import { mockClient } from '../../utils'
 import { DEFAULT_CONFIG } from '../../../src/config'
 import { JIRA } from '../../../src/constants'
-import fieldsDeploymentFilter from '../../../src/filters/fields/field_deployment'
+import fieldsDeploymentFilter from '../../../src/filters/fields/field_deployment_filter'
 import JiraClient from '../../../src/client/client'
 import * as contexts from '../../../src/filters/fields/contexts'
 import * as defaultValues from '../../../src/filters/fields/default_values'

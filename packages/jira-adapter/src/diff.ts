@@ -13,23 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element } from '@salto-io/adapter-api'
-import { references as referenceUtils } from '@salto-io/adapter-components'
-import _ from 'lodash'
-import { referencesRules } from '../references'
-import { FilterCreator } from '../filter'
+export const getDiffIds = (
+  beforeIds: string[],
+  afterIds: string[],
+): {
+  addedIds: string[]
+  removedIds: string[]
+ } => {
+  const beforeIdsSet = new Set(beforeIds)
+  const afterIdsSet = new Set(afterIds)
 
-/**
- * Convert field values into references, based on predefined rules.
- */
-const filter: FilterCreator = () => ({
-  onFetch: async (elements: Element[]) => {
-    await referenceUtils.addReferences({
-      elements,
-      defs: referencesRules,
-      isEqualValue: (lhs, rhs) => _.toString(lhs) === _.toString(rhs),
-    })
-  },
-})
-
-export default filter
+  return {
+    addedIds: Array.from(afterIds).filter(id => !beforeIdsSet.has(id)),
+    removedIds: Array.from(beforeIds).filter(id => !afterIdsSet.has(id)),
+  }
+}

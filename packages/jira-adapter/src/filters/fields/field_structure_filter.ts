@@ -13,16 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Element, Field, InstanceElement, isInstanceElement, isObjectType, ListType, MapType, ObjectType, Values } from '@salto-io/adapter-api'
+import { BuiltinTypes, Element, Field, InstanceElement, isInstanceElement, ListType, MapType, Values } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
-import { FIELD_TYPE_NAME } from './utils'
+import { FIELD_TYPE_NAME, findObject } from './utils'
 
-const findObject = (elements: Element[], name: string): ObjectType | undefined =>
-  elements.filter(isObjectType).find(
-    element => element.elemID.name === name
-  )
 
 const addTypeValue = (instance: InstanceElement): void => {
   if (instance.value.schema?.custom !== undefined) {

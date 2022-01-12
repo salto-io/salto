@@ -13,11 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, getChangeData, InstanceElement, isModificationChange, ObjectType } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isModificationChange } from '@salto-io/adapter-api'
 import { resolveChangeElement } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { getLookUpName } from '../../references'
-import { setDeploymentAnnotations } from './utils'
+import { getLookUpName } from '../../reference_mapping'
+import { getDiffIds } from '../../diff'
 
 // Works for issuesIds and projectsIds
 export const setContextField = async (
@@ -36,11 +36,11 @@ export const setContextField = async (
     return
   }
   const contextInstance = getChangeData(resolvedChange)
-  const afterIds = new Set(contextInstance.value[fieldName] ?? [])
-  const beforeIds = new Set(resolvedChange.data.before.value[fieldName] ?? [])
 
-  const addedIds = Array.from(afterIds).filter(id => !beforeIds.has(id))
-  const removedIds = Array.from(beforeIds).filter(id => !afterIds.has(id))
+  const { addedIds, removedIds } = getDiffIds(
+    resolvedChange.data.before.value[fieldName] ?? [],
+    contextInstance.value[fieldName] ?? []
+  )
 
   if (addedIds.length !== 0) {
     await client.put({
@@ -60,7 +60,3 @@ export const setContextField = async (
     })
   }
 }
-
-export const setProjectsDeploymentAnnotations = (contextType: ObjectType): void => setDeploymentAnnotations(contextType, 'projectIds')
-
-export const setIssueTypesDeploymentAnnotations = (contextType: ObjectType): void => setDeploymentAnnotations(contextType, 'issueTypeIds')

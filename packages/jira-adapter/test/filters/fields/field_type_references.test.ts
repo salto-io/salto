@@ -18,14 +18,14 @@ import { filterUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../../utils'
 import { DEFAULT_CONFIG } from '../../../src/config'
 import { JIRA } from '../../../src/constants'
-import fieldsReferencesFilter, { getFieldsLookUpName } from '../../../src/filters/fields/field_references'
+import fieldsTypeReferencesFilter, { getFieldsLookUpName } from '../../../src/filters/fields/field_type_references_filter'
 
 describe('fields_references', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
   let fieldType: ObjectType
   beforeEach(() => {
     const { client, paginator } = mockClient()
-    filter = fieldsReferencesFilter({
+    filter = fieldsTypeReferencesFilter({
       client,
       paginator,
       config: DEFAULT_CONFIG,
@@ -71,6 +71,58 @@ describe('fields_references', () => {
     expect(instance.value.contexts.name.defaultValue.cascadingOptionId)
       .toBeInstanceOf(ReferenceExpression)
     expect(instance.value.contexts.name.defaultValue.cascadingOptionId.elemID.getFullName()).toBe('jira.Field.instance.instance.contexts.name.options.a1.cascadingOptions.c1')
+  })
+
+  it('should only change optionId if cascadingOptionId cannot be found', async () => {
+    const instance = new InstanceElement(
+      'instance',
+      fieldType,
+      {
+        contexts: {
+          name: {
+            name: 'name',
+            options: {
+              a1: {
+                id: '1',
+                value: 'a1',
+              },
+            },
+            defaultValue: {
+              optionId: '1',
+              cascadingOptionId: '3',
+            },
+          },
+        },
+      },
+    )
+
+    await filter.onFetch([instance])
+
+    expect(instance.value.contexts.name.defaultValue.optionId).toBeInstanceOf(ReferenceExpression)
+    expect(instance.value.contexts.name.defaultValue.optionId.elemID.getFullName()).toBe('jira.Field.instance.instance.contexts.name.options.a1')
+    expect(instance.value.contexts.name.defaultValue.cascadingOptionId).toBe('3')
+  })
+  it('should do nothing if optionId reference cannot be found', async () => {
+    const instance = new InstanceElement(
+      'instance',
+      fieldType,
+      {
+        contexts: {
+          name: {
+            name: 'name',
+            defaultValue: {
+              optionId: '1',
+              cascadingOptionId: '3',
+            },
+          },
+        },
+      },
+    )
+
+    await filter.onFetch([instance])
+
+    expect(instance.value.contexts.name.defaultValue.optionId).toBe('1')
+    expect(instance.value.contexts.name.defaultValue.cascadingOptionId).toBe('3')
   })
 
   it('Should do nothing when there are no contexts', async () => {

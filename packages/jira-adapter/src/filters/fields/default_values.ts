@@ -18,7 +18,7 @@ import { Change, compareSpecialValues, getChangeData, InstanceElement, isModific
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { resolveChangeElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { getLookUpName } from '../../references'
+import { getLookUpName } from '../../reference_mapping'
 import { setDeploymentAnnotations } from './utils'
 
 const EDITABLE_FIELD_NAMES = [

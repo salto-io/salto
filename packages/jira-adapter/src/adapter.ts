@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange } from '@salto-io/adapter-api'
-import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { config as configUtils, elements as elementUtils, client as clientUtils, deployment as deploymentUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import JiraClient from './client/client'
@@ -220,6 +220,9 @@ export default class JiraAdapter implements AdapterOperations {
 
   // eslint-disable-next-line class-methods-use-this
   get deployModifiers(): AdapterOperations['deployModifiers'] {
-    return { changeValidator }
+    return {
+      changeValidator,
+      dependencyChanger: deploymentUtils.dependency.removeStandaloneFieldDependency,
+    }
   }
 }

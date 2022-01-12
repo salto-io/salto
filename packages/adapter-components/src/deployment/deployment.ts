@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ActionName, Change, getChangeData, InstanceElement } from '@salto-io/adapter-api'
-import { transformElement } from '@salto-io/adapter-utils'
+import { resolvePath, transformElement } from '@salto-io/adapter-utils'
 import { replaceUrlParams } from '../elements/request_parameters'
 import { HTTPWriteClientInterface } from '../client/http_client'
 import { DeploymentRequestsByAction } from '../config/request'
@@ -74,9 +74,9 @@ export const deployChange = async (
     ...instance.value,
     ..._.mapValues(
       endpoint.urlParamsToFields ?? {},
-      fieldName => _.get(
-        { ...instance.value, ...instance.annotations },
-        fieldName.split(FIELD_PATH_DELIMITER)
+      fieldName => resolvePath(
+        instance,
+        instance.elemID.createNestedID(...fieldName.split(FIELD_PATH_DELIMITER))
       )
     ),
     ...(additionalUrlVars ?? {}),

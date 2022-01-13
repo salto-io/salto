@@ -433,10 +433,16 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   Board_location: {
     transformation: {
-      fieldsToHide: [
-        {
-          fieldName: 'id',
-        },
+      fieldTypeOverrides: [
+        { fieldName: 'projectKeyOrId', fieldType: 'number' },
+      ],
+      fieldsToOmit: [
+        { fieldName: 'displayName' },
+        { fieldName: 'projectName' },
+        { fieldName: 'projectKey' },
+        { fieldName: 'projectTypeKey' },
+        { fieldName: 'avatarURI' },
+        { fieldName: 'name' },
       ],
     },
   },

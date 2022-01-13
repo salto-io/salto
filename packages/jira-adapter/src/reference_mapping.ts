@@ -190,6 +190,26 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     serializationStrategy: 'id',
     target: { type: 'Project' },
   },
+  {
+    src: { field: 'edit', parentTypes: ['ScreenTypes'] },
+    serializationStrategy: 'id',
+    target: { type: 'Screen' },
+  },
+  {
+    src: { field: 'create', parentTypes: ['ScreenTypes'] },
+    serializationStrategy: 'id',
+    target: { type: 'Screen' },
+  },
+  {
+    src: { field: 'view', parentTypes: ['ScreenTypes'] },
+    serializationStrategy: 'id',
+    target: { type: 'Screen' },
+  },
+  {
+    src: { field: 'default', parentTypes: ['ScreenTypes'] },
+    serializationStrategy: 'id',
+    target: { type: 'Screen' },
+  },
 ]
 
 const lookupNameFuncs: GetLookupNameFunc[] = [

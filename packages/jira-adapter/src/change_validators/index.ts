@@ -13,12 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { filterUtils } from '@salto-io/adapter-components'
-import JiraClient from './client/client'
-import { JiraConfig } from './config'
+import { ChangeValidator } from '@salto-io/adapter-api'
+import { deployment } from '@salto-io/adapter-components'
+import { createChangeValidator } from '@salto-io/adapter-utils'
+import { unsupportedFieldConfigurationsValidator } from './field_configuration'
 
-export const { filtersRunner } = filterUtils
+const {
+  deployTypesNotSupportedValidator,
+} = deployment.changeValidators
 
-export type Filter = filterUtils.Filter
+const validators: ChangeValidator[] = [
+  deployTypesNotSupportedValidator,
+  unsupportedFieldConfigurationsValidator,
+]
 
-export type FilterCreator = filterUtils.FilterCreator<JiraClient, JiraConfig>
+export default createChangeValidator(validators)

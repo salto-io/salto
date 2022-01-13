@@ -13,16 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator } from '@salto-io/adapter-api'
-import { deployment } from '@salto-io/adapter-components'
-import { createChangeValidator } from '@salto-io/adapter-utils'
+import { CORE_ANNOTATIONS, ObjectType, Element, isObjectType } from '@salto-io/adapter-api'
 
-const {
-  deployTypesNotSupportedValidator,
-} = deployment.changeValidators
+export const setDeploymentAnnotations = (contextType: ObjectType, fieldName: string): void => {
+  if (contextType.fields[fieldName] !== undefined) {
+    contextType.fields[fieldName].annotations[CORE_ANNOTATIONS.CREATABLE] = true
+    contextType.fields[fieldName].annotations[CORE_ANNOTATIONS.UPDATABLE] = true
+  }
+}
 
-const validators: ChangeValidator[] = [
-  deployTypesNotSupportedValidator,
-]
-
-export default createChangeValidator(validators)
+export const findObject = (elements: Element[], name: string): ObjectType | undefined =>
+  elements.filter(isObjectType).find(
+    element => element.elemID.name === name
+  )

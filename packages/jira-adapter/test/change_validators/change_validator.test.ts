@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import { toChange, ObjectType, ElemID } from '@salto-io/adapter-api'
-import changeValidator from '../src/change_validator'
-import { JIRA } from '../src/constants'
+import changeValidator from '../../src/change_validators'
+import { JIRA } from '../../src/constants'
 
 describe('change validator creator', () => {
   describe('checkDeploymentAnnotationsValidator', () => {

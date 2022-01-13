@@ -20,7 +20,7 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { getLookUpName } from '../../reference_mapping'
-import { setDeploymentAnnotations } from './utils'
+import { setDeploymentAnnotations } from '../../utils'
 
 const log = logger(module)
 

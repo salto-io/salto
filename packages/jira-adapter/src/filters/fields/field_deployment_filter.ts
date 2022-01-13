@@ -15,19 +15,19 @@
 */
 import { Change, Element, getChangeData, InstanceElement, isInstanceChange, isObjectType, isRemovalChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { FilterContext } from '../../config'
 import JiraClient from '../../client/client'
 import { FilterCreator } from '../../filter'
 import { deployContexts, setContextDeploymentAnnotations } from './contexts'
 import { updateDefaultValues } from './default_values'
 import { defaultDeployChange, deployChanges } from '../../deployment'
-import { FIELD_TYPE_NAME } from './utils'
+import { FIELD_TYPE_NAME } from './constants'
+import { JiraConfig } from '../../config'
 
 
 const deployField = async (
   change: Change<InstanceElement>,
   client: JiraClient,
-  config: FilterContext,
+  config: JiraConfig,
 ): Promise<void> => {
   await defaultDeployChange({ change, client, apiDefinitions: config.apiDefinitions, fieldsToIgnore: ['contexts'] })
 

@@ -19,7 +19,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockFunction } from '@salto-io/test-utils'
 import JiraClient from '../src/client/client'
 import { adapter as adapterCreator } from '../src/adapter_creator'
-import { DEFAULT_INCLUDE_ENDPOINTS, DEFAULT_API_DEFINITIONS } from '../src/config'
+import { DEFAULT_CONFIG } from '../src/config'
 import { JIRA } from '../src/constants'
 import { createCredentialsInstance, createConfigInstance } from './utils'
 
@@ -55,10 +55,7 @@ describe('adapter', () => {
     adapter = adapterCreator.operations({
       elementsSource,
       credentials: createCredentialsInstance({ baseUrl: 'http:/jira.net', user: 'u', token: 't' }),
-      config: createConfigInstance({
-        apiDefinitions: DEFAULT_API_DEFINITIONS,
-        fetch: { includeTypes: DEFAULT_INCLUDE_ENDPOINTS },
-      }),
+      config: createConfigInstance(DEFAULT_CONFIG),
     })
   })
   describe('deploy', () => {

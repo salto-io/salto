@@ -176,6 +176,11 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     serializationStrategy: 'id',
     target: { type: 'Field' },
   },
+  {
+    src: { field: 'id', parentTypes: ['FieldConfigurationItem'] },
+    serializationStrategy: 'id',
+    target: { type: 'Field' },
+  },
 ]
 
 const lookupNameFuncs: GetLookupNameFunc[] = [

@@ -13,18 +13,4 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, ObjectType, Element, isObjectType } from '@salto-io/adapter-api'
-
 export const FIELD_TYPE_NAME = 'Field'
-
-export const setDeploymentAnnotations = (contextType: ObjectType, fieldName: string): void => {
-  if (contextType.fields[fieldName] !== undefined) {
-    contextType.fields[fieldName].annotations[CORE_ANNOTATIONS.CREATABLE] = true
-    contextType.fields[fieldName].annotations[CORE_ANNOTATIONS.UPDATABLE] = true
-  }
-}
-
-export const findObject = (elements: Element[], name: string): ObjectType | undefined =>
-  elements.filter(isObjectType).find(
-    element => element.elemID.name === name
-  )

@@ -15,12 +15,21 @@
 */
 import _ from 'lodash'
 import { collections, values as lowerdashValues, promises } from '@salto-io/lowerdash'
-import { transformValues, TransformFunc, safeJsonStringify } from '@salto-io/adapter-utils'
+import {
+  transformValues,
+  TransformFunc,
+  logInstancesWithCollidingElemID,
+  getCollisionErrors,
+  MAX_BREAKDOWN_ELEMENTS,
+  getInstanceDesc,
+  getInstancesDetailsMsg,
+  createWarningFromMsg,
+} from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Element, Values, Field, InstanceElement, ReferenceExpression, SaltoError } from '@salto-io/adapter-api'
 import { FilterCreator, FilterResult } from '../filter'
 import { apiName, isInstanceOfCustomObject, isCustomObject } from '../transformers/transformer'
-import { FIELD_ANNOTATIONS, KEY_PREFIX, KEY_PREFIX_LENGTH } from '../constants'
+import { FIELD_ANNOTATIONS, KEY_PREFIX, KEY_PREFIX_LENGTH, SALESFORCE } from '../constants'
 import { addElementParentReference, isLookupField, isMasterDetailField } from './utils'
 import { DataManagement } from '../fetch_profile/data_management'
 
@@ -35,14 +44,11 @@ type MissingRef = {
   origin: RefOrigin
   targetId: string
 }
-const { groupByAsync, awu } = collections.asynciterable
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
-
 const INTERNAL_ID_SEPARATOR = '$'
-const MAX_BREAKDOWN_ELEMENTS = 10
-const MAX_BREAKDOWN_DETAILS_ELEMENTS = 3
 
 const serializeInternalID = (typeName: string, id: string): string =>
   (`${typeName}${INTERNAL_ID_SEPARATOR}${id}`)
@@ -61,50 +67,6 @@ const deserializeInternalID = (internalID: string): RefOrigin => {
   }
 }
 
-const groupInstancesByTypeAndElemID = async (
-  instances: InstanceElement[],
-): Promise<Record<string, Record<string, InstanceElement[]>>> =>
-  (_.mapValues(
-    await groupByAsync(instances, async instance => apiName(await instance.getType(), true)),
-    typeInstances => _.groupBy(typeInstances, instance => instance.elemID.name)
-  ))
-
-const logInstancesWithCollidingElemID = async (instances: InstanceElement[]): Promise<void> => {
-  const typeToElemIDtoInstances = await groupInstancesByTypeAndElemID(instances)
-  Object.entries(typeToElemIDtoInstances).forEach(([type, elemIDtoInstances]) => {
-    const instancesCount = Object.values(elemIDtoInstances).flat().length
-    log.debug(`Omitted ${instancesCount} instances of type ${type} due to Salto ID collisions`)
-    Object.entries(elemIDtoInstances).forEach(([elemID, elemIDInstances]) => {
-      const relevantInstanceValues = elemIDInstances
-        .map(instance => _.pickBy(instance.value, val => !_.isEmpty(val)))
-      const relevantInstanceValuesStr = relevantInstanceValues
-        .map(instValues => safeJsonStringify(instValues, undefined, 2)).join('\n')
-      log.debug(`Omitted instances of type ${type} with colliding ElemID ${elemID} with values - 
-  ${relevantInstanceValuesStr}`)
-    })
-  })
-}
-
-const createWarningFromMsg = (message: string): SaltoError =>
-  ({
-    message,
-    severity: 'Warning',
-  })
-
-const getInstanceDesc = (instanceId: string, baseUrl?: string): string =>
-  (baseUrl ? `${baseUrl}/${instanceId}` : `Instance with Id - ${instanceId}`)
-
-const getInstancesDetailsMsg = (instanceIds: string[], baseUrl?: string): string => {
-  const instancesToPrint = instanceIds.slice(0, MAX_BREAKDOWN_DETAILS_ELEMENTS)
-  const instancesMsgs = instancesToPrint.map(instanceId => getInstanceDesc(instanceId, baseUrl))
-  const overFlowSize = instanceIds.length - MAX_BREAKDOWN_DETAILS_ELEMENTS
-  const overFlowMsg = overFlowSize > 0 ? [`${overFlowSize} more instances`] : []
-  return [
-    ...instancesMsgs,
-    ...overFlowMsg,
-  ].map(msg => `\t* ${msg}`).join('\n')
-}
-
 const createWarnings = async (
   instancesWithCollidingElemID: InstanceElement[],
   missingRefs: MissingRef[],
@@ -113,37 +75,15 @@ const createWarnings = async (
   dataManagement: DataManagement,
   baseUrl?: string,
 ): Promise<SaltoError[]> => {
-  const typeToElemIDtoInstances = await groupInstancesByTypeAndElemID(instancesWithCollidingElemID)
-
-  const collisionWarnings = await Promise.all(Object.entries(typeToElemIDtoInstances)
-    .map(async ([type, elemIDtoInstances]) => {
-      const numInstances = Object.values(elemIDtoInstances)
-        .flat().length
-      const header = `Omitted ${numInstances} instances of ${type} due to Salto ID collisions. 
-Current Salto ID configuration for ${type} is defined as [${dataManagement.getObjectIdsFields(type).join(', ')}].`
-
-      const collisionsHeader = 'Breakdown per colliding Salto ID:'
-      const collisionsToDisplay = Object.entries(elemIDtoInstances).slice(0, MAX_BREAKDOWN_ELEMENTS)
-      const collisionMsgs = await Promise.all(collisionsToDisplay
-        .map(async ([elemID, instances]) => `- ${elemID}:
-${getInstancesDetailsMsg(await Promise.all(instances.map(instance => apiName(instance))), baseUrl)}`))
-      const epilogue = `To resolve these collisions please take one of the following actions and fetch again:
-\t1. Change ${type}'s saltoIDSettings to include all fields that uniquely identify the type's instances.
-\t2. Delete duplicate instances from your Salesforce account.
-         
-Alternatively, you can exclude ${type} from the data management configuration in salesforce.nacl`
-      const elemIDCount = Object.keys(elemIDtoInstances).length
-      const overflowMsg = elemIDCount > MAX_BREAKDOWN_ELEMENTS ? ['', `And ${elemIDCount - MAX_BREAKDOWN_ELEMENTS} more colliding Salto IDs`] : []
-      return createWarningFromMsg([
-        header,
-        '',
-        collisionsHeader,
-        ...collisionMsgs,
-        ...overflowMsg,
-        '',
-        epilogue,
-      ].join('\n'))
-    }))
+  const collisionWarnings = await getCollisionErrors({
+    adapterName: SALESFORCE,
+    baseUrl,
+    instances: instancesWithCollidingElemID,
+    configurationName: 'data management',
+    getIdFieldsByType: dataManagement.getObjectIdsFields,
+    getTypeName: async instance => apiName(await instance.getType(), true),
+    getInstanceName: instance => apiName(instance),
+  })
 
   const typeToInstanceIdToMissingRefs = _.mapValues(
     _.groupBy(
@@ -364,7 +304,11 @@ const filter: FilterCreator = ({ client, config }) => ({
     )
     const baseUrl = await client.getUrl()
     const customObjectPrefixKeyMap = await buildCustomObjectPrefixKeyMap(elements)
-    await logInstancesWithCollidingElemID(instancesWithCollidingElemID)
+
+    await logInstancesWithCollidingElemID(
+      instancesWithCollidingElemID,
+      async instance => apiName(await instance.getType(), true),
+    )
     return {
       errors: await createWarnings(
         instancesWithCollidingElemID,

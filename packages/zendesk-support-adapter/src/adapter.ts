@@ -25,10 +25,10 @@ import {
   references as referencesUtils,
 } from '@salto-io/adapter-components'
 import { logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
-import { FilterCreator, Filter, filtersRunner } from './filter'
+import { FilterCreator, Filter, filtersRunner, FilterResult } from './filter'
 import { API_DEFINITIONS_CONFIG, ZendeskConfig } from './config'
 import { ZENDESK_SUPPORT } from './constants'
 import createChangeValidator from './change_validator'
@@ -42,6 +42,7 @@ import userFieldOrderFilter from './filters/reorder/user_field'
 import organizationFieldOrderFilter from './filters/reorder/organization_field'
 import workspaceOrderFilter from './filters/reorder/workspace'
 import businessHoursScheduleFilter from './filters/business_hours_schedule'
+import collisionErrorsFilter from './filters/collision_errors'
 import defaultDeployFilter from './filters/default_deploy'
 
 const log = logger(module)
@@ -49,6 +50,7 @@ const { createPaginator } = clientUtils
 const { findDataField, computeGetArgs } = elementUtils
 const { getAllElements } = elementUtils.ducktype
 const { awu } = collections.asynciterable
+const { concatObjects } = objects
 
 export const DEFAULT_FILTERS = [
   fieldReferencesFilter,
@@ -61,6 +63,7 @@ export const DEFAULT_FILTERS = [
   organizationFieldOrderFilter,
   workspaceOrderFilter,
   businessHoursScheduleFilter,
+  collisionErrorsFilter,
   // defaultDeployFilter should be last!
   defaultDeployFilter,
 ]
@@ -89,14 +92,18 @@ export default class ZendeskAdapter implements AdapterOperations {
       paginationFuncCreator: paginate,
     })
     this.createFiltersRunner = async () => (
-      filtersRunner({
-        client: this.client,
-        paginator: this.paginator,
-        config: {
-          fetch: config.fetch,
-          apiDefinitions: config.apiDefinitions,
+      filtersRunner(
+        {
+          client: this.client,
+          paginator: this.paginator,
+          config: {
+            fetch: config.fetch,
+            apiDefinitions: config.apiDefinitions,
+          },
         },
-      }, filterCreators)
+        filterCreators,
+        concatObjects,
+      )
     )
   }
 
@@ -125,8 +132,8 @@ export default class ZendeskAdapter implements AdapterOperations {
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
-    await (await this.createFiltersRunner()).onFetch(elements)
-    return { elements }
+    const { errors } = await (await this.createFiltersRunner()).onFetch(elements) as FilterResult
+    return { elements, errors }
   }
 
   /**

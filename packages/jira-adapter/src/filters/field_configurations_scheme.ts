@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isModificationChange, isObjectType, Value, Values } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
 import { resolveChangeElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -22,6 +22,8 @@ import JiraClient from '../client/client'
 import { JiraConfig } from '../config'
 import { defaultDeployChange, deployChanges } from '../deployment'
 import { FilterCreator } from '../filter'
+import { findObject, setDeploymentAnnotations } from '../utils'
+import { getDiffObjects } from '../diff'
 
 const FIELD_CONFIG_SCHEME_NAME = 'FieldConfigurationScheme'
 const FIELD_CONFIG_SCHEME_ITEM_NAME = 'FieldConfigurationIssueTypeItem'
@@ -34,38 +36,33 @@ const deployFieldConfigSchemeItems = async (
 ): Promise<void> => {
   const resolvedChange = await resolveChangeElement(change, getLookUpName)
 
-  const afterIds = new Set(isAdditionOrModificationChange(resolvedChange)
-    ? resolvedChange.data.after.value.items?.map((item: Values) => item.issueTypeId) ?? []
-    : [])
+  const { addedObjects, modifiedObjects, removedObjects } = getDiffObjects(
+    isModificationChange(resolvedChange)
+      ? resolvedChange.data.before.value.items ?? []
+      : [],
+    isAdditionOrModificationChange(resolvedChange)
+      ? resolvedChange.data.after.value.items ?? []
+      : [],
+    'issueTypeId'
+  )
 
-
-  const itemsToAdd = isAdditionOrModificationChange(resolvedChange)
-    ? resolvedChange.data.after.value.items ?? []
-    : []
-
-  const itemsToRemove = isModificationChange(resolvedChange)
-    ? resolvedChange.data.before.value.items
-      ?.map((item: Values) => item.issueTypeId)
-      .filter(
-        (issueTypeId: Value) => !afterIds.has(issueTypeId)
-      ) ?? []
-    : []
+  const itemsToUpdate = [...modifiedObjects, ...addedObjects]
 
   const instance = getChangeData(change)
-  if (itemsToAdd.length > 0) {
+  if (itemsToUpdate.length > 0) {
     await client.put({
       url: `/rest/api/3/fieldconfigurationscheme/${instance.value.id}/mapping`,
       data: {
-        mappings: itemsToAdd,
+        mappings: itemsToUpdate,
       },
     })
   }
 
-  if (itemsToRemove.length > 0) {
+  if (removedObjects.length > 0) {
     await client.post({
       url: `/rest/api/3/fieldconfigurationscheme/${instance.value.id}/mapping/delete`,
       data: {
-        issueTypeIds: itemsToRemove,
+        issueTypeIds: removedObjects.map(obj => obj.issueTypeId),
       },
     })
   }
@@ -87,34 +84,21 @@ const deployFieldConfigScheme = async (
 
 const filter: FilterCreator = ({ config, client }) => ({
   onFetch: async elements => {
-    const types = elements.filter(isObjectType)
-    const fieldConfigurationSchemeType = types.find(
-      type => type.elemID.name === FIELD_CONFIG_SCHEME_NAME
-    )
+    const fieldConfigurationSchemeType = findObject(elements, FIELD_CONFIG_SCHEME_NAME)
 
     if (fieldConfigurationSchemeType === undefined) {
       log.warn(`${FIELD_CONFIG_SCHEME_NAME} type not found`)
     } else {
-      fieldConfigurationSchemeType.fields.items.annotations[CORE_ANNOTATIONS.CREATABLE] = true
-      fieldConfigurationSchemeType.fields.items.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
+      setDeploymentAnnotations(fieldConfigurationSchemeType, 'items')
     }
 
-    const fieldConfigurationIssueTypeItemType = types.find(
-      type => type.elemID.name === FIELD_CONFIG_SCHEME_ITEM_NAME
-    )
+    const fieldConfigurationIssueTypeItemType = findObject(elements, FIELD_CONFIG_SCHEME_ITEM_NAME)
 
     if (fieldConfigurationIssueTypeItemType === undefined) {
       log.warn(`${FIELD_CONFIG_SCHEME_ITEM_NAME} type not found`)
     } else {
-      fieldConfigurationIssueTypeItemType.fields.issueTypeId
-        .annotations[CORE_ANNOTATIONS.CREATABLE] = true
-      fieldConfigurationIssueTypeItemType.fields.issueTypeId
-        .annotations[CORE_ANNOTATIONS.UPDATABLE] = true
-
-      fieldConfigurationIssueTypeItemType.fields.fieldConfigurationId
-        .annotations[CORE_ANNOTATIONS.CREATABLE] = true
-      fieldConfigurationIssueTypeItemType.fields.fieldConfigurationId
-        .annotations[CORE_ANNOTATIONS.UPDATABLE] = true
+      setDeploymentAnnotations(fieldConfigurationIssueTypeItemType, 'issueTypeId')
+      setDeploymentAnnotations(fieldConfigurationIssueTypeItemType, 'fieldConfigurationId')
     }
   },
   deploy: async changes => {

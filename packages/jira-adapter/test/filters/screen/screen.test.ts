@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ElemID, InstanceElement, MapType, ObjectType, toChange } from '@salto-io/adapter-api'
 import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { JIRA } from '../../../src/constants'
@@ -44,6 +44,7 @@ describe('screenFilter', () => {
     const { client: cli, paginator, connection } = mockClient()
     client = cli
     mockConnection = connection
+    mockConnection.get.mockResolvedValue({ status: 200, data: [] })
 
     filter = screenFilter({
       client,
@@ -56,15 +57,21 @@ describe('screenFilter', () => {
     screenType = new ObjectType({
       elemID: new ElemID(JIRA, 'Screen'),
       fields: {
-        tabs: { refType: new ListType(screenTabType) },
+        tabs: { refType: new MapType(screenTabType) },
       },
     })
   })
 
   describe('onFetch', () => {
     it('should add deployment annotation to tabs', async () => {
-      await filter.onFetch?.([screenType])
+      await filter.onFetch?.([screenType, screenTabType])
       expect(screenType.fields.tabs.annotations)
+        .toEqual({
+          [CORE_ANNOTATIONS.CREATABLE]: true,
+          [CORE_ANNOTATIONS.UPDATABLE]: true,
+        })
+
+      expect(screenTabType.fields.fields.annotations)
         .toEqual({
           [CORE_ANNOTATIONS.CREATABLE]: true,
           [CORE_ANNOTATIONS.UPDATABLE]: true,
@@ -84,6 +91,26 @@ describe('screenFilter', () => {
       )
       await filter.onFetch?.([instance])
       expect(instance.value.availableFields).toEqual(['id1', 'id2'])
+    })
+
+    it('should convert the tabs to a map', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        screenType,
+        {
+          tabs: [
+            { name: 'tab1' },
+            { name: 'tab2' },
+          ],
+        },
+      )
+      await filter.onFetch?.([instance])
+      expect(instance.value).toEqual({
+        tabs: {
+          tab1: { name: 'tab1', position: 0 },
+          tab2: { name: 'tab2', position: 1 },
+        },
+      })
     })
   })
 
@@ -141,19 +168,21 @@ describe('screenFilter', () => {
         'instance1',
         screenType,
         {
-          tabs: [
-            new ReferenceExpression(
-              screenTabType.elemID.createNestedID('instance', 'inst2'),
-              new InstanceElement('inst2', screenTabType, { id: 'id2' }),
-            ),
-            new ReferenceExpression(
-              screenTabType.elemID.createNestedID('instance', 'inst1'),
-              new InstanceElement('inst1', screenTabType, { id: 'id1' }),
-            ),
-          ],
+          id: 'screenId',
+          tabs: {
+            tab1: {
+              name: 'tab1',
+              id: 'id1',
+              position: 1,
+            },
+            tab2: {
+              name: 'tab2',
+              id: 'id2',
+              position: 0,
+            },
+          },
         }
       )
-      deployChangeMock.mockResolvedValue({ id: 'screenId' })
 
       const change = toChange({ after })
       await filter.deploy?.([change])
@@ -175,16 +204,17 @@ describe('screenFilter', () => {
         'instance1',
         screenType,
         {
-          tabs: [
-            new ReferenceExpression(
-              screenTabType.elemID.createNestedID('instance', 'inst1'),
-              new InstanceElement('inst1', screenTabType, { id: 'id1' }),
-            ),
-            new ReferenceExpression(
-              screenTabType.elemID.createNestedID('instance', 'inst2'),
-              new InstanceElement('inst2', screenTabType, { id: 'id2' }),
-            ),
-          ],
+          id: 'screenId',
+          tabs: {
+            tab1: {
+              name: 'tab1',
+              id: 'id1',
+            },
+            tab2: {
+              name: 'tab2',
+              id: 'id2',
+            },
+          },
         }
       )
 

@@ -827,11 +827,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
-      standaloneFields: [
-        {
-          fieldName: 'tabs',
-        },
-      ],
     },
     deployRequests: {
       add: {
@@ -884,15 +879,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       add: {
         url: '/rest/api/3/screens/{screenId}/tabs',
         method: 'post',
-        urlParamsToFields: {
-          screenId: '_parent.0.id',
-        },
       },
       modify: {
         url: '/rest/api/3/screens/{screenId}/tabs/{tabId}',
         method: 'put',
         urlParamsToFields: {
-          screenId: '_parent.0.id',
           tabId: 'id',
         },
       },
@@ -900,7 +891,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         url: '/rest/api/3/screens/{screenId}/tabs/{tabId}',
         method: 'delete',
         urlParamsToFields: {
-          screenId: '_parent.0.id',
           tabId: 'id',
         },
       },

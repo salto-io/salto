@@ -13,6 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { INITIAL_VALIDATOR } from '../../src/filters/workflow/workflow'
+
 export const WITH_POST_FUNCTIONS = {
   transitions: [
     {
@@ -147,6 +149,66 @@ export const WITH_VALIDATORS = {
           },
           {
             type: 'PreviousStatusValidator',
+          },
+        ],
+      },
+    },
+  ],
+}
+
+export const WITH_PERMISSION_VALIDATORS = {
+  transitions: [
+    {
+      type: 'initial',
+      rules: {
+        validators: [
+          INITIAL_VALIDATOR,
+          {
+            type: 'PreviousStatusValidator',
+            configuration: {
+              previousStatus: {
+                id: '1',
+                name: 'name',
+              },
+            },
+          },
+          INITIAL_VALIDATOR,
+          {
+            type: 'PermissionValidator',
+            configuration: {
+              permissionKey: 'OTHER',
+            },
+          },
+        ],
+      },
+    },
+  ],
+}
+
+export const WITH_SCRIPT_RUNNERS = {
+  transitions: [
+    {
+      rules: {
+        validators: [
+          {
+            type: 'com.onresolve.jira.groovy.groovyrunner__script-workflow-validators',
+          },
+          {
+            type: 'other',
+          },
+          {
+            val: 'val',
+          },
+        ],
+        postFunctions: [
+          {
+            type: 'com.onresolve.jira.groovy.groovyrunner__script-postfunction',
+          },
+          {
+            type: 'other',
+          },
+          {
+            val: 'val',
           },
         ],
       },

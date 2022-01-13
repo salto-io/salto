@@ -73,10 +73,12 @@ const postFunctionConfigurationSchema = Joi.object({
 }).unknown(true)
 
 export type Validator = {
+  type?: string
   configuration?: ValidatorConfiguration
 }
 
 const validatorSchema = Joi.object({
+  type: Joi.string().optional(),
   configuration: validatorConfigurationSchema.optional(),
 }).unknown(true)
 
@@ -138,8 +140,10 @@ const workflowSchema = Joi.object({
   statuses: Joi.array().items(statusSchema).optional(),
 }).unknown(true)
 
+export type WorkflowInstance = InstanceElement & { value: InstanceElement['value'] & Workflow }
+
 export const isWorkflowInstance = (instance: InstanceElement)
-: instance is InstanceElement & { value: InstanceElement['value'] & Workflow } => {
+: instance is WorkflowInstance => {
   const { error } = workflowSchema.validate(instance.value)
   if (error !== undefined) {
     log.warn(`Received an invalid workflow: ${error.message}`)

@@ -71,7 +71,7 @@ describe('checkDeploymentAnnotationsValidator', () => {
       elemID: instance.elemID,
       severity: 'Error',
       message: `The change of ${type.elemID.getFullName()} is not supported and will be omitted from deploy`,
-      detailedMessage: `Salto does not support "add" of ${instance.elemID.getFullName()}`,
+      detailedMessage: `"add" operation on ${instance.elemID.getFullName()} is not supported`,
     }])
   })
 
@@ -85,7 +85,7 @@ describe('checkDeploymentAnnotationsValidator', () => {
       elemID: instance.elemID,
       severity: 'Warning',
       message: `The change of ${type.fields.notUpdatableField.elemID.getFullName()} is not supported and will be omitted from deploy`,
-      detailedMessage: `Salto does not support "modify" of ${instance.elemID.createNestedID('notUpdatableField').getFullName()}`,
+      detailedMessage: `"modify" operation on ${instance.elemID.createNestedID('notUpdatableField').getFullName()} is not supported`,
     }])
   })
 
@@ -99,7 +99,7 @@ describe('checkDeploymentAnnotationsValidator', () => {
       elemID: instance.elemID,
       severity: 'Warning',
       message: `The change of ${type.fields.notUpdatableField.elemID.getFullName()} is not supported and will be omitted from deploy`,
-      detailedMessage: `Salto does not support "modify" of ${instance.elemID.createNestedID('inner', 'notUpdatableField').getFullName()}`,
+      detailedMessage: `"modify" operation on ${instance.elemID.createNestedID('inner', 'notUpdatableField').getFullName()} is not supported`,
     }])
   })
 

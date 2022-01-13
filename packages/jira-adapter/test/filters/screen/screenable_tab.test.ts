@@ -13,15 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType, toChange } from '@salto-io/adapter-api'
+import { AdditionChange, BuiltinTypes, ElemID, Field, InstanceElement, ListType, MapType, ModificationChange, ObjectType, toChange } from '@salto-io/adapter-api'
 import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { JIRA } from '../../../src/constants'
 import { mockClient } from '../../utils'
-import screenableTabFilter from '../../../src/filters/screen/screenable_tab'
-import { Filter } from '../../../src/filter'
 import JiraClient from '../../../src/client/client'
 import { DEFAULT_CONFIG } from '../../../src/config'
+import { deployTabs, transformTabValues } from '../../../src/filters/screen/screenable_tab'
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -34,21 +33,16 @@ jest.mock('@salto-io/adapter-components', () => {
   }
 })
 
-describe('screenableTabFilter', () => {
+describe('screenableTab', () => {
   let screenTabType: ObjectType
-  let filter: Filter
+  let screenType: ObjectType
   let mockConnection: MockInterface<clientUtils.APIConnection>
   let client: JiraClient
   beforeEach(async () => {
-    const { client: cli, paginator, connection } = mockClient()
+    const { client: cli, connection } = mockClient()
     client = cli
     mockConnection = connection
 
-    filter = screenableTabFilter({
-      client,
-      paginator,
-      config: DEFAULT_CONFIG,
-    })
     screenTabType = new ObjectType({
       elemID: new ElemID(JIRA, 'ScreenableTab'),
       fields: {
@@ -57,117 +51,183 @@ describe('screenableTabFilter', () => {
         },
       },
     })
-  })
 
-  describe('onFetch', () => {
-    it('should add deployment annotation to fields', async () => {
-      await filter.onFetch?.([screenTabType])
-      expect(screenTabType.fields.fields.annotations)
-        .toEqual({
-          [CORE_ANNOTATIONS.CREATABLE]: true,
-          [CORE_ANNOTATIONS.UPDATABLE]: true,
-        })
-    })
-
-    it('should convert the fields list to a list of ids', async () => {
-      const instance = new InstanceElement(
-        'instance',
-        screenTabType,
-        {
-          fields: [
-            { id: 'id1' },
-            { id: 'id2' },
-          ],
+    screenType = new ObjectType({
+      elemID: new ElemID(JIRA, 'Screen'),
+      fields: {
+        tabs: {
+          refType: new MapType(screenTabType),
         },
-      )
-      await filter.onFetch?.([instance])
-      expect(instance.value.fields).toEqual(['id1', 'id2'])
+      },
     })
   })
 
-  describe('deploy', () => {
+  describe('transformTabValues', () => {
+    it('should convert fields to ids', async () => {
+      expect(transformTabValues({
+        fields: [
+          {
+            id: '1',
+            name: 'name1',
+          },
+          {
+            id: '2',
+            name: 'name2',
+          },
+        ],
+        name: 'name',
+      })).toEqual({
+        fields: ['1', '2'],
+        name: 'name',
+      })
+    })
+  })
+
+  describe('deployTabs', () => {
     const deployChangeMock = deployment.deployChange as jest.MockedFunction<
       typeof deployment.deployChange
     >
-    it('should return irrelevant changes in leftoverChanges', async () => {
-      const res = await filter.deploy?.([
-        toChange({ after: screenTabType }),
-        toChange({ before: new InstanceElement('instance1', screenTabType) }),
-        toChange({
-          before: new InstanceElement('instance2', new ObjectType({ elemID: new ElemID(JIRA, 'someType') })),
-          after: new InstanceElement('instance2', new ObjectType({ elemID: new ElemID(JIRA, 'someType') })),
-        }),
-      ])
-      expect(res?.leftoverChanges).toHaveLength(3)
-      expect(res?.deployResult).toEqual({ appliedChanges: [], errors: [] })
+
+    beforeEach(() => {
+      deployChangeMock.mockClear()
+    })
+
+    it('if tabs is not a map should throw', async () => {
+      screenType.fields.tabs = new Field(screenType, 'tabs', BuiltinTypes.STRING)
+      const change = toChange({
+        after: new InstanceElement('instance', screenType),
+      }) as AdditionChange<InstanceElement>
+      await expect(deployTabs(change, client, DEFAULT_CONFIG)).rejects.toThrow()
+    })
+
+    it('if tabs inner type is not an object type should throw', async () => {
+      screenType.fields.tabs = new Field(screenType, 'tabs', new MapType(BuiltinTypes.STRING))
+      const change = toChange({
+        after: new InstanceElement('instance', screenType),
+      }) as AdditionChange<InstanceElement>
+      await expect(deployTabs(change, client, DEFAULT_CONFIG)).rejects.toThrow()
     })
 
     it('should call deployChange and ignore fields', async () => {
       const change = toChange({
-        before: new InstanceElement('instance2', screenTabType),
-        after: new InstanceElement('instance2', screenTabType, { name: 'name2' }),
-      })
-      await filter.deploy?.([change])
+        before: new InstanceElement('instance1', screenType),
+        after: new InstanceElement('instance1', screenType, {
+          name: 'name2',
+          id: 'screenId',
+          tabs: {
+            tab: {
+              name: 'tab',
+            },
+          },
+        }),
+      }) as ModificationChange<InstanceElement>
+      await deployTabs(change, client, DEFAULT_CONFIG)
 
       expect(deployChangeMock).toHaveBeenCalledWith(
-        change,
+        toChange({
+          after: new InstanceElement('tab', screenTabType, {
+            name: 'tab',
+          }),
+        }),
         client,
         DEFAULT_CONFIG.apiDefinitions.types.ScreenableTab.deployRequests,
-        ['fields'],
-        undefined
+        ['fields', 'position'],
+        { screenId: 'screenId' },
       )
     })
 
     it('should call deployChange and ignore fields and names of were not changed', async () => {
-      const change = toChange({
-        before: new InstanceElement('instance2', screenTabType),
-        after: new InstanceElement('instance2', screenTabType),
+      const instance = new InstanceElement('instance1', screenType, {
+        name: 'name2',
+        id: 'screenId',
+        tabs: {
+          tab: {
+            name: 'tab',
+          },
+        },
       })
-      await filter.deploy?.([change])
+      const change = toChange({
+        before: instance,
+        after: instance,
+      }) as ModificationChange<InstanceElement>
+      await deployTabs(change, client, DEFAULT_CONFIG)
 
       expect(deployChangeMock).toHaveBeenCalledWith(
-        change,
+        toChange({
+          before: new InstanceElement('tab', screenTabType, { name: 'tab' }),
+          after: new InstanceElement('tab', screenTabType, { name: 'tab' }),
+        }),
         client,
         DEFAULT_CONFIG.apiDefinitions.types.ScreenableTab.deployRequests,
-        ['fields', 'name'],
-        undefined
+        ['fields', 'position', 'name'],
+        { screenId: 'screenId' },
+      )
+    })
+
+    it('should remove  automatically created tabs tab on create', async () => {
+      const instance = new InstanceElement('instance1', screenType, {
+        name: 'name2',
+        id: 'screenId',
+      })
+
+      mockConnection.get.mockResolvedValue({
+        status: 200,
+        data: [
+          {
+            id: 'tabId',
+            name: 'fieldTab',
+          },
+        ],
+      })
+
+      const change = toChange({
+        after: instance,
+      }) as AdditionChange<InstanceElement>
+      await deployTabs(change, client, DEFAULT_CONFIG)
+
+      expect(deployChangeMock).toHaveBeenCalledWith(
+        toChange({
+          before: new InstanceElement('fieldTab', screenTabType, { name: 'fieldTab', id: 'tabId' }),
+        }),
+        client,
+        DEFAULT_CONFIG.apiDefinitions.types.ScreenableTab.deployRequests,
+        ['fields', 'position'],
+        { screenId: 'screenId' },
       )
     })
 
     describe('deploying fields', () => {
       beforeEach(async () => {
-        const before = new InstanceElement(
-          'instance1',
-          screenTabType,
-          {
-            id: 'tabId',
-            fields: [
-              'id1',
-              'id3',
-            ],
-          },
-          undefined,
-          {
-            [CORE_ANNOTATIONS.PARENT]: [{ id: 'screenId' }],
-          },
-        )
-        const after = new InstanceElement(
-          'instance1',
-          screenTabType,
-          {
-            id: 'tabId',
-            fields: [
-              'id2',
-              'id1',
-            ],
-          },
-          undefined,
-          {
-            [CORE_ANNOTATIONS.PARENT]: [{ id: 'screenId' }],
-          },
-        )
+        const change = toChange({
+          before: new InstanceElement('instance1', screenType, {
+            name: 'name2',
+            id: 'screenId',
+            tabs: {
+              tab: {
+                id: 'tabId',
+                fields: [
+                  'id1',
+                  'id3',
+                ],
+              },
+            },
+          }),
+          after: new InstanceElement('instance1', screenType, {
+            name: 'name2',
+            id: 'screenId',
+            tabs: {
+              tab: {
+                id: 'tabId',
+                fields: [
+                  'id2',
+                  'id1',
+                ],
+              },
+            },
+          }),
+        }) as ModificationChange<InstanceElement>
 
-        await filter.deploy?.([toChange({ before, after })])
+        await deployTabs(change, client, DEFAULT_CONFIG)
       })
       it('should call endpoints to add fields', async () => {
         expect(mockConnection.post).toHaveBeenCalledWith(
@@ -206,23 +266,24 @@ describe('screenableTabFilter', () => {
     })
 
     it('should not call re-order if fields were not changed', async () => {
-      const instance = new InstanceElement(
-        'instance1',
-        screenTabType,
-        {
-          id: 'tabId',
-          fields: [
-            'id1',
-            'id2',
-          ],
+      const instance = new InstanceElement('instance1', screenType, {
+        name: 'name2',
+        id: 'screenId',
+        tabs: {
+          tab: {
+            id: 'tabId',
+            fields: [
+              'id1',
+              'id2',
+            ],
+          },
         },
-        undefined,
-        {
-          [CORE_ANNOTATIONS.PARENT]: { value: { id: 'screenId' } },
-        },
+      })
+      await deployTabs(
+        toChange({ before: instance, after: instance }) as ModificationChange<InstanceElement>,
+        client,
+        DEFAULT_CONFIG
       )
-
-      await filter.deploy?.([toChange({ before: instance, after: instance })])
       expect(mockConnection.post).not.toHaveBeenCalled()
     })
   })

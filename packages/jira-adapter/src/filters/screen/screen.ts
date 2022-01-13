@@ -13,42 +13,39 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isModificationChange, ModificationChange, ReferenceExpression } from '@salto-io/adapter-api'
+import { AdditionChange, BuiltinTypes, CORE_ANNOTATIONS, Field, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isModificationChange, ListType, MapType, ModificationChange, Values } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
+import { naclCase } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { defaultDeployChange, deployChanges } from '../../deployment'
 import { FilterCreator } from '../../filter'
 import JiraClient from '../../client/client'
 import { JiraConfig } from '../../config'
-import { covertFields } from './fields'
-import { findObject, setDeploymentAnnotations } from '../../utils'
+import { deployTabs, SCREEN_TAB_TYPE_NAME, transformTabValues } from './screenable_tab'
+import { findObject } from '../../utils'
 
 const { awu } = collections.asynciterable
 
 const SCREEN_TYPE_NAME = 'Screen'
 
-const verifyTabsResolved = (
-  instance: InstanceElement
-): void => instance.value.tabs?.forEach((tab: ReferenceExpression, index: number) => {
-  if (tab.value === undefined) {
-    throw new Error(`Received unresolved reference in tab ${index} of ${instance.elemID.getFullName()}`)
-  }
-})
-
+const log = logger(module)
 
 const deployTabsOrder = async (
   change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
   client: JiraClient
 ): Promise<void> => {
-  verifyTabsResolved(change.data.after)
-  const tabsAfter = change.data.after.value.tabs
-    ?.map((tab: ReferenceExpression) => tab.value.value.id) ?? []
+  const tabsAfter = _(change.data.after.value.tabs)
+    .values()
+    .sortBy(tab => tab.position)
+    .map(tab => tab.id)
+    .value()
 
-  if (isModificationChange(change)) {
-    verifyTabsResolved(change.data.before)
-  }
   const tabsBefore = isModificationChange(change)
-    ? change.data.before.value.tabs?.map((tab: ReferenceExpression) => tab.value.value.id) ?? []
+    ? _(change.data.before.value.tabs)
+      .values()
+      .sortBy(tab => tab.position)
+      .map(tab => tab.id)
     : []
 
   if (tabsAfter.length <= 1 || _.isEqual(tabsAfter, tabsBefore)) {
@@ -85,18 +82,54 @@ const deployScreen = async (
       ? ['tabs', 'name']
       : ['tabs'],
   })
-
+  await deployTabs(change, client, config)
   await deployTabsOrder(change, client)
 }
 
 const filter: FilterCreator = ({ config, client }) => ({
   onFetch: async elements => {
     const screenType = findObject(elements, SCREEN_TYPE_NAME)
-    if (screenType !== undefined) {
-      setDeploymentAnnotations(screenType, 'tabs')
+    const screenTabType = findObject(elements, SCREEN_TAB_TYPE_NAME)
+
+    if (screenType === undefined || screenTabType === undefined) {
+      log.warn(`Could not find ${SCREEN_TYPE_NAME} or ${SCREEN_TAB_TYPE_NAME} type`)
+    } else {
+      screenType.fields.tabs = new Field(
+        screenType,
+        'tabs',
+        new MapType(screenTabType),
+        { [CORE_ANNOTATIONS.CREATABLE]: true, [CORE_ANNOTATIONS.UPDATABLE]: true }
+      )
+
+      screenType.fields.availableFields = new Field(
+        screenType,
+        'availableFields',
+        new ListType(BuiltinTypes.STRING),
+      )
+
+      screenTabType.fields.fields = new Field(
+        screenTabType,
+        'fields',
+        new ListType(BuiltinTypes.STRING),
+        { [CORE_ANNOTATIONS.CREATABLE]: true, [CORE_ANNOTATIONS.UPDATABLE]: true }
+      )
     }
 
-    covertFields(elements, SCREEN_TYPE_NAME, 'availableFields')
+    elements
+      .filter(isInstanceElement)
+      .filter(instance => instance.elemID.typeName === SCREEN_TYPE_NAME)
+      .forEach(element => {
+        element.value.availableFields = element.value.availableFields
+          && element.value.availableFields.map((field: Values) => field.id)
+
+        element.value.tabs = element.value.tabs
+          && _.keyBy(
+            element.value.tabs.map(
+              (tab: Values, position: number) => transformTabValues({ ...tab, position })
+            ),
+            tab => naclCase(tab.name),
+          )
+      })
   },
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(

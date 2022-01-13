@@ -18,12 +18,11 @@ import { collections, values as lowerdashValues, promises } from '@salto-io/lowe
 import {
   transformValues,
   TransformFunc,
-  logInstancesWithCollidingElemID,
-  getCollisionErrors,
-  MAX_BREAKDOWN_ELEMENTS,
+  getAndLogCollisionWarnings,
   getInstanceDesc,
   getInstancesDetailsMsg,
   createWarningFromMsg,
+  getInstancesWithCollidingElemID,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Element, Values, Field, InstanceElement, ReferenceExpression, SaltoError } from '@salto-io/adapter-api'
@@ -49,6 +48,7 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 const INTERNAL_ID_SEPARATOR = '$'
+const MAX_BREAKDOWN_ELEMENTS = 10
 
 const serializeInternalID = (typeName: string, id: string): string =>
   (`${typeName}${INTERNAL_ID_SEPARATOR}${id}`)
@@ -75,13 +75,14 @@ const createWarnings = async (
   dataManagement: DataManagement,
   baseUrl?: string,
 ): Promise<SaltoError[]> => {
-  const collisionWarnings = await getCollisionErrors({
+  const collisionWarnings = await getAndLogCollisionWarnings({
     adapterName: SALESFORCE,
     baseUrl,
     instances: instancesWithCollidingElemID,
     configurationName: 'data management',
     getIdFieldsByType: dataManagement.getObjectIdsFields,
     getTypeName: async instance => apiName(await instance.getType(), true),
+    idFieldsName: 'saltoIDSettings',
     getInstanceName: instance => apiName(instance),
   })
 
@@ -270,13 +271,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       internalToInstance,
       dataManagement,
     )
-    const instancesWithCollidingElemID = Object
-      .values(_.groupBy(
-        customObjectInstances,
-        instance => instance.elemID.getFullName(),
-      ))
-      .filter(instances => instances.length > 1)
-      .flat()
+    const instancesWithCollidingElemID = getInstancesWithCollidingElemID(customObjectInstances)
     const missingRefOriginInternalIDs = new Set(
       missingRefs
         .map(missingRef => serializeInternalID(missingRef.origin.type, missingRef.origin.id))
@@ -304,11 +299,6 @@ const filter: FilterCreator = ({ client, config }) => ({
     )
     const baseUrl = await client.getUrl()
     const customObjectPrefixKeyMap = await buildCustomObjectPrefixKeyMap(elements)
-
-    await logInstancesWithCollidingElemID(
-      instancesWithCollidingElemID,
-      async instance => apiName(await instance.getType(), true),
-    )
     return {
       errors: await createWarnings(
         instancesWithCollidingElemID,

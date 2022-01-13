@@ -132,8 +132,8 @@ export default class ZendeskAdapter implements AdapterOperations {
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
-    const { errors } = await (await this.createFiltersRunner()).onFetch(elements) as FilterResult
-    return { elements, errors }
+    const result = await (await this.createFiltersRunner()).onFetch(elements) as FilterResult
+    return { elements, errors: result ? result.errors : [] }
   }
 
   /**

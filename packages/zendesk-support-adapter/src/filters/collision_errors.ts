@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { isInstanceElement, Element } from '@salto-io/adapter-api'
 import { config as configUtils } from '@salto-io/adapter-components'
-import { getCollisionErrors, logInstancesWithCollidingElemID } from '@salto-io/adapter-utils'
+import { getAndLogCollisionWarnings, getInstancesWithCollidingElemID } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { ZENDESK_SUPPORT } from '../constants'
 import { API_DEFINITIONS_CONFIG } from '../config'
@@ -26,21 +26,10 @@ import { API_DEFINITIONS_CONFIG } from '../config'
  */
 const filterCreator: FilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]) => {
-    const instancesWithCollidingElemID = Object
-      .values(_.groupBy(
-        elements.filter(isInstanceElement),
-        instance => instance.elemID.getFullName(),
-      ))
-      .filter(instances => instances.length > 1)
-      .flat()
-    await logInstancesWithCollidingElemID(
-      instancesWithCollidingElemID,
-      async instance => instance.elemID.typeName,
-    )
-    const collistionWarnings = await getCollisionErrors({
+    const collistionWarnings = await getAndLogCollisionWarnings({
       adapterName: ZENDESK_SUPPORT,
       configurationName: 'service',
-      instances: instancesWithCollidingElemID,
+      instances: getInstancesWithCollidingElemID(elements.filter(isInstanceElement)),
       getTypeName: async instance => instance.elemID.typeName,
       // TODO fix it to use apiName once we have apiName
       getInstanceName: async instance => instance.elemID.name,
@@ -48,6 +37,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
         config[API_DEFINITIONS_CONFIG].types[typeName]?.transformation,
         config[API_DEFINITIONS_CONFIG].typeDefaults.transformation,
       ).idFields,
+      idFieldsName: 'idFields',
     })
     return { errors: collistionWarnings }
   },

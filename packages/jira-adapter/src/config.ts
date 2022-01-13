@@ -395,11 +395,15 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'columns', fieldType: 'list<ColumnItem>' },
+        { fieldName: 'expand', fieldType: 'string' },
       ],
       fieldsToHide: [
         {
           fieldName: 'id',
         },
+      ],
+      fieldsToOmit: [
+        { fieldName: 'expand' },
       ],
     },
     deployRequests: {

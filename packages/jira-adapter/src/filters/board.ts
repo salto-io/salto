@@ -13,21 +13,76 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isInstanceElement } from '@salto-io/adapter-api'
+import { Change, CORE_ANNOTATIONS, Element, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
+import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
+import { findObject } from '../utils'
 import { FilterCreator } from '../filter'
+
+const { awu } = collections.asynciterable
+
+const BOARD_TYPE_NAME = 'Board'
+const BOARD_LOCATION_TYPE = 'project'
+
+const log = logger(module)
 
 /**
  * Change Board type structure to fit the deployment endpoint
  */
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
+    const boardLocationType = findObject(elements, 'Board_location')
+    if (boardLocationType === undefined) {
+      log.warn(`${BOARD_TYPE_NAME} type not found`)
+    } else {
+      boardLocationType.fields.projectId.annotations[CORE_ANNOTATIONS.CREATABLE] = true
+    }
+
     elements
       .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === 'Board')
+      .filter(instance => instance.elemID.typeName === BOARD_TYPE_NAME)
       .forEach(instance => {
         instance.value.filterId = instance.value.config?.filter?.id
         delete instance.value.config?.filter
       })
+  },
+
+  preDeploy: async changes => {
+    await awu(changes)
+      .filter(isAdditionOrModificationChange)
+      .filter(isInstanceChange)
+      .filter(change => getChangeData(change).elemID.typeName === BOARD_TYPE_NAME)
+      .forEach(change => applyFunctionToChangeData<Change<InstanceElement>>(
+        change,
+        instance => {
+          if (instance.value.location?.projectId !== undefined) {
+            instance.value.location.projectKeyOrId = instance.value.location.projectId
+            instance.value.location.type = BOARD_LOCATION_TYPE
+            delete instance.value.location.projectId
+          }
+
+          return instance
+        }
+      ))
+  },
+
+  onDeploy: async changes => {
+    await awu(changes)
+      .filter(isAdditionOrModificationChange)
+      .filter(isInstanceChange)
+      .filter(change => getChangeData(change).elemID.typeName === BOARD_TYPE_NAME)
+      .forEach(change => applyFunctionToChangeData<Change<InstanceElement>>(
+        change,
+        instance => {
+          if (instance.value.location?.projectKeyOrId !== undefined) {
+            instance.value.location.projectId = instance.value.location.projectKeyOrId
+            delete instance.value.location.projectKeyOrId
+            delete instance.value.location.type
+          }
+          return instance
+        }
+      ))
   },
 })
 

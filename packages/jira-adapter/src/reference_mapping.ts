@@ -90,7 +90,6 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     serializationStrategy: 'id',
     target: { type: 'Field' },
   },
-
   {
     src: { field: 'date1', parentTypes: ['ValidatorConfiguration'] },
     serializationStrategy: 'id',
@@ -180,6 +179,16 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     src: { field: 'id', parentTypes: ['FieldConfigurationItem'] },
     serializationStrategy: 'id',
     target: { type: 'Field' },
+  },
+  {
+    src: { field: 'projectId', parentTypes: ['Board_location'] },
+    serializationStrategy: 'id',
+    target: { type: 'Project' },
+  },
+  {
+    src: { field: 'projectKeyOrId', parentTypes: ['Board_location'] },
+    serializationStrategy: 'id',
+    target: { type: 'Project' },
   },
 ]
 

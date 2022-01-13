@@ -15,11 +15,10 @@
 */
 import _ from 'lodash'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ListType } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, ObjectType } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { JIRA } from './constants'
 
-const { createClientConfigType } = clientUtils
 const { createUserFetchConfigType, createSwaggerAdapterApiConfigType } = configUtils
 
 const DEFAULT_ID_FIELDS = ['name']
@@ -28,6 +27,9 @@ const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
 ]
 
 type JiraClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
+  & {
+    fieldConfigurationItemsDeploymentLimit: number
+  }
 
 type JiraFetchConfig = configUtils.UserFetchConfig
 type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'> & {
@@ -159,11 +161,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
   Field: {
     transformation: {
-      // fieldsToHide: [
-      //   {
-      //     fieldName: 'id',
-      //   },
-      // ],
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
       idFields: ['id'],
       fieldTypeOverrides: [
         { fieldName: 'contexts', fieldType: 'list<CustomFieldContext>' },
@@ -1417,7 +1419,7 @@ export const DEFAULT_INCLUDE_ENDPOINTS: string[] = [
 ]
 
 export type JiraConfig = {
-  client?: JiraClientConfig
+  client: JiraClientConfig
   fetch: JiraFetchConfig
   apiDefinitions: JiraApiConfig
 }
@@ -1447,21 +1449,33 @@ const apiDefinitionsType = createMatchingObjectType<Partial<JiraApiConfig>>({
 })
 
 export const DEFAULT_CONFIG: JiraConfig = {
+  client: {
+  // Jira does not allow more items in a single request than this
+    fieldConfigurationItemsDeploymentLimit: 100,
+  },
   fetch: {
     includeTypes: DEFAULT_INCLUDE_ENDPOINTS,
   },
   apiDefinitions: DEFAULT_API_DEFINITIONS,
 }
 
+const createClientConfigType = (): ObjectType => {
+  const configType = clientUtils.createClientConfigType(JIRA)
+  configType.fields.FieldConfigurationItemsDeploymentLimit = new Field(
+    configType, 'FieldConfigurationItemsDeploymentLimit', BuiltinTypes.NUMBER
+  )
+  return configType
+}
+
 export const configType = createMatchingObjectType<Partial<JiraConfig>>({
   elemID: new ElemID(JIRA),
   fields: {
-    client: { refType: createClientConfigType(JIRA) },
+    client: { refType: createClientConfigType() },
     fetch: { refType: createUserFetchConfigType(JIRA) },
     apiDefinitions: { refType: apiDefinitionsType },
   },
   annotations: {
-    [CORE_ANNOTATIONS.DEFAULT]: _.omit(DEFAULT_CONFIG, 'apiDefinitions'),
+    [CORE_ANNOTATIONS.DEFAULT]: _.omit(DEFAULT_CONFIG, ['apiDefinitions', 'client']),
   },
 })
 
@@ -1475,5 +1489,3 @@ export const getApiDefinitions = (config: JiraApiConfig): {
     jira: { ...baseConfig, swagger: config.jiraSwagger },
   }
 }
-
-export type FilterContext = Pick<JiraConfig, 'fetch' | 'apiDefinitions'>

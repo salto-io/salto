@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isModificationChange, isObjectType, ModificationChange, ReferenceExpression } from '@salto-io/adapter-api'
+import { AdditionChange, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isModificationChange, ModificationChange, ReferenceExpression } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { defaultDeployChange, deployChanges } from '../../deployment'
@@ -21,6 +21,7 @@ import { FilterCreator } from '../../filter'
 import JiraClient from '../../client/client'
 import { JiraConfig } from '../../config'
 import { covertFields } from './fields'
+import { findObject, setDeploymentAnnotations } from '../../utils'
 
 const { awu } = collections.asynciterable
 
@@ -90,14 +91,9 @@ const deployScreen = async (
 
 const filter: FilterCreator = ({ config, client }) => ({
   onFetch: async elements => {
-    const screenType = elements
-      .filter(isObjectType)
-      .find(
-        type => type.elemID.name === SCREEN_TYPE_NAME
-      )
+    const screenType = findObject(elements, SCREEN_TYPE_NAME)
     if (screenType !== undefined) {
-      screenType.fields.tabs.annotations[CORE_ANNOTATIONS.CREATABLE] = true
-      screenType.fields.tabs.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
+      setDeploymentAnnotations(screenType, 'tabs')
     }
 
     covertFields(elements, SCREEN_TYPE_NAME, 'availableFields')

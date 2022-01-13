@@ -13,12 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { filterUtils } from '@salto-io/adapter-components'
-import JiraClient from './client/client'
-import { JiraConfig } from './config'
+import { CORE_ANNOTATIONS, ObjectType, Element, isObjectType } from '@salto-io/adapter-api'
 
-export const { filtersRunner } = filterUtils
+export const setDeploymentAnnotations = (contextType: ObjectType, fieldName: string): void => {
+  if (contextType.fields[fieldName] !== undefined) {
+    contextType.fields[fieldName].annotations[CORE_ANNOTATIONS.CREATABLE] = true
+    contextType.fields[fieldName].annotations[CORE_ANNOTATIONS.UPDATABLE] = true
+  }
+}
 
-export type Filter = filterUtils.Filter
-
-export type FilterCreator = filterUtils.FilterCreator<JiraClient, JiraConfig>
+export const findObject = (elements: Element[], name: string): ObjectType | undefined =>
+  elements.filter(isObjectType).find(
+    element => element.elemID.name === name
+  )

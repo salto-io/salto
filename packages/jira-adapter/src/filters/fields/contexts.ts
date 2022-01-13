@@ -24,7 +24,7 @@ import JiraClient from '../../client/client'
 import { setContextOptions, setOptionTypeDeploymentAnnotations } from './context_options'
 import { setDefaultValueTypeDeploymentAnnotations } from './default_values'
 import { setContextField } from './issues_and_projects'
-import { setDeploymentAnnotations } from './utils'
+import { setDeploymentAnnotations } from '../../utils'
 
 const { awu } = collections.asynciterable
 

@@ -19,7 +19,7 @@ import { ObjectType, InstanceElement, AccountId, ReadOnlyElementsSource, Adapter
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
 import JiraAdapter from '../src/adapter'
-import { JiraConfig, DEFAULT_API_DEFINITIONS, DEFAULT_INCLUDE_ENDPOINTS } from '../src/config'
+import { JiraConfig, DEFAULT_CONFIG } from '../src/config'
 import { createCredentialsInstance, createConfigInstance } from './utils'
 
 describe('adapter creator', () => {
@@ -74,10 +74,6 @@ describe('adapter creator', () => {
   describe('create adapter', () => {
     let elementsSource: ReadOnlyElementsSource
     let credentialsInstance: InstanceElement
-    const defaultConfig: JiraConfig = {
-      apiDefinitions: DEFAULT_API_DEFINITIONS,
-      fetch: { includeTypes: DEFAULT_INCLUDE_ENDPOINTS },
-    }
     beforeEach(() => {
       elementsSource = buildElementsSourceFromElements([])
       credentialsInstance = createCredentialsInstance({ baseUrl: 'url', user: 'u', token: 't' })
@@ -86,7 +82,7 @@ describe('adapter creator', () => {
       let result: AdapterOperations
       beforeEach(() => {
         const configWithExtraValue = {
-          ...defaultConfig,
+          ...DEFAULT_CONFIG,
           extraValue: true,
         }
         result = adapter.operations({
@@ -114,7 +110,7 @@ describe('adapter creator', () => {
           elementsSource,
           credentials: credentialsInstance,
           config: createConfigInstance({
-            ...defaultConfig,
+            ...DEFAULT_CONFIG,
             fetch: undefined,
           } as unknown as JiraConfig),
         })).toThrow()
@@ -127,7 +123,7 @@ describe('adapter creator', () => {
           elementsSource,
           credentials: credentialsInstance,
           config: createConfigInstance({
-            ...defaultConfig,
+            ...DEFAULT_CONFIG,
             apiDefinitions: { typeDefaults: 2 },
           } as unknown as JiraConfig),
         })).toThrow()

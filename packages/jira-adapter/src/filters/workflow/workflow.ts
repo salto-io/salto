@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Element, Field, isInstanceElement, isObjectType, ListType, MapType } from '@salto-io/adapter-api'
+import { BuiltinTypes, Element, Field, isInstanceElement, ListType, MapType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
+import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { postFunctionType, types as postFunctionTypes } from './post_functions_types'
 import { isWorkflowInstance, Rules, Status, Validator, Workflow } from './types'
@@ -123,20 +124,19 @@ const transformWorkflowInstance = (workflowValues: Workflow): void => {
 // This filter transforms the workflow values structure so it will fit its deployment endpoint
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
-    const types = elements.filter(isObjectType)
-    const workflowType = types.find(element => element.elemID.name === WORKFLOW_TYPE_NAME)
+    const workflowType = findObject(elements, WORKFLOW_TYPE_NAME)
     if (workflowType !== undefined) {
       delete workflowType.fields.id
     }
 
-    const workflowStatusType = types.find(element => element.elemID.name === 'WorkflowStatus')
+    const workflowStatusType = findObject(elements, 'WorkflowStatus')
     if (workflowStatusType === undefined) {
       log.warn('WorkflowStatus type was not received in fetch')
     } else {
       workflowStatusType.fields.properties = new Field(workflowStatusType, 'properties', new MapType(BuiltinTypes.STRING))
     }
 
-    const workflowRulesType = types.find(element => element.elemID.name === 'WorkflowRules')
+    const workflowRulesType = findObject(elements, 'WorkflowRules')
 
     if (workflowRulesType === undefined) {
       log.warn('WorkflowRules type was not received in fetch')

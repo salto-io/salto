@@ -13,24 +13,24 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, CORE_ANNOTATIONS, getChangeData, InstanceElement, isInstanceChange, isObjectType, isReferenceExpression, isRemovalChange, Values } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isInstanceChange, isObjectType, isReferenceExpression, isRemovalChange, Values } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { defaultDeployChange, deployChanges } from '../deployment'
 import { FilterCreator } from '../filter'
+import { setDeploymentAnnotations } from '../utils'
+import { JiraConfig } from '../config'
 
 const FIELD_CONFIGURATION_TYPE_NAME = 'FieldConfiguration'
 const FIELD_CONFIGURATION_ITEM_TYPE_NAME = 'FieldConfigurationItem'
 
 const log = logger(module)
 
-// Jira does not allow more items in a single request than this
-const MAX_ITEMS_IN_REQUEST = 100
-
 const deployFieldConfigurationItems = async (
   change: Change<InstanceElement>,
   client: clientUtils.HTTPWriteClientInterface,
+  config: JiraConfig
 ): Promise<void> => {
   const instance = getChangeData(change)
   const fields = (instance.value.fields ?? [])
@@ -43,7 +43,7 @@ const deployFieldConfigurationItems = async (
   }
 
   await Promise.all(
-    _.chunk(fields, MAX_ITEMS_IN_REQUEST).map(async fieldsChunk =>
+    _.chunk(fields, config.client.fieldConfigurationItemsDeploymentLimit).map(async fieldsChunk =>
       client.put({
         url: `/rest/api/3/fieldconfiguration/${instance.value.id}/fields`,
         data: {
@@ -63,8 +63,7 @@ const filter: FilterCreator = ({ config, client }) => ({
     if (fieldConfigurationType === undefined) {
       log.warn(`${FIELD_CONFIGURATION_TYPE_NAME} type not found`)
     } else {
-      fieldConfigurationType.fields.fields.annotations[CORE_ANNOTATIONS.CREATABLE] = true
-      fieldConfigurationType.fields.fields.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
+      setDeploymentAnnotations(fieldConfigurationType, 'fields')
     }
 
     const fieldConfigurationItemType = types
@@ -74,8 +73,7 @@ const filter: FilterCreator = ({ config, client }) => ({
       log.warn(`${FIELD_CONFIGURATION_ITEM_TYPE_NAME} type not found`)
     } else {
       ['id', 'description', 'isHidden', 'isRequired', 'renderer'].forEach(fieldName => {
-        fieldConfigurationItemType.fields[fieldName].annotations[CORE_ANNOTATIONS.CREATABLE] = true
-        fieldConfigurationItemType.fields[fieldName].annotations[CORE_ANNOTATIONS.UPDATABLE] = true
+        setDeploymentAnnotations(fieldConfigurationItemType, fieldName)
       })
     }
   },
@@ -98,7 +96,7 @@ const filter: FilterCreator = ({ config, client }) => ({
           apiDefinitions: config.apiDefinitions,
           fieldsToIgnore: ['fields'],
         })
-        await deployFieldConfigurationItems(change, client)
+        await deployFieldConfigurationItems(change, client, config)
       }
     )
 

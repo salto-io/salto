@@ -17,7 +17,8 @@ import { BuiltinTypes, Element, Field, InstanceElement, isInstanceElement, ListT
 import { naclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
-import { FIELD_TYPE_NAME, findObject } from './utils'
+import { findObject } from '../../utils'
+import { FIELD_TYPE_NAME } from './constants'
 
 
 const addTypeValue = (instance: InstanceElement): void => {

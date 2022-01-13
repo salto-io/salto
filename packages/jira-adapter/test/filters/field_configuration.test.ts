@@ -18,7 +18,7 @@ import { filterUtils, client as clientUtils, deployment } from '@salto-io/adapte
 import { resolveChangeElement } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
-import { getLookUpName } from '../../src/references'
+import { getLookUpName } from '../../src/reference_mapping'
 import JiraClient from '../../src/client/client'
 import { DEFAULT_CONFIG } from '../../src/config'
 import { JIRA } from '../../src/constants'

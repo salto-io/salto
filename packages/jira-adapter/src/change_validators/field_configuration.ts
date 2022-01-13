@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { ChangeValidator, compareSpecialValues, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isReferenceExpression, ModificationChange, SaltoErrorSeverity, Values } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
-import _ from 'lodash'
 
 const getFieldId = (field: Values): string => (
   isReferenceExpression(field.id) ? field.id.value.value.id : field.id
@@ -53,12 +53,15 @@ export const unsupportedFieldConfigurationsValidator: ChangeValidator = async ch
         .map(getFieldId)
 
       const { elemID } = getChangeData(change)
-      return unsupportedIds.length !== 0 ? {
-        elemID,
-        severity: 'Warning' as SaltoErrorSeverity,
-        message: `Salto can't deploy fields configuration of ${elemID.getFullName()} because they are either locked or team-managed`,
-        detailedMessage: `Salto can't deploy the configuration of fields: ${unsupportedIds.join(', ')}. If continuing, they will be omitted from the deployment`,
-      } : undefined
+      if (unsupportedIds.length !== 0) {
+        return {
+          elemID,
+          severity: 'Warning' as SaltoErrorSeverity,
+          message: `Salto can't deploy fields configuration of ${elemID.getFullName()} because they are either locked or team-managed`,
+          detailedMessage: `Salto can't deploy the configuration of fields: ${unsupportedIds.join(', ')}. If continuing, they will be omitted from the deployment`,
+        }
+      }
+      return undefined
     })
     .filter(values.isDefined)
 )

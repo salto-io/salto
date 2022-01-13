@@ -18,7 +18,8 @@ import { GetLookupNameFunc, naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
-import { FIELD_TYPE_NAME, findObject } from './utils'
+import { findObject } from '../../utils'
+import { FIELD_TYPE_NAME } from './constants'
 
 const log = logger(module)
 

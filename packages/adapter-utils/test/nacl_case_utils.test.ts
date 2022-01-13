@@ -80,19 +80,18 @@ describe('naclCase utils', () => {
 
     describe('When two strings have special chars', () => {
       const numberOfRandomChecks = 100
-      it('Should have different values after naclCase if diff chars and same if same', () => {
+      it('Should have different values after naclCase if diff chars', () => {
         expect(naclCase('Name Special Char')).not.toEqual(naclCase('Name Special_Char'))
         expect(naclCase('Name_Special__Char')).not.toEqual(naclCase('Name_Special_Char'))
         _.times(numberOfRandomChecks, () => {
           const charA = generateRandomChar()
           const charB = generateRandomChar()
+          if (charA === charB) {
+            return
+          }
           const nameWithCharA = `Name${charA}Special${charA}Char`
           const nameWithCharB = `Name${charB}Special${charB}Char`
-          if (charA === charB) {
-            expect(naclCase(nameWithCharA)).toEqual(nameWithCharB)
-          } else {
-            expect(naclCase(nameWithCharA)).not.toEqual(nameWithCharB)
-          }
+          expect(naclCase(nameWithCharA)).not.toEqual(naclCase(nameWithCharB))
         })
       })
     })

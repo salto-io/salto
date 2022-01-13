@@ -18,7 +18,9 @@ import { Paginator } from './client'
 
 export type Filter<TResult extends void | filter.FilterResult = void> = filter.Filter<TResult>
 
-export type FilterWith<M extends keyof Filter> = filter.FilterWith<void, M>
+export type FilterWith<
+  M extends keyof Filter, TResult extends void | filter.FilterResult = void
+> = filter.FilterWith<TResult, M>
 
 export type FilterOpts<TClient, TContext> = {
   client: TClient

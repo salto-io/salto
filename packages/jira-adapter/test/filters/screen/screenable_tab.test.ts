@@ -20,7 +20,7 @@ import { JIRA } from '../../../src/constants'
 import { mockClient } from '../../utils'
 import JiraClient from '../../../src/client/client'
 import { DEFAULT_CONFIG } from '../../../src/config'
-import { deployTabs, transformTabValues } from '../../../src/filters/screen/screenable_tab'
+import { deployTabs } from '../../../src/filters/screen/screenable_tab'
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -59,27 +59,6 @@ describe('screenableTab', () => {
           refType: new MapType(screenTabType),
         },
       },
-    })
-  })
-
-  describe('transformTabValues', () => {
-    it('should convert fields to ids', async () => {
-      expect(transformTabValues({
-        fields: [
-          {
-            id: '1',
-            name: 'name1',
-          },
-          {
-            id: '2',
-            name: 'name2',
-          },
-        ],
-        name: 'name',
-      })).toEqual({
-        fields: ['1', '2'],
-        name: 'name',
-      })
     })
   })
 

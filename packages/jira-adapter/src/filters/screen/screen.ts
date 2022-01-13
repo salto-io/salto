@@ -22,7 +22,7 @@ import { defaultDeployChange, deployChanges } from '../../deployment'
 import { FilterCreator } from '../../filter'
 import JiraClient from '../../client/client'
 import { JiraConfig } from '../../config'
-import { deployTabs, SCREEN_TAB_TYPE_NAME, transformTabValues } from './screenable_tab'
+import { deployTabs, SCREEN_TAB_TYPE_NAME } from './screenable_tab'
 import { findObject } from '../../utils'
 
 const { awu } = collections.asynciterable
@@ -125,7 +125,11 @@ const filter: FilterCreator = ({ config, client }) => ({
         element.value.tabs = element.value.tabs
           && _.keyBy(
             element.value.tabs.map(
-              (tab: Values, position: number) => transformTabValues({ ...tab, position })
+              (tab: Values, position: number) => ({
+                ...tab,
+                fields: tab.fields && tab.fields.map((field: Values) => field.id),
+                position,
+              })
             ),
             tab => naclCase(tab.name),
           )

@@ -52,7 +52,7 @@ const deployTabFieldsRemoval = async (
   })))
 }
 
-const deployTabFieldsAdditionalAndOrder = async (
+const deployTabFieldsAdditionsAndOrder = async (
   change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
   client: JiraClient,
   parentScreenId: string,
@@ -125,11 +125,6 @@ const deployScreenTab = async (
   })
 }
 
-export const transformTabValues = (tab: Values): Values => ({
-  ...tab,
-  fields: tab.fields && tab.fields.map((field: Values) => field.id),
-})
-
 const createTabInstance = (tabValues: Values, tabType: ObjectType): InstanceElement =>
   new InstanceElement(naclCase(tabValues.name), tabType, tabValues)
 
@@ -184,6 +179,8 @@ const getTabsFromService = async (
   client: JiraClient
 ): Promise<InstanceElement[]> => {
   const instance = getChangeData(change)
+  // At this point because we call this right after the field is created,
+  // there is only one tab so no need to paginate here
   const resp = await client.getSinglePage({ url: `/rest/api/3/screens/${instance.value.id}/tabs` })
   if (!Array.isArray(resp.data) || !resp.data.every(_.isPlainObject)) {
     log.warn(`Received unexpected response from Jira when querying tabs for instance ${instance.elemID.getFullName()}: ${safeJsonStringify(resp.data)}`)
@@ -219,7 +216,7 @@ export const deployTabs = async (
     config
   ))
 
-  // We first remove the fields from all the tabs because two tabs can't have to same field,
+  // We first remove the fields from all the tabs because two tabs can't have the same field,
   // so if we will try to add a field before we removed it from other tab we will get an error
   await Promise.all(tabChanges
     .filter(isAdditionOrModificationChange)
@@ -227,5 +224,5 @@ export const deployTabs = async (
 
   await Promise.all(tabChanges
     .filter(isAdditionOrModificationChange)
-    .map(tabChange => deployTabFieldsAdditionalAndOrder(tabChange, client, screenId)))
+    .map(tabChange => deployTabFieldsAdditionsAndOrder(tabChange, client, screenId)))
 }

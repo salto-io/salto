@@ -44,8 +44,8 @@ describe('workflowValidator', () => {
       {
         elemID: instance.elemID,
         severity: 'Warning',
-        message: `Salto does not support deploying script-runner configuration in the instance ${instance.elemID.getFullName()}`,
-        detailedMessage: 'Salto does not support deploying script-runner (com.onresolve.jira.groovy.groovyrunner) configuration. If continuing, they will be omitted from the deployment',
+        message: `Deploying script-runner configuration in the instance ${instance.elemID.getFullName()} is not supported.`,
+        detailedMessage: 'Deploying script-runner (com.onresolve.jira.groovy.groovyrunner) configuration is not supported. If continuing, they will be omitted from the deployment',
       },
     ])
   })
@@ -69,8 +69,8 @@ describe('workflowValidator', () => {
       {
         elemID: instance.elemID,
         severity: 'Warning',
-        message: `Salto does not support deploying script-runner configuration in the instance ${instance.elemID.getFullName()}`,
-        detailedMessage: 'Salto does not support deploying script-runner (com.onresolve.jira.groovy.groovyrunner) configuration. If continuing, they will be omitted from the deployment',
+        message: `Deploying script-runner configuration in the instance ${instance.elemID.getFullName()} is not supported.`,
+        detailedMessage: 'Deploying script-runner (com.onresolve.jira.groovy.groovyrunner) configuration is not supported. If continuing, they will be omitted from the deployment',
       },
     ])
   })

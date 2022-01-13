@@ -13,6 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { INITIAL_VALIDATOR } from '../../src/filters/workflow/workflow'
+
 export const WITH_POST_FUNCTIONS = {
   transitions: [
     {
@@ -160,12 +162,7 @@ export const WITH_PERMISSION_VALIDATORS = {
       type: 'initial',
       rules: {
         validators: [
-          {
-            type: 'PermissionValidator',
-            configuration: {
-              permissionKey: 'CREATE_ISSUES',
-            },
-          },
+          INITIAL_VALIDATOR,
           {
             type: 'PreviousStatusValidator',
             configuration: {
@@ -175,12 +172,7 @@ export const WITH_PERMISSION_VALIDATORS = {
               },
             },
           },
-          {
-            type: 'PermissionValidator',
-            configuration: {
-              permissionKey: 'CREATE_ISSUES',
-            },
-          },
+          INITIAL_VALIDATOR,
           {
             type: 'PermissionValidator',
             configuration: {

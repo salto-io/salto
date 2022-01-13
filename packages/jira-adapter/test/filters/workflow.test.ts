@@ -18,7 +18,7 @@ import { deployment, filterUtils } from '@salto-io/adapter-components'
 import JiraClient from '../../src/client/client'
 import { DEFAULT_CONFIG } from '../../src/config'
 import { JIRA } from '../../src/constants'
-import workflowFilter from '../../src/filters/workflow/workflow'
+import workflowFilter, { INITIAL_VALIDATOR } from '../../src/filters/workflow/workflow'
 import { mockClient } from '../utils'
 import { EXPECTED_POST_FUNCTIONS, WITH_PERMISSION_VALIDATORS, WITH_POST_FUNCTIONS, WITH_SCRIPT_RUNNERS, WITH_UNSUPPORTED_POST_FUNCTIONS, WITH_VALIDATORS } from './workflow_values'
 
@@ -424,12 +424,7 @@ describe('workflowFilter', () => {
                   type: 'initial',
                   rules: {
                     validators: [
-                      {
-                        type: 'PermissionValidator',
-                        configuration: {
-                          permissionKey: 'CREATE_ISSUES',
-                        },
-                      },
+                      INITIAL_VALIDATOR,
                       {
                         type: 'PreviousStatusValidator',
                         configuration: {

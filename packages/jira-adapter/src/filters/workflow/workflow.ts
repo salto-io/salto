@@ -38,7 +38,7 @@ export const UNDEPLOYALBE_POST_FUNCTION_TYPES = [
 ]
 
 // Taken from https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-workflows/#api-rest-api-3-workflow-post
-const FETCHED_POST_FUNCTIONS_TYPES = [
+const FETCHED_POST_FUNCTION_TYPES = [
   'FireIssueEventFunction',
   'AssignToCurrentUserFunction',
   'AssignToLeadFunction',
@@ -57,8 +57,15 @@ const FETCHED_ONLY_INITIAL_POST_FUNCTION = [
   'UpdateIssueStatusFunction',
   'CreateCommentFunction',
   'IssueStoreFunction',
-  ...FETCHED_POST_FUNCTIONS_TYPES,
+  ...FETCHED_POST_FUNCTION_TYPES,
 ]
+
+export const INITIAL_VALIDATOR = {
+  type: 'PermissionValidator',
+  configuration: {
+    permissionKey: 'CREATE_ISSUES',
+  },
+}
 
 
 const WORKFLOW_TYPE_NAME = 'Workflow'
@@ -88,7 +95,7 @@ const transformPostFunctions = (rules: Rules, transitionType?: string): void => 
     rules.postFunctions = rules.postFunctions?.filter(
       postFunction => (transitionType === 'initial'
         ? FETCHED_ONLY_INITIAL_POST_FUNCTION.includes(postFunction.type ?? '')
-        : FETCHED_POST_FUNCTIONS_TYPES.includes(postFunction.type ?? '')),
+        : FETCHED_POST_FUNCTION_TYPES.includes(postFunction.type ?? '')),
     )
 }
 
@@ -140,7 +147,7 @@ const transformWorkflowInstance = (workflowValues: Workflow): void => {
  * When creating a workflow, the initial transition is always created
  * with an extra PermissionValidator with CREATE_ISSUES permission key.
  * Currently the API does not allow us to remove it but we can at least make sure to
- * not create an additional one if one validator like that is already appears in the nacl.
+ * not create an additional one if one validator like that already appears in the nacl.
  */
 const removeCreateIssuePermissionValidator = (instance: WorkflowInstance): void => {
   instance.value.transitions
@@ -150,18 +157,13 @@ const removeCreateIssuePermissionValidator = (instance: WorkflowInstance): void 
         transition.rules?.validators ?? [],
         validator => _.isEqual(
           validator,
-          {
-            type: 'PermissionValidator',
-            configuration: {
-              permissionKey: 'CREATE_ISSUES',
-            },
-          },
+          INITIAL_VALIDATOR,
         ),
       )
 
-      _.pullAt(
+      _.remove(
         transition.rules?.validators ?? [],
-        createIssuePermissionValidatorIndex,
+        (_validator, index) => index === createIssuePermissionValidatorIndex,
       )
     })
 }

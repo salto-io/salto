@@ -32,13 +32,13 @@ describe('change validator creator', () => {
           elemID: new ElemID(JIRA, 'obj'),
           severity: 'Error',
           message: 'Deployment of non-instance elements is not supported in adapter jira',
-          detailedMessage: 'Salto does not support deployment of jira.obj',
+          detailedMessage: 'Deployment of jira.obj is not supported',
         },
         {
           elemID: new ElemID(JIRA, 'obj2'),
           severity: 'Error',
           message: 'Deployment of non-instance elements is not supported in adapter jira',
-          detailedMessage: 'Salto does not support deployment of jira.obj2',
+          detailedMessage: 'Deployment of jira.obj2 is not supported',
         },
       ])
     })

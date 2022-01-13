@@ -22,18 +22,18 @@ import { getLookUpName } from '../reference_mapping'
 
 const { awu } = collections.asynciterable
 
-const doesHaveUndeployableTypes = (instance: WorkflowInstance): boolean => {
+const hasUndeployableTypes = (instance: WorkflowInstance): boolean => {
   const doesContainUndeployablePostFunction = instance.value.transitions?.some(transition =>
     transition.rules?.postFunctions?.some(
       postFunction => UNDEPLOYALBE_POST_FUNCTION_TYPES.includes(postFunction.type ?? ''),
     )) ?? false
 
-  const doesContainUndeployableValidator = instance.value.transitions?.some(transition =>
+  const containsUndeployableValidator = instance.value.transitions?.some(transition =>
     transition.rules?.validators?.some(
       validator => UNDEPLOYALBE_VALIDATOR_TYPES.includes(validator.type ?? ''),
     )) ?? false
 
-  return doesContainUndeployablePostFunction || doesContainUndeployableValidator
+  return doesContainUndeployablePostFunction || containsUndeployableValidator
 }
 
 export const workflowValidator: ChangeValidator = async changes => (
@@ -44,12 +44,12 @@ export const workflowValidator: ChangeValidator = async changes => (
     .filter(instance => instance.elemID.typeName === 'Workflow')
     .map(instance => resolveValues(instance, getLookUpName))
     .filter(isWorkflowInstance)
-    .filter(doesHaveUndeployableTypes)
+    .filter(hasUndeployableTypes)
     .map(instance => ({
       elemID: instance.elemID,
       severity: 'Warning' as SaltoErrorSeverity,
-      message: `Salto does not support deploying script-runner configuration in the instance ${instance.elemID.getFullName()}`,
-      detailedMessage: 'Salto does not support deploying script-runner (com.onresolve.jira.groovy.groovyrunner) configuration. If continuing, they will be omitted from the deployment',
+      message: `Deploying script-runner configuration in the instance ${instance.elemID.getFullName()} is not supported.`,
+      detailedMessage: 'Deploying script-runner (com.onresolve.jira.groovy.groovyrunner) configuration is not supported. If continuing, they will be omitted from the deployment',
     }))
     .toArray()
 )

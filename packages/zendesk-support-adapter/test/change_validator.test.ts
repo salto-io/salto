@@ -34,13 +34,13 @@ describe('change validator creator', () => {
           elemID: new ElemID(ZENDESK_SUPPORT, 'obj'),
           severity: 'Error',
           message: 'Deployment of non-instance elements is not supported in adapter zendesk_support',
-          detailedMessage: 'Salto does not support deployment of zendesk_support.obj',
+          detailedMessage: 'Deployment of zendesk_support.obj is not supported',
         },
         {
           elemID: new ElemID(ZENDESK_SUPPORT, 'obj2'),
           severity: 'Error',
           message: 'Deployment of non-instance elements is not supported in adapter zendesk_support',
-          detailedMessage: 'Salto does not support deployment of zendesk_support.obj2',
+          detailedMessage: 'Deployment of zendesk_support.obj2 is not supported',
         },
       ])
     })

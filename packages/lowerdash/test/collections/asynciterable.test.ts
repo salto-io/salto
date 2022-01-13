@@ -27,6 +27,14 @@ const {
 type BeforeAfter<T> = collections.asynciterable.BeforeAfter<T>
 
 describe('asynciterable', () => {
+  describe('toAsyncIterable', () => {
+    it('gets same results on async iterable and nonAsyncIterable', async () => {
+      const arr = [1, 2, 3, 5]
+      expect(await awu(toAsyncIterable(arr)).toArray()).toEqual(await awu(toAsyncIterable(
+        toAsyncIterable(arr)
+      )).toArray())
+    })
+  })
   describe('findAsync', () => {
     describe('when given a sync pred', () => {
       describe('when given an empty iterable', () => {

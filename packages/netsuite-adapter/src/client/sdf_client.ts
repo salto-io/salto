@@ -104,17 +104,22 @@ const REQUIRED_ATTRIBUTE = '@_required'
 const INVALID_DEPENDENCIES = ['ADVANCEDEXPENSEMANAGEMENT', 'SUBSCRIPTIONBILLING', 'WMSSYSTEM', 'BILLINGACCOUNTS']
 const REFERENCED_OBJECT_REGEX = new RegExp(`${SCRIPT_ID}=(?<${SCRIPT_ID}>[a-z0-9_]+(\\.[a-z0-9_]+)*)`, 'g')
 
-type RequiredDependencyValueCondition = 'fullLookup' | 'byValue' | 'byPath'
-
 type RequiredDependency = {
   typeName: string
   dependency: string
   value?: Value
-  path?: string[]
-  condition?: RequiredDependencyValueCondition
 }
 
-const REQUIRED_FEATURES: RequiredDependency[] = [
+type RequiredDependencyWithCondition = (
+  RequiredDependency & {
+  condition: 'byPath'
+  path: string[]
+}) | (
+  RequiredDependency & {
+  condition?: 'fullLookup' | 'byValue'
+})
+
+const REQUIRED_FEATURES: RequiredDependencyWithCondition[] = [
   {
     typeName: WORKFLOW,
     dependency: 'EXPREPORTS',
@@ -203,30 +208,28 @@ type ObjectsChunk = {
 }
 
 const getRequiredFeatures = (customizationInfos: CustomizationInfo[]): string[] =>
-  REQUIRED_FEATURES.map(
-    ({ typeName, dependency, value, path, condition }) => {
-      const custInfoWithDependency = customizationInfos
-        .find(custInfo => {
-          if (typeName !== custInfo.typeName) {
-            return false
-          }
-          if (_.isUndefined(value)) {
-            return true
-          }
-          switch (condition) {
-            case 'byPath':
-              return path && _.get(custInfo.values, path) === value
-            case 'byValue':
-              return lookupValue(custInfo.values, val => _.isEqual(val, value))
-            default:
-              return lookupValue(custInfo.values,
-                val => _.isEqual(val, value)
-                || (_.isString(val) && _.isString(value) && val.includes(value)))
-          }
-        })
-      return custInfoWithDependency ? dependency : undefined
-    }
-  ).filter(isDefined)
+  REQUIRED_FEATURES.filter(
+    feature => customizationInfos
+      .some(custInfo => {
+        const { typeName, value } = feature
+        if (typeName !== custInfo.typeName) {
+          return false
+        }
+        if (_.isUndefined(value)) {
+          return true
+        }
+        switch (feature.condition) {
+          case 'byPath':
+            return _.get(custInfo.values, feature.path) === value
+          case 'byValue':
+            return lookupValue(custInfo.values, val => _.isEqual(val, value))
+          default:
+            return lookupValue(custInfo.values,
+              val => _.isEqual(val, value)
+              || (_.isString(val) && _.isString(value) && val.includes(value)))
+        }
+      })
+  ).map(({ dependency }) => dependency)
 
 const getRequiredObjects = (customizationInfos: CustomizationInfo[]): string[] =>
   _.uniq(customizationInfos.flatMap(custInfo => {
@@ -237,7 +240,7 @@ const getRequiredObjects = (customizationInfos: CustomizationInfo[]): string[] =
         return
       }
 
-      requiredObjects.push(...[...matchAll(val, REFERENCED_OBJECT_REGEX)]
+      requiredObjects.push(...Array.from(matchAll(val, REFERENCED_OBJECT_REGEX))
         .map(r => r.groups)
         .filter(isDefined)
         .map(group => group[SCRIPT_ID])
@@ -266,27 +269,23 @@ const addRequiredDependencies = (
   }
 
   const { features, objects } = dependencies
-  features.feature = _.union(
+  features.feature = [
     // remove required features that are set to "required=false"
-    _.differenceBy(
+    ..._.differenceBy(
       makeArray(features.feature),
       requiredFeatures,
       item => item[TEXT_ATTRIBUTE]
     ),
-    requiredFeatures
-  )
+    ...requiredFeatures,
+  ]
   objects.object = _.union(objects.object, requiredObjects)
 }
 
 const cleanInvalidDependencies = (dependencies: Value): void => {
   // This is done due to an SDF bug described in SALTO-1107.
   // This function should be removed once the bug is fixed.
-  const fixedFeatureList = _.differenceBy(
-    makeArray(dependencies.features.feature),
-    INVALID_DEPENDENCIES.map(dep => ({ [TEXT_ATTRIBUTE]: dep })),
-    item => item[TEXT_ATTRIBUTE]
-  )
-  dependencies.features.feature = fixedFeatureList
+  dependencies.features.feature = makeArray(dependencies.features.feature)
+    .filter(item => !INVALID_DEPENDENCIES.includes(item[TEXT_ATTRIBUTE]))
 }
 
 export default class SdfClient {

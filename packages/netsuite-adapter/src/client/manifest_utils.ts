@@ -35,22 +35,28 @@ const REFERENCED_OBJECT_REGEX = new RegExp(`${SCRIPT_ID}=(?<${SCRIPT_ID}>[a-z0-9
 type RequiredDependency = {
   typeName: string
   dependency: string
-  value?: Value
 }
 
 type RequiredDependencyWithCondition = (
   RequiredDependency & {
-  condition: 'byPath'
-  path: string[]
+  condition?: undefined
+  value?: undefined
 }) | (
   RequiredDependency & {
-  condition?: 'fullLookup' | 'byValue'
+  condition: 'byPath'
+  path: string[]
+  value: Value
+}) | (
+  RequiredDependency & {
+  condition: 'fullLookup' | 'byValue'
+  value: Value
 })
 
 const REQUIRED_FEATURES: RequiredDependencyWithCondition[] = [
   {
     typeName: WORKFLOW,
     dependency: 'EXPREPORTS',
+    condition: 'fullLookup',
     value: 'STDRECORDSUBSIDIARYDEFAULTACCTCORPCARDEXP',
   },
 ]
@@ -63,18 +69,17 @@ const getRequiredFeatures = (customizationInfos: CustomizationInfo[]): string[] 
         if (typeName !== custInfo.typeName) {
           return false
         }
-        if (_.isUndefined(value)) {
-          return true
-        }
         switch (feature.condition) {
           case 'byPath':
             return _.get(custInfo.values, feature.path) === value
           case 'byValue':
             return lookupValue(custInfo.values, val => _.isEqual(val, value))
-          default:
+          case 'fullLookup':
             return lookupValue(custInfo.values,
               val => _.isEqual(val, value)
               || (_.isString(val) && _.isString(value) && val.includes(value)))
+          default:
+            return true
         }
       })
   ).map(({ dependency }) => dependency)

@@ -17,12 +17,13 @@ import * as vscode from 'vscode'
 import _ from 'lodash'
 import open from 'open'
 
-import { copy as copyToClipboard } from 'copy-paste'
+import clipboard from 'clipboardy'
 import { context, serviceUrl, workspace as ws } from '@salto-io/lang-server'
 import { collections } from '@salto-io/lowerdash'
 import { vsPosToSaltoPos } from './adapters'
 
 const { awu } = collections.asynciterable
+const copyToClipboard = clipboard.writeSync
 
 export const createCopyReferenceCommand = (
   workspace: ws.EditorWorkspace

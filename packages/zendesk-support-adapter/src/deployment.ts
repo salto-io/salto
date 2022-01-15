@@ -26,6 +26,7 @@ export const deployChange = async (
   change: Change<InstanceElement>,
   client: ZendeskClient,
   apiDefinitions: configUtils.AdapterApiConfig,
+  fieldsToIgnore?: string[],
 ): Promise<void> => {
   const { deployRequests, transformation } = apiDefinitions
     .types[getChangeData(change).elemID.typeName]
@@ -34,6 +35,7 @@ export const deployChange = async (
       change,
       client,
       deployRequests,
+      fieldsToIgnore
     )
     if (isAdditionChange(change)) {
       if (!Array.isArray(response)) {

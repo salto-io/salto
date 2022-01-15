@@ -15,19 +15,53 @@
 */
 import _ from 'lodash'
 import {
-  Change, getChangeData, InstanceElement, isRemovalChange, Values,
+  Change, getChangeData, InstanceElement, isAdditionOrModificationChange,
+  isInstanceChange, isRemovalChange, Values,
 } from '@salto-io/adapter-api'
-import { values } from '@salto-io/lowerdash'
+import { values, collections } from '@salto-io/lowerdash'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 
 const WORKSPACE_TYPE_NAME = 'workspace'
+const { awu } = collections.asynciterable
 
 /**
  * Deploys workspaces
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  preDeploy: async changes => {
+    await awu(changes)
+      .filter(isAdditionOrModificationChange)
+      .filter(isInstanceChange)
+      .filter(change => getChangeData(change).elemID.typeName === WORKSPACE_TYPE_NAME)
+      .forEach(change => applyFunctionToChangeData<Change<InstanceElement>>(
+        change,
+        instance => {
+          instance.value = {
+            ...instance.value,
+            macros: (instance.value.selected_macros ?? [])
+              .filter(_.isPlainObject)
+              .map((e: Values) => e.id)
+              .filter(values.isDefined),
+          }
+          return instance
+        }
+      ))
+  },
+  onDeploy: async changes => {
+    await awu(changes)
+      .filter(isAdditionOrModificationChange)
+      .filter(isInstanceChange)
+      .filter(change => getChangeData(change).elemID.typeName === WORKSPACE_TYPE_NAME)
+      .forEach(change => applyFunctionToChangeData<Change<InstanceElement>>(
+        change,
+        instance => {
+          instance.value = _.omit(instance.value, ['macros'])
+          return instance
+        }
+      ))
+  },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [workspaceChanges, leftoverChanges] = _.partition(
       changes,
@@ -37,19 +71,9 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     )
     const deployResult = await deployChanges(
       workspaceChanges,
-      async change => {
-        await applyFunctionToChangeData(change, workspace => {
-          workspace.value = {
-            ..._.omit(workspace.value, ['selected_macros']),
-            macros: (workspace.value.selected_macros ?? [])
-              .filter(_.isPlainObject)
-              .map((e: Values) => e.id)
-              .filter(values.isDefined),
-          }
-          return workspace
-        })
-        await deployChange(change, client, config.apiDefinitions)
-      }
+      async change => deployChange(
+        change, client, config.apiDefinitions, ['selected_macros'],
+      ),
     )
     return { deployResult, leftoverChanges }
   },

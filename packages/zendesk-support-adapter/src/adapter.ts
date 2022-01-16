@@ -33,7 +33,8 @@ import { API_DEFINITIONS_CONFIG, ZendeskConfig } from './config'
 import { ZENDESK_SUPPORT } from './constants'
 import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
-import fieldReferencesFilter, { fieldNameToTypeMappingDefs } from './filters/field_references'
+import fieldReferencesFilter, { fieldNameToTypeMappingDefs,
+  ZendeskSupportFieldReferenceResolver } from './filters/field_references'
 import unorderedListsFilter from './filters/unordered_lists'
 import viewFilter from './filters/view'
 import workspaceFilter from './filters/workspace'
@@ -149,7 +150,10 @@ export default class ZendeskAdapter implements AdapterOperations {
       })) as Change<InstanceElement>[]
 
     const runner = await this.createFiltersRunner()
-    const lookupFunc = referencesUtils.generateLookupFunc(fieldNameToTypeMappingDefs)
+    const lookupFunc = referencesUtils.generateLookupFunc(
+      fieldNameToTypeMappingDefs,
+      defs => new ZendeskSupportFieldReferenceResolver(defs)
+    )
     const resolvedChanges = await awu(changesToDeploy)
       .map(change => resolveChangeElement(change, lookupFunc))
       .toArray()

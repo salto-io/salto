@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element } from '@salto-io/adapter-api'
+import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 
@@ -52,6 +52,26 @@ const getLowerCaseSingularLookupType = (val: string): string | undefined => {
   return lowercaseVal
 }
 
+const CUSTOM_FIELDS_PREFIX = 'custom_fields_'
+
+type ZendeskSupportReferenceSerializationStrategyName = 'customFields'
+const ZendeskSupportReferenceSerializationStrategyLookup: Record<
+  ZendeskSupportReferenceSerializationStrategyName
+  | referenceUtils.ReferenceSerializationStrategyName,
+  referenceUtils.ReferenceSerializationStrategy
+> = {
+  ...referenceUtils.ReferenceSerializationStrategyLookup,
+  customFields: {
+    serialize: ({ ref }) => (isInstanceElement(ref.value)
+      ? CUSTOM_FIELDS_PREFIX.concat(ref.value.value.id?.toString())
+      : ref.value),
+    lookup: val => ((_.isString(val) && val.startsWith(CUSTOM_FIELDS_PREFIX))
+      ? val.slice(CUSTOM_FIELDS_PREFIX.length)
+      : val),
+    lookupIndexName: 'id',
+  },
+}
+
 export type ReferenceContextStrategyName = 'neighborField' | 'neighborType' | 'parentSubject' | 'parentTitle' | 'parentValue'
 export const contextStrategyLookup: Record<
   ReferenceContextStrategyName, referenceUtils.ContextFunc
@@ -63,9 +83,25 @@ export const contextStrategyLookup: Record<
   parentValue: neighborContextFunc({ contextFieldName: 'value', levelsUp: 2, contextValueMapper: getValueLookupType }),
 }
 
-export const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition<
-  ReferenceContextStrategyName
->[] = [
+type ZendeskSupportFieldReferenceDefinition = referenceUtils
+  .FieldReferenceDefinition<ReferenceContextStrategyName> & {
+  zendeskSupportSerializationStrategy?: ZendeskSupportReferenceSerializationStrategyName
+}
+
+export class ZendeskSupportFieldReferenceResolver extends referenceUtils
+  .FieldReferenceResolver<ReferenceContextStrategyName> {
+  constructor(def: ZendeskSupportFieldReferenceDefinition) {
+    super({ src: def.src })
+    this.serializationStrategy = ZendeskSupportReferenceSerializationStrategyLookup[
+      def.zendeskSupportSerializationStrategy ?? def.serializationStrategy ?? 'fullValue'
+    ]
+    this.target = def.target
+      ? { ...def.target, lookup: this.serializationStrategy.lookup }
+      : undefined
+  }
+}
+
+export const fieldNameToTypeMappingDefs: ZendeskSupportFieldReferenceDefinition[] = [
   {
     src: { field: 'brand_id' },
     serializationStrategy: 'id',
@@ -167,6 +203,16 @@ export const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition
     target: { type: 'ticket_field' },
   },
   {
+    src: { field: 'field', parentTypes: ['view__conditions__all', 'view__conditions__any', 'macro__actions'] },
+    zendeskSupportSerializationStrategy: 'customFields',
+    target: { type: 'ticket_field' },
+  },
+  {
+    src: { field: 'id', parentTypes: ['view__execution__columns'] },
+    serializationStrategy: 'id',
+    target: { type: 'ticket_field' },
+  },
+  {
     src: { field: 'id', parentTypes: ['view__execution__custom_fields'] },
     serializationStrategy: 'id',
     target: { type: 'ticket_field' },
@@ -239,6 +285,7 @@ const filter: FilterCreator = () => ({
       contextStrategyLookup,
       // since ids and references to ids vary inconsistently between string/number, allow both
       isEqualValue: (lhs, rhs) => _.toString(lhs) === _.toString(rhs),
+      fieldReferenceResolverCreator: defs => new ZendeskSupportFieldReferenceResolver(defs),
     })
   },
 })

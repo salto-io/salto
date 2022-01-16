@@ -126,6 +126,32 @@ describe('References by id filter', () => {
       subjectAndValues: { refType: new ListType(someTypeWithNestedValuesAndSubject) },
     },
   })
+  const ticketFieldType = new ObjectType({
+    elemID: new ElemID(ZENDESK_SUPPORT, 'ticket_field'),
+    fields: {
+      id: { refType: BuiltinTypes.NUMBER },
+    },
+  })
+  const viewType = new ObjectType({
+    elemID: new ElemID(ZENDESK_SUPPORT, 'view'),
+    fields: {
+      id: { refType: BuiltinTypes.NUMBER },
+      conditions: {
+        refType: new ObjectType({
+          elemID: new ElemID(ZENDESK_SUPPORT, 'view__conditions'),
+          fields: {
+            all: { refType: new ListType(new ObjectType({
+              elemID: new ElemID(ZENDESK_SUPPORT, 'view__conditions__all'),
+              fields: {
+                field: { refType: BuiltinTypes.STRING },
+                value: { refType: BuiltinTypes.STRING },
+              },
+            })) },
+          },
+        }),
+      },
+    },
+  })
 
   const generateElements = (
   ): Element[] => ([
@@ -139,6 +165,7 @@ describe('References by id filter', () => {
     someTypeWithNestedValueList,
     someTypeWithNestedListOfValuesAndValue,
     type1,
+    ticketFieldType,
     new InstanceElement('brand1', brandType, { id: 1001 }),
     new InstanceElement('brand2', brandType, { id: 1002 }),
     new InstanceElement('group3', groupType, { id: 2003 }),
@@ -175,6 +202,10 @@ describe('References by id filter', () => {
           ],
         },
       ],
+    }),
+    new InstanceElement('customField1', ticketFieldType, { id: 6001 }),
+    new InstanceElement('view1', viewType, {
+      id: 7001, conditions: { all: [{ field: 'custom_fields_6001', value: 'v1' }] },
     }),
   ])
 
@@ -223,6 +254,14 @@ describe('References by id filter', () => {
         inst.value.subjectAndValues[1].valueList[0].value
       ).not.toBeInstanceOf(ReferenceExpression)
       expect(inst.value.subjectAndValues[1].valueList[0].value).toEqual(4007)
+    })
+    it('should resolve custom field reference', () => {
+      const view = elements.filter(
+        e => isInstanceElement(e) && e.elemID.name === 'view1'
+      )[0] as InstanceElement
+      expect(view.value.conditions.all[0].field).toBeInstanceOf(ReferenceExpression)
+      expect(view.value.conditions.all[0].field.elemID.getFullName())
+        .toEqual('zendesk_support.ticket_field.instance.customField1')
     })
   })
 })

@@ -13,24 +13,55 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { filterUtils } from '@salto-io/adapter-components'
+import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { filterUtils, client as clientUtils, deployment } from '@salto-io/adapter-components'
+import { MockInterface } from '@salto-io/test-utils'
+import { DEFAULT_CONFIG } from '../../src/config'
+import JiraClient from '../../src/client/client'
 import { JIRA } from '../../src/constants'
 import projectFilter from '../../src/filters/project'
-import { mockClient, getDefaultAdapterConfig } from '../utils'
+import { mockClient } from '../utils'
+
+jest.mock('@salto-io/adapter-components', () => {
+  const actual = jest.requireActual('@salto-io/adapter-components')
+  return {
+    ...actual,
+    deployment: {
+      ...actual.deployment,
+      deployChange: jest.fn(),
+    },
+  }
+})
 
 describe('projectFilter', () => {
-  let filter: filterUtils.FilterWith<'onFetch' | 'onDeploy'>
+  let filter: filterUtils.FilterWith<'onFetch' | 'deploy' | 'onDeploy'>
   let instance: InstanceElement
+  let client: JiraClient
+  let type: ObjectType
+  let connection: MockInterface<clientUtils.APIConnection>
+  const deployChangeMock = deployment.deployChange as jest.MockedFunction<
+    typeof deployment.deployChange
+  >
+
   beforeEach(async () => {
-    const { client, paginator } = mockClient()
+    const { client: cli, paginator, connection: conn } = mockClient()
+    client = cli
+    connection = conn
+
     filter = projectFilter({
       client,
       paginator,
-      config: await getDefaultAdapterConfig(),
+      config: DEFAULT_CONFIG,
     }) as typeof filter
 
-    const type = new ObjectType({ elemID: new ElemID(JIRA, 'Project') })
+    type = new ObjectType({
+      elemID: new ElemID(JIRA, 'Project'),
+      fields: {
+        workflowScheme: { refType: BuiltinTypes.STRING },
+        issueTypeScreenScheme: { refType: BuiltinTypes.STRING },
+        fieldConfigurationScheme: { refType: BuiltinTypes.STRING },
+      },
+    })
 
     instance = new InstanceElement(
       'instance',
@@ -66,7 +97,22 @@ describe('projectFilter', () => {
           id: 6,
         },
       }
-      await filter.onFetch([instance])
+      await filter.onFetch([type, instance])
+    })
+
+    it('should add the deployment annotations to the schemes', () => {
+      expect(type.fields.workflowScheme.annotations).toEqual({
+        [CORE_ANNOTATIONS.CREATABLE]: true,
+        [CORE_ANNOTATIONS.UPDATABLE]: true,
+      })
+      expect(type.fields.issueTypeScreenScheme.annotations).toEqual({
+        [CORE_ANNOTATIONS.CREATABLE]: true,
+        [CORE_ANNOTATIONS.UPDATABLE]: true,
+      })
+      expect(type.fields.fieldConfigurationScheme.annotations).toEqual({
+        [CORE_ANNOTATIONS.CREATABLE]: true,
+        [CORE_ANNOTATIONS.UPDATABLE]: true,
+      })
     })
 
     it('should set the leadAccountId', async () => {
@@ -86,6 +132,40 @@ describe('projectFilter', () => {
       }
       await filter.onFetch([instance])
       expect(instance.value).toEqual({})
+    })
+  })
+
+  describe('When deploying a change', () => {
+    let change: Change
+
+    beforeEach(async () => {
+      const afterInstance = instance.clone()
+      afterInstance.value.workflowScheme = 1
+      afterInstance.value.id = 2
+
+      change = toChange({ before: instance, after: afterInstance })
+
+      await filter.deploy([change])
+    })
+    it('should call deployChange and ignore scheme', () => {
+      expect(deployChangeMock).toHaveBeenCalledWith(
+        change,
+        client,
+        DEFAULT_CONFIG.apiDefinitions.types.Project.deployRequests,
+        ['workflowScheme', 'issueTypeScreenScheme', 'fieldConfigurationScheme'],
+        undefined
+      )
+    })
+
+    it('should call the endpoint to set the scheme', () => {
+      expect(connection.put).toHaveBeenCalledWith(
+        '/rest/api/3/workflowscheme/project',
+        {
+          workflowSchemeId: 1,
+          projectId: 2,
+        },
+        undefined,
+      )
     })
   })
 

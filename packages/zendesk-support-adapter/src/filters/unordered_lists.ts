@@ -19,26 +19,49 @@ import {
 } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 
+const orderDynamicContentItems = (elements: Element[]): void => {
+  const dynamicContentItemInstances = (elements
+    .filter(isInstanceElement)
+    .filter(e => e.refType.elemID.name === 'dynamic_content_item'))
+
+  dynamicContentItemInstances.forEach(inst => {
+    if (Array.isArray(inst.value.variants) && inst.value.variants.every(variant =>
+      isReferenceExpression(variant.locale_id) && isInstanceElement(variant.locale_id.value))
+    ) {
+      inst.value.variants = _.sortBy(
+        inst.value.variants,
+        // at most one variant is allowed per locale
+        variant => ([variant.locale_id.value.value?.locale])
+      )
+    }
+  })
+}
+
+const orderTriggerDefinitions = (elements: Element[]): void => {
+  const triggerDefinitionsInstances = (elements
+    .filter(isInstanceElement)
+    .filter(e => e.refType.elemID.name === 'trigger_definition'))
+
+  triggerDefinitionsInstances.forEach(inst => {
+    const fieldsToOrder = ['actions', 'conditions_all', 'conditions_any']
+    fieldsToOrder.forEach(fieldName => {
+      if (Array.isArray(inst.value[fieldName])) {
+        inst.value[fieldName] = _.sortBy(
+          inst.value[fieldName],
+          ['title', 'type'],
+        )
+      }
+    })
+  })
+}
+
 /**
  * Sort lists whose order changes between fetches, to avoid unneeded noise.
  */
 const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
-    const dynamicContentItemInstances = (elements
-      .filter(isInstanceElement)
-      .filter(e => e.refType.elemID.name === 'dynamic_content_item'))
-
-    dynamicContentItemInstances.forEach(inst => {
-      if (Array.isArray(inst.value.variants) && inst.value.variants.every(variant =>
-        isReferenceExpression(variant.locale_id) && isInstanceElement(variant.locale_id.value))
-      ) {
-        inst.value.variants = _.sortBy(
-          inst.value.variants,
-          // at most one variant is allowed per locale
-          variant => ([variant.locale_id.value.value?.locale])
-        )
-      }
-    })
+    orderDynamicContentItems(elements)
+    orderTriggerDefinitions(elements)
   },
 })
 

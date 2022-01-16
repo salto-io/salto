@@ -14,13 +14,15 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ChangeError, ChangeValidator, getChangeData, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
+import { ChangeError, ChangeValidator, getChangeData, isInstanceElement,
+  isReferenceExpression } from '@salto-io/adapter-api'
 import { createChangeValidator, getParents } from '@salto-io/adapter-utils'
 
 export const createSkipParentsOfSkippedInstancesValidator = (
   changeValidators: ReadonlyArray<ChangeValidator>,
+  disabledValidators?: ReadonlyArray<ChangeValidator>,
 ): ChangeValidator => async (changes, adapterConfig) => {
-  const changeValidator = createChangeValidator(changeValidators)
+  const changeValidator = createChangeValidator(changeValidators, disabledValidators)
   const changeErrors = await changeValidator(changes, adapterConfig)
   const skippedInstances = _(changeErrors)
     .map(error => error.elemID)
@@ -29,12 +31,16 @@ export const createSkipParentsOfSkippedInstancesValidator = (
     .map(getChangeData)
     .filter(isInstanceElement)
     .value()
-  const skippedInstancesFullNames = new Set(skippedInstances.map(inst => inst.elemID.getFullName()))
+  const skippedInstancesFullName = new Set(skippedInstances.map(inst => inst.elemID.getFullName()))
+  const changesFullName = new Set(
+    changes.map(getChangeData).filter(isInstanceElement).map(e => e.elemID.getFullName())
+  )
   const newChangeErrors = _(skippedInstances)
     .flatMap(getParents)
     .filter(isReferenceExpression)
     .uniqBy(ref => ref.elemID.getFullName())
-    .filter(ref => !skippedInstancesFullNames.has(ref.elemID.getFullName()))
+    .filter(ref => changesFullName.has(ref.elemID.getFullName())
+      && !skippedInstancesFullName.has(ref.elemID.getFullName()))
     .map(ref => ({
       elemID: ref.elemID,
       severity: 'Error',

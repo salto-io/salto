@@ -14,11 +14,12 @@
 * limitations under the License.
 */
 import { ChangeValidator } from '@salto-io/adapter-api'
-import { createChangeValidator } from '@salto-io/adapter-utils'
 import { config as configUtils, deployment } from '@salto-io/adapter-components'
 
 const {
-  deployTypesNotSupportedValidator, createCheckDeploymentBasedOnConfigValidator,
+  deployTypesNotSupportedValidator,
+  createCheckDeploymentBasedOnConfigValidator,
+  createSkipParentsOfSkippedInstancesValidator,
 } = deployment.changeValidators
 
 export default (apiConfig: configUtils.AdapterDuckTypeApiConfig): ChangeValidator => {
@@ -26,5 +27,5 @@ export default (apiConfig: configUtils.AdapterDuckTypeApiConfig): ChangeValidato
     deployTypesNotSupportedValidator,
     createCheckDeploymentBasedOnConfigValidator(apiConfig),
   ]
-  return createChangeValidator(validators)
+  return createSkipParentsOfSkippedInstancesValidator(validators)
 }

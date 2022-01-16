@@ -17,13 +17,10 @@ import _ from 'lodash'
 import {
   Change, getChangeData, InstanceElement, isRemovalChange, Values,
 } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
-import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
-
-const log = logger(module)
+import { applyforInstanceChangesOfType } from './utils'
 
 const VIEW_TYPE_NAME = 'view'
 
@@ -31,6 +28,37 @@ const VIEW_TYPE_NAME = 'view'
  * Deploys views
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  preDeploy: async changes => {
+    await applyforInstanceChangesOfType(
+      changes,
+      VIEW_TYPE_NAME,
+      (instance: InstanceElement) => {
+        instance.value = {
+          ...instance.value,
+          all: (instance.value.conditions.all ?? [])
+            .map((e: Values) => ({ ...e, value: e.value.toString() })),
+          any: (instance.value.conditions.any ?? [])
+            .map((e: Values) => ({ ...e, value: e.value.toString() })),
+          output: {
+            ...instance.value.execution,
+            columns: instance.value.execution.columns?.filter(_.isPlainObject)
+              .map((c: Values) => c.id).filter(values.isDefined) ?? [],
+          },
+        }
+        return instance
+      }
+    )
+  },
+  onDeploy: async changes => {
+    await applyforInstanceChangesOfType(
+      changes,
+      VIEW_TYPE_NAME,
+      (instance: InstanceElement) => {
+        instance.value = _.omit(instance.value, ['all', 'any', 'output'])
+        return instance
+      }
+    )
+  },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [viewChanges, leftoverChanges] = _.partition(
       changes,
@@ -40,30 +68,9 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     )
     const deployResult = await deployChanges(
       viewChanges,
-      async change => {
-        await applyFunctionToChangeData(change, view => {
-          try {
-            view.value = {
-              ..._.omit(view.value, ['conditions', 'execution']),
-              all: (view.value.conditions.all ?? [])
-                .map((e: Values) => ({ ...e, value: e.value.toString() })),
-              any: (view.value.conditions.any ?? [])
-                .map((e: Values) => ({ ...e, value: e.value.toString() })),
-              output: {
-                ..._.omit(view.value.execution, ['fields', 'custom_fields']),
-                columns: view.value.execution.columns?.filter(_.isPlainObject)
-                  .map((c: Values) => c.id).filter(values.isDefined) ?? [],
-              },
-            }
-            return view
-          } catch (e) {
-            log.error('View %s has an invalid format and cannot be deployed. Error: %o',
-              getChangeData(change).elemID.getFullName(), e)
-            throw e
-          }
-        })
-        await deployChange(change, client, config.apiDefinitions)
-      }
+      async change => deployChange(
+        change, client, config.apiDefinitions, ['conditions', 'execution'],
+      ),
     )
     return { deployResult, leftoverChanges }
   },

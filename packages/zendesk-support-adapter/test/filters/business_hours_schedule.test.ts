@@ -77,7 +77,8 @@ describe('business hours schedule filter', () => {
     expect(mockDeployChange).toHaveBeenCalledWith(
       { action: 'add', data: { after: clonedSchedule } },
       expect.anything(),
-      expect.anything()
+      expect.anything(),
+      undefined
     )
     expect(mockPut).toHaveBeenCalledTimes(1)
     expect(mockPut).toHaveBeenCalledWith({
@@ -108,7 +109,8 @@ describe('business hours schedule filter', () => {
     expect(mockDeployChange).toHaveBeenCalledWith(
       { action: 'modify', data: { before: clonedBeforeSchedule, after: clonedAfterSchedule } },
       expect.anything(),
-      expect.anything()
+      expect.anything(),
+      undefined
     )
     expect(mockPut).toHaveBeenCalledTimes(1)
     expect(mockPut).toHaveBeenCalledWith({
@@ -135,7 +137,8 @@ describe('business hours schedule filter', () => {
     expect(mockDeployChange).toHaveBeenCalledWith(
       { action: 'remove', data: { before: clonedSchedule } },
       expect.anything(),
-      expect.anything()
+      expect.anything(),
+      undefined
     )
     expect(mockPut).toHaveBeenCalledTimes(0)
     expect(res.leftoverChanges).toHaveLength(0)
@@ -161,7 +164,8 @@ describe('business hours schedule filter', () => {
     expect(mockDeployChange).toHaveBeenCalledWith(
       { action: 'modify', data: { before: clonedBeforeSchedule, after: clonedAfterSchedule } },
       expect.anything(),
-      expect.anything()
+      expect.anything(),
+      undefined
     )
     expect(mockPut).toHaveBeenCalledTimes(0)
     expect(res.leftoverChanges).toHaveLength(0)
@@ -183,7 +187,8 @@ describe('business hours schedule filter', () => {
     expect(mockDeployChange).toHaveBeenCalledWith(
       { action: 'add', data: { after: clonedSchedule } },
       expect.anything(),
-      expect.anything()
+      expect.anything(),
+      undefined
     )
     expect(mockPut).toHaveBeenCalledTimes(0)
     expect(res.leftoverChanges).toHaveLength(0)
@@ -201,7 +206,8 @@ describe('business hours schedule filter', () => {
     expect(mockDeployChange).toHaveBeenCalledWith(
       { action: 'add', data: { after: clonedSchedule } },
       expect.anything(),
-      expect.anything()
+      expect.anything(),
+      undefined
     )
     expect(mockPut).toHaveBeenCalledTimes(1)
     expect(res.leftoverChanges).toHaveLength(0)

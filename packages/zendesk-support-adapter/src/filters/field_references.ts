@@ -234,12 +234,12 @@ export const fieldNameToTypeMappingDefs: ZendeskSupportFieldReferenceDefinition[
   },
 
   {
-    src: { field: 'id', parentTypes: ['view__restriction'] },
+    src: { field: 'id', parentTypes: ['view__restriction', 'macro__restriction'] },
     serializationStrategy: 'id',
     target: { typeContext: 'neighborType' },
   },
   {
-    src: { field: 'ids', parentTypes: ['view__restriction'] },
+    src: { field: 'ids', parentTypes: ['view__restriction', 'macro__restriction'] },
     serializationStrategy: 'id',
     target: { typeContext: 'neighborType' },
   },

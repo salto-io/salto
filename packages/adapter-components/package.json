@@ -30,7 +30,7 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@apidevtools/swagger-parser": "^10.0.2",
+    "@apidevtools/swagger-parser": "^10.0.3",
     "@salto-io/adapter-api": "0.3.8",
     "@salto-io/adapter-utils": "0.3.8",
     "@salto-io/logging": "0.3.8",

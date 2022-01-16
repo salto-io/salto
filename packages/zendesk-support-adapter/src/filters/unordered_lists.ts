@@ -15,14 +15,13 @@
 */
 import _ from 'lodash'
 import {
-  Element, isInstanceElement, isReferenceExpression,
+  Element, InstanceElement, isInstanceElement, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 
-const orderDynamicContentItems = (elements: Element[]): void => {
-  const dynamicContentItemInstances = (elements
-    .filter(isInstanceElement)
-    .filter(e => e.refType.elemID.name === 'dynamic_content_item'))
+const orderDynamicContentItems = (instances: InstanceElement[]): void => {
+  const dynamicContentItemInstances = instances
+    .filter(e => e.refType.elemID.name === 'dynamic_content_item')
 
   dynamicContentItemInstances.forEach(inst => {
     if (Array.isArray(inst.value.variants) && inst.value.variants.every(variant =>
@@ -37,10 +36,9 @@ const orderDynamicContentItems = (elements: Element[]): void => {
   })
 }
 
-const orderTriggerDefinitions = (elements: Element[]): void => {
-  const triggerDefinitionsInstances = (elements
-    .filter(isInstanceElement)
-    .filter(e => e.refType.elemID.name === 'trigger_definition'))
+const orderTriggerDefinitions = (instances: InstanceElement[]): void => {
+  const triggerDefinitionsInstances = instances
+    .filter(e => e.refType.elemID.name === 'trigger_definition')
 
   triggerDefinitionsInstances.forEach(inst => {
     const fieldsToOrder = ['actions', 'conditions_all', 'conditions_any']
@@ -60,8 +58,9 @@ const orderTriggerDefinitions = (elements: Element[]): void => {
  */
 const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
-    orderDynamicContentItems(elements)
-    orderTriggerDefinitions(elements)
+    const instances = elements.filter(isInstanceElement)
+    orderDynamicContentItems(instances)
+    orderTriggerDefinitions(instances)
   },
 })
 

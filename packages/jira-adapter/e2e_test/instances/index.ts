@@ -18,6 +18,8 @@ import { JIRA } from '../../src/constants'
 import { createReference, findType } from '../utils'
 import { createBoardValues } from './board'
 import { createFieldValues } from './field'
+import { createFieldConfigurationSchemeValues } from './fieldConfigurationScheme'
+import { createIssueTypeSchemeValues } from './issueTypeScheme'
 import { createIssueTypeScreenSchemeValues } from './issueTypeScreenScheme'
 import { createScreenValues } from './screen'
 import { createWorkflowValues } from './workflow'
@@ -96,20 +98,7 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[] =
   const fieldConfigurationScheme = new InstanceElement(
     randomString,
     findType('FieldConfigurationScheme', fetchedElements),
-    {
-      name: randomString,
-      description: randomString,
-      items: [
-        {
-          issueTypeId: 'default',
-          fieldConfigurationId: createReference(new ElemID(JIRA, 'FieldConfiguration', 'instance', 'Default_Field_Configuration@s'), fetchedElements),
-        },
-        {
-          issueTypeId: createReference(new ElemID(JIRA, 'IssueType', 'instance', 'Bug'), fetchedElements),
-          fieldConfigurationId: createReference(new ElemID(JIRA, 'FieldConfiguration', 'instance', 'Default_Field_Configuration@s'), fetchedElements),
-        },
-      ],
-    },
+    createFieldConfigurationSchemeValues(randomString, fetchedElements),
   )
 
   const board = new InstanceElement(
@@ -140,14 +129,7 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[] =
   const issueTypeScheme = new InstanceElement(
     randomString,
     findType('IssueTypeScheme', fetchedElements),
-    {
-      name: randomString,
-      defaultIssueTypeId: createReference(new ElemID(JIRA, 'IssueType', 'instance', 'Bug'), fetchedElements),
-      issueTypeIds: [
-        createReference(new ElemID(JIRA, 'IssueType', 'instance', 'Bug'), fetchedElements),
-        createReference(new ElemID(JIRA, 'IssueType', 'instance', 'Epic'), fetchedElements),
-      ],
-    },
+    createIssueTypeSchemeValues(randomString, fetchedElements),
   )
 
   const projectRole = new InstanceElement(

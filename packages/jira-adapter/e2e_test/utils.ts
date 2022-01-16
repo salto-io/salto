@@ -13,11 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, isInstanceElement, isObjectType, ObjectType, Element, ElemID, ReferenceExpression } from '@salto-io/adapter-api'
+import { InstanceElement, isInstanceElement, ObjectType, Element, ElemID, ReferenceExpression } from '@salto-io/adapter-api'
+import { findObjectType } from '@salto-io/adapter-utils'
+import { JIRA } from '../src/constants'
 
 
 export const findType = (name: string, allElements: Element[]): ObjectType => {
-  const type = allElements.filter(isObjectType).find(e => e.elemID.name === name)
+  const type = findObjectType(allElements, new ElemID(JIRA, name))
   if (type === undefined) {
     throw new Error(`${name} type was not found in received elements`)
   }

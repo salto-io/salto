@@ -455,6 +455,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [{ fieldName: 'issueTypeIds', fieldType: 'list<IssueTypeSchemeMapping>' }],
       serviceIdField: 'issueTypeSchemeId',
+      fieldsToHide: [
+        { fieldName: 'id' },
+      ],
     },
     deployRequests: {
       add: {
@@ -464,10 +467,16 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       modify: {
         url: '/rest/api/3/issuetypescheme/{issueTypeSchemeId}',
         method: 'put',
+        urlParamsToFields: {
+          issueTypeSchemeId: 'id',
+        },
       },
       remove: {
         url: '/rest/api/3/issuetypescheme/{issueTypeSchemeId}',
         method: 'delete',
+        urlParamsToFields: {
+          issueTypeSchemeId: 'id',
+        },
       },
     },
   },
@@ -626,7 +635,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     request: {
       url: '/rest/api/3/project/search',
       queryParams: {
-        expand: 'description,lead,issueTypes,url,projectKeys,permissions',
+        expand: 'description,lead,url,projectKeys,permissions',
       },
       recurseInto: [
         {
@@ -655,6 +664,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         {
           type: 'PageBeanIssueTypeScreenSchemesProjects',
           toField: 'issueTypeScreenScheme',
+          context: [{ name: 'projectId', fromField: 'id' }],
+          isSingle: true,
+        },
+        {
+          type: 'PageBeanIssueTypeSchemeProjects',
+          toField: 'issueTypeScheme',
           context: [{ name: 'projectId', fromField: 'id' }],
           isSingle: true,
         },
@@ -714,6 +729,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'notificationScheme', fieldType: 'NotificationScheme' },
         { fieldName: 'issueTypeScreenScheme', fieldType: 'IssueTypeScreenScheme' },
         { fieldName: 'fieldConfigurationScheme', fieldType: 'FieldConfigurationScheme' },
+        { fieldName: 'issueTypeScheme', fieldType: 'IssueTypeScheme' },
       ],
       fieldsToHide: [
         {
@@ -772,6 +788,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   PageBeanIssueTypeScreenSchemesProjects: {
     request: {
       url: '/rest/api/3/issuetypescreenscheme/project?projectId={projectId}',
+    },
+  },
+
+  PageBeanIssueTypeSchemeProjects: {
+    request: {
+      url: '/rest/api/3/issuetypescheme/project?projectId={projectId}',
     },
   },
 

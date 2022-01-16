@@ -53,6 +53,7 @@ const deployProjectSchemes = async (
   await deployScheme(instance, client, 'workflowScheme', 'workflowSchemeId')
   await deployScheme(instance, client, 'issueTypeScreenScheme', 'issueTypeScreenSchemeId')
   await deployScheme(instance, client, 'fieldConfigurationScheme', 'fieldConfigurationSchemeId')
+  await deployScheme(instance, client, 'issueTypeScheme', 'issueTypeSchemeId')
 }
 
 /**
@@ -67,6 +68,7 @@ const filter: FilterCreator = ({ config, client }) => ({
       setDeploymentAnnotations(projectType, 'workflowScheme')
       setDeploymentAnnotations(projectType, 'issueTypeScreenScheme')
       setDeploymentAnnotations(projectType, 'fieldConfigurationScheme')
+      setDeploymentAnnotations(projectType, 'issueTypeScheme')
     }
 
     elements
@@ -82,6 +84,8 @@ const filter: FilterCreator = ({ config, client }) => ({
           ?.issueTypeScreenScheme?.id
         instance.value.fieldConfigurationScheme = instance.value.fieldConfigurationScheme
           ?.fieldConfigurationScheme?.id
+        instance.value.issueTypeScheme = instance.value.issueTypeScheme
+          ?.issueTypeScheme?.id
 
         instance.value.notificationScheme = instance.value.notificationScheme?.id?.toString()
         instance.value.permissionScheme = instance.value.permissionScheme?.id?.toString()
@@ -104,7 +108,7 @@ const filter: FilterCreator = ({ config, client }) => ({
           change,
           client,
           apiDefinitions: config.apiDefinitions,
-          fieldsToIgnore: ['workflowScheme', 'issueTypeScreenScheme', 'fieldConfigurationScheme'],
+          fieldsToIgnore: ['workflowScheme', 'issueTypeScreenScheme', 'fieldConfigurationScheme', 'issueTypeScheme'],
         })
         await deployProjectSchemes(change, client)
       }

@@ -156,6 +156,11 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     target: { type: 'FieldConfigurationScheme' },
   },
   {
+    src: { field: 'issueTypeScheme', parentTypes: ['Project'] },
+    serializationStrategy: 'id',
+    target: { type: 'IssueTypeScheme' },
+  },
+  {
     src: { field: 'permissionScheme', parentTypes: ['Project'] },
     serializationStrategy: 'id',
     target: { type: 'PermissionScheme' },

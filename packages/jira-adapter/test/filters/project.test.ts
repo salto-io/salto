@@ -60,6 +60,7 @@ describe('projectFilter', () => {
         workflowScheme: { refType: BuiltinTypes.STRING },
         issueTypeScreenScheme: { refType: BuiltinTypes.STRING },
         fieldConfigurationScheme: { refType: BuiltinTypes.STRING },
+        issueTypeScheme: { refType: BuiltinTypes.STRING },
       },
     })
 
@@ -96,6 +97,11 @@ describe('projectFilter', () => {
         permissionScheme: {
           id: 6,
         },
+        issueTypeScheme: {
+          issueTypeScheme: {
+            id: '7',
+          },
+        },
       }
       await filter.onFetch([type, instance])
     })
@@ -113,6 +119,10 @@ describe('projectFilter', () => {
         [CORE_ANNOTATIONS.CREATABLE]: true,
         [CORE_ANNOTATIONS.UPDATABLE]: true,
       })
+      expect(type.fields.issueTypeScheme.annotations).toEqual({
+        [CORE_ANNOTATIONS.CREATABLE]: true,
+        [CORE_ANNOTATIONS.UPDATABLE]: true,
+      })
     })
 
     it('should set the leadAccountId', async () => {
@@ -125,6 +135,7 @@ describe('projectFilter', () => {
       expect(instance.value.fieldConfigurationScheme).toEqual('4')
       expect(instance.value.notificationScheme).toEqual('5')
       expect(instance.value.permissionScheme).toEqual('6')
+      expect(instance.value.issueTypeScheme).toEqual('7')
     })
 
     it('For impartial instance should set undefined', async () => {
@@ -152,7 +163,7 @@ describe('projectFilter', () => {
         change,
         client,
         DEFAULT_CONFIG.apiDefinitions.types.Project.deployRequests,
-        ['workflowScheme', 'issueTypeScreenScheme', 'fieldConfigurationScheme'],
+        ['workflowScheme', 'issueTypeScreenScheme', 'fieldConfigurationScheme', 'issueTypeScheme'],
         undefined
       )
     })

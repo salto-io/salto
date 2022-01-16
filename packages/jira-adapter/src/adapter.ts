@@ -37,6 +37,7 @@ import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
 import projectFilter from './filters/project'
 import defaultInstancesDeployFilter from './filters/default_instances_deploy'
 import workflowFilter from './filters/workflow/workflow'
+import workflowSchemeFilter from './filters/workflow_scheme'
 import fieldStructureFilter from './filters/fields/field_structure_filter'
 import fieldDeploymentFilter from './filters/fields/field_deployment_filter'
 import fieldTypeReferencesFilter from './filters/fields/field_type_references_filter'
@@ -54,6 +55,7 @@ const log = logger(module)
 
 export const DEFAULT_FILTERS = [
   workflowFilter,
+  workflowSchemeFilter,
   issueTypeSchemeReferences,
   issueTypeSchemeFilter,
   sharePermissionFilter,

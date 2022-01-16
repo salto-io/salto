@@ -210,6 +210,21 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     serializationStrategy: 'id',
     target: { type: 'Screen' },
   },
+  {
+    src: { field: 'defaultWorkflow', parentTypes: ['WorkflowScheme'] },
+    serializationStrategy: 'name',
+    target: { type: 'Workflow' },
+  },
+  {
+    src: { field: 'workflow', parentTypes: ['WorkflowSchemeItem'] },
+    serializationStrategy: 'name',
+    target: { type: 'Workflow' },
+  },
+  {
+    src: { field: 'issueType', parentTypes: ['WorkflowSchemeItem'] },
+    serializationStrategy: 'id',
+    target: { type: 'IssueType' },
+  },
 ]
 
 const lookupNameFuncs: GetLookupNameFunc[] = [

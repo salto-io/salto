@@ -150,15 +150,22 @@ describe('views filter', () => {
     })
 
     it('should add any', async () => {
-      expect(clonedView.value.any).toBeDefined()
-      expect(clonedView.value.any).toHaveLength(2)
+      expect(clonedView.value.any).toEqual([
+        { field: 'priority', operator: 'is_not', value: 'low' },
+        { field: 'custom_fields_1500009152882', operator: 'includes', value: 'v1' },
+      ])
     })
     it('should add all', async () => {
-      expect(clonedView.value.all).toBeDefined()
-      expect(clonedView.value.all).toHaveLength(2)
+      expect(clonedView.value.all).toEqual([
+        { field: 'status', operator: 'is', value: 'open' },
+        { field: 'brand_id', operator: 'is', value: '3' },
+      ])
     })
     it('should add output', async () => {
-      expect(clonedView.value.output).toBeDefined()
+      expect(clonedView.value.output).toEqual({
+        ...clonedView.value.execution,
+        columns: ['subject', 'requester', 2],
+      })
     })
     it('should keep conditions', async () => {
       expect(clonedView.value.conditions).toBeDefined()

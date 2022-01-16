@@ -156,7 +156,7 @@
         "tmp-promise": "^2.0.2",
         "ts-jest": "^27.1.2",
         "typescript": "3.9.3",
-        "vsce": "^1.66.0",
+        "vsce": "^1.103.1",
         "vscode-test": "^1.0.2"
     }
 }

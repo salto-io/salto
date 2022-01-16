@@ -23,6 +23,7 @@ import { createIssueTypeSchemeValues } from './issueTypeScheme'
 import { createIssueTypeScreenSchemeValues } from './issueTypeScreenScheme'
 import { createScreenValues } from './screen'
 import { createWorkflowValues } from './workflow'
+import { createWorkflowSchemeValues } from './workflowScheme'
 
 export const createInstances = (fetchedElements: Element[]): InstanceElement[] => {
   const randomString = `createdByOssE2e${String(Date.now()).substring(6)}`
@@ -70,11 +71,7 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[] =
   const workflowScheme = new InstanceElement(
     randomString,
     findType('WorkflowScheme', fetchedElements),
-    {
-      name: randomString,
-      description: randomString,
-      defaultWorkflow: 'classic default workflow',
-    },
+    createWorkflowSchemeValues(randomString, fetchedElements),
   )
 
   const screenScheme = new InstanceElement(

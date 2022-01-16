@@ -26,6 +26,7 @@ const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     await referenceUtils.addReferences({
       elements,
+      fieldsToGroupBy: ['id', 'name'],
       defs: referencesRules,
       isEqualValue: (lhs, rhs) => _.toString(lhs) === _.toString(rhs),
     })

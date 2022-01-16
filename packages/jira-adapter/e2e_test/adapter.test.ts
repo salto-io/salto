@@ -13,23 +13,34 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
+import { DeployResult, Element, getChangeData, InstanceElement, isAdditionChange, isInstanceElement, isObjectType, toChange } from '@salto-io/adapter-api'
+import { config as configUtils } from '@salto-io/adapter-components'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
+import _ from 'lodash'
+import { resolveValues } from '@salto-io/adapter-utils'
 import { Credentials } from '../src/auth'
 import { credsLease, realAdapter } from './adapter'
-import { DEFAULT_API_DEFINITIONS } from '../src/config'
+import { DEFAULT_API_DEFINITIONS, DEFAULT_CONFIG } from '../src/config'
 import 'jest-extended'
+import JiraAdapter from '../src/adapter'
+import { createInstances } from './instances'
+import { findInstance } from './utils'
+import { getLookUpName } from '../src/reference_mapping'
 
 jest.setTimeout(30 * 1000)
 
 describe('Jira E2E', () => {
   let fetchedElements: Element[]
   let credLease: CredsLease<Credentials>
+  let adapter: JiraAdapter
 
   beforeAll(async () => {
     credLease = await credsLease()
-    const adapterAttr = realAdapter({ credentials: credLease.value })
-    const { elements } = await adapterAttr.adapter.fetch({
+    const config = _.cloneDeep(DEFAULT_CONFIG);
+    (config.apiDefinitions.types.Field.transformation as configUtils.TransformationConfig).idFields = ['name']
+    const adapterAttr = realAdapter({ credentials: credLease.value }, config)
+    adapter = adapterAttr.adapter
+    const { elements } = await adapter.fetch({
       progressReporter:
         { reportProgress: () => null },
     })
@@ -64,5 +75,64 @@ describe('Jira E2E', () => {
       'notificationScheme',
       'issueTypeScreenScheme',
     ])
+  })
+
+  describe('deploy', () => {
+    let deployResults: DeployResult[]
+    let instances: InstanceElement[]
+
+    beforeAll(async () => {
+      instances = createInstances(fetchedElements)
+
+      deployResults = await Promise.all(instances.map(instance =>
+        adapter.deploy({
+          changeGroup: {
+            groupID: instance.elemID.getFullName(),
+            changes: [toChange({ after: instance })],
+          },
+        })))
+    })
+
+    it('should have no errors', () => {
+      expect(deployResults.flatMap(res => res.errors)).toHaveLength(0)
+    })
+
+    it('fetch should return the new changes', async () => {
+      const { elements } = await adapter.fetch({
+        progressReporter:
+          { reportProgress: () => null },
+      })
+
+      const resolvedFetchedElements = await Promise.all(
+        elements.map(e => resolveValues(e, getLookUpName))
+      )
+      const resolvedDeployedElements = await Promise.all(
+        instances.map(e => resolveValues(e, getLookUpName))
+      )
+      resolvedDeployedElements.forEach(instance => {
+        expect(findInstance(instance.elemID, resolvedFetchedElements).value)
+          .toMatchObject(instance.value)
+      })
+    })
+
+    afterAll(async () => {
+      const removalChanges = deployResults
+        .flatMap(res => res.appliedChanges)
+        .filter(isAdditionChange)
+        .map(change => toChange({ before: getChangeData(change) }))
+
+      deployResults = await Promise.all(removalChanges.map(change =>
+        adapter.deploy({
+          changeGroup: {
+            groupID: getChangeData(change).elemID.getFullName(),
+            changes: [change],
+          },
+        })))
+
+      const errors = deployResults.flatMap(res => res.errors)
+      if (errors.length) {
+        throw new Error(`Failed to clean e2e changes: ${errors.join(', ')}`)
+      }
+    })
   })
 })

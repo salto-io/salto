@@ -30,12 +30,12 @@ const idSchema = Joi.object({
 }).unknown(true)
 
 type ConfigRef = {
-  id?: string
+  id?: string | number
   name?: string
 }
 
 const configRefSchema = Joi.object({
-  id: Joi.string().optional(),
+  id: Joi.alternatives(Joi.number(), Joi.string()).optional(),
   name: Joi.string().optional(),
 }).unknown(true)
 

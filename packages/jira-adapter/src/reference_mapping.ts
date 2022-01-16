@@ -131,7 +131,7 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     target: { type: 'Project' },
   },
   {
-    src: { field: 'id', parentTypes: ['ProjectRole'] },
+    src: { field: 'id', parentTypes: ['ProjectRolePermission'] },
     serializationStrategy: 'id',
     target: { type: 'ProjectRole' },
   },

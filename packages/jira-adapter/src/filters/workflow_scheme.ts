@@ -69,7 +69,9 @@ const filter: FilterCreator = ({ config, client }) => ({
         }
       )
 
-      delete workflowSchemeType.fields.issueTypeMappings
+      if (workflowSchemeType.fields.issueTypeMappings !== undefined) {
+        delete workflowSchemeType.fields.issueTypeMappings
+      }
 
       elements.push(workflowSchemeItemType)
     }

@@ -21,7 +21,6 @@ const webpack = require('webpack')
 const nexe = require('nexe')
 const webpackConfig = require('./webpack.config')
 const fontFiles = require('./dist/src/fonts').fontFiles
-const { getTarget } = require('nexe/lib/target')
 
 const TARGET_FILE_BASENAME = 'salto'
 const TARGET_DIR = 'pkg'
@@ -32,6 +31,7 @@ const TARGET_PLATFORMS = {
   linux: {},
   mac: {},
 } // alpine not included for now
+const PREBUILT_REMOTE_URL = 'https://github.com/nexe/nexe/releases/download/v3.3.3/'
 
 const resources = [
   ...fontFiles.values(),
@@ -51,7 +51,7 @@ const nexeConfigs = () => Object.entries(TARGET_PLATFORMS)
     return {
       output: `${path.join(TARGET_DIR, platform, TARGET_FILE_BASENAME)}${platformOpts.ext || ''}`,
       target,
-      asset: `https://github.com/nexe/nexe/releases/download/v3.3.3/${getTarget(target).toString()}`,
+      remote: PREBUILT_REMOTE_URL,
     }
   })
 

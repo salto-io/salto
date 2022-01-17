@@ -59,4 +59,31 @@ describe('createSkipParentsOfSkippedInstsValidator', () => {
     ])
     expect(errors).toHaveLength(1)
   })
+  it('should not skip the parent instance if its child did not change', async () => {
+    const otherMockChangeValidator: ChangeValidator = async () => [
+      {
+        elemID: skippedInst.elemID,
+        severity: 'Error',
+        message: 'Error',
+        detailedMessage: 'detailed error',
+      },
+      {
+        elemID: skippedInst.elemID,
+        severity: 'Error',
+        message: 'Error',
+        detailedMessage: 'another detailed error',
+      },
+      {
+        elemID: skippedInst.elemID,
+        severity: 'Error',
+        message: 'Error',
+        detailedMessage: 'and another detailed error',
+      },
+    ]
+    const errors = await createSkipParentsOfSkippedInstancesValidator([otherMockChangeValidator])([
+      toChange({ after: parentInstance }),
+      toChange({ after: skippedInst }),
+    ])
+    expect(errors).toHaveLength(4)
+  })
 })

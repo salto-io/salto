@@ -542,6 +542,20 @@ jira {
             },
           ]
         }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/fieldconfigurationscheme"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/fieldconfigurationscheme/{id}"
+            method = "put"
+          }
+          remove = {
+            url = "/rest/api/3/fieldconfigurationscheme/{id}"
+            method = "delete"
+          }
+        }
       }
       FieldsConfigurationIssueTypeItem = {
         request = {
@@ -586,10 +600,19 @@ jira {
               fieldName = "columns"
               fieldType = "list<ColumnItem>"
             },
+            {
+              fieldName = "expand"
+              fieldType = "string"
+            },
           ]
           fieldsToHide = [
             {
               fieldName = "id"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "expand"
             },
           ]
         }
@@ -628,9 +651,30 @@ jira {
       }
       Board_location = {
         transformation = {
-          fieldsToHide = [
+          fieldTypeOverrides = [
             {
-              fieldName = "id"
+              fieldName = "projectKeyOrId"
+              fieldType = "number"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "displayName"
+            },
+            {
+              fieldName = "projectName"
+            },
+            {
+              fieldName = "projectKey"
+            },
+            {
+              fieldName = "projectTypeKey"
+            },
+            {
+              fieldName = "avatarURI"
+            },
+            {
+              fieldName = "name"
             },
           ]
         }
@@ -644,6 +688,11 @@ jira {
             },
           ]
           serviceIdField = "issueTypeSchemeId"
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
         }
         deployRequests = {
           add = {
@@ -653,10 +702,16 @@ jira {
           modify = {
             url = "/rest/api/3/issuetypescheme/{issueTypeSchemeId}"
             method = "put"
+            urlParamsToFields = {
+              issueTypeSchemeId = "id"
+            }
           }
           remove = {
             url = "/rest/api/3/issuetypescheme/{issueTypeSchemeId}"
             method = "delete"
+            urlParamsToFields = {
+              issueTypeSchemeId = "id"
+            }
           }
         }
       }
@@ -834,7 +889,7 @@ jira {
         request = {
           url = "/rest/api/3/project/search"
           queryParams = {
-            expand = "description,lead,issueTypes,url,projectKeys,permissions"
+            expand = "description,lead,url,projectKeys,permissions"
           }
           recurseInto = [
             {
@@ -883,6 +938,17 @@ jira {
             {
               type = "PageBeanIssueTypeScreenSchemesProjects"
               toField = "issueTypeScreenScheme"
+              context = [
+                {
+                  name = "projectId"
+                  fromField = "id"
+                },
+              ]
+              isSingle = true
+            },
+            {
+              type = "PageBeanIssueTypeSchemeProjects"
+              toField = "issueTypeScheme"
               context = [
                 {
                   name = "projectId"
@@ -976,6 +1042,10 @@ jira {
               fieldName = "fieldConfigurationScheme"
               fieldType = "FieldConfigurationScheme"
             },
+            {
+              fieldName = "issueTypeScheme"
+              fieldType = "IssueTypeScheme"
+            },
           ]
           fieldsToHide = [
             {
@@ -1050,6 +1120,11 @@ jira {
           url = "/rest/api/3/issuetypescreenscheme/project?projectId={projectId}"
         }
       }
+      PageBeanIssueTypeSchemeProjects = {
+        request = {
+          url = "/rest/api/3/issuetypescheme/project?projectId={projectId}"
+        }
+      }
       IssueTypeScreenSchemesProjects = {
         transformation = {
           fieldsToOmit = [
@@ -1118,11 +1193,6 @@ jira {
               fieldName = "id"
             },
           ]
-          standaloneFields = [
-            {
-              fieldName = "tabs"
-            },
-          ]
         }
         deployRequests = {
           add = {
@@ -1183,15 +1253,11 @@ jira {
           add = {
             url = "/rest/api/3/screens/{screenId}/tabs"
             method = "post"
-            urlParamsToFields = {
-              screenId = "_parent.0.id"
-            }
           }
           modify = {
             url = "/rest/api/3/screens/{screenId}/tabs/{tabId}"
             method = "put"
             urlParamsToFields = {
-              screenId = "_parent.0.id"
               tabId = "id"
             }
           }
@@ -1199,7 +1265,6 @@ jira {
             url = "/rest/api/3/screens/{screenId}/tabs/{tabId}"
             method = "delete"
             urlParamsToFields = {
-              screenId = "_parent.0.id"
               tabId = "id"
             }
           }

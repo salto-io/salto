@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ListType, ObjectType, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType, toChange } from '@salto-io/adapter-api'
 import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { JIRA } from '../../../src/constants'
@@ -56,25 +56,6 @@ describe('issueTypeScheme', () => {
   })
 
   describe('onFetch', () => {
-    it('replace id with issueTypeSchemeId in type', async () => {
-      type.fields.id = new Field(type, 'id', BuiltinTypes.STRING)
-      await filter.onFetch?.([type])
-      expect(type.fields.id).toBeUndefined()
-      expect(type.fields.issueTypeSchemeId).toBeDefined()
-      expect(type.fields.issueTypeSchemeId.annotations)
-        .toEqual({ [CORE_ANNOTATIONS.HIDDEN_VALUE]: true })
-    })
-
-    it('replace id with issueTypeSchemeId in instances', async () => {
-      const instance = new InstanceElement(
-        'instance',
-        type,
-        { id: '2' }
-      )
-      await filter.onFetch?.([instance])
-      expect(instance.value).toEqual({ issueTypeSchemeId: '2' })
-    })
-
     it('add the updatable annotation to issueTypeIds', async () => {
       await filter.onFetch?.([type])
       expect(type.fields.issueTypeIds.annotations)
@@ -86,17 +67,16 @@ describe('issueTypeScheme', () => {
     it('should return irrelevant changes in leftoverChanges', async () => {
       const res = await filter.deploy?.([
         toChange({ after: type }),
-        toChange({ after: new InstanceElement('instance1', type) }),
         toChange({
           before: new InstanceElement('instance2', new ObjectType({ elemID: new ElemID(JIRA, 'someType') })),
           after: new InstanceElement('instance2', new ObjectType({ elemID: new ElemID(JIRA, 'someType') })),
         }),
       ])
-      expect(res?.leftoverChanges).toHaveLength(3)
+      expect(res?.leftoverChanges).toHaveLength(2)
       expect(res?.deployResult).toEqual({ appliedChanges: [], errors: [] })
     })
 
-    describe('When deploying a change', () => {
+    describe('When deploying a modification change', () => {
       const deployChangeMock = deployment.deployChange as jest.MockedFunction<
         typeof deployment.deployChange
       >
@@ -107,7 +87,7 @@ describe('issueTypeScheme', () => {
           'instance',
           type,
           {
-            issueTypeSchemeId: '1',
+            id: '1',
             name: 'name1',
             issueTypeIds: ['1', '2', '3'],
           }
@@ -117,7 +97,7 @@ describe('issueTypeScheme', () => {
           'instance',
           type,
           {
-            issueTypeSchemeId: '1',
+            id: '1',
             name: 'name2',
             issueTypeIds: ['6', '1', '5', '3'],
           }
@@ -166,12 +146,54 @@ describe('issueTypeScheme', () => {
       })
     })
 
+    describe('When deploying an addition change', () => {
+      const deployChangeMock = deployment.deployChange as jest.MockedFunction<
+        typeof deployment.deployChange
+      >
+      let change: Change<InstanceElement>
+      let instance: InstanceElement
+      let instanceBefore: InstanceElement
+
+      beforeEach(async () => {
+        deployChangeMock.mockClear()
+        deployChangeMock.mockResolvedValue({ issueTypeSchemeId: '10' })
+
+        instance = new InstanceElement(
+          'instance',
+          type,
+          {
+            name: 'name2',
+            issueTypeIds: ['6', '1', '5', '3'],
+          }
+        )
+
+        instanceBefore = instance.clone()
+
+        change = toChange({ after: instance })
+
+        await filter.deploy?.([change])
+      })
+      it('should call deployChange', () => {
+        expect(deployChangeMock).toHaveBeenCalledWith(
+          toChange({ after: instanceBefore }),
+          expect.any(JiraClient),
+          expect.any(Object),
+          [],
+          undefined
+        )
+      })
+
+      it('should add the id to the instance', () => {
+        expect(instance.value.id).toEqual('10')
+      })
+    })
+
     it('should not call the new issue type ids endpoint of there are no new ids', async () => {
       const beforeInstance = new InstanceElement(
         'instance',
         type,
         {
-          issueTypeSchemeId: '1',
+          id: '1',
           name: 'name1',
           issueTypeIds: ['1', '2', '3'],
         }
@@ -181,7 +203,7 @@ describe('issueTypeScheme', () => {
         'instance',
         type,
         {
-          issueTypeSchemeId: '1',
+          id: '1',
           name: 'name2',
           issueTypeIds: ['1', '2'],
         }
@@ -200,7 +222,7 @@ describe('issueTypeScheme', () => {
         'instance',
         type,
         {
-          issueTypeSchemeId: '1',
+          id: '1',
           name: 'name1',
           issueTypeIds: ['1', '2', '3'],
         }
@@ -210,7 +232,7 @@ describe('issueTypeScheme', () => {
         'instance',
         type,
         {
-          issueTypeSchemeId: '1',
+          id: '1',
           name: 'name2',
           issueTypeIds: ['1', '2', '3'],
         }
@@ -229,7 +251,7 @@ describe('issueTypeScheme', () => {
         'instance',
         type,
         {
-          issueTypeSchemeId: '1',
+          id: '1',
           name: 'name1',
         }
       )
@@ -238,7 +260,7 @@ describe('issueTypeScheme', () => {
         'instance',
         type,
         {
-          issueTypeSchemeId: '1',
+          id: '1',
           name: 'name2',
         }
       )
@@ -256,7 +278,7 @@ describe('issueTypeScheme', () => {
         'instance',
         type,
         {
-          issueTypeSchemeId: '1',
+          id: '1',
           name: 'name1',
           issueTypeIds: ['1', '2', '3'],
         }
@@ -266,7 +288,7 @@ describe('issueTypeScheme', () => {
         'instance',
         type,
         {
-          issueTypeSchemeId: '1',
+          id: '1',
           name: 'name2',
         }
       )

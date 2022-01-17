@@ -97,12 +97,39 @@ describe('client_http_connection', () => {
           url: 'url',
         },
       } as AxiosError)).toBe(10000)
+
+      expect(retryOptions.retryDelay?.(1, {
+        response: {
+          headers: {
+            'retry-after': '10',
+          },
+        },
+        code: 'code',
+        config: {
+          url: 'url',
+        },
+      } as AxiosError)).toBe(10000)
     })
 
-    it('should use the input detail when retry-after header when available', () => {
+    it('should use the input delay when retry-after header is not available', () => {
       expect(retryOptions.retryDelay?.(1, {
         response: {
           headers: {},
+          status: 429,
+        },
+        code: 'code',
+        config: {
+          url: 'url',
+        },
+      } as AxiosError)).toBe(100)
+    })
+
+    it('should use the input delay when retry-after header is invalid', () => {
+      expect(retryOptions.retryDelay?.(1, {
+        response: {
+          headers: {
+            'Retry-After': 'invalid',
+          },
         },
         code: 'code',
         config: {

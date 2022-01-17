@@ -68,18 +68,30 @@ export type ConnectionCreator<TCredentials> = (
   retryOptions: RetryOptions,
 ) => Connection<TCredentials>
 
+const getRetryDelay = (retryOptions: Required<ClientRetryConfig>, error: AxiosError): number => {
+  // Although the standard is 'Retry-After' is seems that some servers
+  // returns 'retry-after' so just in case we lowercase the headers
+  const retryAfterHeaderValue = _.mapKeys(
+    error.response?.headers ?? {},
+    (_val, key) => key.toLowerCase()
+  )['retry-after']
+
+  const retryDelay = retryAfterHeaderValue !== undefined
+    ? parseInt(retryAfterHeaderValue, 10) * 1000
+    : retryOptions.retryDelay
+
+  if (Number.isNaN(retryDelay)) {
+    log.warn(`Received invalid retry-after header value: ${retryAfterHeaderValue}`)
+    return retryOptions.retryDelay
+  }
+
+  return retryDelay
+}
+
 export const createRetryOptions = (retryOptions: Required<ClientRetryConfig>): RetryOptions => ({
   retries: retryOptions.maxAttempts,
   retryDelay: (retryCount, err) => {
-    // Although the standard is 'Retry-After' is seems that some servers
-    // returns 'retry-after' so just in case we lowercase the headers
-    const retryAfterHeaderValue = _.mapKeys(
-      err.response?.headers ?? {},
-      (_val, key) => key.toLowerCase()
-    )['retry-after']
-    const retryDelay = retryAfterHeaderValue !== undefined
-      ? parseInt(retryAfterHeaderValue, 10) * 1000
-      : retryOptions.retryDelay
+    const retryDelay = getRetryDelay(retryOptions, err)
 
     log.warn('Failed to run client call to %s for reason: %s (%s). Retrying in %ds (attempt %d).',
       err.config.url,

@@ -65,9 +65,9 @@ export const deployChange = async (
   if (endpoint === undefined) {
     throw new Error(`No endpoint of type ${change.action} for ${instance.elemID.typeName}`)
   }
-  const valuesToDeploy = _.pickBy(
+  const valuesToDeploy = _.omit(
     (await filterIrrelevantValues(getChangeData(change), change.action)).value,
-    (_value, key) => !fieldsToIgnore.includes(key)
+    fieldsToIgnore
   )
 
   const urlVarsValues = {

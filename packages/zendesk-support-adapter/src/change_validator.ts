@@ -15,6 +15,7 @@
 */
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { config as configUtils, deployment } from '@salto-io/adapter-components'
+import { accountSettingsValidator } from './change_validators'
 
 const {
   deployTypesNotSupportedValidator,
@@ -26,6 +27,7 @@ export default (apiConfig: configUtils.AdapterDuckTypeApiConfig): ChangeValidato
   const validators: ChangeValidator[] = [
     deployTypesNotSupportedValidator,
     createCheckDeploymentBasedOnConfigValidator(apiConfig),
+    accountSettingsValidator,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { validateCredentials, axiosConnection, UnauthorizedError } from '../../src/client'
+import { RetryOptions } from '../../src/client/http_connection'
+import { validateCredentials, axiosConnection, UnauthorizedError, createRetryOptions } from '../../src/client'
 import { createConnection, BASE_URL } from './common'
 
 describe('client_http_connection', () => {
@@ -68,6 +69,73 @@ describe('client_http_connection', () => {
           credValidateFunc: async () => { throw new Error('aaa') },
         })) },
       )).rejects.toThrow(new Error('Login failed with error: Error: aaa'))
+    })
+  })
+  describe('createRetryOptions', () => {
+    let retryOptions: RetryOptions
+
+    beforeEach(() => {
+      retryOptions = createRetryOptions({ maxAttempts: 3, retryDelay: 100 })
+    })
+    it('should retry error code 429', () => {
+      expect(retryOptions.retryCondition?.({
+        response: {
+          status: 429,
+        },
+      } as AxiosError)).toBeTruthy()
+    })
+
+    it('should use the retry-after header when available', () => {
+      expect(retryOptions.retryDelay?.(1, {
+        response: {
+          headers: {
+            'Retry-After': '10',
+          },
+        },
+        code: 'code',
+        config: {
+          url: 'url',
+        },
+      } as AxiosError)).toBe(10000)
+
+      expect(retryOptions.retryDelay?.(1, {
+        response: {
+          headers: {
+            'retry-after': '10',
+          },
+        },
+        code: 'code',
+        config: {
+          url: 'url',
+        },
+      } as AxiosError)).toBe(10000)
+    })
+
+    it('should use the input delay when retry-after header is not available', () => {
+      expect(retryOptions.retryDelay?.(1, {
+        response: {
+          headers: {},
+          status: 429,
+        },
+        code: 'code',
+        config: {
+          url: 'url',
+        },
+      } as AxiosError)).toBe(100)
+    })
+
+    it('should use the input delay when retry-after header is invalid', () => {
+      expect(retryOptions.retryDelay?.(1, {
+        response: {
+          headers: {
+            'Retry-After': 'invalid',
+          },
+        },
+        code: 'code',
+        config: {
+          url: 'url',
+        },
+      } as AxiosError)).toBe(100)
     })
   })
 })

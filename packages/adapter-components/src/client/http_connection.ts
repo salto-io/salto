@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import axios, { AxiosError, AxiosBasicCredentials } from 'axios'
-import axiosRetry from 'axios-retry'
+import axiosRetry, { isNetworkOrIdempotentRequestError } from 'axios-retry'
 import { AccountId } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { ClientRetryConfig } from './config'
@@ -55,6 +55,7 @@ type AuthenticatedAPIConnection = APIConnection & {
 export type RetryOptions = {
   retries: number
   retryDelay?: (retryCount: number, error: AxiosError) => number
+  retryCondition?: (error: AxiosError) => boolean
 }
 
 type LoginFunc<TCredentials> = (creds: TCredentials) => Promise<AuthenticatedAPIConnection>
@@ -67,17 +68,41 @@ export type ConnectionCreator<TCredentials> = (
   retryOptions: RetryOptions,
 ) => Connection<TCredentials>
 
+const getRetryDelay = (retryOptions: Required<ClientRetryConfig>, error: AxiosError): number => {
+  // Although the standard is 'Retry-After' is seems that some servers
+  // returns 'retry-after' so just in case we lowercase the headers
+  const retryAfterHeaderValue = _.mapKeys(
+    error.response?.headers ?? {},
+    (_val, key) => key.toLowerCase()
+  )['retry-after']
+
+  const retryDelay = retryAfterHeaderValue !== undefined
+    ? parseInt(retryAfterHeaderValue, 10) * 1000
+    : retryOptions.retryDelay
+
+  if (Number.isNaN(retryDelay)) {
+    log.warn(`Received invalid retry-after header value: ${retryAfterHeaderValue}`)
+    return retryOptions.retryDelay
+  }
+
+  return retryDelay
+}
+
 export const createRetryOptions = (retryOptions: Required<ClientRetryConfig>): RetryOptions => ({
   retries: retryOptions.maxAttempts,
   retryDelay: (retryCount, err) => {
+    const retryDelay = getRetryDelay(retryOptions, err)
+
     log.warn('Failed to run client call to %s for reason: %s (%s). Retrying in %ds (attempt %d).',
       err.config.url,
       err.code,
       err.message,
-      retryOptions.retryDelay / 1000,
+      retryDelay / 1000,
       retryCount)
-    return retryOptions.retryDelay
+    return retryDelay
   },
+  retryCondition: err => isNetworkOrIdempotentRequestError(err)
+    || err.response?.status === 429,
 })
 
 type ConnectionParams<TCredentials> = {

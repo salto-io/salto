@@ -44,6 +44,7 @@ import organizationFieldOrderFilter from './filters/reorder/organization_field'
 import workspaceOrderFilter from './filters/reorder/workspace'
 import businessHoursScheduleFilter from './filters/business_hours_schedule'
 import collisionErrorsFilter from './filters/collision_errors'
+import accountSettingsFilter from './filters/account_settings'
 import defaultDeployFilter from './filters/default_deploy'
 
 const log = logger(module)
@@ -65,6 +66,7 @@ export const DEFAULT_FILTERS = [
   workspaceOrderFilter,
   businessHoursScheduleFilter,
   collisionErrorsFilter,
+  accountSettingsFilter,
   // defaultDeployFilter should be last!
   defaultDeployFilter,
 ]

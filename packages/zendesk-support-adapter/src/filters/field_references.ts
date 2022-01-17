@@ -63,7 +63,7 @@ const ZendeskSupportReferenceSerializationStrategyLookup: Record<
   ...referenceUtils.ReferenceSerializationStrategyLookup,
   customFields: {
     serialize: ({ ref }) => (isInstanceElement(ref.value)
-      ? CUSTOM_FIELDS_PREFIX.concat(ref.value.value.id?.toString())
+      ? `${CUSTOM_FIELDS_PREFIX}${ref.value.value.id?.toString()}`
       : ref.value),
     lookup: val => ((_.isString(val) && val.startsWith(CUSTOM_FIELDS_PREFIX))
       ? val.slice(CUSTOM_FIELDS_PREFIX.length)
@@ -83,13 +83,15 @@ export const contextStrategyLookup: Record<
   parentValue: neighborContextFunc({ contextFieldName: 'value', levelsUp: 2, contextValueMapper: getValueLookupType }),
 }
 
-type ZendeskSupportFieldReferenceDefinition = referenceUtils
-  .FieldReferenceDefinition<ReferenceContextStrategyName> & {
+type ZendeskSupportFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<
+  ReferenceContextStrategyName
+> & {
   zendeskSupportSerializationStrategy?: ZendeskSupportReferenceSerializationStrategyName
 }
 
-export class ZendeskSupportFieldReferenceResolver extends referenceUtils
-  .FieldReferenceResolver<ReferenceContextStrategyName> {
+export class ZendeskSupportFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<
+  ReferenceContextStrategyName
+> {
   constructor(def: ZendeskSupportFieldReferenceDefinition) {
     super({ src: def.src })
     this.serializationStrategy = ZendeskSupportReferenceSerializationStrategyLookup[

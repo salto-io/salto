@@ -88,7 +88,6 @@ describe('account settings filter', () => {
     )
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(0)
-    expect(res.deployResult.appliedChanges).toHaveLength(1)
     expect(res.deployResult.appliedChanges)
       .toEqual([
         { action: 'modify', data: { before: accountSettings, after: clonedAfter } },
@@ -111,7 +110,6 @@ describe('account settings filter', () => {
     )
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(0)
-    expect(res.deployResult.appliedChanges).toHaveLength(1)
     expect(res.deployResult.appliedChanges)
       .toEqual([
         { action: 'modify', data: { before: accountSettings, after: clonedAfter } },

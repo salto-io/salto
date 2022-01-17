@@ -81,22 +81,19 @@ const deployIssueTypeSchema = async (
   client: JiraClient,
   config: JiraConfig,
 ): Promise<void> => {
-  await defaultDeployChange({
-    change,
-    client,
-    apiDefinitions: config.apiDefinitions,
-    fieldsToIgnore: isModificationChange(change) ? ['issueTypeIds'] : [],
-  })
+  if (isModificationChange(change)) {
+    await defaultDeployChange({ change, client, apiDefinitions: config.apiDefinitions, fieldsToIgnore: ['issueTypeIds'] })
+    const resolvedChange = await resolveChangeElement(change, getLookUpName)
+    await deployNewAndDeletedIssueTypeIds(resolvedChange, client)
+    await deployIssueTypeIdsOrder(resolvedChange, client)
+    return
+  }
+
+  await defaultDeployChange({ change, client, apiDefinitions: config.apiDefinitions })
 
   if (isAdditionChange(change)) {
     change.data.after.value.id = change.data.after.value.issueTypeSchemeId
     delete change.data.after.value.issueTypeSchemeId
-  }
-
-  if (isModificationChange(change)) {
-    const resolvedChange = await resolveChangeElement(change, getLookUpName)
-    await deployNewAndDeletedIssueTypeIds(resolvedChange, client)
-    await deployIssueTypeIdsOrder(resolvedChange, client)
   }
 }
 

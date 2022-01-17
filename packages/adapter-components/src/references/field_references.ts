@@ -228,8 +228,12 @@ export const addReferences = async <
 export const generateLookupFunc = <
   T extends string,
   GenericFieldReferenceDefinition extends FieldReferenceDefinition<T>
->(defs: GenericFieldReferenceDefinition[]): GetLookupNameFunc => {
-  const resolverFinder = generateReferenceResolverFinder(defs)
+>(
+    defs: GenericFieldReferenceDefinition[],
+    fieldReferenceResolverCreator?: (def: GenericFieldReferenceDefinition) =>
+      FieldReferenceResolver<T>,
+  ): GetLookupNameFunc => {
+  const resolverFinder = generateReferenceResolverFinder(defs, fieldReferenceResolverCreator)
 
   const determineLookupStrategy = async (args: GetLookupNameFuncArgs):
     Promise<ReferenceSerializationStrategy | undefined> => {

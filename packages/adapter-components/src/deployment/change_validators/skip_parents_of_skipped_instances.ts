@@ -24,10 +24,13 @@ export const createSkipParentsOfSkippedInstancesValidator = (
 ): ChangeValidator => async (changes, adapterConfig) => {
   const changeValidator = createChangeValidator(changeValidators, disabledValidators)
   const changeErrors = await changeValidator(changes, adapterConfig)
+  const idToChange = Object.fromEntries(
+    changes.map(change => [getChangeData(change).elemID.getFullName(), change])
+  )
   const skippedInstances = _(changeErrors)
-    .map(error => error.elemID)
+    .map(error => error.elemID.getFullName())
     .uniq()
-    .flatMap(id => changes.filter(change => getChangeData(change).elemID.isEqual(id)))
+    .flatMap(id => (idToChange[id] ? [idToChange[id]] : []))
     .map(getChangeData)
     .filter(isInstanceElement)
     .value()
@@ -44,7 +47,7 @@ export const createSkipParentsOfSkippedInstancesValidator = (
     .map(ref => ({
       elemID: ref.elemID,
       severity: 'Error',
-      message: 'Depends on skipped instance',
+      message: `${ref.elemID.getFullName()} depeneds on a skipped instance`,
       detailedMessage: `${ref.elemID.getFullName()} depeneds on a skipped instance and therefore is also skipped`,
     }) as ChangeError)
     .value()

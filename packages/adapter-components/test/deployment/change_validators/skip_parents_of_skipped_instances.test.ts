@@ -53,4 +53,10 @@ describe('createSkipParentsOfSkippedInstsValidator', () => {
     expect(errors).toHaveLength(1)
     expect(errors.map(e => e.elemID.getFullName())).toEqual([skippedInst.elemID.getFullName()])
   })
+  it('should not skip the parent instance if its child did not change', async () => {
+    const errors = await createSkipParentsOfSkippedInstancesValidator([mockChangeValidator])([
+      toChange({ after: parentInstance }),
+    ])
+    expect(errors).toHaveLength(1)
+  })
 })

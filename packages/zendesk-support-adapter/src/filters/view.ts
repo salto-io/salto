@@ -68,9 +68,11 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     )
     const deployResult = await deployChanges(
       viewChanges,
-      async change => deployChange(
-        change, client, config.apiDefinitions, ['conditions', 'execution'],
-      ),
+      async change => {
+        await deployChange(
+          change, client, config.apiDefinitions, ['conditions', 'execution'],
+        )
+      },
     )
     return { deployResult, leftoverChanges }
   },

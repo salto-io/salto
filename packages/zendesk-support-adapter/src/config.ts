@@ -611,8 +611,37 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
   },
   ticket_field__custom_field_options: {
+    deployRequests: {
+      add: {
+        url: '/ticket_fields/{ticketFieldId}/options',
+        method: 'post',
+        deployAsField: 'custom_field_option',
+        urlParamsToFields: {
+          ticketFieldId: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/ticket_fields/{ticketFieldId}/options',
+        method: 'post',
+        deployAsField: 'custom_field_option',
+        urlParamsToFields: {
+          ticketFieldId: '_parent.0.id',
+        },
+      },
+      remove: {
+        url: '/ticket_fields/{ticketFieldId}/options/{ticketFieldOptionId}',
+        method: 'delete',
+        urlParamsToFields: {
+          ticketFieldId: '_parent.0.id',
+          ticketFieldOptionId: 'id',
+        },
+      },
+    },
     transformation: {
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'default', fieldType: 'boolean' },
+      ),
     },
   },
   user_field: {
@@ -650,8 +679,37 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
   },
   user_field__custom_field_options: {
+    deployRequests: {
+      add: {
+        url: '/user_fields/{userFieldId}/options',
+        method: 'post',
+        deployAsField: 'custom_field_option',
+        urlParamsToFields: {
+          userFieldId: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/user_fields/{userFieldId}/options',
+        method: 'post',
+        deployAsField: 'custom_field_option',
+        urlParamsToFields: {
+          userFieldId: '_parent.0.id',
+        },
+      },
+      remove: {
+        url: '/user_fields/{userFieldId}/options/{userFieldOptionId}',
+        method: 'delete',
+        urlParamsToFields: {
+          userFieldId: '_parent.0.id',
+          userFieldOptionId: 'id',
+        },
+      },
+    },
     transformation: {
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'default', fieldType: 'boolean' },
+      ),
     },
   },
   user_field_order: {

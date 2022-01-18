@@ -63,9 +63,11 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     )
     const deployResult = await deployChanges(
       workspaceChanges,
-      async change => deployChange(
-        change, client, config.apiDefinitions, ['selected_macros'],
-      ),
+      async change => {
+        await deployChange(
+          change, client, config.apiDefinitions, ['selected_macros'],
+        )
+      },
     )
     return { deployResult, leftoverChanges }
   },

@@ -24,6 +24,8 @@ import { OPERATION_TO_ANNOTATION } from './annotations'
 
 const FIELD_PATH_DELIMITER = '.'
 
+export type ResponseResult = ResponseValue | ResponseValue[] | undefined
+
 const filterIrrelevantValues = async (
   instance: InstanceElement,
   action: ActionName
@@ -59,7 +61,7 @@ export const deployChange = async (
   endpointDetails?: DeploymentRequestsByAction,
   fieldsToIgnore: string[] = [],
   additionalUrlVars?: Record<string, string>
-): Promise<ResponseValue | ResponseValue[] | undefined> => {
+): Promise<ResponseResult> => {
   const instance = getChangeData(change)
   const endpoint = endpointDetails?.[change.action]
   if (endpoint === undefined) {

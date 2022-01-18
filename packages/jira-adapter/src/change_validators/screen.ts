@@ -40,7 +40,7 @@ export const screenValidator: ChangeValidator = async changes => (
         return {
           elemID: instance.elemID,
           severity: 'Error' as SaltoErrorSeverity,
-          message: 'The field cannot be used more than once in the same screen instance',
+          message: 'Fields cannot be used more than once in the same screen instance',
           detailedMessage: `The ${duplicateFields.length > 1 ? 'fields' : 'field'} ${duplicateFields.join(', ')} can only be used once in the tabs of screen ${instance.elemID.getFullName()}`,
         }
       }

@@ -40,36 +40,31 @@ export const defaultDeployChange = async ({
   apiDefinitions,
   fieldsToIgnore = [],
   additionalUrlVars,
-}: DeployChangeParam): Promise<void> => {
-  try {
-    const changeToDeploy = await elementUtils.swagger.flattenAdditionalProperties(
-      await resolveChangeElement(change, getLookUpName)
-    )
-    const response = await deployment.deployChange(
-      changeToDeploy,
-      client,
-      apiDefinitions.types[getChangeData(change).elemID.typeName]?.deployRequests,
-      fieldsToIgnore,
-      additionalUrlVars
-    )
+}: DeployChangeParam): Promise<
+  clientUtils.ResponseValue | clientUtils.ResponseValue[] | undefined
+> => {
+  const changeToDeploy = await elementUtils.swagger.flattenAdditionalProperties(
+    await resolveChangeElement(change, getLookUpName)
+  )
+  const response = await deployment.deployChange(
+    changeToDeploy,
+    client,
+    apiDefinitions.types[getChangeData(change).elemID.typeName]?.deployRequests,
+    fieldsToIgnore,
+    additionalUrlVars
+  )
 
-    if (isAdditionChange(change)) {
-      if (!Array.isArray(response)) {
-        const serviceIdField = apiDefinitions.types[getChangeData(change).elemID.typeName]?.transformation?.serviceIdField ?? 'id'
-        if (response?.[serviceIdField] !== undefined) {
-          getChangeData(change).value[serviceIdField] = response[serviceIdField]
-        }
-      } else {
-        log.warn('Received unexpected response from deployChange: %o', response)
+  if (isAdditionChange(change)) {
+    if (!Array.isArray(response)) {
+      const serviceIdField = apiDefinitions.types[getChangeData(change).elemID.typeName]?.transformation?.serviceIdField ?? 'id'
+      if (response?.[serviceIdField] !== undefined) {
+        getChangeData(change).value[serviceIdField] = response[serviceIdField]
       }
+    } else {
+      log.warn('Received unexpected response from deployChange: %o', response)
     }
-  } catch (err) {
-    const errorMessage = `Deployment of ${getChangeData(change).elemID.getFullName()} failed: ${err}`
-    if (err instanceof clientUtils.HTTPError && 'errorMessages' in err.response.data) {
-      throw new Error(`${errorMessage}. ${err.response.data.errorMessages}`)
-    }
-    throw Error(errorMessage)
   }
+  return response
 }
 
 /**
@@ -85,10 +80,11 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
         await deployChangeFunc(change)
         return change
       } catch (err) {
-        if (!_.isError(err)) {
-          throw err
+        const errorMessage = `Deployment of ${getChangeData(change).elemID.getFullName()} failed: ${err}`
+        if (err instanceof clientUtils.HTTPError && 'errorMessages' in err.response.data) {
+          return new Error(`${errorMessage}. ${err.response.data.errorMessages}`)
         }
-        return err
+        return new Error(errorMessage)
       }
     })
   )

@@ -33,6 +33,8 @@ describe('screenValidator', () => {
           '1',
           '2',
           '1',
+          '2',
+          '3',
         ],
       },
     }
@@ -45,8 +47,8 @@ describe('screenValidator', () => {
       {
         elemID: instance.elemID,
         severity: 'Error',
-        message: `A field can only be used once in the tabs of screen ${instance.elemID.getFullName()}`,
-        detailedMessage: 'The field cannot be used more than once in the same screen instance',
+        message: 'The field cannot be used more than once in the same screen instance',
+        detailedMessage: `The fields 1, 2 can only be used once in the tabs of screen ${instance.elemID.getFullName()}`,
       },
     ])
   })
@@ -78,8 +80,8 @@ describe('screenValidator', () => {
       {
         elemID: instance.elemID,
         severity: 'Error',
-        message: `A field can only be used once in the tabs of screen ${instance.elemID.getFullName()}`,
-        detailedMessage: 'The field cannot be used more than once in the same screen instance',
+        message: 'The field cannot be used more than once in the same screen instance',
+        detailedMessage: `The field 1 can only be used once in the tabs of screen ${instance.elemID.getFullName()}`,
       },
     ])
   })

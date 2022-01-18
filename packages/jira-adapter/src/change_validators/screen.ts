@@ -13,10 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange, SaltoErrorSeverity, Values } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange, isReferenceExpression, SaltoErrorSeverity, Values } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
-import { resolveValues } from '@salto-io/adapter-utils'
-import { getLookUpName } from '../reference_mapping'
+import _ from 'lodash'
 
 const { awu } = collections.asynciterable
 
@@ -27,17 +26,22 @@ export const screenValidator: ChangeValidator = async changes => (
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === 'Screen')
     .map(async instance => {
-      const resolvedInstance = await resolveValues(instance, getLookUpName)
-
-      const usedFields = (Object.values(resolvedInstance.value.tabs ?? {}) as Values[])
+      const usedFields = (Object.values(instance.value.tabs ?? {}) as Values[])
         .flatMap(tab => tab.fields ?? [])
 
-      if (usedFields.length !== new Set(usedFields).size) {
+      const duplicateFields = _(usedFields)
+        .map(field => (isReferenceExpression(field) ? field.elemID.getFullName() : field))
+        .countBy()
+        .pickBy(count => count > 1)
+        .keys()
+        .value()
+
+      if (duplicateFields.length > 0) {
         return {
           elemID: instance.elemID,
           severity: 'Error' as SaltoErrorSeverity,
-          message: `A field can only be used once in the tabs of screen ${instance.elemID.getFullName()}`,
-          detailedMessage: 'The field cannot be used more than once in the same screen instance',
+          message: 'The field cannot be used more than once in the same screen instance',
+          detailedMessage: `The ${duplicateFields.length > 1 ? 'fields' : 'field'} ${duplicateFields.join(', ')} can only be used once in the tabs of screen ${instance.elemID.getFullName()}`,
         }
       }
       return undefined

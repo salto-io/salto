@@ -296,7 +296,7 @@ describe('issueTypeScheme', () => {
       const res = await filter.deploy?.(
         [toChange({ before: beforeInstance, after: afterInstance })]
       )
-      expect(res?.deployResult.errors).toEqual([new Error('Failed to delete /rest/api/3/issuetypescheme/1/issuetype/1 with error: Error: some error')])
+      expect(res?.deployResult.errors).toEqual([new Error('Deployment of jira.IssueTypeScheme.instance.instance failed: Error: Failed to delete /rest/api/3/issuetypescheme/1/issuetype/1 with error: Error: some error')])
       expect(res?.deployResult.appliedChanges).toEqual([])
     })
   })

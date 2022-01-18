@@ -21,7 +21,9 @@ const filter: FilterCreator = ({ client, config }) => ({
   deploy: async changes => {
     const deployResult = await deployChanges(
       changes.filter(isInstanceChange),
-      change => defaultDeployChange({ change, client, apiDefinitions: config.apiDefinitions })
+      async change => {
+        await defaultDeployChange({ change, client, apiDefinitions: config.apiDefinitions })
+      },
     )
 
     return {

@@ -252,7 +252,9 @@ const filter: FilterCreator = ({ config, client }) => ({
         change,
         async instance => {
           delete instance.value.issueTypeMappings
-          delete instance.value.updateDraftIfNeeded
+          if (isModificationChange(change)) {
+            delete instance.value.updateDraftIfNeeded
+          }
           return instance
         }
       ))

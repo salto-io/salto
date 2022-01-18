@@ -422,7 +422,7 @@ describe('workflowScheme', () => {
           updateDraftIfNeeded: true,
         }
       )
-      await filter.onDeploy?.([toChange({ after: instance })])
+      await filter.onDeploy?.([toChange({ before: instance, after: instance })])
       expect(instance.value).toEqual({})
     })
   })

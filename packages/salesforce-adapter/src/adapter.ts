@@ -39,6 +39,7 @@ import profilePermissionsFilter from './filters/profile_permissions'
 import convertListsFilter from './filters/convert_lists'
 import convertTypeFilter from './filters/convert_types'
 import removeFieldsAndValuesFilter from './filters/remove_fields_and_values'
+import removeRestrictionAnnotationsFilter from './filters/remove_restriction_annotations'
 import standardValueSetFilter from './filters/standard_value_sets'
 import flowFilter from './filters/flow'
 import addMissingIdsFilter from './filters/add_missing_ids'
@@ -94,6 +95,7 @@ export const DEFAULT_FILTERS = [
   // customObjectsInstancesFilter depends on customObjectsFilter
   customObjectsInstancesFilter,
   removeFieldsAndValuesFilter,
+  removeRestrictionAnnotationsFilter,
   // addMissingIdsFilter should run after customObjectsFilter
   addMissingIdsFilter,
   layoutFilter,

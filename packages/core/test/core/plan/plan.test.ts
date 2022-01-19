@@ -225,4 +225,19 @@ describe('getPlan', () => {
     })
     expect(plan.size).toBe(0)
   })
+
+  it('should work for new type with a built-in function name', async () => {
+    const type = new ObjectType({
+      elemID: new ElemID('adapter', 'type'),
+      fields: {
+        toString: { refType: BuiltinTypes.STRING },
+      },
+    })
+
+    const plan = await getPlan({
+      before: createElementSource([]),
+      after: createElementSource([type]),
+    })
+    expect(plan.size).toBe(1)
+  })
 })

@@ -25,7 +25,7 @@ import { FilterCreator } from '../../filter'
 import { addIdUponAddition, deployChange, deployChanges } from '../../deployment'
 import { applyforInstanceChangesOfType } from '../utils'
 
-const CUSTOM_FIELD_OPTIONS_FIELD_NAME = 'custom_field_options'
+export const CUSTOM_FIELD_OPTIONS_FIELD_NAME = 'custom_field_options'
 export const DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME = 'default_custom_field_option'
 
 type CustomFieldOptionsFilterCreatorParams = {
@@ -79,12 +79,10 @@ export const createCustomFieldOptionsFilterCreator = (
       parentTypeName,
       (instance: InstanceElement) => {
         const defaultValue = instance.value[DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME]
-        if (defaultValue) {
-          makeArray(instance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME])
-            .forEach(option => {
-              option.default = option.value === defaultValue
-            })
-        }
+        makeArray(instance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME])
+          .forEach(option => {
+            option.default = (defaultValue !== undefined) && (option.value === defaultValue)
+          })
         return instance
       }
     )

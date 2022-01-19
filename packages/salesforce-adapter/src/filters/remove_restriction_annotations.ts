@@ -44,16 +44,15 @@ export const makeFilter = (
       relevantFields.forEach(fieldName => {
         const field = type.fields[fieldName]
         if (field !== undefined && field.annotations[CORE_ANNOTATIONS.RESTRICTION] !== undefined) {
-          field.annotations[CORE_ANNOTATIONS.RESTRICTION] = undefined
+          delete field.annotations[CORE_ANNOTATIONS.RESTRICTION]
         }
       })
     }
 
-    await awu(elements).filter(isObjectType).filter(
-      async type => typeNameToFieldMapping[
-        await metadataType(type)
-      ] !== undefined
-    ).forEach(removeRestrictionsFromTypeFields)
+    await awu(elements)
+      .filter(isObjectType)
+      .filter(async type => typeNameToFieldMapping[await metadataType(type)] !== undefined)
+      .forEach(removeRestrictionsFromTypeFields)
   },
 })
 

@@ -83,18 +83,20 @@ describe('remove restriction annotations filter', () => {
     it('should not remove restriction for unrelated fields', () => {
       const testType = testElements[0] as ObjectType
       expect(testType.fields.unrelated).toBeDefined()
-      expect(testType.fields.unrelated.annotations[CORE_ANNOTATIONS.RESTRICTION]).toBeDefined()
+      expect(testType.fields.unrelated.annotations).toHaveProperty(CORE_ANNOTATIONS.RESTRICTION)
       const unrelatedType = testElements[1] as ObjectType
       expect(unrelatedType.fields.targetField).toBeDefined()
-      expect(
-        unrelatedType.fields.targetField.annotations[CORE_ANNOTATIONS.RESTRICTION]
-      ).toBeDefined()
+      expect(unrelatedType.fields.targetField.annotations).toHaveProperty(
+        CORE_ANNOTATIONS.RESTRICTION
+      )
     })
 
     it('should remove annotation for related fields', () => {
       const testType = testElements[0] as ObjectType
       expect(testType.fields.targetField).toBeDefined()
-      expect(testType.fields.targetField.annotations[CORE_ANNOTATIONS.RESTRICTION]).toBeUndefined()
+      expect(testType.fields.targetField.annotations).not.toHaveProperty(
+        CORE_ANNOTATIONS.RESTRICTION
+      )
     })
   })
 })

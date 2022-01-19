@@ -15,8 +15,9 @@
 */
 import _ from 'lodash'
 import uuidv4 from 'uuid/v4'
-import { Change, ChangeId, Element, ElemID, InstanceElement, isInstanceElement,
-  ObjectType, isObjectType, toChange, Values } from '@salto-io/adapter-api'
+import { Change, ChangeId, Element, ElemID, InstanceElement, isInstanceElement, ObjectType,
+  isObjectType, toChange, Values, ReferenceExpression, CORE_ANNOTATIONS,
+  FieldDefinition, BuiltinTypes, Value } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
@@ -24,6 +25,7 @@ import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { DEFAULT_CONFIG, API_DEFINITIONS_CONFIG } from '../src/config'
 import { ZENDESK_SUPPORT } from '../src/constants'
 import { Credentials } from '../src/auth'
+import { getChangeGroupIds } from '../src/group_change'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
 
@@ -32,8 +34,9 @@ const { awu } = collections.asynciterable
 // Set long timeout as we communicate with Zendesk APIs
 jest.setTimeout(600000)
 
-const createInstanceElement = (type: string, valuesOverride: Values):
-InstanceElement => {
+const createInstanceElement = (
+  type: string, valuesOverride: Values, fields?: Record<string, FieldDefinition>
+): InstanceElement => {
   const instValues = {
     ...mockDefaultValues[type],
     ...valuesOverride,
@@ -46,7 +49,7 @@ InstanceElement => {
   const nameParts = transformationConfig.idFields.map(field => _.get(instValues, field))
   return new InstanceElement(
     naclCase(nameParts.map(String).join('_')),
-    new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, type) }),
+    new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, type), fields }),
     instValues
   )
 }
@@ -69,6 +72,7 @@ describe('Zendesk support adapter E2E', () => {
     let credLease: CredsLease<Credentials>
     let adapterAttr: Reals
     const testSuffix = uuidv4().slice(0, 8)
+    const testOptionValue = uuidv4().slice(0, 8)
     let elements: Element[] = []
     const createName = (type: string): string => `Test${type}${testSuffix}`
 
@@ -120,9 +124,59 @@ describe('Zendesk support adapter E2E', () => {
     const ticketFieldInstance = createInstanceElement(
       'ticket_field',
       { title: createName('ticket_field') },
+      { default_custom_field_option: { refType: BuiltinTypes.STRING } },
     )
-    const groupIdToInstances = _.groupBy(
-      [
+    const ticketFieldOptionType = new ObjectType({
+      elemID: new ElemID(ZENDESK_SUPPORT, 'ticket_field__custom_field_options'),
+    })
+    const option1Name = `Option1${testSuffix}`
+    const option1 = new InstanceElement(
+      `${ticketFieldInstance.elemID.name}__${option1Name}`,
+      ticketFieldOptionType,
+      {
+        name: option1Name,
+        raw_name: option1Name,
+        value: `v1${testOptionValue}`,
+      },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
+          ticketFieldInstance.elemID, ticketFieldInstance
+        ),
+      },
+    )
+    const option2Name = `Option2${testSuffix}`
+    const option2 = new InstanceElement(
+      `${ticketFieldInstance.elemID.name}__${option2Name}`,
+      ticketFieldOptionType,
+      {
+        name: option2Name,
+        raw_name: option2Name,
+        value: `v2${testOptionValue}`,
+      },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
+          ticketFieldInstance.elemID, ticketFieldInstance
+        ),
+      },
+    )
+    ticketFieldInstance.value.custom_field_options = [
+      new ReferenceExpression(option1.elemID, option1),
+      new ReferenceExpression(option2.elemID, option2),
+    ]
+    ticketFieldInstance.value.default_custom_field_option = new ReferenceExpression(
+      option1.elemID, option1,
+    )
+    let groupIdToInstances: Record<string, InstanceElement[]>
+
+    beforeAll(async () => {
+      credLease = await credsLease()
+      adapterAttr = realAdapter({ credentials: credLease.value })
+      const instancesToAdd = [
+        ticketFieldInstance,
+        option1,
+        option2,
         automationInstance,
         scheduleInstance,
         customRoleInstance,
@@ -130,23 +184,24 @@ describe('Zendesk support adapter E2E', () => {
         macroInstance,
         slaPolicyInstance,
         viewInstance,
-        ticketFieldInstance,
-      ],
-      i => i.elemID.getFullName(),
-    )
-
-    beforeAll(async () => {
-      credLease = await credsLease()
-      adapterAttr = realAdapter({ credentials: credLease.value })
+      ]
+      const changeGroups = await getChangeGroupIds(new Map<string, Change>(instancesToAdd
+        .map(inst => [inst.elemID.getFullName(), toChange({ after: inst })])))
+      groupIdToInstances = _.groupBy(
+        instancesToAdd,
+        inst => changeGroups.get(inst.elemID.getFullName())
+      )
       const changes = _.mapValues(
         groupIdToInstances,
-        instancesToAdd => instancesToAdd.map(inst => toChange({ after: inst }))
+        instances => instances.map(inst => toChange({ after: inst }))
       )
       await deployChanges(adapterAttr, changes)
-      elements = (await adapterAttr.adapter.fetch({
+      const fetchResult = await adapterAttr.adapter.fetch({
         progressReporter:
           { reportProgress: () => null },
-      })).elements
+      })
+      elements = fetchResult.elements
+      expect(fetchResult.errors).toHaveLength(0)
     })
 
     afterAll(async () => {
@@ -227,11 +282,37 @@ describe('Zendesk support adapter E2E', () => {
     })
     it('should fetch the newly deployed instances', async () => {
       const instances = Object.values(groupIdToInstances).flat()
-      instances.forEach(instanceToAdd => {
-        const instance = elements.find(e => e.elemID.isEqual(instanceToAdd.elemID))
-        expect(instance).toBeDefined()
-        expect((instance as InstanceElement).value).toMatchObject(instanceToAdd.value)
-      })
+      instances
+        .filter(inst => inst.elemID.typeName !== 'ticket_field')
+        .forEach(instanceToAdd => {
+          const instance = elements.find(e => e.elemID.isEqual(instanceToAdd.elemID))
+          expect(instance).toBeDefined()
+          expect((instance as InstanceElement).value).toMatchObject(instanceToAdd.value)
+        })
+    })
+    it('should fetch ticket_field correctly', async () => {
+      const instances = Object.values(groupIdToInstances).flat()
+      instances
+        .filter(inst => inst.elemID.typeName === 'ticket_field')
+        .forEach(instanceToAdd => {
+          const instance = elements
+            .find(e => e.elemID.isEqual(instanceToAdd.elemID)) as InstanceElement
+          expect(instance).toBeDefined()
+          expect(
+            _.omit(instance.value, ['custom_field_options', 'default_custom_field_option'])
+          ).toMatchObject(
+            _.omit(instanceToAdd.value, ['custom_field_options', 'default_custom_field_option'])
+          )
+          expect(instance.value.default_custom_field_option).toBeInstanceOf(ReferenceExpression)
+          expect(instance.value.default_custom_field_option.elemID.getFullName())
+            .toEqual(instanceToAdd.value.default_custom_field_option.elemID.getFullName())
+          expect(instance.value.custom_field_options).toHaveLength(2);
+          (instance.value.custom_field_options as Value[]).forEach((option, index) => {
+            expect(option).toBeInstanceOf(ReferenceExpression)
+            expect(option.elemID.getFullName())
+              .toEqual(instanceToAdd.value.custom_field_options[index].elemID.getFullName())
+          })
+        })
     })
   })
 })

@@ -206,9 +206,11 @@ export const mockDefaultValues: Record<string, Values> = {
     },
   },
   ticket_field: {
-    type: 'text',
+    type: 'tagger',
     title: 'Test',
-    description: 'Test desc',
+    description: '',
+    position: 9999,
+    active: true,
     required: false,
     collapsed_for_agents: false,
     visible_in_portal: false,

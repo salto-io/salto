@@ -71,7 +71,7 @@ const ZendeskSupportReferenceSerializationStrategyLookup: Record<
     lookupIndexName: 'id',
   },
   value: {
-    serialize: ({ ref }) => ref.value.value.value,
+    serialize: ({ ref }) => (isInstanceElement(ref.value) ? ref.value.value.value : ref.value),
     lookup: val => val,
     lookupIndexName: 'value',
   },

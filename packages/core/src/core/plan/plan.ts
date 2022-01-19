@@ -20,7 +20,7 @@ import {
   ChangeValidator, Change, ChangeError, DependencyChanger, ChangeGroupIdFunction, getChangeData,
   isAdditionOrRemovalChange, isFieldChange, ReadOnlyElementsSource, ElemID, isVariable,
   Value, isReferenceExpression, compareSpecialValues, BuiltinTypesByFullName, isAdditionChange,
-  isModificationChange, isRemovalChange, InstanceElement, PlaceholderObjectType, isElement,
+  isModificationChange, isRemovalChange, InstanceElement, PlaceholderObjectType,
 } from '@salto-io/adapter-api'
 import { DataNodeMap, DiffNode, DiffGraph, Group, GroupDAG, DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
@@ -249,12 +249,16 @@ const addDifferentElements = (
     const allFieldNames = [...Object.keys(beforeFields), ...Object.keys(afterFields)]
     await Promise.all(allFieldNames.map(
       fieldName => addNodeIfDifferent(
-        // We check `isElement` and don't just do `beforeFields[fieldName]`
+        // We check `hasOwnProperty` and don't just do `beforeFields[fieldName]`
         // because fieldName might be a builtin function name such as
         // `toString` and in that case `beforeFields[fieldName]` will
         // unexpectedly return a function
-        isElement(beforeFields[fieldName]) ? beforeFields[fieldName] : undefined,
-        isElement(afterFields[fieldName]) ? afterFields[fieldName] : undefined
+        Object.prototype.hasOwnProperty.call(beforeFields, fieldName)
+          ? beforeFields[fieldName]
+          : undefined,
+        Object.prototype.hasOwnProperty.call(afterFields, fieldName)
+          ? afterFields[fieldName]
+          : undefined
       )
     ))
   }

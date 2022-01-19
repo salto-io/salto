@@ -23,10 +23,12 @@ const { awu } = collections.asynciterable
 const FIELDS_TO_REMOVE_RESTRICTION_FROM_BY_TYPE: Record<string, string[]> = {
   AccessControlPolicy: ['targetEntity'],
   AnimationRule: ['sobjectType', 'targetField'],
-  PlatformEventChannelMember: ['selectedEntity'],
-  RestrictionRule: ['targetEntity'],
   AppProfileActionOverride: ['pageOrSobjectType'],
+  PlatformEventChannelMember: ['selectedEntity'],
+  ProfileActionOverride: ['pageOrSobjectType'],
   QueueSobject: ['sobjectType'],
+  RestrictionRule: ['targetEntity'],
+  Territory2RuleItem: ['field'],
 }
 
 /**

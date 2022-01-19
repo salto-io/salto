@@ -13,14 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { getAndLogCollisionWarnings, getInstancesWithCollidingElemID } from '../src/collisions'
 
 describe('collisions', () => {
   const instType = new ObjectType({
     elemID: new ElemID('salto', 'obj'),
   })
-  const instance = new InstanceElement('test', instType, { title: 'test' })
+  const instance = new InstanceElement(
+    'test',
+    instType,
+    { title: 'test', ref: new ReferenceExpression(new ElemID('salto', 'something'), 'some value') },
+  )
   const collidedInstance = new InstanceElement('test', instType, { title: 'test', val: 'val' })
   const differentInstance = new InstanceElement('test1', instType, { title: 'test1' })
   describe('getInstancesWithCollidingElemID', () => {

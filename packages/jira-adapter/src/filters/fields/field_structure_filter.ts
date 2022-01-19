@@ -15,11 +15,13 @@
 */
 import { BuiltinTypes, Element, Field, InstanceElement, isInstanceElement, ListType, MapType, Values } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { findObject } from '../../utils'
 import { FIELD_TYPE_NAME } from './constants'
 
+const log = logger(module)
 
 const addTypeValue = (instance: InstanceElement): void => {
   if (instance.value.schema?.custom !== undefined) {
@@ -33,6 +35,10 @@ const addDefaultValuesToContexts = (
   idToContext: Record<string, Values>
 ): void => {
   (instance.value.contextDefaults ?? []).forEach((contextDefault: Values) => {
+    if (idToContext[contextDefault.contextId] === undefined) {
+      log.warn(`Context with id ${contextDefault.contextId} not found in instance ${instance.elemID.getFullName()} when assigning context defaults`)
+      return
+    }
     idToContext[contextDefault.contextId].defaultValue = _.omit(contextDefault, 'contextId')
   })
 
@@ -46,6 +52,10 @@ const addIssueTypesToContexts = (
   (instance.value.contextIssueTypes ?? [])
     .filter((issueType: Values) => !issueType.isAnyIssueType)
     .forEach((issueType: Values) => {
+      if (idToContext[issueType.contextId] === undefined) {
+        log.warn(`Context with id ${issueType.contextId} not found in instance ${instance.elemID.getFullName()} when assigning issue types`)
+        return
+      }
       if (idToContext[issueType.contextId].issueTypeIds === undefined) {
         idToContext[issueType.contextId].issueTypeIds = []
       }
@@ -62,6 +72,10 @@ const addProjectsToContexts = (
   (instance.value.contextProjects ?? [])
     .filter((project: Values) => !project.isGlobalContext)
     .forEach((project: Values) => {
+      if (idToContext[project.contextId] === undefined) {
+        log.warn(`Context with id ${project.contextId} not found in instance ${instance.elemID.getFullName()} when assigning projects`)
+        return
+      }
       if (idToContext[project.contextId].projectIds === undefined) {
         idToContext[project.contextId].projectIds = []
       }

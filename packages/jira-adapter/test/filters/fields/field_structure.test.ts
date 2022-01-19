@@ -65,6 +65,10 @@ describe('fields_structure', () => {
             contextId: 'id1',
             value: 'someValue',
           },
+          {
+            contextId: 'id2',
+            value: 'someValue',
+          },
         ],
         contextIssueTypes: [
           {
@@ -75,6 +79,10 @@ describe('fields_structure', () => {
             contextId: 'id1',
             issueTypeId: '2',
           },
+          {
+            contextId: 'id2',
+            issueTypeId: '2',
+          },
         ],
         contextProjects: [
           {
@@ -83,6 +91,10 @@ describe('fields_structure', () => {
           },
           {
             contextId: 'id1',
+            projectId: '4',
+          },
+          {
+            contextId: 'id2',
             projectId: '4',
           },
         ],
@@ -104,7 +116,7 @@ describe('fields_structure', () => {
     })
   })
 
-  it('should transform options to map and add postions and cascadingOptions', async () => {
+  it('should transform options to map and add positions and cascadingOptions', async () => {
     const instance = new InstanceElement(
       'instance',
       fieldType,

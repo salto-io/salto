@@ -218,4 +218,13 @@ export const mockDefaultValues: Record<string, Values> = {
     required_in_portal: false,
     removable: true,
   },
+  user_field: {
+    type: 'dropdown',
+    title: 'Test',
+    key: 'Test',
+    description: '',
+    position: 9999,
+    active: true,
+    system: false,
+  },
 }

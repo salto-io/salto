@@ -129,14 +129,14 @@ describe('Zendesk support adapter E2E', () => {
     const ticketFieldOptionType = new ObjectType({
       elemID: new ElemID(ZENDESK_SUPPORT, 'ticket_field__custom_field_options'),
     })
-    const option1Name = `Option1${testSuffix}`
-    const option1 = new InstanceElement(
-      `${ticketFieldInstance.elemID.name}__${option1Name}`,
+    const ticketFieldOption1Name = `ticketFieldOption1${testSuffix}`
+    const ticketFieldOption1 = new InstanceElement(
+      `${ticketFieldInstance.elemID.name}__${ticketFieldOption1Name}`,
       ticketFieldOptionType,
       {
-        name: option1Name,
-        raw_name: option1Name,
-        value: `v1${testOptionValue}`,
+        name: ticketFieldOption1Name,
+        raw_name: ticketFieldOption1Name,
+        value: `v1t${testOptionValue}`,
       },
       undefined,
       {
@@ -145,14 +145,14 @@ describe('Zendesk support adapter E2E', () => {
         ),
       },
     )
-    const option2Name = `Option2${testSuffix}`
-    const option2 = new InstanceElement(
-      `${ticketFieldInstance.elemID.name}__${option2Name}`,
+    const ticketFieldOption2Name = `ticketFieldOption2${testSuffix}`
+    const ticketFieldOption2 = new InstanceElement(
+      `${ticketFieldInstance.elemID.name}__${ticketFieldOption2Name}`,
       ticketFieldOptionType,
       {
-        name: option2Name,
-        raw_name: option2Name,
-        value: `v2${testOptionValue}`,
+        name: ticketFieldOption2Name,
+        raw_name: ticketFieldOption2Name,
+        value: `v2t${testOptionValue}`,
       },
       undefined,
       {
@@ -162,12 +162,56 @@ describe('Zendesk support adapter E2E', () => {
       },
     )
     ticketFieldInstance.value.custom_field_options = [
-      new ReferenceExpression(option1.elemID, option1),
-      new ReferenceExpression(option2.elemID, option2),
+      new ReferenceExpression(ticketFieldOption1.elemID, ticketFieldOption1),
+      new ReferenceExpression(ticketFieldOption2.elemID, ticketFieldOption2),
     ]
     ticketFieldInstance.value.default_custom_field_option = new ReferenceExpression(
-      option1.elemID, option1,
+      ticketFieldOption1.elemID, ticketFieldOption1,
     )
+    const userFieldName = createName('user_field')
+    const userFieldInstance = createInstanceElement(
+      'user_field',
+      { title: userFieldName, key: userFieldName },
+    )
+    const userFieldOptionType = new ObjectType({
+      elemID: new ElemID(ZENDESK_SUPPORT, 'user_field__custom_field_options'),
+    })
+    const userFieldOption1Name = `userFieldOption1${testSuffix}`
+    const userFieldOption1 = new InstanceElement(
+      `${userFieldInstance.elemID.name}__${userFieldOption1Name}`,
+      userFieldOptionType,
+      {
+        name: userFieldOption1Name,
+        raw_name: userFieldOption1Name,
+        value: `v1u${testOptionValue}`,
+      },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
+          userFieldInstance.elemID, userFieldInstance
+        ),
+      },
+    )
+    const userFieldOption2Name = `userFieldOption2${testSuffix}`
+    const userFieldOption2 = new InstanceElement(
+      `${userFieldInstance.elemID.name}__${userFieldOption2Name}`,
+      userFieldOptionType,
+      {
+        name: userFieldOption2Name,
+        raw_name: userFieldOption2Name,
+        value: `v2u${testOptionValue}`,
+      },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
+          userFieldInstance.elemID, userFieldInstance
+        ),
+      },
+    )
+    userFieldInstance.value.custom_field_options = [
+      new ReferenceExpression(userFieldOption1.elemID, userFieldOption1),
+      new ReferenceExpression(userFieldOption2.elemID, userFieldOption2),
+    ]
     let groupIdToInstances: Record<string, InstanceElement[]>
 
     beforeAll(async () => {
@@ -175,8 +219,11 @@ describe('Zendesk support adapter E2E', () => {
       adapterAttr = realAdapter({ credentials: credLease.value })
       const instancesToAdd = [
         ticketFieldInstance,
-        option1,
-        option2,
+        ticketFieldOption1,
+        ticketFieldOption2,
+        userFieldInstance,
+        userFieldOption1,
+        userFieldOption2,
         automationInstance,
         scheduleInstance,
         customRoleInstance,
@@ -283,7 +330,7 @@ describe('Zendesk support adapter E2E', () => {
     it('should fetch the newly deployed instances', async () => {
       const instances = Object.values(groupIdToInstances).flat()
       instances
-        .filter(inst => inst.elemID.typeName !== 'ticket_field')
+        .filter(inst => !['ticket_field', 'user_field'].includes(inst.elemID.typeName))
         .forEach(instanceToAdd => {
           const instance = elements.find(e => e.elemID.isEqual(instanceToAdd.elemID))
           expect(instance).toBeDefined()
@@ -312,6 +359,36 @@ describe('Zendesk support adapter E2E', () => {
             expect(option.elemID.getFullName())
               .toEqual(instanceToAdd.value.custom_field_options[index].elemID.getFullName())
           })
+        })
+    })
+    it('should fetch user_field correctly', async () => {
+      const instances = Object.values(groupIdToInstances).flat()
+      instances
+        .filter(inst => inst.elemID.typeName === 'user_field')
+        .forEach(instanceToAdd => {
+          const instance = elements
+            .find(e => e.elemID.isEqual(instanceToAdd.elemID)) as InstanceElement
+          expect(instance).toBeDefined()
+          expect(
+            _.omit(instance.value, ['custom_field_options'])
+          ).toMatchObject(
+            // We omit position since we add the user field to the order element
+            _.omit(instanceToAdd.value, ['custom_field_options', 'position'])
+          )
+          expect(instance.value.custom_field_options).toHaveLength(2);
+          (instance.value.custom_field_options as Value[]).forEach((option, index) => {
+            expect(option).toBeInstanceOf(ReferenceExpression)
+            expect(option.elemID.getFullName())
+              .toEqual(instanceToAdd.value.custom_field_options[index].elemID.getFullName())
+          })
+          const userFieldsOrderInstance = elements
+            .filter(e => e.elemID.typeName === 'user_field_order')
+            .filter(isInstanceElement)
+          expect(userFieldsOrderInstance).toHaveLength(1)
+          const order = userFieldsOrderInstance[0]
+          expect(order.value.user_field_ids
+            .map((ref: ReferenceExpression) => ref.elemID.getFullName()))
+            .toContain(instance.elemID.getFullName())
         })
     })
   })

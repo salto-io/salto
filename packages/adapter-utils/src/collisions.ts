@@ -24,6 +24,7 @@ const log = logger(module)
 
 const MAX_BREAKDOWN_ELEMENTS = 10
 const MAX_BREAKDOWN_DETAILS_ELEMENTS = 3
+const MAX_INSTANCES_WITH_COLLIDING_ELEM_ID_TO_LOG = 20
 
 export const groupInstancesByTypeAndElemID = async (
   instances: InstanceElement[],
@@ -75,10 +76,12 @@ const logInstancesWithCollidingElemID = async (
     Object.entries(elemIDtoInstances).forEach(([elemID, elemIDInstances]) => {
       const relevantInstanceValues = elemIDInstances
         .map(instance => _.pickBy(instance.value, val => !_.isEmpty(val)))
-      const relevantInstanceValuesStr = relevantInstanceValues
-        .map(instValues => safeJsonStringify(instValues, undefined, 2)).join('\n')
-      log.debug(`Omitted instances of type ${type} with colliding ElemID ${elemID} with values - 
-  ${relevantInstanceValuesStr}`)
+      log.debug(`Omitted instances of type ${type} with colliding ElemID ${elemID} with values:\n`)
+      relevantInstanceValues
+        .slice(0, MAX_INSTANCES_WITH_COLLIDING_ELEM_ID_TO_LOG)
+        .forEach(instValues => {
+          log.debug(`${safeJsonStringify(instValues, undefined, 2)}\n`)
+        })
     })
   })
 }

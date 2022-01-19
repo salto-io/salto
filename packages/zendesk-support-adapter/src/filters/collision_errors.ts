@@ -25,7 +25,7 @@ import { API_DEFINITIONS_CONFIG } from '../config'
  */
 const filterCreator: FilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]) => {
-    const collistionWarnings = await getAndLogCollisionWarnings({
+    const collisionWarnings = await getAndLogCollisionWarnings({
       adapterName: ZENDESK_SUPPORT,
       configurationName: 'service',
       instances: getInstancesWithCollidingElemID(elements.filter(isInstanceElement)),
@@ -38,7 +38,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
       ).idFields,
       idFieldsName: 'idFields',
     })
-    return { errors: collistionWarnings }
+    return { errors: collisionWarnings }
   },
 })
 

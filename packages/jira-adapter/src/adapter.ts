@@ -32,6 +32,7 @@ import boardFilter from './filters/board'
 import screenFilter from './filters/screen/screen'
 import issueTypeScreenSchemeFilter from './filters/issue_type_screen_scheme'
 import fieldConfigurationFilter from './filters/field_configuration'
+import fieldConfigurationTrashedFieldsFilter from './filters/field_configuration_trashed_fields'
 import fieldConfigurationSchemeFilter from './filters/field_configurations_scheme'
 import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
 import projectFilter from './filters/project'
@@ -72,6 +73,8 @@ export const DEFAULT_FILTERS = [
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,
   fieldReferencesFilter,
+  // Must run after fieldReferencesFilter
+  fieldConfigurationTrashedFieldsFilter,
   hiddenValuesInListsFilter,
   // Must be last
   defaultInstancesDeployFilter,

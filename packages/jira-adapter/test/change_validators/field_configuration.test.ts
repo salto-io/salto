@@ -25,24 +25,6 @@ describe('unsupportedFieldConfigurationsValidator', () => {
     type = new ObjectType({ elemID: new ElemID(JIRA, 'FieldConfiguration') })
     instance = new InstanceElement('instance', type)
   })
-  it('should return an error if id is not a reference', async () => {
-    instance.value.fields = [{
-      id: 'id',
-    }]
-
-    expect(await unsupportedFieldConfigurationsValidator([
-      toChange({
-        after: instance,
-      }),
-    ])).toEqual([
-      {
-        elemID: instance.elemID,
-        severity: 'Warning',
-        message: `Salto can't deploy fields configuration of ${instance.elemID.getFullName()} because they are either locked or team-managed`,
-        detailedMessage: 'Salto can\'t deploy the configuration of fields: id. If continuing, they will be omitted from the deployment',
-      },
-    ])
-  })
 
   it('should return an error if id is a reference to a locked field', async () => {
     instance.value.fields = [{
@@ -62,7 +44,7 @@ describe('unsupportedFieldConfigurationsValidator', () => {
       {
         elemID: instance.elemID,
         severity: 'Warning',
-        message: `Salto can't deploy fields configuration of ${instance.elemID.getFullName()} because they are either locked or team-managed`,
+        message: `Salto can't deploy fields configuration of ${instance.elemID.getFullName()} because they are locked`,
         detailedMessage: 'Salto can\'t deploy the configuration of fields: inst. If continuing, they will be omitted from the deployment',
       },
     ])

@@ -95,18 +95,15 @@ describe('Jira E2E', () => {
           },
         })
 
-        const appliedChange = res.appliedChanges[0]
-        if (appliedChange === undefined) {
-          return res
-        }
-
-        const appliedInstance = getChangeData(appliedChange)
-        instances
-          .flatMap(getParents)
-          .filter(parent => parent.elemID.isEqual(appliedInstance.elemID))
-          .forEach(parent => {
-            parent.resValue = appliedInstance
-          })
+        res.appliedChanges.forEach(appliedChange => {
+          const appliedInstance = getChangeData(appliedChange)
+          instances
+            .flatMap(getParents)
+            .filter(parent => parent.elemID.isEqual(appliedInstance.elemID))
+            .forEach(parent => {
+              parent.resValue = appliedInstance
+            })
+        })
         return res
       }).toArray()
     })

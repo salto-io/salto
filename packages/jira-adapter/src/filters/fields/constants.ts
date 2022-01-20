@@ -15,3 +15,5 @@
 */
 export const FIELD_TYPE_NAME = 'Field'
 export const FIELD_CONTEXT_TYPE_NAME = 'CustomFieldContext'
+export const FIELD_CONTEXT_DEFAULT_TYPE_NAME = 'CustomFieldContextDefaultValue'
+export const FIELD_CONTEXT_OPTION_TYPE_NAME = 'CustomFieldContextOption'

@@ -15,14 +15,14 @@
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, Element, Field, InstanceElement, isInstanceElement, ListType, MapType, ObjectType, ReferenceExpression, Values } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
-import { config as configUtils } from '@salto-io/adapter-components'
+import { config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { JiraConfig } from '../../config'
 import { FilterCreator } from '../../filter'
 import { findObject } from '../../utils'
-import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from './constants'
+import { FIELD_CONTEXT_DEFAULT_TYPE_NAME, FIELD_CONTEXT_OPTION_TYPE_NAME, FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from './constants'
 
 const log = logger(module)
 
@@ -140,17 +140,16 @@ const transformOptionsToMap = (instance: InstanceElement): void => {
     })
 }
 
-const getInstanceNameParts = (
+const getInstanceName = (
   instanceValues: Values,
   typeName: string,
   config: JiraConfig
-): string[] => {
+): string | undefined => {
   const { idFields } = configUtils.getConfigWithDefault(
     config.apiDefinitions.types[typeName].transformation,
     config.apiDefinitions.typeDefaults.transformation
   )
-  return idFields.map(idField => _.get(instanceValues, idField))
-    .filter(values.isDefined)
+  return elementUtils.getInstanceName(instanceValues, idFields)
 }
 
 const createContextInstance = (
@@ -159,15 +158,16 @@ const createContextInstance = (
   parentField: InstanceElement,
   config: JiraConfig,
 ): InstanceElement => {
-  const parentNameParts = getInstanceNameParts(
+  const parentName = getInstanceName(
     parentField.value,
     parentField.elemID.typeName,
     config,
-  )
-  const contextNameParts = getInstanceNameParts(context, contextType.elemID.typeName, config)
+  ) ?? parentField.elemID.name
+  const contextName = getInstanceName(context, contextType.elemID.typeName, config)
+    ?? context.id
 
   return new InstanceElement(
-    naclCase([...parentNameParts, ...contextNameParts].join('_')),
+    naclCase([parentName, contextName].join('_')),
     contextType,
     context,
     parentField.path,
@@ -185,14 +185,20 @@ const filter: FilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]) => {
     const fieldType = findObject(elements, FIELD_TYPE_NAME)
     const fieldContextType = findObject(elements, FIELD_CONTEXT_TYPE_NAME)
-    const fieldContextDefaultValueType = findObject(elements, 'CustomFieldContextDefaultValue')
-    const fieldContextOptionType = findObject(elements, 'CustomFieldContextOption')
+    const fieldContextDefaultValueType = findObject(elements, FIELD_CONTEXT_DEFAULT_TYPE_NAME)
+    const fieldContextOptionType = findObject(elements, FIELD_CONTEXT_OPTION_TYPE_NAME)
 
     if (fieldType === undefined
       || fieldContextType === undefined
       || fieldContextDefaultValueType === undefined
       || fieldContextOptionType === undefined) {
-      log.warn('Missing types for field structure filter, skipping')
+      const missingTypes = [
+        fieldType === undefined ? FIELD_TYPE_NAME : undefined,
+        fieldContextType === undefined ? FIELD_CONTEXT_TYPE_NAME : undefined,
+        fieldContextDefaultValueType === undefined ? FIELD_CONTEXT_DEFAULT_TYPE_NAME : undefined,
+        fieldContextOptionType === undefined ? FIELD_CONTEXT_OPTION_TYPE_NAME : undefined,
+      ].filter(values.isDefined)
+      log.warn(`Missing types for field structure filter: ${missingTypes.join(', ')}, skipping`)
       return
     }
 

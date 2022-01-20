@@ -38,6 +38,17 @@ export type InstanceCreationParams = {
   normalized?: boolean
 }
 
+export const getInstanceName = (
+  instanceValues: Values,
+  idFields: string[],
+): string | undefined => {
+  const nameParts = idFields.map(field => _.get(instanceValues, field))
+  if (nameParts.includes(undefined)) {
+    log.warn(`could not find id for entry - expected id fields ${idFields}, available fields ${Object.keys(instanceValues)}`)
+  }
+  return nameParts.every(part => part !== undefined && part !== '') ? nameParts.map(String).join('_') : undefined
+}
+
 /**
  * Generate an instance for a single entry returned for a given type.
  *
@@ -83,11 +94,7 @@ export const toBasicInstance = async ({
     transformationDefaultConfig,
   )
 
-  const nameParts = idFields.map(field => _.get(entry, field))
-  if (nameParts.includes(undefined)) {
-    log.warn(`could not find id for entry - expected id fields ${idFields}, available fields ${Object.keys(entry)}`)
-  }
-  const name = nameParts.every(part => part !== undefined && part !== '') ? nameParts.map(String).join('_') : defaultName
+  const name = getInstanceName(entry, idFields) ?? defaultName
 
   const fileNameParts = (fileNameFields !== undefined
     ? fileNameFields.map(field => _.get(entry, field))

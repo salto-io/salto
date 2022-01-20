@@ -31,23 +31,23 @@ export const addIdUponAddition = (
   const { transformation } = apiDefinitions
     .types[getChangeData(change).elemID.typeName]
   if (isAdditionChange(change)) {
-    if (!Array.isArray(response)) {
-      const transformationConfig = configUtils.getConfigWithDefault(
-        transformation,
-        apiDefinitions.typeDefaults.transformation,
-      )
-      const idField = transformationConfig.serviceIdField ?? 'id'
-      const idValue = dataField
-        ? (response?.[dataField] as Values)?.[idField]
-        : response?.[idField]
-      if (idValue !== undefined) {
-        getChangeData(change).value[idField] = idValue
-      }
-    } else {
+    if (Array.isArray(response)) {
       log.warn(
         'Received an array for the response of the deploy. Not updating the id of the element. Action: add. ID: %s',
         getChangeData(change).elemID.getFullName()
       )
+      return
+    }
+    const transformationConfig = configUtils.getConfigWithDefault(
+      transformation,
+      apiDefinitions.typeDefaults.transformation,
+    )
+    const idField = transformationConfig.serviceIdField ?? 'id'
+    const idValue = dataField
+      ? (response?.[dataField] as Values)?.[idField]
+      : response?.[idField]
+    if (idValue !== undefined) {
+      getChangeData(change).value[idField] = idValue
     }
   }
 }
@@ -75,13 +75,13 @@ export const deployChange = async (
 
 export const deployChanges = async <T extends Change<ChangeDataType>>(
   changes: T[],
-  deployChangeFunc: (change: T) => Promise<void>
+  deployChangeFunc: (change: T) => Promise<void | T[]>
 ): Promise<DeployResult> => {
   const result = await Promise.all(
     changes.map(async change => {
       try {
-        await deployChangeFunc(change)
-        return change
+        const res = await deployChangeFunc(change)
+        return res !== undefined ? res : change
       } catch (err) {
         if (!_.isError(err)) {
           throw err
@@ -91,9 +91,6 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
     })
   )
 
-  const [errors, appliedChanges] = _.partition(result, _.isError)
-  return {
-    errors,
-    appliedChanges,
-  }
+  const [errors, appliedChanges] = _.partition(result.flat(), _.isError)
+  return { errors, appliedChanges }
 }

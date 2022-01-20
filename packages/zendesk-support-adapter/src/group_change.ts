@@ -20,7 +20,7 @@ import { getParents } from '@salto-io/adapter-utils'
 
 const { awu } = collections.asynciterable
 
-type ChangeIdFunction = (change: Change) => Promise<string | undefined> | string | undefined
+type ChangeIdFunction = (change: Change) => Promise<string | undefined>
 
 const PARENT_GROUPED_WITH_INNER_TYPE = [
   'ticket_field',
@@ -61,7 +61,9 @@ export const getChangeGroupIds: ChangeGroupIdFunction = async changes => (
         const groupId = await awu(changeIdProviders)
           .map(provider => provider(change))
           .find(values.isDefined)
-        return groupId === undefined ? undefined : [id, groupId] as [ChangeId, ChangeGroupId]
+        return groupId === undefined
+          ? [id, getChangeData(change).elemID.getFullName()] as [ChangeId, ChangeGroupId]
+          : [id, groupId] as [ChangeId, ChangeGroupId]
       })
       .filter(values.isDefined)
       .toArray()

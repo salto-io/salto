@@ -113,8 +113,13 @@ describe('ticket field filter', () => {
         .filter(e => e.elemID.typeName === parentTypeName)
       expect(ticketFieldInstances).toHaveLength(1)
       const clonedTicketField = parent.clone()
+      const child2AfterFilter = elements
+        .find(e => e.elemID.isEqual(child2.elemID)) as InstanceElement
+      expect(child2AfterFilter).toBeDefined()
       clonedTicketField
-        .value[DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME] = new ReferenceExpression(child2.elemID)
+        .value[DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME] = new ReferenceExpression(
+          child2AfterFilter.elemID, child2AfterFilter
+        )
       expect(ticketFieldInstances[0]).toEqual(clonedTicketField)
       const ticketFieldOptionType = elements
         .filter(isObjectType)
@@ -342,6 +347,28 @@ describe('ticket field filter', () => {
         expect(res.leftoverChanges).toHaveLength(0)
         expect(res.deployResult.errors).toHaveLength(1)
         expect(res.deployResult.appliedChanges).toHaveLength(0)
+      })
+      it('should not add id to children if response is invalid', async () => {
+        const clonedElements = [ticketField, option1, option2].map(e => e.clone())
+        mockDeployChange
+          .mockImplementation(async () => ({
+            ticket_field: { id: 1, custom_field_options: [{ id: 2, value: 'v3' }, { id: 3, value: 'v4' }, 'bla'] },
+          }))
+        const res = await filter.deploy(clonedElements.map(e => ({ action: 'add', data: { after: e } })))
+        expect(mockDeployChange).toHaveBeenCalledTimes(1)
+        expect(mockDeployChange).toHaveBeenCalledWith(
+          { action: 'add', data: { after: clonedElements[0] } },
+          expect.anything(),
+          expect.anything(),
+          [DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME],
+        )
+        expect(res.leftoverChanges).toHaveLength(0)
+        expect(res.deployResult.errors).toHaveLength(0)
+        const expectedElements = [ticketField, option1, option2].map(e => e.clone())
+        expectedElements[0].value.id = 1
+        expect(res.deployResult.appliedChanges).toHaveLength(3)
+        expect(res.deployResult.appliedChanges)
+          .toEqual(expectedElements.map(e => ({ action: 'add', data: { after: e } })))
       })
     })
     describe('changes just in parent', () => {

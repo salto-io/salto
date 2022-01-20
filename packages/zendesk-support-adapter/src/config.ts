@@ -638,10 +638,8 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       },
     },
     transformation: {
-      fieldsToHide: FIELDS_TO_HIDE.concat(
-        { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'default', fieldType: 'boolean' },
-      ),
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'default', fieldType: 'boolean' }),
     },
   },
   user_field: {

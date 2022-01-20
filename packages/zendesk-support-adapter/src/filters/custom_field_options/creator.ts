@@ -21,9 +21,11 @@ import {
 import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { getParents } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { addIdUponAddition, deployChange, deployChanges } from '../../deployment'
 import { applyforInstanceChangesOfType } from '../utils'
+import { API_DEFINITIONS_CONFIG, ZendeskApiConfig } from '../../config'
 
 export const CUSTOM_FIELD_OPTIONS_FIELD_NAME = 'custom_field_options'
 export const DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME = 'default_custom_field_option'
@@ -33,7 +35,51 @@ type CustomFieldOptionsFilterCreatorParams = {
   childTypeName: string
 }
 
+const log = logger(module)
 const { makeArray } = collections.array
+
+const getMatchedCustomFieldOption = (
+  change: Change<InstanceElement>,
+  response: clientUtils.ResponseValue,
+  dataField?: string,
+): clientUtils.ResponseValue | undefined => {
+  const customFieldOptionsResponse = ((
+    dataField !== undefined
+      ? response[dataField]
+      : response
+    ) as Values)?.[CUSTOM_FIELD_OPTIONS_FIELD_NAME]
+  if (customFieldOptionsResponse) {
+    if (_.isArray(customFieldOptionsResponse)
+    && customFieldOptionsResponse.every(_.isPlainObject)) {
+      return customFieldOptionsResponse.find(
+        option => option.value && option.value === getChangeData(change).value.value
+      )
+    }
+    log.warn(`Received invalid response for custom_field_options in ${getChangeData(change).elemID.getFullName()}`)
+  }
+  return undefined
+}
+const addIdsToChildrenUponAddition = (
+  response: deployment.ResponseResult,
+  parentChange: Change<InstanceElement>,
+  childrenChanges: Change<InstanceElement>[],
+  apiDefinitions: ZendeskApiConfig
+): Change<InstanceElement>[] => {
+  const { deployRequests } = apiDefinitions
+    .types[getChangeData(parentChange).elemID.typeName]
+  childrenChanges
+    .filter(isAdditionChange)
+    .forEach(change => {
+      if (response && !_.isArray(response)) {
+        const dataField = deployRequests?.add?.deployAsField
+        const option = getMatchedCustomFieldOption(change, response, dataField)
+        if (option) {
+          addIdUponAddition(change, apiDefinitions, option)
+        }
+      }
+    })
+  return [parentChange, ...childrenChanges]
+}
 
 export const createCustomFieldOptionsFilterCreator = (
   { parentTypeName, childTypeName }: CustomFieldOptionsFilterCreatorParams
@@ -54,18 +100,19 @@ export const createCustomFieldOptionsFilterCreator = (
       .filter(isInstanceElement)
       .filter(inst => inst.elemID.typeName === parentTypeName)
       .filter(inst => inst.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] !== undefined)
+    const parentIdToChildInstances = _(elements)
+      .filter(isInstanceElement)
+      .filter(inst => inst.elemID.typeName === childTypeName)
+      .filter(childInst => getParents(childInst)?.[0] !== undefined)
+      .groupBy(childInst => getParents(childInst)[0].value.value.id)
+      .value()
     parentInstances.forEach(inst => {
-      const options = elements
-        .filter(isInstanceElement)
-        .filter(childInst => childInst.elemID.typeName === childTypeName)
-        .filter(childInst => {
-          const parent = getParents(childInst)?.[0]
-          return parent !== undefined && (parent.value.value.id === inst.value.id)
-        })
+      const options = parentIdToChildInstances[inst.value.id] ?? []
       const defaultOption = options.find(option => option?.value?.default === true)
       if (defaultOption) {
         inst.value[DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME] = new ReferenceExpression(
-          defaultOption.elemID
+          defaultOption.elemID,
+          defaultOption,
         )
       }
       options.forEach(option => {
@@ -103,46 +150,6 @@ export const createCustomFieldOptionsFilterCreator = (
     )
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const getMatchedCustomFieldOption = (
-      change: Change<InstanceElement>,
-      response: clientUtils.ResponseValue,
-      dataField?: string,
-    ): clientUtils.ResponseValue | undefined => {
-      const customFieldOptionsResponse = ((
-        dataField !== undefined
-          ? response[dataField]
-          : response
-        ) as Values)?.[CUSTOM_FIELD_OPTIONS_FIELD_NAME]
-      if (customFieldOptionsResponse
-        && _.isArray(customFieldOptionsResponse)
-        && customFieldOptionsResponse.every(_.isPlainObject)
-      ) {
-        return customFieldOptionsResponse.find(
-          o => o.value && o.value === getChangeData(change).value.value
-        )
-      }
-      return undefined
-    }
-    const addIdsToChildrenUponAddition = (
-      response: deployment.ResponseResult,
-      parentChange: Change<InstanceElement>,
-      childrenChanges: Change<InstanceElement>[],
-    ): Change<InstanceElement>[] => {
-      const { deployRequests } = config.apiDefinitions
-        .types[getChangeData(parentChange).elemID.typeName]
-      childrenChanges
-        .filter(isAdditionChange)
-        .forEach(change => {
-          if (response && !_.isArray(response)) {
-            const dataField = deployRequests?.add?.deployAsField
-            const option = getMatchedCustomFieldOption(change, response, dataField)
-            if (option) {
-              addIdUponAddition(change, config.apiDefinitions, option)
-            }
-          }
-        })
-      return [parentChange, ...childrenChanges]
-    }
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change => [parentTypeName, childTypeName]
@@ -161,28 +168,17 @@ export const createCustomFieldOptionsFilterCreator = (
       )
       return { deployResult, leftoverChanges }
     }
-    const result = await Promise.all(
-      parentChanges.map(async change => {
-        try {
-          const response = await deployChange(
-            change,
-            client,
-            config.apiDefinitions,
-            [DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME],
-          )
-          return addIdsToChildrenUponAddition(response, change, childrenChanges)
-        } catch (err) {
-          if (!_.isError(err)) {
-            throw err
-          }
-          return err
-        }
-      })
+    const deployResult = await deployChanges(
+      parentChanges,
+      async change => {
+        const response = await deployChange(
+          change, client, config.apiDefinitions, [DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME]
+        )
+        return addIdsToChildrenUponAddition(
+          response, change, childrenChanges, config[API_DEFINITIONS_CONFIG]
+        )
+      }
     )
-    const [errors, appliedChanges] = _.partition(result, _.isError)
-    return {
-      deployResult: { errors, appliedChanges: appliedChanges.flat() },
-      leftoverChanges,
-    }
+    return { deployResult, leftoverChanges }
   },
 })

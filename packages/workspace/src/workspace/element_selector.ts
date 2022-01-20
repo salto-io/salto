@@ -57,7 +57,7 @@ const match = (elemId: ElemID, selector: ElementSelector, includeNested = false)
   && selector.typeNameSelector.test(elemId.typeName)
   && ((selector.idTypeSelector === elemId.idType) || (includeNested && selector.idTypeSelector === 'type' && elemId.createTopLevelParentID().parent.idType === 'type'))
   && testNames(
-    elemId.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS),
+    elemId.getFullNameParts(true).slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS),
     selector.nameSelectors ?? [],
     includeNested
   )
@@ -210,8 +210,12 @@ const createTopLevelSelector = (selector: ElementSelector): ElementSelector => {
 }
 
 const createSameDepthSelector = (selector: ElementSelector, elemID: ElemID): ElementSelector =>
-  createElementSelector(selector.origin.split(ElemID.NAMESPACE_SEPARATOR).slice(0,
-    elemID.getFullNameParts().length).join(ElemID.NAMESPACE_SEPARATOR), selector.caseInsensitive)
+  createElementSelector(
+    selector.origin
+      .split(ElemID.NAMESPACE_SEPARATOR)
+      .slice(0, elemID.getFullNameParts(true).length)
+      .join(ElemID.NAMESPACE_SEPARATOR), selector.caseInsensitive
+  )
 
 const isElementPossiblyParentOfSearchedElement = (
   selectors: ElementSelector[], testId: ElemID
@@ -283,7 +287,7 @@ export const selectElementIdsByTraversal = async ({
 
   const subElementIDs = new Set<string>()
   const selectFromSubElements: WalkOnFunc = ({ path }) => {
-    if (path.getFullNameParts().length <= 1) {
+    if (path.getFullNameParts(true).length <= 1) {
       return WALK_NEXT_STEP.RECURSE
     }
 
@@ -294,7 +298,7 @@ export const selectElementIdsByTraversal = async ({
       }
     }
     const stillRelevantSelectors = selectors.filter(selector =>
-      selector.origin.split(ElemID.NAMESPACE_SEPARATOR).length > path.getFullNameParts().length)
+      selector.origin.split(ElemID.NAMESPACE_SEPARATOR).length > path.getFullNameParts(true).length)
     if (stillRelevantSelectors.length === 0) {
       return WALK_NEXT_STEP.SKIP
     }

@@ -169,11 +169,15 @@ describe('element selector', () => {
       new ElemID('salesforce', 'sometype', 'instance', 'A', 'B'),
       new ElemID('salesforce', 'sometype', 'instance', 'A', 'B', 'C'),
       new ElemID('salesforce', 'othertype', 'instance', 'NotA'),
+      new ElemID('salesforce', 'othertype', 'instance', '_config'),
+      new ElemID('salesforce', 'othertype', 'instance', '_config', 'B'),
     ]
-    const selectedElements = await selectElements(
+    expect(await selectElements(
       { elements, selectors: ['salesforce.*.instance.A'] }
-    )
-    expect(selectedElements).toEqual([elements[0]])
+    )).toEqual([elements[0]])
+    expect(await selectElements(
+      { elements, selectors: ['salesforce.*.instance._config'] }
+    )).toEqual([elements[4]])
   })
 
   it('should select also nested elements when includeNested is true and name selectors length is 1', async () => {
@@ -182,11 +186,15 @@ describe('element selector', () => {
       new ElemID('salesforce', 'sometype', 'instance', 'A', 'B'),
       new ElemID('salesforce', 'sometype', 'instance', 'A', 'B', 'C'),
       new ElemID('salesforce', 'othertype', 'instance', 'NotA'),
+      new ElemID('salesforce', 'othertype', 'instance', '_config'),
+      new ElemID('salesforce', 'othertype', 'instance', '_config', 'B'),
     ]
-    const selectedElements = await selectElements(
+    expect(await selectElements(
       { elements, selectors: ['salesforce.*.instance.A'], includeNested: true }
-    )
-    expect(selectedElements).toEqual([elements[0], elements[1], elements[2]])
+    )).toEqual([elements[0], elements[1], elements[2]])
+    expect(await selectElements(
+      { elements, selectors: ['salesforce.*.instance._config'], includeNested: true }
+    )).toEqual([elements[4], elements[5]])
   })
 
   it('should select fields and attributes when includeNested is true', async () => {
@@ -208,11 +216,15 @@ describe('element selector', () => {
       new ElemID('salesforce', 'sometype', 'instance', 'A', 'B'),
       new ElemID('salesforce', 'sometype', 'instance', 'A', 'B', 'C'),
       new ElemID('salesforce', 'othertype', 'instance', 'NotA', 'B'),
+      new ElemID('salesforce', 'othertype', 'instance', '_config'),
+      new ElemID('salesforce', 'othertype', 'instance', '_config', 'B'),
     ]
-    const selectedElements = await selectElements(
+    expect(await selectElements(
       { elements, selectors: ['salesforce.*.instance.A.*'] }
-    )
-    expect(selectedElements).toEqual([elements[1]])
+    )).toEqual([elements[1]])
+    expect(await selectElements(
+      { elements, selectors: ['salesforce.*.instance._config.*'] }
+    )).toEqual([elements[5]])
   })
 
   it('should select also nested elements when includeNested is true and name selectors length is 2', async () => {
@@ -221,11 +233,15 @@ describe('element selector', () => {
       new ElemID('salesforce', 'sometype', 'instance', 'A', 'B'),
       new ElemID('salesforce', 'sometype', 'instance', 'A', 'B', 'C'),
       new ElemID('salesforce', 'othertype', 'instance', 'NotA', 'B'),
+      new ElemID('salesforce', 'othertype', 'instance', '_config'),
+      new ElemID('salesforce', 'othertype', 'instance', '_config', 'B'),
     ]
-    const selectedElements = await selectElements(
+    expect(await selectElements(
       { elements, selectors: ['salesforce.*.instance.A.*'], includeNested: true }
-    )
-    expect(selectedElements).toEqual([elements[1], elements[2]])
+    )).toEqual([elements[1], elements[2]])
+    expect(await selectElements(
+      { elements, selectors: ['salesforce.*.instance._config.*'], includeNested: true }
+    )).toEqual([elements[5]])
   })
 
   it('should handle asterisks alongside partial names in type', async () => {

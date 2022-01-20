@@ -179,11 +179,14 @@ export class ElemID {
       .join(ElemID.NAMESPACE_SEPARATOR)
   }
 
-  getFullNameParts(): string[] {
+  getFullNameParts(includeConfigPart = false): string[] {
     const nameParts = this.fullNameParts()
-    return this.fullNameParts()
-      // If the last part of the name is empty we can omit it
-      .filter((part, idx) => idx !== nameParts.length - 1 || part !== ElemID.CONFIG_NAME)
+    return this.fullNameParts().filter((part, idx) => (
+      idx !== nameParts.length - 1
+      // If the last part of the name is empty we can omit it, unless explicitly specified
+      || part !== ElemID.CONFIG_NAME
+      || includeConfigPart
+    ))
   }
 
   isConfig(): boolean {

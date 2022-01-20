@@ -47,9 +47,7 @@ export const unsupportedFieldConfigurationsValidator: ChangeValidator = async ch
         : getDiffFields(change)
 
       const unsupportedIds = fields
-        .filter((field: Values) =>
-          !isReferenceExpression(field.id)
-          || field.id.value.value.isLocked)
+        .filter((field: Values) => field.id.value.value.isLocked)
         .map(getFieldId)
 
       const { elemID } = getChangeData(change)
@@ -57,7 +55,7 @@ export const unsupportedFieldConfigurationsValidator: ChangeValidator = async ch
         return {
           elemID,
           severity: 'Warning' as SaltoErrorSeverity,
-          message: `Salto can't deploy fields configuration of ${elemID.getFullName()} because they are either locked or team-managed`,
+          message: `Salto can't deploy fields configuration of ${elemID.getFullName()} because they are locked`,
           detailedMessage: `Salto can't deploy the configuration of fields: ${unsupportedIds.join(', ')}. If continuing, they will be omitted from the deployment`,
         }
       }

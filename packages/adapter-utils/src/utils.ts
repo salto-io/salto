@@ -868,8 +868,16 @@ export const createDefaultInstanceFromType = async (name: string, objectType: Ob
   return instance
 }
 
+type Replacer = (key: string, value: Value) => Value
+
+export const referenceExpressionStringifyReplacer: Replacer = (_key, value) => (
+  isReferenceExpression(value)
+    ? `ReferenceExpression(${value.elemID.getFullName()}, ${value.value ? '<omitted>' : '<no value>'})`
+    : value
+)
+
 export const safeJsonStringify = (value: Value,
-  replacer?: (key: string, value: Value) => Value,
+  replacer?: Replacer,
   space?: string | number): string =>
   safeStringify(value, replacer, space)
 

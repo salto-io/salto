@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { InstanceElement, SaltoError } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { safeJsonStringify } from './utils'
+import { safeJsonStringify, referenceExpressionStringifyReplacer } from './utils'
 
 const { groupByAsync } = collections.asynciterable
 const log = logger(module)
@@ -65,7 +65,6 @@ export const getInstancesWithCollidingElemID = (instances: InstanceElement[]): I
     .filter(groupedInstances => groupedInstances.length > 1)
     .flat()
 
-
 const logInstancesWithCollidingElemID = async (
   typeToElemIDtoInstances: Record<string, Record<string, InstanceElement[]>>
 ): Promise<void> => {
@@ -76,7 +75,7 @@ const logInstancesWithCollidingElemID = async (
       const relevantInstanceValues = elemIDInstances
         .map(instance => _.pickBy(instance.value, val => !_.isEmpty(val)))
       const relevantInstanceValuesStr = relevantInstanceValues
-        .map(instValues => safeJsonStringify(instValues, undefined, 2)).join('\n')
+        .map(instValues => safeJsonStringify(instValues, referenceExpressionStringifyReplacer, 2)).join('\n')
       log.debug(`Omitted instances of type ${type} with colliding ElemID ${elemID} with values - 
   ${relevantInstanceValuesStr}`)
     })

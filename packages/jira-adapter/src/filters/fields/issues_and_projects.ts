@@ -20,12 +20,17 @@ import { getLookUpName } from '../../reference_mapping'
 import { getDiffIds } from '../../diff'
 
 // Works for issuesIds and projectsIds
-export const setContextField = async (
-  contextChange: Change<InstanceElement>,
-  fieldName: string,
-  endpoint: string,
+export const setContextField = async ({
+  contextChange,
+  fieldName,
+  endpoint,
+  client,
+}: {
+  contextChange: Change<InstanceElement>
+  fieldName: string
+  endpoint: string
   client: clientUtils.HTTPWriteClientInterface
-): Promise<void> => {
+}): Promise<void> => {
   const resolvedChange = await resolveChangeElement(contextChange, getLookUpName)
   if (!isModificationChange(resolvedChange)) {
     // In create the issue types and projects ids are created

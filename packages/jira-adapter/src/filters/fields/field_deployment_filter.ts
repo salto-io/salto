@@ -15,6 +15,7 @@
 */
 import { Change, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { collections } from '@salto-io/lowerdash'
 import JiraClient from '../../client/client'
 import { FilterCreator } from '../../filter'
 import { deployContextChange, getContexts, getContextType } from './contexts'
@@ -22,6 +23,7 @@ import { defaultDeployChange, deployChanges } from '../../deployment'
 import { FIELD_TYPE_NAME } from './constants'
 import { JiraConfig } from '../../config'
 
+const { awu } = collections.asynciterable
 
 const deployField = async (
   change: Change<InstanceElement>,
@@ -38,11 +40,11 @@ const deployField = async (
       .map(instance => toChange({ before: instance }))
     : []
 
-  await Promise.all(removalContextsChanges.map(contextChange => deployContextChange(
+  await awu(removalContextsChanges).forEach(contextChange => deployContextChange(
     contextChange,
     client,
     config.apiDefinitions
-  )))
+  ))
 }
 
 const filter: FilterCreator = ({ client, config }) => ({

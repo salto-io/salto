@@ -48,45 +48,64 @@ const addDefaultValuesToContexts = (
   delete instance.value.contextDefaults
 }
 
+const addPropertyToContexts = (
+  {
+    instance,
+    idToContext,
+    allPropertiesFieldName,
+    propertyFieldName,
+    isGlobalFieldName,
+    destinationFieldName,
+  }: {
+    instance: InstanceElement
+    idToContext: Record<string, Values>
+    allPropertiesFieldName: string
+    propertyFieldName: string
+    isGlobalFieldName: string
+    destinationFieldName: string
+  }
+): void => {
+  (instance.value[allPropertiesFieldName] ?? [])
+    .filter((property: Values) => !property[isGlobalFieldName])
+    .forEach((property: Values) => {
+      if (idToContext[property.contextId] === undefined) {
+        log.warn(`Context with id ${property.contextId} not found in instance ${instance.elemID.getFullName()} when assigning ${destinationFieldName}`)
+        return
+      }
+      if (idToContext[property.contextId][destinationFieldName] === undefined) {
+        idToContext[property.contextId][destinationFieldName] = []
+      }
+      idToContext[property.contextId][destinationFieldName].push(property[propertyFieldName])
+    })
+
+  delete instance.value[allPropertiesFieldName]
+}
+
 const addIssueTypesToContexts = (
   instance: InstanceElement,
   idToContext: Record<string, Values>
-): void => {
-  (instance.value.contextIssueTypes ?? [])
-    .filter((issueType: Values) => !issueType.isAnyIssueType)
-    .forEach((issueType: Values) => {
-      if (idToContext[issueType.contextId] === undefined) {
-        log.warn(`Context with id ${issueType.contextId} not found in instance ${instance.elemID.getFullName()} when assigning issue types`)
-        return
-      }
-      if (idToContext[issueType.contextId].issueTypeIds === undefined) {
-        idToContext[issueType.contextId].issueTypeIds = []
-      }
-      idToContext[issueType.contextId].issueTypeIds.push(issueType.issueTypeId)
-    })
-
-  delete instance.value.contextIssueTypes
-}
+): void =>
+  addPropertyToContexts({
+    instance,
+    idToContext,
+    allPropertiesFieldName: 'contextIssueTypes',
+    propertyFieldName: 'issueTypeId',
+    isGlobalFieldName: 'isAnyIssueType',
+    destinationFieldName: 'issueTypeIds',
+  })
 
 const addProjectsToContexts = (
   instance: InstanceElement,
   idToContext: Record<string, Values>
-): void => {
-  (instance.value.contextProjects ?? [])
-    .filter((project: Values) => !project.isGlobalContext)
-    .forEach((project: Values) => {
-      if (idToContext[project.contextId] === undefined) {
-        log.warn(`Context with id ${project.contextId} not found in instance ${instance.elemID.getFullName()} when assigning projects`)
-        return
-      }
-      if (idToContext[project.contextId].projectIds === undefined) {
-        idToContext[project.contextId].projectIds = []
-      }
-      idToContext[project.contextId].projectIds.push(project.projectId)
-    })
-
-  delete instance.value.contextProjects
-}
+): void =>
+  addPropertyToContexts({
+    instance,
+    idToContext,
+    allPropertiesFieldName: 'contextProjects',
+    propertyFieldName: 'projectId',
+    isGlobalFieldName: 'isGlobalContext',
+    destinationFieldName: 'projectIds',
+  })
 
 const addCascadingOptionsToOptions = (instance: InstanceElement): void => {
   instance.value.contexts

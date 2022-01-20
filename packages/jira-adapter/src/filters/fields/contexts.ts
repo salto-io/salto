@@ -69,8 +69,8 @@ export const deployContextChange = async (
     throw err
   }
 
-  await setContextField(change, 'issueTypeIds', 'issuetype', client)
-  await setContextField(change, 'projectIds', 'project', client)
+  await setContextField({ contextChange: change, fieldName: 'issueTypeIds', endpoint: 'issuetype', client })
+  await setContextField({ contextChange: change, fieldName: 'projectIds', endpoint: 'project', client })
   await setContextOptions(change, client)
   await updateDefaultValues(change, client)
 }

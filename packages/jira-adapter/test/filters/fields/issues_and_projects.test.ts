@@ -66,7 +66,7 @@ describe('issues and projects', () => {
         after: contextAfter,
       })
 
-      await setContextField(contextChange, 'projectIds', 'projects', client)
+      await setContextField({ contextChange, fieldName: 'projectIds', endpoint: 'projects', client })
 
       expect(client.put).toHaveBeenCalledWith({
         url: '/rest/api/3/field/1/context/2/projects',

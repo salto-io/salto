@@ -13,17 +13,28 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isInstanceElement, isReferenceExpression, Values } from '@salto-io/adapter-api'
+import { isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
+import _ from 'lodash'
 import { FilterCreator } from '../filter'
+
+const log = logger(module)
 
 const filter: FilterCreator = () => ({
   onFetch: async elements => {
     elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === 'FieldConfiguration')
+      .filter(instance => instance.value.fields !== undefined)
       .forEach(instance => {
-        instance.value.fields = instance.value.fields
-          && instance.value.fields.filter((field: Values) => isReferenceExpression(field.id))
+        const [fields, trashedFields] = _.partition(
+          instance.value.fields,
+          field => isReferenceExpression(field.id),
+        )
+        instance.value.fields = fields
+        if (trashedFields.length !== 0) {
+          log.debug(`Removed from ${instance.elemID.getFullName()} fields with ids: ${trashedFields.join(', ')}, because they are not references and thus assumed to be in trash`)
+        }
       })
   },
 })

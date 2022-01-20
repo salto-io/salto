@@ -73,7 +73,7 @@ export const DEFAULT_FILTERS = [
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,
   fieldReferencesFilter,
-  // Most run after fieldReferencesFilter
+  // Must run after fieldReferencesFilter
   fieldConfigurationTrashedFieldsFilter,
   hiddenValuesInListsFilter,
   // Must be last

@@ -166,7 +166,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
-      idFields: ['id'],
       fieldTypeOverrides: [
         { fieldName: 'contexts', fieldType: 'list<CustomFieldContext>' },
         { fieldName: 'contextDefaults', fieldType: 'list<CustomFieldContextDefaultValue>' },
@@ -254,12 +253,16 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       add: {
         url: '/rest/api/3/field/{fieldId}/context',
         method: 'post',
+        urlParamsToFields: {
+          fieldId: '_parent.0.id',
+        },
       },
       modify: {
         url: '/rest/api/3/field/{fieldId}/context/{contextId}',
         method: 'put',
         urlParamsToFields: {
           contextId: 'id',
+          fieldId: '_parent.0.id',
         },
       },
       remove: {
@@ -267,6 +270,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         method: 'delete',
         urlParamsToFields: {
           contextId: 'id',
+          fieldId: '_parent.0.id',
         },
       },
     },

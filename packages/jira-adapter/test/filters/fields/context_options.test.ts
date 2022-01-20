@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, InstanceElement, MapType, ObjectType, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, MapType, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { setContextOptions, setOptionTypeDeploymentAnnotations } from '../../../src/filters/fields/context_options'
@@ -51,11 +51,15 @@ describe('context options', () => {
             position: 1,
           },
         ],
+      },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
       })
     })
 
     it('if change is removal, should do nothing', async () => {
-      await setContextOptions(toChange({ before: contextInstance }), parentField, client)
+      await setContextOptions(toChange({ before: contextInstance }), client)
       expect(client.post).not.toHaveBeenCalled()
       expect(client.put).not.toHaveBeenCalled()
       expect(client.delete).not.toHaveBeenCalled()
@@ -83,7 +87,6 @@ describe('context options', () => {
         })
         await setContextOptions(
           toChange({ after: contextInstance }),
-          parentField,
           client
         )
       })
@@ -111,7 +114,6 @@ describe('context options', () => {
       })
       await expect(setContextOptions(
         toChange({ after: contextInstance }),
-        parentField,
         client
       )).rejects.toThrow()
     })
@@ -160,7 +162,6 @@ describe('context options', () => {
         })
         await setContextOptions(
           toChange({ before: contextInstance, after: contextInstanceAfter }),
-          parentField,
           client
         )
       })

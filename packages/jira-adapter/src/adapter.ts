@@ -42,6 +42,7 @@ import workflowFilter from './filters/workflow/workflow'
 import workflowSchemeFilter from './filters/workflow_scheme'
 import fieldStructureFilter from './filters/fields/field_structure_filter'
 import fieldDeploymentFilter from './filters/fields/field_deployment_filter'
+import contextDeploymentFilter from './filters/fields/context_deployment_filter'
 import fieldTypeReferencesFilter from './filters/fields/field_type_references_filter'
 import avatarsFilter from './filters/avatars'
 import { JIRA } from './constants'
@@ -69,6 +70,7 @@ export const DEFAULT_FILTERS = [
   fieldStructureFilter,
   fieldTypeReferencesFilter,
   fieldDeploymentFilter,
+  contextDeploymentFilter,
   screenFilter,
   issueTypeScreenSchemeFilter,
   fieldConfigurationFilter,

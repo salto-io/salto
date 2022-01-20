@@ -17,7 +17,8 @@ import { DeployResult, Element, getChangeData, InstanceElement, isAdditionChange
 import { config as configUtils } from '@salto-io/adapter-components'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import _ from 'lodash'
-import { resolveValues } from '@salto-io/adapter-utils'
+import { getParents, resolveValues } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { Credentials } from '../src/auth'
 import { credsLease, realAdapter } from './adapter'
 import { DEFAULT_API_DEFINITIONS, DEFAULT_CONFIG } from '../src/config'
@@ -26,6 +27,8 @@ import JiraAdapter from '../src/adapter'
 import { createInstances } from './instances'
 import { findInstance } from './utils'
 import { getLookUpName } from '../src/reference_mapping'
+
+const { awu } = collections.asynciterable
 
 jest.setTimeout(30 * 1000)
 
@@ -84,13 +87,28 @@ describe('Jira E2E', () => {
     beforeAll(async () => {
       instances = createInstances(fetchedElements)
 
-      deployResults = await Promise.all(instances.map(instance =>
-        adapter.deploy({
+      deployResults = await awu(instances).map(async instance => {
+        const res = await adapter.deploy({
           changeGroup: {
             groupID: instance.elemID.getFullName(),
             changes: [toChange({ after: instance })],
           },
-        })))
+        })
+
+        const appliedChange = res.appliedChanges[0]
+        if (appliedChange === undefined) {
+          return res
+        }
+
+        const appliedInstance = getChangeData(appliedChange)
+        instances
+          .flatMap(getParents)
+          .filter(parent => parent.elemID.isEqual(appliedInstance.elemID))
+          .forEach(parent => {
+            parent.resValue = appliedInstance
+          })
+        return res
+      }).toArray()
     })
 
     it('should have no errors', () => {

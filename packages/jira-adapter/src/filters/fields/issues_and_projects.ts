@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Change, getChangeData, InstanceElement, isModificationChange } from '@salto-io/adapter-api'
-import { resolveChangeElement } from '@salto-io/adapter-utils'
+import { getParents, resolveChangeElement } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { getLookUpName } from '../../reference_mapping'
 import { getDiffIds } from '../../diff'
@@ -24,7 +24,6 @@ export const setContextField = async (
   contextChange: Change<InstanceElement>,
   fieldName: string,
   endpoint: string,
-  parentField: InstanceElement,
   client: clientUtils.HTTPWriteClientInterface
 ): Promise<void> => {
   const resolvedChange = await resolveChangeElement(contextChange, getLookUpName)
@@ -42,9 +41,11 @@ export const setContextField = async (
     contextInstance.value[fieldName] ?? []
   )
 
+  const fieldId = getParents(contextInstance)[0].id
+
   if (addedIds.length !== 0) {
     await client.put({
-      url: `/rest/api/3/field/${parentField.value.id}/context/${contextInstance.value.id}/${endpoint}`,
+      url: `/rest/api/3/field/${fieldId}/context/${contextInstance.value.id}/${endpoint}`,
       data: {
         [fieldName]: addedIds,
       },
@@ -53,7 +54,7 @@ export const setContextField = async (
 
   if (removedIds.length !== 0) {
     await client.post({
-      url: `/rest/api/3/field/${parentField.value.id}/context/${contextInstance.value.id}/${endpoint}/remove`,
+      url: `/rest/api/3/field/${fieldId}/context/${contextInstance.value.id}/${endpoint}/remove`,
       data: {
         [fieldName]: removedIds,
       },

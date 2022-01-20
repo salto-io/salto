@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { JIRA } from '../../../src/constants'
@@ -46,6 +46,10 @@ describe('issues and projects', () => {
             '3',
             '4',
           ],
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(field.elemID, field)],
         }
       )
     })
@@ -62,7 +66,7 @@ describe('issues and projects', () => {
         after: contextAfter,
       })
 
-      await setContextField(contextChange, 'projectIds', 'projects', field, client)
+      await setContextField(contextChange, 'projectIds', 'projects', client)
 
       expect(client.put).toHaveBeenCalledWith({
         url: '/rest/api/3/field/1/context/2/projects',

@@ -13,12 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, Element, getChangeData, InstanceElement, isInstanceChange, isObjectType, isRemovalChange } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import JiraClient from '../../client/client'
 import { FilterCreator } from '../../filter'
-import { deployContexts, setContextDeploymentAnnotations } from './contexts'
-import { updateDefaultValues } from './default_values'
+import { deployContextChange, getContexts, getContextType } from './contexts'
 import { defaultDeployChange, deployChanges } from '../../deployment'
 import { FIELD_TYPE_NAME } from './constants'
 import { JiraConfig } from '../../config'
@@ -29,32 +28,29 @@ const deployField = async (
   client: JiraClient,
   config: JiraConfig,
 ): Promise<void> => {
-  await defaultDeployChange({ change, client, apiDefinitions: config.apiDefinitions, fieldsToIgnore: ['contexts'] })
+  await defaultDeployChange({ change, client, apiDefinitions: config.apiDefinitions })
 
-  if (isRemovalChange(change)) {
-    return
-  }
+  const contextType = await getContextType(await getChangeData(change).getType())
+  // When creating a field, it is created with a default context,
+  // in addition to what is in the NaCl so we need to delete it
+  const removalContextsChanges = isAdditionChange(change)
+    ? (await getContexts(change, contextType, client))
+      .map(instance => toChange({ before: instance }))
+    : []
 
-  await deployContexts(
-    change,
+  await Promise.all(removalContextsChanges.map(contextChange => deployContextChange(
+    contextChange,
     client,
     config.apiDefinitions
-  )
-  await updateDefaultValues(change, client)
+  )))
 }
 
 const filter: FilterCreator = ({ client, config }) => ({
-  onFetch: async (elements: Element[]) => {
-    const fieldType = elements.filter(isObjectType).find(e => e.elemID.name === FIELD_TYPE_NAME)
-    if (fieldType !== undefined) {
-      await setContextDeploymentAnnotations(fieldType)
-    }
-  },
-
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change => isInstanceChange(change)
+        && isAdditionChange(change)
         && getChangeData(change).elemID.typeName === FIELD_TYPE_NAME
     )
 

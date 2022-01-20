@@ -310,9 +310,6 @@ jira {
               fieldName = "id"
             },
           ]
-          idFields = [
-            "id",
-          ]
           fieldTypeOverrides = [
             {
               fieldName = "contexts"

@@ -14,3 +14,4 @@
 * limitations under the License.
 */
 export const FIELD_TYPE_NAME = 'Field'
+export const FIELD_CONTEXT_TYPE_NAME = 'CustomFieldContext'

@@ -41,6 +41,7 @@ import workflowSchemeFilter from './filters/workflow_scheme'
 import fieldStructureFilter from './filters/fields/field_structure_filter'
 import fieldDeploymentFilter from './filters/fields/field_deployment_filter'
 import fieldTypeReferencesFilter from './filters/fields/field_type_references_filter'
+import avatarsFilter from './filters/avatars'
 import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
 
@@ -54,6 +55,7 @@ const { createPaginator, getWithOffsetAndLimit } = clientUtils
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
+  avatarsFilter,
   workflowFilter,
   workflowSchemeFilter,
   issueTypeSchemeReferences,

@@ -82,7 +82,7 @@ export abstract class AdapterHTTPClient<
 > extends AdapterClientBase<TRateLimitConfig>
   implements HTTPReadClientInterface, HTTPWriteClientInterface {
   protected readonly conn: Connection<TCredentials>
-  private readonly credentials: TCredentials
+  protected readonly credentials: TCredentials
 
   constructor(
     clientName: string,

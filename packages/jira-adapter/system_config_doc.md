@@ -1586,6 +1586,18 @@ jira {
           ]
         }
       }
+      ApplicationRole = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "userCount"
+            },
+            {
+              fieldName = "remainingSeats"
+            },
+          ]
+        }
+      }
       SharePermission = {
         transformation = {
           fieldsToOmit = [

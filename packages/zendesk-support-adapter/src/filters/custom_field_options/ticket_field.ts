@@ -13,23 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
-import { FilterCreator } from '../filter'
-import { deployChange, deployChanges } from '../deployment'
+import { createCustomFieldOptionsFilterCreator } from './creator'
 
 /**
- * Deploys all the changes that were not deployed by the previous filters
+ * Deploys ticket field and ticket field options
  */
-const filterCreator: FilterCreator = ({ config, client }) => ({
-  deploy: async (changes: Change<InstanceElement>[]) => {
-    const deployResult = await deployChanges(
-      changes.filter(isInstanceChange),
-      async change => {
-        await deployChange(change, client, config.apiDefinitions)
-      }
-    )
-    return { deployResult, leftoverChanges: [] }
-  },
+const filterCreator = createCustomFieldOptionsFilterCreator({
+  parentTypeName: 'ticket_field',
+  childTypeName: 'ticket_field__custom_field_options',
 })
 
 export default filterCreator

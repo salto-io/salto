@@ -22,14 +22,43 @@ import { getZendeskError } from './errors'
 
 const log = logger(module)
 
+export const addIdUponAddition = (
+  change: Change<InstanceElement>,
+  apiDefinitions: configUtils.AdapterApiConfig,
+  response: deployment.ResponseResult,
+  dataField?: string,
+): void => {
+  const { transformation } = apiDefinitions
+    .types[getChangeData(change).elemID.typeName]
+  if (isAdditionChange(change)) {
+    if (Array.isArray(response)) {
+      log.warn(
+        'Received an array for the response of the deploy. Not updating the id of the element. Action: add. ID: %s',
+        getChangeData(change).elemID.getFullName()
+      )
+      return
+    }
+    const transformationConfig = configUtils.getConfigWithDefault(
+      transformation,
+      apiDefinitions.typeDefaults.transformation,
+    )
+    const idField = transformationConfig.serviceIdField ?? 'id'
+    const idValue = dataField
+      ? (response?.[dataField] as Values)?.[idField]
+      : response?.[idField]
+    if (idValue !== undefined) {
+      getChangeData(change).value[idField] = idValue
+    }
+  }
+}
+
 export const deployChange = async (
   change: Change<InstanceElement>,
   client: ZendeskClient,
   apiDefinitions: configUtils.AdapterApiConfig,
   fieldsToIgnore?: string[],
-): Promise<void> => {
-  const { deployRequests, transformation } = apiDefinitions
-    .types[getChangeData(change).elemID.typeName]
+): Promise<deployment.ResponseResult> => {
+  const { deployRequests } = apiDefinitions.types[getChangeData(change).elemID.typeName]
   try {
     const response = await deployment.deployChange(
       change,
@@ -37,27 +66,8 @@ export const deployChange = async (
       deployRequests,
       fieldsToIgnore
     )
-    if (isAdditionChange(change)) {
-      if (!Array.isArray(response)) {
-        const transformationConfig = configUtils.getConfigWithDefault(
-          transformation,
-          apiDefinitions.typeDefaults.transformation,
-        )
-        const idField = transformationConfig.serviceIdField ?? 'id'
-        const dataField = deployRequests?.add?.deployAsField
-        const idValue = dataField
-          ? (response?.[dataField] as Values)?.[idField]
-          : response?.[idField]
-        if (idValue !== undefined) {
-          getChangeData(change).value[idField] = idValue
-        }
-      } else {
-        log.warn(
-          'Received an array for the response of the deploy. Not updating the id of the element. Action: add. ID: %s',
-          getChangeData(change).elemID.getFullName()
-        )
-      }
-    }
+    addIdUponAddition(change, apiDefinitions, response, deployRequests?.add?.deployAsField)
+    return response
   } catch (err) {
     throw getZendeskError(getChangeData(change).elemID.getFullName(), err)
   }
@@ -65,13 +75,13 @@ export const deployChange = async (
 
 export const deployChanges = async <T extends Change<ChangeDataType>>(
   changes: T[],
-  deployChangeFunc: (change: T) => Promise<void>
+  deployChangeFunc: (change: T) => Promise<void | T[]>
 ): Promise<DeployResult> => {
   const result = await Promise.all(
     changes.map(async change => {
       try {
-        await deployChangeFunc(change)
-        return change
+        const res = await deployChangeFunc(change)
+        return res !== undefined ? res : change
       } catch (err) {
         if (!_.isError(err)) {
           throw err
@@ -81,9 +91,6 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
     })
   )
 
-  const [errors, appliedChanges] = _.partition(result, _.isError)
-  return {
-    errors,
-    appliedChanges,
-  }
+  const [errors, appliedChanges] = _.partition(result.flat(), _.isError)
+  return { errors, appliedChanges }
 }

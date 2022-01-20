@@ -33,6 +33,7 @@ import { API_DEFINITIONS_CONFIG, ZendeskConfig } from './config'
 import { ZENDESK_SUPPORT } from './constants'
 import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
+import { getChangeGroupIds } from './group_change'
 import fieldReferencesFilter, { fieldNameToTypeMappingDefs,
   ZendeskSupportFieldReferenceResolver } from './filters/field_references'
 import unorderedListsFilter from './filters/unordered_lists'
@@ -45,6 +46,8 @@ import workspaceOrderFilter from './filters/reorder/workspace'
 import businessHoursScheduleFilter from './filters/business_hours_schedule'
 import collisionErrorsFilter from './filters/collision_errors'
 import accountSettingsFilter from './filters/account_settings'
+import ticketFieldFilter from './filters/custom_field_options/ticket_field'
+import userFieldFilter from './filters/custom_field_options/user_field'
 import defaultDeployFilter from './filters/default_deploy'
 
 const log = logger(module)
@@ -55,9 +58,8 @@ const { awu } = collections.asynciterable
 const { concatObjects } = objects
 
 export const DEFAULT_FILTERS = [
-  fieldReferencesFilter,
-  // unorderedListsFilter should run after fieldReferencesFilter
-  unorderedListsFilter,
+  ticketFieldFilter,
+  userFieldFilter,
   viewFilter,
   workspaceFilter,
   ticketFormOrderFilter,
@@ -67,6 +69,9 @@ export const DEFAULT_FILTERS = [
   businessHoursScheduleFilter,
   collisionErrorsFilter,
   accountSettingsFilter,
+  fieldReferencesFilter,
+  // unorderedListsFilter should run after fieldReferencesFilter
+  unorderedListsFilter,
   // defaultDeployFilter should be last!
   defaultDeployFilter,
 ]
@@ -180,6 +185,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     return {
       changeValidator: createChangeValidator(this.userConfig[API_DEFINITIONS_CONFIG]),
       dependencyChanger: deploymentUtils.dependency.removeStandaloneFieldDependency,
+      getChangeGroupIds,
     }
   }
 }

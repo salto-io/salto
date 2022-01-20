@@ -54,7 +54,7 @@ const getLowerCaseSingularLookupType = (val: string): string | undefined => {
 
 const CUSTOM_FIELDS_PREFIX = 'custom_fields_'
 
-type ZendeskSupportReferenceSerializationStrategyName = 'customFields'
+type ZendeskSupportReferenceSerializationStrategyName = 'customFields' | 'value'
 const ZendeskSupportReferenceSerializationStrategyLookup: Record<
   ZendeskSupportReferenceSerializationStrategyName
   | referenceUtils.ReferenceSerializationStrategyName,
@@ -69,6 +69,11 @@ const ZendeskSupportReferenceSerializationStrategyLookup: Record<
       ? val.slice(CUSTOM_FIELDS_PREFIX.length)
       : val),
     lookupIndexName: 'id',
+  },
+  value: {
+    serialize: ({ ref }) => (isInstanceElement(ref.value) ? ref.value.value.value : ref.value),
+    lookup: val => val,
+    lookupIndexName: 'value',
   },
 }
 
@@ -203,6 +208,26 @@ export const fieldNameToTypeMappingDefs: ZendeskSupportFieldReferenceDefinition[
     src: { field: 'ticket_field_ids' },
     serializationStrategy: 'id',
     target: { type: 'ticket_field' },
+  },
+  {
+    src: { field: 'custom_field_options', parentTypes: ['ticket_field'] },
+    serializationStrategy: 'fullValue',
+    target: { type: 'ticket_field__custom_field_options' },
+  },
+  {
+    src: { field: 'default_custom_field_option', parentTypes: ['ticket_field'] },
+    zendeskSupportSerializationStrategy: 'value',
+    target: { type: 'ticket_field__custom_field_options' },
+  },
+  {
+    src: { field: 'custom_field_options', parentTypes: ['user_field'] },
+    serializationStrategy: 'fullValue',
+    target: { type: 'user_field__custom_field_options' },
+  },
+  {
+    src: { field: 'default_custom_field_option', parentTypes: ['user_field'] },
+    zendeskSupportSerializationStrategy: 'value',
+    target: { type: 'user_field__custom_field_options' },
   },
   {
     src: { field: 'field', parentTypes: ['view__conditions__all', 'view__conditions__any', 'macro__actions'] },

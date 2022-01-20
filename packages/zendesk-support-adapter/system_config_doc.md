@@ -518,6 +518,25 @@ zendesk_support {
               fieldType = "number"
             },
           ]
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+            {
+              fieldName = "attachments"
+            },
+          ]
         }
         deployRequests = {
           add = {

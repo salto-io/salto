@@ -67,6 +67,40 @@ describe('fieldConfigurationTrashedFieldsFilter', () => {
       })
     })
 
+    it('should do nothing of fields are not fetched', async () => {
+      const { client, paginator } = mockClient()
+      filter = fieldConfigurationTrashedFieldsFilter({
+        client,
+        paginator,
+        config: {
+          ...DEFAULT_CONFIG,
+          fetch: {
+            includeTypes: DEFAULT_CONFIG.fetch.includeTypes.filter(type => type !== 'Fields'),
+          },
+        },
+      }) as typeof filter
+
+      const instance = new InstanceElement(
+        'instance',
+        fieldConfigurationType,
+        {
+          fields: [
+            {
+              id: '2',
+            },
+          ],
+        }
+      )
+      await filter.onFetch([instance])
+      expect(instance.value).toEqual({
+        fields: [
+          {
+            id: '2',
+          },
+        ],
+      })
+    })
+
     it('should do nothing of there are no fields', async () => {
       const instance = new InstanceElement(
         'instance',

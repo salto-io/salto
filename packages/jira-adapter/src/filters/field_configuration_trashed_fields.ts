@@ -20,8 +20,13 @@ import { FilterCreator } from '../filter'
 
 const log = logger(module)
 
-const filter: FilterCreator = () => ({
+const filter: FilterCreator = ({ config }) => ({
   onFetch: async elements => {
+    if (!config.fetch.includeTypes.includes('Fields')) {
+      log.warn('Fields is not included in the fetch list so we cannot know what fields is in trash. Skipping the field_configuration_trashed_fields')
+      return
+    }
+
     elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === 'FieldConfiguration')

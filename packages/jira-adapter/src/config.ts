@@ -629,6 +629,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   ProjectType: {
     transformation: {
       idFields: ['key'],
+      fieldsToOmit: [
+        { fieldName: 'icon' },
+      ],
     },
   },
   Projects: {

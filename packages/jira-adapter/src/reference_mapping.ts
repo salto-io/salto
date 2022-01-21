@@ -240,6 +240,16 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     serializationStrategy: 'id',
     target: { type: 'IssueType' },
   },
+  {
+    src: { field: 'fieldId', parentTypes: ['agile__1_0__board___boardId___configuration_estimation_field@uuvuuuu_00123_00125uuuu'] },
+    serializationStrategy: 'id',
+    target: { type: 'Field' },
+  },
+  {
+    src: { field: 'rankCustomFieldId', parentTypes: ['agile__1_0__board___boardId___configuration_ranking@uuvuuuu_00123_00125uuu'] },
+    serializationStrategy: 'id',
+    target: { type: 'Field' },
+  },
 ]
 
 const lookupNameFuncs: GetLookupNameFunc[] = [

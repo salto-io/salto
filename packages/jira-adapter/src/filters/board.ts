@@ -45,6 +45,11 @@ const filter: FilterCreator = () => ({
       .forEach(instance => {
         instance.value.filterId = instance.value.config?.filter?.id
         delete instance.value.config?.filter
+
+        const rankFieldId = instance.value.config?.ranking?.rankCustomFieldId
+        if (rankFieldId !== undefined && !rankFieldId.toString().startsWith('customfield_')) {
+          instance.value.config.ranking.rankCustomFieldId = `customfield_${rankFieldId}`
+        }
       })
   },
 

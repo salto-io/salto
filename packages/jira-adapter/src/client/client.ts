@@ -53,6 +53,10 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
     )
   }
 
+  public get baseUrl(): string {
+    return this.credentials.baseUrl
+  }
+
   public async getSinglePage(
     args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {

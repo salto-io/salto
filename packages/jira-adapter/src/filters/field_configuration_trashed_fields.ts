@@ -38,7 +38,7 @@ const filter: FilterCreator = ({ config }) => ({
         )
         instance.value.fields = fields
         if (trashedFields.length !== 0) {
-          log.debug(`Removed from ${instance.elemID.getFullName()} fields with ids: ${trashedFields.join(', ')}, because they are not references and thus assumed to be in trash`)
+          log.debug(`Removed from ${instance.elemID.getFullName()} fields with ids: ${trashedFields.map(field => field.id).join(', ')}, because they are not references and thus assumed to be in trash`)
         }
       })
   },

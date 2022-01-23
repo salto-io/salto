@@ -723,7 +723,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'projectKeys', fieldType: 'List<string>' },
         { fieldName: 'entityId', fieldType: 'string' },
         { fieldName: 'leadAccountId', fieldType: 'string' },
-        { fieldName: 'components', fieldType: 'list<ComponentWithIssueCount>' },
+        { fieldName: 'components', fieldType: 'list<ProjectComponent>' },
         { fieldName: 'workflowScheme', fieldType: 'WorkflowScheme' },
         { fieldName: 'permissionScheme', fieldType: 'PermissionScheme' },
         { fieldName: 'notificationScheme', fieldType: 'NotificationScheme' },
@@ -734,6 +734,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldsToHide: [
         {
           fieldName: 'id',
+        },
+      ],
+      standaloneFields: [
+        {
+          fieldName: 'components',
         },
       ],
     },
@@ -768,13 +773,41 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldsToOmit: [{ fieldName: 'projectIds' }],
     },
   },
-  ComponentWithIssueCount: {
+  ProjectComponent: {
     transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'issueCount', fieldType: 'number' },
+        { fieldName: 'project', fieldType: 'Project' },
+        { fieldName: 'leadAccountId', fieldType: 'string' },
+        { fieldName: 'componentBean', fieldType: 'ProjectComponent' },
+      ],
+      fieldsToHide: [
+        { fieldName: 'id' },
+      ],
       fieldsToOmit: [
         { fieldName: 'issueCount' },
-        { fieldName: 'id' },
         { fieldName: 'projectId' },
+        { fieldName: 'project' },
+        { fieldName: 'realAssignee' },
+        { fieldName: 'isAssigneeTypeValid' },
+        { fieldName: 'realAssigneeType' },
+        { fieldName: 'assignee' },
+        { fieldName: 'componentBean' },
       ],
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/component',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/component/{id}',
+        method: 'put',
+      },
+      remove: {
+        url: '/rest/api/3/component/{id}',
+        method: 'delete',
+      },
     },
   },
   NotificationScheme: {
@@ -1361,6 +1394,10 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
       {
         originalName: 'PageBeanProject',
         newName: 'Projects',
+      },
+      {
+        originalName: 'ComponentWithIssueCount',
+        newName: 'ProjectComponent',
       },
       {
         originalName: 'rest__api__3__project__type',

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, Element, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
+import { Change, Element, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
 import { resolveValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -69,6 +69,7 @@ const filter: FilterCreator = ({ config, client }) => ({
       setDeploymentAnnotations(projectType, 'issueTypeScreenScheme')
       setDeploymentAnnotations(projectType, 'fieldConfigurationScheme')
       setDeploymentAnnotations(projectType, 'issueTypeScheme')
+      setDeploymentAnnotations(projectType, 'components')
     }
 
     elements
@@ -97,7 +98,7 @@ const filter: FilterCreator = ({ config, client }) => ({
       changes,
       change => isInstanceChange(change)
         && getChangeData(change).elemID.typeName === PROJECT_TYPE_NAME
-        && isModificationChange(change)
+        && isAdditionOrModificationChange(change)
     )
 
 
@@ -108,9 +109,13 @@ const filter: FilterCreator = ({ config, client }) => ({
           change,
           client,
           apiDefinitions: config.apiDefinitions,
-          fieldsToIgnore: ['workflowScheme', 'issueTypeScreenScheme', 'fieldConfigurationScheme', 'issueTypeScheme'],
+          fieldsToIgnore: isModificationChange(change)
+            ? ['components', 'workflowScheme', 'issueTypeScreenScheme', 'fieldConfigurationScheme', 'issueTypeScheme']
+            : ['components'],
         })
-        await deployProjectSchemes(change, client)
+        if (isModificationChange(change)) {
+          await deployProjectSchemes(change, client)
+        }
       }
     )
 

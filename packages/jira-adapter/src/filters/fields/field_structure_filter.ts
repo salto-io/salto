@@ -245,7 +245,8 @@ const filter: FilterCreator = ({ config }) => ({
             config,
           ))
 
-        delete instance.value.contexts
+        instance.value.contexts = contexts
+          .map((context: InstanceElement) => new ReferenceExpression(context.elemID, context))
 
         elements.push(...contexts)
       })

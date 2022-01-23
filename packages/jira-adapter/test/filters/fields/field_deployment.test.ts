@@ -88,7 +88,7 @@ describe('fields_deployment', () => {
       change,
       client,
       DEFAULT_CONFIG.apiDefinitions.types.Field.deployRequests,
-      [],
+      ['contexts'],
       undefined,
     )
   })

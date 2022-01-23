@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../../utils'
 import { DEFAULT_CONFIG } from '../../../src/config'
@@ -59,7 +59,10 @@ describe('fields_structure', () => {
       fieldContextDefaultValueType,
       fieldContextOptionType,
     ])
-    expect(instance.value).toEqual({ type: 'someType' })
+    expect(instance.value).toEqual({
+      type: 'someType',
+      contexts: [],
+    })
   })
 
   it('should add the defaults, issue types and projects to the contexts', async () => {
@@ -127,6 +130,9 @@ describe('fields_structure', () => {
     expect(fieldInstance.value).toEqual(
       {
         name: 'name',
+        contexts: [
+          new ReferenceExpression(contextInstance.elemID, contextInstance),
+        ],
       },
     )
     expect(contextInstance.value).toEqual(

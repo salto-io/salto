@@ -13,13 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Element, Field, InstanceElement, isInstanceElement, ListType, MapType, Values } from '@salto-io/adapter-api'
-import { naclCase } from '@salto-io/adapter-utils'
+import { BuiltinTypes, CORE_ANNOTATIONS, Element, Field, InstanceElement, isInstanceElement, isObjectType, ListType, MapType, ObjectType, ReferenceExpression, Values } from '@salto-io/adapter-api'
+import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { logger } from '@salto-io/logging'
 import _ from 'lodash'
+import { values } from '@salto-io/lowerdash'
+import { JiraConfig } from '../../config'
 import { FilterCreator } from '../../filter'
-import { findObject } from '../../utils'
-import { FIELD_TYPE_NAME } from './constants'
+import { FIELD_CONTEXT_DEFAULT_TYPE_NAME, FIELD_CONTEXT_OPTION_TYPE_NAME, FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from './constants'
 
+const log = logger(module)
 
 const addTypeValue = (instance: InstanceElement): void => {
   if (instance.value.schema?.custom !== undefined) {
@@ -33,43 +37,74 @@ const addDefaultValuesToContexts = (
   idToContext: Record<string, Values>
 ): void => {
   (instance.value.contextDefaults ?? []).forEach((contextDefault: Values) => {
+    if (idToContext[contextDefault.contextId] === undefined) {
+      log.warn(`Context with id ${contextDefault.contextId} not found in instance ${instance.elemID.getFullName()} when assigning context defaults`)
+      return
+    }
     idToContext[contextDefault.contextId].defaultValue = _.omit(contextDefault, 'contextId')
   })
 
   delete instance.value.contextDefaults
 }
 
+const addPropertyToContexts = (
+  {
+    instance,
+    idToContext,
+    allPropertiesFieldName,
+    propertyFieldName,
+    isGlobalFieldName,
+    destinationFieldName,
+  }: {
+    instance: InstanceElement
+    idToContext: Record<string, Values>
+    allPropertiesFieldName: string
+    propertyFieldName: string
+    isGlobalFieldName: string
+    destinationFieldName: string
+  }
+): void => {
+  (instance.value[allPropertiesFieldName] ?? [])
+    .filter((property: Values) => !property[isGlobalFieldName])
+    .forEach((property: Values) => {
+      if (idToContext[property.contextId] === undefined) {
+        log.warn(`Context with id ${property.contextId} not found in instance ${instance.elemID.getFullName()} when assigning ${destinationFieldName}`)
+        return
+      }
+      if (idToContext[property.contextId][destinationFieldName] === undefined) {
+        idToContext[property.contextId][destinationFieldName] = []
+      }
+      idToContext[property.contextId][destinationFieldName].push(property[propertyFieldName])
+    })
+
+  delete instance.value[allPropertiesFieldName]
+}
+
 const addIssueTypesToContexts = (
   instance: InstanceElement,
   idToContext: Record<string, Values>
-): void => {
-  (instance.value.contextIssueTypes ?? [])
-    .filter((issueType: Values) => !issueType.isAnyIssueType)
-    .forEach((issueType: Values) => {
-      if (idToContext[issueType.contextId].issueTypeIds === undefined) {
-        idToContext[issueType.contextId].issueTypeIds = []
-      }
-      idToContext[issueType.contextId].issueTypeIds.push(issueType.issueTypeId)
-    })
-
-  delete instance.value.contextIssueTypes
-}
+): void =>
+  addPropertyToContexts({
+    instance,
+    idToContext,
+    allPropertiesFieldName: 'contextIssueTypes',
+    propertyFieldName: 'issueTypeId',
+    isGlobalFieldName: 'isAnyIssueType',
+    destinationFieldName: 'issueTypeIds',
+  })
 
 const addProjectsToContexts = (
   instance: InstanceElement,
   idToContext: Record<string, Values>
-): void => {
-  (instance.value.contextProjects ?? [])
-    .filter((project: Values) => !project.isGlobalContext)
-    .forEach((project: Values) => {
-      if (idToContext[project.contextId].projectIds === undefined) {
-        idToContext[project.contextId].projectIds = []
-      }
-      idToContext[project.contextId].projectIds.push(project.projectId)
-    })
-
-  delete instance.value.contextProjects
-}
+): void =>
+  addPropertyToContexts({
+    instance,
+    idToContext,
+    allPropertiesFieldName: 'contextProjects',
+    propertyFieldName: 'projectId',
+    isGlobalFieldName: 'isGlobalContext',
+    destinationFieldName: 'projectIds',
+  })
 
 const addCascadingOptionsToOptions = (instance: InstanceElement): void => {
   instance.value.contexts
@@ -104,12 +139,89 @@ const transformOptionsToMap = (instance: InstanceElement): void => {
     })
 }
 
+const getInstanceName = (
+  instanceValues: Values,
+  typeName: string,
+  config: JiraConfig
+): string | undefined => {
+  const { idFields } = configUtils.getConfigWithDefault(
+    config.apiDefinitions.types[typeName].transformation,
+    config.apiDefinitions.typeDefaults.transformation
+  )
+  return elementUtils.getInstanceName(instanceValues, idFields)
+}
+
+const createContextInstance = (
+  context: Values,
+  contextType: ObjectType,
+  parentField: InstanceElement,
+  config: JiraConfig,
+): InstanceElement => {
+  const parentName = getInstanceName(
+    parentField.value,
+    parentField.elemID.typeName,
+    config,
+  ) ?? parentField.elemID.name
+  const contextName = getInstanceName(context, contextType.elemID.typeName, config)
+    ?? context.id
+
+  const instanceName = naclCase([parentName, contextName].join('_'))
+  return new InstanceElement(
+    instanceName,
+    contextType,
+    context,
+    parentField.path && [...parentField.path, 'contexts', pathNaclCase(instanceName)],
+    {
+      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
+    }
+  )
+}
+
 /**
  * Converts the field structure to what expected structure of the deployment endpoints and
  * converts list with hidden values to maps
  */
-const filter: FilterCreator = () => ({
+const filter: FilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]) => {
+    const types = _(elements)
+      .filter(isObjectType)
+      .keyBy(element => element.elemID.name)
+      .value()
+
+    const fieldType = types[FIELD_TYPE_NAME]
+    const fieldContextType = types[FIELD_CONTEXT_TYPE_NAME]
+    const fieldContextDefaultValueType = types[FIELD_CONTEXT_DEFAULT_TYPE_NAME]
+    const fieldContextOptionType = types[FIELD_CONTEXT_OPTION_TYPE_NAME]
+
+
+    const missingTypes = [
+      fieldType === undefined ? FIELD_TYPE_NAME : undefined,
+      fieldContextType === undefined ? FIELD_CONTEXT_TYPE_NAME : undefined,
+      fieldContextDefaultValueType === undefined ? FIELD_CONTEXT_DEFAULT_TYPE_NAME : undefined,
+      fieldContextOptionType === undefined ? FIELD_CONTEXT_OPTION_TYPE_NAME : undefined,
+    ].filter(values.isDefined)
+
+    if (missingTypes.length) {
+      log.warn(`Missing types for field structure filter: ${missingTypes.join(', ')}, skipping`)
+      return
+    }
+
+    fieldType.fields.type = new Field(fieldType, 'type', BuiltinTypes.STRING)
+    delete fieldType.fields.contextDefaults
+    delete fieldType.fields.contextProjects
+    delete fieldType.fields.contextIssueTypes
+
+    fieldType.fields.contexts = new Field(fieldType, 'contexts', new MapType(fieldContextType))
+
+    fieldContextType.fields.projectIds = new Field(fieldContextType, 'projectIds', new ListType(BuiltinTypes.STRING))
+    fieldContextType.fields.issueTypeIds = new Field(fieldContextType, 'issueTypeIds', new ListType(BuiltinTypes.STRING))
+    fieldContextType.fields.defaultValue = new Field(fieldContextType, 'defaultValue', fieldContextDefaultValueType)
+    fieldContextType.fields.options = new Field(fieldType, 'options', new MapType(fieldContextOptionType))
+
+    fieldContextOptionType.fields.position = new Field(fieldContextOptionType, 'position', BuiltinTypes.NUMBER)
+    fieldContextOptionType.fields.cascadingOptions = new Field(fieldContextOptionType, 'cascadingOptions', new MapType(fieldContextOptionType))
+
+
     elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === FIELD_TYPE_NAME)
@@ -124,34 +236,23 @@ const filter: FilterCreator = () => ({
 
         addCascadingOptionsToOptions(instance)
         transformOptionsToMap(instance)
-        instance.value.contexts = instance.value.contexts
-          && _.keyBy(instance.value.contexts, context => naclCase(context.name))
+
+        const contexts = (instance.value.contexts ?? [])
+          .map((context: Values) => createContextInstance(
+            context,
+            fieldContextType,
+            instance,
+            config,
+          ))
+
+        instance.value.contexts = contexts
+          .map((context: InstanceElement) => new ReferenceExpression(context.elemID, context))
+        if (instance.path !== undefined) {
+          instance.path = [...instance.path, instance.path[instance.path.length - 1]]
+        }
+
+        elements.push(...contexts)
       })
-
-    const fieldType = findObject(elements, FIELD_TYPE_NAME)
-    const fieldContextType = findObject(elements, 'CustomFieldContext')
-    const fieldContextDefaultValueType = findObject(elements, 'CustomFieldContextDefaultValue')
-    const fieldContextOptionType = findObject(elements, 'CustomFieldContextOption')
-
-    if (fieldType !== undefined
-      && fieldContextType !== undefined
-      && fieldContextDefaultValueType !== undefined
-      && fieldContextOptionType !== undefined) {
-      fieldType.fields.type = new Field(fieldType, 'type', BuiltinTypes.STRING)
-      delete fieldType.fields.contextDefaults
-      delete fieldType.fields.contextProjects
-      delete fieldType.fields.contextIssueTypes
-
-      fieldType.fields.contexts = new Field(fieldType, 'contexts', new MapType(fieldContextType))
-
-      fieldContextType.fields.projectIds = new Field(fieldContextType, 'projectIds', new ListType(BuiltinTypes.STRING))
-      fieldContextType.fields.issueTypeIds = new Field(fieldContextType, 'issueTypeIds', new ListType(BuiltinTypes.STRING))
-      fieldContextType.fields.defaultValue = new Field(fieldContextType, 'defaultValue', fieldContextDefaultValueType)
-      fieldContextType.fields.options = new Field(fieldType, 'options', new MapType(fieldContextOptionType))
-
-      fieldContextOptionType.fields.position = new Field(fieldContextOptionType, 'position', BuiltinTypes.NUMBER)
-      fieldContextOptionType.fields.cascadingOptions = new Field(fieldContextOptionType, 'cascadingOptions', new MapType(fieldContextOptionType))
-    }
   },
 })
 

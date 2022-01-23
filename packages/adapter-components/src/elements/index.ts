@@ -21,6 +21,7 @@ import { computeGetArgs, simpleGetArgs } from './request_parameters'
 import { RECORDS_PATH, TYPES_PATH, SUBTYPES_PATH } from './constants'
 import { findDataField, returnFullEntry, FindNestedFieldFunc } from './field_finder'
 import { filterTypes } from './type_elements'
+import { getInstanceName } from './instance_elements'
 
 export {
   ducktype,
@@ -31,4 +32,5 @@ export {
   findDataField, returnFullEntry, FindNestedFieldFunc,
   RECORDS_PATH, TYPES_PATH, SUBTYPES_PATH,
   filterTypes,
+  getInstanceName,
 }

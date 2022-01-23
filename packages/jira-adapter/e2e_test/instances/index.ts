@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, Element, ElemID } from '@salto-io/adapter-api'
+import { InstanceElement, Element, ElemID, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
+import { naclCase } from '@salto-io/adapter-utils'
 import { JIRA } from '../../src/constants'
 import { createReference, findType } from '../utils'
 import { createBoardValues } from './board'
-import { createFieldValues } from './field'
+import { createContextValues, createFieldValues } from './field'
 import { createFieldConfigurationSchemeValues } from './fieldConfigurationScheme'
 import { createIssueTypeSchemeValues } from './issueTypeScheme'
 import { createIssueTypeScreenSchemeValues } from './issueTypeScreenScheme'
@@ -41,7 +42,15 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[] =
   const field = new InstanceElement(
     randomString,
     findType('Field', fetchedElements),
-    createFieldValues(randomString, fetchedElements),
+    createFieldValues(randomString),
+  )
+
+  const fieldContext = new InstanceElement(
+    naclCase(`${randomString}_${randomString}`),
+    findType('CustomFieldContext', fetchedElements),
+    createContextValues(randomString, fetchedElements),
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(field.elemID, field)] }
   )
 
   const workflow = new InstanceElement(
@@ -141,6 +150,7 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[] =
   return [
     issueType,
     field,
+    fieldContext,
     screen,
     workflow,
     dashboard,

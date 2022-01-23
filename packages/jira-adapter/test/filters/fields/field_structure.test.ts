@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../../utils'
 import { DEFAULT_CONFIG } from '../../../src/config'
@@ -23,6 +23,9 @@ import fieldsStructureFilter from '../../../src/filters/fields/field_structure_f
 describe('fields_structure', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
   let fieldType: ObjectType
+  let fieldContextType: ObjectType
+  let fieldContextDefaultValueType: ObjectType
+  let fieldContextOptionType: ObjectType
   beforeEach(() => {
     const { client, paginator } = mockClient()
     filter = fieldsStructureFilter({
@@ -34,6 +37,10 @@ describe('fields_structure', () => {
     fieldType = new ObjectType({
       elemID: new ElemID(JIRA, 'Field'),
     })
+
+    fieldContextType = new ObjectType({ elemID: new ElemID(JIRA, 'CustomFieldContext') })
+    fieldContextDefaultValueType = new ObjectType({ elemID: new ElemID(JIRA, 'CustomFieldContextDefaultValue') })
+    fieldContextOptionType = new ObjectType({ elemID: new ElemID(JIRA, 'CustomFieldContextOption') })
   })
   it('should replace schema.custom with type', async () => {
     const instance = new InstanceElement(
@@ -45,8 +52,17 @@ describe('fields_structure', () => {
         },
       }
     )
-    await filter.onFetch([instance])
-    expect(instance.value).toEqual({ type: 'someType' })
+    await filter.onFetch([
+      instance,
+      fieldType,
+      fieldContextType,
+      fieldContextDefaultValueType,
+      fieldContextOptionType,
+    ])
+    expect(instance.value).toEqual({
+      type: 'someType',
+      contexts: [],
+    })
   })
 
   it('should add the defaults, issue types and projects to the contexts', async () => {
@@ -54,6 +70,7 @@ describe('fields_structure', () => {
       'instance',
       fieldType,
       {
+        name: 'name',
         contexts: [
           {
             name: 'name',
@@ -63,6 +80,10 @@ describe('fields_structure', () => {
         contextDefaults: [
           {
             contextId: 'id1',
+            value: 'someValue',
+          },
+          {
+            contextId: 'id2',
             value: 'someValue',
           },
         ],
@@ -75,6 +96,10 @@ describe('fields_structure', () => {
             contextId: 'id1',
             issueTypeId: '2',
           },
+          {
+            contextId: 'id2',
+            issueTypeId: '2',
+          },
         ],
         contextProjects: [
           {
@@ -85,26 +110,51 @@ describe('fields_structure', () => {
             contextId: 'id1',
             projectId: '4',
           },
+          {
+            contextId: 'id2',
+            projectId: '4',
+          },
         ],
       }
     )
-    await filter.onFetch([instance])
-    expect(instance.value).toEqual({
-      contexts: {
-        name: {
-          name: 'name',
-          id: 'id1',
-          defaultValue: {
-            value: 'someValue',
-          },
-          issueTypeIds: ['1', '2'],
-          projectIds: ['3', '4'],
-        },
+    const elements = [
+      instance,
+      fieldType,
+      fieldContextType,
+      fieldContextDefaultValueType,
+      fieldContextOptionType,
+    ]
+    await filter.onFetch(elements)
+    const fieldInstance = elements[0] as InstanceElement
+    const contextInstance = elements[elements.length - 1] as InstanceElement
+    expect(fieldInstance.value).toEqual(
+      {
+        name: 'name',
+        contexts: [
+          new ReferenceExpression(contextInstance.elemID, contextInstance),
+        ],
       },
-    })
+    )
+    expect(contextInstance.value).toEqual(
+      {
+        name: 'name',
+        id: 'id1',
+        defaultValue: {
+          value: 'someValue',
+        },
+        issueTypeIds: [
+          '1',
+          '2',
+        ],
+        projectIds: [
+          '3',
+          '4',
+        ],
+      },
+    )
   })
 
-  it('should transform options to map and add postions and cascadingOptions', async () => {
+  it('should transform options to map and add positions and cascadingOptions', async () => {
     const instance = new InstanceElement(
       'instance',
       fieldType,
@@ -147,46 +197,50 @@ describe('fields_structure', () => {
         ],
       }
     )
-    await filter.onFetch([instance])
-    expect(instance.value).toEqual({
-      contexts: {
-        name: {
-          name: 'name',
-          id: 'id1',
-          options: {
-            someValue: {
-              id: '1',
-              value: 'someValue',
+    const elements = [
+      instance,
+      fieldType,
+      fieldContextType,
+      fieldContextOptionType,
+      fieldContextDefaultValueType,
+    ]
+    await filter.onFetch(elements)
+    const contextInstance = elements[elements.length - 1] as InstanceElement
+    expect(contextInstance.value).toEqual({
+      name: 'name',
+      id: 'id1',
+      options: {
+        someValue: {
+          id: '1',
+          value: 'someValue',
+          position: 0,
+          cascadingOptions: {
+            someValue3: {
+              id: '3',
+              value: 'someValue3',
               position: 0,
-              cascadingOptions: {
-                someValue3: {
-                  id: '3',
-                  value: 'someValue3',
-                  position: 0,
-                },
-                someValue4: {
-                  id: '4',
-                  value: 'someValue4',
-                  position: 1,
-                },
-              },
             },
-            someValue2: {
-              id: '2',
-              value: 'someValue2',
+            someValue4: {
+              id: '4',
+              value: 'someValue4',
               position: 1,
-              cascadingOptions: {
-                someValue5: {
-                  id: '5',
-                  value: 'someValue5',
-                  position: 0,
-                },
-                someValue6: {
-                  id: '6',
-                  value: 'someValue6',
-                  position: 1,
-                },
-              },
+            },
+          },
+        },
+        someValue2: {
+          id: '2',
+          value: 'someValue2',
+          position: 1,
+          cascadingOptions: {
+            someValue5: {
+              id: '5',
+              value: 'someValue5',
+              position: 0,
+            },
+            someValue6: {
+              id: '6',
+              value: 'someValue6',
+              position: 1,
             },
           },
         },
@@ -195,10 +249,6 @@ describe('fields_structure', () => {
   })
 
   it('should add the new fields to the Field type', async () => {
-    const fieldContextType = new ObjectType({ elemID: new ElemID(JIRA, 'CustomFieldContext') })
-    const fieldContextDefaultValueType = new ObjectType({ elemID: new ElemID(JIRA, 'CustomFieldContextDefaultValue') })
-    const fieldContextOptionType = new ObjectType({ elemID: new ElemID(JIRA, 'CustomFieldContextOption') })
-
     fieldType.fields.contextDefaults = new Field(fieldType, 'contextDefaults', BuiltinTypes.STRING)
     fieldType.fields.contextProjects = new Field(fieldType, 'contextProjects', BuiltinTypes.STRING)
     fieldType.fields.contextIssueTypes = new Field(fieldType, 'contextIssueTypes', BuiltinTypes.STRING)

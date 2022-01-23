@@ -15,7 +15,7 @@
 */
 import { AdditionChange, Change, getChangeData, InstanceElement, isAdditionChange, isMapType, isObjectType, isRemovalChange, ModificationChange, ObjectType, Value, Values } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { naclCase, resolveValues } from '@salto-io/adapter-utils'
+import { getParents, naclCase, resolveValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -173,7 +173,6 @@ const reorderContextOptions = async (
 
 export const setContextOptions = async (
   contextChange: Change<InstanceElement>,
-  parentField: InstanceElement,
   client: clientUtils.HTTPWriteClientInterface,
 ): Promise<void> => {
   if (isRemovalChange(contextChange)) {
@@ -187,7 +186,9 @@ export const setContextOptions = async (
     option => option.optionId !== undefined || option.parentValue === undefined
   )
 
-  const url = `/rest/api/3/field/${parentField.value.id}/context/${getChangeData(contextChange).value.id}/option`
+  const fieldId = getParents(getChangeData(contextChange))[0].value.value.id
+
+  const url = `/rest/api/3/field/${fieldId}/context/${getChangeData(contextChange).value.id}/option`
   await updateContextOptions({
     addedOptions: addedWithParentId,
     modifiedOptions: modified,

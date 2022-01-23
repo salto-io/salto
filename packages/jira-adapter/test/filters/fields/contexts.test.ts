@@ -13,16 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, BuiltinTypes, ElemID, Field, InstanceElement, MapType, ModificationChange, ObjectType, toChange } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { deployment, filterUtils, client as clientUtils } from '@salto-io/adapter-components'
-import { MockInterface } from '@salto-io/test-utils'
+import { resolveChangeElement } from '@salto-io/adapter-utils'
 import { mockClient } from '../../utils'
 import { DEFAULT_CONFIG } from '../../../src/config'
 import { JIRA } from '../../../src/constants'
 import fieldsDeploymentFilter from '../../../src/filters/fields/field_deployment_filter'
 import JiraClient from '../../../src/client/client'
-import { deployContexts } from '../../../src/filters/fields/contexts'
-
+import { deployContextChange } from '../../../src/filters/fields/contexts'
+import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
+import { getLookUpName } from '../../../src/reference_mapping'
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -35,11 +36,11 @@ jest.mock('@salto-io/adapter-components', () => {
   }
 })
 
-describe('deployContexts', () => {
+describe('deployContextChange', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'deploy'>
-  let fieldType: ObjectType
   let contextType: ObjectType
-  let mockConnection: MockInterface<clientUtils.APIConnection>
+  let parentField: InstanceElement
+
   const deployChangeMock = deployment.deployChange as jest.MockedFunction<
     typeof deployment.deployChange
   >
@@ -52,7 +53,6 @@ describe('deployContexts', () => {
     const mockCli = mockClient()
     client = mockCli.client
     paginator = mockCli.paginator
-    mockConnection = mockCli.connection
 
     filter = fieldsDeploymentFilter({
       client,
@@ -61,92 +61,53 @@ describe('deployContexts', () => {
     }) as typeof filter
 
     contextType = new ObjectType({
-      elemID: new ElemID(JIRA, 'CustomFieldContext'),
+      elemID: new ElemID(JIRA, FIELD_CONTEXT_TYPE_NAME),
     })
 
-    fieldType = new ObjectType({
-      elemID: new ElemID(JIRA, 'Field'),
-      fields: {
-        contexts: {
-          refType: new MapType(contextType),
-        },
-      },
-    })
+    parentField = new InstanceElement(
+      'parentField',
+      new ObjectType({ elemID: new ElemID(JIRA, FIELD_TYPE_NAME) }),
+      {
+        id: '2',
+      }
+    )
   })
-  it('should call deployChange for all the contexts', async () => {
+  it('should call deployChange', async () => {
     const beforeInstance = new InstanceElement(
       'instance',
-      fieldType,
+      contextType,
       {
-        id: 'field_1',
-        contexts: {
-          context1: {
-            id: '1',
-            name: 'context1',
-          },
-          context2: {
-            id: '2',
-            name: 'context2',
-          },
-        },
+        id: '1',
+        name: 'context1',
       },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
+      }
     )
 
     const afterInstance = new InstanceElement(
       'instance',
-      fieldType,
+      contextType,
       {
-        id: 'field_1',
-        contexts: {
-          context1: {
-            id: '1',
-            name: 'context1',
-            description: 'desc',
-          },
-          context3: {
-            id: '3',
-            name: 'context3',
-          },
-        },
+        id: '1',
+        name: 'context1',
+        description: 'desc',
       },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
+      }
     )
 
     const change = toChange({
       before: beforeInstance,
       after: afterInstance,
-    }) as ModificationChange<InstanceElement>
-    await deployContexts(change, client, DEFAULT_CONFIG.apiDefinitions)
-    expect(deployChangeMock).toHaveBeenCalledWith(
-      toChange({
-        after: new InstanceElement(
-          '3',
-          contextType,
-          {
-            id: '3',
-            name: 'context3',
-          },
-        ),
-      }),
-      client,
-      DEFAULT_CONFIG.apiDefinitions.types.CustomFieldContext.deployRequests,
-      [
-        'defaultValue',
-        'options',
-      ],
-      { fieldId: 'field_1' },
-    )
+    })
+    await deployContextChange(change, client, DEFAULT_CONFIG.apiDefinitions)
 
     expect(deployChangeMock).toHaveBeenCalledWith(
-      toChange({
-        before: new InstanceElement(
-          '2',
-          contextType,
-          {
-            id: '2',
-            name: 'context2',
-          },
-        ),
-      }),
+      await resolveChangeElement(change, getLookUpName),
       client,
       DEFAULT_CONFIG.apiDefinitions.types.CustomFieldContext.deployRequests,
       [
@@ -155,162 +116,97 @@ describe('deployContexts', () => {
         'issueTypeIds',
         'projectIds',
       ],
-      { fieldId: 'field_1' },
-    )
-
-    expect(deployChangeMock).toHaveBeenCalledWith(
-      toChange({
-        before: new InstanceElement(
-          '1',
-          contextType,
-          {
-            id: '1',
-            name: 'context1',
-          },
-        ),
-        after: new InstanceElement(
-          '1',
-          contextType,
-          {
-            id: '1',
-            name: 'context1',
-            description: 'desc',
-          },
-        ),
-      }),
-      client,
-      DEFAULT_CONFIG.apiDefinitions.types.CustomFieldContext.deployRequests,
-      [
-        'defaultValue',
-        'options',
-        'issueTypeIds',
-        'projectIds',
-      ],
-      { fieldId: 'field_1' },
+      undefined,
     )
   })
 
-  it('when the field is new, should remove the default created context', async () => {
-    const instance = new InstanceElement(
-      'instance',
-      fieldType,
-      {
-        id: 'field_1',
-        contexts: {
-          context1: {
-            id: '1',
-            name: 'context1',
-          },
-        },
-      },
-    )
-
-    mockConnection.get.mockImplementation(async url => ({
-      status: 200,
-      data: {
-        values: url === '/rest/api/3/field/field_1/contexts'
-          ? [{ id: '4' }]
-          : [],
-      },
-    }))
-
-
-    const change = toChange({ after: instance }) as AdditionChange<InstanceElement>
-    await deployContexts(change, client, DEFAULT_CONFIG.apiDefinitions)
-    expect(deployChangeMock).toHaveBeenCalledWith(
-      toChange({
-        before: new InstanceElement(
-          '4',
-          contextType,
-          {
-            id: '4',
-          },
-        ),
-      }),
-      client,
-      DEFAULT_CONFIG.apiDefinitions.types.CustomFieldContext.deployRequests,
-      [
-        'defaultValue',
-        'options',
-        'issueTypeIds',
-        'projectIds',
-      ],
-      { fieldId: 'field_1' },
-    )
-
-    expect(deployChangeMock).toHaveBeenCalledWith(
-      toChange({
-        after: new InstanceElement(
-          '1',
-          contextType,
-          {
-            id: '1',
-            name: 'context1',
-          },
-        ),
-      }),
-      client,
-      DEFAULT_CONFIG.apiDefinitions.types.CustomFieldContext.deployRequests,
-      [
-        'defaultValue',
-        'options',
-      ],
-      { fieldId: 'field_1' },
-    )
-  })
-
-  it('should not call deployChange if there are no contexts', async () => {
+  it('should not throw if deploy failed because the field was deleted', async () => {
     const beforeInstance = new InstanceElement(
       'instance',
-      fieldType,
+      contextType,
       {
-        id: 'field_1',
+        id: '1',
+        name: 'context1',
       },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
+      }
     )
 
-    const afterInstance = new InstanceElement(
-      'instance',
-      fieldType,
-      {
-        id: 'field_1',
-      },
-    )
+    deployChangeMock.mockImplementation(async () => {
+      throw new clientUtils.HTTPError('message', {
+        status: 404,
+        data: {
+          errorMessages: ['The custom field was not found.'],
+        },
+      })
+    })
 
     const change = toChange({
       before: beforeInstance,
-      after: afterInstance,
-    }) as ModificationChange<InstanceElement>
-    await deployContexts(change, client, DEFAULT_CONFIG.apiDefinitions)
-    expect(deployChangeMock).not.toHaveBeenCalled()
+    })
+    await deployContextChange(change, client, DEFAULT_CONFIG.apiDefinitions)
   })
 
-  it('should throw an error when contexts type is not a Map', async () => {
-    fieldType.fields.contexts = new Field(fieldType, 'contexts', BuiltinTypes.STRING)
-    const instance = new InstanceElement(
+  it('should throw for other error messages', async () => {
+    const beforeInstance = new InstanceElement(
       'instance',
-      fieldType,
+      contextType,
       {
-        id: 'field_1',
+        id: '1',
+        name: 'context1',
       },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
+      }
     )
 
-    const change = toChange({ after: instance }) as AdditionChange<InstanceElement>
-    await expect(deployContexts(change, client, DEFAULT_CONFIG.apiDefinitions)).rejects.toThrow()
-    expect(deployChangeMock).not.toHaveBeenCalled()
+    deployChangeMock.mockImplementation(async () => {
+      throw new clientUtils.HTTPError('message', {
+        status: 404,
+        data: {
+          errorMessages: ['other'],
+        },
+      })
+    })
+
+    const change = toChange({
+      before: beforeInstance,
+    })
+    await expect(deployContextChange(change, client, DEFAULT_CONFIG.apiDefinitions))
+      .rejects.toThrow()
   })
 
-  it('should throw an error when contexts type inner value is not an object type', async () => {
-    fieldType.fields.contexts = new Field(fieldType, 'contexts', new MapType(BuiltinTypes.STRING))
+  it('should throw if not removal', async () => {
     const instance = new InstanceElement(
       'instance',
-      fieldType,
+      contextType,
       {
-        id: 'field_1',
+        id: '1',
+        name: 'context1',
       },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
+      }
     )
 
-    const change = toChange({ after: instance }) as AdditionChange<InstanceElement>
-    await expect(deployContexts(change, client, DEFAULT_CONFIG.apiDefinitions)).rejects.toThrow()
-    expect(deployChangeMock).not.toHaveBeenCalled()
+    deployChangeMock.mockImplementation(async () => {
+      throw new clientUtils.HTTPError('message', {
+        status: 404,
+        data: {
+          errorMessages: ['The custom field was not found.'],
+        },
+      })
+    })
+
+    const change = toChange({
+      before: instance,
+      after: instance,
+    })
+    await expect(deployContextChange(change, client, DEFAULT_CONFIG.apiDefinitions))
+      .rejects.toThrow()
   })
 })

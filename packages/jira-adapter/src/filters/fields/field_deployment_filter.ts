@@ -13,54 +13,59 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, Element, getChangeData, InstanceElement, isInstanceChange, isObjectType, isRemovalChange } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { collections } from '@salto-io/lowerdash'
 import JiraClient from '../../client/client'
 import { FilterCreator } from '../../filter'
-import { deployContexts, setContextDeploymentAnnotations } from './contexts'
-import { updateDefaultValues } from './default_values'
+import { deployContextChange, getContexts, getContextType } from './contexts'
 import { defaultDeployChange, deployChanges } from '../../deployment'
 import { FIELD_TYPE_NAME } from './constants'
 import { JiraConfig } from '../../config'
 
+const { awu } = collections.asynciterable
 
 const deployField = async (
   change: Change<InstanceElement>,
   client: JiraClient,
   config: JiraConfig,
 ): Promise<void> => {
-  await defaultDeployChange({ change, client, apiDefinitions: config.apiDefinitions, fieldsToIgnore: ['contexts'] })
-
-  if (isRemovalChange(change)) {
-    return
-  }
-
-  await deployContexts(
+  await defaultDeployChange({
     change,
     client,
-    config.apiDefinitions
-  )
-  await updateDefaultValues(change, client)
+    apiDefinitions: config.apiDefinitions,
+    fieldsToIgnore: ['contexts'],
+  })
+
+  if (isAdditionChange(change)) {
+    const contextType = await getContextType(await getChangeData(change).getType())
+    // When creating a field, it is created with a default context,
+    // in addition to what is in the NaCl so we need to delete it
+    const removalContextsChanges = isAdditionChange(change)
+      ? (await getContexts(change, contextType, client))
+        .map(instance => toChange({ before: instance }))
+      : []
+
+    await awu(removalContextsChanges).forEach(contextChange => deployContextChange(
+      contextChange,
+      client,
+      config.apiDefinitions
+    ))
+  }
 }
 
 const filter: FilterCreator = ({ client, config }) => ({
-  onFetch: async (elements: Element[]) => {
-    const fieldType = elements.filter(isObjectType).find(e => e.elemID.name === FIELD_TYPE_NAME)
-    if (fieldType !== undefined) {
-      await setContextDeploymentAnnotations(fieldType)
-    }
-  },
-
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change => isInstanceChange(change)
+        && isAdditionOrModificationChange(change)
         && getChangeData(change).elemID.typeName === FIELD_TYPE_NAME
     )
 
     const deployResult = await deployChanges(
       relevantChanges.filter(isInstanceChange),
-      change => deployField(change, client, config)
+      change => deployField(change, client, config),
     )
 
     return {

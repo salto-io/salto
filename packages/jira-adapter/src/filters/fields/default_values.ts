@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 
-import { Change, compareSpecialValues, getChangeData, InstanceElement, isModificationChange, isObjectType, ObjectType, Value, Values } from '@salto-io/adapter-api'
+import { Change, compareSpecialValues, getChangeData, InstanceElement, isAdditionOrModificationChange, isObjectType, isRemovalChange, isRemovalOrModificationChange, ObjectType, Value } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { resolveChangeElement } from '@salto-io/adapter-utils'
+import { getParents, resolveChangeElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { getLookUpName } from '../../reference_mapping'
 import { setDeploymentAnnotations } from '../../utils'
@@ -44,66 +44,46 @@ const EDITABLE_FIELD_NAMES = [
   'versionIds',
 ]
 
-
-const generateDefaultValuesList = (fieldInstance: InstanceElement): Values[] =>
-  Object.values(fieldInstance.value.contexts ?? {})
-    .filter((context: Value) => context.defaultValue !== undefined)
-    .map((context: Value) => ({
-      ...(context.defaultValue),
-      contextId: context.id,
-    }))
-
-const mergeDefaultValueLists = (beforeList: Values[], afterList: Values[]): Values[] => {
-  const afterIds = new Set(afterList.map(defaultValue => defaultValue.contextId))
-
-  return [
-    ...afterList,
-    ...beforeList
-      .filter(defaultValue => !afterIds.has(defaultValue.contextId))
-      .map(defaultValue => _.mapValues(
-        defaultValue,
-        // The way to delete a default value is to set its values to null
-        (value: Value, key: string) => (['contextId', 'type'].includes(key) ? value : null)
-      )),
-  ]
-}
-
 export const updateDefaultValues = async (
-  fieldChange: Change<InstanceElement>,
+  contextChange: Change<InstanceElement>,
   client: clientUtils.HTTPWriteClientInterface,
 ): Promise<void> => {
-  const resolvedChange = await resolveChangeElement(fieldChange, getLookUpName)
+  const resolvedChange = await resolveChangeElement(contextChange, getLookUpName)
 
-  const fieldInstance = getChangeData(resolvedChange)
+  const beforeDefault = isRemovalOrModificationChange(resolvedChange)
+    ? resolvedChange.data.before.value.defaultValue
+    : undefined
 
-  const afterValues = generateDefaultValuesList(fieldInstance)
-  const beforeValues = isModificationChange(resolvedChange)
-    ? generateDefaultValuesList(resolvedChange.data.before)
-    : []
+  const afterDefault = isAdditionOrModificationChange(resolvedChange)
+    ? resolvedChange.data.after.value.defaultValue
+    : undefined
 
-  if (_.isEqualWith(beforeValues, afterValues, compareSpecialValues)) {
+  if (isRemovalChange(contextChange)
+      || _.isEqualWith(
+        beforeDefault,
+        afterDefault,
+        compareSpecialValues
+      )
+  ) {
     return
   }
 
-  const mergedValues = mergeDefaultValueLists(beforeValues, afterValues)
-
-  const afterContextIds = new Set(
-    Object.values(fieldInstance.value.contexts ?? {}).map((context: Value) => context.id)
-  )
-  // Removing from the list defaults values that were deleted because the whole context
-  // was deleted and thus can't be updated
-  const valuesToSet = mergedValues.filter(
-    defaultValue => afterContextIds.has(defaultValue.contextId),
+  const defaultValueToUpdate = afterDefault ?? _.mapValues(
+    beforeDefault,
+    // The way to delete a default value is to set its values to null
+    (value: Value, key: string) => (['contextId', 'type'].includes(key) ? value : null)
   )
 
-  if (valuesToSet.length === 0) {
-    return
-  }
+  const contextInstance = getChangeData(resolvedChange)
+  const parentId = getParents(contextInstance)[0].id
 
   await client.put({
-    url: `/rest/api/3/field/${fieldInstance.value.id}/context/defaultValue`,
+    url: `/rest/api/3/field/${parentId}/context/defaultValue`,
     data: {
-      defaultValues: valuesToSet,
+      defaultValues: [{
+        ...defaultValueToUpdate,
+        contextId: contextInstance.value.id,
+      }],
     },
   })
 }

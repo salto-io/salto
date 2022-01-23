@@ -13,16 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { setDefaultValueTypeDeploymentAnnotations, updateDefaultValues } from '../../../src/filters/fields/default_values'
 import { JIRA } from '../../../src/constants'
+import { FIELD_CONTEXT_TYPE_NAME } from '../../../src/filters/fields/constants'
 
 describe('default values', () => {
   describe('updateDefaultValues', () => {
     let client: MockInterface<clientUtils.HTTPWriteClientInterface>
-    let field: InstanceElement
+    let type: ObjectType
 
     beforeEach(() => {
       client = {
@@ -32,102 +33,120 @@ describe('default values', () => {
         patch: mockFunction<clientUtils.HTTPWriteClientInterface['patch']>(),
       }
 
-      field = new InstanceElement('Field', new ObjectType({ elemID: new ElemID(JIRA, 'Field') }), {
-        id: 2,
-        contexts: {
-          a: {
-            name: 'a',
-            id: 3,
-            defaultValue: {
-              type: 'float',
-              number: 9,
-            },
+      type = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONTEXT_TYPE_NAME) })
+    })
+
+    it('Should update the edited default value', async () => {
+      const before = new InstanceElement(
+        'instance',
+        type,
+        {
+          name: 'a',
+          id: 3,
+          defaultValue: {
+            type: 'float',
+            number: 9,
           },
-          b: {
-            name: 'b',
-            id: 4,
-            defaultValue: {
+        }
+      )
+
+      const after = new InstanceElement(
+        'instance',
+        type,
+        {
+          name: 'a',
+          id: 3,
+          defaultValue: {
+            type: 'float',
+            number: 10,
+          },
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: [{ id: '2' }],
+        }
+      )
+
+      await updateDefaultValues(
+        toChange({ before, after }),
+        client,
+      )
+
+      expect(client.put).toHaveBeenCalledWith({
+        url: '/rest/api/3/field/2/context/defaultValue',
+        data: {
+          defaultValues: [
+            {
+              contextId: 3,
               type: 'float',
               number: 10,
             },
-          },
+          ],
         },
       })
     })
 
-    describe('default values were changed', () => {
-      let fieldAfter: InstanceElement
-
-      beforeEach(async () => {
-        fieldAfter = field.clone()
-        fieldAfter.value.contexts = {
-          a: {
-            name: 'a',
-            id: 3,
-          },
-          b: {
-            name: 'b',
-            id: 4,
-            defaultValue: {
-              type: 'float',
-              number: 11,
-            },
-          },
-          c: {
-            name: 'c',
-            id: 5,
-            defaultValue: {
-              type: 'float',
-              number: 12,
-            },
+    it('Should remove the removed default value', async () => {
+      const before = new InstanceElement(
+        'instance',
+        type,
+        {
+          name: 'a',
+          id: 3,
+          defaultValue: {
+            type: 'float',
+            number: 9,
           },
         }
-        await updateDefaultValues(
-          toChange({ before: field, after: fieldAfter }),
-          client,
-        )
-      })
+      )
 
-      it('should call the update the endpoint with the current state of default values', () => {
-        expect(client.put).toHaveBeenCalledWith({
-          url: '/rest/api/3/field/2/context/defaultValue',
-          data: {
-            defaultValues: [
-              {
-                contextId: 4,
-                type: 'float',
-                number: 11,
-              },
-              {
-                contextId: 5,
-                type: 'float',
-                number: 12,
-              },
-              {
-                contextId: 3,
-                type: 'float',
-                number: null,
-              },
-            ],
-          },
-        })
-      })
-    })
+      const after = new InstanceElement(
+        'instance',
+        type,
+        {
+          name: 'a',
+          id: 3,
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: [{ id: '2' }],
+        }
+      )
 
-    it('should do nothing when there are no context', async () => {
-      delete field.value.contexts
       await updateDefaultValues(
-        toChange({ after: field }),
+        toChange({ before, after }),
         client,
       )
-      expect(client.put).not.toHaveBeenCalled()
+
+      expect(client.put).toHaveBeenCalledWith({
+        url: '/rest/api/3/field/2/context/defaultValue',
+        data: {
+          defaultValues: [
+            {
+              contextId: 3,
+              type: 'float',
+              number: null,
+            },
+          ],
+        },
+      })
     })
 
     it('if context were deleted should do nothing', async () => {
-      const fieldAfter = field.clone()
-      delete fieldAfter.value.contexts
+      const before = new InstanceElement(
+        'instance',
+        type,
+        {
+          name: 'a',
+          id: 3,
+          defaultValue: {
+            type: 'float',
+            number: 9,
+          },
+        }
+      )
       await updateDefaultValues(
-        toChange({ before: field, after: fieldAfter }),
+        toChange({ before }),
         client,
       )
       expect(client.put).not.toHaveBeenCalled()

@@ -15,7 +15,7 @@
 */
 import { ElemID } from './element_id'
 
-export type SaltoErrorSeverity = 'Error' | 'Warning'
+export type SaltoErrorSeverity = 'Error' | 'Warning' | 'Info'
 
 export type SaltoErrorSource = 'config'
 

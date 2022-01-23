@@ -17,10 +17,13 @@ import { Change, Element, getChangeData, InstanceElement, isInstanceChange, isIn
 import { getParents } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { defaultDeployChange, deployChanges } from '../deployment'
 import { FilterCreator } from '../filter'
 
 const PROJECT_COMPONENT_TYPE_NAME = 'ProjectComponent'
+
+const log = logger(module)
 
 const filter: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]) => {
@@ -73,6 +76,7 @@ const filter: FilterCreator = ({ client, config }) => ({
             && err.response.data.errorMessages
               .includes(`The component with id ${getChangeData(change).value.id} does not exist.`)
           ) {
+            log.debug(`When attempting to delete component ${getChangeData(change).elemID.getFullName}, received an error that it is already deleted`)
             return
           }
           throw err

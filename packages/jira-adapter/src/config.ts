@@ -777,7 +777,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'issueCount', fieldType: 'number' },
-        { fieldName: 'project', fieldType: 'Project' },
         { fieldName: 'leadAccountId', fieldType: 'string' },
         { fieldName: 'componentBean', fieldType: 'ProjectComponent' },
       ],

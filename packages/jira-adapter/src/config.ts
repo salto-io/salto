@@ -819,11 +819,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           toField: 'tabs',
           context: [{ name: 'screenId', fromField: 'id' }],
         },
-        {
-          type: 'rest__api__3__screens___screenId___availableFields@uuuuuuuu_00123_00125uu',
-          toField: 'availableFields',
-          context: [{ name: 'screenId', fromField: 'id' }],
-        },
       ],
     },
   },
@@ -842,7 +837,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'tabs', fieldType: 'list<ScreenableTab>' },
-        { fieldName: 'availableFields', fieldType: 'list<ScreenableField>' },
       ],
       fieldsToHide: [
         {

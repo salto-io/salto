@@ -78,21 +78,6 @@ describe('screenFilter', () => {
         })
     })
 
-    it('should convert the available fields list to a list of ids', async () => {
-      const instance = new InstanceElement(
-        'instance',
-        screenType,
-        {
-          availableFields: [
-            { id: 'id1' },
-            { id: 'id2' },
-          ],
-        },
-      )
-      await filter.onFetch?.([instance])
-      expect(instance.value.availableFields).toEqual(['id1', 'id2'])
-    })
-
     it('should convert the tabs to a map', async () => {
       const instance = new InstanceElement(
         'instance',

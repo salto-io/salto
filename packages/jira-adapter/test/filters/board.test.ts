@@ -72,6 +72,42 @@ describe('boardFilter', () => {
       })
     })
 
+    it('should fix rankCustomFieldId value', async () => {
+      instance.value = {
+        config: {
+          ranking: {
+            rankCustomFieldId: 1,
+          },
+        },
+      }
+      await filter.onFetch([instance])
+      expect(instance.value).toEqual({
+        config: {
+          ranking: {
+            rankCustomFieldId: 'customfield_1',
+          },
+        },
+      })
+    })
+
+    it('should not change rankCustomFieldId if its already fixed', async () => {
+      instance.value = {
+        config: {
+          ranking: {
+            rankCustomFieldId: 'customfield_1',
+          },
+        },
+      }
+      await filter.onFetch([instance])
+      expect(instance.value).toEqual({
+        config: {
+          ranking: {
+            rankCustomFieldId: 'customfield_1',
+          },
+        },
+      })
+    })
+
     it('should add nothing for partial instance', async () => {
       instance.value = {}
       await filter.onFetch([instance])

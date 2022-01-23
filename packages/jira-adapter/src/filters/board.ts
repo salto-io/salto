@@ -45,6 +45,15 @@ const filter: FilterCreator = () => ({
       .forEach(instance => {
         instance.value.filterId = instance.value.config?.filter?.id
         delete instance.value.config?.filter
+
+        // Field ids is of the form "customfield_<id>", but specifically here,
+        // we get only the <id> part, so in order to create a reference to the
+        // field, we fix the id here
+        const rankFieldId = instance.value.config?.ranking?.rankCustomFieldId
+        if (rankFieldId !== undefined && !rankFieldId.toString().startsWith('customfield_')) {
+          // No need to revert it pre deploy since it is not deployable
+          instance.value.config.ranking.rankCustomFieldId = `customfield_${rankFieldId}`
+        }
       })
   },
 

@@ -40,24 +40,29 @@ type RequiredDependency = {
 type RequiredDependencyWithCondition = (
   RequiredDependency & {
   condition?: undefined
-  value?: undefined
 }) | (
   RequiredDependency & {
-  condition: 'byPath'
-  path: string[]
-  value: Value
+  condition: {
+    type: 'byPath'
+    path: string[]
+    value: Value
+  }
 }) | (
   RequiredDependency & {
-  condition: 'fullLookup' | 'byValue'
-  value: Value
+  condition: {
+    type: 'fullLookup' | 'byValue'
+    value: Value
+  }
 })
 
 const REQUIRED_FEATURES: RequiredDependencyWithCondition[] = [
   {
     typeName: WORKFLOW,
     dependency: 'EXPREPORTS',
-    condition: 'fullLookup',
-    value: 'STDRECORDSUBSIDIARYDEFAULTACCTCORPCARDEXP',
+    condition: {
+      type: 'fullLookup',
+      value: 'STDRECORDSUBSIDIARYDEFAULTACCTCORPCARDEXP',
+    },
   },
 ]
 
@@ -65,19 +70,23 @@ const getRequiredFeatures = (customizationInfos: CustomizationInfo[]): string[] 
   REQUIRED_FEATURES.filter(
     feature => customizationInfos
       .some(custInfo => {
-        const { typeName, value } = feature
+        const { typeName, condition } = feature
         if (typeName !== custInfo.typeName) {
           return false
         }
-        switch (feature.condition) {
+        switch (condition?.type) {
           case 'byPath':
-            return _.get(custInfo.values, feature.path) === value
+            return _.get(custInfo.values, condition.path) === condition.value
           case 'byValue':
-            return lookupValue(custInfo.values, val => _.isEqual(val, value))
+            return lookupValue(custInfo.values, value => _.isEqual(value, condition.value))
           case 'fullLookup':
             return lookupValue(custInfo.values,
-              val => _.isEqual(val, value)
-              || (_.isString(val) && _.isString(value) && val.includes(value)))
+              value => _.isEqual(value, condition.value)
+              || (
+                _.isString(value)
+                && _.isString(condition.value)
+                && value.includes(condition.value)
+              ))
           default:
             return true
         }

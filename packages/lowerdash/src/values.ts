@@ -28,10 +28,10 @@ export const lookupValue = (
     return true
   }
   if (_.isArray(blob)) {
-    return _.some(blob, item => lookupValue(item, lookupFunc))
+    return blob.some(item => lookupValue(item, lookupFunc))
   }
   if (isPlainRecord(blob)) {
-    return _.some(Object.values(blob), item => lookupValue(item, lookupFunc))
+    return Object.values(blob).some(item => lookupValue(item, lookupFunc))
   }
   return false
 }

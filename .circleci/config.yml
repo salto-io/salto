@@ -371,6 +371,7 @@ workflows:
             - package_vscode_extension
 
       - publish_canary:
+          context: salto
           filters:
             branches:
               only:
@@ -381,6 +382,7 @@ workflows:
             - e2e_test
 
       - publish_on_version_change:
+          context: salto
           filters:
             branches:
               only:

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, Element, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
+import { Change, Element, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
 import { resolveValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -26,6 +26,12 @@ import { findObject, setDeploymentAnnotations } from '../utils'
 const log = logger(module)
 
 const PROJECT_TYPE_NAME = 'Project'
+
+const WORKFLOW_SCHEME_FIELD = 'workflowScheme'
+const COMPONENTS_FIELD = 'components'
+const ISSUE_TYPE_SCREEN_SCHEME_FIELD = 'issueTypeScreenScheme'
+const FIELD_CONFIG_SCHEME_FIELD = 'fieldConfigurationScheme'
+const ISSUE_TYPE_SCHEME = 'issueTypeScheme'
 
 const deployScheme = async (
   instance: InstanceElement,
@@ -50,10 +56,10 @@ const deployProjectSchemes = async (
 ): Promise<void> => {
   const instance = await resolveValues(getChangeData(projectChange), getLookUpName)
 
-  await deployScheme(instance, client, 'workflowScheme', 'workflowSchemeId')
-  await deployScheme(instance, client, 'issueTypeScreenScheme', 'issueTypeScreenSchemeId')
-  await deployScheme(instance, client, 'fieldConfigurationScheme', 'fieldConfigurationSchemeId')
-  await deployScheme(instance, client, 'issueTypeScheme', 'issueTypeSchemeId')
+  await deployScheme(instance, client, WORKFLOW_SCHEME_FIELD, 'workflowSchemeId')
+  await deployScheme(instance, client, ISSUE_TYPE_SCREEN_SCHEME_FIELD, 'issueTypeScreenSchemeId')
+  await deployScheme(instance, client, FIELD_CONFIG_SCHEME_FIELD, 'fieldConfigurationSchemeId')
+  await deployScheme(instance, client, ISSUE_TYPE_SCHEME, 'issueTypeSchemeId')
 }
 
 /**
@@ -65,10 +71,11 @@ const filter: FilterCreator = ({ config, client }) => ({
     if (projectType === undefined) {
       log.debug(`${PROJECT_TYPE_NAME} type not found`)
     } else {
-      setDeploymentAnnotations(projectType, 'workflowScheme')
-      setDeploymentAnnotations(projectType, 'issueTypeScreenScheme')
-      setDeploymentAnnotations(projectType, 'fieldConfigurationScheme')
-      setDeploymentAnnotations(projectType, 'issueTypeScheme')
+      setDeploymentAnnotations(projectType, WORKFLOW_SCHEME_FIELD)
+      setDeploymentAnnotations(projectType, ISSUE_TYPE_SCREEN_SCHEME_FIELD)
+      setDeploymentAnnotations(projectType, FIELD_CONFIG_SCHEME_FIELD)
+      setDeploymentAnnotations(projectType, ISSUE_TYPE_SCHEME)
+      setDeploymentAnnotations(projectType, COMPONENTS_FIELD)
     }
 
     elements
@@ -78,14 +85,14 @@ const filter: FilterCreator = ({ config, client }) => ({
         instance.value.leadAccountId = instance.value.lead?.accountId
         delete instance.value.lead
 
-        instance.value.workflowScheme = instance.value.workflowScheme?.workflowScheme
-          ?.id?.toString()
-        instance.value.issueTypeScreenScheme = instance.value.issueTypeScreenScheme
-          ?.issueTypeScreenScheme?.id
-        instance.value.fieldConfigurationScheme = instance.value.fieldConfigurationScheme
-          ?.fieldConfigurationScheme?.id
-        instance.value.issueTypeScheme = instance.value.issueTypeScheme
-          ?.issueTypeScheme?.id
+        instance.value[WORKFLOW_SCHEME_FIELD] = instance
+          .value[WORKFLOW_SCHEME_FIELD]?.[WORKFLOW_SCHEME_FIELD]?.id?.toString()
+        instance.value.issueTypeScreenScheme = instance
+          .value[ISSUE_TYPE_SCREEN_SCHEME_FIELD]?.[ISSUE_TYPE_SCREEN_SCHEME_FIELD]?.id
+        instance.value.fieldConfigurationScheme = instance
+          .value[FIELD_CONFIG_SCHEME_FIELD]?.[FIELD_CONFIG_SCHEME_FIELD]?.id
+        instance.value[ISSUE_TYPE_SCHEME] = instance
+          .value[ISSUE_TYPE_SCHEME]?.[ISSUE_TYPE_SCHEME]?.id
 
         instance.value.notificationScheme = instance.value.notificationScheme?.id?.toString()
         instance.value.permissionScheme = instance.value.permissionScheme?.id?.toString()
@@ -97,7 +104,7 @@ const filter: FilterCreator = ({ config, client }) => ({
       changes,
       change => isInstanceChange(change)
         && getChangeData(change).elemID.typeName === PROJECT_TYPE_NAME
-        && isModificationChange(change)
+        && isAdditionOrModificationChange(change)
     )
 
 
@@ -108,9 +115,17 @@ const filter: FilterCreator = ({ config, client }) => ({
           change,
           client,
           apiDefinitions: config.apiDefinitions,
-          fieldsToIgnore: ['workflowScheme', 'issueTypeScreenScheme', 'fieldConfigurationScheme', 'issueTypeScheme'],
+          fieldsToIgnore: isModificationChange(change)
+            ? [COMPONENTS_FIELD,
+              WORKFLOW_SCHEME_FIELD,
+              ISSUE_TYPE_SCREEN_SCHEME_FIELD,
+              FIELD_CONFIG_SCHEME_FIELD,
+              ISSUE_TYPE_SCHEME]
+            : [COMPONENTS_FIELD],
         })
-        await deployProjectSchemes(change, client)
+        if (isModificationChange(change)) {
+          await deployProjectSchemes(change, client)
+        }
       }
     )
 

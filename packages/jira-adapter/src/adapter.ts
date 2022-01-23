@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange } from '@salto-io/adapter-api'
-import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { config as configUtils, elements as elementUtils, client as clientUtils, deployment } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import JiraClient from './client/client'
@@ -36,6 +36,7 @@ import fieldConfigurationTrashedFieldsFilter from './filters/field_configuration
 import fieldConfigurationSchemeFilter from './filters/field_configurations_scheme'
 import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
 import projectFilter from './filters/project'
+import projectComponentFilter from './filters/project_component'
 import defaultInstancesDeployFilter from './filters/default_instances_deploy'
 import workflowFilter from './filters/workflow/workflow'
 import workflowSchemeFilter from './filters/workflow_scheme'
@@ -64,6 +65,7 @@ export const DEFAULT_FILTERS = [
   sharePermissionFilter,
   boardFilter,
   projectFilter,
+  projectComponentFilter,
   fieldStructureFilter,
   fieldTypeReferencesFilter,
   fieldDeploymentFilter,
@@ -233,6 +235,7 @@ export default class JiraAdapter implements AdapterOperations {
   get deployModifiers(): AdapterOperations['deployModifiers'] {
     return {
       changeValidator,
+      dependencyChanger: deployment.dependency.removeStandaloneFieldDependency,
     }
   }
 }

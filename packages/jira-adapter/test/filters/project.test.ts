@@ -61,6 +61,7 @@ describe('projectFilter', () => {
         issueTypeScreenScheme: { refType: BuiltinTypes.STRING },
         fieldConfigurationScheme: { refType: BuiltinTypes.STRING },
         issueTypeScheme: { refType: BuiltinTypes.STRING },
+        components: { refType: BuiltinTypes.STRING },
       },
     })
 
@@ -125,6 +126,13 @@ describe('projectFilter', () => {
       })
     })
 
+    it('should add the deployment annotations to the components', () => {
+      expect(type.fields.components.annotations).toEqual({
+        [CORE_ANNOTATIONS.CREATABLE]: true,
+        [CORE_ANNOTATIONS.UPDATABLE]: true,
+      })
+    })
+
     it('should set the leadAccountId', async () => {
       expect(instance.value.leadAccountId).toEqual('1')
     })
@@ -163,7 +171,7 @@ describe('projectFilter', () => {
         change,
         client,
         DEFAULT_CONFIG.apiDefinitions.types.Project.deployRequests,
-        ['workflowScheme', 'issueTypeScreenScheme', 'fieldConfigurationScheme', 'issueTypeScheme'],
+        ['components', 'workflowScheme', 'issueTypeScreenScheme', 'fieldConfigurationScheme', 'issueTypeScheme'],
         undefined
       )
     })

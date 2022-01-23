@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, Element, Field, InstanceElement, isInstanceElement, isObjectType, ListType, MapType, ObjectType, ReferenceExpression, Values } from '@salto-io/adapter-api'
-import { naclCase } from '@salto-io/adapter-utils'
+import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -165,11 +165,12 @@ const createContextInstance = (
   const contextName = getInstanceName(context, contextType.elemID.typeName, config)
     ?? context.id
 
+  const instanceName = naclCase([parentName, contextName].join('_'))
   return new InstanceElement(
-    naclCase([parentName, contextName].join('_')),
+    instanceName,
     contextType,
     context,
-    parentField.path,
+    parentField.path && [...parentField.path, 'contexts', pathNaclCase(instanceName)],
     {
       [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
     }
@@ -246,6 +247,9 @@ const filter: FilterCreator = ({ config }) => ({
 
         instance.value.contexts = contexts
           .map((context: InstanceElement) => new ReferenceExpression(context.elemID, context))
+        if (instance.path !== undefined) {
+          instance.path = [...instance.path, instance.path[instance.path.length - 1]]
+        }
 
         elements.push(...contexts)
       })

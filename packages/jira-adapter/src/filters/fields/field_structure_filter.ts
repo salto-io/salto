@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, Element, Field, InstanceElement, isInstanceElement, ListType, MapType, ObjectType, ReferenceExpression, Values } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, Element, Field, InstanceElement, isInstanceElement, isObjectType, ListType, MapType, ObjectType, ReferenceExpression, Values } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
@@ -21,7 +21,6 @@ import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { JiraConfig } from '../../config'
 import { FilterCreator } from '../../filter'
-import { findObject } from '../../utils'
 import { FIELD_CONTEXT_DEFAULT_TYPE_NAME, FIELD_CONTEXT_OPTION_TYPE_NAME, FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from './constants'
 
 const log = logger(module)
@@ -183,10 +182,15 @@ const createContextInstance = (
  */
 const filter: FilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]) => {
-    const fieldType = findObject(elements, FIELD_TYPE_NAME)
-    const fieldContextType = findObject(elements, FIELD_CONTEXT_TYPE_NAME)
-    const fieldContextDefaultValueType = findObject(elements, FIELD_CONTEXT_DEFAULT_TYPE_NAME)
-    const fieldContextOptionType = findObject(elements, FIELD_CONTEXT_OPTION_TYPE_NAME)
+    const types = _(elements)
+      .filter(isObjectType)
+      .keyBy(element => element.elemID.name)
+      .value()
+
+    const fieldType = types[FIELD_TYPE_NAME]
+    const fieldContextType = types[FIELD_CONTEXT_TYPE_NAME]
+    const fieldContextDefaultValueType = types[FIELD_CONTEXT_DEFAULT_TYPE_NAME]
+    const fieldContextOptionType = types[FIELD_CONTEXT_OPTION_TYPE_NAME]
 
     if (fieldType === undefined
       || fieldContextType === undefined
@@ -243,8 +247,7 @@ const filter: FilterCreator = ({ config }) => ({
 
         delete instance.value.contexts
 
-        // Using this instead of push to make the parent field appear first in the NaCl
-        elements.unshift(...contexts)
+        elements.push(...contexts)
       })
   },
 })

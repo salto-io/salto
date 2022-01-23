@@ -122,7 +122,8 @@ describe('fields_structure', () => {
       fieldContextOptionType,
     ]
     await filter.onFetch(elements)
-    const [contextInstance, fieldInstance] = elements as InstanceElement[]
+    const fieldInstance = elements[0] as InstanceElement
+    const contextInstance = elements[elements.length - 1] as InstanceElement
     expect(fieldInstance.value).toEqual(
       {
         name: 'name',
@@ -198,7 +199,7 @@ describe('fields_structure', () => {
       fieldContextDefaultValueType,
     ]
     await filter.onFetch(elements)
-    const [contextInstance] = elements as InstanceElement[]
+    const contextInstance = elements[elements.length - 1] as InstanceElement
     expect(contextInstance.value).toEqual({
       name: 'name',
       id: 'id1',

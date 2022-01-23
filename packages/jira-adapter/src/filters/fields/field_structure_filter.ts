@@ -192,16 +192,15 @@ const filter: FilterCreator = ({ config }) => ({
     const fieldContextDefaultValueType = types[FIELD_CONTEXT_DEFAULT_TYPE_NAME]
     const fieldContextOptionType = types[FIELD_CONTEXT_OPTION_TYPE_NAME]
 
-    if (fieldType === undefined
-      || fieldContextType === undefined
-      || fieldContextDefaultValueType === undefined
-      || fieldContextOptionType === undefined) {
-      const missingTypes = [
-        fieldType === undefined ? FIELD_TYPE_NAME : undefined,
-        fieldContextType === undefined ? FIELD_CONTEXT_TYPE_NAME : undefined,
-        fieldContextDefaultValueType === undefined ? FIELD_CONTEXT_DEFAULT_TYPE_NAME : undefined,
-        fieldContextOptionType === undefined ? FIELD_CONTEXT_OPTION_TYPE_NAME : undefined,
-      ].filter(values.isDefined)
+
+    const missingTypes = [
+      fieldType === undefined ? FIELD_TYPE_NAME : undefined,
+      fieldContextType === undefined ? FIELD_CONTEXT_TYPE_NAME : undefined,
+      fieldContextDefaultValueType === undefined ? FIELD_CONTEXT_DEFAULT_TYPE_NAME : undefined,
+      fieldContextOptionType === undefined ? FIELD_CONTEXT_OPTION_TYPE_NAME : undefined,
+    ].filter(values.isDefined)
+
+    if (missingTypes.length) {
       log.warn(`Missing types for field structure filter: ${missingTypes.join(', ')}, skipping`)
       return
     }

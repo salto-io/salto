@@ -101,12 +101,6 @@ const filter: FilterCreator = ({ config, client }) => ({
         { [CORE_ANNOTATIONS.CREATABLE]: true, [CORE_ANNOTATIONS.UPDATABLE]: true }
       )
 
-      screenType.fields.availableFields = new Field(
-        screenType,
-        'availableFields',
-        new ListType(BuiltinTypes.STRING),
-      )
-
       screenTabType.fields.fields = new Field(
         screenTabType,
         'fields',
@@ -119,9 +113,6 @@ const filter: FilterCreator = ({ config, client }) => ({
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === SCREEN_TYPE_NAME)
       .forEach(element => {
-        element.value.availableFields = element.value.availableFields
-          && element.value.availableFields.map((field: Values) => field.id)
-
         element.value.tabs = element.value.tabs
           && _.keyBy(
             element.value.tabs.map(

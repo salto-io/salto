@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isDefined, isPlainObject, isPlainRecord } from '../src/values'
+import { isDefined, isPlainObject, isPlainRecord, lookupValue } from '../src/values'
 
 describe('isDefined', () => {
   describe('with undefined value', () => {
@@ -68,5 +68,14 @@ describe('isRecord', () => {
   it('should return false for array', () => {
     expect(isPlainRecord([])).toBeFalsy()
     expect(isPlainRecord([{ a: 'a', b: ['c', 'd'] }])).toBeFalsy()
+  })
+})
+
+describe('lookupValue', () => {
+  it('should return false', () => {
+    expect(lookupValue({ a: 'a', b: ['c', 'd'] }, val => val === 'e')).toBeFalsy()
+  })
+  it('should return true', () => {
+    expect(lookupValue({ a: 'a', b: ['c', 'd'] }, val => val === 'd')).toBeTruthy()
   })
 })

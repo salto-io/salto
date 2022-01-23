@@ -19,3 +19,19 @@ export const isDefined = <T>(val: T | undefined | void): val is T => val !== und
 
 export const isPlainObject = (val: unknown): val is object => _.isPlainObject(val)
 export const isPlainRecord = (val: unknown): val is Record<string, unknown> => _.isPlainObject(val)
+
+export const lookupValue = (
+  blob: unknown,
+  lookupFunc: (val: unknown) => boolean | void
+): boolean => {
+  if (lookupFunc(blob)) {
+    return true
+  }
+  if (_.isArray(blob)) {
+    return blob.some(item => lookupValue(item, lookupFunc))
+  }
+  if (isPlainRecord(blob)) {
+    return Object.values(blob).some(item => lookupValue(item, lookupFunc))
+  }
+  return false
+}

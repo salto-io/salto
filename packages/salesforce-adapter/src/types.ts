@@ -75,6 +75,7 @@ export type ChangeValidatorName = (
   | 'multipleDefaults'
   | 'picklistPromote'
   | 'validateOnlyFlag'
+  | 'spqValidator'
 )
 export type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 

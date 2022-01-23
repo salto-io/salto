@@ -54,7 +54,7 @@ const getLowerCaseSingularLookupType = (val: string): string | undefined => {
 
 const CUSTOM_FIELDS_PREFIX = 'custom_fields_'
 
-type ZendeskSupportReferenceSerializationStrategyName = 'customFields' | 'value'
+type ZendeskSupportReferenceSerializationStrategyName = 'customFields' | 'value' | 'localeId'
 const ZendeskSupportReferenceSerializationStrategyLookup: Record<
   ZendeskSupportReferenceSerializationStrategyName
   | referenceUtils.ReferenceSerializationStrategyName,
@@ -74,6 +74,13 @@ const ZendeskSupportReferenceSerializationStrategyLookup: Record<
     serialize: ({ ref }) => (isInstanceElement(ref.value) ? ref.value.value.value : ref.value),
     lookup: val => val,
     lookupIndexName: 'value',
+  },
+  localeId: {
+    serialize: ({ ref }) => (
+      isInstanceElement(ref.value) ? ref.value.value.locale_id.value.value.id : ref.value
+    ),
+    lookup: val => val,
+    lookupIndexName: 'localeId',
   },
 }
 
@@ -158,6 +165,11 @@ export const fieldNameToTypeMappingDefs: ZendeskSupportFieldReferenceDefinition[
     src: { field: 'default_locale_id' },
     serializationStrategy: 'id',
     target: { type: 'locale' },
+  },
+  {
+    src: { field: 'variants' },
+    zendeskSupportSerializationStrategy: 'localeId',
+    target: { type: 'dynamic_content_item__variants' },
   },
   {
     src: { field: 'macro_id' },

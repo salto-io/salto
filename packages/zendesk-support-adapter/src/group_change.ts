@@ -25,10 +25,12 @@ type ChangeIdFunction = (change: Change) => Promise<string | undefined>
 const PARENT_GROUPED_WITH_INNER_TYPE = [
   'ticket_field',
   'user_field',
+  'dynamic_content_item',
 ]
 const INNER_TYPE_GROUPED_WITH_PARENT = [
   'ticket_field__custom_field_options',
   'user_field__custom_field_options',
+  'dynamic_content_item__variants',
 ]
 
 const recurseIntoInstanceChangeToGroupId: ChangeIdFunction = async change => {

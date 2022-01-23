@@ -1139,6 +1139,33 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       idFields: ['locale_id'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
+    deployRequests: {
+      add: {
+        url: '/dynamic_content/items/{dynamicContentItemId}/variants',
+        deployAsField: 'variant',
+        method: 'post',
+        urlParamsToFields: {
+          dynamicContentItemId: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/dynamic_content/items/{dynamicContentItemId}/variants/{dynammicContentVariantId}',
+        deployAsField: 'variant',
+        method: 'put',
+        urlParamsToFields: {
+          dynammicContentVariantId: 'id',
+          dynamicContentItemId: '_parent.0.id',
+        },
+      },
+      remove: {
+        url: '/dynamic_content/items/{dynamicContentItemId}/variants/{dynammicContentVariantId}',
+        method: 'delete',
+        urlParamsToFields: {
+          dynammicContentVariantId: 'id',
+          dynamicContentItemId: '_parent.0.id',
+        },
+      },
+    },
   },
   locales: {
     request: {

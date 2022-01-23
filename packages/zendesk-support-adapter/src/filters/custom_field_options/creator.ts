@@ -15,17 +15,15 @@
 */
 import _ from 'lodash'
 import {
-  Change, getChangeData, InstanceElement, isAdditionChange, isInstanceElement,
-  Values, Element, isObjectType, Field, BuiltinTypes, ReferenceExpression,
+  Change, getChangeData, InstanceElement, isInstanceElement, Element,
+  isObjectType, Field, BuiltinTypes, ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { getParents } from '@salto-io/adapter-utils'
-import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
-import { addIdUponAddition, deployChange, deployChanges } from '../../deployment'
+import { addIdsToChildrenUponAddition, deployChange, deployChanges } from '../../deployment'
 import { applyforInstanceChangesOfType } from '../utils'
-import { API_DEFINITIONS_CONFIG, ZendeskApiConfig } from '../../config'
+import { API_DEFINITIONS_CONFIG } from '../../config'
 
 export const CUSTOM_FIELD_OPTIONS_FIELD_NAME = 'custom_field_options'
 export const DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME = 'default_custom_field_option'
@@ -35,51 +33,7 @@ type CustomFieldOptionsFilterCreatorParams = {
   childTypeName: string
 }
 
-const log = logger(module)
 const { makeArray } = collections.array
-
-const getMatchedCustomFieldOption = (
-  change: Change<InstanceElement>,
-  response: clientUtils.ResponseValue,
-  dataField?: string,
-): clientUtils.ResponseValue | undefined => {
-  const customFieldOptionsResponse = ((
-    dataField !== undefined
-      ? response[dataField]
-      : response
-    ) as Values)?.[CUSTOM_FIELD_OPTIONS_FIELD_NAME]
-  if (customFieldOptionsResponse) {
-    if (_.isArray(customFieldOptionsResponse)
-    && customFieldOptionsResponse.every(_.isPlainObject)) {
-      return customFieldOptionsResponse.find(
-        option => option.value && option.value === getChangeData(change).value.value
-      )
-    }
-    log.warn(`Received invalid response for custom_field_options in ${getChangeData(change).elemID.getFullName()}`)
-  }
-  return undefined
-}
-const addIdsToChildrenUponAddition = (
-  response: deployment.ResponseResult,
-  parentChange: Change<InstanceElement>,
-  childrenChanges: Change<InstanceElement>[],
-  apiDefinitions: ZendeskApiConfig
-): Change<InstanceElement>[] => {
-  const { deployRequests } = apiDefinitions
-    .types[getChangeData(parentChange).elemID.typeName]
-  childrenChanges
-    .filter(isAdditionChange)
-    .forEach(change => {
-      if (response && !_.isArray(response)) {
-        const dataField = deployRequests?.add?.deployAsField
-        const option = getMatchedCustomFieldOption(change, response, dataField)
-        if (option) {
-          addIdUponAddition(change, apiDefinitions, option)
-        }
-      }
-    })
-  return [parentChange, ...childrenChanges]
-}
 
 export const createCustomFieldOptionsFilterCreator = (
   { parentTypeName, childTypeName }: CustomFieldOptionsFilterCreatorParams
@@ -174,9 +128,14 @@ export const createCustomFieldOptionsFilterCreator = (
         const response = await deployChange(
           change, client, config.apiDefinitions, [DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME]
         )
-        return addIdsToChildrenUponAddition(
-          response, change, childrenChanges, config[API_DEFINITIONS_CONFIG]
-        )
+        return addIdsToChildrenUponAddition({
+          response,
+          parentChange: change,
+          childrenChanges,
+          apiDefinitions: config[API_DEFINITIONS_CONFIG],
+          childFieldName: CUSTOM_FIELD_OPTIONS_FIELD_NAME,
+          childUniqueFieldName: 'value',
+        })
       }
     )
     return { deployResult, leftoverChanges }

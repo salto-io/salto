@@ -114,7 +114,7 @@ export const traverseRequests: (
     })
 
     if (response.status !== 200) {
-      log.error(`error getting result for ${url}: %s %o %o`, response.status, response.statusText, response.data)
+      log.warn(`error getting result for ${url}: %s %o %o`, response.status, response.statusText, response.data)
       break
     }
 

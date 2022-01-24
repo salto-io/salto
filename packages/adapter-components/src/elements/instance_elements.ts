@@ -15,7 +15,8 @@
 */
 import _ from 'lodash'
 import {
-  InstanceElement, Values, ObjectType, ReferenceExpression, CORE_ANNOTATIONS, ElemID, ElemIdGetter, OBJECT_SERVICE_ID, OBJECT_NAME, toServiceIdsString,
+  InstanceElement, Values, ObjectType, ReferenceExpression, CORE_ANNOTATIONS, ElemID,
+  ElemIdGetter, OBJECT_SERVICE_ID, OBJECT_NAME, toServiceIdsString,
 } from '@salto-io/adapter-api'
 import { pathNaclCase, naclCase, transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'

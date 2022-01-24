@@ -167,7 +167,7 @@ export const fieldNameToTypeMappingDefs: ZendeskSupportFieldReferenceDefinition[
     target: { type: 'locale' },
   },
   {
-    src: { field: 'variants' },
+    src: { field: 'variants', parentTypes: ['dynamic_content_item'] },
     zendeskSupportSerializationStrategy: 'localeId',
     target: { type: 'dynamic_content_item__variants' },
   },

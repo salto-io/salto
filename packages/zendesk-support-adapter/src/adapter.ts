@@ -48,6 +48,7 @@ import collisionErrorsFilter from './filters/collision_errors'
 import accountSettingsFilter from './filters/account_settings'
 import ticketFieldFilter from './filters/custom_field_options/ticket_field'
 import userFieldFilter from './filters/custom_field_options/user_field'
+import dynamicContentFilter from './filters/dynamic_content'
 import defaultDeployFilter from './filters/default_deploy'
 
 const log = logger(module)
@@ -69,6 +70,7 @@ export const DEFAULT_FILTERS = [
   businessHoursScheduleFilter,
   collisionErrorsFilter,
   accountSettingsFilter,
+  dynamicContentFilter,
   fieldReferencesFilter,
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,

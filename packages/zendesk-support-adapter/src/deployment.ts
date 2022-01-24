@@ -14,11 +14,16 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Change, ChangeDataType, DeployResult, getChangeData, InstanceElement, isAdditionChange, Values } from '@salto-io/adapter-api'
-import { config as configUtils, deployment } from '@salto-io/adapter-components'
+import {
+  Change, ChangeDataType, DeployResult, getChangeData, InstanceElement, isAdditionChange, Values,
+} from '@salto-io/adapter-api'
+import {
+  config as configUtils, deployment, client as clientUtils,
+} from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
 import { getZendeskError } from './errors'
+import { ZendeskApiConfig } from './config'
 
 const log = logger(module)
 
@@ -50,6 +55,60 @@ export const addIdUponAddition = (
       getChangeData(change).value[idField] = idValue
     }
   }
+}
+
+const getMatchedChild = ({
+  change, response, childFieldName, dataField, childUniqueFieldName,
+}: {
+  change: Change<InstanceElement>
+  response: clientUtils.ResponseValue
+  childFieldName: string
+  childUniqueFieldName: string
+  dataField?: string
+}): clientUtils.ResponseValue | undefined => {
+  const childrenResponse = ((
+    dataField !== undefined
+      ? response[dataField]
+      : response
+    ) as Values)?.[childFieldName]
+  if (childrenResponse) {
+    if (_.isArray(childrenResponse)
+    && childrenResponse.every(_.isPlainObject)) {
+      return childrenResponse.find(
+        child => child[childUniqueFieldName]
+          && child[childUniqueFieldName] === getChangeData(change).value[childUniqueFieldName]
+      )
+    }
+    log.warn(`Received invalid response for ${childFieldName} in ${getChangeData(change).elemID.getFullName()}`)
+  }
+  return undefined
+}
+export const addIdsToChildrenUponAddition = ({
+  response, parentChange, childrenChanges, apiDefinitions, childFieldName, childUniqueFieldName,
+}: {
+  response: deployment.ResponseResult
+  parentChange: Change<InstanceElement>
+  childrenChanges: Change<InstanceElement>[]
+  apiDefinitions: ZendeskApiConfig
+  childFieldName: string
+  childUniqueFieldName: string
+}): Change<InstanceElement>[] => {
+  const { deployRequests } = apiDefinitions
+    .types[getChangeData(parentChange).elemID.typeName]
+  childrenChanges
+    .filter(isAdditionChange)
+    .forEach(change => {
+      if (response && !_.isArray(response)) {
+        const dataField = deployRequests?.add?.deployAsField
+        const child = getMatchedChild({
+          change, response, dataField, childFieldName, childUniqueFieldName,
+        })
+        if (child) {
+          addIdUponAddition(change, apiDefinitions, child)
+        }
+      }
+    })
+  return [parentChange, ...childrenChanges]
 }
 
 export const deployChange = async (

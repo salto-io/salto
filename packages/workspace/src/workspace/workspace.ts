@@ -1228,11 +1228,13 @@ export const loadWorkspace = async (
         ids: ElemID[], visitedIds: Set<string>, elementsArray: Element[] = [],
       ): Promise<{ completed: string[]; missing: string[] }> => {
         const newIds = ids.filter(id => !visitedIds.has(id.getFullName()))
-        newIds.map(id => id.getFullName()).forEach(id => visitedIds.add(id))
 
         if (newIds.length === 0) {
           return { completed: [], missing: [] }
         }
+
+        newIds.map(id => id.getFullName()).forEach(id => visitedIds.add(id))
+
         const getCompletionElem = async (id: ElemID): Promise<Element | undefined> => {
           const rootElem = await (await elementsImpl(true, completeFromEnv))
             .get(id.createTopLevelParentID().parent)

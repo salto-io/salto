@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { BuiltinTypes, Element, InstanceElement, isObjectType, PrimitiveType, Values, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, Element, InstanceElement, isObjectType, PrimitiveType, Values, ObjectType, ElemIdGetter } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
@@ -45,6 +45,7 @@ type GetEntriesParams = {
   typeDefaultConfig: TypeDuckTypeDefaultsConfig
   contextElements?: Record<string, Element[]>
   requestContext?: Record<string, unknown>
+  getElemIdFunc?: ElemIdGetter
 }
 
 type Entries = {
@@ -58,7 +59,7 @@ const getEntriesForType = async (
 ): Promise<Entries> => {
   const {
     typeName, paginator, typesConfig, typeDefaultConfig, contextElements,
-    requestContext, nestedFieldFinder, computeGetArgs, adapterName,
+    requestContext, nestedFieldFinder, computeGetArgs, adapterName, getElemIdFunc,
   } = params
   const typeConfig = typesConfig[typeName]
   if (typeConfig === undefined) {
@@ -122,6 +123,7 @@ const getEntriesForType = async (
           transformationDefaultConfig,
           defaultName: `unnamed_${index}_${nesteIndex}`, // TODO improve
           hasDynamicFields,
+          getElemIdFunc,
         })
       ).filter(isDefined).toArray()
     }
@@ -133,6 +135,7 @@ const getEntriesForType = async (
       transformationDefaultConfig,
       defaultName: `unnamed_${index}`, // TODO improve
       hasDynamicFields,
+      getElemIdFunc,
     })].filter(isDefined)
   }).toArray()
 
@@ -210,6 +213,7 @@ export const getTypeAndInstances = async ({
   typesConfig,
   typeDefaultConfig,
   contextElements,
+  getElemIdFunc,
 }: {
   adapterName: string
   typeName: string
@@ -219,6 +223,7 @@ export const getTypeAndInstances = async ({
   typesConfig: Record<string, TypeDuckTypeConfig>
   typeDefaultConfig: TypeDuckTypeDefaultsConfig
   contextElements?: Record<string, Element[]>
+  getElemIdFunc?: ElemIdGetter
 }): Promise<Element[]> => {
   const entries = await getEntriesForType({
     adapterName,
@@ -229,6 +234,7 @@ export const getTypeAndInstances = async ({
     typeDefaultConfig,
     typesConfig,
     contextElements,
+    getElemIdFunc,
   })
   const elements = [entries.type, ...entries.nestedTypes, ...entries.instances]
   const transformationConfigByType = _.pickBy(
@@ -242,6 +248,7 @@ export const getTypeAndInstances = async ({
     elements,
     transformationConfigByType,
     transformationDefaultConfig: typeDefaultConfig.transformation,
+    getElemIdFunc,
   })
   return elements
 }
@@ -262,6 +269,7 @@ export const getAllElements = async ({
   nestedFieldFinder,
   computeGetArgs,
   typeDefaults,
+  getElemIdFunc,
 }: {
   adapterName: string
   includeTypes: string[]
@@ -270,6 +278,7 @@ export const getAllElements = async ({
   nestedFieldFinder: FindNestedFieldFunc
   computeGetArgs: ComputeGetArgsFunc
   typeDefaults: TypeDuckTypeDefaultsConfig
+  getElemIdFunc?: ElemIdGetter
 }): Promise<Element[]> => {
   const allTypesWithRequestEndpoints = includeTypes.filter(
     typeName => types[typeName].request?.url !== undefined
@@ -282,6 +291,7 @@ export const getAllElements = async ({
     computeGetArgs,
     typesConfig: types,
     typeDefaultConfig: typeDefaults,
+    getElemIdFunc,
   }
 
   const elements = await getElementsWithContext({

@@ -15,8 +15,8 @@
 */
 import _ from 'lodash'
 import {
-  FetchResult, AdapterOperations, DeployResult, Element, DeployModifiers,
-  FetchOptions, DeployOptions, Change, isInstanceChange, InstanceElement, getChangeData,
+  FetchResult, AdapterOperations, DeployResult, Element, DeployModifiers, FetchOptions,
+  DeployOptions, Change, isInstanceChange, InstanceElement, getChangeData, ElemIdGetter,
 } from '@salto-io/adapter-api'
 import {
   client as clientUtils,
@@ -84,6 +84,8 @@ export interface ZendeskAdapterParams {
   filterCreators?: FilterCreator[]
   client: ZendeskClient
   config: ZendeskConfig
+  // callback function to get an existing elemId or create a new one by the ServiceIds values
+  getElemIdFunc?: ElemIdGetter
 }
 
 export default class ZendeskAdapter implements AdapterOperations {
@@ -91,13 +93,16 @@ export default class ZendeskAdapter implements AdapterOperations {
   private client: ZendeskClient
   private paginator: clientUtils.Paginator
   private userConfig: ZendeskConfig
+  private getElemIdFunc?: ElemIdGetter
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
     client,
+    getElemIdFunc,
     config,
   }: ZendeskAdapterParams) {
     this.userConfig = config
+    this.getElemIdFunc = getElemIdFunc
     this.client = client
     this.paginator = createPaginator({
       client: this.client,
@@ -129,6 +134,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       nestedFieldFinder: findDataField,
       computeGetArgs,
       typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
+      getElemIdFunc: this.getElemIdFunc,
     })
   }
 

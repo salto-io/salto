@@ -26,6 +26,7 @@ const {
 
 export const DEFAULT_ID_FIELDS = ['name']
 export const DEFAULT_FILENAME_FIELDS = ['name']
+export const DEFAULT_SERVICE_ID_FIELD = 'id'
 export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
   { fieldName: 'extended_input_schema' },
   { fieldName: 'extended_output_schema' },
@@ -1436,6 +1437,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
         fileNameFields: DEFAULT_FILENAME_FIELDS,
         fieldsToOmit: FIELDS_TO_OMIT,
         fieldsToHide: FIELDS_TO_HIDE,
+        serviceIdField: DEFAULT_SERVICE_ID_FIELD,
       },
     },
     types: DEFAULT_TYPES,

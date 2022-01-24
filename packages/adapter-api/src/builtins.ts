@@ -149,6 +149,11 @@ export const BuiltinTypes = {
       [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
     },
   }),
+  SERVICE_ID_NUMBER: new PrimitiveType({
+    elemID: new ElemID(GLOBAL_ADAPTER, 'serviceid_number'),
+    primitive: PrimitiveTypes.NUMBER,
+    annotations: { [CORE_ANNOTATIONS.SERVICE_ID]: true },
+  }),
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */

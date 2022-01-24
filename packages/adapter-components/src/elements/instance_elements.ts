@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  InstanceElement, Values, ObjectType, ReferenceExpression, CORE_ANNOTATIONS, ElemID,
+  InstanceElement, Values, ObjectType, ReferenceExpression, CORE_ANNOTATIONS, ElemID, ElemIdGetter, OBJECT_SERVICE_ID, OBJECT_NAME, toServiceIdsString,
 } from '@salto-io/adapter-api'
 import { pathNaclCase, naclCase, transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -36,6 +36,7 @@ export type InstanceCreationParams = {
   nestName?: boolean
   parent?: InstanceElement
   normalized?: boolean
+  getElemIdFunc?: ElemIdGetter
 }
 
 export const getInstanceName = (
@@ -63,6 +64,7 @@ export const toBasicInstance = async ({
   nestName,
   parent,
   defaultName,
+  getElemIdFunc,
 }: InstanceCreationParams): Promise<InstanceElement> => {
   const omitFields: TransformFunc = ({ value, field }) => {
     if (field !== undefined) {
@@ -88,7 +90,7 @@ export const toBasicInstance = async ({
   })
 
   const {
-    idFields, fileNameFields,
+    idFields, fileNameFields, serviceIdField,
   } = getConfigWithDefault(
     transformationConfigByType[type.elemID.name],
     transformationDefaultConfig,
@@ -103,10 +105,22 @@ export const toBasicInstance = async ({
     ? fileNameParts.join('_')
     : undefined))
 
-  const naclName = naclCase(
+  const desiredName = naclCase(
     parent && nestName ? `${parent.elemID.name}${ID_SEPARATOR}${name}` : String(name)
   )
   const adapterName = type.elemID.adapter
+  const naclName = getElemIdFunc && serviceIdField
+    ? getElemIdFunc(
+      adapterName,
+      {
+        [serviceIdField]: entry[serviceIdField],
+        [OBJECT_SERVICE_ID]: toServiceIdsString({
+          [OBJECT_NAME]: type.elemID.getFullName(),
+        }),
+      },
+      desiredName
+    ).name
+    : desiredName
   const filePath = type.isSettings
     ? [
       adapterName,

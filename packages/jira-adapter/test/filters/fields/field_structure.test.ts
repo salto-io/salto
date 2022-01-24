@@ -65,6 +65,47 @@ describe('fields_structure', () => {
     })
   })
 
+  it('should remove isLocked if not locked', async () => {
+    const instance = new InstanceElement(
+      'instance',
+      fieldType,
+      {
+        isLocked: false,
+      }
+    )
+    await filter.onFetch([
+      instance,
+      fieldType,
+      fieldContextType,
+      fieldContextDefaultValueType,
+      fieldContextOptionType,
+    ])
+    expect(instance.value).toEqual({
+      contexts: [],
+    })
+  })
+
+  it('should not remove isLocked if locked', async () => {
+    const instance = new InstanceElement(
+      'instance',
+      fieldType,
+      {
+        isLocked: true,
+      }
+    )
+    await filter.onFetch([
+      instance,
+      fieldType,
+      fieldContextType,
+      fieldContextDefaultValueType,
+      fieldContextOptionType,
+    ])
+    expect(instance.value).toEqual({
+      isLocked: true,
+      contexts: [],
+    })
+  })
+
   it('should add the defaults, issue types and projects to the contexts', async () => {
     const instance = new InstanceElement(
       'instance',

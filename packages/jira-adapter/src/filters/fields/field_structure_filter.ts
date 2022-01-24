@@ -226,6 +226,10 @@ const filter: FilterCreator = ({ config }) => ({
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === FIELD_TYPE_NAME)
       .forEach(instance => {
+        if (instance.value.isLocked === false) {
+          delete instance.value.isLocked
+        }
+
         addTypeValue(instance)
 
         const idToContext = _.keyBy(instance.value.contexts ?? [], context => context.id)

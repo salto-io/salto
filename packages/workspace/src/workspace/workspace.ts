@@ -1225,9 +1225,12 @@ export const loadWorkspace = async (
         }
       }
       const addAndValidate = async (
-        ids: ElemID[], elementsArray: Element[] = [],
+        ids: ElemID[], visitedIds: Set<string>, elementsArray: Element[] = [],
       ): Promise<{ completed: string[]; missing: string[] }> => {
-        if (ids.length === 0) {
+        const newIds = ids.filter(id => !visitedIds.has(id.getFullName()))
+        newIds.map(id => id.getFullName()).forEach(id => visitedIds.add(id))
+
+        if (newIds.length === 0) {
           return { completed: [], missing: [] }
         }
         const getCompletionElem = async (id: ElemID): Promise<Element | undefined> => {
@@ -1242,7 +1245,7 @@ export const loadWorkspace = async (
           return resolvePath(rootElem, id)
         }
         const completionRes = Object.fromEntries(
-          await awu(ids).map(async id => ([
+          await awu(newIds).map(async id => ([
             id.getFullName(),
             await getCompletionElem(id),
           ])).toArray()
@@ -1254,6 +1257,7 @@ export const loadWorkspace = async (
         const unresolvedIDs = await getUnresolvedElemIDs(resolvedElements)
         const innerRes = await addAndValidate(
           unresolvedIDs,
+          visitedIds,
           [...elementsArray, ...resolvedElements]
         )
         return {
@@ -1261,7 +1265,7 @@ export const loadWorkspace = async (
           missing: [...missing, ...innerRes.missing],
         }
       }
-      const { completed, missing } = await addAndValidate(unresolvedElemIDs)
+      const { completed, missing } = await addAndValidate(unresolvedElemIDs, new Set())
       return {
         found: compact(completed.sort().map(ElemID.fromFullName)),
         missing: compact(missing.sort().map(ElemID.fromFullName)),

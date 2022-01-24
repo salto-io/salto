@@ -64,7 +64,8 @@ export type FetchCommandArgs = {
 const createFetchFromWorkspaceCommand = (
   fetchFromWorkspaceFunc: FetchFromWorkspaceFunc,
   otherWorkspacePath: string,
-  env : string
+  env: string,
+  fromState: boolean,
 ): FetchFunc => async (workspace, progressEmitter, accounts) => {
   let otherWorkspace: Workspace
   try {
@@ -72,7 +73,14 @@ const createFetchFromWorkspaceCommand = (
   } catch (err) {
     throw new Error(`Failed to load source workspace: ${err.message ?? err}`)
   }
-  return fetchFromWorkspaceFunc({ workspace, otherWorkspace, progressEmitter, accounts, env })
+  return fetchFromWorkspaceFunc({
+    workspace,
+    otherWorkspace,
+    progressEmitter,
+    accounts,
+    env,
+    fromState,
+  })
 }
 
 export const fetchCommand = async (
@@ -245,6 +253,7 @@ type FetchArgs = {
   regenerateSaltoIds: boolean
   fromWorkspace?: string
   fromEnv?: string
+  fromState: boolean
 } & AccountsArg & EnvArg
 
 export const action: WorkspaceCommandAction<FetchArgs> = async ({
@@ -255,7 +264,9 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
   spinnerCreator,
   workspace,
 }): Promise<CliExitCode> => {
-  const { force, stateOnly, accounts, mode, regenerateSaltoIds, fromWorkspace, fromEnv } = input
+  const {
+    force, stateOnly, accounts, mode, regenerateSaltoIds, fromWorkspace, fromEnv, fromState,
+  } = input
   if (
     [fromEnv, fromWorkspace].some(values.isDefined)
     && ![fromEnv, fromWorkspace].every(values.isDefined)
@@ -302,7 +313,8 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
     fetch: fromWorkspace && fromEnv ? createFetchFromWorkspaceCommand(
       fetchFromWorkspace,
       fromWorkspace,
-      fromEnv
+      fromEnv,
+      fromState,
     ) : apiFetch,
     getApprovedChanges: cliGetApprovedChanges,
     shouldUpdateConfig: cliShouldUpdateConfig,
@@ -365,6 +377,14 @@ const fetchDef = createWorkspaceCommand({
         required: false,
         description: 'Fetch the data from another workspace at this path from this env',
         type: 'string',
+      },
+      {
+        name: 'fromState',
+        alias: 'ws',
+        required: false,
+        description: 'Fetch the data from another workspace from the state',
+        type: 'boolean',
+        default: false,
       },
     ],
   },

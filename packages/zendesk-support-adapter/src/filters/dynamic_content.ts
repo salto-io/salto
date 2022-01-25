@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  Change, getChangeData, InstanceElement, isAdditionChange, isModificationChange,
+  Change, getChangeData, InstanceElement, isAdditionChange, isModificationChange, isRemovalChange,
 } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
@@ -71,8 +71,9 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       change => getChangeData(change).elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME,
     )
     if (itemChanges.length === 0 || itemChanges.every(isModificationChange)) {
+      const [removalChanges, nonRemovalChanges] = _.partition(relevantChanges, isRemovalChange)
       const deployResult = await deployChanges(
-        relevantChanges,
+        [...nonRemovalChanges, ...removalChanges],
         async change => {
           await deployChange(change, client, config.apiDefinitions)
         }

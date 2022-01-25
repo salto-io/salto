@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   Change, getChangeData, InstanceElement, isInstanceElement, Element,
-  isObjectType, Field, BuiltinTypes, ReferenceExpression,
+  isObjectType, Field, BuiltinTypes, ReferenceExpression, isRemovalChange,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { getParents } from '@salto-io/adapter-utils'
@@ -114,8 +114,9 @@ export const createCustomFieldOptionsFilterCreator = (
       change => getChangeData(change).elemID.typeName === parentTypeName,
     )
     if (parentChanges.length === 0) {
+      const [removalChanges, nonRemovalChanges] = _.partition(childrenChanges, isRemovalChange)
       const deployResult = await deployChanges(
-        childrenChanges,
+        [...nonRemovalChanges, ...removalChanges],
         async change => {
           await deployChange(change, client, config.apiDefinitions)
         }

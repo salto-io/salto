@@ -15,12 +15,12 @@
 */
 import { ElemID, InstanceElement, ObjectType, toChange, Values } from '@salto-io/adapter-api'
 import { mockClient } from '../utils'
-import permissionSchemeFilter from '../../src/filters/permission_scheme'
+import sortListsFilter from '../../src/filters/sort_lists'
 import { Filter } from '../../src/filter'
 import { DEFAULT_CONFIG } from '../../src/config'
 import { JIRA } from '../../src/constants'
 
-describe('permissionSchemeFilter', () => {
+describe('sortListsFilter', () => {
   let filter: Filter
   let type: ObjectType
   let instance: InstanceElement
@@ -28,7 +28,7 @@ describe('permissionSchemeFilter', () => {
   beforeEach(async () => {
     const { client, paginator } = mockClient()
 
-    filter = permissionSchemeFilter({
+    filter = sortListsFilter({
       client,
       paginator,
       config: DEFAULT_CONFIG,

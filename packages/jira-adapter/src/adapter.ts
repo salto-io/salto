@@ -28,7 +28,7 @@ import removeSelfFilter from './filters/remove_self'
 import issueTypeSchemeReferences from './filters/issue_type_schemas/issue_type_scheme_references'
 import issueTypeSchemeFilter from './filters/issue_type_schemas/issue_type_scheme'
 import sharePermissionFilter from './filters/share_permission'
-import permissionSchemeFilter from './filters/permission_scheme'
+import sortListsFilter from './filters/sort_lists'
 import boardFilter from './filters/board'
 import screenFilter from './filters/screen/screen'
 import issueTypeScreenSchemeFilter from './filters/issue_type_screen_scheme'
@@ -65,7 +65,7 @@ export const DEFAULT_FILTERS = [
   issueTypeSchemeReferences,
   issueTypeSchemeFilter,
   sharePermissionFilter,
-  permissionSchemeFilter,
+  sortListsFilter,
   boardFilter,
   projectFilter,
   projectComponentFilter,

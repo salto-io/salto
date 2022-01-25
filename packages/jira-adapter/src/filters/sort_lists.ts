@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, getChangeData, InstanceElement, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
+import { Change, InstanceElement, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -21,34 +21,46 @@ import { FilterCreator } from '../filter'
 
 const { awu } = collections.asynciterable
 
-const PERMISSION_SCHEME_TYPE_NAME = 'PermissionScheme'
+type ValueToSort = {
+  typeName: string
+  fieldName: string
+}
 
-const sortPermissionScheme = (instance: InstanceElement): void => {
-  if (instance.value.permissions === undefined) {
-    return
-  }
+const VALUES_TO_SORT: ValueToSort[] = [
+  {
+    typeName: 'PermissionScheme',
+    fieldName: 'permissions',
+  },
+]
 
-  instance.value.permissions = _.sortBy(
-    instance.value.permissions,
-    permission => safeJsonStringify(permission)
-  )
+const sortLists = (instance: InstanceElement): void => {
+  VALUES_TO_SORT
+    .filter(({ typeName }) => instance.elemID.name === typeName)
+    .forEach(({ fieldName }) => {
+      if (instance.value.permissions === undefined) {
+        return
+      }
+
+      instance.value[fieldName] = _.sortBy(
+        instance.value.permissions,
+        permission => safeJsonStringify(permission)
+      )
+    })
 }
 
 const filter: FilterCreator = () => ({
   onFetch: async elements => {
     elements
       .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === PERMISSION_SCHEME_TYPE_NAME)
-      .forEach(sortPermissionScheme)
+      .forEach(sortLists)
   },
 
   onDeploy: async changes => awu(changes)
     .filter(isInstanceChange)
-    .filter(change => getChangeData(change).elemID.typeName === PERMISSION_SCHEME_TYPE_NAME)
     .forEach(change => applyFunctionToChangeData<Change<InstanceElement>>(
       change,
       instance => {
-        sortPermissionScheme(instance)
+        sortLists(instance)
         return instance
       }
     )),

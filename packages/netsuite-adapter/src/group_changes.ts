@@ -25,8 +25,10 @@ import { values, collections } from '@salto-io/lowerdash'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import * as suiteAppFileCabinet from './suiteapp_file_cabinet'
-import { customTypes, fileCabinetTypes, isDataObjectType, isFileCabinetInstance } from './types'
+import { isDataObjectType, isFileCabinetInstance } from './types'
 import { APPLICATION_ID } from './constants'
+import { customTypesNames } from './autogen/types'
+import { fileCabinetTypesNames } from './types/file_cabinet_types'
 
 const { awu } = collections.asynciterable
 
@@ -56,8 +58,8 @@ const getChangeGroupIdsWithoutSuiteApp: ChangeGroupIdFunction = async changes =>
   const isSdfChange = (change: Change): boolean => {
     const changeData = getChangeData(change)
     return isInstanceElement(changeData)
-      && (Object.keys(customTypes).includes(changeData.elemID.typeName)
-        || Object.keys(fileCabinetTypes).includes(changeData.elemID.typeName))
+      && (customTypesNames.has(changeData.elemID.typeName)
+        || fileCabinetTypesNames.has(changeData.elemID.typeName))
   }
   return new Map(
     wu(changes.entries())
@@ -134,7 +136,7 @@ const isSuiteAppFileCabinetDeletion = (change: Change): boolean => {
 
 const isSdfChange = (change: Change): boolean => {
   const changeData = getChangeData(change)
-  return Object.keys(customTypes).includes(changeData.elemID.typeName)
+  return customTypesNames.has(changeData.elemID.typeName)
     || (isFileCabinetInstance(changeData)
       && !suiteAppFileCabinet.isChangeDeployable(change))
 }

@@ -60,10 +60,18 @@ import_statements_for_type_def_template = '''import {{
   BuiltinTypes, createRefToElmWithValue, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction,{list_type_import}
 }} from '@salto-io/adapter-api'
 import * as constants from '../../../constants'
+import {{ TypeAndInnerTypes }} from '../../../types/object_types'
 {enums_import}{field_types_import}
 '''
 
-type_inner_types_array_template = '''export const {type_name}InnerTypes: ObjectType[] = []
+get_type_template = '''export const {type_name}Type = (): TypeAndInnerTypes => {{
+{content}
+
+  return {{ type: {type_name}, innerTypes }}
+}}
+'''
+
+INNER_TYPES_MAP = '''  const innerTypes: Record<string, ObjectType> = {}
 
 '''
 
@@ -80,7 +88,7 @@ DISABLE_LINT_LINE_LENGTH = '''/* eslint-disable max-len */
 
 HEADER_FOR_DEFS = LICENSE_HEADER + DISABLE_LINT_LINE_LENGTH + DISABLE_LINT_CAMEL_CASE
 
-type_elem_id_template = '''const {type_name}ElemID = new ElemID(constants.NETSUITE, '{type_name}')
+type_elem_id_template = '''  const {type_name}ElemID = new ElemID(constants.NETSUITE, '{type_name}')
 '''
 
 SUBTYPES_FOLDER_PATH_DEF = '''const enumsFolderPath = [constants.NETSUITE, constants.TYPES_PATH, constants.SUBTYPES_PATH]
@@ -109,62 +117,71 @@ export const enums: Record<string, PrimitiveType> = {{
 {enums_entries}}}
 {enums_values}'''
 
-inner_types_def_template = '''const {inner_type_name}ElemID = new ElemID(constants.NETSUITE, '{inner_type_name}')
+inner_types_def_template = '''  const {inner_type_name}ElemID = new ElemID(constants.NETSUITE, '{inner_type_name}')
 {type_def}
-{type_name}InnerTypes.push({inner_type_name})
+  innerTypes.{inner_type_name} = {inner_type_name}
 
 '''
 
 type_annotation_template = '''
-    {annotation_name}: '{annotation_value}','''
+      {annotation_name}: '{annotation_value}','''
 
 type_annotations_template = '''
-  annotations: {{{annotations}
-  }},'''
+    annotations: {{{annotations}
+    }},'''
 
 type_template = '''
-{export}const {type_name} = new ObjectType({{
-  elemID: {type_name}ElemID,{annotations}
-  fields: {{
+  const {type_name} = new ObjectType({{
+    elemID: {type_name}ElemID,{annotations}
+    fields: {{
 {field_definitions}
-  }},
-  path: {path},
-}})
+    }},
+    path: {path},
+  }})
 '''
 
 type_path_template = '[constants.NETSUITE, constants.TYPES_PATH, {type_name}ElemID.name]'
 
-field_template = '''    {field_name}: {{
-      refType: createRefToElmWithValue({field_type}),
-      annotations: {{{annotations}
-      }},
-    }},'''
+field_template = '''      {field_name}: {{
+        refType: createRefToElmWithValue({field_type}),
+        annotations: {{{annotations}
+        }},
+      }},'''
 
 field_annotation_template = '''
-        {annotation_name}: {annotation_value},'''
+          {annotation_name}: {annotation_value},'''
 
-import_type_statement_template = '''import {{ {type_name}, {type_name}InnerTypes }} from './types/custom_types/{type_name}'
+import_type_statement_template = '''import {{ {type_name}Type }} from './types/custom_types/{type_name}'
 '''
 
-custom_types_map_entry_template = '''  {type_name},
+custom_types_init_template = '''  const {type_name} = {type_name}Type()
 '''
 
-type_inner_types_vars_template = '''  ...{type_name}InnerTypes,
+custom_types_map_entry_template = '''    {type_name}: {{
+      type: {type_name}.type,
+      innerTypes: {type_name}.innerTypes,
+    }},
 '''
 
-types_file_template = LICENSE_HEADER + '''import {{ ObjectType }} from '@salto-io/adapter-api'
+custom_types_name_template = '''  '{type_name}',
+'''
+
+types_file_template = LICENSE_HEADER + '''import {{ TypeAndInnerTypes }} from '../types/object_types'
 {import_types_statements}
 
 export type CustomType = {custom_type_value}
 
+export const customTypesNames: ReadonlySet<string> = new Set([
+{custom_types_names}])
+
 /**
 * generated using types_generator.py as Netsuite don't expose a metadata API for them.
 */
-export const customTypes: Readonly<Record<string, ObjectType>> = {{
-{custom_types_map_entries}}}
-
-export const innerCustomTypes: ObjectType[] = [
-{all_inner_types_vars}]
+export const getCustomTypes = (): Readonly<Record<string, TypeAndInnerTypes>> => {{
+{custom_types_inits}
+  return {{
+{custom_types_map_entries}  }}
+}}
 '''
 
 default_value_pattern = re.compile("[\s\S]*The default value is '?‘?([-|#\w]*)’?'?\.[\s\S]*") # e.g. ‘MIDDLE’, 'NORMAL', T, '|', '#000000', 'windows-1252'
@@ -343,7 +360,7 @@ def login(username, password, secret_key_2fa):
     logging.info('Trying to login to NetSuite documentation')
     # submit username & password
     time.sleep(1)
-    webpage.find_element(By.XPATH, '//*[@id="userName"]').send_keys(username)
+    webpage.find_element(By.XPATH, '//*[@id="email"]').send_keys(username)
     webpage.find_element(By.XPATH, '//*[@id="password"]').send_keys(password)
     webpage.find_element(By.XPATH, '//*[@id="login-submit"]').click()
     time.sleep(2)
@@ -357,10 +374,17 @@ def login(username, password, secret_key_2fa):
 
 def create_types_file(type_names):
     import_types_statements = ''.join([import_type_statement_template.format(type_name = type_name) for type_name in type_names])
+    custom_types_names = ''.join([custom_types_name_template.format(type_name = type_name) for type_name in type_names])
+    custom_types_inits = ''.join([custom_types_init_template.format(type_name = type_name) for type_name in type_names])
     custom_types_map_entries = ''.join([custom_types_map_entry_template.format(type_name = type_name) for type_name in type_names])
-    all_inner_types_vars = ''.join([type_inner_types_vars_template.format(type_name = type_name) for type_name in type_names])
     custom_type_value = ' | '.join(f'\'{name}\'' for name in type_names)
-    file_content = types_file_template.format(import_types_statements = import_types_statements, custom_types_map_entries = custom_types_map_entries, all_inner_types_vars = all_inner_types_vars, custom_type_value = custom_type_value)
+    file_content = types_file_template.format(
+        import_types_statements = import_types_statements,
+        custom_types_map_entries = custom_types_map_entries,
+        custom_type_value = custom_type_value,
+        custom_types_inits = custom_types_inits,
+        custom_types_names = custom_types_names,
+    )
     with open(SRC_DIR + 'types.ts', 'w') as file:
         file.write(file_content)
 
@@ -421,17 +445,13 @@ def format_type_def(type_name, type_def, top_level_type_name = None):
         field_description_comment = ' /* Original description: {0} */'.format(field_def[DESCRIPTION]) if (DESCRIPTION in field_def and field_def[DESCRIPTION] != '') else ''
         return formatted_field + field_description_comment
 
-    def should_export_type_def(is_inner_type, type_name):
-        return not is_inner_type or type_name in inner_types_to_export
-
     is_inner_type = top_level_type_name != None
     annotations = format_type_annotations()
     field_definitions = []
     for field_def in type_def[FIELDS]:
         field_definitions.append(format_field_def(field_def))
     path = type_path_template.format(type_name = top_level_type_name if is_inner_type else type_name) # all inner_types will be located in the same file as their parent
-    export = 'export ' if should_export_type_def(is_inner_type, type_name) else ''
-    return type_template.format(type_name = type_name, export = export, annotations = annotations,
+    return type_template.format(type_name = type_name, annotations = annotations,
       field_definitions = '\n'.join(field_definitions), path = path)
 
 
@@ -488,7 +508,8 @@ def generate_file_per_type(type_name_to_types_defs):
         type_def = type_defs[TYPE_DEF]
         elem_id_def = type_elem_id_template.format(type_name = type_name)
         formatted_type_def = format_type_def(type_name, type_def)
-        file_data = type_inner_types_array_template.format(type_name = type_name) + elem_id_def + format_inner_types_defs(type_name, inner_type_name_to_def) + formatted_type_def
+        content = INNER_TYPES_MAP + elem_id_def + format_inner_types_defs(type_name, inner_type_name_to_def) + formatted_type_def
+        file_data = get_type_template.format(type_name = type_name, content = content)
         import_statements = import_statements_for_type_def_template.format(
             list_type_import = list_type_import if 'new ListType(' in file_data else '',
             enums_import = enums_import if 'enums.' in file_data else '',

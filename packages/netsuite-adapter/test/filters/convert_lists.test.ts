@@ -14,8 +14,9 @@
 * limitations under the License.
 */
 import { InstanceElement } from '@salto-io/adapter-api'
-import { customTypes } from '../../src/types'
-import { DATASET, ENTITY_CUSTOM_FIELD, SAVED_CSV_IMPORT } from '../../src/constants'
+import { datasetType } from '../../src/autogen/types/custom_types/dataset'
+import { entitycustomfieldType } from '../../src/autogen/types/custom_types/entitycustomfield'
+import { savedcsvimportType } from '../../src/autogen/types/custom_types/savedcsvimport'
 import filterCreator from '../../src/filters/convert_lists'
 
 describe('convert_lists filter', () => {
@@ -23,7 +24,7 @@ describe('convert_lists filter', () => {
   let instance: InstanceElement
   beforeEach(() => {
     instance = new InstanceElement(instanceName,
-      customTypes[DATASET],
+      datasetType().type,
       {
         name: instanceName,
         dependencies: {
@@ -51,7 +52,7 @@ describe('convert_lists filter', () => {
 
   it('should sort object list values if in unorderedListFields', async () => {
     const savedCsvImportInstance = new InstanceElement('instance',
-      customTypes[SAVED_CSV_IMPORT],
+      savedcsvimportType().type,
       {
         filemappings: {
           filemapping: [
@@ -94,7 +95,7 @@ describe('convert_lists filter', () => {
     ]
 
     instance = new InstanceElement(instanceName,
-      customTypes[ENTITY_CUSTOM_FIELD],
+      entitycustomfieldType().type,
       {
         label: instanceName,
         roleaccesses: {

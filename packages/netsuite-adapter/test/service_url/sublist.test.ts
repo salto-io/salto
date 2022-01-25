@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
-import { sublist } from '../../src/autogen/types/custom_types/sublist'
+import { sublistType } from '../../src/autogen/types/custom_types/sublist'
 import NetsuiteClient from '../../src/client/client'
 import setServiceUrl from '../../src/service_url/sublist'
 
@@ -25,6 +25,7 @@ describe('setSublistsUrls', () => {
     runSuiteQL: runSuiteQlMock,
     url: 'https://accountid.app.netsuite.com',
   } as unknown as NetsuiteClient
+  const sublist = sublistType().type
 
   let elements: InstanceElement[]
 

@@ -15,7 +15,7 @@
 */
 import { CORE_ANNOTATIONS, InstanceElement, Element } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { file } from '../../src/types/file_cabinet_types'
+import { fileType } from '../../src/types/file_cabinet_types'
 import NetsuiteClient from '../../src/client/client'
 import serviceUrls from '../../src/filters/service_urls'
 
@@ -35,7 +35,7 @@ describe('serviceUrls', () => {
     getPathInternalIdMock.mockResolvedValue(1)
     isSuiteAppConfiguredMock.mockReturnValue(true)
     elements = [
-      new InstanceElement('A', file, { path: '/path/A' }),
+      new InstanceElement('A', fileType(), { path: '/path/A' }),
     ]
   })
 

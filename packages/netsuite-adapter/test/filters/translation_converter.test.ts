@@ -15,14 +15,16 @@
 */
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
 import { ATTRIBUTE_PREFIX } from '../../src/client/constants'
-import { translationcollection } from '../../src/autogen/types/custom_types/translationcollection'
+import { translationcollectionType } from '../../src/autogen/types/custom_types/translationcollection'
 import filterCreator from '../../src/filters/translation_converter'
 
 
 describe('translation_converter filter', () => {
+  const translationcollection = translationcollectionType().type
+
   describe('onFetch', () => {
     it('should add nameTranslate to type', async () => {
-      await filterCreator().onFetch([])
+      await filterCreator().onFetch([translationcollection])
       expect(translationcollection.fields.nameTranslate).toBeDefined()
     })
 

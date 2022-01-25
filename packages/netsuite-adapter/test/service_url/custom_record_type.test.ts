@@ -16,8 +16,8 @@
 import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
 import NetsuiteClient from '../../src/client/client'
 import setServiceUrl from '../../src/service_url/custom_record_type'
-import { customsegment } from '../../src/autogen/types/custom_types/customsegment'
-import { customrecordtype } from '../../src/autogen/types/custom_types/customrecordtype'
+import { customsegmentType } from '../../src/autogen/types/custom_types/customsegment'
+import { customrecordtypeType } from '../../src/autogen/types/custom_types/customrecordtype'
 
 
 describe('setCustomRecordTypesUrls', () => {
@@ -26,6 +26,8 @@ describe('setCustomRecordTypesUrls', () => {
     runSuiteQL: runSuiteQlMock,
     url: 'https://accountid.app.netsuite.com',
   } as unknown as NetsuiteClient
+  const customsegment = customsegmentType().type
+  const customrecordtype = customrecordtypeType().type
 
   let elements: InstanceElement[]
 

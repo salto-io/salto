@@ -14,9 +14,8 @@
 * limitations under the License.
 */
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
+import { savedsearchType } from '../../src/autogen/types/custom_types/savedsearch'
 import savedSearchesMoveEnvironment from '../../src/change_validators/saved_search_move_environment'
-import { customTypes } from '../../src/types'
-import { SAVED_SEARCH } from '../../src/constants'
 
 jest.mock('../../src/saved_search_parsing/saved_search_parser', () => ({
   parseDefinition: jest.fn().mockResolvedValue({
@@ -25,9 +24,10 @@ jest.mock('../../src/saved_search_parsing/saved_search_parser', () => ({
 }))
 
 describe('move environment saved search change validator', () => {
+  const savedsearch = savedsearchType().type
   describe('onAdd', () => {
     it('should have warning change error when moving an instance with correct definition', async () => {
-      const instance = new InstanceElement('test', customTypes[SAVED_SEARCH])
+      const instance = new InstanceElement('test', savedsearch)
       instance.value.definition = 'string'
       instance.value.test = 'test'
       const changeErrors = await savedSearchesMoveEnvironment([
@@ -37,7 +37,7 @@ describe('move environment saved search change validator', () => {
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
     })
     it('should have change error when moving an instance with incorrect definition', async () => {
-      const instance = new InstanceElement('test', customTypes[SAVED_SEARCH])
+      const instance = new InstanceElement('test', savedsearch)
       instance.value.definition = 'string'
       const changeErrors = await savedSearchesMoveEnvironment([
         toChange({ after: instance })])
@@ -48,7 +48,7 @@ describe('move environment saved search change validator', () => {
   })
   describe('onModify', () => {
     it('should have warning change error when moving an instance with correct definition', async () => {
-      const instance = new InstanceElement('test', customTypes[SAVED_SEARCH])
+      const instance = new InstanceElement('test', savedsearch)
       instance.value.definition = 'string'
       instance.value.test = 'test'
       const changeErrors = await savedSearchesMoveEnvironment([
@@ -58,7 +58,7 @@ describe('move environment saved search change validator', () => {
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
     })
     it('should have change error when moving an instance with incorrect definition', async () => {
-      const instance = new InstanceElement('test', customTypes[SAVED_SEARCH])
+      const instance = new InstanceElement('test', savedsearch)
       instance.value.definition = 'string'
       const changeErrors = await savedSearchesMoveEnvironment([
         toChange({ before: instance, after: instance })])

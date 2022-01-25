@@ -14,22 +14,24 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { fileType } from '../../src/types/file_cabinet_types'
+import { entitycustomfieldType } from '../../src/autogen/types/custom_types/entitycustomfield'
 import { validateDependsOnInvalidElement } from '../../src/change_validators/dependencies'
-import { customTypes, fileCabinetTypes } from '../../src/types'
-import { ENTITY_CUSTOM_FIELD, FILE, PATH, SCRIPT_ID } from '../../src/constants'
+import { PATH, SCRIPT_ID } from '../../src/constants'
 
 describe('Change Validator', () => {
+  const entitycustomfield = entitycustomfieldType().type
   const customFieldInstance = new InstanceElement('elementName',
-    customTypes[ENTITY_CUSTOM_FIELD], {
+    entitycustomfield, {
       label: 'elementName',
       [SCRIPT_ID]: 'custentity_my_script_id',
     })
 
-  const fileInstance = new InstanceElement('fileInstance', fileCabinetTypes[FILE], {
+  const fileInstance = new InstanceElement('fileInstance', fileType(), {
     [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder/content.html',
   })
 
-  const dependsOn1Instance = new InstanceElement('dependsOn1Instance', customTypes[ENTITY_CUSTOM_FIELD], {
+  const dependsOn1Instance = new InstanceElement('dependsOn1Instance', entitycustomfield, {
     [SCRIPT_ID]: 'custentity_depends_on_1_instance',
     label: new ReferenceExpression(fileInstance.elemID.createNestedID(PATH),
       fileInstance.value[PATH], fileInstance),
@@ -44,7 +46,7 @@ describe('Change Validator', () => {
     { id: 'serviceIdValue' },
   )
 
-  const instanceWithManyRefs = new InstanceElement('dependsOn2Instances', customTypes[ENTITY_CUSTOM_FIELD], {
+  const instanceWithManyRefs = new InstanceElement('dependsOn2Instances', entitycustomfield, {
     [SCRIPT_ID]: 'custentity_depends_on_2',
     label: new ReferenceExpression(dependsOn1Instance.elemID.createNestedID(SCRIPT_ID),
       dependsOn1Instance.value[SCRIPT_ID], dependsOn1Instance),

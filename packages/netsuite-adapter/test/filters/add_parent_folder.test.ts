@@ -15,15 +15,15 @@
 */
 import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/add_parent_folder'
-import { fileCabinetTypes } from '../../src/types'
-import { PATH, FILE } from '../../src/constants'
+import { PATH } from '../../src/constants'
+import { fileType } from '../../src/types/file_cabinet_types'
 
 describe('add_parent_folder filter', () => {
   let instance: InstanceElement
   beforeEach(() => {
     instance = new InstanceElement(
       'someFile',
-      fileCabinetTypes[FILE],
+      fileType(),
       {}
     )
   })

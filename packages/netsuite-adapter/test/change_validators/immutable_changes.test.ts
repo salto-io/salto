@@ -15,15 +15,19 @@
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import immutableChangesValidator from '../../src/change_validators/immutable_changes'
-import { customTypes, fileCabinetTypes } from '../../src/types'
-import { ENTITY_CUSTOM_FIELD, FILE, NETSUITE, PATH, SCRIPT_ID } from '../../src/constants'
-import { addressForm } from '../../src/autogen/types/custom_types/addressForm'
+import { NETSUITE, PATH, SCRIPT_ID } from '../../src/constants'
+import { addressFormType } from '../../src/autogen/types/custom_types/addressForm'
+import { entitycustomfieldType } from '../../src/autogen/types/custom_types/entitycustomfield'
+import { fileType } from '../../src/types/file_cabinet_types'
 
 
 describe('customization type change validator', () => {
+  const file = fileType()
+  const entitycustomfield = entitycustomfieldType().type
+  const addressForm = addressFormType().type
   it('should have change error if custom type SCRIPT_ID has been modified', async () => {
     const entityCustomFieldInstance = new InstanceElement('elementName',
-      customTypes[ENTITY_CUSTOM_FIELD], {
+      entitycustomfield, {
         [SCRIPT_ID]: 'custentity_my_script_id',
       })
     const after = entityCustomFieldInstance.clone()
@@ -37,7 +41,7 @@ describe('customization type change validator', () => {
   })
 
   it('should have change error if file cabinet type PATH has been modified', async () => {
-    const fileInstance = new InstanceElement('fileInstance', fileCabinetTypes[FILE], {
+    const fileInstance = new InstanceElement('fileInstance', file, {
       [PATH]: 'Templates/content.html',
     })
     const after = fileInstance.clone()
@@ -51,7 +55,7 @@ describe('customization type change validator', () => {
   })
 
   it('should have change error if file cabinet type parent has been modified', async () => {
-    const fileInstance = new InstanceElement('fileInstance', fileCabinetTypes[FILE], {}, undefined, {
+    const fileInstance = new InstanceElement('fileInstance', file, {}, undefined, {
       [CORE_ANNOTATIONS.PARENT]: ['[/Templates/content]'],
     })
     const after = fileInstance.clone()
@@ -66,7 +70,7 @@ describe('customization type change validator', () => {
 
   it('should not have change error if custom type regular field has been modified', async () => {
     const entityCustomFieldInstance = new InstanceElement('elementName',
-      customTypes[ENTITY_CUSTOM_FIELD], {
+      entitycustomfield, {
         [SCRIPT_ID]: 'custentity_my_script_id',
         label: 'original',
       })
@@ -81,7 +85,7 @@ describe('customization type change validator', () => {
   it('should not have change error if file cabinet type regular field has been modified', async () => {
     const fileInstance = new InstanceElement(
       'fileInstance',
-      fileCabinetTypes[FILE],
+      file,
       {
         [PATH]: 'Templates/content.html',
         content: 'original',

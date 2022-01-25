@@ -14,12 +14,14 @@
 * limitations under the License.
 */
 import { InstanceElement, StaticFile, toChange } from '@salto-io/adapter-api'
-import { customtransactiontype } from '../../src/autogen/types/custom_types/customtransactiontype'
+import { customtransactiontypeType } from '../../src/autogen/types/custom_types/customtransactiontype'
 import fileValidator from '../../src/change_validators/file_changes'
-import { file } from '../../src/types/file_cabinet_types'
+import { fileType } from '../../src/types/file_cabinet_types'
 
 
 describe('file changes validator', () => {
+  const file = fileType()
+  const customtransactiontype = customtransactiontypeType().type
   it('should not return errors for valid changes', async () => {
     const BigBuffer = Buffer.from('a'.repeat(1024 * 1024 * 11))
     const validBigFileBefore = new InstanceElement(

@@ -15,11 +15,11 @@
 */
 import { InstanceElement } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/consistent_values'
-import { customTypes } from '../../src/types'
-import {
-  CUSTOM_RECORD_TYPE, ENTITY_CUSTOM_FIELD, ENTRY_FORM, TRANSACTION_FORM, PERMITTED_ROLE,
-  RECORD_TYPE,
-} from '../../src/constants'
+import { PERMITTED_ROLE, RECORD_TYPE } from '../../src/constants'
+import { transactionFormType } from '../../src/autogen/types/custom_types/transactionForm'
+import { customrecordtypeType } from '../../src/autogen/types/custom_types/customrecordtype'
+import { entryFormType } from '../../src/autogen/types/custom_types/entryForm'
+import { entitycustomfieldType } from '../../src/autogen/types/custom_types/entitycustomfield'
 
 describe('consistent_values filter', () => {
   const instanceName = 'instanceName'
@@ -28,14 +28,14 @@ describe('consistent_values filter', () => {
   let instanceWithNestedInconsistentValue: InstanceElement
   beforeEach(() => {
     instance = new InstanceElement(instanceName,
-      customTypes[TRANSACTION_FORM],
+      transactionFormType().type,
       {
         name: instanceName,
         [RECORD_TYPE]: 'INTERCOMPANYJOURNALENTRY',
       })
     instanceWithNestedInconsistentValue = new InstanceElement(
       instanceWithNestedInconsistentValueName,
-      customTypes[CUSTOM_RECORD_TYPE],
+      customrecordtypeType().type,
       {
         name: instanceWithNestedInconsistentValueName,
         permissions: {
@@ -70,7 +70,7 @@ describe('consistent_values filter', () => {
 
   it('should not modify field for instances with other types that have inconsistent values', async () => {
     const entryFormInstance = new InstanceElement(instanceName,
-      customTypes[ENTRY_FORM],
+      entryFormType().type,
       {
         name: instanceName,
         [RECORD_TYPE]: 'INTERCOMPANYJOURNALENTRY',
@@ -82,7 +82,7 @@ describe('consistent_values filter', () => {
 
   it('should not modify field for instances that have no field mappings', async () => {
     const instanceWithNoMappings = new InstanceElement(instanceName,
-      customTypes[ENTITY_CUSTOM_FIELD],
+      entitycustomfieldType().type,
       {
         name: instanceName,
         [RECORD_TYPE]: 'INTERCOMPANYJOURNALENTRY',

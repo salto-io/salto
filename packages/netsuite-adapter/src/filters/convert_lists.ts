@@ -21,49 +21,29 @@ import { applyRecursive } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterWith } from '../filter'
-import { dataset_dependencies } from '../autogen/types/custom_types/dataset'
-import { savedcsvimport_filemappings } from '../autogen/types/custom_types/savedcsvimport'
-import {
-  customsegment_segmentapplication_transactionbody_applications,
-  customsegment_segmentapplication_transactionline_applications,
-} from '../autogen/types/custom_types/customsegment'
 import { SCRIPT_ID } from '../constants'
-import { bundleinstallationscript_scriptdeployments } from '../autogen/types/custom_types/bundleinstallationscript'
-import { clientscript_scriptdeployments } from '../autogen/types/custom_types/clientscript'
-import { customrecordactionscript_scriptdeployments } from '../autogen/types/custom_types/customrecordactionscript'
-import { mapreducescript_scriptdeployments } from '../autogen/types/custom_types/mapreducescript'
-import { portlet_scriptdeployments } from '../autogen/types/custom_types/portlet'
-import { massupdatescript_scriptdeployments } from '../autogen/types/custom_types/massupdatescript'
-import { restlet_scriptdeployments } from '../autogen/types/custom_types/restlet'
-import { scheduledscript_scriptdeployments } from '../autogen/types/custom_types/scheduledscript'
-import { sdfinstallationscript_scriptdeployments } from '../autogen/types/custom_types/sdfinstallationscript'
-import { suitelet_scriptdeployments } from '../autogen/types/custom_types/suitelet'
-import { usereventscript_scriptdeployments } from '../autogen/types/custom_types/usereventscript'
-import { workflowactionscript_scriptdeployments } from '../autogen/types/custom_types/workflowactionscript'
 
 const { awu } = collections.asynciterable
 
 type FieldFullNameToOrderBy = Map<string, string | undefined>
 
 const unorderedListFields: FieldFullNameToOrderBy = new Map([
-  [dataset_dependencies.fields.dependency.elemID.getFullName(), undefined],
-  [savedcsvimport_filemappings.fields.filemapping.elemID.getFullName(), 'file'],
-  [customsegment_segmentapplication_transactionbody_applications.fields.application.elemID.getFullName(), 'id'],
-  [customsegment_segmentapplication_transactionline_applications.fields.application.elemID.getFullName(), 'id'],
-  [bundleinstallationscript_scriptdeployments.fields.scriptdeployment.elemID.getFullName(),
-    SCRIPT_ID],
-  [clientscript_scriptdeployments.fields.scriptdeployment.elemID.getFullName(), SCRIPT_ID],
-  [customrecordactionscript_scriptdeployments.fields.scriptdeployment.elemID.getFullName(),
-    SCRIPT_ID],
-  [mapreducescript_scriptdeployments.fields.scriptdeployment.elemID.getFullName(), SCRIPT_ID],
-  [massupdatescript_scriptdeployments.fields.scriptdeployment.elemID.getFullName(), SCRIPT_ID],
-  [portlet_scriptdeployments.fields.scriptdeployment.elemID.getFullName(), SCRIPT_ID],
-  [restlet_scriptdeployments.fields.scriptdeployment.elemID.getFullName(), SCRIPT_ID],
-  [scheduledscript_scriptdeployments.fields.scriptdeployment.elemID.getFullName(), SCRIPT_ID],
-  [sdfinstallationscript_scriptdeployments.fields.scriptdeployment.elemID.getFullName(), SCRIPT_ID],
-  [suitelet_scriptdeployments.fields.scriptdeployment.elemID.getFullName(), SCRIPT_ID],
-  [usereventscript_scriptdeployments.fields.scriptdeployment.elemID.getFullName(), SCRIPT_ID],
-  [workflowactionscript_scriptdeployments.fields.scriptdeployment.elemID.getFullName(), SCRIPT_ID],
+  ['netsuite.dataset_dependencies.field.dependency', undefined],
+  ['netsuite.savedcsvimport_filemappings.field.filemapping', 'file'],
+  ['netsuite.customsegment_segmentapplication_transactionbody_applications.field.application', 'id'],
+  ['netsuite.customsegment_segmentapplication_transactionline_applications.field.application', 'id'],
+  ['netsuite.bundleinstallationscript_scriptdeployments.field.scriptdeployment', SCRIPT_ID],
+  ['netsuite.clientscript_scriptdeployments.field.scriptdeployment', SCRIPT_ID],
+  ['netsuite.customrecordactionscript_scriptdeployments.field.scriptdeployment', SCRIPT_ID],
+  ['netsuite.mapreducescript_scriptdeployments.field.scriptdeployment', SCRIPT_ID],
+  ['netsuite.massupdatescript_scriptdeployments.field.scriptdeployment', SCRIPT_ID],
+  ['netsuite.portlet_scriptdeployments.field.scriptdeployment', SCRIPT_ID],
+  ['netsuite.restlet_scriptdeployments.field.scriptdeployment', SCRIPT_ID],
+  ['netsuite.scheduledscript_scriptdeployments.field.scriptdeployment', SCRIPT_ID],
+  ['netsuite.sdfinstallationscript_scriptdeployments.field.scriptdeployment', SCRIPT_ID],
+  ['netsuite.suitelet_scriptdeployments.field.scriptdeployment', SCRIPT_ID],
+  ['netsuite.usereventscript_scriptdeployments.field.scriptdeployment', SCRIPT_ID],
+  ['netsuite.workflowactionscript_scriptdeployments.field.scriptdeployment', SCRIPT_ID],
 ])
 
 const castAndOrderListsRecursively = async (

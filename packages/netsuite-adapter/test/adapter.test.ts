@@ -15,13 +15,13 @@
 */
 
 import { ElemID, InstanceElement, StaticFile, ChangeDataType, DeployResult,
-  getChangeData, FetchOptions, ObjectType, Change } from '@salto-io/adapter-api'
+  getChangeData, FetchOptions, ObjectType, Change, isObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import createClient from './client/sdf_client'
 import NetsuiteAdapter from '../src/adapter'
-import { customTypes, fileCabinetTypes, getMetadataTypes } from '../src/types'
+import { getMetadataTypes, metadataTypesToList } from '../src/types'
 import {
   ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, TYPES_TO_SKIP,
   FETCH_ALL_TYPES_AT_ONCE, DEPLOY_REFERENCED_ELEMENTS,
@@ -44,6 +44,7 @@ import { SDF_CHANGE_GROUP_ID } from '../src/group_changes'
 import { SuiteAppFileCabinetOperations } from '../src/suiteapp_file_cabinet'
 import getChangeValidator from '../src/change_validator'
 import { FetchByQueryFunc } from '../src/change_validators/safe_deploy'
+import { customTypesNames } from '../src/autogen/types'
 
 jest.mock('../src/config', () => ({
   ...jest.requireActual<{}>('../src/config'),
@@ -120,6 +121,9 @@ describe('Adapter', () => {
     progressReporter: { reportProgress: jest.fn() },
   }
 
+  const { customTypes, enums, fileCabinetTypes, fieldTypes } = getMetadataTypes()
+  const metadataTypes = metadataTypesToList({ customTypes, enums, fileCabinetTypes, fieldTypes })
+
   beforeEach(() => {
     jest.clearAllMocks()
     client.listInstances = mockFunction<SdfClient['listInstances']>()
@@ -175,34 +179,47 @@ describe('Adapter', () => {
       expect(isPartial).toBeFalsy()
       const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
       const typesToSkip = [SAVED_SEARCH, TRANSACTION_FORM, INTEGRATION]
-      expect(_.pull(Object.keys(customTypes), ...typesToSkip).every(customObjectsQuery.isTypeMatch))
-        .toBeTruthy()
+      expect(_.pull(Array.from(customTypesNames), ...typesToSkip)
+        .every(customObjectsQuery.isTypeMatch)).toBeTruthy()
       expect(typesToSkip.every(customObjectsQuery.isTypeMatch)).toBeFalsy()
       expect(customObjectsQuery.isTypeMatch('subsidiary')).toBeFalsy()
       expect(customObjectsQuery.isTypeMatch('account')).toBeTruthy()
-
 
       const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
       expect(fileCabinetQuery.isFileMatch('Some/File/Regex')).toBeFalsy()
       expect(fileCabinetQuery.isFileMatch('Some/anotherFile/Regex')).toBeTruthy()
 
-      expect(elements).toHaveLength(getMetadataTypes().length + 3)
-      const customFieldType = customTypes[ENTITY_CUSTOM_FIELD]
-      expect(elements).toContainEqual(customFieldType)
-      expect(elements).toContainEqual(
-        await createInstanceElement(customTypeInfo, customFieldType, mockGetElemIdFunc)
-      )
+      expect(elements).toHaveLength(metadataTypes.length + 3)
+
+      const customFieldType = elements.find(element =>
+        element.elemID.isEqual(new ElemID(NETSUITE, ENTITY_CUSTOM_FIELD)))
+      expect(isObjectType(customFieldType)).toBeTruthy()
       expect(elements).toContainEqual(
         await createInstanceElement(
-          fileCustomizationInfo,
-          fileCabinetTypes[FILE],
+          customTypeInfo,
+          customFieldType as ObjectType,
           mockGetElemIdFunc
         )
       )
+
+      const file = elements.find(element =>
+        element.elemID.isEqual(new ElemID(NETSUITE, FILE)))
+      expect(isObjectType(file)).toBeTruthy()
+      expect(elements).toContainEqual(
+        await createInstanceElement(
+          fileCustomizationInfo,
+          file as ObjectType,
+          mockGetElemIdFunc
+        )
+      )
+
+      const folder = elements.find(element =>
+        element.elemID.isEqual(new ElemID(NETSUITE, FOLDER)))
+      expect(isObjectType(folder)).toBeTruthy()
       expect(elements).toContainEqual(
         await createInstanceElement(
           folderCustomizationInfo,
-          fileCabinetTypes[FOLDER],
+          folder as ObjectType,
           mockGetElemIdFunc
         )
       )
@@ -226,7 +243,7 @@ describe('Adapter', () => {
         const adapter = createAdapter(configWithoutFetch)
         const { elements, isPartial } = await adapter.fetch(mockFetchOpts)
         expect(isPartial).toBeFalsy()
-        expect(elements).toHaveLength(getMetadataTypes().length)
+        expect(elements).toHaveLength(metadataTypes.length)
         const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
         const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
@@ -240,7 +257,7 @@ describe('Adapter', () => {
         const adapter = createAdapter(configWithEmptyDefinedFetch)
         const { elements, isPartial } = await adapter.fetch(mockFetchOpts)
         expect(isPartial).toBeFalsy()
-        expect(elements).toHaveLength(getMetadataTypes().length)
+        expect(elements).toHaveLength(metadataTypes.length)
         const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
         const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
@@ -375,7 +392,7 @@ describe('Adapter', () => {
 
         const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
         expect(customObjectsQuery.isTypeMatch('addressForm')).toBeTruthy()
-        expect(_.pull(Object.keys(customTypes), 'addressForm', SAVED_SEARCH, TRANSACTION_FORM).some(customObjectsQuery.isTypeMatch)).toBeFalsy()
+        expect(_.pull(Array.from(customTypesNames), 'addressForm', SAVED_SEARCH, TRANSACTION_FORM).some(customObjectsQuery.isTypeMatch)).toBeFalsy()
         expect(customObjectsQuery.isTypeMatch(INTEGRATION)).toBeFalsy()
       })
 
@@ -415,7 +432,7 @@ describe('Adapter', () => {
           failedTypes: { lockedError: {}, unexpectedError: {} },
         })
       const { elements } = await netsuiteAdapter.fetch(mockFetchOpts)
-      expect(elements).toHaveLength(getMetadataTypes().length)
+      expect(elements).toHaveLength(metadataTypes.length)
     })
 
     it('should call filters by their order', async () => {
@@ -508,7 +525,7 @@ describe('Adapter', () => {
 
   describe('deploy', () => {
     const origInstance = new InstanceElement('elementName',
-      customTypes[ENTITY_CUSTOM_FIELD], {
+      customTypes[ENTITY_CUSTOM_FIELD].type, {
         label: 'elementName',
         [SCRIPT_ID]: 'custentity_my_script_id',
         description: new StaticFile({

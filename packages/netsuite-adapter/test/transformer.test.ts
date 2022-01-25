@@ -20,13 +20,19 @@ import { naclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { createInstanceElement, getLookUpName, toCustomizationInfo } from '../src/transformer'
 import {
-  ADDRESS_FORM, CUSTOM_RECORD_TYPE, ENTITY_CUSTOM_FIELD, SCRIPT_ID, TRANSACTION_FORM,
-  EMAIL_TEMPLATE, NETSUITE, RECORDS_PATH, FILE, FILE_CABINET_PATH, FOLDER, PATH, WORKFLOW,
+  ENTITY_CUSTOM_FIELD, SCRIPT_ID,
+  EMAIL_TEMPLATE, NETSUITE, RECORDS_PATH, FILE, FILE_CABINET_PATH, FOLDER, PATH,
 } from '../src/constants'
-import { customTypes, fileCabinetTypes } from '../src/types'
 import { convertToCustomTypeInfo, convertToXmlContent } from '../src/client/sdf_client'
 import { CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from '../src/client/types'
 import { isFileCustomizationInfo, isFolderCustomizationInfo } from '../src/client/utils'
+import { entitycustomfieldType } from '../src/autogen/types/custom_types/entitycustomfield'
+import { getFileCabinetTypes } from '../src/types/file_cabinet_types'
+import { customrecordtypeType } from '../src/autogen/types/custom_types/customrecordtype'
+import { emailtemplateType } from '../src/autogen/types/custom_types/emailtemplate'
+import { addressFormType } from '../src/autogen/types/custom_types/addressForm'
+import { transactionFormType } from '../src/autogen/types/custom_types/transactionForm'
+import { workflowType } from '../src/autogen/types/custom_types/workflow'
 
 const removeLineBreaks = (xmlContent: string): string => xmlContent.replace(/\n\s*/g, '')
 
@@ -111,9 +117,17 @@ describe('Transformer', () => {
     + '</entitycustomfield>\n',
   }
 
+  const entitycustomfield = entitycustomfieldType().type
+  const customrecordtype = customrecordtypeType().type
+  const emailtemplate = emailtemplateType().type
+  const addressForm = addressFormType().type
+  const transactionForm = transactionFormType().type
+  const workflow = workflowType().type
+  const { file, folder } = getFileCabinetTypes()
+
   describe('createInstanceElement', () => {
     const transformCustomFieldRecord = (xmlContent: string): Promise<InstanceElement> => {
-      const customFieldType = customTypes[ENTITY_CUSTOM_FIELD]
+      const customFieldType = entitycustomfield
       return createInstanceElement(
         convertToCustomTypeInfo(xmlContent, 'custentity_my_script_id'),
         customFieldType,
@@ -140,7 +154,7 @@ describe('Transformer', () => {
       const customRecordTypeXmlContent = XML_TEMPLATES.WITH_NESTED_ATTRIBUTE
       const result = await createInstanceElement(
         convertToCustomTypeInfo(customRecordTypeXmlContent, 'customrecord_my_script_id'),
-        customTypes[CUSTOM_RECORD_TYPE],
+        customrecordtype,
         mockGetElemIdFunc
       )
       expect(result.value[SCRIPT_ID]).toEqual('customrecord_my_script_id')
@@ -248,7 +262,7 @@ describe('Transformer', () => {
         fileExtension: 'html',
       } as TemplateCustomTypeInfo
       const result = await createInstanceElement(emailTemplateCustomizationInfo,
-        customTypes[EMAIL_TEMPLATE], mockGetElemIdFunc)
+        emailtemplate, mockGetElemIdFunc)
       expect(result.value).toEqual({
         name: 'email template name',
         [SCRIPT_ID]: 'custemailtmpl_my_script_id',
@@ -269,7 +283,7 @@ describe('Transformer', () => {
         },
       } as CustomTypeInfo
       const result = await createInstanceElement(emailTemplateCustomizationInfo,
-        customTypes[EMAIL_TEMPLATE], mockGetElemIdFunc)
+        emailtemplate, mockGetElemIdFunc)
       expect(result.value).toEqual({
         name: 'email template name',
         [SCRIPT_ID]: 'custemailtmpl_my_script_id',
@@ -295,13 +309,13 @@ describe('Transformer', () => {
       }
 
       it('should create instance name correctly for file instance', async () => {
-        const result = await createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE],
+        const result = await createInstanceElement(fileCustomizationInfo, file,
           mockGetElemIdFunc)
         expect(result.elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${naclCase(fileCustomizationInfo.path.join('/'))}`)
       })
 
       it('should create instance path correctly for file instance', async () => {
-        const result = await createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE],
+        const result = await createInstanceElement(fileCustomizationInfo, file,
           mockGetElemIdFunc)
         expect(result.path)
           .toEqual([NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates',
@@ -312,7 +326,7 @@ describe('Transformer', () => {
         const fileCustomizationInfoWithDotPrefix = _.clone(fileCustomizationInfo)
         fileCustomizationInfoWithDotPrefix.path = ['Templates', 'E-mail Templates', '.hiddenFolder', '..hiddenFile.xml']
         const result = await createInstanceElement(fileCustomizationInfoWithDotPrefix,
-          fileCabinetTypes[FILE], mockGetElemIdFunc)
+          file, mockGetElemIdFunc)
         expect(result.path).toEqual(
           [NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates', '_hiddenFolder', '_hiddenFile.xml']
         )
@@ -321,7 +335,7 @@ describe('Transformer', () => {
       it('should create instance path correctly for folder instance', async () => {
         const result = await createInstanceElement(
           folderCustomizationInfo,
-          fileCabinetTypes[FOLDER],
+          folder,
           mockGetElemIdFunc
         )
         expect(result.path)
@@ -333,20 +347,20 @@ describe('Transformer', () => {
         const folderCustomizationInfoWithDotPrefix = _.clone(folderCustomizationInfo)
         folderCustomizationInfoWithDotPrefix.path = ['Templates', 'E-mail Templates', '.hiddenFolder']
         const result = await createInstanceElement(folderCustomizationInfoWithDotPrefix,
-          fileCabinetTypes[FOLDER], mockGetElemIdFunc)
+          folder, mockGetElemIdFunc)
         expect(result.path)
           .toEqual([NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates', '_hiddenFolder'])
       })
 
       it('should transform path field correctly', async () => {
-        const result = await createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE],
+        const result = await createInstanceElement(fileCustomizationInfo, file,
           mockGetElemIdFunc)
         expect(result.value[PATH])
           .toEqual('/Templates/E-mail Templates/Inner EmailTemplates Folder/content.html')
       })
 
       it('should set file content in the content field for file instance', async () => {
-        const result = await createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE],
+        const result = await createInstanceElement(fileCustomizationInfo, file,
           mockGetElemIdFunc)
         expect(result.value.content).toEqual(new StaticFile({
           filepath: `${NETSUITE}/${FILE_CABINET_PATH}/Templates/E-mail Templates/Inner EmailTemplates Folder/content.html`,
@@ -358,7 +372,7 @@ describe('Transformer', () => {
 
   describe('toCustomizationInfo', () => {
     const origInstance = new InstanceElement('elementName',
-      customTypes[ENTITY_CUSTOM_FIELD], {
+      entitycustomfield, {
         [SCRIPT_ID]: 'custentity_my_script_id',
       })
     let instance: InstanceElement
@@ -396,7 +410,7 @@ describe('Transformer', () => {
 
     it('should transform cdata primitive field', async () => {
       const addressFormInstance = new InstanceElement('elementName',
-        customTypes[ADDRESS_FORM], {
+        addressForm, {
           name: 'elementName',
           addressTemplate: '<myCdata><field>whoohoo',
         })
@@ -411,7 +425,7 @@ describe('Transformer', () => {
     it('should transform fileContent primitive field', async () => {
       const fileContent = Buffer.from('file content')
       const fileInstance = new InstanceElement('elementName',
-        fileCabinetTypes[FILE], {
+        file, {
           name: 'elementName',
           [PATH]: '/Templates/E-mail Templates/Inner EmailTemplates Folder/content.html',
           content: fileContent,
@@ -423,7 +437,7 @@ describe('Transformer', () => {
 
     it('should transform when cdata primitive field is undefined', async () => {
       const addressFormInstance = new InstanceElement('elementName',
-        customTypes[ADDRESS_FORM], {
+        addressForm, {
           name: 'elementName',
         })
       const customizationInfo = await toCustomizationInfo(addressFormInstance)
@@ -441,7 +455,7 @@ describe('Transformer', () => {
 
     it('should transform nested attribute field', async () => {
       const customRecordTypeInstance = new InstanceElement('elementName',
-        customTypes[CUSTOM_RECORD_TYPE], {
+        customrecordtype, {
           [SCRIPT_ID]: 'customrecord_my_script_id',
           customrecordcustomfields: {
             customrecordcustomfield: [{
@@ -506,7 +520,7 @@ describe('Transformer', () => {
 
     it('should transform ordered values for forms', async () => {
       const transactionFormInstance = new InstanceElement('elementName',
-        customTypes[TRANSACTION_FORM], {
+        transactionForm, {
           address: 'my address',
           mainFields: {
             defaultFieldGroup: {
@@ -567,7 +581,7 @@ describe('Transformer', () => {
       const emailTemplateContent = 'email template content'
       const elementName = 'elementName'
       const emailTemplateInstance = new InstanceElement(elementName,
-        customTypes[EMAIL_TEMPLATE], {
+        emailtemplate, {
           name: elementName,
           content: emailTemplateContent,
         })
@@ -585,7 +599,7 @@ describe('Transformer', () => {
     it('should transform CustomizationInfo EMAIL_TEMPLATE', async () => {
       const elementName = 'elementName'
       const emailTemplateInstance = new InstanceElement(elementName,
-        customTypes[EMAIL_TEMPLATE], {
+        emailtemplate, {
           name: elementName,
         })
       const customizationInfo = await toCustomizationInfo(emailTemplateInstance)
@@ -599,7 +613,7 @@ describe('Transformer', () => {
 
     describe('file cabinet types', () => {
       it('should transform file instance', async () => {
-        const fileInstance = new InstanceElement('elementName', fileCabinetTypes[FILE], {
+        const fileInstance = new InstanceElement('elementName', file, {
           [PATH]: '/Templates/E-mail Templates/Inner EmailTemplates Folder/content.html',
           content: 'dummy file content',
           description: 'file description',
@@ -615,11 +629,11 @@ describe('Transformer', () => {
       })
 
       it('should transform folder instance', async () => {
-        const folder = new InstanceElement('elementName', fileCabinetTypes[FOLDER], {
+        const folderInstance = new InstanceElement('elementName', folder, {
           [PATH]: '/Templates/E-mail Templates/Inner EmailTemplates Folder',
           description: 'folder description',
         })
-        const customizationInfo = await toCustomizationInfo(folder)
+        const customizationInfo = await toCustomizationInfo(folderInstance)
         expect(isFolderCustomizationInfo(customizationInfo)).toBe(true)
         const folderCustomizationInfo = customizationInfo as FolderCustomizationInfo
         expect(folderCustomizationInfo.typeName).toEqual(FOLDER)
@@ -632,12 +646,12 @@ describe('Transformer', () => {
 
   describe('getLookUpName', () => {
     const description = 'description'
-    const fileInstance = new InstanceElement('fileInstance', fileCabinetTypes[FILE], {
+    const fileInstance = new InstanceElement('fileInstance', file, {
       [PATH]: '/Templates/file.name',
       [description]: 'some description',
     })
 
-    const workflowInstance = new InstanceElement('instanceName', customTypes[WORKFLOW], {
+    const workflowInstance = new InstanceElement('instanceName', workflow, {
       [SCRIPT_ID]: 'top_level',
       workflowstates: {
         workflowstate: [

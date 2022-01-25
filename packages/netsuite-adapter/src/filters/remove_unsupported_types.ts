@@ -18,7 +18,7 @@ import { elements as elementsComponents } from '@salto-io/adapter-components'
 import { isObjectType } from '@salto-io/adapter-api'
 import { NETSUITE } from '../constants'
 import { FilterCreator, FilterWith } from '../filter'
-import { getMetadataTypes, isDataObjectType } from '../types'
+import { getMetadataTypes, isDataObjectType, metadataTypesToList } from '../types'
 import { SUPPORTED_TYPES } from '../data_elements/types'
 
 
@@ -27,7 +27,10 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
     if (!client.isSuiteAppConfigured()) {
       return
     }
-    const sdfTypeNames = new Set(getMetadataTypes().map(e => e.elemID.getFullName().toLowerCase()))
+    const sdfTypeNames = new Set(
+      metadataTypesToList(getMetadataTypes())
+        .map(e => e.elemID.getFullName().toLowerCase())
+    )
     const supportedDataTypes = (await elementsComponents
       .filterTypes(
         NETSUITE,

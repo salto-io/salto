@@ -14,17 +14,17 @@
 * limitations under the License.
 */
 import { toChange } from '@salto-io/adapter-api'
+import { entitycustomfieldType } from '../../src/autogen/types/custom_types/entitycustomfield'
 import instanceChangesValidator from '../../src/change_validators/instance_changes'
-import { customTypes } from '../../src/types'
-import { ENTITY_CUSTOM_FIELD, SCRIPT_ID } from '../../src/constants'
+import { SCRIPT_ID } from '../../src/constants'
 
 
 describe('customization type change validator', () => {
   it('should have change error if custom type SCRIPT_ID has been modified', async () => {
-    const after = customTypes[ENTITY_CUSTOM_FIELD].clone()
+    const after = entitycustomfieldType().type
     after.fields[SCRIPT_ID].annotate({ dummyKey: 'dummyValue' })
     const changeErrors = await instanceChangesValidator(
-      [toChange({ before: customTypes[ENTITY_CUSTOM_FIELD], after })]
+      [toChange({ before: entitycustomfieldType().type, after })]
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Error')

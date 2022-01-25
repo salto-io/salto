@@ -14,16 +14,16 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
-import { crmcustomfield } from '../../src/autogen/types/custom_types/crmcustomfield'
+import { crmcustomfieldType } from '../../src/autogen/types/custom_types/crmcustomfield'
 import NetsuiteClient from '../../src/client/client'
 import setServiceUrl from '../../src/service_url/custom_field'
-import { entitycustomfield } from '../../src/autogen/types/custom_types/entitycustomfield'
-import { itemcustomfield } from '../../src/autogen/types/custom_types/itemcustomfield'
-import { itemnumbercustomfield } from '../../src/autogen/types/custom_types/itemnumbercustomfield'
-import { itemoptioncustomfield } from '../../src/autogen/types/custom_types/itemoptioncustomfield'
-import { othercustomfield } from '../../src/autogen/types/custom_types/othercustomfield'
-import { transactionbodycustomfield } from '../../src/autogen/types/custom_types/transactionbodycustomfield'
-import { transactioncolumncustomfield } from '../../src/autogen/types/custom_types/transactioncolumncustomfield'
+import { entitycustomfieldType } from '../../src/autogen/types/custom_types/entitycustomfield'
+import { itemcustomfieldType } from '../../src/autogen/types/custom_types/itemcustomfield'
+import { itemnumbercustomfieldType } from '../../src/autogen/types/custom_types/itemnumbercustomfield'
+import { itemoptioncustomfieldType } from '../../src/autogen/types/custom_types/itemoptioncustomfield'
+import { othercustomfieldType } from '../../src/autogen/types/custom_types/othercustomfield'
+import { transactionbodycustomfieldType } from '../../src/autogen/types/custom_types/transactionbodycustomfield'
+import { transactioncolumncustomfieldType } from '../../src/autogen/types/custom_types/transactioncolumncustomfield'
 
 
 describe('setCustomFieldsUrls', () => {
@@ -32,6 +32,14 @@ describe('setCustomFieldsUrls', () => {
     runSuiteQL: runSuiteQlMock,
     url: 'https://accountid.app.netsuite.com',
   } as unknown as NetsuiteClient
+  const crmcustomfield = crmcustomfieldType().type
+  const entitycustomfield = entitycustomfieldType().type
+  const itemcustomfield = itemcustomfieldType().type
+  const itemnumbercustomfield = itemnumbercustomfieldType().type
+  const itemoptioncustomfield = itemoptioncustomfieldType().type
+  const othercustomfield = othercustomfieldType().type
+  const transactionbodycustomfield = transactionbodycustomfieldType().type
+  const transactioncolumncustomfield = transactioncolumncustomfieldType().type
 
   let elements: InstanceElement[]
 

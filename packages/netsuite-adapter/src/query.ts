@@ -15,8 +15,8 @@
 */
 
 import { regex, strings } from '@salto-io/lowerdash'
+import { customTypesNames } from './autogen/types'
 import { INCLUDE, EXCLUDE, LOCKED_ELEMENTS_TO_EXCLUDE } from './constants'
-import { customTypes } from './types'
 import { SUPPORTED_TYPES, TYPES_TO_INTERNAL_ID } from './data_elements/types'
 
 export interface ObjectID {
@@ -79,7 +79,7 @@ export const validateFetchParameters = ({ types, fileCabinet }:
   if (corruptedTypesIds.length !== 0) {
     throw new Error(`${errMessagePrefix} Expected type ids to be an array of strings, but found:\n${JSON.stringify(corruptedTypesIds, null, 4)}}.`)
   }
-  const existingTypes = [...Object.keys(customTypes), ...SUPPORTED_TYPES]
+  const existingTypes = [...Array.from(customTypesNames), ...SUPPORTED_TYPES]
   const receivedTypes = types.map(obj => obj.name)
   const idsRegexes = types
     .map(obj => obj.ids)

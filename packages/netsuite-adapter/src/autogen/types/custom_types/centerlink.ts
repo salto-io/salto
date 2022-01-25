@@ -19,38 +19,44 @@ import {
   BuiltinTypes, createRefToElmWithValue, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction,
 } from '@salto-io/adapter-api'
 import * as constants from '../../../constants'
+import { TypeAndInnerTypes } from '../../../types/object_types'
 
-export const centerlinkInnerTypes: ObjectType[] = []
+export const centerlinkType = (): TypeAndInnerTypes => {
+  const innerTypes: Record<string, ObjectType> = {}
 
-const centerlinkElemID = new ElemID(constants.NETSUITE, 'centerlink')
+  const centerlinkElemID = new ElemID(constants.NETSUITE, 'centerlink')
 
-export const centerlink = new ObjectType({
-  elemID: centerlinkElemID,
-  annotations: {
-  },
-  fields: {
-    scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-        [constants.IS_ATTRIBUTE]: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^custlink[0-9a-z_]+' }),
-      },
-    }, /* Original description: This attribute value can be up to 48 characters long.   The default value is ‘custlink’. */
-    label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 50 }),
-      },
-    }, /* Original description: This field value can be up to 50 characters long. */
-    url: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 999 }),
-      },
-    }, /* Original description: This field value can be up to 999 characters long. */
-  },
-  path: [constants.NETSUITE, constants.TYPES_PATH, centerlinkElemID.name],
-})
+  const centerlink = new ObjectType({
+    elemID: centerlinkElemID,
+    annotations: {
+    },
+    fields: {
+      scriptid: {
+        refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+          [constants.IS_ATTRIBUTE]: true,
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^custlink[0-9a-z_]+' }),
+        },
+      }, /* Original description: This attribute value can be up to 48 characters long.   The default value is ‘custlink’. */
+      label: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+          // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 50 }),
+        },
+      }, /* Original description: This field value can be up to 50 characters long. */
+      url: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+          // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 999 }),
+        },
+      }, /* Original description: This field value can be up to 999 characters long. */
+    },
+    path: [constants.NETSUITE, constants.TYPES_PATH, centerlinkElemID.name],
+  })
+
+
+  return { type: centerlink, innerTypes }
+}

@@ -16,10 +16,9 @@
 import { AdditionChange, ElemID, InstanceElement, isObjectType, ObjectType, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/parse_saved_searchs'
-import { customTypes } from '../../src/types'
+import { savedsearchType } from '../../src/autogen/types/custom_types/savedsearch'
 import NetsuiteClient from '../../src/client/client'
-import { SAVED_SEARCH } from '../../src/constants'
-import { savedSearchDependenciesElemID } from '../../src/saved_search_parsing/parsed_saved_search'
+import { NETSUITE, SAVED_SEARCH } from '../../src/constants'
 
 jest.mock('../../src/saved_search_parsing/saved_search_parser', () => ({
   parseDefinition: jest.fn().mockResolvedValue({
@@ -44,14 +43,15 @@ describe('parse_saved_searches filter', () => {
     dataTypeNames: new Set<string>(),
   }
   beforeEach(() => {
+    const savedsearch = savedsearchType().type
     instance = new InstanceElement(
       'someSearch',
-      customTypes[SAVED_SEARCH],
+      savedsearch,
       {}
     )
     sourceInstance = new InstanceElement(
       'someSearch',
-      customTypes[SAVED_SEARCH],
+      savedsearch,
       {}
     )
     sourceInstance.value.definition = 'testDefinition'
@@ -65,7 +65,7 @@ describe('parse_saved_searches filter', () => {
       .not.toEqual(savedSearchObject)
   })
   it('test onFetch removes doubled dependency object type', async () => {
-    const dependencyObjectType = new ObjectType({ elemID: savedSearchDependenciesElemID,
+    const dependencyObjectType = new ObjectType({ elemID: new ElemID(NETSUITE, 'savedsearch_dependencies'),
       fields: {} })
     const elements = [dependencyObjectType]
     await filterCreator(fetchOpts).onFetch?.(elements)

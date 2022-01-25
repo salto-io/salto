@@ -19,24 +19,30 @@ import {
   BuiltinTypes, createRefToElmWithValue, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction,
 } from '@salto-io/adapter-api'
 import * as constants from '../../../constants'
+import { TypeAndInnerTypes } from '../../../types/object_types'
 
-export const secretInnerTypes: ObjectType[] = []
+export const secretType = (): TypeAndInnerTypes => {
+  const innerTypes: Record<string, ObjectType> = {}
 
-const secretElemID = new ElemID(constants.NETSUITE, 'secret')
+  const secretElemID = new ElemID(constants.NETSUITE, 'secret')
 
-export const secret = new ObjectType({
-  elemID: secretElemID,
-  annotations: {
-  },
-  fields: {
-    scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-        [constants.IS_ATTRIBUTE]: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^custsecret[0-9a-z_]+' }),
-      },
-    }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custsecret’. */
-  },
-  path: [constants.NETSUITE, constants.TYPES_PATH, secretElemID.name],
-})
+  const secret = new ObjectType({
+    elemID: secretElemID,
+    annotations: {
+    },
+    fields: {
+      scriptid: {
+        refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+          [constants.IS_ATTRIBUTE]: true,
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^custsecret[0-9a-z_]+' }),
+        },
+      }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custsecret’. */
+    },
+    path: [constants.NETSUITE, constants.TYPES_PATH, secretElemID.name],
+  })
+
+
+  return { type: secret, innerTypes }
+}

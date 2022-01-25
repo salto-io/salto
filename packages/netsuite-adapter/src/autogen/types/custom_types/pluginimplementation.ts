@@ -19,134 +19,140 @@ import {
   BuiltinTypes, createRefToElmWithValue, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../../constants'
+import { TypeAndInnerTypes } from '../../../types/object_types'
 import { enums } from '../enums'
 
-export const pluginimplementationInnerTypes: ObjectType[] = []
+export const pluginimplementationType = (): TypeAndInnerTypes => {
+  const innerTypes: Record<string, ObjectType> = {}
 
-const pluginimplementationElemID = new ElemID(constants.NETSUITE, 'pluginimplementation')
-const pluginimplementation_libraries_libraryElemID = new ElemID(constants.NETSUITE, 'pluginimplementation_libraries_library')
+  const pluginimplementationElemID = new ElemID(constants.NETSUITE, 'pluginimplementation')
+  const pluginimplementation_libraries_libraryElemID = new ElemID(constants.NETSUITE, 'pluginimplementation_libraries_library')
 
-const pluginimplementation_libraries_library = new ObjectType({
-  elemID: pluginimplementation_libraries_libraryElemID,
-  annotations: {
-  },
-  fields: {
-    scriptfile: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was filereference */),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-      },
-    }, /* Original description: This field must reference a .js file. */
-  },
-  path: [constants.NETSUITE, constants.TYPES_PATH, pluginimplementationElemID.name],
-})
+  const pluginimplementation_libraries_library = new ObjectType({
+    elemID: pluginimplementation_libraries_libraryElemID,
+    annotations: {
+    },
+    fields: {
+      scriptfile: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was filereference */),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+        },
+      }, /* Original description: This field must reference a .js file. */
+    },
+    path: [constants.NETSUITE, constants.TYPES_PATH, pluginimplementationElemID.name],
+  })
 
-pluginimplementationInnerTypes.push(pluginimplementation_libraries_library)
+  innerTypes.pluginimplementation_libraries_library = pluginimplementation_libraries_library
 
-const pluginimplementation_librariesElemID = new ElemID(constants.NETSUITE, 'pluginimplementation_libraries')
+  const pluginimplementation_librariesElemID = new ElemID(constants.NETSUITE, 'pluginimplementation_libraries')
 
-const pluginimplementation_libraries = new ObjectType({
-  elemID: pluginimplementation_librariesElemID,
-  annotations: {
-  },
-  fields: {
-    library: {
-      refType: createRefToElmWithValue(new ListType(pluginimplementation_libraries_library)),
-      annotations: {
+  const pluginimplementation_libraries = new ObjectType({
+    elemID: pluginimplementation_librariesElemID,
+    annotations: {
+    },
+    fields: {
+      library: {
+        refType: createRefToElmWithValue(new ListType(pluginimplementation_libraries_library)),
+        annotations: {
+        },
       },
     },
-  },
-  path: [constants.NETSUITE, constants.TYPES_PATH, pluginimplementationElemID.name],
-})
+    path: [constants.NETSUITE, constants.TYPES_PATH, pluginimplementationElemID.name],
+  })
 
-pluginimplementationInnerTypes.push(pluginimplementation_libraries)
+  innerTypes.pluginimplementation_libraries = pluginimplementation_libraries
 
 
-export const pluginimplementation = new ObjectType({
-  elemID: pluginimplementationElemID,
-  annotations: {
-  },
-  fields: {
-    scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-        [constants.IS_ATTRIBUTE]: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^customscript[0-9a-z_]+' }),
-      },
-    }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customscript’. */
-    name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 40 }),
-      },
-    }, /* Original description: This field value can be up to 40 characters long.   This field accepts references to the string custom type. */
-    scriptfile: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was filereference */),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-      },
-    }, /* Original description: This field must reference a .js file. */
-    customplugintype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-      },
-    }, /* Original description: This field accepts references to the plugintype custom type. */
-    status: {
-      refType: createRefToElmWithValue(enums.plugintype_status),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-      },
-    }, /* Original description: For information about possible values, see plugintype_status.   The default value is 'TESTING'. */
-    description: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-      annotations: {
-        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 999 }),
-      },
-    }, /* Original description: This field value can be up to 999 characters long.   This field accepts references to the string custom type. */
-    isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
-    notifyadmins: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
-    notifyemails: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
-      annotations: {
-        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 999 }),
-      },
-    }, /* Original description: This field value can be up to 999 characters long. */
-    notifygroup: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
-      annotations: {
-      },
-    }, /* Original description: Note Account-specific values are not supported by SDF. */
-    notifyowner: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-      annotations: {
-      },
-    }, /* Original description: The default value is T. */
-    notifyuser: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
-    loglevel: {
-      refType: createRefToElmWithValue(enums.plugintype_loglevel),
-      annotations: {
-      },
-    }, /* Original description: For information about possible values, see plugintype_loglevel.   The default value is 'DEBUG'. */
-    libraries: {
-      refType: createRefToElmWithValue(pluginimplementation_libraries),
-      annotations: {
+  const pluginimplementation = new ObjectType({
+    elemID: pluginimplementationElemID,
+    annotations: {
+    },
+    fields: {
+      scriptid: {
+        refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+          [constants.IS_ATTRIBUTE]: true,
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^customscript[0-9a-z_]+' }),
+        },
+      }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customscript’. */
+      name: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+          // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 40 }),
+        },
+      }, /* Original description: This field value can be up to 40 characters long.   This field accepts references to the string custom type. */
+      scriptfile: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was filereference */),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+        },
+      }, /* Original description: This field must reference a .js file. */
+      customplugintype: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+        },
+      }, /* Original description: This field accepts references to the plugintype custom type. */
+      status: {
+        refType: createRefToElmWithValue(enums.plugintype_status),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+        },
+      }, /* Original description: For information about possible values, see plugintype_status.   The default value is 'TESTING'. */
+      description: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+        annotations: {
+          // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 999 }),
+        },
+      }, /* Original description: This field value can be up to 999 characters long.   This field accepts references to the string custom type. */
+      isinactive: {
+        refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+        annotations: {
+        },
+      }, /* Original description: The default value is F. */
+      notifyadmins: {
+        refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+        annotations: {
+        },
+      }, /* Original description: The default value is F. */
+      notifyemails: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: {
+          // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 999 }),
+        },
+      }, /* Original description: This field value can be up to 999 characters long. */
+      notifygroup: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: {
+        },
+      }, /* Original description: Note Account-specific values are not supported by SDF. */
+      notifyowner: {
+        refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+        annotations: {
+        },
+      }, /* Original description: The default value is T. */
+      notifyuser: {
+        refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+        annotations: {
+        },
+      }, /* Original description: The default value is F. */
+      loglevel: {
+        refType: createRefToElmWithValue(enums.plugintype_loglevel),
+        annotations: {
+        },
+      }, /* Original description: For information about possible values, see plugintype_loglevel.   The default value is 'DEBUG'. */
+      libraries: {
+        refType: createRefToElmWithValue(pluginimplementation_libraries),
+        annotations: {
+        },
       },
     },
-  },
-  path: [constants.NETSUITE, constants.TYPES_PATH, pluginimplementationElemID.name],
-})
+    path: [constants.NETSUITE, constants.TYPES_PATH, pluginimplementationElemID.name],
+  })
+
+
+  return { type: pluginimplementation, innerTypes }
+}

@@ -14,68 +14,65 @@
 * limitations under the License.
 */
 /* eslint-disable camelcase */
-import { Field, InstanceElement, isInstanceElement, Value } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, isInstanceElement, Value } from '@salto-io/adapter-api'
 import { TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { FilterWith } from '../filter'
 import {
-  CUSTOM_RECORD_TYPE, ENTRY_FORM, TRANSACTION_FORM, PERMITTED_ROLE, RECORD_TYPE,
+  CUSTOM_RECORD_TYPE, ENTRY_FORM, TRANSACTION_FORM, PERMITTED_ROLE, RECORD_TYPE, NETSUITE,
 } from '../constants'
-import { customrecordtype_permissions_permission } from '../autogen/types/custom_types/customrecordtype'
-import { entryForm } from '../autogen/types/custom_types/entryForm'
-import { transactionForm } from '../autogen/types/custom_types/transactionForm'
 
 const { awu } = collections.asynciterable
 type InconsistentFieldMapping = {
-  field: Field
+  field: ElemID
   inconsistentValues: Value[]
   consistentValue: Value
 }
 
 const customRecordTypeApClerkPermittedRole = {
-  field: customrecordtype_permissions_permission.fields[PERMITTED_ROLE],
+  field: new ElemID(NETSUITE, 'customrecordtype_permissions_permission', 'field', PERMITTED_ROLE),
   inconsistentValues: ['CUSTOMROLEAP_CLERK', 'AP_CLERK'],
   consistentValue: 'AP_CLERK',
 }
 
 const customRecordTypeCeoHandsOffPermittedRole = {
-  field: customrecordtype_permissions_permission.fields[PERMITTED_ROLE],
+  field: new ElemID(NETSUITE, 'customrecordtype_permissions_permission', 'field', PERMITTED_ROLE),
   inconsistentValues: ['CUSTOMROLEATHENA_NS_VIEW_ALL', 'CEO_HANDS_OFF'],
   consistentValue: 'CEO_HANDS_OFF',
 }
 
 const customRecordTypeBuyerPermittedRole = {
-  field: customrecordtype_permissions_permission.fields[PERMITTED_ROLE],
+  field: new ElemID(NETSUITE, 'customrecordtype_permissions_permission', 'field', PERMITTED_ROLE),
   inconsistentValues: ['BUYER', 'CUSTOMROLEPURCHASING'],
   consistentValue: 'BUYER',
 }
 
 const entryFormDiscountItemRecordType = {
-  field: entryForm.fields[RECORD_TYPE],
+  field: new ElemID(NETSUITE, ENTRY_FORM, 'field', RECORD_TYPE),
   inconsistentValues: ['DISCOUNTITEM', 'MARKUPITEM'],
   consistentValue: 'DISCOUNTITEM',
 }
 
 const entryFormItemGroupRecordType = {
-  field: entryForm.fields[RECORD_TYPE],
+  field: new ElemID(NETSUITE, ENTRY_FORM, 'field', RECORD_TYPE),
   inconsistentValues: ['ASSEMBLYITEM', 'KITITEM', 'ITEMGROUP'],
   consistentValue: 'ITEMGROUP',
 }
 
 const entryFormJobRecordType = {
-  field: entryForm.fields[RECORD_TYPE],
+  field: new ElemID(NETSUITE, ENTRY_FORM, 'field', RECORD_TYPE),
   inconsistentValues: ['MFGPROJECT', 'JOB'],
   consistentValue: 'JOB',
 }
 
 const entryFormServiceItemRecordType = {
-  field: entryForm.fields[RECORD_TYPE],
+  field: new ElemID(NETSUITE, ENTRY_FORM, 'field', RECORD_TYPE),
   inconsistentValues: ['OTHERCHARGEPURCHASEITEM', 'OTHERCHARGERESALEITEM', 'NONINVENTORYSALEITEM', 'SERVICEPURCHASEITEM', 'GIFTCERTIFICATEITEM', 'DOWNLOADITEM', 'SERVICERESALEITEM', 'OTHERCHARGEITEM', 'SERVICEITEM', 'NONINVENTORYPURCHASEITEM', 'OTHERCHARGESALEITEM', 'NONINVENTORYRESALEITEM', 'SERVICESALEITEM', 'NONINVENTORYITEM'],
   consistentValue: 'SERVICEITEM',
 }
 
 const transactionFormRecordType = {
-  field: transactionForm.fields[RECORD_TYPE],
+  field: new ElemID(NETSUITE, TRANSACTION_FORM, 'field', RECORD_TYPE),
   inconsistentValues: ['JOURNALENTRY', 'INTERCOMPANYJOURNALENTRY', 'ADVINTERCOMPANYJOURNALENTRY', 'STATISTICALJOURNALENTRY'],
   consistentValue: 'JOURNALENTRY',
 }
@@ -100,7 +97,9 @@ const setConsistentValues = async (instance: InstanceElement): Promise<void> => 
     fieldMappings: InconsistentFieldMapping[]
   ): TransformFunc => ({ value, field }) => {
     const matchingFieldMapping = fieldMappings.find(fieldMapping =>
-      field && fieldMapping.field.isEqual(field) && fieldMapping.inconsistentValues.includes(value))
+      field
+      && fieldMapping.field.isEqual(field.elemID)
+      && fieldMapping.inconsistentValues.includes(value))
     if (matchingFieldMapping) {
       return matchingFieldMapping.consistentValue
     }

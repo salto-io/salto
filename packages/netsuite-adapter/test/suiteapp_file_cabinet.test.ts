@@ -20,11 +20,9 @@ import { NetsuiteQuery } from '../src/query'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, isChangeDeployable } from '../src/suiteapp_file_cabinet'
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError } from '../src/client/suiteapp_client/errors'
-import { fileCabinetTypes } from '../src/types'
-import { FILE } from '../src/constants'
-import { customtransactiontype } from '../src/autogen/types/custom_types/customtransactiontype'
-import { file, folder } from '../src/types/file_cabinet_types'
+import { customtransactiontypeType } from '../src/autogen/types/custom_types/customtransactiontype'
 import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from '../src/client/suiteapp_client/types'
+import { getFileCabinetTypes } from '../src/types/file_cabinet_types'
 
 describe('suiteapp_file_cabinet', () => {
   const filesQueryResponse = [{
@@ -181,6 +179,9 @@ describe('suiteapp_file_cabinet', () => {
     addFileCabinetInstances: jest.fn(),
     deleteFileCabinetInstances: jest.fn(),
   }
+
+  const customtransactiontype = customtransactiontypeType().type
+  const { file, folder } = getFileCabinetTypes()
 
   const suiteAppClient = mockSuiteAppClient as unknown as SuiteAppClient
 
@@ -404,7 +405,7 @@ describe('suiteapp_file_cabinet', () => {
       const undeployableInstances = [
         new InstanceElement(
           'invalid1',
-          fileCabinetTypes[FILE],
+          file,
           {
             path: '/Templates/invalid1',
             content: new StaticFile({ filepath: 'somePath', content: Buffer.from('a'.repeat(11 * 1024 * 1024)) }),
@@ -412,7 +413,7 @@ describe('suiteapp_file_cabinet', () => {
         ),
         new InstanceElement(
           'invalid2',
-          fileCabinetTypes[FILE],
+          file,
           {
             path: '/Templates/invalid2',
             generateurltimestamp: true,
@@ -427,7 +428,7 @@ describe('suiteapp_file_cabinet', () => {
         customtransactiontype,
         new InstanceElement(
           'invalid4',
-          fileCabinetTypes[FILE],
+          file,
           {
             path: '/Templates/invalid1',
             content: 'a'.repeat(11 * 1024 * 1024),
@@ -445,7 +446,7 @@ describe('suiteapp_file_cabinet', () => {
     it('deployable should return true', () => {
       const deployableInstance = new InstanceElement(
         'valid1',
-        fileCabinetTypes[FILE],
+        file,
         {
           path: '/Templates/valid1',
           content: new StaticFile({ filepath: 'somePath', content: Buffer.from('aaa') }),
@@ -459,7 +460,7 @@ describe('suiteapp_file_cabinet', () => {
     it('should throw an error for invalid content', () => {
       const instance = new InstanceElement(
         'instance',
-        fileCabinetTypes[FILE],
+        file,
         {
           path: '/Templates/valid1',
           content: {},

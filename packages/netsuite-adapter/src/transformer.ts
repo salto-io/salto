@@ -29,10 +29,13 @@ import {
   APPLICATION_ID,
 } from './constants'
 import { fieldTypes } from './types/field_types'
-import { customTypes, fileCabinetTypes, isCustomType, isFileCabinetType } from './types'
+import { isCustomType, isFileCabinetType } from './types'
 import { isFileCustomizationInfo, isFolderCustomizationInfo, isTemplateCustomTypeInfo } from './client/utils'
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from './client/types'
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from './client/constants'
+import { addressFormType } from './autogen/types/custom_types/addressForm'
+import { entryFormType } from './autogen/types/custom_types/entryForm'
+import { transactionFormType } from './autogen/types/custom_types/transactionForm'
 
 const { awu } = collections.asynciterable
 
@@ -170,12 +173,21 @@ export const restoreAttributes = async (values: Values, type: ObjectType, instan
   return mapKeysRecursive(values, restoreAttributeFunc, instancePath)
 }
 
-const sortValuesBasedOnType = async (
-  typeName: string, values: Values, instancePath: ElemID
-): Promise<Values> => {
-  // we use customTypes[typeName] and not instance.type since it preserves fields order
-  const topLevelType = customTypes[typeName]
+// According to https://{account_id}.app.netsuite.com/app/help/helpcenter.nl?fid=section_1497980303.html
+// there are types that their instances XMLs should be sent in a predefined order
+const getType = (typeName: string): ObjectType | undefined => {
+  const typesMap: Record<string, ObjectType> = {
+    [ADDRESS_FORM]: addressFormType().type,
+    [ENTRY_FORM]: entryFormType().type,
+    [TRANSACTION_FORM]: transactionFormType().type,
+  }
 
+  return typesMap[typeName]
+}
+
+const sortValuesBasedOnType = async (
+  topLevelType: ObjectType, values: Values, instancePath: ElemID
+): Promise<Values> => {
   const sortValues: TransformFunc = async ({ field, value, path }) => {
     const type = await field?.getType()
       ?? (path && path.isEqual(instancePath) ? topLevelType : undefined)
@@ -192,11 +204,6 @@ const sortValuesBasedOnType = async (
     { type: topLevelType, values, transformFunc: sortValues, pathID: instancePath, strict: true }
   )) ?? {}
 }
-
-// According to https://{account_id}.app.netsuite.com/app/help/helpcenter.nl?fid=section_1497980303.html
-// there are types that their instances XMLs should be sent in a predefined order
-const shouldSortValues = (typeName: string): boolean =>
-  [ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM].includes(typeName)
 
 export const toCustomizationInfo = async (
   instance: InstanceElement
@@ -225,9 +232,9 @@ export const toCustomizationInfo = async (
   })) ?? {}
 
   const typeName = instance.refType.elemID.name
-
-  const sortedValues = shouldSortValues(typeName)
-    ? await sortValuesBasedOnType(typeName, transformedValues, instance.elemID)
+  const type = getType(typeName)
+  const sortedValues = type
+    ? await sortValuesBasedOnType(type, transformedValues, instance.elemID)
     : transformedValues
 
   const values = await restoreAttributes(sortedValues, instanceType, instance.elemID)
@@ -241,7 +248,7 @@ export const toCustomizationInfo = async (
   if (isFileCabinetType(instance.refType.elemID)) {
     const path = values[PATH].split(FILE_CABINET_PATH_SEPARATOR).slice(1)
     delete values[PATH]
-    if (instanceType.elemID.isEqual(fileCabinetTypes[FILE].elemID)) {
+    if (instanceType.elemID.isEqual(new ElemID(NETSUITE, FILE))) {
       const contentFieldName = (fileContentField as Field).name
       const fileContent = values[contentFieldName]
       delete values[contentFieldName]

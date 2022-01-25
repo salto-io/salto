@@ -14,10 +14,9 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
+import { getFileCabinetTypes } from '../../src/types/file_cabinet_types'
 import NetsuiteClient from '../../src/client/client'
 import setServiceUrl from '../../src/service_url/file_cabinet'
-import { file, folder } from '../../src/types/file_cabinet_types'
-
 
 describe('setFileCabinetUrls', () => {
   const getPathInternalIdMock = jest.fn()
@@ -25,6 +24,7 @@ describe('setFileCabinetUrls', () => {
     getPathInternalId: getPathInternalIdMock,
     url: 'https://accountid.app.netsuite.com',
   } as unknown as NetsuiteClient
+  const { file, folder } = getFileCabinetTypes()
 
   const elements = [
     new InstanceElement('A', file, { path: '/path/A' }),

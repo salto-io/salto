@@ -26,7 +26,7 @@ import _ from 'lodash'
 import each from 'jest-each'
 import NetsuiteAdapter from '../src/adapter'
 import { credsLease, realAdapter } from './adapter'
-import { customTypes, fileCabinetTypes, getMetadataTypes } from '../src/types'
+import { getMetadataTypes, metadataTypesToList } from '../src/types'
 import { adapter as adapterCreator } from '../src/adapter_creator'
 import {
   CUSTOM_RECORD_TYPE, EMAIL_TEMPLATE, ENTITY_CUSTOM_FIELD, FETCH_ALL_TYPES_AT_ONCE,
@@ -41,27 +41,29 @@ import { Credentials } from '../src/client/credentials'
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
 
-const createInstanceElement = (type: string, valuesOverride: Values): InstanceElement => {
-  const isFileCabinetType = Object.keys(fileCabinetTypes).includes(type)
-
-  const instValues = {
-    ...mockDefaultValues[type],
-    ...valuesOverride,
-  }
-
-  const instanceName = naclCase(instValues[isFileCabinetType ? PATH : SCRIPT_ID]
-    .replace(new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}`), ''))
-
-  return new InstanceElement(
-    instanceName,
-    isFileCabinetType ? fileCabinetTypes[type] : customTypes[type],
-    instValues
-  )
-}
-
 describe('Netsuite adapter E2E with real account', () => {
   let adapter: NetsuiteAdapter
   let credentialsLease: CredsLease<Required<Credentials>>
+  const { customTypes, enums, fileCabinetTypes, fieldTypes } = getMetadataTypes()
+  const metadataTypes = metadataTypesToList({ customTypes, enums, fileCabinetTypes, fieldTypes })
+
+  const createInstanceElement = (type: string, valuesOverride: Values): InstanceElement => {
+    const isFileCabinetType = Object.keys(fileCabinetTypes).includes(type)
+
+    const instValues = {
+      ...mockDefaultValues[type],
+      ...valuesOverride,
+    }
+
+    const instanceName = naclCase(instValues[isFileCabinetType ? PATH : SCRIPT_ID]
+      .replace(new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}`), ''))
+
+    return new InstanceElement(
+      instanceName,
+      isFileCabinetType ? fileCabinetTypes[type] : customTypes[type].type,
+      instValues
+    )
+  }
 
   beforeAll(async () => {
     await adapterCreator.install?.()
@@ -460,7 +462,7 @@ describe('Netsuite adapter E2E with real account', () => {
       })
 
       it('should fetch account successfully', async () => {
-        expect(fetchResult.elements.length).toBeGreaterThan(getMetadataTypes().length)
+        expect(fetchResult.elements.length).toBeGreaterThan(metadataTypes.length)
         validateConfigSuggestions(fetchResult.updatedConfig?.config[0])
       })
 

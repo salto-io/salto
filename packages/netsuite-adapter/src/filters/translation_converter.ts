@@ -13,42 +13,35 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Field, isInstanceElement, isInstanceChange, InstanceElement, Change, isField, ElemID, isObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, Field, isInstanceElement, isInstanceChange, InstanceElement, Change, isField, ElemID, isObjectType, Element } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, getPath, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { FilterWith } from '../filter'
-import { workbook } from '../autogen/types/custom_types/workbook'
-import { translationcollection } from '../autogen/types/custom_types/translationcollection'
-import { dataset } from '../autogen/types/custom_types/dataset'
 import { ATTRIBUTE_PREFIX } from '../client/constants'
-import { getMetadataTypes } from '../types'
-import { NETSUITE } from '../constants'
-import { centercategory } from '../autogen/types/custom_types/centercategory'
-import { centertab } from '../autogen/types/custom_types/centertab'
-import { subtab } from '../autogen/types/custom_types/subtab'
+import { CENTER_CATEGORY, CENTER_TAB, DATASET, NETSUITE, SUBTAB, TRANSLATION_COLLECTION, WORKBOOK } from '../constants'
 
 const { awu } = collections.asynciterable
 
 const log = logger(module)
 
 const FIELDS_TO_CONVERT = [
-  workbook.elemID.createNestedID('field', 'name'),
-  translationcollection.elemID.createNestedID('field', 'name'),
-  dataset.elemID.createNestedID('field', 'name'),
+  new ElemID(NETSUITE, WORKBOOK, 'field', 'name'),
+  new ElemID(NETSUITE, TRANSLATION_COLLECTION, 'field', 'name'),
+  new ElemID(NETSUITE, DATASET, 'field', 'name'),
   new ElemID(NETSUITE, 'centercategory_links_link', 'field', 'linklabel'),
-  centercategory.elemID.createNestedID('field', 'label'),
-  centertab.elemID.createNestedID('field', 'label'),
-  subtab.elemID.createNestedID('field', 'title'),
+  new ElemID(NETSUITE, CENTER_CATEGORY, 'field', 'label'),
+  new ElemID(NETSUITE, CENTER_TAB, 'field', 'label'),
+  new ElemID(NETSUITE, SUBTAB, 'field', 'title'),
 ]
 const REAL_VALUE_KEY = '#text'
 const TRANSLATE_KEY = 'translate'
 
 const getTranslateFieldName = (key: string): string => `${key}Translate`
 
-const addTranslateFields = (): void => {
-  const types = _.keyBy(getMetadataTypes(), type => type.elemID.name)
+const addTranslateFields = (typeElements: Element[]): void => {
+  const types = _.keyBy(typeElements, type => type.elemID.name)
 
   FIELDS_TO_CONVERT.forEach(elemID => {
     const type = types[elemID.typeName]
@@ -73,7 +66,7 @@ const addTranslateFields = (): void => {
 
 const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
   onFetch: async elements => {
-    addTranslateFields()
+    addTranslateFields(elements.filter(element => !isInstanceElement(element)))
 
     await awu(elements)
       .filter(isInstanceElement)

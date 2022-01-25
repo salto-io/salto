@@ -49,7 +49,7 @@ export const convertFieldsTypesFromListToMap = async (
 
     const listMappedByField = isField(innerType.fields.scriptid)
       ? SCRIPT_ID
-      : listMappedByFieldMapping[innerType.elemID.getFullName()]
+      : listMappedByFieldMapping[innerType.elemID.name]
     if (listMappedByField === undefined) {
       log.warn(`there's no field to map by in ${innerType.elemID.getFullName()}`)
       return

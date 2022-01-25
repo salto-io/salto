@@ -16,19 +16,21 @@
 import { collections } from '@salto-io/lowerdash'
 import { BuiltinTypes, createRefToElmWithValue, ElemID, Field, FieldMap, InstanceElement, isListType, isMapType, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
 import { convertFieldsTypesFromListToMap, convertInstanceMapsToLists, convertInstanceListsToMaps, getMappedLists, isMappedList } from '../../src/mapped_lists/utils'
-import { workflow, workflowInnerTypes } from '../../src/autogen/types/custom_types/workflow'
+import { workflowType } from '../../src/autogen/types/custom_types/workflow'
 import { LIST_MAPPED_BY_FIELD, NETSUITE, SCRIPT_ID } from '../../src/constants'
 
 const { awu } = collections.asynciterable
 
 describe('mapped lists', () => {
+  const workflow = workflowType()
+
   let instance: InstanceElement
   let transformedInstance: InstanceElement
   let transformedBackInstance: InstanceElement
   beforeAll(async () => {
     instance = new InstanceElement(
       'instanceName',
-      workflow,
+      workflow.type,
       {
         scriptid: 'customworkflow_changed_id',
         workflowcustomfields: {
@@ -75,7 +77,7 @@ describe('mapped lists', () => {
       }
     )
 
-    await awu(workflowInnerTypes).forEach(t => convertFieldsTypesFromListToMap(t))
+    await awu(Object.values(workflow.innerTypes)).forEach(t => convertFieldsTypesFromListToMap(t))
     transformedInstance = instance.clone()
     transformedInstance.value = await convertInstanceListsToMaps(
       instance.value,
@@ -83,25 +85,25 @@ describe('mapped lists', () => {
     ) ?? instance.value
     transformedBackInstance = await convertInstanceMapsToLists(transformedInstance)
 
-    await awu(workflowInnerTypes).forEach(t => convertFieldsTypesFromListToMap(t))
+    await awu(Object.values(workflow.innerTypes)).forEach(t => convertFieldsTypesFromListToMap(t))
   })
 
   it('should modify ObjectTypes fields', async () => {
-    const workflowcustomfields = workflowInnerTypes.find(t => t.elemID.typeName === 'workflow_workflowcustomfields')
+    const workflowcustomfields = workflow.innerTypes.workflow_workflowcustomfields
     expect(workflowcustomfields).toBeDefined()
     const { workflowcustomfield } = workflowcustomfields?.fields as FieldMap
     expect(isMapType(await workflowcustomfield.getType())).toBeTruthy()
     expect(workflowcustomfield.annotations)
       .toEqual({ [LIST_MAPPED_BY_FIELD]: SCRIPT_ID })
 
-    const workflowstates = workflowInnerTypes.find(t => t.elemID.typeName === 'workflow_workflowstates')
+    const workflowstates = workflow.innerTypes.workflow_workflowstates
     expect(workflowstates).toBeDefined()
     const { workflowstate } = workflowstates?.fields as FieldMap
     expect(isMapType(await workflowstate.getType())).toBeTruthy()
     expect(workflowstate.annotations)
       .toEqual({ [LIST_MAPPED_BY_FIELD]: SCRIPT_ID })
 
-    const workflowstateObject = workflowInnerTypes.find(t => t.elemID.typeName === 'workflow_workflowstates_workflowstate')
+    const workflowstateObject = workflow.innerTypes.workflow_workflowstates_workflowstate
     expect(workflowstateObject).toBeDefined()
     const { workflowactions } = workflowstateObject?.fields as FieldMap
     expect(isMapType(await workflowactions.getType())).toBeTruthy()
@@ -184,7 +186,7 @@ describe('mapped lists', () => {
   it('should not convert list if one of the items has no \'LIST_MAPPED_BY_FIELD\' field', async () => {
     const inst = new InstanceElement(
       'instance',
-      workflow,
+      workflow.type,
       {
         scriptid: 'customworkflow_changed_id',
         workflowcustomfields: {

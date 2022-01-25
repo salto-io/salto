@@ -15,14 +15,15 @@
 */
 import { InstanceElement } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/convert_lists_to_maps'
-import { workflow, workflowInnerTypes } from '../../src/autogen/types/custom_types/workflow'
+import { workflowType } from '../../src/autogen/types/custom_types/workflow'
 
 describe('convert lists to maps filter', () => {
   const instanceName = 'instanceName'
+  const workflow = workflowType()
   let instance: InstanceElement
   beforeAll(async () => {
     instance = new InstanceElement(instanceName,
-      workflow,
+      workflow.type,
       {
         scriptid: 'customworkflow_changed_id',
         workflowcustomfields: {
@@ -48,7 +49,7 @@ describe('convert lists to maps filter', () => {
           ],
         },
       })
-    await filterCreator().onFetch([workflow, ...workflowInnerTypes, instance])
+    await filterCreator().onFetch([workflow.type, ...Object.values(workflow.innerTypes), instance])
   })
 
   it('should modify instance values', () => {

@@ -17,15 +17,16 @@ import { collections } from '@salto-io/lowerdash'
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
 import mappedListsIndexesValidator from '../../src/change_validators/mapped_lists_indexes'
 import { SCRIPT_ID } from '../../src/constants'
-import { workflow, workflowInnerTypes } from '../../src/autogen/types/custom_types/workflow'
+import { workflowType } from '../../src/autogen/types/custom_types/workflow'
 import { convertFieldsTypesFromListToMap } from '../../src/mapped_lists/utils'
 
 const { awu } = collections.asynciterable
 
 describe('mapped lists indexes validator', () => {
+  const workflow = workflowType()
   const origInstance = new InstanceElement(
     'instance',
-    workflow,
+    workflow.type,
     {
       isinactive: false,
       [SCRIPT_ID]: 'customworkflow1',
@@ -46,7 +47,7 @@ describe('mapped lists indexes validator', () => {
   )
   let instance: InstanceElement
   beforeAll(async () => {
-    await awu(workflowInnerTypes).forEach(t => convertFieldsTypesFromListToMap(t))
+    await awu(Object.values(workflow.innerTypes)).forEach(t => convertFieldsTypesFromListToMap(t))
   })
   beforeEach(() => {
     instance = origInstance.clone()

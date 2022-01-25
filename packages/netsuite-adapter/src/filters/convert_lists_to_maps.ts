@@ -20,7 +20,7 @@ import { collections } from '@salto-io/lowerdash'
 import { convertFieldsTypesFromListToMap, convertInstanceListsToMaps } from '../mapped_lists/utils'
 import { FilterWith } from '../filter'
 import { isCustomType } from '../types'
-import { innerCustomTypes } from '../autogen/types'
+import { getCustomTypes } from '../autogen/types'
 
 const { awu } = collections.asynciterable
 
@@ -39,12 +39,17 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
    * @param elements the already fetched elements
    */
   onFetch: async elements => {
-    const innerCustomTypesSet = new Set(innerCustomTypes)
+    const innerCustomTypesNames = new Set(
+      Object.values(getCustomTypes())
+        .flatMap(customType => Object.values(customType.innerTypes))
+        .map(element => element.elemID.name)
+    )
 
     await awu(elements)
       .filter(isObjectType)
-      .filter(type => isCustomType(type.elemID) || innerCustomTypesSet.has(type))
-      .forEach(convertFieldsTypesFromListToMap)
+      .filter(
+        type => isCustomType(type.elemID) || innerCustomTypesNames.has(type.elemID.name)
+      ).forEach(convertFieldsTypesFromListToMap)
 
     await awu(elements)
       .filter(isInstanceElement)

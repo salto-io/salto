@@ -188,7 +188,7 @@ describe('issueTypeScheme', () => {
       })
     })
 
-    it('should not call the new issue type ids endpoint of there are no new ids', async () => {
+    it('should not call the new issue type ids endpoint if there are no new ids', async () => {
       const beforeInstance = new InstanceElement(
         'instance',
         type,
@@ -215,6 +215,64 @@ describe('issueTypeScheme', () => {
         expect.any(Object),
         undefined,
       )
+    })
+
+    it('should not call the new issue type ids endpoint if the scheme is the default scheme', async () => {
+      const beforeInstance = new InstanceElement(
+        'instance',
+        type,
+        {
+          id: '1',
+          name: 'name1',
+          issueTypeIds: ['1', '2'],
+          isDefault: true,
+        }
+      )
+
+      const afterInstance = new InstanceElement(
+        'instance',
+        type,
+        {
+          id: '1',
+          name: 'name2',
+          issueTypeIds: ['1', '2', '3'],
+          isDefault: true,
+        }
+      )
+
+      await filter.deploy?.([toChange({ before: beforeInstance, after: afterInstance })])
+      expect(mockConnection.put).not.toHaveBeenCalledWith(
+        '/rest/api/3/issuetypescheme/1/issuetype',
+        expect.any(Object),
+        undefined,
+      )
+    })
+
+    it('should not call the remove issue type ids endpoint if the scheme is the default scheme', async () => {
+      const beforeInstance = new InstanceElement(
+        'instance',
+        type,
+        {
+          id: '1',
+          name: 'name1',
+          issueTypeIds: ['1', '2', '3'],
+          isDefault: true,
+        }
+      )
+
+      const afterInstance = new InstanceElement(
+        'instance',
+        type,
+        {
+          id: '1',
+          name: 'name2',
+          issueTypeIds: ['1', '2'],
+          isDefault: true,
+        }
+      )
+
+      await filter.deploy?.([toChange({ before: beforeInstance, after: afterInstance })])
+      expect(mockConnection.delete).not.toHaveBeenCalled()
     })
 
     it('should not call the re-order endpoint of there are no changes in the ids', async () => {

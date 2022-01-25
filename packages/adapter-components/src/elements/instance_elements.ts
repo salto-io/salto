@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -20,7 +20,8 @@ import {
 import { pathNaclCase, naclCase, transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { RECORDS_PATH } from './constants'
-import { TransformationConfig, TransformationDefaultConfig, getConfigWithDefault } from '../config'
+import { TransformationConfig, TransformationDefaultConfig, getConfigWithDefault,
+  RecurseIntoCondition, isRecurseIntoConditionByField } from '../config'
 
 const log = logger(module)
 
@@ -35,6 +36,17 @@ export type InstanceCreationParams = {
   nestName?: boolean
   parent?: InstanceElement
   normalized?: boolean
+}
+
+export const getInstanceName = (
+  instanceValues: Values,
+  idFields: string[],
+): string | undefined => {
+  const nameParts = idFields.map(field => _.get(instanceValues, field))
+  if (nameParts.includes(undefined)) {
+    log.warn(`could not find id for entry - expected id fields ${idFields}, available fields ${Object.keys(instanceValues)}`)
+  }
+  return nameParts.every(part => part !== undefined && part !== '') ? nameParts.map(String).join('_') : undefined
 }
 
 /**
@@ -82,11 +94,7 @@ export const toBasicInstance = async ({
     transformationDefaultConfig,
   )
 
-  const nameParts = idFields.map(field => _.get(entry, field))
-  if (nameParts.includes(undefined)) {
-    log.warn(`could not find id for entry - expected id fields ${idFields}, available fields ${Object.keys(entry)}`)
-  }
-  const name = nameParts.every(part => part !== undefined && part !== '') ? nameParts.map(String).join('_') : defaultName
+  const name = getInstanceName(entry, idFields) ?? defaultName
 
   const fileNameParts = (fileNameFields !== undefined
     ? fileNameFields.map(field => _.get(entry, field))
@@ -127,3 +135,16 @@ export const toBasicInstance = async ({
       : undefined,
   )
 }
+
+export const shouldRecurseIntoEntry = (
+  entry: Values,
+  context?: Record<string, unknown>,
+  conditions?: RecurseIntoCondition[]
+): boolean => (
+  (conditions ?? []).every(condition => {
+    const compareValue = isRecurseIntoConditionByField(condition)
+      ? _.get(entry, condition.fromField)
+      : _.get(context, condition.fromContext)
+    return condition.match.some(m => new RegExp(m).test(compareValue))
+  })
+)

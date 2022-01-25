@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { collections, decorators, objects, promises, values } from '@salto-io/lowerdash'
+import { collections, decorators, objects as lowerdashObjects, promises, values } from '@salto-io/lowerdash'
 import { Values, AccountId, Value } from '@salto-io/adapter-api'
 import { mkdirp, readDir, readFile, writeFile, rm, rename } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
@@ -51,9 +51,12 @@ import {
   isCustomTypeInfo, isFileCustomizationInfo, isFolderCustomizationInfo, isTemplateCustomTypeInfo,
   mergeTypeToInstances,
 } from './utils'
+import { fixManifest } from './manifest_utils'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
+const { isDefined } = values
+const { concatObjects } = lowerdashObjects
 const log = logger(module)
 
 const FAILED_TYPE_NAME_TO_REAL_NAME: Record<string, string> = {
@@ -93,9 +96,6 @@ const ADDITIONAL_FILE_PATTERN = '.template.'
 export const MINUTE_IN_MILLISECONDS = 1000 * 60
 const SINGLE_OBJECT_RETRIES = 3
 const READ_CONCURRENCY = 100
-
-const INVALID_DEPENDENCIES = ['ADVANCEDEXPENSEMANAGEMENT', 'SUBSCRIPTIONBILLING', 'WMSSYSTEM', 'BILLINGACCOUNTS']
-const INVALID_DEPENDENCIES_PATTERN = new RegExp(`^.*(<feature required=".*">${INVALID_DEPENDENCIES.join('|')})</feature>.*\n`, 'gm')
 
 const baseExecutionPath = os.tmpdir()
 
@@ -432,10 +432,10 @@ export default class SdfClient {
     )
 
     const failedTypes = {
-      unexpectedError: objects.concatObjects(
+      unexpectedError: concatObjects(
         importResult.map(res => res.failedTypes.unexpectedError)
       ),
-      lockedError: objects.concatObjects(
+      lockedError: concatObjects(
         importResult.map(res => res.failedTypes.lockedError)
       ),
     }
@@ -665,7 +665,7 @@ export default class SdfClient {
               failedPaths.push(`^${folder}.*`)
               return undefined
             }))
-    )).filter(values.isDefined)
+    )).filter(isDefined)
     return {
       listedPaths: actionResults.flatMap(actionResult => makeArray(actionResult.data)),
       failedPaths,
@@ -794,22 +794,25 @@ export default class SdfClient {
       }
       throw new Error(`Failed to deploy invalid customizationInfo: ${customizationInfo}`)
     }))
-    await this.runDeployCommands(project)
+    await this.runDeployCommands(project, customizationInfos)
     await this.projectCleanup(project.projectName, project.authId)
   }
 
-  private static async cleanInvalidDependencies(projectPath: string): Promise<void> {
-    // This is done due to an SDF bug described in SALTO-1107.
-    // This function should be removed once the bug is fixed.
+  private static async fixManifest(
+    projectPath: string,
+    customizationInfos: CustomizationInfo[]
+  ): Promise<void> {
     const manifestPath = osPath.join(projectPath, 'src', 'manifest.xml')
-    const manifestContent = await readFile(manifestPath)
-    const fixedManifestContent = manifestContent.toString().replace(INVALID_DEPENDENCIES_PATTERN, '')
-    await writeFile(manifestPath, fixedManifestContent)
+    const manifestContent = (await readFile(manifestPath)).toString()
+    await writeFile(manifestPath, fixManifest(manifestContent, customizationInfos))
   }
 
-  private async runDeployCommands({ executor, projectPath, type }: Project): Promise<void> {
+  private async runDeployCommands(
+    { executor, projectPath, type }: Project,
+    customizationInfos: CustomizationInfo[]
+  ): Promise<void> {
     await this.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {}, executor)
-    await SdfClient.cleanInvalidDependencies(projectPath)
+    await SdfClient.fixManifest(projectPath, customizationInfos)
     await this.executeProjectAction(
       COMMANDS.DEPLOY_PROJECT,
       // SuiteApp project type can't contain account specific values

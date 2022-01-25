@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,12 +15,16 @@
 */
 import _ from 'lodash'
 import { ActionName, Change, getChangeData, InstanceElement } from '@salto-io/adapter-api'
-import { transformElement } from '@salto-io/adapter-utils'
+import { resolvePath, transformElement } from '@salto-io/adapter-utils'
 import { replaceUrlParams } from '../elements/request_parameters'
 import { HTTPWriteClientInterface } from '../client/http_client'
 import { DeploymentRequestsByAction } from '../config/request'
 import { ResponseValue } from '../client'
 import { OPERATION_TO_ANNOTATION } from './annotations'
+
+const FIELD_PATH_DELIMITER = '.'
+
+export type ResponseResult = ResponseValue | ResponseValue[] | undefined
 
 const filterIrrelevantValues = async (
   instance: InstanceElement,
@@ -57,27 +61,37 @@ export const deployChange = async (
   endpointDetails?: DeploymentRequestsByAction,
   fieldsToIgnore: string[] = [],
   additionalUrlVars?: Record<string, string>
-): Promise<ResponseValue | ResponseValue[]> => {
+): Promise<ResponseResult> => {
   const instance = getChangeData(change)
   const endpoint = endpointDetails?.[change.action]
   if (endpoint === undefined) {
     throw new Error(`No endpoint of type ${change.action} for ${instance.elemID.typeName}`)
   }
-  const valuesToDeploy = _.pickBy(
+  const valuesToDeploy = _.omit(
     (await filterIrrelevantValues(getChangeData(change), change.action)).value,
-    (_value, key) => !fieldsToIgnore.includes(key)
+    fieldsToIgnore
   )
 
   const urlVarsValues = {
     ...instance.value,
-    ..._.mapValues(endpoint.urlParamsToFields ?? {}, fieldName => instance.value[fieldName]),
+    ..._.mapValues(
+      endpoint.urlParamsToFields ?? {},
+      fieldName => resolvePath(
+        instance,
+        instance.elemID.createNestedID(...fieldName.split(FIELD_PATH_DELIMITER))
+      )
+    ),
     ...(additionalUrlVars ?? {}),
   }
   const url = replaceUrlParams(endpoint.url, urlVarsValues)
   const data = endpoint.deployAsField
     ? { [endpoint.deployAsField]: valuesToDeploy }
     : valuesToDeploy
-  const response = await client[endpoint.method]({ url, data })
 
+  if (_.isEmpty(valuesToDeploy)) {
+    return undefined
+  }
+
+  const response = await client[endpoint.method]({ url, data })
   return response.data
 }

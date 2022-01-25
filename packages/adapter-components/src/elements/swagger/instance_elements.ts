@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -22,16 +22,16 @@ import { transformElement, TransformFunc, safeJsonStringify } from '@salto-io/ad
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { ADDITIONAL_PROPERTIES_FIELD, ARRAY_ITEMS_FIELD } from './type_elements/swagger_parser'
-import { InstanceCreationParams, toBasicInstance } from '../instance_elements'
+import { InstanceCreationParams, shouldRecurseIntoEntry, toBasicInstance } from '../instance_elements'
 import { UnauthorizedError, Paginator, PageEntriesExtractor } from '../../client'
 import {
   UserFetchConfig, TypeSwaggerDefaultConfig, TransformationConfig, TransformationDefaultConfig,
-  AdapterSwaggerApiConfig, TypeSwaggerConfig, getConfigWithDefault, RecurseIntoCondition,
-  isRecurseIntoConditionByField,
+  AdapterSwaggerApiConfig, TypeSwaggerConfig, getConfigWithDefault,
 } from '../../config'
 import { findDataField, FindNestedFieldFunc } from '../field_finder'
 import { computeGetArgs as defaultComputeGetArgs, ComputeGetArgsFunc } from '../request_parameters'
 import { getElementsWithContext } from '../element_getter'
+import { TimeoutError } from '../../client/http_client'
 
 const { makeArray } = collections.array
 const { toArrayAsync, awu } = collections.asynciterable
@@ -248,20 +248,6 @@ const normalizeType = async (type: ObjectType | undefined): Promise<ObjectType |
   return type
 }
 
-
-const shouldRecurseIntoEntry = (
-  entry: Values,
-  context?: Record<string, unknown>,
-  conditions?: RecurseIntoCondition[]
-): boolean => (
-  (conditions ?? []).every(condition => {
-    const compareValue = isRecurseIntoConditionByField(condition)
-      ? _.get(entry, condition.fromField)
-      : _.get(context, condition.fromContext)
-    return condition.match.some(m => new RegExp(m).test(compareValue))
-  })
-)
-
 type GetEntriesParams = {
   typeName: string
   paginator: Paginator
@@ -439,7 +425,9 @@ const getInstancesForType = async (params: GetEntriesParams): Promise<InstanceEl
     })
   } catch (e) {
     log.warn(`Could not fetch ${typeName}: ${e}. %s`, e.stack)
-    if (e instanceof UnauthorizedError || e instanceof InvalidTypeConfig) {
+    if (e instanceof UnauthorizedError
+      || e instanceof InvalidTypeConfig
+      || e instanceof TimeoutError) {
       throw e
     }
     return []

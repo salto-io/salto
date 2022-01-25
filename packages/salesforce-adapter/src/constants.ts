@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -186,6 +186,7 @@ export const FIELD_ANNOTATIONS = {
   VALUE_SET: 'valueSet',
   DEFAULT_VALUE: 'defaultValue',
   FORMULA_TREAT_BLANKS_AS: 'formulaTreatBlanksAs',
+  TRACK_HISTORY: 'trackHistory',
   CREATABLE: 'createable',
   UPDATEABLE: 'updateable',
   // indicates whether a field is queryable by SOQL (default true)

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import { toChange, ObjectType, ElemID } from '@salto-io/adapter-api'
-import changeValidator from '../src/change_validator'
-import { JIRA } from '../src/constants'
+import changeValidator from '../../src/change_validators'
+import { JIRA } from '../../src/constants'
 
 describe('change validator creator', () => {
   describe('checkDeploymentAnnotationsValidator', () => {
@@ -32,13 +32,13 @@ describe('change validator creator', () => {
           elemID: new ElemID(JIRA, 'obj'),
           severity: 'Error',
           message: 'Deployment of non-instance elements is not supported in adapter jira',
-          detailedMessage: 'Salto does not support deployment of jira.obj',
+          detailedMessage: 'Deployment of jira.obj is not supported',
         },
         {
           elemID: new ElemID(JIRA, 'obj2'),
           severity: 'Error',
           message: 'Deployment of non-instance elements is not supported in adapter jira',
-          detailedMessage: 'Salto does not support deployment of jira.obj2',
+          detailedMessage: 'Deployment of jira.obj2 is not supported',
         },
       ])
     })

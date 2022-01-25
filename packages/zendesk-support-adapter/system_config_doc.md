@@ -518,6 +518,25 @@ zendesk_support {
               fieldType = "number"
             },
           ]
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+            {
+              fieldName = "attachments"
+            },
+          ]
         }
         deployRequests = {
           add = {
@@ -701,8 +720,33 @@ zendesk_support {
           ]
         }
       }
+      business_hours_schedules = {
+        request = {
+          url = "/business_hours/schedules"
+          recurseInto = [
+            {
+              type = "business_hours_schedule_holiday"
+              toField = "holidays"
+              context = [
+                {
+                  name = "scheduleId"
+                  fromField = "id"
+                },
+              ]
+            },
+          ]
+        }
+        transformation = {
+          dataField = "schedules"
+        }
+      }
       business_hours_schedule = {
         transformation = {
+          standaloneFields = [
+            {
+              fieldName = "holidays"
+            },
+          ]
           sourceTypeName = "business_hours_schedules__schedules"
           fieldsToHide = [
             {
@@ -1241,6 +1285,11 @@ zendesk_support {
       }
       routing_attribute = {
         transformation = {
+          standaloneFields = [
+            {
+              fieldName = "values"
+            },
+          ]
           sourceTypeName = "routing_attributes__attributes"
           fieldsToHide = [
             {
@@ -1253,7 +1302,7 @@ zendesk_support {
             },
             {
               fieldName = "id"
-              fieldType = "number"
+              fieldType = "string"
             },
           ]
         }
@@ -1360,6 +1409,14 @@ zendesk_support {
         transformation = {
           fieldsToHide = [
           ]
+        }
+      }
+      workspace_order = {
+        deployRequests = {
+          modify = {
+            url = "/workspaces/reorder"
+            method = "put"
+          }
         }
       }
       app_installation = {
@@ -1846,9 +1903,54 @@ zendesk_support {
           dataField = "locales"
         }
       }
-      business_hours_schedules = {
+      business_hours_schedule_holiday = {
         request = {
-          url = "/business_hours/schedules"
+          url = "/business_hours/schedules/{scheduleId}/holidays"
+        }
+        deployRequests = {
+          add = {
+            url = "/business_hours/schedules/{scheduleId}/holidays"
+            deployAsField = "holiday"
+            method = "post"
+            urlParamsToFields = {
+              scheduleId = "_parent.0.id"
+            }
+          }
+          modify = {
+            url = "/business_hours/schedules/{scheduleId}/holidays/{holidayId}"
+            deployAsField = "holiday"
+            method = "put"
+            urlParamsToFields = {
+              holidayId = "id"
+              scheduleId = "_parent.0.id"
+            }
+          }
+          remove = {
+            url = "/business_hours/schedules/{scheduleId}/holidays/{holidayId}"
+            method = "delete"
+            urlParamsToFields = {
+              holidayId = "id"
+              scheduleId = "_parent.0.id"
+            }
+          }
+        }
+        transformation = {
+          sourceTypeName = "business_hours_schedule__holidays"
+          dataField = "holidays"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
       }
       sharing_agreements = {
@@ -1916,9 +2018,71 @@ zendesk_support {
           url = "/organization_fields"
         }
       }
+      routing_attribute_value = {
+        request = {
+          url = "/routing/attributes/{attributeId}/values"
+        }
+        deployRequests = {
+          add = {
+            url = "/routing/attributes/{attributeId}/values"
+            deployAsField = "attribute_value"
+            method = "post"
+            urlParamsToFields = {
+              attributeId = "_parent.0.id"
+            }
+          }
+          modify = {
+            url = "/routing/attributes/{attributeId}/values/{attributeValueId}"
+            deployAsField = "attribute_value"
+            method = "put"
+            urlParamsToFields = {
+              attributeValueId = "id"
+              attributeId = "_parent.0.id"
+            }
+          }
+          remove = {
+            url = "/routing/attributes/{attributeId}/values/{attributeValueId}"
+            method = "delete"
+            urlParamsToFields = {
+              attributeValueId = "id"
+              attributeId = "_parent.0.id"
+            }
+          }
+        }
+        transformation = {
+          sourceTypeName = "routing_attribute__values"
+          dataField = "attribute_values"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "string"
+            },
+          ]
+        }
+      }
       routing_attributes = {
         request = {
           url = "/routing/attributes"
+          recurseInto = [
+            {
+              type = "routing_attribute_value"
+              toField = "values"
+              context = [
+                {
+                  name = "attributeId"
+                  fromField = "id"
+                },
+              ]
+            },
+          ]
         }
       }
       routing_attribute_definitions = {

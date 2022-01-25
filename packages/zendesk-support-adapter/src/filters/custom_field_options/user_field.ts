@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,16 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator } from '@salto-io/adapter-api'
-import { deployment } from '@salto-io/adapter-components'
-import { createChangeValidator } from '@salto-io/adapter-utils'
+import { createCustomFieldOptionsFilterCreator } from './creator'
 
-const {
-  deployTypesNotSupportedValidator,
-} = deployment.changeValidators
+/**
+ * Deploys user field and user field options
+ */
+const filterCreator = createCustomFieldOptionsFilterCreator({
+  parentTypeName: 'user_field',
+  childTypeName: 'user_field__custom_field_options',
+})
 
-const validators: ChangeValidator[] = [
-  deployTypesNotSupportedValidator,
-]
-
-export default createChangeValidator(validators)
+export default filterCreator

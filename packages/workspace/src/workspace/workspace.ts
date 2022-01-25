@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -1225,11 +1225,16 @@ export const loadWorkspace = async (
         }
       }
       const addAndValidate = async (
-        ids: ElemID[], elementsArray: Element[] = [],
+        ids: ElemID[], visitedIds: Set<string>, elementsArray: Element[] = [],
       ): Promise<{ completed: string[]; missing: string[] }> => {
-        if (ids.length === 0) {
+        const newIds = ids.filter(id => !visitedIds.has(id.getFullName()))
+
+        if (newIds.length === 0) {
           return { completed: [], missing: [] }
         }
+
+        newIds.map(id => id.getFullName()).forEach(id => visitedIds.add(id))
+
         const getCompletionElem = async (id: ElemID): Promise<Element | undefined> => {
           const rootElem = await (await elementsImpl(true, completeFromEnv))
             .get(id.createTopLevelParentID().parent)
@@ -1242,7 +1247,7 @@ export const loadWorkspace = async (
           return resolvePath(rootElem, id)
         }
         const completionRes = Object.fromEntries(
-          await awu(ids).map(async id => ([
+          await awu(newIds).map(async id => ([
             id.getFullName(),
             await getCompletionElem(id),
           ])).toArray()
@@ -1254,6 +1259,7 @@ export const loadWorkspace = async (
         const unresolvedIDs = await getUnresolvedElemIDs(resolvedElements)
         const innerRes = await addAndValidate(
           unresolvedIDs,
+          visitedIds,
           [...elementsArray, ...resolvedElements]
         )
         return {
@@ -1261,7 +1267,7 @@ export const loadWorkspace = async (
           missing: [...missing, ...innerRes.missing],
         }
       }
-      const { completed, missing } = await addAndValidate(unresolvedElemIDs)
+      const { completed, missing } = await addAndValidate(unresolvedElemIDs, new Set())
       return {
         found: compact(completed.sort().map(ElemID.fromFullName)),
         missing: compact(missing.sort().map(ElemID.fromFullName)),

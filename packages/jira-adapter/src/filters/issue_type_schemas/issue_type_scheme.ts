@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,15 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, Field, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isModificationChange, isObjectType, ModificationChange, ObjectType } from '@salto-io/adapter-api'
+import { AdditionChange, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isModificationChange, isObjectType, ModificationChange, ObjectType } from '@salto-io/adapter-api'
 import { resolveChangeElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { promises } from '@salto-io/lowerdash'
-import { getLookUpName } from '../../references'
+import { getLookUpName } from '../../reference_mapping'
 import JiraClient from '../../client/client'
 import { JiraConfig } from '../../config'
-import { deployChange } from '../../deployment'
+import { defaultDeployChange, deployChanges } from '../../deployment'
 import { FilterCreator } from '../../filter'
+import { getDiffIds } from '../../diff'
 
 const ISSUE_TYPE_SCHEMA_NAME = 'IssueTypeScheme'
 const MAX_CONCURRENT_PROMISES = 20
@@ -30,28 +31,25 @@ const deployNewAndDeletedIssueTypeIds = async (
   change: ModificationChange<InstanceElement>,
   client: JiraClient,
 ): Promise<void> => {
-  const beforeIds = new Set(change.data.before.value.issueTypeIds)
-  const afterIds = new Set(change.data.after.value.issueTypeIds)
-
-  const idsToAdd = change.data.after.value.issueTypeIds
-    ?.filter((id: string) => !beforeIds.has(id)) ?? []
-  const idsToRemove = change.data.before.value.issueTypeIds
-    ?.filter((id: string) => !afterIds.has(id)) ?? []
+  const { addedIds, removedIds } = getDiffIds(
+    change.data.before.value.issueTypeIds ?? [],
+    change.data.after.value.issueTypeIds ?? []
+  )
 
   const instance = getChangeData(change)
-  if (idsToAdd.length > 0) {
+  if (addedIds.length > 0) {
     await client.put({
-      url: `/rest/api/3/issuetypescheme/${instance.value.issueTypeSchemeId}/issuetype`,
+      url: `/rest/api/3/issuetypescheme/${instance.value.id}/issuetype`,
       data: {
-        issueTypeIds: Array.from(idsToAdd),
+        issueTypeIds: Array.from(addedIds),
       },
     })
   }
 
   await promises.array.withLimitedConcurrency(
-    Array.from(idsToRemove).map(id => () =>
+    Array.from(removedIds).map(id => () =>
       client.delete({
-        url: `/rest/api/3/issuetypescheme/${instance.value.issueTypeSchemeId}/issuetype/${id}`,
+        url: `/rest/api/3/issuetypescheme/${instance.value.id}/issuetype/${id}`,
       })),
     MAX_CONCURRENT_PROMISES,
   )
@@ -69,7 +67,7 @@ const deployIssueTypeIdsOrder = async (
     return
   }
   await client.put({
-    url: `/rest/api/3/issuetypescheme/${getChangeData(change).value.issueTypeSchemeId}/issuetype/move`,
+    url: `/rest/api/3/issuetypescheme/${getChangeData(change).value.id}/issuetype/move`,
     data: {
       issueTypeIds: change.data.after.value.issueTypeIds,
       position: 'First',
@@ -79,13 +77,24 @@ const deployIssueTypeIdsOrder = async (
 
 
 const deployIssueTypeSchema = async (
-  change: ModificationChange<InstanceElement>,
+  change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
   client: JiraClient,
   config: JiraConfig,
 ): Promise<void> => {
-  await deployChange(change, client, config.apiDefinitions, ['issueTypeIds'])
-  await deployNewAndDeletedIssueTypeIds(change, client)
-  await deployIssueTypeIdsOrder(change, client)
+  if (isModificationChange(change)) {
+    await defaultDeployChange({ change, client, apiDefinitions: config.apiDefinitions, fieldsToIgnore: ['issueTypeIds'] })
+    const resolvedChange = await resolveChangeElement(change, getLookUpName)
+    await deployNewAndDeletedIssueTypeIds(resolvedChange, client)
+    await deployIssueTypeIdsOrder(resolvedChange, client)
+    return
+  }
+
+  await defaultDeployChange({ change, client, apiDefinitions: config.apiDefinitions })
+
+  if (isAdditionChange(change)) {
+    change.data.after.value.id = change.data.after.value.issueTypeSchemeId
+    delete change.data.after.value.issueTypeSchemeId
+  }
 }
 
 const filter: FilterCreator = ({ config, client }) => ({
@@ -96,54 +105,31 @@ const filter: FilterCreator = ({ config, client }) => ({
     ) as ObjectType | undefined
     if (issueTypeSchemaType !== undefined) {
       issueTypeSchemaType.fields.issueTypeIds.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
-      delete issueTypeSchemaType.fields.id
-      issueTypeSchemaType.fields.issueTypeSchemeId = new Field(issueTypeSchemaType, 'issueTypeSchemeId', BuiltinTypes.STRING, { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true })
     }
-
-    elements
-      .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === ISSUE_TYPE_SCHEMA_NAME)
-      .forEach(instance => {
-        instance.value.issueTypeSchemeId = instance.value.id
-        delete instance.value.id
-      })
   },
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change => isInstanceChange(change)
-        && isModificationChange(change)
+        && isAdditionOrModificationChange(change)
         && getChangeData(change).elemID.typeName === ISSUE_TYPE_SCHEMA_NAME
     )
 
-    const result = await Promise.all(relevantChanges
-      .filter(isInstanceChange)
-      .map(async change => {
-        try {
-          await deployIssueTypeSchema(
-            await resolveChangeElement(
-              change,
-              getLookUpName
-            ) as ModificationChange<InstanceElement>,
-            client,
-            config,
-          )
-          return change
-        } catch (err) {
-          if (!_.isError(err)) {
-            throw err
-          }
-          return err
-        }
-      }))
 
-    const [errors, appliedChanges] = _.partition(result, _.isError)
+    const deployResult = await deployChanges(
+      relevantChanges
+        .filter(isInstanceChange)
+        .filter(isAdditionOrModificationChange),
+      async change => deployIssueTypeSchema(
+        change,
+        client,
+        config
+      )
+    )
+
     return {
       leftoverChanges,
-      deployResult: {
-        errors,
-        appliedChanges,
-      },
+      deployResult,
     }
   },
 })

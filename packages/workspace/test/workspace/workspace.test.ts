@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -3836,6 +3836,72 @@ describe('listUnresolvedReferences', () => {
       expect(res.found).toEqual([
         new ElemID('salesforce', 'someType', 'field', 'f3'),
         new ElemID('salesforce', 'someType', 'instance', 'inst1'),
+      ])
+      expect(res.missing).toHaveLength(0)
+    })
+  })
+
+  describe('workspace with unresolved references that exist in other env with circular references', () => {
+    beforeAll(async () => {
+      jest.resetAllMocks()
+      const type = new ObjectType({
+        elemID: new ElemID('salesforce', 'someType'),
+      })
+
+      const instance1 = new InstanceElement(
+        'instance1',
+        type,
+        {
+          val: new ReferenceExpression(new ElemID('salesforce', 'someType', 'instance', 'instance2')),
+        }
+      )
+
+      const instance2 = new InstanceElement(
+        'instance2',
+        type,
+        {
+          val: new ReferenceExpression(new ElemID('salesforce', 'someType', 'instance', 'instance3')),
+        }
+      )
+
+      const instance3 = new InstanceElement(
+        'instance3',
+        type,
+        {
+          val: new ReferenceExpression(new ElemID('salesforce', 'someType', 'instance', 'instance2')),
+        }
+      )
+
+      workspace = await createWorkspace(
+        undefined, undefined, mockWorkspaceConfigSource(undefined, true), undefined, undefined,
+        undefined,
+        {
+          '': {
+            naclFiles: await naclFilesSource(
+              COMMON_ENV_PREFIX,
+              mockDirStore(),
+              mockStaticFilesSource(),
+              persistentMockCreateRemoteMap(),
+              true
+            ),
+          },
+          default: {
+            naclFiles: createMockNaclFileSource([instance1]),
+            state: createState([instance1]),
+          },
+          inactive: {
+            naclFiles: createMockNaclFileSource([instance1, instance2, instance3]),
+            state: createState([instance1, instance2, instance3]),
+          },
+        }
+      )
+      res = await workspace.listUnresolvedReferences('inactive')
+    })
+
+    it('should successfully resolve all references', () => {
+      expect(res.found).toEqual([
+        new ElemID('salesforce', 'someType', 'instance', 'instance2'),
+        new ElemID('salesforce', 'someType', 'instance', 'instance3'),
       ])
       expect(res.missing).toHaveLength(0)
     })

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -22,7 +22,7 @@ import DummyAdapter from '../src/adapter'
 describe('adapter creator', () => {
   it('should return a config containing all of the generator params', () => {
     const config = adapter.configType as ObjectType
-    expect(Object.keys(config?.fields)).toEqual([...Object.keys(defaultParams), 'extraNaclPath'])
+    expect(Object.keys(config?.fields)).toEqual([...Object.keys(defaultParams), 'extraNaclPath', 'generateEnvName'])
   })
   it('should return an empty creds type', () => {
     expect(Object.keys(adapter.authenticationMethods.basic.credentialsType.fields)).toHaveLength(0)

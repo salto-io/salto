@@ -22,7 +22,7 @@ module.exports = deepMerge(
     displayName: 'zuora-billing-adapter',
     rootDir: `${__dirname}`,
     collectCoverageFrom: [
-      '!<rootDir>/dist/index.js',
+      '!<rootDir>/index.ts',
     ],
     testEnvironment: process.env.RUN_E2E_TESTS
       ? '@salto-io/zuora-billing-adapter/dist/e2e_test/jest_environment'

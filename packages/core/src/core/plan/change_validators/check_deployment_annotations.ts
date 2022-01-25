@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -25,7 +25,7 @@ const { OPERATION_TO_ANNOTATION } = deployment
 const ERROR_MESSAGE = (id: ElemID): string => `The change of ${id.getFullName()} is not supported and will be omitted from deploy`
 
 const detailedErrorMessage = (action: Change['action'], path: ElemID): string =>
-  `Salto does not support "${action}" of ${path.getFullName()}`
+  `"${action}" operation on ${path.getFullName()} is not supported`
 
 const isDeploymentSupported = (element: Element, action: Change['action']): boolean =>
   element.annotations[OPERATION_TO_ANNOTATION[action]]

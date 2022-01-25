@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element } from '@salto-io/adapter-api'
+import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 
@@ -52,6 +52,38 @@ const getLowerCaseSingularLookupType = (val: string): string | undefined => {
   return lowercaseVal
 }
 
+const CUSTOM_FIELDS_PREFIX = 'custom_fields_'
+
+type ZendeskSupportReferenceSerializationStrategyName = 'customFields' | 'value' | 'localeId'
+const ZendeskSupportReferenceSerializationStrategyLookup: Record<
+  ZendeskSupportReferenceSerializationStrategyName
+  | referenceUtils.ReferenceSerializationStrategyName,
+  referenceUtils.ReferenceSerializationStrategy
+> = {
+  ...referenceUtils.ReferenceSerializationStrategyLookup,
+  customFields: {
+    serialize: ({ ref }) => (isInstanceElement(ref.value)
+      ? `${CUSTOM_FIELDS_PREFIX}${ref.value.value.id?.toString()}`
+      : ref.value),
+    lookup: val => ((_.isString(val) && val.startsWith(CUSTOM_FIELDS_PREFIX))
+      ? val.slice(CUSTOM_FIELDS_PREFIX.length)
+      : val),
+    lookupIndexName: 'id',
+  },
+  value: {
+    serialize: ({ ref }) => (isInstanceElement(ref.value) ? ref.value.value.value : ref.value),
+    lookup: val => val,
+    lookupIndexName: 'value',
+  },
+  localeId: {
+    serialize: ({ ref }) => (
+      isInstanceElement(ref.value) ? ref.value.value.locale_id.value.value.id : ref.value
+    ),
+    lookup: val => val,
+    lookupIndexName: 'localeId',
+  },
+}
+
 export type ReferenceContextStrategyName = 'neighborField' | 'neighborType' | 'parentSubject' | 'parentTitle' | 'parentValue'
 export const contextStrategyLookup: Record<
   ReferenceContextStrategyName, referenceUtils.ContextFunc
@@ -63,9 +95,27 @@ export const contextStrategyLookup: Record<
   parentValue: neighborContextFunc({ contextFieldName: 'value', levelsUp: 2, contextValueMapper: getValueLookupType }),
 }
 
-export const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition<
+type ZendeskSupportFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<
   ReferenceContextStrategyName
->[] = [
+> & {
+  zendeskSupportSerializationStrategy?: ZendeskSupportReferenceSerializationStrategyName
+}
+
+export class ZendeskSupportFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<
+  ReferenceContextStrategyName
+> {
+  constructor(def: ZendeskSupportFieldReferenceDefinition) {
+    super({ src: def.src })
+    this.serializationStrategy = ZendeskSupportReferenceSerializationStrategyLookup[
+      def.zendeskSupportSerializationStrategy ?? def.serializationStrategy ?? 'fullValue'
+    ]
+    this.target = def.target
+      ? { ...def.target, lookup: this.serializationStrategy.lookup }
+      : undefined
+  }
+}
+
+export const fieldNameToTypeMappingDefs: ZendeskSupportFieldReferenceDefinition[] = [
   {
     src: { field: 'brand_id' },
     serializationStrategy: 'id',
@@ -117,6 +167,11 @@ export const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition
     target: { type: 'locale' },
   },
   {
+    src: { field: 'variants', parentTypes: ['dynamic_content_item'] },
+    zendeskSupportSerializationStrategy: 'localeId',
+    target: { type: 'dynamic_content_item__variants' },
+  },
+  {
     src: { field: 'macro_id' },
     serializationStrategy: 'id',
     target: { type: 'macro' },
@@ -142,6 +197,11 @@ export const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition
     target: { type: 'user_field' },
   },
   {
+    src: { field: 'ids', parentTypes: ['workspace_order'] },
+    serializationStrategy: 'id',
+    target: { type: 'workspace' },
+  },
+  {
     src: { field: 'id', parentTypes: ['workspace__selected_macros'] },
     serializationStrategy: 'id',
     target: { type: 'macro' },
@@ -158,6 +218,36 @@ export const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition
   },
   {
     src: { field: 'ticket_field_ids' },
+    serializationStrategy: 'id',
+    target: { type: 'ticket_field' },
+  },
+  {
+    src: { field: 'custom_field_options', parentTypes: ['ticket_field'] },
+    serializationStrategy: 'fullValue',
+    target: { type: 'ticket_field__custom_field_options' },
+  },
+  {
+    src: { field: 'default_custom_field_option', parentTypes: ['ticket_field'] },
+    zendeskSupportSerializationStrategy: 'value',
+    target: { type: 'ticket_field__custom_field_options' },
+  },
+  {
+    src: { field: 'custom_field_options', parentTypes: ['user_field'] },
+    serializationStrategy: 'fullValue',
+    target: { type: 'user_field__custom_field_options' },
+  },
+  {
+    src: { field: 'default_custom_field_option', parentTypes: ['user_field'] },
+    zendeskSupportSerializationStrategy: 'value',
+    target: { type: 'user_field__custom_field_options' },
+  },
+  {
+    src: { field: 'field', parentTypes: ['view__conditions__all', 'view__conditions__any', 'macro__actions'] },
+    zendeskSupportSerializationStrategy: 'customFields',
+    target: { type: 'ticket_field' },
+  },
+  {
+    src: { field: 'id', parentTypes: ['view__execution__columns'] },
     serializationStrategy: 'id',
     target: { type: 'ticket_field' },
   },
@@ -183,12 +273,12 @@ export const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition
   },
 
   {
-    src: { field: 'id', parentTypes: ['view__restriction'] },
+    src: { field: 'id', parentTypes: ['view__restriction', 'macro__restriction'] },
     serializationStrategy: 'id',
     target: { typeContext: 'neighborType' },
   },
   {
-    src: { field: 'ids', parentTypes: ['view__restriction'] },
+    src: { field: 'ids', parentTypes: ['view__restriction', 'macro__restriction'] },
     serializationStrategy: 'id',
     target: { typeContext: 'neighborType' },
   },
@@ -234,6 +324,7 @@ const filter: FilterCreator = () => ({
       contextStrategyLookup,
       // since ids and references to ids vary inconsistently between string/number, allow both
       isEqualValue: (lhs, rhs) => _.toString(lhs) === _.toString(rhs),
+      fieldReferenceResolverCreator: defs => new ZendeskSupportFieldReferenceResolver(defs),
     })
   },
 })

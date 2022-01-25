@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -22,7 +22,7 @@ module.exports = deepMerge(
     displayName: 'adapter-api',
     rootDir: `${__dirname}`,
     collectCoverageFrom: [
-      '!<rootDir>/dist/index.js',
+      '!<rootDir>/index.ts',
     ],
     coverageThreshold: {
       // Slowly start increasing here, never decrease!

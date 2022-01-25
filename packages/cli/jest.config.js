@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -22,10 +22,10 @@ module.exports = deepMerge(
     displayName: 'cli',
     rootDir: `${__dirname}`,
     collectCoverageFrom: [
-      '!<rootDir>/dist/src/callbacks.js',
-      '!<rootDir>/dist/src/index.js',
-      '!<rootDir>/package_native.js',
-      '!<rootDir>/dist/bundle.js'
+      '!<rootDir>/src/callbacks.ts',
+      '!<rootDir>/src/index.ts',
+      '!<rootDir>/package_native.ts',
+      '!<rootDir>/bundle.ts'
     ],
     testEnvironment: process.env.RUN_E2E_TESTS
       ? '@salto-io/cli/dist/e2e_test/jest_environment'

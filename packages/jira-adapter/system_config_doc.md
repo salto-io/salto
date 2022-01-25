@@ -2,55 +2,150 @@
 ## Default Configuration
 ```hcl
 jira {
-  fetch = {
-    includeTypes = [
-      "rest__api__3__application_properties@uuuuuub",
-      "rest__api__3__applicationrole",
-      "AttachmentSettings",
-      "Configuration",
-      "rest__api__3__configuration__timetracking__list",
-      "PageBeanDashboard",
-      "PageBeanField",
-      "PageBeanFieldConfigurationDetails",
-      "PageBeanFieldConfigurationScheme",
-      "PageBeanFieldConfigurationIssueTypeItem",
-      "PageBeanFilterDetails",
-      "IssueTypeDetails",
-      "IssueLinkTypes",
-      "SecuritySchemes",
-      "PageBeanIssueTypeScheme",
-      "PageBeanIssueTypeSchemeMapping",
-      "PageBeanIssueTypeScreenScheme",
-      "PageBeanIssueTypeScreenSchemeItem",
-      "PageBeanNotificationScheme",
-      "Permissions",
-      "PermissionSchemes",
-      "rest__api__3__priority",
-      "rest__api__3__projectCategory",
-      "PageBeanProject",
-      "rest__api__3__project__type",
-      "rest__api__3__resolution",
-      "rest__api__3__role",
-      "PageBeanScreen",
-      "PageBeanScreenScheme",
-      "rest__api__3__status",
-      "rest__api__3__statuscategory",
-      "PageBeanWorkflow",
-      "PageBeanWorkflowScheme",
-      "ServerInformation",
-      "agile__1_0__board@uuvuu",
-    ]
-  }
   apiDefinitions = {
     platformSwagger = {
       url = "https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json"
+      typeNameOverrides = [
+        {
+          originalName = "FilterDetails"
+          newName = "Filter"
+        },
+        {
+          originalName = "IssueTypeDetails"
+          newName = "IssueType"
+        },
+        {
+          originalName = "StatusDetails"
+          newName = "Status"
+        },
+        {
+          originalName = "rest__api__3__application_properties@uuuuuub"
+          newName = "ApplicationProperties"
+        },
+        {
+          originalName = "rest__api__3__applicationrole"
+          newName = "ApplicationRoles"
+        },
+        {
+          originalName = "rest__api__3__configuration__timetracking__list"
+          newName = "TimeTrackingProviders"
+        },
+        {
+          originalName = "PageBeanDashboard"
+          newName = "Dashboards"
+        },
+        {
+          originalName = "PageBeanField"
+          newName = "Fields"
+        },
+        {
+          originalName = "PageBeanFieldConfigurationDetails"
+          newName = "FieldConfigurations"
+        },
+        {
+          originalName = "FieldConfigurationDetails"
+          newName = "FieldConfiguration"
+        },
+        {
+          originalName = "PageBeanFieldConfigurationScheme"
+          newName = "FieldsConfigurationScheme"
+        },
+        {
+          originalName = "PageBeanFieldConfigurationIssueTypeItem"
+          newName = "FieldsConfigurationIssueTypeItem"
+        },
+        {
+          originalName = "PageBeanFilterDetails"
+          newName = "Filters"
+        },
+        {
+          originalName = "PageBeanIssueTypeScheme"
+          newName = "IssueTypeSchemes"
+        },
+        {
+          originalName = "PageBeanIssueTypeSchemeMapping"
+          newName = "IssueTypeSchemeMappings"
+        },
+        {
+          originalName = "PageBeanIssueTypeScreenScheme"
+          newName = "IssueTypeScreenSchemes"
+        },
+        {
+          originalName = "PageBeanIssueTypeScreenSchemeItem"
+          newName = "IssueTypeScreenSchemeItems"
+        },
+        {
+          originalName = "PageBeanNotificationScheme"
+          newName = "NotificationSchemes"
+        },
+        {
+          originalName = "rest__api__3__priority"
+          newName = "Priorities"
+        },
+        {
+          originalName = "rest__api__3__projectCategory"
+          newName = "ProjectCategories"
+        },
+        {
+          originalName = "PageBeanProject"
+          newName = "Projects"
+        },
+        {
+          originalName = "ComponentWithIssueCount"
+          newName = "ProjectComponent"
+        },
+        {
+          originalName = "rest__api__3__project__type"
+          newName = "ProjectTypes"
+        },
+        {
+          originalName = "rest__api__3__resolution"
+          newName = "Resolutions"
+        },
+        {
+          originalName = "rest__api__3__role"
+          newName = "Roles"
+        },
+        {
+          originalName = "PageBeanScreen"
+          newName = "Screens"
+        },
+        {
+          originalName = "PageBeanScreenScheme"
+          newName = "ScreenSchemes"
+        },
+        {
+          originalName = "rest__api__3__status"
+          newName = "Statuses"
+        },
+        {
+          originalName = "rest__api__3__statuscategory"
+          newName = "StatusCategories"
+        },
+        {
+          originalName = "PageBeanWorkflow"
+          newName = "Workflows"
+        },
+        {
+          originalName = "PageBeanWorkflowScheme"
+          newName = "WorkflowSchemes"
+        },
+      ]
     }
     jiraSwagger = {
       url = "https://developer.atlassian.com/cloud/jira/software/swagger.v3.json"
       typeNameOverrides = [
         {
-          originalName = "agile__1_0__board_values@uuvuuu"
+          originalName = "rest__agile__1_0__board@uuuuvuu"
+          newName = "Boards"
+        },
+        {
+          originalName = "Boards_values"
           newName = "Board"
+        },
+        {
+          originalName = "rest__agile__1_0__board___boardId___configuration@uuuuvuuuu_00123_00125uu"
+          newName = "BoardConfiguration"
         },
       ]
     }
@@ -74,12 +169,12 @@ jira {
           isSingleton = true
         }
       }
-      PageBeanDashboard = {
+      Dashboards = {
         request = {
           url = "/rest/api/3/dashboard/search"
           paginationField = "startAt"
           queryParams = {
-            expand = "description,owner,viewUrl,favouritedCount,sharePermissions"
+            expand = "description,owner,sharePermissions"
           }
         }
       }
@@ -108,6 +203,11 @@ jira {
               fieldName = "id"
             },
           ]
+          fieldsToOmit = [
+            {
+              fieldName = "isFavourite"
+            },
+          ]
         }
         deployRequests = {
           add = {
@@ -124,12 +224,12 @@ jira {
           }
         }
       }
-      PageBeanField = {
+      Fields = {
         request = {
           url = "/rest/api/3/field/search"
           paginationField = "startAt"
           queryParams = {
-            expand = "key,searcherKey"
+            expand = "searcherKey,isLocked"
           }
           recurseInto = [
             {
@@ -218,9 +318,6 @@ jira {
               fieldName = "id"
             },
           ]
-          idFields = [
-            "id",
-          ]
           fieldTypeOverrides = [
             {
               fieldName = "contexts"
@@ -259,6 +356,13 @@ jira {
         }
       }
       ApplicationProperty = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "key"
+            },
+          ]
+        }
         deployRequests = {
           modify = {
             url = "/rest/api/3/application-properties/{id}"
@@ -296,6 +400,15 @@ jira {
           ]
         }
       }
+      CustomFieldContextOption = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
       CustomFieldContext = {
         transformation = {
           fieldTypeOverrides = [
@@ -304,17 +417,34 @@ jira {
               fieldType = "list<CustomFieldContextOption>"
             },
           ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "isGlobalContext"
+            },
+            {
+              fieldName = "isAnyIssueType"
+            },
+          ]
         }
         deployRequests = {
           add = {
             url = "/rest/api/3/field/{fieldId}/context"
             method = "post"
+            urlParamsToFields = {
+              fieldId = "_parent.0.id"
+            }
           }
           modify = {
             url = "/rest/api/3/field/{fieldId}/context/{contextId}"
             method = "put"
             urlParamsToFields = {
               contextId = "id"
+              fieldId = "_parent.0.id"
             }
           }
           remove = {
@@ -322,6 +452,7 @@ jira {
             method = "delete"
             urlParamsToFields = {
               contextId = "id"
+              fieldId = "_parent.0.id"
             }
           }
         }
@@ -332,7 +463,7 @@ jira {
           paginationField = "startAt"
         }
       }
-      PageBeanFieldConfigurationDetails = {
+      FieldConfigurations = {
         request = {
           url = "/rest/api/3/fieldconfiguration"
           paginationField = "startAt"
@@ -350,12 +481,16 @@ jira {
           ]
         }
       }
-      FieldConfigurationDetails = {
+      FieldConfiguration = {
         transformation = {
           fieldTypeOverrides = [
             {
               fieldName = "fields"
               fieldType = "list<FieldConfigurationItem>"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
             },
           ]
           fieldsToHide = [
@@ -364,6 +499,20 @@ jira {
             },
           ]
         }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/fieldconfiguration"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/fieldconfiguration/{id}"
+            method = "put"
+          }
+          remove = {
+            url = "/rest/api/3/fieldconfiguration/{id}"
+            method = "delete"
+          }
+        }
       }
       PageBeanFieldConfigurationItem = {
         request = {
@@ -371,13 +520,13 @@ jira {
           paginationField = "startAt"
         }
       }
-      PageBeanFieldConfigurationScheme = {
+      FieldsConfigurationScheme = {
         request = {
           url = "/rest/api/3/fieldconfigurationscheme"
           paginationField = "startAt"
           recurseInto = [
             {
-              type = "PageBeanFieldConfigurationIssueTypeItem"
+              type = "FieldsConfigurationIssueTypeItem"
               toField = "items"
               context = [
                 {
@@ -403,8 +552,22 @@ jira {
             },
           ]
         }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/fieldconfigurationscheme"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/fieldconfigurationscheme/{id}"
+            method = "put"
+          }
+          remove = {
+            url = "/rest/api/3/fieldconfigurationscheme/{id}"
+            method = "delete"
+          }
+        }
       }
-      PageBeanFieldConfigurationIssueTypeItem = {
+      FieldsConfigurationIssueTypeItem = {
         request = {
           url = "/rest/api/3/fieldconfigurationscheme/mapping?fieldConfigurationSchemeId={schemeId}"
           paginationField = "startAt"
@@ -419,11 +582,11 @@ jira {
           ]
         }
       }
-      PageBeanFilterDetails = {
+      Filters = {
         request = {
           url = "/rest/api/3/filter/search"
           queryParams = {
-            expand = "description,owner,jql,searchUrl,viewUrl,sharePermissions,subscriptions"
+            expand = "description,owner,jql,sharePermissions,subscriptions"
           }
           paginationField = "startAt"
           recurseInto = [
@@ -440,17 +603,26 @@ jira {
           ]
         }
       }
-      FilterDetails = {
+      Filter = {
         transformation = {
           fieldTypeOverrides = [
             {
               fieldName = "columns"
               fieldType = "list<ColumnItem>"
             },
+            {
+              fieldName = "expand"
+              fieldType = "string"
+            },
           ]
           fieldsToHide = [
             {
               fieldName = "id"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "expand"
             },
           ]
         }
@@ -469,14 +641,14 @@ jira {
           }
         }
       }
-      PageBeanIssueTypeScheme = {
+      IssueTypeSchemes = {
         request = {
           url = "/rest/api/3/issuetypescheme"
           paginationField = "startAt"
           recurseInto = [
             {
-              type = "PageBeanIssueTypeSchemeMapping"
-              toField = "issueTypes"
+              type = "IssueTypeSchemeMappings"
+              toField = "issueTypeIds"
               context = [
                 {
                   name = "schemeId"
@@ -489,9 +661,30 @@ jira {
       }
       Board_location = {
         transformation = {
-          fieldsToHide = [
+          fieldTypeOverrides = [
             {
-              fieldName = "id"
+              fieldName = "projectKeyOrId"
+              fieldType = "number"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "displayName"
+            },
+            {
+              fieldName = "projectName"
+            },
+            {
+              fieldName = "projectKey"
+            },
+            {
+              fieldName = "projectTypeKey"
+            },
+            {
+              fieldName = "avatarURI"
+            },
+            {
+              fieldName = "name"
             },
           ]
         }
@@ -500,10 +693,11 @@ jira {
         transformation = {
           fieldTypeOverrides = [
             {
-              fieldName = "issueTypes"
+              fieldName = "issueTypeIds"
               fieldType = "list<IssueTypeSchemeMapping>"
             },
           ]
+          serviceIdField = "issueTypeSchemeId"
           fieldsToHide = [
             {
               fieldName = "id"
@@ -531,7 +725,7 @@ jira {
           }
         }
       }
-      PageBeanIssueTypeSchemeMapping = {
+      IssueTypeSchemeMappings = {
         request = {
           url = "/rest/api/3/issuetypescheme/mapping?issueTypeSchemeId={schemeId}"
           paginationField = "startAt"
@@ -546,14 +740,14 @@ jira {
           ]
         }
       }
-      PageBeanIssueTypeScreenScheme = {
+      IssueTypeScreenSchemes = {
         request = {
           url = "/rest/api/3/issuetypescreenscheme"
           paginationField = "startAt"
           recurseInto = [
             {
-              type = "PageBeanIssueTypeScreenSchemeItem"
-              toField = "items"
+              type = "IssueTypeScreenSchemeItems"
+              toField = "issueTypeMappings"
               context = [
                 {
                   name = "schemeId"
@@ -568,7 +762,7 @@ jira {
         transformation = {
           fieldTypeOverrides = [
             {
-              fieldName = "items"
+              fieldName = "issueTypeMappings"
               fieldType = "list<IssueTypeScreenSchemeItem>"
             },
           ]
@@ -603,7 +797,7 @@ jira {
           }
         }
       }
-      PageBeanIssueTypeScreenSchemeItem = {
+      IssueTypeScreenSchemeItems = {
         request = {
           url = "/rest/api/3/issuetypescreenscheme/mapping?issueTypeScreenSchemeId={schemeId}"
           paginationField = "startAt"
@@ -618,7 +812,7 @@ jira {
           ]
         }
       }
-      PageBeanNotificationScheme = {
+      NotificationSchemes = {
         request = {
           url = "/rest/api/3/notificationscheme"
           queryParams = {
@@ -636,8 +830,18 @@ jira {
         request = {
           url = "/rest/api/3/permissionscheme"
           queryParams = {
-            expand = "all"
+            expand = "permissions,user"
           }
+        }
+      }
+      PermissionHolder = {
+        transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "user"
+              fieldType = "User"
+            },
+          ]
         }
       }
       PermissionGrant = {
@@ -689,13 +893,18 @@ jira {
           idFields = [
             "key",
           ]
+          fieldsToOmit = [
+            {
+              fieldName = "icon"
+            },
+          ]
         }
       }
-      PageBeanProject = {
+      Projects = {
         request = {
           url = "/rest/api/3/project/search"
           queryParams = {
-            expand = "description,lead,issueTypes,url,projectKeys,permissions"
+            expand = "description,lead,url,projectKeys,permissions"
           }
           recurseInto = [
             {
@@ -717,6 +926,7 @@ jira {
                   fromField = "id"
                 },
               ]
+              isSingle = true
             },
             {
               type = "PermissionScheme"
@@ -727,6 +937,7 @@ jira {
                   fromField = "id"
                 },
               ]
+              isSingle = true
             },
             {
               type = "NotificationScheme"
@@ -737,6 +948,7 @@ jira {
                   fromField = "id"
                 },
               ]
+              isSingle = true
             },
             {
               type = "PageBeanIssueTypeScreenSchemesProjects"
@@ -747,6 +959,18 @@ jira {
                   fromField = "id"
                 },
               ]
+              isSingle = true
+            },
+            {
+              type = "PageBeanIssueTypeSchemeProjects"
+              toField = "issueTypeScheme"
+              context = [
+                {
+                  name = "projectId"
+                  fromField = "id"
+                },
+              ]
+              isSingle = true
             },
             {
               type = "PageBeanFieldConfigurationSchemeProjects"
@@ -757,6 +981,7 @@ jira {
                   fromField = "id"
                 },
               ]
+              isSingle = true
             },
           ]
         }
@@ -778,38 +1003,73 @@ jira {
             },
           ]
         }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/projectCategory"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/projectCategory/{id}"
+            method = "put"
+          }
+          remove = {
+            url = "/rest/api/3/projectCategory/{id}"
+            method = "delete"
+          }
+        }
       }
       Project = {
         transformation = {
           fieldTypeOverrides = [
             {
+              fieldName = "projectKeys"
+              fieldType = "List<string>"
+            },
+            {
+              fieldName = "entityId"
+              fieldType = "string"
+            },
+            {
+              fieldName = "leadAccountId"
+              fieldType = "string"
+            },
+            {
               fieldName = "components"
-              fieldType = "list<ComponentWithIssueCount>"
+              fieldType = "list<ProjectComponent>"
             },
             {
               fieldName = "workflowScheme"
-              fieldType = "list<WorkflowSchemeAssociations>"
+              fieldType = "WorkflowScheme"
             },
             {
               fieldName = "permissionScheme"
-              fieldType = "list<PermissionScheme>"
+              fieldType = "PermissionScheme"
             },
             {
               fieldName = "notificationScheme"
-              fieldType = "list<NotificationScheme>"
+              fieldType = "NotificationScheme"
             },
             {
               fieldName = "issueTypeScreenScheme"
-              fieldType = "list<IssueTypeScreenSchemesProjects>"
+              fieldType = "IssueTypeScreenScheme"
             },
             {
               fieldName = "fieldConfigurationScheme"
-              fieldType = "list<FieldConfigurationSchemeProjects>"
+              fieldType = "FieldConfigurationScheme"
+            },
+            {
+              fieldName = "issueTypeScheme"
+              fieldType = "IssueTypeScheme"
             },
           ]
           fieldsToHide = [
             {
               fieldName = "id"
+            },
+          ]
+          standaloneFields = [
+            {
+              fieldName = "components"
             },
           ]
         }
@@ -848,19 +1108,67 @@ jira {
           ]
         }
       }
-      ComponentWithIssueCount = {
+      ProjectComponent = {
         transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "issueCount"
+              fieldType = "number"
+            },
+            {
+              fieldName = "leadAccountId"
+              fieldType = "string"
+            },
+            {
+              fieldName = "componentBean"
+              fieldType = "ProjectComponent"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
           fieldsToOmit = [
             {
               fieldName = "issueCount"
             },
             {
-              fieldName = "id"
-            },
-            {
               fieldName = "projectId"
             },
+            {
+              fieldName = "project"
+            },
+            {
+              fieldName = "realAssignee"
+            },
+            {
+              fieldName = "isAssigneeTypeValid"
+            },
+            {
+              fieldName = "realAssigneeType"
+            },
+            {
+              fieldName = "assignee"
+            },
+            {
+              fieldName = "componentBean"
+            },
           ]
+        }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/component"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/component/{id}"
+            method = "put"
+          }
+          remove = {
+            url = "/rest/api/3/component/{id}"
+            method = "delete"
+          }
         }
       }
       NotificationScheme = {
@@ -880,6 +1188,11 @@ jira {
           url = "/rest/api/3/issuetypescreenscheme/project?projectId={projectId}"
         }
       }
+      PageBeanIssueTypeSchemeProjects = {
+        request = {
+          url = "/rest/api/3/issuetypescheme/project?projectId={projectId}"
+        }
+      }
       IssueTypeScreenSchemesProjects = {
         transformation = {
           fieldsToOmit = [
@@ -894,7 +1207,7 @@ jira {
           url = "/rest/api/3/fieldconfigurationscheme/project?projectId={projectId}"
         }
       }
-      PageBeanScreen = {
+      Screens = {
         request = {
           url = "/rest/api/3/screens"
           paginationField = "startAt"
@@ -902,16 +1215,6 @@ jira {
             {
               type = "rest__api__3__screens___screenId___tabs@uuuuuuuu_00123_00125uu"
               toField = "tabs"
-              context = [
-                {
-                  name = "screenId"
-                  fromField = "id"
-                },
-              ]
-            },
-            {
-              type = "rest__api__3__screens___screenId___availableFields@uuuuuuuu_00123_00125uu"
-              toField = "availableFields"
               context = [
                 {
                   name = "screenId"
@@ -938,19 +1241,10 @@ jira {
               fieldName = "tabs"
               fieldType = "list<ScreenableTab>"
             },
-            {
-              fieldName = "availableFields"
-              fieldType = "list<ScreenableField>"
-            },
           ]
           fieldsToHide = [
             {
               fieldName = "id"
-            },
-          ]
-          standaloneFields = [
-            {
-              fieldName = "tabs"
             },
           ]
         }
@@ -1009,19 +1303,39 @@ jira {
             },
           ]
         }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/screens/{screenId}/tabs"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/screens/{screenId}/tabs/{tabId}"
+            method = "put"
+            urlParamsToFields = {
+              tabId = "id"
+            }
+          }
+          remove = {
+            url = "/rest/api/3/screens/{screenId}/tabs/{tabId}"
+            method = "delete"
+            urlParamsToFields = {
+              tabId = "id"
+            }
+          }
+        }
       }
-      PageBeanScreenScheme = {
+      ScreenSchemes = {
         request = {
           url = "/rest/api/3/screenscheme"
           paginationField = "startAt"
         }
       }
-      rest__api__3__status = {
+      Statuses = {
         transformation = {
           dataField = "."
         }
       }
-      PageBeanWorkflow = {
+      Workflows = {
         request = {
           url = "/rest/api/3/workflow/search"
           paginationField = "startAt"
@@ -1068,10 +1382,25 @@ jira {
       }
       Workflow = {
         transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "name"
+              fieldType = "string"
+            },
+            {
+              fieldName = "entityId"
+              fieldType = "string"
+            },
+          ]
           idFields = [
             "id.name",
           ]
           serviceIdField = "entityId"
+          fieldsToHide = [
+            {
+              fieldName = "entityId"
+            },
+          ]
           fieldsToOmit = [
             {
               fieldName = "created"
@@ -1092,7 +1421,7 @@ jira {
           }
         }
       }
-      PageBeanWorkflowScheme = {
+      WorkflowSchemes = {
         request = {
           url = "/rest/api/3/workflowscheme"
           paginationField = "startAt"
@@ -1116,7 +1445,7 @@ jira {
           ]
         }
       }
-      StatusDetails = {
+      Status = {
         transformation = {
           fieldsToHide = [
             {
@@ -1148,12 +1477,23 @@ jira {
           }
         }
       }
-      IssueTypeDetails = {
+      IssueType = {
         request = {
           url = "/rest/api/3/issuetype"
         }
         transformation = {
           dataField = "."
+          fieldTypeOverrides = [
+            {
+              fieldName = "untranslatedName"
+              fieldType = "string"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "subtask"
+            },
+          ]
           fieldsToHide = [
             {
               fieldName = "id"
@@ -1185,7 +1525,7 @@ jira {
           isSingleton = true
         }
       }
-      agile__1_0__board@uuvuu = {
+      Boards = {
         request = {
           url = "/rest/agile/1.0/board"
           paginationField = "startAt"
@@ -1194,7 +1534,7 @@ jira {
           }
           recurseInto = [
             {
-              type = "agile__1_0__board___boardId___configuration@uuvuuuu_00123_00125uu"
+              type = "BoardConfiguration"
               toField = "config"
               context = [
                 {
@@ -1202,6 +1542,7 @@ jira {
                   fromField = "id"
                 },
               ]
+              isSingle = true
             },
           ]
         }
@@ -1211,7 +1552,11 @@ jira {
           fieldTypeOverrides = [
             {
               fieldName = "config"
-              fieldType = "list<agile__1_0__board___boardId___configuration@uuvuuuu_00123_00125uu>"
+              fieldType = "BoardConfiguration"
+            },
+            {
+              fieldName = "filterId"
+              fieldType = "string"
             },
           ]
           fieldsToHide = [
@@ -1295,6 +1640,18 @@ jira {
           ]
         }
       }
+      ApplicationRole = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "userCount"
+            },
+            {
+              fieldName = "remainingSeats"
+            },
+          ]
+        }
+      }
       SharePermission = {
         transformation = {
           fieldsToOmit = [
@@ -1333,7 +1690,7 @@ jira {
           }
         }
       }
-      agile__1_0__board___boardId___configuration@uuvuuuu_00123_00125uu = {
+      BoardConfiguration = {
         transformation = {
           fieldsToOmit = [
             {

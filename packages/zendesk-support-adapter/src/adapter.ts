@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -25,40 +25,55 @@ import {
   references as referencesUtils,
 } from '@salto-io/adapter-components'
 import { logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
-import { FilterCreator, Filter, filtersRunner } from './filter'
+import { FilterCreator, Filter, filtersRunner, FilterResult } from './filter'
 import { API_DEFINITIONS_CONFIG, ZendeskConfig } from './config'
 import { ZENDESK_SUPPORT } from './constants'
 import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
-import fieldReferencesFilter, { fieldNameToTypeMappingDefs } from './filters/field_references'
+import { getChangeGroupIds } from './group_change'
+import fieldReferencesFilter, { fieldNameToTypeMappingDefs,
+  ZendeskSupportFieldReferenceResolver } from './filters/field_references'
 import unorderedListsFilter from './filters/unordered_lists'
 import viewFilter from './filters/view'
 import workspaceFilter from './filters/workspace'
 import ticketFormOrderFilter from './filters/reorder/ticket_form'
 import userFieldOrderFilter from './filters/reorder/user_field'
 import organizationFieldOrderFilter from './filters/reorder/organization_field'
+import workspaceOrderFilter from './filters/reorder/workspace'
 import businessHoursScheduleFilter from './filters/business_hours_schedule'
+import collisionErrorsFilter from './filters/collision_errors'
+import accountSettingsFilter from './filters/account_settings'
+import ticketFieldFilter from './filters/custom_field_options/ticket_field'
+import userFieldFilter from './filters/custom_field_options/user_field'
+import dynamicContentFilter from './filters/dynamic_content'
 import defaultDeployFilter from './filters/default_deploy'
 
 const log = logger(module)
 const { createPaginator } = clientUtils
-const { findDataField, simpleGetArgs } = elementUtils
+const { findDataField, computeGetArgs } = elementUtils
 const { getAllElements } = elementUtils.ducktype
 const { awu } = collections.asynciterable
+const { concatObjects } = objects
 
 export const DEFAULT_FILTERS = [
-  fieldReferencesFilter,
-  // unorderedListsFilter should run after fieldReferencesFilter
-  unorderedListsFilter,
+  ticketFieldFilter,
+  userFieldFilter,
   viewFilter,
   workspaceFilter,
   ticketFormOrderFilter,
   userFieldOrderFilter,
   organizationFieldOrderFilter,
+  workspaceOrderFilter,
   businessHoursScheduleFilter,
+  collisionErrorsFilter,
+  accountSettingsFilter,
+  dynamicContentFilter,
+  fieldReferencesFilter,
+  // unorderedListsFilter should run after fieldReferencesFilter
+  unorderedListsFilter,
   // defaultDeployFilter should be last!
   defaultDeployFilter,
 ]
@@ -87,14 +102,18 @@ export default class ZendeskAdapter implements AdapterOperations {
       paginationFuncCreator: paginate,
     })
     this.createFiltersRunner = async () => (
-      filtersRunner({
-        client: this.client,
-        paginator: this.paginator,
-        config: {
-          fetch: config.fetch,
-          apiDefinitions: config.apiDefinitions,
+      filtersRunner(
+        {
+          client: this.client,
+          paginator: this.paginator,
+          config: {
+            fetch: config.fetch,
+            apiDefinitions: config.apiDefinitions,
+          },
         },
-      }, filterCreators)
+        filterCreators,
+        concatObjects,
+      )
     )
   }
 
@@ -106,7 +125,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       includeTypes: this.userConfig.fetch.includeTypes,
       paginator: this.paginator,
       nestedFieldFinder: findDataField,
-      computeGetArgs: simpleGetArgs,
+      computeGetArgs,
       typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
     })
   }
@@ -123,8 +142,8 @@ export default class ZendeskAdapter implements AdapterOperations {
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
-    await (await this.createFiltersRunner()).onFetch(elements)
-    return { elements }
+    const result = await (await this.createFiltersRunner()).onFetch(elements) as FilterResult
+    return { elements, errors: result ? result.errors : [] }
   }
 
   /**
@@ -140,7 +159,10 @@ export default class ZendeskAdapter implements AdapterOperations {
       })) as Change<InstanceElement>[]
 
     const runner = await this.createFiltersRunner()
-    const lookupFunc = referencesUtils.generateLookupFunc(fieldNameToTypeMappingDefs)
+    const lookupFunc = referencesUtils.generateLookupFunc(
+      fieldNameToTypeMappingDefs,
+      defs => new ZendeskSupportFieldReferenceResolver(defs)
+    )
     const resolvedChanges = await awu(changesToDeploy)
       .map(change => resolveChangeElement(change, lookupFunc))
       .toArray()
@@ -165,6 +187,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     return {
       changeValidator: createChangeValidator(this.userConfig[API_DEFINITIONS_CONFIG]),
       dependencyChanger: deploymentUtils.dependency.removeStandaloneFieldDependency,
+      getChangeGroupIds,
     }
   }
 }

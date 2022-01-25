@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -224,5 +224,20 @@ describe('getPlan', () => {
       after: createElementSource([instance, type, innerType]),
     })
     expect(plan.size).toBe(0)
+  })
+
+  it('should work for new type with a built-in function name', async () => {
+    const type = new ObjectType({
+      elemID: new ElemID('adapter', 'type'),
+      fields: {
+        toString: { refType: BuiltinTypes.STRING },
+      },
+    })
+
+    const plan = await getPlan({
+      before: createElementSource([]),
+      after: createElementSource([type]),
+    })
+    expect(plan.size).toBe(1)
   })
 })

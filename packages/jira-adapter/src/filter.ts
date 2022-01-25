@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,10 +15,10 @@
 */
 import { filterUtils } from '@salto-io/adapter-components'
 import JiraClient from './client/client'
-import { FilterContext } from './config'
+import { JiraConfig } from './config'
 
 export const { filtersRunner } = filterUtils
 
 export type Filter = filterUtils.Filter
 
-export type FilterCreator = filterUtils.FilterCreator<JiraClient, FilterContext>
+export type FilterCreator = filterUtils.FilterCreator<JiraClient, JiraConfig>

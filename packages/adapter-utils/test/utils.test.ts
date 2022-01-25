@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -32,6 +32,7 @@ import {
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
   restoreChangeElement, RestoreValuesFunc, getAllReferencedIds, applyFunctionToChangeData,
   transformElement, toObjectType, getParents, resolveTypeShallow,
+  referenceExpressionStringifyReplacer,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 
@@ -2063,6 +2064,43 @@ describe('Test utils.ts', () => {
       const regJSON = JSON.stringify(obj)
       it('should serialize to the same result JSON.stringify', () => {
         expect(saltoJSON).toEqual(regJSON)
+      })
+    })
+    describe('with reference replacer', () => {
+      let inst: InstanceElement
+      beforeAll(() => {
+        const elemID = new ElemID('salto', 'obj')
+        inst = new InstanceElement(
+          'test2',
+          new ObjectType({ elemID }),
+          {
+            title: 'test',
+            refWithVal: new ReferenceExpression(new ElemID('a', 'b'), 'something'),
+            refWithoutVal: new ReferenceExpression(new ElemID('c', 'd')),
+          },
+        )
+      })
+      it('should replace the reference expression object with a serialized representation', () => {
+        const res = safeJsonStringify(inst, referenceExpressionStringifyReplacer, 2)
+        expect(res).not.toEqual(safeJsonStringify(inst))
+        expect(res).toEqual(`{
+  "elemID": {
+    "adapter": "salto",
+    "typeName": "obj",
+    "idType": "instance",
+    "nameParts": [
+      "test2"
+    ]
+  },
+  "annotations": {},
+  "annotationRefTypes": {},
+  "value": {
+    "title": "test",
+    "refWithVal": "ReferenceExpression(a.b, <omitted>)",
+    "refWithoutVal": "ReferenceExpression(c.d, <no value>)"
+  },
+  "refType": "ReferenceExpression(salto.obj, <omitted>)"
+}`)
       })
     })
   })

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -124,6 +124,34 @@ const wsCleanDef = createWorkspaceCommand({
   action: cleanAction,
 })
 
+type CacheUpdateArgs = {}
+export const cacheUpdateAction: WorkspaceCommandAction<CacheUpdateArgs> = async ({
+  workspace,
+  output,
+}) => {
+  outputLine('Updating workspace cache', output)
+  await workspace.flush()
+  return CliExitCode.Success
+}
+
+const cacheUpdateDef = createWorkspaceCommand({
+  properties: {
+    name: 'update',
+    description: 'Update the workspace cache',
+  },
+  action: cacheUpdateAction,
+})
+
+const cacheGroupDef = createCommandGroupDef({
+  properties: {
+    name: 'cache',
+    description: 'Commands for workspace cache administration',
+  },
+  subCommands: [
+    cacheUpdateDef,
+  ],
+})
+
 // Group definition
 const wsGroupDef = createCommandGroupDef({
   properties: {
@@ -132,6 +160,7 @@ const wsGroupDef = createCommandGroupDef({
   },
   subCommands: [
     wsCleanDef,
+    cacheGroupDef,
   ],
 })
 

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,3 +16,4 @@
 export { deployTypesNotSupportedValidator } from './deploy_types_not_supported'
 export { deployNotSupportedValidator } from './deploy_not_supported'
 export { createCheckDeploymentBasedOnConfigValidator } from './check_deployment_based_on_config'
+export { createSkipParentsOfSkippedInstancesValidator } from './skip_parents_of_skipped_instances'

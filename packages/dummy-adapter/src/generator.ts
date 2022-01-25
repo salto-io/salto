@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -67,6 +67,7 @@ export type GeneratorParams = {
     listLengthStd: number
     useOldProfiles: boolean
     extraNaclPath?: string
+    generateEnvName? : string
 }
 
 export const defaultParams: Omit<GeneratorParams, 'extraNaclPath'> = {
@@ -615,7 +616,7 @@ export const generateElements = async (
 
 
   const generateEnvElements = (): Element[] => {
-    const envID = process.env.SALTO_ENV
+    const envID = params.generateEnvName ?? process.env.SALTO_ENV
     if (envID === undefined) return []
     const PrimWithHiddenAnnos = new PrimitiveType({
       elemID: new ElemID('dummy', 'PrimWithAnnos'),

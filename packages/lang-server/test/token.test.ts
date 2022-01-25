@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -22,7 +22,7 @@ describe('Test go to definitions', () => {
   let naclFileContent: string
 
   beforeAll(async () => {
-    const naclPath = path.resolve(`${__dirname}/../../test/test-nacls/all.nacl`)
+    const naclPath = path.resolve(`${__dirname}/../test/test-nacls/all.nacl`)
     naclFileContent = fs.readFileSync(naclPath).toString()
   })
 

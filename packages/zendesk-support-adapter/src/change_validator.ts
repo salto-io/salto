@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -14,17 +14,20 @@
 * limitations under the License.
 */
 import { ChangeValidator } from '@salto-io/adapter-api'
-import { createChangeValidator } from '@salto-io/adapter-utils'
 import { config as configUtils, deployment } from '@salto-io/adapter-components'
+import { accountSettingsValidator } from './change_validators'
 
 const {
-  deployTypesNotSupportedValidator, createCheckDeploymentBasedOnConfigValidator,
+  deployTypesNotSupportedValidator,
+  createCheckDeploymentBasedOnConfigValidator,
+  createSkipParentsOfSkippedInstancesValidator,
 } = deployment.changeValidators
 
 export default (apiConfig: configUtils.AdapterDuckTypeApiConfig): ChangeValidator => {
   const validators: ChangeValidator[] = [
     deployTypesNotSupportedValidator,
     createCheckDeploymentBasedOnConfigValidator(apiConfig),
+    accountSettingsValidator,
   ]
-  return createChangeValidator(validators)
+  return createSkipParentsOfSkippedInstancesValidator(validators)
 }

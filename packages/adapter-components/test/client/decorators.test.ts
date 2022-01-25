@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,7 +16,7 @@
 import { logger } from '@salto-io/logging'
 import { logDecorator, requiresLogin } from '../../src/client'
 
-const logging = logger('adapter-components/client/decorators')
+const logging = logger('adapter-components/src/client/decorators')
 
 class TestCls {
   a: string

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -344,6 +344,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       idFields: ['title'],
       fileNameFields: ['title'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'attachments' }),
     },
     deployRequests: {
       add: {
@@ -430,8 +431,24 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
+  business_hours_schedules: {
+    request: {
+      url: '/business_hours/schedules',
+      recurseInto: [
+        {
+          type: 'business_hours_schedule_holiday',
+          toField: 'holidays',
+          context: [{ name: 'scheduleId', fromField: 'id' }],
+        },
+      ],
+    },
+    transformation: {
+      dataField: 'schedules',
+    },
+  },
   business_hours_schedule: {
     transformation: {
+      standaloneFields: [{ fieldName: 'holidays' }],
       sourceTypeName: 'business_hours_schedules__schedules',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
@@ -595,6 +612,32 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
   },
   ticket_field__custom_field_options: {
+    deployRequests: {
+      add: {
+        url: '/ticket_fields/{ticketFieldId}/options',
+        method: 'post',
+        deployAsField: 'custom_field_option',
+        urlParamsToFields: {
+          ticketFieldId: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/ticket_fields/{ticketFieldId}/options',
+        method: 'post',
+        deployAsField: 'custom_field_option',
+        urlParamsToFields: {
+          ticketFieldId: '_parent.0.id',
+        },
+      },
+      remove: {
+        url: '/ticket_fields/{ticketFieldId}/options/{ticketFieldOptionId}',
+        method: 'delete',
+        urlParamsToFields: {
+          ticketFieldId: '_parent.0.id',
+          ticketFieldOptionId: 'id',
+        },
+      },
+    },
     transformation: {
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
@@ -634,8 +677,37 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
   },
   user_field__custom_field_options: {
+    deployRequests: {
+      add: {
+        url: '/user_fields/{userFieldId}/options',
+        method: 'post',
+        deployAsField: 'custom_field_option',
+        urlParamsToFields: {
+          userFieldId: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/user_fields/{userFieldId}/options',
+        method: 'post',
+        deployAsField: 'custom_field_option',
+        urlParamsToFields: {
+          userFieldId: '_parent.0.id',
+        },
+      },
+      remove: {
+        url: '/user_fields/{userFieldId}/options/{userFieldOptionId}',
+        method: 'delete',
+        urlParamsToFields: {
+          userFieldId: '_parent.0.id',
+          userFieldOptionId: 'id',
+        },
+      },
+    },
     transformation: {
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'default', fieldType: 'boolean' },
+      ),
     },
   },
   user_field_order: {
@@ -698,8 +770,9 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   },
   routing_attribute: {
     transformation: {
+      standaloneFields: [{ fieldName: 'values' }],
       sourceTypeName: 'routing_attributes__attributes',
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'string' }),
     },
     deployRequests: {
       add: {
@@ -772,6 +845,14 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   workspace__apps: {
     transformation: {
       fieldsToHide: [],
+    },
+  },
+  workspace_order: {
+    deployRequests: {
+      modify: {
+        url: '/workspaces/reorder',
+        method: 'put',
+      },
     },
   },
   app_installation: {
@@ -1058,6 +1139,33 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       idFields: ['locale_id'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
+    deployRequests: {
+      add: {
+        url: '/dynamic_content/items/{dynamicContentItemId}/variants',
+        deployAsField: 'variant',
+        method: 'post',
+        urlParamsToFields: {
+          dynamicContentItemId: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/dynamic_content/items/{dynamicContentItemId}/variants/{dynammicContentVariantId}',
+        deployAsField: 'variant',
+        method: 'put',
+        urlParamsToFields: {
+          dynammicContentVariantId: 'id',
+          dynamicContentItemId: '_parent.0.id',
+        },
+      },
+      remove: {
+        url: '/dynamic_content/items/{dynamicContentItemId}/variants/{dynammicContentVariantId}',
+        method: 'delete',
+        urlParamsToFields: {
+          dynammicContentVariantId: 'id',
+          dynamicContentItemId: '_parent.0.id',
+        },
+      },
+    },
   },
   locales: {
     request: {
@@ -1068,9 +1176,41 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
   },
   // eslint-disable-next-line camelcase
-  business_hours_schedules: {
+  business_hours_schedule_holiday: {
     request: {
-      url: '/business_hours/schedules',
+      url: '/business_hours/schedules/{scheduleId}/holidays',
+    },
+    deployRequests: {
+      add: {
+        url: '/business_hours/schedules/{scheduleId}/holidays',
+        deployAsField: 'holiday',
+        method: 'post',
+        urlParamsToFields: {
+          scheduleId: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/business_hours/schedules/{scheduleId}/holidays/{holidayId}',
+        deployAsField: 'holiday',
+        method: 'put',
+        urlParamsToFields: {
+          holidayId: 'id',
+          scheduleId: '_parent.0.id',
+        },
+      },
+      remove: {
+        url: '/business_hours/schedules/{scheduleId}/holidays/{holidayId}',
+        method: 'delete',
+        urlParamsToFields: {
+          holidayId: 'id',
+          scheduleId: '_parent.0.id',
+        },
+      },
+    },
+    transformation: {
+      sourceTypeName: 'business_hours_schedule__holidays',
+      dataField: 'holidays',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
   // eslint-disable-next-line camelcase
@@ -1130,10 +1270,54 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       url: '/organization_fields',
     },
   },
+  routing_attribute_value: {
+    request: {
+      url: '/routing/attributes/{attributeId}/values',
+    },
+    deployRequests: {
+      add: {
+        url: '/routing/attributes/{attributeId}/values',
+        deployAsField: 'attribute_value',
+        method: 'post',
+        urlParamsToFields: {
+          attributeId: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/routing/attributes/{attributeId}/values/{attributeValueId}',
+        deployAsField: 'attribute_value',
+        method: 'put',
+        urlParamsToFields: {
+          attributeValueId: 'id',
+          attributeId: '_parent.0.id',
+        },
+      },
+      remove: {
+        url: '/routing/attributes/{attributeId}/values/{attributeValueId}',
+        method: 'delete',
+        urlParamsToFields: {
+          attributeValueId: 'id',
+          attributeId: '_parent.0.id',
+        },
+      },
+    },
+    transformation: {
+      sourceTypeName: 'routing_attribute__values',
+      dataField: 'attribute_values',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'string' }),
+    },
+  },
   // eslint-disable-next-line camelcase
   routing_attributes: {
     request: {
       url: '/routing/attributes',
+      recurseInto: [
+        {
+          type: 'routing_attribute_value',
+          toField: 'values',
+          context: [{ name: 'attributeId', fromField: 'id' }],
+        },
+      ],
     },
   },
   // eslint-disable-next-line camelcase
@@ -1199,11 +1383,47 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   // not included yet: satisfaction_reason (returns 403), sunshine apis
 }
 
+export const DEFAULT_INCLUDE_ENDPOINTS: string[] = [
+  'account_settings',
+  'app_installations',
+  'apps_owned',
+  'automations',
+  'brands',
+  'business_hours_schedules',
+  'custom_roles',
+  'dynamic_content_item',
+  'groups',
+  'locales',
+  'macro_categories',
+  'macros',
+  'macros_actions',
+  'macros_definitions',
+  'monitored_twitter_handles',
+  'oauth_clients',
+  'oauth_global_clients',
+  'organization_fields',
+  'organizations',
+  'resource_collections',
+  'routing_attribute_definitions',
+  'routing_attributes',
+  'sharing_agreements',
+  'sla_policies',
+  'sla_policies_definitions',
+  'support_addresses',
+  'targets',
+  'ticket_fields',
+  'ticket_forms',
+  'trigger_categories',
+  'trigger_definitions',
+  'triggers',
+  'user_fields',
+  'views',
+  'workspaces',
+]
+
 export const DEFAULT_CONFIG: ZendeskConfig = {
   [FETCH_CONFIG]: {
-    includeTypes: [
-      ...Object.keys(_.pickBy(DEFAULT_TYPES, def => def.request !== undefined)),
-    ].sort(),
+    includeTypes: DEFAULT_INCLUDE_ENDPOINTS,
   },
   [API_DEFINITIONS_CONFIG]: {
     typeDefaults: {

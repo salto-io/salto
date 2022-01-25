@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -213,7 +213,9 @@ export const filterInvalidChanges = async (
     .toArray()
 
   const invalidChanges = changeErrors.filter(v => v.severity === 'Error')
-  const nodeElemIdsToOmit = new Set(invalidChanges.map(change => change.elemID.getFullName()))
+  const nodeElemIdsToOmit = new Set(
+    invalidChanges.map(change => change.elemID.createBaseID().parent.getFullName())
+  )
   const validAfterElementsMap = await createValidAfterElementsMap(invalidChanges)
   const { validDiffGraph, dependencyErrors } = buildValidDiffGraph(
     nodeElemIdsToOmit,

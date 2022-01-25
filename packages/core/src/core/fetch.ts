@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -761,6 +761,7 @@ export const fetchChangesFromWorkspace = async (
   stateElements: elementSource.ElementsSource,
   currentConfigs: InstanceElement[],
   env: string,
+  fromState: boolean,
   progressEmitter?: EventEmitter<FetchProgressEvents>,
 ): Promise<FetchChangesResult> => {
   const getDifferentConfigs = async (): Promise<InstanceElement[]> => (
@@ -799,9 +800,10 @@ export const fetchChangesFromWorkspace = async (
     progressEmitter.emit('changesWillBeFetched', getChangesEmitter, fetchAccounts)
   }
 
-  const fullElements = await awu(
-    await (await otherWorkspace.elements(true, env)).getAll()
-  )
+  const otherElementsSource = fromState
+    ? otherWorkspace.state(env)
+    : (await otherWorkspace.elements(true, env))
+  const fullElements = await awu(await (otherElementsSource).getAll())
     .filter(elem => fetchAccounts.includes(elem.elemID.adapter))
     .toArray()
 

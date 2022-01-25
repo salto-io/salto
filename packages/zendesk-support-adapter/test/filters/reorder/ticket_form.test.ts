@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -111,7 +111,12 @@ describe('ticket form reorder filter', () => {
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toEqual([change])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(change, expect.anything(), expect.anything())
+      expect(mockDeployChange).toHaveBeenCalledWith(
+        change,
+        expect.anything(),
+        expect.anything(),
+        undefined,
+      )
     })
     it('should return an error if there are multiple order changes', async () => {
       const res = await filter.deploy([change, change])

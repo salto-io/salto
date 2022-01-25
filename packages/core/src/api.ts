@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -206,6 +206,7 @@ export type FetchFromWorkspaceFuncParams = {
   progressEmitter?: EventEmitter<FetchProgressEvents>
   accounts?: string[]
   services?: string[]
+  fromState?: boolean
   env: string
 }
 export type FetchFromWorkspaceFunc = (args: FetchFromWorkspaceFuncParams) => Promise<FetchResult>
@@ -280,6 +281,7 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
   progressEmitter,
   accounts,
   services,
+  fromState = false,
   env,
 }: FetchFromWorkspaceFuncParams) => {
   log.debug('fetch starting from workspace..')
@@ -301,6 +303,7 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
     workspace.state(),
     currentConfigs,
     env,
+    fromState,
     progressEmitter,
   )
 

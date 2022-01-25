@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -18,7 +18,7 @@ import { DirectoryStore } from '../../src/workspace/dir_store'
 import { dumpElements } from '../../src/parser'
 import { configSource } from '../../src/workspace/config_source'
 
-jest.mock('../../../src/workspace/dir_store')
+jest.mock('../../src/workspace/dir_store')
 describe('configs', () => {
   const adapter = 'mockadapter'
   const configID = new ElemID(adapter)

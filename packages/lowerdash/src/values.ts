@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -19,3 +19,19 @@ export const isDefined = <T>(val: T | undefined | void): val is T => val !== und
 
 export const isPlainObject = (val: unknown): val is object => _.isPlainObject(val)
 export const isPlainRecord = (val: unknown): val is Record<string, unknown> => _.isPlainObject(val)
+
+export const lookupValue = (
+  blob: unknown,
+  lookupFunc: (val: unknown) => boolean | void
+): boolean => {
+  if (lookupFunc(blob)) {
+    return true
+  }
+  if (_.isArray(blob)) {
+    return blob.some(item => lookupValue(item, lookupFunc))
+  }
+  if (isPlainRecord(blob)) {
+    return Object.values(blob).some(item => lookupValue(item, lookupFunc))
+  }
+  return false
+}

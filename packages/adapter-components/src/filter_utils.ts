@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,9 +16,11 @@
 import { filter } from '@salto-io/adapter-utils'
 import { Paginator } from './client'
 
-export type Filter = filter.Filter<void>
+export type Filter<TResult extends void | filter.FilterResult = void> = filter.Filter<TResult>
 
-export type FilterWith<M extends keyof Filter> = filter.FilterWith<void, M>
+export type FilterWith<
+  M extends keyof Filter, TResult extends void | filter.FilterResult = void
+> = filter.FilterWith<TResult, M>
 
 export type FilterOpts<TClient, TContext> = {
   client: TClient
@@ -26,12 +28,15 @@ export type FilterOpts<TClient, TContext> = {
   config: TContext
 }
 
-export type FilterCreator<TClient, TContext> = filter.FilterCreator<
-  void,
+export type FilterCreator<
+  TClient, TContext, TResult extends void | filter.FilterResult = void
+> = filter.FilterCreator<
+  TResult,
   FilterOpts<TClient, TContext>
 >
 
-export const filtersRunner = <TClient, TContext>(
+export const filtersRunner = <TClient, TContext, TResult extends void | filter.FilterResult = void>(
   opts: FilterOpts<TClient, TContext>,
-  filterCreators: ReadonlyArray<FilterCreator<TClient, TContext>>,
-): Required<Filter> => filter.filtersRunner(opts, filterCreators)
+  filterCreators: ReadonlyArray<FilterCreator<TClient, TContext, TResult>>,
+  onFetchAggregator: (results: TResult[]) => TResult | void = () => undefined,
+): Required<Filter<TResult>> => filter.filtersRunner(opts, filterCreators, onFetchAggregator)

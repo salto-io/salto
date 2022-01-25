@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/test-utils",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "license": "Apache-2.0",
   "description": "Test utilities for jest",
   "repository": {
@@ -50,6 +50,7 @@
     "jest": "^27.4.5",
     "jest-circus": "^27.4.5",
     "jest-junit": "^12.0.0",
+    "ts-jest": "^27.1.2",
     "tsc-watch": "^2.2.1",
     "typescript": "3.9.3"
   }

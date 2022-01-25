@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -14,24 +14,55 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange } from '@salto-io/adapter-api'
-import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
+import {
+  AdapterOperations,
+  Change,
+  DeployOptions,
+  DeployResult,
+  FetchOptions,
+  FetchResult,
+  InstanceElement,
+  isInstanceChange,
+  isObjectType,
+  TypeMap,
+} from '@salto-io/adapter-api'
+import {
+  client as clientUtils,
+  config as configUtils,
+  deployment,
+  elements as elementUtils,
+} from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import JiraClient from './client/client'
-import changeValidator from './change_validator'
-import { JiraConfig, getApiDefinitions } from './config'
-import { FilterCreator, Filter, filtersRunner } from './filter'
-import fieldReferences from './filters/field_references'
+import changeValidator from './change_validators'
+import { getApiDefinitions, JiraConfig } from './config'
+import { Filter, FilterCreator, filtersRunner } from './filter'
+import fieldReferencesFilter from './filters/field_references'
 import referenceBySelfLinkFilter from './filters/references_by_self_link'
+import removeSelfFilter from './filters/remove_self'
 import issueTypeSchemeFilter from './filters/issue_type_schemas/issue_type_scheme'
-import authenticatedPermissionFilter from './filters/authenticated_permission'
+import sharePermissionFilter from './filters/share_permission'
+import boardFilter from './filters/board'
+import screenFilter from './filters/screen/screen'
+import issueTypeScreenSchemeFilter from './filters/issue_type_screen_scheme'
+import fieldConfigurationFilter from './filters/field_configuration'
+import fieldConfigurationTrashedFieldsFilter from './filters/field_configuration_trashed_fields'
+import fieldConfigurationSchemeFilter from './filters/field_configurations_scheme'
 import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
-import defaultDeployFilter from './filters/default_deploy'
+import projectFilter from './filters/project'
+import projectComponentFilter from './filters/project_component'
+import defaultInstancesDeployFilter from './filters/default_instances_deploy'
 import workflowFilter from './filters/workflow/workflow'
+import workflowSchemeFilter from './filters/workflow_scheme'
+import fieldStructureFilter from './filters/fields/field_structure_filter'
+import fieldDeploymentFilter from './filters/fields/field_deployment_filter'
+import contextDeploymentFilter from './filters/fields/context_deployment_filter'
+import fieldTypeReferencesFilter from './filters/fields/field_type_references_filter'
+import replaceObjectWithContainedValueFilter from './filters/replace_object_with_contained_value'
+import avatarsFilter from './filters/avatars'
 import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
-import replaceObjectWithContainedValue from './filters/replace_object_with_contained_value'
 
 const {
   generateTypes,
@@ -43,16 +74,32 @@ const { createPaginator, getWithOffsetAndLimit } = clientUtils
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
-  replaceObjectWithContainedValue,
-  fieldReferences,
+  avatarsFilter,
   workflowFilter,
-  referenceBySelfLinkFilter,
+  workflowSchemeFilter,
   issueTypeSchemeFilter,
-  authenticatedPermissionFilter,
+  sharePermissionFilter,
+  boardFilter,
+  projectFilter,
+  projectComponentFilter,
+  fieldStructureFilter,
+  fieldTypeReferencesFilter,
+  fieldDeploymentFilter,
+  contextDeploymentFilter,
+  screenFilter,
+  issueTypeScreenSchemeFilter,
+  fieldConfigurationFilter,
+  fieldConfigurationSchemeFilter,
+  replaceObjectWithContainedValueFilter,
+  referenceBySelfLinkFilter,
+  // Must run after referenceBySelfLinkFilter
+  removeSelfFilter,
+  fieldReferencesFilter,
+  // Must run after fieldReferencesFilter
+  fieldConfigurationTrashedFieldsFilter,
   hiddenValuesInListsFilter,
-  fieldReferences,
   // Must be last
-  defaultDeployFilter,
+  defaultInstancesDeployFilter,
 ]
 
 export interface JiraAdapterParams {
@@ -204,6 +251,9 @@ export default class JiraAdapter implements AdapterOperations {
 
   // eslint-disable-next-line class-methods-use-this
   get deployModifiers(): AdapterOperations['deployModifiers'] {
-    return { changeValidator }
+    return {
+      changeValidator,
+      dependencyChanger: deployment.dependency.removeStandaloneFieldDependency,
+    }
   }
 }

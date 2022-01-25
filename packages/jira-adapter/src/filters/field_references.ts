@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,7 +16,7 @@
 import { Element } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { referencesRules } from '../references'
+import { referencesRules } from '../reference_mapping'
 import { FilterCreator } from '../filter'
 
 /**
@@ -26,6 +26,7 @@ const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     await referenceUtils.addReferences({
       elements,
+      fieldsToGroupBy: ['id', 'name'],
       defs: referencesRules,
       isEqualValue: (lhs, rhs) => _.toString(lhs) === _.toString(rhs),
     })

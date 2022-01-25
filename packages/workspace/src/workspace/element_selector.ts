@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -45,6 +45,15 @@ type ElementIDContainer = {
   elemID: ElemID
 }
 
+// get the full name including handling for settings instances ('_config')
+const getElemIDFullNameParts = (elemID: ElemID): string[] => {
+  const fullNameParts = elemID.getFullNameParts()
+  if (elemID.isTopLevel() && elemID.idType === 'instance' && elemID.name === ElemID.CONFIG_NAME) {
+    return [...fullNameParts, elemID.name]
+  }
+  return fullNameParts
+}
+
 const testNames = (
   nameArray: readonly string[], nameSelectors: RegExp[], includeNested = false
 ): boolean =>
@@ -57,7 +66,7 @@ const match = (elemId: ElemID, selector: ElementSelector, includeNested = false)
   && selector.typeNameSelector.test(elemId.typeName)
   && ((selector.idTypeSelector === elemId.idType) || (includeNested && selector.idTypeSelector === 'type' && elemId.createTopLevelParentID().parent.idType === 'type'))
   && testNames(
-    elemId.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS),
+    getElemIDFullNameParts(elemId).slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS),
     selector.nameSelectors ?? [],
     includeNested
   )
@@ -210,8 +219,12 @@ const createTopLevelSelector = (selector: ElementSelector): ElementSelector => {
 }
 
 const createSameDepthSelector = (selector: ElementSelector, elemID: ElemID): ElementSelector =>
-  createElementSelector(selector.origin.split(ElemID.NAMESPACE_SEPARATOR).slice(0,
-    elemID.getFullNameParts().length).join(ElemID.NAMESPACE_SEPARATOR), selector.caseInsensitive)
+  createElementSelector(
+    selector.origin
+      .split(ElemID.NAMESPACE_SEPARATOR)
+      .slice(0, getElemIDFullNameParts(elemID).length)
+      .join(ElemID.NAMESPACE_SEPARATOR), selector.caseInsensitive
+  )
 
 const isElementPossiblyParentOfSearchedElement = (
   selectors: ElementSelector[], testId: ElemID
@@ -283,7 +296,7 @@ export const selectElementIdsByTraversal = async ({
 
   const subElementIDs = new Set<string>()
   const selectFromSubElements: WalkOnFunc = ({ path }) => {
-    if (path.getFullNameParts().length <= 1) {
+    if (getElemIDFullNameParts(path).length <= 1) {
       return WALK_NEXT_STEP.RECURSE
     }
 
@@ -294,7 +307,8 @@ export const selectElementIdsByTraversal = async ({
       }
     }
     const stillRelevantSelectors = selectors.filter(selector =>
-      selector.origin.split(ElemID.NAMESPACE_SEPARATOR).length > path.getFullNameParts().length)
+      selector.origin.split(ElemID.NAMESPACE_SEPARATOR).length
+        > getElemIDFullNameParts(path).length)
     if (stillRelevantSelectors.length === 0) {
       return WALK_NEXT_STEP.SKIP
     }

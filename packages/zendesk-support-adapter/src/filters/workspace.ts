@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -18,9 +18,9 @@ import {
   Change, getChangeData, InstanceElement, isRemovalChange, Values,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
-import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
+import { applyforInstanceChangesOfType } from './utils'
 
 const WORKSPACE_TYPE_NAME = 'workspace'
 
@@ -28,6 +28,32 @@ const WORKSPACE_TYPE_NAME = 'workspace'
  * Deploys workspaces
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  preDeploy: async changes => {
+    await applyforInstanceChangesOfType(
+      changes,
+      WORKSPACE_TYPE_NAME,
+      (instance: InstanceElement) => {
+        instance.value = {
+          ...instance.value,
+          macros: (instance.value.selected_macros ?? [])
+            .filter(_.isPlainObject)
+            .map((e: Values) => e.id)
+            .filter(values.isDefined),
+        }
+        return instance
+      }
+    )
+  },
+  onDeploy: async changes => {
+    await applyforInstanceChangesOfType(
+      changes,
+      WORKSPACE_TYPE_NAME,
+      (instance: InstanceElement) => {
+        instance.value = _.omit(instance.value, ['macros'])
+        return instance
+      }
+    )
+  },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [workspaceChanges, leftoverChanges] = _.partition(
       changes,
@@ -38,18 +64,10 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     const deployResult = await deployChanges(
       workspaceChanges,
       async change => {
-        await applyFunctionToChangeData(change, workspace => {
-          workspace.value = {
-            ..._.omit(workspace.value, ['selected_macros']),
-            macros: (workspace.value.selected_macros ?? [])
-              .filter(_.isPlainObject)
-              .map((e: Values) => e.id)
-              .filter(values.isDefined),
-          }
-          return workspace
-        })
-        await deployChange(change, client, config.apiDefinitions)
-      }
+        await deployChange(
+          change, client, config.apiDefinitions, ['selected_macros'],
+        )
+      },
     )
     return { deployResult, leftoverChanges }
   },

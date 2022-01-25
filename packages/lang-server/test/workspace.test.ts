@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -21,7 +21,7 @@ import { mockWorkspace } from './workspace'
 
 const { awu } = collections.asynciterable
 describe('workspace', () => {
-  const workspaceBaseDir = path.resolve(`${__dirname}/../../test/test-nacls`)
+  const workspaceBaseDir = path.resolve(`${__dirname}/../test/test-nacls`)
   const naclFileName = path.join(workspaceBaseDir, 'all.nacl')
   const validation1FileName = path.join(workspaceBaseDir, 'validation1.nacl')
   const validation2FileName = path.join(workspaceBaseDir, 'validation2.nacl')

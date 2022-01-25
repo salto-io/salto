@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -258,16 +258,8 @@ describe('filterInvalidChanges', () => {
     expect(planResult.changeErrors.filter(err => !isDependencyError(err))).toHaveLength(1)
     expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(0)
     expect(planResult.changeErrors[0].severity).toEqual('Error')
-    expect(planResult.changeErrors[0].elemID.isEqual(seatsId))
-      .toBeTruthy()
-    expect(planResult.size).toBe(1)
-    const planItem = getFirstPlanItem(planResult)
-    expect(planItem.items.size).toBe(1)
-    const [change] = planItem.changes()
-    expect(change.action).toEqual('modify')
-    const changeInstance = getChangeData(change)
-    expect(changeInstance).toBeInstanceOf(InstanceElement)
-    expect(changeInstance.elemID).toEqual(saltoEmployeeInstance.elemID)
+    expect(planResult.changeErrors[0].elemID.isEqual(seatsId)).toBeTruthy()
+    expect(planResult.size).toBe(0)
   })
 
   it('should have onRemove change errors', async () => {

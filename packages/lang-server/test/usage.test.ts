@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -32,7 +32,7 @@ describe('Test go to definitions', () => {
     defs: SaltoElemLocation[]
   ): number[] => defs.map(d => d.range.start.line).sort((a, b) => a - b)
 
-  const baseDir = path.resolve(`${__dirname}/../../test/test-nacls/`)
+  const baseDir = path.resolve(`${__dirname}/../test/test-nacls/`)
   const naclFileName = path.join(baseDir, 'all.nacl')
   beforeAll(async () => {
     workspace = new EditorWorkspace(baseDir, await mockWorkspace([naclFileName], ['path/to/content', 'path/to/deep_content']))

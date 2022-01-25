@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -27,7 +27,7 @@ describe('deployTypesNotSupportedValidator', () => {
       elemID: type.elemID,
       severity: 'Error',
       message: `Deployment of non-instance elements is not supported in adapter ${type.elemID.adapter}`,
-      detailedMessage: `Salto does not support deployment of ${type.elemID.getFullName()}`,
+      detailedMessage: `Deployment of ${type.elemID.getFullName()} is not supported`,
     }])
   })
 })

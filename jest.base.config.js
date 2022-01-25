@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -14,24 +14,30 @@
 * limitations under the License.
 */
 module.exports = {
+  globals: {
+    'ts-jest': {
+      isolatedModules: true
+    }
+  },
+  preset: 'ts-jest',
   verbose: true,
   testEnvironment: 'node',
   testMatch: [
     process.env['RUN_E2E_TESTS']
-      ? '<rootDir>/dist/e2e_test/**/*.test.js'
-      : '<rootDir>/dist/test/**/*.test.js'
+      ? '<rootDir>/e2e_test/**/*.test.ts'
+      : '<rootDir>/test/**/*.test.ts'
   ],
   testRunner: "jest-circus/runner",
   collectCoverage: true,
   coverageReporters: ['json', 'lcov', 'text', 'clover', 'json-summary'],
   collectCoverageFrom: [
-    '**/dist/**/*.js',
-    '**/dist/**/*.jsx',
+    '**/*.ts',
+    '**/*.tsx',
     '!**/node_modules/**',
-    '!*.config.js',
+    '!*.config.ts',
     '!coverage/**',
-    '!dist/test/**',
-    '!dist/e2e_test/**',
+    '!test/**',
+    '!e2e_test/**',
   ],
 }
 

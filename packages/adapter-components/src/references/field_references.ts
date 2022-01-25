@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -228,8 +228,12 @@ export const addReferences = async <
 export const generateLookupFunc = <
   T extends string,
   GenericFieldReferenceDefinition extends FieldReferenceDefinition<T>
->(defs: GenericFieldReferenceDefinition[]): GetLookupNameFunc => {
-  const resolverFinder = generateReferenceResolverFinder(defs)
+>(
+    defs: GenericFieldReferenceDefinition[],
+    fieldReferenceResolverCreator?: (def: GenericFieldReferenceDefinition) =>
+      FieldReferenceResolver<T>,
+  ): GetLookupNameFunc => {
+  const resolverFinder = generateReferenceResolverFinder(defs, fieldReferenceResolverCreator)
 
   const determineLookupStrategy = async (args: GetLookupNameFuncArgs):
     Promise<ReferenceSerializationStrategy | undefined> => {

@@ -2,7 +2,7 @@
 set -xeuo pipefail
 shopt -s extglob
 
-mkdir -p ./tmp_pkg && vsce package --yarn -o ./tmp_pkg/salto.vsix
+mkdir -p ./tmp_pkg && cp ../../LICENSE . && vsce package --yarn -o ./tmp_pkg/salto.vsix && rm -f LICENSE
 cd ./tmp_pkg && unzip salto.vsix
 cp -r ../node_modules/!(@salto-io) extension/node_modules/
 zip -ur salto.vsix extension

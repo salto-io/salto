@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -14,48 +14,119 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Change, ChangeDataType, DeployResult, getChangeData, InstanceElement, isAdditionChange, Values } from '@salto-io/adapter-api'
-import { config as configUtils, deployment } from '@salto-io/adapter-components'
+import {
+  Change, ChangeDataType, DeployResult, getChangeData, InstanceElement, isAdditionChange, Values,
+} from '@salto-io/adapter-api'
+import {
+  config as configUtils, deployment, client as clientUtils,
+} from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
 import { getZendeskError } from './errors'
+import { ZendeskApiConfig } from './config'
 
 const log = logger(module)
+
+export const addIdUponAddition = (
+  change: Change<InstanceElement>,
+  apiDefinitions: configUtils.AdapterApiConfig,
+  response: deployment.ResponseResult,
+  dataField?: string,
+): void => {
+  const { transformation } = apiDefinitions
+    .types[getChangeData(change).elemID.typeName]
+  if (isAdditionChange(change)) {
+    if (Array.isArray(response)) {
+      log.warn(
+        'Received an array for the response of the deploy. Not updating the id of the element. Action: add. ID: %s',
+        getChangeData(change).elemID.getFullName()
+      )
+      return
+    }
+    const transformationConfig = configUtils.getConfigWithDefault(
+      transformation,
+      apiDefinitions.typeDefaults.transformation,
+    )
+    const idField = transformationConfig.serviceIdField ?? 'id'
+    const idValue = dataField
+      ? (response?.[dataField] as Values)?.[idField]
+      : response?.[idField]
+    if (idValue !== undefined) {
+      getChangeData(change).value[idField] = idValue
+    }
+  }
+}
+
+const getMatchedChild = ({
+  change, response, childFieldName, dataField, childUniqueFieldName,
+}: {
+  change: Change<InstanceElement>
+  response: clientUtils.ResponseValue
+  childFieldName: string
+  childUniqueFieldName: string
+  dataField?: string
+}): clientUtils.ResponseValue | undefined => {
+  const childrenResponse = ((
+    dataField !== undefined
+      ? response[dataField]
+      : response
+    ) as Values)?.[childFieldName]
+  if (childrenResponse) {
+    if (_.isArray(childrenResponse)
+    && childrenResponse.every(_.isPlainObject)) {
+      return childrenResponse.find(
+        child => child[childUniqueFieldName]
+          && child[childUniqueFieldName] === getChangeData(change).value[childUniqueFieldName]
+      )
+    }
+    log.warn(`Received invalid response for ${childFieldName} in ${getChangeData(change).elemID.getFullName()}`)
+  }
+  return undefined
+}
+export const addIdsToChildrenUponAddition = ({
+  response, parentChange, childrenChanges, apiDefinitions, childFieldName, childUniqueFieldName,
+}: {
+  response: deployment.ResponseResult
+  parentChange: Change<InstanceElement>
+  childrenChanges: Change<InstanceElement>[]
+  apiDefinitions: ZendeskApiConfig
+  childFieldName: string
+  childUniqueFieldName: string
+}): Change<InstanceElement>[] => {
+  const { deployRequests } = apiDefinitions
+    .types[getChangeData(parentChange).elemID.typeName]
+  childrenChanges
+    .filter(isAdditionChange)
+    .forEach(change => {
+      if (response && !_.isArray(response)) {
+        const dataField = deployRequests?.add?.deployAsField
+        const child = getMatchedChild({
+          change, response, dataField, childFieldName, childUniqueFieldName,
+        })
+        if (child) {
+          addIdUponAddition(change, apiDefinitions, child)
+        }
+      }
+    })
+  return [parentChange, ...childrenChanges]
+}
 
 export const deployChange = async (
   change: Change<InstanceElement>,
   client: ZendeskClient,
   apiDefinitions: configUtils.AdapterApiConfig,
-): Promise<void> => {
-  const { deployRequests, transformation } = apiDefinitions
-    .types[getChangeData(change).elemID.typeName]
+  fieldsToIgnore?: string[],
+): Promise<deployment.ResponseResult> => {
+  const { deployRequests } = apiDefinitions.types[getChangeData(change).elemID.typeName]
   try {
     const response = await deployment.deployChange(
       change,
       client,
       deployRequests,
+      fieldsToIgnore
     )
-    if (isAdditionChange(change)) {
-      if (!Array.isArray(response)) {
-        const transformationConfig = configUtils.getConfigWithDefault(
-          transformation,
-          apiDefinitions.typeDefaults.transformation,
-        )
-        const idField = transformationConfig.serviceIdField ?? 'id'
-        const dataField = deployRequests?.add?.deployAsField
-        const idValue = dataField
-          ? (response?.[dataField] as Values)?.[idField]
-          : response?.[idField]
-        if (idValue !== undefined) {
-          getChangeData(change).value[idField] = idValue
-        }
-      } else {
-        log.warn(
-          'Received an array for the response of the deploy. Not updating the id of the element. Action: add. ID: %s',
-          getChangeData(change).elemID.getFullName()
-        )
-      }
-    }
+    addIdUponAddition(change, apiDefinitions, response, deployRequests?.add?.deployAsField)
+    return response
   } catch (err) {
     throw getZendeskError(getChangeData(change).elemID.getFullName(), err)
   }
@@ -63,13 +134,13 @@ export const deployChange = async (
 
 export const deployChanges = async <T extends Change<ChangeDataType>>(
   changes: T[],
-  deployChangeFunc: (change: T) => Promise<void>
+  deployChangeFunc: (change: T) => Promise<void | T[]>
 ): Promise<DeployResult> => {
   const result = await Promise.all(
     changes.map(async change => {
       try {
-        await deployChangeFunc(change)
-        return change
+        const res = await deployChangeFunc(change)
+        return res !== undefined ? res : change
       } catch (err) {
         if (!_.isError(err)) {
           throw err
@@ -79,9 +150,6 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
     })
   )
 
-  const [errors, appliedChanges] = _.partition(result, _.isError)
-  return {
-    errors,
-    appliedChanges,
-  }
+  const [errors, appliedChanges] = _.partition(result.flat(), _.isError)
+  return { errors, appliedChanges }
 }

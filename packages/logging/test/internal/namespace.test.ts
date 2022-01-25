@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,9 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { exportedForTesting, namespaceNormalizer, toHexColor } from '../../src/internal/namespace'
-
-const { MONOREPO_PACKAGES_DIRNAME } = exportedForTesting
+import { namespaceNormalizer, toHexColor } from '../../src/internal/namespace'
 
 describe('namespace', () => {
   describe('toHexColor', () => {
@@ -30,6 +28,11 @@ describe('namespace', () => {
     })
   })
 
+  /**
+   * Note: The correct normalized namespace should not include the "packages" dir
+   * but here they're included in tests since the logger assumes we run
+   * from "dist" while the tests use the typescript modules.
+   */
   describe('namespaceNormalizer', () => {
     const LAST_LIBRARY_FILENAME = 'logging/src/internal/namespace'
     const normalizeNamespace = namespaceNormalizer(LAST_LIBRARY_FILENAME)
@@ -37,15 +40,11 @@ describe('namespace', () => {
       describe('when the id property is a string', () => {
         it('should return the correct namespace', () => {
           expect(normalizeNamespace(module))
-            .toEqual('logging/test/internal/namespace.test')
-        })
-        it('should return the correct namespace for typescript module', () => {
-          expect(normalizeNamespace({ id: `${MONOREPO_PACKAGES_DIRNAME}/test-package/src/path/to/module.ts` }))
-            .toEqual('test-package/path/to/module')
+            .toEqual('packages/logging/test/internal/namespace.test')
         })
         it('should return the correct namespace with extra fragments', () => {
           expect(normalizeNamespace(module, ['foo', 'bar']))
-            .toEqual('logging/test/internal/namespace.test/foo/bar')
+            .toEqual('packages/logging/test/internal/namespace.test/foo/bar')
         })
       })
 
@@ -53,11 +52,11 @@ describe('namespace', () => {
         describe('when the lastLibraryFilename is found in the stack', () => {
           it('should return the correct namespace', () => {
             expect(normalizeNamespace({ id: 12 }))
-              .toEqual('logging/test/internal/namespace.test')
+              .toEqual('packages/logging/test/internal/namespace.test')
           })
           it('should return the correct namespace with extra fragments', () => {
             expect(normalizeNamespace({ id: 12 }, ['foo', 'bar']))
-              .toEqual('logging/test/internal/namespace.test/foo/bar')
+              .toEqual('packages/logging/test/internal/namespace.test/foo/bar')
           })
         })
 

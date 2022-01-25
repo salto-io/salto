@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -405,6 +405,7 @@ export class Types {
     [FIELD_ANNOTATIONS.TRACK_TRENDING]: BuiltinTypes.BOOLEAN,
     [FIELD_ANNOTATIONS.TRACK_FEED_HISTORY]: BuiltinTypes.BOOLEAN,
     [FIELD_ANNOTATIONS.DEPRECATED]: BuiltinTypes.BOOLEAN,
+    [FIELD_ANNOTATIONS.TRACK_HISTORY]: BuiltinTypes.BOOLEAN,
   }
 
   // Type mapping for custom objects

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -30,12 +30,12 @@ const idSchema = Joi.object({
 }).unknown(true)
 
 type ConfigRef = {
-  id?: string
+  id?: string | number
   name?: string
 }
 
 const configRefSchema = Joi.object({
-  id: Joi.string().optional(),
+  id: Joi.alternatives(Joi.number(), Joi.string()).optional(),
   name: Joi.string().optional(),
 }).unknown(true)
 
@@ -73,10 +73,12 @@ const postFunctionConfigurationSchema = Joi.object({
 }).unknown(true)
 
 export type Validator = {
+  type?: string
   configuration?: ValidatorConfiguration
 }
 
 const validatorSchema = Joi.object({
+  type: Joi.string().optional(),
   configuration: validatorConfigurationSchema.optional(),
 }).unknown(true)
 
@@ -138,8 +140,10 @@ const workflowSchema = Joi.object({
   statuses: Joi.array().items(statusSchema).optional(),
 }).unknown(true)
 
+export type WorkflowInstance = InstanceElement & { value: InstanceElement['value'] & Workflow }
+
 export const isWorkflowInstance = (instance: InstanceElement)
-: instance is InstanceElement & { value: InstanceElement['value'] & Workflow } => {
+: instance is WorkflowInstance => {
   const { error } = workflowSchema.validate(instance.value)
   if (error !== undefined) {
     log.warn(`Received an invalid workflow: ${error.message}`)

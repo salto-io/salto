@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -24,7 +24,9 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
   deploy: async (changes: Change<InstanceElement>[]) => {
     const deployResult = await deployChanges(
       changes.filter(isInstanceChange),
-      change => deployChange(change, client, config.apiDefinitions)
+      async change => {
+        await deployChange(change, client, config.apiDefinitions)
+      }
     )
     return { deployResult, leftoverChanges: [] }
   },

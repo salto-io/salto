@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -27,7 +27,7 @@ describe('Cursor context resolver', () => {
   let workspace: EditorWorkspace
   let definitionsTree: PositionContext
   let fullElementSource: ReadOnlyElementsSource | undefined
-  const baseDir = path.resolve(`${__dirname}/../../test/test-nacls`)
+  const baseDir = path.resolve(`${__dirname}/../test/test-nacls`)
   const naclFilename = path.join(baseDir, 'all.nacl')
   beforeAll(async () => {
     workspace = new EditorWorkspace(baseDir, await mockWorkspace([naclFilename]))

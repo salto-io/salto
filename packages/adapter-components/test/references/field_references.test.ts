@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, isInstanceElement, ListType, createRefToElmWithValue, Field } from '@salto-io/adapter-api'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { addReferences, generateLookupFunc } from '../../src/references/field_references'
-import { FieldReferenceDefinition } from '../../src/references/reference_mapping'
+import { FieldReferenceDefinition, FieldReferenceResolver, ReferenceSerializationStrategy, ReferenceSerializationStrategyLookup, ReferenceSerializationStrategyName } from '../../src/references/reference_mapping'
 import { ContextValueMapperFunc, ContextFunc, neighborContextGetter } from '../../src/references'
 
 const ADAPTER_NAME = 'myAdapter'
@@ -420,6 +420,49 @@ describe('Field references', () => {
       })
 
       expect(res).toEqual({ id: 2, name: 'name' })
+    })
+    it('should resolve using custom resolver if given', async () => {
+      type CustomFieldReferenceDefinition = FieldReferenceDefinition<never> & {
+        customSerializationStrategy?: 'realId'
+      }
+      const CustomReferenceSerializationStrategyLookup: Record<
+        'realId' | ReferenceSerializationStrategyName, ReferenceSerializationStrategy
+      > = {
+        ...ReferenceSerializationStrategyLookup,
+        realId: {
+          serialize: ({ ref }) => ref.value.value.realId,
+          lookup: val => val,
+        },
+      }
+      class CustomFieldReferenceResolver extends FieldReferenceResolver<never> {
+        constructor(def: CustomFieldReferenceDefinition) {
+          super({ src: def.src })
+          this.serializationStrategy = CustomReferenceSerializationStrategyLookup[
+            def.customSerializationStrategy ?? def.serializationStrategy ?? 'fullValue'
+          ]
+          this.target = def.target
+            ? { ...def.target, lookup: this.serializationStrategy.lookup }
+            : undefined
+        }
+      }
+      const customLookupNameFunc = generateLookupFunc(
+        [{
+          src: { field: 'refValue' },
+          customSerializationStrategy: 'realId',
+          target: { type: 'typeWithDifferentIdField' },
+        } as CustomFieldReferenceDefinition],
+        defs => new CustomFieldReferenceResolver(defs),
+      )
+      const res = await customLookupNameFunc({
+        ref: new ReferenceExpression(
+          new ElemID('adapter', 'obj', 'instance', 'instance'),
+          new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'obj') }), { realId: 2 }),
+        ),
+        field: new Field(new ObjectType({ elemID: new ElemID('adapter', 'obj2') }), 'refValue', BuiltinTypes.NUMBER),
+        path: new ElemID('adapter', 'somePath'),
+      })
+
+      expect(res).toEqual(2)
     })
   })
   describe('failure modes', () => {

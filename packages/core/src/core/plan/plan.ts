@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -248,7 +248,18 @@ const addDifferentElements = (
     const afterFields = (isObjectType(afterElement)) ? afterElement.fields : {}
     const allFieldNames = [...Object.keys(beforeFields), ...Object.keys(afterFields)]
     await Promise.all(allFieldNames.map(
-      fieldName => addNodeIfDifferent(beforeFields[fieldName], afterFields[fieldName])
+      fieldName => addNodeIfDifferent(
+        // We check `hasOwnProperty` and don't just do `beforeFields[fieldName]`
+        // because fieldName might be a builtin function name such as
+        // `toString` and in that case `beforeFields[fieldName]` will
+        // unexpectedly return a function
+        Object.prototype.hasOwnProperty.call(beforeFields, fieldName)
+          ? beforeFields[fieldName]
+          : undefined,
+        Object.prototype.hasOwnProperty.call(afterFields, fieldName)
+          ? afterFields[fieldName]
+          : undefined
+      )
     ))
   }
   const isSpecialId = (id: string): boolean => (BuiltinTypesByFullName[id] !== undefined

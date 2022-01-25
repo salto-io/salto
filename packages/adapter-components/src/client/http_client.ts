@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -70,6 +70,9 @@ export class HTTPError extends Error {
   }
 }
 
+export class TimeoutError extends Error {
+}
+
 const isMethodWithData = (params: ClientParams): params is ClientDataParams =>
   'data' in params
 
@@ -79,7 +82,7 @@ export abstract class AdapterHTTPClient<
 > extends AdapterClientBase<TRateLimitConfig>
   implements HTTPReadClientInterface, HTTPWriteClientInterface {
   protected readonly conn: Connection<TCredentials>
-  private readonly credentials: TCredentials
+  protected readonly credentials: TCredentials
 
   constructor(
     clientName: string,
@@ -195,6 +198,9 @@ export abstract class AdapterHTTPClient<
       }
     } catch (e) {
       log.warn(`failed to ${method} ${url} ${queryParams}: ${e}, stack: ${e.stack}, data: ${safeJsonStringify(e?.response?.data)}`)
+      if (e.code === 'ETIMEDOUT') {
+        throw new TimeoutError(`Failed to ${method} ${url} with error: ${e}`)
+      }
       if (e.response !== undefined) {
         throw new HTTPError(`Failed to ${method} ${url} with error: ${e}`, e.response)
       }

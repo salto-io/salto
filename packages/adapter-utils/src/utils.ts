@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -513,11 +513,11 @@ export const restoreChangeElement = async (
   )
 )
 
-export const resolveChangeElement = <T extends ChangeDataType = ChangeDataType>(
-  change: Change<T>,
+export const resolveChangeElement = <T extends Change<ChangeDataType> = Change<ChangeDataType>>(
+  change: T,
   getLookUpName: GetLookupNameFunc,
   resolveValuesFunc = resolveValues,
-): Promise<Change<T>> => applyFunctionToChangeData(
+): Promise<T> => applyFunctionToChangeData(
     change,
     changeData => resolveValuesFunc(changeData, getLookUpName)
   )
@@ -868,8 +868,16 @@ export const createDefaultInstanceFromType = async (name: string, objectType: Ob
   return instance
 }
 
+type Replacer = (key: string, value: Value) => Value
+
+export const referenceExpressionStringifyReplacer: Replacer = (_key, value) => (
+  isReferenceExpression(value)
+    ? `ReferenceExpression(${value.elemID.getFullName()}, ${value.value ? '<omitted>' : '<no value>'})`
+    : value
+)
+
 export const safeJsonStringify = (value: Value,
-  replacer?: (key: string, value: Value) => Value,
+  replacer?: Replacer,
   space?: string | number): string =>
   safeStringify(value, replacer, space)
 

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -74,17 +74,6 @@ const filterCreator: FilterCreator = ({ config }) => ({
     if (layouts.length === 0) {
       return
     }
-
-    // const layouts = [...findInstances(elements, LAYOUT_TYPE_ID)]
-    // const apiNameToCustomObject = await generateApiNameToCustomObject(elements)
-
-    // await awu(layouts).forEach(async layout => {
-    //   const [layoutObjName, layoutName] = await layoutObjAndName(layout)
-    //   const layoutObj = apiNameToCustomObject.get(layoutObjName)
-    //   if (layoutObj === undefined) {
-    //     log.debug('Could not find object %s for layout %s', layoutObjName, layoutName)
-    //     return
-    //   }
 
     const referenceElements = buildElementsSourceForFetch(elements, config)
     const apiNameToCustomObject = await multiIndex.keyByAsync({

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -25,7 +25,6 @@ describe('change_validator', () => {
   let changes: ReadonlyArray<Change>
   let adapterConfig: InstanceElement
   let errors: ChangeError[]
-  let result: ReadonlyArray<ChangeError>
 
   beforeEach(async () => {
     errors = [
@@ -47,17 +46,44 @@ describe('change_validator', () => {
       mockFunction<ChangeValidator>().mockResolvedValue(errors.slice(1)),
     ]
     changes = [toChange({ after: testElem })]
-    const mainValidator = createChangeValidator(mockValidators)
-    result = await mainValidator(changes, adapterConfig)
   })
 
-  it('should call all validators', () => {
-    mockValidators.forEach(
-      validator => expect(validator).toHaveBeenCalledWith(changes, adapterConfig)
-    )
+  describe('with active validators', () => {
+    let result: ReadonlyArray<ChangeError>
+    beforeEach(async () => {
+      const mainValidator = createChangeValidator(mockValidators)
+      result = await mainValidator(changes, adapterConfig)
+    })
+    it('should call all validators', () => {
+      mockValidators.forEach(
+        validator => expect(validator).toHaveBeenCalledWith(changes, adapterConfig)
+      )
+    })
+    it('should return errors from all validators', () => {
+      expect(result).toEqual(errors)
+    })
   })
 
-  it('should return errors from all validators', () => {
-    expect(result).toEqual(errors)
+  describe('with disabled validators', () => {
+    let disabledError: ChangeError
+    let disabledValidator: jest.MockedFunction<ChangeValidator>
+    let result: ReadonlyArray<ChangeError>
+    beforeEach(async () => {
+      disabledError = {
+        elemID: testElem.elemID,
+        severity: 'Error',
+        message: 'test3',
+        detailedMessage: 'test3',
+      }
+      disabledValidator = mockFunction<ChangeValidator>().mockResolvedValue([disabledError])
+      const mainValidator = createChangeValidator(mockValidators, [disabledValidator])
+      result = await mainValidator(changes, adapterConfig)
+    })
+    it('should call disabled validator', () => {
+      expect(disabledValidator).toHaveBeenCalled()
+    })
+    it('should not return error from disabled validator', () => {
+      expect(result).not.toContainEqual(disabledError)
+    })
   })
 })

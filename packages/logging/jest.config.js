@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -22,11 +22,11 @@ module.exports = deepMerge(
     displayName: '@salto/logging',
     rootDir: `${__dirname}`,
     collectCoverageFrom: [
-      '!<rootDir>/dist/index.js',
+      '!<rootDir>/index.ts',
     ],
     coverageThreshold: {
       global: {
-        branches: 98,
+        branches: 100,
         functions: 100,
         lines: 100,
         statements: 100,

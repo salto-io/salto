@@ -122,6 +122,9 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     transformation: {
       sourceTypeName: 'organizations__organizations',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [
+        { fieldName: 'organization_fields', fieldType: 'map<unknown>' },
+      ],
     },
     deployRequests: {
       add: {

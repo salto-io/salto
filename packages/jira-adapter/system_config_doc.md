@@ -91,6 +91,10 @@ jira {
           newName = "Projects"
         },
         {
+          originalName = "ComponentWithIssueCount"
+          newName = "ProjectComponent"
+        },
+        {
           originalName = "rest__api__3__project__type"
           newName = "ProjectTypes"
         },
@@ -132,12 +136,16 @@ jira {
       url = "https://developer.atlassian.com/cloud/jira/software/swagger.v3.json"
       typeNameOverrides = [
         {
-          originalName = "agile__1_0__board@uuvuu"
+          originalName = "rest__agile__1_0__board@uuuuvuu"
           newName = "Boards"
         },
         {
           originalName = "Boards_values"
           newName = "Board"
+        },
+        {
+          originalName = "rest__agile__1_0__board___boardId___configuration@uuuuvuuuu_00123_00125uu"
+          newName = "BoardConfiguration"
         },
       ]
     }
@@ -427,12 +435,16 @@ jira {
           add = {
             url = "/rest/api/3/field/{fieldId}/context"
             method = "post"
+            urlParamsToFields = {
+              fieldId = "_parent.0.id"
+            }
           }
           modify = {
             url = "/rest/api/3/field/{fieldId}/context/{contextId}"
             method = "put"
             urlParamsToFields = {
               contextId = "id"
+              fieldId = "_parent.0.id"
             }
           }
           remove = {
@@ -440,6 +452,7 @@ jira {
             method = "delete"
             urlParamsToFields = {
               contextId = "id"
+              fieldId = "_parent.0.id"
             }
           }
         }
@@ -880,6 +893,11 @@ jira {
           idFields = [
             "key",
           ]
+          fieldsToOmit = [
+            {
+              fieldName = "icon"
+            },
+          ]
         }
       }
       Projects = {
@@ -1017,7 +1035,7 @@ jira {
             },
             {
               fieldName = "components"
-              fieldType = "list<ComponentWithIssueCount>"
+              fieldType = "list<ProjectComponent>"
             },
             {
               fieldName = "workflowScheme"
@@ -1047,6 +1065,11 @@ jira {
           fieldsToHide = [
             {
               fieldName = "id"
+            },
+          ]
+          standaloneFields = [
+            {
+              fieldName = "components"
             },
           ]
         }
@@ -1085,19 +1108,67 @@ jira {
           ]
         }
       }
-      ComponentWithIssueCount = {
+      ProjectComponent = {
         transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "issueCount"
+              fieldType = "number"
+            },
+            {
+              fieldName = "leadAccountId"
+              fieldType = "string"
+            },
+            {
+              fieldName = "componentBean"
+              fieldType = "ProjectComponent"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
           fieldsToOmit = [
             {
               fieldName = "issueCount"
             },
             {
-              fieldName = "id"
-            },
-            {
               fieldName = "projectId"
             },
+            {
+              fieldName = "project"
+            },
+            {
+              fieldName = "realAssignee"
+            },
+            {
+              fieldName = "isAssigneeTypeValid"
+            },
+            {
+              fieldName = "realAssigneeType"
+            },
+            {
+              fieldName = "assignee"
+            },
+            {
+              fieldName = "componentBean"
+            },
           ]
+        }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/component"
+            method = "post"
+          }
+          modify = {
+            url = "/rest/api/3/component/{id}"
+            method = "put"
+          }
+          remove = {
+            url = "/rest/api/3/component/{id}"
+            method = "delete"
+          }
         }
       }
       NotificationScheme = {
@@ -1151,16 +1222,6 @@ jira {
                 },
               ]
             },
-            {
-              type = "rest__api__3__screens___screenId___availableFields@uuuuuuuu_00123_00125uu"
-              toField = "availableFields"
-              context = [
-                {
-                  name = "screenId"
-                  fromField = "id"
-                },
-              ]
-            },
           ]
         }
       }
@@ -1179,10 +1240,6 @@ jira {
             {
               fieldName = "tabs"
               fieldType = "list<ScreenableTab>"
-            },
-            {
-              fieldName = "availableFields"
-              fieldType = "list<ScreenableField>"
             },
           ]
           fieldsToHide = [
@@ -1477,7 +1534,7 @@ jira {
           }
           recurseInto = [
             {
-              type = "agile__1_0__board___boardId___configuration@uuvuuuu_00123_00125uu"
+              type = "BoardConfiguration"
               toField = "config"
               context = [
                 {
@@ -1495,7 +1552,7 @@ jira {
           fieldTypeOverrides = [
             {
               fieldName = "config"
-              fieldType = "agile__1_0__board___boardId___configuration@uuvuuuu_00123_00125uu"
+              fieldType = "BoardConfiguration"
             },
             {
               fieldName = "filterId"
@@ -1633,7 +1690,7 @@ jira {
           }
         }
       }
-      agile__1_0__board___boardId___configuration@uuvuuuu_00123_00125uu = {
+      BoardConfiguration = {
         transformation = {
           fieldsToOmit = [
             {

@@ -1143,7 +1143,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       },
       recurseInto: [
         {
-          type: 'agile__1_0__board___boardId___configuration@uuvuuuu_00123_00125uu',
+          type: 'BoardConfiguration',
           toField: 'config',
           context: [{ name: 'boardId', fromField: 'id' }],
           isSingle: true,
@@ -1155,7 +1155,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   Board: {
     transformation: {
       fieldTypeOverrides: [
-        { fieldName: 'config', fieldType: 'agile__1_0__board___boardId___configuration@uuvuuuu_00123_00125uu' },
+        { fieldName: 'config', fieldType: 'BoardConfiguration' },
         { fieldName: 'filterId', fieldType: 'string' },
       ],
       fieldsToHide: [
@@ -1293,7 +1293,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
   },
 
-  'agile__1_0__board___boardId___configuration@uuvuuuu_00123_00125uu': {
+  BoardConfiguration: {
     transformation: {
       fieldsToOmit: [
         {
@@ -1441,12 +1441,16 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
     url: 'https://developer.atlassian.com/cloud/jira/software/swagger.v3.json',
     typeNameOverrides: [
       {
-        originalName: 'agile__1_0__board@uuvuu',
+        originalName: 'rest__agile__1_0__board@uuuuvuu',
         newName: 'Boards',
       },
       {
         originalName: 'Boards_values',
         newName: 'Board',
+      },
+      {
+        originalName: 'rest__agile__1_0__board___boardId___configuration@uuuuvuuuu_00123_00125uu',
+        newName: 'BoardConfiguration',
       },
     ],
   },

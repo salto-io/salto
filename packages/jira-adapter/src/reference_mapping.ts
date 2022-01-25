@@ -241,12 +241,12 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     target: { type: 'IssueType' },
   },
   {
-    src: { field: 'fieldId', parentTypes: ['agile__1_0__board___boardId___configuration_estimation_field@uuvuuuu_00123_00125uuuu'] },
+    src: { field: 'fieldId', parentTypes: ['BoardConfiguration_estimation'] },
     serializationStrategy: 'id',
     target: { type: 'Field' },
   },
   {
-    src: { field: 'rankCustomFieldId', parentTypes: ['agile__1_0__board___boardId___configuration_ranking@uuvuuuu_00123_00125uuu'] },
+    src: { field: 'rankCustomFieldId', parentTypes: ['BoardConfiguration_ranking'] },
     serializationStrategy: 'id',
     target: { type: 'Field' },
   },

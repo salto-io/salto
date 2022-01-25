@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, toChange, Values } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange, Values } from '@salto-io/adapter-api'
 import { mockClient } from '../utils'
 import sortListsFilter from '../../src/filters/sort_lists'
 import { Filter } from '../../src/filter'
@@ -35,7 +35,7 @@ describe('sortListsFilter', () => {
     })
 
     type = new ObjectType({
-      elemID: new ElemID(JIRA, 'type'),
+      elemID: new ElemID(JIRA, 'PermissionScheme'),
     })
 
     instance = new InstanceElement(
@@ -47,7 +47,30 @@ describe('sortListsFilter', () => {
             permission: 'A',
           },
           {
+            permission: 'A',
+            holder: {
+              type: 'B',
+            },
+          },
+          {
+            permission: 'A',
+            holder: {
+              type: 'A',
+            },
+          },
+          {
             permission: 'C',
+            holder: {
+              type: 'A',
+              parameter: new ReferenceExpression(new ElemID(JIRA, 'B')),
+            },
+          },
+          {
+            permission: 'C',
+            holder: {
+              type: 'A',
+              parameter: new ReferenceExpression(new ElemID(JIRA, 'A')),
+            },
           },
           {
             permission: 'B',
@@ -62,10 +85,33 @@ describe('sortListsFilter', () => {
           permission: 'A',
         },
         {
-          permission: 'C',
+          permission: 'A',
+          holder: {
+            type: 'A',
+          },
+        },
+        {
+          permission: 'A',
+          holder: {
+            type: 'B',
+          },
         },
         {
           permission: 'B',
+        },
+        {
+          permission: 'C',
+          holder: {
+            type: 'A',
+            parameter: new ReferenceExpression(new ElemID(JIRA, 'A')),
+          },
+        },
+        {
+          permission: 'C',
+          holder: {
+            type: 'A',
+            parameter: new ReferenceExpression(new ElemID(JIRA, 'B')),
+          },
         },
       ],
     }

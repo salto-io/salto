@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, InstanceElement, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData, safeJsonStringify } from '@salto-io/adapter-utils'
+import { Change, InstanceElement, isInstanceChange, isInstanceElement, isReferenceExpression, Value } from '@salto-io/adapter-api'
+import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
@@ -24,26 +24,35 @@ const { awu } = collections.asynciterable
 type ValueToSort = {
   typeName: string
   fieldName: string
+  sortBy: string[][]
 }
 
 const VALUES_TO_SORT: ValueToSort[] = [
   {
     typeName: 'PermissionScheme',
     fieldName: 'permissions',
+    sortBy: [['permission'], ['holder', 'type'], ['holder', 'parameter']],
   },
 ]
 
+const getValue = (value: Value): Value => (
+  isReferenceExpression(value) ? value.elemID.getFullName() : value
+)
+
+const getSortKey = (value: Value, sortByFields: string[][]): string =>
+  sortByFields.map(fieldPath => getValue(_.get(value, fieldPath))).join('-')
+
 const sortLists = (instance: InstanceElement): void => {
   VALUES_TO_SORT
-    .filter(({ typeName }) => instance.elemID.name === typeName)
-    .forEach(({ fieldName }) => {
-      if (instance.value.permissions === undefined) {
+    .filter(({ typeName }) => instance.elemID.typeName === typeName)
+    .forEach(({ fieldName, sortBy }) => {
+      if (instance.value[fieldName] === undefined) {
         return
       }
 
       instance.value[fieldName] = _.sortBy(
-        instance.value.permissions,
-        permission => safeJsonStringify(permission)
+        instance.value[fieldName],
+        value => getSortKey(value, sortBy),
       )
     })
 }

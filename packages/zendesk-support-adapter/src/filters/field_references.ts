@@ -62,23 +62,21 @@ const ORG_FIELD_TYPE_NAME = 'organization_field'
 const USER_FIELD_TYPE_NAME = 'user_field'
 
 const serializationFunc = (ticketFieldPrefix: string): GetLookupNameFunc => ({ ref }) => {
-  if (!isInstanceElement(ref.value)) {
-    return ref.value
-  }
-  switch (ref.elemID.typeName) {
-    case TICKET_FIELD_TYPE_NAME: {
-      return `${ticketFieldPrefix}${ref.value.value.id?.toString()}`
-    }
-    case ORG_FIELD_TYPE_NAME: {
-      return `${ORG_FIELD_PREFIX}${ref.value.value.key?.toString()}`
-    }
-    case USER_FIELD_TYPE_NAME: {
-      return `${USER_FIELD_PREFIX}${ref.value.value.key?.toString()}`
-    }
-    default: {
-      return ref.value
+  if (isInstanceElement(ref.value)) {
+    // eslint-disable-next-line default-case
+    switch (ref.elemID.typeName) {
+      case TICKET_FIELD_TYPE_NAME: {
+        return `${ticketFieldPrefix}${ref.value.value.id?.toString()}`
+      }
+      case ORG_FIELD_TYPE_NAME: {
+        return `${ORG_FIELD_PREFIX}${ref.value.value.key?.toString()}`
+      }
+      case USER_FIELD_TYPE_NAME: {
+        return `${USER_FIELD_PREFIX}${ref.value.value.key?.toString()}`
+      }
     }
   }
+  return ref.value
 }
 
 type ZendeskSupportReferenceSerializationStrategyName = 'ticketField' | 'value' | 'localeId' | 'orgField' | 'userField' | 'ticketFieldAlternative'
@@ -449,6 +447,21 @@ export const fieldNameToTypeMappingDefs: ZendeskSupportFieldReferenceDefinition[
     src: { field: 'resource_id' },
     serializationStrategy: 'id',
     target: { typeContext: 'neighborType' },
+  },
+  {
+    src: { field: 'group_by', parentTypes: ['view__execution'] },
+    serializationStrategy: 'id',
+    target: { type: 'ticket_field' },
+  },
+  {
+    src: { field: 'sort_by', parentTypes: ['view__execution'] },
+    serializationStrategy: 'id',
+    target: { type: 'ticket_field' },
+  },
+  {
+    src: { field: 'id', parentTypes: ['view__execution__group', 'view__execution__sort'] },
+    serializationStrategy: 'id',
+    target: { type: 'ticket_field' },
   },
 
   // only one of these applies in a given instance

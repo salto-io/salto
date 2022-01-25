@@ -168,6 +168,12 @@ zendesk_support {
               fieldType = "number"
             },
           ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "organization_fields"
+              fieldType = "map<unknown>"
+            },
+          ]
         }
         deployRequests = {
           add = {

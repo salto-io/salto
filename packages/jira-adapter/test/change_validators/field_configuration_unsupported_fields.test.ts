@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { toChange, ObjectType, ElemID, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
-import { unsupportedFieldConfigurationsValidator } from '../../src/change_validators/field_configuration'
+import { unsupportedFieldConfigurationsValidator } from '../../src/change_validators/field_configuration_unsupported_fields'
 import { JIRA } from '../../src/constants'
 
 describe('unsupportedFieldConfigurationsValidator', () => {

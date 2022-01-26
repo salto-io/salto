@@ -129,6 +129,7 @@ describe('fieldConfigurationFilter', () => {
     let change: Change<InstanceElement>
 
     beforeEach(async () => {
+      (deployChange as jest.Mock).mockClear()
       instance = new InstanceElement(
         'instance',
         fieldConfigurationType,
@@ -167,6 +168,12 @@ describe('fieldConfigurationFilter', () => {
         ['fields'],
         undefined,
       )
+    })
+
+    it('should not deploy regular fields if is default', async () => {
+      instance.value.isDefault = true
+      await filter.deploy([change])
+      expect(deployChange).not.toHaveBeenCalled()
     })
 
     it('should deploy supported fields configuration in chunks', async () => {

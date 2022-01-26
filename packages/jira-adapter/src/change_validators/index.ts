@@ -16,7 +16,8 @@
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { createChangeValidator } from '@salto-io/adapter-utils'
-import { unsupportedFieldConfigurationsValidator } from './field_configuration'
+import { unsupportedFieldConfigurationsValidator } from './field_configuration_unsupported_fields'
+import { defaultFieldConfigurationValidator } from './default_field_configuration'
 import { screenValidator } from './screen'
 import { workflowValidator } from './workflow'
 
@@ -27,6 +28,7 @@ const {
 const validators: ChangeValidator[] = [
   deployTypesNotSupportedValidator,
   unsupportedFieldConfigurationsValidator,
+  defaultFieldConfigurationValidator,
   workflowValidator,
   screenValidator,
 ]

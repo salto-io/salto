@@ -1361,6 +1361,25 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       url: '/channels/twitter/monitored_twitter_handles',
     },
   },
+  webhooks: {
+    request: {
+      url: '/webhooks',
+      paginationField: 'links.next',
+    },
+    transformation: {
+      dataField: 'webhooks',
+    },
+  },
+  webhook: {
+    transformation: {
+      sourceTypeName: 'webhooks__webhooks',
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'string' },
+        { fieldName: 'created_by', fieldType: 'string' },
+        { fieldName: 'updated_by', fieldType: 'string' },
+      ),
+    },
+  },
   // not included yet: satisfaction_reason (returns 403), sunshine apis
 }
 
@@ -1399,6 +1418,7 @@ export const DEFAULT_INCLUDE_ENDPOINTS: string[] = [
   'triggers',
   'user_fields',
   'views',
+  'webhooks',
   'workspaces',
 ]
 

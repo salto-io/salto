@@ -215,13 +215,13 @@ describe('adapter', () => {
     })
     it('should generate types for the platform and the jira apis', () => {
       expect(loadSwagger).toHaveBeenCalledTimes(2)
-      expect(loadSwagger).toHaveBeenCalledWith('https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json')
-      expect(loadSwagger).toHaveBeenCalledWith('https://developer.atlassian.com/cloud/jira/software/swagger.v3.json')
+      expect(loadSwagger).toHaveBeenCalledWith('https://raw.githubusercontent.com/salto-io/jira-swaggers/main/platform-swagger.v3.json')
+      expect(loadSwagger).toHaveBeenCalledWith('https://raw.githubusercontent.com/salto-io/jira-swaggers/main/software-swagger.v3.json')
       expect(generateTypes).toHaveBeenCalledWith(
         JIRA,
         expect.objectContaining({
           swagger: expect.objectContaining({
-            url: 'https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json',
+            url: 'https://raw.githubusercontent.com/salto-io/jira-swaggers/main/platform-swagger.v3.json',
           }),
         }),
         undefined,
@@ -231,7 +231,7 @@ describe('adapter', () => {
         JIRA,
         expect.objectContaining({
           swagger: expect.objectContaining({
-            url: 'https://developer.atlassian.com/cloud/jira/software/swagger.v3.json',
+            url: 'https://raw.githubusercontent.com/salto-io/jira-swaggers/main/software-swagger.v3.json',
           }),
         }),
         undefined,

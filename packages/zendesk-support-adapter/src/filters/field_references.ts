@@ -30,11 +30,21 @@ const neighborContextFunc = (args: {
   getLookUpName: async ({ ref }) => ref.elemID.name,
 })
 
+const SPECIAL_CONTEXT_NAMES: Record<string, string> = {
+  schedule_id: 'business_hours_schedule',
+  within_schedule: 'business_hours_schedule',
+  set_schedule: 'business_hours_schedule',
+}
+
 /**
  * For strings with an id-related suffix (_id or _ids), remove the suffix.
  * e.g. `abc_id` => `abc`.
  */
 const getValueLookupType = (val: string): string | undefined => {
+  const specialTypeName = SPECIAL_CONTEXT_NAMES[val]
+  if (specialTypeName !== undefined) {
+    return specialTypeName
+  }
   const valParts = val.split('_')
   const lastPart = valParts.pop()
   if (lastPart === undefined || !['id', 'ids'].includes(lastPart)) {
@@ -61,22 +71,31 @@ const TICKET_FIELD_TYPE_NAME = 'ticket_field'
 const ORG_FIELD_TYPE_NAME = 'organization_field'
 const USER_FIELD_TYPE_NAME = 'user_field'
 
-const serializationFunc = (ticketFieldPrefix: string): GetLookupNameFunc => ({ ref }) => {
-  if (isInstanceElement(ref.value)) {
-    // eslint-disable-next-line default-case
-    switch (ref.elemID.typeName) {
-      case TICKET_FIELD_TYPE_NAME: {
-        return `${ticketFieldPrefix}${ref.value.value.id?.toString()}`
-      }
-      case ORG_FIELD_TYPE_NAME: {
-        return `${ORG_FIELD_PREFIX}${ref.value.value.key?.toString()}`
-      }
-      case USER_FIELD_TYPE_NAME: {
-        return `${USER_FIELD_PREFIX}${ref.value.value.key?.toString()}`
+const getSerializationStrategyOfCustomFieldByContainingType = (
+  prefix: string,
+  lookupIndexName = 'id',
+  ticketFieldPrefix = TICKET_FIELD_PREFIX,
+): referenceUtils.ReferenceSerializationStrategy => {
+  const serialize: GetLookupNameFunc = ({ ref }) => {
+    if (isInstanceElement(ref.value)) {
+      // eslint-disable-next-line default-case
+      switch (ref.elemID.typeName) {
+        case TICKET_FIELD_TYPE_NAME: {
+          return `${ticketFieldPrefix}${ref.value.value.id?.toString()}`
+        }
+        case ORG_FIELD_TYPE_NAME: {
+          return `${ORG_FIELD_PREFIX}${ref.value.value.key?.toString()}`
+        }
+        case USER_FIELD_TYPE_NAME: {
+          return `${USER_FIELD_PREFIX}${ref.value.value.key?.toString()}`
+        }
       }
     }
+    return ref.value
   }
-  return ref.value
+  const lookup: referenceUtils.LookupFunc = val =>
+    ((_.isString(val) && val.startsWith(prefix)) ? val.slice(prefix.length) : val)
+  return { serialize, lookup, lookupIndexName }
 }
 
 type ZendeskSupportReferenceSerializationStrategyName = 'ticketField' | 'value' | 'localeId' | 'orgField' | 'userField' | 'ticketFieldAlternative'
@@ -86,34 +105,12 @@ const ZendeskSupportReferenceSerializationStrategyLookup: Record<
   referenceUtils.ReferenceSerializationStrategy
 > = {
   ...referenceUtils.ReferenceSerializationStrategyLookup,
-  ticketField: {
-    serialize: serializationFunc(TICKET_FIELD_PREFIX),
-    lookup: val => ((_.isString(val) && val.startsWith(TICKET_FIELD_PREFIX))
-      ? val.slice(TICKET_FIELD_PREFIX.length)
-      : val),
-    lookupIndexName: 'id',
-  },
-  ticketFieldAlternative: {
-    serialize: serializationFunc(TICKET_FIELD_ALTERNATIVE_PREFIX),
-    lookup: val => ((_.isString(val) && val.startsWith(TICKET_FIELD_ALTERNATIVE_PREFIX))
-      ? val.slice(TICKET_FIELD_ALTERNATIVE_PREFIX.length)
-      : val),
-    lookupIndexName: 'id',
-  },
-  orgField: {
-    serialize: serializationFunc(TICKET_FIELD_PREFIX),
-    lookup: val => ((_.isString(val) && val.startsWith(ORG_FIELD_PREFIX))
-      ? val.slice(ORG_FIELD_PREFIX.length)
-      : val),
-    lookupIndexName: 'key',
-  },
-  userField: {
-    serialize: serializationFunc(TICKET_FIELD_PREFIX),
-    lookup: val => ((_.isString(val) && val.startsWith(USER_FIELD_PREFIX))
-      ? val.slice(USER_FIELD_PREFIX.length)
-      : val),
-    lookupIndexName: 'key',
-  },
+  ticketField: getSerializationStrategyOfCustomFieldByContainingType(TICKET_FIELD_PREFIX),
+  ticketFieldAlternative: getSerializationStrategyOfCustomFieldByContainingType(
+    TICKET_FIELD_ALTERNATIVE_PREFIX, 'id', TICKET_FIELD_ALTERNATIVE_PREFIX
+  ),
+  orgField: getSerializationStrategyOfCustomFieldByContainingType(ORG_FIELD_PREFIX, 'key'),
+  userField: getSerializationStrategyOfCustomFieldByContainingType(USER_FIELD_PREFIX, 'key'),
   value: {
     serialize: ({ ref }) => (isInstanceElement(ref.value) ? ref.value.value.value : ref.value),
     lookup: val => val,

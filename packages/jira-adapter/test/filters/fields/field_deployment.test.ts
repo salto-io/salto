@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, MapType, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ListType, MapType, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { deployment, filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { mockClient } from '../../utils'
@@ -71,7 +71,7 @@ describe('fields_deployment', () => {
     fieldType = new ObjectType({
       elemID: new ElemID(JIRA, FIELD_TYPE_NAME),
       fields: {
-        contexts: { refType: new MapType(contextType) },
+        contexts: { refType: new ListType(contextType) },
       },
     })
   })

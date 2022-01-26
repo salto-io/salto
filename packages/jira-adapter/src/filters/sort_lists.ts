@@ -13,34 +13,27 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, InstanceElement, isInstanceChange, isInstanceElement, isReferenceExpression, Value } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { InstanceElement, isInstanceElement, isReferenceExpression, Value } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
-
-const { awu } = collections.asynciterable
 
 type ValueToSort = {
   typeName: string
   fieldName: string
-  sortBy: string[][]
+  sortBy: string[]
 }
 
 const VALUES_TO_SORT: ValueToSort[] = [
   {
     typeName: 'PermissionScheme',
     fieldName: 'permissions',
-    sortBy: [['permission'], ['holder', 'type'], ['holder', 'parameter']],
+    sortBy: ['permission', 'holder.type', 'holder.parameter'],
   },
 ]
 
 const getValue = (value: Value): Value => (
   isReferenceExpression(value) ? value.elemID.getFullName() : value
 )
-
-const getSortKey = (value: Value, sortByFields: string[][]): string =>
-  sortByFields.map(fieldPath => getValue(_.get(value, fieldPath))).join('-')
 
 const sortLists = (instance: InstanceElement): void => {
   VALUES_TO_SORT
@@ -50,9 +43,9 @@ const sortLists = (instance: InstanceElement): void => {
         return
       }
 
-      instance.value[fieldName] = _.sortBy(
+      instance.value[fieldName] = _.orderBy(
         instance.value[fieldName],
-        value => getSortKey(value, sortBy),
+        sortBy.map(fieldPath => item => getValue(_.get(item, fieldPath))),
       )
     })
 }
@@ -63,16 +56,6 @@ const filter: FilterCreator = () => ({
       .filter(isInstanceElement)
       .forEach(sortLists)
   },
-
-  onDeploy: async changes => awu(changes)
-    .filter(isInstanceChange)
-    .forEach(change => applyFunctionToChangeData<Change<InstanceElement>>(
-      change,
-      instance => {
-        sortLists(instance)
-        return instance
-      }
-    )),
 })
 
 export default filter

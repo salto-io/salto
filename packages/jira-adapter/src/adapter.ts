@@ -65,7 +65,6 @@ export const DEFAULT_FILTERS = [
   issueTypeSchemeReferences,
   issueTypeSchemeFilter,
   sharePermissionFilter,
-  sortListsFilter,
   boardFilter,
   projectFilter,
   projectComponentFilter,
@@ -83,6 +82,8 @@ export const DEFAULT_FILTERS = [
   fieldReferencesFilter,
   // Must run after fieldReferencesFilter
   fieldConfigurationTrashedFieldsFilter,
+  // Must run after fieldReferencesFilter
+  sortListsFilter,
   hiddenValuesInListsFilter,
   // Must be last
   defaultInstancesDeployFilter,

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange, Values } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Values } from '@salto-io/adapter-api'
 import { mockClient } from '../utils'
 import sortListsFilter from '../../src/filters/sort_lists'
 import { Filter } from '../../src/filter'
@@ -83,9 +83,6 @@ describe('sortListsFilter', () => {
       permissions: [
         {
           permission: 'A',
-        },
-        {
-          permission: 'A',
           holder: {
             type: 'A',
           },
@@ -95,6 +92,9 @@ describe('sortListsFilter', () => {
           holder: {
             type: 'B',
           },
+        },
+        {
+          permission: 'A',
         },
         {
           permission: 'B',
@@ -120,13 +120,6 @@ describe('sortListsFilter', () => {
   describe('onFetch', () => {
     it('should sort the permissions', async () => {
       await filter.onFetch?.([instance])
-      expect(instance.value).toEqual(sortedValues)
-    })
-  })
-
-  describe('onDeploy', () => {
-    it('should sort the permissions', async () => {
-      await filter.onDeploy?.([toChange({ after: instance })])
       expect(instance.value).toEqual(sortedValues)
     })
   })

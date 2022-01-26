@@ -15,10 +15,10 @@
 */
 import {
   ObjectType, ElemID, InstanceElement, Element, isObjectType,
-  isInstanceElement, ReferenceExpression, ModificationChange,
+  isInstanceElement, ReferenceExpression, ModificationChange, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
-import { DEFAULT_CONFIG } from '../../../src/config'
+import { DEFAULT_CONFIG, DEFAULT_INCLUDE_ENDPOINTS, FETCH_CONFIG } from '../../../src/config'
 import ZendeskClient from '../../../src/client/client'
 import { ZENDESK_SUPPORT } from '../../../src/constants'
 import { paginate } from '../../../src/client/pagination'
@@ -87,6 +87,37 @@ describe('ticket form reorder filter', () => {
           new ReferenceExpression(inst1.elemID, inst1),
           new ReferenceExpression(inst2.elemID, inst2),
         ] })
+    })
+    it('should create correct order element with hidden types', async () => {
+      const filterWithHideType = filterCreator({
+        client,
+        paginator: clientUtils.createPaginator({
+          client,
+          paginationFuncCreator: paginate,
+        }),
+        config: {
+          ...DEFAULT_CONFIG,
+          [FETCH_CONFIG]: {
+            includeTypes: DEFAULT_INCLUDE_ENDPOINTS,
+            hideTypes: true,
+          },
+        },
+      }) as FilterType
+      const elements = [objType, inst1, inst2]
+      await filterWithHideType.onFetch(elements)
+      expect(elements).toHaveLength(5)
+      expect(elements.map(e => e.elemID.getFullName()).sort())
+        .toEqual([
+          'zendesk_support.ticket_form',
+          'zendesk_support.ticket_form.instance.inst1',
+          'zendesk_support.ticket_form.instance.inst2',
+          'zendesk_support.ticket_form_order',
+          'zendesk_support.ticket_form_order.instance',
+        ])
+      const orderType = elements
+        .find(elem => elem.elemID.getFullName() === 'zendesk_support.ticket_form_order')
+      expect(orderType).toBeDefined()
+      expect(orderType?.annotations[CORE_ANNOTATIONS.HIDDEN]).toEqual(true)
     })
     it('should not create new elements if there are no ticket form', async () => {
       const elements: Element[] = []

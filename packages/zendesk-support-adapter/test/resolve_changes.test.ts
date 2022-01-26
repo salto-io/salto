@@ -90,11 +90,28 @@ describe('resolveChanges', () => {
     })
   })
   it('should resolve changes correctly for automation', async () => {
+    const ticketFieldOptionType = new ObjectType({
+      elemID: new ElemID(ZENDESK_SUPPORT, 'ticket_field__custom_field_options'),
+      fields: {
+        id: { refType: BuiltinTypes.NUMBER },
+        name: { refType: BuiltinTypes.STRING },
+        value: { refType: BuiltinTypes.STRING },
+      },
+    })
     const ticketFieldType = new ObjectType({
       elemID: new ElemID(ZENDESK_SUPPORT, 'ticket_field'),
       fields: {
         id: { refType: BuiltinTypes.NUMBER },
         title: { refType: BuiltinTypes.STRING },
+        custom_field_options: { refType: new ListType(ticketFieldOptionType) },
+      },
+    })
+    const userFieldOptionType = new ObjectType({
+      elemID: new ElemID(ZENDESK_SUPPORT, 'user_field__custom_field_options'),
+      fields: {
+        id: { refType: BuiltinTypes.NUMBER },
+        name: { refType: BuiltinTypes.STRING },
+        value: { refType: BuiltinTypes.STRING },
       },
     })
     const userFieldType = new ObjectType({
@@ -103,6 +120,15 @@ describe('resolveChanges', () => {
         id: { refType: BuiltinTypes.NUMBER },
         key: { refType: BuiltinTypes.STRING },
         title: { refType: BuiltinTypes.STRING },
+        custom_field_options: { refType: new ListType(userFieldOptionType) },
+      },
+    })
+    const orgFieldOptionType = new ObjectType({
+      elemID: new ElemID(ZENDESK_SUPPORT, 'organization_field__custom_field_options'),
+      fields: {
+        id: { refType: BuiltinTypes.NUMBER },
+        name: { refType: BuiltinTypes.STRING },
+        value: { refType: BuiltinTypes.STRING },
       },
     })
     const orgFieldType = new ObjectType({
@@ -111,6 +137,7 @@ describe('resolveChanges', () => {
         id: { refType: BuiltinTypes.NUMBER },
         key: { refType: BuiltinTypes.STRING },
         title: { refType: BuiltinTypes.STRING },
+        custom_field_options: { refType: new ListType(orgFieldOptionType) },
       },
     })
     const automationType = new ObjectType({
@@ -149,20 +176,55 @@ describe('resolveChanges', () => {
         }) },
       },
     })
+    const ticketFieldOption1Instance = new InstanceElement(
+      'tfo1', ticketFieldOptionType, { id: 1001, name: 'option1', value: 'v1' },
+    )
+    const ticketFieldOption2Instance = new InstanceElement(
+      'tfo2', ticketFieldOptionType, { id: 1002, name: 'option2', value: 'v2' },
+    )
     const ticketFieldInstance = new InstanceElement(
       'tf1',
       ticketFieldType,
-      { id: 100, title: 'tf1' },
+      {
+        id: 100,
+        title: 'tf1',
+        type: 'tagger',
+        custom_field_options: [
+          new ReferenceExpression(ticketFieldOption1Instance.elemID, ticketFieldOption1Instance),
+        ],
+      },
+    )
+    const userFieldOption1Instance = new InstanceElement(
+      'ufo1', userFieldOptionType, { id: 1011, name: 'option1', value: 'v3' },
     )
     const userFieldInstance = new InstanceElement(
       'uf1',
       userFieldType,
-      { id: 101, title: 'uf1', key: 'key_uf1' },
+      {
+        id: 101,
+        title: 'uf1',
+        key: 'key_uf1',
+        type: 'dropdown',
+        custom_field_options: [
+          new ReferenceExpression(userFieldOption1Instance.elemID, userFieldOption1Instance),
+        ],
+      },
+    )
+    const orgFieldOption1Instance = new InstanceElement(
+      'ofo1', orgFieldOptionType, { id: 1021, name: 'option1', value: 'v4' },
     )
     const orgFieldInstance = new InstanceElement(
       'of1',
       orgFieldType,
-      { id: 102, title: 'of1', key: 'key_of1' },
+      {
+        id: 102,
+        title: 'of1',
+        key: 'key_of1',
+        type: 'dropdown',
+        custom_field_options: [
+          new ReferenceExpression(orgFieldOption1Instance.elemID, orgFieldOption1Instance),
+        ],
+      },
     )
     const automationInstance = new InstanceElement(
       'Test',
@@ -173,24 +235,37 @@ describe('resolveChanges', () => {
         active: true,
         actions: [{
           field: new ReferenceExpression(ticketFieldInstance.elemID, ticketFieldInstance),
-          value: 'v1',
+          value: new ReferenceExpression(
+            ticketFieldOption1Instance.elemID, ticketFieldOption1Instance
+          ),
         }],
         conditions: {
           all: [
             {
               field: new ReferenceExpression(ticketFieldInstance.elemID, ticketFieldInstance),
               operator: 'is',
-              value: 'v2',
+              value: new ReferenceExpression(
+                ticketFieldOption2Instance.elemID, ticketFieldOption2Instance
+              ),
             },
             {
               field: new ReferenceExpression(userFieldInstance.elemID, userFieldInstance),
               operator: 'is',
-              value: 'v3',
+              value: new ReferenceExpression(
+                userFieldOption1Instance.elemID, userFieldOption1Instance
+              ),
             },
             {
               field: new ReferenceExpression(orgFieldInstance.elemID, orgFieldInstance),
               operator: 'is',
-              value: 'v4',
+              value: new ReferenceExpression(
+                orgFieldOption1Instance.elemID, orgFieldOption1Instance
+              ),
+            },
+            {
+              field: new ReferenceExpression(ticketFieldInstance.elemID, ticketFieldInstance),
+              operator: 'is',
+              value: 'v123',
             },
           ],
         },
@@ -208,8 +283,9 @@ describe('resolveChanges', () => {
       conditions: {
         all: [
           { field: 'custom_fields_100', operator: 'is', value: 'v2' },
-          { field: 'requester.custom_fields.key_uf1', operator: 'is', value: 'v3' },
-          { field: 'organization.custom_fields.key_of1', operator: 'is', value: 'v4' },
+          { field: 'requester.custom_fields.key_uf1', operator: 'is', value: '1011' },
+          { field: 'organization.custom_fields.key_of1', operator: 'is', value: '1021' },
+          { field: 'custom_fields_100', operator: 'is', value: 'v123' },
         ],
       },
     })

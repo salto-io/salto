@@ -45,6 +45,7 @@ export type AdapterApiConfig<
 
 export type UserFetchConfig = {
   includeTypes: string[]
+  hideTypes?: boolean
 }
 
 export const createAdapterApiConfigType = ({

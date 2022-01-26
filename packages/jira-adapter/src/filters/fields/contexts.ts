@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, Change, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isMapType, isObjectType, isRemovalChange, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import { AdditionChange, Change, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isListType, isObjectType, isRemovalChange, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { config, client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
@@ -32,8 +32,8 @@ const log = logger(module)
 export const getContextType = async (fieldType: ObjectType):
 Promise<ObjectType> => {
   const contextMapType = await fieldType.fields.contexts.getType()
-  if (!isMapType(contextMapType)) {
-    throw new Error(`type of ${fieldType.fields.contexts.elemID.getFullName()} is not a map type`)
+  if (!isListType(contextMapType)) {
+    throw new Error(`type of ${fieldType.fields.contexts.elemID.getFullName()} is not a list type`)
   }
 
   const contextType = await contextMapType.getInnerType()

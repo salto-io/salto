@@ -26,6 +26,7 @@ import { FIELD_CONTEXT_TYPE_NAME } from '../../../src/filters/fields/constants'
 
 describe('fieldContextDeployment', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'deploy'>
+  let fieldType: ObjectType
   let contextType: ObjectType
   let optionType: ObjectType
   let defaultValueType: ObjectType
@@ -73,11 +74,23 @@ describe('fieldContextDeployment', () => {
         issueTypeIds: { refType: new ListType(BuiltinTypes.STRING) },
       },
     })
+
+    fieldType = new ObjectType({
+      elemID: new ElemID(JIRA, 'Field'),
+      fields: {
+        contexts: { refType: new ListType(contextType) },
+      },
+    })
   })
 
   describe('onFetch', () => {
     it('should add deployment annotations to context type', async () => {
-      await filter.onFetch([contextType])
+      await filter.onFetch([fieldType, contextType])
+
+      expect(fieldType.fields.contexts.annotations).toEqual({
+        [CORE_ANNOTATIONS.CREATABLE]: true,
+        [CORE_ANNOTATIONS.UPDATABLE]: true,
+      })
 
       expect(contextType.fields.projectIds.annotations).toEqual({
         [CORE_ANNOTATIONS.CREATABLE]: true,

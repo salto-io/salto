@@ -211,8 +211,6 @@ const filter: FilterCreator = ({ config }) => ({
     delete fieldType.fields.contextProjects
     delete fieldType.fields.contextIssueTypes
 
-    fieldType.fields.contexts = new Field(fieldType, 'contexts', new MapType(fieldContextType))
-
     fieldContextType.fields.projectIds = new Field(fieldContextType, 'projectIds', new ListType(BuiltinTypes.STRING))
     fieldContextType.fields.issueTypeIds = new Field(fieldContextType, 'issueTypeIds', new ListType(BuiltinTypes.STRING))
     fieldContextType.fields.defaultValue = new Field(fieldContextType, 'defaultValue', fieldContextDefaultValueType)

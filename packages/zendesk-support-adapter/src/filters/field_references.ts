@@ -655,9 +655,7 @@ const filter: FilterCreator = () => ({
     await addReferences(
       [...firstIterationFieldNameToTypeMappingDefs, ...commonFieldNameToTypeMappingDefs]
     )
-    await addReferences(
-      [...secondIterationFieldNameToTypeMappingDefs, ...commonFieldNameToTypeMappingDefs]
-    )
+    await addReferences(secondIterationFieldNameToTypeMappingDefs)
   },
 })
 

@@ -26,7 +26,7 @@ import profileMapKeysValidator from './change_validators/profile_map_keys'
 import multipleDefaultsValidator from './change_validators/multiple_defaults'
 import picklistPromoteValidator from './change_validators/picklist_promote'
 import createValidateOnlyFlagValidator from './change_validators/validate_only_flag'
-import spqValidator from './change_validators/cpq_trigger'
+import cpqValidator from './change_validators/cpq_trigger'
 import { ChangeValidatorName, SalesforceConfig } from './types'
 
 type ChangeValidatorCreator = (config: SalesforceConfig) => ChangeValidator
@@ -41,7 +41,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   multipleDefaults: () => multipleDefaultsValidator,
   picklistPromote: () => picklistPromoteValidator,
   validateOnlyFlag: createValidateOnlyFlagValidator,
-  spqValidator: () => spqValidator,
+  cpqValidator: () => cpqValidator,
 }
 
 

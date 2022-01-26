@@ -133,6 +133,22 @@ describe('References by id filter', () => {
       value: { refType: BuiltinTypes.STRING },
     },
   })
+  const userFieldOptionType = new ObjectType({
+    elemID: new ElemID(ZENDESK_SUPPORT, 'user_field__custom_field_options'),
+    fields: {
+      id: { refType: BuiltinTypes.NUMBER },
+      name: { refType: BuiltinTypes.STRING },
+      value: { refType: BuiltinTypes.STRING },
+    },
+  })
+  const orgFieldOptionType = new ObjectType({
+    elemID: new ElemID(ZENDESK_SUPPORT, 'organization_field__custom_field_options'),
+    fields: {
+      id: { refType: BuiltinTypes.NUMBER },
+      name: { refType: BuiltinTypes.STRING },
+      value: { refType: BuiltinTypes.STRING },
+    },
+  })
   const userFieldType = new ObjectType({
     elemID: new ElemID(ZENDESK_SUPPORT, 'user_field'),
     fields: {
@@ -227,6 +243,21 @@ describe('References by id filter', () => {
       { id: 9001, name: 'option1', value: 'v11' },
     ),
     new InstanceElement(
+      'option2',
+      userFieldOptionType,
+      { id: 9002, name: 'option2', value: 'v12' },
+    ),
+    new InstanceElement(
+      'option3',
+      orgFieldOptionType,
+      { id: 9003, name: 'option3', value: 'v13' },
+    ),
+    new InstanceElement(
+      'option4',
+      orgFieldOptionType,
+      { id: 9004, name: 'option4', value: 'v14' },
+    ),
+    new InstanceElement(
       'customField1',
       ticketFieldType,
       {
@@ -235,8 +266,10 @@ describe('References by id filter', () => {
         custom_field_options: [{ name: 'option1', value: 'v11' }],
       }
     ),
-    new InstanceElement('userField1', userFieldType, { id: 6002, key: 'key_uf1' }),
-    new InstanceElement('orgField1', orgFieldType, { id: 6003, key: 'key_of1' }),
+    new InstanceElement('customField2', ticketFieldType, { id: 6005, type: 'text' }),
+    new InstanceElement('userField1', userFieldType, { id: 6002, key: 'key_uf1', type: 'dropdown' }),
+    new InstanceElement('orgField1', orgFieldType, { id: 6003, key: 'key_of1', type: 'dropdown' }),
+    new InstanceElement('orgField2', orgFieldType, { id: 6003, key: 'key_of2', type: 'text' }),
     new InstanceElement(
       'trigger1',
       triggerType,
@@ -245,8 +278,10 @@ describe('References by id filter', () => {
         conditions: {
           all: [
             { field: 'custom_fields_6001', operator: 'is', value: 'v11' },
-            { field: 'requester.custom_fields.key_uf1', value: 'v1' },
-            { field: 'organization.custom_fields.key_of1', value: 'v1' },
+            { field: 'requester.custom_fields.key_uf1', value: 9002 },
+            { field: 'organization.custom_fields.key_of1', value: '9003' },
+            { field: 'organization.custom_fields.key_of2', value: '9004' },
+            { field: 'custom_fields_6005', operator: 'is', value: 'v11' },
           ],
         },
       },
@@ -306,12 +341,29 @@ describe('References by id filter', () => {
       expect(trigger.value.conditions.all[0].field).toBeInstanceOf(ReferenceExpression)
       expect(trigger.value.conditions.all[0].field.elemID.getFullName())
         .toEqual('zendesk_support.ticket_field.instance.customField1')
+      expect(trigger.value.conditions.all[0].value).toBeInstanceOf(ReferenceExpression)
+      expect(trigger.value.conditions.all[0].value.elemID.getFullName())
+        .toEqual('zendesk_support.ticket_field__custom_field_options.instance.option1')
       expect(trigger.value.conditions.all[1].field).toBeInstanceOf(ReferenceExpression)
       expect(trigger.value.conditions.all[1].field.elemID.getFullName())
         .toEqual('zendesk_support.user_field.instance.userField1')
+      expect(trigger.value.conditions.all[1].value).toBeInstanceOf(ReferenceExpression)
+      expect(trigger.value.conditions.all[1].value.elemID.getFullName())
+        .toEqual('zendesk_support.user_field__custom_field_options.instance.option2')
       expect(trigger.value.conditions.all[2].field).toBeInstanceOf(ReferenceExpression)
       expect(trigger.value.conditions.all[2].field.elemID.getFullName())
         .toEqual('zendesk_support.organization_field.instance.orgField1')
+      expect(trigger.value.conditions.all[2].value).toBeInstanceOf(ReferenceExpression)
+      expect(trigger.value.conditions.all[2].value.elemID.getFullName())
+        .toEqual('zendesk_support.organization_field__custom_field_options.instance.option3')
+      expect(trigger.value.conditions.all[3].field).toBeInstanceOf(ReferenceExpression)
+      expect(trigger.value.conditions.all[3].field.elemID.getFullName())
+        .toEqual('zendesk_support.organization_field.instance.orgField2')
+      expect(trigger.value.conditions.all[3].value).not.toBeInstanceOf(ReferenceExpression)
+      expect(trigger.value.conditions.all[4].field).toBeInstanceOf(ReferenceExpression)
+      expect(trigger.value.conditions.all[4].field.elemID.getFullName())
+        .toEqual('zendesk_support.ticket_field.instance.customField2')
+      expect(trigger.value.conditions.all[4].value).not.toBeInstanceOf(ReferenceExpression)
     })
   })
 })

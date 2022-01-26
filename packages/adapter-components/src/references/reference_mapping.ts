@@ -19,7 +19,7 @@ import { types } from '@salto-io/lowerdash'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 
 export type ApiNameFunc = (elem: Element) => string
-type LookupFunc = (val: Value, context?: string) => string
+export type LookupFunc = (val: Value, context?: string) => string
 
 export type ReferenceSerializationStrategy = {
   serialize: GetLookupNameFunc

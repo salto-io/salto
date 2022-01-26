@@ -1309,7 +1309,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
 export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
   platformSwagger: {
-    url: 'https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json',
+    url: 'https://raw.githubusercontent.com/salto-io/jira-swaggers/main/platform-swagger.v3.json',
     typeNameOverrides: [
       {
         originalName: 'FilterDetails',
@@ -1438,7 +1438,7 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
     ],
   },
   jiraSwagger: {
-    url: 'https://developer.atlassian.com/cloud/jira/software/swagger.v3.json',
+    url: 'https://raw.githubusercontent.com/salto-io/jira-swaggers/main/software-swagger.v3.json',
     typeNameOverrides: [
       {
         originalName: 'rest__agile__1_0__board@uuuuvuu',

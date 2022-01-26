@@ -1469,29 +1469,6 @@ zendesk_support {
             "settings.name",
           ]
         }
-        deployRequests = {
-          add = {
-            url = "/apps/installations"
-            deployAsField = "installation"
-            method = "post"
-          }
-          modify = {
-            url = "/apps/installations/{appInstallationId}"
-            method = "put"
-            deployAsField = "installation"
-            urlParamsToFields = {
-              appInstallationId = "id"
-            }
-          }
-          remove = {
-            url = "/apps/installations/{appInstallationId}"
-            method = "delete"
-            deployAsField = "installation"
-            urlParamsToFields = {
-              appInstallationId = "id"
-            }
-          }
-        }
       }
       app_owned = {
         transformation = {
@@ -1534,6 +1511,10 @@ zendesk_support {
             {
               fieldName = "secret"
               fieldType = "string"
+            },
+            {
+              fieldName = "user_id"
+              fieldType = "number"
             },
           ]
         }

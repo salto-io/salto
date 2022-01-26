@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, isInstanceElement, ListType } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element,
+  BuiltinTypes, isInstanceElement, ListType } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../src/filters/field_references'
 import ZendeskClient from '../../src/client/client'
@@ -80,14 +81,6 @@ describe('References by id filter', () => {
       parent_id: { refType: BuiltinTypes.NUMBER },
     },
   })
-  const triggerType = new ObjectType({
-    elemID: new ElemID(ZENDESK_SUPPORT, 'api_access_profile'),
-    fields: {
-      id: { refType: BuiltinTypes.NUMBER },
-      // eslint-disable-next-line camelcase
-      category_id: { refType: new ListType(BuiltinTypes.NUMBER) },
-    },
-  })
   const someTypeWithValue = new ObjectType({
     elemID: new ElemID(ZENDESK_SUPPORT, 'typeWithValue'),
     fields: {
@@ -132,18 +125,43 @@ describe('References by id filter', () => {
       id: { refType: BuiltinTypes.NUMBER },
     },
   })
-  const viewType = new ObjectType({
-    elemID: new ElemID(ZENDESK_SUPPORT, 'view'),
+  const ticketFieldOptionType = new ObjectType({
+    elemID: new ElemID(ZENDESK_SUPPORT, 'ticket_field__custom_field_options'),
     fields: {
       id: { refType: BuiltinTypes.NUMBER },
+      name: { refType: BuiltinTypes.STRING },
+      value: { refType: BuiltinTypes.STRING },
+    },
+  })
+  const userFieldType = new ObjectType({
+    elemID: new ElemID(ZENDESK_SUPPORT, 'user_field'),
+    fields: {
+      id: { refType: BuiltinTypes.NUMBER },
+      key: { refType: BuiltinTypes.STRING },
+    },
+  })
+  const orgFieldType = new ObjectType({
+    elemID: new ElemID(ZENDESK_SUPPORT, 'organization_field'),
+    fields: {
+      id: { refType: BuiltinTypes.NUMBER },
+      key: { refType: BuiltinTypes.STRING },
+    },
+  })
+  const triggerType = new ObjectType({
+    elemID: new ElemID(ZENDESK_SUPPORT, 'trigger'),
+    fields: {
+      id: { refType: BuiltinTypes.NUMBER },
+      // eslint-disable-next-line camelcase
+      category_id: { refType: new ListType(BuiltinTypes.NUMBER) },
       conditions: {
         refType: new ObjectType({
-          elemID: new ElemID(ZENDESK_SUPPORT, 'view__conditions'),
+          elemID: new ElemID(ZENDESK_SUPPORT, 'trigger__conditions'),
           fields: {
             all: { refType: new ListType(new ObjectType({
-              elemID: new ElemID(ZENDESK_SUPPORT, 'view__conditions__all'),
+              elemID: new ElemID(ZENDESK_SUPPORT, 'trigger__conditions__all'),
               fields: {
                 field: { refType: BuiltinTypes.STRING },
+                operator: { refType: BuiltinTypes.STRING },
                 value: { refType: BuiltinTypes.STRING },
               },
             })) },
@@ -203,10 +221,36 @@ describe('References by id filter', () => {
         },
       ],
     }),
-    new InstanceElement('customField1', ticketFieldType, { id: 6001 }),
-    new InstanceElement('view1', viewType, {
-      id: 7001, conditions: { all: [{ field: 'custom_fields_6001', value: 'v1' }] },
-    }),
+    new InstanceElement(
+      'option1',
+      ticketFieldOptionType,
+      { id: 9001, name: 'option1', value: 'v11' },
+    ),
+    new InstanceElement(
+      'customField1',
+      ticketFieldType,
+      {
+        id: 6001,
+        type: 'tagger',
+        custom_field_options: [{ name: 'option1', value: 'v11' }],
+      }
+    ),
+    new InstanceElement('userField1', userFieldType, { id: 6002, key: 'key_uf1' }),
+    new InstanceElement('orgField1', orgFieldType, { id: 6003, key: 'key_of1' }),
+    new InstanceElement(
+      'trigger1',
+      triggerType,
+      {
+        id: 7001,
+        conditions: {
+          all: [
+            { field: 'custom_fields_6001', operator: 'is', value: 'v11' },
+            { field: 'requester.custom_fields.key_uf1', value: 'v1' },
+            { field: 'organization.custom_fields.key_of1', value: 'v1' },
+          ],
+        },
+      },
+    ),
   ])
 
   describe('on fetch', () => {
@@ -255,13 +299,19 @@ describe('References by id filter', () => {
       ).not.toBeInstanceOf(ReferenceExpression)
       expect(inst.value.subjectAndValues[1].valueList[0].value).toEqual(4007)
     })
-    it('should resolve custom field reference', () => {
-      const view = elements.filter(
-        e => isInstanceElement(e) && e.elemID.name === 'view1'
+    it('should resolve custom field references', () => {
+      const trigger = elements.filter(
+        e => isInstanceElement(e) && e.elemID.name === 'trigger1'
       )[0] as InstanceElement
-      expect(view.value.conditions.all[0].field).toBeInstanceOf(ReferenceExpression)
-      expect(view.value.conditions.all[0].field.elemID.getFullName())
+      expect(trigger.value.conditions.all[0].field).toBeInstanceOf(ReferenceExpression)
+      expect(trigger.value.conditions.all[0].field.elemID.getFullName())
         .toEqual('zendesk_support.ticket_field.instance.customField1')
+      expect(trigger.value.conditions.all[1].field).toBeInstanceOf(ReferenceExpression)
+      expect(trigger.value.conditions.all[1].field.elemID.getFullName())
+        .toEqual('zendesk_support.user_field.instance.userField1')
+      expect(trigger.value.conditions.all[2].field).toBeInstanceOf(ReferenceExpression)
+      expect(trigger.value.conditions.all[2].field.elemID.getFullName())
+        .toEqual('zendesk_support.organization_field.instance.orgField1')
     })
   })
 })

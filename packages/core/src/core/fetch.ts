@@ -21,7 +21,7 @@ import {
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
   FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, SaltoError,
   isSaltoElementError, ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId,
-  CORE_ANNOTATIONS, AdapterOperationsContext, FetchResult,
+  CORE_ANNOTATIONS, AdapterOperationsContext, FetchResult, isAdditionChange,
 } from '@salto-io/adapter-api'
 import {
   applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements,
@@ -134,17 +134,6 @@ const getDetailedChangeTree = async (
   )
 )
 
-const getChangeMap = async (
-  before: ReadOnlyElementsSource,
-  after: ReadOnlyElementsSource,
-  idFilters: IDFilter[]
-): Promise<Record<string, DetailedChange>> =>
-  _.fromPairs(
-    wu(await getDetailedChanges(before, after, idFilters))
-      .map(change => [change.id.getFullName(), change])
-      .toArray(),
-  )
-
 const findNestedElementPath = (
   changeElemID: ElemID,
   originalParentElements: Element[]
@@ -186,21 +175,33 @@ const addFetchChangeMetadata = (
   ),
 }])
 
+const getChangesNestedUnderID = (
+  id: ElemID, changesTree: collections.treeMap.TreeMap<WorkspaceDetailedChange>
+): WorkspaceDetailedChange[] => (
+  wu(changesTree.valuesWithPrefix(id.getFullName()))
+    .flatten(true)
+    // Instance IDs are nested under the type ID in the tree, so we have to filter this
+    .filter(item => id.isEqual(item.change.id) || id.isParentOf(item.change.id))
+    .toArray()
+)
+
 const toFetchChanges = (
   accountAndPendingChanges: collections.treeMap.TreeMap<WorkspaceDetailedChange>,
-  workspaceToServiceChanges: Record<string, DetailedChange>,
+  workspaceToServiceChanges: collections.treeMap.TreeMap<WorkspaceDetailedChange>,
 ): Iterable<FetchChange> => {
   const handledChangeIDs = new Set<string>()
   return wu(accountAndPendingChanges.keys())
-    .map((id): FetchChange | undefined => {
+    .map((id): FetchChange[] | undefined => {
       if (handledChangeIDs.has(id)) {
         // If we get here it means this change was a "relatedChange" in a previous iteration
         // which means we already handled this change and we should not handle it again
         return undefined
       }
 
-      const wsChange = workspaceToServiceChanges[id]
-      if (wsChange === undefined) {
+      const elemId = ElemID.fromFullName(id)
+      const wsChanges = getChangesNestedUnderID(elemId, workspaceToServiceChanges)
+        .map(({ change }) => change)
+      if (wsChanges.length === 0) {
         // If we get here it means there is a difference between the account and the state
         // but there is no difference between the account and the workspace. this can happen
         // when the nacl files are updated externally (from git usually) with the change that
@@ -211,10 +212,7 @@ const toFetchChanges = (
       }
 
       // Find all changes that relate to the current ID and mark them as handled
-      const relatedChanges = [...accountAndPendingChanges.valuesWithPrefix(id)]
-        .flat()
-        .filter(change =>
-          wsChange.id.isEqual(change.change.id) || wsChange.id.isParentOf(change.change.id))
+      const relatedChanges = getChangesNestedUnderID(elemId, accountAndPendingChanges)
       relatedChanges.forEach(change => handledChangeIDs.add(change.change.id.getFullName()))
 
       const [serviceChanges, pendingChanges] = _.partition(
@@ -233,9 +231,25 @@ const toFetchChanges = (
           id, serviceChanges.length, pendingChanges.length,
         )
       }
-      return { change: wsChange, serviceChanges, pendingChanges }
+
+      const createFetchChange = (change: DetailedChange): FetchChange => {
+        if (!change.id.isEqual(elemId) && isAdditionChange(change)) {
+          // We have a workspace change that is nested inside a conflict between
+          // the workspace and the service. it seems like this can only happen if both sides
+          // are adding the same element but with different values.
+          // We choose to always accept anything the service added as if it is not a conflict
+          // we do this because there is a chance that these are all just hidden values and then
+          // the conflict isn't real and we can just apply the changes without forcing the user to
+          // do anything
+          return { change, serviceChanges, pendingChanges: [] }
+        }
+        // In all other cases, we want to return the change with the relevant conflicts
+        return { change, serviceChanges, pendingChanges }
+      }
+      return wsChanges.map(createFetchChange)
     })
     .filter(values.isDefined)
+    .flatten(true)
 }
 
 export type FetchChangesResult = {
@@ -585,10 +599,11 @@ const calcFetchChanges = async (
     'calculate pending changes',
   )
   const workspaceToServiceChanges = await log.time(
-    () => getChangeMap(
+    () => getDetailedChangeTree(
       workspaceElements,
       partialFetchElementSource,
-      [accountFetchFilter, partialFetchFilter]
+      [accountFetchFilter, partialFetchFilter],
+      'service',
     ),
     'calculate service-workspace changes',
   )

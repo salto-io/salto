@@ -862,6 +862,68 @@ describe('fetch', () => {
       })
     })
 
+    describe('when pending change and the account add the same instance with different values', () => {
+      let pendingInstance: InstanceElement
+      beforeEach(async () => {
+        const adapters: Record<string, jest.Mocked<AdapterOperations>> = {
+          [typeWithHiddenField.elemID.adapter]: {
+            fetch: mockFunction<AdapterOperations['fetch']>()
+              .mockResolvedValue({ elements: [typeWithHiddenField, hiddenInstance] }),
+            deploy: mockFunction<AdapterOperations['deploy']>()
+              .mockResolvedValue({ appliedChanges: [], errors: [] }),
+          },
+        }
+        pendingInstance = hiddenInstance.clone()
+        pendingInstance.value.reg = 'other'
+        pendingInstance.value.extra = 'extra'
+        delete pendingInstance.value.hiddenValue
+
+        const result = await fetchChanges(
+          adapters,
+          createElementSource([typeWithHiddenField, pendingInstance]),
+          createElementSource([typeWithHiddenField]),
+          { [typeWithHiddenField.elemID.adapter]: 'dummy' },
+          [],
+        )
+        changes = [...result.changes]
+      })
+      it('should return values that exist only in the service as non-conflicts', () => {
+        expect(changes).toContainEqual(
+          expect.objectContaining({
+            change: expect.objectContaining({
+              id: hiddenInstance.elemID.createNestedID('hiddenValue'),
+              action: 'add',
+            }),
+            pendingChanges: [],
+          })
+        )
+      })
+      it('should return conflicting values as conflicts', () => {
+        expect(changes).toContainEqual(
+          expect.objectContaining({
+            change: expect.objectContaining({
+              id: hiddenInstance.elemID.createNestedID('reg'),
+              action: 'modify',
+            }),
+            pendingChanges: expect.arrayContaining([expect.anything()]),
+            serviceChanges: expect.arrayContaining([expect.anything()]),
+          })
+        )
+      })
+      it('should return values that are only in pending as conflicts', () => {
+        expect(changes).toContainEqual(
+          expect.objectContaining({
+            change: expect.objectContaining({
+              id: hiddenInstance.elemID.createNestedID('extra'),
+              action: 'remove',
+            }),
+            pendingChanges: expect.arrayContaining([expect.anything()]),
+            serviceChanges: expect.arrayContaining([expect.anything()]),
+          })
+        )
+      })
+    })
+
     describe('generateServiceIdToStateElemId', () => {
       const SERVICE_ID_ANNOTATION = 'service_id_annotation_type_name'
       const SERVICE_ID_FIELD_NAME = 'service_id_field_name'

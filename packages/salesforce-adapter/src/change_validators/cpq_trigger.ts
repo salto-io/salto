@@ -30,8 +30,18 @@ const getCpqError = async (
       message: 'Identify cpq change',
       detailedMessage: `Identify cpq change for ${elemId}`,
       deployActions: {
-        preAction: 'disable CPQ trigger',
-        postAction: 'enable CPQ trigger',
+        preAction: {
+          label: 'disable CPQ trigger',
+          subtext: [
+            'In your Salesforce destination org, native to: \'Setup\' > \'Installed Packages\' > \'Salesforce CPQ\' > \'Configure\' > \'Additional Settings\'',
+            'Check \'Triggers Disabled\'',
+            'Click Save',
+          ],
+        },
+        postAction: {
+          label: 'disable CPQ trigger',
+          subtext: [],
+        },
       },
     } as ChangeError
   }
@@ -41,8 +51,6 @@ const getCpqError = async (
 
 const changeValidator: ChangeValidator = async changes => {
   const updateChangeErrors = await awu(changes)
-    // .filter(isInstanceOfCustomObjectChange)
-    // .filter(isModificationChange)
     .map(change =>
       getCpqError(
         getChangeData(change).elemID

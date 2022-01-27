@@ -19,9 +19,12 @@ export type SaltoErrorSeverity = 'Error' | 'Warning' | 'Info'
 
 export type SaltoErrorSource = 'config'
 
-export type PreDeployAction = 'disable CPQ trigger'
+export type PreDeployAction = {
+    label: string
+    subtext: string[]
+}
 
-export type PostDeployAction = 'enable CPQ trigger'
+export type PostDeployAction = PreDeployAction
 
 export type DeployActions = {
     preAction?: PreDeployAction

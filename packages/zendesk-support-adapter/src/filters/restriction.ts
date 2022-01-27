@@ -19,17 +19,18 @@ import { FilterCreator } from '../filter'
 
 export const RESTRICTION_FIELD_NAME = 'restriction'
 
+const removeIdField = (instanceValue: Values): void => {
+  if (!_.isEmpty(instanceValue[RESTRICTION_FIELD_NAME]?.ids)) {
+    delete instanceValue[RESTRICTION_FIELD_NAME].id
+  }
+}
+
 /**
  * Fix the restriction object on multiple types
  */
 const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     const instances = elements.filter(isInstanceElement)
-    const removeIdField = (instanceValue: Values): void => {
-      if (!_.isEmpty(instanceValue[RESTRICTION_FIELD_NAME]?.ids)) {
-        delete instanceValue[RESTRICTION_FIELD_NAME].id
-      }
-    }
     instances
       .filter(inst => ['view', 'macro'].includes(inst.elemID.typeName))
       .map(inst => inst.value)

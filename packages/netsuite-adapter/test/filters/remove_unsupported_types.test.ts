@@ -19,12 +19,12 @@ import filterCreator from '../../src/filters/remove_unsupported_types'
 import { NETSUITE } from '../../src/constants'
 import NetsuiteClient from '../../src/client/client'
 import { FilterOpts } from '../../src/filter'
-import { customrecordtype } from '../../src/autogen/types/custom_types/customrecordtype'
+import { customrecordtypeType } from '../../src/autogen/types/custom_types/customrecordtype'
 
 describe('remove_unsupported_types', () => {
   let filterOpts: FilterOpts
   let elements: TypeElement[]
-  const sdfType = customrecordtype
+  const sdfType = customrecordtypeType().type
   const supportedSoapType = new ObjectType({ elemID: new ElemID(NETSUITE, 'subsidiary'), annotations: { source: 'soap' } })
   const unsupportedSoapType = new ObjectType({ elemID: new ElemID(NETSUITE, 'someType'), annotations: { source: 'soap' } })
   const sdfSoapType = new ObjectType({ elemID: new ElemID(NETSUITE, 'CustomRecordType'), annotations: { source: 'soap' } })

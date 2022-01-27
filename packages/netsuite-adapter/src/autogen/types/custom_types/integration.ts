@@ -19,24 +19,30 @@ import {
   BuiltinTypes, createRefToElmWithValue, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction,
 } from '@salto-io/adapter-api'
 import * as constants from '../../../constants'
+import { TypeAndInnerTypes } from '../../../types/object_types'
 
-export const integrationInnerTypes: ObjectType[] = []
+export const integrationType = (): TypeAndInnerTypes => {
+  const innerTypes: Record<string, ObjectType> = {}
 
-const integrationElemID = new ElemID(constants.NETSUITE, 'integration')
+  const integrationElemID = new ElemID(constants.NETSUITE, 'integration')
 
-export const integration = new ObjectType({
-  elemID: integrationElemID,
-  annotations: {
-  },
-  fields: {
-    scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-        [constants.IS_ATTRIBUTE]: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^custinteg[0-9a-z_]+' }),
-      },
-    }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custinteg’. */
-  },
-  path: [constants.NETSUITE, constants.TYPES_PATH, integrationElemID.name],
-})
+  const integration = new ObjectType({
+    elemID: integrationElemID,
+    annotations: {
+    },
+    fields: {
+      scriptid: {
+        refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+          [constants.IS_ATTRIBUTE]: true,
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^custinteg[0-9a-z_]+' }),
+        },
+      }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custinteg’. */
+    },
+    path: [constants.NETSUITE, constants.TYPES_PATH, integrationElemID.name],
+  })
+
+
+  return { type: integration, innerTypes }
+}

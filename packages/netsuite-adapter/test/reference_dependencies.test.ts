@@ -14,28 +14,37 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, StaticFile } from '@salto-io/adapter-api'
-import {
-  CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT, DATASET, ENTITY_CUSTOM_FIELD, FILE, PATH, SCRIPT_ID, WORKBOOK,
-} from '../src/constants'
-import { customTypes, fileCabinetTypes } from '../src/types'
+import { customrecordtypeType } from '../src/autogen/types/custom_types/customrecordtype'
+import { customsegmentType } from '../src/autogen/types/custom_types/customsegment'
+import { datasetType } from '../src/autogen/types/custom_types/dataset'
+import { entitycustomfieldType } from '../src/autogen/types/custom_types/entitycustomfield'
+import { workbookType } from '../src/autogen/types/custom_types/workbook'
+import { fileType } from '../src/types/file_cabinet_types'
+import { PATH, SCRIPT_ID } from '../src/constants'
 import {
   getAllReferencedInstances,
   getRequiredReferencedInstances,
 } from '../src/reference_dependencies'
 
 describe('reference dependencies', () => {
-  const fileInstance = new InstanceElement('fileInstance', fileCabinetTypes[FILE], {
+  const entitycustomfield = entitycustomfieldType().type
+  const customrecordtype = customrecordtypeType().type
+  const customsegment = customsegmentType().type
+  const dataset = datasetType().type
+  const workbook = workbookType().type
+
+  const fileInstance = new InstanceElement('fileInstance', fileType(), {
     [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder/content.html',
   })
 
-  const dependsOn1Instance = new InstanceElement('dependsOn1Instance', customTypes[ENTITY_CUSTOM_FIELD], {
+  const dependsOn1Instance = new InstanceElement('dependsOn1Instance', entitycustomfield, {
     [SCRIPT_ID]: 'custentity_depends_on_1_instance',
     label: new ReferenceExpression(fileInstance.elemID.createNestedID(PATH),
       fileInstance.value[PATH], fileInstance),
   })
 
   const instance = new InstanceElement('elementName',
-    customTypes[ENTITY_CUSTOM_FIELD], {
+    entitycustomfield, {
       label: 'elementName',
       [SCRIPT_ID]: 'custentity_my_script_id',
       description: new StaticFile({
@@ -53,7 +62,7 @@ describe('reference dependencies', () => {
     { id: 'serviceIdValue' },
   )
 
-  const instanceWithManyRefs = new InstanceElement('dependsOn2Instances', customTypes[ENTITY_CUSTOM_FIELD], {
+  const instanceWithManyRefs = new InstanceElement('dependsOn2Instances', entitycustomfield, {
     [SCRIPT_ID]: 'custentity_depends_on_2',
     label: new ReferenceExpression(dependsOn1Instance.elemID.createNestedID(SCRIPT_ID),
       dependsOn1Instance.value[SCRIPT_ID], dependsOn1Instance),
@@ -71,12 +80,12 @@ describe('reference dependencies', () => {
   })
   describe('getRequiredReferencedInstances', () => {
     const customRecordTypeInstance = new InstanceElement('customRecordTypeInstance',
-      customTypes[CUSTOM_RECORD_TYPE], {
+      customrecordtype, {
         [SCRIPT_ID]: 'customrecord_my_script_id',
       })
 
     const customSegmentInstance = new InstanceElement('customSegmentInstance',
-      customTypes[CUSTOM_SEGMENT], {
+      customsegment, {
         [SCRIPT_ID]: 'cseg_my_script_id',
       })
 
@@ -89,12 +98,12 @@ describe('reference dependencies', () => {
     )
 
     const datasetInstance = new InstanceElement('datasetInstance',
-      customTypes[DATASET], {
+      dataset, {
         [SCRIPT_ID]: 'custdataset_my_script_id',
       })
 
     const workbookInstance = new InstanceElement('workbookInstance',
-      customTypes[WORKBOOK], {
+      workbook, {
         [SCRIPT_ID]: 'custworkbook_my_script_id',
         dependencies: {
           dependency: new ReferenceExpression(
@@ -132,7 +141,7 @@ describe('reference dependencies', () => {
 
     it('should not add new dependencies more then once', async () => {
       const customRecordTypeInstance2 = new InstanceElement('customRecordTypeInstance2',
-        customTypes[CUSTOM_RECORD_TYPE], {
+        customrecordtype, {
           [SCRIPT_ID]: 'customrecord_my_script_id_2',
           customsegment: new ReferenceExpression(
             customSegmentInstance.elemID, 'val', customSegmentInstance

@@ -16,7 +16,7 @@
 import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
 import NetsuiteClient from '../../src/client/client'
 import setServiceUrl from '../../src/service_url/savedsearch'
-import { savedsearch } from '../../src/autogen/types/custom_types/savedsearch'
+import { savedsearchType } from '../../src/autogen/types/custom_types/savedsearch'
 
 
 describe('setSavedSearchUrls', () => {
@@ -25,6 +25,7 @@ describe('setSavedSearchUrls', () => {
     runSavedSearchQuery: runSavedSearchQueryMock,
     url: 'https://accountid.app.netsuite.com',
   } as unknown as NetsuiteClient
+  const savedsearch = savedsearchType().type
 
   let elements: InstanceElement[]
 

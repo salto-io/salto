@@ -21,7 +21,7 @@ import { fieldTypes } from './field_types'
 const pathRegex = '^/.+'
 
 const fileElemID = new ElemID(constants.NETSUITE, 'file')
-export const file = new ObjectType({
+export const fileType = (): ObjectType => new ObjectType({
   elemID: fileElemID,
   annotations: {
   },
@@ -87,7 +87,7 @@ export const file = new ObjectType({
 
 
 const folderElemID = new ElemID(constants.NETSUITE, 'folder')
-export const folder = new ObjectType({
+export const folderType = (): ObjectType => new ObjectType({
   elemID: folderElemID,
   annotations: {
   },
@@ -129,4 +129,10 @@ export const folder = new ObjectType({
     },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, folderElemID.name],
+})
+
+export const fileCabinetTypesNames: ReadonlySet<string> = new Set(['file', 'folder'])
+export const getFileCabinetTypes = (): Readonly<Record<string, ObjectType>> => ({
+  file: fileType(),
+  folder: folderType(),
 })

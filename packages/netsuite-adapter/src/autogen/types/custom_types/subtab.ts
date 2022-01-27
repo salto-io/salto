@@ -19,42 +19,48 @@ import {
   BuiltinTypes, createRefToElmWithValue, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction,
 } from '@salto-io/adapter-api'
 import * as constants from '../../../constants'
+import { TypeAndInnerTypes } from '../../../types/object_types'
 import { enums } from '../enums'
 
-export const subtabInnerTypes: ObjectType[] = []
+export const subtabType = (): TypeAndInnerTypes => {
+  const innerTypes: Record<string, ObjectType> = {}
 
-const subtabElemID = new ElemID(constants.NETSUITE, 'subtab')
+  const subtabElemID = new ElemID(constants.NETSUITE, 'subtab')
 
-export const subtab = new ObjectType({
-  elemID: subtabElemID,
-  annotations: {
-  },
-  fields: {
-    scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-        [constants.IS_ATTRIBUTE]: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^custtab[0-9a-z_]+' }),
-      },
-    }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘custtab’. */
-    title: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-      },
-    }, /* Original description: This field accepts references to the string custom type. */
-    tabtype: {
-      refType: createRefToElmWithValue(enums.generic_tab_type),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-      },
-    }, /* Original description: For information about possible values, see generic_tab_type. */
-    parent: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-      annotations: {
-      },
-    }, /* Original description: This field accepts references to the subtab custom type.   For information about other possible values, see generic_tab_parent. */
-  },
-  path: [constants.NETSUITE, constants.TYPES_PATH, subtabElemID.name],
-})
+  const subtab = new ObjectType({
+    elemID: subtabElemID,
+    annotations: {
+    },
+    fields: {
+      scriptid: {
+        refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+          [constants.IS_ATTRIBUTE]: true,
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^custtab[0-9a-z_]+' }),
+        },
+      }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘custtab’. */
+      title: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+        },
+      }, /* Original description: This field accepts references to the string custom type. */
+      tabtype: {
+        refType: createRefToElmWithValue(enums.generic_tab_type),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+        },
+      }, /* Original description: For information about possible values, see generic_tab_type. */
+      parent: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+        annotations: {
+        },
+      }, /* Original description: This field accepts references to the subtab custom type.   For information about other possible values, see generic_tab_parent. */
+    },
+    path: [constants.NETSUITE, constants.TYPES_PATH, subtabElemID.name],
+  })
+
+
+  return { type: subtab, innerTypes }
+}

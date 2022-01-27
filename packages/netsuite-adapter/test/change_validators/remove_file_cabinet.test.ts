@@ -14,21 +14,21 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { entitycustomfieldType } from '../../src/autogen/types/custom_types/entitycustomfield'
+import { fileType } from '../../src/types/file_cabinet_types'
 import removeFileCabinetValidator from '../../src/change_validators/remove_file_cabinet'
-import { customTypes, fileCabinetTypes } from '../../src/types'
-import { ENTITY_CUSTOM_FIELD } from '../../src/constants'
 
 
 describe('remove file cabinet change validator', () => {
   describe('onRemove', () => {
     it('should not have change error when removing an instance with custom object type', async () => {
-      const instance = new InstanceElement('test', customTypes[ENTITY_CUSTOM_FIELD])
+      const instance = new InstanceElement('test', entitycustomfieldType().type)
       const changeErrors = await removeFileCabinetValidator([toChange({ before: instance })])
       expect(changeErrors).toHaveLength(0)
     })
 
     it('should have change error when removing an instance with file cabinet type', async () => {
-      const instance = new InstanceElement('test', fileCabinetTypes.file)
+      const instance = new InstanceElement('test', fileType())
       const changeErrors = await removeFileCabinetValidator([toChange({ before: instance })])
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')

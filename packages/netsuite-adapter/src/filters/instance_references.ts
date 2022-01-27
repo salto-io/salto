@@ -22,7 +22,7 @@ import { values as lowerdashValues, collections } from '@salto-io/lowerdash'
 import { SCRIPT_ID, PATH } from '../constants'
 import { serviceId } from '../transformer'
 import { FilterCreator, FilterWith } from '../filter'
-import { isCustomType, typesElementSourceWrapper } from '../types'
+import { isCustomType } from '../types'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 
 const { awu } = collections.asynciterable
@@ -133,7 +133,6 @@ const customTypeServiceIdsToElemIds = async (
     element: instance,
     transformFunc: addFullServiceIdsCallback,
     strict: true,
-    elementsSource: typesElementSourceWrapper(),
   })
   return serviceIdsToElemIds
 }
@@ -154,7 +153,7 @@ const shouldExtractToGenereatedDependency = (serviceIdInfoRecord: ServiceIdInfo)
 export const getInstanceServiceIdRecords = async (
   instance: InstanceElement,
 ): Promise<Record<string, ElemID>> => (
-  isCustomType(instance.refType.elemID)
+  isCustomType(instance.refType)
     ? customTypeServiceIdsToElemIds(instance)
     : { [serviceId(instance)]: instance.elemID.createNestedID(PATH) }
 )

@@ -13,31 +13,21 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { DeployResult as AdapterApiDeployResult, Element, InstanceElement, isInstanceElement, ObjectType, TypeElement, ElemID, ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
+import { DeployResult as AdapterApiDeployResult, Element, InstanceElement, isInstanceElement, ObjectType, PrimitiveType, TypeElement, TypeReference } from '@salto-io/adapter-api'
 import { fieldTypes } from './types/field_types'
 import { enums } from './autogen/types/enums'
-import { customTypes, innerCustomTypes } from './autogen/types'
-import { file, folder } from './types/file_cabinet_types'
+import { CustomType, getCustomTypes, isCustomTypeName } from './autogen/types'
+import { TypesMap } from './types/object_types'
+import { fileCabinetTypesNames, getFileCabinetTypes } from './types/file_cabinet_types'
 
-const { awu } = collections.asynciterable
+export const isCustomType = (type: ObjectType | TypeReference): boolean =>
+  isCustomTypeName(type.elemID.name)
 
-export { customTypes } from './autogen/types'
-
-export const fileCabinetTypes: Readonly<Record<string, ObjectType>> = {
-  file,
-  folder,
-}
-
-export const isCustomType = (typeElemID: ElemID): boolean =>
-  !_.isUndefined(customTypes[typeElemID.name])
-
-export const isFileCabinetType = (typeElemID: ElemID): boolean =>
-  !_.isUndefined(fileCabinetTypes[typeElemID.name])
+export const isFileCabinetType = (type: ObjectType | TypeReference): boolean =>
+  fileCabinetTypesNames.has(type.elemID.name)
 
 export const isFileCabinetInstance = (element: Element): element is InstanceElement =>
-  isInstanceElement(element) && isFileCabinetType(element.refType.elemID)
+  isInstanceElement(element) && isFileCabinetType(element.refType)
 
 export const isFileInstance = (element: Element): boolean =>
   isInstanceElement(element) && element.refType.elemID.name === 'file'
@@ -45,13 +35,36 @@ export const isFileInstance = (element: Element): boolean =>
 export const isDataObjectType = (element: ObjectType): boolean =>
   element.annotations.source === 'soap'
 
-export const getMetadataTypes = (): TypeElement[] => [
-  ...Object.values(customTypes),
-  ...innerCustomTypes,
-  ...Object.values(enums),
-  ...Object.values(fileCabinetTypes),
-  ...Object.values(fieldTypes),
-]
+type MetadataTypes = {
+  customTypes: TypesMap<CustomType>
+  enums: Readonly<Record<string, PrimitiveType>>
+  fileCabinetTypes: Readonly<Record<string, ObjectType>>
+  fieldTypes: Readonly<Record<string, PrimitiveType>>
+}
+
+export const getMetadataTypes = (): MetadataTypes => ({
+  customTypes: getCustomTypes(),
+  enums,
+  fileCabinetTypes: getFileCabinetTypes(),
+  fieldTypes,
+})
+
+export const getTopLevelCustomTypes = (customTypes: TypesMap<CustomType>): ObjectType[] =>
+  Object.values(customTypes).map(customType => customType.type)
+
+export const getInnerCustomTypes = (customTypes: TypesMap<CustomType>): ObjectType[] =>
+  Object.values(customTypes).flatMap(customType => Object.values(customType.innerTypes))
+
+export const metadataTypesToList = (metadataTypes: MetadataTypes): TypeElement[] => {
+  const { customTypes, fileCabinetTypes } = metadataTypes
+  return [
+    ...getTopLevelCustomTypes(customTypes),
+    ...getInnerCustomTypes(customTypes),
+    ...Object.values(enums),
+    ...Object.values(fileCabinetTypes),
+    ...Object.values(fieldTypes),
+  ]
+}
 
 export const SCRIPT_TYPES = [
   'bundleinstallationscript',
@@ -91,19 +104,6 @@ export const FIELD_TYPES = [
   'crmcustomfield',
   'customfield',
 ]
-export const typesElementSourceWrapper = (
-): ReadOnlyElementsSource => {
-  const typesByKey = _.keyBy(
-    getMetadataTypes(),
-    type => type.elemID.getFullName()
-  )
-  return {
-    get: async elemID => typesByKey[elemID.getFullName()],
-    getAll: async () => awu(Object.values(typesByKey)),
-    has: async elemID => typesByKey[elemID.getFullName()] !== undefined,
-    list: async () => awu(Object.keys(typesByKey).map(ElemID.fromFullName)),
-  }
-}
 
 export type DeployResult = AdapterApiDeployResult & {
   elemIdToInternalId?: Record<string, string>

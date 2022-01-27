@@ -14,15 +14,16 @@
 * limitations under the License.
 */
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
+import { fileType } from '../../src/types/file_cabinet_types'
+import { workflowType } from '../../src/autogen/types/custom_types/workflow'
 import accountSpecificValueValidator from '../../src/change_validators/account_specific_values'
-import { customTypes, fileCabinetTypes } from '../../src/types'
-import { ACCOUNT_SPECIFIC_VALUE, FILE, PATH, SCRIPT_ID, WORKFLOW } from '../../src/constants'
+import { ACCOUNT_SPECIFIC_VALUE, PATH, SCRIPT_ID } from '../../src/constants'
 
 
 describe('account specific value validator', () => {
   const origInstance = new InstanceElement(
     'instance',
-    customTypes[WORKFLOW],
+    workflowType().type,
     {
       isinactive: false,
       [SCRIPT_ID]: 'customworkflow1',
@@ -38,7 +39,7 @@ describe('account specific value validator', () => {
   it('should not have ChangeError when deploying a file cabinet instance', async () => {
     const newFileInstance = new InstanceElement(
       'instance',
-      fileCabinetTypes[FILE],
+      fileType(),
       {
         [PATH]: '/Path/to/file',
         content: ACCOUNT_SPECIFIC_VALUE,

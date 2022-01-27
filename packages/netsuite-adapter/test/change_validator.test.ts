@@ -14,12 +14,14 @@
 * limitations under the License.
 */
 import { Change, ElemID, InstanceElement, ObjectType, ProgressReporter, toChange } from '@salto-io/adapter-api'
-import { fileCabinetTypes } from '../src/types'
+import { fileType } from '../src/types/file_cabinet_types'
 import getChangeValidator from '../src/change_validator'
 import { FetchByQueryFunc, FetchByQueryReturnType } from '../src/change_validators/safe_deploy'
 import { NetsuiteQuery } from '../src/query'
 
 describe('change validator', () => {
+  const file = fileType()
+
   describe('SuiteApp', () => {
     let fetchByQuery: FetchByQueryFunc
     beforeEach(() => {
@@ -36,7 +38,7 @@ describe('change validator', () => {
         const changeValidator = getChangeValidator(
           { withSuiteApp: false, warnStaleData: false, fetchByQuery }
         )
-        const instance = new InstanceElement('test', fileCabinetTypes.file)
+        const instance = new InstanceElement('test', file)
         const changeErrors = await changeValidator([toChange({ before: instance })])
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
@@ -49,7 +51,7 @@ describe('change validator', () => {
         const changeValidator = getChangeValidator(
           { withSuiteApp: true, warnStaleData: false, fetchByQuery }
         )
-        const instance = new InstanceElement('test', fileCabinetTypes.file)
+        const instance = new InstanceElement('test', file)
         const changeErrors = await changeValidator([toChange({ before: instance })])
         expect(changeErrors).toHaveLength(0)
       })

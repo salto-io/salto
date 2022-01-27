@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
-import { restlet } from '../../src/autogen/types/custom_types/restlet'
+import { restletType } from '../../src/autogen/types/custom_types/restlet'
 import NetsuiteClient from '../../src/client/client'
 import setServiceUrl from '../../src/service_url/script'
-import { emailcaptureplugin } from '../../src/autogen/types/custom_types/emailcaptureplugin'
-import { plugintype } from '../../src/autogen/types/custom_types/plugintype'
+import { emailcapturepluginType } from '../../src/autogen/types/custom_types/emailcaptureplugin'
+import { plugintypeType } from '../../src/autogen/types/custom_types/plugintype'
 
 
 describe('setScriptsUrls', () => {
@@ -27,6 +27,9 @@ describe('setScriptsUrls', () => {
     runSuiteQL: runSuiteQlMock,
     url: 'https://accountid.app.netsuite.com',
   } as unknown as NetsuiteClient
+  const restlet = restletType().type
+  const emailcaptureplugin = emailcapturepluginType().type
+  const plugintype = plugintypeType().type
 
   let elements: InstanceElement[]
 

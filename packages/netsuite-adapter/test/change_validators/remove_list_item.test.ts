@@ -14,15 +14,14 @@
 * limitations under the License.
 */
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
+import { customlistType } from '../../src/autogen/types/custom_types/customlist'
 import removeListItemValidator from '../../src/change_validators/remove_list_item'
-import { customTypes } from '../../src/types'
-import { CUSTOM_LIST } from '../../src/constants'
 
 
 describe('remove customlist item change validator', () => {
   const origInstance = new InstanceElement(
     'instance',
-    customTypes[CUSTOM_LIST],
+    customlistType().type,
     {
       customvalues: {
         customvalue: [

@@ -14,15 +14,16 @@
 * limitations under the License.
 */
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
+import { addressFormType } from '../../src/autogen/types/custom_types/addressForm'
+import { roleType } from '../../src/autogen/types/custom_types/role'
 import invalidValuesValidator from '../../src/change_validators/custom_types_invalid_values'
-import { customTypes } from '../../src/types'
-import { SCRIPT_ID, ROLE, ADDRESS_FORM } from '../../src/constants'
+import { SCRIPT_ID } from '../../src/constants'
 
 
 describe('invalid values validator', () => {
   const origInstance = new InstanceElement(
     'instance',
-    customTypes[ROLE],
+    roleType().type,
     {
       isinactive: false,
       [SCRIPT_ID]: 'customrole1009',
@@ -39,7 +40,7 @@ describe('invalid values validator', () => {
   it('should not have ChangeError when deployoong a type that doesn\'t have invalid value', async () => {
     const anotherInstance = new InstanceElement(
       'instance',
-      customTypes[ADDRESS_FORM],
+      addressFormType().type,
       {
         [SCRIPT_ID]: 'custform_2_t1440050_248',
         name: 'My Address Form',

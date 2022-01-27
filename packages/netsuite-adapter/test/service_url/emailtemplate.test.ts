@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
-import { emailtemplate } from '../../src/autogen/types/custom_types/emailtemplate'
+import { emailtemplateType } from '../../src/autogen/types/custom_types/emailtemplate'
 import NetsuiteClient from '../../src/client/client'
 import setServiceUrl from '../../src/service_url/emailtemplate'
 
@@ -25,6 +25,7 @@ describe('setEmailTemplatesUrls', () => {
     runSuiteQL: runSuiteQlMock,
     url: 'https://accountid.app.netsuite.com',
   } as unknown as NetsuiteClient
+  const emailtemplate = emailtemplateType().type
 
   let elements: InstanceElement[]
 

@@ -16,13 +16,13 @@
 import { getChangeData, InstanceElement, toChange } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/account_specific_values'
 import { ACCOUNT_SPECIFIC_VALUE, APPLICATION_ID } from '../../src/constants'
-import { addressForm } from '../../src/autogen/types/custom_types/addressForm'
+import { addressFormType } from '../../src/autogen/types/custom_types/addressForm'
 
 describe('account_specific_values filter', () => {
   it('should remove account specific values', async () => {
     const instance = new InstanceElement(
       'instance',
-      addressForm,
+      addressFormType().type,
       {
         [APPLICATION_ID]: 'a.b.c',
         a: 2,

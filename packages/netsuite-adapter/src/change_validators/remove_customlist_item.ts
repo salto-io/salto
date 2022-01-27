@@ -16,15 +16,15 @@
 import {
   ChangeValidator, getChangeData, isModificationChange, InstanceElement, isInstanceChange,
   ModificationChange,
+  ElemID,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { customTypes } from '../types'
-import { CUSTOM_LIST } from '../constants'
+import { CUSTOM_LIST, NETSUITE } from '../constants'
 
 const { makeArray } = collections.array
 
 const isCustomListChange = (change: ModificationChange<InstanceElement>): boolean =>
-  getChangeData(change).refType.elemID.isEqual(customTypes[CUSTOM_LIST].elemID)
+  getChangeData(change).refType.elemID.isEqual(new ElemID(NETSUITE, CUSTOM_LIST))
 
 const hasItemRemoval = (change: ModificationChange<InstanceElement>): boolean => {
   const beforeCustomList = change.data.before

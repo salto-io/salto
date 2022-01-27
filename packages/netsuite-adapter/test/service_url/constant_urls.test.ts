@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
-import { role } from '../../src/autogen/types/custom_types/role'
+import { roleType } from '../../src/autogen/types/custom_types/role'
 import NetsuiteClient from '../../src/client/client'
 import setServiceUrl from '../../src/service_url/constant_urls'
 import { NETSUITE } from '../../src/constants'
@@ -24,6 +24,7 @@ describe('setConstantUrls', () => {
   const client = {
     url: 'https://tstdrv2259448.app.netsuite.com',
   } as unknown as NetsuiteClient
+  const role = roleType().type
 
   let elements: ObjectType[]
 

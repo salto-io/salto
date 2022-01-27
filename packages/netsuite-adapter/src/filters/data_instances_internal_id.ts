@@ -57,8 +57,8 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
         && value.internalId !== undefined
         && isObjectType(fieldType)
         && (isInsideList
-          || isCustomType(fieldType.elemID)
-          || isFileCabinetType(fieldType.elemID))) {
+          || isCustomType(fieldType)
+          || isFileCabinetType(fieldType))) {
         const instanceName = getSubInstanceName(path, value.internalId)
 
         if (!(instanceName in newInstancesMap)) {
@@ -67,7 +67,7 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
             // If the fieldType is an SDF type we replace it with RecordRef to avoid validation
             // errors because SDF types has fields with a "required" annotation which might not
             // be fulfilled
-            (isCustomType(fieldType.elemID) || isFileCabinetType(fieldType.elemID))
+            (isCustomType(fieldType) || isFileCabinetType(fieldType))
               && recordRefType !== undefined
               ? recordRefType : fieldType,
             { ...value, isSubInstance: true },

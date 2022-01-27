@@ -13,19 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
-import path from 'path'
-import { isFileCabinetType } from '../types'
-import { FilterWith } from '../filter'
+import { ObjectType } from '@salto-io/adapter-api'
 
-const filterCreator = (): FilterWith<'onFetch'> => ({
-  onFetch: async elements => {
-    elements
-      .filter(isInstanceElement)
-      .filter(e => isFileCabinetType(e.refType))
-      .filter(e => path.dirname(e.value.path) !== '/')
-      .forEach(e => { e.annotations[CORE_ANNOTATIONS.PARENT] = [`[${path.dirname(e.value.path)}]`] })
-  },
-})
+export type TypeAndInnerTypes = {
+  type: ObjectType
+  innerTypes: Readonly<Record<string, ObjectType>>
+}
 
-export default filterCreator
+export type TypesMap<T extends string> = Readonly<Record<T, TypeAndInnerTypes>>

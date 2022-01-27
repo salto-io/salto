@@ -57,7 +57,7 @@ const changeValidator: ChangeValidator = async changes => (
       }
 
       // parent annotations in file cabinet instances
-      if (isFileCabinetType(after.refType.elemID)
+      if (isFileCabinetType(after.refType)
         && !_.isEqual(
           getParents(before).map(getReferenceIdentifier),
           getParents(after).map(getReferenceIdentifier),

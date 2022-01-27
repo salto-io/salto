@@ -21,7 +21,7 @@ const changeValidator: ChangeValidator = async changes => (
     .filter(isRemovalChange)
     .map(getChangeData)
     .filter(isInstanceElement)
-    .filter(inst => isCustomType(inst.refType.elemID))
+    .filter(inst => isCustomType(inst.refType))
     .map(({ elemID }) => ({
       elemID,
       severity: 'Error',

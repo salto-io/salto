@@ -13,10 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, Field, isObjectType, ListType, ObjectType, TypeElement } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, Field, isContainerType, isObjectType, isPrimitiveType, ListType, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { getMetadataTypes } from '../types'
 import { NETSUITE } from '../constants'
 import { FilterWith } from '../filter'
 
@@ -430,7 +429,12 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
     recordRefType.fields.id = new Field(recordRefType, 'id', BuiltinTypes.STRING)
 
     const types = elements.filter(isObjectType)
-    const typeMap = _.keyBy([...types, ...getMetadataTypes()], e => e.elemID.name)
+    const primitives = elements.filter(isPrimitiveType)
+    const containers = elements.filter(isContainerType)
+    const typeMap = _.keyBy(
+      [...types, ...primitives, ...containers],
+      e => e.elemID.name
+    )
 
     await awu(types).forEach(async element => {
       element.fields = Object.fromEntries(await awu(Object.entries(element.fields))

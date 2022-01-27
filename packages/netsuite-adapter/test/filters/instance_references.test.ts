@@ -19,8 +19,10 @@ import {
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/instance_references'
-import { customTypes, fileCabinetTypes } from '../../src/types'
-import { CUSTOM_SEGMENT, FILE, PATH, SCRIPT_ID, WORKFLOW } from '../../src/constants'
+import { fileType } from '../../src/types/file_cabinet_types'
+import { customsegmentType } from '../../src/autogen/types/custom_types/customsegment'
+import { workflowType } from '../../src/autogen/types/custom_types/workflow'
+import { PATH, SCRIPT_ID } from '../../src/constants'
 import NetsuiteClient from '../../src/client/client'
 
 
@@ -44,19 +46,20 @@ describe('instance_references filter', () => {
         internalIdsIndex: {},
       })
 
-      fileInstance = new InstanceElement('fileInstance', fileCabinetTypes[FILE], {
+      const file = fileType()
+      fileInstance = new InstanceElement('fileInstance', file, {
         [PATH]: '/Templates/file.name',
       })
 
-      customSegmentInstance = new InstanceElement('customSegmentInstance', customTypes[CUSTOM_SEGMENT], {
+      customSegmentInstance = new InstanceElement('customSegmentInstance', customsegmentType().type, {
         [SCRIPT_ID]: 'cseg_1',
       })
 
-      instanceInElementsSource = new InstanceElement('instanceInElementsSource', fileCabinetTypes[FILE], {
+      instanceInElementsSource = new InstanceElement('instanceInElementsSource', file, {
         [PATH]: '/Templates/instanceInElementsSource',
       })
 
-      workflowInstance = new InstanceElement('instanceName', customTypes[WORKFLOW], {
+      workflowInstance = new InstanceElement('instanceName', workflowType().type, {
         [SCRIPT_ID]: 'top_level',
         workflowstates: {
           workflowstate: [

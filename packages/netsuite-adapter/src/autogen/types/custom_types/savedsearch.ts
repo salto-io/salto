@@ -19,54 +19,60 @@ import {
   BuiltinTypes, createRefToElmWithValue, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../../constants'
+import { TypeAndInnerTypes } from '../../../types/object_types'
 
-export const savedsearchInnerTypes: ObjectType[] = []
+export const savedsearchType = (): TypeAndInnerTypes => {
+  const innerTypes: Record<string, ObjectType> = {}
 
-const savedsearchElemID = new ElemID(constants.NETSUITE, 'savedsearch')
-const savedsearch_dependenciesElemID = new ElemID(constants.NETSUITE, 'savedsearch_dependencies')
+  const savedsearchElemID = new ElemID(constants.NETSUITE, 'savedsearch')
+  const savedsearch_dependenciesElemID = new ElemID(constants.NETSUITE, 'savedsearch_dependencies')
 
-const savedsearch_dependencies = new ObjectType({
-  elemID: savedsearch_dependenciesElemID,
-  annotations: {
-  },
-  fields: {
-    dependency: {
-      refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
+  const savedsearch_dependencies = new ObjectType({
+    elemID: savedsearch_dependenciesElemID,
+    annotations: {
+    },
+    fields: {
+      dependency: {
+        refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+        },
+      }, /* Original description: This definition field is set by defining a saved search in NetSuite. For more information, see Defining a Saved Search.   To redefine a saved search, you should customize it in NetSuite and then import the savedsearch object into the SDF project again. You must not manually edit saved searches in SDF. Modifications to the system-generated XML may result in validation and deployment failures. For more information, see Saved Searches as XML Definitions.   This field only accepts references to any custom type. */
+    },
+    path: [constants.NETSUITE, constants.TYPES_PATH, savedsearchElemID.name],
+  })
+
+  innerTypes.savedsearch_dependencies = savedsearch_dependencies
+
+
+  const savedsearch = new ObjectType({
+    elemID: savedsearchElemID,
+    annotations: {
+    },
+    fields: {
+      scriptid: {
+        refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+          [constants.IS_ATTRIBUTE]: true,
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^customsearch[0-9a-z_]+' }),
+        },
+      }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customsearch’. */
+      definition: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+        },
       },
-    }, /* Original description: This definition field is set by defining a saved search in NetSuite. For more information, see Defining a Saved Search.   To redefine a saved search, you should customize it in NetSuite and then import the savedsearch object into the SDF project again. You must not manually edit saved searches in SDF. Modifications to the system-generated XML may result in validation and deployment failures. For more information, see Saved Searches as XML Definitions.   This field only accepts references to any custom type. */
-  },
-  path: [constants.NETSUITE, constants.TYPES_PATH, savedsearchElemID.name],
-})
-
-savedsearchInnerTypes.push(savedsearch_dependencies)
-
-
-export const savedsearch = new ObjectType({
-  elemID: savedsearchElemID,
-  annotations: {
-  },
-  fields: {
-    scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-        [constants.IS_ATTRIBUTE]: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^customsearch[0-9a-z_]+' }),
-      },
-    }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customsearch’. */
-    definition: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
+      dependencies: {
+        refType: createRefToElmWithValue(savedsearch_dependencies),
+        annotations: {
+        },
       },
     },
-    dependencies: {
-      refType: createRefToElmWithValue(savedsearch_dependencies),
-      annotations: {
-      },
-    },
-  },
-  path: [constants.NETSUITE, constants.TYPES_PATH, savedsearchElemID.name],
-})
+    path: [constants.NETSUITE, constants.TYPES_PATH, savedsearchElemID.name],
+  })
+
+
+  return { type: savedsearch, innerTypes }
+}

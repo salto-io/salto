@@ -15,20 +15,24 @@
 */
 import { ChangeGroupId, ChangeId, ElemID, InstanceElement, ObjectType, toChange, Change, StaticFile, ReferenceExpression } from '@salto-io/adapter-api'
 import { getChangeGroupIdsFunc, SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../src/group_changes'
-import { customTypes, fileCabinetTypes } from '../src/types'
-import { APPLICATION_ID, ENTITY_CUSTOM_FIELD, FILE, NETSUITE } from '../src/constants'
+import { APPLICATION_ID, NETSUITE } from '../src/constants'
+import { entitycustomfieldType } from '../src/autogen/types/custom_types/entitycustomfield'
+import { fileType } from '../src/types/file_cabinet_types'
 
 describe('Group Changes without Salto suiteApp', () => {
+  const entitycustomfield = entitycustomfieldType().type
+  const file = fileType()
+
   const customFieldInstance = new InstanceElement('elementName',
-    customTypes[ENTITY_CUSTOM_FIELD])
+    entitycustomfield)
 
   const customFieldFromSuiteAppInstance = new InstanceElement(
     'elementNameFromSuiteApp',
-    customTypes[ENTITY_CUSTOM_FIELD],
+    entitycustomfield,
     { [APPLICATION_ID]: 'a.b.c' },
   )
 
-  const fileInstance = new InstanceElement('fileInstance', fileCabinetTypes[FILE])
+  const fileInstance = new InstanceElement('fileInstance', file)
 
   const dummyType = new ObjectType({ elemID: new ElemID(NETSUITE, 'dummytype') })
   const nonSdfInstance = new InstanceElement('nonSdfInstance', dummyType)
@@ -71,11 +75,14 @@ describe('Group Changes without Salto suiteApp', () => {
 })
 
 describe('Group Changes with Salto suiteApp', () => {
+  const entitycustomfield = entitycustomfieldType().type
+  const file = fileType()
+
   const customFieldInstance = new InstanceElement('elementName',
-    customTypes[ENTITY_CUSTOM_FIELD])
+    entitycustomfield)
   const customFieldFromSuiteAppInstance = new InstanceElement(
     'elementNameFromSuiteApp',
-    customTypes[ENTITY_CUSTOM_FIELD],
+    entitycustomfield,
     { [APPLICATION_ID]: 'a.b.c' },
   )
   const dummyType = new ObjectType({ elemID: new ElemID(NETSUITE, 'dummytype') })
@@ -83,7 +90,7 @@ describe('Group Changes with Salto suiteApp', () => {
 
   const suiteAppFileInstance1 = new InstanceElement(
     'fileInstance',
-    fileCabinetTypes[FILE],
+    file,
     {
       path: '/Images/file',
       content: new StaticFile({ filepath: 'somePath', content: Buffer.from('aaa') }),
@@ -92,7 +99,7 @@ describe('Group Changes with Salto suiteApp', () => {
 
   const suiteAppFileInstance2 = new InstanceElement(
     'fileInstance2',
-    fileCabinetTypes[FILE],
+    file,
     {
       path: '/Templates/file',
       content: new StaticFile({ filepath: 'somePath', content: Buffer.from('aaa') }),
@@ -101,7 +108,7 @@ describe('Group Changes with Salto suiteApp', () => {
 
   const suiteAppFileInstance3Before = new InstanceElement(
     'fileInstance3',
-    fileCabinetTypes[FILE],
+    file,
     {
       path: '/Images/file3',
       content: new StaticFile({ filepath: 'somePath', content: Buffer.from('aaa') }),
@@ -110,7 +117,7 @@ describe('Group Changes with Salto suiteApp', () => {
 
   const suiteAppFileInstance3After = new InstanceElement(
     'fileInstance3',
-    fileCabinetTypes[FILE],
+    file,
     {
       path: '/Images/file3',
       description: 'aa',
@@ -120,7 +127,7 @@ describe('Group Changes with Salto suiteApp', () => {
 
   const deletedSuiteAppFileInstance = new InstanceElement(
     'deletedInstance4',
-    fileCabinetTypes[FILE],
+    file,
     {
       path: '/Images/file4',
       description: 'aa',
@@ -130,7 +137,7 @@ describe('Group Changes with Salto suiteApp', () => {
 
   const sdfFileInstance1 = new InstanceElement(
     'fileInstance4',
-    fileCabinetTypes[FILE],
+    file,
     {
       path: '/Templates/file',
       content: new StaticFile({ filepath: 'somePath', content: Buffer.from('a'.repeat(11 * 1024 * 1024)) }),
@@ -138,7 +145,7 @@ describe('Group Changes with Salto suiteApp', () => {
   )
   const sdfFileInstance2 = new InstanceElement(
     'fileInstance5',
-    fileCabinetTypes[FILE],
+    file,
     {
       path: '/Templates/file',
       generateurltimestamp: true,

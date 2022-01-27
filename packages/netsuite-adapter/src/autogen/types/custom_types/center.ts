@@ -19,30 +19,36 @@ import {
   BuiltinTypes, createRefToElmWithValue, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction,
 } from '@salto-io/adapter-api'
 import * as constants from '../../../constants'
+import { TypeAndInnerTypes } from '../../../types/object_types'
 
-export const centerInnerTypes: ObjectType[] = []
+export const centerType = (): TypeAndInnerTypes => {
+  const innerTypes: Record<string, ObjectType> = {}
 
-const centerElemID = new ElemID(constants.NETSUITE, 'center')
+  const centerElemID = new ElemID(constants.NETSUITE, 'center')
 
-export const center = new ObjectType({
-  elemID: centerElemID,
-  annotations: {
-  },
-  fields: {
-    scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-        [constants.IS_ATTRIBUTE]: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^custcenter[0-9a-z_]+' }),
-      },
-    }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custcenter’. */
-    label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-      },
-    }, /* Original description: This field accepts references to the string custom type. */
-  },
-  path: [constants.NETSUITE, constants.TYPES_PATH, centerElemID.name],
-})
+  const center = new ObjectType({
+    elemID: centerElemID,
+    annotations: {
+    },
+    fields: {
+      scriptid: {
+        refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+          [constants.IS_ATTRIBUTE]: true,
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^custcenter[0-9a-z_]+' }),
+        },
+      }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custcenter’. */
+      label: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+        },
+      }, /* Original description: This field accepts references to the string custom type. */
+    },
+    path: [constants.NETSUITE, constants.TYPES_PATH, centerElemID.name],
+  })
+
+
+  return { type: center, innerTypes }
+}

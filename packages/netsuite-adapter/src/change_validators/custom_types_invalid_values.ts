@@ -82,7 +82,7 @@ const changeValidator: ChangeValidator = async changes => {
     changes
       .filter(isAdditionOrModificationChange)
       .filter(isInstanceChange)
-      .filter(change => isCustomType(getChangeData(change).refType.elemID)),
+      .filter(change => isCustomType(getChangeData(change).refType)),
     change => getChangeData(change).elemID.typeName
   )
 

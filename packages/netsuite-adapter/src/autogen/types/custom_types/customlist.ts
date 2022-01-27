@@ -19,110 +19,116 @@ import {
   BuiltinTypes, createRefToElmWithValue, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../../constants'
+import { TypeAndInnerTypes } from '../../../types/object_types'
 
-export const customlistInnerTypes: ObjectType[] = []
+export const customlistType = (): TypeAndInnerTypes => {
+  const innerTypes: Record<string, ObjectType> = {}
 
-const customlistElemID = new ElemID(constants.NETSUITE, 'customlist')
-const customlist_customvalues_customvalueElemID = new ElemID(constants.NETSUITE, 'customlist_customvalues_customvalue')
+  const customlistElemID = new ElemID(constants.NETSUITE, 'customlist')
+  const customlist_customvalues_customvalueElemID = new ElemID(constants.NETSUITE, 'customlist_customvalues_customvalue')
 
-const customlist_customvalues_customvalue = new ObjectType({
-  elemID: customlist_customvalues_customvalueElemID,
-  annotations: {
-  },
-  fields: {
-    scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-        [constants.IS_ATTRIBUTE]: true,
-      },
-    }, /* Original description: This attribute value can be up to 40 characters long. */
-    value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-      },
-    }, /* Original description: This field accepts references to the string custom type. */
-    abbreviation: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
-      annotations: {
-      },
-    }, /* Original description: This field is mandatory when the ismatrixoption value is equal to T.   If this field appears in the project, you must reference the MATRIXITEMS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. MATRIXITEMS must be enabled for this field to appear in your account. */
-    isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
-  },
-  path: [constants.NETSUITE, constants.TYPES_PATH, customlistElemID.name],
-})
+  const customlist_customvalues_customvalue = new ObjectType({
+    elemID: customlist_customvalues_customvalueElemID,
+    annotations: {
+    },
+    fields: {
+      scriptid: {
+        refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+          [constants.IS_ATTRIBUTE]: true,
+        },
+      }, /* Original description: This attribute value can be up to 40 characters long. */
+      value: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+        },
+      }, /* Original description: This field accepts references to the string custom type. */
+      abbreviation: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: {
+        },
+      }, /* Original description: This field is mandatory when the ismatrixoption value is equal to T.   If this field appears in the project, you must reference the MATRIXITEMS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. MATRIXITEMS must be enabled for this field to appear in your account. */
+      isinactive: {
+        refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+        annotations: {
+        },
+      }, /* Original description: The default value is F. */
+    },
+    path: [constants.NETSUITE, constants.TYPES_PATH, customlistElemID.name],
+  })
 
-customlistInnerTypes.push(customlist_customvalues_customvalue)
+  innerTypes.customlist_customvalues_customvalue = customlist_customvalues_customvalue
 
-const customlist_customvaluesElemID = new ElemID(constants.NETSUITE, 'customlist_customvalues')
+  const customlist_customvaluesElemID = new ElemID(constants.NETSUITE, 'customlist_customvalues')
 
-const customlist_customvalues = new ObjectType({
-  elemID: customlist_customvaluesElemID,
-  annotations: {
-  },
-  fields: {
-    customvalue: {
-      refType: createRefToElmWithValue(new ListType(customlist_customvalues_customvalue)),
-      annotations: {
+  const customlist_customvalues = new ObjectType({
+    elemID: customlist_customvaluesElemID,
+    annotations: {
+    },
+    fields: {
+      customvalue: {
+        refType: createRefToElmWithValue(new ListType(customlist_customvalues_customvalue)),
+        annotations: {
+        },
       },
     },
-  },
-  path: [constants.NETSUITE, constants.TYPES_PATH, customlistElemID.name],
-})
+    path: [constants.NETSUITE, constants.TYPES_PATH, customlistElemID.name],
+  })
 
-customlistInnerTypes.push(customlist_customvalues)
+  innerTypes.customlist_customvalues = customlist_customvalues
 
 
-export const customlist = new ObjectType({
-  elemID: customlistElemID,
-  annotations: {
-  },
-  fields: {
-    scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-        [constants.IS_ATTRIBUTE]: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^customlist[0-9a-z_]+' }),
+  const customlist = new ObjectType({
+    elemID: customlistElemID,
+    annotations: {
+    },
+    fields: {
+      scriptid: {
+        refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+          [constants.IS_ATTRIBUTE]: true,
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^customlist[0-9a-z_]+' }),
+        },
+      }, /* Original description: This attribute value can be up to 38 characters long.   The default value is ‘customlist’. */
+      name: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+          // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 30 }),
+        },
+      }, /* Original description: This field value can be up to 30 characters long.   This field accepts references to the string custom type. */
+      description: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: {
+        },
       },
-    }, /* Original description: This attribute value can be up to 38 characters long.   The default value is ‘customlist’. */
-    name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 30 }),
-      },
-    }, /* Original description: This field value can be up to 30 characters long.   This field accepts references to the string custom type. */
-    description: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
-      annotations: {
+      isinactive: {
+        refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+        annotations: {
+        },
+      }, /* Original description: The default value is F. */
+      ismatrixoption: {
+        refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+        annotations: {
+        },
+      }, /* Original description: The default value is F.   If this field appears in the project, you must reference the MATRIXITEMS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. MATRIXITEMS must be enabled for this field to appear in your account. */
+      isordered: {
+        refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+        annotations: {
+        },
+      }, /* Original description: The default value is T. */
+      customvalues: {
+        refType: createRefToElmWithValue(customlist_customvalues),
+        annotations: {
+        },
       },
     },
-    isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
-    ismatrixoption: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-      annotations: {
-      },
-    }, /* Original description: The default value is F.   If this field appears in the project, you must reference the MATRIXITEMS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. MATRIXITEMS must be enabled for this field to appear in your account. */
-    isordered: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-      annotations: {
-      },
-    }, /* Original description: The default value is T. */
-    customvalues: {
-      refType: createRefToElmWithValue(customlist_customvalues),
-      annotations: {
-      },
-    },
-  },
-  path: [constants.NETSUITE, constants.TYPES_PATH, customlistElemID.name],
-})
+    path: [constants.NETSUITE, constants.TYPES_PATH, customlistElemID.name],
+  })
+
+
+  return { type: customlist, innerTypes }
+}

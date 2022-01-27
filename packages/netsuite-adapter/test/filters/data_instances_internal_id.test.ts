@@ -16,7 +16,7 @@
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/data_instances_internal_id'
 import { ACCOUNT_SPECIFIC_VALUE, NETSUITE } from '../../src/constants'
-import { role } from '../../src/autogen/types/custom_types/role'
+import { roleType } from '../../src/autogen/types/custom_types/role'
 
 describe('data_instances_internal_id', () => {
   const recordRefType = new ObjectType({
@@ -81,7 +81,7 @@ describe('data_instances_internal_id', () => {
     it('type should be record type if the original type is an SDF type', async () => {
       const instance = new InstanceElement(
         'instance',
-        new ObjectType({ elemID: new ElemID(NETSUITE, 'type'), fields: { someValue: { refType: role } }, annotations: { source: 'soap' } }),
+        new ObjectType({ elemID: new ElemID(NETSUITE, 'type'), fields: { someValue: { refType: roleType().type } }, annotations: { source: 'soap' } }),
         { someValue: { internalId: '1' } }
       )
 

@@ -17,8 +17,8 @@
 import { BuiltinTypes, Field, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { SOAP_FIELDS_TYPES } from '../client/suiteapp_client/soap_client/types'
-import { othercustomfield } from '../autogen/types/custom_types/othercustomfield'
 import { INTERNAL_ID_TO_TYPES } from './types'
+import { OTHER_CUSTOM_FIELD } from '../constants'
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?([+-]\d{2}:\d{2})?$/
 
@@ -68,7 +68,7 @@ export const getFieldInstanceTypes = (instance: InstanceElement): string[] => {
       .flatMap(([_fieldName, typeNames]) => typeNames)
   }
 
-  if (instance.elemID.typeName === othercustomfield.elemID.name
+  if (instance.elemID.typeName === OTHER_CUSTOM_FIELD
     && instance.value.rectype in INTERNAL_ID_TO_TYPES) {
     return INTERNAL_ID_TO_TYPES[instance.value.rectype]
   }

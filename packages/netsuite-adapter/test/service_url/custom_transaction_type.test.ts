@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
-import { customtransactiontype } from '../../src/autogen/types/custom_types/customtransactiontype'
+import { customtransactiontypeType } from '../../src/autogen/types/custom_types/customtransactiontype'
 import NetsuiteClient from '../../src/client/client'
 import setServiceUrl from '../../src/service_url/custom_transaction_type'
 
@@ -25,6 +25,7 @@ describe('setCustomTransactionTypesUrls', () => {
     runSuiteQL: runSuiteQlMock,
     url: 'https://accountid.app.netsuite.com',
   } as unknown as NetsuiteClient
+  const customtransactiontype = customtransactiontypeType().type
 
   let elements: InstanceElement[]
 

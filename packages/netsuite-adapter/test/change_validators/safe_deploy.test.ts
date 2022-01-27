@@ -16,15 +16,18 @@
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ProgressReporter, toChange } from '@salto-io/adapter-api'
 import { NetsuiteQuery } from '../../src/query'
 import safeDeployValidator, { FetchByQueryReturnType } from '../../src/change_validators/safe_deploy'
-import { customTypes, fileCabinetTypes } from '../../src/types'
-import { CUSTOM_LIST, CUSTOM_RECORD_TYPE, FOLDER, PATH, FILE, NETSUITE } from '../../src/constants'
+import { PATH, NETSUITE } from '../../src/constants'
 import { IDENTIFIER_FIELD } from '../../src/data_elements/types'
+import { customlistType } from '../../src/autogen/types/custom_types/customlist'
+import { customrecordtypeType } from '../../src/autogen/types/custom_types/customrecordtype'
+import { fileType, folderType } from '../../src/types/file_cabinet_types'
 
 describe('safe deploy change validator', () => {
+  const customlist = customlistType().type
   describe('custom instances', () => {
     const origInstance = new InstanceElement(
       'instance',
-      customTypes[CUSTOM_LIST],
+      customlist,
       {
         customvalues: {
           customvalue: [
@@ -42,7 +45,7 @@ describe('safe deploy change validator', () => {
     )
     const origInstance1 = new InstanceElement(
       'instance1',
-      customTypes[CUSTOM_LIST],
+      customlist,
       {
         customvalues: {
           customvalue: [
@@ -61,7 +64,7 @@ describe('safe deploy change validator', () => {
 
     const origInstance2 = new InstanceElement(
       'instance',
-      customTypes[CUSTOM_RECORD_TYPE],
+      customrecordtypeType().type,
       {
         customvalues: {
           customvalue: [
@@ -522,7 +525,8 @@ describe('safe deploy change validator', () => {
       let origInstance1: InstanceElement
       let origInstance2: InstanceElement
       beforeEach(() => {
-        origInstance = new InstanceElement('fileInstance', fileCabinetTypes[FILE], {
+        const file = fileType()
+        origInstance = new InstanceElement('fileInstance', file, {
           [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder/content.html',
           bundleable: false,
           description: 'a',
@@ -530,11 +534,11 @@ describe('safe deploy change validator', () => {
         afterInstance = origInstance.clone()
         afterInstance.value.description = 'b'
 
-        origInstance1 = new InstanceElement('fileInstance1', fileCabinetTypes[FILE], {
+        origInstance1 = new InstanceElement('fileInstance1', file, {
           [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder/content.html',
           bundleable: false,
         })
-        origInstance2 = new InstanceElement('fileInstance2', fileCabinetTypes[FILE], {
+        origInstance2 = new InstanceElement('fileInstance2', file, {
           [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder/content.html',
           bundleable: false,
         })
@@ -705,16 +709,17 @@ describe('safe deploy change validator', () => {
       let origInstance1: InstanceElement
       let origInstance2: InstanceElement
       beforeEach(() => {
-        origInstance = new InstanceElement('folderInstance', fileCabinetTypes[FOLDER], {
+        const folder = folderType()
+        origInstance = new InstanceElement('folderInstance', folder, {
           [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder',
           description: 'a',
         })
         afterInstance = origInstance.clone()
         afterInstance.value.description = 'b'
-        origInstance1 = new InstanceElement('folderInstance1', fileCabinetTypes[FOLDER], {
+        origInstance1 = new InstanceElement('folderInstance1', folder, {
           [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder',
         })
-        origInstance2 = new InstanceElement('folderInstance2', fileCabinetTypes[FOLDER], {
+        origInstance2 = new InstanceElement('folderInstance2', folder, {
           [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder',
         })
       })

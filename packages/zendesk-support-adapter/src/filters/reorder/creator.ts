@@ -74,6 +74,7 @@ export const createReorderFilterCreator = (
       { [orderFieldName]: instancesReferences },
       [ZENDESK_SUPPORT, RECORDS_PATH, typeName, typeNameNaclCase],
     )
+    _.remove(elements, element => element.elemID.isEqual(type.elemID))
     elements.push(type, instance)
   },
   deploy: async (changes: Change<InstanceElement>[]) => {

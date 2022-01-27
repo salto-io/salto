@@ -537,7 +537,7 @@ describe('ducktype_transformer', () => {
         types: typesConfig,
         typeDefaults: typeDefaultConfig,
       })
-      expect(res).toHaveLength(6)
+      expect(res).toHaveLength(8)
       expect(res.map(e => e.elemID.getFullName())).toEqual([
         'something.folder',
         'something.permission',
@@ -545,6 +545,8 @@ describe('ducktype_transformer', () => {
         'something.folder.instance.abc',
         'something.permission.instance.abc',
         'something.file.instance.abc',
+        'something.folder__subfolders',
+        'something.workflow',
       ])
       expect(transformer.getTypeAndInstances).toHaveBeenCalledTimes(3)
       expect(transformer.getTypeAndInstances).toHaveBeenCalledWith({

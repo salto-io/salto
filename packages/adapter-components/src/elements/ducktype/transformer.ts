@@ -29,6 +29,7 @@ import { getElementsWithContext } from '../element_getter'
 import { extractStandaloneFields } from './standalone_field_extractor'
 import { fixFieldTypes } from '../type_elements'
 import { shouldRecurseIntoEntry } from '../instance_elements'
+import { addRemainingTypes } from './add_remaining_types'
 
 const { makeArray } = collections.array
 const { toArrayAsync, awu } = collections.asynciterable
@@ -326,5 +327,9 @@ export const getAllElements = async ({
     typeDefaults,
     (val: string) => _.get(duckTypeTypeMap, val, BuiltinTypes.UNKNOWN),
   )
-  return [...Object.values(objectTypes), ...elements.filter(e => !isObjectType(e))]
+  const instancesAndTypes = [
+    ...Object.values(objectTypes), ...elements.filter(e => !isObjectType(e)),
+  ]
+  addRemainingTypes({ adapterName, elements: instancesAndTypes, typesConfig: types })
+  return instancesAndTypes
 }

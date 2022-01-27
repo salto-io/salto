@@ -80,8 +80,8 @@ describe('adapter', () => {
           ),
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
-        expect(elements).toHaveLength(354)
-        expect(elements.filter(isObjectType)).toHaveLength(180)
+        expect(elements).toHaveLength(362)
+        expect(elements.filter(isObjectType)).toHaveLength(188)
         expect(elements.filter(isInstanceElement)).toHaveLength(174)
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'zendesk_support.account_setting',
@@ -124,6 +124,7 @@ describe('adapter', () => {
           'zendesk_support.app_installation__settings',
           'zendesk_support.app_installation__settings_objects',
           'zendesk_support.app_installations',
+          'zendesk_support.app_owned',
           'zendesk_support.apps_owned',
           'zendesk_support.automation',
           'zendesk_support.automation.instance.Close_ticket_4_days_after_status_is_set_to_solved@s',
@@ -147,6 +148,7 @@ describe('adapter', () => {
           'zendesk_support.business_hours_schedule_holiday',
           'zendesk_support.business_hours_schedule_holiday.instance.New_schedule_s__Holiday1@umuu',
           'zendesk_support.business_hours_schedule_holiday.instance.Schedule_3_s__Holi2@umuu',
+          'zendesk_support.business_hours_schedule_holiday__holidays',
           'zendesk_support.business_hours_schedules',
           'zendesk_support.custom_role',
           'zendesk_support.custom_role.instance.Advisor',
@@ -192,6 +194,7 @@ describe('adapter', () => {
           'zendesk_support.macro_action__values__list',
           'zendesk_support.macro_categories',
           'zendesk_support.macro_categories.instance',
+          'zendesk_support.macro_category',
           'zendesk_support.macro_definition',
           'zendesk_support.macro_definition.instance',
           'zendesk_support.macro_definition__actions',
@@ -200,6 +203,7 @@ describe('adapter', () => {
           'zendesk_support.macros_actions',
           'zendesk_support.macros_actions.instance',
           'zendesk_support.macros_definitions',
+          'zendesk_support.monitored_twitter_handle',
           'zendesk_support.monitored_twitter_handles',
           'zendesk_support.oauth_client',
           'zendesk_support.oauth_client.instance.c123',
@@ -256,12 +260,15 @@ describe('adapter', () => {
           'zendesk_support.routing_attribute_value.instance.Language__Spanish',
           'zendesk_support.routing_attribute_value.instance.Location__San_Francisco@uus',
           'zendesk_support.routing_attribute_value.instance.Location__Tel_Aviv@uus',
+          'zendesk_support.routing_attribute_value__attribute_values',
           'zendesk_support.routing_attribute_value__conditions',
           'zendesk_support.routing_attribute_value__conditions__all',
           'zendesk_support.routing_attributes',
+          'zendesk_support.sharing_agreement',
           'zendesk_support.sharing_agreements',
           'zendesk_support.sla_policies',
           'zendesk_support.sla_policies_definitions',
+          'zendesk_support.sla_policies_definitions__value',
           'zendesk_support.sla_policy',
           'zendesk_support.sla_policy.instance.SLA_501@s',
           'zendesk_support.sla_policy.instance.SLA_502@s',
@@ -431,6 +438,7 @@ describe('adapter', () => {
           'zendesk_support.webhooks__meta',
           'zendesk_support.workspace',
           'zendesk_support.workspace.instance.New_Workspace_123@s',
+          'zendesk_support.workspace__apps',
           'zendesk_support.workspace__conditions',
           'zendesk_support.workspace__conditions__all',
           'zendesk_support.workspace__conditions__any',
@@ -490,17 +498,20 @@ describe('adapter', () => {
           ),
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
-        expect(elements).toHaveLength(6)
-        expect(elements.filter(isObjectType)).toHaveLength(2)
-        expect(elements.filter(isInstanceElement)).toHaveLength(4)
-        expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
-          'zendesk_support.group',
-          'zendesk_support.group.instance.Support',
-          'zendesk_support.group.instance.Support2',
-          'zendesk_support.group.instance.Support4',
-          'zendesk_support.group.instance.Support5',
-          'zendesk_support.groups',
-        ])
+        const instances = elements.filter(isInstanceElement)
+        expect(instances).toHaveLength(8)
+        expect(instances.map(e => e.elemID.getFullName()).sort())
+          .toEqual([
+            'zendesk_support.group.instance.Support',
+            'zendesk_support.group.instance.Support2',
+            'zendesk_support.group.instance.Support4',
+            'zendesk_support.group.instance.Support5',
+            // The order element are always created on fetch
+            'zendesk_support.organization_field_order.instance',
+            'zendesk_support.ticket_form_order.instance',
+            'zendesk_support.user_field_order.instance',
+            'zendesk_support.workspace_order.instance',
+          ])
       })
     })
     it('should use elemIdGetter', async () => {

@@ -273,11 +273,8 @@ describe('adapter', () => {
           ),
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
-        expect(elements).toHaveLength(7)
-        expect(elements.filter(isObjectType)).toHaveLength(1)
-        expect(elements.filter(isInstanceElement)).toHaveLength(6)
-        expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
-          'workato.connection',
+        const intances = elements.filter(isInstanceElement)
+        expect(intances.map(e => e.elemID.getFullName()).sort()).toEqual([
           'workato.connection.instance.HTTP_connection_1@s',
           'workato.connection.instance.My_Gmail_connection@s',
           'workato.connection.instance.My_Google_sheets_connection@s',

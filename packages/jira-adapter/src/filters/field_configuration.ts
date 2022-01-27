@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, getChangeData, InstanceElement, isInstanceChange, isObjectType, isReferenceExpression, isRemovalChange, Values } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, isObjectType, isReferenceExpression, isRemovalChange, Values } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -90,12 +90,16 @@ const filter: FilterCreator = ({ config, client }) => ({
     const deployResult = await deployChanges(
       relevantChanges as Change<InstanceElement>[],
       async change => {
-        await defaultDeployChange({
-          change,
-          client,
-          apiDefinitions: config.apiDefinitions,
-          fieldsToIgnore: ['fields'],
-        })
+        if (!getChangeData(change).value.isDefault && isModificationChange(change)) {
+          await defaultDeployChange({
+            change,
+            client,
+            apiDefinitions: config.apiDefinitions,
+            fieldsToIgnore: ['fields'],
+          })
+        } else {
+          log.warn(`Skipping default deploy for default ${FIELD_CONFIGURATION_TYPE_NAME} because it is not supported`)
+        }
         await deployFieldConfigurationItems(change, client, config)
       }
     )

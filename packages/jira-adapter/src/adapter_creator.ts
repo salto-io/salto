@@ -67,6 +67,10 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
       DEFAULT_CONFIG.apiDefinitions,
       config?.value.apiDefinitions
     ),
+    client: configUtils.mergeWithDefaultConfig(
+      DEFAULT_CONFIG.client,
+      config?.value.client
+    ),
   }
   validateConfig(fullConfig)
 

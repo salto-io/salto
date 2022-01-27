@@ -298,6 +298,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'fields', fieldType: 'list<FieldConfigurationItem>' },
+        { fieldName: 'isDefault', fieldType: 'boolean' },
         { fieldName: 'id', fieldType: 'number' },
       ],
       fieldsToHide: [

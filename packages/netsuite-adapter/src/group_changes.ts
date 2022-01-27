@@ -27,7 +27,7 @@ import _ from 'lodash'
 import * as suiteAppFileCabinet from './suiteapp_file_cabinet'
 import { isDataObjectType, isFileCabinetInstance } from './types'
 import { APPLICATION_ID } from './constants'
-import { customTypesNames } from './autogen/types'
+import { isCustomTypeName } from './autogen/types'
 import { fileCabinetTypesNames } from './types/file_cabinet_types'
 
 const { awu } = collections.asynciterable
@@ -58,7 +58,7 @@ const getChangeGroupIdsWithoutSuiteApp: ChangeGroupIdFunction = async changes =>
   const isSdfChange = (change: Change): boolean => {
     const changeData = getChangeData(change)
     return isInstanceElement(changeData)
-      && (customTypesNames.has(changeData.elemID.typeName)
+      && (isCustomTypeName(changeData.elemID.typeName)
         || fileCabinetTypesNames.has(changeData.elemID.typeName))
   }
   return new Map(
@@ -136,7 +136,7 @@ const isSuiteAppFileCabinetDeletion = (change: Change): boolean => {
 
 const isSdfChange = (change: Change): boolean => {
   const changeData = getChangeData(change)
-  return customTypesNames.has(changeData.elemID.typeName)
+  return isCustomTypeName(changeData.elemID.typeName)
     || (isFileCabinetInstance(changeData)
       && !suiteAppFileCabinet.isChangeDeployable(change))
 }

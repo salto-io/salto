@@ -37,6 +37,7 @@ import {
 } from '../src/constants'
 import { mockDefaultValues } from './mock_elements'
 import { Credentials } from '../src/client/credentials'
+import { isCustomTypeName } from '../src/autogen/types'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -48,19 +49,17 @@ describe('Netsuite adapter E2E with real account', () => {
   const metadataTypes = metadataTypesToList({ customTypes, enums, fileCabinetTypes, fieldTypes })
 
   const createInstanceElement = (type: string, valuesOverride: Values): InstanceElement => {
-    const isFileCabinetType = Object.keys(fileCabinetTypes).includes(type)
-
     const instValues = {
       ...mockDefaultValues[type],
       ...valuesOverride,
     }
 
-    const instanceName = naclCase(instValues[isFileCabinetType ? PATH : SCRIPT_ID]
+    const instanceName = naclCase(instValues[isCustomTypeName(type) ? SCRIPT_ID : PATH]
       .replace(new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}`), ''))
 
     return new InstanceElement(
       instanceName,
-      isFileCabinetType ? fileCabinetTypes[type] : customTypes[type].type,
+      isCustomTypeName(type) ? customTypes[type].type : fileCabinetTypes[type],
       instValues
     )
   }

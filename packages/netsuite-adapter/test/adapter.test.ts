@@ -44,7 +44,7 @@ import { SDF_CHANGE_GROUP_ID } from '../src/group_changes'
 import { SuiteAppFileCabinetOperations } from '../src/suiteapp_file_cabinet'
 import getChangeValidator from '../src/change_validator'
 import { FetchByQueryFunc } from '../src/change_validators/safe_deploy'
-import { customTypesNames } from '../src/autogen/types'
+import { getCustomTypesNames } from '../src/autogen/types'
 
 jest.mock('../src/config', () => ({
   ...jest.requireActual<{}>('../src/config'),
@@ -179,7 +179,7 @@ describe('Adapter', () => {
       expect(isPartial).toBeFalsy()
       const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
       const typesToSkip = [SAVED_SEARCH, TRANSACTION_FORM, INTEGRATION]
-      expect(_.pull(Array.from(customTypesNames), ...typesToSkip)
+      expect(_.pull(getCustomTypesNames(), ...typesToSkip)
         .every(customObjectsQuery.isTypeMatch)).toBeTruthy()
       expect(typesToSkip.every(customObjectsQuery.isTypeMatch)).toBeFalsy()
       expect(customObjectsQuery.isTypeMatch('subsidiary')).toBeFalsy()
@@ -392,7 +392,7 @@ describe('Adapter', () => {
 
         const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
         expect(customObjectsQuery.isTypeMatch('addressForm')).toBeTruthy()
-        expect(_.pull(Array.from(customTypesNames), 'addressForm', SAVED_SEARCH, TRANSACTION_FORM).some(customObjectsQuery.isTypeMatch)).toBeFalsy()
+        expect(_.pull(getCustomTypesNames(), 'addressForm', SAVED_SEARCH, TRANSACTION_FORM).some(customObjectsQuery.isTypeMatch)).toBeFalsy()
         expect(customObjectsQuery.isTypeMatch(INTEGRATION)).toBeFalsy()
       })
 

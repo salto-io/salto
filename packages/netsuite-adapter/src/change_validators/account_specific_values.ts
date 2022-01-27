@@ -54,7 +54,7 @@ const changeValidator: ChangeValidator = async changes => (
     .filter(isInstanceChange)
     .map(async change => {
       const instance = getChangeData(change)
-      if (!isCustomType(instance.refType.elemID)) {
+      if (!isCustomType(instance.refType)) {
         return undefined
       }
       if (!hasAccountSpecificValue(instance)) {

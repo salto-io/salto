@@ -26,7 +26,7 @@ import { filter } from '@salto-io/adapter-utils'
 import {
   createInstanceElement,
 } from './transformer'
-import { getMetadataTypes, metadataTypesToList } from './types'
+import { getMetadataTypes, getTopLevelCustomTypes, metadataTypesToList } from './types'
 import { TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST,
   INTEGRATION, FETCH_TARGET, SKIP_LIST, LAST_FETCH_TIME, USE_CHANGES_DETECTION, FETCH, INCLUDE, EXCLUDE, DEPLOY, DEPLOY_REFERENCED_ELEMENTS, WARN_STALE_DATA, APPLICATION_ID, LOCKED_ELEMENTS_TO_EXCLUDE } from './constants'
 import replaceInstanceReferencesFilter from './filters/instance_references'
@@ -66,7 +66,7 @@ import getChangeValidator from './change_validator'
 import { FetchByQueryFunc, FetchByQueryReturnType } from './change_validators/safe_deploy'
 import { getChangeGroupIdsFunc } from './group_changes'
 import { getDataElements } from './data_elements/data_elements'
-import { customTypesNames } from './autogen/types'
+import { getCustomTypesNames, isCustomTypeName } from './autogen/types'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -203,7 +203,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       this.getElemIdFunc)
 
     const getCustomObjectsResult = this.client.getCustomObjects(
-      Array.from(customTypesNames),
+      getCustomTypesNames(),
       updatedFetchQuery
     )
     const importFileCabinetResult = this.client.importFileCabinetContent(updatedFetchQuery)
@@ -221,7 +221,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       failedTypes,
     } = await getCustomObjectsResult
 
-    const topLevelCustomTypes = Object.values(customTypes).map(customType => customType.type)
+    const topLevelCustomTypes = getTopLevelCustomTypes(customTypes)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
     _(topLevelCustomTypes)
       .concat(Object.values(fileCabinetTypes))
@@ -240,8 +240,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     const customizationInfos = [...customObjects, ...fileCabinetContent]
     const instances = await awu(customizationInfos).map(customizationInfo => {
-      const type = customTypes[customizationInfo.typeName]?.type
-        ?? fileCabinetTypes[customizationInfo.typeName]
+      const type = isCustomTypeName(customizationInfo.typeName)
+        ? customTypes[customizationInfo.typeName].type
+        : fileCabinetTypes[customizationInfo.typeName]
       return type
         ? createInstanceElement(customizationInfo, type, this.getElemIdFunc, serverTime)
         : undefined

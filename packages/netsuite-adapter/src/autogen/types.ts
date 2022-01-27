@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { TypeAndInnerTypes } from '../types/object_types'
+import { TypesMap } from '../types/object_types'
 import { addressFormType } from './types/custom_types/addressForm'
 import { advancedpdftemplateType } from './types/custom_types/advancedpdftemplate'
 import { bankstatementparserpluginType } from './types/custom_types/bankstatementparserplugin'
@@ -73,10 +73,7 @@ import { workbookbuilderpluginType } from './types/custom_types/workbookbuilderp
 import { workflowType } from './types/custom_types/workflow'
 import { workflowactionscriptType } from './types/custom_types/workflowactionscript'
 
-
-export type CustomType = 'addressForm' | 'advancedpdftemplate' | 'bankstatementparserplugin' | 'bundleinstallationscript' | 'center' | 'centercategory' | 'centerlink' | 'centertab' | 'clientscript' | 'cmscontenttype' | 'crmcustomfield' | 'customglplugin' | 'customlist' | 'customrecordactionscript' | 'customrecordtype' | 'customsegment' | 'customtransactiontype' | 'dataset' | 'datasetbuilderplugin' | 'emailcaptureplugin' | 'emailtemplate' | 'entitycustomfield' | 'entryForm' | 'ficonnectivityplugin' | 'fiparserplugin' | 'integration' | 'itemcustomfield' | 'itemnumbercustomfield' | 'itemoptioncustomfield' | 'kpiscorecard' | 'mapreducescript' | 'massupdatescript' | 'othercustomfield' | 'pluginimplementation' | 'plugintype' | 'portlet' | 'promotionsplugin' | 'publisheddashboard' | 'restlet' | 'role' | 'savedcsvimport' | 'savedsearch' | 'scheduledscript' | 'sdfinstallationscript' | 'secret' | 'sspapplication' | 'sublist' | 'subtab' | 'suitelet' | 'transactionForm' | 'transactionbodycustomfield' | 'transactioncolumncustomfield' | 'translationcollection' | 'usereventscript' | 'workbook' | 'workbookbuilderplugin' | 'workflow' | 'workflowactionscript'
-
-export const customTypesNames: ReadonlySet<string> = new Set([
+const customTypesNamesList = [
   'addressForm',
   'advancedpdftemplate',
   'bankstatementparserplugin',
@@ -135,12 +132,22 @@ export const customTypesNames: ReadonlySet<string> = new Set([
   'workbookbuilderplugin',
   'workflow',
   'workflowactionscript',
-])
+] as const
+
+const customTypesNamesSet: ReadonlySet<string> = new Set(customTypesNamesList)
+
+export type CustomType = typeof customTypesNamesList[number]
+
+export const isCustomTypeName = (name: string): name is CustomType =>
+  customTypesNamesSet.has(name)
+
+export const getCustomTypesNames = (): CustomType[] =>
+  Array.from(customTypesNamesList)
 
 /**
 * generated using types_generator.py as Netsuite don't expose a metadata API for them.
 */
-export const getCustomTypes = (): Readonly<Record<string, TypeAndInnerTypes>> => {
+export const getCustomTypes = (): TypesMap<CustomType> => {
   const addressForm = addressFormType()
   const advancedpdftemplate = advancedpdftemplateType()
   const bankstatementparserplugin = bankstatementparserpluginType()

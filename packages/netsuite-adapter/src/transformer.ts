@@ -49,10 +49,10 @@ const removeDotPrefix = (name: string): string => name.replace(/^\.+/, '_')
 export const createInstanceElement = async (customizationInfo: CustomizationInfo, type: ObjectType,
   getElemIdFunc?: ElemIdGetter, fetchTime?: Date): Promise<InstanceElement> => {
   const getInstanceName = (transformedValues: Values): string => {
-    if (!isCustomType(type.elemID) && !isFileCabinetType(type.elemID)) {
+    if (!isCustomType(type) && !isFileCabinetType(type)) {
       throw new Error(`Failed to getInstanceName for unknown type: ${type.elemID.name}`)
     }
-    const serviceIdFieldName = isCustomType(type.elemID) ? SCRIPT_ID : PATH
+    const serviceIdFieldName = isCustomType(type) ? SCRIPT_ID : PATH
     const serviceIds: ServiceIds = {
       [serviceIdFieldName]: transformedValues[serviceIdFieldName],
       [OBJECT_SERVICE_ID]: toServiceIdsString({
@@ -245,7 +245,7 @@ export const toCustomizationInfo = async (
       return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
     })
 
-  if (isFileCabinetType(instance.refType.elemID)) {
+  if (isFileCabinetType(instance.refType)) {
     const path = values[PATH].split(FILE_CABINET_PATH_SEPARATOR).slice(1)
     delete values[PATH]
     if (instanceType.elemID.isEqual(new ElemID(NETSUITE, FILE))) {
@@ -263,7 +263,7 @@ export const toCustomizationInfo = async (
   const scriptId = instance.value[SCRIPT_ID]
   // Template Custom Type
   if (!_.isUndefined(fileContentField) && !_.isUndefined(values[fileContentField.name])
-    && isCustomType(instance.refType.elemID)) {
+    && isCustomType(instance.refType)) {
     const fileContent = values[fileContentField.name]
     delete values[fileContentField.name]
     return {
@@ -278,7 +278,7 @@ export const toCustomizationInfo = async (
 }
 
 export const serviceId = (instance: InstanceElement): string =>
-  instance.value[isCustomType(instance.refType.elemID) ? SCRIPT_ID : PATH]
+  instance.value[isCustomType(instance.refType) ? SCRIPT_ID : PATH]
 
 const getScriptIdParts = (topLevelParent: InstanceElement, elemId: ElemID): string[] => {
   if (elemId.isTopLevel()) {
@@ -297,10 +297,10 @@ export const getLookUpName: GetLookupNameFunc = ({ ref }) => {
   if (!isInstanceElement(topLevelParent)) {
     return value
   }
-  if (isFileCabinetType(topLevelParent.refType.elemID) && elemID.name === PATH) {
+  if (isFileCabinetType(topLevelParent.refType) && elemID.name === PATH) {
     return `[${value}]`
   }
-  if (isCustomType(topLevelParent.refType.elemID) && elemID.name === SCRIPT_ID) {
+  if (isCustomType(topLevelParent.refType) && elemID.name === SCRIPT_ID) {
     return `[${SCRIPT_ID}=${getScriptIdParts(topLevelParent, elemID).join('.')}]`
   }
   return value

@@ -252,7 +252,7 @@ const workflowaction_valuedateElemID = new ElemID(constants.NETSUITE, 'workflowa
 const workflowaction_valuetypeElemID = new ElemID(constants.NETSUITE, 'workflowaction_valuetype')
 const workflowtransition_triggertypeElemID = new ElemID(constants.NETSUITE, 'workflowtransition_triggertype')
 
-export const enums: Record<string, PrimitiveType> = {
+export const enums: Readonly<Record<string, PrimitiveType>> = {
   addressform_fieldid: new PrimitiveType({
     elemID: addressform_fieldidElemID,
     primitive: PrimitiveTypes.STRING,

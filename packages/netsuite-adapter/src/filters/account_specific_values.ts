@@ -32,7 +32,7 @@ const filterCreator = (): FilterWith<'preDeploy'> => ({
           change,
           async element => {
             if (!isInstanceElement(element)
-              || !isCustomType((await element.getType()).elemID)
+              || !isCustomType((await element.getType()))
               // instances that are not from a suite app are handled
               // using the accountspecificvalues flag
               || element.value[APPLICATION_ID] === undefined) {

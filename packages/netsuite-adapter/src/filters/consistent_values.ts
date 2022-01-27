@@ -24,55 +24,55 @@ import {
 
 const { awu } = collections.asynciterable
 type InconsistentFieldMapping = {
-  field: ElemID
+  fieldElemID: ElemID
   inconsistentValues: Value[]
   consistentValue: Value
 }
 
 const customRecordTypeApClerkPermittedRole = {
-  field: new ElemID(NETSUITE, 'customrecordtype_permissions_permission', 'field', PERMITTED_ROLE),
+  fieldElemID: new ElemID(NETSUITE, 'customrecordtype_permissions_permission', 'field', PERMITTED_ROLE),
   inconsistentValues: ['CUSTOMROLEAP_CLERK', 'AP_CLERK'],
   consistentValue: 'AP_CLERK',
 }
 
 const customRecordTypeCeoHandsOffPermittedRole = {
-  field: new ElemID(NETSUITE, 'customrecordtype_permissions_permission', 'field', PERMITTED_ROLE),
+  fieldElemID: new ElemID(NETSUITE, 'customrecordtype_permissions_permission', 'field', PERMITTED_ROLE),
   inconsistentValues: ['CUSTOMROLEATHENA_NS_VIEW_ALL', 'CEO_HANDS_OFF'],
   consistentValue: 'CEO_HANDS_OFF',
 }
 
 const customRecordTypeBuyerPermittedRole = {
-  field: new ElemID(NETSUITE, 'customrecordtype_permissions_permission', 'field', PERMITTED_ROLE),
+  fieldElemID: new ElemID(NETSUITE, 'customrecordtype_permissions_permission', 'field', PERMITTED_ROLE),
   inconsistentValues: ['BUYER', 'CUSTOMROLEPURCHASING'],
   consistentValue: 'BUYER',
 }
 
 const entryFormDiscountItemRecordType = {
-  field: new ElemID(NETSUITE, ENTRY_FORM, 'field', RECORD_TYPE),
+  fieldElemID: new ElemID(NETSUITE, ENTRY_FORM, 'field', RECORD_TYPE),
   inconsistentValues: ['DISCOUNTITEM', 'MARKUPITEM'],
   consistentValue: 'DISCOUNTITEM',
 }
 
 const entryFormItemGroupRecordType = {
-  field: new ElemID(NETSUITE, ENTRY_FORM, 'field', RECORD_TYPE),
+  fieldElemID: new ElemID(NETSUITE, ENTRY_FORM, 'field', RECORD_TYPE),
   inconsistentValues: ['ASSEMBLYITEM', 'KITITEM', 'ITEMGROUP'],
   consistentValue: 'ITEMGROUP',
 }
 
 const entryFormJobRecordType = {
-  field: new ElemID(NETSUITE, ENTRY_FORM, 'field', RECORD_TYPE),
+  fieldElemID: new ElemID(NETSUITE, ENTRY_FORM, 'field', RECORD_TYPE),
   inconsistentValues: ['MFGPROJECT', 'JOB'],
   consistentValue: 'JOB',
 }
 
 const entryFormServiceItemRecordType = {
-  field: new ElemID(NETSUITE, ENTRY_FORM, 'field', RECORD_TYPE),
+  fieldElemID: new ElemID(NETSUITE, ENTRY_FORM, 'field', RECORD_TYPE),
   inconsistentValues: ['OTHERCHARGEPURCHASEITEM', 'OTHERCHARGERESALEITEM', 'NONINVENTORYSALEITEM', 'SERVICEPURCHASEITEM', 'GIFTCERTIFICATEITEM', 'DOWNLOADITEM', 'SERVICERESALEITEM', 'OTHERCHARGEITEM', 'SERVICEITEM', 'NONINVENTORYPURCHASEITEM', 'OTHERCHARGESALEITEM', 'NONINVENTORYRESALEITEM', 'SERVICESALEITEM', 'NONINVENTORYITEM'],
   consistentValue: 'SERVICEITEM',
 }
 
 const transactionFormRecordType = {
-  field: new ElemID(NETSUITE, TRANSACTION_FORM, 'field', RECORD_TYPE),
+  fieldElemID: new ElemID(NETSUITE, TRANSACTION_FORM, 'field', RECORD_TYPE),
   inconsistentValues: ['JOURNALENTRY', 'INTERCOMPANYJOURNALENTRY', 'ADVINTERCOMPANYJOURNALENTRY', 'STATISTICALJOURNALENTRY'],
   consistentValue: 'JOURNALENTRY',
 }
@@ -98,7 +98,7 @@ const setConsistentValues = async (instance: InstanceElement): Promise<void> => 
   ): TransformFunc => ({ value, field }) => {
     const matchingFieldMapping = fieldMappings.find(fieldMapping =>
       field
-      && fieldMapping.field.isEqual(field.elemID)
+      && fieldMapping.fieldElemID.isEqual(field.elemID)
       && fieldMapping.inconsistentValues.includes(value))
     if (matchingFieldMapping) {
       return matchingFieldMapping.consistentValue

@@ -153,7 +153,7 @@ const shouldExtractToGenereatedDependency = (serviceIdInfoRecord: ServiceIdInfo)
 export const getInstanceServiceIdRecords = async (
   instance: InstanceElement,
 ): Promise<Record<string, ElemID>> => (
-  isCustomType(instance.refType.elemID)
+  isCustomType(instance.refType)
     ? customTypeServiceIdsToElemIds(instance)
     : { [serviceId(instance)]: instance.elemID.createNestedID(PATH) }
 )

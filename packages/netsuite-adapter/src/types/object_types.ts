@@ -19,3 +19,5 @@ export type TypeAndInnerTypes = {
   type: ObjectType
   innerTypes: Readonly<Record<string, ObjectType>>
 }
+
+export type TypesMap<T extends string> = Readonly<Record<T, TypeAndInnerTypes>>

@@ -13,21 +13,21 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { DeployResult as AdapterApiDeployResult, Element, InstanceElement, isInstanceElement, ObjectType, ElemID, PrimitiveType, TypeElement } from '@salto-io/adapter-api'
+import { DeployResult as AdapterApiDeployResult, Element, InstanceElement, isInstanceElement, ObjectType, PrimitiveType, TypeElement, TypeReference } from '@salto-io/adapter-api'
 import { fieldTypes } from './types/field_types'
 import { enums } from './autogen/types/enums'
-import { customTypesNames, getCustomTypes } from './autogen/types'
-import { TypeAndInnerTypes } from './types/object_types'
+import { CustomType, getCustomTypes, isCustomTypeName } from './autogen/types'
+import { TypesMap } from './types/object_types'
 import { fileCabinetTypesNames, getFileCabinetTypes } from './types/file_cabinet_types'
 
-export const isCustomType = (typeElemID: ElemID): boolean =>
-  customTypesNames.has(typeElemID.name)
+export const isCustomType = (type: ObjectType | TypeReference): boolean =>
+  isCustomTypeName(type.elemID.name)
 
-export const isFileCabinetType = (typeElemID: ElemID): boolean =>
-  fileCabinetTypesNames.has(typeElemID.name)
+export const isFileCabinetType = (type: ObjectType | TypeReference): boolean =>
+  fileCabinetTypesNames.has(type.elemID.name)
 
 export const isFileCabinetInstance = (element: Element): element is InstanceElement =>
-  isInstanceElement(element) && isFileCabinetType(element.refType.elemID)
+  isInstanceElement(element) && isFileCabinetType(element.refType)
 
 export const isFileInstance = (element: Element): boolean =>
   isInstanceElement(element) && element.refType.elemID.name === 'file'
@@ -36,8 +36,8 @@ export const isDataObjectType = (element: ObjectType): boolean =>
   element.annotations.source === 'soap'
 
 type MetadataTypes = {
-  customTypes: Readonly<Record<string, TypeAndInnerTypes>>
-  enums: Record<string, PrimitiveType>
+  customTypes: TypesMap<CustomType>
+  enums: Readonly<Record<string, PrimitiveType>>
   fileCabinetTypes: Readonly<Record<string, ObjectType>>
   fieldTypes: Readonly<Record<string, PrimitiveType>>
 }
@@ -49,12 +49,17 @@ export const getMetadataTypes = (): MetadataTypes => ({
   fieldTypes,
 })
 
+export const getTopLevelCustomTypes = (customTypes: TypesMap<CustomType>): ObjectType[] =>
+  Object.values(customTypes).map(customType => customType.type)
+
+export const getInnerCustomTypes = (customTypes: TypesMap<CustomType>): ObjectType[] =>
+  Object.values(customTypes).flatMap(customType => Object.values(customType.innerTypes))
+
 export const metadataTypesToList = (metadataTypes: MetadataTypes): TypeElement[] => {
   const { customTypes, fileCabinetTypes } = metadataTypes
   return [
-    ...Object.values(customTypes).map(customType => customType.type),
-    ...Object.values(customTypes)
-      .flatMap(customType => Object.values(customType.innerTypes)),
+    ...getTopLevelCustomTypes(customTypes),
+    ...getInnerCustomTypes(customTypes),
     ...Object.values(enums),
     ...Object.values(fileCabinetTypes),
     ...Object.values(fieldTypes),

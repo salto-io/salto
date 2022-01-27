@@ -113,7 +113,7 @@ enums_values_template = '''export type {type_name}Value = {values}
 '''
 
 enums_file_template = HEADER_FOR_DEFS + COMMON_IMPORT_STATEMENTS_FOR_ENUMS_DEF + SUBTYPES_FOLDER_PATH_DEF + '''{enums_elem_ids}
-export const enums: Record<string, PrimitiveType> = {{
+export const enums: Readonly<Record<string, PrimitiveType>> = {{
 {enums_entries}}}
 {enums_values}'''
 
@@ -166,18 +166,26 @@ custom_types_map_entry_template = '''    {type_name}: {{
 custom_types_name_template = '''  '{type_name}',
 '''
 
-types_file_template = LICENSE_HEADER + '''import {{ TypeAndInnerTypes }} from '../types/object_types'
+types_file_template = LICENSE_HEADER + '''import {{ TypesMap }} from '../types/object_types'
 {import_types_statements}
 
-export type CustomType = {custom_type_value}
+const customTypesNamesList = [
+{custom_types_names}] as const
 
-export const customTypesNames: ReadonlySet<string> = new Set([
-{custom_types_names}])
+const customTypesNamesSet: ReadonlySet<string> = new Set(customTypesNamesList)
+
+export type CustomType = typeof customTypesNamesList[number]
+
+export const isCustomTypeName = (name: string): name is CustomType =>
+  customTypesNamesSet.has(name)
+
+export const getCustomTypesNames = (): CustomType[] =>
+  Array.from(customTypesNamesList)
 
 /**
 * generated using types_generator.py as Netsuite don't expose a metadata API for them.
 */
-export const getCustomTypes = (): Readonly<Record<string, TypeAndInnerTypes>> => {{
+export const getCustomTypes = (): TypesMap<CustomType> => {{
 {custom_types_inits}
   return {{
 {custom_types_map_entries}  }}
@@ -377,11 +385,9 @@ def create_types_file(type_names):
     custom_types_names = ''.join([custom_types_name_template.format(type_name = type_name) for type_name in type_names])
     custom_types_inits = ''.join([custom_types_init_template.format(type_name = type_name) for type_name in type_names])
     custom_types_map_entries = ''.join([custom_types_map_entry_template.format(type_name = type_name) for type_name in type_names])
-    custom_type_value = ' | '.join(f'\'{name}\'' for name in type_names)
     file_content = types_file_template.format(
         import_types_statements = import_types_statements,
         custom_types_map_entries = custom_types_map_entries,
-        custom_type_value = custom_type_value,
         custom_types_inits = custom_types_inits,
         custom_types_names = custom_types_names,
     )

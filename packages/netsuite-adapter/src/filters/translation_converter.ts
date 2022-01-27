@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Field, isInstanceElement, isInstanceChange, InstanceElement, Change, isField, ElemID, isObjectType, Element } from '@salto-io/adapter-api'
+import { BuiltinTypes, Field, isInstanceElement, isInstanceChange, InstanceElement, Change, isField, ElemID, isObjectType, TypeElement, isPrimitiveType, isContainerType } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, getPath, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -40,7 +40,7 @@ const TRANSLATE_KEY = 'translate'
 
 const getTranslateFieldName = (key: string): string => `${key}Translate`
 
-const addTranslateFields = (typeElements: Element[]): void => {
+const addTranslateFields = (typeElements: TypeElement[]): void => {
   const types = _.keyBy(typeElements, type => type.elemID.name)
 
   FIELDS_TO_CONVERT.forEach(elemID => {
@@ -66,7 +66,10 @@ const addTranslateFields = (typeElements: Element[]): void => {
 
 const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
   onFetch: async elements => {
-    addTranslateFields(elements.filter(element => !isInstanceElement(element)))
+    const types = elements.filter(isObjectType)
+    const primitives = elements.filter(isPrimitiveType)
+    const containers = elements.filter(isContainerType)
+    addTranslateFields([...types, ...primitives, ...containers])
 
     await awu(elements)
       .filter(isInstanceElement)

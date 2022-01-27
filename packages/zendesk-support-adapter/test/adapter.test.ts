@@ -80,9 +80,9 @@ describe('adapter', () => {
           ),
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
-        expect(elements).toHaveLength(349)
-        expect(elements.filter(isObjectType)).toHaveLength(176)
-        expect(elements.filter(isInstanceElement)).toHaveLength(173)
+        expect(elements).toHaveLength(354)
+        expect(elements.filter(isObjectType)).toHaveLength(180)
+        expect(elements.filter(isInstanceElement)).toHaveLength(174)
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'zendesk_support.account_setting',
           'zendesk_support.account_setting.instance',
@@ -424,6 +424,11 @@ describe('adapter', () => {
           'zendesk_support.view__execution__sort',
           'zendesk_support.view__restriction',
           'zendesk_support.views',
+          'zendesk_support.webhook',
+          'zendesk_support.webhook.instance.test',
+          'zendesk_support.webhook__authentication',
+          'zendesk_support.webhooks',
+          'zendesk_support.webhooks__meta',
           'zendesk_support.workspace',
           'zendesk_support.workspace.instance.New_Workspace_123@s',
           'zendesk_support.workspace__conditions',

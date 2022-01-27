@@ -56,10 +56,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
       .filter(inst => isCustomType(inst.refType.elemID))
       .forEach(
         async inst => {
-          inst.value = await convertInstanceListsToMaps(
-            inst.value,
-            await inst.getType()
-          ) ?? inst.value
+          inst.value = await convertInstanceListsToMaps(inst) ?? inst.value
         }
       )
   },

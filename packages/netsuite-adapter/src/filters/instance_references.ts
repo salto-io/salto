@@ -24,70 +24,12 @@ import { serviceId } from '../transformer'
 import { FilterCreator, FilterWith } from '../filter'
 import { isCustomType } from '../types'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
+import {
+  CAPTURED_APPID, CAPTURED_BUNDLEID, CAPTURED_SERVICE_ID, CAPTURED_TYPE,
+  captureServiceIdInfo, ServiceIdInfo,
+} from '../service_id_info'
 
 const { awu } = collections.asynciterable
-
-const CAPTURED_SERVICE_ID = 'serviceId'
-const CAPTURED_TYPE = 'type'
-const CAPTURED_APPID = 'appid'
-const CAPTURED_BUNDLEID = 'bundleid'
-
-const TYPE_REGEX = `type=(?<${CAPTURED_TYPE}>[a-z_]+), `
-const APPID_REGEX = `appid=(?<${CAPTURED_APPID}>[a-z_\\.]+), `
-const BUNDLEID_REGEX = `bundleid=(?<${CAPTURED_BUNDLEID}>\\d+), `
-const SERVICE_ID_REGEX = `${SCRIPT_ID}=(?<${CAPTURED_SERVICE_ID}>[a-z0-9_]+(\\.[a-z0-9_]+)*)`
-
-// e.g. '[scriptid=customworkflow1]' & '[scriptid=customworkflow1.workflowstate17.workflowaction33]'
-//  & '[type=customsegment, scriptid=cseg1]'
-const scriptIdReferenceRegex = new RegExp(`\\[(${BUNDLEID_REGEX})?(${APPID_REGEX})?(${TYPE_REGEX})?${SERVICE_ID_REGEX}]`, 'g')
-// e.g. '[/Templates/filename.html]' & '[/SuiteScripts/script.js]'
-const pathReferenceRegex = new RegExp(`^\\[(?<${CAPTURED_SERVICE_ID}>\\/.+)]$`)
-
-type ServiceIdInfo = {
-  [CAPTURED_SERVICE_ID]: string
-  [CAPTURED_TYPE]?: string
-  [CAPTURED_APPID]?: string
-  [CAPTURED_BUNDLEID]?: string
-  isFullMatch: boolean
-}
-
-const isRegExpFullMatch = (regExpMatches: Array<RegExpExecArray | null>): boolean => (
-  regExpMatches.length === 1
-  && regExpMatches[0] !== null
-  && regExpMatches[0][0] === regExpMatches[0].input
-)
-
-/**
- * This method tries to capture the serviceId from Netsuite references format. For example:
- * '[scriptid=customworkflow1]' => 'customworkflow1'
- * '[/SuiteScripts/script.js]' => '/SuiteScripts/script.js'
- * 'Some string' => undefined
- */
-const captureServiceIdInfo = (value: string): ServiceIdInfo[] => {
-  const pathRefMatches = value.match(pathReferenceRegex)?.groups
-  if (pathRefMatches !== undefined) {
-    return [
-      { [CAPTURED_SERVICE_ID]: pathRefMatches[CAPTURED_SERVICE_ID],
-        isFullMatch: true }]
-  }
-
-  const regexMatches = [scriptIdReferenceRegex.exec(value)]
-  while (regexMatches[regexMatches.length - 1]) {
-    regexMatches.push(scriptIdReferenceRegex.exec(value))
-  }
-  const scriptIdRefMatches = regexMatches.slice(0, -1)
-  const isFullMatch = isRegExpFullMatch(scriptIdRefMatches)
-
-  return scriptIdRefMatches.map(match => match?.groups)
-    .filter(lowerdashValues.isDefined)
-    .map(serviceIdRef => ({
-      [CAPTURED_SERVICE_ID]: serviceIdRef[CAPTURED_SERVICE_ID],
-      [CAPTURED_TYPE]: serviceIdRef[CAPTURED_TYPE],
-      [CAPTURED_APPID]: serviceIdRef[CAPTURED_APPID],
-      [CAPTURED_BUNDLEID]: serviceIdRef[CAPTURED_BUNDLEID],
-      isFullMatch,
-    }))
-}
 
 const customTypeServiceIdsToElemIds = async (
   instance: InstanceElement,

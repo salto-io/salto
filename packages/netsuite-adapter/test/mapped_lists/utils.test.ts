@@ -41,6 +41,12 @@ describe('mapped lists', () => {
             {
               scriptid: 'custworkflow2',
             },
+            {
+              scriptid: 's0m@ $CR1pt!*()',
+            },
+            {
+              scriptid: '[scriptid=custworkflow2]',
+            },
           ],
         },
         workflowstates: {
@@ -79,10 +85,7 @@ describe('mapped lists', () => {
 
     await awu(Object.values(workflow.innerTypes)).forEach(t => convertFieldsTypesFromListToMap(t))
     transformedInstance = instance.clone()
-    transformedInstance.value = await convertInstanceListsToMaps(
-      instance.value,
-      await instance.getType()
-    ) ?? instance.value
+    transformedInstance.value = await convertInstanceListsToMaps(instance) ?? instance.value
     transformedBackInstance = await convertInstanceMapsToLists(transformedInstance)
 
     await awu(Object.values(workflow.innerTypes)).forEach(t => convertFieldsTypesFromListToMap(t))
@@ -123,6 +126,14 @@ describe('mapped lists', () => {
           custworkflow2: {
             scriptid: 'custworkflow2',
             index: 1,
+          },
+          's0m___CR1pt____@mszclojk': {
+            scriptid: 's0m@ $CR1pt!*()',
+            index: 2,
+          },
+          custworkflow2_index3: {
+            scriptid: '[scriptid=custworkflow2]',
+            index: 3,
           },
         },
       },
@@ -201,7 +212,7 @@ describe('mapped lists', () => {
         },
       },
     )
-    expect(await convertInstanceListsToMaps(inst.value, await inst.getType())).toEqual(inst.value)
+    expect(await convertInstanceListsToMaps(inst)).toEqual(inst.value)
   })
 
   describe('isMappedList', () => {
@@ -269,12 +280,20 @@ describe('mapped lists', () => {
       { path: new ElemID('netsuite', 'workflow', 'instance', 'instanceName', 'workflowcustomfields', 'workflowcustomfield'),
         value: {
           custworkflow1: {
-            index: 0,
             scriptid: 'custworkflow1',
+            index: 0,
           },
           custworkflow2: {
-            index: 1,
             scriptid: 'custworkflow2',
+            index: 1,
+          },
+          's0m___CR1pt____@mszclojk': {
+            scriptid: 's0m@ $CR1pt!*()',
+            index: 2,
+          },
+          custworkflow2_index3: {
+            scriptid: '[scriptid=custworkflow2]',
+            index: 3,
           },
         } },
       { path: new ElemID('netsuite', 'workflow', 'instance', 'instanceName', 'workflowstates', 'workflowstate'),

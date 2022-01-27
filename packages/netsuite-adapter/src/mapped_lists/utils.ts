@@ -17,12 +17,13 @@ import {
   Values, InstanceElement, isMapType, ObjectType, isField, isListType, Field,
   MapType, isObjectType, createRefToElmWithValue, ListType, isContainerType, ElemID, Value,
 } from '@salto-io/adapter-api'
-import { transformElement, TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import { naclCase, transformElement, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { INDEX, LIST_MAPPED_BY_FIELD, SCRIPT_ID } from '../constants'
 import { listMappedByFieldMapping } from './mapping'
+import { CAPTURED_SERVICE_ID, captureServiceIdInfo } from '../service_id_info'
 
 const { awu } = collections.asynciterable
 
@@ -65,6 +66,38 @@ export const convertFieldsTypesFromListToMap = async (
   })
 }
 
+const getItemKey = (mapFieldValue: string, path?: ElemID): string => {
+  const naclCaseKey = naclCase(mapFieldValue)
+  if (mapFieldValue === naclCaseKey) {
+    return mapFieldValue
+  }
+
+  const serviceIdInfoList = captureServiceIdInfo(mapFieldValue)
+  if (serviceIdInfoList.length === 0) {
+    log.debug(`fixing mapFieldValue to use it as a key: '${mapFieldValue}' -> '${naclCaseKey}' (${path?.getFullName()})`)
+    return naclCaseKey
+  }
+
+  const serviceIdKey = naclCase(
+    serviceIdInfoList.map(serviceIdInfo => serviceIdInfo[CAPTURED_SERVICE_ID]).join('_')
+  )
+  log.debug(`extracting ${SCRIPT_ID} to use it as a key: '${mapFieldValue}' -> '${serviceIdKey}' (${path?.getFullName()})`)
+  return serviceIdKey
+}
+
+const addSuffixUntilUnique = (
+  keyName: string,
+  suffix: string,
+  keySet: Set<string>,
+  path?: ElemID
+): string => {
+  if (keySet.has(keyName)) {
+    log.debug(`adding suffix to key: '${keyName}' -> '${keyName}${suffix}' (${path?.getFullName()})`)
+    return addSuffixUntilUnique(`${keyName}${suffix}`, suffix, keySet, path)
+  }
+  return keyName
+}
+
 const transformMappedLists: TransformFunc = async ({ value, field, path }) => {
   const mapFieldName = field?.annotations[LIST_MAPPED_BY_FIELD]
   if (!_.isArray(value) || mapFieldName === undefined || !isMapType(await field?.getType())) {
@@ -76,19 +109,29 @@ const transformMappedLists: TransformFunc = async ({ value, field, path }) => {
     return value
   }
 
+  const keySet: Set<string> = new Set()
   return _(value)
     .map((item, index) => ({ ...item, [INDEX]: index }))
-    .keyBy(item => item[mapFieldName])
+    .keyBy(item => {
+      const mapFieldValue = addSuffixUntilUnique(
+        getItemKey(_.toString(item[mapFieldName]), path),
+        `_index${item[INDEX]}`,
+        keySet,
+        path,
+      )
+      keySet.add(mapFieldValue)
+      return mapFieldValue
+    })
     .value()
 }
 
 export const convertInstanceListsToMaps = async (
-  values: Value,
-  type: ObjectType
+  instance: InstanceElement
 ): Promise<Values | undefined> =>
   transformValues({
-    values,
-    type,
+    values: instance.value,
+    type: await instance.getType(),
+    pathID: instance.elemID,
     transformFunc: transformMappedLists,
     strict: false,
   })

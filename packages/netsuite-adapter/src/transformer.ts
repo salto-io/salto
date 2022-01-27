@@ -33,9 +33,6 @@ import { isCustomType, isFileCabinetType } from './types'
 import { isFileCustomizationInfo, isFolderCustomizationInfo, isTemplateCustomTypeInfo } from './client/utils'
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from './client/types'
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from './client/constants'
-import { addressFormType } from './autogen/types/custom_types/addressForm'
-import { entryFormType } from './autogen/types/custom_types/entryForm'
-import { transactionFormType } from './autogen/types/custom_types/transactionForm'
 
 const { awu } = collections.asynciterable
 
@@ -175,15 +172,7 @@ export const restoreAttributes = async (values: Values, type: ObjectType, instan
 
 // According to https://{account_id}.app.netsuite.com/app/help/helpcenter.nl?fid=section_1497980303.html
 // there are types that their instances XMLs should be sent in a predefined order
-const getType = (typeName: string): ObjectType | undefined => {
-  const typesMap: Record<string, ObjectType> = {
-    [ADDRESS_FORM]: addressFormType().type,
-    [ENTRY_FORM]: entryFormType().type,
-    [TRANSACTION_FORM]: transactionFormType().type,
-  }
-
-  return typesMap[typeName]
-}
+const TYPES_TO_SORT = [ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM]
 
 const sortValuesBasedOnType = async (
   topLevelType: ObjectType, values: Values, instancePath: ElemID
@@ -232,9 +221,8 @@ export const toCustomizationInfo = async (
   })) ?? {}
 
   const typeName = instance.refType.elemID.name
-  const type = getType(typeName)
-  const sortedValues = type
-    ? await sortValuesBasedOnType(type, transformedValues, instance.elemID)
+  const sortedValues = TYPES_TO_SORT.includes(typeName)
+    ? await sortValuesBasedOnType(await instance.getType(), transformedValues, instance.elemID)
     : transformedValues
 
   const values = await restoreAttributes(sortedValues, instanceType, instance.elemID)

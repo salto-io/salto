@@ -134,12 +134,11 @@ const customTypesNamesList = [
   'workflowactionscript',
 ] as const
 
-const customTypesNamesSet: ReadonlySet<string> = new Set(customTypesNamesList)
-
 export type CustomType = typeof customTypesNamesList[number]
 
+const customTypesNamesSet: ReadonlySet<CustomType> = new Set(customTypesNamesList)
 export const isCustomTypeName = (name: string): name is CustomType =>
-  customTypesNamesSet.has(name)
+  customTypesNamesSet.has(name as CustomType)
 
 export const getCustomTypesNames = (): CustomType[] =>
   Array.from(customTypesNamesList)

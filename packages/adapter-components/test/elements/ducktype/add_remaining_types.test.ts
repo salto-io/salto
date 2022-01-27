@@ -28,6 +28,7 @@ describe('add remaining types', () => {
       transformation: {
         idFields: ['name'],
         standaloneFields: [{ fieldName: 'subfolders' }],
+        sourceTypeName: 'dir',
       },
     },
     file: {
@@ -65,9 +66,10 @@ describe('add remaining types', () => {
       },
     },
   }
+  const includeTypes = ['dir', 'file', 'permission', 'workflow']
   it('should create all the needed types if elements exist', () => {
     const elements: Element[] = []
-    addRemainingTypes({ elements, typesConfig, adapterName: ADAPTER_NAME })
+    addRemainingTypes({ elements, typesConfig, adapterName: ADAPTER_NAME, includeTypes })
     expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
       'myAdapter.file',
       'myAdapter.folder',
@@ -85,7 +87,7 @@ describe('add remaining types', () => {
     })
     const fileInstance = new InstanceElement('file1', fileType, { test: 'test1' })
     const elements = [fileType, fileInstance]
-    addRemainingTypes({ elements, typesConfig, adapterName: ADAPTER_NAME })
+    addRemainingTypes({ elements, typesConfig, adapterName: ADAPTER_NAME, includeTypes })
     expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
       'myAdapter.file',
       'myAdapter.file.instance.file1',

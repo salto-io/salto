@@ -15,16 +15,19 @@
 */
 import _ from 'lodash'
 import { ElemID, isObjectType, ObjectType, Element } from '@salto-io/adapter-api'
-import { toNestedTypeName } from './type_elements'
+import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { ID_SEPARATOR, toNestedTypeName } from './type_elements'
 import { DATA_FIELD_ENTIRE_OBJECT } from '../../config/transformation'
 import { TypeDuckTypeConfig } from '../../config'
+import { SUBTYPES_PATH, TYPES_PATH } from '../constants'
 
 export const addRemainingTypes = ({
-  elements, typesConfig, adapterName,
+  elements, typesConfig, adapterName, includeTypes,
 }: {
   elements: Element[]
   typesConfig: Record<string, TypeDuckTypeConfig>
   adapterName: string
+  includeTypes: string[]
 }): void => {
   const sourceTypeNameToTypeName = _(typesConfig)
     .pickBy(typeConfig => typeConfig.transformation?.sourceTypeName !== undefined)
@@ -51,6 +54,16 @@ export const addRemainingTypes = ({
     .map(e => e.elemID.typeName))
   const typesToAdd = typeNames
     .filter(typeName => !existingTypeNames.has(typeName))
-    .map(typeName => new ObjectType({ elemID: new ElemID(adapterName, typeName) }))
+    .map(typeName => {
+      const naclName = naclCase(typeName)
+      return new ObjectType({
+        elemID: new ElemID(adapterName, typeName),
+        path: [
+          adapterName, TYPES_PATH,
+          ...(!includeTypes.includes(sourceTypeNameToTypeName[typeName] ?? typeName)
+            ? [SUBTYPES_PATH, ...naclName.split(ID_SEPARATOR).map(pathNaclCase)]
+            : [pathNaclCase(naclName)])],
+      })
+    })
   elements.push(...typesToAdd)
 }

@@ -19,14 +19,14 @@ import {
   Element, isObjectType, isInstanceElement, ChangeDataType, isField, isPrimitiveType,
   ChangeValidator, Change, ChangeError, DependencyChanger, ChangeGroupIdFunction, getChangeData,
   isAdditionOrRemovalChange, isFieldChange, ReadOnlyElementsSource, ElemID, isVariable,
-  Value, isReferenceExpression, compareSpecialValues, BuiltinTypesByFullName, isAdditionChange,
-  isModificationChange, isRemovalChange, PlaceholderObjectType,
+  Value, isReferenceExpression, BuiltinTypesByFullName, isAdditionChange,
+  isModificationChange, isRemovalChange, ReferenceExpression, isStaticFile,
+  compareStringsIgnoreNewlineDifferences,
 } from '@salto-io/adapter-api'
 import { DataNodeMap, DiffNode, DiffGraph, Group, GroupDAG, DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import { expressions, elementSource } from '@salto-io/workspace'
 import { collections, values } from '@salto-io/lowerdash'
-import { transformValues } from '@salto-io/adapter-utils'
 import { PlanItem, addPlanItemAccessors, PlanItemId } from './plan_item'
 import { buildGroupedGraphFromDiffGraph, getCustomGroupIds } from './group'
 import { filterInvalidChanges } from './filter'
@@ -41,31 +41,9 @@ const log = logger(module)
 
 export type IDFilter = (id: ElemID) => boolean | Promise<boolean>
 
-const shouldResolve = (value: Value): boolean => isReferenceExpression(value)
-  && (!(value.elemID.isTopLevel() || value.elemID.idType === 'field')
-    || value.elemID.idType === 'var')
-  && value.value === undefined
-
-
-const resolveRef = async (
-  valueToResolve: Value,
-  src: ReadOnlyElementsSource,
-): Promise<Value> => (shouldResolve(valueToResolve) ? transformValues({
-  values: valueToResolve,
-  type: new PlaceholderObjectType({ elemID: new ElemID('adapter', 'placeholder') }),
-  strict: false,
-  allowEmpty: true,
-  transformFunc: async ({ value }) => {
-    if (shouldResolve(value)) {
-      const resolvedValue = await resolveReferenceExpression(value, src, {})
-      if (isReferenceExpression(resolvedValue)) {
-        return resolvedValue.value
-      }
-      return resolvedValue
-    }
-    return value
-  },
-}) : valueToResolve)
+const shouldResolve = (ref: ReferenceExpression): boolean =>
+  !(ref.elemID.isTopLevel() || ref.elemID.idType === 'field')
+    || ref.elemID.idType === 'var'
 
 /**
  * Check if 2 nodes in the DAG are equals or not
@@ -76,44 +54,76 @@ const compareValuesAndLazyResolveRefs = async (
   firstSrc: ReadOnlyElementsSource,
   secondSrc: ReadOnlyElementsSource
 ): Promise<boolean> => {
-  const resolvedFirst = await resolveRef(first, firstSrc)
-  const resolvedSecond = await resolveRef(second, secondSrc)
-  const specialCompareRes = compareSpecialValues(resolvedFirst, resolvedSecond)
-  if (values.isDefined(specialCompareRes)) {
-    return specialCompareRes
+  if (isStaticFile(first) && isStaticFile(second)) {
+    return first.isEqual(second)
   }
 
-  if (_.isArray(resolvedFirst) && _.isArray(resolvedSecond)) {
-    if (resolvedFirst.length !== resolvedSecond.length) {
+  // if both values are ReferenceExpressions they are compared by their elemID
+  if (isReferenceExpression(first) && isReferenceExpression(second)) {
+    return first.elemID.isEqual(second.elemID)
+  }
+
+  // if only first value is a ReferenceExpression and it should be resolved -
+  // its value is compared with the second value
+  if (isReferenceExpression(first) && shouldResolve(first)) {
+    if (first.value !== undefined) {
+      return compareValuesAndLazyResolveRefs(first.value, second, firstSrc, secondSrc)
+    }
+    const firstResolved = await resolveReferenceExpression(first, firstSrc, {})
+    return compareValuesAndLazyResolveRefs(firstResolved.value, second, firstSrc, secondSrc)
+  }
+
+  // if only second value is a ReferenceExpression and it should be resolved -
+  // its value is compared with the first value
+  if (isReferenceExpression(second) && shouldResolve(second)) {
+    if (second.value !== undefined) {
+      return compareValuesAndLazyResolveRefs(first, second.value, firstSrc, secondSrc)
+    }
+    const secondResolved = await resolveReferenceExpression(second, secondSrc, {})
+    return compareValuesAndLazyResolveRefs(first, secondResolved.value, firstSrc, secondSrc)
+  }
+
+  // if we got here with a ReferenceExpression it means that the values aren't equal
+  if (isReferenceExpression(first) || isReferenceExpression(second)) {
+    return false
+  }
+
+  if (typeof first === 'string' && typeof second === 'string') {
+    return compareStringsIgnoreNewlineDifferences(first, second)
+  }
+
+  if (_.isArray(first) && _.isArray(second)) {
+    if (first.length !== second.length) {
       return false
     }
     // The double negation and the double await might seem like this was created using a random
     // code generator, but its here in order for the method to "fail fast" as some
     // can stop when the first non equal values are encountered.
-    return !(await awu(resolvedFirst).some(
+    return !(await awu(first).some(
       async (value, index) => !await compareValuesAndLazyResolveRefs(
         value,
-        resolvedSecond[index],
+        second[index],
         firstSrc,
         secondSrc
       )
     ))
   }
 
-  if (_.isPlainObject(resolvedFirst) && _.isPlainObject(resolvedSecond)) {
-    if (!_.isEqual(new Set(Object.keys(resolvedFirst)), new Set(Object.keys(resolvedSecond)))) {
+  if (_.isPlainObject(first) && _.isPlainObject(second)) {
+    if (!_.isEqual(new Set(Object.keys(first)), new Set(Object.keys(second)))) {
       return false
     }
-    return !await awu(Object.keys(resolvedFirst)).some(
+    return !await awu(Object.keys(first)).some(
       async key => !await compareValuesAndLazyResolveRefs(
-        resolvedFirst[key],
-        resolvedSecond[key],
+        first[key],
+        second[key],
         firstSrc,
         secondSrc
       )
     )
   }
-  return _.isEqual(resolvedFirst, resolvedSecond)
+
+  return _.isEqual(first, second)
 }
 /**
  * Check if 2 nodes in the DAG are equals or not

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { InstanceElement, getChangeData, isInstanceElement, ChangeGroupIdFunction, ElemID, ObjectType, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
+import { InstanceElement, getChangeData, isInstanceElement, ChangeGroupIdFunction, ElemID, ObjectType, BuiltinTypes, ReferenceExpression, Variable, VariableExpression, StaticFile } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import * as mock from '../../common/elements'
 import { getFirstPlanItem, getChange } from '../../common/plan'
@@ -199,18 +199,18 @@ describe('getPlan', () => {
       },
     })
 
-    const instance = new InstanceElement(
-      'instance',
+    const firstInstance1 = new InstanceElement(
+      'instance1',
       type,
       {
         value: 'some value',
-        inner: { inner: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance', 'value')) },
-        ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance', 'inner')),
+        inner: { inner: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance1', 'value')) },
+        ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance1', 'inner')),
       }
     )
 
-    const stateInstance = new InstanceElement(
-      'instance',
+    const secondInstance1 = new InstanceElement(
+      'instance1',
       type,
       {
         value: 'some value',
@@ -219,11 +219,221 @@ describe('getPlan', () => {
       }
     )
 
+
+    const firstInstance2 = new InstanceElement(
+      'instance2',
+      type,
+      {
+        value: 'some value',
+        inner: { inner: 'some value' },
+        ref: { inner: 'some value' },
+      }
+    )
+
+    const secondInstance2 = new InstanceElement(
+      'instance2',
+      type,
+      {
+        value: 'some value',
+        inner: { inner: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance2', 'value')) },
+        ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance2', 'inner')),
+      }
+    )
+
+
+    const firstInstance3 = new InstanceElement(
+      'instance3',
+      type,
+      {
+        ref: new ReferenceExpression(
+          new ElemID('adapter', 'type', 'instance', 'instance3', 'inner'),
+          {
+            inner: new ReferenceExpression(
+              new ElemID('adapter', 'type', 'instance', 'instance3', 'value'),
+              'some value'
+            ),
+          }
+        ),
+      }
+    )
+
+    const secondInstance3 = new InstanceElement(
+      'instance3',
+      type,
+      {
+        ref: { inner: 'some value' },
+      }
+    )
+
+    const firstInstance4 = new InstanceElement(
+      'instance4',
+      type,
+      {
+        ref: { inner: 'some value' },
+      }
+    )
+
+    const secondInstance4 = new InstanceElement(
+      'instance4',
+      type,
+      {
+        ref: new ReferenceExpression(
+          new ElemID('adapter', 'type', 'instance', 'instance4', 'inner'),
+          {
+            inner: new ReferenceExpression(
+              new ElemID('adapter', 'type', 'instance', 'instance4', 'value'),
+              'some value'
+            ),
+          }
+        ),
+      }
+    )
+
+
     const plan = await getPlan({
-      before: createElementSource([stateInstance, type, innerType]),
-      after: createElementSource([instance, type, innerType]),
+      before: createElementSource(
+        [firstInstance1, firstInstance2, firstInstance3, firstInstance4, type, innerType]
+      ),
+      after: createElementSource(
+        [secondInstance1, secondInstance2, secondInstance3, secondInstance4, type, innerType]
+      ),
     })
     expect(plan.size).toBe(0)
+  })
+
+  it('when instances use variables and there is no change should create empty plan', async () => {
+    const variableObject = new Variable(
+      new ElemID('var', 'a'),
+      5
+    )
+
+    const type = new ObjectType({
+      elemID: new ElemID('adapter', 'type'),
+      fields: {
+        value: { refType: BuiltinTypes.NUMBER },
+      },
+    })
+
+    const instance = new InstanceElement(
+      'instance',
+      type,
+      {
+        value: new VariableExpression(variableObject.elemID),
+      }
+    )
+
+    const stateInstance = new InstanceElement(
+      'instance',
+      type,
+      {
+        value: 5,
+      }
+    )
+
+    const plan = await getPlan({
+      before: createElementSource([stateInstance, type]),
+      after: createElementSource([instance, type, variableObject]),
+    })
+    expect(plan.size).toBe(0)
+  })
+
+  it('when reference in instance changes but the value is the same should have a change in plan', async () => {
+    const type = new ObjectType({
+      elemID: new ElemID('adapter', 'type'),
+      fields: {
+        a: { refType: BuiltinTypes.NUMBER },
+        b: { refType: BuiltinTypes.NUMBER },
+        ref: { refType: BuiltinTypes.NUMBER },
+      },
+    })
+
+    const instance = new InstanceElement(
+      'instance',
+      type,
+      {
+        a: 5,
+        b: 5,
+        ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance', 'a')),
+      }
+    )
+
+    const changedInstance = new InstanceElement(
+      'instance',
+      type,
+      {
+        a: 5,
+        b: 5,
+        ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance', 'b')),
+      }
+    )
+
+    const plan = await getPlan({
+      before: createElementSource([instance, type]),
+      after: createElementSource([changedInstance, type]),
+    })
+    expect(plan.size).toBe(1)
+  })
+
+  it('when reference in instance points to a whole element should have a change in plan', async () => {
+    const type = new ObjectType({
+      elemID: new ElemID('adapter', 'type'),
+      fields: {
+        id: { refType: BuiltinTypes.STRING },
+        ref: { refType: BuiltinTypes.NUMBER },
+      },
+    })
+
+    const instance = new InstanceElement(
+      'instance',
+      type,
+      {
+        id: 'id1',
+        ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance')),
+      }
+    )
+
+    const changedInstance = new InstanceElement(
+      'instance',
+      type,
+      {
+        id: 'id1',
+        ref: 'id1',
+      }
+    )
+
+    const plan = await getPlan({
+      before: createElementSource([instance, type]),
+      after: createElementSource([changedInstance, type]),
+    })
+    expect(plan.size).toBe(1)
+  })
+
+  it('should return change in plan when comparing different StaticFiles', async () => {
+    const type = new ObjectType({
+      elemID: new ElemID('adapter', 'type'),
+    })
+
+    const instance = new InstanceElement(
+      'instance',
+      type,
+      {
+        file: new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') }),
+      }
+    )
+
+    const changedInstance = new InstanceElement(
+      'instance',
+      type,
+      {
+        file: new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMGI') }),
+      }
+    )
+
+    const plan = await getPlan({
+      before: createElementSource([instance, type]),
+      after: createElementSource([changedInstance, type]),
+    })
+    expect(plan.size).toBe(1)
   })
 
   it('should work for new type with a built-in function name', async () => {

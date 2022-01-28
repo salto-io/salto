@@ -481,8 +481,9 @@ describe('Netsuite adapter E2E with real account', () => {
           customRecordTypeToCreate.elemID
         ) as InstanceElement
         expect(fetchedCustomRecordType.value.recordname).toEqual(randomString)
-        const permissions = makeArray(fetchedCustomRecordType.value.permissions?.permission)
-        const createdRolePermission = permissions
+        const permissions = fetchedCustomRecordType.value.permissions?.permission
+        expect(_.isPlainObject(permissions)).toBeTruthy()
+        const createdRolePermission = Object.values(permissions as Values)
           .find(permission => isReferenceExpression(permission.permittedrole)
           && permission.permittedrole.elemID
             .isEqual(roleToCreateThatDependsOnCustomRecord.elemID.createNestedID(SCRIPT_ID)))

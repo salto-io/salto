@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { InstanceElement, isObjectType, isInstanceElement, ReferenceExpression, ObjectType, Element, createRefToElmWithValue, isListType, ListType, TypeElement } from '@salto-io/adapter-api'
+import { InstanceElement, isObjectType, isInstanceElement, ReferenceExpression, ObjectType, Element, createRefToElmWithValue, isListType, ListType, TypeElement, ElemIdGetter } from '@salto-io/adapter-api'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { StandaloneFieldConfigType, TransformationConfig, TransformationDefaultConfig } from '../../config'
@@ -62,6 +62,7 @@ const addFieldTypeAndInstances = async ({
   instances,
   transformationConfigByType,
   transformationDefaultConfig,
+  getElemIdFunc,
 }: {
   adapterName: string
   typeName: string
@@ -70,6 +71,7 @@ const addFieldTypeAndInstances = async ({
   instances: InstanceElement[]
   transformationConfigByType: Record<string, TransformationConfig>
   transformationDefaultConfig: TransformationDefaultConfig
+  getElemIdFunc?: ElemIdGetter
 }): Promise<Element[]> => {
   if (type.fields[fieldName] === undefined) {
     log.info('type %s field %s does not exist (maybe it is not populated by any of the instances), not extracting field', type.elemID.name, fieldName)
@@ -123,6 +125,7 @@ const addFieldTypeAndInstances = async ({
         nestName: true,
         transformationConfigByType,
         transformationDefaultConfig,
+        getElemIdFunc,
       })
       if (fieldInstance === undefined) {
         // cannot happen
@@ -154,11 +157,13 @@ export const extractStandaloneFields = async ({
   transformationConfigByType,
   transformationDefaultConfig,
   adapterName,
+  getElemIdFunc,
 }: {
   elements: Element[]
   transformationConfigByType: Record<string, TransformationConfig>
   transformationDefaultConfig: TransformationDefaultConfig
   adapterName: string
+  getElemIdFunc?: ElemIdGetter
 }): Promise<void> => {
   const allTypes = _.keyBy(elements.filter(isObjectType), e => e.elemID.name)
   const allInstancesbyType = _.groupBy(
@@ -196,6 +201,7 @@ export const extractStandaloneFields = async ({
           instances,
           transformationConfigByType,
           transformationDefaultConfig,
+          getElemIdFunc,
         }))
       })
     })

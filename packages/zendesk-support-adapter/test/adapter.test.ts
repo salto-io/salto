@@ -503,6 +503,85 @@ describe('adapter', () => {
         ])
       })
     })
+    it('should use elemIdGetter', async () => {
+      const supportInstanceId = 1500002894482
+      const operations = adapter.operations({
+        credentials: new InstanceElement(
+          'config',
+          usernamePasswordCredentialsType,
+          { username: 'user123', password: 'pwd456', subdomain: 'abc' },
+        ),
+        config: new InstanceElement(
+          'config',
+          configType,
+          {
+            [FETCH_CONFIG]: {
+              includeTypes: ['groups'],
+            },
+            [API_DEFINITIONS_CONFIG]: {
+              types: {
+                group: {
+                  transformation: {
+                    sourceTypeName: 'groups__groups',
+                  },
+                },
+                groups: {
+                  request: {
+                    url: '/groups',
+                  },
+                  transformation: {
+                    dataField: 'groups',
+                  },
+                },
+              },
+            },
+          },
+        ),
+        elementsSource: buildElementsSourceFromElements([]),
+        getElemIdFunc: (adapterName, serviceIds, name) => {
+          if (Number(serviceIds.id) === supportInstanceId) {
+            return new ElemID(adapterName, 'group', 'instance', 'Support')
+          }
+          return new ElemID(adapterName, name)
+        },
+      })
+      const { elements } = await operations
+        .fetch({ progressReporter: { reportProgress: () => null } })
+      const instances = elements.filter(isInstanceElement)
+      expect(instances).toHaveLength(4)
+      expect(instances.map(e => e.elemID.getFullName()).sort()).toEqual([
+        'zendesk_support.group.instance.Support',
+        'zendesk_support.group.instance.Support2',
+        'zendesk_support.group.instance.Support4',
+        'zendesk_support.group.instance.Support5',
+      ])
+      const response = {
+        groups: [
+          {
+            url: 'https://myBrand.zendesk.com/api/v2/groups/1500002894482.json',
+            id: supportInstanceId,
+            name: 'Support - Edited',
+            description: '',
+            default: true,
+            deleted: false,
+            created_at: '2021-05-18T19:00:44Z',
+            updated_at: '2021-05-18T19:00:44Z',
+          },
+        ],
+        next_page: null,
+        previous_page: null,
+        count: 1,
+      }
+      mockAxiosAdapter.onGet('/groups').replyOnce(
+        200, response
+      )
+      const { elements: newElements } = await operations
+        .fetch({ progressReporter: { reportProgress: () => null } })
+      const newInstances = newElements.filter(isInstanceElement)
+      expect(newInstances.map(e => e.elemID.getFullName()).sort()).toEqual([
+        'zendesk_support.group.instance.Support',
+      ])
+    })
   })
 
   describe('deploy', () => {

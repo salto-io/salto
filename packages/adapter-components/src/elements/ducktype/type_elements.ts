@@ -21,7 +21,7 @@ import {
 import { pathNaclCase, naclCase } from '@salto-io/adapter-utils'
 import { DuckTypeTransformationConfig, DuckTypeTransformationDefaultConfig, getConfigWithDefault } from '../../config'
 import { TYPES_PATH, SUBTYPES_PATH } from '../constants'
-import { hideFields } from '../type_elements'
+import { hideFields, markServiceIdField } from '../type_elements'
 
 const ID_SEPARATOR = '__'
 
@@ -224,13 +224,17 @@ export const generateType = ({
     )
 
   // mark fields as hidden based on config
-  const { fieldsToHide } = getConfigWithDefault(
+  const { fieldsToHide, serviceIdField } = getConfigWithDefault(
     transformationConfigByType[naclName],
     transformationDefaultConfig,
   )
 
   if (Array.isArray(fieldsToHide)) {
     hideFields(fieldsToHide, fields, typeName)
+  }
+
+  if (serviceIdField) {
+    markServiceIdField(serviceIdField, fields, typeName)
   }
 
   const type = new ObjectType({

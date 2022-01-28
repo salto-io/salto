@@ -16,7 +16,7 @@
 */
 import _ from 'lodash'
 import { FieldDefinition, Field, CORE_ANNOTATIONS, TypeElement, isObjectType, isContainerType,
-  getDeepInnerType, ObjectType, BuiltinTypes, createRestriction, createRefToElmWithValue, PrimitiveType, LIST_ID_PREFIX, GENERIC_ID_PREFIX, GENERIC_ID_SUFFIX, MAP_ID_PREFIX, ListType, MapType, isEqualElements } from '@salto-io/adapter-api'
+  getDeepInnerType, ObjectType, BuiltinTypes, createRestriction, createRefToElmWithValue, PrimitiveType, LIST_ID_PREFIX, GENERIC_ID_PREFIX, GENERIC_ID_SUFFIX, MAP_ID_PREFIX, ListType, MapType, isEqualElements, isPrimitiveType, PrimitiveTypes } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { values, collections } from '@salto-io/lowerdash'
 import { FieldToHideType, FieldTypeOverrideType, getTypeTransformationConfig } from '../config/transformation'
@@ -37,7 +37,9 @@ export const hideFields = (
   typeName: string,
 ): void => {
   fieldsToHide.forEach(({ fieldName, fieldType }) => {
-    const field = typeFields[fieldName]
+    const field = Object.prototype.hasOwnProperty.call(typeFields, fieldName)
+      ? typeFields[fieldName]
+      : undefined
     if (field === undefined) {
       log.warn('field %s.%s not found, cannot hide it', typeName, fieldName)
       return
@@ -52,6 +54,40 @@ export const hideFields = (
   })
 }
 
+/**
+ * Change field type to be service_id if it match the specified configuration.
+ */
+export const markServiceIdField = (
+  fieldName: string,
+  typeFields: Record<string, FieldDefinition>,
+  typeName: string,
+): void => {
+  const field = Object.prototype.hasOwnProperty.call(typeFields, fieldName)
+    ? typeFields[fieldName]
+    : undefined
+  if (field === undefined) {
+    log.warn('field %s.%s not found, cannot mark it as service_id', typeName, fieldName)
+    return
+  }
+  log.debug('Mark field %s.%s as service_id', typeName, fieldName)
+  if (!isPrimitiveType(field.refType)) {
+    log.warn('field %s.%s type is not primitive, cannot mark it as service_id', typeName, fieldName)
+    return
+  }
+  switch (field.refType.primitive) {
+    case (PrimitiveTypes.NUMBER):
+      field.refType = BuiltinTypes.SERVICE_ID_NUMBER
+      return
+    case (PrimitiveTypes.STRING):
+      field.refType = BuiltinTypes.SERVICE_ID
+      return
+    default:
+      log.warn(
+        'Failed to mark field %s.%s as service id, since its primitive type id (%d) is not supported',
+        typeName, fieldName, field.refType.primitive
+      )
+  }
+}
 
 export const filterTypes = async (
   adapterName: string,

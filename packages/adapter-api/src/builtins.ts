@@ -41,6 +41,11 @@ const StandardBuiltinTypes = {
     primitive: PrimitiveTypes.STRING,
     annotations: { [CORE_ANNOTATIONS.SERVICE_ID]: true },
   }),
+  SERVICE_ID_NUMBER: new PrimitiveType({
+    elemID: new ElemID(GLOBAL_ADAPTER, 'serviceid_number'),
+    primitive: PrimitiveTypes.NUMBER,
+    annotations: { [CORE_ANNOTATIONS.SERVICE_ID]: true },
+  }),
   JSON: new PrimitiveType({
     elemID: new ElemID(GLOBAL_ADAPTER, 'json'),
     primitive: PrimitiveTypes.STRING,

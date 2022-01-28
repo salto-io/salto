@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   InstanceElement, Values, ObjectType, isObjectType, ReferenceExpression, isReferenceExpression,
-  isListType, isMapType, TypeElement, PrimitiveType, MapType,
+  isListType, isMapType, TypeElement, PrimitiveType, MapType, ElemIdGetter,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -48,9 +48,11 @@ const extractStandaloneFields = async (
   {
     transformationConfigByType,
     transformationDefaultConfig,
+    getElemIdFunc,
   }: {
     transformationConfigByType: Record<string, TransformationConfig>
     transformationDefaultConfig: TransformationDefaultConfig
+    getElemIdFunc?: ElemIdGetter
   },
 ): Promise<InstanceElement[]> => {
   if (_.isEmpty(transformationConfigByType[inst.refType.elemID.name]?.standaloneFields)) {
@@ -72,6 +74,7 @@ const extractStandaloneFields = async (
       transformationConfigByType,
       transformationDefaultConfig,
       normalized: true,
+      getElemIdFunc,
     })
     additionalInstances.push(...refInstances)
     return refInstances.map(refInst => new ReferenceExpression(refInst.elemID))
@@ -199,6 +202,7 @@ const generateInstancesForType = ({
   transformationConfigByType,
   transformationDefaultConfig,
   normalized,
+  getElemIdFunc,
 }: {
   entries: Values[]
   objType: ObjectType
@@ -207,6 +211,7 @@ const generateInstancesForType = ({
   transformationConfigByType: Record<string, TransformationConfig>
   transformationDefaultConfig: TransformationDefaultConfig
   normalized?: boolean
+  getElemIdFunc?: ElemIdGetter
 }): Promise<InstanceElement[]> => {
   const standaloneFields = transformationConfigByType[objType.elemID.name]?.standaloneFields
   return awu(entries)
@@ -219,6 +224,7 @@ const generateInstancesForType = ({
       transformationDefaultConfig,
       normalized,
       defaultName: `unnamed_${index}`, // TODO improve
+      getElemIdFunc,
     }))
     .flatMap(inst => (
       standaloneFields === undefined
@@ -226,6 +232,7 @@ const generateInstancesForType = ({
         : extractStandaloneFields(inst, {
           transformationConfigByType,
           transformationDefaultConfig,
+          getElemIdFunc,
         })
     )).toArray()
 }
@@ -258,6 +265,7 @@ type GetEntriesParams = {
   requestContext?: Record<string, unknown>
   nestedFieldFinder: FindNestedFieldFunc
   computeGetArgs: ComputeGetArgsFunc
+  getElemIdFunc?: ElemIdGetter
 }
 
 export const extractPageEntriesByNestedField = (fieldName?: string): PageEntriesExtractor => (
@@ -405,7 +413,7 @@ const getEntriesForType = async (
  * use the already-fetched elements as context in order to determine the right requests.
  */
 const getInstancesForType = async (params: GetEntriesParams): Promise<InstanceElement[]> => {
-  const { typeName, typesConfig, typeDefaultConfig } = params
+  const { typeName, typesConfig, typeDefaultConfig, getElemIdFunc } = params
   const transformationConfigByType = _.pickBy(
     _.mapValues(typesConfig, def => def.transformation),
     isDefined,
@@ -422,6 +430,7 @@ const getInstancesForType = async (params: GetEntriesParams): Promise<InstanceEl
       objType,
       transformationConfigByType,
       transformationDefaultConfig,
+      getElemIdFunc,
     })
   } catch (e) {
     log.warn(`Could not fetch ${typeName}: ${e}. %s`, e.stack)
@@ -444,6 +453,7 @@ export const getAllInstances = async ({
   objectTypes,
   nestedFieldFinder = findDataField,
   computeGetArgs = defaultComputeGetArgs,
+  getElemIdFunc,
 }: {
   paginator: Paginator
   apiConfig: Pick<AdapterSwaggerApiConfig, 'types' | 'typeDefaults'>
@@ -451,6 +461,7 @@ export const getAllInstances = async ({
   objectTypes: Record<string, ObjectType>
   nestedFieldFinder?: FindNestedFieldFunc
   computeGetArgs?: ComputeGetArgsFunc
+  getElemIdFunc?: ElemIdGetter
 }): Promise<InstanceElement[]> => {
   const { types, typeDefaults } = apiConfig
 
@@ -461,6 +472,7 @@ export const getAllInstances = async ({
     typeDefaultConfig: typeDefaults,
     nestedFieldFinder,
     computeGetArgs,
+    getElemIdFunc,
   }
 
   return getElementsWithContext({

@@ -326,5 +326,35 @@ describe('ducktype_instance_elements', () => {
       })
       expect(inst).toBeUndefined()
     })
+    it('should use elemIdGetter ', async () => {
+      const instanceName = 'test'
+      const inst = await toInstance({
+        type,
+        transformationConfigByType: {
+          bla: {
+            idFields: ['name'],
+            serviceIdField: 'id',
+          },
+        },
+        transformationDefaultConfig: {
+          idFields: ['somethingElse'],
+        },
+        defaultName: 'abc',
+        entry,
+        getElemIdFunc: (adapterName, serviceIds, name) => {
+          if (Number(serviceIds.id) === entry.id) {
+            return new ElemID(adapterName, type.elemID.typeName, 'instance', instanceName)
+          }
+          return new ElemID(adapterName, type.elemID.typeName, 'instance', name)
+        },
+      })
+      expect(inst).toBeDefined()
+      expect(inst?.isEqual(new InstanceElement(
+        instanceName,
+        type,
+        entry,
+      ))).toBeTruthy()
+      expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', instanceName])
+    })
   })
 })

@@ -59,7 +59,6 @@ describe('salesforce client', () => {
       retry: {
         maxAttempts: 4, // try 4 times
         retryDelay: 100, // wait for 100ms before trying again
-        retryStrategy: 'NetworkError', // retry on network errors
       },
       maxConcurrentApiRequests: {
         total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
@@ -151,11 +150,29 @@ describe('salesforce client', () => {
       expect(res).toEqual([])
     })
     it('writes the right things to log', () => {
-      expect(log).toHaveBeenCalledWith('failed to run SFDC call for reason: %s. Retrying in %ss.', 'something awful happened', 0.1)
+      expect(log).toHaveBeenCalledWith('failed to run SFDC call for reason: %s. נing in %ss.', 'something awful happened', 0.1)
     })
   })
 
   describe('with other errors ', () => {
+    it('retries with 400 error', async () => {
+      const dodoScope = nock('http://dodo22')
+        .post(/.*/)
+        .times(1)
+        .reply(500, 'server error')
+        .post(/.*/)
+        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: { metadataObjects: [] } } } } },
+          headers)
+
+      try {
+        await client.listMetadataTypes()
+        throw new Error('client should have failed')
+      } catch (e) {
+        expect(e.message).toBe('server error')
+        expect(e.attempts).toBeUndefined()
+      }
+      expect(dodoScope.isDone()).toBeFalsy()
+    })
     it('fails on first error without retries', async () => {
       const dodoScope = nock('http://dodo22')
         .post(/.*/)

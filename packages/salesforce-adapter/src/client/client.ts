@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { IncomingMessage } from 'http'
 import { EOL } from 'os'
 import requestretry, { RequestRetryOptions, RetryStrategies } from 'requestretry'
 import Bottleneck from 'bottleneck'
@@ -324,6 +325,11 @@ export const loginFromCredentialsAndReturnOrgId = async (
   return identityInfo.organization_id
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const retryHTTPorNetworkOr400 = (err: Error, response: IncomingMessage, body: any): boolean =>
+  RetryStrategies.HTTPOrNetworkError(err, response, body)
+    || response?.statusCode === 400
+
 export const getConnectionDetails = async (
   creds: Credentials, connection? : Connection): Promise<{
   remainingDailyRequests: number
@@ -331,7 +337,7 @@ export const getConnectionDetails = async (
 }> => {
   const options = {
     maxAttempts: 2,
-    retryStrategy: RetryStrategies.HTTPOrNetworkError,
+    retryStrategy: retryHTTPorNetworkOr400,
   }
   const conn = connection || createConnectionFromCredentials(creds, options)
   const orgId = (await loginFromCredentialsAndReturnOrgId(conn, creds))

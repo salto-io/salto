@@ -103,6 +103,7 @@ describe('resolveChanges', () => {
       fields: {
         id: { refType: BuiltinTypes.NUMBER },
         title: { refType: BuiltinTypes.STRING },
+        default_custom_field_option: { refType: BuiltinTypes.STRING },
         custom_field_options: { refType: new ListType(ticketFieldOptionType) },
       },
     })
@@ -189,6 +190,9 @@ describe('resolveChanges', () => {
         id: 100,
         title: 'tf1',
         type: 'tagger',
+        default_custom_field_option: new ReferenceExpression(
+          ticketFieldOption1Instance.elemID, ticketFieldOption1Instance
+        ),
         custom_field_options: [
           new ReferenceExpression(ticketFieldOption1Instance.elemID, ticketFieldOption1Instance),
         ],
@@ -271,10 +275,12 @@ describe('resolveChanges', () => {
         },
       },
     )
-    const resolvedChanges = await awu([toChange({ after: automationInstance })])
+    const resolvedChanges = await awu(
+      [automationInstance, ticketFieldInstance].map(inst => toChange({ after: inst }))
+    )
       .map(change => resolveChangeElement(change, lookupFunc))
       .toArray()
-    expect(resolvedChanges).toHaveLength(1)
+    expect(resolvedChanges).toHaveLength(2)
     expect(getChangeData(resolvedChanges[0]).value).toEqual({
       id: 2,
       title: 'Test',
@@ -288,6 +294,15 @@ describe('resolveChanges', () => {
           { field: 'custom_fields_100', operator: 'is', value: 'v123' },
         ],
       },
+    })
+    expect(getChangeData(resolvedChanges[1]).value).toEqual({
+      id: 100,
+      title: 'tf1',
+      type: 'tagger',
+      default_custom_field_option: 'v1',
+      custom_field_options: [
+        { id: 1001, name: 'option1', value: 'v1' },
+      ],
     })
   })
 })

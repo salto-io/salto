@@ -37,7 +37,9 @@ export const hideFields = (
   typeName: string,
 ): void => {
   fieldsToHide.forEach(({ fieldName, fieldType }) => {
-    const field = typeFields[fieldName]
+    const field = Object.prototype.hasOwnProperty.call(typeFields, fieldName)
+      ? typeFields[fieldName]
+      : undefined
     if (field === undefined) {
       log.warn('field %s.%s not found, cannot hide it', typeName, fieldName)
       return
@@ -60,7 +62,9 @@ export const markServiceIdField = (
   typeFields: Record<string, FieldDefinition>,
   typeName: string,
 ): void => {
-  const field = typeFields[fieldName]
+  const field = Object.prototype.hasOwnProperty.call(typeFields, fieldName)
+    ? typeFields[fieldName]
+    : undefined
   if (field === undefined) {
     log.warn('field %s.%s not found, cannot mark it as service_id', typeName, fieldName)
     return
@@ -70,10 +74,18 @@ export const markServiceIdField = (
     log.warn('field %s.%s type is not primitive, cannot mark it as service_id', typeName, fieldName)
     return
   }
-  if (field.refType.primitive === PrimitiveTypes.NUMBER) {
-    field.refType = BuiltinTypes.SERVICE_ID_NUMBER
-  } else {
-    field.refType = BuiltinTypes.SERVICE_ID
+  switch (field.refType.primitive) {
+    case (PrimitiveTypes.NUMBER):
+      field.refType = BuiltinTypes.SERVICE_ID_NUMBER
+      return
+    case (PrimitiveTypes.STRING):
+      field.refType = BuiltinTypes.SERVICE_ID
+      return
+    default:
+      log.warn(
+        'Failed to mark field %s.%s as service id, since its primitive type id (%d) is not supported',
+        typeName, fieldName, field.refType.primitive
+      )
   }
 }
 

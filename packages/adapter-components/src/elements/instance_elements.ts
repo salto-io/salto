@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   InstanceElement, Values, ObjectType, ReferenceExpression, CORE_ANNOTATIONS, ElemID,
-  ElemIdGetter, OBJECT_SERVICE_ID, OBJECT_NAME, toServiceIdsString,
+  ElemIdGetter, OBJECT_SERVICE_ID, OBJECT_NAME, toServiceIdsString, ServiceIds,
 } from '@salto-io/adapter-api'
 import { pathNaclCase, naclCase, transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -50,6 +50,15 @@ export const getInstanceName = (
   }
   return nameParts.every(part => part !== undefined && part !== '') ? nameParts.map(String).join('_') : undefined
 }
+
+const createServiceIds = (
+  entry: Values, serviceIdField: string, type: ObjectType
+): ServiceIds => ({
+  [serviceIdField]: entry[serviceIdField],
+  [OBJECT_SERVICE_ID]: toServiceIdsString({
+    [OBJECT_NAME]: type.elemID.getFullName(),
+  }),
+})
 
 /**
  * Generate an instance for a single entry returned for a given type.
@@ -111,16 +120,7 @@ export const toBasicInstance = async ({
   )
   const adapterName = type.elemID.adapter
   const naclName = getElemIdFunc && serviceIdField
-    ? getElemIdFunc(
-      adapterName,
-      {
-        [serviceIdField]: entry[serviceIdField],
-        [OBJECT_SERVICE_ID]: toServiceIdsString({
-          [OBJECT_NAME]: type.elemID.getFullName(),
-        }),
-      },
-      desiredName
-    ).name
+    ? getElemIdFunc(adapterName, createServiceIds(entry, serviceIdField, type), desiredName).name
     : desiredName
   const filePath = type.isSettings
     ? [

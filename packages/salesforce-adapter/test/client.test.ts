@@ -150,7 +150,7 @@ describe('salesforce client', () => {
       expect(res).toEqual([])
     })
     it('writes the right things to log', () => {
-      expect(log).toHaveBeenCalledWith('failed to run SFDC call for reason: %s. נing in %ss.', 'something awful happened', 0.1)
+      expect(log).toHaveBeenCalledWith('failed to run SFDC call for reason: %s. Retrying in %ss.', 'something awful happened', 0.1)
     })
   })
 
@@ -159,19 +159,12 @@ describe('salesforce client', () => {
       const dodoScope = nock('http://dodo22')
         .post(/.*/)
         .times(1)
-        .reply(500, 'server error')
+        .reply(400, {})
         .post(/.*/)
         .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: { metadataObjects: [] } } } } },
           headers)
-
-      try {
-        await client.listMetadataTypes()
-        throw new Error('client should have failed')
-      } catch (e) {
-        expect(e.message).toBe('server error')
-        expect(e.attempts).toBeUndefined()
-      }
-      expect(dodoScope.isDone()).toBeFalsy()
+      await client.listMetadataTypes()
+      expect(dodoScope.isDone()).toBeTruthy()
     })
     it('fails on first error without retries', async () => {
       const dodoScope = nock('http://dodo22')

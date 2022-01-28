@@ -290,7 +290,7 @@ const createRetryOptions = (retryOptions: Required<ClientRetryConfig>): RequestR
   retryStrategy: RetryStrategies[retryOptions.retryStrategy],
   delayStrategy: (err, _response, _body) => {
     log.error('failed to run SFDC call for reason: %s. Retrying in %ss.',
-      err.message, (retryOptions.retryDelay / 1000))
+      err?.message ?? '', (retryOptions.retryDelay / 1000))
     return retryOptions.retryDelay
   },
 })
@@ -326,8 +326,8 @@ export const loginFromCredentialsAndReturnOrgId = async (
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const retryHTTPorNetworkOr400 = (err: Error, response: IncomingMessage, body: any): boolean =>
-  RetryStrategies.HTTPOrNetworkError(err, response, body)
+const retryNetworkOr400 = (err: Error, response: IncomingMessage, body: any): boolean =>
+  RetryStrategies.NetworkError(err, response, body)
     || response?.statusCode === 400
 
 export const getConnectionDetails = async (
@@ -337,7 +337,7 @@ export const getConnectionDetails = async (
 }> => {
   const options = {
     maxAttempts: 2,
-    retryStrategy: retryHTTPorNetworkOr400,
+    retryStrategy: RetryStrategies.HTTPOrNetworkError,
   }
   const conn = connection || createConnectionFromCredentials(creds, options)
   const orgId = (await loginFromCredentialsAndReturnOrgId(conn, creds))
@@ -379,6 +379,9 @@ export default class SalesforceClient {
     this.credentials = credentials
     this.config = config
     this.retryOptions = createRetryOptions(_.defaults({}, config?.retry, DEFAULT_RETRY_OPTS))
+    if (!config?.retry?.retryStrategy) {
+      this.retryOptions.retryStrategy = retryNetworkOr400
+    }
     this.conn = connection ?? createConnectionFromCredentials(
       credentials,
       this.retryOptions,

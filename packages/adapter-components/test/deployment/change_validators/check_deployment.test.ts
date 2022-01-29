@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { AdapterApiConfig } from '../../../src/config/shared'
 import { createCheckDeploymentBasedOnConfigValidator } from '../../../src/deployment/change_validators/check_deployment_based_on_config'
 
@@ -63,7 +63,7 @@ describe('checkDeploymentBasedOnConfigValidator', () => {
     }])
   })
 
-  it('should return an error when type does not support specific', async () => {
+  it('should return an error when type does not support specific method', async () => {
     const instance = new InstanceElement('test', type)
     const errors = await createCheckDeploymentBasedOnConfigValidator(apiConfig)(
       [toChange({ before: instance })],
@@ -82,5 +82,40 @@ describe('checkDeploymentBasedOnConfigValidator', () => {
       [toChange({ after: instance })],
     )
     expect(errors).toEqual([])
+  })
+  it('should not return an error when operation deployed via parent and parent is supported', async () => {
+    const childTypeName = 'testChild'
+    const parentInst = new InstanceElement('parent', type)
+    const instance = new InstanceElement(
+      'test',
+      new ObjectType({ elemID: new ElemID('dum', childTypeName) }),
+      undefined,
+      undefined,
+      { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentInst.elemID, parentInst)] },
+    )
+    const errors = await createCheckDeploymentBasedOnConfigValidator(apiConfig, [childTypeName])(
+      [toChange({ after: instance })],
+    )
+    expect(errors).toEqual([])
+  })
+  it('should return an error when operation deployed via parent and parent is not supported', async () => {
+    const childTypeName = 'testChild'
+    const parentInst = new InstanceElement('parent', type)
+    const instance = new InstanceElement(
+      'test',
+      new ObjectType({ elemID: new ElemID('dum', childTypeName) }),
+      undefined,
+      undefined,
+      { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentInst.elemID, parentInst)] },
+    )
+    const errors = await createCheckDeploymentBasedOnConfigValidator(apiConfig, [childTypeName])(
+      [toChange({ before: instance })],
+    )
+    expect(errors).toEqual([{
+      elemID: instance.elemID,
+      severity: 'Error',
+      message: 'Operation not supported',
+      detailedMessage: `Salto does not support "remove" of ${instance.elemID.getFullName()}`,
+    }])
   })
 })

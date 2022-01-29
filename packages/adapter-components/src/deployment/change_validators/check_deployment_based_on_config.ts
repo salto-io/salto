@@ -13,9 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeError, ChangeValidator, getChangeData, isInstanceChange, Element, ElemID } from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { Change, ChangeError, ChangeValidator, getChangeData, Element, ElemID, isInstanceElement,
+  isReferenceExpression, ActionName } from '@salto-io/adapter-api'
+import { getParents } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { AdapterApiConfig, DeploymentRequestsByAction } from '../../config'
+import { AdapterApiConfig, DeploymentRequestsByAction, DeployRequestConfig } from '../../config'
 
 const { awu } = collections.asynciterable
 
@@ -28,24 +31,46 @@ const isDeploymentSupported = (
   action: Change['action'], config: DeploymentRequestsByAction
 ): boolean => config[action] !== undefined
 
-export const createCheckDeploymentBasedOnConfigValidator = (apiConfig: AdapterApiConfig):
-ChangeValidator => async changes => (
+const createChangeErrors = (
+  typeConfig: Partial<Record<ActionName, DeployRequestConfig>>,
+  instanceElemID: ElemID,
+  action: ActionName,
+): ChangeError[] => {
+  if (!isDeploymentSupported(action, typeConfig)) {
+    return [{
+      elemID: instanceElemID,
+      severity: 'Error',
+      message: ERROR_MESSAGE,
+      detailedMessage: detailedErrorMessage(action, instanceElemID),
+    }]
+  }
+  return []
+}
+
+export const createCheckDeploymentBasedOnConfigValidator = (
+  apiConfig: AdapterApiConfig, typesDeployedViaParent: string[] = []
+): ChangeValidator => async changes => (
   awu(changes)
     .map(async (change: Change<Element>): Promise<(ChangeError | undefined)[]> => {
-      if (!isInstanceChange(change)) {
+      const element = getChangeData(change)
+      if (!isInstanceElement(element)) {
         return []
       }
-      const instance = getChangeData(change)
-      const typeConfig = apiConfig?.types?.[instance.elemID.typeName]?.deployRequests ?? {}
-      if (!isDeploymentSupported(change.action, typeConfig)) {
-        return [{
-          elemID: instance.elemID,
-          severity: 'Error',
-          message: ERROR_MESSAGE,
-          detailedMessage: detailedErrorMessage(change.action, instance.elemID),
-        }]
+      const getChangeErrorsByTypeName = (typeName: string): ChangeError[] => {
+        const typeConfig = apiConfig?.types?.[typeName]?.deployRequests ?? {}
+        return createChangeErrors(typeConfig, element.elemID, change.action)
       }
-      return []
+      if (typesDeployedViaParent.includes(element.elemID.typeName)) {
+        const parents = getParents(element)
+        if (!_.isEmpty(parents)
+          && parents.every(isReferenceExpression)
+          && parents.every(parent => isInstanceElement(parent.value))
+        ) {
+          const parentTypeName = _.uniq(parents.map(p => p.value.elemID.typeName))
+          return parentTypeName.flatMap(getChangeErrorsByTypeName)
+        }
+      }
+      return getChangeErrorsByTypeName(element.elemID.typeName)
     })
     .flat()
     .toArray()

@@ -23,10 +23,12 @@ const {
   createSkipParentsOfSkippedInstancesValidator,
 } = deployment.changeValidators
 
-export default (apiConfig: configUtils.AdapterDuckTypeApiConfig): ChangeValidator => {
+export default (
+  apiConfig: configUtils.AdapterDuckTypeApiConfig, typesDeployedViaParent: string[]
+): ChangeValidator => {
   const validators: ChangeValidator[] = [
     deployTypesNotSupportedValidator,
-    createCheckDeploymentBasedOnConfigValidator(apiConfig),
+    createCheckDeploymentBasedOnConfigValidator(apiConfig, typesDeployedViaParent),
     accountSettingsValidator,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)

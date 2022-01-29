@@ -50,6 +50,7 @@ import ticketFieldFilter from './filters/custom_field_options/ticket_field'
 import userFieldFilter from './filters/custom_field_options/user_field'
 import dynamicContentFilter from './filters/dynamic_content'
 import restrictionFilter from './filters/restriction'
+import organizationFieldFilter from './filters/organization_field'
 import defaultDeployFilter from './filters/default_deploy'
 
 const log = logger(module)
@@ -73,11 +74,16 @@ export const DEFAULT_FILTERS = [
   accountSettingsFilter,
   dynamicContentFilter,
   restrictionFilter,
+  organizationFieldFilter,
   fieldReferencesFilter,
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,
   // defaultDeployFilter should be last!
   defaultDeployFilter,
+]
+
+const SKIP_RESOLVE_TYPE_NAMES = [
+  'organization_field__custom_field_options',
 ]
 
 export interface ZendeskAdapterParams {
@@ -172,7 +178,10 @@ export default class ZendeskAdapter implements AdapterOperations {
       defs => new ZendeskSupportFieldReferenceResolver(defs)
     )
     const resolvedChanges = await awu(changesToDeploy)
-      .map(change => resolveChangeElement(change, lookupFunc))
+      .map(async change =>
+        (SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
+          ? change
+          : resolveChangeElement(change, lookupFunc)))
       .toArray()
     await runner.preDeploy(resolvedChanges)
     const { deployResult } = await runner.deploy(resolvedChanges)
@@ -193,7 +202,9 @@ export default class ZendeskAdapter implements AdapterOperations {
   // eslint-disable-next-line class-methods-use-this
   public get deployModifiers(): DeployModifiers {
     return {
-      changeValidator: createChangeValidator(this.userConfig[API_DEFINITIONS_CONFIG]),
+      changeValidator: createChangeValidator(
+        this.userConfig[API_DEFINITIONS_CONFIG], SKIP_RESOLVE_TYPE_NAMES
+      ),
       dependencyChanger: deploymentUtils.dependency.removeStandaloneFieldDependency,
       getChangeGroupIds,
     }

@@ -16,7 +16,7 @@
 import { DynamoDB } from 'aws-sdk'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { functions, retry as retryUtil } from '@salto-io/lowerdash'
-import uuidv4 from 'uuid/v4'
+import { v4 as uuidv4 } from 'uuid'
 import {
   InstanceId, Pool, Repo, LeaseWithStatus, Lease,
   InstanceNotFoundError, InstanceNotLeasedError, InstanceIdAlreadyRegistered, RetryStrategy,

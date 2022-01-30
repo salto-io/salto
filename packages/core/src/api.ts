@@ -44,7 +44,7 @@ import { defaultDependencyChangers } from './core/plan/plan'
 import { createRestoreChanges } from './core/restore'
 import { getAdapterChangeGroupIdFunctions } from './core/adapters/custom_group_key'
 import { createDiffChanges } from './core/diff'
-import { getChangeValidators, getAdaptersConfig } from './core/plan/change_validators'
+import getChangeValidators from './core/plan/change_validators'
 import { renameChecks, renameElement, updateStateElements } from './core/rename'
 
 export { cleanWorkspace } from './core/clean'
@@ -108,7 +108,6 @@ export const preview = async (
     dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers(adapters)),
     customGroupIdFunctions: getAdapterChangeGroupIdFunctions(adapters),
     topLevelFilters: [shouldElementBeIncluded(accounts)],
-    adapterGetConfig: await getAdaptersConfig(adapters, workspace.accountConfig.bind(workspace)),
   })
 }
 

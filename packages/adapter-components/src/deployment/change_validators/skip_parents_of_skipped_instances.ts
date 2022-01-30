@@ -21,9 +21,9 @@ import { createChangeValidator, getParents } from '@salto-io/adapter-utils'
 export const createSkipParentsOfSkippedInstancesValidator = (
   changeValidators: ReadonlyArray<ChangeValidator>,
   disabledValidators?: ReadonlyArray<ChangeValidator>,
-): ChangeValidator => async (changes, adapterConfig) => {
+): ChangeValidator => async changes => {
   const changeValidator = createChangeValidator(changeValidators, disabledValidators)
-  const changeErrors = await changeValidator(changes, adapterConfig)
+  const changeErrors = await changeValidator(changes)
   const idToChange = Object.fromEntries(
     changes.map(change => [getChangeData(change).elemID.getFullName(), change])
   )
@@ -47,8 +47,8 @@ export const createSkipParentsOfSkippedInstancesValidator = (
     .map(ref => ({
       elemID: ref.elemID,
       severity: 'Error',
-      message: `${ref.elemID.getFullName()} depeneds on a skipped instance`,
-      detailedMessage: `${ref.elemID.getFullName()} depeneds on a skipped instance and therefore is also skipped`,
+      message: `${ref.elemID.getFullName()} depends on a skipped instance`,
+      detailedMessage: `${ref.elemID.getFullName()} depends on a skipped instance and therefore is also skipped`,
     }) as ChangeError)
     .value()
   return [...changeErrors, ...newChangeErrors]

@@ -22,7 +22,6 @@ import { CustomObject as tCustomObject } from './src/client/types'
 
 export { default } from './src/adapter'
 export { adapter } from './src/adapter_creator'
-export { default as changeValidator } from './src/change_validator'
 export { default as SalesforceClient } from './src/client/client'
 export { UsernamePasswordCredentials, OauthAccessTokenCredentials } from './src/types'
 export { getAllInstances } from './src/filters/custom_objects_instances'

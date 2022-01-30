@@ -27,35 +27,43 @@ jest.mock('@salto-io/adapter-utils', () => {
 })
 
 describe('createSalesforceChangeValidator', () => {
-  afterEach(() => {
-    (createChangeValidator as jest.MockedFunction<typeof createChangeValidator>).mockClear()
+  let createChangeValidatorMock: jest.MockedFunction<typeof createChangeValidator>
+  beforeEach(() => {
+    createChangeValidatorMock = createChangeValidator as typeof createChangeValidatorMock
+    createChangeValidatorMock.mockClear()
   })
 
   describe('with no validator config', () => {
     let validator: ChangeValidator
     beforeEach(() => {
-      validator = createSalesforceChangeValidator()
+      validator = createSalesforceChangeValidator({})
     })
     it('should create a validator', () => {
       expect(validator).toBeDefined()
     })
     it('should create a validator will all internal validators enabled', () => {
-      expect(createChangeValidator).toHaveBeenCalledWith(Object.values(changeValidators), [])
+      expect(createChangeValidator).toHaveBeenCalledTimes(1)
+      expect(
+        createChangeValidatorMock.mock.calls[0][0]
+      ).toHaveLength(Object.values(changeValidators).length)
     })
   })
 
   describe('with a disabled validator config', () => {
     let validator: ChangeValidator
     beforeEach(() => {
-      validator = createSalesforceChangeValidator({ customFieldType: false })
+      validator = createSalesforceChangeValidator({ validators: { customFieldType: false } })
     })
     it('should create a validator', () => {
       expect(validator).toBeDefined()
     })
     it('should put the disabled validator in the disabled list', () => {
-      const enabledValidators = Object.values(_.omit(changeValidators, 'customFieldType'))
-      const disabledValidators = [changeValidators.customFieldType]
-      expect(createChangeValidator).toHaveBeenCalledWith(enabledValidators, disabledValidators)
+      const enabledValidatorsCount = Object.values(_.omit(changeValidators, 'customFieldType')).length
+      const disabledValidators = [changeValidators.customFieldType({})]
+      expect(createChangeValidator).toHaveBeenCalledWith(
+        expect.arrayContaining([]), disabledValidators
+      )
+      expect(createChangeValidatorMock.mock.calls[0][0]).toHaveLength(enabledValidatorsCount)
     })
   })
 })

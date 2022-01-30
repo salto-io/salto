@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, BuiltinTypes, FieldDefinition, ElemID, ListType } from '@salto-io/adapter-api'
+import { ObjectType, BuiltinTypes, FieldDefinition } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { AdapterApiConfig, createAdapterApiConfigType, UserFetchConfig, TypeConfig, TypeDefaultsConfig } from './shared'
 import { TransformationConfig, TransformationDefaultConfig, createTransformationConfigTypes, validateTransoformationConfig } from './transformation'
@@ -104,17 +104,3 @@ export const validateFetchConfig = (
     throw Error(`Invalid type names in ${fetchConfigPath}: ${invalidIncludeTypes}`)
   }
 }
-
-export const createUserFetchConfigType = (
-  adapter: string,
-  additionalFields?: Record<string, FieldDefinition>,
-): ObjectType => (
-  new ObjectType({
-    elemID: new ElemID(adapter, 'userFetchConfig'),
-    fields: {
-      includeTypes: { refType: new ListType(BuiltinTypes.STRING) },
-      hideTypes: { refType: new ListType(BuiltinTypes.BOOLEAN) },
-      ...additionalFields,
-    },
-  })
-)

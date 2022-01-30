@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  ElemID, ObjectType, BuiltinTypes, FieldDefinition, MapType,
+  ElemID, ObjectType, BuiltinTypes, FieldDefinition, ListType, MapType,
 } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import type { TransformationConfig, TransformationDefaultConfig } from './transformation'
@@ -102,6 +102,19 @@ export const createAdapterApiConfigType = ({
   })
   return adapterApiConfigType
 }
+
+export const createUserFetchConfigType = (
+  adapter: string,
+  additionalFields?: Record<string, FieldDefinition>,
+): ObjectType => (
+  new ObjectType({
+    elemID: new ElemID(adapter, 'userFetchConfig'),
+    fields: {
+      includeTypes: { refType: new ListType(BuiltinTypes.STRING) },
+      ...additionalFields,
+    },
+  })
+)
 
 export const getConfigWithDefault = <
   T extends TransformationConfig | FetchRequestConfig | undefined,

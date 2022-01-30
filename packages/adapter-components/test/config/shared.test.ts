@@ -13,9 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getConfigWithDefault } from '../../src/config'
+import { createUserFetchConfigType, getConfigWithDefault } from '../../src/config'
 
 describe('config_shared', () => {
+  describe('createUserFetchConfigType', () => {
+    it('should return default type when no custom fields were added', () => {
+      const type = createUserFetchConfigType('myAdapter')
+      expect(Object.keys(type.fields)).toHaveLength(1)
+      expect(type.fields.includeTypes).toBeDefined()
+    })
+  })
   describe('getConfigWithDefault', () => {
     it('should return the config with defaults for adapter api when type-specific config is provided', () => {
       expect(getConfigWithDefault(

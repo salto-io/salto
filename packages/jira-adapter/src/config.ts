@@ -19,10 +19,7 @@ import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, ObjectType } f
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA } from './constants'
 
-const {
-  createSwaggerUserFetchConfigType: createUserFetchConfigType,
-  createSwaggerAdapterApiConfigType,
-} = configUtils
+const { createUserFetchConfigType, createSwaggerAdapterApiConfigType } = configUtils
 
 const DEFAULT_ID_FIELDS = ['name']
 const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [

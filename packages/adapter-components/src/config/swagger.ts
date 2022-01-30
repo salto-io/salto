@@ -203,15 +203,3 @@ export const validateFetchConfig = (
     }
   }
 }
-export const createUserFetchConfigType = (
-  adapter: string,
-  additionalFields?: Record<string, FieldDefinition>,
-): ObjectType => (
-  new ObjectType({
-    elemID: new ElemID(adapter, 'userFetchConfig'),
-    fields: {
-      includeTypes: { refType: new ListType(BuiltinTypes.STRING) },
-      ...additionalFields,
-    },
-  })
-)

@@ -21,10 +21,7 @@ import _ from 'lodash'
 import { STRIPE } from './constants'
 
 const { createClientConfigType } = clientUtils
-const {
-  createSwaggerUserFetchConfigType: createUserFetchConfigType,
-  createSwaggerAdapterApiConfigType,
-} = configUtils
+const { createUserFetchConfigType, createSwaggerAdapterApiConfigType } = configUtils
 
 const DEFAULT_ID_FIELDS = ['id']
 export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [

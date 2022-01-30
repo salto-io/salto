@@ -20,10 +20,7 @@ import { client as clientUtils, config as configUtils } from '@salto-io/adapter-
 import { ZUORA_BILLING, CUSTOM_OBJECT_DEFINITION_TYPE, LIST_ALL_SETTINGS_TYPE, SETTINGS_TYPE_PREFIX, TASK_TYPE, WORKFLOW_DETAILED_TYPE, WORKFLOW_EXPORT_TYPE, PRODUCT_RATE_PLAN_TYPE, ACCOUNTING_CODE_ITEM_TYPE } from './constants'
 
 const { createClientConfigType } = clientUtils
-const {
-  createSwaggerUserFetchConfigType: createUserFetchConfigType,
-  createSwaggerAdapterApiConfigType,
-} = configUtils
+const { createUserFetchConfigType, createSwaggerAdapterApiConfigType } = configUtils
 
 export const CLIENT_CONFIG = 'client'
 export const FETCH_CONFIG = 'fetch'

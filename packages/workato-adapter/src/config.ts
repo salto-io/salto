@@ -20,7 +20,7 @@ import { WORKATO, PROPERTY_TYPE, ROLE_TYPE, API_COLLECTION_TYPE, FOLDER_TYPE, RE
 
 const { createClientConfigType } = clientUtils
 const {
-  createDuckTypeUserFetchConfigType: createUserFetchConfigType,
+  createUserFetchConfigType,
   createDucktypeAdapterApiConfigType,
   validateDuckTypeFetchConfig,
 } = configUtils
@@ -164,6 +164,7 @@ export const configType = new ObjectType({
       refType: createUserFetchConfigType(
         WORKATO,
         {
+          hideTypes: { refType: BuiltinTypes.BOOLEAN },
           serviceConnectionNames: {
             refType: new MapType(new ListType(BuiltinTypes.STRING)),
           },

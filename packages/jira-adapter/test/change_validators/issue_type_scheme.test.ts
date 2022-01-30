@@ -15,15 +15,15 @@
 */
 import { toChange, ObjectType, ElemID, InstanceElement, Change, getChangeData } from '@salto-io/adapter-api'
 import { issueTypeSchemeValidator } from '../../src/change_validators/issue_type_scheme'
-import { JIRA } from '../../src/constants'
+import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA } from '../../src/constants'
 
 describe('issueTypeSchemeValidator', () => {
   let issueTypeSchemeChange: Change
   let issueTypeChange: Change
 
   beforeEach(() => {
-    const issueTypeSchemeType = new ObjectType({ elemID: new ElemID(JIRA, 'IssueTypeScheme') })
-    const issueType = new ObjectType({ elemID: new ElemID(JIRA, 'IssueType') })
+    const issueTypeSchemeType = new ObjectType({ elemID: new ElemID(JIRA, ISSUE_TYPE_SCHEMA_NAME) })
+    const issueType = new ObjectType({ elemID: new ElemID(JIRA, ISSUE_TYPE_NAME) })
 
     issueTypeSchemeChange = toChange({
       before: new InstanceElement(

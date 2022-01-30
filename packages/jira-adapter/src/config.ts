@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, ObjectType } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
-import { JIRA } from './constants'
+import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA } from './constants'
 
 const { createUserFetchConfigType, createSwaggerAdapterApiConfigType } = configUtils
 
@@ -737,7 +737,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'notificationScheme', fieldType: 'NotificationScheme' },
         { fieldName: 'issueTypeScreenScheme', fieldType: 'IssueTypeScreenScheme' },
         { fieldName: 'fieldConfigurationScheme', fieldType: 'FieldConfigurationScheme' },
-        { fieldName: 'issueTypeScheme', fieldType: 'IssueTypeScheme' },
+        { fieldName: 'issueTypeScheme', fieldType: ISSUE_TYPE_SCHEMA_NAME },
       ],
       fieldsToHide: [
         {
@@ -1318,7 +1318,7 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
       },
       {
         originalName: 'IssueTypeDetails',
-        newName: 'IssueType',
+        newName: ISSUE_TYPE_NAME,
       },
       {
         originalName: 'StatusDetails',
@@ -1477,7 +1477,7 @@ export const DEFAULT_INCLUDE_ENDPOINTS: string[] = [
   'FieldsConfigurationScheme',
   'FieldsConfigurationIssueTypeItem',
   'Filters',
-  'IssueType',
+  ISSUE_TYPE_NAME,
   'IssueLinkTypes',
   'SecuritySchemes',
   'IssueTypeSchemes',

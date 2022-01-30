@@ -24,8 +24,8 @@ import { JiraConfig } from '../../config'
 import { defaultDeployChange, deployChanges } from '../../deployment'
 import { FilterCreator } from '../../filter'
 import { getDiffIds } from '../../diff'
+import { ISSUE_TYPE_SCHEMA_NAME } from '../../constants'
 
-const ISSUE_TYPE_SCHEMA_NAME = 'IssueTypeScheme'
 const MAX_CONCURRENT_PROMISES = 20
 
 const log = logger(module)
@@ -53,17 +53,13 @@ const deployNewAndDeletedIssueTypeIds = async (
     }
   }
 
-  if (!instance.value.isDefault) {
-    await promises.array.withLimitedConcurrency(
-      Array.from(removedIds).map(id => () =>
-        client.delete({
-          url: `/rest/api/3/issuetypescheme/${instance.value.id}/issuetype/${id}`,
-        })),
-      MAX_CONCURRENT_PROMISES,
-    )
-  } else if (removedIds.length > 0) {
-    log.info('Removing issue types from default issue type scheme is not supported')
-  }
+  await promises.array.withLimitedConcurrency(
+    Array.from(removedIds).map(id => () =>
+      client.delete({
+        url: `/rest/api/3/issuetypescheme/${instance.value.id}/issuetype/${id}`,
+      })),
+    MAX_CONCURRENT_PROMISES,
+  )
 }
 
 const deployIssueTypeIdsOrder = async (

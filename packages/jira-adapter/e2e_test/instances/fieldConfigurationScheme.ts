@@ -15,7 +15,7 @@
 */
 import { Values, Element, ElemID } from '@salto-io/adapter-api'
 import { createReference } from '../utils'
-import { JIRA } from '../../src/constants'
+import { ISSUE_TYPE_NAME, JIRA } from '../../src/constants'
 
 export const createFieldConfigurationSchemeValues = (
   name: string,
@@ -29,7 +29,7 @@ export const createFieldConfigurationSchemeValues = (
       fieldConfigurationId: createReference(new ElemID(JIRA, 'FieldConfiguration', 'instance', 'Default_Field_Configuration@s'), allElements),
     },
     {
-      issueTypeId: createReference(new ElemID(JIRA, 'IssueType', 'instance', 'Bug'), allElements),
+      issueTypeId: createReference(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'Bug'), allElements),
       fieldConfigurationId: createReference(new ElemID(JIRA, 'FieldConfiguration', 'instance', 'Default_Field_Configuration@s'), allElements),
     },
   ],

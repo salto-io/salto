@@ -16,18 +16,18 @@
 import { Values } from '@salto-io/adapter-api'
 
 export const getDiffIds = (
-  beforeIds: string[],
-  afterIds: string[],
+  beforeIds: string[] | undefined,
+  afterIds: string[] | undefined,
 ): {
   addedIds: string[]
   removedIds: string[]
  } => {
-  const beforeIdsSet = new Set(beforeIds)
-  const afterIdsSet = new Set(afterIds)
+  const beforeIdsSet = new Set(beforeIds ?? [])
+  const afterIdsSet = new Set(afterIds ?? [])
 
   return {
-    addedIds: Array.from(afterIds).filter(id => !beforeIdsSet.has(id)),
-    removedIds: Array.from(beforeIds).filter(id => !afterIdsSet.has(id)),
+    addedIds: Array.from(afterIds ?? []).filter(id => !beforeIdsSet.has(id)),
+    removedIds: Array.from(beforeIds ?? []).filter(id => !afterIdsSet.has(id)),
   }
 }
 

@@ -14,3 +14,5 @@
 * limitations under the License.
 */
 export const JIRA = 'jira'
+export const ISSUE_TYPE_SCHEMA_NAME = 'IssueTypeScheme'
+export const ISSUE_TYPE_NAME = 'IssueType'

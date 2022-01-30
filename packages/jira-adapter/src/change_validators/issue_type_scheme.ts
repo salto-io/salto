@@ -15,35 +15,43 @@
 */
 import { ChangeValidator, getChangeData, isInstanceChange, isModificationChange, isRemovalChange, SaltoErrorSeverity } from '@salto-io/adapter-api'
 import { resolveChangeElement } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { getLookUpName } from '../reference_mapping'
 import { getDiffIds } from '../diff'
+import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME } from '../constants'
 
+const log = logger(module)
 
 export const issueTypeSchemeValidator: ChangeValidator = async changes => {
   const instanceChanges = changes
     .filter(isInstanceChange)
 
-  const defaultIssueTypeSchemeChange = instanceChanges
+  const defaultIssueTypeSchemeChanges = instanceChanges
     .filter(isModificationChange)
-    .filter(change => getChangeData(change).elemID.typeName === 'IssueTypeScheme')
-    .find(change => getChangeData(change).value.isDefault)
+    .filter(change => getChangeData(change).elemID.typeName === ISSUE_TYPE_SCHEMA_NAME)
+    .filter(change => getChangeData(change).value.isDefault)
 
-  if (defaultIssueTypeSchemeChange === undefined) {
+  if (defaultIssueTypeSchemeChanges.length !== 1) {
+    log.warn(`Expected exactly one default issue type scheme change, found ${defaultIssueTypeSchemeChanges.length}`)
     return []
   }
+
+  const [defaultIssueTypeSchemeChange] = defaultIssueTypeSchemeChanges
 
   const resolvedDefaultSchemeChange = await resolveChangeElement(
     defaultIssueTypeSchemeChange,
     getLookUpName,
   )
   const { removedIds: removedIdsFromDefaultScheme } = getDiffIds(
-    resolvedDefaultSchemeChange.data.before.value.issueTypeIds ?? [],
-    resolvedDefaultSchemeChange.data.after.value.issueTypeIds ?? []
+    resolvedDefaultSchemeChange.data.before.value.issueTypeIds,
+    resolvedDefaultSchemeChange.data.after.value.issueTypeIds,
   )
 
   const deletedIds = instanceChanges
     .filter(isRemovalChange)
-    .filter(change => getChangeData(change).elemID.typeName === 'IssueType')
+    .filter(change => getChangeData(change).elemID.typeName === ISSUE_TYPE_NAME)
+    // issue types will always have ids on removal, because we receive them on
+    // fetch and the user can't delete them because they are hidden
     .map(change => getChangeData(change).value.id)
 
   const deletedIdsSet = new Set(deletedIds)

@@ -15,7 +15,7 @@
 */
 import { ElemID, Values, Element, ReferenceExpression } from '@salto-io/adapter-api'
 import { createReference } from '../utils'
-import { JIRA } from '../../src/constants'
+import { ISSUE_TYPE_NAME, JIRA } from '../../src/constants'
 
 const p1Option = {
   value: 'p1',
@@ -81,7 +81,7 @@ export const createContextValues = (name: string, allElements: Element[]): Value
     ),
   },
   issueTypeIds: [
-    createReference(new ElemID(JIRA, 'IssueType', 'instance', 'Epic'), allElements),
-    createReference(new ElemID(JIRA, 'IssueType', 'instance', 'Story'), allElements),
+    createReference(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'Epic'), allElements),
+    createReference(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'Story'), allElements),
   ],
 })

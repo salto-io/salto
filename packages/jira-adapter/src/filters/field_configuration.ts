@@ -33,7 +33,7 @@ const deployFieldConfigurationItems = async (
   config: JiraConfig
 ): Promise<void> => {
   const instance = getChangeData(change)
-  const fields = (instance.value.fields ?? [])
+  const fields = (Object.values(instance.value.fields ?? []) as Values[])
     .filter((fieldConf: Values) => isReferenceExpression(fieldConf.id))
     .filter((fieldConf: Values) => !fieldConf.id.value.value.isLocked)
     .map((fieldConf: Values) => ({ ...fieldConf, id: fieldConf.id.value.value.id }))

@@ -22,18 +22,19 @@ const getFieldId = (field: Values): string => (
 )
 
 const getDiffFields = (change: ModificationChange<InstanceElement>): Values[] => {
-  const beforeIdToField = _.keyBy(
-    change.data.before.value.fields,
-    getFieldId,
-  )
+  const beforeIdToField = _(change.data.before.value.fields)
+    .values()
+    .keyBy(getFieldId)
+    .value()
 
-  return change.data.after.value.fields.filter(
-    (field: Values) => !_.isEqualWith(
-      field,
-      beforeIdToField[getFieldId(field)],
-      compareSpecialValues
+  return (Object.values(change.data.after.value.fields ?? []) as Values[])
+    .filter(
+      (field: Values) => !_.isEqualWith(
+        field,
+        beforeIdToField[getFieldId(field)],
+        compareSpecialValues
+      )
     )
-  )
 }
 
 export const unsupportedFieldConfigurationsValidator: ChangeValidator = async changes => (
@@ -43,7 +44,7 @@ export const unsupportedFieldConfigurationsValidator: ChangeValidator = async ch
     .filter(change => getChangeData(change).elemID.typeName === 'FieldConfiguration')
     .map(change => {
       const fields = isAdditionChange(change)
-        ? change.data.after.value.fields
+        ? Object.values(change.data.after.value.fields ?? []) as Values[]
         : getDiffFields(change)
 
       const unsupportedIds = fields

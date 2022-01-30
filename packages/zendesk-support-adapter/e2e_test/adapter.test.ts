@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import uuidv4 from 'uuid/v4'
+import { v4 as uuidv4 } from 'uuid'
 import { Change, ChangeId, Element, ElemID, InstanceElement, isInstanceElement, ObjectType,
   isObjectType, toChange, Values, ReferenceExpression, CORE_ANNOTATIONS,
   FieldDefinition, BuiltinTypes, Value } from '@salto-io/adapter-api'

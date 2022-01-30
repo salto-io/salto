@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import path from 'path'
-import uuidv4 from 'uuid/v4'
+import { v4 as uuidv4 } from 'uuid'
 import { DetailedChange, ObjectType } from '@salto-io/adapter-api'
 import { exists, isEmptyDir, rm } from '@salto-io/file'
 import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl, remoteMap,

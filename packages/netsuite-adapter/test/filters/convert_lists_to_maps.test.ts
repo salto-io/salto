@@ -15,15 +15,16 @@
 */
 import { InstanceElement } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/convert_lists_to_maps'
-import { workflowType } from '../../src/autogen/types/custom_types/workflow'
+import { getCustomTypes } from '../../src/autogen/types'
+import { getInnerCustomTypes, getTopLevelCustomTypes } from '../../src/types'
 
 describe('convert lists to maps filter', () => {
   const instanceName = 'instanceName'
-  const workflow = workflowType()
+  const customTypes = getCustomTypes()
   let instance: InstanceElement
   beforeAll(async () => {
     instance = new InstanceElement(instanceName,
-      workflow.type,
+      customTypes.workflow.type,
       {
         scriptid: 'customworkflow_changed_id',
         workflowcustomfields: {
@@ -49,7 +50,11 @@ describe('convert lists to maps filter', () => {
           ],
         },
       })
-    await filterCreator().onFetch([workflow.type, ...Object.values(workflow.innerTypes), instance])
+    await filterCreator().onFetch([
+      ...getTopLevelCustomTypes(customTypes),
+      ...getInnerCustomTypes(customTypes),
+      instance,
+    ])
   })
 
   it('should modify instance values', () => {
@@ -82,5 +87,13 @@ describe('convert lists to maps filter', () => {
         },
       },
     })
+  })
+
+  it('should throw when missing some types with field mapping', async () => {
+    await expect(filterCreator().onFetch([
+      customTypes.workflow.type,
+      ...Object.values(customTypes.workflow.innerTypes),
+      instance,
+    ])).rejects.toThrow('missing some types with field mapping')
   })
 })

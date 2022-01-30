@@ -35,6 +35,22 @@ export type MappedList = {
   value: Values
 }
 
+export const validateTypesFieldMapping = (elements: ObjectType[]): boolean => {
+  const typesMap = _.keyBy(elements, element => element.elemID.name)
+  return Object.entries(listMappedByFieldMapping).every(([typeName, fieldName]) => {
+    const type = typesMap[typeName]
+    if (type === undefined) {
+      log.error(`type '${typeName}' should have mapping field but '${typeName}' is not in elements`)
+      return false
+    }
+    if (type.fields[fieldName] === undefined) {
+      log.error(`type '${typeName}' should have mapping field '${fieldName}' but '${typeName}' has no '${fieldName}' field`)
+      return false
+    }
+    return true
+  })
+}
+
 export const convertFieldsTypesFromListToMap = async (
   element: ObjectType,
 ): Promise<void> => {
@@ -93,15 +109,16 @@ const getItemKey = (mapFieldValue: string, path?: ElemID): string => {
 
 const addSuffixUntilUnique = (
   keyName: string,
-  suffix: string,
   keySet: Set<string>,
-  path?: ElemID
+  path?: ElemID,
+  suffixIndex = 0,
 ): string => {
-  if (keySet.has(keyName)) {
-    log.debug(`adding suffix to key: '${keyName}' -> '${keyName}${suffix}' (${path?.getFullName()})`)
-    return addSuffixUntilUnique(`${keyName}${suffix}`, suffix, keySet, path)
+  const keyNameWithSuffix = `${keyName}_${suffixIndex}`
+  if (keySet.has(keyNameWithSuffix)) {
+    return addSuffixUntilUnique(keyName, keySet, path, suffixIndex + 1)
   }
-  return keyName
+  log.debug(`adding suffix to key: '${keyName}' -> '${keyNameWithSuffix}' (${path?.getFullName()})`)
+  return keyNameWithSuffix
 }
 
 const transformMappedLists: TransformFunc = async ({ value, field, path }) => {
@@ -119,14 +136,14 @@ const transformMappedLists: TransformFunc = async ({ value, field, path }) => {
   return _(value)
     .map((item, index) => ({ ...item, [INDEX]: index }))
     .keyBy(item => {
-      const mapFieldValue = addSuffixUntilUnique(
-        getItemKey(_.toString(item[mapFieldName]), path),
-        `_index${item[INDEX]}`,
-        keySet,
-        path,
-      )
-      keySet.add(mapFieldValue)
-      return mapFieldValue
+      const mapFieldValue = getItemKey(_.toString(item[mapFieldName]), path)
+      if (!keySet.has(mapFieldValue)) {
+        keySet.add(mapFieldValue)
+        return mapFieldValue
+      }
+      const mapFieldValueWithSuffix = addSuffixUntilUnique(mapFieldValue, keySet, path)
+      keySet.add(mapFieldValueWithSuffix)
+      return mapFieldValueWithSuffix
     })
     .value()
 }

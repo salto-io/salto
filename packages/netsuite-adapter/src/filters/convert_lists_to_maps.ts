@@ -17,7 +17,7 @@ import {
   isInstanceElement, isObjectType,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { convertFieldsTypesFromListToMap, convertInstanceListsToMaps } from '../mapped_lists/utils'
+import { convertFieldsTypesFromListToMap, convertInstanceListsToMaps, validateTypesFieldMapping } from '../mapped_lists/utils'
 import { FilterWith } from '../filter'
 import { isCustomType, getInnerCustomTypes } from '../types'
 import { getCustomTypes } from '../autogen/types'
@@ -44,11 +44,16 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
         .map(element => element.elemID.name)
     )
 
-    await awu(elements)
-      .filter(isObjectType)
-      .filter(
-        type => isCustomType(type) || innerCustomTypesNames.has(type.elemID.name)
-      ).forEach(convertFieldsTypesFromListToMap)
+    const customTypes = elements.filter(isObjectType).filter(
+      type => isCustomType(type) || innerCustomTypesNames.has(type.elemID.name)
+    )
+
+    if (!validateTypesFieldMapping(customTypes)) {
+      throw new Error('missing some types with field mapping')
+    }
+
+    await awu(customTypes)
+      .forEach(convertFieldsTypesFromListToMap)
 
     await awu(elements)
       .filter(isInstanceElement)

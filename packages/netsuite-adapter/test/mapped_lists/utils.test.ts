@@ -15,14 +15,16 @@
 */
 import { collections } from '@salto-io/lowerdash'
 import { BuiltinTypes, createRefToElmWithValue, ElemID, Field, FieldMap, InstanceElement, isListType, isMapType, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
-import { convertFieldsTypesFromListToMap, convertInstanceMapsToLists, convertInstanceListsToMaps, getMappedLists, isMappedList } from '../../src/mapped_lists/utils'
-import { workflowType } from '../../src/autogen/types/custom_types/workflow'
+import { convertFieldsTypesFromListToMap, convertInstanceMapsToLists, convertInstanceListsToMaps, getMappedLists, isMappedList, validateTypesFieldMapping } from '../../src/mapped_lists/utils'
+import { getCustomTypes } from '../../src/autogen/types'
 import { LIST_MAPPED_BY_FIELD, NETSUITE, SCRIPT_ID } from '../../src/constants'
+import { getInnerCustomTypes, getTopLevelCustomTypes } from '../../src/types'
 
 const { awu } = collections.asynciterable
 
 describe('mapped lists', () => {
-  const workflow = workflowType()
+  const customTypes = getCustomTypes()
+  const { workflow } = customTypes
 
   let instance: InstanceElement
   let transformedInstance: InstanceElement
@@ -46,6 +48,9 @@ describe('mapped lists', () => {
             },
             {
               scriptid: '[scriptid=custworkflow2]',
+            },
+            {
+              scriptid: '[type=workflow, scriptid=custworkflow2]',
             },
           ],
         },
@@ -91,6 +96,31 @@ describe('mapped lists', () => {
     await awu(Object.values(workflow.innerTypes)).forEach(t => convertFieldsTypesFromListToMap(t))
   })
 
+  describe('validateTypesFieldMapping', () => {
+    const customTypesAndInnerTypes = [
+      ...getTopLevelCustomTypes(customTypes),
+      ...getInnerCustomTypes(customTypes),
+    ]
+    it('should return true when all types and fields in listMappedByFieldMapping exists', () => {
+      expect(validateTypesFieldMapping(customTypesAndInnerTypes)).toBeTruthy()
+    })
+    it('should return false when missing some types with field mapping', () => {
+      const missingTypes = customTypesAndInnerTypes
+        .filter(element => element.elemID.name !== 'addressForm_mainFields_defaultFieldGroup_fields')
+      expect(validateTypesFieldMapping(missingTypes)).toBeFalsy()
+
+      const typeWithMissingField = new ObjectType({
+        elemID: new ElemID(NETSUITE, 'addressForm_mainFields_defaultFieldGroup_fields'),
+        fields: {
+          positions: {
+            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          },
+        },
+      })
+      expect(validateTypesFieldMapping([...missingTypes, typeWithMissingField])).toBeFalsy()
+    })
+  })
+
   it('should modify ObjectTypes fields', async () => {
     const workflowcustomfields = workflow.innerTypes.workflow_workflowcustomfields
     expect(workflowcustomfields).toBeDefined()
@@ -131,9 +161,13 @@ describe('mapped lists', () => {
             scriptid: 's0m@ $CR1pt!*()',
             index: 2,
           },
-          custworkflow2_index3: {
+          custworkflow2_0: {
             scriptid: '[scriptid=custworkflow2]',
             index: 3,
+          },
+          custworkflow2_1: {
+            scriptid: '[type=workflow, scriptid=custworkflow2]',
+            index: 4,
           },
         },
       },
@@ -291,9 +325,13 @@ describe('mapped lists', () => {
             scriptid: 's0m@ $CR1pt!*()',
             index: 2,
           },
-          custworkflow2_index3: {
+          custworkflow2_0: {
             scriptid: '[scriptid=custworkflow2]',
             index: 3,
+          },
+          custworkflow2_1: {
+            scriptid: '[type=workflow, scriptid=custworkflow2]',
+            index: 4,
           },
         } },
       { path: new ElemID('netsuite', 'workflow', 'instance', 'instanceName', 'workflowstates', 'workflowstate'),

@@ -49,7 +49,7 @@ const printPlan = async (
     actions.changeErrors.map(ce => () => workspace.transformToWorkspaceError(ce)),
     20,
   )
-  // TODO work in this place
+  // TODO continue here
   outputLine(header(Prompts.PLAN_STEPS_HEADER_DEPLOY), output)
   outputLine(await formatExecutionPlan(actions, planWorkspaceErrors, detailedPlan), output)
 }

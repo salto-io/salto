@@ -265,6 +265,25 @@ export const formatChangeErrors = (
   return ret
 }
 
+export const formatPreDeployActions = (
+  wsChangeErrors: ReadonlyArray<ChangeWorkspaceError>
+): string[] => {
+  if (!wsChangeErrors.find(wsError => wsError.deployActions?.preAction)) {
+    return [emptyLine()]
+  }
+  return [emptyLine(),
+    header(Prompts.DEPLOY_PRE_ACTION_HEADER),
+    emptyLine(),
+    ...wsChangeErrors.flatMap(wsError => {
+      if (wsError.deployActions?.preAction) {
+        return [subHeader(wsError.deployActions.preAction.label),
+          ...wsError.deployActions.preAction.subtext,
+          emptyLine()]
+      }
+      return []
+    })]
+}
+
 export const formatExecutionPlan = async (
   plan: Plan,
   workspaceErrors: ReadonlyArray<ChangeWorkspaceError>,
@@ -273,6 +292,7 @@ export const formatExecutionPlan = async (
   const formattedPlanChangeErrors: string = formatChangeErrors(
     workspaceErrors
   )
+  const preDeployActionOutput: string[] = formatPreDeployActions(workspaceErrors)
   const planErrorsOutput: string[] = _.isEmpty(formattedPlanChangeErrors)
     ? [emptyLine()]
     : [emptyLine(),
@@ -295,6 +315,8 @@ export const formatExecutionPlan = async (
     emptyLine(),
     planSteps,
     ...planErrorsOutput,
+    emptyLine(),
+    ...preDeployActionOutput,
     emptyLine(),
     subHeader(Prompts.EXPLAIN_PREVIEW_RESULT),
     actionCount,

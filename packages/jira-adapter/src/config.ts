@@ -1310,7 +1310,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
 export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
   platformSwagger: {
-    url: 'https://raw.githubusercontent.com/salto-io/jira-swaggers/main/platform-swagger.v3.json',
+    url: 'https://raw.githubusercontent.com/salto-io/jira-swaggers/next-main/platform-swagger.v3.json',
     typeNameOverrides: [
       {
         originalName: 'FilterDetails',
@@ -1439,10 +1439,10 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
     ],
   },
   jiraSwagger: {
-    url: 'https://raw.githubusercontent.com/salto-io/jira-swaggers/main/software-swagger.v3.json',
+    url: 'https://raw.githubusercontent.com/salto-io/jira-swaggers/next-main/software-swagger.v3.json',
     typeNameOverrides: [
       {
-        originalName: 'rest__agile__1_0__board@uuuuvuu',
+        originalName: 'agile__1_0__board@uuvuu',
         newName: 'Boards',
       },
       {
@@ -1450,7 +1450,7 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
         newName: 'Board',
       },
       {
-        originalName: 'rest__agile__1_0__board___boardId___configuration@uuuuvuuuu_00123_00125uu',
+        originalName: 'agile__1_0__board___boardId___configuration@uuvuuuu_00123_00125uu',
         newName: 'BoardConfiguration',
       },
     ],

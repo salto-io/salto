@@ -54,6 +54,11 @@ export const issueTypeSchemeValidator: ChangeValidator = async changes => {
     // fetch and the user can't delete them because they are hidden
     .map(change => getChangeData(change).value.id)
 
+  // We should also check in the element source if the issue was deleted
+  // in case the changes of the issueType deletion and the issueTypeScheme
+  // were deployed in two separate deployments (doesn't supposed to happen,
+  // unless there was some unexpected error in the original deployment that
+  // contains both of them). See SALTO-1981
   const deletedIdsSet = new Set(deletedIds)
 
   if (removedIdsFromDefaultScheme.every(id => deletedIdsSet.has(id))) {

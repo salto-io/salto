@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ObjectType, BuiltinTypes, MapType } from '@salto-io/adapter-api'
-import { createDucktypeAdapterApiConfigType, createUserFetchConfigType, validateDuckTypeFetchConfig, validateDuckTypeApiDefinitionConfig } from '../../src/config'
+import { createDucktypeAdapterApiConfigType, validateDuckTypeFetchConfig, validateDuckTypeApiDefinitionConfig } from '../../src/config'
 
 describe('config_ducktype', () => {
   describe('createAdapterApiConfigType', () => {
@@ -78,14 +78,6 @@ describe('config_ducktype', () => {
       expect(requestDefaults.fields.a).toBeDefined()
       expect(transformationDefaults.fields.b).toBeDefined()
       expect(transformationDefaults.fields.a).toBeUndefined()
-    })
-  })
-
-  describe('createUserFetchConfigType', () => {
-    it('should return default type when no custom fields were added', () => {
-      const type = createUserFetchConfigType('myAdapter')
-      expect(Object.keys(type.fields)).toHaveLength(1)
-      expect(type.fields.includeTypes).toBeDefined()
     })
   })
 

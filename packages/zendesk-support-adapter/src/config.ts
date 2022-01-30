@@ -14,14 +14,16 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ElemID, CORE_ANNOTATIONS, BuiltinTypes } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { ZENDESK_SUPPORT } from './constants'
 
 const { createClientConfigType } = clientUtils
 const {
-  createUserFetchConfigType, createDucktypeAdapterApiConfigType, validateDuckTypeFetchConfig,
+  createUserFetchConfigType,
+  createDucktypeAdapterApiConfigType,
+  validateDuckTypeFetchConfig,
 } = configUtils
 
 export const DEFAULT_ID_FIELDS = ['name']
@@ -45,7 +47,7 @@ export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
 export type ZendeskClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
 
-export type ZendeskFetchConfig = configUtils.UserFetchConfig
+export type ZendeskFetchConfig = configUtils.DuckTypeUserFetchConfig
 export type ZendeskApiConfig = configUtils.AdapterDuckTypeApiConfig
 
 export type ZendeskConfig = {
@@ -1451,7 +1453,10 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       refType: createClientConfigType(ZENDESK_SUPPORT),
     },
     [FETCH_CONFIG]: {
-      refType: createUserFetchConfigType(ZENDESK_SUPPORT),
+      refType: createUserFetchConfigType(
+        ZENDESK_SUPPORT,
+        { hideTypes: { refType: BuiltinTypes.BOOLEAN } },
+      ),
     },
     [API_DEFINITIONS_CONFIG]: {
       refType: createDucktypeAdapterApiConfigType({ adapter: ZENDESK_SUPPORT }),

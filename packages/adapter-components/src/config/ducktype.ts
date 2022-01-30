@@ -38,6 +38,8 @@ export type AdapterDuckTypeApiConfig = AdapterApiConfig<
   DuckTypeTransformationConfig, DuckTypeTransformationDefaultConfig
 >
 
+export type DuckTypeUserFetchConfig = UserFetchConfig & { hideTypes?: boolean }
+
 export const createDucktypeAdapterApiConfigType = ({
   adapter,
   additionalFields,
@@ -91,7 +93,7 @@ export const validateApiDefinitionConfig = (
  */
 export const validateFetchConfig = (
   fetchConfigPath: string,
-  userFetchConfig: UserFetchConfig,
+  userFetchConfig: DuckTypeUserFetchConfig,
   adapterApiConfig: AdapterApiConfig,
 ): void => {
   const typeNames = new Set(Object.keys(adapterApiConfig.types))

@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import { ObjectType, BuiltinTypes, MapType } from '@salto-io/adapter-api'
-import { createSwaggerAdapterApiConfigType, validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } from '../../src/config'
+import { createSwaggerAdapterApiConfigType, validateSwaggerApiDefinitionConfig,
+  validateSwaggerFetchConfig } from '../../src/config'
 
 describe('config_swagger', () => {
   describe('createSwaggerAdapterApiConfigType', () => {

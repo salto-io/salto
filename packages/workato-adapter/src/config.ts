@@ -20,7 +20,9 @@ import { WORKATO, PROPERTY_TYPE, ROLE_TYPE, API_COLLECTION_TYPE, FOLDER_TYPE, RE
 
 const { createClientConfigType } = clientUtils
 const {
-  createUserFetchConfigType, createDucktypeAdapterApiConfigType, validateDuckTypeFetchConfig,
+  createUserFetchConfigType,
+  createDucktypeAdapterApiConfigType,
+  validateDuckTypeFetchConfig,
 } = configUtils
 
 export const DEFAULT_ID_FIELDS = ['name']
@@ -38,7 +40,7 @@ export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
 export type WorkatoClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
 
-export type WorkatoFetchConfig = configUtils.UserFetchConfig & {
+export type WorkatoFetchConfig = configUtils.DuckTypeUserFetchConfig & {
   serviceConnectionNames?: Record<string, string[]>
 }
 export type WorkatoApiConfig = configUtils.AdapterDuckTypeApiConfig
@@ -162,6 +164,7 @@ export const configType = new ObjectType({
       refType: createUserFetchConfigType(
         WORKATO,
         {
+          hideTypes: { refType: BuiltinTypes.BOOLEAN },
           serviceConnectionNames: {
             refType: new MapType(new ListType(BuiltinTypes.STRING)),
           },

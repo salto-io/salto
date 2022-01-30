@@ -88,6 +88,7 @@ export default class WorkatoAdapter implements AdapterOperations {
       nestedFieldFinder: returnFullEntry,
       computeGetArgs: simpleGetArgs,
       typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
+      hideTypes: this.userConfig.fetch.hideTypes ?? false,
     })
   }
 

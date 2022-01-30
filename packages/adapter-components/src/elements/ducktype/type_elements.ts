@@ -17,6 +17,7 @@ import _ from 'lodash'
 import {
   ObjectType, ElemID, BuiltinTypes, Values, MapType, PrimitiveType, ListType, isObjectType,
   FieldDefinition,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { pathNaclCase, naclCase } from '@salto-io/adapter-utils'
 import { DuckTypeTransformationConfig, DuckTypeTransformationDefaultConfig, getConfigWithDefault } from '../../config'
@@ -48,6 +49,7 @@ const generateNestedType = ({
   transformationDefaultConfig,
   hasDynamicFields,
   typeNameOverrideConfig,
+  hideTypes,
 }: {
   adapterName: string
   typeName: string
@@ -57,6 +59,7 @@ const generateNestedType = ({
   transformationDefaultConfig: DuckTypeTransformationDefaultConfig
   typeNameOverrideConfig: Record<string, string>
   hasDynamicFields: boolean
+  hideTypes?: boolean
 }): NestedTypeWithNestedTypes => {
   const validEntries = entries.filter(entry => entry !== undefined && entry !== null)
   const name = toNestedTypeName(parentName, typeName)
@@ -72,6 +75,7 @@ const generateNestedType = ({
         transformationConfigByType,
         transformationDefaultConfig,
         typeNameOverrideConfig,
+        hideTypes,
       })
       return {
         type: new ListType(nestedType.type),
@@ -92,6 +96,7 @@ const generateNestedType = ({
         transformationDefaultConfig,
         isSubType: true,
         typeNameOverrideConfig,
+        hideTypes,
       })
     }
 
@@ -156,6 +161,7 @@ export const generateType = ({
   transformationConfigByType,
   transformationDefaultConfig,
   typeNameOverrideConfig,
+  hideTypes,
   isSubType = false,
 }: {
   adapterName: string
@@ -165,6 +171,7 @@ export const generateType = ({
   transformationConfigByType: Record<string, DuckTypeTransformationConfig>
   transformationDefaultConfig: DuckTypeTransformationDefaultConfig
   typeNameOverrideConfig?: Record<string, string>
+  hideTypes?: boolean
   isSubType?: boolean
 }): ObjectTypeWithNestedTypes => {
   const typeRenameConfig = typeNameOverrideConfig ?? generateTypeRenameConfig(
@@ -201,6 +208,7 @@ export const generateType = ({
           transformationDefaultConfig,
           hasDynamicFields: false,
           typeNameOverrideConfig: typeRenameConfig,
+          hideTypes,
         }))),
       },
     }
@@ -218,6 +226,7 @@ export const generateType = ({
               transformationDefaultConfig,
               hasDynamicFields: false,
               typeNameOverrideConfig: typeRenameConfig,
+              hideTypes,
             })),
           },
         ])
@@ -242,6 +251,7 @@ export const generateType = ({
     fields,
     path,
     isSettings: transformationConfigByType[naclName]?.isSingleton ?? false,
+    annotations: hideTypes ? ({ [CORE_ANNOTATIONS.HIDDEN]: true }) : undefined,
   })
 
   return { type, nestedTypes }

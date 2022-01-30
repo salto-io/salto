@@ -636,6 +636,11 @@ export const fieldNameToTypeMappingDefs: ZendeskSupportFieldReferenceDefinition[
   ...commonFieldNameToTypeMappingDefs,
 ]
 
+export const lookupFunc = referenceUtils.generateLookupFunc(
+  fieldNameToTypeMappingDefs,
+  defs => new ZendeskSupportFieldReferenceResolver(defs)
+)
+
 /**
  * Convert field values into references, based on predefined rules.
  */

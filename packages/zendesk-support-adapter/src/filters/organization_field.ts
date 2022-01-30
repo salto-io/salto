@@ -19,12 +19,11 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { getParents, resolveChangeElement } from '@salto-io/adapter-utils'
-import { references as referencesUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges } from '../deployment'
 import { API_DEFINITIONS_CONFIG } from '../config'
-import { fieldNameToTypeMappingDefs, ZendeskSupportFieldReferenceResolver } from './field_references'
+import { lookupFunc } from './field_references'
 
 export const CUSTOM_FIELD_OPTIONS_FIELD_NAME = 'custom_field_options'
 export const ORG_FIELD_TYPE_NAME = 'organization_field'
@@ -44,24 +43,21 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       relevantChanges,
       change => getChangeData(change).elemID.typeName === ORG_FIELD_TYPE_NAME,
     )
-    const lookupFunc = referencesUtils.generateLookupFunc(
-      fieldNameToTypeMappingDefs,
-      defs => new ZendeskSupportFieldReferenceResolver(defs)
-    )
+
     const additionalParentChange: Change<InstanceElement>[] = []
     if (parentChanges.length === 0 && childrenChanges.length > 0) {
-      // We aggregate by the parent full name so we now that all the children have the same parent
+      // We aggregate by the parent full name so we know that all the children have the same parent
       const parents = getParents(getChangeData(childrenChanges[0]))
       if (_.isEmpty(parents)
         || !parents.every(isReferenceExpression)
         || !parents.every(parent => isInstanceElement(parent.value))) {
         log.error(`Failed to update the following ${
-          ORG_FIELD_OPTION_TYPE_NAME} instances since they have no parent: ${
+          ORG_FIELD_OPTION_TYPE_NAME} instances since they have no valid parent: ${
           childrenChanges.map(getChangeData).map(e => e.elemID.getFullName())}`)
         return {
           deployResult: {
             appliedChanges: [],
-            errors: childrenChanges.map(getChangeData).map(e => new Error(`Failed to update ${e.elemID.getFullName()} since it has no parent`)),
+            errors: childrenChanges.map(getChangeData).map(e => new Error(`Failed to update ${e.elemID.getFullName()} since it has no valid parent`)),
           },
           leftoverChanges,
         }

@@ -22,7 +22,6 @@ import {
   client as clientUtils,
   elements as elementUtils,
   deployment as deploymentUtils,
-  references as referencesUtils,
 } from '@salto-io/adapter-components'
 import { logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'
@@ -34,8 +33,7 @@ import { ZENDESK_SUPPORT } from './constants'
 import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
 import { getChangeGroupIds } from './group_change'
-import fieldReferencesFilter, { fieldNameToTypeMappingDefs,
-  ZendeskSupportFieldReferenceResolver } from './filters/field_references'
+import fieldReferencesFilter, { lookupFunc } from './filters/field_references'
 import unorderedListsFilter from './filters/unordered_lists'
 import viewFilter from './filters/view'
 import workspaceFilter from './filters/workspace'
@@ -173,10 +171,6 @@ export default class ZendeskAdapter implements AdapterOperations {
       })) as Change<InstanceElement>[]
 
     const runner = await this.createFiltersRunner()
-    const lookupFunc = referencesUtils.generateLookupFunc(
-      fieldNameToTypeMappingDefs,
-      defs => new ZendeskSupportFieldReferenceResolver(defs)
-    )
     const resolvedChanges = await awu(changesToDeploy)
       .map(async change =>
         (SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
@@ -203,7 +197,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   public get deployModifiers(): DeployModifiers {
     return {
       changeValidator: createChangeValidator(
-        this.userConfig[API_DEFINITIONS_CONFIG], SKIP_RESOLVE_TYPE_NAMES
+        this.userConfig[API_DEFINITIONS_CONFIG], ['organization_field__custom_field_options']
       ),
       dependencyChanger: deploymentUtils.dependency.removeStandaloneFieldDependency,
       getChangeGroupIds,

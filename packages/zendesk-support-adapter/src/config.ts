@@ -21,7 +21,8 @@ import { ZENDESK_SUPPORT } from './constants'
 
 const { createClientConfigType } = clientUtils
 const {
-  createUserFetchConfigType, createDucktypeAdapterApiConfigType, validateDuckTypeFetchConfig,
+  createDuckTypeUserFetchConfigType: createUserFetchConfigType,
+  createDucktypeAdapterApiConfigType, validateDuckTypeFetchConfig,
 } = configUtils
 
 export const DEFAULT_ID_FIELDS = ['name']
@@ -45,7 +46,7 @@ export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
 export type ZendeskClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
 
-export type ZendeskFetchConfig = configUtils.UserFetchConfig
+export type ZendeskFetchConfig = configUtils.DuckTypeUserFetchConfig
 export type ZendeskApiConfig = configUtils.AdapterDuckTypeApiConfig
 
 export type ZendeskConfig = {

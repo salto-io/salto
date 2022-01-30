@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import { ObjectType, BuiltinTypes, MapType } from '@salto-io/adapter-api'
-import { createSwaggerAdapterApiConfigType, validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } from '../../src/config'
+import { createSwaggerAdapterApiConfigType, validateSwaggerApiDefinitionConfig,
+  validateSwaggerFetchConfig, createSwaggerUserFetchConfigType } from '../../src/config'
 
 describe('config_swagger', () => {
   describe('createSwaggerAdapterApiConfigType', () => {
@@ -318,6 +319,14 @@ describe('config_swagger', () => {
           },
         },
       )).toThrow(new Error('Invalid type names in FETCH_PATH.includeTypes: unknown are not listed as supported types in API_PATH.supportedTypes.'))
+    })
+  })
+
+  describe('createUserFetchConfigType', () => {
+    it('should return default type when no custom fields were added', () => {
+      const type = createSwaggerUserFetchConfigType('myAdapter')
+      expect(Object.keys(type.fields)).toHaveLength(1)
+      expect(type.fields.includeTypes).toBeDefined()
     })
   })
 })

@@ -251,7 +251,7 @@ export const generateType = ({
     fields,
     path,
     isSettings: transformationConfigByType[naclName]?.isSingleton ?? false,
-    annotations: hideTypes ? ({ [CORE_ANNOTATIONS.HIDDEN]: hideTypes }) : {},
+    annotations: hideTypes ? ({ [CORE_ANNOTATIONS.HIDDEN]: true }) : undefined,
   })
 
   return { type, nestedTypes }

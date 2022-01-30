@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, BuiltinTypes, FieldDefinition } from '@salto-io/adapter-api'
+import { ObjectType, BuiltinTypes, FieldDefinition, ElemID, ListType } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { AdapterApiConfig, createAdapterApiConfigType, UserFetchConfig, TypeConfig, TypeDefaultsConfig } from './shared'
 import { TransformationConfig, TransformationDefaultConfig, createTransformationConfigTypes, validateTransoformationConfig } from './transformation'
@@ -37,6 +37,8 @@ export type TypeDuckTypeDefaultsConfig = TypeDefaultsConfig<DuckTypeTransformati
 export type AdapterDuckTypeApiConfig = AdapterApiConfig<
   DuckTypeTransformationConfig, DuckTypeTransformationDefaultConfig
 >
+
+export type DuckTypeUserFetchConfig = UserFetchConfig & { hideTypes?: boolean }
 
 export const createDucktypeAdapterApiConfigType = ({
   adapter,
@@ -91,7 +93,7 @@ export const validateApiDefinitionConfig = (
  */
 export const validateFetchConfig = (
   fetchConfigPath: string,
-  userFetchConfig: UserFetchConfig,
+  userFetchConfig: DuckTypeUserFetchConfig,
   adapterApiConfig: AdapterApiConfig,
 ): void => {
   const typeNames = new Set(Object.keys(adapterApiConfig.types))
@@ -102,3 +104,17 @@ export const validateFetchConfig = (
     throw Error(`Invalid type names in ${fetchConfigPath}: ${invalidIncludeTypes}`)
   }
 }
+
+export const createUserFetchConfigType = (
+  adapter: string,
+  additionalFields?: Record<string, FieldDefinition>,
+): ObjectType => (
+  new ObjectType({
+    elemID: new ElemID(adapter, 'userFetchConfig'),
+    fields: {
+      includeTypes: { refType: new ListType(BuiltinTypes.STRING) },
+      hideTypes: { refType: new ListType(BuiltinTypes.BOOLEAN) },
+      ...additionalFields,
+    },
+  })
+)

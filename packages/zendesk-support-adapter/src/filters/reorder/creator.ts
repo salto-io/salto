@@ -64,7 +64,7 @@ export const createReorderFilterCreator = (
           refType: new ListType(BuiltinTypes.NUMBER),
         },
       },
-      annotations: config.fetch.hideTypes ? { [CORE_ANNOTATIONS.HIDDEN]: true } : {},
+      annotations: config.fetch.hideTypes ? { [CORE_ANNOTATIONS.HIDDEN]: true } : undefined,
       isSettings: true,
       path: [ZENDESK_SUPPORT, TYPES_PATH, SUBTYPES_PATH, typeNameNaclCase],
     })

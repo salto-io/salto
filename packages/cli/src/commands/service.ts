@@ -13,18 +13,48 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdapterAuthMethod, AdapterAuthentication, InstanceElement, ObjectType, OAuthMethod, ElemID } from '@salto-io/adapter-api'
+import {
+  AdapterAuthentication,
+  AdapterAuthMethod,
+  ElemID,
+  InstanceElement,
+  OAuthMethod,
+  ObjectType,
+} from '@salto-io/adapter-api'
 import { EOL } from 'os'
-import { addAdapter, getLoginStatuses, LoginStatus, updateCredentials, getAdaptersCredentialsTypes, installAdapter, getSupportedServiceAdapterNames } from '@salto-io/core'
+import {
+  addAdapter,
+  getAdaptersCredentialsTypes,
+  getLoginStatuses,
+  getSupportedServiceAdapterNames,
+  installAdapter,
+  LoginStatus,
+  updateCredentials,
+} from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { naclCase } from '@salto-io/adapter-utils'
+import { values } from '@salto-io/lowerdash'
+import _ from 'lodash'
 import { getCredentialsFromUser } from '../callbacks'
-import { CliOutput, CliExitCode, KeyedOption } from '../types'
-import { createCommandGroupDef, WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
-import { formatAccountAlreadyAdded, formatAccountAdded, formatLoginToAccountFailed, formatCredentialsHeader, formatLoginUpdated, formatAccountNotConfigured, formatLoginOverride, formatConfiguredAndAdditionalAccounts, formatAddServiceFailed, formatInvalidServiceInput } from '../formatter'
+import { CliExitCode, CliOutput, KeyedOption } from '../types'
+import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
+import {
+  formatAccountAdded,
+  formatAccountAlreadyAdded,
+  formatAccountNotConfigured,
+  formatAddServiceFailed,
+  formatConfiguredAndAdditionalAccounts,
+  formatCredentialsHeader,
+  formatInvalidServiceInput,
+  formatLoginOverride,
+  formatLoginToAccountFailed,
+  formatLoginUpdated,
+} from '../formatter'
 import { errorOutputLine, outputLine } from '../outputer'
 import { processOauthCredentials } from '../cli_oauth_authenticator'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
+
+const { isDefined } = values
 
 
 type AuthTypeArgs = {
@@ -41,6 +71,27 @@ const AUTH_TYPE_OPTION: KeyedOption<AuthTypeArgs> = {
   default: 'basic',
 }
 
+type LoginParametersArg = {
+  loginParameters?: string[]
+}
+
+const LOGIN_PARAMETER_OPTION: KeyedOption<LoginParametersArg> = {
+  name: 'loginParameters',
+  alias: 'p',
+  required: false,
+  description: 'Service login parameter in form of NAME=VALUE',
+  type: 'stringsList',
+}
+
+const entryFromRawLoginParameter = (rawLoginParameter: string): string[] => {
+  const splitValues = rawLoginParameter.split('=')
+  if (splitValues.length !== 2) {
+    throw new Error(`Parameter: "${rawLoginParameter}" is in a wrong format. Expected format is parameter=value`)
+  }
+  return [splitValues[0].trim(), splitValues[1].trim()]
+}
+
+
 const getOauthConfig = async (
   oauthMethod: OAuthMethod,
   output: CliOutput,
@@ -55,7 +106,7 @@ const getOauthConfig = async (
   return new InstanceElement(ElemID.CONFIG_NAME, oauthMethod.credentialsType, credentials)
 }
 
-const getConfigFromInput = async (
+const getLoginConfig = async (
   authType: AdapterAuthMethod,
   authMethods: AdapterAuthentication,
   output: CliOutput,
@@ -83,8 +134,24 @@ const getLoginInputFlow = async (
   output: CliOutput,
   authType: AdapterAuthMethod,
   account: string,
+  loginParameters?: string[]
 ): Promise<void> => {
-  const newConfig = await getConfigFromInput(authType, authMethods, output, getCredentialsFromUser)
+  const createConfigFromLoginParameters = async (credentialsType: ObjectType)
+    : Promise<InstanceElement> => {
+    if (_.isUndefined(loginParameters)) {
+      throw new Error('Login parameters are undefined')
+    }
+    const configValues = Object.fromEntries(loginParameters.map(entryFromRawLoginParameter))
+    const missingLoginParameters = Object.keys(credentialsType.fields)
+      .filter(key => _.isUndefined(configValues[key]))
+    if (!_.isEmpty(missingLoginParameters)) {
+      throw new Error(`Missing the following login parameters: ${missingLoginParameters}`)
+    }
+    return new InstanceElement(ElemID.CONFIG_NAME, credentialsType, configValues)
+  }
+  const newConfig = isDefined(loginParameters)
+    ? await getLoginConfig(authType, authMethods, output, createConfigFromLoginParameters)
+    : await getLoginConfig(authType, authMethods, output, getCredentialsFromUser)
   await updateCredentials(workspace, newConfig, account)
   output.stdout.write(EOL)
   outputLine(formatLoginUpdated, output)
@@ -95,14 +162,14 @@ type AccountAddArgs = {
     login: boolean
     serviceName: string
     account?: string
-} & AuthTypeArgs & EnvArg
+} & AuthTypeArgs & EnvArg & LoginParametersArg
 
 export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
   input,
   output,
   workspace,
 }): Promise<CliExitCode> => {
-  const { login, serviceName, authType, account } = input
+  const { login, serviceName, authType, account, loginParameters } = input
   if (account !== undefined && !(naclCase(account) === account)) {
     errorOutputLine(`Invalid account name: ${account}, account name may only include letters, digits or underscores`, output)
     return CliExitCode.UserInputError
@@ -133,7 +200,8 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
   if (login) {
     const adapterCredentialsTypes = getAdaptersCredentialsTypes([serviceName])[serviceName]
     try {
-      await getLoginInputFlow(workspace, adapterCredentialsTypes, output, authType, accountName)
+      await getLoginInputFlow(workspace, adapterCredentialsTypes, output,
+        authType, accountName, loginParameters)
     } catch (e) {
       errorOutputLine(formatAddServiceFailed(accountName, e.message), output)
       return CliExitCode.AppError
@@ -168,6 +236,7 @@ const serviceAddDef = createWorkspaceCommand({
       },
       AUTH_TYPE_OPTION,
       ENVIRONMENT_OPTION,
+      LOGIN_PARAMETER_OPTION,
     ],
     positionalOptions: [
       {
@@ -206,14 +275,14 @@ const accountListDef = createWorkspaceCommand({
 // Login
 type ServiceLoginArgs = {
     accountName: string
-} & AuthTypeArgs & EnvArg
+} & AuthTypeArgs & EnvArg & LoginParametersArg
 
 export const loginAction: WorkspaceCommandAction<ServiceLoginArgs> = async ({
   input,
   output,
   workspace,
 }): Promise<CliExitCode> => {
-  const { accountName, authType } = input
+  const { accountName, authType, loginParameters } = input
   await validateAndSetEnv(workspace, input, output)
   if (!workspace.accounts().includes(accountName)) {
     errorOutputLine(formatAccountNotConfigured(accountName), output)
@@ -228,7 +297,7 @@ export const loginAction: WorkspaceCommandAction<ServiceLoginArgs> = async ({
   }
   try {
     await getLoginInputFlow(workspace, accountLoginStatus.configTypeOptions,
-      output, authType, accountName)
+      output, authType, accountName, loginParameters)
   } catch (e) {
     errorOutputLine(formatLoginToAccountFailed(accountName, e.message), output)
     return CliExitCode.AppError
@@ -243,6 +312,7 @@ const accountLoginDef = createWorkspaceCommand({
     keyedOptions: [
       AUTH_TYPE_OPTION,
       ENVIRONMENT_OPTION,
+      LOGIN_PARAMETER_OPTION,
     ],
     positionalOptions: [
       {

@@ -174,7 +174,7 @@ const filterElementsSource = (
   }
 }
 
-export type AdapterConfigGetter = (
+type AdapterConfigGetter = (
   adapter: string, defaultValue?: InstanceElement
 ) => Promise<InstanceElement | undefined>
 

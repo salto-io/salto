@@ -14,16 +14,13 @@
 * limitations under the License.
 */
 
-import { AdapterOperations, ChangeValidator, InstanceElement } from '@salto-io/adapter-api'
+import { AdapterOperations, ChangeValidator } from '@salto-io/adapter-api'
 import { createChangeValidator } from '@salto-io/adapter-utils'
-import { promises } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { getAdapterChangeValidators, AdapterConfigGetter } from '../../adapters'
+import { getAdapterChangeValidators } from '../../adapters'
 import { changeValidator as unresolvedReferencesValidator } from './unresolved_references'
 import { checkDeploymentAnnotationsValidator } from './check_deployment_annotations'
 
-
-const { mapValuesAsync } = promises.object
 
 const DEFAULT_CHANGE_VALIDATORS = [
   unresolvedReferencesValidator,
@@ -37,19 +34,4 @@ Record<string, ChangeValidator> =>
     adapterValidator => createChangeValidator([...DEFAULT_CHANGE_VALIDATORS, adapterValidator])
   )
 
-const getAdaptersConfig = async (
-  adapters: Record<string, AdapterOperations>,
-  getConfig: AdapterConfigGetter,
-): Promise<Record<string, InstanceElement | undefined>> => {
-  const adaptersConfig = await mapValuesAsync(
-    adapters,
-    (_v, adapter) => getConfig(adapter)
-  )
-
-  return adaptersConfig
-}
-
-export {
-  getChangeValidators,
-  getAdaptersConfig,
-}
+export default getChangeValidators

@@ -22,10 +22,10 @@ const log = logger(module)
 export const createChangeValidator = (
   changeValidators: ReadonlyArray<ChangeValidator>,
   disabledValidators?: ReadonlyArray<ChangeValidator>,
-): ChangeValidator => async (changes, adapterConfig) => {
+): ChangeValidator => async changes => {
   if (disabledValidators !== undefined) {
     const disabledErrors = _.flatten(await Promise.all(
-      disabledValidators.map(validator => validator(changes, adapterConfig))
+      disabledValidators.map(validator => validator(changes))
     ))
     disabledErrors.forEach(error => {
       log.info(
@@ -35,6 +35,6 @@ export const createChangeValidator = (
     })
   }
   return _.flatten(await Promise.all(
-    changeValidators.map(validator => validator(changes, adapterConfig))
+    changeValidators.map(validator => validator(changes))
   ))
 }

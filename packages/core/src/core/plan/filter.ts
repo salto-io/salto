@@ -36,7 +36,6 @@ export const filterInvalidChanges = async (
   afterElements: ReadOnlyElementsSource,
   diffGraph: DiffGraph<ChangeDataType>,
   changeValidators: Record<string, ChangeValidator>,
-  adapterGetConfig?: Record<string, InstanceElement | undefined>,
 ): Promise<FilterResult> => {
   const createValidTopLevelElem = (beforeTopLevelElem: TopLevelElement,
     afterTopLevelElem: TopLevelElement, elemIdsToOmit: ElemID[]): Element | undefined => {
@@ -206,10 +205,7 @@ export const filterInvalidChanges = async (
 
   const changeErrors = await awu(changesByAdapter.entries())
     .filter(([adapter]) => adapter in changeValidators)
-    .flatMap(([adapter, changes]) => changeValidators[adapter](
-      changes,
-      adapterGetConfig?.[adapter],
-    ))
+    .flatMap(([adapter, changes]) => changeValidators[adapter](changes))
     .toArray()
 
   const invalidChanges = changeErrors.filter(v => v.severity === 'Error')

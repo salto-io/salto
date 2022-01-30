@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { ChangeValidator, ChangeError, ObjectType, ElemID, Change, toChange, InstanceElement } from '@salto-io/adapter-api'
+import { ChangeValidator, ChangeError, ObjectType, ElemID, Change, toChange } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import { createChangeValidator } from '../src/change_validator'
 
@@ -23,7 +23,6 @@ describe('change_validator', () => {
 
   let mockValidators: jest.MockedFunction<ChangeValidator>[]
   let changes: ReadonlyArray<Change>
-  let adapterConfig: InstanceElement
   let errors: ChangeError[]
 
   beforeEach(async () => {
@@ -52,11 +51,11 @@ describe('change_validator', () => {
     let result: ReadonlyArray<ChangeError>
     beforeEach(async () => {
       const mainValidator = createChangeValidator(mockValidators)
-      result = await mainValidator(changes, adapterConfig)
+      result = await mainValidator(changes)
     })
     it('should call all validators', () => {
       mockValidators.forEach(
-        validator => expect(validator).toHaveBeenCalledWith(changes, adapterConfig)
+        validator => expect(validator).toHaveBeenCalledWith(changes)
       )
     })
     it('should return errors from all validators', () => {
@@ -77,7 +76,7 @@ describe('change_validator', () => {
       }
       disabledValidator = mockFunction<ChangeValidator>().mockResolvedValue([disabledError])
       const mainValidator = createChangeValidator(mockValidators, [disabledValidator])
-      result = await mainValidator(changes, adapterConfig)
+      result = await mainValidator(changes)
     })
     it('should call disabled validator', () => {
       expect(disabledValidator).toHaveBeenCalled()

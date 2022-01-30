@@ -19,7 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
-import { addIdsToChildrenUponAddition, deployChange, deployChanges } from '../deployment'
+import { addIdsToChildrenUponAddition, deployChange, deployChanges, deployChangesByGroups } from '../deployment'
 import { API_DEFINITIONS_CONFIG } from '../config'
 import { applyforInstanceChangesOfType } from './utils'
 
@@ -71,9 +71,11 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       change => getChangeData(change).elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME,
     )
     if (itemChanges.length === 0 || itemChanges.every(isModificationChange)) {
+      // The service does not allow us to have an item with no variant - therefore, we need to do
+      //  the removal changes last
       const [removalChanges, nonRemovalChanges] = _.partition(relevantChanges, isRemovalChange)
-      const deployResult = await deployChanges(
-        [...nonRemovalChanges, ...removalChanges],
+      const deployResult = await deployChangesByGroups(
+        [nonRemovalChanges, removalChanges] as Change<InstanceElement>[][],
         async change => {
           await deployChange(change, client, config.apiDefinitions)
         }

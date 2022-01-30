@@ -21,7 +21,7 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import { getParents } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
-import { addIdsToChildrenUponAddition, deployChange, deployChanges } from '../../deployment'
+import { addIdsToChildrenUponAddition, deployChange, deployChanges, deployChangesByGroups } from '../../deployment'
 import { applyforInstanceChangesOfType } from '../utils'
 import { API_DEFINITIONS_CONFIG } from '../../config'
 
@@ -114,9 +114,11 @@ export const createCustomFieldOptionsFilterCreator = (
       change => getChangeData(change).elemID.typeName === parentTypeName,
     )
     if (parentChanges.length === 0) {
+      // The service does not allow us to have an field with no options - therefore, we need to do
+      //  the removal changes last
       const [removalChanges, nonRemovalChanges] = _.partition(childrenChanges, isRemovalChange)
-      const deployResult = await deployChanges(
-        [...nonRemovalChanges, ...removalChanges],
+      const deployResult = await deployChangesByGroups(
+        [nonRemovalChanges, removalChanges] as Change<InstanceElement>[][],
         async change => {
           await deployChange(change, client, config.apiDefinitions)
         }

@@ -138,8 +138,8 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
   changes: T[],
   deployChangeFunc: (change: T) => Promise<void | T[]>
 ): Promise<DeployResult> => {
-  const result = await awu(changes)
-    .map(async change => {
+  const result = await Promise.all(
+    changes.map(async change => {
       try {
         const res = await deployChangeFunc(change)
         return res !== undefined ? res : change
@@ -149,8 +149,22 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
         }
         return err
       }
-    }).toArray()
+    })
+  )
 
   const [errors, appliedChanges] = _.partition(result.flat(), _.isError)
   return { errors, appliedChanges }
+}
+
+export const deployChangesByGroups = async <T extends Change<ChangeDataType>>(
+  changeGroups: T[][],
+  deployChangeFunc: (change: T) => Promise<void | T[]>
+): Promise<DeployResult> => {
+  const deployGroupResults = await awu(changeGroups)
+    .map(async changeGroup => deployChanges(changeGroup, deployChangeFunc))
+    .toArray()
+  return {
+    errors: deployGroupResults.flatMap(res => res.errors),
+    appliedChanges: deployGroupResults.flatMap(res => res.appliedChanges),
+  }
 }

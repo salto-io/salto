@@ -16,6 +16,7 @@
 import {
   Values, InstanceElement, isMapType, ObjectType, isField, isListType, Field,
   MapType, isObjectType, createRefToElmWithValue, ListType, isContainerType, ElemID, Value,
+  BuiltinTypes,
 } from '@salto-io/adapter-api'
 import { naclCase, transformElement, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -63,6 +64,11 @@ export const convertFieldsTypesFromListToMap = async (
       { ...field.annotations, [LIST_MAPPED_BY_FIELD]: listMappedByField }
     )
     element.fields[fieldName] = newField
+    innerType.fields[INDEX] = new Field(
+      innerType,
+      INDEX,
+      createRefToElmWithValue(BuiltinTypes.NUMBER)
+    )
   })
 }
 

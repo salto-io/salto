@@ -14,11 +14,13 @@
 * limitations under the License.
 */
 import { Element, InstanceElement, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
+import { ISSUE_TYPE_SCHEMA_NAME } from '../../constants'
 import { FilterCreator } from '../../filter'
 
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
-    const isIssueTypeScheme = (element: Element): boolean => element.elemID.typeName === 'IssueTypeScheme'
+    const isIssueTypeScheme = (element: Element): boolean =>
+      element.elemID.typeName === ISSUE_TYPE_SCHEMA_NAME
     const setReferences = (scheme: InstanceElement): void => {
       type IssueTypeMapping = { issueTypeId: ReferenceExpression }
       scheme.value.issueTypeIds = scheme.value.issueTypeIds

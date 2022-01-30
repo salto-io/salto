@@ -17,15 +17,18 @@ import { AdditionChange, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdd
 import { resolveChangeElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { promises } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { getLookUpName } from '../../reference_mapping'
 import JiraClient from '../../client/client'
 import { JiraConfig } from '../../config'
 import { defaultDeployChange, deployChanges } from '../../deployment'
 import { FilterCreator } from '../../filter'
 import { getDiffIds } from '../../diff'
+import { ISSUE_TYPE_SCHEMA_NAME } from '../../constants'
 
-const ISSUE_TYPE_SCHEMA_NAME = 'IssueTypeScheme'
 const MAX_CONCURRENT_PROMISES = 20
+
+const log = logger(module)
 
 const deployNewAndDeletedIssueTypeIds = async (
   change: ModificationChange<InstanceElement>,
@@ -38,12 +41,16 @@ const deployNewAndDeletedIssueTypeIds = async (
 
   const instance = getChangeData(change)
   if (addedIds.length > 0) {
-    await client.put({
-      url: `/rest/api/3/issuetypescheme/${instance.value.id}/issuetype`,
-      data: {
-        issueTypeIds: Array.from(addedIds),
-      },
-    })
+    if (!instance.value.isDefault) {
+      await client.put({
+        url: `/rest/api/3/issuetypescheme/${instance.value.id}/issuetype`,
+        data: {
+          issueTypeIds: Array.from(addedIds),
+        },
+      })
+    } else {
+      log.info('Skipping adding issues to default issue type scheme because they are automatically added')
+    }
   }
 
   await promises.array.withLimitedConcurrency(

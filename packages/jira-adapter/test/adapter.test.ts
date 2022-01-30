@@ -20,7 +20,7 @@ import { mockFunction } from '@salto-io/test-utils'
 import JiraClient from '../src/client/client'
 import { adapter as adapterCreator } from '../src/adapter_creator'
 import { DEFAULT_CONFIG } from '../src/config'
-import { JIRA } from '../src/constants'
+import { ISSUE_TYPE_NAME, JIRA } from '../src/constants'
 import { createCredentialsInstance, createConfigInstance } from './utils'
 
 
@@ -93,7 +93,10 @@ describe('adapter', () => {
     it('should call deployChange with the resolved elements', async () => {
       const referencedInstance = new InstanceElement(
         'referenced',
-        new ObjectType({ elemID: new ElemID(JIRA, 'IssueType'), fields: { id: { refType: BuiltinTypes.STRING } } }),
+        new ObjectType({
+          elemID: new ElemID(JIRA, ISSUE_TYPE_NAME),
+          fields: { id: { refType: BuiltinTypes.STRING } },
+        }),
         { id: '3' }
       )
       await adapter.deploy({

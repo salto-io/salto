@@ -16,6 +16,7 @@
 import { isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
+import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 
 
@@ -23,7 +24,7 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
   {
     src: { field: 'issueTypeId', parentTypes: ['IssueTypeScreenSchemeItem', 'FieldConfigurationIssueTypeItem'] },
     serializationStrategy: 'id',
-    target: { type: 'IssueType' },
+    target: { type: ISSUE_TYPE_NAME },
   },
   {
     src: { field: 'fieldConfigurationId', parentTypes: ['FieldConfigurationIssueTypeItem'] },
@@ -36,14 +37,14 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     target: { type: 'ScreenScheme' },
   },
   {
-    src: { field: 'defaultIssueTypeId', parentTypes: ['IssueTypeScheme'] },
+    src: { field: 'defaultIssueTypeId', parentTypes: [ISSUE_TYPE_SCHEMA_NAME] },
     serializationStrategy: 'id',
-    target: { type: 'IssueType' },
+    target: { type: ISSUE_TYPE_NAME },
   },
   {
-    src: { field: 'issueTypeIds', parentTypes: ['IssueTypeScheme', 'CustomFieldContext'] },
+    src: { field: 'issueTypeIds', parentTypes: [ISSUE_TYPE_SCHEMA_NAME, 'CustomFieldContext'] },
     serializationStrategy: 'id',
-    target: { type: 'IssueType' },
+    target: { type: ISSUE_TYPE_NAME },
   },
   {
     src: { field: 'projectIds', parentTypes: ['CustomFieldContext'] },
@@ -158,7 +159,7 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
   {
     src: { field: 'issueTypeScheme', parentTypes: ['Project'] },
     serializationStrategy: 'id',
-    target: { type: 'IssueTypeScheme' },
+    target: { type: ISSUE_TYPE_SCHEMA_NAME },
   },
   {
     src: { field: 'permissionScheme', parentTypes: ['Project'] },
@@ -223,7 +224,7 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
   {
     src: { field: 'issueType', parentTypes: ['WorkflowSchemeItem'] },
     serializationStrategy: 'id',
-    target: { type: 'IssueType' },
+    target: { type: ISSUE_TYPE_NAME },
   },
   {
     src: { field: 'statusId', parentTypes: ['StatusMigration'] },
@@ -238,7 +239,7 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
   {
     src: { field: 'issueTypeId', parentTypes: ['StatusMigration'] },
     serializationStrategy: 'id',
-    target: { type: 'IssueType' },
+    target: { type: ISSUE_TYPE_NAME },
   },
   {
     src: { field: 'fieldId', parentTypes: ['BoardConfiguration_estimation'] },

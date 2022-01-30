@@ -15,7 +15,7 @@
 */
 import { Values, Element, ElemID } from '@salto-io/adapter-api'
 import { createReference } from '../utils'
-import { JIRA } from '../../src/constants'
+import { ISSUE_TYPE_NAME, JIRA } from '../../src/constants'
 
 export const createWorkflowSchemeValues = (
   name: string,
@@ -26,7 +26,7 @@ export const createWorkflowSchemeValues = (
   defaultWorkflow: createReference(new ElemID(JIRA, 'Workflow', 'instance', 'jira'), allElements),
   items: [
     {
-      issueType: createReference(new ElemID(JIRA, 'IssueType', 'instance', 'Bug'), allElements),
+      issueType: createReference(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'Bug'), allElements),
       workflow: createReference(new ElemID(JIRA, 'Workflow', 'instance', 'jira'), allElements),
     },
   ],

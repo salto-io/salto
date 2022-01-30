@@ -15,7 +15,7 @@
 */
 import { InstanceElement, Element, ElemID, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
-import { JIRA } from '../../src/constants'
+import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA } from '../../src/constants'
 import { createReference, findType } from '../utils'
 import { createBoardValues } from './board'
 import { createContextValues, createFieldValues } from './field'
@@ -31,7 +31,7 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[] =
 
   const issueType = new InstanceElement(
     randomString,
-    findType('IssueType', fetchedElements),
+    findType(ISSUE_TYPE_NAME, fetchedElements),
     {
       description: randomString,
       name: randomString,
@@ -134,7 +134,7 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[] =
 
   const issueTypeScheme = new InstanceElement(
     randomString,
-    findType('IssueTypeScheme', fetchedElements),
+    findType(ISSUE_TYPE_SCHEMA_NAME, fetchedElements),
     createIssueTypeSchemeValues(randomString, fetchedElements),
   )
 

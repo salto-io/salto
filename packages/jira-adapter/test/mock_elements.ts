@@ -24,7 +24,7 @@ import {
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
-import { JIRA } from '../src/constants'
+import { ISSUE_TYPE_SCHEMA_NAME, JIRA } from '../src/constants'
 
 const { ADDITIONAL_PROPERTIES_FIELD } = elementsUtils.swagger
 
@@ -59,7 +59,7 @@ const issueTypeSchemeMappingType = new ObjectType({
 })
 
 const issueTypeSchemeType = new ObjectType({
-  elemID: new ElemID(JIRA, 'IssueTypeScheme'),
+  elemID: new ElemID(JIRA, ISSUE_TYPE_SCHEMA_NAME),
   fields: {
     issueTypeIds: { refType: new ListType(issueTypeSchemeMappingType) },
   },

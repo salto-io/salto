@@ -16,7 +16,7 @@
 import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType, toChange } from '@salto-io/adapter-api'
 import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { JIRA } from '../../../src/constants'
+import { ISSUE_TYPE_SCHEMA_NAME, JIRA } from '../../../src/constants'
 import { mockClient } from '../../utils'
 import issueTypeSchemeFilter from '../../../src/filters/issue_type_schemas/issue_type_scheme'
 import { Filter } from '../../../src/filter'
@@ -48,7 +48,7 @@ describe('issueTypeScheme', () => {
       config: DEFAULT_CONFIG,
     })
     type = new ObjectType({
-      elemID: new ElemID(JIRA, 'IssueTypeScheme'),
+      elemID: new ElemID(JIRA, ISSUE_TYPE_SCHEMA_NAME),
       fields: {
         issueTypeIds: { refType: new ListType(BuiltinTypes.STRING) },
       },
@@ -188,7 +188,7 @@ describe('issueTypeScheme', () => {
       })
     })
 
-    it('should not call the new issue type ids endpoint of there are no new ids', async () => {
+    it('should not call the new issue type ids endpoint if there are no new ids', async () => {
       const beforeInstance = new InstanceElement(
         'instance',
         type,
@@ -206,6 +206,37 @@ describe('issueTypeScheme', () => {
           id: '1',
           name: 'name2',
           issueTypeIds: ['1', '2'],
+        }
+      )
+
+      await filter.deploy?.([toChange({ before: beforeInstance, after: afterInstance })])
+      expect(mockConnection.put).not.toHaveBeenCalledWith(
+        '/rest/api/3/issuetypescheme/1/issuetype',
+        expect.any(Object),
+        undefined,
+      )
+    })
+
+    it('should not call the new issue type ids endpoint if the scheme is the default scheme', async () => {
+      const beforeInstance = new InstanceElement(
+        'instance',
+        type,
+        {
+          id: '1',
+          name: 'name1',
+          issueTypeIds: ['1', '2'],
+          isDefault: true,
+        }
+      )
+
+      const afterInstance = new InstanceElement(
+        'instance',
+        type,
+        {
+          id: '1',
+          name: 'name2',
+          issueTypeIds: ['1', '2', '3'],
+          isDefault: true,
         }
       )
 

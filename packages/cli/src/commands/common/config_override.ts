@@ -31,7 +31,7 @@ export const CONFIG_OVERRIDE_OPTION: KeyedOption<ConfigOverrideArg> = {
 const SALTO_ENV_PREFIX = 'SALTO'
 const SALTO_ENV_CONFIG_PREFIX = `${SALTO_ENV_PREFIX}_CONFIG_`
 
-const convertValueType = (value: string): Value => {
+export const convertValueType = (value: string): Value => {
   try {
     return JSON.parse(value)
   } catch (e) {

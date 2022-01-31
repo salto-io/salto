@@ -192,7 +192,7 @@ export type TemplatePart = string | Expression
   However, it's about 20 times better to use replace than to iterate over both strings.
   For this reason we first check a naive comparison, and then test with replace.
   */
-export const compareStringsIgnoreNewlineDifferences = (s1: string, s2: string): boolean =>
+const compareStringsIgnoreNewlineDifferences = (s1: string, s2: string): boolean =>
   (s1 === s2) || (s1.replace(/\r\n/g, '\n') === s2.replace(/\r\n/g, '\n'))
 
 export const compareSpecialValues = (

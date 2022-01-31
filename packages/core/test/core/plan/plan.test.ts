@@ -338,6 +338,10 @@ describe('getPlan', () => {
   })
 
   it('when reference in instance changes but the value is the same should have a change in plan', async () => {
+    // This behavior works for fetch but it is not really the correct behavior for deploy:
+    // If there is no difference in the value to be deployed, it should not be a change in the plan
+    // (because nothing is actually going to change).
+    // We may want to change that in the future.
     const type = new ObjectType({
       elemID: new ElemID('adapter', 'type'),
       fields: {

@@ -38,14 +38,11 @@ const { resolve, resolveReferenceExpression } = expressions
 
 const log = logger(module)
 
-const COMPARE_RETURN = 'return'
-const COMPARE_RECURSE = 'recurse'
-
-type CompareReturnValue = {
-  returnCode: typeof COMPARE_RETURN
+type ReferenceCompareReturnValue = {
+  returnCode: 'return'
   returnValue: boolean
 } | {
-  returnCode: typeof COMPARE_RECURSE
+  returnCode: 'recurse'
   returnValue: {
     firstValue: Value
     secondValue: Value
@@ -63,16 +60,16 @@ const shouldResolve = (ref: ReferenceExpression): boolean => (
 )
 
 
-const compareReferences = async (
+const areReferencesEqual = async (
   first: Value,
   second: Value,
   firstSrc: ReadOnlyElementsSource,
   secondSrc: ReadOnlyElementsSource
-): Promise<CompareReturnValue> => {
+): Promise<ReferenceCompareReturnValue> => {
   // if both values are ReferenceExpressions they are compared by their elemID
   if (isReferenceExpression(first) && isReferenceExpression(second)) {
     return {
-      returnCode: COMPARE_RETURN,
+      returnCode: 'return',
       returnValue: first.elemID.isEqual(second.elemID),
     }
   }
@@ -80,48 +77,31 @@ const compareReferences = async (
   // if only first value is a ReferenceExpression and it should be resolved -
   // its value is compared with the second value
   if (isReferenceExpression(first) && shouldResolve(first)) {
-    if (first.value !== undefined) {
-      return {
-        returnCode: COMPARE_RECURSE,
-        returnValue: {
-          firstValue: first.value,
-          secondValue: second,
-        },
-      }
-    }
-    const firstResolved = await resolveReferenceExpression(first, firstSrc, {})
+    const firstValue = first.value !== undefined
+      ? first.value
+      : (await resolveReferenceExpression(first, firstSrc, {})).value
     return {
-      returnCode: COMPARE_RECURSE,
-      returnValue: {
-        firstValue: firstResolved.value,
-        secondValue: second,
-      },
+      returnCode: 'recurse',
+      returnValue: { firstValue, secondValue: second },
     }
   }
 
   // if only second value is a ReferenceExpression and it should be resolved -
   // its value is compared with the first value
   if (isReferenceExpression(second) && shouldResolve(second)) {
-    if (second.value !== undefined) {
-      return {
-        returnCode: COMPARE_RECURSE,
-        returnValue: {
-          firstValue: first,
-          secondValue: second.value,
-        },
-      }
-    }
-    const secondResolved = await resolveReferenceExpression(second, secondSrc, {})
+    const secondValue = second.value !== undefined
+      ? second.value
+      : (await resolveReferenceExpression(second, secondSrc, {})).value
     return {
-      returnCode: COMPARE_RECURSE,
-      returnValue: {
-        firstValue: first,
-        secondValue: secondResolved.value,
-      },
+      returnCode: 'recurse',
+      returnValue: { firstValue: first, secondValue },
     }
   }
+
+  // if we got here, as we asume that one of the compared values is a ReferenceExpression,
+  // we need to return false because a non-resolved reference isn't equal to a non-reference value
   return {
-    returnCode: COMPARE_RETURN,
+    returnCode: 'return',
     returnValue: false,
   }
 }
@@ -139,8 +119,8 @@ const compareValuesAndLazyResolveRefs = async (
   // resolved. We are using here lazy resolving so we can't use compareSpecialValues to compare
   // references
   if (isReferenceExpression(first) || isReferenceExpression(second)) {
-    const referencesCompareResult = await compareReferences(first, second, firstSrc, secondSrc)
-    if (referencesCompareResult.returnCode === COMPARE_RETURN) {
+    const referencesCompareResult = await areReferencesEqual(first, second, firstSrc, secondSrc)
+    if (referencesCompareResult.returnCode === 'return') {
       return referencesCompareResult.returnValue
     }
     const { firstValue, secondValue } = referencesCompareResult.returnValue

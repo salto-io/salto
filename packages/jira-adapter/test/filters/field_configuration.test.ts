@@ -159,7 +159,7 @@ describe('fieldConfigurationFilter', () => {
       change = toChange({ before: instance, after: instance })
     })
 
-    it('should deploy regular fields using deployChange', async () => {
+    it('should deploy regular fields using deployChange in modification', async () => {
       await filter.deploy([change])
       expect(deployChange).toHaveBeenCalledWith(
         await resolveChangeElement(change, getLookUpName),
@@ -170,7 +170,18 @@ describe('fieldConfigurationFilter', () => {
       )
     })
 
-    it('should not deploy regular fields if is default', async () => {
+    it('should deploy regular fields using deployChange in creation', async () => {
+      await filter.deploy([toChange({ after: instance })])
+      expect(deployChange).toHaveBeenCalledWith(
+        await resolveChangeElement(toChange({ after: instance }), getLookUpName),
+        mockCli,
+        DEFAULT_CONFIG.apiDefinitions.types.FieldConfiguration.deployRequests,
+        ['fields'],
+        undefined,
+      )
+    })
+
+    it('should not deploy regular fields if is default and change is modification', async () => {
       instance.value.isDefault = true
       await filter.deploy([change])
       expect(deployChange).not.toHaveBeenCalled()

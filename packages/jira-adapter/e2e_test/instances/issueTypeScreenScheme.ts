@@ -25,11 +25,11 @@ export const createIssueTypeScreenSchemeValues = (
   description: name,
   issueTypeMappings: [
     {
-      issueTypeId: 'default',
+      issueTypeId: createReference(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'Bug'), allElements),
       screenSchemeId: createReference(new ElemID(JIRA, 'ScreenScheme', 'instance', 'Default_Screen_Scheme@s'), allElements),
     },
     {
-      issueTypeId: createReference(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'Bug'), allElements),
+      issueTypeId: 'default',
       screenSchemeId: createReference(new ElemID(JIRA, 'ScreenScheme', 'instance', 'Default_Screen_Scheme@s'), allElements),
     },
   ],

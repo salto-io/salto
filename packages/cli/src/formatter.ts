@@ -258,6 +258,7 @@ export const formatChangeErrors = (
       errorsIndent)
   }
   const ret = _(wsChangeErrors)
+    .filter(ce => ce.severity !== 'Info')
     .groupBy(ce => ce.message)
     .values()
     .sortBy(errs => -errs.length)
@@ -282,7 +283,7 @@ export const formatPreDeployActions = (
     header(Prompts.DEPLOY_PRE_ACTION_HEADER),
     emptyLine(),
     ...groupedByPreDeployLabel.flatMap(preDeploy => [
-      subHeader(preDeploy.label),
+      header(preDeploy.label),
       ...preDeploy.subtext,
     ]),
   ]

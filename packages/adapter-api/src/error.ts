@@ -35,7 +35,7 @@ export type SaltoError = {
     message: string
     severity: SaltoErrorSeverity
     source?: SaltoErrorSource
-    // TODO naming
+    // TODO naming?
     deployActions?: DeployActions
 }
 

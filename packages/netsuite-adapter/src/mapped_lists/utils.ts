@@ -27,6 +27,7 @@ import { listMappedByFieldMapping } from './mapping'
 import { CAPTURED_SERVICE_ID, captureServiceIdInfo } from '../service_id_info'
 
 const { awu } = collections.asynciterable
+const { makeArray } = collections.array
 
 const log = logger(module)
 
@@ -35,19 +36,20 @@ export type MappedList = {
   value: Values
 }
 
-export const validateTypesFieldMapping = (elements: ObjectType[]): boolean => {
+export const validateTypesFieldMapping = (elements: ObjectType[]): void => {
   const typesMap = _.keyBy(elements, element => element.elemID.name)
-  return Object.entries(listMappedByFieldMapping).every(([typeName, fieldName]) => {
+  Object.entries(listMappedByFieldMapping).forEach(([typeName, fieldNameList]) => {
     const type = typesMap[typeName]
     if (type === undefined) {
       log.error(`type '${typeName}' should have mapping field but '${typeName}' is not in elements`)
-      return false
+      throw new Error('missing some types with field mapping')
     }
-    if (type.fields[fieldName] === undefined) {
-      log.error(`type '${typeName}' should have mapping field '${fieldName}' but '${typeName}' has no '${fieldName}' field`)
-      return false
-    }
-    return true
+    makeArray(fieldNameList).forEach(fieldName => {
+      if (type.fields[fieldName] === undefined) {
+        log.error(`type '${typeName}' should have mapping field '${fieldName}' but '${typeName}' has no '${fieldName}' field`)
+        throw new Error('missing some types with field mapping')
+      }
+    })
   })
 }
 
@@ -121,30 +123,42 @@ const addSuffixUntilUnique = (
   return keyNameWithSuffix
 }
 
-const transformMappedLists: TransformFunc = async ({ value, field, path }) => {
-  const mapFieldName = field?.annotations[LIST_MAPPED_BY_FIELD]
-  if (!_.isArray(value) || mapFieldName === undefined || !isMapType(await field?.getType())) {
-    return value
+const getUniqueItemKey = (
+  item: Value,
+  mapFieldNameList: string[],
+  keySet: Set<string>,
+  path?: ElemID,
+): string => {
+  const mapFieldName = mapFieldNameList.find(fieldName => item[fieldName] !== undefined)
+  if (mapFieldName === undefined) {
+    log.warn(`item in ${path?.getFullName()} have no mapFieldName key: ${mapFieldNameList.join(',')}`)
   }
 
-  if (value.find(item => item[mapFieldName] === undefined)) {
-    log.warn(`not all items of ${path?.getFullName()} have mapFieldName key: ${mapFieldName}`)
+  const mapFieldValue = getItemKey(
+    mapFieldName ? _.toString(item[mapFieldName]) : 'key',
+    path
+  )
+
+  if (!keySet.has(mapFieldValue)) {
+    keySet.add(mapFieldValue)
+    return mapFieldValue
+  }
+
+  const mapFieldValueWithSuffix = addSuffixUntilUnique(mapFieldValue, keySet, path)
+  keySet.add(mapFieldValueWithSuffix)
+  return mapFieldValueWithSuffix
+}
+
+const transformMappedLists: TransformFunc = async ({ value, field, path }) => {
+  const mapFieldNameList = makeArray(field?.annotations[LIST_MAPPED_BY_FIELD])
+  if (!_.isArray(value) || _.isEmpty(mapFieldNameList) || !isMapType(await field?.getType())) {
     return value
   }
 
   const keySet: Set<string> = new Set()
   return _(value)
     .map((item, index) => ({ ...item, [INDEX]: index }))
-    .keyBy(item => {
-      const mapFieldValue = getItemKey(_.toString(item[mapFieldName]), path)
-      if (!keySet.has(mapFieldValue)) {
-        keySet.add(mapFieldValue)
-        return mapFieldValue
-      }
-      const mapFieldValueWithSuffix = addSuffixUntilUnique(mapFieldValue, keySet, path)
-      keySet.add(mapFieldValueWithSuffix)
-      return mapFieldValueWithSuffix
-    })
+    .keyBy(item => getUniqueItemKey(item, mapFieldNameList, keySet, path))
     .value()
 }
 
@@ -159,14 +173,10 @@ export const convertInstanceListsToMaps = async (
     strict: false,
   })
 
-export const isMappedList = async (value: Value, field: Field): Promise<boolean> => {
-  const mapFieldName = field.annotations[LIST_MAPPED_BY_FIELD]
-  if (mapFieldName === undefined || !_.isPlainObject(value)) {
-    return false
-  }
-
-  return isContainerType(await field.getType())
-}
+export const isMappedList = async (value: Value, field: Field): Promise<boolean> =>
+  field.annotations[LIST_MAPPED_BY_FIELD]
+  && _.isPlainObject(value)
+  && isContainerType(await field.getType())
 
 export const getMappedLists = async (
   instance: InstanceElement

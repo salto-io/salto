@@ -24,7 +24,7 @@ const { awu } = collections.asynciterable
 
 describe('mapped lists', () => {
   const customTypes = getCustomTypes()
-  const { workflow } = customTypes
+  const { workflow, kpiscorecard } = customTypes
 
   let instance: InstanceElement
   let transformedInstance: InstanceElement
@@ -88,7 +88,8 @@ describe('mapped lists', () => {
       }
     )
 
-    await awu(Object.values(workflow.innerTypes)).forEach(t => convertFieldsTypesFromListToMap(t))
+    await awu([...Object.values(workflow.innerTypes), ...Object.values(kpiscorecard.innerTypes)])
+      .forEach(t => convertFieldsTypesFromListToMap(t))
     transformedInstance = instance.clone()
     transformedInstance.value = await convertInstanceListsToMaps(instance) ?? instance.value
     transformedBackInstance = await convertInstanceMapsToLists(transformedInstance)
@@ -101,13 +102,10 @@ describe('mapped lists', () => {
       ...getTopLevelCustomTypes(customTypes),
       ...getInnerCustomTypes(customTypes),
     ]
-    it('should return true when all types and fields in listMappedByFieldMapping exists', () => {
-      expect(validateTypesFieldMapping(customTypesAndInnerTypes)).toBeTruthy()
-    })
-    it('should return false when missing some types with field mapping', () => {
+    it('should throw when missing some types with field mapping', async () => {
       const missingTypes = customTypesAndInnerTypes
         .filter(element => element.elemID.name !== 'addressForm_mainFields_defaultFieldGroup_fields')
-      expect(validateTypesFieldMapping(missingTypes)).toBeFalsy()
+      await expect(async () => validateTypesFieldMapping(missingTypes)).rejects.toThrow('missing some types with field mapping')
 
       const typeWithMissingField = new ObjectType({
         elemID: new ElemID(NETSUITE, 'addressForm_mainFields_defaultFieldGroup_fields'),
@@ -117,7 +115,8 @@ describe('mapped lists', () => {
           },
         },
       })
-      expect(validateTypesFieldMapping([...missingTypes, typeWithMissingField])).toBeFalsy()
+      await expect(async () => validateTypesFieldMapping([...missingTypes, typeWithMissingField]))
+        .rejects.toThrow('missing some types with field mapping')
     })
   })
 
@@ -142,6 +141,14 @@ describe('mapped lists', () => {
     expect(isMapType(await workflowactions.getType())).toBeTruthy()
     expect(workflowactions.annotations)
       .toEqual({ [LIST_MAPPED_BY_FIELD]: 'triggertype' })
+  })
+
+  it('should not modify ObjectTypes fields when types has no field to map by', async () => {
+    const highlightings = kpiscorecard.innerTypes.kpiscorecard_highlightings
+    expect(highlightings).toBeDefined()
+    const { highlighting } = highlightings?.fields as FieldMap
+    expect(isListType(await highlighting.getType())).toBeTruthy()
+    expect(highlighting.annotations[LIST_MAPPED_BY_FIELD]).toBeUndefined()
   })
 
   it('should modify instance values', () => {
@@ -228,7 +235,7 @@ describe('mapped lists', () => {
     expect(primitiveList.annotations).toEqual({})
   })
 
-  it('should not convert list if one of the items has no \'LIST_MAPPED_BY_FIELD\' field', async () => {
+  it('should use \'key\' as item key if item has no \'LIST_MAPPED_BY_FIELD\' field', async () => {
     const inst = new InstanceElement(
       'instance',
       workflow.type,
@@ -246,7 +253,21 @@ describe('mapped lists', () => {
         },
       },
     )
-    expect(await convertInstanceListsToMaps(inst)).toEqual(inst.value)
+    expect(await convertInstanceListsToMaps(inst)).toEqual({
+      scriptid: 'customworkflow_changed_id',
+      workflowcustomfields: {
+        workflowcustomfield: {
+          custworkflow1: {
+            scriptid: 'custworkflow1',
+            index: 0,
+          },
+          key: {
+            notscriptid: 'custworkflow2',
+            index: 1,
+          },
+        },
+      },
+    })
   })
 
   describe('isMappedList', () => {

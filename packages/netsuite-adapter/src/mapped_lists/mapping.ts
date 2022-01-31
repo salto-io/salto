@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-export const listMappedByFieldMapping: Record<string, string> = {
+export const listMappedByFieldMapping: Record<string, string | string[]> = {
   // addressForm
   addressForm_mainFields_defaultFieldGroup_fields: 'position',
   addressForm_mainFields_defaultFieldGroup_fields_field: 'id',
@@ -22,7 +22,7 @@ export const listMappedByFieldMapping: Record<string, string> = {
   addressForm_mainFields_fieldGroup_fields_field: 'id',
 
   // centercategory
-  centercategory_links_link: 'linkid',
+  centercategory_links_link: ['linkid', 'linkobject'],
 
   // clientscript
   clientscript_buttons_button: 'buttonlabel',

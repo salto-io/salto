@@ -48,9 +48,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
       type => isCustomType(type) || innerCustomTypesNames.has(type.elemID.name)
     )
 
-    if (!validateTypesFieldMapping(customTypes)) {
-      throw new Error('missing some types with field mapping')
-    }
+    validateTypesFieldMapping(customTypes)
 
     await awu(customTypes)
       .forEach(convertFieldsTypesFromListToMap)

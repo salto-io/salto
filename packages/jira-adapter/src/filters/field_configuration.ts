@@ -90,15 +90,15 @@ const filter: FilterCreator = ({ config, client }) => ({
     const deployResult = await deployChanges(
       relevantChanges as Change<InstanceElement>[],
       async change => {
-        if (!getChangeData(change).value.isDefault && isModificationChange(change)) {
+        if (getChangeData(change).value.isDefault && isModificationChange(change)) {
+          log.warn(`Skipping default deploy for default ${FIELD_CONFIGURATION_TYPE_NAME} because it is not supported`)
+        } else {
           await defaultDeployChange({
             change,
             client,
             apiDefinitions: config.apiDefinitions,
             fieldsToIgnore: ['fields'],
           })
-        } else {
-          log.warn(`Skipping default deploy for default ${FIELD_CONFIGURATION_TYPE_NAME} because it is not supported`)
         }
         await deployFieldConfigurationItems(change, client, config)
       }

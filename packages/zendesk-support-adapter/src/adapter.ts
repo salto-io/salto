@@ -54,7 +54,11 @@ import defaultDeployFilter from './filters/default_deploy'
 const log = logger(module)
 const { createPaginator } = clientUtils
 const { findDataField, computeGetArgs } = elementUtils
-const { getAllElements } = elementUtils.ducktype
+const {
+  getAllElements,
+  replaceInstanceTypeForDeploy,
+  restoreInstanceTypeFromDeploy,
+} = elementUtils.ducktype
 const { awu } = collections.asynciterable
 const { concatObjects } = objects
 
@@ -164,13 +168,15 @@ export default class ZendeskAdapter implements AdapterOperations {
    */
   @logDuration('deploying account configuration')
   async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
-    const changesToDeploy = changeGroup.changes
-      .filter(isInstanceChange)
+    const instanceChanges = changeGroup.changes.filter(isInstanceChange)
+    const changesToDeploy = instanceChanges
       .map(change => ({
         action: change.action,
-        data: _.mapValues(change.data, (element: Element) => element.clone()),
+        data: _.mapValues(change.data, (instance: InstanceElement) =>
+          replaceInstanceTypeForDeploy(
+            instance.clone(), this.userConfig[API_DEFINITIONS_CONFIG]
+          )),
       })) as Change<InstanceElement>[]
-
     const runner = await this.createFiltersRunner()
     const resolvedChanges = await awu(changesToDeploy)
       .map(async change =>
@@ -191,7 +197,8 @@ export default class ZendeskAdapter implements AdapterOperations {
     const appliedChanges = await awu(appliedChangesBeforeRestore)
       .map(change => restoreChangeElement(change, sourceElements, lookupFunc))
       .toArray()
-    return { appliedChanges, errors: deployResult.errors }
+    const restoredAppliedChanges = restoreInstanceTypeFromDeploy(appliedChanges, instanceChanges)
+    return { appliedChanges: restoredAppliedChanges, errors: deployResult.errors }
   }
 
   // eslint-disable-next-line class-methods-use-this

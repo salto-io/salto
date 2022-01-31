@@ -50,6 +50,7 @@ const generateNestedType = ({
   hasDynamicFields,
   typeNameOverrideConfig,
   hideTypes,
+  isUnknownEntry,
 }: {
   adapterName: string
   typeName: string
@@ -60,10 +61,18 @@ const generateNestedType = ({
   typeNameOverrideConfig: Record<string, string>
   hasDynamicFields: boolean
   hideTypes?: boolean
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  isUnknownEntry?: (value: any) => boolean
 }): NestedTypeWithNestedTypes => {
   const validEntries = entries.filter(entry => entry !== undefined && entry !== null)
   const name = toNestedTypeName(parentName, typeName)
   if (validEntries.length > 0) {
+    if (isUnknownEntry && validEntries.every(isUnknownEntry)) {
+      return {
+        type: BuiltinTypes.UNKNOWN,
+        nestedTypes: [],
+      }
+    }
     if (validEntries.every(entry => Array.isArray(entry))) {
       // eslint-disable-next-line no-use-before-define
       const nestedType = generateNestedType({
@@ -76,6 +85,7 @@ const generateNestedType = ({
         transformationDefaultConfig,
         typeNameOverrideConfig,
         hideTypes,
+        isUnknownEntry,
       })
       return {
         type: new ListType(nestedType.type),
@@ -97,6 +107,7 @@ const generateNestedType = ({
         isSubType: true,
         typeNameOverrideConfig,
         hideTypes,
+        isUnknownEntry,
       })
     }
 
@@ -163,6 +174,7 @@ export const generateType = ({
   typeNameOverrideConfig,
   hideTypes,
   isSubType = false,
+  isUnknownEntry,
 }: {
   adapterName: string
   name: string
@@ -173,6 +185,8 @@ export const generateType = ({
   typeNameOverrideConfig?: Record<string, string>
   hideTypes?: boolean
   isSubType?: boolean
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  isUnknownEntry?: (value: any) => boolean
 }): ObjectTypeWithNestedTypes => {
   const typeRenameConfig = typeNameOverrideConfig ?? generateTypeRenameConfig(
     transformationConfigByType
@@ -209,6 +223,7 @@ export const generateType = ({
           hasDynamicFields: false,
           typeNameOverrideConfig: typeRenameConfig,
           hideTypes,
+          isUnknownEntry,
         }))),
       },
     }
@@ -227,6 +242,7 @@ export const generateType = ({
               hasDynamicFields: false,
               typeNameOverrideConfig: typeRenameConfig,
               hideTypes,
+              isUnknownEntry,
             })),
           },
         ])

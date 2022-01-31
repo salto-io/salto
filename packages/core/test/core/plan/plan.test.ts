@@ -375,6 +375,9 @@ describe('getPlan', () => {
   })
 
   it('when reference in instance points to a whole element should have a change in plan', async () => {
+    // Ideally we would want to know if the adapter is going to resolve this element into its ID
+    // so we could tell if this is a real difference, but since we can't do that with the current
+    // design, we take the safer option and say this is always a change
     const type = new ObjectType({
       elemID: new ElemID('adapter', 'type'),
       fields: {

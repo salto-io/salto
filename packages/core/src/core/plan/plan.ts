@@ -19,9 +19,8 @@ import {
   Element, isObjectType, isInstanceElement, ChangeDataType, isField, isPrimitiveType,
   ChangeValidator, Change, ChangeError, DependencyChanger, ChangeGroupIdFunction, getChangeData,
   isAdditionOrRemovalChange, isFieldChange, ReadOnlyElementsSource, ElemID, isVariable,
-  Value, isReferenceExpression, BuiltinTypesByFullName, isAdditionChange,
-  isModificationChange, isRemovalChange, ReferenceExpression, isStaticFile,
-  compareStringsIgnoreNewlineDifferences,
+  Value, isReferenceExpression, compareSpecialValues, BuiltinTypesByFullName, isAdditionChange,
+  isModificationChange, isRemovalChange, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { DataNodeMap, DiffNode, DiffGraph, Group, GroupDAG, DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
@@ -39,11 +38,93 @@ const { resolve, resolveReferenceExpression } = expressions
 
 const log = logger(module)
 
+const COMPARE_RETURN = 'return'
+const COMPARE_RECURSE = 'recurse'
+
+type CompareReturnValue = {
+  returnCode: typeof COMPARE_RETURN
+  returnValue: boolean
+} | {
+  returnCode: typeof COMPARE_RECURSE
+  returnValue: {
+    firstValue: Value
+    secondValue: Value
+  }
+}
+
 export type IDFilter = (id: ElemID) => boolean | Promise<boolean>
 
-const shouldResolve = (ref: ReferenceExpression): boolean =>
-  !(ref.elemID.isTopLevel() || ref.elemID.idType === 'field')
-    || ref.elemID.idType === 'var'
+const shouldResolve = (ref: ReferenceExpression): boolean => (
+  // Do not resolve references to elements because we expect them to have their own
+  // node in the graph and we cannot know here if a difference in an element would
+  // cause a difference in the reference. We do resolve variables because they always
+  // point to a primitive value that we can compare
+  !ref.elemID.isBaseID() || ref.elemID.idType === 'var'
+)
+
+
+const compareReferences = async (
+  first: Value,
+  second: Value,
+  firstSrc: ReadOnlyElementsSource,
+  secondSrc: ReadOnlyElementsSource
+): Promise<CompareReturnValue> => {
+  // if both values are ReferenceExpressions they are compared by their elemID
+  if (isReferenceExpression(first) && isReferenceExpression(second)) {
+    return {
+      returnCode: COMPARE_RETURN,
+      returnValue: first.elemID.isEqual(second.elemID),
+    }
+  }
+
+  // if only first value is a ReferenceExpression and it should be resolved -
+  // its value is compared with the second value
+  if (isReferenceExpression(first) && shouldResolve(first)) {
+    if (first.value !== undefined) {
+      return {
+        returnCode: COMPARE_RECURSE,
+        returnValue: {
+          firstValue: first.value,
+          secondValue: second,
+        },
+      }
+    }
+    const firstResolved = await resolveReferenceExpression(first, firstSrc, {})
+    return {
+      returnCode: COMPARE_RECURSE,
+      returnValue: {
+        firstValue: firstResolved.value,
+        secondValue: second,
+      },
+    }
+  }
+
+  // if only second value is a ReferenceExpression and it should be resolved -
+  // its value is compared with the first value
+  if (isReferenceExpression(second) && shouldResolve(second)) {
+    if (second.value !== undefined) {
+      return {
+        returnCode: COMPARE_RECURSE,
+        returnValue: {
+          firstValue: first,
+          secondValue: second.value,
+        },
+      }
+    }
+    const secondResolved = await resolveReferenceExpression(second, secondSrc, {})
+    return {
+      returnCode: COMPARE_RECURSE,
+      returnValue: {
+        firstValue: first,
+        secondValue: secondResolved.value,
+      },
+    }
+  }
+  return {
+    returnCode: COMPARE_RETURN,
+    returnValue: false,
+  }
+}
 
 /**
  * Check if 2 nodes in the DAG are equals or not
@@ -54,42 +135,21 @@ const compareValuesAndLazyResolveRefs = async (
   firstSrc: ReadOnlyElementsSource,
   secondSrc: ReadOnlyElementsSource
 ): Promise<boolean> => {
-  if (isStaticFile(first) && isStaticFile(second)) {
-    return first.isEqual(second)
-  }
-
-  // if both values are ReferenceExpressions they are compared by their elemID
-  if (isReferenceExpression(first) && isReferenceExpression(second)) {
-    return first.elemID.isEqual(second.elemID)
-  }
-
-  // if only first value is a ReferenceExpression and it should be resolved -
-  // its value is compared with the second value
-  if (isReferenceExpression(first) && shouldResolve(first)) {
-    if (first.value !== undefined) {
-      return compareValuesAndLazyResolveRefs(first.value, second, firstSrc, secondSrc)
-    }
-    const firstResolved = await resolveReferenceExpression(first, firstSrc, {})
-    return compareValuesAndLazyResolveRefs(firstResolved.value, second, firstSrc, secondSrc)
-  }
-
-  // if only second value is a ReferenceExpression and it should be resolved -
-  // its value is compared with the first value
-  if (isReferenceExpression(second) && shouldResolve(second)) {
-    if (second.value !== undefined) {
-      return compareValuesAndLazyResolveRefs(first, second.value, firstSrc, secondSrc)
-    }
-    const secondResolved = await resolveReferenceExpression(second, secondSrc, {})
-    return compareValuesAndLazyResolveRefs(first, secondResolved.value, firstSrc, secondSrc)
-  }
-
-  // if we got here with a ReferenceExpression it means that the values aren't equal
+  // compareSpecialValues doesn't compare nested references right if they are not recursively
+  // resolved. We are using here lazy resolving so we can't use compareSpecialValues to compare
+  // references
   if (isReferenceExpression(first) || isReferenceExpression(second)) {
-    return false
+    const referencesCompareResult = await compareReferences(first, second, firstSrc, secondSrc)
+    if (referencesCompareResult.returnCode === COMPARE_RETURN) {
+      return referencesCompareResult.returnValue
+    }
+    const { firstValue, secondValue } = referencesCompareResult.returnValue
+    return compareValuesAndLazyResolveRefs(firstValue, secondValue, firstSrc, secondSrc)
   }
 
-  if (typeof first === 'string' && typeof second === 'string') {
-    return compareStringsIgnoreNewlineDifferences(first, second)
+  const specialCompareRes = compareSpecialValues(first, second)
+  if (values.isDefined(specialCompareRes)) {
+    return specialCompareRes
   }
 
   if (_.isArray(first) && _.isArray(second)) {

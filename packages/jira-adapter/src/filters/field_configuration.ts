@@ -91,7 +91,7 @@ const filter: FilterCreator = ({ config, client }) => ({
       relevantChanges as Change<InstanceElement>[],
       async change => {
         if (getChangeData(change).value.isDefault && isModificationChange(change)) {
-          log.warn(`Skipping default deploy for default ${FIELD_CONFIGURATION_TYPE_NAME} because it is not supported`)
+          log.info(`Skipping default deploy for default ${FIELD_CONFIGURATION_TYPE_NAME} because it is not supported`)
         } else {
           await defaultDeployChange({
             change,

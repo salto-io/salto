@@ -53,6 +53,7 @@ import {
 import { errorOutputLine, outputLine } from '../outputer'
 import { processOauthCredentials } from '../cli_oauth_authenticator'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
+import { convertValueType } from './common/config_override'
 
 const { isDefined } = values
 
@@ -84,13 +85,13 @@ const LOGIN_PARAMETER_OPTION: KeyedOption<LoginParametersArg> = {
 }
 
 const entryFromRawLoginParameter = (rawLoginParameter: string): string[] => {
-  const splitValues = rawLoginParameter.split('=')
-  if (splitValues.length !== 2) {
+  const match = rawLoginParameter.match(/^(\w+?)=(.+)$/)
+  if (match === null) {
     throw new Error(`Parameter: "${rawLoginParameter}" is in a wrong format. Expected format is parameter=value`)
   }
-  return [splitValues[0].trim(), splitValues[1].trim()]
+  const [key, value] = match.slice(1)
+  return [key, convertValueType(value)]
 }
-
 
 const getOauthConfig = async (
   oauthMethod: OAuthMethod,

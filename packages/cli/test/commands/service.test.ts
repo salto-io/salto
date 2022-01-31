@@ -249,7 +249,7 @@ describe('service command group', () => {
                 login: true,
                 loginParameters: [
                   'username=testUser',
-                  'password=testPassword',
+                  'password="testPass\\"w==ord"',
                   'token=testToken',
                   'sandbox=y',
                 ],

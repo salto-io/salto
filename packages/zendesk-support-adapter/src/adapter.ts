@@ -22,7 +22,6 @@ import {
   client as clientUtils,
   elements as elementUtils,
   deployment as deploymentUtils,
-  references as referencesUtils,
 } from '@salto-io/adapter-components'
 import { logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'
@@ -34,8 +33,7 @@ import { ZENDESK_SUPPORT } from './constants'
 import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
 import { getChangeGroupIds } from './group_change'
-import fieldReferencesFilter, { fieldNameToTypeMappingDefs,
-  ZendeskSupportFieldReferenceResolver } from './filters/field_references'
+import fieldReferencesFilter, { lookupFunc } from './filters/field_references'
 import unorderedListsFilter from './filters/unordered_lists'
 import viewFilter from './filters/view'
 import workspaceFilter from './filters/workspace'
@@ -50,6 +48,7 @@ import ticketFieldFilter from './filters/custom_field_options/ticket_field'
 import userFieldFilter from './filters/custom_field_options/user_field'
 import dynamicContentFilter from './filters/dynamic_content'
 import restrictionFilter from './filters/restriction'
+import organizationFieldFilter from './filters/organization_field'
 import defaultDeployFilter from './filters/default_deploy'
 
 const log = logger(module)
@@ -73,11 +72,16 @@ export const DEFAULT_FILTERS = [
   accountSettingsFilter,
   dynamicContentFilter,
   restrictionFilter,
+  organizationFieldFilter,
   fieldReferencesFilter,
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,
   // defaultDeployFilter should be last!
   defaultDeployFilter,
+]
+
+const SKIP_RESOLVE_TYPE_NAMES = [
+  'organization_field__custom_field_options',
 ]
 
 export interface ZendeskAdapterParams {
@@ -168,12 +172,11 @@ export default class ZendeskAdapter implements AdapterOperations {
       })) as Change<InstanceElement>[]
 
     const runner = await this.createFiltersRunner()
-    const lookupFunc = referencesUtils.generateLookupFunc(
-      fieldNameToTypeMappingDefs,
-      defs => new ZendeskSupportFieldReferenceResolver(defs)
-    )
     const resolvedChanges = await awu(changesToDeploy)
-      .map(change => resolveChangeElement(change, lookupFunc))
+      .map(async change =>
+        (SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
+          ? change
+          : resolveChangeElement(change, lookupFunc)))
       .toArray()
     await runner.preDeploy(resolvedChanges)
     const { deployResult } = await runner.deploy(resolvedChanges)
@@ -194,7 +197,9 @@ export default class ZendeskAdapter implements AdapterOperations {
   // eslint-disable-next-line class-methods-use-this
   public get deployModifiers(): DeployModifiers {
     return {
-      changeValidator: createChangeValidator(this.userConfig[API_DEFINITIONS_CONFIG]),
+      changeValidator: createChangeValidator(
+        this.userConfig[API_DEFINITIONS_CONFIG], ['organization_field__custom_field_options']
+      ),
       dependencyChanger: deploymentUtils.dependency.removeStandaloneFieldDependency,
       getChangeGroupIds,
     }

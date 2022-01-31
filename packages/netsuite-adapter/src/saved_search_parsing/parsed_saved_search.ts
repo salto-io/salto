@@ -251,7 +251,7 @@ export const savedsearchType = (): TypeAndInnerTypes => {
         refType: createRefToElmWithValue(new ListType(savedSearchReturnField)),
       },
       sort_columns: {
-        refType: createRefToElmWithValue(savedSearchSortColumns),
+        refType: new ListType(savedSearchSortColumns),
       },
       audience: {
         refType: createRefToElmWithValue(savedSearchAudience),

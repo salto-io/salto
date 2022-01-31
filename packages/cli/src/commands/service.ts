@@ -128,19 +128,8 @@ const getLoginConfig = async (
   return newConfig
 }
 
-const getLoginInputFlow = async (
-  workspace: Workspace,
-  authMethods: AdapterAuthentication,
-  output: CliOutput,
-  authType: AdapterAuthMethod,
-  account: string,
-  loginParameters?: string[]
-): Promise<void> => {
-  const createConfigFromLoginParameters = async (credentialsType: ObjectType)
-    : Promise<InstanceElement> => {
-    if (_.isUndefined(loginParameters)) {
-      throw new Error('Login parameters are undefined')
-    }
+const createConfigFromLoginParameters = (loginParameters: string[]) => (
+  async (credentialsType: ObjectType): Promise<InstanceElement> => {
     const configValues = Object.fromEntries(loginParameters.map(entryFromRawLoginParameter))
     const missingLoginParameters = Object.keys(credentialsType.fields)
       .filter(key => _.isUndefined(configValues[key]))
@@ -149,9 +138,20 @@ const getLoginInputFlow = async (
     }
     return new InstanceElement(ElemID.CONFIG_NAME, credentialsType, configValues)
   }
-  const newConfig = isDefined(loginParameters)
-    ? await getLoginConfig(authType, authMethods, output, createConfigFromLoginParameters)
-    : await getLoginConfig(authType, authMethods, output, getCredentialsFromUser)
+)
+
+const getLoginInputFlow = async (
+  workspace: Workspace,
+  authMethods: AdapterAuthentication,
+  output: CliOutput,
+  authType: AdapterAuthMethod,
+  account: string,
+  loginParameters?: string[]
+): Promise<void> => {
+  const getLoginInput = isDefined(loginParameters)
+    ? createConfigFromLoginParameters(loginParameters)
+    : getCredentialsFromUser
+  const newConfig = await getLoginConfig(authType, authMethods, output, getLoginInput)
   await updateCredentials(workspace, newConfig, account)
   output.stdout.write(EOL)
   outputLine(formatLoginUpdated, output)

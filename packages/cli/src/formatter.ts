@@ -26,9 +26,8 @@ import {
 import { Plan, PlanItem, FetchChange, FetchResult, LocalChange, getSupportedServiceAdapterNames } from '@salto-io/core'
 import { errors, SourceFragment, parser, WorkspaceComponents, StateRecency } from '@salto-io/workspace'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import Prompts from './prompts'
-import { isDefined } from '@salto-io/lowerdash/dist/src/values'
 
 const { awu } = collections.asynciterable
 
@@ -272,7 +271,7 @@ export const formatPreDeployActions = (
 ): string[] => {
   const preDeployActions = wsChangeErrors
     .map(wsError => wsError.deployActions?.preAction)
-    .filter(isDefined)
+    .filter(values.isDefined)
   if (_.isEmpty(preDeployActions)) {
     return [emptyLine()]
   }

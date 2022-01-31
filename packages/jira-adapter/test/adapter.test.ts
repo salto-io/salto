@@ -128,7 +128,7 @@ describe('adapter', () => {
         if (isRemovalChange(change)) {
           throw new Error('some error')
         }
-        throw new client.HTTPError('some error', { status: 400, data: { errorMessages: ['errorMessage'] } })
+        throw new client.HTTPError('some error', { status: 400, data: { errorMessages: ['errorMessage'], errors: { key: 'value' } } })
       })
 
       const deployRes = await adapter.deploy({
@@ -142,7 +142,7 @@ describe('adapter', () => {
       })
 
       expect(deployRes.errors).toEqual([
-        new Error('Deployment of jira.FieldConfigurationIssueTypeItem.instance.inst1 failed: Error: some error. errorMessage'),
+        new Error('Deployment of jira.FieldConfigurationIssueTypeItem.instance.inst1 failed: Error: some error. errorMessage, {"key":"value"}'),
         new Error('Deployment of jira.FieldConfigurationIssueTypeItem.instance.inst2 failed: Error: some error'),
       ])
     })

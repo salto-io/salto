@@ -113,6 +113,19 @@ describe('salesforce client', () => {
       log = jest.spyOn(logging, 'error')
     })
 
+    it('retries with 400 error', async () => {
+      const dodoScope = nock('http://dodo22')
+        .post(/.*/)
+        .times(1)
+        .reply(400, {})
+        .post(/.*/)
+        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: { metadataObjects: [] } } } } },
+          headers)
+      const res = await client.listMetadataTypes()
+      expect(dodoScope.isDone()).toBeTruthy()
+      expect(res).toEqual([])
+    })
+
     it('fails if max attempts was reached ', async () => {
       const dodoScope = nock('http://dodo22')
         .persist()
@@ -155,17 +168,6 @@ describe('salesforce client', () => {
   })
 
   describe('with other errors ', () => {
-    it('retries with 400 error', async () => {
-      const dodoScope = nock('http://dodo22')
-        .post(/.*/)
-        .times(1)
-        .reply(400, {})
-        .post(/.*/)
-        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: { metadataObjects: [] } } } } },
-          headers)
-      await client.listMetadataTypes()
-      expect(dodoScope.isDone()).toBeTruthy()
-    })
     it('fails on first error without retries', async () => {
       const dodoScope = nock('http://dodo22')
         .post(/.*/)

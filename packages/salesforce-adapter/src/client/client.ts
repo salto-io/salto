@@ -14,9 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { IncomingMessage } from 'http'
 import { EOL } from 'os'
-import requestretry, { RequestRetryOptions, RetryStrategies } from 'requestretry'
+import requestretry, { RequestRetryOptions, RetryStrategies, RetryStrategy } from 'requestretry'
 import Bottleneck from 'bottleneck'
 import { collections, decorators, hash } from '@salto-io/lowerdash'
 import {
@@ -285,9 +284,13 @@ const sendChunked = async <TIn, TOut>({
 
 export class ApiLimitsTooLowError extends Error {}
 
+const retry400ErrorWrapper = (strategy: RetryStrategy): RetryStrategy =>
+  (err, response, body) =>
+    strategy(err, response, body) || response.statusCode === 400
+
 const createRetryOptions = (retryOptions: Required<ClientRetryConfig>): RequestRetryOptions => ({
   maxAttempts: retryOptions.maxAttempts,
-  retryStrategy: RetryStrategies[retryOptions.retryStrategy],
+  retryStrategy: retry400ErrorWrapper(RetryStrategies[retryOptions.retryStrategy]),
   delayStrategy: (err, _response, _body) => {
     log.error('failed to run SFDC call for reason: %s. Retrying in %ss.',
       err?.message ?? '', (retryOptions.retryDelay / 1000))
@@ -324,11 +327,6 @@ export const loginFromCredentialsAndReturnOrgId = async (
 
   return identityInfo.organization_id
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const retryNetworkOr400 = (err: Error, response: IncomingMessage, body: any): boolean =>
-  RetryStrategies.NetworkError(err, response, body)
-    || response?.statusCode === 400
 
 export const getConnectionDetails = async (
   creds: Credentials, connection? : Connection): Promise<{
@@ -379,9 +377,6 @@ export default class SalesforceClient {
     this.credentials = credentials
     this.config = config
     this.retryOptions = createRetryOptions(_.defaults({}, config?.retry, DEFAULT_RETRY_OPTS))
-    if (!config?.retry?.retryStrategy) {
-      this.retryOptions.retryStrategy = retryNetworkOr400
-    }
     this.conn = connection ?? createConnectionFromCredentials(
       credentials,
       this.retryOptions,

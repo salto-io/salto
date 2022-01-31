@@ -29,6 +29,16 @@ const VALUES_TO_SORT: ValueToSort[] = [
     fieldName: 'permissions',
     sortBy: ['permission', 'holder.type', 'holder.parameter'],
   },
+  {
+    typeName: 'Workflow',
+    fieldName: 'statuses',
+    sortBy: ['id.elemID.name'],
+  },
+  {
+    typeName: 'IssueTypeScreenScheme',
+    fieldName: 'issueTypeMappings',
+    sortBy: ['issueTypeId.elemID.name'],
+  },
 ]
 
 const getValue = (value: Value): Value => (

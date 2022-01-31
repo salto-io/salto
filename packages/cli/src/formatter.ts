@@ -28,6 +28,7 @@ import { errors, SourceFragment, parser, WorkspaceComponents, StateRecency } fro
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import Prompts from './prompts'
+import { isDefined } from '@salto-io/lowerdash/dist/src/values'
 
 const { awu } = collections.asynciterable
 
@@ -268,20 +269,23 @@ export const formatChangeErrors = (
 export const formatPreDeployActions = (
   wsChangeErrors: ReadonlyArray<ChangeWorkspaceError>
 ): string[] => {
-  if (!wsChangeErrors.find(wsError => wsError.deployActions?.preAction)) {
+  const preDeployActions = wsChangeErrors
+    .map(wsError => wsError.deployActions?.preAction)
+    .filter(isDefined)
+  if (_.isEmpty(preDeployActions)) {
     return [emptyLine()]
   }
+  const groupedByPreDeployLabel = _(preDeployActions)
+    .uniqBy(preAction => Boolean(preAction.label))
+    .value()
   return [emptyLine(),
     header(Prompts.DEPLOY_PRE_ACTION_HEADER),
     emptyLine(),
-    ...wsChangeErrors.flatMap(wsError => {
-      if (wsError.deployActions?.preAction) {
-        return [subHeader(wsError.deployActions.preAction.label),
-          ...wsError.deployActions.preAction.subtext,
-          emptyLine()]
-      }
-      return []
-    })]
+    ...groupedByPreDeployLabel.flatMap(preDeploy => [
+      subHeader(preDeploy.label),
+      ...preDeploy.subtext,
+    ]),
+  ]
 }
 
 export const formatExecutionPlan = async (

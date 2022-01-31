@@ -27,14 +27,16 @@ describe('unsupportedFieldConfigurationsValidator', () => {
   })
 
   it('should return an error if id is a reference to a locked field', async () => {
-    instance.value.fields = [{
-      id: new ReferenceExpression(new ElemID(JIRA, 'Field', 'instance', 'inst'), {
-        value: {
-          id: 'inst',
-          isLocked: true,
-        },
-      }),
-    }]
+    instance.value.fields = {
+      inst: {
+        id: new ReferenceExpression(new ElemID(JIRA, 'Field', 'instance', 'inst'), {
+          value: {
+            id: 'inst',
+            isLocked: true,
+          },
+        }),
+      },
+    }
 
     expect(await unsupportedFieldConfigurationsValidator([
       toChange({
@@ -51,13 +53,15 @@ describe('unsupportedFieldConfigurationsValidator', () => {
   })
 
   it('should not return an error if field configuration is valid', async () => {
-    instance.value.fields = [{
-      id: new ReferenceExpression(new ElemID(JIRA, 'Field', 'instance', 'inst'), {
-        value: {
-          id: 'inst',
-        },
-      }),
-    }]
+    instance.value.fields = {
+      inst: {
+        id: new ReferenceExpression(new ElemID(JIRA, 'Field', 'instance', 'inst'), {
+          value: {
+            id: 'inst',
+          },
+        }),
+      },
+    }
 
     expect(await unsupportedFieldConfigurationsValidator([
       toChange({
@@ -67,14 +71,16 @@ describe('unsupportedFieldConfigurationsValidator', () => {
   })
 
   it('should not return an error if an invalid field config was not changed', async () => {
-    instance.value.fields = [{
-      id: new ReferenceExpression(new ElemID(JIRA, 'Field', 'instance', 'inst'), {
-        value: {
-          id: 'inst',
-          isLocked: true,
-        },
-      }),
-    }]
+    instance.value.fields = {
+      inst: {
+        id: new ReferenceExpression(new ElemID(JIRA, 'Field', 'instance', 'inst'), {
+          value: {
+            id: 'inst',
+            isLocked: true,
+          },
+        }),
+      },
+    }
 
     expect(await unsupportedFieldConfigurationsValidator([
       toChange({

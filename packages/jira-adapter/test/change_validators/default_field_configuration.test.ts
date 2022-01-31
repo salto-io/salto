@@ -28,7 +28,7 @@ describe('defaultFieldConfigurationValidator', () => {
       type,
       {
         isDefault: true,
-        fields: [],
+        fields: {},
       }
     )
   })

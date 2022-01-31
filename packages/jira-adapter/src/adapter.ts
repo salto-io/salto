@@ -31,6 +31,7 @@ import sharePermissionFilter from './filters/share_permission'
 import sortListsFilter from './filters/sort_lists'
 import boardFilter from './filters/board'
 import screenFilter from './filters/screen/screen'
+import mapListsFilter from './filters/map_lists'
 import issueTypeScreenSchemeFilter from './filters/issue_type_screen_scheme'
 import fieldConfigurationFilter from './filters/field_configuration'
 import fieldConfigurationTrashedFieldsFilter from './filters/field_configuration_trashed_fields'
@@ -84,6 +85,8 @@ export const DEFAULT_FILTERS = [
   fieldConfigurationTrashedFieldsFilter,
   // Must run after fieldReferencesFilter
   sortListsFilter,
+  // Must run after fieldReferencesFilter
+  mapListsFilter,
   hiddenValuesInListsFilter,
   // Must be last
   defaultInstancesDeployFilter,

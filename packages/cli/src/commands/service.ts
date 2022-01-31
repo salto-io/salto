@@ -88,7 +88,7 @@ const entryFromRawLoginParameter = (rawLoginParameter: string): string[] => {
   if (splitValues.length !== 2) {
     throw new Error(`Parameter: "${rawLoginParameter}" is in a wrong format. Expected format is parameter=value`)
   }
-  return [splitValues[0].trim(), splitValues[1].trim()]
+  return [splitValues[0].trim(), splitValues[1]]
 }
 
 

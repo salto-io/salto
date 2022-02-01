@@ -22,7 +22,7 @@ export const listMappedByFieldMapping: Record<string, string | string[]> = {
   addressForm_mainFields_fieldGroup_fields_field: 'id',
 
   // centercategory
-  // NOTE: this type would have the first OR the second fields lists here.
+  // NOTE: Instances of this type would have the first OR the second fields lists here.
   // On the transformation from lists to maps there is a check of which field to use for each item.
   centercategory_links_link: ['linkid', 'linkobject'],
 

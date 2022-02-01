@@ -21,11 +21,13 @@ import {
   config as configUtils, deployment, client as clientUtils,
 } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import ZendeskClient from './client/client'
 import { getZendeskError } from './errors'
 import { ZendeskApiConfig } from './config'
 
 const log = logger(module)
+const { awu } = collections.asynciterable
 
 export const addIdUponAddition = (
   change: Change<InstanceElement>,
@@ -152,4 +154,17 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
 
   const [errors, appliedChanges] = _.partition(result.flat(), _.isError)
   return { errors, appliedChanges }
+}
+
+export const deployChangesByGroups = async <T extends Change<ChangeDataType>>(
+  changeGroups: T[][],
+  deployChangeFunc: (change: T) => Promise<void | T[]>
+): Promise<DeployResult> => {
+  const deployGroupResults = await awu(changeGroups)
+    .map(async changeGroup => deployChanges(changeGroup, deployChangeFunc))
+    .toArray()
+  return {
+    errors: deployGroupResults.flatMap(res => res.errors),
+    appliedChanges: deployGroupResults.flatMap(res => res.appliedChanges),
+  }
 }

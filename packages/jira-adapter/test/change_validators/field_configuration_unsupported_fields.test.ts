@@ -29,7 +29,7 @@ describe('unsupportedFieldConfigurationsValidator', () => {
   it('should return an error if id is a reference to a locked field', async () => {
     instance.value.fields = {
       inst: {
-        id: new ReferenceExpression(new ElemID(JIRA, 'Field', 'instance', 'inst'), {
+        id: new ReferenceExpression(new ElemID(JIRA, 'Field', 'instance', 'instName'), {
           value: {
             id: 'inst',
             isLocked: true,
@@ -47,7 +47,7 @@ describe('unsupportedFieldConfigurationsValidator', () => {
         elemID: instance.elemID,
         severity: 'Warning',
         message: `Salto can't deploy fields configuration of ${instance.elemID.getFullName()} because they are locked`,
-        detailedMessage: 'Salto can\'t deploy the configuration of fields: inst. If continuing, they will be omitted from the deployment',
+        detailedMessage: 'Salto can\'t deploy the configuration of fields: instName because they are locked. If continuing, they will be omitted from the deployment',
       },
     ])
   })

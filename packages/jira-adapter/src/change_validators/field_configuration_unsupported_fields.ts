@@ -18,7 +18,7 @@ import { ChangeValidator, compareSpecialValues, getChangeData, InstanceElement, 
 import { values } from '@salto-io/lowerdash'
 
 const getFieldId = (field: Values): string => (
-  isReferenceExpression(field.id) ? field.id.value.value.id : field.id
+  isReferenceExpression(field.id) ? field.id.elemID.name : field.id
 )
 
 const getDiffFields = (change: ModificationChange<InstanceElement>): Values[] => {
@@ -57,7 +57,7 @@ export const unsupportedFieldConfigurationsValidator: ChangeValidator = async ch
           elemID,
           severity: 'Warning' as SaltoErrorSeverity,
           message: `Salto can't deploy fields configuration of ${elemID.getFullName()} because they are locked`,
-          detailedMessage: `Salto can't deploy the configuration of fields: ${unsupportedIds.join(', ')}. If continuing, they will be omitted from the deployment`,
+          detailedMessage: `Salto can't deploy the configuration of fields: ${unsupportedIds.join(', ')} because they are locked. If continuing, they will be omitted from the deployment`,
         }
       }
       return undefined

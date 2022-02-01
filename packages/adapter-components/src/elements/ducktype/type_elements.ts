@@ -61,8 +61,7 @@ const generateNestedType = ({
   typeNameOverrideConfig: Record<string, string>
   hasDynamicFields: boolean
   hideTypes?: boolean
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  isUnknownEntry?: (value: any) => boolean
+  isUnknownEntry?: (value: unknown) => boolean
 }): NestedTypeWithNestedTypes => {
   const validEntries = entries.filter(entry => entry !== undefined && entry !== null)
   const name = toNestedTypeName(parentName, typeName)
@@ -185,8 +184,7 @@ export const generateType = ({
   typeNameOverrideConfig?: Record<string, string>
   hideTypes?: boolean
   isSubType?: boolean
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  isUnknownEntry?: (value: any) => boolean
+  isUnknownEntry?: (value: unknown) => boolean
 }): ObjectTypeWithNestedTypes => {
   const typeRenameConfig = typeNameOverrideConfig ?? generateTypeRenameConfig(
     transformationConfigByType

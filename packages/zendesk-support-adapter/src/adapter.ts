@@ -168,14 +168,19 @@ export default class ZendeskAdapter implements AdapterOperations {
    */
   @logDuration('deploying account configuration')
   async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
-    const instanceChanges = changeGroup.changes.filter(isInstanceChange)
+    const [instanceChanges, nonInstanceChanges] = _.partition(changeGroup.changes, isInstanceChange)
+    if (nonInstanceChanges.length > 0) {
+      log.warn(`We currently can't deploy types. Therefore, the following changes wouldn't be deployed: ${
+        nonInstanceChanges.map(elem => getChangeData(elem).elemID.getFullName()).join(', ')}`)
+    }
     const changesToDeploy = instanceChanges
       .map(change => ({
         action: change.action,
         data: _.mapValues(change.data, (instance: InstanceElement) =>
-          replaceInstanceTypeForDeploy(
-            instance.clone(), this.userConfig[API_DEFINITIONS_CONFIG]
-          )),
+          replaceInstanceTypeForDeploy({
+            instance,
+            config: this.userConfig[API_DEFINITIONS_CONFIG],
+          })),
       })) as Change<InstanceElement>[]
     const runner = await this.createFiltersRunner()
     const resolvedChanges = await awu(changesToDeploy)
@@ -197,7 +202,10 @@ export default class ZendeskAdapter implements AdapterOperations {
     const appliedChanges = await awu(appliedChangesBeforeRestore)
       .map(change => restoreChangeElement(change, sourceElements, lookupFunc))
       .toArray()
-    const restoredAppliedChanges = restoreInstanceTypeFromDeploy(appliedChanges, instanceChanges)
+    const restoredAppliedChanges = restoreInstanceTypeFromDeploy({
+      appliedChanges,
+      originalInstanceChanges: instanceChanges,
+    })
     return { appliedChanges: restoredAppliedChanges, errors: deployResult.errors }
   }
 

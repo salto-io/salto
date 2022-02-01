@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 export { toInstance } from './instance_elements'
-export { replaceInstanceTypeForDeploy, restoreInstanceTypeFromDeploy } from './deployment'
+export { replaceInstanceTypeForDeploy, restoreInstanceTypeFromDeploy } from './deployment_placeholder_types'
 export { extractStandaloneFields } from './standalone_field_extractor'
 export { getAllElements, getTypeAndInstances } from './transformer'
 export { generateType, toNestedTypeName } from './type_elements'

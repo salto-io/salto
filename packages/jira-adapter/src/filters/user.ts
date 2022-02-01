@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isInstanceElement } from '@salto-io/adapter-api'
+import { BuiltinTypes, Field, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import { transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
+import _ from 'lodash'
 import { FilterCreator } from '../filter'
 
 const { awu } = collections.asynciterable
@@ -34,14 +35,24 @@ const filter: FilterCreator = () => ({
           values: instance.value,
           type: await instance.getType(),
           strict: false,
-          transformFunc: async ({ value, field }) => {
-            if ((await field?.getType())?.elemID.typeName === USER_TYPE_NAME
-              && value.displayName !== undefined) {
+          transformFunc: ({ value, field }) => {
+            if (field?.refType.elemID.typeName === USER_TYPE_NAME) {
               return value.displayName
             }
             return value
           },
         }) ?? instance.value
+      })
+
+    await awu(elements)
+      .filter(isObjectType)
+      .forEach(async type => {
+        type.fields = _.mapValues(
+          type.fields,
+          field => (field.refType.elemID.typeName === USER_TYPE_NAME
+            ? new Field(type, field.name, BuiltinTypes.STRING, field.annotations)
+            : field)
+        )
       })
   },
 })

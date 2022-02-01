@@ -47,6 +47,7 @@ import fieldDeploymentFilter from './filters/fields/field_deployment_filter'
 import contextDeploymentFilter from './filters/fields/context_deployment_filter'
 import fieldTypeReferencesFilter from './filters/fields/field_type_references_filter'
 import avatarsFilter from './filters/avatars'
+import userFilter from './filters/user'
 import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
 
@@ -77,6 +78,7 @@ export const DEFAULT_FILTERS = [
   issueTypeScreenSchemeFilter,
   fieldConfigurationFilter,
   fieldConfigurationSchemeFilter,
+  userFilter,
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,

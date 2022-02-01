@@ -363,15 +363,24 @@ describe('instance_references filter', () => {
         .toHaveLength(3)
       expect(instanceWithRefs.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES])
         .toEqual([
-          { reference: new ReferenceExpression(
-            customSegmentInstance.elemID.createNestedID(SCRIPT_ID)
-          ) },
-          { reference: new ReferenceExpression(
-            workflowInstance.elemID.createNestedID('workflowstates', 'workflowstate', '0', 'workflowactions', '0', 'setfieldvalueaction', '0', SCRIPT_ID)
-          ) },
-          { reference: new ReferenceExpression(
-            workflowInstance.elemID.createNestedID(SCRIPT_ID)
-          ) },
+          {
+            reference: new ReferenceExpression(
+              customSegmentInstance.elemID.createNestedID(SCRIPT_ID)
+            ),
+            occurrences: undefined,
+          },
+          {
+            reference: new ReferenceExpression(
+              workflowInstance.elemID.createNestedID(SCRIPT_ID)
+            ),
+            occurrences: undefined,
+          },
+          {
+            reference: new ReferenceExpression(
+              workflowInstance.elemID.createNestedID('workflowstates', 'workflowstate', '0', 'workflowactions', '0', 'setfieldvalueaction', '0', SCRIPT_ID)
+            ),
+            occurrences: undefined,
+          },
         ])
     })
 

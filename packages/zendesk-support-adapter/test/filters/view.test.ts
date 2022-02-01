@@ -52,13 +52,14 @@ describe('views filter', () => {
         ids: [1],
       },
       execution: {
-        group_by: 'requester',
+        group_by: 123,
         group_order: 'asc',
         sort_by: 'nice_id',
         sort_order: 'desc',
         group: {
-          id: 'requester',
+          id: 123,
           title: 'Requester',
+          type: 'tagger',
           order: 'asc',
         },
         sort: {
@@ -183,6 +184,9 @@ describe('views filter', () => {
       expect(anotherClonedView.value.output.columns).toHaveLength(0)
       expect(anotherClonedView.value.any).toBeDefined()
       expect(anotherClonedView.value.any).toHaveLength(0)
+    })
+    it('should change group_by to be a string', async () => {
+      expect(clonedView.value.output.group_by).toEqual('123')
     })
   })
 

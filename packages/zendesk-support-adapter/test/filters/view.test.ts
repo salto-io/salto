@@ -165,6 +165,7 @@ describe('views filter', () => {
     it('should add output', async () => {
       expect(clonedView.value.output).toEqual({
         ...clonedView.value.execution,
+        group_by: '123',
         columns: ['subject', 'requester', 2],
       })
     })
@@ -184,9 +185,6 @@ describe('views filter', () => {
       expect(anotherClonedView.value.output.columns).toHaveLength(0)
       expect(anotherClonedView.value.any).toBeDefined()
       expect(anotherClonedView.value.any).toHaveLength(0)
-    })
-    it('should change group_by to be a string', async () => {
-      expect(clonedView.value.output.group_by).toEqual('123')
     })
   })
 

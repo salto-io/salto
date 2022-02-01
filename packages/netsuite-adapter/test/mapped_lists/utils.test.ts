@@ -168,11 +168,11 @@ describe('mapped lists', () => {
             scriptid: 's0m@ $CR1pt!*()',
             index: 2,
           },
-          custworkflow2_0: {
+          custworkflow2_2: {
             scriptid: '[scriptid=custworkflow2]',
             index: 3,
           },
-          custworkflow2_1: {
+          custworkflow2_3: {
             scriptid: '[type=workflow, scriptid=custworkflow2]',
             index: 4,
           },
@@ -346,11 +346,11 @@ describe('mapped lists', () => {
             scriptid: 's0m@ $CR1pt!*()',
             index: 2,
           },
-          custworkflow2_0: {
+          custworkflow2_2: {
             scriptid: '[scriptid=custworkflow2]',
             index: 3,
           },
-          custworkflow2_1: {
+          custworkflow2_3: {
             scriptid: '[type=workflow, scriptid=custworkflow2]',
             index: 4,
           },

@@ -67,9 +67,10 @@ export const convertFieldsTypesFromListToMap = async (
       return
     }
 
-    const listMappedByField = isField(innerType.fields.scriptid)
-      ? SCRIPT_ID
-      : listMappedByFieldMapping[innerType.elemID.name]
+    const listMappedByField = listMappedByFieldMapping[innerType.elemID.name]
+      ?? (isField(innerType.fields.scriptid)
+        ? SCRIPT_ID
+        : undefined)
     if (listMappedByField === undefined) {
       log.warn(`there's no field to map by in ${innerType.elemID.getFullName()}`)
       return
@@ -113,7 +114,7 @@ const addSuffixUntilUnique = (
   keyName: string,
   keySet: Set<string>,
   path?: ElemID,
-  suffixIndex = 0,
+  suffixIndex = 2,
 ): string => {
   const keyNameWithSuffix = `${keyName}_${suffixIndex}`
   if (keySet.has(keyNameWithSuffix)) {
@@ -129,9 +130,11 @@ const getUniqueItemKey = (
   keySet: Set<string>,
   path?: ElemID,
 ): string => {
+  // types may have more than one optional mapping field (see 'centercategory_links_link' in
+  // mapping.ts) so we're taking the first to be defined
   const mapFieldName = mapFieldNameList.find(fieldName => item[fieldName] !== undefined)
   if (mapFieldName === undefined) {
-    log.warn(`item in ${path?.getFullName()} have no mapFieldName key: ${mapFieldNameList.join(',')}`)
+    log.warn(`item in ${path?.getFullName()} has no mapFieldName key: ${mapFieldNameList.join(',')}`)
   }
 
   const mapFieldValue = getItemKey(

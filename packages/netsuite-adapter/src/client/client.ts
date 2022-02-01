@@ -32,6 +32,7 @@ import { getLookUpName, toCustomizationInfo } from '../transformer'
 import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../group_changes'
 import { DeployResult } from '../types'
 import { APPLICATION_ID } from '../constants'
+import { convertInstanceMapsToLists } from '../mapped_lists/utils'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -119,7 +120,8 @@ export default class NetsuiteClient {
       changedInstances,
       deployReferencedElements
     )).map(instance => resolveValues(instance, getLookUpName))
-      .map(instance => toCustomizationInfo(instance))
+      .map(convertInstanceMapsToLists)
+      .map(toCustomizationInfo)
       .toArray()
 
     const suiteAppId = getChangeData(changes[0]).value[APPLICATION_ID]

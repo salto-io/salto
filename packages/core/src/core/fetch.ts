@@ -790,8 +790,8 @@ export const fetchChangesFromWorkspace = async (
       differentConfig.map(config => config.elemID.adapter).join(', ')
     }`)
   }
-
-  if (await otherWorkspace.hasErrors(env)) {
+  if (!fromState
+    && wu.some(err => err.severity === 'Error', (await otherWorkspace.errors()).all())) {
     return createEmptyFetchChangeDueToError('Can not fetch from a workspace with errors.')
   }
 

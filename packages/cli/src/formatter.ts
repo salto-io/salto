@@ -266,24 +266,27 @@ export const formatChangeErrors = (
   return ret
 }
 
-export const formatPreDeployActions = (
-  wsChangeErrors: ReadonlyArray<ChangeWorkspaceError>
+export const formatDeployActions = (
+  wsChangeErrors: ReadonlyArray<ChangeWorkspaceError | ChangeError>,
+  isPreDeploy = true,
 ): string[] => {
-  const preDeployActions = wsChangeErrors
-    .map(wsError => wsError.deployActions?.preAction)
+  const deployActions = wsChangeErrors
+    .map(wsError => (isPreDeploy
+      ? wsError.deployActions?.preAction
+      : wsError.deployActions?.postAction))
     .filter(values.isDefined)
-  if (_.isEmpty(preDeployActions)) {
+  if (_.isEmpty(deployActions)) {
     return [emptyLine()]
   }
-  const groupedByPreDeployLabel = _(preDeployActions)
-    .uniqBy(preAction => Boolean(preAction.label))
+  const actionsUniqByLabel = _(deployActions)
+    .uniqBy(deployAction => deployAction.label)
     .value()
   return [emptyLine(),
-    header(Prompts.DEPLOY_PRE_ACTION_HEADER),
+    header(isPreDeploy ? Prompts.DEPLOY_PRE_ACTION_HEADER : Prompts.DEPLOY_POST_ACTION_HEADER),
     emptyLine(),
-    ...groupedByPreDeployLabel.flatMap(preDeploy => [
-      header(preDeploy.label),
-      ...preDeploy.subtext,
+    ...actionsUniqByLabel.flatMap(deployAction => [
+      header(deployAction.label),
+      ...deployAction.subtext,
     ]),
   ]
 }
@@ -296,7 +299,7 @@ export const formatExecutionPlan = async (
   const formattedPlanChangeErrors: string = formatChangeErrors(
     workspaceErrors
   )
-  const preDeployActionOutput: string[] = formatPreDeployActions(workspaceErrors)
+  const preDeployActionOutput: string[] = formatDeployActions(workspaceErrors)
   const planErrorsOutput: string[] = _.isEmpty(formattedPlanChangeErrors)
     ? [emptyLine()]
     : [emptyLine(),

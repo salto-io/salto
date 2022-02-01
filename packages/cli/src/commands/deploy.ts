@@ -23,7 +23,7 @@ import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_build
 import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts } from './common/accounts'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { outputLine, errorOutputLine } from '../outputer'
-import { header, formatExecutionPlan, deployPhaseHeader, cancelDeployOutput, formatItemDone, formatItemError, formatCancelAction, formatActionInProgress, formatActionStart, deployPhaseEpilogue, formatStateRecencies } from '../formatter'
+import { header, formatExecutionPlan, deployPhaseHeader, cancelDeployOutput, formatItemDone, formatItemError, formatCancelAction, formatActionInProgress, formatActionStart, deployPhaseEpilogue, formatStateRecencies, formatDeployActions } from '../formatter'
 import Prompts from '../prompts'
 import { getUserBooleanInput } from '../callbacks'
 import { getWorkspaceTelemetryTags, updateWorkspace, isValidWorkspaceForCommand, shouldRecommendFetch } from '../workspace/workspace'
@@ -221,6 +221,8 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
       cliExitCode = CliExitCode.AppError
     }
   }
+  const postDeployActionsOutput = formatDeployActions(actionPlan.changeErrors, false)
+  outputLine(postDeployActionsOutput.join('\n'), output)
   return cliExitCode
 }
 

@@ -56,7 +56,8 @@ export default class Prompts {
   public static readonly PLAN_STEPS_HEADER_PREVIEW = 'Salto has calculated the following deployment plan:'
   public static readonly PLAN_CHANGE_ERRS_HEADER = 'Encountered the following validations and will ignore their execution:'
   // TODO: what message should be the header here?
-  public static readonly DEPLOY_PRE_ACTION_HEADER = 'Before deploying we suggest to do the following actions:'
+  public static readonly DEPLOY_PRE_ACTION_HEADER = 'Before deploying we suggest you to do the following actions:'
+  public static readonly DEPLOY_POST_ACTION_HEADER = 'We suggest you to do the following actions:'
 
   public static readonly EMPTY_PLAN = 'Nothing to do.'
 

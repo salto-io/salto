@@ -104,3 +104,9 @@ export const validateFetchConfig = (
     throw Error(`Invalid type names in ${fetchConfigPath}: ${invalidIncludeTypes}`)
   }
 }
+
+export const getTransformationConfigByType = (typesConfig: Record<string, TypeDuckTypeConfig>):
+Record<string, DuckTypeTransformationConfig> => _.pickBy(
+  _.mapValues(typesConfig, def => def.transformation),
+  isDefined,
+)

@@ -14,20 +14,26 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, isObjectType, ObjectType, Element } from '@salto-io/adapter-api'
-import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
-import { ID_SEPARATOR, toNestedTypeName } from './type_elements'
+import { isObjectType, Element } from '@salto-io/adapter-api'
+import { naclCase } from '@salto-io/adapter-utils'
+import { generateType, toNestedTypeName } from './type_elements'
 import { DATA_FIELD_ENTIRE_OBJECT } from '../../config/transformation'
-import { TypeDuckTypeConfig } from '../../config'
-import { SUBTYPES_PATH, TYPES_PATH } from '../constants'
+import { getTransformationConfigByType, TypeDuckTypeConfig, TypeDuckTypeDefaultsConfig } from '../../config'
 
+/**
+ * Adds the types that supposed to exist but weren't created since they had no instances
+ *
+ * Note: modifies the elements array in-place.
+ */
 export const addRemainingTypes = ({
-  elements, typesConfig, adapterName, includeTypes,
+  elements, typesConfig, adapterName, includeTypes, typeDefaultConfig, hideTypes,
 }: {
   elements: Element[]
   typesConfig: Record<string, TypeDuckTypeConfig>
   adapterName: string
   includeTypes: string[]
+  typeDefaultConfig: TypeDuckTypeDefaultsConfig
+  hideTypes?: boolean
 }): void => {
   const sourceTypeNameToTypeName = _(typesConfig)
     .pickBy(typeConfig => typeConfig.transformation?.sourceTypeName !== undefined)
@@ -38,11 +44,10 @@ export const addRemainingTypes = ({
   const typeNames = _(typesConfig)
     .entries()
     .flatMap(([typeName, typeConfig]) => {
-      const dataField = typeConfig.transformation?.dataField
-      const standAloneFields = typeConfig.transformation?.standaloneFields
+      const { dataField, standaloneFields } = typeConfig.transformation ?? {}
       const nestedFields = [
         ...((dataField && dataField !== DATA_FIELD_ENTIRE_OBJECT) ? [dataField] : []),
-        ...(standAloneFields ?? []).map(field => field.fieldName),
+        ...(standaloneFields ?? []).map(field => field.fieldName),
       ].map(fieldName => toNestedTypeName(typeName, fieldName))
       return [typeName, ...nestedFields]
     })
@@ -53,17 +58,16 @@ export const addRemainingTypes = ({
     .filter(isObjectType)
     .map(e => e.elemID.typeName))
   const typesToAdd = typeNames
-    .filter(typeName => !existingTypeNames.has(typeName))
-    .map(typeName => {
-      const naclName = naclCase(typeName)
-      return new ObjectType({
-        elemID: new ElemID(adapterName, typeName),
-        path: [
-          adapterName, TYPES_PATH,
-          ...(!includeTypes.includes(sourceTypeNameToTypeName[typeName] ?? typeName)
-            ? [SUBTYPES_PATH, ...naclName.split(ID_SEPARATOR).map(pathNaclCase)]
-            : [pathNaclCase(naclName)])],
-      })
-    })
+    .filter(typeName => !existingTypeNames.has(naclCase(typeName)))
+    .map(typeName => generateType({
+      adapterName,
+      entries: [{}],
+      name: typeName,
+      hasDynamicFields: false,
+      hideTypes,
+      transformationConfigByType: getTransformationConfigByType(typesConfig),
+      transformationDefaultConfig: typeDefaultConfig.transformation,
+      isSubType: !includeTypes.includes(sourceTypeNameToTypeName[typeName]),
+    }).type)
   elements.push(...typesToAdd)
 }

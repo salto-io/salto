@@ -330,6 +330,13 @@ export const getAllElements = async ({
   const instancesAndTypes = [
     ...Object.values(objectTypes), ...elements.filter(e => !isObjectType(e)),
   ]
-  addRemainingTypes({ adapterName, elements: instancesAndTypes, typesConfig: types, includeTypes })
+  addRemainingTypes({
+    adapterName,
+    elements: instancesAndTypes,
+    typesConfig: types,
+    includeTypes,
+    typeDefaultConfig: typeDefaults,
+    hideTypes,
+  })
   return instancesAndTypes
 }

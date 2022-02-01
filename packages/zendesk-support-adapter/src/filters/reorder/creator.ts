@@ -74,6 +74,8 @@ export const createReorderFilterCreator = (
       { [orderFieldName]: instancesReferences },
       [ZENDESK_SUPPORT, RECORDS_PATH, typeName, typeNameNaclCase],
     )
+    // Those types are already exist since we added the empty version of them
+    //  via the add remaining types mechanism. So we first need to remove the old versions
     _.remove(elements, element => element.elemID.isEqual(type.elemID))
     elements.push(type, instance)
   },

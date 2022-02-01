@@ -14,12 +14,13 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, InstanceElement, Element, BuiltinTypes } from '@salto-io/adapter-api'
-import { TypeDuckTypeConfig } from '../../../src/config'
+import { TypeDuckTypeConfig, TypeDuckTypeDefaultsConfig } from '../../../src/config'
 import { addRemainingTypes } from '../../../src/elements/ducktype/add_remaining_types'
 
 const ADAPTER_NAME = 'myAdapter'
 
 describe('add remaining types', () => {
+  const typeDefaultConfig: TypeDuckTypeDefaultsConfig = { transformation: { idFields: ['name'] } }
   const typesConfig: Record<string, TypeDuckTypeConfig> = {
     folder: {
       request: {
@@ -69,7 +70,14 @@ describe('add remaining types', () => {
   const includeTypes = ['dir', 'file', 'permission', 'workflow']
   it('should create all the needed types if elements exist', () => {
     const elements: Element[] = []
-    addRemainingTypes({ elements, typesConfig, adapterName: ADAPTER_NAME, includeTypes })
+    addRemainingTypes({
+      elements,
+      typesConfig,
+      adapterName: ADAPTER_NAME,
+      includeTypes,
+      typeDefaultConfig,
+      hideTypes: false,
+    })
     expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
       'myAdapter.file',
       'myAdapter.folder',
@@ -87,7 +95,14 @@ describe('add remaining types', () => {
     })
     const fileInstance = new InstanceElement('file1', fileType, { test: 'test1' })
     const elements = [fileType, fileInstance]
-    addRemainingTypes({ elements, typesConfig, adapterName: ADAPTER_NAME, includeTypes })
+    addRemainingTypes({
+      elements,
+      typesConfig,
+      adapterName: ADAPTER_NAME,
+      includeTypes,
+      typeDefaultConfig,
+      hideTypes: false,
+    })
     expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
       'myAdapter.file',
       'myAdapter.file.instance.file1',

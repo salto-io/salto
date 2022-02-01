@@ -24,7 +24,7 @@ import { DuckTypeTransformationConfig, DuckTypeTransformationDefaultConfig, getC
 import { TYPES_PATH, SUBTYPES_PATH } from '../constants'
 import { hideFields, markServiceIdField } from '../type_elements'
 
-export const ID_SEPARATOR = '__'
+const ID_SEPARATOR = '__'
 
 export const toNestedTypeName = (parentName: string, nestedTypeName: string): string => (
   `${parentName}${ID_SEPARATOR}${nestedTypeName}`

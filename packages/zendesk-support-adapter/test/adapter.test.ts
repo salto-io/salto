@@ -558,7 +558,9 @@ describe('adapter', () => {
       })
       const { elements } = await operations
         .fetch({ progressReporter: { reportProgress: () => null } })
-      const instances = elements.filter(isInstanceElement)
+      const instances = elements
+        .filter(isInstanceElement)
+        .filter(inst => inst.elemID.typeName === 'group')
       expect(instances).toHaveLength(4)
       expect(instances.map(e => e.elemID.getFullName()).sort()).toEqual([
         'zendesk_support.group.instance.Support',
@@ -588,7 +590,9 @@ describe('adapter', () => {
       )
       const { elements: newElements } = await operations
         .fetch({ progressReporter: { reportProgress: () => null } })
-      const newInstances = newElements.filter(isInstanceElement)
+      const newInstances = newElements
+        .filter(isInstanceElement)
+        .filter(inst => inst.elemID.typeName === 'group')
       expect(newInstances.map(e => e.elemID.getFullName()).sort()).toEqual([
         'zendesk_support.group.instance.Support',
       ])

@@ -17,6 +17,7 @@ import semver from 'semver'
 import moment from 'moment'
 import { Plan, PlanItem } from '@salto-io/core'
 import { Workspace, state, remoteMap, elementSource, pathIndex } from '@salto-io/workspace'
+import Prompts from '../../src/prompts'
 import { CliExitCode } from '../../src/types'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
@@ -218,6 +219,63 @@ describe('deploy command', () => {
         expect(result).toBe(CliExitCode.AppError)
         expect(callbacks.getUserBooleanInput).not.toHaveBeenCalled()
       })
+    })
+  })
+  describe('when there is Info severity error', () => {
+    it('should NOT print error message', async () => {
+      await action({
+        ...cliCommandArgs,
+        input: {
+          force: true,
+          dryRun: false,
+          detailedPlan: false,
+          accounts,
+        },
+        workspace,
+      })
+      expect(output.stdout.content).not.toMatch(/This should not be printed/s)
+      expect(output.stderr.content).not.toMatch(/This should not be printed/s)
+    })
+  })
+  describe('when there are deploy actions', () => {
+    const testDeployActionsVisability = async (userBooleanInput: boolean): Promise<void> => {
+      mockGetUserBooleanInput.mockResolvedValueOnce(userBooleanInput)
+      await action({
+        ...cliCommandArgs,
+        input: {
+          force: false,
+          dryRun: false,
+          detailedPlan: false,
+          accounts,
+          env: mocks.withEnvironmentParam,
+        },
+        workspace,
+      })
+      if (userBooleanInput) {
+        expect(output.stdout.content).not.toContain('Cancelling deploy')
+        expect(output.stdout.content).toContain('Deployment succeeded')
+      } else {
+        expect(output.stdout.content).toContain('Cancelling deploy')
+        expect(output.stdout.content).not.toContain('Deployment succeeded')
+      }
+      expect(output.stdout.content).toContain(Prompts.DEPLOY_PRE_ACTION_HEADER)
+      expect(output.stdout.content).toContain(Prompts.DEPLOY_POST_ACTION_HEADER)
+      expect(output.stdout.content).toMatch(/preDeployAction/s)
+      expect(output.stdout.content).toMatch(/preDeployAction2/s)
+      expect(output.stdout.content).toMatch(/first subtext/s)
+      expect(output.stdout.content).toMatch(/second subtext/s)
+      expect(output.stdout.content).toMatch(/third subtext/s)
+      expect(output.stdout.content).toMatch(/fourth subtext/s)
+      expect(output.stdout.content).toMatch(/first subtext2/s)
+      expect(output.stdout.content).toMatch(/second subtext2/s)
+      expect(output.stdout.content).toMatch(/third subtext2/s)
+      expect(output.stdout.content).toMatch(/fourth subtext2/s)
+    }
+    it('should print deploy actions when deploy is done', async () => {
+      await testDeployActionsVisability(true)
+    })
+    it('should print deploy actions when deploy is canceled', async () => {
+      await testDeployActionsVisability(false)
     })
   })
   describe('Using environment variable', () => {

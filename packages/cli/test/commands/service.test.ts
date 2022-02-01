@@ -14,12 +14,10 @@
 * limitations under the License.
 */
 import { AdapterAuthentication, ObjectType } from '@salto-io/adapter-api'
-import {
-  LoginStatus, updateCredentials, addAdapter, installAdapter,
-} from '@salto-io/core'
+import { addAdapter, installAdapter, LoginStatus, updateCredentials } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { getPrivateAdaptersNames } from '../../src/formatter'
-import { loginAction, addAction, listAction } from '../../src/commands/service'
+import { addAction, listAction, loginAction } from '../../src/commands/service'
 import { processOauthCredentials } from '../../src/cli_oauth_authenticator'
 import * as mocks from '../mocks'
 import * as callbacks from '../../src/callbacks'
@@ -241,6 +239,61 @@ describe('service command group', () => {
       })
 
       describe('when called with a new service', () => {
+        describe('when called with login parameters', () => {
+          it('should succeed when called with valid parameters', async () => {
+            const exitCode = await addAction({
+              ...cliCommandArgs,
+              input: {
+                serviceName: 'newAdapter',
+                authType: 'basic',
+                login: true,
+                loginParameters: [
+                  'username=testUser',
+                  'password="testPass\\"w==ord"',
+                  'token=testToken',
+                  'sandbox=y',
+                ],
+              },
+              workspace,
+            })
+            expect(exitCode).toEqual(CliExitCode.Success)
+          })
+          it('should fail when called with missing parameter', async () => {
+            const exitCode = await addAction({
+              ...cliCommandArgs,
+              input: {
+                serviceName: 'newAdapter',
+                authType: 'basic',
+                login: true,
+                loginParameters: [
+                  'username=testUser',
+                  'password=testPassword',
+                  'token=testToken',
+                ],
+              },
+              workspace,
+            })
+            expect(exitCode).toEqual(CliExitCode.AppError)
+          })
+          it('should fail when called with malformed parameter', async () => {
+            const exitCode = await addAction({
+              ...cliCommandArgs,
+              input: {
+                serviceName: 'newAdapter',
+                authType: 'basic',
+                login: true,
+                loginParameters: [
+                  'username=testUser',
+                  'password=testPassword',
+                  'testToken',
+                  'sandbox=y',
+                ],
+              },
+              workspace,
+            })
+            expect(exitCode).toEqual(CliExitCode.AppError)
+          })
+        })
         describe('when called with valid credentials', () => {
           beforeEach(async () => {
             await addAction({
@@ -589,6 +642,58 @@ describe('service command group', () => {
             workspace,
           })
           expect(workspace.setCurrentEnv).toHaveBeenCalledWith(mocks.withEnvironmentParam, false)
+        })
+      })
+      describe('when called with login parameters', () => {
+        it('should succeed when called with valid parameters', async () => {
+          const exitCode = await loginAction({
+            ...cliCommandArgs,
+            input: {
+              accountName: 'salesforce',
+              authType: 'basic',
+              loginParameters: [
+                'username=testUser',
+                'password=testPassword',
+                'token=testToken',
+                'sandbox=y',
+              ],
+            },
+            workspace,
+          })
+          expect(exitCode).toEqual(CliExitCode.Success)
+        })
+        it('should fail when called with missing parameter', async () => {
+          const exitCode = await loginAction({
+            ...cliCommandArgs,
+            input: {
+              accountName: 'salesforce',
+              authType: 'basic',
+              loginParameters: [
+                'username=testUser',
+                'password=testPassword',
+                'token=testToken',
+              ],
+            },
+            workspace,
+          })
+          expect(exitCode).toEqual(CliExitCode.AppError)
+        })
+        it('should fail when called with malformed parameter', async () => {
+          const exitCode = await loginAction({
+            ...cliCommandArgs,
+            input: {
+              accountName: 'salesforce',
+              authType: 'basic',
+              loginParameters: [
+                'username=testUser',
+                'password=testPassword',
+                'testToken',
+                'sandbox=y',
+              ],
+            },
+            workspace,
+          })
+          expect(exitCode).toEqual(CliExitCode.AppError)
         })
       })
     })

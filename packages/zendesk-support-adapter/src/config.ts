@@ -1383,6 +1383,11 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       ),
     },
   },
+  channel: {
+    transformation: {
+      fieldsToHide: [{ fieldName: 'id', fieldType: 'string' }],
+    },
+  },
   // not included yet: satisfaction_reason (returns 403), sunshine apis
 }
 

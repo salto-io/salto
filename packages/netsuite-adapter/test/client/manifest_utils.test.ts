@@ -22,6 +22,7 @@ describe('manifest.xml utils', () => {
     {
       typeName: 'someType',
       values: {
+        '@_scriptid': 'scriptid1',
         key: '__STDRECORDSUBSIDIARYDEFAULTACCTCORPCARDEXP__',
         ref: '[scriptid=somescriptid]',
       },
@@ -29,8 +30,11 @@ describe('manifest.xml utils', () => {
     {
       typeName: WORKFLOW,
       values: {
+        '@_scriptid': 'workflow1',
         key: '__STDRECORDSUBSIDIARYDEFAULTACCTCORPCARDEXP__',
         ref: '[scriptid=secondscriptid]',
+        ref2: '[scriptid=scriptid1]',
+        ref3: '[scriptid=workflow1.innerscriptid]',
       },
     },
   ]

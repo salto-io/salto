@@ -93,9 +93,10 @@ const getRequiredFeatures = (customizationInfos: CustomizationInfo[]): string[] 
       })
   ).map(({ dependency }) => dependency)
 
-const getRequiredObjects = (customizationInfos: CustomizationInfo[]): string[] =>
-  _.uniq(customizationInfos.flatMap(custInfo => {
-    const objName = custInfo.values[ATTRIBUTE_PREFIX + SCRIPT_ID]
+const getRequiredObjects = (customizationInfos: CustomizationInfo[]): string[] => {
+  const objNames = new Set(customizationInfos.map(custInfo =>
+    custInfo.values[ATTRIBUTE_PREFIX + SCRIPT_ID]))
+  return _.uniq(customizationInfos.flatMap(custInfo => {
     const requiredObjects: string[] = []
     lookupValue(custInfo.values, val => {
       if (!_.isString(val)) {
@@ -106,11 +107,11 @@ const getRequiredObjects = (customizationInfos: CustomizationInfo[]): string[] =
         .map(r => r.groups)
         .filter(isDefined)
         .map(group => group[SCRIPT_ID])
-        .filter(scriptId => scriptId !== objName
-          && !scriptId.startsWith(`${objName}.`)))
+        .filter(scriptId => !objNames.has(scriptId.split('.')[0])))
     })
     return requiredObjects
   }))
+}
 
 const fixDependenciesObject = (dependencies: Value): void => {
   dependencies.features = dependencies.features ?? {}

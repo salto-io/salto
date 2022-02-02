@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ObjectType, BuiltinTypes, FieldDefinition } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { AdapterApiConfig, createAdapterApiConfigType, UserFetchConfig, TypeConfig, TypeDefaultsConfig } from './shared'
-import { TransformationConfig, TransformationDefaultConfig, createTransformationConfigTypes, validateTransoformationConfig } from './transformation'
+import { TransformationConfig, TransformationDefaultConfig, createTransformationConfigTypes, validateTransoformationConfig, getTransformationConfigByType } from './transformation'
 import { createRequestConfigs, validateRequestConfig } from './request'
 
 const { isDefined } = lowerDashValues
@@ -80,10 +80,7 @@ export const validateApiDefinitionConfig = (
   validateTransoformationConfig(
     apiDefinitionConfigPath,
     adapterApiConfig.typeDefaults.transformation,
-    _.pickBy(
-      _.mapValues(adapterApiConfig.types, typeDef => typeDef.transformation),
-      isDefined,
-    ),
+    getTransformationConfigByType(adapterApiConfig.types),
   )
 }
 

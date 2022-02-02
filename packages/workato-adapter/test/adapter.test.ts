@@ -273,10 +273,11 @@ describe('adapter', () => {
           ),
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
-        expect(elements).toHaveLength(7)
-        expect(elements.filter(isObjectType)).toHaveLength(1)
-        expect(elements.filter(isInstanceElement)).toHaveLength(6)
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
+          'workato.api_access_profile',
+          'workato.api_client',
+          'workato.api_collection',
+          'workato.api_endpoint',
           'workato.connection',
           'workato.connection.instance.HTTP_connection_1@s',
           'workato.connection.instance.My_Gmail_connection@s',
@@ -284,6 +285,11 @@ describe('adapter', () => {
           'workato.connection.instance.Test_NetSuite_account@s',
           'workato.connection.instance.dev2_sfdc_account@s',
           'workato.connection.instance.sfdev1',
+          'workato.folder',
+          'workato.property',
+          'workato.recipe',
+          'workato.recipe__code',
+          'workato.role',
         ])
       })
     })

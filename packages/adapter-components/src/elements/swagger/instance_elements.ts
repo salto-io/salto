@@ -26,7 +26,7 @@ import { InstanceCreationParams, shouldRecurseIntoEntry, toBasicInstance } from 
 import { UnauthorizedError, Paginator, PageEntriesExtractor } from '../../client'
 import {
   UserFetchConfig, TypeSwaggerDefaultConfig, TransformationConfig, TransformationDefaultConfig,
-  AdapterSwaggerApiConfig, TypeSwaggerConfig, getConfigWithDefault,
+  AdapterSwaggerApiConfig, TypeSwaggerConfig, getConfigWithDefault, getTransformationConfigByType,
 } from '../../config'
 import { findDataField, FindNestedFieldFunc } from '../field_finder'
 import { computeGetArgs as defaultComputeGetArgs, ComputeGetArgsFunc } from '../request_parameters'
@@ -35,7 +35,7 @@ import { TimeoutError } from '../../client/http_client'
 
 const { makeArray } = collections.array
 const { toArrayAsync, awu } = collections.asynciterable
-const { isDefined, isPlainRecord } = lowerdashValues
+const { isPlainRecord } = lowerdashValues
 const log = logger(module)
 
 class InvalidTypeConfig extends Error {}
@@ -414,10 +414,7 @@ const getEntriesForType = async (
  */
 const getInstancesForType = async (params: GetEntriesParams): Promise<InstanceElement[]> => {
   const { typeName, typesConfig, typeDefaultConfig, getElemIdFunc } = params
-  const transformationConfigByType = _.pickBy(
-    _.mapValues(typesConfig, def => def.transformation),
-    isDefined,
-  )
+  const transformationConfigByType = getTransformationConfigByType(typesConfig)
   const transformationDefaultConfig = typeDefaultConfig.transformation
   try {
     const { entries, objType } = await getEntriesForType(params)
@@ -425,7 +422,7 @@ const getInstancesForType = async (params: GetEntriesParams): Promise<InstanceEl
       log.warn(`Expected one instance for singleton type: ${typeName} but received: ${entries.length}`)
       throw new InvalidTypeConfig(`Could not fetch type ${typeName}, singleton types should not have more than one instance`)
     }
-    return generateInstancesForType({
+    return await generateInstancesForType({
       entries,
       objType,
       transformationConfigByType,

@@ -21,7 +21,7 @@ import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { Paginator, ResponseValue } from '../../client'
 import { generateType } from './type_elements'
 import { toInstance } from './instance_elements'
-import { TypeConfig, getConfigWithDefault } from '../../config'
+import { TypeConfig, getConfigWithDefault, getTransformationConfigByType } from '../../config'
 import { FindNestedFieldFunc } from '../field_finder'
 import { TypeDuckTypeDefaultsConfig, TypeDuckTypeConfig } from '../../config/ducktype'
 import { ComputeGetArgsFunc } from '../request_parameters'
@@ -29,6 +29,7 @@ import { getElementsWithContext } from '../element_getter'
 import { extractStandaloneFields } from './standalone_field_extractor'
 import { fixFieldTypes } from '../type_elements'
 import { shouldRecurseIntoEntry } from '../instance_elements'
+import { addRemainingTypes } from './add_remaining_types'
 
 const { makeArray } = collections.array
 const { toArrayAsync, awu } = collections.asynciterable
@@ -91,10 +92,7 @@ const getEntriesForType = async (
     // escape "field" names that contain '.'
     .map(values => _.mapKeys(values, (_val, key) => naclCase(key)))
 
-  const transformationConfigByType = _.pickBy(
-    _.mapValues(typesConfig, def => def.transformation),
-    isDefined,
-  )
+  const transformationConfigByType = getTransformationConfigByType(typesConfig)
   const transformationDefaultConfig = typeDefaultConfig.transformation
 
   // types with dynamic fields will be associated with the dynamic_keys type
@@ -243,10 +241,7 @@ export const getTypeAndInstances = async ({
     getElemIdFunc,
   })
   const elements = [entries.type, ...entries.nestedTypes, ...entries.instances]
-  const transformationConfigByType = _.pickBy(
-    _.mapValues(typesConfig, def => def.transformation),
-    isDefined,
-  )
+  const transformationConfigByType = getTransformationConfigByType(typesConfig)
 
   // We currently don't support extracting standalone fields from the types we recursed into
   await extractStandaloneFields({
@@ -326,5 +321,16 @@ export const getAllElements = async ({
     typeDefaults,
     (val: string) => _.get(duckTypeTypeMap, val, BuiltinTypes.UNKNOWN),
   )
-  return [...Object.values(objectTypes), ...elements.filter(e => !isObjectType(e))]
+  const instancesAndTypes = [
+    ...Object.values(objectTypes), ...elements.filter(e => !isObjectType(e)),
+  ]
+  addRemainingTypes({
+    adapterName,
+    elements: instancesAndTypes,
+    typesConfig: types,
+    includeTypes,
+    typeDefaultConfig: typeDefaults,
+    hideTypes,
+  })
+  return instancesAndTypes
 }

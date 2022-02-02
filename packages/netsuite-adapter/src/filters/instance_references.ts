@@ -16,7 +16,7 @@
 import {
   Element, isInstanceElement, ElemID, ReferenceExpression, InstanceElement, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
-import { extendGeneratedDependencies, transformElement, TransformFunc } from '@salto-io/adapter-utils'
+import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { values as lowerdashValues, collections } from '@salto-io/lowerdash'
 import { SCRIPT_ID, PATH } from '../constants'
@@ -26,6 +26,7 @@ import { isCustomType } from '../types'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 
 const { awu } = collections.asynciterable
+const { makeArray } = collections.array
 
 const CAPTURED_SERVICE_ID = 'serviceId'
 const CAPTURED_TYPE = 'type'
@@ -56,6 +57,18 @@ const isRegExpFullMatch = (regExpMatches: Array<RegExpExecArray | null>): boolea
   && regExpMatches[0] !== null
   && regExpMatches[0][0] === regExpMatches[0].input
 )
+
+const addDependencies = (instance: InstanceElement, deps: Array<ElemID>): void => {
+  if (deps.length === 0) {
+    return
+  }
+  const dependenciesList = _.uniqBy(
+    makeArray(instance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES])
+      .concat(deps.map(dep => ({ reference: new ReferenceExpression(dep) }))),
+    ref => ref.reference.elemID.getFullName()
+  )
+  instance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] = dependenciesList
+}
 
 /**
  * This method tries to capture the serviceId from Netsuite references format. For example:
@@ -124,10 +137,18 @@ const customTypeServiceIdsToElemIds = async (
   return serviceIdsToElemIds
 }
 
-const shouldExtractToGenereatedDependency = (serviceIdInfoRecord: ServiceIdInfo): boolean =>
-  serviceIdInfoRecord[CAPTURED_APPID] != null
-  || serviceIdInfoRecord[CAPTURED_BUNDLEID] != null
-  || !serviceIdInfoRecord.isFullMatch
+const shouldExtractToGenereatedDependency = (serviceIdInfoRecord: ServiceIdInfo): boolean => {
+  if (serviceIdInfoRecord[CAPTURED_APPID] != null
+    || serviceIdInfoRecord[CAPTURED_BUNDLEID] != null) {
+    return true
+  }
+
+  if (serviceIdInfoRecord.isFullMatch) {
+    return false
+  }
+
+  return true
+}
 
 export const getInstanceServiceIdRecords = async (
   instance: InstanceElement,
@@ -162,13 +183,8 @@ const replaceReferenceValues = async (
       const elemID = fetchedElementsServiceIdToElemID[serviceIdInfoRecord[CAPTURED_SERVICE_ID]]
       ?? elementsSourceServiceIdToElemID[serviceIdInfoRecord[CAPTURED_SERVICE_ID]]
 
-      if (elemID === undefined) {
-        return
-      }
-
       const type = serviceIdInfoRecord[CAPTURED_TYPE]
-      if (type && type !== elemID.typeName) {
-        dependenciesToAdd.push(elemID)
+      if (_.isUndefined(elemID) || (type && type !== elemID.typeName)) {
         return
       }
 
@@ -195,11 +211,7 @@ const replaceReferenceValues = async (
     transformFunc: replacePrimitive,
     strict: false,
   })
-
-  extendGeneratedDependencies(
-    newInstance,
-    dependenciesToAdd.map(elemID => ({ reference: new ReferenceExpression(elemID) }))
-  )
+  addDependencies(newInstance, dependenciesToAdd)
 
   return newInstance
 }

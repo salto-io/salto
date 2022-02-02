@@ -908,12 +908,14 @@ Moving the specified elements to common.
         workspace = mocks.mockWorkspace({})
         workspace.listUnresolvedReferences.mockImplementation(mockedList)
         // Should ignore unresolved reference errors
-        workspace.errors.mockResolvedValue(mocks.mockErrors([
-          new errors.UnresolvedReferenceValidationError({
+        workspace.errors.mockResolvedValue(new errors.Errors({
+          parse: [],
+          merge: [],
+          validation: [new errors.UnresolvedReferenceValidationError({
             elemID: new ElemID('test', 'src'),
             target: new ElemID('test', 'target'),
-          }),
-        ]))
+          })],
+        }))
         result = await listUnresolvedAction({
           ...mocks.mockCliCommandArgs(listUnresolvedName, cliArgs),
           input: {

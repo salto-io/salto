@@ -1361,7 +1361,7 @@ describe('fetch from workspace', () => {
       expect(fetchRes.errors[0].severity).toBe('Error')
     })
 
-    it('should fail if the source workspace has errors', async () => {
+    it('should fail if the source workspace has errors (not warnings) and fetch not from state', async () => {
       const sourceWS = mockWorkspace({
         accounts: ['salto'],
         errors: [{ message: 'A glitch', severity: 'Error' }],
@@ -1561,108 +1561,171 @@ describe('fetch from workspace', () => {
     })
 
     describe('with fromState false', () => {
-      beforeEach(async () => {
-        fetchRes = await fetchChangesFromWorkspace(
-          mockWorkspace({
-            elements: mergedElements,
-            index: await awu(pi.entries()).toArray(),
-            accountConfigs: { salto: configs[0] },
-            stateElements,
-          }),
-          ['salto'],
-          createInMemoryElementSource([existingElement]),
-          createInMemoryElementSource([existingElement]),
-          configs,
-          'default',
-          false,
-        )
-        resElements = [...fetchRes.elements]
+      describe('With no errors and warnings', () => {
+        beforeEach(async () => {
+          fetchRes = await fetchChangesFromWorkspace(
+            mockWorkspace({
+              elements: mergedElements,
+              index: await awu(pi.entries()).toArray(),
+              accountConfigs: { salto: configs[0] },
+              stateElements,
+            }),
+            ['salto'],
+            createInMemoryElementSource([existingElement]),
+            createInMemoryElementSource([existingElement]),
+            configs,
+            'default',
+            false,
+          )
+          resElements = [...fetchRes.elements]
+        })
+
+        it('should return all merged elements of the fetched services', () => {
+          expect(resElements.sort(elemIDSorter)).toEqual(mergedElements
+            .filter(e => e.elemID.adapter === 'salto')
+            .sort(elemIDSorter))
+        })
+
+        it('should return the elem with diff between merged and state with merged val', () => {
+          const editElements = resElements.filter(e => e.elemID.isEqual(editElemID))
+          expect(editElements).toHaveLength(1)
+          expect(editElements[0].isEqual(editNaclElem)).toBeTruthy()
+        })
+
+        it('should return all unmerged elements fragments with the same pathes as the source pathes', () => {
+          const unmerged = [...fetchRes.unmergedElements]
+          const expectedFrags = unmergedElementsWithEditNaclElem
+            .filter(e => e.elemID.adapter === 'salto')
+          expect(unmerged).toHaveLength(expectedFrags.length)
+          expectedFrags
+            .forEach(frag => expect(unmerged.filter(e => e.isEqual(frag)))
+              .toHaveLength(1))
+        })
+
+        it('should create changes based on the current elements', () => {
+          const changes = [...fetchRes.changes]
+          const unmergedDiffElement = unmergedElementsWithEditNaclElem
+            .filter(elem => elem.elemID.getFullName() === 'salto.obj')
+          const changesElements = changes
+            .map(change => getChangeData(change.change))
+          unmergedDiffElement
+            .forEach(frag => expect(changesElements.filter(e => e.isEqual(frag)))
+              .toHaveLength(1))
+        })
       })
 
-      it('should return all merged elements of the fetched services', () => {
-        expect(resElements.sort(elemIDSorter)).toEqual(mergedElements
-          .filter(e => e.elemID.adapter === 'salto')
-          .sort(elemIDSorter))
-      })
+      describe('With warnings', () => {
+        beforeEach(async () => {
+          fetchRes = await fetchChangesFromWorkspace(
+            mockWorkspace({
+              elements: mergedElements,
+              index: await awu(pi.entries()).toArray(),
+              accountConfigs: { salto: configs[0] },
+              stateElements,
+              errors: [{ message: 'A warnings', severity: 'Warning' }],
+            }),
+            ['salto'],
+            createInMemoryElementSource([existingElement]),
+            createInMemoryElementSource([existingElement]),
+            configs,
+            'default',
+            false,
+          )
+          resElements = [...fetchRes.elements]
+        })
 
-      it('should return the elem with diff between merged and state with merged val', () => {
-        const editElements = resElements.filter(e => e.elemID.isEqual(editElemID))
-        expect(editElements).toHaveLength(1)
-        expect(editElements[0].isEqual(editNaclElem)).toBeTruthy()
-      })
-
-      it('should return all unmerged elements fragments with the same pathes as the source pathes', () => {
-        const unmerged = [...fetchRes.unmergedElements]
-        const expectedFrags = unmergedElementsWithEditNaclElem
-          .filter(e => e.elemID.adapter === 'salto')
-        expect(unmerged).toHaveLength(expectedFrags.length)
-        expectedFrags
-          .forEach(frag => expect(unmerged.filter(e => e.isEqual(frag)))
-            .toHaveLength(1))
-      })
-
-      it('should create changes based on the current elements', () => {
-        const changes = [...fetchRes.changes]
-        const unmergedDiffElement = unmergedElementsWithEditNaclElem
-          .filter(elem => elem.elemID.getFullName() === 'salto.obj')
-        const changesElements = changes
-          .map(change => getChangeData(change.change))
-        unmergedDiffElement
-          .forEach(frag => expect(changesElements.filter(e => e.isEqual(frag)))
-            .toHaveLength(1))
+        it('Should return with changes and no errors', () => {
+          expect([...fetchRes.changes]).not.toHaveLength(0)
+          expect(fetchRes.elements).not.toHaveLength(0)
+          expect(fetchRes.unmergedElements).not.toHaveLength(0)
+          expect(fetchRes.errors).toHaveLength(0)
+        })
       })
     })
 
     describe('with fromState true', () => {
-      beforeEach(async () => {
-        fetchRes = await fetchChangesFromWorkspace(
-          mockWorkspace({
-            elements: mergedElements,
-            index: await awu(pi.entries()).toArray(),
-            accountConfigs: { salto: configs[0] },
-            stateElements,
-          }),
-          ['salto'],
-          createInMemoryElementSource([existingElement]),
-          createInMemoryElementSource([existingElement]),
-          configs,
-          'default',
-          true,
-        )
-        resElements = [...fetchRes.elements]
+      describe('With no errors and warnings', () => {
+        beforeEach(async () => {
+          fetchRes = await fetchChangesFromWorkspace(
+            mockWorkspace({
+              elements: mergedElements,
+              index: await awu(pi.entries()).toArray(),
+              accountConfigs: { salto: configs[0] },
+              stateElements,
+            }),
+            ['salto'],
+            createInMemoryElementSource([existingElement]),
+            createInMemoryElementSource([existingElement]),
+            configs,
+            'default',
+            true,
+          )
+          resElements = [...fetchRes.elements]
+        })
+
+        it('should return all merged elements of the fetched services', () => {
+          expect(resElements.sort(elemIDSorter)).toEqual(stateElements
+            .filter(e => e.elemID.adapter === 'salto')
+            .sort(elemIDSorter))
+        })
+
+        it('should return the elem with diff between merged and state with state val', () => {
+          const editElements = resElements.filter(e => e.elemID.isEqual(editElemID))
+          expect(editElements).toHaveLength(1)
+          expect(editElements[0].isEqual(editStateElem)).toBeTruthy()
+        })
+
+        it('should return all unmerged elements fragments with the same pathes as the source pathes', () => {
+          const unmerged = [...fetchRes.unmergedElements]
+          const expectedFrags = unmergedElements
+            .filter(e => e.elemID.adapter === 'salto')
+          expect(unmerged).toHaveLength(expectedFrags.length)
+          expectedFrags
+            .forEach(frag => expect(unmerged.filter(e => e.isEqual(frag)))
+              .toHaveLength(1))
+        })
+
+        it('should create changes based on the current elements', () => {
+          const changes = [...fetchRes.changes]
+          const unmergedDiffElement = unmergedElements
+            .filter(elem => elem.elemID.getFullName() === 'salto.obj')
+          const changesElements = changes
+            .map(change => getChangeData(change.change))
+          unmergedDiffElement
+            .forEach(frag => expect(changesElements.filter(e => e.isEqual(frag)))
+              .toHaveLength(1))
+        })
       })
 
-      it('should return all merged elements of the fetched services', () => {
-        expect(resElements.sort(elemIDSorter)).toEqual(stateElements
-          .filter(e => e.elemID.adapter === 'salto')
-          .sort(elemIDSorter))
-      })
+      describe('With errors and warnings', () => {
+        beforeEach(async () => {
+          fetchRes = await fetchChangesFromWorkspace(
+            mockWorkspace({
+              elements: mergedElements,
+              index: await awu(pi.entries()).toArray(),
+              accountConfigs: { salto: configs[0] },
+              stateElements,
+              errors: [
+                { message: 'what is this madness', severity: 'Error' },
+                { message: 'A warnings', severity: 'Warning' },
+              ],
+            }),
+            ['salto'],
+            createInMemoryElementSource([existingElement]),
+            createInMemoryElementSource([existingElement]),
+            configs,
+            'default',
+            true,
+          )
+          resElements = [...fetchRes.elements]
+        })
 
-      it('should return the elem with diff between merged and state with state val', () => {
-        const editElements = resElements.filter(e => e.elemID.isEqual(editElemID))
-        expect(editElements).toHaveLength(1)
-        expect(editElements[0].isEqual(editStateElem)).toBeTruthy()
-      })
-
-      it('should return all unmerged elements fragments with the same pathes as the source pathes', () => {
-        const unmerged = [...fetchRes.unmergedElements]
-        const expectedFrags = unmergedElements
-          .filter(e => e.elemID.adapter === 'salto')
-        expect(unmerged).toHaveLength(expectedFrags.length)
-        expectedFrags
-          .forEach(frag => expect(unmerged.filter(e => e.isEqual(frag)))
-            .toHaveLength(1))
-      })
-
-      it('should create changes based on the current elements', () => {
-        const changes = [...fetchRes.changes]
-        const unmergedDiffElement = unmergedElements
-          .filter(elem => elem.elemID.getFullName() === 'salto.obj')
-        const changesElements = changes
-          .map(change => getChangeData(change.change))
-        unmergedDiffElement
-          .forEach(frag => expect(changesElements.filter(e => e.isEqual(frag)))
-            .toHaveLength(1))
+        it('Should return with changes and no errors', () => {
+          expect([...fetchRes.changes]).not.toHaveLength(0)
+          expect(fetchRes.elements).not.toHaveLength(0)
+          expect(fetchRes.unmergedElements).not.toHaveLength(0)
+          expect(fetchRes.errors).toHaveLength(0)
+        })
       })
     })
   })

@@ -16,7 +16,7 @@
 import { BuiltinTypes, Element, ElemID, InstanceElement, ObjectType, SaltoError, Value } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import * as workspace from '@salto-io/workspace'
-import { elementSource } from '@salto-io/workspace'
+import { elementSource, errors as wsErrors } from '@salto-io/workspace'
 import { mockState } from './state'
 
 const mockService = 'salto'
@@ -58,6 +58,12 @@ const mockEmptyConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockEmpt
   password: 'test',
   token: 'test',
   sandbox: false,
+})
+
+export const mockErrors = (errors: SaltoError[]): wsErrors.Errors => new wsErrors.Errors({
+  parse: [],
+  merge: [],
+  validation: errors.map(err => ({ elemID: new ElemID('test'), error: err.message, ...err })),
 })
 
 export const mockWorkspace = ({
@@ -110,6 +116,7 @@ export const mockWorkspace = ({
     updateAccountConfig: jest.fn(),
     clear: jest.fn(),
     getElementIdsBySelectors: jest.fn(),
+    errors: jest.fn().mockImplementation(() => mockErrors(errors)),
     hasErrors: () => errors.length > 0,
     getValue: async (id: ElemID) => elements.find(e => e.elemID.getFullName() === id.getFullName()),
   } as unknown as workspace.Workspace

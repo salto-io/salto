@@ -39,7 +39,6 @@ const log = logger(module)
 
 export const MAX_DETAIL_CHANGES_TO_LOG = 100
 export const MAX_WORKSPACE_ERRORS_TO_LOG = 30
-const isError = (e: SaltoError): boolean => (e.severity === 'Error')
 
 export type LoadWorkspaceResult = {
   workspace: Workspace
@@ -94,13 +93,13 @@ export const validateWorkspace = async (
   if (!errors.hasErrors()) {
     return { status: 'Valid', errors: [] }
   }
-  if (wu.some(isError, errors.all())) {
-    return { status: 'Error', errors: groupRelatedErrors([...wu.filter(isError, errors.all())]) }
+  if (errors.hasErrors('Error')) {
+    return { status: 'Error', errors: groupRelatedErrors([...errors.all('Error')]) }
   }
 
   const relevantErrors = [...ignoreUnresolvedRefs
-    ? wu.filter(e => !isUnresolvedRefError(e), errors.all())
-    : errors.all()]
+    ? wu.filter(e => !isUnresolvedRefError(e), errors.all('Warning'))
+    : errors.all('Warning')]
 
   if (relevantErrors.length === 0) {
     return { status: 'Valid', errors: [] }

@@ -15,7 +15,7 @@
 */
 import wu from 'wu'
 import { types } from '@salto-io/lowerdash'
-import { SaltoError } from '@salto-io/adapter-api'
+import { SaltoError, SaltoErrorSeverity } from '@salto-io/adapter-api'
 import { MergeError } from '../merger'
 import { ValidationError } from '../validator'
 import { ParseError } from '../parser'
@@ -27,12 +27,15 @@ export class Errors extends types.Bean<Readonly<{
     merge: ReadonlyArray<MergeError>
     validation: ReadonlyArray<ValidationError>
   }>> {
-  hasErrors(): boolean {
-    return [this.parse, this.merge, this.validation].some(errors => errors.length > 0)
+  all(severity?: SaltoErrorSeverity): Iterable<SaltoError> {
+    const allErrors = wu.chain<SaltoError>(this.parse, this.merge, this.validation)
+    return (severity
+      ? allErrors.filter(error => error.severity === severity)
+      : allErrors)
   }
 
-  all(): Iterable<SaltoError> {
-    return wu.chain<SaltoError>(this.parse, this.merge, this.validation)
+  hasErrors(severity?: SaltoErrorSeverity): boolean {
+    return wu(this.all(severity)).some(() => true)
   }
 
   strings(): ReadonlyArray<string> {

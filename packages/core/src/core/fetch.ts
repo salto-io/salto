@@ -791,7 +791,7 @@ export const fetchChangesFromWorkspace = async (
     }`)
   }
   if (!fromState
-    && wu.some(err => err.severity === 'Error', (await otherWorkspace.errors()).all())) {
+    && (await otherWorkspace.errors()).hasErrors('Error')) {
     return createEmptyFetchChangeDueToError('Can not fetch from a workspace with errors.')
   }
 

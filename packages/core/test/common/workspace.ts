@@ -60,13 +60,10 @@ const mockEmptyConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockEmpt
   sandbox: false,
 })
 
-export const mockErrors = (errors: SaltoError[]): wsErrors.Errors => ({
-  all: () => errors,
-  hasErrors: () => errors.length !== 0,
-  merge: [],
+export const mockErrors = (errors: SaltoError[]): wsErrors.Errors => new wsErrors.Errors({
   parse: [],
-  validation: errors.map(err => ({ elemID: new ElemID('test'), error: '', ...err })),
-  strings: () => errors.map(err => err.message),
+  merge: [],
+  validation: errors.map(err => ({ elemID: new ElemID('test'), error: err.message, ...err })),
 })
 
 export const mockWorkspace = ({

@@ -17,21 +17,21 @@ import _ from 'lodash'
 import { ChangeValidator, compareSpecialValues, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isReferenceExpression, ModificationChange, SaltoErrorSeverity, Values } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 
-const getFieldId = (field: Values): string => (
+const getFieldNaclRepr = (field: Values): string => (
   isReferenceExpression(field.id) ? field.id.elemID.name : field.id
 )
 
 const getDiffFields = (change: ModificationChange<InstanceElement>): Values[] => {
-  const beforeIdToField = _(change.data.before.value.fields)
+  const beforeReprToField = _(change.data.before.value.fields)
     .values()
-    .keyBy(getFieldId)
+    .keyBy(getFieldNaclRepr)
     .value()
 
   return (Object.values(change.data.after.value.fields ?? []) as Values[])
     .filter(
       (field: Values) => !_.isEqualWith(
         field,
-        beforeIdToField[getFieldId(field)],
+        beforeReprToField[getFieldNaclRepr(field)],
         compareSpecialValues
       )
     )
@@ -49,7 +49,7 @@ export const unsupportedFieldConfigurationsValidator: ChangeValidator = async ch
 
       const unsupportedIds = fields
         .filter((field: Values) => field.id.value.value.isLocked)
-        .map(getFieldId)
+        .map(getFieldNaclRepr)
 
       const { elemID } = getChangeData(change)
       if (unsupportedIds.length !== 0) {

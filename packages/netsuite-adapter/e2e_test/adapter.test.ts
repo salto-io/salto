@@ -481,9 +481,8 @@ describe('Netsuite adapter E2E with real account', () => {
           customRecordTypeToCreate.elemID
         ) as InstanceElement
         expect(fetchedCustomRecordType.value.recordname).toEqual(randomString)
-        const permissions = fetchedCustomRecordType.value.permissions?.permission
-        expect(_.isPlainObject(permissions)).toBeTruthy()
-        const createdRolePermission = Object.values(permissions as Values)
+        const permissions = makeArray(fetchedCustomRecordType.value.permissions?.permission)
+        const createdRolePermission = permissions
           .find(permission => isReferenceExpression(permission.permittedrole)
           && permission.permittedrole.elemID
             .isEqual(roleToCreateThatDependsOnCustomRecord.elemID.createNestedID(SCRIPT_ID)))
@@ -510,12 +509,12 @@ describe('Netsuite adapter E2E with real account', () => {
           workflowToCreate.elemID
         ) as InstanceElement
         expect(fetchedWorkflow.value.name).toEqual(randomString)
-        // eslint-disable-next-line max-len
-        const toStateReference = fetchedWorkflow.value.workflowstates?.workflowstate?.workflowstate_state1?.workflowtransitions?.workflowtransition?.workflowtransition_transition1?.tostate
+        const toStateReference = fetchedWorkflow.value.workflowstates?.workflowstate?.[0]
+          ?.workflowtransitions?.workflowtransition?.[0]?.tostate
         expect(toStateReference).toBeDefined()
         expect(isReferenceExpression(toStateReference)
         && toStateReference.elemID.isEqual(
-          fetchedWorkflow.elemID.createNestedID('workflowstates', 'workflowstate', 'workflowstate_state2', SCRIPT_ID)
+          fetchedWorkflow.elemID.createNestedID('workflowstates', 'workflowstate', '1', SCRIPT_ID)
         )).toBe(true)
       })
 

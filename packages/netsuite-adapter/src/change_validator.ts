@@ -27,7 +27,6 @@ import immutableChangesValidator from './change_validators/immutable_changes'
 import subInstancesValidator from './change_validators/subinstances'
 import customTypesInvalidValuesValidator from './change_validators/custom_types_invalid_values'
 import safeDeployValidator, { FetchByQueryFunc } from './change_validators/safe_deploy'
-import mappedListsIndexesValidator from './change_validators/mapped_lists_indexes'
 import { validateDependsOnInvalidElement } from './change_validators/dependencies'
 
 
@@ -42,7 +41,6 @@ const changeValidators: ChangeValidator[] = [
   fileValidator,
   subInstancesValidator,
   customTypesInvalidValuesValidator,
-  mappedListsIndexesValidator,
 ]
 
 const nonSuiteAppValidators: ChangeValidator[] = [

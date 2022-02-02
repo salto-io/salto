@@ -14,18 +14,34 @@
 * limitations under the License.
 */
 import SwaggerParser from '@apidevtools/swagger-parser'
+import { logger } from '@salto-io/logging'
 import { OpenAPI } from 'openapi-types'
+
+const DEFAULT_NUMBER_OF_RETRIES = 5
+
+const log = logger(module)
 
 export type LoadedSwagger = {
   document: OpenAPI.Document
   parser: SwaggerParser
 }
 
-export const loadSwagger = async (swaggerPath: string): Promise<LoadedSwagger> => {
-  const parser = new SwaggerParser()
-  const document = await parser.bundle(swaggerPath)
-  return {
-    document,
-    parser,
+export const loadSwagger = async (
+  swaggerPath: string,
+  numberOfRetries = DEFAULT_NUMBER_OF_RETRIES
+): Promise<LoadedSwagger> => {
+  try {
+    const parser = new SwaggerParser()
+    const document = await parser.bundle(swaggerPath)
+    return {
+      document,
+      parser,
+    }
+  } catch (err) {
+    log.warn(`Failed to load swagger file ${swaggerPath} with error: ${err}. Retries left: ${numberOfRetries}`)
+    if (numberOfRetries <= 0) {
+      throw err
+    }
+    return loadSwagger(swaggerPath, numberOfRetries - 1)
   }
 }

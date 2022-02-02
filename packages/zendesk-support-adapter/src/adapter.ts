@@ -170,7 +170,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
     const [instanceChanges, nonInstanceChanges] = _.partition(changeGroup.changes, isInstanceChange)
     if (nonInstanceChanges.length > 0) {
-      log.warn(`We currently can't deploy types. Therefore, the following changes wouldn't be deployed: ${
+      log.warn(`We currently can't deploy types. Therefore, the following changes will not be deployed: ${
         nonInstanceChanges.map(elem => getChangeData(elem).elemID.getFullName()).join(', ')}`)
     }
     const changesToDeploy = instanceChanges

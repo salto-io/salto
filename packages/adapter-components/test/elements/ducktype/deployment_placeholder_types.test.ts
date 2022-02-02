@@ -37,12 +37,20 @@ describe('ducktype deployment functions', () => {
             { nested: 1 },
             { nested: 2 },
           ],
+          field4: [
+            { nested: 1 },
+            { nested: new ReferenceExpression(new ElemID(ADAPTER_NAME, 'obj', 'instance', 'test')) },
+          ],
         },
         {
           field1: 'test2',
           field2: 2,
           field3: [
             { nested: 3 },
+          ],
+          field4: [
+            { nested: 3 },
+            { nested: new ReferenceExpression(new ElemID(ADAPTER_NAME, 'obj', 'instance', 'test')) },
           ],
         },
       ],
@@ -66,6 +74,13 @@ describe('ducktype deployment functions', () => {
               nested: { refType: BuiltinTypes.NUMBER },
             },
             path: [ADAPTER_NAME, TYPES_PATH, SUBTYPES_PATH, 'obj', 'complex', 'field3'],
+          })) },
+          field4: { refType: new ListType(new ObjectType({
+            elemID: new ElemID(ADAPTER_NAME, 'obj__complex__field4'),
+            fields: {
+              nested: { refType: BuiltinTypes.UNKNOWN },
+            },
+            path: [ADAPTER_NAME, TYPES_PATH, SUBTYPES_PATH, 'obj', 'complex', 'field4'],
           })) },
         },
         path: [ADAPTER_NAME, TYPES_PATH, SUBTYPES_PATH, 'obj', 'complex'],

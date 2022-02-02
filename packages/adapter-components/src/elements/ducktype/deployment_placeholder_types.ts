@@ -20,7 +20,7 @@ import { generateType } from './type_elements'
 import { AdapterDuckTypeApiConfig, getConfigWithDefault } from '../../config'
 
 /**
- * Changes instance type to be suitable for the deploy (generated from the instance itself)
+ * Changes instance type to be suitable for the deploy (generated from the latest instance))
  */
 export const replaceInstanceTypeForDeploy = ({
   instance, config,

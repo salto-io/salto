@@ -66,7 +66,7 @@ const generateNestedType = ({
   const validEntries = entries.filter(entry => entry !== undefined && entry !== null)
   const name = toNestedTypeName(parentName, typeName)
   if (validEntries.length > 0) {
-    if (isUnknownEntry && validEntries.every(isUnknownEntry)) {
+    if (isUnknownEntry && validEntries.some(isUnknownEntry)) {
       return {
         type: BuiltinTypes.UNKNOWN,
         nestedTypes: [],

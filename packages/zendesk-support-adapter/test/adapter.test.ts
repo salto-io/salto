@@ -825,5 +825,34 @@ describe('adapter', () => {
         undefined,
       )
     })
+    it('should not try to deploy instances', async () => {
+      mockDeployChange.mockImplementation(async () => ({}))
+      const deployRes = await operations.deploy({
+        changeGroup: {
+          groupID: 'group',
+          changes: [
+            toChange({ before: new InstanceElement('inst', groupType) }),
+            toChange({ after: new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'test') }) }),
+          ],
+        },
+      })
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith(
+        toChange({ before: new InstanceElement(
+          'inst',
+          new ObjectType({
+            elemID: groupType.elemID,
+            // generateType function creates path
+            path: [ZENDESK_SUPPORT, elementsUtils.TYPES_PATH, 'group'],
+          }),
+        ) }),
+        expect.anything(),
+        expect.anything(),
+        undefined,
+      )
+      expect(deployRes.appliedChanges).toEqual([
+        toChange({ before: new InstanceElement('inst', groupType) }),
+      ])
+    })
   })
 })

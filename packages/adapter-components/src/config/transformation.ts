@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS,
   FieldDefinition, ListType, RestrictionAnnotationType } from '@salto-io/adapter-api'
-import { types } from '@salto-io/lowerdash'
+import { types, values } from '@salto-io/lowerdash'
 import { findDuplicates } from './validation_utils'
 import { getConfigWithDefault, TypeConfig, TypeDefaultsConfig } from './shared'
 
@@ -223,4 +223,10 @@ export const getTypeTransformationConfig = (
     typeConfig[typeName]?.transformation,
     typeDefaultConfig.transformation,
   )
+)
+
+export const getTransformationConfigByType = (typesConfig: Record<string, TypeConfig>):
+Record<string, TransformationConfig> => _.pickBy(
+  _.mapValues(typesConfig, def => def.transformation),
+  values.isDefined,
 )

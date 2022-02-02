@@ -18,7 +18,7 @@ import { ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, Li
 import { types, values as lowerDashValues } from '@salto-io/lowerdash'
 import { AdapterApiConfig, createAdapterApiConfigType, TypeConfig, TypeDefaultsConfig, UserFetchConfig } from './shared'
 import { createRequestConfigs, validateRequestConfig } from './request'
-import { createTransformationConfigTypes, validateTransoformationConfig } from './transformation'
+import { createTransformationConfigTypes, getTransformationConfigByType, validateTransoformationConfig } from './transformation'
 import { findDuplicates } from './validation_utils'
 
 const { isDefined } = lowerDashValues
@@ -162,10 +162,7 @@ export const validateApiDefinitionConfig = (
   validateTransoformationConfig(
     apiDefinitionConfigPath,
     adapterApiConfig.typeDefaults.transformation,
-    _.pickBy(
-      _.mapValues(adapterApiConfig.types, typeDef => typeDef.transformation),
-      isDefined,
-    ),
+    getTransformationConfigByType(adapterApiConfig.types),
   )
   // TODO after loading the swagger and parsing the types,
   // add change suggestions for values that catch nothing

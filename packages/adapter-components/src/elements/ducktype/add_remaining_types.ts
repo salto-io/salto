@@ -21,7 +21,10 @@ import { DATA_FIELD_ENTIRE_OBJECT } from '../../config/transformation'
 import { getTransformationConfigByType, TypeDuckTypeConfig, TypeDuckTypeDefaultsConfig } from '../../config'
 
 /**
- * Adds the types that supposed to exist but weren't created since they had no instances
+ * Add empty object types for all types that can have instances in the workspace,
+ *  even if no instances will be created for them in the current fetch.
+ * This is needed because if instances are added / cloned from another environment,
+ *  they need to have a type in order to be deployed.
  *
  * Note: modifies the elements array in-place.
  */

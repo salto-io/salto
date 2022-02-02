@@ -36,15 +36,20 @@ export type Response<T> = {
   statusText?: string
 }
 
+type RequestConfig = {
+  params?: Record<string, unknown>
+  headers?: Record<string, unknown>
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type APIConnection<T = any, S = any> = {
   // based on https://github.com/axios/axios/blob/f472e5da5fe76c72db703d6a0f5190e4ad31e642/index.d.ts#L140
-  get: (url: string, config?: { params: Record<string, unknown> }) => Promise<Response<T>>
-  post: (url: string, data: S, config?: { params: Record<string, unknown> })
+  get: (url: string, config?: RequestConfig) => Promise<Response<T>>
+  post: (url: string, data: S, config?: RequestConfig)
     => Promise<Response<T>>
-  put: (url: string, data: S, config?: { params: Record<string, unknown> }) => Promise<Response<T>>
-  delete: (url: string, config?: { params: Record<string, unknown> }) => Promise<Response<T>>
-  patch: (url: string, data: S, config?: { params: Record<string, unknown> })
+  put: (url: string, data: S, config?: RequestConfig) => Promise<Response<T>>
+  delete: (url: string, config?: RequestConfig) => Promise<Response<T>>
+  patch: (url: string, data: S, config?: RequestConfig)
     => Promise<Response<T>>
 }
 

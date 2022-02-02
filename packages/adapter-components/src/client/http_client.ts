@@ -36,6 +36,7 @@ export type ClientOpts<
 export type ClientBaseParams = {
   url: string
   queryParams?: Record<string, string>
+  headers?: Record<string, string>
 }
 
 export type ClientDataParams = ClientBaseParams & {
@@ -172,21 +173,24 @@ export abstract class AdapterHTTPClient<
       throw new Error(`uninitialized ${this.clientName} client`)
     }
 
-    const { url, queryParams } = params
+    const { url, queryParams, headers } = params
     try {
-      const requestQueryParams = queryParams !== undefined && Object.keys(queryParams).length > 0
-        ? { params: queryParams }
+      const requestConfig = queryParams !== undefined || headers !== undefined
+        ? {
+          params: queryParams,
+          headers,
+        }
         : undefined
 
       const { data, status } = isMethodWithData(params)
         ? await this.apiClient[method](
           url,
           params.data,
-          requestQueryParams,
+          requestConfig,
         )
         : await this.apiClient[method](
           url,
-          requestQueryParams,
+          requestConfig,
         )
       log.debug('Received response for %s (%s) with status %d', url, safeJsonStringify({ url, queryParams }), status)
       log.trace('Full HTTP response for %s: %s', url, safeJsonStringify({

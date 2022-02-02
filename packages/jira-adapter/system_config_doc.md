@@ -4,7 +4,7 @@
 jira {
   apiDefinitions = {
     platformSwagger = {
-      url = "https://raw.githubusercontent.com/salto-io/jira-swaggers/next-main/platform-swagger.v3.json"
+      url = "https://raw.githubusercontent.com/salto-io/jira-swaggers/main/platform-swagger.v3.json"
       typeNameOverrides = [
         {
           originalName = "FilterDetails"
@@ -133,7 +133,7 @@ jira {
       ]
     }
     jiraSwagger = {
-      url = "https://raw.githubusercontent.com/salto-io/jira-swaggers/next-main/software-swagger.v3.json"
+      url = "https://raw.githubusercontent.com/salto-io/jira-swaggers/main/software-swagger.v3.json"
       typeNameOverrides = [
         {
           originalName = "agile__1_0__board@uuvuu"

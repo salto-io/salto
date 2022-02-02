@@ -52,13 +52,14 @@ describe('views filter', () => {
         ids: [1],
       },
       execution: {
-        group_by: 'requester',
+        group_by: 123,
         group_order: 'asc',
         sort_by: 'nice_id',
         sort_order: 'desc',
         group: {
-          id: 'requester',
+          id: 123,
           title: 'Requester',
+          type: 'tagger',
           order: 'asc',
         },
         sort: {
@@ -164,6 +165,7 @@ describe('views filter', () => {
     it('should add output', async () => {
       expect(clonedView.value.output).toEqual({
         ...clonedView.value.execution,
+        group_by: '123',
         columns: ['subject', 'requester', 2],
       })
     })

@@ -41,6 +41,8 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
             .map((e: Values) => ({ ...e, value: e.value.toString() })),
           output: {
             ...instance.value.execution,
+            group_by: instance.value.execution.group_by?.toString(),
+            sort_by: instance.value.execution.sort_by?.toString(),
             columns: instance.value.execution.columns?.filter(_.isPlainObject)
               .map((c: Values) => c.id).filter(values.isDefined) ?? [],
           },

@@ -49,6 +49,7 @@ import userFieldFilter from './filters/custom_field_options/user_field'
 import dynamicContentFilter from './filters/dynamic_content'
 import restrictionFilter from './filters/restriction'
 import organizationFieldFilter from './filters/organization_field'
+import hideDefinitionInstancesFilter from './filters/hide_definition_instances'
 import defaultDeployFilter from './filters/default_deploy'
 
 const log = logger(module)
@@ -73,6 +74,7 @@ export const DEFAULT_FILTERS = [
   dynamicContentFilter,
   restrictionFilter,
   organizationFieldFilter,
+  hideDefinitionInstancesFilter,
   fieldReferencesFilter,
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,

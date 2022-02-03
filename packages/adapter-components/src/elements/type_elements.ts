@@ -41,7 +41,6 @@ export const hideFields = (
       ? typeFields[fieldName]
       : undefined
     if (field === undefined) {
-      log.warn('field %s.%s not found, cannot hide it', typeName, fieldName)
       return
     }
     if (fieldType === undefined || fieldType === field.refType.elemID.name) {

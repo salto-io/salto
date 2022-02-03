@@ -17,8 +17,9 @@ import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { InstanceElement, isObjectType, isInstanceElement, ReferenceExpression, isRemovalChange,
-  AdapterOperations, toChange, ObjectType, ElemID, getChangeData } from '@salto-io/adapter-api'
+  AdapterOperations, toChange, ObjectType, ElemID, getChangeData, BuiltinTypes } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { elements as elementsUtils } from '@salto-io/adapter-components'
 import mockReplies from './mock_replies.json'
 import { adapter } from '../src/adapter_creator'
 import { usernamePasswordCredentialsType } from '../src/auth'
@@ -702,6 +703,9 @@ describe('adapter', () => {
         elementsSource: buildElementsSourceFromElements([]),
       })
     })
+    afterEach(() => {
+      mockDeployChange.mockRestore()
+    })
 
     it('should return the applied changes', async () => {
       const ref = new ReferenceExpression(
@@ -791,6 +795,63 @@ describe('adapter', () => {
       })
       expect(deployRes.appliedChanges).toEqual([
         toChange({ after: new InstanceElement('inst', groupType) }),
+      ])
+    })
+    it('should call deploy with the fixed type', async () => {
+      const instance = new InstanceElement('inst', groupType, { name: 'test' })
+      await operations.deploy({
+        changeGroup: {
+          groupID: 'group',
+          changes: [
+            toChange({ after: instance }),
+          ],
+        },
+      })
+      expect(mockDeployChange).toHaveBeenCalledWith(
+        toChange({
+          after: new InstanceElement(
+            instance.elemID.name,
+            new ObjectType({
+              elemID: groupType.elemID,
+              fields: { name: { refType: BuiltinTypes.STRING } },
+              // generateType function creates path
+              path: [ZENDESK_SUPPORT, elementsUtils.TYPES_PATH, 'group'],
+            }),
+            { ...instance.value, id: 1 },
+          ),
+        }),
+        expect.anything(),
+        expect.anything(),
+        undefined,
+      )
+    })
+    it('should not try to deploy instances', async () => {
+      mockDeployChange.mockImplementation(async () => ({}))
+      const deployRes = await operations.deploy({
+        changeGroup: {
+          groupID: 'group',
+          changes: [
+            toChange({ before: new InstanceElement('inst', groupType) }),
+            toChange({ after: new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'test') }) }),
+          ],
+        },
+      })
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith(
+        toChange({ before: new InstanceElement(
+          'inst',
+          new ObjectType({
+            elemID: groupType.elemID,
+            // generateType function creates path
+            path: [ZENDESK_SUPPORT, elementsUtils.TYPES_PATH, 'group'],
+          }),
+        ) }),
+        expect.anything(),
+        expect.anything(),
+        undefined,
+      )
+      expect(deployRes.appliedChanges).toEqual([
+        toChange({ before: new InstanceElement('inst', groupType) }),
       ])
     })
   })

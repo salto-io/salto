@@ -21,7 +21,7 @@ import { ZENDESK_SUPPORT } from '../../src/constants'
 import { paginate } from '../../src/client/pagination'
 import filterCreator, { RESTRICTION_FIELD_NAME } from '../../src/filters/restriction'
 
-describe('ticket field filter', () => {
+describe('restriction filter', () => {
   let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType

@@ -39,6 +39,8 @@ const SPECIAL_CONTEXT_NAMES: Record<string, string> = {
   notification_group: 'group',
   notification_sms_group: 'group',
   notification_webhook: 'webhook',
+  via_id: 'channel',
+  current_via_id: 'channel',
 }
 
 /**

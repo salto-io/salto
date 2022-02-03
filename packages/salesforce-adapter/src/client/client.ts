@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { EOL } from 'os'
-import requestretry, { RequestRetryOptions, RetryStrategies } from 'requestretry'
+import requestretry, { RequestRetryOptions, RetryStrategies, RetryStrategy } from 'requestretry'
 import Bottleneck from 'bottleneck'
 import { collections, decorators, hash } from '@salto-io/lowerdash'
 import {
@@ -284,12 +284,23 @@ const sendChunked = async <TIn, TOut>({
 
 export class ApiLimitsTooLowError extends Error {}
 
+const retry400ErrorWrapper = (strategy: RetryStrategy): RetryStrategy =>
+  (err, response, body) => {
+    if (strategy(err, response, body)) {
+      return true
+    }
+    if (response.statusCode === 400) {
+      log.trace(`Retrying on 400 due to known salesforce issues. Err: ${err}`)
+      return true
+    }
+    return false
+  }
 const createRetryOptions = (retryOptions: Required<ClientRetryConfig>): RequestRetryOptions => ({
   maxAttempts: retryOptions.maxAttempts,
-  retryStrategy: RetryStrategies[retryOptions.retryStrategy],
+  retryStrategy: retry400ErrorWrapper(RetryStrategies[retryOptions.retryStrategy]),
   delayStrategy: (err, _response, _body) => {
     log.error('failed to run SFDC call for reason: %s. Retrying in %ss.',
-      err.message, (retryOptions.retryDelay / 1000))
+      err?.message ?? '', (retryOptions.retryDelay / 1000))
     return retryOptions.retryDelay
   },
 })

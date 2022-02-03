@@ -59,7 +59,6 @@ describe('salesforce client', () => {
       retry: {
         maxAttempts: 4, // try 4 times
         retryDelay: 100, // wait for 100ms before trying again
-        retryStrategy: 'NetworkError', // retry on network errors
       },
       maxConcurrentApiRequests: {
         total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
@@ -112,6 +111,19 @@ describe('salesforce client', () => {
 
     beforeAll(() => {
       log = jest.spyOn(logging, 'error')
+    })
+
+    it('retries with 400 error', async () => {
+      const dodoScope = nock('http://dodo22')
+        .post(/.*/)
+        .times(1)
+        .reply(400, {})
+        .post(/.*/)
+        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: { metadataObjects: [] } } } } },
+          headers)
+      const res = await client.listMetadataTypes()
+      expect(dodoScope.isDone()).toBeTruthy()
+      expect(res).toEqual([])
     })
 
     it('fails if max attempts was reached ', async () => {

@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { logger } from '@salto-io/logging'
 import {
   InstanceElement, isInstanceElement, isPrimitiveType, ElemID, getFieldType,
   isReferenceExpression, Value, isServiceId,
@@ -26,6 +27,7 @@ import {
 
 const { awu } = collections.asynciterable
 const { isDefined } = lowerDashValues
+const log = logger(module)
 
 export const findDependingInstancesFromRefs = async (
   instance: InstanceElement
@@ -78,7 +80,10 @@ export const getAllReferencedInstances = async (
   ): Promise<InstanceElement[]> => {
     const newInstances = (await findDependingInstancesFromRefs(instance))
       .filter(inst => !visited.has(inst.elemID.getFullName()))
-    newInstances.forEach(inst => visited.add(inst.elemID.getFullName()))
+    newInstances.forEach(inst => {
+      log.debug(`adding referenced instance: ${inst.elemID.getFullName()}`)
+      visited.add(inst.elemID.getFullName())
+    })
     return [
       ...newInstances,
       ...await awu(newInstances).flatMap(getNewReferencedInstances).toArray(),
@@ -123,6 +128,8 @@ export const getRequiredReferencedInstances = (
   const requiredReferencedInstances = sourceInstances
     .map(getInstanceRequiredDependency)
     .filter(isDefined)
+
+  log.debug(`adding referenced instances:\n${requiredReferencedInstances.map(inst => inst.elemID.getFullName()).join('\n')}`)
 
   return Array.from(new Set(sourceInstances.concat(requiredReferencedInstances)))
 }

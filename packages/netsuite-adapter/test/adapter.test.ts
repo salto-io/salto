@@ -59,6 +59,7 @@ getChangeValidatorMock.mockImplementation(({}: {
   withSuiteApp: boolean
   warnStaleData: boolean
   fetchByQuery: FetchByQueryFunc
+  deployReferencedElements?: boolean
 }) => (_changes: ReadonlyArray<Change>) => Promise.resolve([]))
 
 jest.mock('../src/reference_dependencies')
@@ -758,6 +759,7 @@ describe('Adapter', () => {
           withSuiteApp: expect.anything(),
           warnStaleData: false,
           fetchByQuery: expect.anything(),
+          deployReferencedElements: expect.anything(),
         })
       })
 
@@ -784,6 +786,7 @@ describe('Adapter', () => {
           withSuiteApp: expect.anything(),
           warnStaleData: false,
           fetchByQuery: expect.anything(),
+          deployReferencedElements: expect.anything(),
         })
       })
 
@@ -810,6 +813,7 @@ describe('Adapter', () => {
           withSuiteApp: expect.anything(),
           warnStaleData: true,
           fetchByQuery: expect.anything(),
+          deployReferencedElements: expect.anything(),
         })
       })
     })

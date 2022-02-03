@@ -55,12 +55,15 @@ const nonSuiteAppValidators: ChangeValidator[] = [
  */
 
 
-const getChangeValidator: ({ withSuiteApp, warnStaleData, fetchByQuery }
+const getChangeValidator: ({ withSuiteApp, warnStaleData, fetchByQuery, deployReferencedElements }
   : {
   withSuiteApp: boolean
   warnStaleData: boolean
   fetchByQuery: FetchByQueryFunc
-  }) => ChangeValidator = ({ withSuiteApp, warnStaleData, fetchByQuery }) =>
+  deployReferencedElements?: boolean
+  }) => ChangeValidator = (
+    { withSuiteApp, warnStaleData, fetchByQuery, deployReferencedElements }
+  ) =>
     async changes => {
       const validators = withSuiteApp
         ? [...changeValidators]
@@ -68,10 +71,12 @@ const getChangeValidator: ({ withSuiteApp, warnStaleData, fetchByQuery }
 
       const changeErrors: ChangeError[] = _.flatten(await Promise.all([
         ...validators.map(validator => validator(changes)),
-        warnStaleData ? safeDeployValidator(changes, fetchByQuery) : [],
+        warnStaleData ? safeDeployValidator(changes, fetchByQuery, deployReferencedElements) : [],
       ]))
 
-      const invalidElementIds = changeErrors.map(error => error.elemID.getFullName())
+      const invalidElementIds = changeErrors
+        .filter(error => error.severity === 'Error')
+        .map(error => error.elemID.getFullName())
       return changeErrors.concat(await validateDependsOnInvalidElement(invalidElementIds, changes))
     }
 

@@ -395,6 +395,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
         withSuiteApp: this.client.isSuiteAppConfigured(),
         warnStaleData: this.warnStaleData ?? DEFAULT_WARN_STALE_DATA,
         fetchByQuery: this.fetchByQuery,
+        deployReferencedElements: this.deployReferencedElements
+          ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
       }),
       getChangeGroupIds: getChangeGroupIdsFunc(this.client.isSuiteAppConfigured()),
     }

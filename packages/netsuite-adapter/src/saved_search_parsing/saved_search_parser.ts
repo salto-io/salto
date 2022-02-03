@@ -114,7 +114,7 @@ export const parseDefinition = async (definition:string): Promise<Values> => {
   safeAssignKeyValue(returnInstance, 'return_fields', extractSearchRecordsValues(searchParts.definition.returnFields))
   safeAssignKeyValue(returnInstance, 'detail_fields', extractSearchRecordsValues(searchParts.definition.detailFields))
   safeAssignKeyValue(returnInstance, 'sort_columns', extractSearchRecordsValues(searchParts.definition.sortColumns))
-  safeAssignKeyValue(returnInstance, 'audience:', getAudience(searchParts.dependency))
+  safeAssignKeyValue(returnInstance, 'audience', getAudience(searchParts.dependency))
   safeAssignKeyValue(returnInstance, 'alert_recipients', getAlertRecipients(searchParts.definition))
   Object.assign(returnInstance, getFlags(searchParts.definition))
   return returnInstance

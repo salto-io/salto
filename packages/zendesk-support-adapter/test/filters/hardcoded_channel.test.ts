@@ -19,9 +19,9 @@ import { DEFAULT_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
 import { ZENDESK_SUPPORT } from '../../src/constants'
 import { paginate } from '../../src/client/pagination'
-import filterCreator, { TRIGGER_DEFINITION_TYPE_NAME, CHANNEL_TYPE_NAME } from '../../src/filters/channel'
+import filterCreator, { TRIGGER_DEFINITION_TYPE_NAME, CHANNEL_TYPE_NAME } from '../../src/filters/hardcoded_channel'
 
-describe('channel filter', () => {
+describe('hardcoded channel filter', () => {
   let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType
@@ -69,7 +69,6 @@ describe('channel filter', () => {
   describe('onFetch', () => {
     it('should add the correct type and instances', async () => {
       const elements = [
-        channelObjType.clone(),
         triggerDefinitionObjType.clone(),
         triggerDefinitionInstance.clone(),
       ]
@@ -113,22 +112,100 @@ describe('channel filter', () => {
         triggerDefinitionObjType,
       )
       const elements = [
-        channelObjType.clone(),
         triggerDefinitionObjType.clone(),
         emptyTriggerDefinitionsInstance,
       ]
       await filter.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName()).sort())
         .toEqual([
-          'zendesk_support.channel',
           'zendesk_support.trigger_definition',
           'zendesk_support.trigger_definition.instance',
         ])
-      const channelType = elements
-        .filter(isObjectType)
-        .find(e => e.elemID.typeName === CHANNEL_TYPE_NAME)
-      expect(channelType).toBeDefined()
-      expect(Object.keys(channelType?.fields ?? {}).sort()).toEqual([])
+    })
+    it('should not add the type and instances if the trigger_definition channels are invalid', async () => {
+      const invalidTriggerDefinitionInstance = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        triggerDefinitionObjType,
+        {
+          conditions_all: [
+            {
+              title: 'Channel',
+              values: [
+                { value: '0', enabled: true },
+                { value: '4', title: 'Email', enabled: true },
+                { value: '29', title: 'Chat', enabled: true },
+                { value: '30', title: 'Twitter', enabled: true },
+              ],
+            },
+          ],
+        },
+      )
+      const elements = [
+        triggerDefinitionObjType.clone(),
+        invalidTriggerDefinitionInstance,
+      ]
+      await filter.onFetch(elements)
+      expect(elements.map(e => e.elemID.getFullName()).sort())
+        .toEqual([
+          'zendesk_support.trigger_definition',
+          'zendesk_support.trigger_definition.instance',
+        ])
+    })
+    it('should not add the type and instances if the channels are not unique', async () => {
+      const invalidTriggerDefinitionInstance = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        triggerDefinitionObjType,
+        {
+          conditions_all: [
+            {
+              title: 'Channel',
+              values: [
+                { value: '4', title: 'Email', enabled: true },
+                { value: '4', title: 'Test', enabled: true },
+                { value: '29', title: 'Chat', enabled: true },
+                { value: '30', title: 'Twitter', enabled: true },
+              ],
+            },
+          ],
+        },
+      )
+      const elements = [
+        triggerDefinitionObjType.clone(),
+        invalidTriggerDefinitionInstance,
+      ]
+      await filter.onFetch(elements)
+      expect(elements.map(e => e.elemID.getFullName()).sort())
+        .toEqual([
+          'zendesk_support.trigger_definition',
+          'zendesk_support.trigger_definition.instance',
+        ])
+    })
+    it('should not add the type and instances if there is no channel condition', async () => {
+      const invalidTriggerDefinitionInstance = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        triggerDefinitionObjType,
+        {
+          conditions_all: [
+            {
+              title: 'Status',
+              values: [
+                { value: '4', title: 'Email', enabled: true },
+                { value: '4', title: 'Test', enabled: true },
+              ],
+            },
+          ],
+        },
+      )
+      const elements = [
+        triggerDefinitionObjType.clone(),
+        invalidTriggerDefinitionInstance,
+      ]
+      await filter.onFetch(elements)
+      expect(elements.map(e => e.elemID.getFullName()).sort())
+        .toEqual([
+          'zendesk_support.trigger_definition',
+          'zendesk_support.trigger_definition.instance',
+        ])
     })
   })
 })

@@ -50,7 +50,7 @@ import dynamicContentFilter from './filters/dynamic_content'
 import restrictionFilter from './filters/restriction'
 import organizationFieldFilter from './filters/organization_field'
 import hideDefinitionInstancesFilter from './filters/hide_definition_instances'
-import channelFilter from './filters/channel'
+import hardcodedChannelFilter from './filters/hardcoded_channel'
 import defaultDeployFilter from './filters/default_deploy'
 
 const log = logger(module)
@@ -80,7 +80,7 @@ export const DEFAULT_FILTERS = [
   restrictionFilter,
   organizationFieldFilter,
   hideDefinitionInstancesFilter,
-  channelFilter,
+  hardcodedChannelFilter,
   fieldReferencesFilter,
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,

@@ -13,11 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
+import Joi from 'joi'
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, isInstanceElement, ObjectType, Values,
 } from '@salto-io/adapter-api'
-import { naclCase } from '@salto-io/adapter-utils'
+import { naclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
@@ -30,8 +30,29 @@ const { RECORDS_PATH, SUBTYPES_PATH, TYPES_PATH } = elementsUtils
 export const CHANNEL_TYPE_NAME = 'channel'
 export const TRIGGER_DEFINITION_TYPE_NAME = 'trigger_definition'
 
+type Channel = {
+  value: string
+  title: string
+  enabled: boolean
+}
+
+const EXPECTED_CHANNELS_SCHEMA = Joi.array().items(Joi.object({
+  value: Joi.string().required(),
+  title: Joi.string().required(),
+  enabled: Joi.boolean(),
+})).required()
+
+const isChannels = (values: unknown): values is Channel[] => {
+  const { error } = EXPECTED_CHANNELS_SCHEMA.validate(values)
+  if (error !== undefined) {
+    log.error(`Received an invalid response for the channel values: ${error.message}, ${safeJsonStringify(values)}`)
+    return false
+  }
+  return true
+}
+
 /**
- * Adds the hardcoded channel instances
+ * Adds the hardcoded channel instances in order to add references to them
  */
 const filterCreator: FilterCreator = ({ config }) => ({
   onFetch: async elements => {
@@ -40,13 +61,12 @@ const filterCreator: FilterCreator = ({ config }) => ({
       .filter(isInstanceElement)
       .find(e => e.elemID.typeName === TRIGGER_DEFINITION_TYPE_NAME)
     if (triggerDefinitionInstance === undefined) {
-      log.warn('Failed to find trigger_definition instance. Does not add channel instances')
+      log.warn(`Failed to find ${TRIGGER_DEFINITION_TYPE_NAME} instance. Not adding channel instances`)
       return
     }
     const channels = (triggerDefinitionInstance.value.conditions_all ?? [])
-      .find((condition: Values) => condition.title === 'Channel')?.values as (Values[] | undefined)
-    if (channels === undefined) {
-      log.warn('Failed to find the channels in trigger_definition instance. Does not add channel instances')
+      .find((condition: Values) => condition?.title === 'Channel')?.values
+    if (!isChannels(channels)) {
       return
     }
     const channelType = new ObjectType({
@@ -60,6 +80,10 @@ const filterCreator: FilterCreator = ({ config }) => ({
       annotations: config.fetch.hideTypes ? { [CORE_ANNOTATIONS.HIDDEN]: true } : undefined,
       path: [ZENDESK_SUPPORT, TYPES_PATH, SUBTYPES_PATH, CHANNEL_TYPE_NAME],
     })
+    if (channels.length !== (new Set(channels.map(c => c.value))).size) {
+      log.warn(`Found duplicate ids in the channels - Not adding channel instances. ${safeJsonStringify(channels)}`)
+      return
+    }
     const instances = channels.map(channel => {
       const instanceName = naclCase(channel.title)
       return new InstanceElement(
@@ -69,9 +93,6 @@ const filterCreator: FilterCreator = ({ config }) => ({
         [ZENDESK_SUPPORT, RECORDS_PATH, CHANNEL_TYPE_NAME, instanceName],
       )
     })
-    // Those types already exist since we added the empty version of them
-    //  via the add remaining types mechanism. So we first need to remove the old versions
-    _.remove(elements, element => element.elemID.isEqual(channelType.elemID))
     elements.push(channelType, ...instances)
   },
 })

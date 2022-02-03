@@ -285,9 +285,16 @@ const sendChunked = async <TIn, TOut>({
 export class ApiLimitsTooLowError extends Error {}
 
 const retry400ErrorWrapper = (strategy: RetryStrategy): RetryStrategy =>
-  (err, response, body) =>
-    strategy(err, response, body) || response.statusCode === 400
-
+  (err, response, body) => {
+    if (strategy(err, response, body)) {
+      return true
+    }
+    if (response.statusCode === 400) {
+      log.trace(`Retrying on 400 due to known salesforce issues. Err: ${err}`)
+      return true
+    }
+    return false
+  }
 const createRetryOptions = (retryOptions: Required<ClientRetryConfig>): RequestRetryOptions => ({
   maxAttempts: retryOptions.maxAttempts,
   retryStrategy: retry400ErrorWrapper(RetryStrategies[retryOptions.retryStrategy]),

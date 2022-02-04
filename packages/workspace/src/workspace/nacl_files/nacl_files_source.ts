@@ -269,7 +269,10 @@ const buildNaclFilesState = async ({
   currentState: NaclFilesState
 }): Promise<buildNaclFilesStateResult> => {
   const preChangeHash = await currentState.metadata.get(HASH_KEY)
-  const cacheValid = (preChangeHash === await currentState.parsedNaclFiles.getHash())
+  const parsedFileHash = await currentState.parsedNaclFiles.getHash()
+  // if parsedFileHash is undefined, it means the parsed Nacl files haven't been read yet.
+  // Nothing to compare for invalidation.
+  const cacheValid = parsedFileHash ? (preChangeHash === parsedFileHash) : true
   log.debug('building elements indices for %d NaCl files', newNaclFiles.length)
   const newParsed = _.keyBy(newNaclFiles, parsed => parsed.filename)
   const elementsIndexAdditions: Record<string, Set<string>> = {}
@@ -366,7 +369,6 @@ const buildNaclFilesState = async ({
 
   const handleAdditionsOrModifications = async (naclFiles:
     AwuIterable<ParsedNaclFile>): Promise<void> => {
-    const toAdd: Record<string, ParsedNaclFile> = {}
     await naclFiles.forEach(async naclFile => {
       const parsedFile = (await getNaclFile(naclFile))
       updateIndexOfFile(
@@ -400,7 +402,6 @@ const buildNaclFilesState = async ({
         await currentState.parsedNaclFiles.put(naclFile.filename, naclFile)
       }
     })
-    await currentState.parsedNaclFiles.putAll(toAdd)
   }
 
   const handleDeletions = async (naclFiles: AwuIterable<ParsedNaclFile>): Promise<void> => {

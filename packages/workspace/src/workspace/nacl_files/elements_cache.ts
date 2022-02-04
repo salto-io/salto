@@ -229,10 +229,10 @@ export const createMergeManager = async (flushables: Flushable[],
       || preChangeHash === cachePreChangeHash)
       && src1Changes.cacheValid && src2Changes.cacheValid
     if (!src1Changes.cacheValid) {
-      log.debug(`Invalid cache: ${cacheUpdate.src1Prefix}`)
+      log.debug(`Invalid cache: ${cacheUpdate.src1Prefix}. Prechange hash: ${src1Changes.preChangeHash}. Postchange hash: ${src1Changes.postChangeHash}`)
     }
     if (!src2Changes.cacheValid) {
-      log.debug(`Invalid cache: ${cacheUpdate.src2Prefix}`)
+      log.debug(`Invalid cache: ${cacheUpdate.src2Prefix}. Prechange hash: ${src2Changes.preChangeHash}. Postchange hash: ${src2Changes.postChangeHash}`)
     }
     if (!(preChangeHash === cachePreChangeHash)) {
       log.debug(`Invalid cache merge between ${cacheUpdate.src1Prefix} and ${cacheUpdate.src2Prefix}`)

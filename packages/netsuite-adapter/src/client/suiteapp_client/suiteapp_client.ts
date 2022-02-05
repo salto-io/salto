@@ -16,11 +16,13 @@
 import Bottleneck from 'bottleneck'
 import OAuth from 'oauth-1.0a'
 import crypto from 'crypto'
-import axios, { AxiosResponse } from 'axios'
+import axios, { AxiosInstance, AxiosResponse } from 'axios'
+import axiosRetry from 'axios-retry'
 import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { client as clientUtils } from '@salto-io/adapter-components'
 import { WSDL } from 'soap'
 import { InstanceElement } from '@salto-io/adapter-api'
 import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails,
@@ -35,7 +37,9 @@ import SoapClient from './soap_client/soap_client'
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError } from './errors'
 import { InvalidSuiteAppCredentialsError } from '../types'
 
-const PAGE_SIZE = 1000
+const { DEFAULT_RETRY_OPTS } = clientUtils
+
+export const PAGE_SIZE = 1000
 
 const log = logger(module)
 
@@ -61,6 +65,7 @@ export default class SuiteAppClient {
   private restletUrl: URL
   private ajv: Ajv
   private soapClient: SoapClient
+  private axiosClient: AxiosInstance | undefined
 
   constructor(params: SuiteAppClientParameters) {
     this.credentials = params.credentials
@@ -76,6 +81,7 @@ export default class SuiteAppClient {
 
     this.ajv = new Ajv({ allErrors: true, strict: false })
     this.soapClient = new SoapClient(this.credentials, this.callsLimiter)
+    this.axiosClient = undefined
   }
 
   /**
@@ -185,20 +191,51 @@ export default class SuiteAppClient {
     await client.sendRestletRequest('sysInfo')
   }
 
+  private getAxiosClient(): AxiosInstance {
+    if (this.axiosClient === undefined) {
+      this.axiosClient = axios.create()
+      axiosRetry(this.axiosClient, {
+        retries: DEFAULT_RETRY_OPTS.maxAttempts,
+        retryDelay: (retryCount, error) => {
+          log.warn(
+            'Try %s to run failed axios call to %s with status %s: %s',
+            retryCount,
+            error.config.url,
+            error.response?.status,
+            safeJsonStringify(error.response?.data, undefined, 2)
+          )
+          return DEFAULT_RETRY_OPTS.retryDelay
+        },
+        retryCondition: error => (
+          error.response?.status
+            ? !UNAUTHORIZED_STATUSES.includes(error.response?.status)
+            : false
+        ),
+      })
+    }
+    return this.axiosClient
+  }
+
   private async safeAxiosPost(
     href: string,
     data: unknown,
     headers: unknown
   ): Promise<AxiosResponse> {
     try {
-      return await this.callsLimiter(() => axios.post(
+      const axiosClient = this.getAxiosClient()
+      return await this.callsLimiter(() => axiosClient.post(
         href,
         data,
         { headers },
       ))
     } catch (e) {
-      log.warn('Received error from SuiteApp request to %s: error: %s',
-        href, safeJsonStringify(e.response.data, undefined, 2))
+      log.warn(
+        'Received error from SuiteApp request to %s (postParams: %s) with status %s: %s',
+        href,
+        data,
+        e.response.status,
+        safeJsonStringify(e.response.data, undefined, 2)
+      )
       if (UNAUTHORIZED_STATUSES.includes(e.response?.status)) {
         throw new InvalidSuiteAppCredentialsError()
       }
@@ -217,6 +254,11 @@ export default class SuiteAppClient {
       prefer: 'transient',
     }
     const response = await this.safeAxiosPost(url.href, { q: query }, headers)
+    log.debug(
+      'SuiteQL call (postParams: %s) responsed with status %s',
+      { query, offset, limit },
+      response.status
+    )
 
     if (!this.ajv.validate<SuiteQLResults>(SUITE_QL_RESULTS_SCHEMA, response.data)) {
       throw new Error(`Got invalid results from the SuiteQL query: ${this.ajv.errorsText()}`)
@@ -230,6 +272,12 @@ export default class SuiteAppClient {
     args: Record<string, unknown> = {}
   ): Promise<unknown> {
     const response = await this.safeAxiosPost(this.restletUrl.href, { operation, args }, this.generateHeaders(this.restletUrl, 'POST'))
+    log.debug(
+      'Restlet call to operation %s (postParams: %s) responsed with status %s',
+      operation,
+      safeJsonStringify(args),
+      response.status
+    )
 
     if (!this.ajv.validate<RestletResults>(RESTLET_RESULTS_SCHEMA, response.data)) {
       throw new Error(`Got invalid results from a Restlet request: ${this.ajv.errorsText()}`)

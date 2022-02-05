@@ -72,6 +72,8 @@ describe('soap_client', () => {
 
 
   describe('retries', () => {
+    jest.setTimeout(7000)
+
     it('when succeeds within the permitted retries should return the results', async () => {
       getAsyncMock.mockRejectedValueOnce(new Error('ECONNRESET'))
       getAsyncMock.mockResolvedValueOnce([{
@@ -89,6 +91,20 @@ describe('soap_client', () => {
     it('when still failing after the permitted retries should throw', async () => {
       getAsyncMock.mockRejectedValue(new Error('ECONNRESET'))
       await expect(client.readFile(1)).rejects.toThrow()
+    })
+
+    it('when having a delayed retry', async () => {
+      getAsyncMock.mockRejectedValueOnce(new Error('Concurrent request limit exceeded'))
+      getAsyncMock.mockResolvedValueOnce([{
+        readResponse: {
+          record: {
+            content: 'ZGVtbw==',
+          },
+          status: { attributes: { isSuccess: 'true' } },
+        },
+      }])
+      expect(await client.readFile(1)).toEqual(Buffer.from('demo'))
+      expect(getAsyncMock).toHaveBeenCalledTimes(2)
     })
   })
   it('client should be cached', async () => {

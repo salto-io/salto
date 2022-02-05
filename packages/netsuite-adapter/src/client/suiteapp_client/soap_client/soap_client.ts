@@ -40,37 +40,57 @@ const log = logger(module)
 export const ITEMS_TYPES = INTERNAL_ID_TO_TYPES[ITEM_TYPE_ID]
 export const WSDL_PATH = `${__dirname}/client/suiteapp_client/soap_client/wsdl/netsuite_1.wsdl`
 const REQUEST_MAX_RETRIES = 5
+const REQUEST_RETRY_DELAY = 5000
 
 // When updating the version, we should also update the types in src/data_elements/types.ts
 const NETSUITE_VERSION = '2020_2'
 const SEARCH_PAGE_SIZE = 100
 
 const RETRYABLE_MESSAGES = ['ECONN', 'UNEXPECTED_ERROR', 'INSUFFICIENT_PERMISSION']
+const SOAP_RETRYABLE_MESSAGES = ['CONCURRENT']
 
 type SoapSearchType = {
   type: string
   subtypes?: string[]
 }
 
-const retryOnBadResponse = decorators.wrapMethodWith(
-  async (
-    call: decorators.OriginalCall,
-  ): Promise<unknown> => {
-    const runWithRetry = async (retriesLeft: number): Promise<unknown> => {
-      try {
-        // eslint-disable-next-line @typescript-eslint/return-await
-        return await call.call()
-      } catch (e) {
-        if (RETRYABLE_MESSAGES.some(message => e.message.includes(message)) && retriesLeft > 0) {
-          log.warn('Retrying soap request with error: %o. Retries left: %d', e, retriesLeft)
-          return runWithRetry(retriesLeft - 1)
+const retryOnBadResponseWithDelay = (
+  retryableMessages: string[],
+  retryDelay?: number
+): decorators.InstanceMethodDecorator => (
+  decorators.wrapMethodWith(
+    async (
+      call: decorators.OriginalCall,
+    ): Promise<unknown> => {
+      const runWithRetry = async (retriesLeft: number): Promise<unknown> => {
+        try {
+          // eslint-disable-next-line @typescript-eslint/return-await
+          return await call.call()
+        } catch (e) {
+          if (retryableMessages.some(message => e.message.toUpperCase().includes(message))
+            && retriesLeft > 0) {
+            log.warn('Retrying soap request with error: %s. Retries left: %d', e.message, retriesLeft)
+            if (retryDelay) {
+              await new Promise(f => setTimeout(f, retryDelay))
+            }
+            return runWithRetry(retriesLeft - 1)
+          }
+
+          if (retriesLeft === 0) {
+            log.error('Soap request exceed max retries with error: %s', e.message)
+          } else {
+            log.error('Soap request had error: %s', e.message)
+          }
+
+          throw e
         }
-        throw e
       }
+      return runWithRetry(REQUEST_MAX_RETRIES)
     }
-    return runWithRetry(REQUEST_MAX_RETRIES)
-  }
+  )
 )
+
+const retryOnBadResponse = retryOnBadResponseWithDelay(RETRYABLE_MESSAGES)
 
 export default class SoapClient {
   private credentials: SuiteAppCredentials
@@ -306,10 +326,19 @@ export default class SoapClient {
     return wsdl
   }
 
+  @retryOnBadResponseWithDelay(SOAP_RETRYABLE_MESSAGES, REQUEST_RETRY_DELAY)
+  private static async soapRequestWithRetries(
+    client: soap.Client, operation: string, body: object
+  ): Promise<unknown> {
+    return (await client[`${operation}Async`](body))[0]
+  }
+
   private async sendSoapRequest(operation: string, body: object): Promise<unknown> {
     const client = await this.getClient()
     try {
-      return await this.callsLimiter(async () => (await client[`${operation}Async`](body))[0])
+      return await this.callsLimiter(
+        async () => SoapClient.soapRequestWithRetries(client, operation, body)
+      )
     } catch (e) {
       log.warn('Received error from NetSuite SuiteApp Soap request: operation - %s, body - %o, error - %o', operation, body, e)
       if (e.message.includes('Invalid login attempt.')) {

@@ -1383,6 +1383,20 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       ),
     },
   },
+  users: {
+    request: {
+      url: 'users?role[]=admin&role[]=agent',
+      paginationField: 'links.next',
+    },
+    transformation: {
+      dataField: 'users',
+    },
+  },
+  user: {
+    transformation: {
+      sourceTypeName: 'users__users',
+    },
+  },
   // not included yet: satisfaction_reason (returns 403), sunshine apis
 }
 

@@ -50,6 +50,7 @@ import dynamicContentFilter from './filters/dynamic_content'
 import restrictionFilter from './filters/restriction'
 import organizationFieldFilter from './filters/organization_field'
 import hardcodedChannelFilter from './filters/hardcoded_channel'
+import usersFilter from './filters/user'
 import defaultDeployFilter from './filters/default_deploy'
 
 const log = logger(module)
@@ -80,6 +81,7 @@ export const DEFAULT_FILTERS = [
   organizationFieldFilter,
   hardcodedChannelFilter,
   fieldReferencesFilter,
+  usersFilter,
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,
   // defaultDeployFilter should be last!

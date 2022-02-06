@@ -13,22 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, ChangeError, ElemID } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, ChangeError, ChangeDataType, ObjectType, Field } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
+import { getNamespace } from '../filters/utils'
+import { isInstanceOfCustomObjectChange } from '../custom_object_instances_deploy'
 
 
 const { awu } = collections.asynciterable
-// TODO what is the right logic
 const getCpqError = async (
-  elemId: ElemID,
+  element: ChangeDataType,
 ): Promise<ChangeError | undefined> => {
-  if (elemId.getFullName().includes('SBQQ')) {
+  if (getNamespace(element as ObjectType | Field)) {
     return {
-      elemID: elemId,
+      elemID: element.elemID,
       severity: 'Info',
-      // TODO re-write messages
+      // TODO re-write messages?
       message: 'Identify cpq change',
-      detailedMessage: `Identify cpq change for ${elemId}`,
+      detailedMessage: `Identify cpq change for ${element.elemID}`,
       deployActions: {
         preAction: {
           label: 'disable CPQ trigger',
@@ -51,9 +52,10 @@ const getCpqError = async (
 
 const changeValidator: ChangeValidator = async changes => {
   const updateChangeErrors = await awu(changes)
+    .filter(isInstanceOfCustomObjectChange)
     .map(change =>
       getCpqError(
-        getChangeData(change).elemID
+        getChangeData(change)
       ))
     .filter(values.isDefined)
     .toArray()

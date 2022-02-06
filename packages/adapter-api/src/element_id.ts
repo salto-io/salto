@@ -208,8 +208,8 @@ export class ElemID {
     if (other.isTopLevel() || this.nestingLevel >= other.nestingLevel) {
       return false
     }
-    const parent = other.createParentID()
-    return this.isEqual(parent) || this.isParentOf(parent)
+    const sameLevelID = other.createParentID(other.nestingLevel - this.nestingLevel)
+    return this.isEqual(sameLevelID)
   }
 
   createNestedID(...nameParts: string[]): ElemID {
@@ -228,8 +228,11 @@ export class ElemID {
     return new ElemID(this.adapter, this.typeName, this.idType, ...this.nameParts, ...nameParts)
   }
 
-  createParentID(): ElemID {
-    const newNameParts = this.nameParts.slice(0, -1)
+  createParentID(numLevels = 1): ElemID {
+    if (numLevels < 1) {
+      throw new Error(`Invalid argument to "createParentID" - numLevels=${numLevels} must be a positive number`)
+    }
+    const newNameParts = this.nameParts.slice(0, -1 * numLevels)
     if (!_.isEmpty(newNameParts)) {
       // Parent should have the same type as this ID
       return new ElemID(this.adapter, this.typeName, this.idType, ...newNameParts)
@@ -238,7 +241,7 @@ export class ElemID {
       // The parent of top level elements is the adapter
       return new ElemID(this.adapter)
     }
-    if (this.isAnnotationTypeID() && this.nameParts.length === 1) {
+    if (this.isAnnotationTypeID() && this.nameParts.length === numLevels) {
       // The parent of an annotationType is annotationTypes
       return new ElemID(this.adapter, this.typeName, this.idType)
     }

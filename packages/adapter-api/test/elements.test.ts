@@ -274,6 +274,7 @@ describe('Test elements.ts', () => {
     const annotationTypesId = typeId.createNestedID('annotation')
     const typeInstId = typeId.createNestedID('instance', 'test')
     const valueId = typeInstId.createNestedID('nested', 'value')
+    const typeAttrId = typeId.createNestedID('attr', 'anno')
     const configTypeId = new ElemID('adapter')
     const configInstId = configTypeId.createNestedID('instance', ElemID.CONFIG_NAME)
     const variableId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName')
@@ -448,13 +449,22 @@ describe('Test elements.ts', () => {
         expect(typeId.isParentOf(fieldId)).toBeTruthy()
         expect(typeId.isParentOf(fieldIdWithPath)).toBeTruthy()
         expect(typeId.isParentOf(annotationTypeId)).toBeTruthy()
+        expect(typeId.isParentOf(typeAttrId)).toBeTruthy()
+        expect(typeId.isParentOf(typeAttrId.createNestedID('more', 'nesting'))).toBeTruthy()
         expect(fieldId.isParentOf(fieldIdWithPath)).toBeTruthy()
         expect(typeInstId.isParentOf(valueId)).toBeTruthy()
+        expect(typeInstId.isParentOf(valueId.createNestedID('super', 'duper', 'nested'))).toBeTruthy()
+        expect(valueId.isParentOf(valueId.createNestedID('nested', 'value'))).toBeTruthy()
       })
       it('should return false if the checked ID is not nested under the current ID', () => {
         expect(typeId.isParentOf(typeInstId)).toBeFalsy()
-        expect(fieldId.isParentOf(typeId)).toBeFalsy()
         expect(typeId.isParentOf(typeId)).toBeFalsy()
+        expect(typeId.isParentOf(variableId)).toBeFalsy()
+        expect(fieldId.isParentOf(typeId)).toBeFalsy()
+        expect(fieldId.isParentOf(valueId)).toBeFalsy()
+        expect(typeInstId.isParentOf(variableId)).toBeFalsy()
+        expect(typeInstId.isParentOf(fieldId)).toBeFalsy()
+        expect(valueId.isParentOf(fieldId)).toBeFalsy()
       })
     })
 
@@ -542,6 +552,20 @@ describe('Test elements.ts', () => {
           [fieldId, typeInstId, configInstId].forEach(
             parent => expect(parent.createNestedID('test').createParentID()).toEqual(parent)
           )
+        })
+      })
+      describe('numLevels argument', () => {
+        it('should fail when passed as non positive', () => {
+          expect(() => fieldId.createParentID(0)).toThrow()
+          expect(() => fieldId.createParentID(-1)).toThrow()
+        })
+        it('should go up the correct number of levels', () => {
+          [fieldId, typeInstId, configInstId].forEach(
+            parent => expect(parent.createNestedID('test', 'foo').createParentID(2)).toEqual(parent)
+          )
+          expect(fieldId.createNestedID('asd').createParentID(2)).toEqual(typeId)
+          expect(typeAttrId.createNestedID('asd').createParentID(2)).toEqual(typeId)
+          expect(annotationTypeId.createParentID(2)).toEqual(typeId)
         })
       })
     })

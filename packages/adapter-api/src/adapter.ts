@@ -20,7 +20,7 @@ import { AdapterAuthentication } from './authentication_types'
 import { ElemID } from './element_id'
 import { Change } from './change'
 import { DependencyChanger } from './dependency_changer'
-import { SaltoElementError, SaltoError, SaltoErrorSeverity } from './error'
+import { SaltoElementError, SaltoError } from './error'
 import { ChangeGroup, ChangeGroupIdFunction } from './change_group'
 
 export interface FetchResult {

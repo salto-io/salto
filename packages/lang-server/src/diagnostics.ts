@@ -15,7 +15,7 @@
 */
 import wu from 'wu'
 import _ from 'lodash'
-import { SaltoErrorSeverity } from '@salto-io/adapter-api'
+import { SeverityLevel } from '@salto-io/adapter-api'
 import { EditorRange } from './context'
 import { EditorWorkspace } from './workspace'
 
@@ -23,7 +23,7 @@ export interface SaltoDiagnostic {
   filename: string
   msg: string
   range: EditorRange
-  severity: SaltoErrorSeverity
+  severity: SeverityLevel
 }
 
 export type WorkspaceSaltoDiagnostics = Record<string, SaltoDiagnostic[]>

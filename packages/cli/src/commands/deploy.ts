@@ -223,7 +223,12 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
       cliExitCode = CliExitCode.AppError
     }
   }
-  const postDeployActionsOutput = formatDeployActions({ wsChangeErrors: actionPlan.changeErrors, isPreDeploy: false })
+  const postDeployActionsOutput = formatDeployActions(
+    {
+      wsChangeErrors: actionPlan.changeErrors,
+      isPreDeploy: false,
+    }
+  )
   outputLine(postDeployActionsOutput.join('\n'), output)
   return cliExitCode
 }

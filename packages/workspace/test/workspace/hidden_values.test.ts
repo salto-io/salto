@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, DetailedChange, getChangeData, INSTANCE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, DetailedChange, getChangeData, INSTANCE_ANNOTATIONS, ReferenceExpression, MapType } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { mockState } from '../common/state'
 import { MergeResult } from '../../src/merger'
@@ -550,6 +550,81 @@ describe('handleHiddenChanges', () => {
       )
       expect(result.visible.length).toBe(1)
       expect(result.hidden.length).toBe(0)
+    })
+  })
+
+  describe('map with hidden values', () => {
+    const innerType = new ObjectType({
+      elemID: new ElemID('test', 'inner'),
+      fields: {
+        hidden: {
+          refType: BuiltinTypes.STRING,
+          annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+        },
+        visible: {
+          refType: BuiltinTypes.STRING,
+        },
+      },
+    })
+
+    const type = new ObjectType({
+      elemID: new ElemID('test', 'type'),
+      fields: {
+        map: { refType: new MapType(innerType) },
+      },
+    })
+    describe('with an addition of map with hidden value', () => {
+      const stateInstance = new InstanceElement('instance', type, {})
+
+      const change: DetailedChange = {
+        id: stateInstance.elemID.createNestedID('map'),
+        action: 'add',
+        data: {
+          after: {
+            val: {
+              hidden: 'hidden',
+              visible: 'visible',
+            },
+          },
+        },
+      }
+
+      it('should have a hidden change', async () => {
+        const result = await handleHiddenChanges(
+          [change],
+          mockState([type, innerType, stateInstance]),
+          createInMemoryElementSource(),
+        )
+        expect(result.visible.length).toBe(1)
+        expect(result.hidden.length).toBe(1)
+      })
+    })
+
+    describe('with an addition of map item with hidden value', () => {
+      const stateInstance = new InstanceElement('instance', type, {
+        map: {},
+      })
+
+      const change: DetailedChange = {
+        id: stateInstance.elemID.createNestedID('map', 'val'),
+        action: 'add',
+        data: {
+          after: {
+            hidden: 'hidden',
+            visible: 'visible',
+          },
+        },
+      }
+
+      it('should have a hidden change', async () => {
+        const result = await handleHiddenChanges(
+          [change],
+          mockState([type, innerType, stateInstance]),
+          createInMemoryElementSource(),
+        )
+        expect(result.visible.length).toBe(1)
+        expect(result.hidden.length).toBe(1)
+      })
     })
   })
 })

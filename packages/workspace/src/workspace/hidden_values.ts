@@ -751,8 +751,7 @@ export const filterOutHiddenChanges = async (
         return { hidden: change }
       }
 
-      const fieldType = changeType
-        && await getFieldType(changeType, changePath, state)
+      const fieldType = changeType && await getFieldType(changeType, changePath, state)
       if (isObjectType(fieldType) || isMapType(fieldType)) {
         const visible = await applyFunctionToChangeData(
           change,

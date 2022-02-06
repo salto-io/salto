@@ -70,10 +70,7 @@ export type DeployActions = {
   postAction?: PostDeployAction
 }
 
-export type ChangeValidatorSeverity = SaltoErrorSeverity | 'Info'
-
 export type ChangeError = SaltoElementError & {
-  severity: ChangeValidatorSeverity
   detailedMessage: string
   // TODO naming?
   deployActions?: DeployActions

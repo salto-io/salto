@@ -257,7 +257,6 @@ export const formatChangeErrors = (
       errorsIndent)
   }
   const ret = _(wsChangeErrors)
-    .filter(ce => ce.severity !== 'Info')
     .groupBy(ce => ce.message)
     .values()
     .sortBy(errs => -errs.length)
@@ -266,10 +265,11 @@ export const formatChangeErrors = (
   return ret
 }
 
-export const formatDeployActions = (
-  wsChangeErrors: ReadonlyArray<ChangeWorkspaceError | ChangeError>,
-  isPreDeploy = true,
-): string[] => {
+export const formatDeployActions = ({
+  wsChangeErrors,
+  isPreDeploy,
+}: {wsChangeErrors: ReadonlyArray<ChangeWorkspaceError | ChangeError>
+  isPreDeploy: boolean }): string[] => {
   const deployActions = wsChangeErrors
     .map(wsError => (isPreDeploy
       ? wsError.deployActions?.preAction
@@ -299,7 +299,12 @@ export const formatExecutionPlan = async (
   const formattedPlanChangeErrors: string = formatChangeErrors(
     workspaceErrors
   )
-  const preDeployActionOutput: string[] = formatDeployActions(workspaceErrors)
+  const preDeployActionOutput: string[] = formatDeployActions(
+    {
+      wsChangeErrors: workspaceErrors,
+      isPreDeploy: true,
+    }
+  )
   const planErrorsOutput: string[] = _.isEmpty(formattedPlanChangeErrors)
     ? [emptyLine()]
     : [emptyLine(),

@@ -23,30 +23,27 @@ import { isInstanceOfCustomObjectChange } from '../custom_object_instances_deplo
 const { awu } = collections.asynciterable
 const getCpqError = async (
   instance: InstanceElement,
-): Promise<ChangeError> => {
-  const changeError = {
-    elemID: instance.elemID,
-    severity: 'Info',
-    // TODO re-write messages?
-    message: 'Identify cpq change',
-    detailedMessage: `Identify cpq change for ${instance.elemID}`,
-    deployActions: {
-      preAction: {
-        label: 'disable CPQ trigger',
-        subtext: [
-          'In your Salesforce destination org, native to: \'Setup\' > \'Installed Packages\' > \'Salesforce CPQ\' > \'Configure\' > \'Additional Settings\'',
-          'Check \'Triggers Disabled\'',
-          'Click Save',
-        ],
-      },
-      postAction: {
-        label: 'disable CPQ trigger',
-        subtext: [],
-      },
+): Promise<ChangeError> => ({
+  elemID: instance.elemID,
+  severity: 'Info',
+  // TODO re-write messages?
+  message: 'Identify cpq change',
+  detailedMessage: `Identify cpq change for ${instance.elemID}`,
+  deployActions: {
+    preAction: {
+      label: 'disable CPQ trigger',
+      subtext: [
+        'In your Salesforce destination org, native to: \'Setup\' > \'Installed Packages\' > \'Salesforce CPQ\' > \'Configure\' > \'Additional Settings\'',
+        'Check \'Triggers Disabled\'',
+        'Click Save',
+      ],
     },
-  }
-  return changeError as ChangeError
-}
+    postAction: {
+      label: 'disable CPQ trigger',
+      subtext: [],
+    },
+  },
+})
 
 
 const changeValidator: ChangeValidator = async changes => {

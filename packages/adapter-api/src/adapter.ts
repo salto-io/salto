@@ -20,7 +20,7 @@ import { AdapterAuthentication } from './authentication_types'
 import { ElemID } from './element_id'
 import { Change } from './change'
 import { DependencyChanger } from './dependency_changer'
-import { SaltoElementError, SaltoError } from './error'
+import { SaltoElementError, SaltoError, SaltoErrorSeverity } from './error'
 import { ChangeGroup, ChangeGroupIdFunction } from './change_group'
 
 export interface FetchResult {
@@ -58,9 +58,25 @@ export type PostFetchOptions = {
   progressReporter: ProgressReporter
 }
 
+export type PreDeployAction = {
+  label: string
+  subtext: string[]
+}
+
+export type PostDeployAction = PreDeployAction
+
+export type DeployActions = {
+  preAction?: PreDeployAction
+  postAction?: PostDeployAction
+}
+
+export type ChangeValidatorSeverity = SaltoErrorSeverity | 'Info'
 
 export type ChangeError = SaltoElementError & {
+  severity: ChangeValidatorSeverity
   detailedMessage: string
+  // TODO naming?
+  deployActions?: DeployActions
 }
 
 export type DependencyError = ChangeError & {

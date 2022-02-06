@@ -15,28 +15,14 @@
 */
 import { ElemID } from './element_id'
 
-export type SaltoErrorSeverity = 'Error' | 'Warning' | 'Info'
+export type SaltoErrorSeverity = 'Error' | 'Warning'
 
 export type SaltoErrorSource = 'config'
-
-export type PreDeployAction = {
-    label: string
-    subtext: string[]
-}
-
-export type PostDeployAction = PreDeployAction
-
-export type DeployActions = {
-    preAction?: PreDeployAction
-    postAction?: PostDeployAction
-}
 
 export type SaltoError = {
     message: string
     severity: SaltoErrorSeverity
     source?: SaltoErrorSource
-    // TODO naming?
-    deployActions?: DeployActions
 }
 
 export type SaltoElementError = SaltoError & {

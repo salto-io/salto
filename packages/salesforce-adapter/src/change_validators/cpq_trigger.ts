@@ -13,40 +13,39 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, ChangeError, ChangeDataType, ObjectType, Field } from '@salto-io/adapter-api'
-import { values, collections } from '@salto-io/lowerdash'
+import { ChangeValidator, getChangeData, ChangeError, InstanceElement } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { getNamespace } from '../filters/utils'
+import { hasNamespace } from './package'
 import { isInstanceOfCustomObjectChange } from '../custom_object_instances_deploy'
 
 
 const { awu } = collections.asynciterable
 const getCpqError = async (
-  element: ChangeDataType,
-): Promise<ChangeError | undefined> => {
-  if (getNamespace(element as ObjectType | Field)) {
-    return {
-      elemID: element.elemID,
-      severity: 'Info',
-      // TODO re-write messages?
-      message: 'Identify cpq change',
-      detailedMessage: `Identify cpq change for ${element.elemID}`,
-      deployActions: {
-        preAction: {
-          label: 'disable CPQ trigger',
-          subtext: [
-            'In your Salesforce destination org, native to: \'Setup\' > \'Installed Packages\' > \'Salesforce CPQ\' > \'Configure\' > \'Additional Settings\'',
-            'Check \'Triggers Disabled\'',
-            'Click Save',
-          ],
-        },
-        postAction: {
-          label: 'disable CPQ trigger',
-          subtext: [],
-        },
+  instance: InstanceElement,
+): Promise<ChangeError> => {
+  const changeError = {
+    elemID: instance.elemID,
+    severity: 'Info',
+    // TODO re-write messages?
+    message: 'Identify cpq change',
+    detailedMessage: `Identify cpq change for ${instance.elemID}`,
+    deployActions: {
+      preAction: {
+        label: 'disable CPQ trigger',
+        subtext: [
+          'In your Salesforce destination org, native to: \'Setup\' > \'Installed Packages\' > \'Salesforce CPQ\' > \'Configure\' > \'Additional Settings\'',
+          'Check \'Triggers Disabled\'',
+          'Click Save',
+        ],
       },
-    } as ChangeError
+      postAction: {
+        label: 'disable CPQ trigger',
+        subtext: [],
+      },
+    },
   }
-  return undefined
+  return changeError as ChangeError
 }
 
 
@@ -54,10 +53,12 @@ const changeValidator: ChangeValidator = async changes => {
   const updateChangeErrors = await awu(changes)
     .filter(isInstanceOfCustomObjectChange)
     .map(change =>
-      getCpqError(
-        getChangeData(change)
-      ))
-    .filter(values.isDefined)
+      getChangeData(change) as InstanceElement) // already checked that this is an instance element
+    .filter(async instance => {
+      const type = await instance.getType()
+      return await hasNamespace(type) && (await getNamespace(type)) === 'SBQQ'
+    })
+    .map(instance => getCpqError(instance))
     .toArray()
 
   return [

@@ -14,50 +14,72 @@
 * limitations under the License.
 */
 import {
-  ElemID, ObjectType, toChange,
+  ElemID, ObjectType, toChange, InstanceElement, BuiltinTypes,
 } from '@salto-io/adapter-api'
-import { Types } from '../../src/transformers/transformer'
 import cpqChangeValidator from '../../src/change_validators/cpq_trigger'
-import { createField } from '../utils'
+import { CUSTOM_OBJECT } from '../../src/constants'
 
 describe('cpq trigger change validator', () => {
   const objCpq = new ObjectType({
-    elemID: new ElemID('salesforce', 'SBQQ__cpqElement'),
+    elemID: new ElemID('salesforce', 'SBQQ__ProductRule__c'),
+    annotations: { metadataType: CUSTOM_OBJECT, apiName: 'SBQQ__ProductRule__c' },
+    fields: {
+      newField: {
+        refType: BuiltinTypes.STRING,
+      },
+    },
   })
+  const before = new InstanceElement('myInst', objCpq)
+  const after = new InstanceElement('myInst', objCpq, { newField: 'newValue' })
   describe('onUpdate', () => {
     it('should have error when cpq element has been modified', async () => {
-      const beforeField = createField(objCpq, Types.primitiveDataTypes.Time, 'Something')
-      const afterField = createField(objCpq, Types.primitiveDataTypes.Time, 'Something else')
       const changeErrors = await cpqChangeValidator(
-        [toChange({ before: beforeField, after: afterField })]
+        [toChange({ before, after })]
       )
       expect(changeErrors).toHaveLength(1)
       const [changeError] = changeErrors
-      expect(changeError.elemID).toEqual(beforeField.elemID)
+      expect(changeError.elemID).toEqual(before.elemID)
       expect(changeError.severity).toEqual('Info')
       expect(changeError.deployActions).toBeDefined()
     })
 
     it('should have error when cpq element has been deleted', async () => {
       const changeErrors = await cpqChangeValidator(
-        [toChange({ before: objCpq, after: undefined })]
+        [toChange({ before, after: undefined })]
       )
       expect(changeErrors).toHaveLength(1)
       const [changeError] = changeErrors
-      expect(changeError.elemID).toEqual(objCpq.elemID)
+      expect(changeError.elemID).toEqual(before.elemID)
       expect(changeError.severity).toEqual('Info')
       expect(changeError.deployActions).toBeDefined()
     })
 
     it('should have error when cpq element has been created', async () => {
       const changeErrors = await cpqChangeValidator(
-        [toChange({ before: undefined, after: objCpq })]
+        [toChange({ before: undefined, after })]
       )
       expect(changeErrors).toHaveLength(1)
       const [changeError] = changeErrors
-      expect(changeError.elemID).toEqual(objCpq.elemID)
+      expect(changeError.elemID).toEqual(after.elemID)
       expect(changeError.severity).toEqual('Info')
       expect(changeError.deployActions).toBeDefined()
+    })
+    it('should have no error when instance element is not instance of cpq namespace', async () => {
+      const objNOTcpq = new ObjectType({
+        elemID: new ElemID('salesforce', 'NOTcpqElement'),
+        annotations: { metadataType: CUSTOM_OBJECT, apiName: 'NOTcpqElement' },
+        fields: {
+          newField: {
+            refType: BuiltinTypes.STRING,
+          },
+        },
+      })
+      const beforeNOTcpq = new InstanceElement('myInst', objNOTcpq)
+      const afterNOTcpq = new InstanceElement('myInst', objNOTcpq, { newField: 'newField' })
+      const changeErrors = await cpqChangeValidator(
+        [toChange({ before: beforeNOTcpq, after: afterNOTcpq })]
+      )
+      expect(changeErrors).toHaveLength(0)
     })
   })
 })

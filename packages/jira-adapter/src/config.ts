@@ -29,6 +29,7 @@ const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
 type JiraClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
   & {
     fieldConfigurationItemsDeploymentLimit: number
+    usePrivateAPI: boolean
   }
 
 type JiraFetchConfig = configUtils.UserFetchConfig
@@ -1539,6 +1540,7 @@ export const DEFAULT_CONFIG: JiraConfig = {
   client: {
   // Jira does not allow more items in a single request than this
     fieldConfigurationItemsDeploymentLimit: 100,
+    usePrivateAPI: true,
   },
   fetch: {
     includeTypes: DEFAULT_INCLUDE_ENDPOINTS,
@@ -1550,6 +1552,9 @@ const createClientConfigType = (): ObjectType => {
   const configType = clientUtils.createClientConfigType(JIRA)
   configType.fields.FieldConfigurationItemsDeploymentLimit = new Field(
     configType, 'FieldConfigurationItemsDeploymentLimit', BuiltinTypes.NUMBER
+  )
+  configType.fields.usePrivateAPI = new Field(
+    configType, 'usePrivateAPI', BuiltinTypes.BOOLEAN
   )
   return configType
 }

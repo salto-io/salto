@@ -96,7 +96,9 @@ const replaceRestrictionImpl = (values: Values, mapping: Record<string, string>)
     const newValue = Object.prototype.hasOwnProperty.call(mapping, id)
       ? mapping[id]
       : undefined
-    values.restriction.id = newValue
+    if (newValue !== undefined) {
+      values.restriction.id = newValue
+    }
   }
 }
 

@@ -47,7 +47,6 @@ const printPlan = async (
 ): Promise<void> => {
   const planWorkspaceErrors = await promises.array.withLimitedConcurrency(
     actions.changeErrors
-      .filter(ce => ce.severity !== 'Info')
       .map(ce => () => workspace.transformToWorkspaceError(ce)),
     20,
   )

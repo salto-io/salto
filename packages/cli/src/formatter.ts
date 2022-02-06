@@ -298,11 +298,11 @@ export const formatExecutionPlan = async (
   detailed = false,
 ): Promise<string> => {
   const formattedPlanChangeErrors: string = formatChangeErrors(
-    workspaceErrors
+    workspaceErrors.filter(ce => ce.severity !== 'Info')
   )
   const deployCallToActions: string[] = formatDeployActions(
     {
-      wsChangeErrors: plan.changeErrors,
+      wsChangeErrors: workspaceErrors,
       isPreDeploy: true,
     }
   )

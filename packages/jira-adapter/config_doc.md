@@ -57,6 +57,7 @@ jira {
 
 ## Fetch configuration options
 
-| Name                                        | Default when undefined          | Description
-|---------------------------------------------|---------------------------------|------------
-| includeTypes                                | []                              | List of types to fetch
+| Name                                        | Default when undefined            | Description
+|---------------------------------------------|-----------------------------------|------------
+| includeTypes                                | []                                | List of types to fetch
+| typesToFallbackToInternalId                 | ['Field', 'Status', 'Resolution'] | List of types to add their internal ids to the instance name when the name is not unique between the instances of that type

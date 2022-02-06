@@ -15,7 +15,7 @@
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, Element, ElemIdGetter, Field, InstanceElement, isInstanceElement, isObjectType, ListType, MapType, ObjectType, OBJECT_NAME, OBJECT_SERVICE_ID, ReferenceExpression, ServiceIds, toServiceIdsString, Values } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
-import { config as configUtils } from '@salto-io/adapter-components'
+import { config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
@@ -23,7 +23,8 @@ import { JIRA } from '../../constants'
 import { JiraConfig } from '../../config'
 import { FilterCreator } from '../../filter'
 import { FIELD_CONTEXT_DEFAULT_TYPE_NAME, FIELD_CONTEXT_OPTION_TYPE_NAME, FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from './constants'
-import { generateInstanceName } from '../../utils'
+
+const { generateInstanceNameFromConfig } = elementUtils
 
 const log = logger(module)
 
@@ -166,10 +167,10 @@ const createContextInstance = (
   config: JiraConfig,
   getElemIdFunc?: ElemIdGetter,
 ): InstanceElement => {
-  const parentName = generateInstanceName(
+  const parentName = generateInstanceNameFromConfig(
     parentField.value,
     parentField.elemID.typeName,
-    config,
+    config.apiDefinitions,
   )
 
   const naclCasedParentName = parentName !== undefined
@@ -183,8 +184,11 @@ const createContextInstance = (
     ? [parentName, parentField.value.id]
     : [(parentName ?? parentField.elemID.name)]
 
-  const contextName = generateInstanceName(context, contextType.elemID.typeName, config)
-    ?? context.id
+  const contextName = generateInstanceNameFromConfig(
+    context,
+    contextType.elemID.typeName,
+    config.apiDefinitions
+  ) ?? context.id
 
   const defaultName = naclCase([...parentParts, contextName].join('_'))
 

@@ -29,6 +29,7 @@ describe('duplicateIdsFilter', () => {
     const { client, paginator } = mockClient()
 
     config = _.cloneDeep(DEFAULT_CONFIG)
+    config.fetch.typesToFallbackToInternalId = [ISSUE_TYPE_NAME]
 
     filter = duplicateIdsFilter({
       client,
@@ -95,8 +96,8 @@ describe('duplicateIdsFilter', () => {
     })
   })
 
-  it('should do nothing if fallbackToInternalId is false', async () => {
-    config.apiDefinitions.fallbackToInternalId = false
+  it('should do nothing if typesToFallbackToInternalId is empty', async () => {
+    config.fetch.typesToFallbackToInternalId = []
     const dup1 = new InstanceElement(
       'dup',
       type,

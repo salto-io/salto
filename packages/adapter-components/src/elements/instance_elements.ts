@@ -22,7 +22,7 @@ import { pathNaclCase, naclCase, transformValues, TransformFunc } from '@salto-i
 import { logger } from '@salto-io/logging'
 import { RECORDS_PATH } from './constants'
 import { TransformationConfig, TransformationDefaultConfig, getConfigWithDefault,
-  RecurseIntoCondition, isRecurseIntoConditionByField } from '../config'
+  RecurseIntoCondition, isRecurseIntoConditionByField, AdapterApiConfig } from '../config'
 
 const log = logger(module)
 
@@ -50,6 +50,19 @@ export const getInstanceName = (
   }
   return nameParts.every(part => part !== undefined && part !== '') ? nameParts.map(String).join('_') : undefined
 }
+
+export const generateInstanceNameFromConfig = (
+  values: Values,
+  typeName: string,
+  apiDefinitions: AdapterApiConfig
+): string | undefined => {
+  const { idFields } = getConfigWithDefault(
+    apiDefinitions.types[typeName]?.transformation ?? {},
+    apiDefinitions.typeDefaults.transformation
+  )
+  return getInstanceName(values, idFields)
+}
+
 
 const createServiceIds = (
   entry: Values, serviceIdField: string, type: ObjectType

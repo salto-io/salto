@@ -65,6 +65,7 @@ const { createPaginator, getWithOffsetAndLimit } = clientUtils
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
+  // This should happen before any filter that creates new instances or references
   duplicateIdsFilter,
   avatarsFilter,
   workflowFilter,

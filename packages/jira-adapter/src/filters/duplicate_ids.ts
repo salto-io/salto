@@ -17,15 +17,28 @@ import { InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import { JiraConfig } from '../config'
-import { generateInstanceName } from '../utils'
 import { FilterCreator } from '../filter'
+import { FIELD_TYPE_NAME } from './fields/constants'
+
+const { generateInstanceNameFromConfig } = elementUtils
+
 
 const log = logger(module)
 
+const defaultTypesToFallbackToInternalId = [
+  FIELD_TYPE_NAME,
+  'Status',
+  'Resolution',
+]
+
 const getInstanceName = (instance: InstanceElement, config: JiraConfig): string => {
-  const originalName = generateInstanceName(instance.value, instance.elemID.typeName, config)
-    ?? instance.elemID.name
+  const originalName = generateInstanceNameFromConfig(
+    instance.value,
+    instance.elemID.typeName,
+    config.apiDefinitions
+  ) ?? instance.elemID.name
   return naclCase(`${originalName}_${instance.value.id}`)
 }
 
@@ -36,12 +49,12 @@ const getInstanceName = (instance: InstanceElement, config: JiraConfig): string 
  */
 const filter: FilterCreator = ({ config }) => ({
   onFetch: async elements => {
-    if (!config.apiDefinitions.fallbackToInternalId) {
-      return
-    }
+    const relevantInstances = elements
+      .filter(isInstanceElement)
+      .filter(instance => (config.fetch.typesToFallbackToInternalId
+        ?? defaultTypesToFallbackToInternalId).includes(instance.elemID.typeName))
 
-    const instances = elements.filter(isInstanceElement)
-    const duplicateIds = new Set(_(instances)
+    const duplicateIds = new Set(_(relevantInstances)
       .countBy(instance => instance.elemID.getFullName())
       .pickBy(count => count > 1)
       .keys()
@@ -70,6 +83,7 @@ const filter: FilterCreator = ({ config }) => ({
         instance.annotations,
       ))
 
+    log.debug(`Replaced duplicate names with: ${Array.from(newInstances.map(instance => instance.elemID.name)).join(', ')}`)
     elements.push(...newInstances)
   },
 })

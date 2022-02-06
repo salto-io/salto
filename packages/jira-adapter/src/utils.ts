@@ -13,9 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, ObjectType, Element, isObjectType, Values } from '@salto-io/adapter-api'
-import { config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { JiraConfig } from './config'
+import { CORE_ANNOTATIONS, ObjectType, Element, isObjectType } from '@salto-io/adapter-api'
 
 export const setDeploymentAnnotations = (contextType: ObjectType, fieldName: string): void => {
   if (contextType.fields[fieldName] !== undefined) {
@@ -28,15 +26,3 @@ export const findObject = (elements: Element[], name: string): ObjectType | unde
   elements.filter(isObjectType).find(
     element => element.elemID.name === name
   )
-
-export const generateInstanceName = (
-  values: Values,
-  typeName: string,
-  config: JiraConfig
-): string | undefined => {
-  const { idFields } = configUtils.getConfigWithDefault(
-    config.apiDefinitions.types[typeName].transformation,
-    config.apiDefinitions.typeDefaults.transformation
-  )
-  return elementUtils.getInstanceName(values, idFields)
-}

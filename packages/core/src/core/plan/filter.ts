@@ -17,7 +17,7 @@ import wu from 'wu'
 import _ from 'lodash'
 
 import { DataNodeMap, DiffGraph, DiffNode, NodeId } from '@salto-io/dag'
-import { ChangeError, ElementMap, InstanceElement, TypeElement, ChangeValidator, getChangeData, ElemID, ObjectType, ChangeDataType, Element, isAdditionOrModificationChange, isField, isObjectType, ReadOnlyElementsSource, SaltoErrorSeverity, DependencyError } from '@salto-io/adapter-api'
+import { ChangeError, ElementMap, InstanceElement, TypeElement, ChangeValidator, getChangeData, ElemID, ObjectType, ChangeDataType, Element, isAdditionOrModificationChange, isField, isObjectType, ReadOnlyElementsSource, SeverityLevel, DependencyError } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 
@@ -139,7 +139,7 @@ export const filterInvalidChanges = async (
         elemID: droppedID,
         message,
         detailedMessage: message,
-        severity: 'Error' as SaltoErrorSeverity,
+        severity: 'Error' as SeverityLevel,
       }
     }
 

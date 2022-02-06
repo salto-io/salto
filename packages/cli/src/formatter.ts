@@ -300,7 +300,7 @@ export const formatExecutionPlan = async (
   const formattedPlanChangeErrors: string = formatChangeErrors(
     workspaceErrors
   )
-  const preDeployActionOutput: string[] = formatDeployActions(
+  const deployCallToActions: string[] = formatDeployActions(
     {
       wsChangeErrors: plan.changeErrors,
       isPreDeploy: true,
@@ -329,7 +329,7 @@ export const formatExecutionPlan = async (
     planSteps,
     ...planErrorsOutput,
     emptyLine(),
-    ...preDeployActionOutput,
+    ...deployCallToActions,
     subHeader(Prompts.EXPLAIN_PREVIEW_RESULT),
     actionCount,
     emptyLine(),

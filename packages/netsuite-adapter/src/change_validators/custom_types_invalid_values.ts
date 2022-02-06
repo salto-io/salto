@@ -24,7 +24,7 @@ import {
   isAdditionOrModificationChange,
   isInstanceChange,
   isModificationChange,
-  SaltoErrorSeverity,
+  SeverityLevel,
   Value,
 } from '@salto-io/adapter-api'
 import { isCustomType } from '../types'
@@ -36,7 +36,7 @@ type InvalidValue = {
   path: string[]
   value: Value
   error: {
-    severity: SaltoErrorSeverity
+    severity: SeverityLevel
     detailedMessage: string
   }
 }

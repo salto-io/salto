@@ -15,14 +15,14 @@
 */
 import _ from 'lodash'
 import { errors as wsErrors, validator as wsValidator } from '@salto-io/workspace'
-import { ElemID, SaltoError, SaltoElementError, SaltoErrorSeverity } from '@salto-io/adapter-api'
+import { ElemID, SaltoError, SaltoElementError, SeverityLevel } from '@salto-io/adapter-api'
 
 const { isUnresolvedRefError } = wsValidator
 
 export class UnresolvedReferenceGroupError implements SaltoElementError {
   readonly elemID: ElemID
   readonly message: string
-  readonly severity: SaltoErrorSeverity
+  readonly severity: SeverityLevel
   constructor(
     target: string,
     refErrors: ReadonlyArray<wsErrors.UnresolvedReferenceValidationError>,

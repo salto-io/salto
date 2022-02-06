@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isInstanceChange, isModificationChange, isRemovalChange, SaltoErrorSeverity } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isInstanceChange, isModificationChange, isRemovalChange, SeverityLevel } from '@salto-io/adapter-api'
 import { resolveChangeElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { getLookUpName } from '../reference_mapping'
@@ -69,7 +69,7 @@ export const issueTypeSchemeValidator: ChangeValidator = async changes => {
 
   return [{
     elemID,
-    severity: 'Error' as SaltoErrorSeverity,
+    severity: 'Error' as SeverityLevel,
     message: 'Cannot remove issue types from default issue type scheme',
     detailedMessage: `Removing issue types from the default issue type scheme ${elemID.getFullName()} is not supported`,
   }]

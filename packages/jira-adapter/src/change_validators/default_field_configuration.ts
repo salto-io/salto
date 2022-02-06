@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isInstanceChange, isModificationChange, SaltoErrorSeverity } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isInstanceChange, isModificationChange, SeverityLevel } from '@salto-io/adapter-api'
 
 export const defaultFieldConfigurationValidator: ChangeValidator = async changes => (
   changes
@@ -27,7 +27,7 @@ export const defaultFieldConfigurationValidator: ChangeValidator = async changes
       ))
       .map(fieldName => ({
         elemID: getChangeData(change).elemID,
-        severity: 'Warning' as SaltoErrorSeverity,
+        severity: 'Warning' as SeverityLevel,
         message: `Deploying the "${fieldName}" value in a default field configuration is not supported`,
         detailedMessage: `Deploying the "${fieldName}" value in the default field configuration ${getChangeData(change).elemID.getFullName()} is not supported and will be omitted from the deployment`,
       })))

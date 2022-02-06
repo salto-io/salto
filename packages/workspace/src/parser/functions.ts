@@ -15,7 +15,7 @@
 */
 
 import {
-  Value, SaltoError, SaltoErrorSeverity,
+  Value, SaltoError, SeverityLevel,
 } from '@salto-io/adapter-api'
 import { FunctionExpression } from './internal/functions'
 
@@ -30,7 +30,7 @@ export type FunctionImplementation = {
 export type Functions = Record<string, FunctionImplementation>
 
 export class MissingFunctionError implements SaltoError {
-  public severity: SaltoErrorSeverity = 'Error'
+  public severity: SeverityLevel = 'Error'
   constructor(public funcName: string) {}
 
   get message(): string {

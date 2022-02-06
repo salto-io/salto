@@ -276,7 +276,7 @@ export const formatDeployActions = ({
       : wsError.deployActions?.postAction))
     .filter(values.isDefined)
   if (_.isEmpty(deployActions)) {
-    return [emptyLine()]
+    return []
   }
   const actionsUniqByLabel = _(deployActions)
     .uniqBy(deployAction => deployAction.label)
@@ -288,6 +288,7 @@ export const formatDeployActions = ({
       header(deployAction.label),
       ...deployAction.subtext,
     ]),
+    emptyLine(),
   ]
 }
 
@@ -329,7 +330,6 @@ export const formatExecutionPlan = async (
     ...planErrorsOutput,
     emptyLine(),
     ...preDeployActionOutput,
-    emptyLine(),
     subHeader(Prompts.EXPLAIN_PREVIEW_RESULT),
     actionCount,
     emptyLine(),

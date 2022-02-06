@@ -44,6 +44,7 @@ import defaultInstancesDeployFilter from './filters/default_instances_deploy'
 import workflowFilter from './filters/workflow/workflow'
 import workflowPropertiesFilter from './filters/workflow/workflow_properties'
 import workflowSchemeFilter from './filters/workflow_scheme'
+import duplicateIdsFilter from './filters/duplicate_ids'
 import fieldStructureFilter from './filters/fields/field_structure_filter'
 import fieldDeploymentFilter from './filters/fields/field_deployment_filter'
 import contextDeploymentFilter from './filters/fields/context_deployment_filter'
@@ -64,6 +65,7 @@ const { createPaginator, getWithOffsetAndLimit } = clientUtils
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
+  duplicateIdsFilter,
   avatarsFilter,
   workflowFilter,
   workflowPropertiesFilter,

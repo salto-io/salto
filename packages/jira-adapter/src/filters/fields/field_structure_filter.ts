@@ -15,7 +15,7 @@
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, Element, ElemIdGetter, Field, InstanceElement, isInstanceElement, isObjectType, ListType, MapType, ObjectType, OBJECT_NAME, OBJECT_SERVICE_ID, ReferenceExpression, ServiceIds, toServiceIdsString, Values } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
-import { config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { config as configUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
@@ -23,6 +23,7 @@ import { JIRA } from '../../constants'
 import { JiraConfig } from '../../config'
 import { FilterCreator } from '../../filter'
 import { FIELD_CONTEXT_DEFAULT_TYPE_NAME, FIELD_CONTEXT_OPTION_TYPE_NAME, FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from './constants'
+import { generateInstanceName } from '../../utils'
 
 const log = logger(module)
 
@@ -140,18 +141,6 @@ const transformOptionsToMap = (instance: InstanceElement): void => {
     })
 }
 
-const getInstanceName = (
-  instanceValues: Values,
-  typeName: string,
-  config: JiraConfig
-): string | undefined => {
-  const { idFields } = configUtils.getConfigWithDefault(
-    config.apiDefinitions.types[typeName].transformation,
-    config.apiDefinitions.typeDefaults.transformation
-  )
-  return elementUtils.getInstanceName(instanceValues, idFields)
-}
-
 const getServiceIds = (
   instanceValues: Values,
   type: ObjectType,
@@ -177,15 +166,27 @@ const createContextInstance = (
   config: JiraConfig,
   getElemIdFunc?: ElemIdGetter,
 ): InstanceElement => {
-  const parentName = getInstanceName(
+  const parentName = generateInstanceName(
     parentField.value,
     parentField.elemID.typeName,
     config,
-  ) ?? parentField.elemID.name
-  const contextName = getInstanceName(context, contextType.elemID.typeName, config)
+  )
+
+  const naclCasedParentName = parentName !== undefined
+    ? naclCase(parentName)
+    : parentField.elemID.name
+
+  // This is a kinda hacky way to get the element name of the parent field
+  // (before the nacl case) if the id was added to it in the
+  // duplicate_ids filter.
+  const parentParts = naclCasedParentName !== parentField.elemID.name
+    ? [parentName, parentField.value.id]
+    : [(parentName ?? parentField.elemID.name)]
+
+  const contextName = generateInstanceName(context, contextType.elemID.typeName, config)
     ?? context.id
 
-  const defaultName = naclCase([parentName, contextName].join('_'))
+  const defaultName = naclCase([...parentParts, contextName].join('_'))
 
   const serviceIds = getServiceIds(context, contextType, config)
   const instanceName = getElemIdFunc && serviceIds

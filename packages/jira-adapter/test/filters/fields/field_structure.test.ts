@@ -324,6 +324,32 @@ describe('fields_structure', () => {
     })
   })
 
+  it('should create the right name for the context when the id was added to the field name', async () => {
+    const instance = new InstanceElement(
+      'instance_123',
+      fieldType,
+      {
+        name: 'instance',
+        id: '123',
+        contexts: [
+          {
+            name: 'name',
+          },
+        ],
+      }
+    )
+    const elements = [
+      instance,
+      fieldType,
+      fieldContextType,
+      fieldContextOptionType,
+      fieldContextDefaultValueType,
+    ]
+    await filter.onFetch(elements)
+    const contextInstance = elements[elements.length - 1] as InstanceElement
+    expect(contextInstance.elemID.name).toBe('instance_123_name')
+  })
+
   it('should add the new fields to the Field type', async () => {
     fieldType.fields.contextDefaults = new Field(fieldType, 'contextDefaults', BuiltinTypes.STRING)
     fieldType.fields.contextProjects = new Field(fieldType, 'contextProjects', BuiltinTypes.STRING)

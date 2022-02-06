@@ -36,6 +36,7 @@ type JiraFetchConfig = configUtils.UserFetchConfig
 type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'> & {
   platformSwagger: configUtils.AdapterSwaggerApiConfig['swagger']
   jiraSwagger: configUtils.AdapterSwaggerApiConfig['swagger']
+  fallbackToInternalId: boolean
 }
 
 // A list of custom field types that support options
@@ -1477,6 +1478,7 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
     },
   },
   types: DEFAULT_TYPE_CUSTOMIZATIONS,
+  fallbackToInternalId: true,
 }
 
 export const DEFAULT_INCLUDE_ENDPOINTS: string[] = [
@@ -1536,6 +1538,7 @@ const defaultApiDefinitionsType = createSwaggerAdapterApiConfigType({ adapter: J
 const apiDefinitionsType = createMatchingObjectType<Partial<JiraApiConfig>>({
   elemID: new ElemID(JIRA, 'apiDefinitions'),
   fields: {
+    fallbackToInternalId: { refType: BuiltinTypes.BOOLEAN },
     apiVersion: { refType: BuiltinTypes.STRING },
     typeDefaults: {
       refType: defaultApiDefinitionsType.fields.typeDefaults.refType,

@@ -168,51 +168,69 @@ const getUsers = async (paginator: clientUtils.Paginator): Promise<User[]> => {
   return users
 }
 
-const deployModificationFunc = async (
-  changes: Change<InstanceElement>[],
-  paginator: clientUtils.Paginator,
-  mappingFunction: (user: User) => [string, string],
-): Promise<void> => {
+const thereAreRelevantChangesToReplace = (changes: Change<InstanceElement>[]): boolean => {
   const changesTypeNames = _.uniq(changes.map(getChangeData).map(e => e.elemID.typeName))
-  if (_.isEmpty(_.intersection(changesTypeNames, Object.keys(TYPE_NAME_TO_REPLACER)))) {
-    return
-  }
-  const users = await getUsers(paginator)
-  if (_.isEmpty(users)) {
-    return
-  }
-  const mapping = Object.fromEntries(users.map(user => mappingFunction(user)))
-  changes.forEach(change => {
-    _.mapValues(change.data, (instance: InstanceElement) => {
-      TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance, mapping)
-    })
-  })
+  return !_.isEmpty(_.intersection(changesTypeNames, Object.keys(TYPE_NAME_TO_REPLACER)))
 }
 
 /**
  * Replaces the user ids with emails
  */
-const filterCreator: FilterCreator = ({ paginator }) => ({
-  onFetch: async elements => {
-    const users = await getUsers(paginator)
-    if (_.isEmpty(users)) {
+const filterCreator: FilterCreator = ({ paginator }) => {
+  let userIdToEmail: Record<string, string> = {}
+  let emailToUserId: Record<string, string> = {}
+  const deployModificationFunc = async (
+    changes: Change<InstanceElement>[],
+    mapping: Record<string, string>,
+  ): Promise<void> => {
+    const changesTypeNames = _.uniq(changes.map(getChangeData).map(e => e.elemID.typeName))
+    if (_.isEmpty(_.intersection(changesTypeNames, Object.keys(TYPE_NAME_TO_REPLACER)))) {
       return
     }
-    const userIdToEmail = Object.fromEntries(
-      users
-        .map(user => [user.id.toString(), user.email])
-    ) as Record<string, string>
-    const instances = elements.filter(isInstanceElement)
-    instances.forEach(instance => {
-      TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance, userIdToEmail)
+    changes.forEach(change => {
+      _.mapValues(change.data, (instance: InstanceElement) => {
+        TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance, mapping)
+      })
     })
-  },
-  preDeploy: async (changes: Change<InstanceElement>[]) => {
-    await deployModificationFunc(changes, paginator, user => [user.email, user.id.toString()])
-  },
-  onDeploy: async (changes: Change<InstanceElement>[]) => {
-    await deployModificationFunc(changes, paginator, user => [user.id.toString(), user.email])
-  },
-})
+  }
+  return {
+    onFetch: async elements => {
+      const users = await getUsers(paginator)
+      if (_.isEmpty(users)) {
+        return
+      }
+      userIdToEmail = Object.fromEntries(
+        users
+          .map(user => [user.id.toString(), user.email])
+      ) as Record<string, string>
+      const instances = elements.filter(isInstanceElement)
+      instances.forEach(instance => {
+        TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance, userIdToEmail)
+      })
+    },
+    preDeploy: async (changes: Change<InstanceElement>[]) => {
+      if (!thereAreRelevantChangesToReplace(changes)) {
+        return
+      }
+      const users = await getUsers(paginator)
+      if (_.isEmpty(users)) {
+        return
+      }
+      userIdToEmail = Object.fromEntries(
+        users.map(user => [user.id.toString(), user.email])
+      ) as Record<string, string>
+      emailToUserId = Object.fromEntries(
+        users.map(user => [user.email, user.id.toString()])
+      ) as Record<string, string>
+      await deployModificationFunc(changes, emailToUserId)
+    },
+    onDeploy: async (changes: Change<InstanceElement>[]) => {
+      if (!thereAreRelevantChangesToReplace(changes)) {
+        return
+      }
+      await deployModificationFunc(changes, userIdToEmail)
+    },
+  }
+}
 
 export default filterCreator

@@ -490,6 +490,8 @@ describe('user filter', () => {
         macroInstance, slaPolicyInstance, triggerInstance, workspaceInstance,
       ].map(e => e.clone())
       const changes = instances.map(instance => toChange({ after: instance }))
+      // We call preDeploy here because it sets the mappings
+      await filter.preDeploy(changes)
       await filter.onDeploy(changes)
       const changedInstances = changes.map(getChangeData)
       const macro = changedInstances.find(inst => inst.elemID.typeName === 'macro')
@@ -576,6 +578,8 @@ describe('user filter', () => {
         })
       const newFilter = filterCreator({ client, paginator, config: DEFAULT_CONFIG }) as FilterType
       const changes = instances.map(instance => toChange({ after: instance }))
+      // We call preDeploy here because it sets the mappings
+      await newFilter.preDeploy(changes)
       await newFilter.onDeploy(changes)
       const changedInstances = changes.map(getChangeData)
       const macro = changedInstances.find(e => e.elemID.typeName === 'macro')

@@ -229,10 +229,10 @@ export class ElemID {
   }
 
   createParentID(numLevels = 1): ElemID {
-    // To avoid confusion with negative levels, take the absolute value of the requested number
-    // of levels to go up
-    const absNumLevels = Math.abs(numLevels)
-    const newNameParts = this.nameParts.slice(0, -1 * absNumLevels)
+    if (numLevels < 1) {
+      throw new Error(`Invalid argument to "createParentID" - numLevels=${numLevels} must be a positive number`)
+    }
+    const newNameParts = this.nameParts.slice(0, -1 * numLevels)
     if (!_.isEmpty(newNameParts)) {
       // Parent should have the same type as this ID
       return new ElemID(this.adapter, this.typeName, this.idType, ...newNameParts)
@@ -241,7 +241,7 @@ export class ElemID {
       // The parent of top level elements is the adapter
       return new ElemID(this.adapter)
     }
-    if (this.isAnnotationTypeID() && this.nameParts.length === absNumLevels) {
+    if (this.isAnnotationTypeID() && this.nameParts.length === numLevels) {
       // The parent of an annotationType is annotationTypes
       return new ElemID(this.adapter, this.typeName, this.idType)
     }

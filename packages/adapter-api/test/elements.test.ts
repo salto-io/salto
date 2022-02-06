@@ -554,6 +554,20 @@ describe('Test elements.ts', () => {
           )
         })
       })
+      describe('numLevels argument', () => {
+        it('should fail when passed as non positive', () => {
+          expect(() => fieldId.createParentID(0)).toThrow()
+          expect(() => fieldId.createParentID(-1)).toThrow()
+        })
+        it('should go up the correct number of levels', () => {
+          [fieldId, typeInstId, configInstId].forEach(
+            parent => expect(parent.createNestedID('test', 'foo').createParentID(2)).toEqual(parent)
+          )
+          expect(fieldId.createNestedID('asd').createParentID(2)).toEqual(typeId)
+          expect(typeAttrId.createNestedID('asd').createParentID(2)).toEqual(typeId)
+          expect(annotationTypeId.createParentID(2)).toEqual(typeId)
+        })
+      })
     })
 
     describe('createTopLevelParentID', () => {

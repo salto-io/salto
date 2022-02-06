@@ -137,14 +137,14 @@ describe('fetch', () => {
       newTypeDifferentAdapterID.adapter))
   })
 
-  const hiddenInstance = new InstanceElement('instance_elem_id_name', typeWithHiddenField, {
+  const instanceWithHidden = new InstanceElement('instance_elem_id_name', typeWithHiddenField, {
     reg: 'reg',
     notHidden: 'notHidden',
     hidden: 'Hidden',
     hiddenValue: 'hidden val',
   })
 
-  const hiddenInstanceAlternateId = new InstanceElement('instance_elem_id_name',
+  const instanceWithHiddenAlternateId = new InstanceElement('instance_elem_id_name',
     typeWithHiddenFieldAlternativeId, {
       reg: 'reg',
       notHidden: 'notHidden',
@@ -500,13 +500,13 @@ describe('fetch', () => {
       let elements: Element[]
       beforeEach(async () => {
         mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
-          Promise.resolve({ elements: [newTypeBase, newTypeExt, hiddenInstance] }),
+          Promise.resolve({ elements: [newTypeBase, newTypeExt, instanceWithHidden] }),
         )
 
         const result = await fetchChanges(
           mockAdapters,
-          createElementSource([newTypeMerged, hiddenInstanceAlternateId]),
-          createElementSource([newTypeMerged, hiddenInstanceAlternateId]),
+          createElementSource([newTypeMerged, instanceWithHiddenAlternateId]),
+          createElementSource([newTypeMerged, instanceWithHiddenAlternateId]),
           { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           [],
         )
@@ -528,7 +528,7 @@ describe('fetch', () => {
 
       beforeEach(async () => {
         // the (changed) service instance
-        const hiddenInstanceFromService = hiddenInstance.clone()
+        const hiddenInstanceFromService = instanceWithHidden.clone()
         const typeWithFieldAndAnnotations = typeWithField.clone()
         typeWithFieldAndAnnotations.annotations = { [CORE_ANNOTATIONS.CHANGED_AT]: 'test' }
         hiddenInstanceFromService.value.hidden = hiddenChangedVal
@@ -541,8 +541,8 @@ describe('fetch', () => {
 
         const result = await fetchChanges(
           mockAdapters,
-          createElementSource([typeWithFieldDifferentID, hiddenInstanceAlternateId]),
-          createElementSource([typeWithFieldDifferentID, hiddenInstanceAlternateId]),
+          createElementSource([typeWithFieldDifferentID, instanceWithHiddenAlternateId]),
+          createElementSource([typeWithFieldDifferentID, instanceWithHiddenAlternateId]),
           { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           [],
         )
@@ -868,12 +868,12 @@ describe('fetch', () => {
         const adapters: Record<string, jest.Mocked<AdapterOperations>> = {
           [typeWithHiddenField.elemID.adapter]: {
             fetch: mockFunction<AdapterOperations['fetch']>()
-              .mockResolvedValue({ elements: [typeWithHiddenField, hiddenInstance] }),
+              .mockResolvedValue({ elements: [typeWithHiddenField, instanceWithHidden] }),
             deploy: mockFunction<AdapterOperations['deploy']>()
               .mockResolvedValue({ appliedChanges: [], errors: [] }),
           },
         }
-        pendingInstance = hiddenInstance.clone()
+        pendingInstance = instanceWithHidden.clone()
         pendingInstance.value.reg = 'other'
         pendingInstance.value.extra = 'extra'
         delete pendingInstance.value.hiddenValue
@@ -891,7 +891,7 @@ describe('fetch', () => {
         expect(changes).toContainEqual(
           expect.objectContaining({
             change: expect.objectContaining({
-              id: hiddenInstance.elemID.createNestedID('hiddenValue'),
+              id: instanceWithHidden.elemID.createNestedID('hiddenValue'),
               action: 'add',
             }),
             pendingChanges: [],
@@ -902,7 +902,7 @@ describe('fetch', () => {
         expect(changes).toContainEqual(
           expect.objectContaining({
             change: expect.objectContaining({
-              id: hiddenInstance.elemID.createNestedID('reg'),
+              id: instanceWithHidden.elemID.createNestedID('reg'),
               action: 'modify',
             }),
             pendingChanges: expect.arrayContaining([expect.anything()]),
@@ -914,7 +914,7 @@ describe('fetch', () => {
         expect(changes).toContainEqual(
           expect.objectContaining({
             change: expect.objectContaining({
-              id: hiddenInstance.elemID.createNestedID('extra'),
+              id: instanceWithHidden.elemID.createNestedID('extra'),
               action: 'remove',
             }),
             pendingChanges: expect.arrayContaining([expect.anything()]),
@@ -1082,7 +1082,7 @@ describe('fetch', () => {
     describe('first fetch', () => {
       beforeEach(async () => {
         mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
-          { elements: [typeWithField, hiddenInstance] }
+          { elements: [typeWithField, instanceWithHidden] }
         )
         const result = await fetchChanges(
           mockAdapters,
@@ -1101,7 +1101,7 @@ describe('fetch', () => {
 
       it('changes should be equal to the account elements', () => {
         expect(getChangeData(changes[0].change)).toEqual(typeWithFieldDifferentID)
-        const expectedHiddenInstanceAlternateId = hiddenInstanceAlternateId.clone()
+        const expectedHiddenInstanceAlternateId = instanceWithHiddenAlternateId.clone()
         expectedHiddenInstanceAlternateId.refType = _.clone(expectedHiddenInstanceAlternateId
           .refType)
         expectedHiddenInstanceAlternateId.refType.value = expect.anything()
@@ -1121,7 +1121,7 @@ describe('fetch', () => {
           return awu([])
         })
         mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
-          Promise.resolve({ elements: [hiddenInstance] })
+          Promise.resolve({ elements: [instanceWithHidden] })
         )
         await fetchChanges(
           mockAdapters,
@@ -1131,7 +1131,7 @@ describe('fetch', () => {
           [],
         )
         const passed = await awu(instancesPassed).toArray()
-        const expectedHiddenInstanceAlternateId = hiddenInstanceAlternateId.clone()
+        const expectedHiddenInstanceAlternateId = instanceWithHiddenAlternateId.clone()
         expectedHiddenInstanceAlternateId.refType = _.clone(expectedHiddenInstanceAlternateId
           .refType)
         expectedHiddenInstanceAlternateId.refType.value = expect.anything()

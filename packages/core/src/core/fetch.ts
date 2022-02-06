@@ -186,11 +186,11 @@ const getChangesNestedUnderID = (
 )
 
 const toFetchChanges = (
-  accountAndPendingChanges: collections.treeMap.TreeMap<WorkspaceDetailedChange>,
+  serviceAndPendingChanges: collections.treeMap.TreeMap<WorkspaceDetailedChange>,
   workspaceToServiceChanges: collections.treeMap.TreeMap<WorkspaceDetailedChange>,
 ): Iterable<FetchChange> => {
   const handledChangeIDs = new Set<string>()
-  return wu(accountAndPendingChanges.keys())
+  return wu(serviceAndPendingChanges.keys())
     .map((id): FetchChange[] | undefined => {
       if (handledChangeIDs.has(id)) {
         // If we get here it means this change was a "relatedChange" in a previous iteration
@@ -212,7 +212,7 @@ const toFetchChanges = (
       }
 
       // Find all changes that relate to the current ID and mark them as handled
-      const relatedChanges = getChangesNestedUnderID(elemId, accountAndPendingChanges)
+      const relatedChanges = getChangesNestedUnderID(elemId, serviceAndPendingChanges)
       relatedChanges.forEach(change => handledChangeIDs.add(change.change.id.getFullName()))
 
       const [serviceChanges, pendingChanges] = _.partition(

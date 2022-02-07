@@ -261,6 +261,53 @@ const getHiddenTypeChanges = async (
   .filter(values.isDefined)
   .toArray()
 
+
+const getInstanceTypeHiddenChanges = async (
+  changes: DetailedChange[],
+  state: State,
+): Promise<DetailedChange[]> => {
+  const hiddenValueOnElementChanges = changes
+    .filter(c => isHiddenChangeOnElement(c, true))
+
+  // Exit early to avoid unneeded calculation if there are no hidden type changes
+  if (hiddenValueOnElementChanges.length === 0) {
+    return []
+  }
+
+  const [toHiddenChanges, fromHiddenChanges] = _.partition(
+    hiddenValueOnElementChanges,
+    c => isChangeToHidden(c, true)
+  )
+
+  const toHiddenElemIds = new Set(
+    toHiddenChanges.map(change => change.id.createTopLevelParentID().parent.getFullName())
+  )
+
+  const fromHiddenElemIds = new Set(
+    fromHiddenChanges.map(change => change.id.createTopLevelParentID().parent.getFullName())
+  )
+
+  const pathIndex = await state.getPathIndex()
+  return awu(await state.getAll())
+    .map(async elem => {
+      if (isInstanceElement(elem)) {
+        if (toHiddenElemIds.has(elem.refType.elemID.getFullName())) {
+          return createRemoveChange(elem, elem.elemID)
+        }
+        if (fromHiddenElemIds.has(elem.refType.elemID.getFullName())) {
+          return createAddChange(
+            elem,
+            elem.elemID,
+            ((await pathIndex.get(elem.elemID.getFullName())) ?? [])[0]
+          )
+        }
+      }
+      return undefined
+    })
+    .filter(values.isDefined)
+    .toArray()
+}
+
 const isAnnotationTypeChange = (
   change: DetailedChange
 ): change is DetailedChange & ModificationChange<ReferenceExpression> => (
@@ -514,6 +561,7 @@ const mergeWithHiddenChangeSideEffects = async (
   const additionalChanges = [
     ...await getHiddenTypeChanges(changes, state),
     ...await getHiddenFieldAndAnnotationValueChanges(changes, state, visibleElementSource),
+    ...await getInstanceTypeHiddenChanges(changes, state),
   ]
   // Additional changes may override / be overridden by original changes, so if we add new changes
   // we have to make sure we remove duplicates

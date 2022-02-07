@@ -14,12 +14,13 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, DetailedChange, getChangeData, INSTANCE_ANNOTATIONS, ReferenceExpression, MapType } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, DetailedChange, getChangeData, INSTANCE_ANNOTATIONS, ReferenceExpression, MapType, isRemovalChange, isAdditionChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { mockState } from '../common/state'
 import { MergeResult } from '../../src/merger'
 import { mergeWithHidden, handleHiddenChanges } from '../../src/workspace/hidden_values'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
+import { createAddChange, createRemoveChange } from '../../src/workspace/nacl_files/multi_env/projections'
 
 const { awu } = collections.asynciterable
 
@@ -624,6 +625,74 @@ describe('handleHiddenChanges', () => {
         )
         expect(result.visible.length).toBe(1)
         expect(result.hidden.length).toBe(1)
+      })
+    })
+  })
+
+  describe('when an instance type\'s hidden_value value is changes', () => {
+    const obj = new ObjectType({
+      elemID: ElemID.fromFullName('salto.obj'),
+      path: ['this', 'is', 'path', 'to', 'obj'],
+    })
+    const hiddenObj = new ObjectType({
+      elemID: ElemID.fromFullName('salto.hidden'),
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+      },
+      path: ['this', 'is', 'path', 'to', 'hiddenObj'],
+    })
+    const inst = new InstanceElement('visi', obj, {}, ['this', 'is', 'path', 'to', 'inst'])
+    const hidden = new InstanceElement('hidden', hiddenObj, {}, ['this', 'is', 'path', 'to', 'hidden'])
+
+    const state = mockState([obj, hiddenObj, inst, hidden])
+    const visibleSource = createInMemoryElementSource([obj, hiddenObj, inst])
+    describe('when the type\'s hidden_value values is changed to true', () => {
+      let changes: DetailedChange[]
+
+      beforeEach(async () => {
+        const objClone = obj.clone()
+        objClone.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
+        await state.set(objClone)
+        const toHiddenChange = createAddChange(
+          true,
+          obj.elemID.createNestedID('attr', CORE_ANNOTATIONS.HIDDEN_VALUE)
+        )
+        changes = (await handleHiddenChanges(
+          [toHiddenChange],
+          state,
+          visibleSource
+        )).visible
+      })
+
+      it('should create remove changes for instances with this type', () => {
+        const removeChange = changes.find(c => c.id.getFullName() === inst.elemID.getFullName())
+        expect(removeChange).toBeDefined()
+        expect(isRemovalChange(removeChange as DetailedChange)).toBeTruthy()
+      })
+    })
+
+    describe('when the type\'s hidden_value values is changed to false', () => {
+      let changes: DetailedChange[]
+
+      beforeEach(async () => {
+        const hiddenObjClone = hiddenObj.clone()
+        delete hiddenObjClone.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]
+        await state.set(hiddenObjClone)
+        const fromHiddenChange = createRemoveChange(
+          true,
+          hiddenObj.elemID.createNestedID('attr', CORE_ANNOTATIONS.HIDDEN_VALUE)
+        )
+        changes = (await handleHiddenChanges(
+          [fromHiddenChange],
+          state,
+          visibleSource
+        )).visible
+      })
+      it('should create add changes with the instance value from the state', () => {
+        const addChange = changes
+          .find(c => c.id.getFullName() === hidden.elemID.getFullName()) as DetailedChange
+        expect(isAdditionChange(addChange)).toBeTruthy()
+        expect(addChange.path).toEqual(['this', 'is', 'path', 'to', 'hidden'])
       })
     })
   })

@@ -17,7 +17,7 @@ import _ from 'lodash'
 import Joi from 'joi'
 import { logger } from '@salto-io/logging'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { Change, getChangeData, InstanceElement, isInstanceElement, Values } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
@@ -42,7 +42,7 @@ const EXPECTED_USER_SCHEMA = Joi.array().items(Joi.object({
 
 const EXPECTED_CONDITION_SCHEMA = Joi.array().items(Joi.object({
   field: Joi.string().required(),
-}).unknown(true))
+}).unknown(true)).required()
 
 const areUsers = (values: unknown): values is User[] => {
   const { error } = EXPECTED_USER_SCHEMA.validate(values)
@@ -54,7 +54,11 @@ const areUsers = (values: unknown): values is User[] => {
 }
 const areConditions = (values: unknown): values is Condition[] => {
   const { error } = EXPECTED_CONDITION_SCHEMA.validate(values)
-  return error === undefined
+  if (error !== undefined) {
+    log.error(`Received an invalid values for conditions: ${safeJsonStringify(values)}`)
+    return false
+  }
+  return true
 }
 
 type ReplacerCreatorParams = {
@@ -68,7 +72,7 @@ const replaceConditionsAndActionsCreator = (
 ): UserReplacer => (instance, mapping) => {
   params.forEach(replacerParams => {
     const conditions = _.get(instance.value, replacerParams.fieldName)
-    if (conditions === undefined || !areConditions(conditions)) {
+    if (!areConditions(conditions)) {
       return
     }
     conditions
@@ -77,7 +81,7 @@ const replaceConditionsAndActionsCreator = (
       .forEach(condition => {
         const valuePath = replacerParams.fieldsToReplace
           .find(f => f.name === condition.field)?.valuePath ?? 'value'
-        const value = _.get(condition, valuePath)?.toString() as string | undefined
+        const value = _.get(condition, valuePath)?.toString()
         const newValue = ((value !== undefined)
           && Object.prototype.hasOwnProperty.call(mapping, value))
           ? mapping[value]
@@ -173,25 +177,26 @@ const isRelevantChange = (change: Change<InstanceElement>): boolean => (
   Object.keys(TYPE_NAME_TO_REPLACER).includes(getChangeData(change).elemID.typeName)
 )
 
+const deployModificationFunc = async (
+  changes: Change<InstanceElement>[],
+  mapping: Record<string, string>,
+): Promise<void> => {
+  await awu(changes).forEach(async change => {
+    await applyFunctionToChangeData<Change<InstanceElement>>(
+      change,
+      instance => {
+        TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance, mapping)
+        return instance
+      }
+    )
+  })
+}
+
 /**
  * Replaces the user ids with emails
  */
 const filterCreator: FilterCreator = ({ paginator }) => {
   let userIdToEmail: Record<string, string> = {}
-  const deployModificationFunc = async (
-    changes: Change<InstanceElement>[],
-    mapping: Record<string, string>,
-  ): Promise<void> => {
-    await awu(changes).forEach(async change => {
-      await applyFunctionToChangeData<Change<InstanceElement>>(
-        change,
-        instance => {
-          TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance, mapping)
-          return instance
-        }
-      )
-    })
-  }
   return {
     onFetch: async elements => {
       const users = await getUsers(paginator)

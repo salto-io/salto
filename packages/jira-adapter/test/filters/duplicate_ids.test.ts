@@ -70,8 +70,58 @@ describe('duplicateIdsFilter', () => {
       )
 
       const elements = [notDup, dup1, dup2]
-      await filter.onFetch?.(elements)
+      const filterRes = await filter.onFetch?.(elements)
       expect(elements.map(e => e.elemID.name)).toEqual(['notDup', 'dup_1', 'dup_2'])
+      expect(filterRes).toEqual({
+        errors: [{
+          message: 'The name of jira.IssueType.instance.dup is not unique in the account, so the ids of the instances were added to their names, the new names are dup_1, dup_2. However, that way Salto won\'t be able to identify that instances between envs are the same instance which will impact comparing and cloning elements between environments. It is strongly recommended to change the names of the instances to be unique in the account and then re-fetch with "Regenerate Salto IDs".',
+          severity: 'Warning',
+        }],
+      })
+    })
+
+    it('should create the right warning message when there are multiple dups', async () => {
+      const dupA1 = new InstanceElement(
+        'dupA',
+        type,
+        {
+          id: '1',
+          name: 'dupA',
+        }
+      )
+      const dupA2 = new InstanceElement(
+        'dupA',
+        type,
+        {
+          id: '2',
+        }
+      )
+
+      const dupB1 = new InstanceElement(
+        'dupB',
+        type,
+        {
+          id: '3',
+          name: 'dupB',
+        }
+      )
+      const dupB2 = new InstanceElement(
+        'dupB',
+        type,
+        {
+          id: '4',
+        }
+      )
+
+      const elements = [dupA1, dupA2, dupB1, dupB2]
+      const filterRes = await filter.onFetch?.(elements)
+      expect(elements.map(e => e.elemID.name)).toEqual(['dupA_1', 'dupA_2', 'dupB_3', 'dupB_4'])
+      expect(filterRes).toEqual({
+        errors: [{
+          message: 'The names of jira.IssueType.instance.dupA, jira.IssueType.instance.dupB are not unique in the account, so the ids of the instances were added to their names, the new names are dupA_1, dupA_2, dupB_3, dupB_4. However, that way Salto won\'t be able to identify that instances between envs are the same instance which will impact comparing and cloning elements between environments. It is strongly recommended to change the names of the instances to be unique in the account and then re-fetch with "Regenerate Salto IDs".',
+          severity: 'Warning',
+        }],
+      })
     })
 
     it('should do nothing if there is no id', async () => {
@@ -116,7 +166,9 @@ describe('duplicateIdsFilter', () => {
     )
 
     const elements = [dup1, dup2]
-    await filter.onFetch?.(elements)
+    const filterRes = await filter.onFetch?.(elements)
     expect(elements.map(e => e.elemID.name)).toEqual(['dup', 'dup'])
+
+    expect(filterRes).toEqual({})
   })
 })

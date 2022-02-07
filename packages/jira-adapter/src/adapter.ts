@@ -18,10 +18,11 @@ import { FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap,
 import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { objects } from '@salto-io/lowerdash'
 import JiraClient from './client/client'
 import changeValidator from './change_validators'
 import { JiraConfig, getApiDefinitions } from './config'
-import { FilterCreator, Filter, filtersRunner } from './filter'
+import { FilterCreator, Filter, filtersRunner, FilterResult } from './filter'
 import fieldReferencesFilter from './filters/field_references'
 import referenceBySelfLinkFilter from './filters/references_by_self_link'
 import removeSelfFilter from './filters/remove_self'
@@ -142,7 +143,7 @@ export default class JiraAdapter implements AdapterOperations {
         paginator,
         config,
         getElemIdFunc,
-      }, filterCreators)
+      }, filterCreators, objects.concatObjects)
     )
   }
 
@@ -217,7 +218,7 @@ export default class JiraAdapter implements AdapterOperations {
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
-    await this.createFiltersRunner().onFetch(elements)
+    const filterResult = (await this.createFiltersRunner().onFetch(elements) ?? {}) as FilterResult
 
     // This needs to happen after the onFetch since some filters
     // may add fields that deployment annotation should be added to
@@ -226,7 +227,7 @@ export default class JiraAdapter implements AdapterOperations {
       Object.values(swaggers),
       this.userConfig.apiDefinitions,
     )
-    return { elements }
+    return { elements, errors: filterResult.errors }
   }
 
   /**

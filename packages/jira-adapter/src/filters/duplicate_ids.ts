@@ -61,7 +61,7 @@ const filter: FilterCreator = ({ config }) => ({
       .value())
 
     if (duplicateIds.size === 0) {
-      return
+      return {}
     }
 
     log.warn(`Found ${duplicateIds.size} duplicate instance names: ${Array.from(duplicateIds).join(', ')}`)
@@ -83,8 +83,21 @@ const filter: FilterCreator = ({ config }) => ({
         instance.annotations,
       ))
 
-    log.debug(`Replaced duplicate names with: ${Array.from(newInstances.map(instance => instance.elemID.name)).join(', ')}`)
+    const newNames = Array.from(newInstances.map(instance => instance.elemID.name))
+
+    log.debug(`Replaced duplicate names with: ${newNames.join(', ')}`)
     elements.push(...newInstances)
+
+    const isPlural = duplicateIds.size > 1
+
+    return {
+      errors: [
+        {
+          message: `The ${isPlural ? 'names' : 'name'} of ${Array.from(duplicateIds).join(', ')} ${isPlural ? 'are' : 'is'} not unique in the account, so the ids of the instances were added to their names, the new names are ${newNames.join(', ')}. However, that way Salto won't be able to identify that instances between envs are the same instance which will impact comparing and cloning elements between environments. It is strongly recommended to change the names of the instances to be unique in the account and then re-fetch with "Regenerate Salto IDs".`,
+          severity: 'Warning',
+        },
+      ],
+    }
   },
 })
 

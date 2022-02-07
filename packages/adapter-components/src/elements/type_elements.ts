@@ -16,7 +16,7 @@
 */
 import _ from 'lodash'
 import { FieldDefinition, Field, CORE_ANNOTATIONS, TypeElement, isObjectType, isContainerType,
-  getDeepInnerType, ObjectType, BuiltinTypes, createRestriction, createRefToElmWithValue, PrimitiveType, LIST_ID_PREFIX, GENERIC_ID_PREFIX, GENERIC_ID_SUFFIX, MAP_ID_PREFIX, ListType, MapType, isEqualElements, isPrimitiveType, PrimitiveTypes } from '@salto-io/adapter-api'
+  getDeepInnerType, ObjectType, BuiltinTypes, createRestriction, createRefToElmWithValue, PrimitiveType, LIST_ID_PREFIX, GENERIC_ID_PREFIX, GENERIC_ID_SUFFIX, MAP_ID_PREFIX, ListType, MapType, isEqualElements, isPrimitiveType, PrimitiveTypes, isReferenceExpression } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { values, collections } from '@salto-io/lowerdash'
 import { FieldToHideType, FieldTypeOverrideType, getTypeTransformationConfig } from '../config/transformation'
@@ -69,21 +69,25 @@ export const markServiceIdField = (
     return
   }
   log.debug('Mark field %s.%s as service_id', typeName, fieldName)
-  if (!isPrimitiveType(field.refType)) {
+  const fieldType = isReferenceExpression(field.refType)
+    ? field.refType.value
+    : field.refType
+
+  if (!isPrimitiveType(fieldType)) {
     log.warn('field %s.%s type is not primitive, cannot mark it as service_id', typeName, fieldName)
     return
   }
-  switch (field.refType.primitive) {
+  switch (fieldType.primitive) {
     case (PrimitiveTypes.NUMBER):
-      field.refType = BuiltinTypes.SERVICE_ID_NUMBER
+      field.refType = createRefToElmWithValue(BuiltinTypes.SERVICE_ID_NUMBER)
       return
     case (PrimitiveTypes.STRING):
-      field.refType = BuiltinTypes.SERVICE_ID
+      field.refType = createRefToElmWithValue(BuiltinTypes.SERVICE_ID)
       return
     default:
       log.warn(
         'Failed to mark field %s.%s as service id, since its primitive type id (%d) is not supported',
-        typeName, fieldName, field.refType.primitive
+        typeName, fieldName, fieldType.primitive
       )
   }
 }

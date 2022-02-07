@@ -1460,6 +1460,7 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
     transformation: {
       idFields: DEFAULT_ID_FIELDS,
       fieldsToOmit: FIELDS_TO_OMIT,
+      serviceIdField: 'id',
     },
   },
   types: DEFAULT_TYPE_CUSTOMIZATIONS,

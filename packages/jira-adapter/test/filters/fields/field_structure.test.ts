@@ -195,6 +195,41 @@ describe('fields_structure', () => {
     )
   })
 
+  it('should use elemIdGetter when extracting the contexts', async () => {
+    const { client, paginator } = mockClient()
+    filter = fieldsStructureFilter({
+      client,
+      paginator,
+      config: DEFAULT_CONFIG,
+      getElemIdFunc: () => new ElemID(JIRA, 'customName'),
+    }) as typeof filter
+
+    const instance = new InstanceElement(
+      'instance',
+      fieldType,
+      {
+        name: 'name',
+        contexts: [
+          {
+            name: 'name',
+            id: 'id1',
+          },
+        ],
+      }
+    )
+    const elements = [
+      instance,
+      fieldType,
+      fieldContextType,
+      fieldContextDefaultValueType,
+      fieldContextOptionType,
+    ]
+    await filter.onFetch(elements)
+    const contextInstance = elements[elements.length - 1] as InstanceElement
+
+    expect(contextInstance.elemID.name).toBe('customName')
+  })
+
   it('should transform options to map and add positions and cascadingOptions', async () => {
     const instance = new InstanceElement(
       'instance',

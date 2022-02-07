@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { FieldDefinition, BuiltinTypes, ObjectType, ElemID } from '@salto-io/adapter-api'
+import { FieldDefinition, BuiltinTypes, ObjectType, ElemID, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { SUBTYPES_PATH, TYPES_PATH } from '../../src/elements/constants'
 import { filterTypes, hideFields, markServiceIdField } from '../../src/elements/type_elements'
 
@@ -117,7 +117,9 @@ describe('type_elements', () => {
           anotherField: { refType: BuiltinTypes.STRING },
         }
         markServiceIdField('id', typeFields, 'test')
-        expect(typeFields.id.refType).toEqual(BuiltinTypes.SERVICE_ID)
+        expect(typeFields.id.refType).toEqual(
+          createRefToElmWithValue(BuiltinTypes.SERVICE_ID)
+        )
       })
       it('should mark number', () => {
         const typeFields = {
@@ -125,7 +127,9 @@ describe('type_elements', () => {
           anotherField: { refType: BuiltinTypes.STRING },
         }
         markServiceIdField('id', typeFields, 'test')
-        expect(typeFields.id.refType).toEqual(BuiltinTypes.SERVICE_ID_NUMBER)
+        expect(typeFields.id.refType).toEqual(
+          createRefToElmWithValue(BuiltinTypes.SERVICE_ID_NUMBER)
+        )
       })
       it('should not mark boolean', () => {
         const typeFields = {

@@ -17,14 +17,14 @@ import { Element } from '@salto-io/adapter-api'
 import { State, buildInMemState } from '../../src/workspace/state'
 import { InMemoryRemoteMap } from '../../src/workspace/remote_map'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
-import { Path, getElementsPathHints } from '../../src/workspace/path_index'
+import { Path } from '../../src/workspace/path_index'
 
 export const mockState = (
   elements: Element[] = [],
 ): State => (
   buildInMemState(async () => ({
     elements: createInMemoryElementSource(elements),
-    pathIndex: new InMemoryRemoteMap<Path[]>(getElementsPathHints(elements)),
+    pathIndex: new InMemoryRemoteMap<Path[]>(),
     accountsUpdateDate: new InMemoryRemoteMap(),
     saltoVersion: '0.0.1',
     saltoMetadata: new InMemoryRemoteMap(),

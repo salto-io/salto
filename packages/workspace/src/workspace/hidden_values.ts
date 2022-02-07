@@ -25,6 +25,7 @@ import { mergeElements, MergeResult } from '../merger'
 import { State } from './state'
 import { createAddChange, createRemoveChange } from './nacl_files/multi_env/projections'
 import { ElementsSource } from './elements_source'
+import { splitElementByPath } from './path_index'
 
 const { pickAsync } = promises.object
 const { awu } = collections.asynciterable
@@ -288,24 +289,21 @@ const getInstanceTypeHiddenChanges = async (
   )
 
   const pathIndex = await state.getPathIndex()
-  return awu(await state.getAll())
-    .map(async elem => {
+  const r = await awu(await state.getAll())
+    .flatMap(async elem => {
       if (isInstanceElement(elem)) {
         if (toHiddenElemIds.has(elem.refType.elemID.getFullName())) {
-          return createRemoveChange(elem, elem.elemID)
+          return [createRemoveChange(elem, elem.elemID)]
         }
         if (fromHiddenElemIds.has(elem.refType.elemID.getFullName())) {
-          return createAddChange(
-            elem,
-            elem.elemID,
-            ((await pathIndex.get(elem.elemID.getFullName())) ?? [])[0]
-          )
+          return (await splitElementByPath(elem, pathIndex))
+            .map(fragment => createAddChange(fragment, elem.elemID, fragment.path))
         }
       }
-      return undefined
+      return []
     })
-    .filter(values.isDefined)
     .toArray()
+  return r
 }
 
 const isAnnotationTypeChange = (
@@ -529,11 +527,18 @@ const removeDuplicateChanges = (
   origChanges: DetailedChange[],
   additionalChanges: DetailedChange[],
 ): DetailedChange[] => {
-  const changes = [...origChanges, ...additionalChanges]
   // If we have multiple changes on the same ID, we want to take the newer change
   // (the one from additionalChanges) because it overrides the original, for example
   // this can happen if a field is both hidden and changed at the same time
-  const changeById = _.keyBy(changes, change => change.id.getFullName())
+  // this specific logic is needed to support cases in which we had multiple changes
+  // with the same id (fragments addition)
+  const origChangesById = _.groupBy(origChanges, change => change.id.getFullName())
+  const additionalChangesById = _.groupBy(additionalChanges, change => change.id.getFullName())
+
+  const changeById = {
+    ...origChangesById,
+    ...additionalChangesById,
+  }
 
   // If we have a change to A.B and a change to A.B.C, the second change is redundant because
   // its value is included in the first one.
@@ -545,7 +550,7 @@ const removeDuplicateChanges = (
     return changeById[parent.getFullName()] !== undefined || hasChangeOnParent(parent)
   }
 
-  return Object.values(changeById).filter(change => !hasChangeOnParent(change.id))
+  return Object.values(changeById).flat().filter(change => !hasChangeOnParent(change.id))
 }
 
 /**

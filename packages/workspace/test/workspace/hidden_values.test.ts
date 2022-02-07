@@ -642,8 +642,9 @@ describe('handleHiddenChanges', () => {
       path: ['this', 'is', 'path', 'to', 'hiddenObj'],
     })
     const inst = new InstanceElement('visi', obj, {}, ['this', 'is', 'path', 'to', 'inst'])
-    const hidden = new InstanceElement('hidden', hiddenObj, {}, ['this', 'is', 'path', 'to', 'hidden'])
-
+    const hidden1 = new InstanceElement('hidden', hiddenObj, { a: 1 }, ['this', 'is', 'path', 'to', 'hidden'])
+    const hidden2 = new InstanceElement('hidden', hiddenObj, { b: 2 }, ['this', 'is', 'path', 'to', 'hidden2'])
+    const hidden = new InstanceElement('hidden', hiddenObj, { a: 1, b: 2 })
     const state = mockState([obj, hiddenObj, inst, hidden])
     const visibleSource = createInMemoryElementSource([obj, hiddenObj, inst])
     describe('when the type\'s hidden_value values is changed to true', () => {
@@ -678,6 +679,8 @@ describe('handleHiddenChanges', () => {
         const hiddenObjClone = hiddenObj.clone()
         delete hiddenObjClone.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]
         await state.set(hiddenObjClone)
+        await state.overridePathIndex([obj, hiddenObj, inst, hidden1, hidden2])
+
         const fromHiddenChange = createRemoveChange(
           true,
           hiddenObj.elemID.createNestedID('attr', CORE_ANNOTATIONS.HIDDEN_VALUE)
@@ -689,10 +692,15 @@ describe('handleHiddenChanges', () => {
         )).visible
       })
       it('should create add changes with the instance value from the state', () => {
-        const addChange = changes
-          .find(c => c.id.getFullName() === hidden.elemID.getFullName()) as DetailedChange
-        expect(isAdditionChange(addChange)).toBeTruthy()
-        expect(addChange.path).toEqual(['this', 'is', 'path', 'to', 'hidden'])
+        const addChanges = changes
+          .filter(c => c.id.getFullName() === hidden.elemID.getFullName() && isAdditionChange(c))
+        expect(addChanges).toHaveLength(2)
+        expect(addChanges.map(c => c.path)).toEqual(
+          [
+            ['this', 'is', 'path', 'to', 'hidden'],
+            ['this', 'is', 'path', 'to', 'hidden2'],
+          ]
+        )
       })
     })
   })

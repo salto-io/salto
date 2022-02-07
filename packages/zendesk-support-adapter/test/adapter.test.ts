@@ -16,8 +16,8 @@
 import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { InstanceElement, isObjectType, isInstanceElement, ReferenceExpression, isRemovalChange,
-  AdapterOperations, toChange, ObjectType, ElemID, getChangeData, BuiltinTypes } from '@salto-io/adapter-api'
+import { InstanceElement, isInstanceElement, ReferenceExpression, isRemovalChange,
+  AdapterOperations, toChange, ObjectType, ElemID, getChangeData, BuiltinTypes, isObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import mockReplies from './mock_replies.json'
@@ -81,8 +81,8 @@ describe('adapter', () => {
           ),
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
-        expect(elements).toHaveLength(397)
-        expect(elements.filter(isObjectType)).toHaveLength(189)
+        expect(elements).toHaveLength(399)
+        expect(elements.filter(isObjectType)).toHaveLength(191)
         expect(elements.filter(isInstanceElement)).toHaveLength(208)
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'zendesk_support.account_setting',
@@ -224,6 +224,7 @@ describe('adapter', () => {
           'zendesk_support.macro.instance.Take_it_@sl',
           'zendesk_support.macro.instance.Test',
           'zendesk_support.macro__actions',
+          'zendesk_support.macro__restriction',
           'zendesk_support.macro_action',
           'zendesk_support.macro_action__operators',
           'zendesk_support.macro_action__values',
@@ -479,6 +480,7 @@ describe('adapter', () => {
           'zendesk_support.workspace__conditions__all',
           'zendesk_support.workspace__conditions__any',
           'zendesk_support.workspace__selected_macros',
+          'zendesk_support.workspace__selected_macros__restriction',
           'zendesk_support.workspace_order',
           'zendesk_support.workspace_order.instance',
           'zendesk_support.workspaces',
@@ -623,6 +625,57 @@ describe('adapter', () => {
       }
       mockAxiosAdapter.onGet('/groups').replyOnce(
         200, response
+      )
+      const usersResponse = {
+        users: [
+          {
+            id: 1529420581222,
+            url: 'https://myBrand.zendesk.com/api/v2/users/1529420581222.json',
+            name: 'Tester',
+            email: 'tester@myBrand.com',
+            created_at: '2022-01-11T15:44:17Z',
+            updated_at: '2022-01-13T18:57:52Z',
+            time_zone: 'America/Los_Angeles',
+            iana_time_zone: 'America/Los_Angeles',
+            phone: null,
+            shared_phone_number: null,
+            photo: null,
+            locale_id: 1,
+            locale: 'en-US',
+            organization_id: 1500709144333,
+            role: 'admin',
+            verified: true,
+            external_id: null,
+            tags: [],
+            alias: null,
+            active: true,
+            shared: false,
+            shared_agent: false,
+            last_login_at: '2022-01-13T16:59:44Z',
+            two_factor_auth_enabled: null,
+            signature: null,
+            details: null,
+            notes: null,
+            role_type: 4,
+            custom_role_id: 1500009793441,
+            moderator: true,
+            ticket_restriction: null,
+            only_private_comments: false,
+            restricted_agent: false,
+            suspended: false,
+            default_group_id: 4414969685139,
+            report_csv: true,
+            user_fields: {
+              userfield1: null,
+            },
+          },
+        ],
+        next_page: null,
+        previous_page: null,
+        count: 1,
+      }
+      mockAxiosAdapter.onGet('/users?role[]=admin&role[]=agent').replyOnce(
+        200, usersResponse
       )
       const { elements: newElements } = await operations
         .fetch({ progressReporter: { reportProgress: () => null } })

@@ -184,6 +184,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       },
     },
   },
+  view__restriction: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'unknown' },
+      ],
+    },
+  },
   trigger: {
     transformation: {
       sourceTypeName: 'triggers__triggers',
@@ -848,6 +855,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       fieldsToHide: [],
     },
   },
+  workspace__selected_macros__restriction: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'unknown' },
+      ],
+    },
+  },
   workspace__apps: {
     transformation: {
       fieldsToHide: [],
@@ -1073,6 +1087,13 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
     transformation: {
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+    },
+  },
+  macro__restriction: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'unknown' },
+      ],
     },
   },
   brands: {

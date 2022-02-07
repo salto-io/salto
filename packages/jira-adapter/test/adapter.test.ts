@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdapterOperations, ObjectType, ElemID, ProgressReporter, FetchResult, InstanceElement, toChange, isRemovalChange, getChangeData, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
+import { AdapterOperations, ObjectType, ElemID, ProgressReporter, FetchResult, InstanceElement, toChange, isRemovalChange, getChangeData, BuiltinTypes, ReferenceExpression, ElemIdGetter, ServiceIds } from '@salto-io/adapter-api'
 import { deployment, elements, client } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockFunction } from '@salto-io/test-utils'
@@ -50,12 +50,18 @@ jest.mock('@salto-io/adapter-components', () => {
 
 describe('adapter', () => {
   let adapter: AdapterOperations
+  let getElemIdFunc: ElemIdGetter
+
   beforeEach(() => {
     const elementsSource = buildElementsSourceFromElements([])
+    getElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string): ElemID =>
+      new ElemID(adapterName, name)
+
     adapter = adapterCreator.operations({
       elementsSource,
       credentials: createCredentialsInstance({ baseUrl: 'http:/jira.net', user: 'u', token: 't' }),
       config: createConfigInstance(DEFAULT_CONFIG),
+      getElemIdFunc,
     })
   })
   describe('deploy', () => {
@@ -241,6 +247,15 @@ describe('adapter', () => {
         expect.any(Object)
       )
     })
+
+    it('should pass elem id getter to getAllInstances', () => {
+      expect(getAllInstances).toHaveBeenCalledWith(
+        expect.objectContaining({
+          getElemIdFunc,
+        })
+      )
+    })
+
     it('should return all types and instances returned from the infrastructure', () => {
       expect(result.elements).toContain(platformTestType)
       expect(result.elements).toContain(jiraTestType)

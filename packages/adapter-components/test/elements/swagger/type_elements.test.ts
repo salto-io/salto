@@ -49,7 +49,12 @@ describe('swagger_type_elements', () => {
           ADAPTER_NAME,
           {
             swagger: { url },
-            typeDefaults: { transformation: { idFields: ['name'] } },
+            typeDefaults: {
+              transformation: {
+                idFields: ['name'],
+                serviceIdField: 'name',
+              },
+            },
             types: {},
           },
         )
@@ -62,7 +67,7 @@ describe('swagger_type_elements', () => {
           additionalProperties: 'Map<unknown>',
           category: 'myAdapter.Category',
           id: 'number',
-          name: 'string',
+          name: 'serviceid',
           photoUrls: 'List<string>',
           status: 'string',
           tags: 'List<myAdapter.Tag>',
@@ -149,7 +154,7 @@ describe('swagger_type_elements', () => {
         expect(location).toBeInstanceOf(ObjectType)
         expect(_.mapValues(location.fields, f => f.refType.elemID.name)).toEqual({
           additionalProperties: 'Map<unknown>',
-          name: 'string',
+          name: 'serviceid',
           // address is defined as anyOf combining primitive and object - should use unknown
           address: 'unknown',
         })

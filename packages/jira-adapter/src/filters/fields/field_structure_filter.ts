@@ -13,12 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, Element, Field, InstanceElement, isInstanceElement, isObjectType, ListType, MapType, ObjectType, ReferenceExpression, Values } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, Element, ElemIdGetter, Field, InstanceElement, isInstanceElement, isObjectType, ListType, MapType, ObjectType, OBJECT_NAME, OBJECT_SERVICE_ID, ReferenceExpression, ServiceIds, toServiceIdsString, Values } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
+import { JIRA } from '../../constants'
 import { JiraConfig } from '../../config'
 import { FilterCreator } from '../../filter'
 import { FIELD_CONTEXT_DEFAULT_TYPE_NAME, FIELD_CONTEXT_OPTION_TYPE_NAME, FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from './constants'
@@ -151,11 +152,30 @@ const getInstanceName = (
   return elementUtils.getInstanceName(instanceValues, idFields)
 }
 
+const getServiceIds = (
+  instanceValues: Values,
+  type: ObjectType,
+  config: JiraConfig,
+): ServiceIds | undefined => {
+  const { serviceIdField } = configUtils.getConfigWithDefault(
+    config.apiDefinitions.types[type.elemID.name].transformation,
+    config.apiDefinitions.typeDefaults.transformation
+  )
+
+  return serviceIdField !== undefined ? {
+    [serviceIdField]: instanceValues[serviceIdField],
+    [OBJECT_SERVICE_ID]: toServiceIdsString({
+      [OBJECT_NAME]: type.elemID.getFullName(),
+    }),
+  } : undefined
+}
+
 const createContextInstance = (
   context: Values,
   contextType: ObjectType,
   parentField: InstanceElement,
   config: JiraConfig,
+  getElemIdFunc?: ElemIdGetter,
 ): InstanceElement => {
   const parentName = getInstanceName(
     parentField.value,
@@ -165,7 +185,13 @@ const createContextInstance = (
   const contextName = getInstanceName(context, contextType.elemID.typeName, config)
     ?? context.id
 
-  const instanceName = naclCase([parentName, contextName].join('_'))
+  const defaultName = naclCase([parentName, contextName].join('_'))
+
+  const serviceIds = getServiceIds(context, contextType, config)
+  const instanceName = getElemIdFunc && serviceIds
+    ? getElemIdFunc(JIRA, serviceIds, defaultName).name
+    : defaultName
+
   return new InstanceElement(
     instanceName,
     contextType,
@@ -181,7 +207,7 @@ const createContextInstance = (
  * Converts the field structure to what expected structure of the deployment endpoints and
  * converts list with hidden values to maps
  */
-const filter: FilterCreator = ({ config }) => ({
+const filter: FilterCreator = ({ config, getElemIdFunc }) => ({
   onFetch: async (elements: Element[]) => {
     const types = _(elements)
       .filter(isObjectType)
@@ -245,6 +271,7 @@ const filter: FilterCreator = ({ config }) => ({
             fieldContextType,
             instance,
             config,
+            getElemIdFunc,
           ))
 
         instance.value.contexts = contexts

@@ -48,6 +48,8 @@ const FIELD_TYPES_WITH_OPTIONS = [
   'com.atlassian.jira.plugin.system.customfieldtypes:multicheckboxes',
 ]
 
+const DEFAULT_SERVICE_ID_FIELD = 'id'
+
 const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   // Cloud platform API
   Configuration: {
@@ -1460,6 +1462,7 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
     transformation: {
       idFields: DEFAULT_ID_FIELDS,
       fieldsToOmit: FIELDS_TO_OMIT,
+      serviceIdField: DEFAULT_SERVICE_ID_FIELD,
     },
   },
   types: DEFAULT_TYPE_CUSTOMIZATIONS,

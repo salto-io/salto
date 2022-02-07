@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { ElemIdGetter } from '@salto-io/adapter-api'
 import { filter } from '@salto-io/adapter-utils'
 import { Paginator } from './client'
 
@@ -26,6 +27,7 @@ export type FilterOpts<TClient, TContext> = {
   client: TClient
   paginator: Paginator
   config: TContext
+  getElemIdFunc?: ElemIdGetter
 }
 
 export type FilterCreator<

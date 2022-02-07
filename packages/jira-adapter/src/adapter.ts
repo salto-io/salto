@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange } from '@salto-io/adapter-api'
+import { FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter } from '@salto-io/adapter-api'
 import { config as configUtils, elements as elementUtils, client as clientUtils, deployment } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -100,6 +100,7 @@ export interface JiraAdapterParams {
   filterCreators?: FilterCreator[]
   client: JiraClient
   config: JiraConfig
+  getElemIdFunc?: ElemIdGetter
 }
 
 type AdapterSwaggers = {
@@ -112,13 +113,16 @@ export default class JiraAdapter implements AdapterOperations {
   private client: JiraClient
   private userConfig: JiraConfig
   private paginator: clientUtils.Paginator
+  private getElemIdFunc?: ElemIdGetter
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
     client,
+    getElemIdFunc,
     config,
   }: JiraAdapterParams) {
     this.userConfig = config
+    this.getElemIdFunc = getElemIdFunc
     this.client = client
     const paginator = createPaginator({
       client: this.client,
@@ -131,6 +135,7 @@ export default class JiraAdapter implements AdapterOperations {
         client,
         paginator,
         config,
+        getElemIdFunc,
       }, filterCreators)
     )
   }
@@ -186,6 +191,7 @@ export default class JiraAdapter implements AdapterOperations {
       objectTypes: _.pickBy(allTypes, isObjectType),
       apiConfig: updatedApiDefinitionsConfig,
       fetchConfig: this.userConfig.fetch,
+      getElemIdFunc: this.getElemIdFunc,
     })
   }
 

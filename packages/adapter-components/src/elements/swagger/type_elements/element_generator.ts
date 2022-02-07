@@ -19,15 +19,16 @@ import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { types as lowerdashTypes, values as lowerdashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { TYPES_PATH, SUBTYPES_PATH } from '../../constants'
-import { RequestableTypeSwaggerConfig, AdapterSwaggerApiConfig } from '../../../config/swagger'
+import { RequestableTypeSwaggerConfig, AdapterSwaggerApiConfig, TypeSwaggerConfig, TypeSwaggerDefaultConfig } from '../../../config/swagger'
 import {
   getParsedDefs, isReferenceObject, toNormalizedRefName, SchemaObject,
   extractProperties, ADDITIONAL_PROPERTIES_FIELD, toPrimitiveType, toTypeName, SwaggerRefs,
   SchemaOrReference, SWAGGER_ARRAY, SWAGGER_OBJECT, isArraySchemaObject, SchemasAndRefs,
 } from './swagger_parser'
 import { fixTypes, defineAdditionalTypes } from './type_config_override'
-import { filterTypes } from '../../type_elements'
+import { filterTypes, markServiceIdField } from '../../type_elements'
 import { LoadedSwagger } from '../swagger'
+import { getConfigWithDefault } from '../../../config/shared'
 
 const { isDefined } = lowerdashValues
 const { isArrayOfType } = lowerdashTypes
@@ -258,6 +259,22 @@ export type ParsedTypes = {
   parsedConfigs: Record<string, RequestableTypeSwaggerConfig>
 }
 
+const addServiceIdAnnotations = (
+  types: Record<string, ObjectType>,
+  typeConfig: Record<string, TypeSwaggerConfig>,
+  typeDefaultConfig: TypeSwaggerDefaultConfig,
+): void => {
+  Object.values(types).forEach(type => {
+    const { serviceIdField } = getConfigWithDefault(
+      typeConfig[type.elemID.name]?.transformation ?? {},
+      typeDefaultConfig.transformation,
+    )
+    if (serviceIdField !== undefined) {
+      markServiceIdField(serviceIdField, type.fields, type.elemID.name)
+    }
+  })
+}
+
 /**
  * Generate types for the given OpenAPI definitions.
  */
@@ -307,6 +324,8 @@ export const generateTypes = async (
     defineAdditionalTypes(adapterName, swagger.additionalTypes, definedTypes, types)
   }
   fixTypes(definedTypes, types, typeDefaults)
+
+  addServiceIdAnnotations(definedTypes, types, typeDefaults)
 
   if (supportedTypes !== undefined) {
     const filteredTypes = await filterTypes(

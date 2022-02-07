@@ -81,8 +81,8 @@ describe('adapter', () => {
           ),
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
-        expect(elements).toHaveLength(401)
-        expect(elements.filter(isObjectType)).toHaveLength(193)
+        expect(elements).toHaveLength(399)
+        expect(elements.filter(isObjectType)).toHaveLength(191)
         expect(elements.filter(isInstanceElement)).toHaveLength(208)
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'zendesk_support.account_setting',
@@ -403,7 +403,6 @@ describe('adapter', () => {
           'zendesk_support.trigger_definition__conditions_any__values',
           'zendesk_support.trigger_definitions',
           'zendesk_support.triggers',
-          'zendesk_support.user',
           'zendesk_support.user_field',
           'zendesk_support.user_field.instance.another_text_3425',
           'zendesk_support.user_field.instance.date6436',
@@ -441,7 +440,6 @@ describe('adapter', () => {
           'zendesk_support.user_field_order',
           'zendesk_support.user_field_order.instance',
           'zendesk_support.user_fields',
-          'zendesk_support.users',
           'zendesk_support.view',
           'zendesk_support.view.instance.All_unsolved_tickets@s',
           'zendesk_support.view.instance.Copy_of_All_unsolved_tickets@s',

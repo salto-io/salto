@@ -17,12 +17,13 @@ import _ from 'lodash'
 import Joi from 'joi'
 import { logger } from '@salto-io/logging'
 import { client as clientUtils } from '@salto-io/adapter-components'
+import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { Change, getChangeData, InstanceElement, isInstanceElement, Values } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 
 const log = logger(module)
-const { toArrayAsync } = collections.asynciterable
+const { toArrayAsync, awu } = collections.asynciterable
 const { makeArray } = collections.array
 
 type UserReplacer = (instance: InstanceElement, mapping: Record<string, string>) => void
@@ -168,29 +169,27 @@ const getUsers = async (paginator: clientUtils.Paginator): Promise<User[]> => {
   return users
 }
 
-const thereAreRelevantChangesToReplace = (changes: Change<InstanceElement>[]): boolean => {
-  const changesTypeNames = _.uniq(changes.map(getChangeData).map(e => e.elemID.typeName))
-  return !_.isEmpty(_.intersection(changesTypeNames, Object.keys(TYPE_NAME_TO_REPLACER)))
-}
+const isRelevantChange = (change: Change<InstanceElement>): boolean => (
+  Object.keys(TYPE_NAME_TO_REPLACER).includes(getChangeData(change).elemID.typeName)
+)
 
 /**
  * Replaces the user ids with emails
  */
 const filterCreator: FilterCreator = ({ paginator }) => {
   let userIdToEmail: Record<string, string> = {}
-  let emailToUserId: Record<string, string> = {}
   const deployModificationFunc = async (
     changes: Change<InstanceElement>[],
     mapping: Record<string, string>,
   ): Promise<void> => {
-    const changesTypeNames = _.uniq(changes.map(getChangeData).map(e => e.elemID.typeName))
-    if (_.isEmpty(_.intersection(changesTypeNames, Object.keys(TYPE_NAME_TO_REPLACER)))) {
-      return
-    }
-    changes.forEach(change => {
-      _.mapValues(change.data, (instance: InstanceElement) => {
-        TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance, mapping)
-      })
+    await awu(changes).forEach(async change => {
+      await applyFunctionToChangeData<Change<InstanceElement>>(
+        change,
+        instance => {
+          TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance, mapping)
+          return instance
+        }
+      )
     })
   }
   return {
@@ -199,17 +198,17 @@ const filterCreator: FilterCreator = ({ paginator }) => {
       if (_.isEmpty(users)) {
         return
       }
-      userIdToEmail = Object.fromEntries(
-        users
-          .map(user => [user.id.toString(), user.email])
+      const mapping = Object.fromEntries(
+        users.map(user => [user.id.toString(), user.email])
       ) as Record<string, string>
       const instances = elements.filter(isInstanceElement)
       instances.forEach(instance => {
-        TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance, userIdToEmail)
+        TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance, mapping)
       })
     },
     preDeploy: async (changes: Change<InstanceElement>[]) => {
-      if (!thereAreRelevantChangesToReplace(changes)) {
+      const relevantChanges = changes.filter(isRelevantChange)
+      if (_.isEmpty(relevantChanges)) {
         return
       }
       const users = await getUsers(paginator)
@@ -219,13 +218,14 @@ const filterCreator: FilterCreator = ({ paginator }) => {
       userIdToEmail = Object.fromEntries(
         users.map(user => [user.id.toString(), user.email])
       ) as Record<string, string>
-      emailToUserId = Object.fromEntries(
+      const emailToUserId = Object.fromEntries(
         users.map(user => [user.email, user.id.toString()])
       ) as Record<string, string>
       await deployModificationFunc(changes, emailToUserId)
     },
     onDeploy: async (changes: Change<InstanceElement>[]) => {
-      if (!thereAreRelevantChangesToReplace(changes)) {
+      const relevantChanges = changes.filter(isRelevantChange)
+      if (_.isEmpty(relevantChanges)) {
         return
       }
       await deployModificationFunc(changes, userIdToEmail)

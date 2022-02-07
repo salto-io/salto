@@ -19,6 +19,7 @@ import { isInstanceChange, InstanceElement, Element,
   getChangeData, ModificationChange,
   isRemovalChange, isModificationChange, isAdditionChange, AdditionChange, RemovalChange } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
+import { expressions, elementSource } from '@salto-io/workspace'
 import { buildNetsuiteQuery, convertToQueryParams, NetsuiteQuery, NetsuiteQueryParameters } from '../query'
 import { isCustomType, isFileCabinetInstance } from '../types'
 import { LAST_FETCH_TIME, PATH, SCRIPT_ID } from '../constants'
@@ -54,6 +55,8 @@ type AdditionalInstance = {
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
+const { resolve } = expressions
+const { createInMemoryElementSource } = elementSource
 
 const getIdentifyingValue = async (instance: InstanceElement): Promise<string> => (
   instance.value[SCRIPT_ID] ?? instance.value[getTypeIdentifier(await instance.getType())]
@@ -96,8 +99,9 @@ const getMatchingServiceInstances = async (
 
   const fetchQuery = buildNetsuiteQuery(convertToQueryParams(fetchTarget))
   const { elements } = await fetchByQuery(fetchQuery, { reportProgress: () => null }, false)
+  const resolvedElements = await resolve(elements, createInMemoryElementSource(elements))
   return _.keyBy(
-    elements.filter(isInstanceElement).map(getInstanceToCompare),
+    resolvedElements.filter(isInstanceElement).map(getInstanceToCompare),
     element => element.elemID.getFullName()
   )
 }

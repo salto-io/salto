@@ -17,6 +17,7 @@
     { "path": "../adapter-api" },
     { "path": "../adapter-components" },
     { "path": "../adapter-utils" },
+    { "path": "../workspace" },
     { "path": "../e2e-credentials-store" },
     { "path": "../file" },
     { "path": "../logging" },

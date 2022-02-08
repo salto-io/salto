@@ -1509,9 +1509,14 @@ export const DEFAULT_INCLUDE_ENDPOINTS: string[] = [
   'Boards',
 ]
 
+type JiraDeployConfig = {
+  forceDelete: boolean
+}
+
 export type JiraConfig = {
   client: JiraClientConfig
   fetch: JiraFetchConfig
+  deploy: JiraDeployConfig
   apiDefinitions: JiraApiConfig
 }
 
@@ -1548,6 +1553,9 @@ export const DEFAULT_CONFIG: JiraConfig = {
   fetch: {
     includeTypes: DEFAULT_INCLUDE_ENDPOINTS,
   },
+  deploy: {
+    forceDelete: false,
+  },
   apiDefinitions: DEFAULT_API_DEFINITIONS,
 }
 
@@ -1562,11 +1570,19 @@ const createClientConfigType = (): ObjectType => {
   return configType
 }
 
+const jiraDeployConfigType = new ObjectType({
+  elemID: new ElemID(JIRA, 'DeployConfig'),
+  fields: {
+    forceDelete: { refType: BuiltinTypes.BOOLEAN },
+  },
+})
+
 export const configType = createMatchingObjectType<Partial<JiraConfig>>({
   elemID: new ElemID(JIRA),
   fields: {
     client: { refType: createClientConfigType() },
     fetch: { refType: createUserFetchConfigType(JIRA) },
+    deploy: { refType: jiraDeployConfigType },
     apiDefinitions: { refType: apiDefinitionsType },
   },
   annotations: {

@@ -21,18 +21,27 @@ import { defaultFieldConfigurationValidator } from './default_field_configuratio
 import { issueTypeSchemeValidator } from './issue_type_scheme'
 import { screenValidator } from './screen'
 import { workflowValidator } from './workflow'
+import JiraClient from '../client/client'
+import { JiraConfig } from '../config'
+import { projectDeletionValidator } from './project_deletion'
 
 const {
   deployTypesNotSupportedValidator,
 } = deployment.changeValidators
 
-const validators: ChangeValidator[] = [
-  deployTypesNotSupportedValidator,
-  unsupportedFieldConfigurationsValidator,
-  defaultFieldConfigurationValidator,
-  workflowValidator,
-  screenValidator,
-  issueTypeSchemeValidator,
-]
 
-export default createChangeValidator(validators)
+export default (
+  client: JiraClient, config: JiraConfig
+): ChangeValidator => {
+  const validators: ChangeValidator[] = [
+    deployTypesNotSupportedValidator,
+    unsupportedFieldConfigurationsValidator,
+    defaultFieldConfigurationValidator,
+    workflowValidator,
+    screenValidator,
+    issueTypeSchemeValidator,
+    projectDeletionValidator(client, config),
+  ]
+
+  return createChangeValidator(validators)
+}

@@ -61,17 +61,10 @@ function validateConfig(config: Values): asserts config is JiraConfig {
 }
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): JiraConfig => {
-  const fullConfig = {
-    ...(config?.value ?? {}),
-    apiDefinitions: configUtils.mergeWithDefaultConfig(
-      DEFAULT_CONFIG.apiDefinitions,
-      config?.value.apiDefinitions
-    ),
-    client: configUtils.mergeWithDefaultConfig(
-      DEFAULT_CONFIG.client,
-      config?.value.client
-    ),
-  }
+  const fullConfig = configUtils.mergeWithDefaultConfig(
+    _.omit(DEFAULT_CONFIG, 'fetch'),
+    config?.value
+  )
   validateConfig(fullConfig)
 
   // Hack to make sure this is coupled with the type definition of JiraConfig
@@ -79,6 +72,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
     apiDefinitions: null,
     client: null,
     fetch: null,
+    deploy: null,
   }
   Object.keys(fullConfig)
     .filter(k => !Object.keys(adapterConfig).includes(k))

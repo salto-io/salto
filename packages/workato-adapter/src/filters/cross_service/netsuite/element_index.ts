@@ -17,7 +17,7 @@ import { Element, ElemID, InstanceElement, isInstanceElement, isObjectType, Obje
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 
-const { isPlainRecord } = values
+const { isPlainRecord, isDefined } = values
 
 export type NetsuiteIndex = {
   scriptId: Record<string, ElemID>
@@ -49,16 +49,21 @@ export const indexNetsuiteByTypeAndScriptId = (
     const nestedFields = (
       customRecordTypeInstances
         .flatMap(inst => (
-          Object.values(inst.value[CUSTOM_RECORD_CUSTOM_FIELDS]?.[CUSTOM_RECORD_CUSTOM_FIELD] ?? {})
-            .filter(isPlainRecord)
-            .map(f => ({
-              scriptId: f.scriptid,
+          Object.entries(
+            inst.value[CUSTOM_RECORD_CUSTOM_FIELDS]?.[CUSTOM_RECORD_CUSTOM_FIELD] ?? {}
+          ).map(([key, item]) => {
+            if (!isPlainRecord(item)) {
+              return undefined
+            }
+            return {
+              scriptId: item.scriptid,
               nestedPath: inst.elemID.createNestedID(
                 CUSTOM_RECORD_CUSTOM_FIELDS,
                 CUSTOM_RECORD_CUSTOM_FIELD,
-                String(f.index),
+                key,
               ),
-            }))))
+            }
+          }).filter(isDefined)))
     )
     // TODO these should be replaced by maps or nested fields under custom objects - see SALTO-1078
     const customRecordTypeNestedFieldIndex = Object.fromEntries(

@@ -15,3 +15,5 @@
 */
 export { accountSettingsValidator } from './account_settings'
 export { duplicateCustomFieldOptionValuesValidator } from './duplicate_option_values'
+export { emptyCustomFieldOptionsValidator } from './empty_custom_field_options'
+export { emptyVariantsValidator } from './empty_variants'

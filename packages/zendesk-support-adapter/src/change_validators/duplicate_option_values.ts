@@ -16,8 +16,8 @@
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import {
-  Change, ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificationChange,
-  isInstanceChange, isInstanceElement, isModificationChange,
+  Change, ChangeValidator, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange,
+  isInstanceChange, isInstanceElement, isModificationChange, ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 
 const { awu } = collections.asynciterable
@@ -68,10 +68,49 @@ const findConflictedInstances = ({
   .filter(inst => inst.elemID.getFullName() !== instanceToCheck.elemID.getFullName())
   .map(inst => inst.elemID.getFullName())
 
+const getConflictedIds = ({
+  change, pair, childInstances, parentInstances,
+}: {
+  change: Change<InstanceElement>
+  pair: ParentAndChildTypePair
+  childInstances: InstanceElement[]
+  parentInstances: InstanceElement[]
+}): string[] => {
+  const instance = getChangeData(change)
+  const value = instance.elemID.typeName === pair.parent
+    ? instance.value.tag
+    : instance.value.value
+  const conflictedChildInstanceNames = findConflictedInstances({
+    instanceToCheck: instance, relevantInstances: childInstances, fieldName: 'value', value,
+  })
+  const conflictedParentInstanceNames = findConflictedInstances({
+    instanceToCheck: instance, relevantInstances: parentInstances, fieldName: 'tag', value,
+  })
+  return [
+    ...conflictedChildInstanceNames, ...conflictedParentInstanceNames,
+  ]
+}
+
+const getRelevantInstances = async ({
+  relevantTypeToElementIds, typeName, elementSource, filter = (() => true),
+}: {
+  relevantTypeToElementIds: Record<string, ElemID[]>
+  typeName: string
+  elementSource: ReadOnlyElementsSource
+  filter?: (instance: InstanceElement) => boolean
+}): Promise<InstanceElement[]> => {
+  const elementIds = relevantTypeToElementIds[typeName] ?? []
+  return awu(elementIds)
+    .map(id => elementSource.get(id))
+    .filter(isInstanceElement)
+    .filter(filter)
+    .toArray()
+}
+
 export const duplicateCustomFieldOptionValuesValidator: ChangeValidator = async (
-  changes, elementsSource
+  changes, elementSource
 ) => {
-  if (elementsSource === undefined) {
+  if (elementSource === undefined) {
     return []
   }
   const relevantChanges = changes
@@ -84,38 +123,27 @@ export const duplicateCustomFieldOptionValuesValidator: ChangeValidator = async 
       .filter(values.isDefined),
     pair => pair.parent,
   )
-  const relevantTypeToElementIds = await awu(await elementsSource.list())
+  const relevantTypeToElementIds = await awu(await elementSource.list())
     .filter(id => relevantTypes.flatMap(pair => [pair.parent, pair.child]).includes(id.typeName))
     .filter(id => id.idType === 'instance')
     .groupBy(id => id.typeName)
   return awu(relevantTypes).map(async pair => {
-    const childElementIds = relevantTypeToElementIds[pair.child] ?? []
-    const parentElementIds = relevantTypeToElementIds[pair.parent] ?? []
-    const childInstances = await awu(childElementIds)
-      .map(id => elementsSource.get(id))
-      .filter(isInstanceElement)
-      .toArray()
-    const parentInstances = await awu(parentElementIds)
-      .map(id => elementsSource.get(id))
-      .filter(isInstanceElement)
-      .filter(inst => inst.value.type === CHECKBOX_TYPE_NAME && inst.value.tag !== '')
-      .toArray()
+    const childInstances = await getRelevantInstances({
+      relevantTypeToElementIds, typeName: pair.child, elementSource,
+    })
+    const parentInstances = await getRelevantInstances({
+      relevantTypeToElementIds,
+      typeName: pair.parent,
+      elementSource,
+      filter: inst => inst.value.type === CHECKBOX_TYPE_NAME && inst.value.tag !== '',
+    })
     return relevantChanges
       .filter(change => getRelevantPairType(change)?.parent === pair.parent)
       .flatMap(change => {
         const instance = getChangeData(change)
-        const value = instance.elemID.typeName === pair.parent
-          ? instance.value.tag
-          : instance.value.value
-        const conflictedChildInstanceNames = findConflictedInstances({
-          instanceToCheck: instance, relevantInstances: childInstances, fieldName: 'value', value,
+        const conflictedInstanceNames = getConflictedIds({
+          change, pair, childInstances, parentInstances,
         })
-        const conflictedParentInstanceNames = findConflictedInstances({
-          instanceToCheck: instance, relevantInstances: parentInstances, fieldName: 'tag', value,
-        })
-        const conflictedInstanceNames = [
-          ...conflictedChildInstanceNames, ...conflictedParentInstanceNames,
-        ]
         if (conflictedInstanceNames.length > 0) {
           return [{
             elemID: instance.elemID,

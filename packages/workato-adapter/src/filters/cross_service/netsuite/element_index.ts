@@ -14,8 +14,10 @@
 * limitations under the License.
 */
 import { Element, ElemID, InstanceElement, isInstanceElement, isObjectType, ObjectType } from '@salto-io/adapter-api'
+import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 
+const { isPlainRecord } = values
 
 export type NetsuiteIndex = {
   scriptId: Record<string, ElemID>
@@ -47,13 +49,14 @@ export const indexNetsuiteByTypeAndScriptId = (
     const nestedFields = (
       customRecordTypeInstances
         .flatMap(inst => (
-          (inst.value[CUSTOM_RECORD_CUSTOM_FIELDS]?.[CUSTOM_RECORD_CUSTOM_FIELD] ?? [])
-            .map((f: { scriptid: string }, idx: number) => ({
+          Object.values(inst.value[CUSTOM_RECORD_CUSTOM_FIELDS]?.[CUSTOM_RECORD_CUSTOM_FIELD] ?? {})
+            .filter(isPlainRecord)
+            .map(f => ({
               scriptId: f.scriptid,
               nestedPath: inst.elemID.createNestedID(
                 CUSTOM_RECORD_CUSTOM_FIELDS,
                 CUSTOM_RECORD_CUSTOM_FIELD,
-                String(idx),
+                String(f.index),
               ),
             }))))
     )

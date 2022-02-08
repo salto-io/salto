@@ -862,11 +862,11 @@ describe('Recipe references filter', () => {
         scriptid: 'customrecord16',
         recordname: 'my custom record',
         customrecordcustomfields: {
-          customrecordcustomfield: [
-            { scriptid: 'custrecord5' },
-            { scriptid: 'somethingelse' },
-            { scriptid: 'custrecordaccount_id' },
-          ],
+          customrecordcustomfield: {
+            custrecord5: { scriptid: 'custrecord5', index: 0 },
+            somethingelse: { scriptid: 'somethingelse', index: 1 },
+            custrecordaccount_id: { scriptid: 'custrecordaccount_id', index: 2 },
+          },
         },
       }
     )

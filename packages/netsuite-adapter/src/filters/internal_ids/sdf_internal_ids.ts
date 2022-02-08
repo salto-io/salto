@@ -28,6 +28,14 @@ type RecordIdResult = {
   id: string
 }
 
+type QueryResponse = {
+  scriptid: string
+} & ({
+  id: string
+ } | {
+  internalid: string
+ })
+
 const CUSTOM_FIELD = 'customfield'
 
 const TYPE_NAMES_TO_TABLE_NAME: Record<string, string> = {
@@ -57,11 +65,14 @@ Promise<RecordIdResult[]> => {
     return []
   }
   const ajv = new Ajv({ allErrors: true, strict: false })
-  if (!ajv.validate<RecordIdResult[]>(RECORD_ID_SCHEMA, recordIdResults)) {
+  if (!ajv.validate<QueryResponse[]>(RECORD_ID_SCHEMA, recordIdResults)) {
     log.error(`Got invalid results from listing ${recordType} table: ${ajv.errorsText()}`)
     return []
   }
-  return recordIdResults
+  return recordIdResults.map(res => ({
+    scriptid: res.scriptid,
+    id: 'id' in res ? res.id : res.internalid,
+  }))
 }
 
 const addInternalIdFieldToType = (object: ObjectType): void => {
@@ -88,7 +99,7 @@ const fetchRecordType = async (
   client: NetsuiteClient,
   recordType: string,
 ): Promise<Record<string, string>> => {
-  const query = `SELECT scriptid, ${idParamName} as id FROM ${recordType} ORDER BY id ASC`
+  const query = `SELECT scriptid, ${idParamName} FROM ${recordType} ORDER BY ${idParamName} ASC`
   const recordTypeIds = await queryRecordIds(client, query, recordType)
   if (_.isUndefined(recordTypeIds) || _.isEmpty(recordTypeIds)) {
     return {}

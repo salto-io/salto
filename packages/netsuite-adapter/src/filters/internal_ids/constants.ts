@@ -68,20 +68,62 @@ export const TABLE_NAME_TO_ID_PARAMETER_MAP: Record<string, string> = {
 }
 
 export const RECORD_ID_SCHEMA = {
+  $schema: 'http://json-schema.org/draft-07/schema#',
   items: {
-    properties: {
-      id: {
-        type: 'string',
+    anyOf: [
+      {
+        allOf: [
+          {
+            properties: {
+              scriptid: {
+                type: 'string',
+              },
+            },
+            required: [
+              'scriptid',
+            ],
+            type: 'object',
+          },
+          {
+            properties: {
+              id: {
+                type: 'string',
+              },
+            },
+            required: [
+              'id',
+            ],
+            type: 'object',
+          },
+        ],
       },
-      scriptid: {
-        type: 'string',
+      {
+        allOf: [
+          {
+            properties: {
+              scriptid: {
+                type: 'string',
+              },
+            },
+            required: [
+              'scriptid',
+            ],
+            type: 'object',
+          },
+          {
+            properties: {
+              internalid: {
+                type: 'string',
+              },
+            },
+            required: [
+              'internalid',
+            ],
+            type: 'object',
+          },
+        ],
       },
-    },
-    required: [
-      'id',
-      'scriptid',
     ],
-    type: 'object',
   },
   type: 'array',
 }

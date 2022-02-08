@@ -164,9 +164,9 @@ describe('sdf internal ids tests', () => {
       await filterCreator(filterOpts).onFetch?.(elements)
     })
     it('should query information from api', () => {
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, 'SELECT scriptid, internalid as id FROM customrecordtype ORDER BY id ASC')
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, 'SELECT scriptid, id as id FROM clientscript ORDER BY id ASC')
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, 'SELECT scriptid, internalid as id FROM customfield ORDER BY id ASC')
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, 'SELECT scriptid, internalid FROM customrecordtype ORDER BY internalid ASC')
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, 'SELECT scriptid, id FROM clientscript ORDER BY id ASC')
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, 'SELECT scriptid, internalid FROM customfield ORDER BY internalid ASC')
       expect(runSuiteQLMock).toHaveBeenCalledTimes(3)
     })
     it('should add internal ids to elements', () => {
@@ -208,8 +208,8 @@ describe('sdf internal ids tests', () => {
         )
       })
       it('should query information from api', () => {
-        expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, 'SELECT scriptid, internalid as id FROM customrecordtype ORDER BY id ASC')
-        expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, 'SELECT scriptid, id as id FROM clientscript ORDER BY id ASC')
+        expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, 'SELECT scriptid, internalid FROM customrecordtype ORDER BY internalid ASC')
+        expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, 'SELECT scriptid, id FROM clientscript ORDER BY id ASC')
         expect(runSuiteQLMock).toHaveBeenCalledTimes(2)
       })
       it('should add internal ids to new elements', () => {

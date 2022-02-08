@@ -205,7 +205,7 @@ export const filterInvalidChanges = async (
 
   const changeErrors = await awu(changesByAdapter.entries())
     .filter(([adapter]) => adapter in changeValidators)
-    .flatMap(([adapter, changes]) => changeValidators[adapter](changes))
+    .flatMap(([adapter, changes]) => changeValidators[adapter](changes, afterElements))
     .toArray()
 
   const invalidChanges = changeErrors.filter(v => v.severity === 'Error')

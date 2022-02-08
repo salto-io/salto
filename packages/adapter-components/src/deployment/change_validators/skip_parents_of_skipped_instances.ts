@@ -21,9 +21,9 @@ import { createChangeValidator, getParents } from '@salto-io/adapter-utils'
 export const createSkipParentsOfSkippedInstancesValidator = (
   changeValidators: ReadonlyArray<ChangeValidator>,
   disabledValidators?: ReadonlyArray<ChangeValidator>,
-): ChangeValidator => async changes => {
+): ChangeValidator => async (changes, elementSource) => {
   const changeValidator = createChangeValidator(changeValidators, disabledValidators)
-  const changeErrors = await changeValidator(changes)
+  const changeErrors = await changeValidator(changes, elementSource)
   const idToChange = Object.fromEntries(
     changes.map(change => [getChangeData(change).elemID.getFullName(), change])
   )

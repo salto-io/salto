@@ -673,6 +673,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           isSingle: true,
         },
         {
+          type: 'SecurityScheme',
+          toField: 'issueSecurityScheme',
+          context: [{ name: 'projectKeyOrId', fromField: 'key' }],
+          isSingle: true,
+        },
+        {
           type: 'PageBeanIssueTypeScreenSchemesProjects',
           toField: 'issueTypeScreenScheme',
           context: [{ name: 'projectId', fromField: 'id' }],
@@ -738,6 +744,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'workflowScheme', fieldType: 'WorkflowScheme' },
         { fieldName: 'permissionScheme', fieldType: 'PermissionScheme' },
         { fieldName: 'notificationScheme', fieldType: 'NotificationScheme' },
+        { fieldName: 'issueSecurityScheme', fieldType: 'SecurityScheme' },
         { fieldName: 'issueTypeScreenScheme', fieldType: 'IssueTypeScreenScheme' },
         { fieldName: 'fieldConfigurationScheme', fieldType: 'FieldConfigurationScheme' },
         { fieldName: 'issueTypeScheme', fieldType: ISSUE_TYPE_SCHEMA_NAME },
@@ -1041,7 +1048,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
 
   SecurityScheme: {
+    request: {
+      url: '/rest/api/3/project/{projectKeyOrId}/issuesecuritylevelscheme',
+    },
     transformation: {
+      dataField: '.',
       fieldsToHide: [
         {
           fieldName: 'id',

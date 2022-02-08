@@ -103,6 +103,9 @@ describe('projectFilter', () => {
             id: '7',
           },
         },
+        issueSecurityScheme: {
+          id: '8',
+        },
       }
       await filter.onFetch([type, instance])
     })
@@ -144,6 +147,7 @@ describe('projectFilter', () => {
       expect(instance.value.notificationScheme).toEqual('5')
       expect(instance.value.permissionScheme).toEqual('6')
       expect(instance.value.issueTypeScheme).toEqual('7')
+      expect(instance.value.issueSecurityScheme).toEqual('8')
     })
 
     it('For impartial instance should set undefined', async () => {

@@ -59,7 +59,7 @@ export const indexNetsuiteByTypeAndScriptId = (
                 '%s is not a plain object as expected: %o',
                 inst.elemID.createNestedID(
                   CUSTOM_RECORD_CUSTOM_FIELDS, CUSTOM_RECORD_CUSTOM_FIELD, key
-                ),
+                ).getFullName(),
                 item
               )
               return undefined

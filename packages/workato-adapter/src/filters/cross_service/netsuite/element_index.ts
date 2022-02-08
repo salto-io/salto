@@ -15,8 +15,10 @@
 */
 import { Element, ElemID, InstanceElement, isInstanceElement, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 
+const log = logger(module)
 const { isPlainRecord, isDefined } = values
 
 export type NetsuiteIndex = {
@@ -53,6 +55,13 @@ export const indexNetsuiteByTypeAndScriptId = (
             inst.value[CUSTOM_RECORD_CUSTOM_FIELDS]?.[CUSTOM_RECORD_CUSTOM_FIELD] ?? {}
           ).map(([key, item]) => {
             if (!isPlainRecord(item)) {
+              log.warn(
+                '%s is not a plain object as expected: %o',
+                inst.elemID.createNestedID(
+                  CUSTOM_RECORD_CUSTOM_FIELDS, CUSTOM_RECORD_CUSTOM_FIELD, key
+                ),
+                item
+              )
               return undefined
             }
             return {

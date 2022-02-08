@@ -38,6 +38,7 @@ describe('remove_unsupported_types', () => {
       client: { isSuiteAppConfigured: isSuiteAppConfiguredMock } as unknown as NetsuiteClient,
       elementsSourceIndex: { getIndexes: () => Promise.resolve({
         serviceIdsIndex: {},
+        serviceIdRecordsIndex: {},
         internalIdsIndex: {},
         customFieldsIndex: {},
       }) },

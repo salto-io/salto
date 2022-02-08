@@ -18,12 +18,12 @@ import {
 } from '@salto-io/adapter-api'
 import { extendGeneratedDependencies, transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { values as lowerdashValues, collections } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import { SCRIPT_ID, PATH } from '../constants'
 import { serviceId } from '../transformer'
 import { FilterCreator, FilterWith } from '../filter'
 import { isCustomType } from '../types'
-import { LazyElementsSourceIndexes } from '../elements_source_index/types'
+import { LazyElementsSourceIndexes, ServiceIdRecords } from '../elements_source_index/types'
 import {
   CAPTURED_APPID, CAPTURED_BUNDLEID, CAPTURED_SERVICE_ID, CAPTURED_TYPE,
   captureServiceIdInfo, ServiceIdInfo,
@@ -33,8 +33,8 @@ const { awu } = collections.asynciterable
 
 const customTypeServiceIdsToElemIds = async (
   instance: InstanceElement,
-): Promise<Record<string, ElemID>> => {
-  const serviceIdsToElemIds: Record<string, ElemID> = {}
+): Promise<ServiceIdRecords> => {
+  const serviceIdsToElemIds: ServiceIdRecords = {}
   const parentElemIdFullNameToServiceId: Record<string, string> = {}
 
   const getClosestParentServiceId = (elemID: ElemID): string | undefined => {
@@ -53,7 +53,7 @@ const customTypeServiceIdsToElemIds = async (
       const parentServiceId = getClosestParentServiceId(path)
       const resolvedServiceId = _.isUndefined(parentServiceId) ? value : `${parentServiceId}.${value}`
       parentElemIdFullNameToServiceId[path.createParentID().getFullName()] = resolvedServiceId
-      serviceIdsToElemIds[resolvedServiceId] = path
+      serviceIdsToElemIds[resolvedServiceId] = { elemID: path, serviceID: value }
     }
     return value
   }
@@ -73,15 +73,18 @@ const shouldExtractToGenereatedDependency = (serviceIdInfoRecord: ServiceIdInfo)
 
 export const getInstanceServiceIdRecords = async (
   instance: InstanceElement,
-): Promise<Record<string, ElemID>> => (
+): Promise<ServiceIdRecords> => (
   isCustomType(instance.refType)
     ? customTypeServiceIdsToElemIds(instance)
-    : { [serviceId(instance)]: instance.elemID.createNestedID(PATH) }
+    : { [serviceId(instance)]: {
+      elemID: instance.elemID.createNestedID(PATH),
+      serviceID: serviceId(instance),
+    } }
 )
 
 const generateServiceIdToElemID = async (
   elements: Element[],
-): Promise<Record<string, ElemID>> =>
+): Promise<ServiceIdRecords> =>
   _.assign(
     {},
     ...await awu(elements).filter(isInstanceElement)
@@ -90,8 +93,8 @@ const generateServiceIdToElemID = async (
 
 const replaceReferenceValues = async (
   instance: InstanceElement,
-  fetchedElementsServiceIdToElemID: Record<string, ElemID>,
-  elementsSourceServiceIdToElemID: Record<string, ElemID>,
+  fetchedElementsServiceIdToElemID: ServiceIdRecords,
+  elementsSourceServiceIdToElemID: ServiceIdRecords,
 ): Promise<InstanceElement> => {
   const dependenciesToAdd: Array<ElemID> = []
   const replacePrimitive: TransformFunc = ({ path, value }) => {
@@ -101,13 +104,15 @@ const replaceReferenceValues = async (
     const serviceIdInfo = captureServiceIdInfo(value)
     let returnValue: ReferenceExpression | string = value
     serviceIdInfo.forEach(serviceIdInfoRecord => {
-      const elemID = fetchedElementsServiceIdToElemID[serviceIdInfoRecord[CAPTURED_SERVICE_ID]]
-      ?? elementsSourceServiceIdToElemID[serviceIdInfoRecord[CAPTURED_SERVICE_ID]]
+      const capturedServiceId = serviceIdInfoRecord[CAPTURED_SERVICE_ID]
+      const serviceIdRecord = fetchedElementsServiceIdToElemID[capturedServiceId]
+      ?? elementsSourceServiceIdToElemID[capturedServiceId]
 
-      if (elemID === undefined) {
+      if (serviceIdRecord === undefined) {
         return
       }
 
+      const { elemID, serviceID } = serviceIdRecord
       const type = serviceIdInfoRecord[CAPTURED_TYPE]
       if (type && type !== elemID.typeName) {
         dependenciesToAdd.push(elemID)
@@ -123,7 +128,7 @@ const replaceReferenceValues = async (
         return
       }
       if (!shouldExtractToGenereatedDependency(serviceIdInfoRecord)) {
-        returnValue = new ReferenceExpression(elemID)
+        returnValue = new ReferenceExpression(elemID, serviceID)
         return
       }
       dependenciesToAdd.push(elemID)
@@ -149,16 +154,11 @@ const replaceReferenceValues = async (
 const createElementsSourceServiceIdToElemID = async (
   elementsSourceIndex: LazyElementsSourceIndexes,
   isPartial: boolean,
-): Promise<Record<string, ElemID>> => {
-  if (!isPartial) {
-    return {}
-  }
-
-  return _((await elementsSourceIndex.getIndexes()).serviceIdsIndex)
-    .mapValues(val => val.elemID)
-    .pickBy(lowerdashValues.isDefined)
-    .value()
-}
+): Promise<ServiceIdRecords> => (
+  isPartial
+    ? (await elementsSourceIndex.getIndexes()).serviceIdRecordsIndex
+    : {}
+)
 
 const filterCreator: FilterCreator = ({
   elementsSourceIndex,

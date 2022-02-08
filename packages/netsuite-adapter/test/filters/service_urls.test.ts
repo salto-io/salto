@@ -44,6 +44,7 @@ describe('serviceUrls', () => {
       client,
       elementsSourceIndex: { getIndexes: () => Promise.resolve({
         serviceIdsIndex: {},
+        serviceIdRecordsIndex: {},
         internalIdsIndex: {},
         customFieldsIndex: {},
       }) },
@@ -58,6 +59,7 @@ describe('serviceUrls', () => {
       client,
       elementsSourceIndex: { getIndexes: () => Promise.resolve({
         serviceIdsIndex: {},
+        serviceIdRecordsIndex: {},
         internalIdsIndex: {},
         customFieldsIndex: {},
       }) },

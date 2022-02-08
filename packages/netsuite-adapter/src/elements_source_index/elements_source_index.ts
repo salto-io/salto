@@ -20,7 +20,7 @@ import _ from 'lodash'
 import { LAST_FETCH_TIME } from '../constants'
 import { getInstanceServiceIdRecords } from '../filters/instance_references'
 import { serviceId } from '../transformer'
-import { ElementsSourceIndexes, ElementsSourceValue, LazyElementsSourceIndexes } from './types'
+import { ElementsSourceIndexes, ElementsSourceValue, LazyElementsSourceIndexes, ServiceIdRecords } from './types'
 import { getFieldInstanceTypes } from '../data_elements/custom_fields'
 
 const { awu } = collections.asynciterable
@@ -33,19 +33,22 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
   Promise<ElementsSourceIndexes> => {
   log.debug('Starting to create elements source index')
   const serviceIdsIndex: Record<string, ElementsSourceValue> = {}
+  const serviceIdRecordsIndex: ServiceIdRecords = {}
   const internalIdsIndex: Record<string, ElementsSourceValue> = {}
   const customFieldsIndex: Record<string, InstanceElement[]> = {}
 
   const updateServiceIdIndex = async (element: InstanceElement): Promise<void> => {
-    const idRecords = await getInstanceServiceIdRecords(element)
+    const serviceIdRecords = await getInstanceServiceIdRecords(element)
+    _.assign(serviceIdRecordsIndex, serviceIdRecords)
+
     const rawLastFetchTime = element.value[LAST_FETCH_TIME]
     const lastFetchTime = rawLastFetchTime && new Date(rawLastFetchTime)
 
     _.assign(
       serviceIdsIndex,
-      _.isEmpty(idRecords)
+      _.isEmpty(serviceIdRecords)
         ? { [serviceId(element)]: { lastFetchTime } }
-        : _.mapValues(idRecords, elemID => ({ elemID, lastFetchTime }))
+        : _.mapValues(serviceIdRecords, ({ elemID }) => ({ elemID, lastFetchTime }))
     )
   }
 
@@ -82,7 +85,7 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
       updateCustomFieldsIndex(element)
     })
   log.debug('finished creating elements source index')
-  return { serviceIdsIndex, internalIdsIndex, customFieldsIndex }
+  return { serviceIdsIndex, serviceIdRecordsIndex, internalIdsIndex, customFieldsIndex }
 }
 
 export const createElementsSourceIndex = (

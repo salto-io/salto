@@ -42,7 +42,7 @@ describe('instance_references filter', () => {
     beforeEach(async () => {
       getIndexesMock.mockReset()
       getIndexesMock.mockResolvedValue({
-        serviceIdsIndex: {},
+        serviceIdRecordsIndex: {},
         internalIdsIndex: {},
       })
 
@@ -121,7 +121,7 @@ describe('instance_references filter', () => {
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
       expect(instanceWithRefs.value.refToFilePath)
-        .toEqual(new ReferenceExpression(fileInstance.elemID.createNestedID(PATH)))
+        .toEqual(new ReferenceExpression(fileInstance.elemID.createNestedID(PATH), '/Templates/file.name'))
     })
 
     it('should replace scriptid references', async () => {
@@ -134,7 +134,7 @@ describe('instance_references filter', () => {
 
 
       expect(instanceWithRefs.value.refToScriptId)
-        .toEqual(new ReferenceExpression(workflowInstance.elemID.createNestedID(SCRIPT_ID)))
+        .toEqual(new ReferenceExpression(workflowInstance.elemID.createNestedID(SCRIPT_ID), 'top_level'))
     })
 
     it('should replace annotations references', async () => {
@@ -147,9 +147,9 @@ describe('instance_references filter', () => {
 
 
       expect(instanceWithRefs.annotations.refToFilePath)
-        .toEqual(new ReferenceExpression(fileInstance.elemID.createNestedID(PATH)))
+        .toEqual(new ReferenceExpression(fileInstance.elemID.createNestedID(PATH), '/Templates/file.name'))
       expect(instanceWithRefs.annotations.refToScriptId)
-        .toEqual(new ReferenceExpression(workflowInstance.elemID.createNestedID(SCRIPT_ID)))
+        .toEqual(new ReferenceExpression(workflowInstance.elemID.createNestedID(SCRIPT_ID), 'top_level'))
     })
 
     it('parent should reference the element itself', async () => {
@@ -175,7 +175,7 @@ describe('instance_references filter', () => {
 
 
       expect(instanceWithRefs.value.refToOneLevelNestedScriptId)
-        .toEqual(new ReferenceExpression(workflowInstance.elemID.createNestedID('workflowstates', 'workflowstate', '0', SCRIPT_ID)))
+        .toEqual(new ReferenceExpression(workflowInstance.elemID.createNestedID('workflowstates', 'workflowstate', '0', SCRIPT_ID), 'one_nesting'))
     })
 
     it('should replace scriptid with 2 nesting level references', async () => {
@@ -188,7 +188,7 @@ describe('instance_references filter', () => {
 
 
       expect(instanceWithRefs.value.refToTwoLevelNestedScriptId)
-        .toEqual(new ReferenceExpression(workflowInstance.elemID.createNestedID('workflowstates', 'workflowstate', '0', 'workflowactions', '0', 'setfieldvalueaction', '0', SCRIPT_ID)))
+        .toEqual(new ReferenceExpression(workflowInstance.elemID.createNestedID('workflowstates', 'workflowstate', '0', 'workflowactions', '0', 'setfieldvalueaction', '0', SCRIPT_ID), 'two_nesting'))
     })
 
     it('should replace inner scriptid references', async () => {
@@ -202,7 +202,7 @@ describe('instance_references filter', () => {
 
       expect(workflowInstance.value.workflowstates.workflowstate[0].workflowactions[0]
         .setfieldvalueaction[1].field)
-        .toEqual(new ReferenceExpression(workflowInstance.elemID.createNestedID('workflowstates', 'workflowstate', '0', 'workflowactions', '0', 'setfieldvalueaction', '0', SCRIPT_ID)))
+        .toEqual(new ReferenceExpression(workflowInstance.elemID.createNestedID('workflowstates', 'workflowstate', '0', 'workflowactions', '0', 'setfieldvalueaction', '0', SCRIPT_ID), 'two_nesting'))
     })
 
     it('should replace type and scriptid references', async () => {
@@ -215,7 +215,7 @@ describe('instance_references filter', () => {
 
 
       expect(instanceWithRefs.value.refToCustomSegment)
-        .toEqual(new ReferenceExpression(customSegmentInstance.elemID.createNestedID(SCRIPT_ID)))
+        .toEqual(new ReferenceExpression(customSegmentInstance.elemID.createNestedID(SCRIPT_ID), 'cseg_1'))
     })
 
     it('should not replace scriptid references for non existing scriptid', async () => {
@@ -311,7 +311,7 @@ describe('instance_references filter', () => {
 
     it('should use elements source for creating the references with fetch is partial', async () => {
       getIndexesMock.mockResolvedValue({
-        serviceIdsIndex: {
+        serviceIdRecordsIndex: {
           '/Templates/instanceInElementsSource': { elemID: instanceInElementsSource.elemID.createNestedID(PATH) },
         },
         internalIdsIndex: {},
@@ -330,7 +330,7 @@ describe('instance_references filter', () => {
 
     it('should not use elements source for creating the references when fetch is not partial', async () => {
       getIndexesMock.mockResolvedValue({
-        serviceIdsIndex: {
+        serviceIdRecordsIndex: {
           '/Templates/instanceInElementsSource': { elemID: instanceInElementsSource.elemID.createNestedID(PATH) },
         },
         internalIdsIndex: {},

@@ -73,6 +73,7 @@ describe('netsuite system note author information', () => {
       client,
       elementsSourceIndex: { getIndexes: () => Promise.resolve({
         serviceIdsIndex: {},
+        serviceIdRecordsIndex: {},
         internalIdsIndex: {},
         customFieldsIndex: {},
       }) },
@@ -178,6 +179,7 @@ describe('netsuite system note author information', () => {
         client: clientWithoutSuiteApp,
         elementsSourceIndex: { getIndexes: () => Promise.resolve({
           serviceIdsIndex: {},
+          serviceIdRecordsIndex: {},
           internalIdsIndex: {},
           customFieldsIndex: {},
         }) },

@@ -37,6 +37,7 @@ describe('data_types_custom_fields', () => {
       elementsSourceIndex: {
         getIndexes: () => Promise.resolve({
           serviceIdsIndex: {},
+          serviceIdRecordsIndex: {},
           internalIdsIndex: {},
           customFieldsIndex: {},
         }),
@@ -91,6 +92,7 @@ describe('data_types_custom_fields', () => {
         elementsSourceIndex: {
           getIndexes: () => Promise.resolve({
             serviceIdsIndex: {},
+            serviceIdRecordsIndex: {},
             internalIdsIndex: {},
             customFieldsIndex: { Customer: [instance] },
           }),
@@ -114,6 +116,7 @@ describe('data_types_custom_fields', () => {
         elementsSourceIndex: {
           getIndexes: () => Promise.resolve({
             serviceIdsIndex: {},
+            serviceIdRecordsIndex: {},
             internalIdsIndex: {},
             customFieldsIndex: { Customer: [instance] },
           }),

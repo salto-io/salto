@@ -20,8 +20,11 @@ export type ElementsSourceValue = {
   elemID: ElemID
 }
 
+export type ServiceIdRecords = Record<string, { elemID: ElemID; serviceID: string }>
+
 export type ElementsSourceIndexes = {
   serviceIdsIndex: Record<string, ElementsSourceValue>
+  serviceIdRecordsIndex: ServiceIdRecords
   internalIdsIndex: Record<string, ElementsSourceValue>
   customFieldsIndex: Record<string, InstanceElement[]>
 }

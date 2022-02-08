@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType } from '@salto-io/adapter-api'
 import { mockClient } from '../utils'
 import userFilter from '../../src/filters/user'
 import { Filter } from '../../src/filter'
@@ -42,6 +42,7 @@ describe('userFilter', () => {
       elemID: new ElemID(JIRA, 'Type'),
       fields: {
         user: { refType: userType },
+        userList: { refType: new ListType(userType) },
       },
     })
   })
@@ -55,11 +56,15 @@ describe('userFilter', () => {
           user: {
             displayName: 'John Doe',
           },
+          userList: [{
+            displayName: 'John Doe',
+          }],
         }
       )
       await filter.onFetch?.([instance])
       expect(instance.value).toEqual({
         user: 'John Doe',
+        userList: ['John Doe'],
       })
     })
 
@@ -84,6 +89,7 @@ describe('userFilter', () => {
     it('should replace field type', async () => {
       await filter.onFetch?.([type])
       expect(await type.fields.user.getType()).toBe(BuiltinTypes.STRING)
+      expect(await type.fields.userList.getType()).toEqual(new ListType(BuiltinTypes.STRING))
     })
   })
 })

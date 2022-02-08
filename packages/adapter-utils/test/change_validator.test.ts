@@ -55,7 +55,7 @@ describe('change_validator', () => {
     })
     it('should call all validators', () => {
       mockValidators.forEach(
-        validator => expect(validator).toHaveBeenCalledWith(changes)
+        validator => expect(validator).toHaveBeenCalledWith(changes, undefined)
       )
     })
     it('should return errors from all validators', () => {

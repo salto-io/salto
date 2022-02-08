@@ -48,7 +48,7 @@ describe('getChangeValidators', () => {
     const errors = await changesValidators.adapter(changes)
     expect(errors).toHaveLength(2)
     expect(errors[0].message).toBe('Element has unresolved references')
-    expect(adapterChangeValidator).toHaveBeenCalledWith(changes)
+    expect(adapterChangeValidator).toHaveBeenCalledWith(changes, undefined)
     expect(errors[1].message).toBe('message')
   })
 })

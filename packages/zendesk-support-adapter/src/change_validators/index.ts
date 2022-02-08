@@ -14,3 +14,4 @@
 * limitations under the License.
 */
 export { accountSettingsValidator } from './account_settings'
+export { duplicateCustomFieldOptionValuesValidator } from './duplicate_option_values'

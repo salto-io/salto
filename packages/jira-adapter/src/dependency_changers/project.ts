@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Change, dependencyChange, DependencyChanger, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
-import { SetId } from '@salto-io/lowerdash/src/collections/set'
+import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 
 
@@ -22,7 +22,7 @@ export const projectDependencyChanger: DependencyChanger = async changes => {
   const projectChanges = Array.from(changes.entries())
     .map(([key, change]) => ({ key, change }))
     .filter(
-      (change): change is { key: SetId; change: Change<InstanceElement> } =>
+      (change): change is { key: collections.set.SetId; change: Change<InstanceElement> } =>
         isInstanceChange(change.change)
     )
     .filter(({ change }) => getChangeData(change).elemID.typeName === 'Project')

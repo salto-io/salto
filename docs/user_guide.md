@@ -150,7 +150,7 @@ A `Salto Element ID` conforms with the following schema:
     <adapter>.<type>.field.<name>[.<key>...]
     <adapter>.<type>.instance.<name>[.<key>...]
 ```
-Few configuration element id examples:
+A few configuration element id examples:
 
 ```bash
 # salesforce object 
@@ -174,6 +174,17 @@ For example, all custom fields of the salesforce Lead object can by represented 
 ```bash
 salesforce.Lead.field.*__c
 ```
+
+#### NaCl-Case
+As seen above, some parts of the element ID can be customized by each adapter. In order to keep the ID structure unambiguous, each part of the element ID is only allowed to contain alphanumeric characters, `_` and `@`.
+
+We transform strings into a specific form satisfying these requirements, which we call `NaCl-case`. At a high level, it is a deterministic transformation that converts all unsupported characters into `_`, and adds a section at the end (starting with `@`) that encodes the characters that were transformed, in order to keep the resulting string unique.
+
+For example:
+* `My custom form` becomes `My_custom_form@s`
+* `My custom-form` becomes `My_custom_form@sb`
+* `My_custom_form` remains `My_custom_form`
+
 
 ### References
 

@@ -32,12 +32,10 @@ type JiraClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimit
     usePrivateAPI: boolean
   }
 
-type JiraFetchConfig = configUtils.UserFetchConfig & {
-  typesToFallbackToInternalId?: string[]
-}
 type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'> & {
   platformSwagger: configUtils.AdapterSwaggerApiConfig['swagger']
   jiraSwagger: configUtils.AdapterSwaggerApiConfig['swagger']
+  typesToFallbackToInternalId: string[]
 }
 
 // A list of custom field types that support options
@@ -1479,6 +1477,11 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
     },
   },
   types: DEFAULT_TYPE_CUSTOMIZATIONS,
+  typesToFallbackToInternalId: [
+    'Field',
+    'Status',
+    'Resolution',
+  ],
 }
 
 export const DEFAULT_INCLUDE_ENDPOINTS: string[] = [
@@ -1554,6 +1557,9 @@ const apiDefinitionsType = createMatchingObjectType<Partial<JiraApiConfig>>({
     supportedTypes: {
       refType: new ListType(BuiltinTypes.STRING),
     },
+    typesToFallbackToInternalId: {
+      refType: new ListType(BuiltinTypes.STRING),
+    },
   },
 })
 
@@ -1591,7 +1597,6 @@ const jiraDeployConfigType = new ObjectType({
 })
 
 const fetchConfigType = createUserFetchConfigType(JIRA)
-fetchConfigType.fields.typesToFallbackToInternalId = new Field(fetchConfigType, 'typesToFallbackToInternalId', new ListType(BuiltinTypes.STRING))
 
 export const configType = createMatchingObjectType<Partial<JiraConfig>>({
   elemID: new ElemID(JIRA),

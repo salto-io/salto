@@ -22,7 +22,7 @@ import { objects } from '@salto-io/lowerdash'
 import JiraClient from './client/client'
 import changeValidator from './change_validators'
 import { JiraConfig, getApiDefinitions } from './config'
-import { FilterCreator, Filter, filtersRunner, FilterResult } from './filter'
+import { FilterCreator, Filter, filtersRunner } from './filter'
 import fieldReferencesFilter from './filters/field_references'
 import referenceBySelfLinkFilter from './filters/references_by_self_link'
 import removeSelfFilter from './filters/remove_self'
@@ -66,13 +66,13 @@ const { createPaginator, getWithOffsetAndLimit } = clientUtils
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
-  // This should happen before any filter that creates new instances or references
+  missingStatusesFilter,
+  // This should happen before any filter that creates references
   duplicateIdsFilter,
   avatarsFilter,
   workflowFilter,
   workflowPropertiesFilter,
   workflowSchemeFilter,
-  missingStatusesFilter,
   issueTypeSchemeReferences,
   issueTypeSchemeFilter,
   sharePermissionFilter,
@@ -138,12 +138,16 @@ export default class JiraAdapter implements AdapterOperations {
     })
     this.paginator = paginator
     this.createFiltersRunner = () => (
-      filtersRunner({
-        client,
-        paginator,
-        config,
-        getElemIdFunc,
-      }, filterCreators, objects.concatObjects)
+      filtersRunner(
+        {
+          client,
+          paginator,
+          config,
+          getElemIdFunc,
+        },
+        filterCreators,
+        objects.concatObjects
+      )
     )
   }
 
@@ -218,7 +222,7 @@ export default class JiraAdapter implements AdapterOperations {
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
-    const filterResult = (await this.createFiltersRunner().onFetch(elements) ?? {}) as FilterResult
+    const filterResult = await this.createFiltersRunner().onFetch(elements) || {}
 
     // This needs to happen after the onFetch since some filters
     // may add fields that deployment annotation should be added to
@@ -227,7 +231,9 @@ export default class JiraAdapter implements AdapterOperations {
       Object.values(swaggers),
       this.userConfig.apiDefinitions,
     )
-    return { elements, errors: filterResult.errors }
+    return filterResult.errors !== undefined
+      ? { elements, errors: filterResult.errors }
+      : { elements }
   }
 
   /**

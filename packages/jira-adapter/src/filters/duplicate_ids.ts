@@ -20,18 +20,11 @@ import { logger } from '@salto-io/logging'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { JiraConfig } from '../config'
 import { FilterCreator } from '../filter'
-import { FIELD_TYPE_NAME } from './fields/constants'
 
 const { generateInstanceNameFromConfig } = elementUtils
 
 
 const log = logger(module)
-
-const defaultTypesToFallbackToInternalId = [
-  FIELD_TYPE_NAME,
-  'Status',
-  'Resolution',
-]
 
 const getInstanceName = (instance: InstanceElement, config: JiraConfig): string => {
   const originalName = generateInstanceNameFromConfig(
@@ -51,8 +44,8 @@ const filter: FilterCreator = ({ config }) => ({
   onFetch: async elements => {
     const relevantInstances = elements
       .filter(isInstanceElement)
-      .filter(instance => (config.fetch.typesToFallbackToInternalId
-        ?? defaultTypesToFallbackToInternalId).includes(instance.elemID.typeName))
+      .filter(instance => config.apiDefinitions.typesToFallbackToInternalId
+        .includes(instance.elemID.typeName))
 
     const duplicateIds = new Set(_(relevantInstances)
       .countBy(instance => instance.elemID.getFullName())
@@ -93,7 +86,7 @@ const filter: FilterCreator = ({ config }) => ({
     return {
       errors: [
         {
-          message: `The ${isPlural ? 'names' : 'name'} of ${Array.from(duplicateIds).join(', ')} ${isPlural ? 'are' : 'is'} not unique in the account, so the ids of the instances were added to their names, the new names are ${newNames.join(', ')}. However, that way Salto won't be able to identify that instances between envs are the same instance which will impact comparing and cloning elements between environments. It is strongly recommended to change the names of the instances to be unique in the account and then re-fetch with "Regenerate Salto IDs".`,
+          message: `The ${isPlural ? 'names' : 'name'} of ${Array.from(duplicateIds).join(', ')} ${isPlural ? 'are' : 'is'} not unique in the account, so the ids of the instances were added to their names, the new names are ${newNames.join(', ')}. However, that way Salto will not be able to identify that instances between environments are the same instance which will impact comparing and cloning elements between environments. It is strongly recommended to change the names of the instances to be unique in the account and then re-fetch with "Regenerate Salto IDs".`,
           severity: 'Warning',
         },
       ],

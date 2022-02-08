@@ -167,30 +167,13 @@ const createContextInstance = (
   config: JiraConfig,
   getElemIdFunc?: ElemIdGetter,
 ): InstanceElement => {
-  const parentName = generateInstanceNameFromConfig(
-    parentField.value,
-    parentField.elemID.typeName,
-    config.apiDefinitions,
-  )
-
-  const naclCasedParentName = parentName !== undefined
-    ? naclCase(parentName)
-    : parentField.elemID.name
-
-  // This is a kinda hacky way to get the element name of the parent field
-  // (before the nacl case) if the id was added to it in the
-  // duplicate_ids filter.
-  const parentParts = naclCasedParentName !== parentField.elemID.name
-    ? [parentName, parentField.value.id]
-    : [(parentName ?? parentField.elemID.name)]
-
   const contextName = generateInstanceNameFromConfig(
     context,
     contextType.elemID.typeName,
     config.apiDefinitions
   ) ?? context.id
 
-  const defaultName = naclCase([...parentParts, contextName].join('_'))
+  const defaultName = naclCase([parentField.elemID.name, contextName].join('_'))
 
   const serviceIds = getServiceIds(context, contextType, config)
   const instanceName = getElemIdFunc && serviceIds

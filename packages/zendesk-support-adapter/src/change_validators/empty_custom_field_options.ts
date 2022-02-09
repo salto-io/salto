@@ -17,6 +17,7 @@ import _ from 'lodash'
 import { ChangeValidator, getChangeData,
   isAdditionOrModificationChange, isInstanceElement } from '@salto-io/adapter-api'
 import { CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../filters/custom_field_options/creator'
+import { createEmptyFieldErrorMessage } from './utils'
 
 const RELEVANT_TYPES = ['ticket_field', 'user_field', 'organization_field']
 const RELEVANT_FIELD_TYPES = ['dropdown', 'tagger', 'multiselect']
@@ -35,8 +36,12 @@ export const emptyCustomFieldOptionsValidator: ChangeValidator = async changes =
         return [{
           elemID: instance.elemID,
           severity: 'Error',
-          message: `Can not change ${instance.elemID.getFullName()}' ${CUSTOM_FIELD_OPTIONS_FIELD_NAME} to be empty`,
-          detailedMessage: `Can not change ${instance.elemID.getFullName()}' ${CUSTOM_FIELD_OPTIONS_FIELD_NAME} to be empty`,
+          message: createEmptyFieldErrorMessage(
+            instance.elemID.getFullName(), CUSTOM_FIELD_OPTIONS_FIELD_NAME
+          ),
+          detailedMessage: createEmptyFieldErrorMessage(
+            instance.elemID.getFullName(), CUSTOM_FIELD_OPTIONS_FIELD_NAME
+          ),
         }]
       }
       return []

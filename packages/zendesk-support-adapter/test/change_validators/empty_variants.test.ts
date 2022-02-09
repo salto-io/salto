@@ -27,7 +27,7 @@ describe('emptyVariantsValidator', () => {
     itemType,
     { name: 'test1', [VARIANTS_FIELD_NAME]: [] },
   )
-  it('should return an error when we add field with no options', async () => {
+  it('should return an error when we add field with no variants', async () => {
     const errors = await emptyVariantsValidator([
       toChange({ after: item }),
     ])
@@ -38,13 +38,13 @@ describe('emptyVariantsValidator', () => {
       detailedMessage: `Can not change ${item.elemID.getFullName()}' ${VARIANTS_FIELD_NAME} to be empty`,
     }])
   })
-  it('should not return an error when we remove a field', async () => {
+  it('should not return an error when we remove an item', async () => {
     const errors = await emptyVariantsValidator([
       toChange({ before: item }),
     ])
     expect(errors).toHaveLength(0)
   })
-  it('should not return an error when there are options', async () => {
+  it('should not return an error when there are variants', async () => {
     const clonedItem = item.clone()
     const variant = new InstanceElement(
       'option1',

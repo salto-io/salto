@@ -17,6 +17,7 @@ import _ from 'lodash'
 import { ChangeValidator, getChangeData,
   isAdditionOrModificationChange, isInstanceElement } from '@salto-io/adapter-api'
 import { VARIANTS_FIELD_NAME, DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../filters/dynamic_content'
+import { createEmptyFieldErrorMessage } from './utils'
 
 export const emptyVariantsValidator: ChangeValidator = async changes => (
   changes
@@ -29,8 +30,10 @@ export const emptyVariantsValidator: ChangeValidator = async changes => (
         return [{
           elemID: instance.elemID,
           severity: 'Error',
-          message: `Can not change ${instance.elemID.getFullName()}' ${VARIANTS_FIELD_NAME} to be empty`,
-          detailedMessage: `Can not change ${instance.elemID.getFullName()}' ${VARIANTS_FIELD_NAME} to be empty`,
+          message: createEmptyFieldErrorMessage(instance.elemID.getFullName(), VARIANTS_FIELD_NAME),
+          detailedMessage: createEmptyFieldErrorMessage(
+            instance.elemID.getFullName(), VARIANTS_FIELD_NAME
+          ),
         }]
       }
       return []

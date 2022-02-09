@@ -228,7 +228,7 @@ References in NaCl represent connections between configuration elements.
 These are useful to find direct and indirect relationships between configuration elements.
 References allow Salto to deploy changes in the correct order and it allows Salto users to perform more advanced analysis of the configuration.
 
-References in NaCl are written as an element ID and can be found anywhere a value can be written.
+References in NaCl are written as an [element ID](user_guide.md#salto-configuration-elements) and can be found anywhere a value can be written.
 
 #### Syntax
 The syntax of a reference is the same as the syntax of an element ID.

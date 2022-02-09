@@ -81,9 +81,9 @@ describe('adapter', () => {
           ),
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
-        expect(elements).toHaveLength(399)
+        expect(elements).toHaveLength(394)
         expect(elements.filter(isObjectType)).toHaveLength(191)
-        expect(elements.filter(isInstanceElement)).toHaveLength(208)
+        expect(elements.filter(isInstanceElement)).toHaveLength(203)
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'zendesk_support.account_setting',
           'zendesk_support.account_setting.instance',
@@ -233,12 +233,10 @@ describe('adapter', () => {
           'zendesk_support.macro_categories.instance',
           'zendesk_support.macro_category',
           'zendesk_support.macro_definition',
-          'zendesk_support.macro_definition.instance',
           'zendesk_support.macro_definition__actions',
           'zendesk_support.macro_definition__actions__values',
           'zendesk_support.macros',
           'zendesk_support.macros_actions',
-          'zendesk_support.macros_actions.instance',
           'zendesk_support.macros_definitions',
           'zendesk_support.monitored_twitter_handle',
           'zendesk_support.monitored_twitter_handles',
@@ -284,7 +282,6 @@ describe('adapter', () => {
           'zendesk_support.routing_attribute.instance.Language',
           'zendesk_support.routing_attribute.instance.Location',
           'zendesk_support.routing_attribute_definition',
-          'zendesk_support.routing_attribute_definition.instance',
           'zendesk_support.routing_attribute_definition__conditions_all',
           'zendesk_support.routing_attribute_definition__conditions_all__operators',
           'zendesk_support.routing_attribute_definition__conditions_all__values',
@@ -313,7 +310,6 @@ describe('adapter', () => {
           'zendesk_support.sla_policy__filter__all',
           'zendesk_support.sla_policy__policy_metrics',
           'zendesk_support.sla_policy_definition',
-          'zendesk_support.sla_policy_definition.instance',
           'zendesk_support.sla_policy_definition__all',
           'zendesk_support.sla_policy_definition__all__operators',
           'zendesk_support.sla_policy_definition__all__values',
@@ -390,7 +386,6 @@ describe('adapter', () => {
           'zendesk_support.trigger_category.instance.Custom_Events___edited@ssbs',
           'zendesk_support.trigger_category.instance.Notifications',
           'zendesk_support.trigger_definition',
-          'zendesk_support.trigger_definition.instance',
           'zendesk_support.trigger_definition__actions',
           'zendesk_support.trigger_definition__actions__metadata',
           'zendesk_support.trigger_definition__actions__metadata__phone_numbers',

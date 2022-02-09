@@ -110,13 +110,16 @@ const getRelevantInstances = async ({
 export const duplicateCustomFieldOptionValuesValidator: ChangeValidator = async (
   changes, elementSource
 ) => {
-  if (elementSource === undefined) {
-    return []
-  }
   const relevantChanges = changes
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
     .filter(isRelevantChange)
+  if (_.isEmpty(relevantChanges)) {
+    return []
+  }
+  if (elementSource === undefined) {
+    return []
+  }
   const relevantTypes = _.uniqBy(
     relevantChanges
       .map(getRelevantPairType)

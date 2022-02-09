@@ -20,6 +20,7 @@ import {
   emptyCustomFieldOptionsValidator,
   emptyVariantsValidator,
   duplicateCustomFieldOptionValuesValidator,
+  noDuplicateLocaleIdInDynamicContentItemValidator,
 } from './change_validators'
 
 const {
@@ -38,6 +39,7 @@ export default (
     emptyCustomFieldOptionsValidator,
     emptyVariantsValidator,
     duplicateCustomFieldOptionValuesValidator,
+    noDuplicateLocaleIdInDynamicContentItemValidator,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

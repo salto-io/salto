@@ -25,6 +25,7 @@ import { mergeElements, MergeResult } from '../merger'
 import { State } from './state'
 import { createAddChange, createRemoveChange } from './nacl_files/multi_env/projections'
 import { ElementsSource } from './elements_source'
+import { splitElementByPath } from './path_index'
 
 const { pickAsync } = promises.object
 const { awu } = collections.asynciterable
@@ -261,6 +262,50 @@ const getHiddenTypeChanges = async (
   .filter(values.isDefined)
   .toArray()
 
+
+const getInstanceTypeHiddenChanges = async (
+  changes: DetailedChange[],
+  state: State,
+): Promise<DetailedChange[]> => {
+  const hiddenValueOnElementChanges = changes
+    .filter(c => isHiddenChangeOnElement(c, true))
+
+  // Exit early to avoid unneeded calculation if there are no hidden type changes
+  if (hiddenValueOnElementChanges.length === 0) {
+    return []
+  }
+
+  const [toHiddenChanges, fromHiddenChanges] = _.partition(
+    hiddenValueOnElementChanges,
+    c => isChangeToHidden(c, true)
+  )
+
+  const toHiddenElemIds = new Set(
+    toHiddenChanges.map(change => change.id.createTopLevelParentID().parent.getFullName())
+  )
+
+  const fromHiddenElemIds = new Set(
+    fromHiddenChanges.map(change => change.id.createTopLevelParentID().parent.getFullName())
+  )
+
+  const pathIndex = await state.getPathIndex()
+  const r = await awu(await state.getAll())
+    .flatMap(async elem => {
+      if (isInstanceElement(elem)) {
+        if (toHiddenElemIds.has(elem.refType.elemID.getFullName())) {
+          return [createRemoveChange(elem, elem.elemID)]
+        }
+        if (fromHiddenElemIds.has(elem.refType.elemID.getFullName())) {
+          return (await splitElementByPath(elem, pathIndex))
+            .map(fragment => createAddChange(fragment, elem.elemID, fragment.path))
+        }
+      }
+      return []
+    })
+    .toArray()
+  return r
+}
+
 const isAnnotationTypeChange = (
   change: DetailedChange
 ): change is DetailedChange & ModificationChange<ReferenceExpression> => (
@@ -482,11 +527,18 @@ const removeDuplicateChanges = (
   origChanges: DetailedChange[],
   additionalChanges: DetailedChange[],
 ): DetailedChange[] => {
-  const changes = [...origChanges, ...additionalChanges]
   // If we have multiple changes on the same ID, we want to take the newer change
   // (the one from additionalChanges) because it overrides the original, for example
   // this can happen if a field is both hidden and changed at the same time
-  const changeById = _.keyBy(changes, change => change.id.getFullName())
+  // this specific logic is needed to support cases in which we had multiple changes
+  // with the same id (fragments addition)
+  const origChangesById = _.groupBy(origChanges, change => change.id.getFullName())
+  const additionalChangesById = _.groupBy(additionalChanges, change => change.id.getFullName())
+
+  const changeById = {
+    ...origChangesById,
+    ...additionalChangesById,
+  }
 
   // If we have a change to A.B and a change to A.B.C, the second change is redundant because
   // its value is included in the first one.
@@ -498,7 +550,7 @@ const removeDuplicateChanges = (
     return changeById[parent.getFullName()] !== undefined || hasChangeOnParent(parent)
   }
 
-  return Object.values(changeById).filter(change => !hasChangeOnParent(change.id))
+  return Object.values(changeById).flat().filter(change => !hasChangeOnParent(change.id))
 }
 
 /**
@@ -514,6 +566,7 @@ const mergeWithHiddenChangeSideEffects = async (
   const additionalChanges = [
     ...await getHiddenTypeChanges(changes, state),
     ...await getHiddenFieldAndAnnotationValueChanges(changes, state, visibleElementSource),
+    ...await getInstanceTypeHiddenChanges(changes, state),
   ]
   // Additional changes may override / be overridden by original changes, so if we add new changes
   // we have to make sure we remove duplicates

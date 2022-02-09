@@ -13,9 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  CORE_ANNOTATIONS, isObjectType,
-} from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 
 const DEFINITION_TYPE_NAMES = [
@@ -27,16 +26,13 @@ const DEFINITION_TYPE_NAMES = [
 ]
 
 /**
- * Hides the definition instances
+ * Removes the definition instances
  */
 const filterCreator: FilterCreator = () => ({
   onFetch: async elements => {
-    elements
-      .filter(isObjectType)
-      .filter(objType => DEFINITION_TYPE_NAMES.includes(objType.elemID.typeName))
-      .forEach(objType => {
-        objType.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
-      })
+    _.remove(elements,
+      element =>
+        isInstanceElement(element) && DEFINITION_TYPE_NAMES.includes(element.elemID.typeName))
   },
 })
 

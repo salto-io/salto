@@ -13,22 +13,25 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { DEFAULT_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
 import { ZENDESK_SUPPORT } from '../../src/constants'
 import { paginate } from '../../src/client/pagination'
-import filterCreator from '../../src/filters/hide_definition_instances'
+import filterCreator from '../../src/filters/remove_definition_instances'
 import { FilterResult } from '../../src/filter'
 
-describe('hide definition instances', () => {
+describe('remove definition instances', () => {
   let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch', FilterResult>
   let filter: FilterType
   const randomObjType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'obj') })
+  const instanceRandomObj = new InstanceElement('test', randomObjType)
   const triggerDefinitionObjType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'trigger_definition') })
+  const triggerDefinition = new InstanceElement('test', triggerDefinitionObjType)
   const macrosActionsObjType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'macros_actions') })
+  const macrosActions = new InstanceElement('test', macrosActionsObjType)
 
   beforeEach(async () => {
     jest.clearAllMocks()
@@ -47,18 +50,16 @@ describe('hide definition instances', () => {
 
   describe('onFetch', () => {
     it('should change the hidden value annotation of the relevant types', async () => {
-      const elements = [randomObjType, triggerDefinitionObjType, macrosActionsObjType]
-        .map(e => e.clone())
+      const elements = [
+        randomObjType, instanceRandomObj, triggerDefinitionObjType,
+        triggerDefinition, macrosActionsObjType, macrosActions,
+      ]
       await filter.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName())).toEqual([
         'zendesk_support.obj',
+        'zendesk_support.obj.instance.test',
         'zendesk_support.trigger_definition',
         'zendesk_support.macros_actions',
-      ])
-      expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE])).toEqual([
-        undefined,
-        true,
-        true,
       ])
     })
   })

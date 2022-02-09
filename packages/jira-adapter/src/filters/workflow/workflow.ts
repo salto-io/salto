@@ -20,7 +20,7 @@ import { resolveValues } from '@salto-io/adapter-utils'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { postFunctionType, types as postFunctionTypes } from './post_functions_types'
-import { isWorkflowInstance, Rules, Status, Validator, Workflow, WorkflowInstance } from './types'
+import { isWorkflowInstance, Rules, Status, Validator, Workflow, WorkflowInstance, WORKFLOW_TYPE_NAME } from './types'
 import { validatorType, types as validatorTypes } from './validators_types'
 import JiraClient from '../../client/client'
 import { JiraConfig } from '../../config'
@@ -67,8 +67,6 @@ export const INITIAL_VALIDATOR = {
   },
 }
 
-
-const WORKFLOW_TYPE_NAME = 'Workflow'
 
 const transformStatus = (status: Status): void => {
   status.properties = status.properties?.additionalProperties

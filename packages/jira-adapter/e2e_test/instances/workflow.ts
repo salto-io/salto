@@ -224,15 +224,17 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
   statuses: [
     {
       id: createReference(new ElemID(JIRA, 'Status', 'instance', 'Backlog'), allElements),
-      properties: {
-        'jira.issue.editable': 'true',
-      },
+      properties: [{
+        key: 'jira.issue.editable',
+        value: 'true',
+      }],
     },
     {
       id: createReference(new ElemID(JIRA, 'Status', 'instance', 'Done'), allElements),
-      properties: {
-        'jira.issue.editable': 'true',
-      },
+      properties: [{
+        key: 'jira.issue.editable',
+        value: 'true',
+      }],
     },
   ],
 })

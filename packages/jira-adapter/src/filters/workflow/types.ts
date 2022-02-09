@@ -19,6 +19,8 @@ import Joi from 'joi'
 
 const log = logger(module)
 
+export const WORKFLOW_TYPE_NAME = 'Workflow'
+
 type Id = {
   name?: string
   entityId?: string
@@ -30,23 +32,23 @@ const idSchema = Joi.object({
 }).unknown(true)
 
 type ConfigRef = {
-  id?: string | number
+  id?: unknown
   name?: string
 }
 
 const configRefSchema = Joi.object({
-  id: Joi.alternatives(Joi.number(), Joi.string()).optional(),
+  id: Joi.optional(),
   name: Joi.string().optional(),
 }).unknown(true)
 
 type ValidatorConfiguration = {
   windowsDays?: number | string
-  fieldId?: string
+  fieldId?: unknown
   parentStatuses?: ConfigRef[]
   previousStatus?: ConfigRef
   field?: string
   fields?: string[]
-  fieldIds?: string[]
+  fieldIds?: unknown[]
 }
 
 const validatorConfigurationSchema = Joi.object({
@@ -54,12 +56,12 @@ const validatorConfigurationSchema = Joi.object({
     Joi.number().integer(),
     Joi.string(),
   ).optional(),
-  fieldId: Joi.string().optional(),
+  fieldId: Joi.optional(),
   parentStatuses: Joi.array().items(configRefSchema).optional(),
   previousStatus: configRefSchema.optional(),
-  field: Joi.string().optional(),
+  field: Joi.optional(),
   fields: Joi.array().items(Joi.string()).optional(),
-  fieldIds: Joi.array().items(Joi.string()).optional(),
+  fieldIds: Joi.array().optional(),
 }).unknown(true)
 
 type PostFunctionConfiguration = {
@@ -121,7 +123,7 @@ export type Status = {
 }
 
 const statusSchema = Joi.object({
-  properties: Joi.object().optional(),
+  properties: Joi.alternatives(Joi.object(), Joi.array()).optional(),
 }).unknown(true)
 
 export type Workflow = {

@@ -42,6 +42,7 @@ import projectFilter from './filters/project'
 import projectComponentFilter from './filters/project_component'
 import defaultInstancesDeployFilter from './filters/default_instances_deploy'
 import workflowFilter from './filters/workflow/workflow'
+import workflowPropertiesFilter from './filters/workflow/workflow_properties'
 import workflowSchemeFilter from './filters/workflow_scheme'
 import fieldStructureFilter from './filters/fields/field_structure_filter'
 import fieldDeploymentFilter from './filters/fields/field_deployment_filter'
@@ -65,6 +66,7 @@ const log = logger(module)
 export const DEFAULT_FILTERS = [
   avatarsFilter,
   workflowFilter,
+  workflowPropertiesFilter,
   workflowSchemeFilter,
   missingStatusesFilter,
   issueTypeSchemeReferences,

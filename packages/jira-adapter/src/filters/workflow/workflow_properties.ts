@@ -31,9 +31,20 @@ const log = logger(module)
 
 const convertStatusesPropertiesToList = (instance: WorkflowInstance): void => {
   instance.value.statuses?.forEach(status => {
-    status.properties = status.properties
-      && Object.entries(status.properties)
+    if (status.properties !== undefined) {
+      status.properties = Object.entries(status.properties)
         .map(([key, value]) => ({ key, value }))
+    }
+  })
+}
+
+const convertStatusesPropertiesToMap = (instance: WorkflowInstance): void => {
+  instance.value.statuses?.forEach(status => {
+    if (status.properties !== undefined) {
+      status.properties = Object.fromEntries(
+        status.properties.map(({ key, value }: Values) => [key, value])
+      )
+    }
   })
 }
 
@@ -80,12 +91,7 @@ const filter: FilterCreator = () => ({
         await applyFunctionToChangeData<Change<WorkflowInstance>>(
           change,
           instance => {
-            instance.value.statuses?.forEach(status => {
-              status.properties = status.properties
-                && Object.fromEntries(
-                  status.properties.map(({ key, value }: Values) => [key, value])
-                )
-            })
+            convertStatusesPropertiesToMap(instance)
             return instance
           }
         )

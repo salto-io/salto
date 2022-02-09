@@ -49,6 +49,7 @@ import userFieldFilter from './filters/custom_field_options/user_field'
 import dynamicContentFilter from './filters/dynamic_content'
 import restrictionFilter from './filters/restriction'
 import organizationFieldFilter from './filters/organization_field'
+import hideDefinitionInstancesFilter from './filters/hide_definition_instances'
 import hardcodedChannelFilter from './filters/hardcoded_channel'
 import usersFilter from './filters/user'
 import defaultDeployFilter from './filters/default_deploy'
@@ -79,6 +80,7 @@ export const DEFAULT_FILTERS = [
   dynamicContentFilter,
   restrictionFilter,
   organizationFieldFilter,
+  hideDefinitionInstancesFilter,
   hardcodedChannelFilter,
   fieldReferencesFilter,
   usersFilter,

@@ -96,6 +96,7 @@ const filter: FilterCreator = ({ config, client }) => ({
 
         instance.value.notificationScheme = instance.value.notificationScheme?.id?.toString()
         instance.value.permissionScheme = instance.value.permissionScheme?.id?.toString()
+        instance.value.issueSecurityScheme = instance.value.issueSecurityScheme?.id?.toString()
       })
   },
 

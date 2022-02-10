@@ -72,7 +72,7 @@ export const findDependingInstancesFromRefs = async (
  * of deploy and writing them in the manifest.xml doesn't suffice.
  * Here we add automatically all of the referenced instances.
  */
-export const getAllReferencedInstances = async (
+const getAllReferencedInstances = async (
   sourceInstances: ReadonlyArray<InstanceElement>
 ): Promise<ReadonlyArray<InstanceElement>> => {
   const visited = new Set<string>(sourceInstances.map(inst => inst.elemID.getFullName()))
@@ -101,7 +101,7 @@ export const getAllReferencedInstances = async (
  * of deploy and writing them in the manifest.xml doesn't suffice.
  * Here we add manually all of the quirks we identified.
  */
-export const getRequiredReferencedInstances = (
+const getRequiredReferencedInstances = (
   sourceInstances: ReadonlyArray<InstanceElement>
 ): ReadonlyArray<InstanceElement> => {
   const getReferencedInstance = (value: Value, type?: string): InstanceElement | undefined => (

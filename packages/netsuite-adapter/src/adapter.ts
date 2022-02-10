@@ -107,7 +107,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly fetchTarget?: NetsuiteQueryParameters
   private readonly skipList?: NetsuiteQueryParameters // old version
   private readonly useChangesDetection: boolean
-  private createFiltersRunner: () => Required<Filter>
+  private createFiltersRunner: (isPartial?: boolean) => Required<Filter>
   private elementsSourceIndex: LazyElementsSourceIndexes
 
 
@@ -173,12 +173,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
      ?? config[DEPLOY_REFERENCED_ELEMENTS]
     this.warnStaleData = config[DEPLOY]?.[WARN_STALE_DATA]
     this.elementsSourceIndex = createElementsSourceIndex(this.elementsSource)
-    this.createFiltersRunner = () => filter.filtersRunner(
+    this.createFiltersRunner = isPartial => filter.filtersRunner(
       {
         client: this.client,
         elementsSourceIndex: this.elementsSourceIndex,
         elementsSource: this.elementsSource,
-        isPartial: this.fetchTarget !== undefined,
+        isPartial: isPartial ?? this.fetchTarget !== undefined,
       },
       filtersCreators,
     )
@@ -187,7 +187,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
   public fetchByQuery: FetchByQueryFunc = async (
     fetchQuery: NetsuiteQuery,
     progressReporter: ProgressReporter,
-    useChangesDetection: boolean
+    useChangesDetection: boolean,
+    isPartial?: boolean
   ): Promise<FetchByQueryReturnType> => {
     const { customTypes, enums, fileCabinetTypes, fieldTypes } = getMetadataTypes()
     const {
@@ -260,7 +261,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       ...serverTimeElements,
     ]
 
-    await this.createFiltersRunner().onFetch(elements)
+    await this.createFiltersRunner(isPartial).onFetch(elements)
 
     return {
       failedToFetchAllAtOnce,

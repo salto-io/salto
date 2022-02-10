@@ -15,6 +15,7 @@
 */
 import {
   Element, isInstanceElement, ElemID, ReferenceExpression, InstanceElement, CORE_ANNOTATIONS,
+  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { extendGeneratedDependencies, transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import _ from 'lodash'
@@ -33,6 +34,7 @@ const { awu } = collections.asynciterable
 
 const customTypeServiceIdsToElemIds = async (
   instance: InstanceElement,
+  elementsSource?: ReadOnlyElementsSource
 ): Promise<ServiceIdRecords> => {
   const serviceIdsToElemIds: ServiceIdRecords = {}
   const parentElemIdFullNameToServiceId: Record<string, string> = {}
@@ -62,6 +64,7 @@ const customTypeServiceIdsToElemIds = async (
     element: instance,
     transformFunc: addFullServiceIdsCallback,
     strict: true,
+    elementsSource,
   })
   return serviceIdsToElemIds
 }
@@ -73,9 +76,10 @@ const shouldExtractToGenereatedDependency = (serviceIdInfoRecord: ServiceIdInfo)
 
 export const getInstanceServiceIdRecords = async (
   instance: InstanceElement,
+  elementsSource?: ReadOnlyElementsSource
 ): Promise<ServiceIdRecords> => (
   isCustomType(instance.refType)
-    ? customTypeServiceIdsToElemIds(instance)
+    ? customTypeServiceIdsToElemIds(instance, elementsSource)
     : { [serviceId(instance)]: {
       elemID: instance.elemID.createNestedID(PATH),
       serviceID: serviceId(instance),
@@ -88,7 +92,7 @@ const generateServiceIdToElemID = async (
   _.assign(
     {},
     ...await awu(elements).filter(isInstanceElement)
-      .map(getInstanceServiceIdRecords).toArray()
+      .map(instance => getInstanceServiceIdRecords(instance)).toArray()
   )
 
 const replaceReferenceValues = async (

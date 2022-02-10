@@ -24,7 +24,7 @@ import { isCustomType, isFileCabinetInstance } from '../types'
 import { LAST_FETCH_TIME, PATH, SCRIPT_ID } from '../constants'
 import { getTypeIdentifier } from '../data_elements/types'
 import { FailedFiles, FailedTypes } from '../client/types'
-import { getAllReferencedInstances, getReferencedInstances } from '../reference_dependencies'
+import { getReferencedInstances } from '../reference_dependencies'
 
 export type FetchByQueryReturnType = {
   failedToFetchAllAtOnce: boolean
@@ -36,7 +36,8 @@ export type FetchByQueryReturnType = {
 export type FetchByQueryFunc = (
   fetchQuery: NetsuiteQuery,
   progressReporter: ProgressReporter,
-  useChangesDetection: boolean
+  useChangesDetection: boolean,
+  isPartial?: boolean
 ) => Promise<FetchByQueryReturnType>
 
 export type QueryChangeValidator = (
@@ -95,7 +96,7 @@ const getMatchingServiceInstances = async (
   }
 
   const fetchQuery = buildNetsuiteQuery(convertToQueryParams(fetchTarget))
-  const { elements } = await fetchByQuery(fetchQuery, { reportProgress: () => null }, false)
+  const { elements } = await fetchByQuery(fetchQuery, { reportProgress: () => null }, false, true)
   return _.keyBy(
     elements.filter(isInstanceElement).map(getInstanceToCompare),
     element => element.elemID.getFullName()
@@ -191,16 +192,15 @@ const changeValidator: QueryChangeValidator = async (
   deployAllReferencedElements = false
 ) => {
   const instanceChanges = changes.filter(isInstanceChange)
+  const instances = instanceChanges.map(getChangeData)
 
-  const [customTypeInstances, dataTypeInstances] = _.partition(
-    instanceChanges.map(getChangeData),
-    instance => isCustomType(instance.refType)
+  const additionalInstances = await getAdditionalInstances(
+    instances.filter(instance => isCustomType(instance.refType)),
+    deployAllReferencedElements
   )
 
-  const referencedCustomTypes = await getAllReferencedInstances(customTypeInstances)
-
   const serviceInstances = await getMatchingServiceInstances(
-    [...referencedCustomTypes, ...dataTypeInstances],
+    instances.concat(additionalInstances.map(addedInst => addedInst.instance)),
     fetchByQuery
   )
 
@@ -223,10 +223,6 @@ const changeValidator: QueryChangeValidator = async (
   const changesWarnings = instanceChanges
     .filter(isOverridingChange)
     .map(toChangeWarning)
-
-  const additionalInstances = await getAdditionalInstances(
-    customTypeInstances, deployAllReferencedElements
-  )
 
   const additionalInstancesWarnings = additionalInstances
     .filter(isOverridingAdditionalInstance)

@@ -38,7 +38,7 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
   const customFieldsIndex: Record<string, InstanceElement[]> = {}
 
   const updateServiceIdIndex = async (element: InstanceElement): Promise<void> => {
-    const serviceIdRecords = await getInstanceServiceIdRecords(element)
+    const serviceIdRecords = await getInstanceServiceIdRecords(element, elementsSource)
     _.assign(serviceIdRecordsIndex, serviceIdRecords)
 
     const rawLastFetchTime = element.value[LAST_FETCH_TIME]

@@ -36,10 +36,7 @@ export const onlyOneTicketFormDefaultValidator: ChangeValidator = async (
     .filter(isInstanceChange)
     .filter(isRelevantChange)
     .map(getChangeData)
-  if (_.isEmpty(relevantInstances)) {
-    return []
-  }
-  if (elementSource === undefined) {
+  if (_.isEmpty(relevantInstances) || (elementSource === undefined)) {
     return []
   }
   const allTicketForms = await awu(await elementSource.list())

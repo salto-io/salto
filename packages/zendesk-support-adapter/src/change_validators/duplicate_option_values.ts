@@ -114,10 +114,7 @@ export const duplicateCustomFieldOptionValuesValidator: ChangeValidator = async 
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
     .filter(isRelevantChange)
-  if (_.isEmpty(relevantChanges)) {
-    return []
-  }
-  if (elementSource === undefined) {
+  if (_.isEmpty(relevantChanges) || (elementSource === undefined)) {
     return []
   }
   const relevantTypes = _.uniqBy(

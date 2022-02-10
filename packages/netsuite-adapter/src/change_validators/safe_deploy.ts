@@ -37,7 +37,7 @@ export type FetchByQueryFunc = (
   fetchQuery: NetsuiteQuery,
   progressReporter: ProgressReporter,
   useChangesDetection: boolean,
-  isPartial?: boolean
+  isPartial: boolean
 ) => Promise<FetchByQueryReturnType>
 
 export type QueryChangeValidator = (

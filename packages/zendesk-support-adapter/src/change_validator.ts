@@ -22,6 +22,8 @@ import {
   duplicateCustomFieldOptionValuesValidator,
   noDuplicateLocaleIdInDynamicContentItemValidator,
   onlyOneTicketFormDefaultValidator,
+  missingFromParentValidatorCreator,
+  removedFromParentValidatorCreator,
 } from './change_validators'
 
 const {
@@ -39,6 +41,8 @@ export default (
     accountSettingsValidator,
     emptyCustomFieldOptionsValidator,
     emptyVariantsValidator,
+    missingFromParentValidatorCreator(apiConfig),
+    removedFromParentValidatorCreator(apiConfig),
     duplicateCustomFieldOptionValuesValidator,
     noDuplicateLocaleIdInDynamicContentItemValidator,
     onlyOneTicketFormDefaultValidator,

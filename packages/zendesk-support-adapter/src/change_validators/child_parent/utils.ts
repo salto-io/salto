@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { elements } from '@salto-io/adapter-components'
-import { InstanceElement, isInstanceElement, isReferenceExpression, ModificationChange } from '@salto-io/adapter-api'
+import { AdditionChange, InstanceElement, isAdditionChange, isInstanceElement, isReferenceExpression, ModificationChange } from '@salto-io/adapter-api'
 import { ZendeskApiConfig } from '../../config'
 
 export type ChildParentRelationship = {
@@ -48,9 +48,11 @@ const getIdsFromReferenceExpressions = (values: unknown): string[] =>
     : [])
 
 export const getRemovedAndAddedChildren = (
-  change: ModificationChange<InstanceElement>, fieldName: string
+  change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>, fieldName: string
 ): { removed: string[]; added: string[] } => {
-  const childrenBefore = getIdsFromReferenceExpressions(change.data.before.value[fieldName])
+  const childrenBefore = isAdditionChange(change)
+    ? []
+    : getIdsFromReferenceExpressions(change.data.before.value[fieldName])
   const childrenAfter = getIdsFromReferenceExpressions(change.data.after.value[fieldName])
   return {
     removed: childrenBefore.filter(child => !childrenAfter.includes(child)),

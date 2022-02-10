@@ -24,7 +24,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { INDEX, LIST_MAPPED_BY_FIELD, SCRIPT_ID } from '../constants'
 import { listMappedByFieldMapping } from './mapping'
-import { CAPTURED_SERVICE_ID, captureServiceIdInfo } from '../service_id_info'
+import { captureServiceIdInfo } from '../service_id_info'
 
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
@@ -104,7 +104,7 @@ const getItemKey = (mapFieldValue: string, path?: ElemID): string => {
   }
 
   const serviceIdKey = naclCase(
-    serviceIdInfoList.map(serviceIdInfo => serviceIdInfo[CAPTURED_SERVICE_ID]).join('_')
+    serviceIdInfoList.map(serviceIdInfo => serviceIdInfo.serviceId).join('_')
   )
   log.debug(`extracting ${SCRIPT_ID} to use it as a key: '${mapFieldValue}' -> '${serviceIdKey}' (${path?.getFullName()})`)
   return serviceIdKey

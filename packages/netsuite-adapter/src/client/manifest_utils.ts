@@ -13,24 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { collections, values, strings } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import { Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import xmlParser from 'fast-xml-parser'
 import _ from 'lodash'
 import { SCRIPT_ID, WORKFLOW } from '../constants'
+import { captureServiceIdInfo } from '../service_id_info'
 import { CustomizationInfo } from './types'
 import { ATTRIBUTE_PREFIX } from './constants'
 
 const { makeArray } = collections.array
-const { isDefined, lookupValue } = values
-const { matchAll } = strings
+const { lookupValue } = values
 const log = logger(module)
 
 const TEXT_ATTRIBUTE = '#text'
 const REQUIRED_ATTRIBUTE = '@_required'
 const INVALID_DEPENDENCIES = ['ADVANCEDEXPENSEMANAGEMENT', 'SUBSCRIPTIONBILLING', 'WMSSYSTEM', 'BILLINGACCOUNTS']
-const REFERENCED_OBJECT_REGEX = new RegExp(`${SCRIPT_ID}=(?<${SCRIPT_ID}>[a-z0-9_]+(\\.[a-z0-9_]+)*)`, 'g')
 
 type RequiredDependency = {
   typeName: string
@@ -103,10 +102,9 @@ const getRequiredObjects = (customizationInfos: CustomizationInfo[]): string[] =
         return
       }
 
-      requiredObjects.push(...Array.from(matchAll(val, REFERENCED_OBJECT_REGEX))
-        .map(r => r.groups)
-        .filter(isDefined)
-        .map(group => group[SCRIPT_ID])
+      requiredObjects.push(...captureServiceIdInfo(val)
+        .filter(({ serviceIdType, appid }) => serviceIdType === 'scriptid' && appid === undefined)
+        .map(serviceIdInfo => serviceIdInfo.serviceId)
         .filter(scriptId => !objNames.has(scriptId.split('.')[0])))
     })
     return requiredObjects

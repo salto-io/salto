@@ -16,10 +16,10 @@
 import { values } from '@salto-io/lowerdash'
 import { SCRIPT_ID } from './constants'
 
-export const CAPTURED_SERVICE_ID = 'serviceId'
-export const CAPTURED_TYPE = 'type'
-export const CAPTURED_APPID = 'appid'
-export const CAPTURED_BUNDLEID = 'bundleid'
+const CAPTURED_SERVICE_ID = 'serviceId'
+const CAPTURED_TYPE = 'type'
+const CAPTURED_APPID = 'appid'
+const CAPTURED_BUNDLEID = 'bundleid'
 
 const TYPE_REGEX = `type=(?<${CAPTURED_TYPE}>[a-z_]+), `
 const APPID_REGEX = `appid=(?<${CAPTURED_APPID}>[a-z_\\.]+), `
@@ -33,10 +33,11 @@ const scriptIdReferenceRegex = new RegExp(`\\[(${BUNDLEID_REGEX})?(${APPID_REGEX
 const pathReferenceRegex = new RegExp(`^\\[(?<${CAPTURED_SERVICE_ID}>\\/.+)]$`)
 
 export type ServiceIdInfo = {
-  [CAPTURED_SERVICE_ID]: string
-  [CAPTURED_TYPE]?: string
-  [CAPTURED_APPID]?: string
-  [CAPTURED_BUNDLEID]?: string
+  serviceId: string
+  serviceIdType: 'path' | 'scriptid'
+  type?: string
+  appid?: string
+  bundleid?: string
   isFullMatch: boolean
 }
 
@@ -56,8 +57,12 @@ export const captureServiceIdInfo = (value: string): ServiceIdInfo[] => {
   const pathRefMatches = value.match(pathReferenceRegex)?.groups
   if (pathRefMatches !== undefined) {
     return [
-      { [CAPTURED_SERVICE_ID]: pathRefMatches[CAPTURED_SERVICE_ID],
-        isFullMatch: true }]
+      {
+        serviceId: pathRefMatches[CAPTURED_SERVICE_ID],
+        serviceIdType: 'path',
+        isFullMatch: true,
+      },
+    ]
   }
 
   const regexMatches = [scriptIdReferenceRegex.exec(value)]
@@ -70,10 +75,11 @@ export const captureServiceIdInfo = (value: string): ServiceIdInfo[] => {
   return scriptIdRefMatches.map(match => match?.groups)
     .filter(values.isDefined)
     .map(serviceIdRef => ({
-      [CAPTURED_SERVICE_ID]: serviceIdRef[CAPTURED_SERVICE_ID],
-      [CAPTURED_TYPE]: serviceIdRef[CAPTURED_TYPE],
-      [CAPTURED_APPID]: serviceIdRef[CAPTURED_APPID],
-      [CAPTURED_BUNDLEID]: serviceIdRef[CAPTURED_BUNDLEID],
+      serviceId: serviceIdRef[CAPTURED_SERVICE_ID],
+      serviceIdType: 'scriptid',
+      type: serviceIdRef[CAPTURED_TYPE],
+      appid: serviceIdRef[CAPTURED_APPID],
+      bundleid: serviceIdRef[CAPTURED_BUNDLEID],
       isFullMatch,
     }))
 }

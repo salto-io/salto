@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { logger } from '@salto-io/logging'
 import {
   InstanceElement, isInstanceElement, isPrimitiveType, ElemID, getFieldType,
   isReferenceExpression, Value, isServiceId,
@@ -20,12 +21,14 @@ import {
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import wu from 'wu'
+import os from 'os'
 import {
   CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT, DATASET, NETSUITE, WORKBOOK,
 } from './constants'
 
 const { awu } = collections.asynciterable
 const { isDefined } = lowerDashValues
+const log = logger(module)
 
 export const findDependingInstancesFromRefs = async (
   instance: InstanceElement
@@ -69,7 +72,7 @@ export const findDependingInstancesFromRefs = async (
  * of deploy and writing them in the manifest.xml doesn't suffice.
  * Here we add automatically all of the referenced instances.
  */
-export const getAllReferencedInstances = async (
+const getAllReferencedInstances = async (
   sourceInstances: ReadonlyArray<InstanceElement>
 ): Promise<ReadonlyArray<InstanceElement>> => {
   const visited = new Set<string>(sourceInstances.map(inst => inst.elemID.getFullName()))
@@ -78,7 +81,10 @@ export const getAllReferencedInstances = async (
   ): Promise<InstanceElement[]> => {
     const newInstances = (await findDependingInstancesFromRefs(instance))
       .filter(inst => !visited.has(inst.elemID.getFullName()))
-    newInstances.forEach(inst => visited.add(inst.elemID.getFullName()))
+    newInstances.forEach(inst => {
+      log.debug(`adding referenced instance: ${inst.elemID.getFullName()}`)
+      visited.add(inst.elemID.getFullName())
+    })
     return [
       ...newInstances,
       ...await awu(newInstances).flatMap(getNewReferencedInstances).toArray(),
@@ -95,7 +101,7 @@ export const getAllReferencedInstances = async (
  * of deploy and writing them in the manifest.xml doesn't suffice.
  * Here we add manually all of the quirks we identified.
  */
-export const getRequiredReferencedInstances = (
+const getRequiredReferencedInstances = (
   sourceInstances: ReadonlyArray<InstanceElement>
 ): ReadonlyArray<InstanceElement> => {
   const getReferencedInstance = (value: Value, type?: string): InstanceElement | undefined => (
@@ -124,5 +130,16 @@ export const getRequiredReferencedInstances = (
     .map(getInstanceRequiredDependency)
     .filter(isDefined)
 
+  log.debug(`adding referenced instances:${os.EOL}${requiredReferencedInstances.map(inst => inst.elemID.getFullName()).join('\n')}`)
+
   return Array.from(new Set(sourceInstances.concat(requiredReferencedInstances)))
 }
+
+export const getReferencedInstances = async (
+  instances: ReadonlyArray<InstanceElement>,
+  deployAllReferencedElements: boolean
+): Promise<ReadonlyArray<InstanceElement>> => (
+  deployAllReferencedElements
+    ? getAllReferencedInstances(instances)
+    : getRequiredReferencedInstances(instances)
+)

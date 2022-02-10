@@ -21,10 +21,7 @@ import { entitycustomfieldType } from '../src/autogen/types/custom_types/entityc
 import { workbookType } from '../src/autogen/types/custom_types/workbook'
 import { fileType } from '../src/types/file_cabinet_types'
 import { PATH, SCRIPT_ID } from '../src/constants'
-import {
-  getAllReferencedInstances,
-  getRequiredReferencedInstances,
-} from '../src/reference_dependencies'
+import { getReferencedInstances } from '../src/reference_dependencies'
 
 describe('reference dependencies', () => {
   const entitycustomfield = entitycustomfieldType().type
@@ -74,7 +71,7 @@ describe('reference dependencies', () => {
 
   describe('getAllReferencedInstances', () => {
     it('should return all depending instances', async () => {
-      const result = await getAllReferencedInstances([instanceWithManyRefs])
+      const result = await getReferencedInstances([instanceWithManyRefs], true)
       expect(result).toEqual([instanceWithManyRefs, dependsOn1Instance, fileInstance])
     })
   })
@@ -113,29 +110,29 @@ describe('reference dependencies', () => {
       })
 
     it('should not add dependencies that are not required', async () => {
-      const result = getRequiredReferencedInstances([instanceWithManyRefs])
+      const result = await getReferencedInstances([instanceWithManyRefs], false)
       expect(result).toEqual([instanceWithManyRefs])
     })
 
     it('should add CUSTOM_SEGMENT dependency of CUSTOM_RECORD_TYPE', async () => {
-      const result = getRequiredReferencedInstances([customRecordTypeInstance])
+      const result = await getReferencedInstances([customRecordTypeInstance], false)
       expect(result).toEqual([customRecordTypeInstance, customSegmentInstance])
     })
 
     it('should add CUSTOM_RECORD_TYPE dependency of CUSTOM_SEGMENT', async () => {
-      const result = getRequiredReferencedInstances([customSegmentInstance])
+      const result = await getReferencedInstances([customSegmentInstance], false)
       expect(result).toEqual([customSegmentInstance, customRecordTypeInstance])
     })
 
     it('should add DATASET dependency of WORKBOOK', async () => {
-      const result = getRequiredReferencedInstances([workbookInstance])
+      const result = await getReferencedInstances([workbookInstance], false)
       expect(result).toEqual([workbookInstance, datasetInstance])
     })
 
     it('should not add dependencies that already exist', async () => {
       const input = [customRecordTypeInstance, customSegmentInstance, workbookInstance,
         datasetInstance, instance]
-      const result = getRequiredReferencedInstances(input)
+      const result = await getReferencedInstances(input, false)
       expect(result).toEqual(input)
     })
 
@@ -148,8 +145,9 @@ describe('reference dependencies', () => {
           ),
         })
 
-      const result = getRequiredReferencedInstances(
-        [customRecordTypeInstance, customRecordTypeInstance2]
+      const result = await getReferencedInstances(
+        [customRecordTypeInstance, customRecordTypeInstance2],
+        false
       )
       expect(result)
         .toEqual([customRecordTypeInstance, customRecordTypeInstance2, customSegmentInstance])

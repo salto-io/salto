@@ -13,13 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ProgressReporter, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ProgressReporter, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { NetsuiteQuery } from '../../src/query'
 import safeDeployValidator, { FetchByQueryReturnType } from '../../src/change_validators/safe_deploy'
 import { PATH, NETSUITE } from '../../src/constants'
 import { IDENTIFIER_FIELD } from '../../src/data_elements/types'
 import { customlistType } from '../../src/autogen/types/custom_types/customlist'
 import { customrecordtypeType } from '../../src/autogen/types/custom_types/customrecordtype'
+import { customsegmentType } from '../../src/autogen/types/custom_types/customsegment'
+import { roleType } from '../../src/autogen/types/custom_types/role'
 import { fileType, folderType } from '../../src/types/file_cabinet_types'
 
 describe('safe deploy change validator', () => {
@@ -261,6 +263,107 @@ describe('safe deploy change validator', () => {
           fetchByQuery
         )
         expect(changeErrors).toHaveLength(0)
+      })
+    })
+    describe('Changes in referenced instances', () => {
+      const customRecordInstance = new InstanceElement(
+        'customrecord_cseg1',
+        customrecordtypeType().type,
+        {
+          scriptid: 'customrecord_cseg1',
+          customsegment: 'cseg1',
+          value: 'Value',
+        },
+      )
+
+      const customSegmentInstance = new InstanceElement(
+        'cseg1',
+        customsegmentType().type,
+        {
+          scriptid: 'cseg1',
+          recordtype: 'customrecord_cseg1',
+          value: 'Value',
+          permissions: {
+            permission: [
+              {
+                role: 'role1',
+              },
+            ],
+          },
+        },
+      )
+
+      const roleInstance = new InstanceElement(
+        'role1',
+        roleType().type,
+        {
+          scriptid: 'role1',
+          value: 'Value',
+        }
+      )
+
+      customRecordInstance.value.customsegment = new ReferenceExpression(
+        customSegmentInstance.elemID.createNestedID('scriptid'),
+        undefined,
+        customSegmentInstance
+      )
+      customSegmentInstance.value.recordtype = new ReferenceExpression(
+        customRecordInstance.elemID.createNestedID('scriptid'),
+        undefined,
+        customRecordInstance
+      )
+      customSegmentInstance.value.permissions.permission[0].role = new ReferenceExpression(
+        roleInstance.elemID.createNestedID('scriptid'),
+        undefined,
+        roleInstance
+      )
+
+      let afterCustomRecordInstance: InstanceElement
+      beforeEach(() => {
+        afterCustomRecordInstance = customRecordInstance.clone()
+        afterCustomRecordInstance.value.value = 'Changed Value'
+      })
+
+      it('should have a warning when required instance changed in the service', async () => {
+        const serviceRequiredInstance = customSegmentInstance.clone()
+        serviceRequiredInstance.value.value = 'Changed Value'
+
+        const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
+        Promise<FetchByQueryReturnType> => (Promise.resolve({
+          failedToFetchAllAtOnce: false,
+          failedFilePaths: { lockedError: [], otherError: [] },
+          failedTypes: { lockedError: {}, unexpectedError: {} },
+          elements: [customRecordInstance.clone(), serviceRequiredInstance, roleInstance.clone()],
+        }))
+        const changeErrors = await safeDeployValidator(
+          [toChange({ before: customRecordInstance, after: afterCustomRecordInstance })],
+          fetchByQuery
+        )
+        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors[0].detailedMessage).toEqual(`The element ${customSegmentInstance.elemID.getFullName()}, which is required in ${customRecordInstance.elemID.name} and going to be deployed with it, has recently changed in the service.`)
+      })
+      it('should have a warning when referenced instance changed in the service', async () => {
+        const serviceReferencedInstance = roleInstance.clone()
+        serviceReferencedInstance.value.value = 'Changed Value'
+
+        const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
+        Promise<FetchByQueryReturnType> => (Promise.resolve({
+          failedToFetchAllAtOnce: false,
+          failedFilePaths: { lockedError: [], otherError: [] },
+          failedTypes: { lockedError: {}, unexpectedError: {} },
+          elements: [
+            customRecordInstance.clone(),
+            customSegmentInstance.clone(),
+            serviceReferencedInstance,
+          ],
+        }))
+        const changeErrors = await safeDeployValidator(
+          [toChange({ before: customRecordInstance, after: afterCustomRecordInstance })],
+          fetchByQuery,
+          true
+        )
+        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors[0].detailedMessage).toEqual(`The element ${roleInstance.elemID.getFullName()}, which is referenced in ${customRecordInstance.elemID.name} and going to be deployed with it, has recently changed in the service.`)
       })
     })
   })

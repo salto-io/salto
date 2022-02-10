@@ -54,6 +54,7 @@ describe('netsuite saved searches author information tests', () => {
       client,
       elementsSourceIndex: { getIndexes: () => Promise.resolve({
         serviceIdsIndex: {},
+        serviceIdRecordsIndex: {},
         internalIdsIndex: {},
         customFieldsIndex: {},
       }) },
@@ -118,6 +119,7 @@ describe('netsuite saved searches author information tests', () => {
         client: clientWithoutSuiteApp,
         elementsSourceIndex: { getIndexes: () => Promise.resolve({
           serviceIdsIndex: {},
+          serviceIdRecordsIndex: {},
           internalIdsIndex: {},
           customFieldsIndex: {},
         }) },

@@ -34,6 +34,7 @@ describe('parse_saved_searches filter', () => {
     elementsSourceIndex: {
       getIndexes: () => Promise.resolve({
         serviceIdsIndex: {},
+        serviceIdRecordsIndex: {},
         internalIdsIndex: {},
         customFieldsIndex: {},
       }),
@@ -83,6 +84,7 @@ describe('parse_saved_searches filter', () => {
       elementsSourceIndex: {
         getIndexes: () => Promise.resolve({
           serviceIdsIndex: {},
+          serviceIdRecordsIndex: {},
           internalIdsIndex: {},
           customFieldsIndex: {},
         }),

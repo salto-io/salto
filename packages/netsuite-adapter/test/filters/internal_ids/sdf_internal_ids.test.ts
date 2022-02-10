@@ -64,6 +64,7 @@ describe('sdf internal ids tests', () => {
       client,
       elementsSourceIndex: { getIndexes: () => Promise.resolve({
         serviceIdsIndex: {},
+        serviceIdRecordsIndex: {},
         internalIdsIndex: {},
         customFieldsIndex: {},
       }) },
@@ -88,6 +89,7 @@ describe('sdf internal ids tests', () => {
         client: clientWithoutSuiteApp,
         elementsSourceIndex: { getIndexes: () => Promise.resolve({
           serviceIdsIndex: {},
+          serviceIdRecordsIndex: {},
           internalIdsIndex: {},
           customFieldsIndex: {},
         }) },
@@ -109,6 +111,7 @@ describe('sdf internal ids tests', () => {
         client: clientWithoutSuiteApp,
         elementsSourceIndex: { getIndexes: () => Promise.resolve({
           serviceIdsIndex: {},
+          serviceIdRecordsIndex: {},
           internalIdsIndex: {},
           customFieldsIndex: {},
         }) },
@@ -128,6 +131,7 @@ describe('sdf internal ids tests', () => {
         client: clientWithoutSuiteApp,
         elementsSourceIndex: { getIndexes: () => Promise.resolve({
           serviceIdsIndex: {},
+          serviceIdRecordsIndex: {},
           internalIdsIndex: {},
           customFieldsIndex: {},
         }) },

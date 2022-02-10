@@ -59,20 +59,19 @@ getChangeValidatorMock.mockImplementation(({}: {
   withSuiteApp: boolean
   warnStaleData: boolean
   fetchByQuery: FetchByQueryFunc
+  deployReferencedElements?: boolean
 }) => (_changes: ReadonlyArray<Change>) => Promise.resolve([]))
 
 jest.mock('../src/reference_dependencies')
-const getAllReferencedInstancesMock = referenceDependenciesModule
-  .getAllReferencedInstances as jest.Mock
-getAllReferencedInstancesMock
-  .mockImplementation((sourceInstances: ReadonlyArray<InstanceElement>) => sourceInstances)
+const getReferencedInstancesMock = referenceDependenciesModule
+  .getReferencedInstances as jest.Mock
+getReferencedInstancesMock
+  .mockImplementation((
+    sourceInstances: ReadonlyArray<InstanceElement>,
+    _deployAllReferencedElements: boolean
+  ) => sourceInstances)
 
 jest.mock('../src/changes_detector/changes_detector')
-
-const getRequiredReferencedInstancesMock = referenceDependenciesModule
-  .getRequiredReferencedInstances as jest.Mock
-getRequiredReferencedInstancesMock
-  .mockImplementation((sourceInstances: ReadonlyArray<InstanceElement>) => sourceInstances)
 
 const onFetchMock = jest.fn().mockImplementation(async _arg => undefined)
 const firstDummyFilter: FilterCreator = () => ({
@@ -701,7 +700,7 @@ describe('Adapter', () => {
     })
 
     describe('deployReferencedElements', () => {
-      it('should call getAllReferencedInstances when deployReferencedElements is set to true', async () => {
+      it('should call getReferencedInstances with deployReferencedElements=true', async () => {
         const configWithDeployReferencedElements = {
           [TYPES_TO_SKIP]: [SAVED_SEARCH, TRANSACTION_FORM],
           [FETCH_ALL_TYPES_AT_ONCE]: true,
@@ -724,14 +723,12 @@ describe('Adapter', () => {
           },
         })
 
-        expect(getAllReferencedInstancesMock).toHaveBeenCalledTimes(1)
-        expect(getRequiredReferencedInstancesMock).not.toHaveBeenCalled()
+        expect(getReferencedInstancesMock).toHaveBeenCalledWith([instance], true)
       })
 
-      it('should call getRequiredReferencedInstances when deployReferencedElements is set to false', async () => {
+      it('should call getReferencedInstances with deployReferencedElements=false', async () => {
         await adapterAdd(instance)
-        expect(getRequiredReferencedInstancesMock).toHaveBeenCalledTimes(1)
-        expect(getAllReferencedInstancesMock).not.toHaveBeenCalled()
+        expect(getReferencedInstancesMock).toHaveBeenCalledWith([instance], false)
       })
     })
 
@@ -758,6 +755,7 @@ describe('Adapter', () => {
           withSuiteApp: expect.anything(),
           warnStaleData: false,
           fetchByQuery: expect.anything(),
+          deployReferencedElements: expect.anything(),
         })
       })
 
@@ -784,6 +782,7 @@ describe('Adapter', () => {
           withSuiteApp: expect.anything(),
           warnStaleData: false,
           fetchByQuery: expect.anything(),
+          deployReferencedElements: expect.anything(),
         })
       })
 
@@ -810,6 +809,7 @@ describe('Adapter', () => {
           withSuiteApp: expect.anything(),
           warnStaleData: true,
           fetchByQuery: expect.anything(),
+          deployReferencedElements: expect.anything(),
         })
       })
     })

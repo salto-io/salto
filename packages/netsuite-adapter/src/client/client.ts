@@ -27,7 +27,7 @@ import SuiteAppClient from './suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from '../suiteapp_file_cabinet'
 import { SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
 import { GetCustomObjectsResult, ImportFileCabinetResult } from './types'
-import { getAllReferencedInstances, getRequiredReferencedInstances } from '../reference_dependencies'
+import { getReferencedInstances } from '../reference_dependencies'
 import { getLookUpName, toCustomizationInfo } from '../transformer'
 import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../group_changes'
 import { DeployResult } from '../types'
@@ -101,22 +101,12 @@ export default class NetsuiteClient {
     return this.sdfClient.importFileCabinetContent(query)
   }
 
-  private static async getAllRequiredReferencedInstances(
-    changedInstances: ReadonlyArray<InstanceElement>,
-    deployReferencedElements: boolean,
-  ): Promise<ReadonlyArray<InstanceElement>> {
-    if (deployReferencedElements) {
-      return getAllReferencedInstances(changedInstances)
-    }
-    return getRequiredReferencedInstances(changedInstances)
-  }
-
   private async sdfDeploy(
     changes: ReadonlyArray<Change<InstanceElement>>,
     deployReferencedElements: boolean
   ): Promise<DeployResult> {
     const changedInstances = changes.map(getChangeData)
-    const customizationInfos = await awu(await NetsuiteClient.getAllRequiredReferencedInstances(
+    const customizationInfos = await awu(await getReferencedInstances(
       changedInstances,
       deployReferencedElements
     )).map(instance => resolveValues(instance, getLookUpName))

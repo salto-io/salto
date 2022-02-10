@@ -57,6 +57,7 @@ describe('data_instances_references', () => {
         elementsSourceIndex: {
           getIndexes: () => Promise.resolve({
             serviceIdsIndex: {},
+            serviceIdRecordsIndex: {},
             internalIdsIndex: {},
             customFieldsIndex: {},
           }),
@@ -82,6 +83,7 @@ describe('data_instances_references', () => {
         elementsSourceIndex: {
           getIndexes: () => Promise.resolve({
             serviceIdsIndex: {},
+            serviceIdRecordsIndex: {},
             internalIdsIndex: {},
             customFieldsIndex: {},
           }),
@@ -111,6 +113,7 @@ describe('data_instances_references', () => {
         elementsSourceIndex: {
           getIndexes: () => Promise.resolve({
             serviceIdsIndex: {},
+            serviceIdRecordsIndex: {},
             internalIdsIndex: {
               'firstType-1': { elemID: referencedInstance.elemID },
             },
@@ -143,6 +146,7 @@ describe('data_instances_references', () => {
         elementsSourceIndex: {
           getIndexes: () => Promise.resolve({
             serviceIdsIndex: {},
+            serviceIdRecordsIndex: {},
             internalIdsIndex: {},
             customFieldsIndex: {},
           }),
@@ -175,6 +179,7 @@ describe('data_instances_references', () => {
         elementsSourceIndex: {
           getIndexes: () => Promise.resolve({
             serviceIdsIndex: {},
+            serviceIdRecordsIndex: {},
             internalIdsIndex: {},
             customFieldsIndex: {},
           }),
@@ -208,6 +213,7 @@ describe('data_instances_references', () => {
         elementsSourceIndex: {
           getIndexes: () => Promise.resolve({
             serviceIdsIndex: {},
+            serviceIdRecordsIndex: {},
             internalIdsIndex: {},
             customFieldsIndex: {},
           }),

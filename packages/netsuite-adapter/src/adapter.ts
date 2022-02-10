@@ -107,7 +107,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly fetchTarget?: NetsuiteQueryParameters
   private readonly skipList?: NetsuiteQueryParameters // old version
   private readonly useChangesDetection: boolean
-  private createFiltersRunner: () => Required<Filter>
+  private createFiltersRunner: (isPartial: boolean) => Required<Filter>
   private elementsSourceIndex: LazyElementsSourceIndexes
 
 
@@ -173,21 +173,24 @@ export default class NetsuiteAdapter implements AdapterOperations {
      ?? config[DEPLOY_REFERENCED_ELEMENTS]
     this.warnStaleData = config[DEPLOY]?.[WARN_STALE_DATA]
     this.elementsSourceIndex = createElementsSourceIndex(this.elementsSource)
-    this.createFiltersRunner = () => filter.filtersRunner(
+    this.createFiltersRunner = isPartial => filter.filtersRunner(
       {
         client: this.client,
         elementsSourceIndex: this.elementsSourceIndex,
         elementsSource: this.elementsSource,
-        isPartial: this.fetchTarget !== undefined,
+        isPartial,
       },
       filtersCreators,
     )
   }
 
+  private isPartialFetch(): boolean { return this.fetchTarget !== undefined }
+
   public fetchByQuery: FetchByQueryFunc = async (
     fetchQuery: NetsuiteQuery,
     progressReporter: ProgressReporter,
-    useChangesDetection: boolean
+    useChangesDetection: boolean,
+    isPartial: boolean
   ): Promise<FetchByQueryReturnType> => {
     const { customTypes, enums, fileCabinetTypes, fieldTypes } = getMetadataTypes()
     const {
@@ -198,7 +201,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       ? andQuery(changedObjectsQuery, fetchQuery)
       : fetchQuery
 
-    const serverTimeElements = this.fetchTarget === undefined && serverTime !== undefined
+    const serverTimeElements = !this.isPartialFetch() && serverTime !== undefined
       ? createServerTimeElements(serverTime)
       : []
 
@@ -260,7 +263,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       ...serverTimeElements,
     ]
 
-    await this.createFiltersRunner().onFetch(elements)
+    await this.createFiltersRunner(isPartial).onFetch(elements)
 
     return {
       failedToFetchAllAtOnce,
@@ -290,14 +293,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
       notQuery(deprecatedSkipList),
     ].filter(values.isDefined).reduce(andQuery)
 
-    const isPartial = this.fetchTarget !== undefined
+    const isPartial = this.isPartialFetch()
 
     const {
       failedToFetchAllAtOnce,
       failedFilePaths,
       failedTypes,
       elements,
-    } = await this.fetchByQuery(fetchQuery, progressReporter, this.useChangesDetection)
+    } = await this.fetchByQuery(fetchQuery, progressReporter, this.useChangesDetection, isPartial)
 
     const updatedConfig = getConfigFromConfigChanges(
       failedToFetchAllAtOnce, failedFilePaths, failedTypes, this.userConfig
@@ -324,7 +327,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       return {}
     }
 
-    if (this.fetchTarget === undefined) {
+    if (!this.isPartialFetch()) {
       return {
         serverTime: sysInfo.time,
       }
@@ -361,7 +364,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         data: _.mapValues(change.data, (element: Element) => element.clone()),
       })) as Change[]
 
-    const filtersRunner = this.createFiltersRunner()
+    const filtersRunner = this.createFiltersRunner(this.isPartialFetch())
     await filtersRunner.preDeploy(changesToDeploy)
 
     const deployResult = await this.client.deploy(
@@ -395,6 +398,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
         withSuiteApp: this.client.isSuiteAppConfigured(),
         warnStaleData: this.warnStaleData ?? DEFAULT_WARN_STALE_DATA,
         fetchByQuery: this.fetchByQuery,
+        deployReferencedElements: this.deployReferencedElements
+          ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
       }),
       getChangeGroupIds: getChangeGroupIdsFunc(this.client.isSuiteAppConfigured()),
     }

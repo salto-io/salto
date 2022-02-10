@@ -44,8 +44,6 @@ const filter: FilterCreator = ({ config }) => ({
   onFetch: async elements => {
     const relevantInstances = elements
       .filter(isInstanceElement)
-      .filter(instance => config.apiDefinitions.typesToFallbackToInternalId
-        .includes(instance.elemID.typeName))
 
     const duplicateIds = new Set(_(relevantInstances)
       .countBy(instance => instance.elemID.getFullName())
@@ -66,8 +64,22 @@ const filter: FilterCreator = ({ config }) => ({
         && element.value.id !== undefined
     )
 
+    if (!config.fetch.fallbackToInternalId) {
+      return {
+        errors: [
+          {
+            message: `The following elements had duplicate names in Jira: ${Array.from(duplicateIds).join(', ')}. It is strongly recommended to rename these instances so they are unique in Jira, then re-fetch.
+If changing the names is not possible, you can add the fetch.fallbackToInternalId option to the configuration file; that will add their internal ID to their names and fetch them. Read more here: https://docs.salto.io/docs/jira-faq`,
+            severity: 'Warning',
+          },
+        ],
+      }
+    }
+
     const newInstances = duplicateInstances
       .filter(isInstanceElement)
+      .filter(instance => config.apiDefinitions.typesToFallbackToInternalId
+        .includes(instance.elemID.typeName))
       .map(instance => new InstanceElement(
         getInstanceName(instance, config),
         instance.refType,
@@ -81,12 +93,10 @@ const filter: FilterCreator = ({ config }) => ({
     log.debug(`Replaced duplicate names with: ${newNames.join(', ')}`)
     elements.push(...newInstances)
 
-    const isPlural = duplicateIds.size > 1
-
     return {
       errors: [
         {
-          message: `The ${isPlural ? 'names' : 'name'} of ${Array.from(duplicateIds).join(', ')} ${isPlural ? 'are' : 'is'} not unique in the account, so the ids of the instances were added to their names, the new names are ${newNames.join(', ')}. However, that way Salto will not be able to identify that instances between environments are the same instance which will impact comparing and cloning elements between environments. It is strongly recommended to change the names of the instances to be unique in the account and then re-fetch with "Regenerate Salto IDs".`,
+          message: `The following elements had duplicate names in Jira and therefore their internal id was added to their names: ${newNames.join(', ')}. It is strongly recommended to rename these instances so they are unique in Jira, then re-fetch with the "Regenerate Salto IDs" fetch option. Read more here: https://docs.salto.io/docs/jira-faq.`,
           severity: 'Warning',
         },
       ],

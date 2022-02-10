@@ -122,5 +122,11 @@ describe('sortListsFilter', () => {
       await filter.onFetch?.([instance])
       expect(instance.value).toEqual(sortedValues)
     })
+
+    it('should do nothing when field is undefined', async () => {
+      delete instance.value.permissions
+      await filter.onFetch?.([instance])
+      expect(instance.value).toEqual({})
+    })
   })
 })

@@ -1529,6 +1529,10 @@ type JiraDeployConfig = {
   forceDelete: boolean
 }
 
+type JiraFetchConfig = configUtils.UserFetchConfig & {
+  fallbackToInternalId?: boolean
+}
+
 export type JiraConfig = {
   client: JiraClientConfig
   fetch: JiraFetchConfig
@@ -1597,6 +1601,7 @@ const jiraDeployConfigType = new ObjectType({
 })
 
 const fetchConfigType = createUserFetchConfigType(JIRA)
+fetchConfigType.fields.fallbackToInternalId = new Field(fetchConfigType, 'fallbackToInternalId', BuiltinTypes.BOOLEAN)
 
 export const configType = createMatchingObjectType<Partial<JiraConfig>>({
   elemID: new ElemID(JIRA),

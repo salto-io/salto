@@ -60,3 +60,4 @@ jira {
 | Name                                        | Default when undefined            | Description
 |---------------------------------------------|-----------------------------------|------------
 | includeTypes                                | []                                | List of types to fetch
+| fallbackToInternalId                        | false                             | Whether to add the internal ids to the instance name when the name is not unique among the instances of that type

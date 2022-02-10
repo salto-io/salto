@@ -30,6 +30,8 @@ describe('duplicateIdsFilter', () => {
 
     config = _.cloneDeep(DEFAULT_CONFIG)
 
+    config.fetch.fallbackToInternalId = true
+
     filter = duplicateIdsFilter({
       client,
       paginator,
@@ -73,51 +75,7 @@ describe('duplicateIdsFilter', () => {
       expect(elements.map(e => e.elemID.name)).toEqual(['notDup', 'dup_1', 'dup_2'])
       expect(filterRes).toEqual({
         errors: [{
-          message: 'The name of jira.Status.instance.dup is not unique in the account, so the ids of the instances were added to their names, the new names are dup_1, dup_2. However, that way Salto will not be able to identify that instances between environments are the same instance which will impact comparing and cloning elements between environments. It is strongly recommended to change the names of the instances to be unique in the account and then re-fetch with "Regenerate Salto IDs".',
-          severity: 'Warning',
-        }],
-      })
-    })
-
-    it('should create the right warning message when there are multiple dups', async () => {
-      const dupA1 = new InstanceElement(
-        'dupA',
-        type,
-        {
-          id: '1',
-          name: 'dupA',
-        }
-      )
-      const dupA2 = new InstanceElement(
-        'dupA',
-        type,
-        {
-          id: '2',
-        }
-      )
-
-      const dupB1 = new InstanceElement(
-        'dupB',
-        type,
-        {
-          id: '3',
-          name: 'dupB',
-        }
-      )
-      const dupB2 = new InstanceElement(
-        'dupB',
-        type,
-        {
-          id: '4',
-        }
-      )
-
-      const elements = [dupA1, dupA2, dupB1, dupB2]
-      const filterRes = await filter.onFetch?.(elements)
-      expect(elements.map(e => e.elemID.name)).toEqual(['dupA_1', 'dupA_2', 'dupB_3', 'dupB_4'])
-      expect(filterRes).toEqual({
-        errors: [{
-          message: 'The names of jira.Status.instance.dupA, jira.Status.instance.dupB are not unique in the account, so the ids of the instances were added to their names, the new names are dupA_1, dupA_2, dupB_3, dupB_4. However, that way Salto will not be able to identify that instances between environments are the same instance which will impact comparing and cloning elements between environments. It is strongly recommended to change the names of the instances to be unique in the account and then re-fetch with "Regenerate Salto IDs".',
+          message: 'The following elements had duplicate names in Jira and therefore their internal id was added to their names: dup_1, dup_2. It is strongly recommended to rename these instances so they are unique in Jira, then re-fetch with the "Regenerate Salto IDs" fetch option. Read more here: https://docs.salto.io/docs/jira-faq.',
           severity: 'Warning',
         }],
       })
@@ -145,7 +103,7 @@ describe('duplicateIdsFilter', () => {
     })
   })
 
-  it('should do nothing if typesToFallbackToInternalId is empty', async () => {
+  it('should only remove the duplicates if typesToFallbackToInternalId is empty', async () => {
     config.apiDefinitions.typesToFallbackToInternalId = []
     const dup1 = new InstanceElement(
       'dup',
@@ -165,9 +123,39 @@ describe('duplicateIdsFilter', () => {
     )
 
     const elements = [dup1, dup2]
-    const filterRes = await filter.onFetch?.(elements)
-    expect(elements.map(e => e.elemID.name)).toEqual(['dup', 'dup'])
+    await filter.onFetch?.(elements)
+    expect(elements).toHaveLength(0)
+  })
 
-    expect(filterRes).toEqual({})
+  it('should only remove the duplicates if fallbackToInternalId is false', async () => {
+    config.fetch.fallbackToInternalId = false
+    const dup1 = new InstanceElement(
+      'dup',
+      type,
+      {
+        id: '1',
+        name: 'dup',
+      }
+    )
+    const dup2 = new InstanceElement(
+      'dup',
+      type,
+      {
+        id: '2',
+        name: 'dup',
+      }
+    )
+
+    const elements = [dup1, dup2]
+    const filterRes = await filter.onFetch?.(elements)
+    expect(elements).toHaveLength(0)
+
+    expect(filterRes).toEqual({
+      errors: [{
+        message: `The following elements had duplicate names in Jira: jira.Status.instance.dup. It is strongly recommended to rename these instances so they are unique in Jira, then re-fetch.
+If changing the names is not possible, you can add the fetch.fallbackToInternalId option to the configuration file; that will add their internal ID to their names and fetch them. Read more here: https://docs.salto.io/docs/jira-faq`,
+        severity: 'Warning',
+      }],
+    })
   })
 })

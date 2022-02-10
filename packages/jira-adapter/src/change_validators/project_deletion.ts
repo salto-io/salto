@@ -15,6 +15,7 @@
 */
 import { ChangeValidator, getChangeData, InstanceElement, isInstanceChange, isRemovalChange, SaltoErrorSeverity } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import JiraClient from '../client/client'
@@ -28,27 +29,28 @@ const doesProjectHaveIssues = async (
   instance: InstanceElement,
   client: JiraClient
 ): Promise<boolean> => {
+  let response: clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>
   try {
-    const response = await client.getSinglePage({
+    response = await client.getSinglePage({
       url: '/rest/api/3/search',
       queryParams: {
         jql: `project = "${instance.value.key}"`,
         maxResults: '0',
       },
     })
-
-    if (Array.isArray(response.data) || response.data.total === undefined) {
-      log.error(`Received invalid response from Jira search API, ${safeJsonStringify(response.data, undefined, 2)}. Assuming project ${instance.elemID.getFullName()} has issues.`)
-      return true
-    }
-
-    log.debug(`Project ${instance.elemID.getFullName()} has ${response.data.total} issues.`)
-
-    return response.data.total !== 0
   } catch (e) {
     log.error(`Received an error Jira search API, ${e.message}. Assuming project ${instance.elemID.getFullName()} has issues.`)
     return true
   }
+
+  if (Array.isArray(response.data) || response.data.total === undefined) {
+    log.error(`Received invalid response from Jira search API, ${safeJsonStringify(response.data, undefined, 2)}. Assuming project ${instance.elemID.getFullName()} has issues.`)
+    return true
+  }
+
+  log.debug(`Project ${instance.elemID.getFullName()} has ${response.data.total} issues.`)
+
+  return response.data.total !== 0
 }
 
 export const projectDeletionValidator: (client: JiraClient, config: JiraConfig) =>

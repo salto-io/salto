@@ -270,23 +270,22 @@ export const formatDeployActions = ({
   isPreDeploy,
 }: {wsChangeErrors: ReadonlyArray<ChangeWorkspaceError | ChangeError>
   isPreDeploy: boolean }): string[] => {
-  const deployActions = wsChangeErrors
+  const deployActions = _(wsChangeErrors)
+    .uniqBy(wsError => wsError.message)
     .map(wsError => (isPreDeploy
       ? wsError.deployActions?.preAction
       : wsError.deployActions?.postAction))
     .filter(values.isDefined)
+    .value()
   if (_.isEmpty(deployActions)) {
     return []
   }
-  const actionsUniqByLabel = _(deployActions)
-    .uniqBy(deployAction => deployAction.label)
-    .value()
   return [emptyLine(),
     header(isPreDeploy ? Prompts.DEPLOY_PRE_ACTION_HEADER : Prompts.DEPLOY_POST_ACTION_HEADER),
     emptyLine(),
-    ...actionsUniqByLabel.flatMap(deployAction => [
+    ...deployActions.flatMap(deployAction => [
       header(deployAction.label),
-      ...deployAction.subtext,
+      ...deployAction.subtext.map(text => indent(`- ${text}`, 1)),
     ]),
     emptyLine(),
   ]
@@ -298,9 +297,9 @@ export const formatExecutionPlan = async (
   detailed = false,
 ): Promise<string> => {
   const formattedPlanChangeErrors: string = formatChangeErrors(
-    workspaceErrors.filter(ce => ce.severity !== 'Info')
+    workspaceErrors
   )
-  const deployCallToActions: string[] = formatDeployActions(
+  const preDeployCallToActions: string[] = formatDeployActions(
     {
       wsChangeErrors: workspaceErrors,
       isPreDeploy: true,
@@ -329,7 +328,7 @@ export const formatExecutionPlan = async (
     planSteps,
     ...planErrorsOutput,
     emptyLine(),
-    ...deployCallToActions,
+    ...preDeployCallToActions,
     subHeader(Prompts.EXPLAIN_PREVIEW_RESULT),
     actionCount,
     emptyLine(),

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, ChangeError, InstanceElement } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, ChangeError, InstanceElement, ElemID } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { getNamespace } from '../filters/utils'
 import { hasNamespace } from './package'
@@ -21,14 +21,14 @@ import { isInstanceOfCustomObjectChange } from '../custom_object_instances_deplo
 
 
 const { awu } = collections.asynciterable
-const getCpqError = async (
-  instance: InstanceElement,
-): Promise<ChangeError> => ({
-  elemID: instance.elemID,
+const getCpqError = (
+  elemID: ElemID,
+): ChangeError => ({
+  elemID,
   severity: 'Info',
   // TODO re-write messages?
   message: 'Identify cpq change',
-  detailedMessage: `Identify cpq change for ${instance.elemID}`,
+  detailedMessage: `Identify cpq change for ${elemID}`,
   deployActions: {
     preAction: {
       label: 'disable CPQ trigger',
@@ -45,22 +45,18 @@ const getCpqError = async (
   },
 })
 
-
+// this changeValidator will return none or a single changeError
 const changeValidator: ChangeValidator = async changes => {
-  const updateChangeErrors = await awu(changes)
+  const cpqInstance = await awu(changes)
     .filter(isInstanceOfCustomObjectChange)
     .map(change =>
       getChangeData(change) as InstanceElement) // already checked that this is an instance element
-    .filter(async instance => {
+    .find(async instance => {
       const type = await instance.getType()
       return await hasNamespace(type) && (await getNamespace(type)) === 'SBQQ'
     })
-    .map(instance => getCpqError(instance))
-    .toArray()
 
-  return [
-    ...updateChangeErrors,
-  ]
+  return cpqInstance !== undefined ? [getCpqError(cpqInstance.elemID)] : []
 }
 
 export default changeValidator

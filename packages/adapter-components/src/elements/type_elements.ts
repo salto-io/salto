@@ -65,7 +65,6 @@ export const markServiceIdField = (
     ? typeFields[fieldName]
     : undefined
   if (field === undefined) {
-    log.warn('field %s.%s not found, cannot mark it as service_id', typeName, fieldName)
     return
   }
   log.debug('Mark field %s.%s as service_id', typeName, fieldName)

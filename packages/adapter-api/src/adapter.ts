@@ -58,21 +58,20 @@ export type PostFetchOptions = {
   progressReporter: ProgressReporter
 }
 
-export type PreDeployAction = {
+export type DeployAction = {
   label: string
+  description?: string
   subtext: string[]
+  documentationURL?: string
 }
 
-export type PostDeployAction = PreDeployAction
-
 export type DeployActions = {
-  preAction?: PreDeployAction
-  postAction?: PostDeployAction
+  preAction?: DeployAction
+  postAction?: DeployAction
 }
 
 export type ChangeError = SaltoElementError & {
   detailedMessage: string
-  // TODO naming?
   deployActions?: DeployActions
 }
 

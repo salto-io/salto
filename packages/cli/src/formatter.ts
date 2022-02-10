@@ -285,7 +285,9 @@ export const formatDeployActions = ({
     emptyLine(),
     ...deployActions.flatMap(deployAction => [
       header(deployAction.label),
+      deployAction.description ?? '',
       ...deployAction.subtext.map(text => indent(`- ${text}`, 1)),
+      deployAction.documentationURL ?? '',
     ]),
     emptyLine(),
   ]

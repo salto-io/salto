@@ -131,7 +131,7 @@ const toChangeWarning = (change: Change<InstanceElement>): ChangeError => (
   {
     elemID: getChangeData(change).elemID,
     severity: 'Warning',
-    message: 'Continuing the deploy proccess will override changes made in the service to this element.',
+    message: 'Continuing the deploy process will override changes made in the service to this element.',
     detailedMessage: `The element ${getChangeData(change).elemID.name}, which you are attempting to ${change.action}, has recently changed in the service.`,
   }
 )
@@ -141,7 +141,7 @@ const toAdditionalInstanceWarning = (
 ): ChangeError => ({
   elemID: referer.elemID,
   severity: 'Warning',
-  message: 'Continuing the deploy proccess will override changes made in the service to a referenced element.',
+  message: 'Continuing the deploy process will override changes made in the service to a referenced element.',
   detailedMessage: `The element ${instance.elemID.getFullName()}, which is ${dependency} in ${referer.elemID.name} and going to be deployed with it, has recently changed in the service.`,
 })
 

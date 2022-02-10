@@ -252,10 +252,9 @@ export default class JiraAdapter implements AdapterOperations {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
   get deployModifiers(): AdapterOperations['deployModifiers'] {
     return {
-      changeValidator,
+      changeValidator: changeValidator(this.client, this.userConfig),
       dependencyChanger,
     }
   }

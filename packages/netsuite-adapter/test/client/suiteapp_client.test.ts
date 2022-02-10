@@ -92,14 +92,14 @@ describe('SuiteAppClient', () => {
     })
 
     describe('query failure', () => {
-      jest.setTimeout(7000)
       it('exception thrown', async () => {
         mockAxiosAdapter.onPost().reply(() => [])
         expect(await client.runSuiteQL('')).toBeUndefined()
       })
       it('with retry', async () => {
+        jest.spyOn(global, 'setTimeout').mockImplementation((cb: TimerHandler) => (_.isFunction(cb) ? cb() : undefined))
         mockAxiosAdapter
-          .onPost().replyOnce(500)
+          .onPost().replyOnce(429)
           .onPost().replyOnce(200, {
             hasMore: false,
             items: [{ links: [], a: 1 }, { links: [], a: 2 }],

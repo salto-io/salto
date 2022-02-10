@@ -37,7 +37,7 @@ import SoapClient from './soap_client/soap_client'
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError } from './errors'
 import { InvalidSuiteAppCredentialsError } from '../types'
 
-const { DEFAULT_RETRY_OPTS } = clientUtils
+const { DEFAULT_RETRY_OPTS, createRetryOptions } = clientUtils
 
 export const PAGE_SIZE = 1000
 
@@ -65,7 +65,7 @@ export default class SuiteAppClient {
   private restletUrl: URL
   private ajv: Ajv
   private soapClient: SoapClient
-  private axiosClient: AxiosInstance | undefined
+  private axiosClient: AxiosInstance
 
   constructor(params: SuiteAppClientParameters) {
     this.credentials = params.credentials
@@ -81,7 +81,9 @@ export default class SuiteAppClient {
 
     this.ajv = new Ajv({ allErrors: true, strict: false })
     this.soapClient = new SoapClient(this.credentials, this.callsLimiter)
-    this.axiosClient = undefined
+
+    this.axiosClient = axios.create()
+    axiosRetry(this.axiosClient, createRetryOptions(DEFAULT_RETRY_OPTS))
   }
 
   /**
@@ -191,39 +193,13 @@ export default class SuiteAppClient {
     await client.sendRestletRequest('sysInfo')
   }
 
-  private getAxiosClient(): AxiosInstance {
-    if (this.axiosClient === undefined) {
-      this.axiosClient = axios.create()
-      axiosRetry(this.axiosClient, {
-        retries: DEFAULT_RETRY_OPTS.maxAttempts,
-        retryDelay: (retryCount, error) => {
-          log.warn(
-            'Try %s to run failed axios call to %s with status %s: %s',
-            retryCount,
-            error.config.url,
-            error.response?.status,
-            safeJsonStringify(error.response?.data, undefined, 2)
-          )
-          return DEFAULT_RETRY_OPTS.retryDelay
-        },
-        retryCondition: error => (
-          error.response?.status
-            ? !UNAUTHORIZED_STATUSES.includes(error.response?.status)
-            : false
-        ),
-      })
-    }
-    return this.axiosClient
-  }
-
   private async safeAxiosPost(
     href: string,
     data: unknown,
     headers: unknown
   ): Promise<AxiosResponse> {
     try {
-      const axiosClient = this.getAxiosClient()
-      return await this.callsLimiter(() => axiosClient.post(
+      return await this.callsLimiter(() => this.axiosClient.post(
         href,
         data,
         { headers },
@@ -256,7 +232,7 @@ export default class SuiteAppClient {
     const response = await this.safeAxiosPost(url.href, { q: query }, headers)
     log.debug(
       'SuiteQL call (postParams: %s) responsed with status %s',
-      { query, offset, limit },
+      safeJsonStringify({ query, offset, limit }),
       response.status
     )
 

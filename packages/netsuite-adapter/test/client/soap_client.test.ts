@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import * as soap from 'soap'
 import { ElemID, InstanceElement, ListType, ObjectType } from '@salto-io/adapter-api'
 import { ExistingFileCabinetInstanceDetails } from '../../src/client/suiteapp_client/types'
@@ -72,8 +73,6 @@ describe('soap_client', () => {
 
 
   describe('retries', () => {
-    jest.setTimeout(7000)
-
     it('when succeeds within the permitted retries should return the results', async () => {
       getAsyncMock.mockRejectedValueOnce(new Error('ECONNRESET'))
       getAsyncMock.mockResolvedValueOnce([{
@@ -94,6 +93,7 @@ describe('soap_client', () => {
     })
 
     it('when having a delayed retry', async () => {
+      jest.spyOn(global, 'setTimeout').mockImplementation((cb: TimerHandler) => (_.isFunction(cb) ? cb() : undefined))
       getAsyncMock.mockRejectedValueOnce(new Error('Concurrent request limit exceeded'))
       getAsyncMock.mockResolvedValueOnce([{
         readResponse: {

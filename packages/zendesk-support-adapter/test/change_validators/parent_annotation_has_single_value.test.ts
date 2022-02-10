@@ -69,8 +69,8 @@ describe('parentAnnotationToHaveSingleValueValidatorCreator', () => {
     expect(errors).toEqual([{
       elemID: clonedOption.elemID,
       severity: 'Error',
-      message: `Can not change the ${clonedOption.elemID.typeName} instance because it should have a single parent and it does not`,
-      detailedMessage: `Can not change ${clonedOption.elemID.getFullName()} because it should have a single parent and it does not`,
+      message: `Can not change the ${clonedOption.elemID.typeName} instance because it should have exactly one parent`,
+      detailedMessage: `Can not change ${clonedOption.elemID.getFullName()} because it should have exactly one parent`,
     }])
   })
   it('should return an error when the parent annotation is an empty list', async () => {
@@ -84,8 +84,8 @@ describe('parentAnnotationToHaveSingleValueValidatorCreator', () => {
     expect(errors).toEqual([{
       elemID: clonedOption.elemID,
       severity: 'Error',
-      message: `Can not change the ${clonedOption.elemID.typeName} instance because it should have a single parent and it does not`,
-      detailedMessage: `Can not change ${clonedOption.elemID.getFullName()} because it should have a single parent and it does not`,
+      message: `Can not change the ${clonedOption.elemID.typeName} instance because it should have exactly one parent`,
+      detailedMessage: `Can not change ${clonedOption.elemID.getFullName()} because it should have exactly one parent`,
     }])
   })
   it('should return an error when there is no parent annotation', async () => {
@@ -99,8 +99,8 @@ describe('parentAnnotationToHaveSingleValueValidatorCreator', () => {
     expect(errors).toEqual([{
       elemID: clonedOption.elemID,
       severity: 'Error',
-      message: `Can not change the ${clonedOption.elemID.typeName} instance because it should have a single parent and it does not`,
-      detailedMessage: `Can not change ${clonedOption.elemID.getFullName()} because it should have a single parent and it does not`,
+      message: `Can not change the ${clonedOption.elemID.typeName} instance because it should have exactly one parent`,
+      detailedMessage: `Can not change ${clonedOption.elemID.getFullName()} because it should have exactly one parent`,
     }])
   })
   it('should return an error when there is one parent annotation but it is not a reference', async () => {
@@ -114,8 +114,8 @@ describe('parentAnnotationToHaveSingleValueValidatorCreator', () => {
     expect(errors).toEqual([{
       elemID: clonedOption.elemID,
       severity: 'Error',
-      message: `Can not change the ${clonedOption.elemID.typeName} instance because it should have a single parent and it does not`,
-      detailedMessage: `Can not change ${clonedOption.elemID.getFullName()} because it should have a single parent and it does not`,
+      message: `Can not change the ${clonedOption.elemID.typeName} instance because it should have exactly one parent`,
+      detailedMessage: `Can not change ${clonedOption.elemID.getFullName()} because it should have exactly one parent`,
     }])
   })
   it('should not return an error when there is exactly one parent annotation', async () => {

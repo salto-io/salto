@@ -24,6 +24,7 @@ import {
   onlyOneTicketFormDefaultValidator,
   missingFromParentValidatorCreator,
   removedFromParentValidatorCreator,
+  parentAnnotationToHaveSingleValueValidatorCreator,
 } from './change_validators'
 
 const {
@@ -41,6 +42,7 @@ export default (
     accountSettingsValidator,
     emptyCustomFieldOptionsValidator,
     emptyVariantsValidator,
+    parentAnnotationToHaveSingleValueValidatorCreator(apiConfig),
     missingFromParentValidatorCreator(apiConfig),
     removedFromParentValidatorCreator(apiConfig),
     duplicateCustomFieldOptionValuesValidator,

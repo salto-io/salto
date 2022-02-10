@@ -21,6 +21,7 @@ import {
   emptyVariantsValidator,
   duplicateCustomFieldOptionValuesValidator,
   noDuplicateLocaleIdInDynamicContentItemValidator,
+  onlyOneTicketFormDefaultValidator,
 } from './change_validators'
 
 const {
@@ -40,6 +41,7 @@ export default (
     emptyVariantsValidator,
     duplicateCustomFieldOptionValuesValidator,
     noDuplicateLocaleIdInDynamicContentItemValidator,
+    onlyOneTicketFormDefaultValidator,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

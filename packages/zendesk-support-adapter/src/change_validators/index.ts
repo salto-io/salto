@@ -18,3 +18,4 @@ export { duplicateCustomFieldOptionValuesValidator } from './duplicate_option_va
 export { emptyCustomFieldOptionsValidator } from './empty_custom_field_options'
 export { emptyVariantsValidator } from './empty_variants'
 export { noDuplicateLocaleIdInDynamicContentItemValidator } from './unique_locale_per_variant'
+export { onlyOneTicketFormDefaultValidator } from './ticket_form_default'

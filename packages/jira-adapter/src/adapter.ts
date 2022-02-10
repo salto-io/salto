@@ -33,6 +33,7 @@ import boardFilter from './filters/board'
 import screenFilter from './filters/screen/screen'
 import mapListsFilter from './filters/map_lists'
 import missingStatusesFilter from './filters/statuses/missing_statuses'
+import statusDeploymentFilter from './filters/statuses/status_deployment'
 import issueTypeScreenSchemeFilter from './filters/issue_type_screen_scheme'
 import fieldConfigurationFilter from './filters/field_configuration'
 import fieldConfigurationTrashedFieldsFilter from './filters/field_configuration_trashed_fields'
@@ -67,6 +68,7 @@ export const DEFAULT_FILTERS = [
   workflowFilter,
   workflowSchemeFilter,
   missingStatusesFilter,
+  statusDeploymentFilter,
   issueTypeSchemeReferences,
   issueTypeSchemeFilter,
   sharePermissionFilter,

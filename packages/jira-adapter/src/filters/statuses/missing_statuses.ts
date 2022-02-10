@@ -23,8 +23,8 @@ import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { JIRA, PRIVATE_API_HEADERS } from '../../constants'
 import { JiraConfig } from '../../config'
-
-const STATUS_TYPE_NAME = 'Status'
+import JiraClient from '../../client/client'
+import { STATUS_TYPE_NAME } from './constants'
 
 const log = logger(module)
 
@@ -47,6 +47,20 @@ const isStatusesResponse = (responseValue: unknown): responseValue is Status[] =
     return false
   }
   return true
+}
+
+export const queryStatuses = async (client: JiraClient): Promise<Status[]> => {
+  const response = await client.getSinglePage({
+    url: '/rest/workflowDesigner/1.0/statuses',
+    headers: PRIVATE_API_HEADERS,
+  })
+  const statusesValues = response.data
+
+  if (!isStatusesResponse(statusesValues)) {
+    throw new Error('Received an invalid response from querying statuses')
+  }
+
+  return statusesValues
 }
 
 const createStatusInstance = (
@@ -87,7 +101,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       return
     }
 
-    const statusType = findObject(elements, 'Status')
+    const statusType = findObject(elements, STATUS_TYPE_NAME)
     if (statusType === undefined) {
       log.warn(`${STATUS_TYPE_NAME} type not found, skipping missing_statuses filter`)
       return
@@ -100,16 +114,7 @@ const filter: FilterCreator = ({ client, config }) => ({
 
 
     try {
-      const response = await client.getSinglePage({
-        url: '/rest/workflowDesigner/1.0/statuses',
-        headers: PRIVATE_API_HEADERS,
-      })
-      const statusesValues = response.data
-
-      if (!isStatusesResponse(statusesValues)) {
-        return
-      }
-
+      const statusesValues = await queryStatuses(client)
 
       const missingStatuses = statusesValues
         .filter(status => !existingIds.has(status.id))

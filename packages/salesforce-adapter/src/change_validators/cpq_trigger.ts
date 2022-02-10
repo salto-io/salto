@@ -31,7 +31,7 @@ const getCpqError = (
   detailedMessage: `Identify cpq change for ${elemID}`,
   deployActions: {
     preAction: {
-      label: 'disable CPQ trigger',
+      title: 'disable CPQ trigger',
       subtext: [
         'In your Salesforce destination org, native to: \'Setup\' > \'Installed Packages\' > \'Salesforce CPQ\' > \'Configure\' > \'Additional Settings\'',
         'Check \'Triggers Disabled\'',
@@ -39,7 +39,7 @@ const getCpqError = (
       ],
     },
     postAction: {
-      label: 'disable CPQ trigger',
+      title: 'disable CPQ trigger',
       subtext: [],
     },
   },

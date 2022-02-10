@@ -59,7 +59,7 @@ export type PostFetchOptions = {
 }
 
 export type DeployAction = {
-  label: string
+  title: string
   description?: string
   subtext: string[]
   documentationURL?: string

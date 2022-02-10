@@ -653,13 +653,13 @@ export const preview = (): Plan => {
       detailedMessage: 'detailed Info message',
       deployActions: {
         preAction: {
-          label: 'preDeployAction',
+          title: 'preDeployAction',
           description: 'description',
           subtext: ['first subtext', 'second subtext'],
           documentationURL: 'someURL',
         },
         postAction: {
-          label: 'postDeployAction',
+          title: 'postDeployAction',
           subtext: ['third subtext', 'fourth subtext'],
         },
       },
@@ -671,11 +671,11 @@ export const preview = (): Plan => {
       detailedMessage: 'detailed Warning message',
       deployActions: {
         preAction: {
-          label: 'preDeployAction2',
+          title: 'preDeployAction2',
           subtext: ['first subtext2', 'second subtext2'],
         },
         postAction: {
-          label: 'postDeployAction2',
+          title: 'postDeployAction2',
           subtext: ['third subtext2', 'fourth subtext2'],
         },
       },

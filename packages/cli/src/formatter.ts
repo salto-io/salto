@@ -284,7 +284,7 @@ export const formatDeployActions = ({
     header(isPreDeploy ? Prompts.DEPLOY_PRE_ACTION_HEADER : Prompts.DEPLOY_POST_ACTION_HEADER),
     emptyLine(),
     ...deployActions.flatMap(deployAction => [
-      header(deployAction.label),
+      header(deployAction.title),
       deployAction.description ?? '',
       ...deployAction.subtext.map(text => indent(`- ${text}`, 1)),
       deployAction.documentationURL ?? '',

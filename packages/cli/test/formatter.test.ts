@@ -64,7 +64,7 @@ describe('formatter', () => {
     severity: 'Info',
     deployActions: {
       preAction: {
-        label: 'This is my label',
+        title: 'This is my title',
         subtext: [
           'first subtext',
           'second subtext',
@@ -108,7 +108,7 @@ describe('formatter', () => {
     })
     it('should return pre deploy action suggestions', () => {
       expect(output).toMatch(`${chalk.bold(Prompts.DEPLOY_PRE_ACTION_HEADER)}`)
-      expect(output).toMatch(`${chalk.bold('This is my label')}`)
+      expect(output).toMatch(`${chalk.bold('This is my title')}`)
       expect(output).toMatch(/description.*first subtext.*second subtext.*someURL/s)
     })
     it('should not print pre deploy actions when there are none', async () => {

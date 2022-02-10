@@ -74,7 +74,7 @@ describe('formatter', () => {
   }
   const workspaceErrorWithInfoSeverity: ChangeError = {
     elemID: new ElemID('salesforce', 'TestType'),
-    message: 'shouldn\'t be printed',
+    message: 'my Info message',
     detailedMessage: '',
     severity: 'Info',
   }
@@ -109,10 +109,17 @@ describe('formatter', () => {
     it('should return pre deploy action suggestions', () => {
       expect(output).toMatch(`${chalk.bold(Prompts.DEPLOY_PRE_ACTION_HEADER)}`)
       expect(output).toMatch(`${chalk.bold('This is my label')}`)
-      expect(output).toMatch(/first subtext.*second subtext/s)
+      expect(output).toMatch(/description.*first subtext.*second subtext.*someURL/s)
     })
-    it('should not print Info Severity errors', () => {
-      expect(output.match(/shouldn't be printed/s)).toBeFalsy()
+    it('should not print pre deploy actions when there are none', async () => {
+      const outputWithNoDeployActions = await formatExecutionPlan(
+        plan,
+        [workspaceErrorWithInfoSeverity].map(ce => ({
+          ...ce,
+          sourceFragments: workspaceErrorWithSourceFragments.sourceFragments,
+        }))
+      )
+      expect(outputWithNoDeployActions).not.toMatch(`${chalk.bold(Prompts.DEPLOY_PRE_ACTION_HEADER)}`)
     })
   })
 

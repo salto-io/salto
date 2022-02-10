@@ -649,12 +649,14 @@ export const preview = (): Plan => {
     {
       elemID: new ElemID('salesforce', 'test2'),
       severity: 'Info',
-      message: 'This should not be printed',
-      detailedMessage: 'This should not be printed',
+      message: 'Info message',
+      detailedMessage: 'detailed Info message',
       deployActions: {
         preAction: {
           label: 'preDeployAction',
+          description: 'description',
           subtext: ['first subtext', 'second subtext'],
+          documentationURL: 'someURL',
         },
         postAction: {
           label: 'postDeployAction',
@@ -665,8 +667,8 @@ export const preview = (): Plan => {
     {
       elemID: new ElemID('salesforce', 'test3'),
       severity: 'Warning',
-      message: 'This should be printed',
-      detailedMessage: 'This should be printed',
+      message: 'Warning message',
+      detailedMessage: 'detailed Warning message',
       deployActions: {
         preAction: {
           label: 'preDeployAction2',

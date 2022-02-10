@@ -81,5 +81,13 @@ describe('cpq trigger change validator', () => {
       )
       expect(changeErrors).toHaveLength(0)
     })
+    it('should have a single error when there are many cpq related changes', async () => {
+      const anotherBefore = before.clone()
+      const anotherAfter = after.clone()
+      const changeErrors = await cpqChangeValidator(
+        [toChange({ before, after }), toChange({ before: anotherBefore, after: anotherAfter })]
+      )
+      expect(changeErrors).toHaveLength(1)
+    })
   })
 })

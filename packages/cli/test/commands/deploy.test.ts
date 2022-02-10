@@ -221,22 +221,6 @@ describe('deploy command', () => {
       })
     })
   })
-  describe('when there is Info severity error', () => {
-    it('should NOT print error message', async () => {
-      await action({
-        ...cliCommandArgs,
-        input: {
-          force: true,
-          dryRun: false,
-          detailedPlan: false,
-          accounts,
-        },
-        workspace,
-      })
-      expect(output.stdout.content).not.toMatch(/This should not be printed/s)
-      expect(output.stderr.content).not.toMatch(/This should not be printed/s)
-    })
-  })
   describe('when there are deploy actions', () => {
     const testDeployActionsVisability = async (userBooleanInput: boolean): Promise<void> => {
       mockGetUserBooleanInput.mockResolvedValueOnce(userBooleanInput)

@@ -47,15 +47,15 @@ const EXPECTED_CONDITION_SCHEMA = Joi.array().items(Joi.object({
 const areUsers = (values: unknown): values is User[] => {
   const { error } = EXPECTED_USER_SCHEMA.validate(values)
   if (error !== undefined) {
-    log.error(`Received an invalid response for the users values: ${error.message}`)
+    log.warn(`Received an invalid response for the users values: ${error.message}`)
     return false
   }
   return true
 }
-const areConditions = (values: unknown): values is Condition[] => {
+const areConditions = (values: unknown, fullName: string): values is Condition[] => {
   const { error } = EXPECTED_CONDITION_SCHEMA.validate(values)
   if (error !== undefined) {
-    log.error(`Received an invalid values for conditions: ${safeJsonStringify(values)}`)
+    log.warn(`Received an invalid values for conditions on ${fullName}: ${safeJsonStringify(values)}`)
     return false
   }
   return true
@@ -72,7 +72,7 @@ const replaceConditionsAndActionsCreator = (
 ): UserReplacer => (instance, mapping) => {
   params.forEach(replacerParams => {
     const conditions = _.get(instance.value, replacerParams.fieldName)
-    if (!areConditions(conditions)) {
+    if (!areConditions(conditions, instance.elemID.getFullName())) {
       return
     }
     conditions

@@ -24,6 +24,8 @@ import { JiraConfig } from '../../config'
 import { FilterCreator } from '../../filter'
 import { FIELD_CONTEXT_DEFAULT_TYPE_NAME, FIELD_CONTEXT_OPTION_TYPE_NAME, FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from './constants'
 
+const { generateInstanceNameFromConfig } = elementUtils
+
 const log = logger(module)
 
 const addTypeValue = (instance: InstanceElement): void => {
@@ -140,18 +142,6 @@ const transformOptionsToMap = (instance: InstanceElement): void => {
     })
 }
 
-const getInstanceName = (
-  instanceValues: Values,
-  typeName: string,
-  config: JiraConfig
-): string | undefined => {
-  const { idFields } = configUtils.getConfigWithDefault(
-    config.apiDefinitions.types[typeName].transformation,
-    config.apiDefinitions.typeDefaults.transformation
-  )
-  return elementUtils.getInstanceName(instanceValues, idFields)
-}
-
 const getServiceIds = (
   instanceValues: Values,
   type: ObjectType,
@@ -177,15 +167,13 @@ const createContextInstance = (
   config: JiraConfig,
   getElemIdFunc?: ElemIdGetter,
 ): InstanceElement => {
-  const parentName = getInstanceName(
-    parentField.value,
-    parentField.elemID.typeName,
-    config,
-  ) ?? parentField.elemID.name
-  const contextName = getInstanceName(context, contextType.elemID.typeName, config)
-    ?? context.id
+  const contextName = generateInstanceNameFromConfig(
+    context,
+    contextType.elemID.typeName,
+    config.apiDefinitions
+  ) ?? context.id
 
-  const defaultName = naclCase([parentName, contextName].join('_'))
+  const defaultName = naclCase([parentField.elemID.name, contextName].join('_'))
 
   const serviceIds = getServiceIds(context, contextType, config)
   const instanceName = getElemIdFunc && serviceIds

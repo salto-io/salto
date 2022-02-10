@@ -13,12 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { SaltoError } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import JiraClient from './client/client'
 import { JiraConfig } from './config'
 
 export const { filtersRunner } = filterUtils
 
-export type Filter = filterUtils.Filter
+export type FilterResult = {
+  errors?: SaltoError[]
+}
 
-export type FilterCreator = filterUtils.FilterCreator<JiraClient, JiraConfig>
+export type Filter = filterUtils.Filter<FilterResult>
+
+export type FilterCreator = filterUtils.FilterCreator<JiraClient, JiraConfig, FilterResult>

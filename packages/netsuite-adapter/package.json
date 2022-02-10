@@ -33,7 +33,6 @@
     "@salto-io/adapter-api": "0.3.9",
     "@salto-io/adapter-components": "0.3.9",
     "@salto-io/adapter-utils": "0.3.9",
-    "@salto-io/workspace": "0.3.9",
     "@salto-io/file": "0.3.9",
     "@salto-io/logging": "0.3.9",
     "@salto-io/lowerdash": "0.3.9",

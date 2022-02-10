@@ -24,7 +24,7 @@ import { isCustomType, isFileCabinetInstance } from '../types'
 import { LAST_FETCH_TIME, PATH, SCRIPT_ID } from '../constants'
 import { getTypeIdentifier } from '../data_elements/types'
 import { FailedFiles, FailedTypes } from '../client/types'
-import { getAllReferencedInstances, getRequiredReferencedInstances } from '../reference_dependencies'
+import { getAllReferencedInstances, getReferencedInstances } from '../reference_dependencies'
 
 export type FetchByQueryReturnType = {
   failedToFetchAllAtOnce: boolean
@@ -102,15 +102,6 @@ const getMatchingServiceInstances = async (
   )
 }
 
-const getReferencedInstances = async (
-  instance: InstanceElement,
-  deployAllReferencedElements: boolean
-): Promise<ReadonlyArray<InstanceElement>> => (
-  deployAllReferencedElements
-    ? getAllReferencedInstances([instance])
-    : getRequiredReferencedInstances([instance])
-)
-
 const getAdditionalInstances = async (
   instances: InstanceElement[],
   deployAllReferencedElements: boolean
@@ -119,7 +110,10 @@ const getAdditionalInstances = async (
   const instancesElemIdSet = new Set(instances.map(instance => instance.elemID.getFullName()))
   return awu(instances)
     .flatMap(async referer => {
-      const additionalInstances = await getReferencedInstances(referer, deployAllReferencedElements)
+      const additionalInstances = await getReferencedInstances(
+        [referer],
+        deployAllReferencedElements
+      )
       return additionalInstances.map(instance => {
         if (instancesElemIdSet.has(instance.elemID.getFullName())) {
           return undefined
@@ -198,15 +192,15 @@ const changeValidator: QueryChangeValidator = async (
 ) => {
   const instanceChanges = changes.filter(isInstanceChange)
 
-  const [customTypes, dataTypes] = _.partition(
+  const [customTypeInstances, dataTypeInstances] = _.partition(
     instanceChanges.map(getChangeData),
     instance => isCustomType(instance.refType)
   )
 
-  const referencedCustomTypes = await getAllReferencedInstances(customTypes)
+  const referencedCustomTypes = await getAllReferencedInstances(customTypeInstances)
 
   const serviceInstances = await getMatchingServiceInstances(
-    [...referencedCustomTypes, ...dataTypes],
+    [...referencedCustomTypes, ...dataTypeInstances],
     fetchByQuery
   )
 
@@ -231,14 +225,14 @@ const changeValidator: QueryChangeValidator = async (
     .map(toChangeWarning)
 
   const additionalInstances = await getAdditionalInstances(
-    customTypes, deployAllReferencedElements
+    customTypeInstances, deployAllReferencedElements
   )
 
   const additionalInstancesWarnings = additionalInstances
     .filter(isOverridingAdditionalInstance)
     .map(toAdditionalInstanceWarning)
 
-  return [...changesWarnings, ...additionalInstancesWarnings]
+  return changesWarnings.concat(additionalInstancesWarnings)
 }
 
 export default changeValidator

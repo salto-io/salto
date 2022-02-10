@@ -21,6 +21,7 @@ import {
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import wu from 'wu'
+import os from 'os'
 import {
   CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT, DATASET, NETSUITE, WORKBOOK,
 } from './constants'
@@ -129,7 +130,16 @@ export const getRequiredReferencedInstances = (
     .map(getInstanceRequiredDependency)
     .filter(isDefined)
 
-  log.debug(`adding referenced instances:\n${requiredReferencedInstances.map(inst => inst.elemID.getFullName()).join('\n')}`)
+  log.debug(`adding referenced instances:${os.EOL}${requiredReferencedInstances.map(inst => inst.elemID.getFullName()).join('\n')}`)
 
   return Array.from(new Set(sourceInstances.concat(requiredReferencedInstances)))
 }
+
+export const getReferencedInstances = async (
+  instances: ReadonlyArray<InstanceElement>,
+  deployAllReferencedElements: boolean
+): Promise<ReadonlyArray<InstanceElement>> => (
+  deployAllReferencedElements
+    ? getAllReferencedInstances(instances)
+    : getRequiredReferencedInstances(instances)
+)

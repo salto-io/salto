@@ -21,3 +21,4 @@ export { noDuplicateLocaleIdInDynamicContentItemValidator } from './unique_local
 export { onlyOneTicketFormDefaultValidator } from './ticket_form_default'
 export { missingFromParentValidatorCreator } from './child_parent/missing_from_parent'
 export { removedFromParentValidatorCreator } from './child_parent/removed_from_parent'
+export { parentAnnotationToHaveSingleValueValidatorCreator } from './child_parent/parent_annotation_has_single_value'

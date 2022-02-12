@@ -78,7 +78,7 @@ describe('business hours schedule filter', () => {
       { action: 'add', data: { after: clonedSchedule } },
       expect.anything(),
       expect.anything(),
-      undefined
+      ['holidays']
     )
     expect(mockPut).toHaveBeenCalledTimes(1)
     expect(mockPut).toHaveBeenCalledWith({
@@ -110,7 +110,7 @@ describe('business hours schedule filter', () => {
       { action: 'modify', data: { before: clonedBeforeSchedule, after: clonedAfterSchedule } },
       expect.anything(),
       expect.anything(),
-      undefined
+      ['holidays']
     )
     expect(mockPut).toHaveBeenCalledTimes(1)
     expect(mockPut).toHaveBeenCalledWith({
@@ -138,7 +138,7 @@ describe('business hours schedule filter', () => {
       { action: 'remove', data: { before: clonedSchedule } },
       expect.anything(),
       expect.anything(),
-      undefined
+      ['holidays']
     )
     expect(mockPut).toHaveBeenCalledTimes(0)
     expect(res.leftoverChanges).toHaveLength(0)
@@ -165,7 +165,7 @@ describe('business hours schedule filter', () => {
       { action: 'modify', data: { before: clonedBeforeSchedule, after: clonedAfterSchedule } },
       expect.anything(),
       expect.anything(),
-      undefined
+      ['holidays']
     )
     expect(mockPut).toHaveBeenCalledTimes(0)
     expect(res.leftoverChanges).toHaveLength(0)
@@ -188,7 +188,7 @@ describe('business hours schedule filter', () => {
       { action: 'add', data: { after: clonedSchedule } },
       expect.anything(),
       expect.anything(),
-      undefined
+      ['holidays']
     )
     expect(mockPut).toHaveBeenCalledTimes(0)
     expect(res.leftoverChanges).toHaveLength(0)
@@ -207,7 +207,7 @@ describe('business hours schedule filter', () => {
       { action: 'add', data: { after: clonedSchedule } },
       expect.anything(),
       expect.anything(),
-      undefined
+      ['holidays']
     )
     expect(mockPut).toHaveBeenCalledTimes(1)
     expect(res.leftoverChanges).toHaveLength(0)

@@ -69,6 +69,7 @@ const log = logger(module)
 
 export const DEFAULT_FILTERS = [
   missingStatusesFilter,
+  // Should run before duplicateIdsFilter
   fieldNameFilter,
   // This should happen before any filter that creates references
   duplicateIdsFilter,

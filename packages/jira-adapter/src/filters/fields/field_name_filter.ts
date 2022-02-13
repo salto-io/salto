@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ElemIdGetter, InstanceElement, isInstanceElement, OBJECT_NAME, OBJECT_SERVICE_ID, toServiceIdsString } from '@salto-io/adapter-api'
+import { Element, ElemIdGetter, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { elements as elementUtils, config as configUtils } from '@salto-io/adapter-components'
 import { naclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
@@ -23,6 +23,10 @@ import { FilterCreator } from '../../filter'
 import { FIELD_TYPE_NAME } from './constants'
 
 const { generateInstanceNameFromConfig } = elementUtils
+
+// Added to avoid conflicts with names
+// of custom fields and system fields
+export const CUSTOM_FIELDS_SUFFIX = '__c'
 
 const getInstanceName = (
   instance: InstanceElement,
@@ -39,35 +43,35 @@ const getInstanceName = (
     return instance.elemID.name
   }
 
-  const defaultName = naclCase(`${baseName}__c`)
+  const defaultName = naclCase(`${baseName}${CUSTOM_FIELDS_SUFFIX}`)
 
   const { serviceIdField } = configUtils.getConfigWithDefault(
     config.apiDefinitions.types[instance.elemID.typeName].transformation,
     config.apiDefinitions.typeDefaults.transformation
   )
 
-  if (serviceIdField === undefined) {
+  if (serviceIdField === undefined || getElemIdFunc === undefined) {
     return defaultName
   }
 
-  const serviceIds = {
-    [serviceIdField]: instance.value[serviceIdField],
-    [OBJECT_SERVICE_ID]: toServiceIdsString({
-      [OBJECT_NAME]: instance.refType.elemID.getFullName(),
-    }),
-  }
+  const serviceIds = elementUtils.createServiceIds(
+    instance,
+    serviceIdField,
+    instance.refType.elemID
+  )
 
-  return getElemIdFunc !== undefined
-    ? getElemIdFunc(JIRA, serviceIds, defaultName).name
-    : defaultName
+  return getElemIdFunc(JIRA, serviceIds, defaultName).name
 }
 
+// Add __c suffix to custom fields to avoid conflicts between custom fields to system fields
 const filter: FilterCreator = ({ config, getElemIdFunc }) => ({
   onFetch: async (elements: Element[]) => {
-    const customFields = _.remove(elements,
+    const customFields = _.remove(
+      elements,
       element => isInstanceElement(element)
         && element.elemID.typeName === FIELD_TYPE_NAME
-        && element.value.schema?.custom !== undefined)
+        && element.value.schema?.custom !== undefined
+    )
 
     const newCustomFields = customFields
       .filter(isInstanceElement)

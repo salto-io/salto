@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, Element, ElemIdGetter, Field, InstanceElement, isInstanceElement, isObjectType, ListType, MapType, ObjectType, OBJECT_NAME, OBJECT_SERVICE_ID, ReferenceExpression, ServiceIds, toServiceIdsString, Values } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, Element, ElemIdGetter, Field, InstanceElement, isInstanceElement, isObjectType, ListType, MapType, ObjectType, ReferenceExpression, ServiceIds, Values } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
@@ -152,12 +152,9 @@ const getServiceIds = (
     config.apiDefinitions.typeDefaults.transformation
   )
 
-  return serviceIdField !== undefined ? {
-    [serviceIdField]: instanceValues[serviceIdField],
-    [OBJECT_SERVICE_ID]: toServiceIdsString({
-      [OBJECT_NAME]: type.elemID.getFullName(),
-    }),
-  } : undefined
+  return serviceIdField !== undefined
+    ? elementUtils.createServiceIds(instanceValues, serviceIdField, type.elemID)
+    : undefined
 }
 
 const createContextInstance = (

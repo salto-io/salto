@@ -64,12 +64,12 @@ export const generateInstanceNameFromConfig = (
 }
 
 
-const createServiceIds = (
-  entry: Values, serviceIdField: string, type: ObjectType
+export const createServiceIds = (
+  entry: Values, serviceIdField: string, typeId: ElemID
 ): ServiceIds => ({
   [serviceIdField]: entry[serviceIdField],
   [OBJECT_SERVICE_ID]: toServiceIdsString({
-    [OBJECT_NAME]: type.elemID.getFullName(),
+    [OBJECT_NAME]: typeId.getFullName(),
   }),
 })
 
@@ -133,7 +133,11 @@ export const toBasicInstance = async ({
   )
   const adapterName = type.elemID.adapter
   const naclName = getElemIdFunc && serviceIdField
-    ? getElemIdFunc(adapterName, createServiceIds(entry, serviceIdField, type), desiredName).name
+    ? getElemIdFunc(
+      adapterName,
+      createServiceIds(entry, serviceIdField, type.elemID),
+      desiredName
+    ).name
     : desiredName
   const filePath = type.isSettings
     ? [

@@ -67,6 +67,7 @@ export const adapter: Adapter = {
         config: config[CLIENT_CONFIG],
       }),
       config,
+      getElemIdFunc: context.getElemIdFunc,
     })
   },
   validateCredentials: async config => validateCredentials(

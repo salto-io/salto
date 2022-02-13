@@ -406,7 +406,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     transformation: {
       sourceTypeName: 'brands__brands',
       // We currently not supporting in attachements
-      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'logo' }),
+      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'logo' }, { fieldName: 'ticket_form_ids' }),
       fieldTypeOverrides: [
         { fieldName: 'help_center_state', fieldType: 'string', restrictions: { enforce_value: true, values: ['enabled', 'disabled', 'restricted'] } },
       ],
@@ -1392,6 +1392,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
     transformation: {
       dataField: 'webhooks',
+      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'meta' }),
     },
   },
   webhook: {

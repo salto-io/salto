@@ -40,6 +40,7 @@ zendesk_support {
             fieldType = "string"
           },
         ]
+        serviceIdField = "id"
       }
     }
     types = {
@@ -245,6 +246,16 @@ zendesk_support {
               viewId = "id"
             }
           }
+        }
+      }
+      view__restriction = {
+        transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "unknown"
+            },
+          ]
         }
       }
       trigger = {
@@ -646,6 +657,9 @@ zendesk_support {
             },
             {
               fieldName = "logo"
+            },
+            {
+              fieldName = "ticket_form_ids"
             },
           ]
           fieldTypeOverrides = [
@@ -1066,6 +1080,32 @@ zendesk_support {
         }
       }
       ticket_field__custom_field_options = {
+        deployRequests = {
+          add = {
+            url = "/ticket_fields/{ticketFieldId}/options"
+            method = "post"
+            deployAsField = "custom_field_option"
+            urlParamsToFields = {
+              ticketFieldId = "_parent.0.id"
+            }
+          }
+          modify = {
+            url = "/ticket_fields/{ticketFieldId}/options"
+            method = "post"
+            deployAsField = "custom_field_option"
+            urlParamsToFields = {
+              ticketFieldId = "_parent.0.id"
+            }
+          }
+          remove = {
+            url = "/ticket_fields/{ticketFieldId}/options/{ticketFieldOptionId}"
+            method = "delete"
+            urlParamsToFields = {
+              ticketFieldId = "_parent.0.id"
+              ticketFieldOptionId = "id"
+            }
+          }
+        }
         transformation = {
           fieldsToHide = [
             {
@@ -1153,6 +1193,32 @@ zendesk_support {
         }
       }
       user_field__custom_field_options = {
+        deployRequests = {
+          add = {
+            url = "/user_fields/{userFieldId}/options"
+            method = "post"
+            deployAsField = "custom_field_option"
+            urlParamsToFields = {
+              userFieldId = "_parent.0.id"
+            }
+          }
+          modify = {
+            url = "/user_fields/{userFieldId}/options"
+            method = "post"
+            deployAsField = "custom_field_option"
+            urlParamsToFields = {
+              userFieldId = "_parent.0.id"
+            }
+          }
+          remove = {
+            url = "/user_fields/{userFieldId}/options/{userFieldOptionId}"
+            method = "delete"
+            urlParamsToFields = {
+              userFieldId = "_parent.0.id"
+              userFieldOptionId = "id"
+            }
+          }
+        }
         transformation = {
           fieldsToHide = [
             {
@@ -1166,6 +1232,10 @@ zendesk_support {
             {
               fieldName = "id"
               fieldType = "number"
+            },
+            {
+              fieldName = "default"
+              fieldType = "boolean"
             },
           ]
         }
@@ -1408,6 +1478,16 @@ zendesk_support {
       workspace__selected_macros = {
         transformation = {
           fieldsToHide = [
+          ]
+        }
+      }
+      workspace__selected_macros__restriction = {
+        transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "unknown"
+            },
           ]
         }
       }
@@ -1803,6 +1883,16 @@ zendesk_support {
           ]
         }
       }
+      macro__restriction = {
+        transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "unknown"
+            },
+          ]
+        }
+      }
       brands = {
         request = {
           url = "/brands"
@@ -1880,6 +1970,33 @@ zendesk_support {
               fieldType = "number"
             },
           ]
+        }
+        deployRequests = {
+          add = {
+            url = "/dynamic_content/items/{dynamicContentItemId}/variants"
+            deployAsField = "variant"
+            method = "post"
+            urlParamsToFields = {
+              dynamicContentItemId = "_parent.0.id"
+            }
+          }
+          modify = {
+            url = "/dynamic_content/items/{dynamicContentItemId}/variants/{dynammicContentVariantId}"
+            deployAsField = "variant"
+            method = "put"
+            urlParamsToFields = {
+              dynammicContentVariantId = "id"
+              dynamicContentItemId = "_parent.0.id"
+            }
+          }
+          remove = {
+            url = "/dynamic_content/items/{dynamicContentItemId}/variants/{dynammicContentVariantId}"
+            method = "delete"
+            urlParamsToFields = {
+              dynammicContentVariantId = "id"
+              dynamicContentItemId = "_parent.0.id"
+            }
+          }
         }
       }
       locales = {
@@ -2121,6 +2238,61 @@ zendesk_support {
       monitored_twitter_handles = {
         request = {
           url = "/channels/twitter/monitored_twitter_handles"
+        }
+      }
+      webhooks = {
+        request = {
+          url = "/webhooks"
+          paginationField = "links.next"
+        }
+        transformation = {
+          dataField = "webhooks"
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+            {
+              fieldName = "meta"
+            },
+          ]
+        }
+      }
+      webhook = {
+        transformation = {
+          sourceTypeName = "webhooks__webhooks"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "string"
+            },
+            {
+              fieldName = "created_by"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_by"
+              fieldType = "string"
+            },
+          ]
         }
       }
     }

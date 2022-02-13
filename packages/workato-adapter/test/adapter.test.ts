@@ -71,9 +71,9 @@ describe('adapter', () => {
           ),
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
-        expect(elements).toHaveLength(84)
+        expect(elements).toHaveLength(85)
         expect(elements.filter(isObjectType)).toHaveLength(49)
-        expect(elements.filter(isInstanceElement)).toHaveLength(35)
+        expect(elements.filter(isInstanceElement)).toHaveLength(36)
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'workato.api_access_profile',
           'workato.api_access_profile.instance.ap1',
@@ -91,6 +91,7 @@ describe('adapter', () => {
           'workato.connection.instance.dev2_sfdc_account@s',
           'workato.connection.instance.sfdev1',
           'workato.folder',
+          'workato.folder.instance.ROOT',
           'workato.folder.instance.basedir1_257262',
           'workato.folder.instance.f1_nested1_300506',
           'workato.folder.instance.f1_nested2_300506@vu',

@@ -26,21 +26,26 @@ const getCpqError = (
 ): ChangeError => ({
   elemID,
   severity: 'Info',
-  // TODO re-write messages?
-  message: 'Identify cpq change',
-  detailedMessage: `Identify cpq change for ${elemID}`,
+  message: 'CPQ changes detected',
+  detailedMessage: '',
   deployActions: {
     preAction: {
-      title: 'disable CPQ trigger',
+      title: 'Disable CPQ Triggers',
+      description: 'CPQ triggers must be disabled before deploying:',
       subtext: [
-        'In your Salesforce destination org, native to: \'Setup\' > \'Installed Packages\' > \'Salesforce CPQ\' > \'Configure\' > \'Additional Settings\'',
-        'Check \'Triggers Disabled\'',
-        'Click Save',
+        'In Salesforce, navigate to Setup > Installed Packages > Salesforce CPQ > Configure > Additional Settings tab',
+        'Check the "Triggers Disabled" checkbox',
+        'Click "Save"',
       ],
     },
     postAction: {
-      title: 'disable CPQ trigger',
-      subtext: [],
+      title: 'Re-enable CPQ Triggers',
+      description: 'CPQ triggers should now be re-enabled:',
+      subtext: [
+        'In Salesforce, navigate to Setup > Installed Packages > Salesforce CPQ > Configure > Additional Settings tab',
+        'Uncheck the "Triggers Disabled" checkbox',
+        'Click "Save"',
+      ],
     },
   },
 })

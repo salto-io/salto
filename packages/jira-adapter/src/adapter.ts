@@ -50,6 +50,7 @@ import fieldStructureFilter from './filters/fields/field_structure_filter'
 import fieldDeploymentFilter from './filters/fields/field_deployment_filter'
 import contextDeploymentFilter from './filters/fields/context_deployment_filter'
 import fieldTypeReferencesFilter from './filters/fields/field_type_references_filter'
+import contextReferencesFilter from './filters/fields/context_references_filter'
 import avatarsFilter from './filters/avatars'
 import userFilter from './filters/user'
 import { JIRA } from './constants'
@@ -69,6 +70,13 @@ export const DEFAULT_FILTERS = [
   missingStatusesFilter,
   // This should happen before any filter that creates references
   duplicateIdsFilter,
+  fieldStructureFilter,
+  // This should run here again because fieldStructureFilter creates the instances and references
+  duplicateIdsFilter,
+  contextReferencesFilter,
+  fieldTypeReferencesFilter,
+  fieldDeploymentFilter,
+  contextDeploymentFilter,
   avatarsFilter,
   workflowFilter,
   workflowPropertiesFilter,
@@ -79,10 +87,6 @@ export const DEFAULT_FILTERS = [
   boardFilter,
   projectFilter,
   projectComponentFilter,
-  fieldStructureFilter,
-  fieldTypeReferencesFilter,
-  fieldDeploymentFilter,
-  contextDeploymentFilter,
   screenFilter,
   issueTypeScreenSchemeFilter,
   fieldConfigurationFilter,

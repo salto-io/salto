@@ -17,23 +17,12 @@ import { InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { elements as elementUtils } from '@salto-io/adapter-components'
-import { JiraConfig } from '../config'
 import { FilterCreator } from '../filter'
-
-const { generateInstanceNameFromConfig } = elementUtils
-
 
 const log = logger(module)
 
-const getInstanceName = (instance: InstanceElement, config: JiraConfig): string => {
-  const originalName = generateInstanceNameFromConfig(
-    instance.value,
-    instance.elemID.typeName,
-    config.apiDefinitions
-  ) ?? instance.elemID.name
-  return naclCase(`${originalName}_${instance.value.id}`)
-}
+const getInstanceName = (instance: InstanceElement): string =>
+  naclCase(`${instance.elemID.name}_${instance.value.id}`)
 
 /**
  * Add id to the name of instances with duplicate names to prevent conflicts in the names
@@ -81,7 +70,7 @@ If changing the names is not possible, you can add the fetch.fallbackToInternalI
       .filter(instance => config.apiDefinitions.typesToFallbackToInternalId
         .includes(instance.elemID.typeName))
       .map(instance => new InstanceElement(
-        getInstanceName(instance, config),
+        getInstanceName(instance),
         instance.refType,
         instance.value,
         instance.path,

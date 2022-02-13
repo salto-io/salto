@@ -262,8 +262,7 @@ const filter: FilterCreator = ({ config, getElemIdFunc }) => ({
             getElemIdFunc,
           ))
 
-        instance.value.contexts = contexts
-          .map((context: InstanceElement) => new ReferenceExpression(context.elemID, context))
+        delete instance.value.contexts
         if (instance.path !== undefined) {
           instance.path = [...instance.path, instance.path[instance.path.length - 1]]
         }

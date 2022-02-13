@@ -36,7 +36,7 @@ const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     const folderType = elements.filter(isObjectType).find(e => e.elemID.typeName === FOLDER_TYPE)
     if (folderType === undefined) {
-      log.warn('Could not find object type for folder')
+      log.warn('Could not find object type for folder - not adding a root folder instance')
       return
     }
     const folders = elements

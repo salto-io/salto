@@ -25,6 +25,7 @@ import { FilterCreator, Filter, filtersRunner } from './filter'
 import { WorkatoConfig } from './config'
 import addRootFolderFilter from './filters/add_root_folder'
 import fieldReferencesFilter from './filters/field_references'
+import fixMultienvIDs from './filters/fix_multienv_ids'
 import recipeCrossServiceReferencesFilter from './filters/cross_service/recipe_references'
 import serviceUrlFilter from './filters/service_url'
 import { WORKATO } from './constants'
@@ -38,6 +39,8 @@ const { getAllElements } = elementUtils.ducktype
 
 export const DEFAULT_FILTERS = [
   addRootFolderFilter,
+  // fixMultienvIDs should run after addRootFolderFilter
+  fixMultienvIDs,
   // fieldReferencesFilter should run after all element manipulations are done
   fieldReferencesFilter,
   recipeCrossServiceReferencesFilter,

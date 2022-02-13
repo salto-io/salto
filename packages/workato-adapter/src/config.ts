@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { ElemID, ObjectType, CORE_ANNOTATIONS, BuiltinTypes, ListType, MapType } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
-import { WORKATO, PROPERTY_TYPE, ROLE_TYPE, API_COLLECTION_TYPE, FOLDER_TYPE, RECIPE_TYPE, CONNECTION_TYPE, API_ENDPOINT_TYPE, API_CLIENT_TYPE, API_ACCESS_PROFILE_TYPE } from './constants'
+import { WORKATO, PROPERTY_TYPE, ROLE_TYPE, API_COLLECTION_TYPE, FOLDER_TYPE, RECIPE_TYPE, CONNECTION_TYPE, API_ENDPOINT_TYPE, API_CLIENT_TYPE, API_ACCESS_PROFILE_TYPE, RECIPE_CODE_TYPE } from './constants'
 
 const { createClientConfigType } = clientUtils
 const {
@@ -87,10 +87,17 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
         { fieldName: 'last_run_at' },
         { fieldName: 'job_succeeded_count' },
         { fieldName: 'job_failed_count' },
+        { fieldName: 'copy_count' },
+        { fieldName: 'lifetime_task_count' },
       ],
       standaloneFields: [
         { fieldName: 'code', parseJSON: true },
       ],
+    },
+  },
+  [RECIPE_CODE_TYPE]: {
+    transformation: {
+      idFields: [], // there is one code per recipe, so no need for additional details
     },
   },
   [FOLDER_TYPE]: {

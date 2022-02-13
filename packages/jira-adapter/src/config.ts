@@ -1479,6 +1479,7 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
   types: DEFAULT_TYPE_CUSTOMIZATIONS,
   typesToFallbackToInternalId: [
     'Field',
+    'CustomFieldContext',
     'Status',
     'Resolution',
   ],

@@ -41,13 +41,13 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[] =
   )
 
   const field = new InstanceElement(
-    randomString,
+    `${randomString}__c`,
     findType('Field', fetchedElements),
     createFieldValues(randomString),
   )
 
   const fieldContext = new InstanceElement(
-    naclCase(`${randomString}_${randomString}`),
+    naclCase(`${randomString}__c_${randomString}`),
     findType('CustomFieldContext', fetchedElements),
     createContextValues(randomString, fetchedElements),
     undefined,

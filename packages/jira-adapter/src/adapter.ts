@@ -46,6 +46,7 @@ import workflowFilter from './filters/workflow/workflow'
 import workflowPropertiesFilter from './filters/workflow/workflow_properties'
 import workflowSchemeFilter from './filters/workflow_scheme'
 import duplicateIdsFilter from './filters/duplicate_ids'
+import fieldNameFilter from './filters/fields/field_name_filter'
 import fieldStructureFilter from './filters/fields/field_structure_filter'
 import fieldDeploymentFilter from './filters/fields/field_deployment_filter'
 import contextDeploymentFilter from './filters/fields/context_deployment_filter'
@@ -68,6 +69,7 @@ const log = logger(module)
 
 export const DEFAULT_FILTERS = [
   missingStatusesFilter,
+  fieldNameFilter,
   // This should happen before any filter that creates references
   duplicateIdsFilter,
   fieldStructureFilter,

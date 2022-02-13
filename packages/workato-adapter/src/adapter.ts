@@ -15,7 +15,7 @@
 */
 import {
   FetchResult, AdapterOperations, DeployResult, Element, PostFetchOptions, DeployModifiers,
-  FetchOptions,
+  FetchOptions, ElemIdGetter,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { logDuration } from '@salto-io/adapter-utils'
@@ -45,6 +45,8 @@ export interface WorkatoAdapterParams {
   filterCreators?: FilterCreator[]
   client: WorkatoClient
   config: WorkatoConfig
+  // callback function to get an existing elemId or create a new one by the ServiceIds values
+  getElemIdFunc?: ElemIdGetter
 }
 
 export default class WorkatoAdapter implements AdapterOperations {
@@ -52,14 +54,17 @@ export default class WorkatoAdapter implements AdapterOperations {
   private client: WorkatoClient
   private paginator: clientUtils.Paginator
   private userConfig: WorkatoConfig
+  private getElemIdFunc?: ElemIdGetter
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
     client,
+    getElemIdFunc,
     config,
   }: WorkatoAdapterParams) {
     this.userConfig = config
     this.client = client
+    this.getElemIdFunc = getElemIdFunc
     const paginator = createPaginator({
       client: this.client,
       paginationFuncCreator: paginate,
@@ -89,6 +94,7 @@ export default class WorkatoAdapter implements AdapterOperations {
       computeGetArgs: simpleGetArgs,
       typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
       hideTypes: this.userConfig.fetch.hideTypes ?? false,
+      getElemIdFunc: this.getElemIdFunc,
     })
   }
 

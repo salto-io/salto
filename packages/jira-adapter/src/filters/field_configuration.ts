@@ -17,7 +17,7 @@ import { Change, getChangeData, InstanceElement, isInstanceChange, isModificatio
 import { client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { defaultDeployChange, deployChanges } from '../deployment'
+import { defaultDeployChange, deployChanges } from '../deployment/deployment'
 import { FilterCreator } from '../filter'
 import { setDeploymentAnnotations } from '../utils'
 import { JiraConfig } from '../config'

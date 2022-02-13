@@ -1073,6 +1073,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   Status: {
     transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'untranslatedName', fieldType: 'string' },
+      ],
       fieldsToHide: [
         {
           fieldName: 'id',

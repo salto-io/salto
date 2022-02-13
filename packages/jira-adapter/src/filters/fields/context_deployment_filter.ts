@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { deployContextChange, setContextDeploymentAnnotations } from './contexts'
-import { deployChanges } from '../../deployment'
+import { deployChanges } from '../../deployment/deployment'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from './constants'
 import { findObject, setDeploymentAnnotations } from '../../utils'
 

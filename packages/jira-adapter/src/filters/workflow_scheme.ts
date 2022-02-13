@@ -23,7 +23,7 @@ import { getLookUpName } from '../reference_mapping'
 import { findObject } from '../utils'
 import { FilterCreator } from '../filter'
 import { JIRA } from '../constants'
-import { defaultDeployChange, deployChanges } from '../deployment'
+import { defaultDeployChange, deployChanges } from '../deployment/deployment'
 import JiraClient from '../client/client'
 import { JiraConfig } from '../config'
 

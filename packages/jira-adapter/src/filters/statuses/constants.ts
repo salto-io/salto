@@ -13,15 +13,4 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export const JIRA = 'jira'
-export const ISSUE_TYPE_SCHEMA_NAME = 'IssueTypeScheme'
-export const ISSUE_TYPE_NAME = 'IssueType'
-
-export const PRIVATE_API_HEADERS = {
-  'X-Atlassian-Token': 'no-check',
-}
-
-export const JSP_API_HEADERS = {
-  ...PRIVATE_API_HEADERS,
-  'Content-Type': 'application/x-www-form-urlencoded',
-}
+export const STATUS_TYPE_NAME = 'Status'

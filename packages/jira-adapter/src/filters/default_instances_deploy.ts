@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { isInstanceChange } from '@salto-io/adapter-api'
-import { defaultDeployChange, deployChanges } from '../deployment'
+import { defaultDeployChange, deployChanges } from '../deployment/deployment'
 import { FilterCreator } from '../filter'
 
 const filter: FilterCreator = ({ client, config }) => ({

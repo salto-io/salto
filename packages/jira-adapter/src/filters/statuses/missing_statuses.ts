@@ -23,8 +23,8 @@ import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { JIRA, PRIVATE_API_HEADERS } from '../../constants'
 import { JiraConfig } from '../../config'
+import { STATUS_TYPE_NAME } from './constants'
 
-const STATUS_TYPE_NAME = 'Status'
 
 const log = logger(module)
 
@@ -87,7 +87,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       return
     }
 
-    const statusType = findObject(elements, 'Status')
+    const statusType = findObject(elements, STATUS_TYPE_NAME)
     if (statusType === undefined) {
       log.warn(`${STATUS_TYPE_NAME} type not found, skipping missing_statuses filter`)
       return

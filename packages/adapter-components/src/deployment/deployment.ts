@@ -26,7 +26,7 @@ const FIELD_PATH_DELIMITER = '.'
 
 export type ResponseResult = ResponseValue | ResponseValue[] | undefined
 
-const filterIrrelevantValues = async (
+export const filterUndeployableValues = async (
   instance: InstanceElement,
   action: ActionName
 ): Promise<InstanceElement> => (
@@ -68,7 +68,7 @@ export const deployChange = async (
     throw new Error(`No endpoint of type ${change.action} for ${instance.elemID.typeName}`)
   }
   const valuesToDeploy = _.omit(
-    (await filterIrrelevantValues(getChangeData(change), change.action)).value,
+    (await filterUndeployableValues(getChangeData(change), change.action)).value,
     fieldsToIgnore
   )
 

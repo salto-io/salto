@@ -19,7 +19,7 @@ import { collections } from '@salto-io/lowerdash'
 import JiraClient from '../../client/client'
 import { FilterCreator } from '../../filter'
 import { deployContextChange, getContexts, getContextType } from './contexts'
-import { defaultDeployChange, deployChanges } from '../../deployment'
+import { defaultDeployChange, deployChanges } from '../../deployment/deployment'
 import { FIELD_TYPE_NAME } from './constants'
 import { JiraConfig } from '../../config'
 

@@ -24,6 +24,7 @@ import { workflowValidator } from './workflow'
 import JiraClient from '../client/client'
 import { JiraConfig } from '../config'
 import { projectDeletionValidator } from './project_deletion'
+import { statusValidator } from './status'
 
 const {
   deployTypesNotSupportedValidator,
@@ -41,6 +42,7 @@ export default (
     screenValidator,
     issueTypeSchemeValidator,
     projectDeletionValidator(client, config),
+    statusValidator,
   ]
 
   return createChangeValidator(validators)

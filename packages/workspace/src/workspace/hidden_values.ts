@@ -195,6 +195,7 @@ export const removeHiddenFromElement = <T extends Element>(
         : removeHidden(elementsSource),
       strict: false,
       elementsSource,
+      allowEmpty: true,
     })
   )
 

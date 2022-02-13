@@ -52,6 +52,7 @@ import organizationFieldFilter from './filters/organization_field'
 import removeDefinitionInstancesFilter from './filters/remove_definition_instances'
 import hardcodedChannelFilter from './filters/hardcoded_channel'
 import usersFilter from './filters/user'
+import routingAttributeFilter from './filters/routing_attribute'
 import defaultDeployFilter from './filters/default_deploy'
 
 const log = logger(module)
@@ -83,6 +84,7 @@ export const DEFAULT_FILTERS = [
   hardcodedChannelFilter,
   fieldReferencesFilter,
   usersFilter,
+  routingAttributeFilter,
   // removeDefinitionInstancesFilter should be after hardcodedChannelFilter
   removeDefinitionInstancesFilter,
   // unorderedListsFilter should run after fieldReferencesFilter

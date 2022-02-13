@@ -85,7 +85,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     const deployResult = await deployChanges(
       scheduleChanges,
       async change => {
-        await deployChange(change, client, config.apiDefinitions)
+        await deployChange(change, client, config.apiDefinitions, ['holidays'])
         await deployIntervals(client, change)
       }
     )

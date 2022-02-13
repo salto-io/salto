@@ -248,6 +248,9 @@ export const formatChangeErrors = (
   const formatGroupedChangeErrors = (groupedChangeErrors: ChangeWorkspaceError[]): string => {
     const errorsIndent = 2
     const firstErr: ChangeWorkspaceError = groupedChangeErrors[0]
+    if (firstErr.detailedMessage === '') {
+      return ''
+    }
     if (groupedChangeErrors.length > 1) {
       return indent(`${firstErr.severity}: ${formatError(firstErr)} (${groupedChangeErrors.length} Elements)`,
         errorsIndent)

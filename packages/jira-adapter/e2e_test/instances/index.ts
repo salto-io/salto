@@ -15,6 +15,7 @@
 */
 import { InstanceElement, Element, ElemID, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
+import { CUSTOM_FIELDS_SUFFIX } from '../../src/filters/fields/field_name_filter'
 import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA } from '../../src/constants'
 import { createReference, findType } from '../utils'
 import { createBoardValues } from './board'
@@ -41,13 +42,13 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[] =
   )
 
   const field = new InstanceElement(
-    randomString,
+    `${randomString}${CUSTOM_FIELDS_SUFFIX}`,
     findType('Field', fetchedElements),
     createFieldValues(randomString),
   )
 
   const fieldContext = new InstanceElement(
-    naclCase(`${randomString}_${randomString}`),
+    naclCase(`${randomString}${CUSTOM_FIELDS_SUFFIX}_${randomString}`),
     findType('CustomFieldContext', fetchedElements),
     createContextValues(randomString, fetchedElements),
     undefined,

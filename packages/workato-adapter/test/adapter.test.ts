@@ -96,7 +96,7 @@ describe('adapter', () => {
           'workato.folder.instance.f1_nested2_300506@vu',
           'workato.folder.instance.f1n2_leaf1_300508@su',
           'workato.property',
-          'workato.property.instance.unnamed_0',
+          'workato.property.instance',
           'workato.recipe',
           'workato.recipe.instance.Copy_of_New_email_in_Gmail_will_add_a_new_row_in_Google_Sheets_1109414@sssssssssssssu',
           'workato.recipe.instance.Copy_of_New_or_updated_standard_record___________in_NetSuite__will_create_record_in_Salesforce_1109550@ssssss_00010sssssssssss_00010sssssu',

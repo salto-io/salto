@@ -33,6 +33,7 @@ export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
   { fieldName: 'extended_input_schema' },
   { fieldName: 'extended_output_schema' },
 ]
+export const FIELDS_TO_HIDE: configUtils.FieldToHideType[] = []
 
 export const CLIENT_CONFIG = 'client'
 export const FETCH_CONFIG = 'fetch'
@@ -57,6 +58,17 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     request: {
       url: '/connections',
     },
+    transformation: {
+      fieldsToHide: [
+        ...FIELDS_TO_HIDE,
+        { fieldName: 'id' },
+      ],
+      fieldsToOmit: [
+        ...FIELDS_TO_OMIT,
+        { fieldName: 'authorized_at', fieldType: 'string' },
+        { fieldName: 'authorization_status', fieldType: 'string' },
+      ],
+    },
   },
   [RECIPE_TYPE]: {
     request: {
@@ -65,6 +77,11 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
     transformation: {
       idFields: ['name', 'id'], // not multienv-friendly - see SALTO-1241
+      fieldsToHide: [
+        ...FIELDS_TO_HIDE,
+        { fieldName: 'id' },
+        { fieldName: 'user_id' },
+      ],
       fieldsToOmit: [
         ...FIELDS_TO_OMIT,
         { fieldName: 'last_run_at' },
@@ -87,16 +104,24 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
     transformation: {
       idFields: ['name', 'parent_id'], // not multienv-friendly - see SALTO-1241
+      fieldsToHide: [
+        ...FIELDS_TO_HIDE,
+        { fieldName: 'id' },
+      ],
     },
   },
-  // eslint-disable-next-line camelcase
   [API_COLLECTION_TYPE]: {
     request: {
       url: '/api_collections',
       paginationField: 'page',
     },
+    transformation: {
+      fieldsToHide: [
+        ...FIELDS_TO_HIDE,
+        { fieldName: 'id' },
+      ],
+    },
   },
-  // eslint-disable-next-line camelcase
   [API_ENDPOINT_TYPE]: {
     request: {
       url: '/api_endpoints',
@@ -104,25 +129,45 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
     transformation: {
       idFields: ['name', 'base_path'],
+      fieldsToHide: [
+        ...FIELDS_TO_HIDE,
+        { fieldName: 'id' },
+      ],
     },
   },
-  // eslint-disable-next-line camelcase
   [API_CLIENT_TYPE]: {
     request: {
       url: '/api_clients',
       paginationField: 'page',
     },
+    transformation: {
+      fieldsToHide: [
+        ...FIELDS_TO_HIDE,
+        { fieldName: 'id' },
+      ],
+    },
   },
-  // eslint-disable-next-line camelcase
   [API_ACCESS_PROFILE_TYPE]: {
     request: {
       url: '/api_access_profiles',
       paginationField: 'page',
     },
+    transformation: {
+      fieldsToHide: [
+        ...FIELDS_TO_HIDE,
+        { fieldName: 'id' },
+      ],
+    },
   },
   [ROLE_TYPE]: {
     request: {
       url: '/roles',
+    },
+    transformation: {
+      fieldsToHide: [
+        ...FIELDS_TO_HIDE,
+        { fieldName: 'id' },
+      ],
     },
   },
   [PROPERTY_TYPE]: {
@@ -134,6 +179,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
     transformation: {
       hasDynamicFields: true,
+      isSingleton: true,
     },
   },
 }

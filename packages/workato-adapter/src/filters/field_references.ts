@@ -51,7 +51,7 @@ const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition<never>
     target: { type: 'connection' },
   },
   {
-    src: { field: 'folder_id', parentTypes: ['recipe'] },
+    src: { field: 'folder_id', parentTypes: ['recipe', 'connection'] },
     serializationStrategy: 'id',
     target: { type: 'folder' },
   },

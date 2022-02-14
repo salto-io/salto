@@ -23,6 +23,7 @@ import { logger } from '@salto-io/logging'
 import WorkatoClient from './client/client'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import { WorkatoConfig } from './config'
+import addRootFolderFilter from './filters/add_root_folder'
 import fieldReferencesFilter from './filters/field_references'
 import recipeCrossServiceReferencesFilter from './filters/cross_service/recipe_references'
 import serviceUrlFilter from './filters/service_url'
@@ -36,6 +37,8 @@ const { returnFullEntry, simpleGetArgs } = elementUtils
 const { getAllElements } = elementUtils.ducktype
 
 export const DEFAULT_FILTERS = [
+  addRootFolderFilter,
+  // fieldReferencesFilter should run after all element manipulations are done
   fieldReferencesFilter,
   recipeCrossServiceReferencesFilter,
   serviceUrlFilter,

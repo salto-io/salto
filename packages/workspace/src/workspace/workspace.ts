@@ -807,18 +807,19 @@ export const loadWorkspace = async (
     const loadNaclFileSource = await getLoadedNaclFilesSource()
     // It is important to make sure these are obtain using Promise.all in order to allow
     // the SaaS UI to debounce the DB accesses.
-    const [errorsFromSource, configErrors, validationErrors, mergeErrors] = await Promise.all([
-      loadNaclFileSource.getErrors(env ?? currentEnv()),
-      adaptersConfig.getErrors(),
-      awu(currentState.states[envToUse].validationErrors.values()).flat().toArray(),
-      awu(currentState.states[envToUse].errors.values()).flat().toArray(),
-    ])
+    const [errorsFromSource, configErrors, validationErrors, mergeErrors]
+      : [Errors, Errors, ValidationError[], MergeError[]] = await Promise.all([
+        loadNaclFileSource.getErrors(env ?? currentEnv()),
+        adaptersConfig.getErrors(),
+        awu(currentState.states[envToUse].validationErrors.values()).flat().toArray(),
+        awu(currentState.states[envToUse].errors.values()).flat().toArray(),
+      ])
 
     _(validationErrors)
       .groupBy(error => error.constructor.name)
       .entries()
       .forEach(([errorType, errorsGroup]) => {
-        log.error(`Invalid elements, error type: ${errorType}, element IDs: ${errorsGroup.map(e => e.elemID.getFullName()).join(', ')}`)
+        log.warn(`Invalid elements, error type: ${errorType}, severity: ${errorsGroup[0].severity} element IDs: ${errorsGroup.map(e => e.elemID.getFullName()).join(', ')}`)
       })
     return new Errors({
       parse: [

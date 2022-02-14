@@ -26,8 +26,8 @@ const { RECORDS_PATH } = elementUtils
 
 // using a single-word folder name guarantees the id will be unique,
 // because all other folder ids include their parent as well as their own name
-const ROOT_FOLDER_NAME = 'ROOT'
-const ROOT_FOLDER_PATH = 'ROOT'
+const ROOT_FOLDER_NAME = 'Root'
+const ROOT_FOLDER_PATH = 'Root'
 
 /**
  * Add root folder instance, since it is not returned from the service but can contain resources.

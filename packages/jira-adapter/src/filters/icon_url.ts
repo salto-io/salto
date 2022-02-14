@@ -16,9 +16,8 @@
 import { isAdditionOrModificationChange, isInstanceChange, getChangeData, InstanceElement, Change } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
+import { PRIORITY_TYPE_NAME, STATUS_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
-import { PRIORITY_TYPE_NAME } from './priority'
-import { STATUS_TYPE_NAME } from './statuses/constants'
 
 const { awu } = collections.asynciterable
 

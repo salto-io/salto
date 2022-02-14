@@ -20,7 +20,7 @@ import { logger } from '@salto-io/logging'
 import { getLookUpName } from '../reference_mapping'
 import JiraClient from '../client/client'
 import { JiraConfig } from '../config'
-import { defaultDeployChange, deployChanges } from '../deployment/deployment'
+import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
 import { FilterCreator } from '../filter'
 
 const ISSUE_TYPE_SCREEN_SCHEME_NAME = 'IssueTypeScreenScheme'

@@ -19,8 +19,7 @@ import _ from 'lodash'
 import { findObject, setDeploymentAnnotations } from '../utils'
 import { FilterCreator } from '../filter'
 import { deployWithJspEndpoints } from '../deployment/jsp_deployment'
-
-export const PRIORITY_TYPE_NAME = 'Priority'
+import { PRIORITY_TYPE_NAME } from '../constants'
 
 const log = logger(module)
 
@@ -54,19 +53,15 @@ const filter: FilterCreator = ({ client, config }) => ({
         && getChangeData(change).elemID.typeName === PRIORITY_TYPE_NAME
     )
 
-    const deployResult = await deployWithJspEndpoints(
-      relevantChanges.filter(isInstanceChange).filter(isAdditionOrModificationChange),
+    const deployResult = await deployWithJspEndpoints({
+      changes: relevantChanges.filter(isInstanceChange).filter(isAdditionOrModificationChange),
       client,
-      {
-        addUrl: '/secure/admin/AddPriority.jspa',
-        modifyUrl: '/secure/admin/EditPriority.jspa',
-        queryUrl: '/rest/api/3/priority',
-      },
-      serviceValues => _.omit({
+      urls: config.apiDefinitions.jspEndpoints[PRIORITY_TYPE_NAME],
+      serviceValuesTransformer: serviceValues => _.omit({
         ...serviceValues,
         iconurl: new URL(serviceValues.iconUrl).pathname,
       }, 'iconUrl'),
-    )
+    })
     return {
       leftoverChanges,
       deployResult,

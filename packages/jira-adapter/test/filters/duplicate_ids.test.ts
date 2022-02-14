@@ -19,7 +19,7 @@ import { mockClient } from '../utils'
 import duplicateIdsFilter from '../../src/filters/duplicate_ids'
 import { Filter } from '../../src/filter'
 import { DEFAULT_CONFIG, JiraConfig } from '../../src/config'
-import { JIRA } from '../../src/constants'
+import { JIRA, STATUS_TYPE_NAME } from '../../src/constants'
 
 describe('duplicateIdsFilter', () => {
   let filter: Filter
@@ -39,7 +39,7 @@ describe('duplicateIdsFilter', () => {
     })
 
     type = new ObjectType({
-      elemID: new ElemID(JIRA, 'Status'),
+      elemID: new ElemID(JIRA, STATUS_TYPE_NAME),
     })
   })
 

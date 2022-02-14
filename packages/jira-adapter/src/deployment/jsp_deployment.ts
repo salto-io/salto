@@ -19,26 +19,25 @@ import _ from 'lodash'
 import { resolveValues, safeJsonStringify } from '@salto-io/adapter-utils'
 import { deployment } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
-import { JSP_API_HEADERS, PRIVATE_API_HEADERS } from '../constants'
-import { deployChanges } from './deployment'
+import { PRIVATE_API_HEADERS } from '../constants'
+import { deployChanges } from './standard_deployment'
 import JiraClient from '../client/client'
 import { getLookUpName } from '../reference_mapping'
+import { JspUrls } from '../config'
 
 const { awu } = collections.asynciterable
 
 const log = logger(module)
 
-export type DeployUrls = {
-  addUrl: string
-  modifyUrl: string
-  removeUrl?: string
-  queryUrl: string
+type NameIdObject = {
+  name: unknown
+  id: unknown
 }
 
 const deployChange = async (
   change: Change<InstanceElement>,
   client: JiraClient,
-  urls: DeployUrls
+  urls: JspUrls
 ): Promise<void> => {
   const instance = await deployment.filterUndeployableValues(
     await resolveValues(getChangeData(change), getLookUpName),
@@ -46,53 +45,60 @@ const deployChange = async (
   )
 
   if (isAdditionChange(change)) {
-    await client.post({
-      url: urls.addUrl,
-      headers: JSP_API_HEADERS,
-      data: new URLSearchParams(instance.value),
+    await client.jspPost({
+      url: urls.add,
+      data: instance.value,
     })
   }
 
   if (isModificationChange(change)) {
-    await client.post({
-      url: urls.modifyUrl,
-      headers: JSP_API_HEADERS,
-      data: new URLSearchParams(instance.value),
+    await client.jspPost({
+      url: urls.modify,
+      data: instance.value,
     })
   }
 
   if (isRemovalChange(change)) {
-    if (urls.removeUrl === undefined) {
+    if (urls.remove === undefined) {
       throw new Error(`Remove ${instance.elemID.getFullName()} is not supported`)
     }
-    await client.post({
-      url: urls.removeUrl,
-      headers: JSP_API_HEADERS,
-      data: new URLSearchParams({
+    await client.jspPost({
+      url: urls.remove,
+      data: {
         ...instance.value,
         confirm: 'true',
-      }),
+      },
     })
   }
 }
 
-const queryServiceValues = async (client: JiraClient, urls: DeployUrls): Promise<Values[]> => {
+const isNameIdObject = (obj: unknown): obj is NameIdObject =>
+  typeof obj === 'object' && obj !== null && 'name' in obj && 'id' in obj
+
+const queryServiceValues = async (client: JiraClient, urls: JspUrls)
+: Promise<NameIdObject[]> => {
   const response = await client.getSinglePage({
-    url: urls.queryUrl,
+    url: urls.query,
     headers: PRIVATE_API_HEADERS,
   })
   if (!Array.isArray(response.data)) {
     throw new Error(`Expected array of values in response, got ${safeJsonStringify(response.data)}`)
   }
-  return response.data
+  return response.data.filter((obj): obj is NameIdObject => {
+    if (!isNameIdObject(obj)) {
+      log.warn(`Received unexpected response ${safeJsonStringify(obj)} from query ${urls.query}`)
+      return false
+    }
+    return true
+  })
 }
 
 const addIdsToResults = async (
   appliedChanges: AdditionChange<InstanceElement>[],
-  serviceValues: Values[],
+  serviceValues: NameIdObject[],
 ): Promise<void> => {
   const nameToId = Object.fromEntries(
-    serviceValues.map(values => [values.name, values.id])
+    serviceValues.map(value => [value.name, value.id])
   )
 
   appliedChanges.forEach(change => {
@@ -103,22 +109,30 @@ const addIdsToResults = async (
 type ServiceValuesTransformer = (serviceValues: Values, currentInstance: InstanceElement) => Values
 
 const verifyDeployment = async (
-  serviceValues: Values[],
+  serviceValues: NameIdObject[],
   deployResult: DeployResult,
   serviceValuesTransformer: ServiceValuesTransformer
 ): Promise<void> => {
   const idToValues = _.keyBy(serviceValues, value => value.id)
 
-  const deployedInstances = await awu(deployResult.appliedChanges)
-    .filter(isInstanceChange)
-    .map(change => deployment.filterUndeployableValues(getChangeData(change), change.action))
-    .map(instance => resolveValues(instance, getLookUpName))
-    .toArray()
+  const deployedInstances = _.keyBy(
+    await awu(deployResult.appliedChanges)
+      .filter(isInstanceChange)
+      .map(change => deployment.filterUndeployableValues(getChangeData(change), change.action))
+      .map(instance => resolveValues(instance, getLookUpName))
+      .toArray(),
+    instance => instance.elemID.getFullName()
+  )
 
   const invalidChanges = _.remove(
     deployResult.appliedChanges,
-    (change, index) => {
-      const instance = deployedInstances[index]
+    change => {
+      const instance = deployedInstances[getChangeData(change).elemID.getFullName()]
+
+      if (instance === undefined) {
+        log.warn(`Failed to deploy ${getChangeData(change).elemID.getFullName()}, not an instance`)
+        return true
+      }
 
       if (instance.value.id === undefined) {
         log.warn(`Failed to deploy ${instance.elemID.getFullName()}, id is undefined`)
@@ -127,13 +141,16 @@ const verifyDeployment = async (
 
       if (isRemovalChange(change)) {
         if (instance.value.id in idToValues) {
-          log.warn(`Failed to deploy ${instance.elemID.getFullName()}, id is still exist in the service`)
+          log.warn(`Failed to remove ${instance.elemID.getFullName()}, id still exists in the service`)
           return true
         }
         return false
       }
 
-      const serviceValue = serviceValuesTransformer(idToValues[instance.value.id], instance)
+      const serviceValue = serviceValuesTransformer(
+        idToValues[instance.value.id] as Values,
+        instance,
+      )
 
       if (!_.isMatch(serviceValue, instance.value)) {
         log.warn(`Failed to deploy ${instance.elemID.getFullName()}, the deployment values  ${safeJsonStringify(instance.value)} do not match the service values ${safeJsonStringify(serviceValue)}`)
@@ -150,11 +167,24 @@ const verifyDeployment = async (
   ]
 }
 
-export const deployWithJspEndpoints = async (
-  changes: Change<InstanceElement>[],
-  client: JiraClient,
-  urls: DeployUrls,
-  serviceValuesTransformer: ServiceValuesTransformer = _.identity
+/**
+ * Deploy changes by sending post request to JSP pages in Jira
+ * Because these pages does not return an indication of success or failure,
+ * we need to pass a query url to check if the change was deployed
+ *
+ * This won't work with oauth creds
+ */
+export const deployWithJspEndpoints = async ({
+  changes,
+  client,
+  urls,
+  serviceValuesTransformer = _.identity,
+} : {
+  changes: Change<InstanceElement>[]
+  client: JiraClient
+  urls: JspUrls
+  serviceValuesTransformer?: ServiceValuesTransformer
+}
 ): Promise<DeployResult> => {
   const deployResult = await deployChanges(
     changes,
@@ -174,7 +204,7 @@ export const deployWithJspEndpoints = async (
       )
       await verifyDeployment(serviceValues, deployResult, serviceValuesTransformer)
     } catch (err) {
-      log.error(`Failed to query service values: ${err.message}`)
+      log.error(`Failed to query service values: ${err}`)
       deployResult.errors = [
         ...deployResult.errors,
         ...deployResult.appliedChanges.map(change => new Error(`Failed to deploy ${getChangeData(change).elemID.getFullName()}`)),

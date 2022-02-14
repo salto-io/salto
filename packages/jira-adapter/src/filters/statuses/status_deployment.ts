@@ -19,7 +19,7 @@ import _ from 'lodash'
 import { findObject, setDeploymentAnnotations } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { deployWithJspEndpoints } from '../../deployment/jsp_deployment'
-import { STATUS_TYPE_NAME } from './constants'
+import { STATUS_TYPE_NAME } from '../../constants'
 
 const log = logger(module)
 
@@ -61,20 +61,15 @@ const filter: FilterCreator = ({ client, config }) => ({
         && getChangeData(change).elemID.typeName === STATUS_TYPE_NAME
     )
 
-    const deployResult = await deployWithJspEndpoints(
-      relevantChanges.filter(isInstanceChange),
+    const deployResult = await deployWithJspEndpoints({
+      changes: relevantChanges.filter(isInstanceChange),
       client,
-      {
-        addUrl: '/secure/admin/AddStatus.jspa',
-        modifyUrl: '/secure/admin/EditStatus.jspa',
-        removeUrl: '/secure/admin/DeleteStatus.jspa',
-        queryUrl: '/rest/workflowDesigner/1.0/statuses',
-      },
-      (serviceValues, currentInstance) => _.omit({
+      urls: config.apiDefinitions.jspEndpoints[STATUS_TYPE_NAME],
+      serviceValuesTransformer: (serviceValues, currentInstance) => _.omit({
         ...currentInstance.value,
         ...serviceValues,
       }, 'iconURL'),
-    )
+    })
     return {
       leftoverChanges,
       deployResult,

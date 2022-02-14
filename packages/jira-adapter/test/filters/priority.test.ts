@@ -19,7 +19,7 @@ import { mockClient } from '../utils'
 import priorityFilter from '../../src/filters/priority'
 import { Filter } from '../../src/filter'
 import { DEFAULT_CONFIG, JiraConfig } from '../../src/config'
-import { JIRA } from '../../src/constants'
+import { JIRA, PRIORITY_TYPE_NAME } from '../../src/constants'
 import { deployWithJspEndpoints } from '../../src/deployment/jsp_deployment'
 import JiraClient from '../../src/client/client'
 
@@ -46,7 +46,7 @@ describe('priorityFilter', () => {
     })
 
     type = new ObjectType({
-      elemID: new ElemID(JIRA, 'Priority'),
+      elemID: new ElemID(JIRA, PRIORITY_TYPE_NAME),
       fields: {
         id: { refType: BuiltinTypes.STRING },
         name: { refType: BuiltinTypes.STRING },
@@ -119,16 +119,16 @@ describe('priorityFilter', () => {
       )
       await filter.deploy?.([toChange({ after: instance })])
 
-      expect(deployWithJspEndpointsMock).toHaveBeenCalledWith(
-        [toChange({ after: instance })],
+      expect(deployWithJspEndpointsMock).toHaveBeenCalledWith({
+        changes: [toChange({ after: instance })],
         client,
-        {
-          addUrl: '/secure/admin/AddPriority.jspa',
-          modifyUrl: '/secure/admin/EditPriority.jspa',
-          queryUrl: '/rest/api/3/priority',
+        urls: {
+          add: '/secure/admin/AddPriority.jspa',
+          modify: '/secure/admin/EditPriority.jspa',
+          query: '/rest/api/3/priority',
         },
-        expect.toBeFunction(),
-      )
+        serviceValuesTransformer: expect.toBeFunction(),
+      })
     })
   })
 })

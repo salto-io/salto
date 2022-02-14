@@ -19,7 +19,7 @@ import { mockClient } from '../../utils'
 import statusDeploymentFilter from '../../../src/filters/statuses/status_deployment'
 import { Filter } from '../../../src/filter'
 import { DEFAULT_CONFIG, JiraConfig } from '../../../src/config'
-import { JIRA } from '../../../src/constants'
+import { JIRA, STATUS_TYPE_NAME } from '../../../src/constants'
 import { deployWithJspEndpoints } from '../../../src/deployment/jsp_deployment'
 import JiraClient from '../../../src/client/client'
 
@@ -46,7 +46,7 @@ describe('statusDeploymentFilter', () => {
     })
 
     type = new ObjectType({
-      elemID: new ElemID(JIRA, 'Status'),
+      elemID: new ElemID(JIRA, STATUS_TYPE_NAME),
       fields: {
         id: { refType: BuiltinTypes.STRING },
         name: { refType: BuiltinTypes.STRING },
@@ -149,17 +149,17 @@ describe('statusDeploymentFilter', () => {
       )
       await filter.deploy?.([toChange({ after: instance })])
 
-      expect(deployWithJspEndpointsMock).toHaveBeenCalledWith(
-        [toChange({ after: instance })],
+      expect(deployWithJspEndpointsMock).toHaveBeenCalledWith({
+        changes: [toChange({ after: instance })],
         client,
-        {
-          addUrl: '/secure/admin/AddStatus.jspa',
-          modifyUrl: '/secure/admin/EditStatus.jspa',
-          removeUrl: '/secure/admin/DeleteStatus.jspa',
-          queryUrl: '/rest/workflowDesigner/1.0/statuses',
+        urls: {
+          add: '/secure/admin/AddStatus.jspa',
+          modify: '/secure/admin/EditStatus.jspa',
+          remove: '/secure/admin/DeleteStatus.jspa',
+          query: '/rest/workflowDesigner/1.0/statuses',
         },
-        expect.toBeFunction(),
-      )
+        serviceValuesTransformer: expect.toBeFunction(),
+      })
     })
   })
 })

@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange, SaltoErrorSeverity } from '@salto-io/adapter-api'
-import { collections, values } from '@salto-io/lowerdash'
-import { STATUS_TYPE_NAME } from '../filters/statuses/constants'
+import { collections } from '@salto-io/lowerdash'
+import { STATUS_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
 
@@ -25,17 +25,12 @@ export const statusValidator: ChangeValidator = async changes => (
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === STATUS_TYPE_NAME)
-    .map(async instance => {
-      if (instance.value.statusCategory === undefined) {
-        return {
-          elemID: instance.elemID,
-          severity: 'Error' as SaltoErrorSeverity,
-          message: 'statusCategory is required to deploy statuses',
-          detailedMessage: `The status ${instance.elemID.getFullName()} is missing statusCategory`,
-        }
-      }
-      return undefined
-    })
-    .filter(values.isDefined)
+    .filter(instance => instance.value.statusCategory === undefined)
+    .map(async instance => ({
+      elemID: instance.elemID,
+      severity: 'Error' as SaltoErrorSeverity,
+      message: 'statusCategory is required in order to deploy statuses',
+      detailedMessage: `The status ${instance.elemID.getFullName()} is missing statusCategory`,
+    }))
     .toArray()
 )

@@ -16,7 +16,7 @@
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { createConnection } from './connection'
-import { JIRA } from '../constants'
+import { JIRA, JSP_API_HEADERS } from '../constants'
 import { Credentials } from '../auth'
 
 const log = logger(module)
@@ -75,5 +75,18 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
       }
       throw e
     }
+  }
+
+  public async jspPost(
+    args: clientUtils.ClientDataParams & { data: Record<string, string> },
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    return this.post({
+      ...args,
+      data: new URLSearchParams(args.data),
+      headers: {
+        ...JSP_API_HEADERS,
+        ...(args.headers ?? {}),
+      },
+    })
   }
 }

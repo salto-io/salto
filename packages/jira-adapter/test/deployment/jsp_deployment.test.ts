@@ -18,14 +18,15 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { mockClient } from '../utils'
-import { DeployUrls, deployWithJspEndpoints } from '../../src/deployment/jsp_deployment'
+import { deployWithJspEndpoints } from '../../src/deployment/jsp_deployment'
 import JiraClient from '../../src/client/client'
 import { JIRA, JSP_API_HEADERS, PRIVATE_API_HEADERS } from '../../src/constants'
+import { JspUrls } from '../../src/config'
 
 describe('jsp_deployment', () => {
   let mockConnection: MockInterface<clientUtils.APIConnection>
   let client: JiraClient
-  let urls: DeployUrls
+  let urls: JspUrls
   let type: ObjectType
   let instance: InstanceElement
 
@@ -35,10 +36,10 @@ describe('jsp_deployment', () => {
     client = cli
 
     urls = {
-      addUrl: 'https://jira.com/rest/api/2/add',
-      modifyUrl: 'https://jira.com/rest/api/2/modify',
-      removeUrl: 'https://jira.com/rest/api/2/remove',
-      queryUrl: 'https://jira.com/rest/api/2/query',
+      add: 'https://jira.com/rest/api/2/add',
+      modify: 'https://jira.com/rest/api/2/modify',
+      remove: 'https://jira.com/rest/api/2/remove',
+      query: 'https://jira.com/rest/api/2/query',
     }
 
     type = new ObjectType({
@@ -49,7 +50,7 @@ describe('jsp_deployment', () => {
       'instance',
       type,
       {
-        value: 'val',
+        name: 'val',
       }
     )
   })
@@ -60,21 +61,21 @@ describe('jsp_deployment', () => {
         status: 200,
         data: [{
           id: '1',
-          value: 'val',
+          name: 'val',
           self: 'someSelf',
         }],
       })
-      const results = await deployWithJspEndpoints(
-        [toChange({ after: instance })],
+      const results = await deployWithJspEndpoints({
+        changes: [toChange({ after: instance })],
         client,
         urls,
-      )
+      })
       expect(results.errors).toHaveLength(0)
       expect(results.appliedChanges).toHaveLength(1)
 
       expect(instance.value).toEqual({
         id: '1',
-        value: 'val',
+        name: 'val',
       })
       expect(mockConnection.get).toHaveBeenCalledWith(
         'https://jira.com/rest/api/2/query',
@@ -86,7 +87,7 @@ describe('jsp_deployment', () => {
       expect(mockConnection.post).toHaveBeenCalledWith(
         'https://jira.com/rest/api/2/add',
         new URLSearchParams({
-          value: 'val',
+          name: 'val',
         }),
         {
           headers: JSP_API_HEADERS,
@@ -99,11 +100,11 @@ describe('jsp_deployment', () => {
         status: 200,
         data: [],
       })
-      const results = await deployWithJspEndpoints(
-        [toChange({ after: instance })],
+      const results = await deployWithJspEndpoints({
+        changes: [toChange({ after: instance })],
         client,
         urls,
-      )
+      })
       expect(results.errors).toHaveLength(1)
       expect(results.appliedChanges).toHaveLength(0)
     })
@@ -113,15 +114,15 @@ describe('jsp_deployment', () => {
         status: 200,
         data: [{
           id: '1',
-          value: 'val2',
+          name: 'val2',
           self: 'someSelf',
         }],
       })
-      const results = await deployWithJspEndpoints(
-        [toChange({ after: instance })],
+      const results = await deployWithJspEndpoints({
+        changes: [toChange({ after: instance })],
         client,
         urls,
-      )
+      })
       expect(results.errors).toHaveLength(1)
       expect(results.appliedChanges).toHaveLength(0)
     })
@@ -131,11 +132,11 @@ describe('jsp_deployment', () => {
         status: 400,
         data: {},
       })
-      const results = await deployWithJspEndpoints(
-        [toChange({ after: instance })],
+      const results = await deployWithJspEndpoints({
+        changes: [toChange({ after: instance })],
         client,
         urls,
-      )
+      })
       expect(results.errors).toHaveLength(1)
       expect(results.appliedChanges).toHaveLength(0)
     })
@@ -150,21 +151,21 @@ describe('jsp_deployment', () => {
         status: 200,
         data: [{
           id: '1',
-          value: 'val',
+          name: 'val',
           self: 'someSelf',
         }],
       })
-      const results = await deployWithJspEndpoints(
-        [toChange({ before: instance, after: instance })],
+      const results = await deployWithJspEndpoints({
+        changes: [toChange({ before: instance, after: instance })],
         client,
         urls,
-      )
+      })
       expect(results.errors).toHaveLength(0)
       expect(results.appliedChanges).toHaveLength(1)
 
       expect(instance.value).toEqual({
         id: '1',
-        value: 'val',
+        name: 'val',
       })
       expect(mockConnection.get).toHaveBeenCalledWith(
         'https://jira.com/rest/api/2/query',
@@ -176,7 +177,7 @@ describe('jsp_deployment', () => {
       expect(mockConnection.post).toHaveBeenCalledWith(
         'https://jira.com/rest/api/2/modify',
         new URLSearchParams({
-          value: 'val',
+          name: 'val',
           id: '1',
         }),
         {
@@ -190,11 +191,11 @@ describe('jsp_deployment', () => {
         status: 200,
         data: [],
       })
-      const results = await deployWithJspEndpoints(
-        [toChange({ before: instance, after: instance })],
+      const results = await deployWithJspEndpoints({
+        changes: [toChange({ before: instance, after: instance })],
         client,
         urls,
-      )
+      })
       expect(results.errors).toHaveLength(1)
       expect(results.appliedChanges).toHaveLength(0)
     })
@@ -204,15 +205,15 @@ describe('jsp_deployment', () => {
         status: 200,
         data: [{
           id: '1',
-          value: 'val2',
+          name: 'val2',
           self: 'someSelf',
         }],
       })
-      const results = await deployWithJspEndpoints(
-        [toChange({ before: instance, after: instance })],
+      const results = await deployWithJspEndpoints({
+        changes: [toChange({ before: instance, after: instance })],
         client,
         urls,
-      )
+      })
       expect(results.errors).toHaveLength(1)
       expect(results.appliedChanges).toHaveLength(0)
     })
@@ -227,11 +228,11 @@ describe('jsp_deployment', () => {
         status: 200,
         data: [],
       })
-      const results = await deployWithJspEndpoints(
-        [toChange({ before: instance })],
+      const results = await deployWithJspEndpoints({
+        changes: [toChange({ before: instance })],
         client,
         urls,
-      )
+      })
       expect(results.errors).toHaveLength(0)
       expect(results.appliedChanges).toHaveLength(1)
 
@@ -245,7 +246,7 @@ describe('jsp_deployment', () => {
       expect(mockConnection.post).toHaveBeenCalledWith(
         'https://jira.com/rest/api/2/remove',
         new URLSearchParams({
-          value: 'val',
+          name: 'val',
           id: '1',
           confirm: 'true',
         }),
@@ -260,14 +261,14 @@ describe('jsp_deployment', () => {
         status: 200,
         data: [{
           id: '1',
-          value: 'val',
+          name: 'val',
         }],
       })
-      const results = await deployWithJspEndpoints(
-        [toChange({ before: instance })],
+      const results = await deployWithJspEndpoints({
+        changes: [toChange({ before: instance })],
         client,
         urls,
-      )
+      })
       expect(results.errors).toHaveLength(1)
       expect(results.appliedChanges).toHaveLength(0)
     })
@@ -277,11 +278,11 @@ describe('jsp_deployment', () => {
         status: 400,
         data: {},
       })
-      const results = await deployWithJspEndpoints(
-        [toChange({ before: instance })],
+      const results = await deployWithJspEndpoints({
+        changes: [toChange({ before: instance })],
         client,
         urls,
-      )
+      })
       expect(results.errors).toHaveLength(1)
       expect(results.appliedChanges).toHaveLength(0)
     })
@@ -291,11 +292,11 @@ describe('jsp_deployment', () => {
         status: 400,
         data: {},
       })
-      const results = await deployWithJspEndpoints(
-        [toChange({ before: instance })],
+      const results = await deployWithJspEndpoints({
+        changes: [toChange({ before: instance })],
         client,
-        _.omit(urls, 'removeUrl'),
-      )
+        urls: _.omit(urls, 'removeUrl'),
+      })
       expect(results.errors).toHaveLength(1)
       expect(results.appliedChanges).toHaveLength(0)
     })

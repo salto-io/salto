@@ -15,9 +15,9 @@
 */
 import _ from 'lodash'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
-import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA } from './constants'
+import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA, STATUS_TYPE_NAME } from './constants'
 
 const { createUserFetchConfigType, createSwaggerAdapterApiConfigType } = configUtils
 
@@ -32,11 +32,20 @@ type JiraClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimit
     usePrivateAPI: boolean
   }
 
+export type JspUrls = {
+  add: string
+  modify: string
+  remove?: string
+  query: string
+}
+
 type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'> & {
   platformSwagger: configUtils.AdapterSwaggerApiConfig['swagger']
   jiraSwagger: configUtils.AdapterSwaggerApiConfig['swagger']
   typesToFallbackToInternalId: string[]
+  jspEndpoints: Record<string, JspUrls>
 }
+
 
 // A list of custom field types that support options
 // according to https://support.atlassian.com/jira-cloud-administration/docs/edit-a-custom-fields-options/
@@ -1339,7 +1348,7 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
       },
       {
         originalName: 'StatusDetails',
-        newName: 'Status',
+        newName: STATUS_TYPE_NAME,
       },
       {
         originalName: 'rest__api__3__application_properties@uuuuuub',
@@ -1483,9 +1492,27 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
   typesToFallbackToInternalId: [
     'Field',
     'CustomFieldContext',
-    'Status',
+    STATUS_TYPE_NAME,
     'Resolution',
   ],
+  jspEndpoints: {
+    Status: {
+      add: '/secure/admin/AddStatus.jspa',
+      modify: '/secure/admin/EditStatus.jspa',
+      remove: '/secure/admin/DeleteStatus.jspa',
+      query: '/rest/workflowDesigner/1.0/statuses',
+    },
+    Resolution: {
+      add: '/secure/admin/AddResolution.jspa',
+      modify: '/secure/admin/EditResolution.jspa',
+      query: '/rest/api/3/resolution',
+    },
+    Priority: {
+      add: '/secure/admin/AddPriority.jspa',
+      modify: '/secure/admin/EditPriority.jspa',
+      query: '/rest/api/3/priority',
+    },
+  },
 }
 
 export const DEFAULT_INCLUDE_ENDPOINTS: string[] = [
@@ -1546,6 +1573,16 @@ export type JiraConfig = {
 
 const defaultApiDefinitionsType = createSwaggerAdapterApiConfigType({ adapter: JIRA })
 
+const jspUrlsType = createMatchingObjectType<Partial<JspUrls>>({
+  elemID: new ElemID(JIRA, 'apiDefinitions'),
+  fields: {
+    add: { refType: BuiltinTypes.STRING },
+    modify: { refType: BuiltinTypes.STRING },
+    remove: { refType: BuiltinTypes.STRING },
+    query: { refType: BuiltinTypes.STRING },
+  },
+})
+
 const apiDefinitionsType = createMatchingObjectType<Partial<JiraApiConfig>>({
   elemID: new ElemID(JIRA, 'apiDefinitions'),
   fields: {
@@ -1567,6 +1604,9 @@ const apiDefinitionsType = createMatchingObjectType<Partial<JiraApiConfig>>({
     },
     typesToFallbackToInternalId: {
       refType: new ListType(BuiltinTypes.STRING),
+    },
+    jspEndpoints: {
+      refType: new MapType(jspUrlsType),
     },
   },
 })

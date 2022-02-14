@@ -105,15 +105,15 @@ describe('resolutionFilter', () => {
       )
       await filter.deploy?.([toChange({ after: instance })])
 
-      expect(deployWithJspEndpointsMock).toHaveBeenCalledWith(
-        [toChange({ after: instance })],
+      expect(deployWithJspEndpointsMock).toHaveBeenCalledWith({
+        changes: [toChange({ after: instance })],
         client,
-        {
-          addUrl: '/secure/admin/AddResolution.jspa',
-          modifyUrl: '/secure/admin/EditResolution.jspa',
-          queryUrl: '/rest/api/3/resolution',
+        urls: {
+          add: '/secure/admin/AddResolution.jspa',
+          modify: '/secure/admin/EditResolution.jspa',
+          query: '/rest/api/3/resolution',
         },
-      )
+      })
     })
   })
 })

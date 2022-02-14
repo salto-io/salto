@@ -18,7 +18,7 @@ import { getParents } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { defaultDeployChange, deployChanges } from '../deployment/deployment'
+import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
 import { FilterCreator } from '../filter'
 
 const PROJECT_COMPONENT_TYPE_NAME = 'ProjectComponent'

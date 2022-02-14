@@ -14,19 +14,24 @@
 * limitations under the License.
 */
 import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { statusValidator } from '../../src/change_validators/status'
+import _ from 'lodash'
+import { DEFAULT_CONFIG, JiraConfig } from '../../src/config'
+import { privateApiValidator } from '../../src/change_validators/private_api'
 import { JIRA, STATUS_TYPE_NAME } from '../../src/constants'
 
-describe('statusValidator', () => {
+describe('privateApiValidator', () => {
   let type: ObjectType
   let instance: InstanceElement
+  let config: JiraConfig
 
   beforeEach(() => {
     type = new ObjectType({ elemID: new ElemID(JIRA, STATUS_TYPE_NAME) })
     instance = new InstanceElement('instance', type)
+    config = _.cloneDeep(DEFAULT_CONFIG)
   })
-  it('should return if status does not have a category', async () => {
-    expect(await statusValidator([
+  it('should return an error if privateAPI is disabled', async () => {
+    config.client.usePrivateAPI = false
+    expect(await privateApiValidator(config)([
       toChange({
         after: instance,
       }),
@@ -34,16 +39,16 @@ describe('statusValidator', () => {
       {
         elemID: instance.elemID,
         severity: 'Error',
-        message: 'statusCategory is required in order to deploy statuses',
-        detailedMessage: 'The status jira.Status.instance.instance is missing statusCategory',
+        message: 'Deploying Status is not supported when private API is disabled',
+        detailedMessage: 'To deploy jira.Status.instance.instance, private API usage must be enabled by setting the jira.client.usePrivateAPI flag to true (usePrivateAPI flag is not supported when using oauth credentials)',
       },
     ])
   })
 
-  it('should not return an error if there is status category', async () => {
-    instance.value.statusCategory = '1'
+  it('should not return an error if privateAPI is enabled', async () => {
+    config.client.usePrivateAPI = true
 
-    expect(await statusValidator([
+    expect(await privateApiValidator(config)([
       toChange({
         after: instance,
       }),

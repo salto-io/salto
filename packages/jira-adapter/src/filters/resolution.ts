@@ -19,8 +19,7 @@ import _ from 'lodash'
 import { findObject, setDeploymentAnnotations } from '../utils'
 import { FilterCreator } from '../filter'
 import { deployWithJspEndpoints } from '../deployment/jsp_deployment'
-
-const RESOLUTION_TYPE_NAME = 'Resolution'
+import { RESOLUTION_TYPE_NAME } from '../constants'
 
 const log = logger(module)
 
@@ -52,15 +51,11 @@ const filter: FilterCreator = ({ client, config }) => ({
         && getChangeData(change).elemID.typeName === RESOLUTION_TYPE_NAME
     )
 
-    const deployResult = await deployWithJspEndpoints(
-      relevantChanges.filter(isInstanceChange).filter(isAdditionOrModificationChange),
+    const deployResult = await deployWithJspEndpoints({
+      changes: relevantChanges.filter(isInstanceChange),
       client,
-      {
-        addUrl: '/secure/admin/AddResolution.jspa',
-        modifyUrl: '/secure/admin/EditResolution.jspa',
-        queryUrl: '/rest/api/3/resolution',
-      }
-    )
+      urls: config.apiDefinitions.jspEndpoints[RESOLUTION_TYPE_NAME],
+    })
     return {
       leftoverChanges,
       deployResult,

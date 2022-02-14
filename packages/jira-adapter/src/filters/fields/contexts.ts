@@ -17,7 +17,7 @@ import { AdditionChange, Change, CORE_ANNOTATIONS, getChangeData, InstanceElemen
 import { config, client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { defaultDeployChange } from '../../deployment/deployment'
+import { defaultDeployChange } from '../../deployment/standard_deployment'
 import JiraClient from '../../client/client'
 import { setContextOptions, setOptionTypeDeploymentAnnotations } from './context_options'
 import { setDefaultValueTypeDeploymentAnnotations, updateDefaultValues } from './default_values'

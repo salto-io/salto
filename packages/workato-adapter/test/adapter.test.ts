@@ -91,7 +91,7 @@ describe('adapter', () => {
           'workato.connection.instance.dev2_sfdc_account@s',
           'workato.connection.instance.sfdev1',
           'workato.folder',
-          'workato.folder.instance.ROOT',
+          'workato.folder.instance.Root',
           'workato.folder.instance.basedir1_257262',
           'workato.folder.instance.f1_nested1_300506',
           'workato.folder.instance.f1_nested2_300506@vu',

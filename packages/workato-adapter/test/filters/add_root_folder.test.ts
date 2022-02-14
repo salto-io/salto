@@ -84,9 +84,9 @@ describe('Field references filter', () => {
       const lengthBefore = elements.length
       await filter.onFetch(elements)
       expect(elements.length).toEqual(lengthBefore + 1)
-      const rootFolder = elements.find(e => e.elemID.getFullName() === 'workato.folder.instance.ROOT') as InstanceElement
+      const rootFolder = elements.find(e => e.elemID.getFullName() === 'workato.folder.instance.Root') as InstanceElement
       expect(rootFolder).toBeInstanceOf(InstanceElement)
-      expect(rootFolder.value).toEqual({ id: 55, name: 'ROOT' })
+      expect(rootFolder.value).toEqual({ id: 55, name: 'Root' })
     })
 
     it('should not create a root folder if all parents already exist', async () => {
@@ -95,7 +95,7 @@ describe('Field references filter', () => {
       const lengthBefore = elements.length
       await filter.onFetch(elements)
       expect(elements.length).toEqual(lengthBefore)
-      const rootFolder = elements.find(e => e.elemID.getFullName() === 'workato.folder.instance.ROOT')
+      const rootFolder = elements.find(e => e.elemID.getFullName() === 'workato.folder.instance.Root')
       expect(rootFolder).toBeUndefined()
     })
 
@@ -105,7 +105,7 @@ describe('Field references filter', () => {
       const lengthBefore = elements.length
       await filter.onFetch(elements)
       expect(elements.length).toEqual(lengthBefore)
-      const rootFolder = elements.find(e => e.elemID.getFullName() === 'workato.folder.instance.ROOT')
+      const rootFolder = elements.find(e => e.elemID.getFullName() === 'workato.folder.instance.Root')
       expect(rootFolder).toBeUndefined()
     })
 
@@ -115,7 +115,7 @@ describe('Field references filter', () => {
       const lengthBefore = elements.length
       await filter.onFetch(elements)
       expect(elements.length).toEqual(lengthBefore)
-      const rootFolder = elements.find(e => e.elemID.getFullName() === 'workato.folder.instance.ROOT')
+      const rootFolder = elements.find(e => e.elemID.getFullName() === 'workato.folder.instance.Root')
       expect(rootFolder).toBeUndefined()
     })
 
@@ -124,7 +124,7 @@ describe('Field references filter', () => {
       const lengthBefore = elements.length
       await filter.onFetch(elements)
       expect(elements.length).toEqual(lengthBefore)
-      const rootFolder = elements.find(e => e.elemID.getFullName() === 'workato.folder.instance.ROOT')
+      const rootFolder = elements.find(e => e.elemID.getFullName() === 'workato.folder.instance.Root')
       expect(rootFolder).toBeUndefined()
     })
   })

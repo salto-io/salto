@@ -75,6 +75,7 @@ describe('field_name_filter', () => {
       'custom',
       fieldType,
       {
+        id: '1',
         name: 'custom',
         schema: {
           custom: 'someType',
@@ -86,6 +87,11 @@ describe('field_name_filter', () => {
 
     const elements = [custom]
     await filter.onFetch(elements)
+    expect(elemIdGetter).toHaveBeenCalledWith(
+      JIRA,
+      { id: '1', object_service_id: 'object_name,jira.Field' },
+      'custom__c',
+    )
     expect(elements.map(e => e.elemID.name)).toEqual([
       'custom__c2',
     ])

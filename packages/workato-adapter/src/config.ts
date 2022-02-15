@@ -59,10 +59,6 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       url: '/connections',
     },
     transformation: {
-      fieldsToHide: [
-        ...FIELDS_TO_HIDE,
-        { fieldName: 'id' },
-      ],
       fieldsToOmit: [
         ...FIELDS_TO_OMIT,
         { fieldName: 'authorized_at', fieldType: 'string' },
@@ -80,7 +76,6 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       fieldsToHide: [
         ...FIELDS_TO_HIDE,
         { fieldName: 'id' },
-        { fieldName: 'user_id' },
       ],
       fieldsToOmit: [
         ...FIELDS_TO_OMIT,
@@ -122,12 +117,6 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       url: '/api_collections',
       paginationField: 'page',
     },
-    transformation: {
-      fieldsToHide: [
-        ...FIELDS_TO_HIDE,
-        { fieldName: 'id' },
-      ],
-    },
   },
   [API_ENDPOINT_TYPE]: {
     request: {
@@ -136,45 +125,25 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
     transformation: {
       idFields: ['name', 'base_path'],
-      fieldsToHide: [
-        ...FIELDS_TO_HIDE,
-        { fieldName: 'id' },
-      ],
     },
   },
+  // eslint-disable-next-line camelcase
   [API_CLIENT_TYPE]: {
     request: {
       url: '/api_clients',
       paginationField: 'page',
     },
-    transformation: {
-      fieldsToHide: [
-        ...FIELDS_TO_HIDE,
-        { fieldName: 'id' },
-      ],
-    },
   },
+  // eslint-disable-next-line camelcase
   [API_ACCESS_PROFILE_TYPE]: {
     request: {
       url: '/api_access_profiles',
       paginationField: 'page',
     },
-    transformation: {
-      fieldsToHide: [
-        ...FIELDS_TO_HIDE,
-        { fieldName: 'id' },
-      ],
-    },
   },
   [ROLE_TYPE]: {
     request: {
       url: '/roles',
-    },
-    transformation: {
-      fieldsToHide: [
-        ...FIELDS_TO_HIDE,
-        { fieldName: 'id' },
-      ],
     },
   },
   [PROPERTY_TYPE]: {

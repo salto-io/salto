@@ -22,6 +22,7 @@ import { createDeployPackage } from '../src/transformers/xml_transformer'
 import { MetadataValues, createInstanceElement } from '../src/transformers/transformer'
 import SalesforceClient from '../src/client/client'
 import { mockTypes, mockDefaultValues } from '../test/mock_elements'
+import { removeMetadataIfAlreadyExists } from './utils'
 
 
 export const gvsName = 'TestGlobalValueSet'
@@ -91,6 +92,11 @@ export const verifyElementsExist = async (client: SalesforceClient): Promise<voi
   }
 
   const addCustomObjectWithVariousFields = async (): Promise<void> => {
+    await removeMetadataIfAlreadyExists(
+      client,
+      constants.CUSTOM_FIELD,
+      summaryFieldName,
+    )
     await removeCustomObjectsWithVariousFields(client)
     const objectToAdd = {
       deploymentStatus: 'Deployed',

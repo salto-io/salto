@@ -47,7 +47,7 @@ const getDereferencedInstanceName = (
     }
   )
   if (nameParts.includes(undefined)) {
-    log.warn(`could not find id for entry - expected id fields ${idFields}, available fields ${Object.keys(instanceValues)}`)
+    log.debug(`could not find id for entry - expected id fields ${idFields}, available fields ${Object.keys(instanceValues)}`)
   }
   return nameParts.every(part => part !== undefined && part !== '') ? nameParts.map(String).join('_') : undefined
 }
@@ -89,7 +89,6 @@ const getValidatedIdFields = (
   )) {
     return idFields
   }
-  log.debug('unexpected %s id fields %s', typeName, idFields)
   return undefined
 }
 
@@ -116,7 +115,6 @@ const getSortedFolders = (
     foldersByParent[0] === undefined
     || foldersByParent[0][0]?.id !== rootFolderId
   ) {
-    log.warn('could not find root folder, not changing folder ids')
     return []
   }
 
@@ -149,14 +147,13 @@ const getSortedFolders = (
 const fixFolderIDs = (elements: Element[], apiDefinitions: WorkatoApiConfig): void => {
   const idFields = getValidatedIdFields(FOLDER_TYPE, ['parent_id'], apiDefinitions)
   if (idFields === undefined) {
-    log.info('unexpected id fields, not changing folder ids: %s', idFields)
     return
   }
 
   const folders = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === FOLDER_TYPE)
   const rootFolderId = folders.find(f => f.elemID.name === ROOT_FOLDER_NAME)?.value.id
   if (rootFolderId === undefined) {
-    log.warn('could not find root folder, not changing folders')
+    log.debug('could not find root folder, not changing folders')
     return
   }
   const sortedFolders = getSortedFolders(folders, rootFolderId)
@@ -169,11 +166,12 @@ const fixFolderIDs = (elements: Element[], apiDefinitions: WorkatoApiConfig): vo
     && e.elemID.typeName === FOLDER_TYPE)
 
   if (sortedFolders.length !== oldFolders.length) {
-    log.warn('unexpected inconsistency found, not changing folders')
+    log.debug('unexpected inconsistency found, not changing folders')
     elements.push(...oldFolders)
     return
   }
 
+  log.info('changing folder ids based on parents')
   const folderNameMapping = { [rootFolderId]: ROOT_FOLDER_NAME }
   const newFolders = sortedFolders.map(inst => {
     const newName = getDereferencedInstanceName(inst.value, idFields, folderNameMapping)
@@ -193,9 +191,10 @@ const fixRecipeIDs = (elements: Element[], apiDefinitions: WorkatoApiConfig): vo
   const recipeIdFields = getValidatedIdFields(RECIPE_TYPE, ['folder_id'], apiDefinitions)
   const codeIdFields = getValidatedIdFields(RECIPE_CODE_TYPE, [], apiDefinitions)
   if (recipeIdFields === undefined || codeIdFields === undefined) {
-    log.debug('unexpected id fields, not changing recipes')
     return
   }
+
+  log.debug('changing recipes based on parent folder names')
 
   const instances = elements.filter(isInstanceElement)
   const folders = instances.filter(e => e.elemID.typeName === FOLDER_TYPE)

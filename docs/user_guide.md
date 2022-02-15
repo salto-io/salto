@@ -36,15 +36,15 @@ The easiest way to install Salto's command line interface (CLI) is by downloadin
 
 Once you've downloaded the binary, it is advised to copy it somewhere safe and add it to your path.
 
-For example, on Mac (using bash) one could do:
+For example, on Mac (using zsh) one could do:
 
 ```shell
 mkdir ~/salto
-curl -L https://github.com/salto-io/salto/releases/latest/download/salto-macos.tar.gz --output ~/salto/salto.tar.gz
-tar -xzf ~/salto/salto.tar.gz
-rm ~/salto/salto.tar.gz
-echo "export PATH=$PATH:~/salto" >> ~/.bash_profile
+cd ~/salto
+curl -Ls https://github.com/salto-io/salto/releases/latest/download/salto-macos.tar.gz | tar -xzf -
+echo "export PATH=$PATH:~/salto" >> ~/.zshrc
 chmod +x ~/salto/salto
+cd -
 ```
 
 >Note that on new MacOS versions, you will get prompted when trying to run `salto` for the first time, as currently the executable is not signed. As a workaround, you could open Finder, Right-Click the downloaded file, choose `Open` and click `Open` again. This downloaded file will be saved as an exception to your security settings.

@@ -13,12 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export const JIRA = 'jira'
-export const ISSUE_TYPE_SCHEMA_NAME = 'IssueTypeScheme'
-export const ISSUE_TYPE_NAME = 'IssueType'
-export const WORKFLOW_TYPE_NAME = 'Workflow'
-export const WORKFLOW_RULES_TYPE_NAME = 'WorkflowRules'
+import { BuiltinTypes, ElemID, MapType } from '@salto-io/adapter-api'
+import { elements } from '@salto-io/adapter-components'
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
+import { JIRA } from '../../constants'
+import { Trigger } from './types'
 
-export const PRIVATE_API_HEADERS = {
-  'X-Atlassian-Token': 'no-check',
-}
+export const triggerType = createMatchingObjectType<Trigger>({
+  elemID: new ElemID(JIRA, 'Trigger'),
+  fields: {
+    key: { refType: BuiltinTypes.STRING },
+    configuration: { refType: new MapType(BuiltinTypes.UNKNOWN) },
+  },
+  path: [JIRA, elements.TYPES_PATH, 'Trigger'],
+})

@@ -19,8 +19,6 @@ import Joi from 'joi'
 
 const log = logger(module)
 
-export const WORKFLOW_TYPE_NAME = 'Workflow'
-
 type Id = {
   name?: string
   entityId?: string
@@ -94,9 +92,20 @@ const postFunctionSchema = Joi.object({
   configuration: postFunctionConfigurationSchema.optional(),
 }).unknown(true)
 
+export type Trigger = {
+  key?: string
+  configuration?: Record<string, unknown>
+}
+
+const triggerSchema = Joi.object({
+  key: Joi.string().optional(),
+  configuration: Joi.object().optional(),
+}).unknown(true)
+
 export type Rules = {
   validators?: Validator[]
   postFunctions?: PostFunction[]
+  triggers?: PostFunction[]
   conditionsTree?: unknown
   conditions?: unknown
 }
@@ -104,18 +113,25 @@ export type Rules = {
 const rulesSchema = Joi.object({
   validators: Joi.array().items(validatorSchema).optional(),
   postFunctions: Joi.array().items(postFunctionSchema).optional(),
+  triggers: Joi.array().items(triggerSchema).optional(),
   conditionsTree: Joi.any().optional(),
   conditions: Joi.any().optional(),
 }).unknown(true)
 
-type Transitions = {
+export type Transition = {
+  id?: string
   type?: string
   rules?: Rules
+  name?: string
+  from?: unknown[]
 }
 
 const transitionsSchema = Joi.object({
+  id: Joi.string().optional(),
   type: Joi.string().optional(),
   rules: rulesSchema.optional(),
+  name: Joi.string().optional(),
+  from: Joi.array().items(Joi.any()).optional(),
 }).unknown(true)
 
 export type Status = {
@@ -127,14 +143,16 @@ const statusSchema = Joi.object({
 }).unknown(true)
 
 export type Workflow = {
+  transitionIds?: Record<string, string>
   id?: Id
   entityId?: string
   name?: string
-  transitions?: Transitions[]
+  transitions?: Transition[]
   statuses?: Status[]
 }
 
 const workflowSchema = Joi.object({
+  transitionIds: Joi.object().pattern(Joi.string(), Joi.string()).optional(),
   id: idSchema.optional(),
   entityId: Joi.string().optional(),
   name: Joi.string().optional(),
@@ -144,12 +162,14 @@ const workflowSchema = Joi.object({
 
 export type WorkflowInstance = InstanceElement & { value: InstanceElement['value'] & Workflow }
 
-export const isWorkflowInstance = (instance: InstanceElement)
-: instance is WorkflowInstance => {
-  const { error } = workflowSchema.validate(instance.value)
+export const isWorkflowValues = (values: unknown): values is Workflow => {
+  const { error } = workflowSchema.validate(values)
   if (error !== undefined) {
     log.warn(`Received an invalid workflow: ${error.message}`)
     return false
   }
   return true
 }
+
+export const isWorkflowInstance = (instance: InstanceElement)
+: instance is WorkflowInstance => isWorkflowValues(instance.value)

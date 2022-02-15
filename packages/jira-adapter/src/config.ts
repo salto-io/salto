@@ -1003,13 +1003,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       ],
     },
   },
-  Transition: {
-    transformation: {
-      fieldsToOmit: [
-        { fieldName: 'id' },
-      ],
-    },
-  },
   Workflow: {
     transformation: {
       fieldTypeOverrides: [

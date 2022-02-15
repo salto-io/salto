@@ -15,11 +15,11 @@
 */
 import { ElemID, InstanceElement, ListType, ObjectType, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import JiraClient from '../../src/client/client'
-import { DEFAULT_CONFIG } from '../../src/config'
-import { JIRA } from '../../src/constants'
-import workflowPropertiesFilter from '../../src/filters/workflow/workflow_properties'
-import { mockClient } from '../utils'
+import JiraClient from '../../../src/client/client'
+import { DEFAULT_CONFIG } from '../../../src/config'
+import { JIRA, WORKFLOW_TYPE_NAME } from '../../../src/constants'
+import workflowPropertiesFilter from '../../../src/filters/workflow/workflow_properties_filter'
+import { mockClient } from '../../utils'
 
 describe('workflowPropertiesFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'deploy'>
@@ -29,7 +29,7 @@ describe('workflowPropertiesFilter', () => {
   beforeEach(async () => {
     workflowStatusType = new ObjectType({ elemID: new ElemID(JIRA, 'WorkflowStatus') })
     workflowType = new ObjectType({
-      elemID: new ElemID(JIRA, 'Workflow'),
+      elemID: new ElemID(JIRA, WORKFLOW_TYPE_NAME),
       fields: {
         statuses: { refType: new ListType(workflowStatusType) },
       },

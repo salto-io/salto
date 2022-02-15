@@ -16,9 +16,10 @@
 import { ChangeValidator, getChangeData, isAdditionChange, isInstanceChange, SaltoErrorSeverity } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
-import { UNDEPLOYALBE_POST_FUNCTION_TYPES, UNDEPLOYALBE_VALIDATOR_TYPES } from '../filters/workflow/workflow'
 import { isWorkflowInstance, WorkflowInstance } from '../filters/workflow/types'
 import { getLookUpName } from '../reference_mapping'
+import { WORKFLOW_TYPE_NAME } from '../constants'
+import { UNDEPLOYALBE_POST_FUNCTION_TYPES, UNDEPLOYALBE_VALIDATOR_TYPES } from '../filters/workflow/workflow_deploy_filter'
 
 const { awu } = collections.asynciterable
 
@@ -41,7 +42,7 @@ export const workflowValidator: ChangeValidator = async changes => (
     .filter(isInstanceChange)
     .filter(isAdditionChange)
     .map(getChangeData)
-    .filter(instance => instance.elemID.typeName === 'Workflow')
+    .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
     .map(instance => resolveValues(instance, getLookUpName))
     .filter(isWorkflowInstance)
     .filter(hasUndeployableTypes)

@@ -15,6 +15,7 @@
 */
 import { InstanceElement, isInstanceElement, isReferenceExpression, Value } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { WORKFLOW_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
 
 type ValueToSort = {
@@ -30,7 +31,7 @@ const VALUES_TO_SORT: ValueToSort[] = [
     sortBy: ['permission', 'holder.type', 'holder.parameter'],
   },
   {
-    typeName: 'Workflow',
+    typeName: WORKFLOW_TYPE_NAME,
     fieldName: 'statuses',
     sortBy: ['id.elemID.name'],
   },

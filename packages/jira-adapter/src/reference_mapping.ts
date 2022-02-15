@@ -16,7 +16,7 @@
 import { isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
-import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME } from './constants'
+import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, WORKFLOW_TYPE_NAME } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 
 
@@ -219,12 +219,12 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
   {
     src: { field: 'defaultWorkflow', parentTypes: ['WorkflowScheme'] },
     serializationStrategy: 'name',
-    target: { type: 'Workflow' },
+    target: { type: WORKFLOW_TYPE_NAME },
   },
   {
     src: { field: 'workflow', parentTypes: ['WorkflowSchemeItem'] },
     serializationStrategy: 'name',
-    target: { type: 'Workflow' },
+    target: { type: WORKFLOW_TYPE_NAME },
   },
   {
     src: { field: 'issueType', parentTypes: ['WorkflowSchemeItem'] },

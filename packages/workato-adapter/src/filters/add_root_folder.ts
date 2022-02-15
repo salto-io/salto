@@ -26,7 +26,7 @@ const { RECORDS_PATH } = elementUtils
 
 // using a single-word folder name guarantees the id will be unique,
 // because all other folder ids include their parent as well as their own name
-const ROOT_FOLDER_NAME = 'Root'
+export const ROOT_FOLDER_NAME = 'Root'
 const ROOT_FOLDER_PATH = 'Root'
 
 /**

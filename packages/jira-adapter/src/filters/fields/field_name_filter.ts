@@ -55,7 +55,7 @@ const getInstanceName = (
   }
 
   const serviceIds = elementUtils.createServiceIds(
-    instance,
+    instance.value,
     serviceIdField,
     instance.refType.elemID
   )

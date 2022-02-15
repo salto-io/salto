@@ -25,7 +25,6 @@ const {
   validateDuckTypeFetchConfig,
 } = configUtils
 
-export const DEFAULT_SERVICE_ID_FIELD = 'id'
 export const DEFAULT_ID_FIELDS = ['name']
 export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
   { fieldName: 'created_at', fieldType: 'string' },
@@ -202,7 +201,6 @@ export const DEFAULT_CONFIG: WorkatoConfig = {
       transformation: {
         idFields: DEFAULT_ID_FIELDS,
         fieldsToOmit: FIELDS_TO_OMIT,
-        serviceIdField: DEFAULT_SERVICE_ID_FIELD,
       },
     },
     types: DEFAULT_TYPES,

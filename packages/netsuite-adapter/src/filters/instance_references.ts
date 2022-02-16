@@ -21,14 +21,11 @@ import { extendGeneratedDependencies, transformElement, TransformFunc } from '@s
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { SCRIPT_ID, PATH } from '../constants'
-import { serviceId } from '../transformer'
+import { getServiceId } from '../transformer'
 import { FilterCreator, FilterWith } from '../filter'
 import { isCustomType } from '../types'
 import { LazyElementsSourceIndexes, ServiceIdRecords } from '../elements_source_index/types'
-import {
-  CAPTURED_APPID, CAPTURED_BUNDLEID, CAPTURED_SERVICE_ID, CAPTURED_TYPE,
-  captureServiceIdInfo, ServiceIdInfo,
-} from '../service_id_info'
+import { captureServiceIdInfo, ServiceIdInfo } from '../service_id_info'
 
 const { awu } = collections.asynciterable
 
@@ -70,8 +67,8 @@ const customTypeServiceIdsToElemIds = async (
 }
 
 const shouldExtractToGenereatedDependency = (serviceIdInfoRecord: ServiceIdInfo): boolean =>
-  serviceIdInfoRecord[CAPTURED_APPID] != null
-  || serviceIdInfoRecord[CAPTURED_BUNDLEID] != null
+  serviceIdInfoRecord.appid !== undefined
+  || serviceIdInfoRecord.bundleid !== undefined
   || !serviceIdInfoRecord.isFullMatch
 
 export const getInstanceServiceIdRecords = async (
@@ -80,9 +77,9 @@ export const getInstanceServiceIdRecords = async (
 ): Promise<ServiceIdRecords> => (
   isCustomType(instance.refType)
     ? customTypeServiceIdsToElemIds(instance, elementsSource)
-    : { [serviceId(instance)]: {
+    : { [getServiceId(instance)]: {
       elemID: instance.elemID.createNestedID(PATH),
-      serviceID: serviceId(instance),
+      serviceID: getServiceId(instance),
     } }
 )
 
@@ -108,16 +105,15 @@ const replaceReferenceValues = async (
     const serviceIdInfo = captureServiceIdInfo(value)
     let returnValue: ReferenceExpression | string = value
     serviceIdInfo.forEach(serviceIdInfoRecord => {
-      const capturedServiceId = serviceIdInfoRecord[CAPTURED_SERVICE_ID]
-      const serviceIdRecord = fetchedElementsServiceIdToElemID[capturedServiceId]
-      ?? elementsSourceServiceIdToElemID[capturedServiceId]
+      const { serviceId, type } = serviceIdInfoRecord
+      const serviceIdRecord = fetchedElementsServiceIdToElemID[serviceId]
+      ?? elementsSourceServiceIdToElemID[serviceId]
 
       if (serviceIdRecord === undefined) {
         return
       }
 
       const { elemID, serviceID } = serviceIdRecord
-      const type = serviceIdInfoRecord[CAPTURED_TYPE]
       if (type && type !== elemID.typeName) {
         dependenciesToAdd.push(elemID)
         return

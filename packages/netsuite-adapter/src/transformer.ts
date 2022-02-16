@@ -265,7 +265,7 @@ export const toCustomizationInfo = async (
   return { typeName, values, scriptId } as CustomTypeInfo
 }
 
-export const serviceId = (instance: InstanceElement): string =>
+export const getServiceId = (instance: InstanceElement): string =>
   instance.value[isCustomType(instance.refType) ? SCRIPT_ID : PATH]
 
 const getScriptIdParts = (topLevelParent: InstanceElement, elemId: ElemID): string[] => {

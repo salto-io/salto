@@ -19,8 +19,8 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { LAST_FETCH_TIME } from '../constants'
 import { getInstanceServiceIdRecords } from '../filters/instance_references'
-import { serviceId } from '../transformer'
 import { ElementsSourceIndexes, ElementsSourceValue, LazyElementsSourceIndexes, ServiceIdRecords } from './types'
+import { getServiceId } from '../transformer'
 import { getFieldInstanceTypes } from '../data_elements/custom_fields'
 
 const { awu } = collections.asynciterable
@@ -47,7 +47,7 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
     _.assign(
       serviceIdsIndex,
       _.isEmpty(serviceIdRecords)
-        ? { [serviceId(element)]: { lastFetchTime } }
+        ? { [getServiceId(element)]: { lastFetchTime } }
         : _.mapValues(serviceIdRecords, ({ elemID }) => ({ elemID, lastFetchTime }))
     )
   }

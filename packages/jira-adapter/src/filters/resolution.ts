@@ -20,6 +20,7 @@ import { findObject, setDeploymentAnnotations } from '../utils'
 import { FilterCreator } from '../filter'
 import { deployWithJspEndpoints } from '../deployment/jsp_deployment'
 import { RESOLUTION_TYPE_NAME } from '../constants'
+import { JspUrls } from '../config'
 
 const log = logger(module)
 
@@ -54,7 +55,7 @@ const filter: FilterCreator = ({ client, config }) => ({
     const deployResult = await deployWithJspEndpoints({
       changes: relevantChanges.filter(isInstanceChange),
       client,
-      urls: config.apiDefinitions.jspEndpoints[RESOLUTION_TYPE_NAME],
+      urls: config.apiDefinitions.types[RESOLUTION_TYPE_NAME].jspRequests as JspUrls,
     })
     return {
       leftoverChanges,

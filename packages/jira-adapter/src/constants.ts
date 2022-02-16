@@ -19,13 +19,3 @@ export const ISSUE_TYPE_NAME = 'IssueType'
 export const STATUS_TYPE_NAME = 'Status'
 export const PRIORITY_TYPE_NAME = 'Priority'
 export const RESOLUTION_TYPE_NAME = 'Resolution'
-
-
-export const PRIVATE_API_HEADERS = {
-  'X-Atlassian-Token': 'no-check',
-}
-
-export const JSP_API_HEADERS = {
-  ...PRIVATE_API_HEADERS,
-  'Content-Type': 'application/x-www-form-urlencoded',
-}

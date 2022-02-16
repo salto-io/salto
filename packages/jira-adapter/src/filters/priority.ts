@@ -20,6 +20,7 @@ import { findObject, setDeploymentAnnotations } from '../utils'
 import { FilterCreator } from '../filter'
 import { deployWithJspEndpoints } from '../deployment/jsp_deployment'
 import { PRIORITY_TYPE_NAME } from '../constants'
+import { JspUrls } from '../config'
 
 const log = logger(module)
 
@@ -56,7 +57,7 @@ const filter: FilterCreator = ({ client, config }) => ({
     const deployResult = await deployWithJspEndpoints({
       changes: relevantChanges.filter(isInstanceChange).filter(isAdditionOrModificationChange),
       client,
-      urls: config.apiDefinitions.jspEndpoints[PRIORITY_TYPE_NAME],
+      urls: config.apiDefinitions.types[PRIORITY_TYPE_NAME].jspRequests as JspUrls,
       serviceValuesTransformer: serviceValues => _.omit({
         ...serviceValues,
         iconurl: new URL(serviceValues.iconUrl).pathname,

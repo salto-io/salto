@@ -120,10 +120,12 @@ const createSwaggerDefinitionsBaseConfigType = (
 export const createSwaggerAdapterApiConfigType = ({
   adapter,
   additionalFields,
+  additionalTypeFields,
   additionalRequestFields,
   additionalTransformationFields,
 }: {
   adapter: string
+  additionalTypeFields?: Record<string, FieldDefinition>
   additionalFields?: Record<string, FieldDefinition>
   additionalRequestFields?: Record<string, FieldDefinition>
   additionalTransformationFields?: Record<string, FieldDefinition>
@@ -137,6 +139,7 @@ export const createSwaggerAdapterApiConfigType = ({
     adapter,
     requestTypes,
     transformationTypes,
+    additionalTypeFields,
     additionalFields: {
       ...additionalFields,
       swagger: {

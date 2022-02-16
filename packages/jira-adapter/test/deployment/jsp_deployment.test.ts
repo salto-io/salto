@@ -19,8 +19,8 @@ import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter
 import _ from 'lodash'
 import { mockClient } from '../utils'
 import { deployWithJspEndpoints } from '../../src/deployment/jsp_deployment'
-import JiraClient from '../../src/client/client'
-import { JIRA, JSP_API_HEADERS, PRIVATE_API_HEADERS } from '../../src/constants'
+import JiraClient, { JSP_API_HEADERS, PRIVATE_API_HEADERS } from '../../src/client/client'
+import { JIRA } from '../../src/constants'
 import { JspUrls } from '../../src/config'
 
 describe('jsp_deployment', () => {

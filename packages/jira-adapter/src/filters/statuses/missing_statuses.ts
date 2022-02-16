@@ -21,8 +21,9 @@ import { elements as elementUtils, config as configUtils } from '@salto-io/adapt
 import _ from 'lodash'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
-import { JIRA, PRIVATE_API_HEADERS, STATUS_TYPE_NAME } from '../../constants'
+import { JIRA, STATUS_TYPE_NAME } from '../../constants'
 import { JiraConfig } from '../../config'
+import { PRIVATE_API_HEADERS } from '../../client/client'
 
 
 const log = logger(module)

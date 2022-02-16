@@ -30,7 +30,7 @@ export const privateApiValidator: (config: JiraConfig) => ChangeValidator = conf
       .map(change => ({
         elemID: getChangeData(change).elemID,
         severity: 'Error' as SaltoErrorSeverity,
-        message: `Deploying ${getChangeData(change).elemID.typeName} is not supported when private API is disabled`,
-        detailedMessage: `To deploy ${getChangeData(change).elemID.getFullName()}, private API usage must be enabled by setting the jira.client.usePrivateAPI flag to true (usePrivateAPI flag is not supported when using oauth credentials)`,
+        message: `Deploying ${getChangeData(change).elemID.typeName} is not supported when private API usage is disabled`,
+        detailedMessage: `To deploy ${getChangeData(change).elemID.getFullName()}, private API usage must be enabled by setting the jira.client.usePrivateAPI flag to true. Note that usePrivateAPI is not supported when using OAuth credentials`,
       }))
   }

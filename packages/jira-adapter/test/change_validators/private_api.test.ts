@@ -39,8 +39,8 @@ describe('privateApiValidator', () => {
       {
         elemID: instance.elemID,
         severity: 'Error',
-        message: 'Deploying Status is not supported when private API is disabled',
-        detailedMessage: 'To deploy jira.Status.instance.instance, private API usage must be enabled by setting the jira.client.usePrivateAPI flag to true (usePrivateAPI flag is not supported when using oauth credentials)',
+        message: 'Deploying Status is not supported when private API usage is disabled',
+        detailedMessage: 'To deploy jira.Status.instance.instance, private API usage must be enabled by setting the jira.client.usePrivateAPI flag to true. Note that usePrivateAPI is not supported when using OAuth credentials',
       },
     ])
   })

@@ -16,7 +16,7 @@
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { createConnection } from './connection'
-import { JIRA, JSP_API_HEADERS } from '../constants'
+import { JIRA } from '../constants'
 import { Credentials } from '../auth'
 
 const log = logger(module)
@@ -34,6 +34,17 @@ const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitC
 const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
   get: 50,
 }
+
+
+export const PRIVATE_API_HEADERS = {
+  'X-Atlassian-Token': 'no-check',
+}
+
+export const JSP_API_HEADERS = {
+  ...PRIVATE_API_HEADERS,
+  'Content-Type': 'application/x-www-form-urlencoded',
+}
+
 
 export default class JiraClient extends clientUtils.AdapterHTTPClient<
   Credentials, clientUtils.ClientRateLimitConfig
@@ -77,6 +88,7 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
     }
   }
 
+  // Sends a post request to a JIRA JSP page
   public async jspPost(
     args: clientUtils.ClientDataParams & { data: Record<string, string> },
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {

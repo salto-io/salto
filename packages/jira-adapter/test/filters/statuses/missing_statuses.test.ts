@@ -21,7 +21,8 @@ import { mockClient } from '../../utils'
 import missingStatusesFilter from '../../../src/filters/statuses/missing_statuses'
 import { Filter } from '../../../src/filter'
 import { DEFAULT_CONFIG, JiraConfig } from '../../../src/config'
-import { JIRA, PRIVATE_API_HEADERS, STATUS_TYPE_NAME } from '../../../src/constants'
+import { JIRA, STATUS_TYPE_NAME } from '../../../src/constants'
+import { PRIVATE_API_HEADERS } from '../../../src/client/client'
 
 describe('missingStatusesFilter', () => {
   let filter: Filter

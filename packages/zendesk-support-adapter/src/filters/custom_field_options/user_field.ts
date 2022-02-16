@@ -21,6 +21,7 @@ import { createCustomFieldOptionsFilterCreator } from './creator'
 const filterCreator = createCustomFieldOptionsFilterCreator({
   parentTypeName: 'user_field',
   childTypeName: 'user_field__custom_field_options',
+  newOptionWithNull: true,
 })
 
 export default filterCreator

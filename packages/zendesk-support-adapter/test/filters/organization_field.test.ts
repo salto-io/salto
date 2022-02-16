@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, ElemID, InstanceElement,
-  ReferenceExpression, CORE_ANNOTATIONS,
+  ReferenceExpression, CORE_ANNOTATIONS, toChange,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { DEFAULT_CONFIG } from '../../src/config'
@@ -65,6 +65,64 @@ describe('organization field filter', () => {
       config: DEFAULT_CONFIG,
     }) as FilterType
   })
+  describe('preDeploy', () => {
+    const resolvedParent = new InstanceElement(
+      'parent',
+      parentObjType,
+      {
+        id: 11,
+        name: 'parent',
+        [CUSTOM_FIELD_OPTIONS_FIELD_NAME]: [
+          { id: 22, name: 'child1', value: 'v1' },
+        ],
+      },
+    )
+    it('should add null as id for new childs', async () => {
+      const clonedResolvedParentBefore = resolvedParent.clone()
+      const clonedResolvedParentAfter = resolvedParent.clone()
+      clonedResolvedParentAfter.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] = [
+        { id: 22, name: 'child1', value: 'v1' },
+        { name: 'child2', value: 'v2' },
+      ]
+      const change = toChange({
+        before: clonedResolvedParentBefore, after: clonedResolvedParentAfter,
+      })
+      await filter?.preDeploy([change])
+      expect(clonedResolvedParentAfter.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME]).toEqual([
+        { id: 22, name: 'child1', value: 'v1' },
+        { id: null, name: 'child2', value: 'v2' },
+      ])
+    })
+  })
+  describe('onDeploy', () => {
+    const resolvedParent = new InstanceElement(
+      'parent',
+      parentObjType,
+      {
+        id: 11,
+        name: 'parent',
+        [CUSTOM_FIELD_OPTIONS_FIELD_NAME]: [
+          { id: 22, name: 'child1', value: 'v1' },
+        ],
+      },
+    )
+    it('should remove the null from id for new childs', async () => {
+      const clonedResolvedParentBefore = resolvedParent.clone()
+      const clonedResolvedParentAfter = resolvedParent.clone()
+      clonedResolvedParentAfter.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] = [
+        { id: 22, name: 'child1', value: 'v1' },
+        { id: null, name: 'child2', value: 'v2' },
+      ]
+      const change = toChange({
+        before: clonedResolvedParentBefore, after: clonedResolvedParentAfter,
+      })
+      await filter?.onDeploy([change])
+      expect(clonedResolvedParentAfter.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME]).toEqual([
+        { id: 22, name: 'child1', value: 'v1' },
+        { name: 'child2', value: 'v2' },
+      ])
+    })
+  })
   describe('deploy', () => {
     const resolvedParent = new InstanceElement(
       'parent',
@@ -101,7 +159,8 @@ describe('organization field filter', () => {
         .mockImplementation(async () => ({
           organization_field: { id: 11, [CUSTOM_FIELD_OPTIONS_FIELD_NAME]: [{ id: 22, value: 'v1' }, { id: 33, value: 'v2' }] },
         }))
-      const res = await filter.deploy(clonedElements.map(e => ({ action: 'add', data: { after: e } })))
+      const changes = clonedElements.map(e => toChange({ after: e }))
+      const res = await filter.deploy(changes)
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
       expect(mockDeployChange).toHaveBeenCalledWith(
         { action: 'add', data: { after: clonedElements[0] } },

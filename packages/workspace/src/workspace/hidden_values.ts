@@ -20,7 +20,7 @@ import { transformElement, TransformFunc, transformValues, applyFunctionToChange
 import { CORE_ANNOTATIONS, Element, isInstanceElement, isType, TypeElement, getField,
   DetailedChange, isRemovalChange, ElemID, isObjectType, ObjectType, Values,
   isRemovalOrModificationChange, isAdditionOrModificationChange, isElement, isField,
-  ReadOnlyElementsSource, ReferenceMap, isPrimitiveType, PrimitiveType, InstanceElement, Field, isModificationChange, ModificationChange, ReferenceExpression, isReferenceExpression, MapType, getFieldType, isMapType } from '@salto-io/adapter-api'
+  ReadOnlyElementsSource, ReferenceMap, isPrimitiveType, PrimitiveType, InstanceElement, Field, isModificationChange, ModificationChange, ReferenceExpression, isReferenceExpression, MapType, getFieldType, isMapType, getChangeData } from '@salto-io/adapter-api'
 import { mergeElements, MergeResult } from '../merger'
 import { State } from './state'
 import { createAddChange, createRemoveChange } from './nacl_files/multi_env/projections'
@@ -558,7 +558,7 @@ const removeDuplicateChanges = (
  * Since the hidden annotation is currently supported on types and fields, we need to handle
  * types that changed visibility and fields that changed visibility.
  */
-const mergeWithHiddenChangeSideEffects = async (
+const getHiddenChangeNaclSideEffects = async (
   changes: DetailedChange[],
   state: State,
   visibleElementSource: ReadOnlyElementsSource,
@@ -568,12 +568,17 @@ const mergeWithHiddenChangeSideEffects = async (
     ...await getHiddenFieldAndAnnotationValueChanges(changes, state, visibleElementSource),
     ...await getInstanceTypeHiddenChanges(changes, state),
   ]
-  // Additional changes may override / be overridden by original changes, so if we add new changes
-  // we have to make sure we remove duplicates
-  return additionalChanges.length === 0
-    ? changes
-    : removeDuplicateChanges(changes, additionalChanges)
+  return additionalChanges
 }
+
+const getAdditionalHiddenChanges = (
+  changes: DetailedChange[]
+): DetailedChange[] => changes.filter(change => {
+  const changeData = getChangeData(change)
+  return isRemovalChange(change)
+    && isElement(changeData)
+    && changeData.elemID.isTopLevel()
+})
 
 const isHiddenField = async (
   baseType: TypeElement,
@@ -842,12 +847,23 @@ export const handleHiddenChanges = async (
   state: State,
   visibleElementSource: ReadOnlyElementsSource,
 ): Promise<{visible: DetailedChange[]; hidden: DetailedChange[]}> => {
-  const changesWithHiddenAnnotationChanges = await mergeWithHiddenChangeSideEffects(
-    changes, state, visibleElementSource,
-  )
-  const filteredChanges = await filterOutHiddenChanges(changesWithHiddenAnnotationChanges, state)
+  const additionalNaclChanges = (await filterOutHiddenChanges(
+    await getHiddenChangeNaclSideEffects(changes, state, visibleElementSource),
+    state
+  )).map(change => change.visible).filter(values.isDefined)
+  const additionalStateChanges = (await filterOutHiddenChanges(
+    getAdditionalHiddenChanges(changes),
+    state
+  )).map(change => change.hidden).filter(values.isDefined)
+  const filteredChanges = await filterOutHiddenChanges(changes, state)
   return {
-    visible: filteredChanges.map(change => change.visible).filter(values.isDefined),
-    hidden: filteredChanges.map(change => change.hidden).filter(values.isDefined),
+    visible: removeDuplicateChanges(
+      filteredChanges.map(change => change.visible).filter(values.isDefined),
+      additionalNaclChanges
+    ),
+    hidden: removeDuplicateChanges(
+      filteredChanges.map(change => change.hidden).filter(values.isDefined),
+      additionalStateChanges
+    ),
   }
 }

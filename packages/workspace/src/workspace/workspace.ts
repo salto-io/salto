@@ -473,9 +473,6 @@ export const loadWorkspace = async (
             .map(elem => toChange({ after: elem })).toArray()
           : []
 
-        const stateRemovedElementChanges = (workspaceChanges[envName] ?? createEmptyChangeSet())
-          .changes.filter(change => isRemovalChange(change)
-            && getChangeData(change).elemID.isTopLevel())
         // To preserve the old ws functionality - hidden values should be added to the workspace
         // cache only if their top level element is in the nacls, or they are marked as hidden
         // (SAAS-2639)
@@ -495,8 +492,7 @@ export const loadWorkspace = async (
 
         return {
           changes: stateChangesForExistingNaclElements
-            .concat(initHiddenElementsChanges)
-            .concat(stateRemovedElementChanges),
+            .concat(initHiddenElementsChanges),
           cacheValid,
           preChangeHash: partialStateChanges.preChangeHash
             ?? await stateToBuild.mergeManager.getHash(STATE_SOURCE_PREFIX + envName),

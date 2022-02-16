@@ -502,7 +502,11 @@ describe('handleHiddenChanges', () => {
       new ObjectType({
         elemID: new ElemID('test', 'type'),
       }),
-      { [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [{ reference: 'aaa', occurrences: undefined }] },
+      {
+        [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [{ reference: 'aaa', occurrences: undefined }],
+        emptyList: [],
+        undefinedValue: undefined,
+      },
     )
 
     const change: DetailedChange = {

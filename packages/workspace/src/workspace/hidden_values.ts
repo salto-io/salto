@@ -20,7 +20,7 @@ import { transformElement, TransformFunc, transformValues, applyFunctionToChange
 import { CORE_ANNOTATIONS, Element, isInstanceElement, isType, TypeElement, getField,
   DetailedChange, isRemovalChange, ElemID, isObjectType, ObjectType, Values,
   isRemovalOrModificationChange, isAdditionOrModificationChange, isElement, isField,
-  ReadOnlyElementsSource, ReferenceMap, isPrimitiveType, PrimitiveType, InstanceElement, Field, isModificationChange, ModificationChange, ReferenceExpression, isReferenceExpression, MapType, getFieldType, isMapType, getChangeData } from '@salto-io/adapter-api'
+  ReadOnlyElementsSource, ReferenceMap, isPrimitiveType, PrimitiveType, InstanceElement, Field, isModificationChange, ModificationChange, ReferenceExpression, isReferenceExpression, MapType, getFieldType, isMapType } from '@salto-io/adapter-api'
 import { mergeElements, MergeResult } from '../merger'
 import { State } from './state'
 import { createAddChange, createRemoveChange } from './nacl_files/multi_env/projections'
@@ -527,6 +527,10 @@ const removeDuplicateChanges = (
   origChanges: DetailedChange[],
   additionalChanges: DetailedChange[],
 ): DetailedChange[] => {
+  // If there are no additional changes we'll save the calculation time
+  if (additionalChanges.length === 0) {
+    return origChanges
+  }
   // If we have multiple changes on the same ID, we want to take the newer change
   // (the one from additionalChanges) because it overrides the original, for example
   // this can happen if a field is both hidden and changed at the same time
@@ -570,15 +574,6 @@ const getHiddenChangeNaclSideEffects = async (
   ]
   return additionalChanges
 }
-
-const getAdditionalHiddenChanges = (
-  changes: DetailedChange[]
-): DetailedChange[] => changes.filter(change => {
-  const changeData = getChangeData(change)
-  return isRemovalChange(change)
-    && isElement(changeData)
-    && changeData.elemID.isTopLevel()
-})
 
 const isHiddenField = async (
   baseType: TypeElement,
@@ -851,19 +846,12 @@ export const handleHiddenChanges = async (
     await getHiddenChangeNaclSideEffects(changes, state, visibleElementSource),
     state
   )).map(change => change.visible).filter(values.isDefined)
-  const additionalStateChanges = (await filterOutHiddenChanges(
-    getAdditionalHiddenChanges(changes),
-    state
-  )).map(change => change.hidden).filter(values.isDefined)
   const filteredChanges = await filterOutHiddenChanges(changes, state)
   return {
     visible: removeDuplicateChanges(
       filteredChanges.map(change => change.visible).filter(values.isDefined),
       additionalNaclChanges
     ),
-    hidden: removeDuplicateChanges(
-      filteredChanges.map(change => change.hidden).filter(values.isDefined),
-      additionalStateChanges
-    ),
+    hidden: filteredChanges.map(change => change.hidden).filter(values.isDefined),
   }
 }

@@ -35,6 +35,8 @@ describe('manifest.xml utils', () => {
         ref: '[scriptid=secondscriptid]',
         ref2: '[scriptid=scriptid1]',
         ref3: '[scriptid=workflow1.innerscriptid]',
+        ref4: '[appid=com.salto, scriptid=external_script_id]',
+        fileRef: '[/SuiteScripts/test.js]',
       },
     },
   ]

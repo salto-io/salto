@@ -35,6 +35,17 @@ const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
   get: 50,
 }
 
+
+export const PRIVATE_API_HEADERS = {
+  'X-Atlassian-Token': 'no-check',
+}
+
+export const JSP_API_HEADERS = {
+  ...PRIVATE_API_HEADERS,
+  'Content-Type': 'application/x-www-form-urlencoded',
+}
+
+
 export default class JiraClient extends clientUtils.AdapterHTTPClient<
   Credentials, clientUtils.ClientRateLimitConfig
 > {
@@ -75,5 +86,31 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
       }
       throw e
     }
+  }
+
+  // Sends a post request to a JIRA JSP page
+  public async jspPost(
+    args: clientUtils.ClientDataParams & { data: Record<string, string> },
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    return this.post({
+      ...args,
+      data: new URLSearchParams(args.data),
+      headers: {
+        ...JSP_API_HEADERS,
+        ...(args.headers ?? {}),
+      },
+    })
+  }
+
+  public async getPrivate(
+    args: clientUtils.ClientBaseParams,
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    return this.getSinglePage({
+      ...args,
+      headers: {
+        ...PRIVATE_API_HEADERS,
+        ...(args.headers ?? {}),
+      },
+    })
   }
 }

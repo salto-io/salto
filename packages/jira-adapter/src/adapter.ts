@@ -52,7 +52,11 @@ import fieldDeploymentFilter from './filters/fields/field_deployment_filter'
 import contextDeploymentFilter from './filters/fields/context_deployment_filter'
 import fieldTypeReferencesFilter from './filters/fields/field_type_references_filter'
 import contextReferencesFilter from './filters/fields/context_references_filter'
+import resolutionFilter from './filters/resolution'
+import priorityFilter from './filters/priority'
+import statusDeploymentFilter from './filters/statuses/status_deployment'
 import avatarsFilter from './filters/avatars'
+import iconUrlFilter from './filters/icon_url'
 import userFilter from './filters/user'
 import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
@@ -81,6 +85,7 @@ export const DEFAULT_FILTERS = [
   fieldDeploymentFilter,
   contextDeploymentFilter,
   avatarsFilter,
+  iconUrlFilter,
   workflowFilter,
   workflowPropertiesFilter,
   workflowSchemeFilter,
@@ -91,6 +96,9 @@ export const DEFAULT_FILTERS = [
   projectFilter,
   projectComponentFilter,
   screenFilter,
+  resolutionFilter,
+  priorityFilter,
+  statusDeploymentFilter,
   issueTypeScreenSchemeFilter,
   fieldConfigurationFilter,
   fieldConfigurationSchemeFilter,

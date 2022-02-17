@@ -54,6 +54,7 @@ describe('config_swagger', () => {
         additionalTransformationFields: { b: {
           refType: BuiltinTypes.NUMBER,
         } },
+        additionalTypeFields: { c: { refType: BuiltinTypes.STRING } },
       })
       expect(Object.keys(configType.fields)).toHaveLength(5)
       expect(configType.fields.types).toBeDefined()
@@ -67,7 +68,7 @@ describe('config_swagger', () => {
       expect(types).toBeInstanceOf(MapType)
       const typesInner = await types.getInnerType() as ObjectType
       expect(typesInner).toBeInstanceOf(ObjectType)
-      expect(new Set(Object.keys(typesInner.fields))).toEqual(new Set(['request', 'transformation', 'deployRequests']))
+      expect(new Set(Object.keys(typesInner.fields))).toEqual(new Set(['request', 'transformation', 'deployRequests', 'c']))
       const request = await typesInner.fields.request.getType() as ObjectType
       const transformation = await typesInner.fields.transformation.getType() as ObjectType
       expect(request).toBeInstanceOf(ObjectType)
@@ -77,7 +78,7 @@ describe('config_swagger', () => {
       expect(transformation.fields.a).toBeUndefined()
       const typeDefaults = await configType.fields.typeDefaults.getType() as ObjectType
       expect(typeDefaults).toBeInstanceOf(ObjectType)
-      expect(new Set(Object.keys(typeDefaults.fields))).toEqual(new Set(['request', 'transformation']))
+      expect(new Set(Object.keys(typeDefaults.fields))).toEqual(new Set(['request', 'transformation', 'c']))
       const requestDefaults = await typesInner.fields.request.getType() as ObjectType
       const transformationDefaults = await typesInner.fields.transformation.getType() as ObjectType
       expect(requestDefaults).toBeInstanceOf(ObjectType)

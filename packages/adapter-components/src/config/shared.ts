@@ -50,11 +50,13 @@ export type UserFetchConfig = {
 export const createAdapterApiConfigType = ({
   adapter,
   additionalFields,
+  additionalTypeFields,
   requestTypes,
   transformationTypes,
 }: {
   adapter: string
   additionalFields?: Record<string, FieldDefinition>
+  additionalTypeFields?: Record<string, FieldDefinition>
   requestTypes: {
     fetch: {
       request: ObjectType
@@ -71,6 +73,7 @@ export const createAdapterApiConfigType = ({
       transformation: {
         refType: transformationTypes.transformationDefault,
       },
+      ...additionalTypeFields,
     },
   })
 
@@ -82,6 +85,7 @@ export const createAdapterApiConfigType = ({
         refType: requestTypes.deployRequests,
       },
       transformation: { refType: transformationTypes.transformation },
+      ...additionalTypeFields,
     },
   })
 

@@ -25,7 +25,7 @@ import { validatorType, types as validatorTypes } from './validators_types'
 import JiraClient from '../../client/client'
 import { JiraConfig } from '../../config'
 import { getLookUpName } from '../../reference_mapping'
-import { defaultDeployChange, deployChanges } from '../../deployment'
+import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 
 const log = logger(module)
 

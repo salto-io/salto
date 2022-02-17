@@ -16,7 +16,6 @@
 export const JIRA = 'jira'
 export const ISSUE_TYPE_SCHEMA_NAME = 'IssueTypeScheme'
 export const ISSUE_TYPE_NAME = 'IssueType'
-
-export const PRIVATE_API_HEADERS = {
-  'X-Atlassian-Token': 'no-check',
-}
+export const STATUS_TYPE_NAME = 'Status'
+export const PRIORITY_TYPE_NAME = 'Priority'
+export const RESOLUTION_TYPE_NAME = 'Resolution'

@@ -160,6 +160,7 @@ jira {
             fieldType = "string"
           },
         ]
+        serviceIdField = "id"
       }
     }
     types = {
@@ -487,6 +488,10 @@ jira {
             {
               fieldName = "fields"
               fieldType = "list<FieldConfigurationItem>"
+            },
+            {
+              fieldName = "isDefault"
+              fieldType = "boolean"
             },
             {
               fieldName = "id"
@@ -951,6 +956,17 @@ jira {
               isSingle = true
             },
             {
+              type = "SecurityScheme"
+              toField = "issueSecurityScheme"
+              context = [
+                {
+                  name = "projectKeyOrId"
+                  fromField = "key"
+                },
+              ]
+              isSingle = true
+            },
+            {
               type = "PageBeanIssueTypeScreenSchemesProjects"
               toField = "issueTypeScreenScheme"
               context = [
@@ -1048,6 +1064,10 @@ jira {
             {
               fieldName = "notificationScheme"
               fieldType = "NotificationScheme"
+            },
+            {
+              fieldName = "issueSecurityScheme"
+              fieldType = "SecurityScheme"
             },
             {
               fieldName = "issueTypeScreenScheme"
@@ -1428,7 +1448,11 @@ jira {
         }
       }
       SecurityScheme = {
+        request = {
+          url = "/rest/api/3/project/{projectKeyOrId}/issuesecuritylevelscheme"
+        }
         transformation = {
+          dataField = "."
           fieldsToHide = [
             {
               fieldName = "id"
@@ -1447,6 +1471,12 @@ jira {
       }
       Status = {
         transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "untranslatedName"
+              fieldType = "string"
+            },
+          ]
           fieldsToHide = [
             {
               fieldName = "id"
@@ -1703,6 +1733,12 @@ jira {
         }
       }
     }
+    typesToFallbackToInternalId = [
+      "Field",
+      "CustomFieldContext",
+      "Status",
+      "Resolution",
+    ]
   }
 }
 ```

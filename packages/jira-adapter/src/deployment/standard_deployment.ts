@@ -18,8 +18,8 @@ import { config, deployment, client as clientUtils, elements as elementUtils } f
 import { resolveChangeElement, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import JiraClient from './client/client'
-import { getLookUpName } from './reference_mapping'
+import JiraClient from '../client/client'
+import { getLookUpName } from '../reference_mapping'
 
 const log = logger(module)
 

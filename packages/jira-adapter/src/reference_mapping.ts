@@ -16,7 +16,7 @@
 import { isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
-import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME } from './constants'
+import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, STATUS_TYPE_NAME } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 
 
@@ -54,7 +54,7 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
   {
     src: { field: 'id', parentTypes: ['WorkflowStatus'] },
     serializationStrategy: 'id',
-    target: { type: 'Status' },
+    target: { type: STATUS_TYPE_NAME },
   },
   {
     src: { field: 'id', parentTypes: ['TransitionScreenDetails'] },
@@ -64,12 +64,12 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
   {
     src: { field: 'to', parentTypes: ['Transition'] },
     serializationStrategy: 'id',
-    target: { type: 'Status' },
+    target: { type: STATUS_TYPE_NAME },
   },
   {
     src: { field: 'from', parentTypes: ['Transition'] },
     serializationStrategy: 'id',
-    target: { type: 'Status' },
+    target: { type: STATUS_TYPE_NAME },
   },
   {
     src: { field: 'id', parentTypes: ['ProjectRoleConfig'] },
@@ -114,7 +114,7 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
   {
     src: { field: 'id', parentTypes: ['StatusRef'] },
     serializationStrategy: 'id',
-    target: { type: 'Status' },
+    target: { type: STATUS_TYPE_NAME },
   },
   {
     src: { field: 'parameter', parentTypes: ['PermissionHolder'] },
@@ -234,12 +234,12 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
   {
     src: { field: 'statusId', parentTypes: ['StatusMigration'] },
     serializationStrategy: 'id',
-    target: { type: 'Status' },
+    target: { type: STATUS_TYPE_NAME },
   },
   {
     src: { field: 'newStatusId', parentTypes: ['StatusMigration'] },
     serializationStrategy: 'id',
-    target: { type: 'Status' },
+    target: { type: STATUS_TYPE_NAME },
   },
   {
     src: { field: 'issueTypeId', parentTypes: ['StatusMigration'] },
@@ -255,6 +255,11 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     src: { field: 'rankCustomFieldId', parentTypes: ['BoardConfiguration_ranking'] },
     serializationStrategy: 'id',
     target: { type: 'Field' },
+  },
+  {
+    src: { field: 'statusCategory', parentTypes: [STATUS_TYPE_NAME] },
+    serializationStrategy: 'id',
+    target: { type: 'StatusCategory' },
   },
 ]
 

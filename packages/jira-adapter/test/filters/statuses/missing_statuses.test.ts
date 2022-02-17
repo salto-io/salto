@@ -21,7 +21,8 @@ import { mockClient } from '../../utils'
 import missingStatusesFilter from '../../../src/filters/statuses/missing_statuses'
 import { Filter } from '../../../src/filter'
 import { DEFAULT_CONFIG, JiraConfig } from '../../../src/config'
-import { JIRA, PRIVATE_API_HEADERS } from '../../../src/constants'
+import { JIRA, STATUS_TYPE_NAME } from '../../../src/constants'
+import { PRIVATE_API_HEADERS } from '../../../src/client/client'
 
 describe('missingStatusesFilter', () => {
   let filter: Filter
@@ -41,7 +42,7 @@ describe('missingStatusesFilter', () => {
     })
 
     type = new ObjectType({
-      elemID: new ElemID(JIRA, 'Status'),
+      elemID: new ElemID(JIRA, STATUS_TYPE_NAME),
     })
   })
 
@@ -117,7 +118,7 @@ describe('missingStatusesFilter', () => {
       expect(elements.map(e => e.elemID.getFullName())).toEqual([
         type.elemID.getFullName(),
         instance.elemID.getFullName(),
-        new ElemID(JIRA, 'Status', 'instance', 'Status1').getFullName(),
+        new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'Status1').getFullName(),
       ])
     })
   })

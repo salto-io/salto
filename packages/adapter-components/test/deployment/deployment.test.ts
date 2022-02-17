@@ -16,7 +16,7 @@
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { HTTPWriteClientInterface } from '../../src/client/http_client'
-import { deployChange } from '../../src/deployment/deployment'
+import { deployChange, filterUndeployableValues } from '../../src/deployment/deployment'
 import { DeploymentRequestsByAction } from '../../src/config/request'
 
 describe('deployChange', () => {
@@ -93,5 +93,64 @@ describe('deployChange', () => {
     expect(httpClient.delete).toHaveBeenCalledWith(expect.objectContaining({
       url: '/test/endpoint/1',
     }))
+  })
+})
+
+describe('filterUndeployableValues', () => {
+  let instance: InstanceElement
+
+  beforeEach(() => {
+    const type = new ObjectType({
+      elemID: new ElemID('adapter', 'test'),
+      fields: {
+        creatable: {
+          refType: BuiltinTypes.STRING,
+          annotations: {
+            [CORE_ANNOTATIONS.CREATABLE]: true,
+            [CORE_ANNOTATIONS.UPDATABLE]: false,
+          },
+        },
+
+        updatable: {
+          refType: BuiltinTypes.STRING,
+          annotations: {
+            [CORE_ANNOTATIONS.CREATABLE]: false,
+            [CORE_ANNOTATIONS.UPDATABLE]: true,
+          },
+        },
+      },
+    })
+
+
+    instance = new InstanceElement(
+      'instance',
+      type,
+      {
+        creatable: 'aaa',
+        updatable: 'bbb',
+        other: 'ccc',
+      }
+    )
+  })
+
+  it('should filter the the unsupported values', async () => {
+    const addValues = await filterUndeployableValues(instance, 'add')
+    expect(addValues.value).toEqual({
+      creatable: 'aaa',
+      other: 'ccc',
+    })
+
+    const updateValues = await filterUndeployableValues(instance, 'modify')
+    expect(updateValues.value).toEqual({
+      updatable: 'bbb',
+      other: 'ccc',
+    })
+
+    const removeValues = await filterUndeployableValues(instance, 'remove')
+    expect(removeValues.value).toEqual({
+      creatable: 'aaa',
+      updatable: 'bbb',
+      other: 'ccc',
+    })
   })
 })

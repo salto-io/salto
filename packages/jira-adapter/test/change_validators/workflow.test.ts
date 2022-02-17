@@ -15,14 +15,14 @@
 */
 import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { workflowValidator } from '../../src/change_validators/workflow'
-import { JIRA } from '../../src/constants'
+import { JIRA, WORKFLOW_TYPE_NAME } from '../../src/constants'
 
 describe('workflowValidator', () => {
   let type: ObjectType
   let instance: InstanceElement
 
   beforeEach(() => {
-    type = new ObjectType({ elemID: new ElemID(JIRA, 'Workflow') })
+    type = new ObjectType({ elemID: new ElemID(JIRA, WORKFLOW_TYPE_NAME) })
     instance = new InstanceElement('instance', type)
   })
   it('should return an error if there is a non-deployable post function', async () => {

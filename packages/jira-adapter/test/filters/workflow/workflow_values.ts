@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { INITIAL_VALIDATOR } from '../../src/filters/workflow/workflow'
+import { INITIAL_VALIDATOR } from '../../../src/filters/workflow/workflow_deploy_filter'
 
 export const WITH_POST_FUNCTIONS = {
   transitions: [
@@ -157,6 +157,7 @@ export const WITH_VALIDATORS = {
 }
 
 export const WITH_PERMISSION_VALIDATORS = {
+  name: 'name',
   transitions: [
     {
       type: 'initial',
@@ -186,6 +187,7 @@ export const WITH_PERMISSION_VALIDATORS = {
 }
 
 export const WITH_SCRIPT_RUNNERS = {
+  name: 'name',
   transitions: [
     {
       rules: {

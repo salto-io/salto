@@ -62,6 +62,7 @@ describe('NetsuiteAdapter creator', () => {
       tokenSecret: 'secret',
       suiteAppTokenId: '',
       suiteAppTokenSecret: '',
+      accountIdSignature: '',
     },
   )
 
@@ -115,6 +116,7 @@ describe('NetsuiteAdapter creator', () => {
         ...cred.value,
         suiteAppTokenId: 'aaa',
         suiteAppTokenSecret: 'bbb',
+        accountIdSignature: 'signature',
       }
 
       await adapter.validateCredentials(cred)
@@ -128,6 +130,7 @@ describe('NetsuiteAdapter creator', () => {
         accountId: 'FOO_A',
         suiteAppTokenId: 'aaa',
         suiteAppTokenSecret: 'bbb',
+        accountIdSignature: 'signature',
       })
     })
 
@@ -140,6 +143,7 @@ describe('NetsuiteAdapter creator', () => {
         ...cred.value,
         suiteAppTokenId: 'aaa',
         suiteAppTokenSecret: 'bbb',
+        accountIdSignature: 'signature',
       }
 
       await expect(adapter.validateCredentials(cred)).rejects.toThrow('SDF Authentication failed.')
@@ -153,6 +157,7 @@ describe('NetsuiteAdapter creator', () => {
         ...cred.value,
         suiteAppTokenId: 'aaa',
         suiteAppTokenSecret: 'bbb',
+        accountIdSignature: 'signature',
       }
 
       await expect(adapter.validateCredentials(cred)).rejects.toThrow('SuiteApp Authentication failed.')
@@ -174,6 +179,7 @@ describe('NetsuiteAdapter creator', () => {
           tokenSecret: 'secret',
           suiteAppTokenId: undefined,
           suiteAppTokenSecret: undefined,
+          accountIdSignature: undefined,
         },
         config: clientConfig,
         globalLimiter: expect.any(Bottleneck),
@@ -191,12 +197,29 @@ describe('NetsuiteAdapter creator', () => {
       expect(SuiteAppClient).not.toHaveBeenCalled()
     })
 
+    it('should throw when missing account id signature', () => {
+      const cred = credentials.clone()
+      cred.value = {
+        ...cred.value,
+        suiteAppTokenId: 'aaa',
+        suiteAppTokenSecret: 'bbb',
+        accountIdSignature: '',
+      }
+
+      expect(() => adapter.operations({
+        credentials: cred,
+        config,
+        elementsSource: buildElementsSourceFromElements([]),
+      })).toThrow('Missing SuiteApp login creds')
+    })
+
     it('should create the client if credentials were passed', () => {
       const cred = credentials.clone()
       cred.value = {
         ...cred.value,
         suiteAppTokenId: 'aaa',
         suiteAppTokenSecret: 'bbb',
+        accountIdSignature: 'signature',
       }
 
       adapter.operations({
@@ -209,6 +232,7 @@ describe('NetsuiteAdapter creator', () => {
           accountId: 'FOO_A',
           suiteAppTokenId: 'aaa',
           suiteAppTokenSecret: 'bbb',
+          accountIdSignature: 'signature',
         },
         globalLimiter: expect.any(Bottleneck),
       })
@@ -220,6 +244,7 @@ describe('NetsuiteAdapter creator', () => {
         ...cred.value,
         suiteAppTokenId: 'aaa',
         suiteAppTokenSecret: 'bbb',
+        accountIdSignature: 'signature',
       }
 
       const configuration = config.clone()
@@ -240,6 +265,7 @@ describe('NetsuiteAdapter creator', () => {
           accountId: 'FOO_A',
           suiteAppTokenId: 'aaa',
           suiteAppTokenSecret: 'bbb',
+          accountIdSignature: 'signature',
         },
         config: {
           [SUITEAPP_CONCURRENCY_LIMIT]: 5,

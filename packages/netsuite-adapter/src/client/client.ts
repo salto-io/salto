@@ -21,7 +21,7 @@ import { resolveValues } from '@salto-io/adapter-utils'
 import { WSDL } from 'soap'
 import _ from 'lodash'
 import { NetsuiteQuery } from '../query'
-import { Credentials, toUrlAccountId } from './credentials'
+import { Credentials, isSuiteAppCredentials, toUrlAccountId } from './credentials'
 import SdfClient from './sdf_client'
 import SuiteAppClient from './suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from '../suiteapp_file_cabinet'
@@ -64,12 +64,13 @@ export default class NetsuiteClient {
 
   @NetsuiteClient.logDecorator
   static async validateCredentials(credentials: Credentials): Promise<AccountId> {
-    if (credentials.suiteAppTokenId && credentials.suiteAppTokenSecret) {
+    if (isSuiteAppCredentials(credentials)) {
       try {
         await SuiteAppClient.validateCredentials({
           accountId: credentials.accountId,
           suiteAppTokenId: credentials.suiteAppTokenId,
           suiteAppTokenSecret: credentials.suiteAppTokenSecret,
+          accountIdSignature: credentials.accountIdSignature,
         })
       } catch (e) {
         e.message = `Salto SuiteApp Authentication failed. ${e.message}`

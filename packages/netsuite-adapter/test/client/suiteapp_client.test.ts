@@ -34,6 +34,7 @@ describe('SuiteAppClient', () => {
         accountId: 'ACCOUNT_ID',
         suiteAppTokenId: 'tokenId',
         suiteAppTokenSecret: 'tokenSecret',
+        accountIdSignature: 'signature',
       },
       globalLimiter: new Bottleneck(),
     })
@@ -134,6 +135,7 @@ describe('SuiteAppClient', () => {
       expect(req.url).toEqual('https://account-id.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=customscript_salto_restlet&deploy=customdeploy_salto_restlet')
       expect(JSON.parse(req.data)).toEqual({
         operation: 'search',
+        signature: 'signature',
         args: {
           type: 'type',
           columns: [],
@@ -173,7 +175,7 @@ describe('SuiteAppClient', () => {
       })
 
       it('error status', async () => {
-        mockAxiosAdapter.onPost().reply(200, { status: 'error', message: '' })
+        mockAxiosAdapter.onPost().reply(200, { status: 'error', message: '', error: new Error('error') })
         expect(await client.runSavedSearchQuery({
           type: 'type',
           columns: [],
@@ -208,6 +210,7 @@ describe('SuiteAppClient', () => {
 
       expect(JSON.parse(requests[0].data)).toEqual({
         operation: 'search',
+        signature: 'signature',
         args: {
           type: 'type',
           columns: [],
@@ -219,6 +222,7 @@ describe('SuiteAppClient', () => {
 
       expect(JSON.parse(requests[1].data)).toEqual({
         operation: 'search',
+        signature: 'signature',
         args: {
           type: 'type',
           columns: [],
@@ -247,6 +251,36 @@ describe('SuiteAppClient', () => {
       const req = mockAxiosAdapter.history.post[0]
       expect(JSON.parse(req.data)).toEqual({
         operation: 'sysInfo',
+        signature: 'signature',
+        args: {},
+      })
+    })
+    it('fallback after trying to use "signature" param', async () => {
+      mockAxiosAdapter
+        .onPost().replyOnce(200, {
+          status: 'error',
+          message: 'Invalid input: data should NOT have additional properties',
+        })
+        .onPost().replyOnce(200, {
+          status: 'success',
+          results: {
+            appVersion: [0, 1, 2],
+            time: 1000,
+          },
+        })
+
+      const results = await client.getSystemInformation()
+
+      expect(results).toEqual({ appVersion: [0, 1, 2], time: new Date(1000) })
+      expect(mockAxiosAdapter.history.post.length).toBe(2)
+      const req = mockAxiosAdapter.history.post
+      expect(JSON.parse(req[0].data)).toEqual({
+        operation: 'sysInfo',
+        signature: 'signature',
+        args: {},
+      })
+      expect(JSON.parse(req[1].data)).toEqual({
+        operation: 'sysInfo',
         args: {},
       })
     })
@@ -270,6 +304,7 @@ describe('SuiteAppClient', () => {
         accountId: 'ACCOUNT_ID',
         suiteAppTokenId: 'tokenId',
         suiteAppTokenSecret: 'tokenSecret',
+        accountIdSignature: 'signature',
       })).rejects.toThrow()
     })
 
@@ -286,6 +321,7 @@ describe('SuiteAppClient', () => {
         accountId: 'ACCOUNT_ID',
         suiteAppTokenId: 'tokenId',
         suiteAppTokenSecret: 'tokenSecret',
+        accountIdSignature: 'signature',
       })).resolves.toBeUndefined()
     })
   })
@@ -340,6 +376,7 @@ describe('SuiteAppClient', () => {
       expect(req.url).toEqual('https://account-id.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=customscript_salto_restlet&deploy=customdeploy_salto_restlet')
       expect(JSON.parse(req.data)).toEqual({
         operation: 'readFile',
+        signature: 'signature',
         args: {
           ids: [1, 2, 3, 4, 5],
         },

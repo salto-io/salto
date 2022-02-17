@@ -36,7 +36,7 @@ import {
   INSTALLED_SUITEAPPS,
 } from './constants'
 import { validateFetchParameters, convertToQueryParams } from './query'
-import { Credentials, toCredentialsAccountId } from './client/credentials'
+import { Credentials, isSuiteAppCredentials, toCredentialsAccountId } from './client/credentials'
 import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
 import SdfClient from './client/sdf_client'
 import NetsuiteClient from './client/client'
@@ -75,6 +75,12 @@ export const defaultCredentialsType = new ObjectType({
       refType: BuiltinTypes.STRING,
       annotations: {
         message: 'Salto SuiteApp Token Secret (empty if Salto SuiteApp is not installed)',
+      },
+    },
+    accountIdSignature: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        message: 'Salto SuiteApp Account ID Signature (empty if Salto SuiteApp is not installed)',
       },
     },
   },
@@ -183,7 +189,23 @@ const netsuiteCredentialsFromCredentials = (credentials: Readonly<InstanceElemen
     tokenSecret: credentials.value.tokenSecret,
     suiteAppTokenId: credentials.value.suiteAppTokenId === '' ? undefined : credentials.value.suiteAppTokenId,
     suiteAppTokenSecret: credentials.value.suiteAppTokenSecret === '' ? undefined : credentials.value.suiteAppTokenSecret,
+    accountIdSignature: credentials.value.accountIdSignature === '' ? undefined : credentials.value.accountIdSignature,
   })
+
+const throwOnMissingSuiteAppLoginCreds = (credentials: Credentials): void => {
+  if (credentials.suiteAppTokenId
+    || credentials.suiteAppTokenSecret
+    || credentials.accountIdSignature) {
+    if (!isSuiteAppCredentials(credentials)) {
+      const undefinedCreds = [
+        { key: 'suiteAppTokenId', value: credentials.suiteAppTokenId },
+        { key: 'suiteAppTokenSecret', value: credentials.suiteAppTokenSecret },
+        { key: 'accountIdSignature', value: credentials.accountIdSignature },
+      ].filter(item => item.value === undefined).map(item => item.key)
+      throw new Error(`Missing SuiteApp login creds: ${undefinedCreds.join(', ')}. Please authenticate using 'salto service login'`)
+    }
+  }
+}
 
 const getAdapterOperations = (context: AdapterOperationsContext): AdapterOperations => {
   const adapterConfig = netsuiteConfigFromConfig(context.config)
@@ -196,12 +218,16 @@ const getAdapterOperations = (context: AdapterOperationsContext): AdapterOperati
         adapterConfig.suiteAppClient?.suiteAppConcurrencyLimit ?? DEFAULT_CONCURRENCY
       ),
   })
-  const suiteAppClient = credentials.suiteAppTokenId && credentials.suiteAppTokenSecret
+
+  throwOnMissingSuiteAppLoginCreds(credentials)
+
+  const suiteAppClient = isSuiteAppCredentials(credentials)
     ? new SuiteAppClient({
       credentials: {
         accountId: credentials.accountId,
         suiteAppTokenId: credentials.suiteAppTokenId,
         suiteAppTokenSecret: credentials.suiteAppTokenSecret,
+        accountIdSignature: credentials.accountIdSignature,
       },
       config: adapterConfig[SUITEAPP_CLIENT_CONFIG],
       globalLimiter,
@@ -226,6 +252,7 @@ export const adapter: Adapter = {
   operations: context => getAdapterOperations(context),
   validateCredentials: async config => {
     const credentials = netsuiteCredentialsFromCredentials(config)
+    throwOnMissingSuiteAppLoginCreds(credentials)
     return NetsuiteClient.validateCredentials(credentials)
   },
   authenticationMethods: {

@@ -58,6 +58,8 @@ const NON_BINARY_FILETYPES = new Set([
 
 const UNAUTHORIZED_STATUSES = [401, 403]
 
+const ADDITIONAL_PARAMS_ERROR = 'Invalid input: data should NOT have additional properties'
+
 export default class SuiteAppClient {
   private credentials: SuiteAppCredentials
   private callsLimiter: CallsLimiter
@@ -66,6 +68,10 @@ export default class SuiteAppClient {
   private ajv: Ajv
   private soapClient: SoapClient
   private axiosClient: AxiosInstance
+
+  // TODO: SALTO-1975 - Remove this attribute after all customers will have the SuiteApp
+  // version with the required "signature" param
+  private useSignatureInRestletRequests: boolean
 
   constructor(params: SuiteAppClientParameters) {
     this.credentials = params.credentials
@@ -78,6 +84,7 @@ export default class SuiteAppClient {
     const accountIdUrl = toUrlAccountId(params.credentials.accountId)
     this.suiteQLUrl = new URL(`https://${accountIdUrl}.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql`)
     this.restletUrl = new URL(`https://${accountIdUrl}.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=customscript_salto_restlet&deploy=customdeploy_salto_restlet`)
+    this.useSignatureInRestletRequests = true
 
     this.ajv = new Ajv({ allErrors: true, strict: false })
     this.soapClient = new SoapClient(this.credentials, this.callsLimiter)
@@ -247,7 +254,13 @@ export default class SuiteAppClient {
     operation: RestletOperation,
     args: Record<string, unknown> = {}
   ): Promise<unknown> {
-    const response = await this.safeAxiosPost(this.restletUrl.href, { operation, args }, this.generateHeaders(this.restletUrl, 'POST'))
+    const response = await this.safeAxiosPost(
+      this.restletUrl.href,
+      this.useSignatureInRestletRequests
+        ? { operation, args, signature: this.credentials.accountIdSignature }
+        : { operation, args },
+      this.generateHeaders(this.restletUrl, 'POST')
+    )
     log.debug(
       'Restlet call to operation %s (postParams: %s) responsed with status %s',
       operation,
@@ -260,7 +273,14 @@ export default class SuiteAppClient {
     }
 
     if (isError(response.data)) {
-      throw new Error(`Restlet request failed. Message: ${response.data.message}, error: ${safeJsonStringify(response.data.error)}`)
+      // TODO: SALTO-1975 - Remove this condition after all customers will have the SuiteApp
+      // version with the required "signature" param
+      if (this.useSignatureInRestletRequests && response.data.message === ADDITIONAL_PARAMS_ERROR) {
+        log.warn('failed using account id signature because of an old SuiteApp version - trying again without "signature" param')
+        this.useSignatureInRestletRequests = false
+        return this.sendRestletRequest(operation, args)
+      }
+      throw new Error(`Restlet request failed. Message: ${response.data.message}${response.data.error ? `, error: ${safeJsonStringify(response.data.error)}` : ''}`)
     }
 
     return response.data.results

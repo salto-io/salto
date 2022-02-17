@@ -22,7 +22,7 @@ import _ from 'lodash'
 import { InstanceElement, isListType, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import { collections, decorators, strings } from '@salto-io/lowerdash'
 import { v4 as uuidv4 } from 'uuid'
-import { SuiteAppCredentials, toUrlAccountId } from '../../credentials'
+import { SuiteAppSoapCredentials, toUrlAccountId } from '../../credentials'
 import { CONSUMER_KEY, CONSUMER_SECRET } from '../constants'
 import { ReadFileError } from '../errors'
 import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails, FileDetails, FolderDetails } from '../types'
@@ -93,12 +93,12 @@ const retryOnBadResponseWithDelay = (
 const retryOnBadResponse = retryOnBadResponseWithDelay(RETRYABLE_MESSAGES)
 
 export default class SoapClient {
-  private credentials: SuiteAppCredentials
+  private credentials: SuiteAppSoapCredentials
   private callsLimiter: CallsLimiter
   private ajv: Ajv
   private client: soap.Client | undefined
 
-  constructor(credentials: SuiteAppCredentials, callsLimiter: CallsLimiter) {
+  constructor(credentials: SuiteAppSoapCredentials, callsLimiter: CallsLimiter) {
     this.credentials = credentials
     this.callsLimiter = callsLimiter
     this.ajv = new Ajv({ allErrors: true, strict: false })

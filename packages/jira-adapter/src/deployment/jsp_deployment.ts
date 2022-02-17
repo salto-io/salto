@@ -20,7 +20,7 @@ import { resolveValues, safeJsonStringify } from '@salto-io/adapter-utils'
 import { deployment } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { deployChanges } from './standard_deployment'
-import JiraClient, { PRIVATE_API_HEADERS } from '../client/client'
+import JiraClient from '../client/client'
 import { getLookUpName } from '../reference_mapping'
 import { JspUrls } from '../config'
 
@@ -76,9 +76,8 @@ const isNameIdObject = (obj: unknown): obj is NameIdObject =>
 
 const queryServiceValues = async (client: JiraClient, urls: JspUrls)
 : Promise<NameIdObject[]> => {
-  const response = await client.getSinglePage({
+  const response = await client.getPrivate({
     url: urls.query,
-    headers: PRIVATE_API_HEADERS,
   })
   if (!Array.isArray(response.data)) {
     throw new Error(`Expected array of values in response, got ${safeJsonStringify(response.data)}`)

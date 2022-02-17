@@ -130,5 +130,27 @@ describe('priorityFilter', () => {
         serviceValuesTransformer: expect.toBeFunction(),
       })
     })
+
+    it('should throw if there are no jsp urls', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        type,
+      )
+
+      delete config.apiDefinitions.types[PRIORITY_TYPE_NAME].jspRequests
+
+      await expect(filter.deploy?.([toChange({ after: instance })])).rejects.toThrow()
+    })
+
+    it('should throw if there is no type definition', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        type,
+      )
+
+      delete config.apiDefinitions.types[PRIORITY_TYPE_NAME]
+
+      await expect(filter.deploy?.([toChange({ after: instance })])).rejects.toThrow()
+    })
   })
 })

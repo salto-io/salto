@@ -20,7 +20,6 @@ import { findObject, setDeploymentAnnotations } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { deployWithJspEndpoints } from '../../deployment/jsp_deployment'
 import { STATUS_TYPE_NAME } from '../../constants'
-import { JspUrls } from '../../config'
 
 const log = logger(module)
 
@@ -62,10 +61,25 @@ const filter: FilterCreator = ({ client, config }) => ({
         && getChangeData(change).elemID.typeName === STATUS_TYPE_NAME
     )
 
+    if (relevantChanges.length === 0) {
+      return {
+        leftoverChanges,
+        deployResult: {
+          errors: [],
+          appliedChanges: [],
+        },
+      }
+    }
+
+    const jspRequests = config.apiDefinitions.types[STATUS_TYPE_NAME]?.jspRequests
+    if (jspRequests === undefined) {
+      throw new Error(`${STATUS_TYPE_NAME} jsp urls are missing from the configuration`)
+    }
+
     const deployResult = await deployWithJspEndpoints({
       changes: relevantChanges.filter(isInstanceChange),
       client,
-      urls: config.apiDefinitions.types[STATUS_TYPE_NAME].jspRequests as JspUrls,
+      urls: jspRequests,
       serviceValuesTransformer: (serviceValues, currentInstance) => _.omit({
         ...currentInstance.value,
         ...serviceValues,

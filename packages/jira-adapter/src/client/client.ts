@@ -101,4 +101,16 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
       },
     })
   }
+
+  public async getPrivate(
+    args: clientUtils.ClientBaseParams,
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    return this.getSinglePage({
+      ...args,
+      headers: {
+        ...PRIVATE_API_HEADERS,
+        ...(args.headers ?? {}),
+      },
+    })
+  }
 }

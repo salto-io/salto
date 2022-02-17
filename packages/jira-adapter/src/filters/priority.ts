@@ -20,7 +20,6 @@ import { findObject, setDeploymentAnnotations } from '../utils'
 import { FilterCreator } from '../filter'
 import { deployWithJspEndpoints } from '../deployment/jsp_deployment'
 import { PRIORITY_TYPE_NAME } from '../constants'
-import { JspUrls } from '../config'
 
 const log = logger(module)
 
@@ -54,10 +53,25 @@ const filter: FilterCreator = ({ client, config }) => ({
         && getChangeData(change).elemID.typeName === PRIORITY_TYPE_NAME
     )
 
+    if (relevantChanges.length === 0) {
+      return {
+        leftoverChanges,
+        deployResult: {
+          errors: [],
+          appliedChanges: [],
+        },
+      }
+    }
+
+    const jspRequests = config.apiDefinitions.types[PRIORITY_TYPE_NAME]?.jspRequests
+    if (jspRequests === undefined) {
+      throw new Error(`${PRIORITY_TYPE_NAME} jsp urls are missing from the configuration`)
+    }
+
     const deployResult = await deployWithJspEndpoints({
       changes: relevantChanges.filter(isInstanceChange).filter(isAdditionOrModificationChange),
       client,
-      urls: config.apiDefinitions.types[PRIORITY_TYPE_NAME].jspRequests as JspUrls,
+      urls: jspRequests,
       serviceValuesTransformer: serviceValues => _.omit({
         ...serviceValues,
         iconurl: new URL(serviceValues.iconUrl).pathname,

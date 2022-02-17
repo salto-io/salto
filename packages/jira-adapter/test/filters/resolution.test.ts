@@ -19,7 +19,7 @@ import { mockClient } from '../utils'
 import resolutionFilter from '../../src/filters/resolution'
 import { Filter } from '../../src/filter'
 import { DEFAULT_CONFIG, JiraConfig } from '../../src/config'
-import { JIRA } from '../../src/constants'
+import { JIRA, RESOLUTION_TYPE_NAME } from '../../src/constants'
 import { deployWithJspEndpoints } from '../../src/deployment/jsp_deployment'
 import JiraClient from '../../src/client/client'
 
@@ -114,6 +114,28 @@ describe('resolutionFilter', () => {
           query: '/rest/api/3/resolution',
         },
       })
+    })
+
+    it('should throw if there are no jsp urls', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        type,
+      )
+
+      delete config.apiDefinitions.types[RESOLUTION_TYPE_NAME].jspRequests
+
+      await expect(filter.deploy?.([toChange({ after: instance })])).rejects.toThrow()
+    })
+
+    it('should throw if there is no type definition', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        type,
+      )
+
+      delete config.apiDefinitions.types[RESOLUTION_TYPE_NAME]
+
+      await expect(filter.deploy?.([toChange({ after: instance })])).rejects.toThrow()
     })
   })
 })

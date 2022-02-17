@@ -23,7 +23,6 @@ import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { JIRA, STATUS_TYPE_NAME } from '../../constants'
 import { JiraConfig } from '../../config'
-import { PRIVATE_API_HEADERS } from '../../client/client'
 
 
 const log = logger(module)
@@ -100,9 +99,8 @@ const filter: FilterCreator = ({ client, config }) => ({
 
 
     try {
-      const response = await client.getSinglePage({
+      const response = await client.getPrivate({
         url: '/rest/workflowDesigner/1.0/statuses',
-        headers: PRIVATE_API_HEADERS,
       })
       const statusesValues = response.data
 

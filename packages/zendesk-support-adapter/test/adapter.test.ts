@@ -81,8 +81,8 @@ describe('adapter', () => {
           ),
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
-        expect(elements).toHaveLength(394)
-        expect(elements.filter(isObjectType)).toHaveLength(191)
+        expect(elements).toHaveLength(397)
+        expect(elements.filter(isObjectType)).toHaveLength(194)
         expect(elements.filter(isInstanceElement)).toHaveLength(203)
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'zendesk_support.account_setting',
@@ -119,8 +119,11 @@ describe('adapter', () => {
           'zendesk_support.account_setting__voice',
           'zendesk_support.account_settings',
           'zendesk_support.app_installation',
-          'zendesk_support.app_installation.instance.Salesforce',
-          'zendesk_support.app_installation.instance.Slack',
+          'zendesk_support.app_installation.instance.Salesforce_10',
+          'zendesk_support.app_installation.instance.Slack_156097',
+          'zendesk_support.app_installation__app',
+          'zendesk_support.app_installation__app__categories',
+          'zendesk_support.app_installation__app__parameters',
           'zendesk_support.app_installation__plan_information',
           'zendesk_support.app_installation__settings',
           'zendesk_support.app_installation__settings_objects',

@@ -53,6 +53,7 @@ import removeDefinitionInstancesFilter from './filters/remove_definition_instanc
 import hardcodedChannelFilter from './filters/hardcoded_channel'
 import usersFilter from './filters/user'
 import addFieldOptionsFilter from './filters/add_field_options'
+import appsFilter from './filters/app'
 import routingAttributeFilter from './filters/routing_attribute'
 import defaultDeployFilter from './filters/default_deploy'
 
@@ -84,6 +85,7 @@ export const DEFAULT_FILTERS = [
   organizationFieldFilter,
   hardcodedChannelFilter,
   fieldReferencesFilter,
+  appsFilter,
   usersFilter,
   routingAttributeFilter,
   addFieldOptionsFilter,

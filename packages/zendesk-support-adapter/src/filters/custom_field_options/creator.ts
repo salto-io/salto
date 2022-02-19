@@ -31,13 +31,12 @@ export const DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME = 'default_custom_field_opti
 type CustomFieldOptionsFilterCreatorParams = {
   parentTypeName: string
   childTypeName: string
-  newOptionWithNull: boolean
 }
 
 const { makeArray } = collections.array
 
 export const createCustomFieldOptionsFilterCreator = (
-  { parentTypeName, childTypeName, newOptionWithNull }: CustomFieldOptionsFilterCreatorParams
+  { parentTypeName, childTypeName }: CustomFieldOptionsFilterCreatorParams
 ): FilterCreator => ({ config, client }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     const parentType = elements
@@ -78,15 +77,12 @@ export const createCustomFieldOptionsFilterCreator = (
   preDeploy: async changes => {
     await applyforInstanceChangesOfType(
       changes,
-      parentTypeName,
+      [parentTypeName],
       (instance: InstanceElement) => {
         const defaultValue = instance.value[DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME]
         makeArray(instance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME])
           .forEach(option => {
             option.default = (defaultValue !== undefined) && (option.value === defaultValue)
-            if (newOptionWithNull && (option.id === undefined)) {
-              option.id = null
-            }
           })
         return instance
       }
@@ -95,15 +91,12 @@ export const createCustomFieldOptionsFilterCreator = (
   onDeploy: async changes => {
     await applyforInstanceChangesOfType(
       changes,
-      parentTypeName,
+      [parentTypeName],
       (instance: InstanceElement) => {
         const options = makeArray(instance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME])
         if (options) {
           options.forEach(option => {
             delete option.default
-            if (newOptionWithNull && (option.id === null)) {
-              delete option.id
-            }
           })
         }
         return instance

@@ -24,7 +24,6 @@ import { FilterCreator } from '../filter'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges } from '../deployment'
 import { API_DEFINITIONS_CONFIG } from '../config'
 import { lookupFunc } from './field_references'
-import { applyforInstanceChangesOfType } from './utils'
 
 export const CUSTOM_FIELD_OPTIONS_FIELD_NAME = 'custom_field_options'
 export const ORG_FIELD_TYPE_NAME = 'organization_field'
@@ -32,39 +31,8 @@ export const ORG_FIELD_OPTION_TYPE_NAME = 'organization_field__custom_field_opti
 
 const log = logger(module)
 const { awu } = collections.asynciterable
-const { makeArray } = collections.array
 
 const filterCreator: FilterCreator = ({ config, client }) => ({
-  preDeploy: async changes => {
-    await applyforInstanceChangesOfType(
-      changes,
-      ORG_FIELD_TYPE_NAME,
-      (instance: InstanceElement) => {
-        makeArray(instance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME])
-          .forEach(option => {
-            if (option.id === undefined) {
-              option.id = null
-            }
-          })
-        return instance
-      }
-    )
-  },
-  onDeploy: async changes => {
-    await applyforInstanceChangesOfType(
-      changes,
-      ORG_FIELD_TYPE_NAME,
-      (instance: InstanceElement) => {
-        makeArray(instance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME])
-          .forEach(option => {
-            if (option.id === null) {
-              delete option.id
-            }
-          })
-        return instance
-      }
-    )
-  },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,

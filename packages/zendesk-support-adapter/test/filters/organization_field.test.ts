@@ -40,7 +40,7 @@ jest.mock('@salto-io/adapter-components', () => {
 
 describe('organization field filter', () => {
   let client: ZendeskClient
-  type FilterType = filterUtils.FilterWith<'deploy' | 'preDeploy' | 'onDeploy'>
+  type FilterType = filterUtils.FilterWith<'deploy'>
   let filter: FilterType
   const parentTypeName = ORG_FIELD_TYPE_NAME
   const childTypeName = ORG_FIELD_OPTION_TYPE_NAME
@@ -64,64 +64,6 @@ describe('organization field filter', () => {
       }),
       config: DEFAULT_CONFIG,
     }) as FilterType
-  })
-  describe('preDeploy', () => {
-    const resolvedParent = new InstanceElement(
-      'parent',
-      parentObjType,
-      {
-        id: 11,
-        name: 'parent',
-        [CUSTOM_FIELD_OPTIONS_FIELD_NAME]: [
-          { id: 22, name: 'child1', value: 'v1' },
-        ],
-      },
-    )
-    it('should add null as id for new childs', async () => {
-      const clonedResolvedParentBefore = resolvedParent.clone()
-      const clonedResolvedParentAfter = resolvedParent.clone()
-      clonedResolvedParentAfter.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] = [
-        { id: 22, name: 'child1', value: 'v1' },
-        { name: 'child2', value: 'v2' },
-      ]
-      const change = toChange({
-        before: clonedResolvedParentBefore, after: clonedResolvedParentAfter,
-      })
-      await filter?.preDeploy([change])
-      expect(clonedResolvedParentAfter.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME]).toEqual([
-        { id: 22, name: 'child1', value: 'v1' },
-        { id: null, name: 'child2', value: 'v2' },
-      ])
-    })
-  })
-  describe('onDeploy', () => {
-    const resolvedParent = new InstanceElement(
-      'parent',
-      parentObjType,
-      {
-        id: 11,
-        name: 'parent',
-        [CUSTOM_FIELD_OPTIONS_FIELD_NAME]: [
-          { id: 22, name: 'child1', value: 'v1' },
-        ],
-      },
-    )
-    it('should remove the null from id for new childs', async () => {
-      const clonedResolvedParentBefore = resolvedParent.clone()
-      const clonedResolvedParentAfter = resolvedParent.clone()
-      clonedResolvedParentAfter.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] = [
-        { id: 22, name: 'child1', value: 'v1' },
-        { id: null, name: 'child2', value: 'v2' },
-      ]
-      const change = toChange({
-        before: clonedResolvedParentBefore, after: clonedResolvedParentAfter,
-      })
-      await filter?.onDeploy([change])
-      expect(clonedResolvedParentAfter.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME]).toEqual([
-        { id: 22, name: 'child1', value: 'v1' },
-        { name: 'child2', value: 'v2' },
-      ])
-    })
   })
   describe('deploy', () => {
     const resolvedParent = new InstanceElement(

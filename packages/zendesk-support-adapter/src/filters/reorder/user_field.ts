@@ -13,13 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { USER_FIELD_TYPE_NAME } from '../custom_field_options/user_field'
 import { createReorderFilterCreator } from './creator'
 
 /**
  * Add user field order element with all the user fields ordered
  */
 const filterCreator = createReorderFilterCreator({
-  typeName: 'user_field',
+  typeName: USER_FIELD_TYPE_NAME,
   orderFieldName: 'user_field_ids',
 })
 

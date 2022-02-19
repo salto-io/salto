@@ -21,7 +21,6 @@ import { createCustomFieldOptionsFilterCreator } from './creator'
 const filterCreator = createCustomFieldOptionsFilterCreator({
   parentTypeName: 'ticket_field',
   childTypeName: 'ticket_field__custom_field_options',
-  newOptionWithNull: false,
 })
 
 export default filterCreator

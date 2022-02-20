@@ -22,11 +22,13 @@ import { USER_FIELD_TYPE_NAME } from './custom_field_options/user_field'
 
 const { makeArray } = collections.array
 
+const RELEVANT_TYPE_NAMES = [ORG_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME]
+
 const filterCreator: FilterCreator = () => ({
   preDeploy: async changes => {
     await applyforInstanceChangesOfType(
       changes,
-      [ORG_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME],
+      RELEVANT_TYPE_NAMES,
       (instance: InstanceElement) => {
         makeArray(instance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME])
           .forEach(option => {
@@ -41,7 +43,7 @@ const filterCreator: FilterCreator = () => ({
   onDeploy: async changes => {
     await applyforInstanceChangesOfType(
       changes,
-      [ORG_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME],
+      RELEVANT_TYPE_NAMES,
       (instance: InstanceElement) => {
         makeArray(instance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME])
           .forEach(option => {

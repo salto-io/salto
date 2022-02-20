@@ -15,14 +15,12 @@
 */
 import _ from 'lodash'
 import { ActionName, Change, ElemID, getChangeData, InstanceElement, Values } from '@salto-io/adapter-api'
-import { resolvePath, transformElement } from '@salto-io/adapter-utils'
-import { replaceUrlParams } from '../elements/request_parameters'
+import { transformElement } from '@salto-io/adapter-utils'
+import { createUrl } from '../elements/request_parameters'
 import { HTTPWriteClientInterface } from '../client/http_client'
 import { DeploymentRequestsByAction } from '../config/request'
 import { ResponseValue } from '../client'
 import { OPERATION_TO_ANNOTATION } from './annotations'
-
-const FIELD_PATH_DELIMITER = '.'
 
 export type ResponseResult = ResponseValue | ResponseValue[] | undefined
 
@@ -95,19 +93,12 @@ export const deployChange = async (
     await filterUndeployableValues(getChangeData(change), change.action),
     fieldsToIgnore,
   )
-
-  const urlVarsValues = {
-    ...instance.value,
-    ..._.mapValues(
-      endpoint.urlParamsToFields ?? {},
-      fieldName => resolvePath(
-        instance,
-        instance.elemID.createNestedID(...fieldName.split(FIELD_PATH_DELIMITER))
-      )
-    ),
-    ...(additionalUrlVars ?? {}),
-  }
-  const url = replaceUrlParams(endpoint.url, urlVarsValues)
+  const url = createUrl({
+    instance,
+    baseUrl: endpoint.url,
+    urlParamsToFields: endpoint.urlParamsToFields,
+    additionalUrlVars,
+  })
   const data = endpoint.deployAsField
     ? { [endpoint.deployAsField]: valuesToDeploy }
     : valuesToDeploy

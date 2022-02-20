@@ -19,6 +19,7 @@ import { ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS,
 import { types, values } from '@salto-io/lowerdash'
 import { findDuplicates } from './validation_utils'
 import { getConfigWithDefault, TypeConfig, TypeDefaultsConfig } from './shared'
+import { UrlParams } from './request'
 
 export const DATA_FIELD_ENTIRE_OBJECT = '.'
 
@@ -36,6 +37,11 @@ export type FieldTypeOverrideType = {
   fieldName: string
   fieldType: string
   restrictions?: RestrictionAnnotationType
+}
+
+type UrlService = {
+  url: string
+  urlParamsToFields?: UrlParams
 }
 
 export type TransformationConfig = {
@@ -62,6 +68,8 @@ export type TransformationConfig = {
   isSingleton?: boolean
   // The identifier field for the service
   serviceIdField?: string
+  // The url of the type in the service
+  serviceUrl?: UrlService
 }
 
 export type TransformationDefaultConfig = types.PickyRequired<Partial<Omit<TransformationConfig, 'isSingleton'>>, 'idFields'>

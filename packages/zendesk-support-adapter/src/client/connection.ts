@@ -21,7 +21,8 @@ import { Credentials, isOauthAccessTokenCredentials, OauthAccessTokenCredentials
 
 const log = logger(module)
 
-const baseUrl = (subdomain: string): string => `https://${subdomain}.zendesk.com/api/v2`
+export const instanceUrl = (subdomain: string): string => `https://${subdomain}.zendesk.com`
+const baseUrl = (subdomain: string): string => (new URL('/api/v2', instanceUrl(subdomain))).href
 
 const MARKETPLACE_NAME = 'Salto'
 const MARKETPLACE_ORG_ID = 5110

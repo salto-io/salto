@@ -14,13 +14,15 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, Values, isInstanceElement, isPrimitiveValue } from '@salto-io/adapter-api'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { Element, Values, isInstanceElement, isPrimitiveValue, InstanceElement } from '@salto-io/adapter-api'
+import { resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { ClientGetWithPaginationParams } from '../client'
-import { FetchRequestConfig, ARG_PLACEHOLDER_MATCHER } from '../config/request'
+import { FetchRequestConfig, ARG_PLACEHOLDER_MATCHER, UrlParams } from '../config/request'
 
 const log = logger(module)
+
+const FIELD_PATH_DELIMITER = '.'
 
 export type ComputeGetArgsFunc = (
   request: FetchRequestConfig,
@@ -99,6 +101,28 @@ export const replaceUrlParams = (url: string, paramValues: Record<string, unknow
       return replacement.toString()
     }
   )
+
+export const createUrl = ({
+  instance, baseUrl, urlParamsToFields, additionalUrlVars,
+}: {
+  instance: InstanceElement
+  baseUrl: string
+  urlParamsToFields?: UrlParams
+  additionalUrlVars?: Record<string, string>
+}): string => replaceUrlParams(
+  baseUrl,
+  {
+    ...instance.value,
+    ..._.mapValues(
+      urlParamsToFields ?? {},
+      fieldName => resolvePath(
+        instance,
+        instance.elemID.createNestedID(...fieldName.split(FIELD_PATH_DELIMITER))
+      )
+    ),
+    ...(additionalUrlVars ?? {}),
+  }
+)
 
 export const computeGetArgs: ComputeGetArgsFunc = (
   args,

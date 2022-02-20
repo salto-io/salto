@@ -17,7 +17,7 @@ import * as ducktype from './ducktype'
 import * as swagger from './swagger'
 import * as soap from './soap'
 import * as subtypes from './subtypes'
-import { computeGetArgs, simpleGetArgs } from './request_parameters'
+import { computeGetArgs, simpleGetArgs, createUrl } from './request_parameters'
 import { RECORDS_PATH, TYPES_PATH, SUBTYPES_PATH } from './constants'
 import { findDataField, returnFullEntry, FindNestedFieldFunc } from './field_finder'
 import { filterTypes } from './type_elements'
@@ -35,4 +35,5 @@ export {
   getInstanceName,
   generateInstanceNameFromConfig,
   createServiceIds,
+  createUrl,
 }

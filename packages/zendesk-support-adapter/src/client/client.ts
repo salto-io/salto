@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { createConnection } from './connection'
+import { createConnection, instanceUrl } from './connection'
 import { ZENDESK_SUPPORT } from '../constants'
 import { Credentials } from '../auth'
 
@@ -47,5 +47,9 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
         retry: DEFAULT_RETRY_OPTS,
       }
     )
+  }
+
+  public getUrl(): URL {
+    return new URL(instanceUrl(this.credentials.subdomain))
   }
 }

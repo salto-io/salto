@@ -1366,7 +1366,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   // eslint-disable-next-line camelcase
   app_installations: {
     request: {
-      url: '/apps/installations?include=app',
+      url: '/apps/installations',
     },
   },
   // eslint-disable-next-line camelcase

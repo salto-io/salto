@@ -27,8 +27,8 @@ export const APP_INSTALLATION_TYPE_NAME = 'app_installation'
 const { withRetry } = retry
 const { intervals } = retry.retryStrategies
 
-const MAX_RETRIES = 120
-const INTERVAL_TIME = 5000
+const MAX_RETRIES = 60
+const INTERVAL_TIME = 2000
 
 const checkIfJobIsDone = async (
   client: ZendeskClient, jobId: string, fullName: string
@@ -37,8 +37,8 @@ const checkIfJobIsDone = async (
   if (_.isArray(res.data)) {
     throw new Error(`Got an invalid response for job status. Element: ${fullName}. Job ID: ${jobId}`)
   }
-  if (res.data.status === 'failed') {
-    throw new Error(`Job status is failed. Element: ${fullName}. Job ID: ${jobId}`)
+  if (['failed', 'killed'].includes(res.data.status)) {
+    throw new Error(`Job status is failed. Element: ${fullName}. Job ID: ${jobId}. Error: ${res.data.message}`)
   }
   return res.data.status === 'completed'
 }
@@ -57,7 +57,7 @@ Promise<void> => {
 }
 
 /**
- * Deploys business hours schedules and their intervals
+ * Deploys app installation
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
   deploy: async (changes: Change<InstanceElement>[]) => {

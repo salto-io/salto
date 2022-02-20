@@ -473,9 +473,13 @@ export const loadWorkspace = async (
             .map(elem => toChange({ after: elem })).toArray()
           : []
 
-        const stateRemovedElementChanges = (workspaceChanges[envName] ?? createEmptyChangeSet())
-          .changes.filter(change => isRemovalChange(change)
-            && getChangeData(change).elemID.isTopLevel())
+        const stateRemovedElementChanges = await awu(
+          (workspaceChanges[envName] ?? createEmptyChangeSet())
+            .changes
+        ).filter(async change => isRemovalChange(change)
+            && getChangeData(change).elemID.isTopLevel()
+            && !await isHidden(getChangeData(change), state(envName))).toArray()
+
         // To preserve the old ws functionality - hidden values should be added to the workspace
         // cache only if their top level element is in the nacls, or they are marked as hidden
         // (SAAS-2639)

@@ -528,6 +528,10 @@ const removeDuplicateChanges = (
   origChanges: DetailedChange[],
   additionalChanges: DetailedChange[],
 ): DetailedChange[] => {
+  // If there are no additional changes we'll save the calculation time
+  if (additionalChanges.length === 0) {
+    return origChanges
+  }
   // If we have multiple changes on the same ID, we want to take the newer change
   // (the one from additionalChanges) because it overrides the original, for example
   // this can happen if a field is both hidden and changed at the same time
@@ -559,7 +563,7 @@ const removeDuplicateChanges = (
  * Since the hidden annotation is currently supported on types and fields, we need to handle
  * types that changed visibility and fields that changed visibility.
  */
-const mergeWithHiddenChangeSideEffects = async (
+const getHiddenChangeNaclSideEffects = async (
   changes: DetailedChange[],
   state: State,
   visibleElementSource: ReadOnlyElementsSource,
@@ -569,11 +573,7 @@ const mergeWithHiddenChangeSideEffects = async (
     ...await getHiddenFieldAndAnnotationValueChanges(changes, state, visibleElementSource),
     ...await getInstanceTypeHiddenChanges(changes, state),
   ]
-  // Additional changes may override / be overridden by original changes, so if we add new changes
-  // we have to make sure we remove duplicates
-  return additionalChanges.length === 0
-    ? changes
-    : removeDuplicateChanges(changes, additionalChanges)
+  return additionalChanges
 }
 
 const isHiddenField = async (
@@ -843,12 +843,21 @@ export const handleHiddenChanges = async (
   state: State,
   visibleElementSource: ReadOnlyElementsSource,
 ): Promise<{visible: DetailedChange[]; hidden: DetailedChange[]}> => {
-  const changesWithHiddenAnnotationChanges = await mergeWithHiddenChangeSideEffects(
-    changes, state, visibleElementSource,
-  )
-  const filteredChanges = await filterOutHiddenChanges(changesWithHiddenAnnotationChanges, state)
+  // The side effects here are going to be applied to the nacls, so only
+  // the visible part is needed. We filter it here and not with the rest
+  // of the changes in order to prevent remove changes (which are always
+  // sent to both the visible and hidden parts) from being applied to
+  // the state as well.
+  const additionalNaclChanges = (await filterOutHiddenChanges(
+    await getHiddenChangeNaclSideEffects(changes, state, visibleElementSource),
+    state
+  )).map(change => change.visible).filter(values.isDefined)
+  const filteredChanges = await filterOutHiddenChanges(changes, state)
   return {
-    visible: filteredChanges.map(change => change.visible).filter(values.isDefined),
+    visible: removeDuplicateChanges(
+      filteredChanges.map(change => change.visible).filter(values.isDefined),
+      additionalNaclChanges
+    ),
     hidden: filteredChanges.map(change => change.hidden).filter(values.isDefined),
   }
 }

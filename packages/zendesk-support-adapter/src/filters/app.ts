@@ -14,10 +14,13 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import Joi from 'joi'
 import {
   Change, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange,
 } from '@salto-io/adapter-api'
 import { retry } from '@salto-io/lowerdash'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import ZendeskClient from '../client/client'
@@ -26,21 +29,41 @@ export const APP_INSTALLATION_TYPE_NAME = 'app_installation'
 
 const { withRetry } = retry
 const { intervals } = retry.retryStrategies
+const log = logger(module)
 
 const MAX_RETRIES = 60
 const INTERVAL_TIME = 2000
 
+type JobStatus = {
+  status: string
+  message?: string
+}
+
+const EXPECTED_APP_SCHEMA = Joi.object({
+  status: Joi.string().required(),
+  message: Joi.string().optional().allow(''),
+}).unknown(true).required()
+
+const isJobStatus = (value: unknown): value is JobStatus => {
+  const { error } = EXPECTED_APP_SCHEMA.validate(value)
+  if (error !== undefined) {
+    log.error(`Received an invalid response for the job status: ${error.message}, ${safeJsonStringify(value)}`)
+    return false
+  }
+  return true
+}
+
 const checkIfJobIsDone = async (
   client: ZendeskClient, jobId: string, fullName: string
 ): Promise<boolean> => {
-  const res = await client.getSinglePage({ url: `/apps/job_statuses/${jobId}` })
-  if (_.isArray(res.data)) {
+  const res = (await client.getSinglePage({ url: `/apps/job_statuses/${jobId}` })).data
+  if (!isJobStatus(res)) {
     throw new Error(`Got an invalid response for job status. Element: ${fullName}. Job ID: ${jobId}`)
   }
-  if (['failed', 'killed'].includes(res.data.status)) {
-    throw new Error(`Job status is failed. Element: ${fullName}. Job ID: ${jobId}. Error: ${res.data.message}`)
+  if (['failed', 'killed'].includes(res.status)) {
+    throw new Error(`Job status is failed. Element: ${fullName}. Job ID: ${jobId}. Error: ${res.message}`)
   }
-  return res.data.status === 'completed'
+  return res.status === 'completed'
 }
 
 const waitTillJobIsDone = async (client: ZendeskClient, jobId: string, fullName: string):

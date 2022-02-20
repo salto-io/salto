@@ -62,13 +62,6 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     transformation: {
       sourceTypeName: 'groups__groups',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      // TODO: weired look like group
-      serviceUrl: {
-        url: '/groups/{groupId}',
-        urlParamsToFields: {
-          groupId: 'id',
-        },
-      },
     },
     deployRequests: {
       add: {
@@ -363,13 +356,6 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       sourceTypeName: 'targets__targets',
       idFields: ['title', 'type'], // looks like title is unique so not adding id
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      // TODO: weired look like group
-      serviceUrl: {
-        url: '/targets/{targetId}/edit',
-        urlParamsToFields: {
-          targetId: 'id',
-        },
-      },
     },
     deployRequests: {
       add: {
@@ -547,13 +533,6 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
         { fieldName: 'type', fieldType: 'string', restrictions: { enforce_value: true, values: ['inbound', 'outbound'] } },
       ],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      // TODO: looks weired like groups
-      serviceUrl: {
-        url: '/sharing_agreements/{sharingAgreementId}',
-        urlParamsToFields: {
-          sharingAgreementId: 'id',
-        },
-      },
     },
     deployRequests: {
       add: {
@@ -593,13 +572,6 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'domain_verification_code' },
       ]),
-      // TODO: weird look like group
-      serviceUrl: {
-        url: '/settings/recipient_addresses/{supportAddressId}/edit',
-        urlParamsToFields: {
-          supportAddressId: 'id',
-        },
-      },
     },
     deployRequests: {
       add: {
@@ -1224,13 +1196,6 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       dataField: '.',
       standaloneFields: [{ fieldName: 'variants' }],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      // TODO: looks weired like groups
-      serviceUrl: {
-        url: '/dynamic_content/items/{dynamicContentItemId}',
-        urlParamsToFields: {
-          dynamicContentItemId: 'id',
-        },
-      },
     },
     deployRequests: {
       add: {
@@ -1261,14 +1226,6 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       // Will be changed after SALTO-1687 + SALTO-1688
       idFields: ['locale_id'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      // TODO: looks weired like groups
-      serviceUrl: {
-        url: '/dynamic_content/items/{dynamicContentItemId}/variants/{dynammicContentVariantId}/edit',
-        urlParamsToFields: {
-          dynammicContentVariantId: 'id',
-          dynamicContentItemId: '_parent.0.id',
-        },
-      },
     },
     deployRequests: {
       add: {

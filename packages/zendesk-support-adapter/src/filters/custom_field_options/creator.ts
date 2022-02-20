@@ -77,7 +77,7 @@ export const createCustomFieldOptionsFilterCreator = (
   preDeploy: async changes => {
     await applyforInstanceChangesOfType(
       changes,
-      parentTypeName,
+      [parentTypeName],
       (instance: InstanceElement) => {
         const defaultValue = instance.value[DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME]
         makeArray(instance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME])
@@ -91,7 +91,7 @@ export const createCustomFieldOptionsFilterCreator = (
   onDeploy: async changes => {
     await applyforInstanceChangesOfType(
       changes,
-      parentTypeName,
+      [parentTypeName],
       (instance: InstanceElement) => {
         const options = makeArray(instance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME])
         if (options) {

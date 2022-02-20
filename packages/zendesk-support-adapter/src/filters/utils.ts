@@ -22,13 +22,13 @@ const { awu } = collections.asynciterable
 
 export const applyforInstanceChangesOfType = async (
   changes: Change<ChangeDataType>[],
-  typeName: string,
+  typeNames: string[],
   func: (arg: InstanceElement) => Promise<InstanceElement> | InstanceElement,
 ): Promise<void> => {
   await awu(changes)
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
-    .filter(change => getChangeData(change).elemID.typeName === typeName)
+    .filter(change => typeNames.includes(getChangeData(change).elemID.typeName))
     .forEach(change => applyFunctionToChangeData<Change<InstanceElement>>(
       change,
       func,

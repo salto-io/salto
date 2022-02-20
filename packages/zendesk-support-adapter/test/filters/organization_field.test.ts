@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, ElemID, InstanceElement,
-  ReferenceExpression, CORE_ANNOTATIONS,
+  ReferenceExpression, CORE_ANNOTATIONS, toChange,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { DEFAULT_CONFIG } from '../../src/config'
@@ -40,7 +40,7 @@ jest.mock('@salto-io/adapter-components', () => {
 
 describe('organization field filter', () => {
   let client: ZendeskClient
-  type FilterType = filterUtils.FilterWith<'deploy' | 'preDeploy' | 'onDeploy'>
+  type FilterType = filterUtils.FilterWith<'deploy'>
   let filter: FilterType
   const parentTypeName = ORG_FIELD_TYPE_NAME
   const childTypeName = ORG_FIELD_OPTION_TYPE_NAME
@@ -101,7 +101,8 @@ describe('organization field filter', () => {
         .mockImplementation(async () => ({
           organization_field: { id: 11, [CUSTOM_FIELD_OPTIONS_FIELD_NAME]: [{ id: 22, value: 'v1' }, { id: 33, value: 'v2' }] },
         }))
-      const res = await filter.deploy(clonedElements.map(e => ({ action: 'add', data: { after: e } })))
+      const changes = clonedElements.map(e => toChange({ after: e }))
+      const res = await filter.deploy(changes)
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
       expect(mockDeployChange).toHaveBeenCalledWith(
         { action: 'add', data: { after: clonedElements[0] } },

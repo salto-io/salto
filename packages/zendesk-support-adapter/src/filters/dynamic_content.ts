@@ -39,7 +39,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       .map(variant => [variant.value.locale_id, variant.value]))
     await applyforInstanceChangesOfType(
       changes.filter(isAdditionChange),
-      DYNAMIC_CONTENT_ITEM_TYPE_NAME,
+      [DYNAMIC_CONTENT_ITEM_TYPE_NAME],
       (instance: InstanceElement) => {
         instance.value[VARIANTS_FIELD_NAME] = makeArray(instance.value[VARIANTS_FIELD_NAME])
           .map(variant => localeIdToVariant[variant])
@@ -51,7 +51,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
   onDeploy: async (changes: Change<InstanceElement>[]) => {
     await applyforInstanceChangesOfType(
       changes.filter(isAdditionChange),
-      DYNAMIC_CONTENT_ITEM_TYPE_NAME,
+      [DYNAMIC_CONTENT_ITEM_TYPE_NAME],
       (instance: InstanceElement) => {
         instance.value[VARIANTS_FIELD_NAME] = makeArray(instance.value[VARIANTS_FIELD_NAME])
           .map(variant => variant.locale_id)

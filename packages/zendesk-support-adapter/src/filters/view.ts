@@ -31,7 +31,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
   preDeploy: async changes => {
     await applyforInstanceChangesOfType(
       changes,
-      VIEW_TYPE_NAME,
+      [VIEW_TYPE_NAME],
       (instance: InstanceElement) => {
         instance.value = {
           ...instance.value,
@@ -54,7 +54,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
   onDeploy: async changes => {
     await applyforInstanceChangesOfType(
       changes,
-      VIEW_TYPE_NAME,
+      [VIEW_TYPE_NAME],
       (instance: InstanceElement) => {
         instance.value = _.omit(instance.value, ['all', 'any', 'output'])
         return instance

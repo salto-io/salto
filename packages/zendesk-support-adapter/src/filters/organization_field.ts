@@ -43,7 +43,6 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       relevantChanges,
       change => getChangeData(change).elemID.typeName === ORG_FIELD_TYPE_NAME,
     )
-
     const additionalParentChange: Change<InstanceElement>[] = []
     if (parentChanges.length === 0 && childrenChanges.length > 0) {
       // We aggregate by the parent full name so we know that all the children have the same parent

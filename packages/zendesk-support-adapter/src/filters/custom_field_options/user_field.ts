@@ -15,11 +15,13 @@
 */
 import { createCustomFieldOptionsFilterCreator } from './creator'
 
+export const USER_FIELD_TYPE_NAME = 'user_field'
+
 /**
  * Deploys user field and user field options
  */
 const filterCreator = createCustomFieldOptionsFilterCreator({
-  parentTypeName: 'user_field',
+  parentTypeName: USER_FIELD_TYPE_NAME,
   childTypeName: 'user_field__custom_field_options',
 })
 

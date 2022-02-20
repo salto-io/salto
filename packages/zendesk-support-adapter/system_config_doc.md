@@ -1521,6 +1521,9 @@ zendesk_support {
               fieldName = "id"
               fieldType = "number"
             },
+            {
+              fieldName = "app"
+            },
           ]
           fieldsToOmit = [
             {
@@ -1544,10 +1547,32 @@ zendesk_support {
           ]
           idFields = [
             "settings.name",
+            "app_id",
           ]
           fileNameFields = [
             "settings.name",
+            "app_id",
           ]
+        }
+        deployRequests = {
+          add = {
+            url = "/apps/installations"
+            method = "post"
+          }
+          modify = {
+            url = "/apps/installations/{appInstallationId}"
+            method = "put"
+            urlParamsToFields = {
+              appInstallationId = "id"
+            }
+          }
+          remove = {
+            url = "/apps/installations/{appInstallationId}"
+            method = "delete"
+            urlParamsToFields = {
+              appInstallationId = "id"
+            }
+          }
         }
       }
       app_owned = {
@@ -2204,7 +2229,7 @@ zendesk_support {
       }
       app_installations = {
         request = {
-          url = "/apps/installations"
+          url = "/apps/installations?include=app"
         }
       }
       apps_owned = {

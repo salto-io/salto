@@ -878,10 +878,33 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   app_installation: {
     transformation: {
       sourceTypeName: 'app_installations__installations',
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'app' },
+      ),
       fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'updated', fieldType: 'string' }),
-      idFields: ['settings.name'],
-      fileNameFields: ['settings.name'],
+      idFields: ['settings.name', 'app_id'],
+      fileNameFields: ['settings.name', 'app_id'],
+    },
+    deployRequests: {
+      add: {
+        url: '/apps/installations',
+        method: 'post',
+      },
+      modify: {
+        url: '/apps/installations/{appInstallationId}',
+        method: 'put',
+        urlParamsToFields: {
+          appInstallationId: 'id',
+        },
+      },
+      remove: {
+        url: '/apps/installations/{appInstallationId}',
+        method: 'delete',
+        urlParamsToFields: {
+          appInstallationId: 'id',
+        },
+      },
     },
   },
   app_owned: {

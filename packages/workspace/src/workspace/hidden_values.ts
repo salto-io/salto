@@ -842,6 +842,11 @@ export const handleHiddenChanges = async (
   state: State,
   visibleElementSource: ReadOnlyElementsSource,
 ): Promise<{visible: DetailedChange[]; hidden: DetailedChange[]}> => {
+  // The side effects here are going to be applied to the nacls, so only
+  // the visible part is needed. We filter it here and not with the rest
+  // of the changes in order to prevent remove changes (which are always
+  // sent to both the visible and hidden parts) from being applied to
+  // the state as well.
   const additionalNaclChanges = (await filterOutHiddenChanges(
     await getHiddenChangeNaclSideEffects(changes, state, visibleElementSource),
     state

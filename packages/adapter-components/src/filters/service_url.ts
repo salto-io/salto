@@ -44,9 +44,6 @@ export const serviceUrlFilterCreator: <
   },
   onDeploy: async (changes: Change<InstanceElement>[]) => {
     const relevantChanges = changes.filter(isInstanceChange).filter(isAdditionChange)
-    if (_.isEmpty(relevantChanges)) {
-      return
-    }
     relevantChanges
       .map(getChangeData)
       .forEach(instance => addUrlToInstance(instance, baseUrl, config))

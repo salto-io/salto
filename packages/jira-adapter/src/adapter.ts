@@ -42,8 +42,11 @@ import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
 import projectFilter from './filters/project'
 import projectComponentFilter from './filters/project_component'
 import defaultInstancesDeployFilter from './filters/default_instances_deploy'
-import workflowFilter from './filters/workflow/workflow'
-import workflowPropertiesFilter from './filters/workflow/workflow_properties'
+import workflowStructureFilter from './filters/workflow/workflow_structure_filter'
+import workflowPropertiesFilter from './filters/workflow/workflow_properties_filter'
+import transitionIdsFilter from './filters/workflow/transition_ids_filter'
+import workflowDeployFilter from './filters/workflow/workflow_deploy_filter'
+import triggersFilter from './filters/workflow/triggers_filter'
 import workflowSchemeFilter from './filters/workflow_scheme'
 import duplicateIdsFilter from './filters/duplicate_ids'
 import fieldNameFilter from './filters/fields/field_name_filter'
@@ -86,8 +89,11 @@ export const DEFAULT_FILTERS = [
   contextDeploymentFilter,
   avatarsFilter,
   iconUrlFilter,
-  workflowFilter,
+  workflowStructureFilter,
+  transitionIdsFilter,
+  triggersFilter,
   workflowPropertiesFilter,
+  workflowDeployFilter,
   workflowSchemeFilter,
   issueTypeSchemeReferences,
   issueTypeSchemeFilter,

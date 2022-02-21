@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { HTTPWriteClientInterface } from '../../src/client/http_client'
 import { deployChange, filterUndeployableValues } from '../../src/deployment/deployment'
@@ -41,7 +41,8 @@ describe('deployChange', () => {
       'instance',
       type,
       {
-        creatableField: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance', 'val'), 'creatableValue'),
+        creatableField: 'creatableValue',
+        ignored: 'ignored',
       }
     )
 
@@ -93,6 +94,26 @@ describe('deployChange', () => {
     expect(httpClient.delete).toHaveBeenCalledWith(expect.objectContaining({
       url: '/test/endpoint/1',
     }))
+  })
+
+  it('should not send ignored fields', async () => {
+    httpClient.post.mockResolvedValue({
+      status: 200,
+      data: {},
+    })
+    await deployChange(
+      toChange({ after: instance }),
+      httpClient,
+      endpoint,
+      path => path.name === 'ignored',
+    )
+
+    expect(httpClient.post).toHaveBeenCalledWith({
+      url: '/test/endpoint',
+      data: {
+        creatableField: 'creatableValue',
+      },
+    })
   })
 })
 

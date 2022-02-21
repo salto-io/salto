@@ -20,8 +20,8 @@ import { collections } from '@salto-io/lowerdash'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
-import { isWorkflowInstance, WorkflowInstance, WORKFLOW_TYPE_NAME } from './types'
-import { JIRA } from '../../constants'
+import { isWorkflowInstance, WorkflowInstance } from './types'
+import { JIRA, WORKFLOW_TYPE_NAME } from '../../constants'
 
 const STATUS_PROPERTY_TYPE_NAME = 'StatusProperty'
 

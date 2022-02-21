@@ -16,7 +16,7 @@
 import { InstanceElement, Element, ElemID, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { CUSTOM_FIELDS_SUFFIX } from '../../src/filters/fields/field_name_filter'
-import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA } from '../../src/constants'
+import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA, WORKFLOW_TYPE_NAME } from '../../src/constants'
 import { createReference, findType } from '../utils'
 import { createBoardValues } from './board'
 import { createContextValues, createFieldValues } from './field'
@@ -57,7 +57,7 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[] =
 
   const workflow = new InstanceElement(
     randomString,
-    findType('Workflow', fetchedElements),
+    findType(WORKFLOW_TYPE_NAME, fetchedElements),
     createWorkflowValues(randomString, fetchedElements),
   )
 

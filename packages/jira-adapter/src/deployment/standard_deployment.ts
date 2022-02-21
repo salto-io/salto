@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeDataType, DeployResult, getChangeData, InstanceElement, isAdditionChange } from '@salto-io/adapter-api'
+import { Change, ChangeDataType, DeployResult, ElemID, getChangeData, InstanceElement, isAdditionChange } from '@salto-io/adapter-api'
 import { config, deployment, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { resolveChangeElement, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -27,7 +27,7 @@ type DeployChangeParam = {
   change: Change<InstanceElement>
   client: JiraClient
   apiDefinitions: config.AdapterApiConfig
-  fieldsToIgnore?: string[]
+  fieldsToIgnore?: string[] | ((path: ElemID) => boolean)
   additionalUrlVars?: Record<string, string>
 }
 

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ActionName, Change, getChangeData, InstanceElement } from '@salto-io/adapter-api'
+import { ActionName, Change, ElemID, getChangeData, InstanceElement, Values } from '@salto-io/adapter-api'
 import { resolvePath, transformElement } from '@salto-io/adapter-utils'
 import { replaceUrlParams } from '../elements/request_parameters'
 import { HTTPWriteClientInterface } from '../client/http_client'
@@ -44,6 +44,30 @@ export const filterUndeployableValues = async (
   })
 )
 
+export const filterIgnoredValues = async (
+  instance: InstanceElement,
+  fieldsToIgnore: string[] | ((path: ElemID) => boolean)
+): Promise<Values> => {
+  if (Array.isArray(fieldsToIgnore)) {
+    return _.omit(
+      instance.value,
+      fieldsToIgnore
+    )
+  }
+
+  return (await transformElement({
+    element: instance,
+    strict: false,
+    allowEmpty: true,
+    transformFunc: ({ value, path }) => {
+      if (path !== undefined && fieldsToIgnore(path)) {
+        return undefined
+      }
+      return value
+    },
+  })).value
+}
+
 /**
  * Deploy a single change to the service using the given details
  *
@@ -59,7 +83,7 @@ export const deployChange = async (
   change: Change<InstanceElement>,
   client: HTTPWriteClientInterface,
   endpointDetails?: DeploymentRequestsByAction,
-  fieldsToIgnore: string[] = [],
+  fieldsToIgnore: string[] | ((path: ElemID) => boolean) = [],
   additionalUrlVars?: Record<string, string>
 ): Promise<ResponseResult> => {
   const instance = getChangeData(change)
@@ -67,9 +91,9 @@ export const deployChange = async (
   if (endpoint === undefined) {
     throw new Error(`No endpoint of type ${change.action} for ${instance.elemID.typeName}`)
   }
-  const valuesToDeploy = _.omit(
-    (await filterUndeployableValues(getChangeData(change), change.action)).value,
-    fieldsToIgnore
+  const valuesToDeploy = await filterIgnoredValues(
+    await filterUndeployableValues(getChangeData(change), change.action),
+    fieldsToIgnore,
   )
 
   const urlVarsValues = {

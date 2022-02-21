@@ -1253,6 +1253,11 @@ jira {
             },
           ]
         }
+        jspRequests = {
+          add = "/secure/admin/AddResolution.jspa"
+          modify = "/secure/admin/EditResolution.jspa"
+          query = "/rest/api/3/resolution"
+        }
       }
       Screen = {
         transformation = {
@@ -1391,15 +1396,6 @@ jira {
           ]
         }
       }
-      Transition = {
-        transformation = {
-          fieldsToOmit = [
-            {
-              fieldName = "id"
-            },
-          ]
-        }
-      }
       Workflow = {
         transformation = {
           fieldTypeOverrides = [
@@ -1482,6 +1478,12 @@ jira {
               fieldName = "id"
             },
           ]
+        }
+        jspRequests = {
+          add = "/secure/admin/AddStatus.jspa"
+          modify = "/secure/admin/EditStatus.jspa"
+          remove = "/secure/admin/DeleteStatus.jspa"
+          query = "/rest/workflowDesigner/1.0/statuses"
         }
       }
       WorkflowScheme = {
@@ -1668,6 +1670,11 @@ jira {
               fieldName = "id"
             },
           ]
+        }
+        jspRequests = {
+          add = "/secure/admin/AddPriority.jspa"
+          modify = "/secure/admin/EditPriority.jspa"
+          query = "/rest/api/3/priority"
         }
       }
       ApplicationRole = {

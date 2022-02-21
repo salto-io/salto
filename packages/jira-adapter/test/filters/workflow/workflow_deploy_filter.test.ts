@@ -289,7 +289,7 @@ describe('workflowDeployFilter', () => {
         })
       })
 
-      it('should do nothing when response values is not an array', async () => {
+      it('should throw when response values is not an array', async () => {
         const change = toChange({
           after: new InstanceElement(
             'instance',
@@ -315,11 +315,10 @@ describe('workflowDeployFilter', () => {
 
         const { deployResult } = await filter.deploy([change])
 
-        expect((getChangeData(deployResult.appliedChanges[0]) as InstanceElement)
-          .value.transitionIds).toEqual({})
+        expect(deployResult.errors).toHaveLength(1)
       })
 
-      it('should do nothing when number of workflows in response is invalid', async () => {
+      it('should throw when number of workflows in response is invalid', async () => {
         const change = toChange({
           after: new InstanceElement(
             'instance',
@@ -345,11 +344,10 @@ describe('workflowDeployFilter', () => {
 
         const { deployResult } = await filter.deploy([change])
 
-        expect((getChangeData(deployResult.appliedChanges[0]) as InstanceElement)
-          .value.transitionIds).toEqual({})
+        expect(deployResult.errors).toHaveLength(1)
       })
 
-      it('should do nothing when workflow in response is invalid', async () => {
+      it('should throw when workflow in response is invalid', async () => {
         const change = toChange({
           after: new InstanceElement(
             'instance',
@@ -379,11 +377,10 @@ describe('workflowDeployFilter', () => {
 
         const { deployResult } = await filter.deploy([change])
 
-        expect((getChangeData(deployResult.appliedChanges[0]) as InstanceElement)
-          .value.transitionIds).toEqual({})
+        expect(deployResult.errors).toHaveLength(1)
       })
 
-      it('should do nothing when there are not transitions in response', async () => {
+      it('should throw when there are not transitions in response', async () => {
         const change = toChange({
           after: new InstanceElement(
             'instance',
@@ -413,8 +410,7 @@ describe('workflowDeployFilter', () => {
 
         const { deployResult } = await filter.deploy([change])
 
-        expect((getChangeData(deployResult.appliedChanges[0]) as InstanceElement)
-          .value.transitionIds).toEqual({})
+        expect(deployResult.errors).toHaveLength(1)
       })
     })
   })

@@ -97,7 +97,7 @@ export type Trigger = {
   configuration?: Record<string, unknown>
 }
 
-const triggerSchema = Joi.object({
+export const triggerSchema = Joi.object({
   key: Joi.string().optional(),
   configuration: Joi.object().optional(),
 }).unknown(true)
@@ -151,14 +151,14 @@ export type Workflow = {
   statuses?: Status[]
 }
 
-const workflowSchema = Joi.object({
+export const workflowSchema = Joi.object({
   transitionIds: Joi.object().pattern(Joi.string(), Joi.string()).optional(),
   id: idSchema.optional(),
   entityId: Joi.string().optional(),
   name: Joi.string().optional(),
   transitions: Joi.array().items(transitionsSchema).optional(),
   statuses: Joi.array().items(statusSchema).optional(),
-}).unknown(true)
+}).unknown(true).required()
 
 export type WorkflowInstance = InstanceElement & { value: InstanceElement['value'] & Workflow }
 

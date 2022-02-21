@@ -14,6 +14,8 @@
 * limitations under the License.
 */
 import { AdditionChange, getChangeData } from '@salto-io/adapter-api'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import JiraClient from '../../client/client'
 import { getTransitionKey } from './transition_ids_filter'
@@ -21,22 +23,35 @@ import { WorkflowInstance } from './types'
 
 const { awu } = collections.asynciterable
 
+const log = logger(module)
+
 export const deployTriggers = async (
   change: AdditionChange<WorkflowInstance>,
   client: JiraClient
 ): Promise<void> => {
   const instance = getChangeData(change)
 
+  const workflowName = instance.value.name
+  // We never supposed to get here
+  if (workflowName === undefined) {
+    throw new Error('Cannot deploy a workflow without a name')
+  }
+
   await awu(instance.value.transitions ?? []).forEach(async transition => {
     const transitionId = instance.value.transitionIds?.[getTransitionKey(transition)]
+
+    if (transitionId === undefined) {
+      log.error(`Could not find the id of the transition ${transition.name} to deploy: ${safeJsonStringify(instance.value)}`)
+      throw new Error('Could not find the id of the transition to deploy')
+    }
 
     await awu(transition.rules?.triggers ?? [])
       .forEach(async trigger => {
         await client.putPrivate({
           url: '/rest/triggers/1.0/workflow/config',
           queryParams: {
-            workflowName: instance.value.name as string,
-            actionId: transitionId as string,
+            workflowName,
+            actionId: transitionId,
           },
           data: {
             definitionConfig: trigger.configuration,

@@ -37,7 +37,7 @@ const EXPECTED_RESULTS_SCHEME = Joi.array().items(Joi.object({
   id: Joi.string(),
   name: Joi.string(),
   description: Joi.string().allow('').optional(),
-}).unknown(true))
+}).unknown(true)).required()
 
 const isStatusesResponse = (responseValue: unknown): responseValue is Status[] => {
   const { error } = EXPECTED_RESULTS_SCHEME.validate(responseValue)

@@ -17,14 +17,15 @@ import { AdditionChange, getChangeData, InstanceElement, isAdditionChange, isIns
 import _ from 'lodash'
 import { resolveChangeElement, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import Joi from 'joi'
 import { FilterCreator } from '../../filter'
-import { isPostFetchWorkflowInstance, WorkflowInstance } from './types'
+import { isPostFetchWorkflowInstance, Transition, Workflow, WorkflowInstance, workflowSchema } from './types'
 import JiraClient from '../../client/client'
 import { JiraConfig } from '../../config'
 import { getLookUpName } from '../../reference_mapping'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { WORKFLOW_TYPE_NAME } from '../../constants'
-import { addTransitionIds, getTransitionsFromService } from './transition_ids_filter'
+import { addTransitionIds } from './transition_ids_filter'
 import { deployTriggers } from './triggers_deployment'
 
 const log = logger(module)
@@ -86,6 +87,38 @@ const removeUnsupportedRules = (instance: WorkflowInstance): void => {
     })
 }
 
+const isValidTransitionResponse = (response: unknown): response is { values: [Workflow] } => {
+  const { error } = Joi.object({
+    values: Joi.array().min(1).max(1).items(workflowSchema),
+  }).unknown(true).required().validate(response)
+
+  if (error !== undefined) {
+    log.warn(`Unexpected workflows response from Jira: ${error}. ${safeJsonStringify(response)}`)
+    return false
+  }
+  return true
+}
+
+const getTransitionsFromService = async (
+  client: JiraClient,
+  workflowName: string,
+): Promise<Transition[]> => {
+  const response = await client.getSinglePage({
+    url: '/rest/api/3/workflow/search',
+    queryParams: {
+      expand: 'transitions',
+      workflowName,
+    },
+  })
+
+  if (!isValidTransitionResponse(response.data)) {
+    return []
+  }
+
+  const workflowValues = response.data.values[0]
+  return workflowValues.transitions ?? []
+}
+
 const deployWorkflow = async (
   change: AdditionChange<InstanceElement>,
   client: JiraClient,
@@ -94,7 +127,7 @@ const deployWorkflow = async (
   const resolvedChange = await resolveChangeElement(change, getLookUpName)
   const instance = getChangeData(resolvedChange)
   if (!isPostFetchWorkflowInstance(instance)) {
-    log.warn(`values ${safeJsonStringify(instance.value)} of instance ${instance.elemID.getFullName} are invalid`)
+    log.error(`values ${safeJsonStringify(instance.value)} of instance ${instance.elemID.getFullName} are invalid`)
     throw new Error(`instance ${instance.elemID.getFullName()} is not valid for deployment`)
   }
   removeCreateIssuePermissionValidator(instance)

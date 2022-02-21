@@ -17,15 +17,26 @@ import { CORE_ANNOTATIONS, Field, isInstanceElement, ListType } from '@salto-io/
 import { logger } from '@salto-io/logging'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+import Joi from 'joi'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
-import { isWorkflowInstance } from './types'
+import { isWorkflowInstance, triggerSchema } from './types'
 import { triggerType } from './triggers_types'
 import { getTransitionKey } from './transition_ids_filter'
 
 const log = logger(module)
 
+const isValidResponse = (response: unknown):
+response is Array<{key?: string; configuration?: Record<string, unknown>}> => {
+  const { error } = Joi.array().items(triggerSchema).required().validate(response)
+
+  if (error !== undefined) {
+    log.warn(`Unexpected triggers response from Jira: ${error}. ${safeJsonStringify(response)}`)
+    return false
+  }
+  return true
+}
 
 const filter: FilterCreator = ({ client, config }) => ({
   onFetch: async elements => {
@@ -72,8 +83,7 @@ const filter: FilterCreator = ({ client, config }) => ({
               },
             })
 
-            if (!Array.isArray(response.data)) {
-              log.warn(`Unexpected triggers response from Jira: ${safeJsonStringify(response.data)}`)
+            if (!isValidResponse(response.data)) {
               return
             }
 

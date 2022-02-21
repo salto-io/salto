@@ -17,12 +17,10 @@ import { BuiltinTypes, CORE_ANNOTATIONS, Element, Field, isInstanceElement, MapT
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { WORKFLOW_TYPE_NAME } from '../../constants'
-import { isWorkflowInstance, isWorkflowValues, Transition, WorkflowInstance } from './types'
-import JiraClient from '../../client/client'
+import { isWorkflowInstance, Transition, WorkflowInstance } from './types'
 
 const log = logger(module)
 
@@ -47,38 +45,6 @@ export const addTransitionIds = (
   instance.value.transitions?.forEach(transition => {
     delete transition.id
   })
-}
-
-export const getTransitionsFromService = async (
-  client: JiraClient,
-  workflowName: string,
-): Promise<Transition[]> => {
-  const response = await client.getSinglePage({
-    url: '/rest/api/3/workflow/search',
-    queryParams: {
-      expand: 'transitions',
-      workflowName,
-    },
-  })
-
-  if (!Array.isArray(response.data.values)) {
-    log.warn(`Unexpected workflows response from Jira: ${safeJsonStringify(response.data.values)}`)
-    return []
-  }
-
-  if (response.data.values.length !== 1) {
-    log.warn(`Received unexpected number of workflows from Jira: ${safeJsonStringify(response.data.values)}`)
-    return []
-  }
-
-  const workflowValues = response.data.values[0]
-
-  if (!isWorkflowValues(workflowValues)) {
-    log.warn(`Received an invalid workflow from Jira: ${safeJsonStringify(workflowValues)}`)
-    return []
-  }
-
-  return workflowValues.transitions ?? []
 }
 
 const filter: FilterCreator = () => ({

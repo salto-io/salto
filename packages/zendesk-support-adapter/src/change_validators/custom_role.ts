@@ -14,21 +14,23 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Change, ChangeValidator, getChangeData,
-  InstanceElement,
+import { Change, ChangeValidator, getChangeData, InstanceElement, isAdditionChange,
   isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 
 const { awu } = collections.asynciterable
+const log = logger(module)
 const SYSTEM_ROLE_NAMES = [
   'agen', 'agent', 'administrator', 'admin', 'billing admin', 'light agent',
-].map(name => name.toLowerCase())
+]
 export const CUSTOM_ROLE_TYPE_NAME = 'custom_role'
 
 const isRelevantChange = (change: Change<InstanceElement>): boolean =>
   (getChangeData(change).elemID.typeName === CUSTOM_ROLE_TYPE_NAME)
-  && !(isModificationChange(change)
-    && (change.data.before.value.name === change.data.after.value.name))
+  && (isAdditionChange(change)
+    || (isModificationChange(change)
+      && (change.data.before.value.name !== change.data.after.value.name)))
 
 export const customRoleNameValidator: ChangeValidator = async (
   changes, elementSource
@@ -38,7 +40,11 @@ export const customRoleNameValidator: ChangeValidator = async (
     .filter(isInstanceChange)
     .filter(isRelevantChange)
     .map(getChangeData)
-  if (_.isEmpty(relevantInstances) || (elementSource === undefined)) {
+  if (elementSource === undefined) {
+    log.error('Failed to run customRoleNameValidator because no element source was provided')
+    return []
+  }
+  if (_.isEmpty(relevantInstances)) {
     return []
   }
   const allCustomRoles = await awu(await elementSource.list())
@@ -53,8 +59,8 @@ export const customRoleNameValidator: ChangeValidator = async (
         return [{
           elemID: instance.elemID,
           severity: 'Error',
-          message: 'Can not change custom_role because its name is reserved for a system role',
-          detailedMessage: `Can not change ${instance.elemID.getFullName()} because its name (${instance.value.name}) is reserved for a system role`,
+          message: 'Can not change custom_role because the name is reserved for a system role',
+          detailedMessage: `Can not change ${instance.elemID.getFullName()} because the name (${instance.value.name}) is reserved for a system role`,
         }]
       }
       const otherCustomRoleWithTheSameName = allCustomRoles
@@ -67,8 +73,8 @@ export const customRoleNameValidator: ChangeValidator = async (
       return [{
         elemID: instance.elemID,
         severity: 'Error',
-        message: 'Can not change custom_role because its name is already in use',
-        detailedMessage: `Can not change ${instance.elemID.getFullName()} because its name is already in use by ${
+        message: 'Can not change custom_role because the name is already in use',
+        detailedMessage: `Can not change ${instance.elemID.getFullName()} because the name is already in use by ${
           otherCustomRoleWithTheSameName.map(customRole => customRole.elemID.getFullName()).join(', ')}`,
       }]
     })

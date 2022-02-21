@@ -40,8 +40,8 @@ describe('customRoleNameValidator', () => {
     expect(errors).toEqual([{
       elemID: systemCustomRole.elemID,
       severity: 'Error',
-      message: 'Can not change custom_role because its name is reserved for a system role',
-      detailedMessage: `Can not change ${systemCustomRole.elemID.getFullName()} because its name (${systemCustomRole.value.name}) is reserved for a system role`,
+      message: 'Can not change custom_role because the name is reserved for a system role',
+      detailedMessage: `Can not change ${systemCustomRole.elemID.getFullName()} because the name (${systemCustomRole.value.name}) is reserved for a system role`,
     }])
   })
   it('should return an error if the custom role name is already in use', async () => {
@@ -58,8 +58,8 @@ describe('customRoleNameValidator', () => {
     expect(errors).toEqual([{
       elemID: clonedCustomRole.elemID,
       severity: 'Error',
-      message: 'Can not change custom_role because its name is already in use',
-      detailedMessage: `Can not change ${clonedCustomRole.elemID.getFullName()} because its name is already in use by ${testCustomRole.elemID.getFullName()}`,
+      message: 'Can not change custom_role because the name is already in use',
+      detailedMessage: `Can not change ${clonedCustomRole.elemID.getFullName()} because the name is already in use by ${testCustomRole.elemID.getFullName()}`,
     }])
   })
   it('should not return an error if custom role name is not in use', async () => {

@@ -20,7 +20,7 @@ import ZendeskAdapter from './adapter'
 import { Credentials, oauthAccessTokenCredentialsType, oauthRequestParametersType, usernamePasswordCredentialsType } from './auth'
 import {
   configType, ZendeskConfig, CLIENT_CONFIG, FETCH_CONFIG, validateFetchConfig,
-  API_DEFINITIONS_CONFIG, DEFAULT_CONFIG,
+  API_DEFINITIONS_CONFIG, DEFAULT_CONFIG, ZendeskFetchConfig,
 } from './config'
 import ZendeskClient from './client/client'
 import { createConnection } from './client/connection'
@@ -81,9 +81,14 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
     config?.value.apiDefinitions
   ) as configUtils.AdapterDuckTypeApiConfig
 
+  const fetch = configUtils.mergeWithDefaultConfig(
+    DEFAULT_CONFIG.fetch,
+    config?.value.fetch
+  ) as ZendeskFetchConfig
+
   const adapterConfig: { [K in keyof Required<ZendeskConfig>]: ZendeskConfig[K] } = {
     client: configValue.client,
-    fetch: configValue.fetch,
+    fetch,
     apiDefinitions,
   }
 

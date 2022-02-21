@@ -20,8 +20,7 @@ import WorkatoAdapter from './adapter'
 import { Credentials, usernameTokenCredentialsType } from './auth'
 import {
   configType, WorkatoConfig, CLIENT_CONFIG, validateFetchConfig,
-  FETCH_CONFIG,
-  DEFAULT_CONFIG,
+  FETCH_CONFIG, DEFAULT_CONFIG, WorkatoFetchConfig,
 } from './config'
 import WorkatoClient from './client/client'
 import { createConnection } from './client/connection'
@@ -42,9 +41,14 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
     config?.value.apiDefinitions
   ) as configUtils.AdapterDuckTypeApiConfig
 
+  const fetch = configUtils.mergeWithDefaultConfig(
+    DEFAULT_CONFIG.fetch,
+    config?.value.fetch
+  ) as WorkatoFetchConfig
+
   const adapterConfig: { [K in keyof Required<WorkatoConfig>]: WorkatoConfig[K] } = {
     client: configValue.client,
-    fetch: configValue.fetch,
+    fetch,
     apiDefinitions,
   }
 

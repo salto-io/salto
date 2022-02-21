@@ -96,12 +96,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
         { fieldName: 'role_type', fieldType: 'number' },
         { fieldName: 'team_member_count', fieldType: 'number' },
       ]),
-      serviceUrl: {
-        url: '/admin/people/team/roles/{customRoleId}',
-        urlParamsToFields: {
-          customRoleId: 'id',
-        },
-      },
+      serviceUrl: '/admin/people/team/roles/{id}',
     },
     deployRequests: {
       add: {
@@ -134,12 +129,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       fieldTypeOverrides: [
         { fieldName: 'organization_fields', fieldType: 'map<unknown>' },
       ],
-      serviceUrl: {
-        url: '/agent/organizations/{organizationId}/tickets',
-        urlParamsToFields: {
-          organizationId: 'id',
-        },
-      },
+      serviceUrl: '/agent/organizations/{id}/tickets',
     },
     deployRequests: {
       add: {
@@ -171,12 +161,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       idFields: ['title'],
       fileNameFields: ['title'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      serviceUrl: {
-        url: '/admin/workspaces/agent-workspace/views/{viewId}',
-        urlParamsToFields: {
-          viewId: 'id',
-        },
-      },
+      serviceUrl: '/admin/workspaces/agent-workspace/views/{id}',
     },
     deployRequests: {
       add: {
@@ -215,12 +200,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       idFields: ['title'],
       fileNameFields: ['title'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      serviceUrl: {
-        url: '/admin/objects-rules/rules/triggers/{triggerId}',
-        urlParamsToFields: {
-          triggerId: 'id',
-        },
-      },
+      serviceUrl: '/admin/objects-rules/rules/triggers/{id}',
     },
     deployRequests: {
       add: {
@@ -282,12 +262,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       idFields: ['title'],
       fileNameFields: ['title'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      serviceUrl: {
-        url: '/admin/objects-rules/rules/automations/{automationId}',
-        urlParamsToFields: {
-          automationId: 'id',
-        },
-      },
+      serviceUrl: '/admin/objects-rules/rules/automations/{id}',
     },
     deployRequests: {
       add: {
@@ -388,12 +363,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       fileNameFields: ['title'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'attachments' }),
-      serviceUrl: {
-        url: '/admin/workspaces/agent-workspace/macros/{macroId}',
-        urlParamsToFields: {
-          macroId: 'id',
-        },
-      },
+      serviceUrl: '/admin/workspaces/agent-workspace/macros/{id}',
     },
     deployRequests: {
       add: {
@@ -603,12 +573,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       fieldsToHide: FIELDS_TO_HIDE.concat([
         { fieldName: 'id', fieldType: 'number' },
       ]),
-      serviceUrl: {
-        url: '/admin/objects-rules/tickets/ticket-forms/edit/{ticketFormId}',
-        urlParamsToFields: {
-          ticketFormId: 'id',
-        },
-      },
+      serviceUrl: '/admin/objects-rules/tickets/ticket-forms/edit/{id}',
     },
     deployRequests: {
       add: {
@@ -641,12 +606,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       fileNameFields: ['type', 'title'],
       standaloneFields: [{ fieldName: 'custom_field_options' }],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      serviceUrl: {
-        url: '/admin/objects-rules/tickets/ticket-fields/{ticketFieldId}',
-        urlParamsToFields: {
-          ticketFieldId: 'id',
-        },
-      },
+      serviceUrl: '/admin/objects-rules/tickets/ticket-fields/{id}',
     },
     deployRequests: {
       add: {
@@ -712,12 +672,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
         { fieldName: 'type', fieldType: 'string', restrictions: { enforce_value: true, values: ['checkbox', 'date', 'decimal', 'dropdown', 'integer', 'regexp', 'text', 'textarea'] } },
       ],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      serviceUrl: {
-        url: '/agent/admin/user_fields/{userFieldId}',
-        urlParamsToFields: {
-          userFieldId: 'id',
-        },
-      },
+      serviceUrl: '/agent/admin/user_fields/{id}',
     },
     deployRequests: {
       add: {
@@ -794,12 +749,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
         { fieldName: 'type', fieldType: 'string', restrictions: { enforce_value: true, values: ['checkbox', 'date', 'decimal', 'dropdown', 'integer', 'regexp', 'text', 'textarea'] } },
       ],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      serviceUrl: {
-        url: '/agent/admin/organization_fields/{organizationFieldId}',
-        urlParamsToFields: {
-          organizationFieldId: 'id',
-        },
-      },
+      serviceUrl: '/agent/admin/organization_fields/{id}',
     },
     deployRequests: {
       add: {
@@ -1486,12 +1436,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
         { fieldName: 'created_by', fieldType: 'string' },
         { fieldName: 'updated_by', fieldType: 'string' },
       ),
-      serviceUrl: {
-        url: '/admin/apps-integrations/webhooks/webhooks/{webhookId}/details',
-        urlParamsToFields: {
-          webhookId: 'id',
-        },
-      },
+      serviceUrl: '/admin/apps-integrations/webhooks/webhooks/{id}/details',
     },
   },
   // not included yet: satisfaction_reason (returns 403), sunshine apis

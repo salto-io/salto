@@ -14,34 +14,38 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS, toChange, getChangeData } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
-import { DEFAULT_CONFIG } from '../../src/config'
-import ZendeskClient from '../../src/client/client'
-import { ZENDESK_SUPPORT } from '../../src/constants'
-import { paginate } from '../../src/client/pagination'
-import filterCreator from '../../src/filters/service_url'
+import { FilterWith } from '../../src/filter_utils'
+import { Paginator } from '../../src/client'
+import { serviceUrlFilterCreator } from '../../src/filters/service_url'
 
 describe('service url filter', () => {
-  let client: ZendeskClient
-  type FilterType = filterUtils.FilterWith<'onFetch' | 'onDeploy'>
+  type FilterType = FilterWith<'onFetch' | 'onDeploy'>
   let filter: FilterType
-  const roleObjType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'custom_role') })
+  const roleObjType = new ObjectType({ elemID: new ElemID('adapter', 'role') })
   const roleInst = new InstanceElement('role', roleObjType, { id: 11, name: 'role' })
-  const testObjType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'test') })
+  const testObjType = new ObjectType({ elemID: new ElemID('adapter', 'test') })
   const testInst = new InstanceElement('test', testObjType, { id: 11, name: 'test' })
+  const baseUrl = 'https://www.example.com'
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: DEFAULT_CONFIG,
+    filter = serviceUrlFilterCreator(baseUrl)({
+      client: {} as unknown,
+      paginator: undefined as unknown as Paginator,
+      config: {
+        apiDefinitions: {
+          types: {
+            role: {
+              transformation: {
+                serviceUrl: '/roles/{id}',
+              },
+            },
+          },
+          typeDefaults: {
+            transformation: { idFields: ['id'] },
+          },
+        },
+      },
     }) as FilterType
   })
 
@@ -50,17 +54,17 @@ describe('service url filter', () => {
       const elements = [roleInst].map(e => e.clone())
       await filter.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName()).sort())
-        .toEqual(['zendesk_support.custom_role.instance.role'])
+        .toEqual(['adapter.role.instance.role'])
       const [instance] = elements
       expect(instance.annotations).toEqual({
-        [CORE_ANNOTATIONS.SERVICE_URL]: 'https://ignore.zendesk.com/admin/people/team/roles/11',
+        [CORE_ANNOTATIONS.SERVICE_URL]: 'https://www.example.com/roles/11',
       })
     })
     it('should not add service url annotation if it is not exist in the config', async () => {
       const elements = [testInst].map(e => e.clone())
       await filter.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName()).sort())
-        .toEqual(['zendesk_support.test.instance.test'])
+        .toEqual(['adapter.test.instance.test'])
       const [instance] = elements
       expect(instance.annotations).toEqual({})
     })
@@ -70,17 +74,26 @@ describe('service url filter', () => {
       const changes = [roleInst].map(e => e.clone()).map(inst => toChange({ after: inst }))
       await filter.onDeploy(changes)
       expect(changes.map(getChangeData).map(e => e.elemID.getFullName()).sort())
-        .toEqual(['zendesk_support.custom_role.instance.role'])
+        .toEqual(['adapter.role.instance.role'])
       const instance = getChangeData(changes[0])
       expect(instance.annotations).toEqual({
-        [CORE_ANNOTATIONS.SERVICE_URL]: 'https://ignore.zendesk.com/admin/people/team/roles/11',
+        [CORE_ANNOTATIONS.SERVICE_URL]: 'https://www.example.com/roles/11',
       })
     })
     it('should not add service url annotation if it is not exist in the config', async () => {
       const changes = [testInst].map(e => e.clone()).map(inst => toChange({ after: inst }))
       await filter.onDeploy(changes)
       expect(changes.map(getChangeData).map(e => e.elemID.getFullName()).sort())
-        .toEqual(['zendesk_support.test.instance.test'])
+        .toEqual(['adapter.test.instance.test'])
+      const instance = getChangeData(changes[0])
+      expect(instance.annotations).toEqual({})
+    })
+    it('should not add service url annotation if the change is irrelevant', async () => {
+      const changes = [roleInst]
+        .map(e => e.clone()).map(inst => toChange({ before: inst.clone(), after: inst.clone() }))
+      await filter.onDeploy(changes)
+      expect(changes.map(getChangeData).map(e => e.elemID.getFullName()).sort())
+        .toEqual(['adapter.role.instance.role'])
       const instance = getChangeData(changes[0])
       expect(instance.annotations).toEqual({})
     })

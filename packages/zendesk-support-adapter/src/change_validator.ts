@@ -25,6 +25,7 @@ import {
   missingFromParentValidatorCreator,
   removedFromParentValidatorCreator,
   parentAnnotationToHaveSingleValueValidatorCreator,
+  customRoleNameValidator,
 } from './change_validators'
 
 const {
@@ -48,6 +49,7 @@ export default (
     duplicateCustomFieldOptionValuesValidator,
     noDuplicateLocaleIdInDynamicContentItemValidator,
     onlyOneTicketFormDefaultValidator,
+    customRoleNameValidator,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

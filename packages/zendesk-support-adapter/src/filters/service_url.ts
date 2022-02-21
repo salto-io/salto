@@ -13,11 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export * as auth from './src/auth'
-export * as deployment from './src/deployment'
-export * as client from './src/client'
-export * as config from './src/config'
-export * as elements from './src/elements'
-export * as filterUtils from './src/filter_utils'
-export * as references from './src/references'
-export * as filters from './src/filters'
+import { filters } from '@salto-io/adapter-components'
+import { FilterContext } from '../config'
+import { FilterCreator, FilterResult } from '../filter'
+import ZendeskClient from '../client/client'
+
+const filter: FilterCreator = params =>
+  filters.serviceUrlFilterCreator<ZendeskClient, FilterContext, FilterResult>(
+    params.client.getUrl().href
+  )(params)
+
+export default filter

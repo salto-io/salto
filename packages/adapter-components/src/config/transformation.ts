@@ -62,6 +62,8 @@ export type TransformationConfig = {
   isSingleton?: boolean
   // The identifier field for the service
   serviceIdField?: string
+  // The url of the type in the service
+  serviceUrl?: string
 }
 
 export type TransformationDefaultConfig = types.PickyRequired<Partial<Omit<TransformationConfig, 'isSingleton'>>, 'idFields'>

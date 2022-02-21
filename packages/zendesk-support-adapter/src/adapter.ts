@@ -55,6 +55,7 @@ import usersFilter from './filters/user'
 import addFieldOptionsFilter from './filters/add_field_options'
 import appsFilter from './filters/app'
 import routingAttributeFilter from './filters/routing_attribute'
+import serviceUrlFilter from './filters/service_url'
 import defaultDeployFilter from './filters/default_deploy'
 
 const log = logger(module)
@@ -93,6 +94,7 @@ export const DEFAULT_FILTERS = [
   removeDefinitionInstancesFilter,
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,
+  serviceUrlFilter,
   // defaultDeployFilter should be last!
   defaultDeployFilter,
 ]

@@ -30,14 +30,6 @@ import { deployTriggers } from './triggers_deployment'
 
 const log = logger(module)
 
-export const UNDEPLOYALBE_VALIDATOR_TYPES = [
-  'com.onresolve.jira.groovy.groovyrunner__script-workflow-validators',
-]
-
-export const UNDEPLOYALBE_POST_FUNCTION_TYPES = [
-  'com.onresolve.jira.groovy.groovyrunner__script-postfunction',
-]
-
 export const INITIAL_VALIDATOR = {
   type: 'PermissionValidator',
   configuration: {
@@ -67,23 +59,6 @@ const removeCreateIssuePermissionValidator = (instance: WorkflowInstance): void 
         transition.rules?.validators ?? [],
         (_validator, index) => index === createIssuePermissionValidatorIndex,
       )
-    })
-}
-
-const removeUnsupportedRules = (instance: WorkflowInstance): void => {
-  instance.value.transitions
-    ?.forEach(transition => {
-      if (transition.rules?.postFunctions !== undefined) {
-        transition.rules.postFunctions = transition.rules.postFunctions.filter(
-          postFunction => !UNDEPLOYALBE_POST_FUNCTION_TYPES.includes(postFunction.type ?? ''),
-        )
-      }
-
-      if (transition.rules?.validators !== undefined) {
-        transition.rules.validators = transition.rules.validators.filter(
-          validator => !UNDEPLOYALBE_VALIDATOR_TYPES.includes(validator.type ?? ''),
-        )
-      }
     })
 }
 
@@ -131,7 +106,6 @@ const deployWorkflow = async (
     throw new Error(`instance ${instance.elemID.getFullName()} is not valid for deployment`)
   }
   removeCreateIssuePermissionValidator(instance)
-  removeUnsupportedRules(instance)
   await defaultDeployChange({
     change: resolvedChange,
     client,

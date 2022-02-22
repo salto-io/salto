@@ -107,7 +107,8 @@ export const WITH_UNSUPPORTED_POST_FUNCTIONS = {
         postFunctions: [
           { type: 'AssignToCurrentUserFunction' },
           { type: 'UpdateIssueStatusFunction' },
-          { type: 'unsupported' },
+          { type: 'GenerateChangeHistoryFunction' },
+          {},
         ],
       },
     },
@@ -117,7 +118,8 @@ export const WITH_UNSUPPORTED_POST_FUNCTIONS = {
         postFunctions: [
           { type: 'AssignToCurrentUserFunction' },
           { type: 'UpdateIssueStatusFunction' },
-          { type: 'unsupported' },
+          { type: 'GenerateChangeHistoryFunction' },
+          {},
         ],
       },
     },
@@ -179,38 +181,6 @@ export const WITH_PERMISSION_VALIDATORS = {
             configuration: {
               permissionKey: 'OTHER',
             },
-          },
-        ],
-      },
-    },
-  ],
-}
-
-export const WITH_SCRIPT_RUNNERS = {
-  name: 'name',
-  transitions: [
-    {
-      rules: {
-        validators: [
-          {
-            type: 'com.onresolve.jira.groovy.groovyrunner__script-workflow-validators',
-          },
-          {
-            type: 'other',
-          },
-          {
-            val: 'val',
-          },
-        ],
-        postFunctions: [
-          {
-            type: 'com.onresolve.jira.groovy.groovyrunner__script-postfunction',
-          },
-          {
-            type: 'other',
-          },
-          {
-            val: 'val',
           },
         ],
       },

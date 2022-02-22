@@ -19,34 +19,22 @@ import _ from 'lodash'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { postFunctionType, types as postFunctionTypes } from './post_functions_types'
-import { isWorkflowInstance, Rules, Status, Validator, Workflow } from './types'
+import { Condition, isWorkflowInstance, Rules, Status, Validator, Workflow } from './types'
 import { validatorType, types as validatorTypes } from './validators_types'
 import { WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
-import { UNDEPLOYALBE_POST_FUNCTION_TYPES } from './workflow_deploy_filter'
 
 const log = logger(module)
 
-// Taken from https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-workflows/#api-rest-api-3-workflow-post
-const FETCHED_POST_FUNCTION_TYPES = [
-  'FireIssueEventFunction',
-  'AssignToCurrentUserFunction',
-  'AssignToLeadFunction',
-  'AssignToReporterFunction',
-  'ClearFieldValuePostFunction',
-  'CopyValueFromOtherFieldPostFunction',
-  'CreateCrucibleReviewWorkflowFunction',
-  'SetIssueSecurityFromRoleFunction',
-  'TriggerWebhookFunction',
-  'UpdateIssueCustomFieldPostFunction',
-  'UpdateIssueFieldFunction',
-  ...UNDEPLOYALBE_POST_FUNCTION_TYPES,
+const NOT_FETCHED_POST_FUNCTION_TYPES = [
+  'GenerateChangeHistoryFunction',
+  'IssueReindexFunction',
+  'IssueCreateFunction',
 ]
 
 const FETCHED_ONLY_INITIAL_POST_FUNCTION = [
   'UpdateIssueStatusFunction',
   'CreateCommentFunction',
   'IssueStoreFunction',
-  ...FETCHED_POST_FUNCTION_TYPES,
 ]
 
 const transformStatus = (status: Status): void => {
@@ -55,6 +43,8 @@ const transformStatus = (status: Status): void => {
   // of "jira.issue.editable" with the same value
   delete status.properties?.issueEditable
 }
+
+const isExtensionType = (type: string | undefined): boolean => type !== undefined && type.includes('__')
 
 const transformPostFunctions = (rules: Rules, transitionType?: string): void => {
   rules.postFunctions
@@ -71,10 +61,16 @@ const transformPostFunctions = (rules: Rules, transitionType?: string): void => 
         delete postFunc.configuration?.projectRole?.name
       })
 
+    rules.postFunctions
+      ?.filter(({ type }) => isExtensionType(type))
+      .forEach(postFunc => {
+        delete postFunc.configuration?.id
+      })
+
     rules.postFunctions = rules.postFunctions?.filter(
       postFunction => (transitionType === 'initial'
-        ? FETCHED_ONLY_INITIAL_POST_FUNCTION.includes(postFunction.type ?? '')
-        : FETCHED_POST_FUNCTION_TYPES.includes(postFunction.type ?? '')),
+        ? !NOT_FETCHED_POST_FUNCTION_TYPES.includes(postFunction.type ?? '')
+        : ![...NOT_FETCHED_POST_FUNCTION_TYPES, ...FETCHED_ONLY_INITIAL_POST_FUNCTION].includes(postFunction.type ?? '')),
     )
 }
 
@@ -101,11 +97,28 @@ const transformValidator = (validator: Validator): void => {
     config.fieldIds = config.fields
     delete config.fields
   }
+
+  if (isExtensionType(validator.type)) {
+    delete config.id
+  }
+}
+
+const transformCondition = (condition: Condition): void => {
+  if (isExtensionType(condition.type)) {
+    delete condition.configuration?.id
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  condition.conditions?.forEach(transformCondition)
 }
 
 const transformRules = (rules: Rules, transitionType?: string): void => {
   rules.conditions = rules.conditionsTree
   delete rules.conditionsTree
+
+  if (rules.conditions !== undefined) {
+    transformCondition(rules.conditions)
+  }
   transformPostFunctions(rules, transitionType)
   rules.validators?.forEach(transformValidator)
 }

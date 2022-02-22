@@ -158,7 +158,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       computeGetArgs,
       typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
       getElemIdFunc: this.getElemIdFunc,
-      hideTypes: this.userConfig.fetch.hideTypes ?? false,
+      hideTypes: this.userConfig.fetch.hideTypes,
     })
   }
 

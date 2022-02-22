@@ -195,6 +195,7 @@ export const DEFAULT_CONFIG: WorkatoConfig = {
     includeTypes: [
       ...Object.keys(_.pickBy(DEFAULT_TYPES, def => def.request !== undefined)),
     ].sort(),
+    hideTypes: true,
   },
   [API_DEFINITIONS_CONFIG]: {
     typeDefaults: {
@@ -229,7 +230,9 @@ export const configType = new ObjectType({
     },
   },
   annotations: {
-    [CORE_ANNOTATIONS.DEFAULT]: _.omit(DEFAULT_CONFIG, API_DEFINITIONS_CONFIG),
+    [CORE_ANNOTATIONS.DEFAULT]: _.omit(
+      DEFAULT_CONFIG, API_DEFINITIONS_CONFIG, `${FETCH_CONFIG}.hideTypes`
+    ),
   },
 })
 

@@ -1484,6 +1484,7 @@ export const DEFAULT_INCLUDE_ENDPOINTS: string[] = [
 export const DEFAULT_CONFIG: ZendeskConfig = {
   [FETCH_CONFIG]: {
     includeTypes: DEFAULT_INCLUDE_ENDPOINTS,
+    hideTypes: true,
   },
   [API_DEFINITIONS_CONFIG]: {
     typeDefaults: {
@@ -1519,7 +1520,9 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
     },
   },
   annotations: {
-    [CORE_ANNOTATIONS.DEFAULT]: _.omit(DEFAULT_CONFIG, API_DEFINITIONS_CONFIG),
+    [CORE_ANNOTATIONS.DEFAULT]: _.omit(
+      DEFAULT_CONFIG, API_DEFINITIONS_CONFIG, `${FETCH_CONFIG}.hideTypes`
+    ),
   },
 })
 

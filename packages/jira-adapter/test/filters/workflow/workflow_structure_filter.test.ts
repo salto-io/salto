@@ -179,7 +179,7 @@ describe('workflowStructureFilter', () => {
           transitions: [
             {
               rules: {
-                conditionsTree: 'conditionsTree',
+                conditionsTree: { type: 'type' },
               },
             },
           ],
@@ -189,10 +189,86 @@ describe('workflowStructureFilter', () => {
       expect(instance.value.transitions).toEqual([
         {
           rules: {
-            conditions: 'conditionsTree',
+            conditions: { type: 'type' },
           },
         },
       ])
+    })
+
+    it('should remove id if condition type is an extension', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        workflowType,
+        {
+          transitions: [
+            {
+              rules: {
+                conditionsTree: {
+                  type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesFunction',
+                  configuration: {
+                    id: 'id',
+                  },
+                  conditions: [{
+                    type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesCondition',
+                    configuration: {
+                      id: 'id',
+                    },
+                  }],
+                },
+              },
+            },
+          ],
+        }
+      )
+      await filter.onFetch([instance])
+      expect(instance.value).toEqual({
+        transitions: [
+          {
+            rules: {
+              conditions: {
+                type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesFunction',
+                configuration: {
+                },
+                conditions: [{
+                  type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesCondition',
+                  configuration: {
+                  },
+                }],
+              },
+            },
+          },
+        ],
+      })
+    })
+
+    it('should do nothing if there is no configuration in an extension type', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        workflowType,
+        {
+          transitions: [
+            {
+              rules: {
+                conditionsTree: {
+                  type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesFunction',
+                },
+              },
+            },
+          ],
+        }
+      )
+      await filter.onFetch([instance])
+      expect(instance.value).toEqual({
+        transitions: [
+          {
+            rules: {
+              conditions: {
+                type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesFunction',
+              },
+            },
+          },
+        ],
+      })
     })
 
     describe('post functions', () => {
@@ -206,6 +282,79 @@ describe('workflowStructureFilter', () => {
         expect(instance.value.transitions).toEqual([
           EXPECTED_POST_FUNCTIONS,
         ])
+      })
+
+      it('should remove id from post functions with an extension type', async () => {
+        const instance = new InstanceElement(
+          'instance',
+          workflowType,
+          {
+            transitions: [
+              {
+                rules: {
+                  postFunctions: [
+                    {
+                      type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesFunction',
+                      configuration: {
+                        id: '1',
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          }
+        )
+        await filter.onFetch([instance])
+        expect(instance.value).toEqual({
+          transitions: [
+            {
+              rules: {
+                postFunctions: [
+                  {
+                    type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesFunction',
+                    configuration: {
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        })
+      })
+
+      it('should do nothing if there is no config in an extension type', async () => {
+        const instance = new InstanceElement(
+          'instance',
+          workflowType,
+          {
+            transitions: [
+              {
+                rules: {
+                  postFunctions: [
+                    {
+                      type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesFunction',
+                    },
+                  ],
+                },
+              },
+            ],
+          }
+        )
+        await filter.onFetch([instance])
+        expect(instance.value).toEqual({
+          transitions: [
+            {
+              rules: {
+                postFunctions: [
+                  {
+                    type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesFunction',
+                  },
+                ],
+              },
+            },
+          ],
+        })
       })
 
       it('should remove unsupported post functions', async () => {
@@ -222,6 +371,7 @@ describe('workflowStructureFilter', () => {
               postFunctions: [
                 { type: 'AssignToCurrentUserFunction' },
                 { type: 'UpdateIssueStatusFunction' },
+                {},
               ],
             },
           },
@@ -230,6 +380,7 @@ describe('workflowStructureFilter', () => {
             rules: {
               postFunctions: [
                 { type: 'AssignToCurrentUserFunction' },
+                {},
               ],
             },
           },
@@ -272,6 +423,45 @@ describe('workflowStructureFilter', () => {
             },
           },
         ])
+      })
+
+      it('should remove id from validators with an extension type', async () => {
+        const instance = new InstanceElement(
+          'instance',
+          workflowType,
+          {
+            transitions: [
+              {
+                rules: {
+                  validators: [
+                    {
+                      type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesFunction',
+                      configuration: {
+                        id: '1',
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          }
+        )
+        await filter.onFetch([instance])
+        expect(instance.value).toEqual({
+          transitions: [
+            {
+              rules: {
+                validators: [
+                  {
+                    type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesFunction',
+                    configuration: {
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        })
       })
 
       it('should rename fields to fieldIds', async () => {

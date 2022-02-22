@@ -21,7 +21,7 @@ import { DEFAULT_CONFIG } from '../../../src/config'
 import { JIRA, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import workflowFilter, { INITIAL_VALIDATOR } from '../../../src/filters/workflow/workflow_deploy_filter'
 import { mockClient } from '../../utils'
-import { WITH_PERMISSION_VALIDATORS, WITH_SCRIPT_RUNNERS } from './workflow_values'
+import { WITH_PERMISSION_VALIDATORS } from './workflow_values'
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -99,56 +99,6 @@ describe('workflowDeployFilter', () => {
                         configuration: {
                           permissionKey: 'OTHER',
                         },
-                      },
-                    ],
-                  },
-                },
-              ],
-            }
-          ),
-        }),
-        client,
-        DEFAULT_CONFIG.apiDefinitions.types.Workflow.deployRequests,
-        expect.toBeFunction(),
-        undefined
-      )
-    })
-
-    it('should remove the undeployable post functions and validators', async () => {
-      const change = toChange({
-        after: new InstanceElement(
-          'instance',
-          workflowType,
-          WITH_SCRIPT_RUNNERS
-        ),
-      })
-
-      await filter.deploy([change])
-
-      expect(deployChangeMock).toHaveBeenCalledWith(
-        toChange({
-          after: new InstanceElement(
-            'instance',
-            workflowType,
-            {
-              name: 'name',
-              transitions: [
-                {
-                  rules: {
-                    validators: [
-                      {
-                        type: 'other',
-                      },
-                      {
-                        val: 'val',
-                      },
-                    ],
-                    postFunctions: [
-                      {
-                        type: 'other',
-                      },
-                      {
-                        val: 'val',
                       },
                     ],
                   },

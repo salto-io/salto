@@ -47,6 +47,7 @@ type ValidatorConfiguration = {
   field?: string
   fields?: string[]
   fieldIds?: unknown[]
+  id?: unknown
 }
 
 const validatorConfigurationSchema = Joi.object({
@@ -65,6 +66,7 @@ const validatorConfigurationSchema = Joi.object({
 type PostFunctionConfiguration = {
   projectRole?: ConfigRef
   event?: ConfigRef
+  id?: unknown
 }
 
 const postFunctionConfigurationSchema = Joi.object({
@@ -102,20 +104,32 @@ export const triggerSchema = Joi.object({
   configuration: Joi.object().optional(),
 }).unknown(true)
 
+export type Condition = {
+  conditions?: Condition[]
+  type?: string
+  configuration?: Record<string, unknown>
+}
+
+const conditionScheme = Joi.object({
+  conditions: Joi.array().items(Joi.link('/')).optional(),
+  type: Joi.string().optional(),
+  configuration: Joi.object().optional(),
+}).unknown(true)
+
 export type Rules = {
   validators?: Validator[]
   postFunctions?: PostFunction[]
   triggers?: Trigger[]
-  conditionsTree?: unknown
-  conditions?: unknown
+  conditionsTree?: Condition
+  conditions?: Condition
 }
 
 const rulesSchema = Joi.object({
   validators: Joi.array().items(validatorSchema).optional(),
   postFunctions: Joi.array().items(postFunctionSchema).optional(),
   triggers: Joi.array().items(triggerSchema).optional(),
-  conditionsTree: Joi.any().optional(),
-  conditions: Joi.any().optional(),
+  conditionsTree: conditionScheme.optional(),
+  conditions: conditionScheme.optional(),
 }).unknown(true)
 
 export type Transition = {

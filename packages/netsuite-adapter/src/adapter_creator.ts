@@ -200,7 +200,7 @@ const throwOnMissingSuiteAppLoginCreds = (
     { key: 'suiteAppTokenId', value: credentials.suiteAppTokenId },
     { key: 'suiteAppTokenSecret', value: credentials.suiteAppTokenSecret },
     { key: 'accountIdSignature', value: credentials.accountIdSignature },
-  ].filter(item => item.value === undefined).map(item => item.key)
+  ].filter(item => !item.value).map(item => item.key)
   throw new Error(`Missing SuiteApp login creds: ${undefinedCreds.join(', ')}. Please authenticate using 'salto service login'`)
 }
 

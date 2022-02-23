@@ -171,7 +171,8 @@ export const generateElements = async (
   params: GeneratorParams,
   progressReporter: ProgressReporter
 ): Promise<Element[]> => {
-  seedrandom(params.seed.toString(), { global: true })
+  const randomGen = seedrandom(params.seed.toString())
+  console.log(">>>>", randomGen(), randomGen(), randomGen())
   const elementRanks: Record<string, number> = {}
   const primitiveByRank: PrimitiveType[][] = arrayOf(defaultParams.maxRank + 1, () => [])
   const objByRank: ObjectType[][] = arrayOf(defaultParams.maxRank + 1, () => [])
@@ -188,8 +189,8 @@ export const generateElements = async (
     let u; let v
     let s: number
     do {
-      u = (Math.random() * 2) - 1
-      v = (Math.random() * 2) - 1
+      u = (randomGen() * 2) - 1
+      v = (randomGen() * 2) - 1
       s = u * u + v * v
     } while (s >= 1 || s === 0)
     s = Math.sqrt(-2.0 * (Math.log(s) / s))
@@ -197,7 +198,7 @@ export const generateElements = async (
   }
 
   const weightedRandomSelect = <T>(items: T[], weights?: number[]): T => {
-    const rValue = Math.random()
+    const rValue = randomGen()
     let sumOfWeights = 0
     // I also hate disabling lint - but in this specific case I think its legit.
     // Just makes the code simpler... (lint does not allow for/in loops)
@@ -231,9 +232,9 @@ export const generateElements = async (
     )
     if (
       allowContainers
-      && Math.random() < defaultParams.listFieldFreq + defaultParams.mapFieldFreq
+      && randomGen() < defaultParams.listFieldFreq + defaultParams.mapFieldFreq
     ) {
-      if (Math.random() < (
+      if (randomGen() < (
         defaultParams.mapFieldFreq / (defaultParams.listFieldFreq + defaultParams.listFieldFreq)
       )) {
         return new MapType(fieldType)
@@ -248,6 +249,7 @@ export const generateElements = async (
       dictionaries: [adjectives, colors, names],
       style: 'capital',
       separator: '',
+      seed: randomGen()
     })
     return name.replace(/\W/g, '')
   }
@@ -278,14 +280,14 @@ export const generateElements = async (
   const getListLength = (): number => normalRandom(params.listLengthMean, params.listLengthStd) + 1
 
   const getSingleLine = (): string => (
-    stringLinesOpts[Math.floor(Math.random() * stringLinesOpts.length)]
+    stringLinesOpts[Math.floor(randomGen() * stringLinesOpts.length)]
   )
   const getMultiLine = (numOflines: number): string => (
     arrayOf(numOflines, getSingleLine).join('\n')
   )
-  const generateBoolean = (): boolean => Math.random() < 0.5
-  const generateNumber = (): number => Math.floor(Math.random() * 1000)
-  const generateString = (): string => (Math.random() > defaultParams.multilineFreq
+  const generateBoolean = (): boolean => randomGen() < 0.5
+  const generateNumber = (): number => Math.floor(randomGen() * 1000)
+  const generateString = (): string => (randomGen() > defaultParams.multilineFreq
     ? getSingleLine()
     : getMultiLine(
       normalRandom(params.multilLinesStringLinesMean, params.multilLinesStringLinesStd)
@@ -410,10 +412,10 @@ export const generateElements = async (
       })
       await updateElementRank(element)
       if (element.primitive === PrimitiveTypes.STRING
-        && Math.random() < 1
+        && randomGen() < 1
       ) { // defaultParams.staticFileFreq) {
         staticFileIds.add(element.elemID.getFullName())
-      } else if (Math.random() < defaultParams.staticFileFreq) {
+      } else if (randomGen() < defaultParams.staticFileFreq) {
         referenceFields.add(element.elemID.getFullName())
       }
       return element
@@ -481,7 +483,7 @@ export const generateElements = async (
       ),
       [DUMMY_ADAPTER, 'Records', instanceType.elemID.name, name]
     )
-    if (Math.random() < defaultParams.parentFreq) {
+    if (randomGen() < defaultParams.parentFreq) {
       record.annotations[CORE_ANNOTATIONS.PARENT] = new ReferenceExpression(
         chooseObjIgnoreRank().elemID
       )

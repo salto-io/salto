@@ -182,25 +182,19 @@ const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined)
   }
 }
 
-const isSignatureUndefined = (credsInstance: Readonly<InstanceElement>): boolean =>
-  credsInstance.value.accountIdSignature === undefined
-
-const throwOnMissingSuiteAppLoginCreds = (
-  credentials: Credentials,
-  allowSignatureUndefined: boolean
-): void => {
+const throwOnMissingSuiteAppLoginCreds = (credentials: Credentials): void => {
   if (isSdfCredentialsOnly(credentials)) {
     return
   }
-  if (isSuiteAppCredentials(credentials)
-    && (credentials.accountIdSignature || allowSignatureUndefined)) {
+  // accountIdSignature may be undefined but empty string is forbidden
+  if (isSuiteAppCredentials(credentials) && credentials.accountIdSignature !== '') {
     return
   }
-  const undefinedCreds = [
+  const undefinedBaseCreds = [
     { key: 'suiteAppTokenId', value: credentials.suiteAppTokenId },
     { key: 'suiteAppTokenSecret', value: credentials.suiteAppTokenSecret },
-    { key: 'accountIdSignature', value: credentials.accountIdSignature },
   ].filter(item => !item.value).map(item => item.key)
+  const undefinedCreds = undefinedBaseCreds.concat(credentials.accountIdSignature === '' ? ['accountIdSignature'] : [])
   throw new Error(`Missing SuiteApp login creds: ${undefinedCreds.join(', ')}. Please authenticate using 'salto service login'`)
 }
 
@@ -213,9 +207,9 @@ const netsuiteCredentialsFromCredentials = (
     tokenSecret: credsInstance.value.tokenSecret,
     suiteAppTokenId: credsInstance.value.suiteAppTokenId === '' ? undefined : credsInstance.value.suiteAppTokenId,
     suiteAppTokenSecret: credsInstance.value.suiteAppTokenSecret === '' ? undefined : credsInstance.value.suiteAppTokenSecret,
-    accountIdSignature: credsInstance.value.accountIdSignature === '' ? undefined : credsInstance.value.accountIdSignature,
+    accountIdSignature: credsInstance.value.accountIdSignature,
   }
-  throwOnMissingSuiteAppLoginCreds(credentials, isSignatureUndefined(credsInstance))
+  throwOnMissingSuiteAppLoginCreds(credentials)
   return credentials
 }
 

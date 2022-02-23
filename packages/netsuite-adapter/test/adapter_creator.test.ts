@@ -62,7 +62,6 @@ describe('NetsuiteAdapter creator', () => {
       tokenSecret: 'secret',
       suiteAppTokenId: '',
       suiteAppTokenSecret: '',
-      accountIdSignature: '',
     },
   )
 
@@ -169,7 +168,6 @@ describe('NetsuiteAdapter creator', () => {
           tokenSecret: 'secret',
           suiteAppTokenId: undefined,
           suiteAppTokenSecret: undefined,
-          accountIdSignature: undefined,
         },
         config: clientConfig,
         globalLimiter: expect.any(Bottleneck),

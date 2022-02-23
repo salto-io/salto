@@ -197,7 +197,7 @@ export default class SuiteAppClient {
 
   public static async validateCredentials(credentials: SuiteAppCredentials): Promise<void> {
     const client = new SuiteAppClient({ credentials, globalLimiter: new Bottleneck() })
-    await client.sendRestletRequest('sysInfo', {}, true)
+    await client.sendRestletRequest('sysInfo', {})
   }
 
   private async safeAxiosPost(
@@ -252,12 +252,8 @@ export default class SuiteAppClient {
 
   private async sendRestletRequest(
     operation: RestletOperation,
-    args: Record<string, unknown> = {},
-    allowSignatureUndefined = false
+    args: Record<string, unknown> = {}
   ): Promise<unknown> {
-    if (!this.credentials.accountIdSignature && !allowSignatureUndefined) {
-      throw new Error('Got forbidden undefined parameter: accountIdSignature')
-    }
     const response = await this.safeAxiosPost(
       this.restletUrl.href,
       this.useSignatureInRestletRequests && this.credentials.accountIdSignature

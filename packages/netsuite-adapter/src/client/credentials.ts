@@ -41,7 +41,6 @@ export const isSdfCredentialsOnly = (
 ): boolean =>
   credentials.suiteAppTokenId === undefined
   && credentials.suiteAppTokenSecret === undefined
-  && credentials.accountIdSignature === undefined
 
 export const toUrlAccountId = (accountId: string): string => accountId.toLowerCase().replace('_', '-')
 

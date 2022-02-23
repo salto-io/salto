@@ -294,18 +294,6 @@ describe('SuiteAppClient', () => {
         mockAxiosAdapter.onPost().reply(200, { status: 'success', results: {} })
         expect(await client.getSystemInformation()).toBeUndefined()
       })
-      it('should throw when no signature', async () => {
-        const clientWithoutSignature = new SuiteAppClient({
-          credentials: {
-            accountId: 'ACCOUNT_ID',
-            suiteAppTokenId: 'tokenId',
-            suiteAppTokenSecret: 'tokenSecret',
-          },
-          globalLimiter: new Bottleneck(),
-        })
-        expect(await clientWithoutSignature.getSystemInformation()).toBeUndefined()
-        expect(mockAxiosAdapter.history.post.length).toEqual(0)
-      })
     })
   })
 

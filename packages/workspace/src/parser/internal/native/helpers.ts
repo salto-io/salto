@@ -74,16 +74,18 @@ export const registerRange = (
 }
 
 export const addValuePromiseWatcher = (
-  context: ParseContext,
+  valuePromiseWatchers: ValuePromiseWatcher[],
   parent: Value,
   key: string | number
 ): void => {
   if (isPromise(parent[key])) {
-    context.valuePromiseWatchers.push({ parent, key })
+    valuePromiseWatchers.push({ parent, key })
   }
 }
 
-export const replaceValuePromises = async (valuePromiseWatchers: ValuePromiseWatcher[]): Promise<void> => {
+export const replaceValuePromises = async (
+  valuePromiseWatchers: ValuePromiseWatcher[]
+): Promise<void> => {
   await Promise.all(valuePromiseWatchers.map(async watcher => {
     const { parent, key } = watcher
     parent[key] = await parent[key]

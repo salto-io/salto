@@ -15,9 +15,6 @@
 */
 import _ from 'lodash'
 import { Field, isObjectType, PrimitiveTypes, isPrimitiveType, Element, isInstanceElement, Value, INSTANCE_ANNOTATIONS, isReferenceExpression, isField, ElemID, ReferenceMap, TypeReference } from '@salto-io/adapter-api'
-import { promises, collections } from '@salto-io/lowerdash'
-
-
 import { dump as hclDump, dumpValue } from './internal/dump'
 import { DumpedHclBlock } from './internal/types'
 import { Keywords } from './language'
@@ -26,9 +23,8 @@ import {
   Functions,
   FunctionExpression,
 } from './functions'
-
-const { awu } = collections.asynciterable
-const { object: { mapValuesAsync } } = promises
+import { ValuePromiseWatcher } from './internal/native/types'
+import { addValuePromiseWatcher, replaceValuePromises } from './internal/native/helpers'
 
 /**
  * @param primitiveType Primitive type identifier
@@ -62,8 +58,12 @@ export const dumpElemID = (id: ElemID): string => {
   return id.getFullName()
 }
 
-const dumpAttributes = async (value: Value, functions: Functions): Promise<Value> => {
-  const funcVal = await getFunctionExpression(value, functions)
+const dumpAttributes = (
+  value: Value,
+  functions: Functions,
+  valuePromiseWatchers: ValuePromiseWatcher[]
+): Value => {
+  const funcVal = getFunctionExpression(value, functions)
   if (funcVal) {
     return funcVal
   }
@@ -75,18 +75,31 @@ const dumpAttributes = async (value: Value, functions: Functions): Promise<Value
   ) {
     return value
   }
-
   if (_.isArray(value)) {
-    return Promise.all(value.map(x => dumpAttributes(x, functions)))
+    const retArray: Value[] = []
+    value.forEach((x, key) => {
+      retArray.push(dumpAttributes(x, functions, valuePromiseWatchers))
+      addValuePromiseWatcher(valuePromiseWatchers, retArray, key)
+    })
+    return retArray
   }
 
-  return mapValuesAsync(value, async val => dumpAttributes(val, functions))
+  const retObj: Record<string, Value> = {}
+  Object.entries(value).forEach(([key, val]) => {
+    retObj[key] = dumpAttributes(val, functions, valuePromiseWatchers)
+    addValuePromiseWatcher(valuePromiseWatchers, retObj, key)
+  })
+  return retObj
 }
 
-const dumpFieldBlock = async (field: Field, functions: Functions): Promise<DumpedHclBlock> => ({
+const dumpFieldBlock = (
+  field: Field,
+  functions: Functions,
+  valuePromiseWatchers: ValuePromiseWatcher[]
+): DumpedHclBlock => ({
   type: dumpElemID(field.refType.elemID),
   labels: [field.elemID.name],
-  attrs: await dumpAttributes(field.annotations, functions),
+  attrs: dumpAttributes(field.annotations, functions, valuePromiseWatchers),
   blocks: [],
 })
 
@@ -107,20 +120,22 @@ const dumpAnnotationTypesBlock = (annotationRefTypes: ReferenceMap): DumpedHclBl
       .map(([key, ref]) => dumpAnnotationTypeBlock(key, ref)),
   }])
 
-const dumpElementBlock = async (
+const dumpElementBlock = (
   elem: Readonly<Element>,
-  functions: Functions
-): Promise<DumpedHclBlock> => {
+  functions: Functions,
+  valuePromiseWatchers: ValuePromiseWatcher[]
+): DumpedHclBlock => {
   if (isField(elem)) {
-    return dumpFieldBlock(elem, functions)
+    return dumpFieldBlock(elem, functions, valuePromiseWatchers)
   }
   if (isObjectType(elem)) {
     return {
       type: elem.isSettings ? Keywords.SETTINGS_DEFINITION : Keywords.TYPE_DEFINITION,
       labels: [dumpElemID(elem.elemID)],
-      attrs: await dumpAttributes(elem.annotations, functions),
+      attrs: dumpAttributes(elem.annotations, functions, valuePromiseWatchers),
       blocks: dumpAnnotationTypesBlock(elem.annotationRefTypes).concat(
-        await Promise.all(Object.values(elem.fields).map(field => dumpFieldBlock(field, functions)))
+        Object.values(elem.fields)
+          .map(field => dumpFieldBlock(field, functions, valuePromiseWatchers))
       ),
     }
   }
@@ -132,7 +147,7 @@ const dumpElementBlock = async (
         Keywords.TYPE_INHERITANCE_SEPARATOR,
         getPrimitiveTypeName(elem.primitive),
       ],
-      attrs: await dumpAttributes(elem.annotations, functions),
+      attrs: dumpAttributes(elem.annotations, functions, valuePromiseWatchers),
       blocks: dumpAnnotationTypesBlock(elem.annotationRefTypes),
     }
   }
@@ -143,9 +158,10 @@ const dumpElementBlock = async (
       || elem.elemID.name === '_config' // TODO: should inject the correct type
         ? []
         : [elem.elemID.name],
-      attrs: await dumpAttributes(
+      attrs: dumpAttributes(
         _.merge({}, elem.value, _.pick(elem.annotations, _.values(INSTANCE_ANNOTATIONS))),
         functions,
+        valuePromiseWatchers
       ),
       blocks: [],
     }
@@ -164,11 +180,15 @@ const wrapBlocks = (blocks: DumpedHclBlock[]): DumpedHclBlock => ({
 
 export const dumpElements = async (
   elements: Readonly<Element>[], functions: Functions = {}, indentationLevel = 0
-): Promise<string> =>
-  hclDump(
-    wrapBlocks(await awu(elements).map(e => dumpElementBlock(e, functions)).toArray()),
-    indentationLevel
+): Promise<string> => {
+  const valuePromiseWatchers: ValuePromiseWatcher[] = []
+
+  const warpedBlocks = wrapBlocks(
+    elements.map(e => dumpElementBlock(e, functions, valuePromiseWatchers))
   )
+  await replaceValuePromises(valuePromiseWatchers)
+  return hclDump(warpedBlocks, indentationLevel)
+}
 
 export const dumpSingleAnnotationType = (
   name: string, refType: TypeReference, indentationLevel = 0
@@ -184,7 +204,20 @@ export const dumpAnnotationTypes = (
 export const dumpValues = async (
   value: Value, functions: Functions, indentationLevel = 0
 ): Promise<string> => {
+  // Note that since this function can receive a primitive / func obj
+  // as the value param, we need to create a mock parent for the value
+  // promise watchers logic to work
+  const valuePromiseWatchers: ValuePromiseWatcher[] = []
+  const defaultKey = 'value'
+  const defaultParent: Record<string, Value> = {}
   // Convert potential function values before dumping the value
-  const valueWithSerializedFunctions = await dumpAttributes(value, functions)
+  defaultParent[defaultKey] = dumpAttributes(
+    value,
+    functions,
+    valuePromiseWatchers
+  )
+  addValuePromiseWatcher(valuePromiseWatchers, defaultParent, defaultKey)
+  await replaceValuePromises(valuePromiseWatchers)
+  const valueWithSerializedFunctions = defaultParent[defaultKey]
   return dumpValue(valueWithSerializedFunctions, indentationLevel).join('\n').concat('\n')
 }

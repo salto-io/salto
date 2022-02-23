@@ -240,7 +240,7 @@ const consumeArrayItems = (
       }
     }
     items.push(consumedValue.value)
-    addValuePromiseWatcher(context, items, itemIndex)
+    addValuePromiseWatcher(context.valuePromiseWatchers, items, itemIndex)
     if (itemId) {
       registerRange(context, itemId, consumedValue.range)
     }
@@ -388,7 +388,7 @@ const consumeObject = (context: ParseContext, idPrefix?: ElemID): ConsumerReturn
     } else {
       context.errors.push(duplicatedAttribute({ ...tokens.range, filename: context.filename }, key))
     }
-    addValuePromiseWatcher(context, obj, key)
+    addValuePromiseWatcher(context.valuePromiseWatchers, obj, key)
     if (attrId) {
       registerRange(context, attrId, { start: tokens.range.start, end: consumedValue.range.end })
     }

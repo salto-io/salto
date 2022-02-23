@@ -35,7 +35,7 @@ export type ClientOpts<
 
 export type ClientBaseParams = {
   url: string
-  queryParams?: Record<string, string>
+  queryParams?: Record<string, string | string[]>
   headers?: Record<string, string>
 }
 

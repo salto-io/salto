@@ -161,8 +161,11 @@ const TYPE_NAME_TO_REPLACER: Record<string, UserReplacer> = {
 
 const getUsers = async (paginator: clientUtils.Paginator): Promise<User[]> => {
   const paginationArgs = {
-    url: '/users?role[]=admin&role[]=agent',
+    url: '/users',
     paginationField: 'next_page',
+    queryParams: {
+      role: ['admin', 'agent'],
+    },
   }
   const users = (await toArrayAsync(
     paginator(paginationArgs, page => makeArray(page) as clientUtils.ResponseValue[])

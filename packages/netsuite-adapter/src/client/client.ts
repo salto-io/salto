@@ -66,16 +66,13 @@ export default class NetsuiteClient {
   static async validateCredentials(credentials: Credentials): Promise<AccountId> {
     if (isSuiteAppCredentials(credentials)) {
       try {
-        await SuiteAppClient.validateCredentials({
-          accountId: credentials.accountId,
-          suiteAppTokenId: credentials.suiteAppTokenId,
-          suiteAppTokenSecret: credentials.suiteAppTokenSecret,
-          accountIdSignature: credentials.accountIdSignature,
-        })
+        await SuiteAppClient.validateCredentials(credentials)
       } catch (e) {
         e.message = `Salto SuiteApp Authentication failed. ${e.message}`
         throw e
       }
+    } else {
+      log.debug('SuiteApp is not configured - skipping SuiteApp credentials validation')
     }
 
     try {

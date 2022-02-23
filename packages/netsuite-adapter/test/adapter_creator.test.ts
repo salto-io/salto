@@ -120,18 +120,8 @@ describe('NetsuiteAdapter creator', () => {
       }
 
       await adapter.validateCredentials(cred)
-      expect(netsuiteValidateMock).toHaveBeenCalledWith(expect.objectContaining({
-        accountId: 'FOO_A',
-        tokenId: 'bar',
-        tokenSecret: 'secret',
-      }))
-
-      expect(suiteAppClientValidateMock).toHaveBeenCalledWith({
-        accountId: 'FOO_A',
-        suiteAppTokenId: 'aaa',
-        suiteAppTokenSecret: 'bbb',
-        accountIdSignature: 'signature',
-      })
+      expect(netsuiteValidateMock).toHaveBeenCalledWith({ ...cred.value, accountId: 'FOO_A' })
+      expect(suiteAppClientValidateMock).toHaveBeenCalledWith({ ...cred.value, accountId: 'FOO_A' })
     })
 
     it('SDF validation failure should throw SDF error', async () => {
@@ -228,12 +218,7 @@ describe('NetsuiteAdapter creator', () => {
         elementsSource: buildElementsSourceFromElements([]),
       })
       expect(SuiteAppClient).toHaveBeenCalledWith({
-        credentials: {
-          accountId: 'FOO_A',
-          suiteAppTokenId: 'aaa',
-          suiteAppTokenSecret: 'bbb',
-          accountIdSignature: 'signature',
-        },
+        credentials: { ...cred.value, accountId: 'FOO_A' },
         globalLimiter: expect.any(Bottleneck),
       })
     })
@@ -261,12 +246,7 @@ describe('NetsuiteAdapter creator', () => {
         elementsSource: buildElementsSourceFromElements([]),
       })
       expect(SuiteAppClient).toHaveBeenCalledWith({
-        credentials: {
-          accountId: 'FOO_A',
-          suiteAppTokenId: 'aaa',
-          suiteAppTokenSecret: 'bbb',
-          accountIdSignature: 'signature',
-        },
+        credentials: { ...cred.value, accountId: 'FOO_A' },
         config: {
           [SUITEAPP_CONCURRENCY_LIMIT]: 5,
         },

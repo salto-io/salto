@@ -36,7 +36,7 @@ import {
   INSTALLED_SUITEAPPS,
 } from './constants'
 import { validateFetchParameters, convertToQueryParams } from './query'
-import { Credentials, isSuiteAppCredentials, toCredentialsAccountId } from './client/credentials'
+import { Credentials, isSdfCredentialsOnly, isSuiteAppCredentials, toCredentialsAccountId } from './client/credentials'
 import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
 import SdfClient from './client/sdf_client'
 import NetsuiteClient from './client/client'
@@ -182,29 +182,41 @@ const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined)
   }
 }
 
-const netsuiteCredentialsFromCredentials = (credentials: Readonly<InstanceElement>): Credentials =>
-  ({
-    accountId: toCredentialsAccountId(credentials.value.accountId),
-    tokenId: credentials.value.tokenId,
-    tokenSecret: credentials.value.tokenSecret,
-    suiteAppTokenId: credentials.value.suiteAppTokenId === '' ? undefined : credentials.value.suiteAppTokenId,
-    suiteAppTokenSecret: credentials.value.suiteAppTokenSecret === '' ? undefined : credentials.value.suiteAppTokenSecret,
-    accountIdSignature: credentials.value.accountIdSignature === '' ? undefined : credentials.value.accountIdSignature,
-  })
+const isSignatureUndefined = (credsInstance: Readonly<InstanceElement>): boolean =>
+  credsInstance.value.accountIdSignature === undefined
 
-const throwOnMissingSuiteAppLoginCreds = (credentials: Credentials): void => {
-  if (credentials.suiteAppTokenId
-    || credentials.suiteAppTokenSecret
-    || credentials.accountIdSignature) {
-    if (!isSuiteAppCredentials(credentials)) {
-      const undefinedCreds = [
-        { key: 'suiteAppTokenId', value: credentials.suiteAppTokenId },
-        { key: 'suiteAppTokenSecret', value: credentials.suiteAppTokenSecret },
-        { key: 'accountIdSignature', value: credentials.accountIdSignature },
-      ].filter(item => item.value === undefined).map(item => item.key)
-      throw new Error(`Missing SuiteApp login creds: ${undefinedCreds.join(', ')}. Please authenticate using 'salto service login'`)
-    }
+const throwOnMissingSuiteAppLoginCreds = (
+  credentials: Credentials,
+  allowSignatureUndefined: boolean
+): void => {
+  if (isSdfCredentialsOnly(credentials)) {
+    return
   }
+  if (isSuiteAppCredentials(credentials)
+    && (credentials.accountIdSignature || allowSignatureUndefined)) {
+    return
+  }
+  const undefinedCreds = [
+    { key: 'suiteAppTokenId', value: credentials.suiteAppTokenId },
+    { key: 'suiteAppTokenSecret', value: credentials.suiteAppTokenSecret },
+    { key: 'accountIdSignature', value: credentials.accountIdSignature },
+  ].filter(item => item.value === undefined).map(item => item.key)
+  throw new Error(`Missing SuiteApp login creds: ${undefinedCreds.join(', ')}. Please authenticate using 'salto service login'`)
+}
+
+const netsuiteCredentialsFromCredentials = (
+  credsInstance: Readonly<InstanceElement>
+): Credentials => {
+  const credentials = {
+    accountId: toCredentialsAccountId(credsInstance.value.accountId),
+    tokenId: credsInstance.value.tokenId,
+    tokenSecret: credsInstance.value.tokenSecret,
+    suiteAppTokenId: credsInstance.value.suiteAppTokenId === '' ? undefined : credsInstance.value.suiteAppTokenId,
+    suiteAppTokenSecret: credsInstance.value.suiteAppTokenSecret === '' ? undefined : credsInstance.value.suiteAppTokenSecret,
+    accountIdSignature: credsInstance.value.accountIdSignature === '' ? undefined : credsInstance.value.accountIdSignature,
+  }
+  throwOnMissingSuiteAppLoginCreds(credentials, isSignatureUndefined(credsInstance))
+  return credentials
 }
 
 const getAdapterOperations = (context: AdapterOperationsContext): AdapterOperations => {
@@ -219,16 +231,9 @@ const getAdapterOperations = (context: AdapterOperationsContext): AdapterOperati
       ),
   })
 
-  throwOnMissingSuiteAppLoginCreds(credentials)
-
-  const suiteAppClient = isSuiteAppCredentials(credentials)
+  const suiteAppClient = isSuiteAppCredentials(credentials) && credentials.accountIdSignature
     ? new SuiteAppClient({
-      credentials: {
-        accountId: credentials.accountId,
-        suiteAppTokenId: credentials.suiteAppTokenId,
-        suiteAppTokenSecret: credentials.suiteAppTokenSecret,
-        accountIdSignature: credentials.accountIdSignature,
-      },
+      credentials,
       config: adapterConfig[SUITEAPP_CLIENT_CONFIG],
       globalLimiter,
     })
@@ -252,7 +257,6 @@ export const adapter: Adapter = {
   operations: context => getAdapterOperations(context),
   validateCredentials: async config => {
     const credentials = netsuiteCredentialsFromCredentials(config)
-    throwOnMissingSuiteAppLoginCreds(credentials)
     return NetsuiteClient.validateCredentials(credentials)
   },
   authenticationMethods: {

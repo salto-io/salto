@@ -294,21 +294,35 @@ describe('SuiteAppClient', () => {
         mockAxiosAdapter.onPost().reply(200, { status: 'success', results: {} })
         expect(await client.getSystemInformation()).toBeUndefined()
       })
+      it('should throw when no signature', async () => {
+        const clientWithoutSignature = new SuiteAppClient({
+          credentials: {
+            accountId: 'ACCOUNT_ID',
+            suiteAppTokenId: 'tokenId',
+            suiteAppTokenSecret: 'tokenSecret',
+          },
+          globalLimiter: new Bottleneck(),
+        })
+        expect(await clientWithoutSignature.getSystemInformation()).toBeUndefined()
+        expect(mockAxiosAdapter.history.post.length).toEqual(0)
+      })
     })
   })
 
   describe('validateCredentials', () => {
     it('should fail when request fails', async () => {
       mockAxiosAdapter.onPost().reply(() => [])
-      await expect(SuiteAppClient.validateCredentials({
-        accountId: 'ACCOUNT_ID',
-        suiteAppTokenId: 'tokenId',
-        suiteAppTokenSecret: 'tokenSecret',
-        accountIdSignature: 'signature',
-      })).rejects.toThrow()
+      await expect(SuiteAppClient.validateCredentials(
+        {
+          accountId: 'ACCOUNT_ID',
+          suiteAppTokenId: 'tokenId',
+          suiteAppTokenSecret: 'tokenSecret',
+          accountIdSignature: 'signature',
+        },
+      )).rejects.toThrow()
     })
 
-    it('should succeed', async () => {
+    it('should succeed with signature', async () => {
       mockAxiosAdapter.onPost().reply(200, {
         status: 'success',
         results: {
@@ -317,12 +331,31 @@ describe('SuiteAppClient', () => {
         },
       })
 
-      await expect(SuiteAppClient.validateCredentials({
-        accountId: 'ACCOUNT_ID',
-        suiteAppTokenId: 'tokenId',
-        suiteAppTokenSecret: 'tokenSecret',
-        accountIdSignature: 'signature',
-      })).resolves.toBeUndefined()
+      await expect(SuiteAppClient.validateCredentials(
+        {
+          accountId: 'ACCOUNT_ID',
+          suiteAppTokenId: 'tokenId',
+          suiteAppTokenSecret: 'tokenSecret',
+          accountIdSignature: 'signature',
+        },
+      )).resolves.toBeUndefined()
+    })
+    it('should succeed without signature', async () => {
+      mockAxiosAdapter.onPost().reply(200, {
+        status: 'success',
+        results: {
+          appVersion: [0, 1, 2],
+          time: '2021-02-22T18:55:17.949Z',
+        },
+      })
+
+      await expect(SuiteAppClient.validateCredentials(
+        {
+          accountId: 'ACCOUNT_ID',
+          suiteAppTokenId: 'tokenId',
+          suiteAppTokenSecret: 'tokenSecret',
+        },
+      )).resolves.toBeUndefined()
     })
   })
 

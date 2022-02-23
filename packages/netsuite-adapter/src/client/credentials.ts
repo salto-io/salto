@@ -17,7 +17,7 @@ export type SuiteAppCredentials = {
   accountId: string
   suiteAppTokenId: string
   suiteAppTokenSecret: string
-  accountIdSignature: string
+  accountIdSignature?: string
 }
 
 export type SuiteAppSoapCredentials = Omit<SuiteAppCredentials, 'accountIdSignature'>
@@ -35,7 +35,13 @@ export const isSuiteAppCredentials = (
 ): credentials is SdfCredentials & SuiteAppCredentials =>
   credentials.suiteAppTokenId !== undefined
   && credentials.suiteAppTokenSecret !== undefined
-  && credentials.accountIdSignature !== undefined
+
+export const isSdfCredentialsOnly = (
+  credentials: Credentials
+): boolean =>
+  credentials.suiteAppTokenId === undefined
+  && credentials.suiteAppTokenSecret === undefined
+  && credentials.accountIdSignature === undefined
 
 export const toUrlAccountId = (accountId: string): string => accountId.toLowerCase().replace('_', '-')
 

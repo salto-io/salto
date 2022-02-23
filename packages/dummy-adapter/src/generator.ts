@@ -172,7 +172,6 @@ export const generateElements = async (
   progressReporter: ProgressReporter
 ): Promise<Element[]> => {
   const randomGen = seedrandom(params.seed.toString())
-  console.log(">>>>", randomGen(), randomGen(), randomGen())
   const elementRanks: Record<string, number> = {}
   const primitiveByRank: PrimitiveType[][] = arrayOf(defaultParams.maxRank + 1, () => [])
   const objByRank: ObjectType[][] = arrayOf(defaultParams.maxRank + 1, () => [])

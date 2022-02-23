@@ -669,7 +669,7 @@ describe('adapter', () => {
         previous_page: null,
         count: 1,
       }
-      mockAxiosAdapter.onGet('/users?role[]=admin&role[]=agent').replyOnce(
+      mockAxiosAdapter.onGet('/users').replyOnce(
         200, usersResponse
       )
       const { elements: newElements } = await operations

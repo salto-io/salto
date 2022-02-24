@@ -55,7 +55,7 @@ describe('transitionIdsFilter', () => {
           transitions: [
             { id: '1', name: 'transition1', from: ['4', '5'] },
             { id: '2', name: 'transition2' },
-            { id: '3', from: ['6', '7'] },
+            { id: '3', from: ['7', '6'] },
           ],
         },
       )
@@ -69,7 +69,7 @@ describe('transitionIdsFilter', () => {
         transitions: [
           { name: 'transition1', from: ['4', '5'] },
           { name: 'transition2' },
-          { from: ['6', '7'] },
+          { from: ['7', '6'] },
         ],
       })
     })

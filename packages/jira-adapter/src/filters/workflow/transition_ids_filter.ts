@@ -25,7 +25,7 @@ import { isWorkflowInstance, Transition, WorkflowInstance } from './types'
 const log = logger(module)
 
 export const getTransitionKey = (transition: Transition): string => [
-  ...(transition.from ?? []),
+  ..._.sortBy(transition.from ?? []),
   transition.name ?? '',
 ].join('-')
 

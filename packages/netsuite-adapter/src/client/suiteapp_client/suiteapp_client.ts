@@ -90,8 +90,7 @@ export default class SuiteAppClient {
 
     const accountIdUrl = toUrlAccountId(params.credentials.accountId)
     this.suiteQLUrl = new URL(`https://${accountIdUrl}.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql`)
-    // this.restletUrl = new URL(`https://${accountIdUrl}.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=customscript_salto_restlet&deploy=customdeploy_salto_restlet`)
-    this.restletUrl = new URL(`https://${accountIdUrl}.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=24&deploy=5`)
+    this.restletUrl = new URL(`https://${accountIdUrl}.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=customscript_salto_restlet&deploy=customdeploy_salto_restlet`)
 
     this.ajv = new Ajv({ allErrors: true, strict: false })
     this.soapClient = new SoapClient(this.credentials, this.callsLimiter)

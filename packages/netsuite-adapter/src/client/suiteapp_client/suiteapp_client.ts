@@ -294,12 +294,6 @@ export default class SuiteAppClient {
       }
       log.debug('set SuiteApp version features successfully', { versionFeatures: this.versionFeatures })
     })
-
-    if (this.versionFeatures) {
-      return
-    }
-
-    throw new Error('failed setting SuiteApp version features')
   }
 
   private async innerSendRestletRequest(

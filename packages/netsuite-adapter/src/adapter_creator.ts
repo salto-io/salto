@@ -68,19 +68,19 @@ export const defaultCredentialsType = new ObjectType({
     suiteAppTokenId: {
       refType: BuiltinTypes.STRING,
       annotations: {
-        message: 'Salto SuiteApp Token ID (empty if Salto SuiteApp is not installed)',
+        message: 'Salto SuiteApp Token ID (optional)',
       },
     },
     suiteAppTokenSecret: {
       refType: BuiltinTypes.STRING,
       annotations: {
-        message: 'Salto SuiteApp Token Secret (empty if Salto SuiteApp is not installed)',
+        message: 'Salto SuiteApp Token Secret (optional)',
       },
     },
     accountIdSignature: {
       refType: BuiltinTypes.STRING,
       annotations: {
-        message: 'Salto SuiteApp Account ID Signature (empty if Salto SuiteApp is not installed)',
+        message: 'Salto SuiteApp Activation Key (optional)',
       },
     },
   },
@@ -195,7 +195,7 @@ const throwOnMissingSuiteAppLoginCreds = (credentials: Credentials): void => {
     { key: 'suiteAppTokenSecret', value: credentials.suiteAppTokenSecret },
   ].filter(item => !item.value).map(item => item.key)
   const undefinedCreds = undefinedBaseCreds.concat(credentials.accountIdSignature === '' ? ['accountIdSignature'] : [])
-  throw new Error(`Missing SuiteApp login creds: ${undefinedCreds.join(', ')}. Please authenticate using 'salto service login'`)
+  throw new Error(`Missing SuiteApp login creds: ${undefinedCreds.join(', ')}. Please login again.`)
 }
 
 const netsuiteCredentialsFromCredentials = (

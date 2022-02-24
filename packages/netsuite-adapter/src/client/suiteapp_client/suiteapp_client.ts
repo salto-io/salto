@@ -154,32 +154,27 @@ export default class SuiteAppClient {
     return items
   }
 
-  private async innerGetSystemInformation(
-    useInnerSendRestletRequest = false
-  ): Promise<SystemInformation | undefined> {
+  private parseSystemInformation(results: unknown): SystemInformation | undefined {
+    if (!this.ajv.validate<{ time: number; appVersion: number[] }>(
+      SYSTEM_INFORMATION_SCHEME,
+      results
+    )) {
+      log.error(`getSystemInformation failed. Got invalid results: ${this.ajv.errorsText()}`)
+      return undefined
+    }
+
+    log.debug('SuiteApp system information', results)
+    return { ...results, time: new Date(results.time) }
+  }
+
+  public async getSystemInformation(): Promise<SystemInformation | undefined> {
     try {
-      const results = useInnerSendRestletRequest
-        ? await this.innerSendRestletRequest('sysInfo')
-        : await this.sendRestletRequest('sysInfo')
-
-      if (!this.ajv.validate<{ time: number; appVersion: number[] }>(
-        SYSTEM_INFORMATION_SCHEME,
-        results
-      )) {
-        log.error(`getSystemInformation failed. Got invalid results: ${this.ajv.errorsText()}`)
-        return undefined
-      }
-
-      log.debug('SuiteApp system information', results)
-      return { ...results, time: new Date(results.time) }
+      const results = await this.sendRestletRequest('sysInfo')
+      return this.parseSystemInformation(results)
     } catch (error) {
       log.error('error was thrown in getSystemInformation', { error })
       return undefined
     }
-  }
-
-  public async getSystemInformation(): Promise<SystemInformation | undefined> {
-    return this.innerGetSystemInformation()
   }
 
   public async readFiles(ids: number[]): Promise<(Buffer | Error)[] | undefined> {
@@ -282,12 +277,13 @@ export default class SuiteAppClient {
         return
       }
       log.debug('setting SuiteApp version features')
-      const result = await this.innerGetSystemInformation(true)
-      if (!result) {
+      const result = await this.innerSendRestletRequest('sysInfo')
+      const sysInfo = this.parseSystemInformation(result)
+      if (!sysInfo) {
         log.warn('could not detect SuiteApp version')
         return
       }
-      if (compareVersions(result.appVersion.join('.'), SIGNATURE_APP_VERSION) === -1) {
+      if (compareVersions(sysInfo.appVersion.join('.'), SIGNATURE_APP_VERSION) === -1) {
         this.versionFeatures = { signature: false }
       } else {
         this.versionFeatures = { signature: true }

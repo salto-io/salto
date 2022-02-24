@@ -474,5 +474,15 @@ describe('SuiteAppClient', () => {
       expect(client.getVersionFeatures()).toEqual({ signature: true })
       expect(mockAxiosAdapter.history.post.length).toEqual(3)
     })
+    it('should not set versionFeatures when getting invalid results', async () => {
+      mockAxiosAdapter.onPost().reply(200, {
+        status: 'success',
+        results: {
+          time: 1000,
+        },
+      })
+      await client.getSystemInformation()
+      expect(client.getVersionFeatures()).toBeUndefined()
+    })
   })
 })

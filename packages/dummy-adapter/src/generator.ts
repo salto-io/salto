@@ -242,15 +242,21 @@ export const generateElements = async (
     }
     return fieldType
   }
-
+  const generatedNamesCount: Record<string, number> = {}
   const getName = (): string => {
     const name = uniqueNamesGenerator({
       dictionaries: [adjectives, colors, names],
       style: 'capital',
       separator: '',
-      seed: randomGen()
+      seed: randomGen(),
     })
-    return name.replace(/\W/g, '')
+    const cleanName = name.replace(/\W/g, '')
+    generatedNamesCount[cleanName] = generatedNamesCount[cleanName] ?? 0
+    const uniqueName = generatedNamesCount[cleanName] === 0
+      ? cleanName
+      : `${cleanName}${generatedNamesCount[cleanName] + 1}`
+    generatedNamesCount[cleanName] += 1
+    return uniqueName
   }
 
   const getMaxRank = async (elements: Element[]): Promise<number> => (elements.length > 0

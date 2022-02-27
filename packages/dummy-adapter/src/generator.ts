@@ -248,7 +248,7 @@ export const generateElements = async (
       dictionaries: [adjectives, colors, names],
       style: 'capital',
       separator: '',
-      seed: randomGen(),
+      seed: randomGen() * 10000000000000,
     })
     const cleanName = name.replace(/\W/g, '')
     generatedNamesCount[cleanName] = generatedNamesCount[cleanName] ?? 0

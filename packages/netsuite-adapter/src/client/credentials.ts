@@ -17,10 +17,10 @@ export type SuiteAppCredentials = {
   accountId: string
   suiteAppTokenId: string
   suiteAppTokenSecret: string
-  accountIdSignature?: string
+  suiteAppActivationKey?: string
 }
 
-export type SuiteAppSoapCredentials = Omit<SuiteAppCredentials, 'accountIdSignature'>
+export type SuiteAppSoapCredentials = Omit<SuiteAppCredentials, 'suiteAppActivationKey'>
 
 export type SdfCredentials = {
   accountId: string

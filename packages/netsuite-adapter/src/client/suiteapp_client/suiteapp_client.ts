@@ -60,10 +60,10 @@ const NON_BINARY_FILETYPES = new Set([
 
 const UNAUTHORIZED_STATUSES = [401, 403]
 
-const SIGNATURE_APP_VERSION = '0.1.2'
+const ACTIVATION_KEY_APP_VERSION = '0.1.2'
 
 type VersionFeatures = {
-  signature: boolean
+  activationKey: boolean
 }
 
 export default class SuiteAppClient {
@@ -75,8 +75,6 @@ export default class SuiteAppClient {
   private soapClient: SoapClient
   private axiosClient: AxiosInstance
 
-  // TODO: SALTO-1975 - Remove this attribute after all customers will have the SuiteApp
-  // version with the required "signature" param
   private versionFeatures: VersionFeatures | undefined
   private readonly setVersionFeaturesLock: AsyncLock
 
@@ -283,10 +281,9 @@ export default class SuiteAppClient {
         log.warn('could not detect SuiteApp version')
         return
       }
-      if (compareVersions(sysInfo.appVersion.join('.'), SIGNATURE_APP_VERSION) === -1) {
-        this.versionFeatures = { signature: false }
-      } else {
-        this.versionFeatures = { signature: true }
+      const currentVersion = sysInfo.appVersion.join('.')
+      this.versionFeatures = {
+        activationKey: compareVersions(currentVersion, ACTIVATION_KEY_APP_VERSION) !== -1,
       }
       log.debug('set SuiteApp version features successfully', { versionFeatures: this.versionFeatures })
     })
@@ -298,8 +295,8 @@ export default class SuiteAppClient {
   ): Promise<unknown> {
     const response = await this.safeAxiosPost(
       this.restletUrl.href,
-      this.versionFeatures?.signature && this.credentials.accountIdSignature
-        ? { operation, args, signature: this.credentials.accountIdSignature }
+      this.versionFeatures?.activationKey && this.credentials.suiteAppActivationKey
+        ? { operation, args, activationKey: this.credentials.suiteAppActivationKey }
         : { operation, args },
       this.generateHeaders(this.restletUrl, 'POST')
     )

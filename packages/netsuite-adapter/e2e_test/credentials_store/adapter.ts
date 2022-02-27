@@ -23,7 +23,7 @@ type Args = {
   tokenSecret: string
   suiteAppTokenId: string
   suiteAppTokenSecret: string
-  accountIdSignature: string
+  suiteAppActivationKey: string
 }
 
 const adapter: Adapter<Args, Credentials> = {
@@ -49,7 +49,7 @@ const adapter: Adapter<Args, Credentials> = {
       type: 'string',
       demand: true,
     },
-    accountIdSignature: {
+    suiteAppActivationKey: {
       type: 'string',
       demand: true,
     },
@@ -60,7 +60,7 @@ const adapter: Adapter<Args, Credentials> = {
     tokenSecret: args.tokenSecret,
     suiteAppTokenId: args.suiteAppTokenId,
     suiteAppTokenSecret: args.suiteAppTokenSecret,
-    accountIdSignature: args.accountIdSignature,
+    suiteAppActivationKey: args.suiteAppActivationKey,
   }),
   validateCredentials: credentials =>
     NetsuiteClient.validateCredentials(credentials) as unknown as Promise<void>,

@@ -42,7 +42,7 @@ describe('SuiteAppClient', () => {
           accountId: 'ACCOUNT_ID',
           suiteAppTokenId: 'tokenId',
           suiteAppTokenSecret: 'tokenSecret',
-          accountIdSignature: 'signature',
+          suiteAppActivationKey: 'activationKey',
         },
         globalLimiter: new Bottleneck(),
       })
@@ -149,7 +149,7 @@ describe('SuiteAppClient', () => {
         expect(req.url).toEqual('https://account-id.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=customscript_salto_restlet&deploy=customdeploy_salto_restlet')
         expect(JSON.parse(req.data)).toEqual({
           operation: 'search',
-          signature: 'signature',
+          activationKey: 'activationKey',
           args: {
             type: 'type',
             columns: [],
@@ -224,7 +224,7 @@ describe('SuiteAppClient', () => {
 
         expect(JSON.parse(requests[0].data)).toEqual({
           operation: 'search',
-          signature: 'signature',
+          activationKey: 'activationKey',
           args: {
             type: 'type',
             columns: [],
@@ -236,7 +236,7 @@ describe('SuiteAppClient', () => {
 
         expect(JSON.parse(requests[1].data)).toEqual({
           operation: 'search',
-          signature: 'signature',
+          activationKey: 'activationKey',
           args: {
             type: 'type',
             columns: [],
@@ -265,7 +265,7 @@ describe('SuiteAppClient', () => {
         const req = mockAxiosAdapter.history.post[0]
         expect(JSON.parse(req.data)).toEqual({
           operation: 'sysInfo',
-          signature: 'signature',
+          activationKey: 'activationKey',
           args: {},
         })
       })
@@ -331,7 +331,7 @@ describe('SuiteAppClient', () => {
         expect(req.url).toEqual('https://account-id.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=customscript_salto_restlet&deploy=customdeploy_salto_restlet')
         expect(JSON.parse(req.data)).toEqual({
           operation: 'readFile',
-          signature: 'signature',
+          activationKey: 'activationKey',
           args: {
             ids: [1, 2, 3, 4, 5],
           },
@@ -381,12 +381,12 @@ describe('SuiteAppClient', () => {
           accountId: 'ACCOUNT_ID',
           suiteAppTokenId: 'tokenId',
           suiteAppTokenSecret: 'tokenSecret',
-          accountIdSignature: 'signature',
+          suiteAppActivationKey: 'activationKey',
         },
       )).rejects.toThrow()
     })
 
-    it('should succeed with signature', async () => {
+    it('should succeed with activationKey', async () => {
       mockAxiosAdapter.onPost().reply(200, {
         status: 'success',
         results: {
@@ -400,11 +400,11 @@ describe('SuiteAppClient', () => {
           accountId: 'ACCOUNT_ID',
           suiteAppTokenId: 'tokenId',
           suiteAppTokenSecret: 'tokenSecret',
-          accountIdSignature: 'signature',
+          suiteAppActivationKey: 'activationKey',
         },
       )).resolves.toBeUndefined()
     })
-    it('should succeed without signature', async () => {
+    it('should succeed without activationKey', async () => {
       mockAxiosAdapter.onPost().reply(200, {
         status: 'success',
         results: {
@@ -431,7 +431,7 @@ describe('SuiteAppClient', () => {
           accountId: 'ACCOUNT_ID',
           suiteAppTokenId: 'tokenId',
           suiteAppTokenSecret: 'tokenSecret',
-          accountIdSignature: 'signature',
+          suiteAppActivationKey: 'activationKey',
         },
         globalLimiter: new Bottleneck(),
       })
@@ -445,7 +445,7 @@ describe('SuiteAppClient', () => {
         },
       })
       await client.getSystemInformation()
-      expect(client.getVersionFeatures()).toEqual({ signature: false })
+      expect(client.getVersionFeatures()).toEqual({ activationKey: false })
     })
     it('should set new versionFeatures', async () => {
       mockAxiosAdapter.onPost().reply(200, {
@@ -456,7 +456,7 @@ describe('SuiteAppClient', () => {
         },
       })
       await client.getSystemInformation()
-      expect(client.getVersionFeatures()).toEqual({ signature: true })
+      expect(client.getVersionFeatures()).toEqual({ activationKey: true })
     })
     it('should set versionFeatures once on parallel request', async () => {
       mockAxiosAdapter.onPost().reply(200, {
@@ -471,7 +471,7 @@ describe('SuiteAppClient', () => {
         client.getSystemInformation(),
         client.getSystemInformation(),
       ])
-      expect(client.getVersionFeatures()).toEqual({ signature: true })
+      expect(client.getVersionFeatures()).toEqual({ activationKey: true })
       expect(mockAxiosAdapter.history.post.length).toEqual(3)
     })
     it('should not set versionFeatures when getting invalid results', async () => {

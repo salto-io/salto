@@ -77,7 +77,7 @@ export const defaultCredentialsType = new ObjectType({
         message: 'Salto SuiteApp Token Secret (optional)',
       },
     },
-    accountIdSignature: {
+    suiteAppActivationKey: {
       refType: BuiltinTypes.STRING,
       annotations: {
         message: 'Salto SuiteApp Activation Key (optional)',
@@ -186,15 +186,15 @@ const throwOnMissingSuiteAppLoginCreds = (credentials: Credentials): void => {
   if (isSdfCredentialsOnly(credentials)) {
     return
   }
-  // accountIdSignature may be undefined but empty string is forbidden
-  if (isSuiteAppCredentials(credentials) && credentials.accountIdSignature !== '') {
+  // suiteAppActivationKey may be undefined but empty string is forbidden
+  if (isSuiteAppCredentials(credentials) && credentials.suiteAppActivationKey !== '') {
     return
   }
   const undefinedBaseCreds = [
     { key: 'suiteAppTokenId', value: credentials.suiteAppTokenId },
     { key: 'suiteAppTokenSecret', value: credentials.suiteAppTokenSecret },
   ].filter(item => !item.value).map(item => item.key)
-  const undefinedCreds = undefinedBaseCreds.concat(credentials.accountIdSignature === '' ? ['accountIdSignature'] : [])
+  const undefinedCreds = undefinedBaseCreds.concat(credentials.suiteAppActivationKey === '' ? ['suiteAppActivationKey'] : [])
   throw new Error(`Missing SuiteApp login creds: ${undefinedCreds.join(', ')}. Please login again.`)
 }
 
@@ -207,7 +207,7 @@ const netsuiteCredentialsFromCredentials = (
     tokenSecret: credsInstance.value.tokenSecret,
     suiteAppTokenId: credsInstance.value.suiteAppTokenId === '' ? undefined : credsInstance.value.suiteAppTokenId,
     suiteAppTokenSecret: credsInstance.value.suiteAppTokenSecret === '' ? undefined : credsInstance.value.suiteAppTokenSecret,
-    accountIdSignature: credsInstance.value.accountIdSignature,
+    suiteAppActivationKey: credsInstance.value.suiteAppActivationKey,
   }
   throwOnMissingSuiteAppLoginCreds(credentials)
   return credentials
@@ -225,7 +225,7 @@ const getAdapterOperations = (context: AdapterOperationsContext): AdapterOperati
       ),
   })
 
-  const suiteAppClient = isSuiteAppCredentials(credentials) && credentials.accountIdSignature
+  const suiteAppClient = isSuiteAppCredentials(credentials) && credentials.suiteAppActivationKey
     ? new SuiteAppClient({
       credentials,
       config: adapterConfig[SUITEAPP_CLIENT_CONFIG],

@@ -115,7 +115,7 @@ describe('NetsuiteAdapter creator', () => {
         ...cred.value,
         suiteAppTokenId: 'aaa',
         suiteAppTokenSecret: 'bbb',
-        accountIdSignature: 'signature',
+        suiteAppActivationKey: 'ccc',
       }
 
       await adapter.validateCredentials(cred)
@@ -132,7 +132,7 @@ describe('NetsuiteAdapter creator', () => {
         ...cred.value,
         suiteAppTokenId: 'aaa',
         suiteAppTokenSecret: 'bbb',
-        accountIdSignature: 'signature',
+        suiteAppActivationKey: 'ccc',
       }
 
       await expect(adapter.validateCredentials(cred)).rejects.toThrow('SDF Authentication failed.')
@@ -146,7 +146,7 @@ describe('NetsuiteAdapter creator', () => {
         ...cred.value,
         suiteAppTokenId: 'aaa',
         suiteAppTokenSecret: 'bbb',
-        accountIdSignature: 'signature',
+        suiteAppActivationKey: 'ccc',
       }
 
       await expect(adapter.validateCredentials(cred)).rejects.toThrow('SuiteApp Authentication failed.')
@@ -185,13 +185,13 @@ describe('NetsuiteAdapter creator', () => {
       expect(SuiteAppClient).not.toHaveBeenCalled()
     })
 
-    it('should throw when missing account id signature', () => {
+    it('should throw when missing activation key', () => {
       const cred = credentials.clone()
       cred.value = {
         ...cred.value,
         suiteAppTokenId: 'aaa',
         suiteAppTokenSecret: 'bbb',
-        accountIdSignature: '',
+        suiteAppActivationKey: '',
       }
 
       expect(() => adapter.operations({
@@ -207,7 +207,7 @@ describe('NetsuiteAdapter creator', () => {
         ...cred.value,
         suiteAppTokenId: 'aaa',
         suiteAppTokenSecret: 'bbb',
-        accountIdSignature: 'signature',
+        suiteAppActivationKey: 'ccc',
       }
 
       adapter.operations({
@@ -227,7 +227,7 @@ describe('NetsuiteAdapter creator', () => {
         ...cred.value,
         suiteAppTokenId: 'aaa',
         suiteAppTokenSecret: 'bbb',
-        accountIdSignature: 'signature',
+        suiteAppActivationKey: 'ccc',
       }
 
       const configuration = config.clone()

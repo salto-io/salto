@@ -4006,6 +4006,7 @@ describe('isValidEnvName', () => {
     expect(isValidEnvName('why?')).toEqual(false)
     expect(isValidEnvName('no:pe')).toEqual(false)
     expect(isValidEnvName('100%')).toEqual(false)
+    expect(isValidEnvName('created at 24/02/2022')).toEqual(false)
   })
 })
 

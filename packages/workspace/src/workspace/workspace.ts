@@ -56,7 +56,7 @@ const MULTI_ENV_SOURCE_PREFIX = 'multi_env_element_source'
 const STATE_SOURCE_PREFIX = 'state_element_source'
 
 export const isValidEnvName = (envName: string): boolean =>
-  /^[a-z0-9-_.!\s/]+$/i.test(envName) && envName.length <= MAX_ENV_NAME_LEN
+  /^[a-z0-9-_.!\s]+$/i.test(envName) && envName.length <= MAX_ENV_NAME_LEN
 
 export type SourceFragment = {
   sourceRange: SourceRange

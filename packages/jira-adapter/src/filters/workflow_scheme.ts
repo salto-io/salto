@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, Field, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isModificationChange, ListType, ObjectType, Values } from '@salto-io/adapter-api'
-import { elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, Field, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isModificationChange, isRemovalOrModificationChange, ListType, ModificationChange, ObjectType, RemovalChange, Values } from '@salto-io/adapter-api'
+import { elements as elementUtils, client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { applyFunctionToChangeData, resolveValues, safeJsonStringify } from '@salto-io/adapter-utils'
@@ -94,12 +94,49 @@ const publishDraft = async (
   await waitForWorkflowSchemePublish(response, client, MAX_TASK_CHECKS)
 }
 
-const deployWorkflowScheme = async (
-  change: Change<InstanceElement>,
+const updateSchemeId = async (
+  change: ModificationChange<InstanceElement> | RemovalChange<InstanceElement>,
   client: JiraClient,
+  paginator: clientUtils.Paginator,
   config: JiraConfig,
 ): Promise<void> => {
   const instance = getChangeData(change)
+  const response = await client.getSinglePage({
+    url: `/rest/api/3/workflowscheme/${instance.value.id}`,
+  })
+  if (response.status === 200
+    && !Array.isArray(response.data)
+    && response.data.name === instance.value.name) {
+    return
+  }
+
+  const workflowSchemes = await awu(paginator(
+    config.apiDefinitions.types.WorkflowSchemes.request as configUtils.FetchRequestConfig,
+    page => collections.array.makeArray(page.values) as clientUtils.ResponseValue[]
+  )).flat().toArray()
+
+  const id = workflowSchemes.find(scheme => scheme.name === instance.value.name)?.id
+
+  if (id !== undefined) {
+    instance.value.id = id
+  } else {
+    log.warn(`Failed to find workflow scheme with name ${instance.value.name} after deploy`)
+  }
+}
+
+const deployWorkflowScheme = async (
+  change: Change<InstanceElement>,
+  client: JiraClient,
+  paginator: clientUtils.Paginator,
+  config: JiraConfig,
+): Promise<void> => {
+  const instance = getChangeData(change)
+
+  if (isRemovalOrModificationChange(change)) {
+    // For some reason sometime the id is changed after publishing the draft
+    await updateSchemeId(change, client, paginator, config)
+  }
+
   const { statusMigrations } = (await resolveValues(instance, getLookUpName)).value
   delete instance.value.statusMigrations
 
@@ -115,7 +152,7 @@ const deployWorkflowScheme = async (
   }
 }
 
-const filter: FilterCreator = ({ config, client }) => ({
+const filter: FilterCreator = ({ config, client, paginator }) => ({
   onFetch: async elements => {
     const workflowSchemeType = findObject(elements, WORKFLOW_SCHEME_TYPE)
     if (workflowSchemeType === undefined) {
@@ -226,16 +263,14 @@ const filter: FilterCreator = ({ config, client }) => ({
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change => isInstanceChange(change)
-        && isAdditionOrModificationChange(change)
         && getChangeData(change).elemID.typeName === WORKFLOW_SCHEME_TYPE
     )
 
 
     const deployResult = await deployChanges(
       relevantChanges
-        .filter(isInstanceChange)
-        .filter(isAdditionOrModificationChange),
-      async change => deployWorkflowScheme(change, client, config),
+        .filter(isInstanceChange),
+      async change => deployWorkflowScheme(change, client, paginator, config),
     )
 
     return {

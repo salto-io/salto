@@ -279,6 +279,192 @@ describe('workflowScheme', () => {
       expect(instance.value.statusMigrations).toBeUndefined()
     })
 
+    it('should update the id if changed', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        workflowSchemeType,
+        {
+          id: '1',
+          name: 'name',
+          items: [
+            {
+              issueType: 1234,
+              workflow: 'workflow name',
+            },
+          ],
+          issueTypeMappings: {
+            1234: 'workflow name',
+          },
+          statusMigrations: [
+            {
+              issueTypeId: '1',
+              statusId: '2',
+              newStatusId: '3',
+            },
+          ],
+        }
+      )
+
+      deployChangeMock.mockResolvedValue({ draft: false })
+
+      connection.get.mockResolvedValueOnce({
+        status: 404,
+        data: {},
+      })
+
+      connection.get.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          isLast: true,
+          startAt: 0,
+          values: [{
+            id: '2',
+            name: 'name',
+          }],
+        },
+      })
+
+      await filter.deploy?.([toChange({ before: instance, after: instance })])
+
+
+      expect(deployChangeMock).toHaveBeenCalledWith(
+        toChange({ before: instance, after: instance }),
+        client,
+        DEFAULT_CONFIG.apiDefinitions.types.WorkflowScheme.deployRequests,
+        ['items'],
+        undefined
+      )
+
+
+      expect(connection.get).toHaveBeenCalledWith(
+        '/rest/api/3/workflowscheme/1',
+        undefined
+      )
+
+      expect(connection.get).toHaveBeenCalledWith(
+        '/rest/api/3/workflowscheme',
+        undefined
+      )
+
+      expect(instance.value.statusMigrations).toBeUndefined()
+      expect(instance.value.id).toBe('2')
+    })
+
+    it('should not update the id if not changed', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        workflowSchemeType,
+        {
+          id: '1',
+          name: 'name',
+          items: [
+            {
+              issueType: 1234,
+              workflow: 'workflow name',
+            },
+          ],
+          issueTypeMappings: {
+            1234: 'workflow name',
+          },
+          statusMigrations: [
+            {
+              issueTypeId: '1',
+              statusId: '2',
+              newStatusId: '3',
+            },
+          ],
+        }
+      )
+
+      deployChangeMock.mockResolvedValue({ draft: false })
+
+      connection.get.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          name: 'name',
+        },
+      })
+
+      await filter.deploy?.([toChange({ before: instance, after: instance })])
+
+      expect(deployChangeMock).toHaveBeenCalledWith(
+        toChange({ before: instance, after: instance }),
+        client,
+        DEFAULT_CONFIG.apiDefinitions.types.WorkflowScheme.deployRequests,
+        ['items'],
+        undefined
+      )
+
+      expect(connection.get).toHaveBeenCalledWith(
+        '/rest/api/3/workflowscheme/1',
+        undefined
+      )
+
+      expect(connection.get).not.toHaveBeenCalledWith(
+        '/rest/api/3/workflowscheme',
+        undefined
+      )
+
+      expect(instance.value.statusMigrations).toBeUndefined()
+      expect(instance.value.id).toBe('1')
+    })
+
+    it('should not update the id if not found', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        workflowSchemeType,
+        {
+          id: '1',
+          name: 'name',
+          items: [
+            {
+              issueType: 1234,
+              workflow: 'workflow name',
+            },
+          ],
+          issueTypeMappings: {
+            1234: 'workflow name',
+          },
+          statusMigrations: [
+            {
+              issueTypeId: '1',
+              statusId: '2',
+              newStatusId: '3',
+            },
+          ],
+        }
+      )
+
+      deployChangeMock.mockResolvedValue({ draft: false })
+
+      connection.get.mockResolvedValueOnce({
+        status: 404,
+        data: {},
+      })
+
+      connection.get.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          isLast: true,
+          startAt: 0,
+          values: [],
+        },
+      })
+
+      await filter.deploy?.([toChange({ before: instance, after: instance })])
+
+      expect(deployChangeMock).toHaveBeenCalledWith(
+        toChange({ before: instance, after: instance }),
+        client,
+        DEFAULT_CONFIG.apiDefinitions.types.WorkflowScheme.deployRequests,
+        ['items'],
+        undefined
+      )
+
+      expect(instance.value.statusMigrations).toBeUndefined()
+      expect(instance.value.id).toBe('1')
+    })
+
     it('when return error if publish draft failed', async () => {
       const instance = new InstanceElement(
         'instance',
@@ -347,7 +533,8 @@ describe('workflowScheme', () => {
 
       const res = await filter.deploy?.([toChange({ before: instance, after: instance })])
 
-      expect(connection.get).toHaveBeenCalledTimes(MAX_TASK_CHECKS)
+      // + 1 is for the internal id check
+      expect(connection.get).toHaveBeenCalledTimes(MAX_TASK_CHECKS + 1)
 
       expect(res?.deployResult.appliedChanges).toEqual([])
       expect(res?.deployResult.errors).toHaveLength(1)

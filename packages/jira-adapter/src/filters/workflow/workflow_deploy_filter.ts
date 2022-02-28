@@ -27,6 +27,8 @@ import { defaultDeployChange, deployChanges } from '../../deployment/standard_de
 import { WORKFLOW_TYPE_NAME } from '../../constants'
 import { addTransitionIds } from './transition_ids_filter'
 import { deployTriggers } from './triggers_deployment'
+import { addStepIds } from './step_ids_filter'
+import { deploySteps } from './steps_deployment'
 
 const log = logger(module)
 
@@ -110,16 +112,20 @@ const deployWorkflow = async (
     change: resolvedChange,
     client,
     apiDefinitions: config.apiDefinitions,
-    fieldsToIgnore: path => path.name === 'triggers',
+    fieldsToIgnore: path => path.name === 'triggers' || (path.name === 'name' && path.getFullNameParts().includes('statuses')),
   })
 
   const transitions = await getTransitionsFromService(client, instance.value.name)
   addTransitionIds(instance, transitions)
+  await addStepIds(instance, client, config)
 
   await deployTriggers(resolvedChange, client)
 
   getChangeData(change).value.entityId = instance.value.entityId
   getChangeData(change).value.transitionIds = instance.value.transitionIds
+  getChangeData(change).value.stepIds = instance.value.stepIds
+
+  await deploySteps(getChangeData(change), client)
 }
 
 // This filter transforms the workflow values structure so it will fit its deployment endpoint

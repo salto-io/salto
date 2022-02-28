@@ -45,6 +45,7 @@ import defaultInstancesDeployFilter from './filters/default_instances_deploy'
 import workflowStructureFilter from './filters/workflow/workflow_structure_filter'
 import workflowPropertiesFilter from './filters/workflow/workflow_properties_filter'
 import transitionIdsFilter from './filters/workflow/transition_ids_filter'
+import stepIdsFilter from './filters/workflow/step_ids_filter'
 import workflowDeployFilter from './filters/workflow/workflow_deploy_filter'
 import triggersFilter from './filters/workflow/triggers_filter'
 import workflowSchemeFilter from './filters/workflow_scheme'
@@ -91,6 +92,7 @@ export const DEFAULT_FILTERS = [
   iconUrlFilter,
   workflowStructureFilter,
   transitionIdsFilter,
+  stepIdsFilter,
   triggersFilter,
   workflowPropertiesFilter,
   workflowDeployFilter,

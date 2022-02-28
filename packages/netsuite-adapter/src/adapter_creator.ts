@@ -36,7 +36,7 @@ import {
   INSTALLED_SUITEAPPS,
 } from './constants'
 import { validateFetchParameters, convertToQueryParams } from './query'
-import { Credentials, toCredentialsAccountId } from './client/credentials'
+import { Credentials, isSdfCredentialsOnly, isSuiteAppCredentials, toCredentialsAccountId } from './client/credentials'
 import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
 import SdfClient from './client/sdf_client'
 import NetsuiteClient from './client/client'
@@ -68,13 +68,19 @@ export const defaultCredentialsType = new ObjectType({
     suiteAppTokenId: {
       refType: BuiltinTypes.STRING,
       annotations: {
-        message: 'Salto SuiteApp Token ID (empty if Salto SuiteApp is not installed)',
+        message: 'Salto SuiteApp Token ID (optional)',
       },
     },
     suiteAppTokenSecret: {
       refType: BuiltinTypes.STRING,
       annotations: {
-        message: 'Salto SuiteApp Token Secret (empty if Salto SuiteApp is not installed)',
+        message: 'Salto SuiteApp Token Secret (optional)',
+      },
+    },
+    suiteAppActivationKey: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        message: 'Salto SuiteApp Activation Key (optional)',
       },
     },
   },
@@ -176,14 +182,36 @@ const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined)
   }
 }
 
-const netsuiteCredentialsFromCredentials = (credentials: Readonly<InstanceElement>): Credentials =>
-  ({
-    accountId: toCredentialsAccountId(credentials.value.accountId),
-    tokenId: credentials.value.tokenId,
-    tokenSecret: credentials.value.tokenSecret,
-    suiteAppTokenId: credentials.value.suiteAppTokenId === '' ? undefined : credentials.value.suiteAppTokenId,
-    suiteAppTokenSecret: credentials.value.suiteAppTokenSecret === '' ? undefined : credentials.value.suiteAppTokenSecret,
-  })
+const throwOnMissingSuiteAppLoginCreds = (credentials: Credentials): void => {
+  if (isSdfCredentialsOnly(credentials)) {
+    return
+  }
+  // suiteAppActivationKey may be undefined but empty string is forbidden
+  if (isSuiteAppCredentials(credentials) && credentials.suiteAppActivationKey !== '') {
+    return
+  }
+  const undefinedBaseCreds = [
+    { key: 'suiteAppTokenId', value: credentials.suiteAppTokenId },
+    { key: 'suiteAppTokenSecret', value: credentials.suiteAppTokenSecret },
+  ].filter(item => !item.value).map(item => item.key)
+  const undefinedCreds = undefinedBaseCreds.concat(credentials.suiteAppActivationKey === '' ? ['suiteAppActivationKey'] : [])
+  throw new Error(`Missing SuiteApp login creds: ${undefinedCreds.join(', ')}. Please login again.`)
+}
+
+const netsuiteCredentialsFromCredentials = (
+  credsInstance: Readonly<InstanceElement>
+): Credentials => {
+  const credentials = {
+    accountId: toCredentialsAccountId(credsInstance.value.accountId),
+    tokenId: credsInstance.value.tokenId,
+    tokenSecret: credsInstance.value.tokenSecret,
+    suiteAppTokenId: credsInstance.value.suiteAppTokenId === '' ? undefined : credsInstance.value.suiteAppTokenId,
+    suiteAppTokenSecret: credsInstance.value.suiteAppTokenSecret === '' ? undefined : credsInstance.value.suiteAppTokenSecret,
+    suiteAppActivationKey: credsInstance.value.suiteAppActivationKey,
+  }
+  throwOnMissingSuiteAppLoginCreds(credentials)
+  return credentials
+}
 
 const getAdapterOperations = (context: AdapterOperationsContext): AdapterOperations => {
   const adapterConfig = netsuiteConfigFromConfig(context.config)
@@ -196,13 +224,10 @@ const getAdapterOperations = (context: AdapterOperationsContext): AdapterOperati
         adapterConfig.suiteAppClient?.suiteAppConcurrencyLimit ?? DEFAULT_CONCURRENCY
       ),
   })
-  const suiteAppClient = credentials.suiteAppTokenId && credentials.suiteAppTokenSecret
+
+  const suiteAppClient = isSuiteAppCredentials(credentials) && credentials.suiteAppActivationKey
     ? new SuiteAppClient({
-      credentials: {
-        accountId: credentials.accountId,
-        suiteAppTokenId: credentials.suiteAppTokenId,
-        suiteAppTokenSecret: credentials.suiteAppTokenSecret,
-      },
+      credentials,
       config: adapterConfig[SUITEAPP_CLIENT_CONFIG],
       globalLimiter,
     })

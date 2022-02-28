@@ -53,6 +53,7 @@ describe('data_elements', () => {
     tokenSecret: 'tokenSecret',
     suiteAppTokenId: 'suiteAppTokenId',
     suiteAppTokenSecret: 'suiteAppTokenSecret',
+    suiteAppActivationKey: 'suiteAppActivationKey',
   }
   const client = new NetsuiteClient(
     new SdfClient({ credentials: creds, globalLimiter: new Bottleneck() }),

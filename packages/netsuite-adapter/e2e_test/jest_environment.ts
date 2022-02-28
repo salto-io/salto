@@ -31,6 +31,7 @@ export const credsSpec = (envName?: string): CredsSpec<Required<Credentials>> =>
   const tokenSecretEnvVarName = addEnvName('NS_TOKEN_SECRET')
   const suiteAppTokenIdEnvVarName = addEnvName('NS_SUITE_APP_TOKEN_ID')
   const suiteAppTokenSecretEnvVarName = addEnvName('NS_SUITE_APP_TOKEN_SECRET')
+  const suiteAppActivationKeyEnvVarName = addEnvName('NS_SUITE_APP_ACTIVATION_KEY')
   return {
     envHasCreds: env => accountIdEnvVarName in env,
     fromEnv: env => {
@@ -41,6 +42,7 @@ export const credsSpec = (envName?: string): CredsSpec<Required<Credentials>> =>
         tokenSecret: envUtils.required(tokenSecretEnvVarName),
         suiteAppTokenId: envUtils.required(suiteAppTokenIdEnvVarName),
         suiteAppTokenSecret: envUtils.required(suiteAppTokenSecretEnvVarName),
+        suiteAppActivationKey: envUtils.required(suiteAppActivationKeyEnvVarName),
       }
     },
     validate: async (_credentials: Credentials): Promise<void> => {

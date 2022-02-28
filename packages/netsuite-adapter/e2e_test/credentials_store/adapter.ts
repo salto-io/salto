@@ -14,13 +14,16 @@
 * limitations under the License.
 */
 import { Adapter } from '@salto-io/e2e-credentials-store'
-import { Credentials } from '../../src/client/credentials'
-import SdfClient from '../../src/client/sdf_client'
+import NetsuiteClient from '../../src/client/client'
+import { Credentials, toCredentialsAccountId } from '../../src/client/credentials'
 
 type Args = {
   accountId: string
   tokenId: string
   tokenSecret: string
+  suiteAppTokenId: string
+  suiteAppTokenSecret: string
+  suiteAppActivationKey: string
 }
 
 const adapter: Adapter<Args, Credentials> = {
@@ -38,14 +41,29 @@ const adapter: Adapter<Args, Credentials> = {
       type: 'string',
       demand: true,
     },
+    suiteAppTokenId: {
+      type: 'string',
+      demand: true,
+    },
+    suiteAppTokenSecret: {
+      type: 'string',
+      demand: true,
+    },
+    suiteAppActivationKey: {
+      type: 'string',
+      demand: true,
+    },
   },
   credentials: async args => ({
-    accountId: args.accountId,
+    accountId: toCredentialsAccountId(args.accountId),
     tokenId: args.tokenId,
     tokenSecret: args.tokenSecret,
+    suiteAppTokenId: args.suiteAppTokenId,
+    suiteAppTokenSecret: args.suiteAppTokenSecret,
+    suiteAppActivationKey: args.suiteAppActivationKey,
   }),
   validateCredentials: credentials =>
-   SdfClient.validateCredentials(credentials) as unknown as Promise<void>,
+    NetsuiteClient.validateCredentials(credentials) as unknown as Promise<void>,
 }
 
 export default adapter

@@ -19,6 +19,8 @@ import crypto from 'crypto'
 import axios, { AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry from 'axios-retry'
 import Ajv from 'ajv'
+import AsyncLock from 'async-lock'
+import compareVersions from 'compare-versions'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
@@ -58,6 +60,12 @@ const NON_BINARY_FILETYPES = new Set([
 
 const UNAUTHORIZED_STATUSES = [401, 403]
 
+const ACTIVATION_KEY_APP_VERSION = '0.1.2'
+
+type VersionFeatures = {
+  activationKey: boolean
+}
+
 export default class SuiteAppClient {
   private credentials: SuiteAppCredentials
   private callsLimiter: CallsLimiter
@@ -66,6 +74,9 @@ export default class SuiteAppClient {
   private ajv: Ajv
   private soapClient: SoapClient
   private axiosClient: AxiosInstance
+
+  private versionFeatures: VersionFeatures | undefined
+  private readonly setVersionFeaturesLock: AsyncLock
 
   constructor(params: SuiteAppClientParameters) {
     this.credentials = params.credentials
@@ -84,6 +95,9 @@ export default class SuiteAppClient {
 
     this.axiosClient = axios.create()
     axiosRetry(this.axiosClient, createRetryOptions(DEFAULT_RETRY_OPTS))
+
+    this.versionFeatures = undefined
+    this.setVersionFeaturesLock = new AsyncLock()
   }
 
   /**
@@ -138,19 +152,23 @@ export default class SuiteAppClient {
     return items
   }
 
+  private parseSystemInformation(results: unknown): SystemInformation | undefined {
+    if (!this.ajv.validate<{ time: number; appVersion: number[] }>(
+      SYSTEM_INFORMATION_SCHEME,
+      results
+    )) {
+      log.error(`getSystemInformation failed. Got invalid results: ${this.ajv.errorsText()}`)
+      return undefined
+    }
+
+    log.debug('SuiteApp system information', results)
+    return { ...results, time: new Date(results.time) }
+  }
+
   public async getSystemInformation(): Promise<SystemInformation | undefined> {
     try {
       const results = await this.sendRestletRequest('sysInfo')
-
-      if (!this.ajv.validate<{ time: number; appVersion: number[] }>(
-        SYSTEM_INFORMATION_SCHEME,
-        results
-      )) {
-        log.error(`getSystemInformation failed. Got invalid results: ${this.ajv.errorsText()}`)
-        return undefined
-      }
-
-      return { ...results, time: new Date(results.time) }
+      return this.parseSystemInformation(results)
     } catch (error) {
       log.error('error was thrown in getSystemInformation', { error })
       return undefined
@@ -243,11 +261,45 @@ export default class SuiteAppClient {
     return response.data
   }
 
-  private async sendRestletRequest(
+  public getVersionFeatures(): VersionFeatures | undefined {
+    return this.versionFeatures ? { ...this.versionFeatures } : undefined
+  }
+
+  private async setVersionFeatures(): Promise<void> {
+    if (this.versionFeatures) {
+      return
+    }
+
+    await this.setVersionFeaturesLock.acquire('setVersionFeatures', async () => {
+      if (this.versionFeatures) {
+        return
+      }
+      log.debug('setting SuiteApp version features')
+      const result = await this.innerSendRestletRequest('sysInfo')
+      const sysInfo = this.parseSystemInformation(result)
+      if (!sysInfo) {
+        log.warn('could not detect SuiteApp version')
+        return
+      }
+      const currentVersion = sysInfo.appVersion.join('.')
+      this.versionFeatures = {
+        activationKey: compareVersions(currentVersion, ACTIVATION_KEY_APP_VERSION) !== -1,
+      }
+      log.debug('set SuiteApp version features successfully', { versionFeatures: this.versionFeatures })
+    })
+  }
+
+  private async innerSendRestletRequest(
     operation: RestletOperation,
     args: Record<string, unknown> = {}
   ): Promise<unknown> {
-    const response = await this.safeAxiosPost(this.restletUrl.href, { operation, args }, this.generateHeaders(this.restletUrl, 'POST'))
+    const response = await this.safeAxiosPost(
+      this.restletUrl.href,
+      this.versionFeatures?.activationKey && this.credentials.suiteAppActivationKey
+        ? { operation, args, activationKey: this.credentials.suiteAppActivationKey }
+        : { operation, args },
+      this.generateHeaders(this.restletUrl, 'POST')
+    )
     log.debug(
       'Restlet call to operation %s (postParams: %s) responsed with status %s',
       operation,
@@ -260,10 +312,18 @@ export default class SuiteAppClient {
     }
 
     if (isError(response.data)) {
-      throw new Error(`Restlet request failed. Message: ${response.data.message}, error: ${safeJsonStringify(response.data.error)}`)
+      throw new Error(`Restlet request failed. Message: ${response.data.message}${response.data.error ? `, error: ${safeJsonStringify(response.data.error)}` : ''}`)
     }
 
     return response.data.results
+  }
+
+  private async sendRestletRequest(
+    operation: RestletOperation,
+    args: Record<string, unknown> = {}
+  ): Promise<unknown> {
+    await this.setVersionFeatures()
+    return this.innerSendRestletRequest(operation, args)
   }
 
   private async sendSavedSearchRequest(query: SavedSearchQuery, offset: number, limit: number):

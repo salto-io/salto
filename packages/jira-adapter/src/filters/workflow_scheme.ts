@@ -110,12 +110,10 @@ const updateSchemeId = async (
     return
   }
 
-  const workflowSchemes = await awu(paginator(
+  const id = (await awu(paginator(
     config.apiDefinitions.types.WorkflowSchemes.request as configUtils.FetchRequestConfig,
     page => collections.array.makeArray(page.values) as clientUtils.ResponseValue[]
-  )).flat().toArray()
-
-  const id = workflowSchemes.find(scheme => scheme.name === instance.value.name)?.id
+  )).flat().find(scheme => scheme.name === instance.value.name))?.id
 
   if (id !== undefined) {
     instance.value.id = id

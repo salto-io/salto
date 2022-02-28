@@ -30,6 +30,13 @@ describe('elements generator', () => {
       const run2 = await generateElements(testParams, mockProgressReporter)
       expect(run1).toEqual(run2)
     })
+    it('should create the same set of elements when invoked with the same seed and params concurrently', async () => {
+      const [run1, run2] = await Promise.all([
+        generateElements(testParams, mockProgressReporter),
+        generateElements(testParams, mockProgressReporter),
+      ])
+      expect(run1).toEqual(run2)
+    })
     it('should create different results when invoked with different seeds', async () => {
       const run1 = await generateElements(testParams, mockProgressReporter)
       const run2 = await generateElements({

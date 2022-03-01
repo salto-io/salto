@@ -60,7 +60,7 @@ const NON_BINARY_FILETYPES = new Set([
 
 const UNAUTHORIZED_STATUSES = [401, 403]
 
-const ACTIVATION_KEY_APP_VERSION = '0.1.2'
+const ACTIVATION_KEY_APP_VERSION = '0.1.3'
 
 type VersionFeatures = {
   activationKey: boolean

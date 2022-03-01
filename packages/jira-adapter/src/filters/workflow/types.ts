@@ -149,15 +149,20 @@ const transitionsSchema = Joi.object({
 }).unknown(true)
 
 export type Status = {
+  id?: unknown
+  name?: string
   properties?: Values
 }
 
 const statusSchema = Joi.object({
+  id: Joi.optional(),
+  name: Joi.string().optional(),
   properties: Joi.alternatives(Joi.object(), Joi.array()).optional(),
 }).unknown(true)
 
 export type Workflow = {
   transitionIds?: Record<string, string>
+  stepIds?: Record<string, string>
   id?: Id
   entityId?: string
   name?: string
@@ -167,6 +172,7 @@ export type Workflow = {
 
 export const workflowSchema = Joi.object({
   transitionIds: Joi.object().pattern(Joi.string(), Joi.string()).optional(),
+  stepIds: Joi.object().pattern(Joi.string(), Joi.string()).optional(),
   id: idSchema.optional(),
   entityId: Joi.string().optional(),
   name: Joi.string().optional(),

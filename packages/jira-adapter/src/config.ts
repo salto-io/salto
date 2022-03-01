@@ -1005,13 +1005,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       ],
     },
   },
-  WorkflowStatus: {
-    transformation: {
-      fieldsToOmit: [
-        { fieldName: 'name' },
-      ],
-    },
-  },
   TransitionScreenDetails: {
     transformation: {
       fieldsToOmit: [

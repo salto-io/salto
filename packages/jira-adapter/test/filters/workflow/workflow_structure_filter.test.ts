@@ -70,6 +70,9 @@ describe('workflowStructureFilter', () => {
     it('should set the properties field in WorkflowStatus', async () => {
       const workflowStatusType = new ObjectType({
         elemID: new ElemID(JIRA, 'WorkflowStatus'),
+        fields: {
+          name: { refType: BuiltinTypes.STRING },
+        },
       })
       await filter.onFetch([workflowStatusType])
       expect(workflowStatusType.fields.properties).toBeDefined()

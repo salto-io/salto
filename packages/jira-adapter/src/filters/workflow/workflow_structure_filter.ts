@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Element, Field, isInstanceElement, ListType, MapType } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, Element, Field, isInstanceElement, ListType, MapType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { findObject } from '../../utils'
@@ -148,6 +148,7 @@ const filter: FilterCreator = () => ({
       log.warn('WorkflowStatus type was not received in fetch')
     } else {
       workflowStatusType.fields.properties = new Field(workflowStatusType, 'properties', new MapType(BuiltinTypes.STRING))
+      workflowStatusType.fields.name.annotations[CORE_ANNOTATIONS.CREATABLE] = true
     }
 
     const workflowRulesType = findObject(elements, WORKFLOW_RULES_TYPE_NAME)

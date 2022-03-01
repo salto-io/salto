@@ -655,12 +655,12 @@ export const preview = (): Plan => {
         preAction: {
           title: 'preDeployAction',
           description: 'description',
-          subtext: ['first subtext', 'second subtext'],
+          subActions: ['first subtext', 'second subtext'],
           documentationURL: 'someURL',
         },
         postAction: {
           title: 'postDeployAction',
-          subtext: ['third subtext', 'fourth subtext'],
+          subActions: ['third subtext', 'fourth subtext'],
         },
       },
     },
@@ -672,11 +672,11 @@ export const preview = (): Plan => {
       deployActions: {
         preAction: {
           title: 'preDeployAction2',
-          subtext: ['first subtext2', 'second subtext2'],
+          subActions: ['first subtext2', 'second subtext2'],
         },
         postAction: {
           title: 'postDeployAction2',
-          subtext: ['third subtext2', 'fourth subtext2'],
+          subActions: ['third subtext2', 'fourth subtext2'],
         },
       },
     },

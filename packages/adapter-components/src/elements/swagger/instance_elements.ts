@@ -397,12 +397,17 @@ const getEntriesForType = async (
       })
   )
 
-  const filledEntries = await Promise.all(
+  const filledEntries = (await Promise.all(
     entries.map(async entry => {
-      const extraFields = await getExtraFieldValues(entry)
-      return { ...entry, ...Object.fromEntries(extraFields) }
+      try {
+        const extraFields = await getExtraFieldValues(entry)
+        return { ...entry, ...Object.fromEntries(extraFields) }
+      } catch (err) {
+        log.warn(`Failed getting extra field values for ${typeName} entry: ${safeJsonStringify(entry)}. Error: ${err.message}`)
+        return undefined
+      }
     })
-  )
+  )).filter(lowerdashValues.isDefined)
 
   return { entries: filledEntries, objType }
 }

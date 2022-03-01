@@ -289,7 +289,7 @@ export const formatDeployActions = ({
     ...deployActions.flatMap(deployAction => [
       header(deployAction.title),
       deployAction.description ?? '',
-      ...deployAction.subtext.map(text => indent(`- ${text}`, 1)),
+      ...deployAction.subActions.map(action => indent(`- ${action}`, 1)),
       deployAction.documentationURL ?? '',
     ]),
     emptyLine(),

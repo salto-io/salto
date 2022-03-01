@@ -65,7 +65,7 @@ describe('formatter', () => {
     deployActions: {
       preAction: {
         title: 'This is my title',
-        subtext: [
+        subActions: [
           'first subtext',
           'second subtext',
         ],

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isInstanceChange, SaltoErrorSeverity } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
 import { JiraConfig } from '../config'
 import { PRIORITY_TYPE_NAME, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME } from '../constants'
 
@@ -29,7 +29,7 @@ export const privateApiValidator: (config: JiraConfig) => ChangeValidator = conf
       .filter(change => RELEVANT_TYPES.includes(getChangeData(change).elemID.typeName))
       .map(change => ({
         elemID: getChangeData(change).elemID,
-        severity: 'Error' as SaltoErrorSeverity,
+        severity: 'Error' as SeverityLevel,
         message: `Deploying ${getChangeData(change).elemID.typeName} is not supported when private API usage is disabled`,
         detailedMessage: `To deploy ${getChangeData(change).elemID.getFullName()}, private API usage must be enabled by setting the jira.client.usePrivateAPI flag to true. Note that usePrivateAPI is not supported when using OAuth credentials`,
       }))

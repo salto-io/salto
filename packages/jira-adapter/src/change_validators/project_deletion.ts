@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, InstanceElement, isInstanceChange, isRemovalChange, SaltoErrorSeverity } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, InstanceElement, isInstanceChange, isRemovalChange, SeverityLevel } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
@@ -68,7 +68,7 @@ export const projectDeletionValidator: (client: JiraClient, config: JiraConfig) 
       .filter(instance => doesProjectHaveIssues(instance, client))
       .map(instance => ({
         elemID: instance.elemID,
-        severity: 'Error' as SaltoErrorSeverity,
+        severity: 'Error' as SeverityLevel,
         message: 'Project has issues assigned to it.',
         detailedMessage: `The project ${instance.elemID.getFullName()} has issues assigned to it. Deleting the project will also delete all its issues and Salto will not be able to restore the issues. If you are sure you want to delete the project use the "forceDelete" deploy option.`,
       }))

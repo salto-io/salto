@@ -241,6 +241,11 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskSupportFieldReferenceDefi
     target: { type: 'brand' },
   },
   {
+    src: { field: 'restricted_brand_ids' },
+    serializationStrategy: 'id',
+    target: { type: 'brand' },
+  },
+  {
     src: { field: 'category_id' },
     serializationStrategy: 'id',
     target: { type: 'trigger_category' },

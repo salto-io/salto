@@ -85,9 +85,10 @@ export const DEFAULT_FILTERS = [
   restrictionFilter,
   organizationFieldFilter,
   hardcodedChannelFilter,
+  // fieldReferencesFilter should be after usersFilter
+  usersFilter,
   fieldReferencesFilter,
   appsFilter,
-  usersFilter,
   routingAttributeFilter,
   addFieldOptionsFilter,
   // removeDefinitionInstancesFilter should be after hardcodedChannelFilter

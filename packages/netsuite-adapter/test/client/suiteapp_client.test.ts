@@ -50,7 +50,7 @@ describe('SuiteAppClient', () => {
       mockAxiosAdapter.onPost().replyOnce(200, {
         status: 'success',
         results: {
-          appVersion: [0, 1, 2],
+          appVersion: [0, 1, 3],
           time: 1000,
         },
       })
@@ -253,14 +253,14 @@ describe('SuiteAppClient', () => {
         mockAxiosAdapter.onPost().reply(200, {
           status: 'success',
           results: {
-            appVersion: [0, 1, 2],
+            appVersion: [0, 1, 3],
             time: 1000,
           },
         })
 
         const results = await client.getSystemInformation()
 
-        expect(results).toEqual({ appVersion: [0, 1, 2], time: new Date(1000) })
+        expect(results).toEqual({ appVersion: [0, 1, 3], time: new Date(1000) })
         expect(mockAxiosAdapter.history.post.length).toBe(1)
         const req = mockAxiosAdapter.history.post[0]
         expect(JSON.parse(req.data)).toEqual({
@@ -390,7 +390,7 @@ describe('SuiteAppClient', () => {
       mockAxiosAdapter.onPost().reply(200, {
         status: 'success',
         results: {
-          appVersion: [0, 1, 2],
+          appVersion: [0, 1, 3],
           time: 1000,
         },
       })
@@ -408,7 +408,7 @@ describe('SuiteAppClient', () => {
       mockAxiosAdapter.onPost().reply(200, {
         status: 'success',
         results: {
-          appVersion: [0, 1, 2],
+          appVersion: [0, 1, 3],
           time: 1000,
         },
       })
@@ -451,7 +451,7 @@ describe('SuiteAppClient', () => {
       mockAxiosAdapter.onPost().reply(200, {
         status: 'success',
         results: {
-          appVersion: [0, 1, 2],
+          appVersion: [0, 1, 3],
           time: 1000,
         },
       })
@@ -462,7 +462,7 @@ describe('SuiteAppClient', () => {
       mockAxiosAdapter.onPost().reply(200, {
         status: 'success',
         results: {
-          appVersion: [0, 1, 2],
+          appVersion: [0, 1, 3],
           time: 1000,
         },
       })

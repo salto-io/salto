@@ -15,14 +15,13 @@
 */
 import { getChangeData, ElemID, Value, DetailedChange, ChangeDataType, Element, isObjectType, isPrimitiveType, isInstanceElement, isField, isAdditionChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import path from 'path'
 import { promises, values, collections } from '@salto-io/lowerdash'
 import { resolvePath, filterByID, detailedCompare, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import {
   projectChange, projectElementOrValueToEnv, createAddChange, createRemoveChange,
 } from './projections'
 import { wrapAdditions, DetailedAddition, wrapNestedValues } from '../addition_wrapper'
-import { NaclFilesSource, RoutingMode } from '../nacl_files_source'
+import { NaclFilesSource, RoutingMode, toPathHint } from '../nacl_files_source'
 import { mergeElements } from '../../../merger'
 
 const { awu } = collections.asynciterable
@@ -77,12 +76,6 @@ const filterByFile = async (
     ) !== undefined
   ))
 )
-
-const toPathHint = (filename: string): string[] => {
-  const dirName = path.dirname(filename)
-  const dirPathSplitted = (dirName === '.') ? [] : dirName.split(path.sep)
-  return [...dirPathSplitted, path.basename(filename, path.extname(filename))]
-}
 
 const isEmptyAnnoAndAnnoTypes = (element: Element): boolean =>
   (_.isEmpty(element.annotations) && _.isEmpty(element.annotationRefTypes))

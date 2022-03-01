@@ -1591,11 +1591,39 @@ describe('fetch from workspace', () => {
       },
       path: ['salto', 'here'],
     })
-    const mergedElements = [objFull, existingElement, otherAdapterElem, editNaclElem]
-    const stateElements = [objFull, existingElement, otherAdapterElem, editStateElem]
+
+    const noPathElemID = ElemID.fromFullName('salto.partially')
+    const noPathElementFull = new ObjectType({
+      elemID: noPathElemID,
+      annotations: {
+        inNacl: 'Im in nacl',
+        inState: 'Im in state',
+      },
+      path: ['salto', 'nopath'],
+    })
+    const noPathElementNACL = new ObjectType({
+      elemID: noPathElemID,
+      annotations: {
+        inNacl: 'Im in nacl',
+      },
+      path: ['salto', 'nopath'],
+    })
+
+    const movedElem = new ObjectType({
+      elemID: ElemID.fromFullName('salto.moved'),
+      annotations: {
+        str: 'The user renamed the nacl, path should be the same',
+      },
+      path: ['salto', 'origLocation'],
+    })
+    const mergedElements = [objFull, existingElement, otherAdapterElem, editNaclElem,
+      noPathElementFull, movedElem]
+    const stateElements = [objFull, existingElement, otherAdapterElem, editStateElem,
+      noPathElementFull, movedElem]
     const unmergedElements = [
       objFragStdFields, objFragCustomFields, editStateElem,
       objFragAnnotations, existingElement, otherAdapterElem,
+      noPathElementFull, movedElem,
     ]
     const unmergedElementsWithEditNaclElem = [
       ...(unmergedElements.filter(e => !e.elemID.isEqual(editElemID))),
@@ -1619,7 +1647,9 @@ describe('fetch from workspace', () => {
     }
 
     beforeEach(async () => {
-      await pathIndex.overridePathIndex(pi, unmergedElements)
+      await pathIndex.overridePathIndex(pi, unmergedElements.filter(
+        e => !e.elemID.isEqual(noPathElemID)
+      ))
     })
 
     describe('with fromState false', () => {
@@ -1631,6 +1661,10 @@ describe('fetch from workspace', () => {
               index: await awu(pi.entries()).toArray(),
               accountConfigs: { salto: configs[0] },
               stateElements,
+              parsedNaclFiles: {
+                'salto/nopath.nacl': [noPathElementNACL],
+                'salto/moved.nacl': [movedElem],
+              },
             }),
             ['salto'],
             createInMemoryElementSource([existingElement]),

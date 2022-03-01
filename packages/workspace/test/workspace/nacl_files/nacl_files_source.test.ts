@@ -77,6 +77,9 @@ const validateParsedNaclFile = async (
   if (parsed) {
     const parsedElements = await awu((await parsed.elements()) ?? []).toArray()
     expect(parsedElements).toEqual(elements)
+    parsedElements.forEach(
+      elem => expect(elem.path).toEqual(naclFileSourceModule.toPathHint(filename))
+    )
     expect(await parsed.data.errors()).toEqual(errors)
     expect(parsed.filename).toEqual(filename)
   }

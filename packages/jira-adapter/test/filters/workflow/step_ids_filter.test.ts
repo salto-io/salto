@@ -98,7 +98,7 @@ describe('stepIdsFilter', () => {
       })
 
       expect(mockConnection.get).toHaveBeenCalledWith(
-        'rest/workflowDesigner/1.0/workflows',
+        '/rest/workflowDesigner/1.0/workflows',
         {
           params: {
             name: 'workflowName',

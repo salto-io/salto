@@ -112,7 +112,9 @@ const deployWorkflow = async (
     change: resolvedChange,
     client,
     apiDefinitions: config.apiDefinitions,
-    fieldsToIgnore: path => path.name === 'triggers' || (path.name === 'name' && path.getFullNameParts().includes('statuses')),
+    fieldsToIgnore: path => path.name === 'triggers'
+      // Matching here the 'name' of status inside the statuses array
+      || (path.name === 'name' && path.getFullNameParts().includes('statuses')),
   })
 
   const transitions = await getTransitionsFromService(client, instance.value.name)

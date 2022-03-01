@@ -26,6 +26,8 @@ import { JiraConfig } from '../../config'
 
 const log = logger(module)
 
+const STEP_IDS_FIELD = 'stepIds'
+
 type StatusesResponse = {
   layout: {
     statuses: {
@@ -68,7 +70,7 @@ export const addStepIds = async (
   }
 
   const response = await client.getPrivate({
-    url: 'rest/workflowDesigner/1.0/workflows',
+    url: '/rest/workflowDesigner/1.0/workflows',
     queryParams: {
       name: instance.value.name,
     },
@@ -91,9 +93,9 @@ const filter: FilterCreator = ({ client, config }) => ({
     if (workflowType === undefined) {
       log.warn(`${WORKFLOW_TYPE_NAME} type not found`)
     } else {
-      workflowType.fields.stepIds = new Field(
+      workflowType.fields[STEP_IDS_FIELD] = new Field(
         workflowType,
-        'stepIds',
+        STEP_IDS_FIELD,
         new MapType(BuiltinTypes.STRING),
         { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true }
       )

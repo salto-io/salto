@@ -17,7 +17,7 @@ import { ReferenceExpression, ElemID, Value, ListType, PrimitiveTypes, MapType, 
 import isPromise from 'is-promise'
 import { LexerToken, WILDCARD } from './lexer'
 import { SourcePos, IllegalReference, SourceRange } from '../types'
-import { ParseContext } from './types'
+import { ParseContext, ValuePromiseWatcher } from './types'
 import { Keywords } from '../../language'
 import { invalidElemIDType } from './errors'
 
@@ -74,17 +74,19 @@ export const registerRange = (
 }
 
 export const addValuePromiseWatcher = (
-  context: ParseContext,
+  valuePromiseWatchers: ValuePromiseWatcher[],
   parent: Value,
   key: string | number
 ): void => {
   if (isPromise(parent[key])) {
-    context.valuePromiseWatchers.push({ parent, key })
+    valuePromiseWatchers.push({ parent, key })
   }
 }
 
-export const replaceValuePromises = async (context: ParseContext): Promise<void> => {
-  await Promise.all(context.valuePromiseWatchers.map(async watcher => {
+export const replaceValuePromises = async (
+  valuePromiseWatchers: ValuePromiseWatcher[]
+): Promise<void> => {
+  await Promise.all(valuePromiseWatchers.map(async watcher => {
     const { parent, key } = watcher
     parent[key] = await parent[key]
   }))

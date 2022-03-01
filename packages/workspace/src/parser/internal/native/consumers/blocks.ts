@@ -97,7 +97,7 @@ export const consumeBlockBody = (context: ParseContext, idPrefix: ElemID,
           filename: context.filename,
         }, key))
       }
-      addValuePromiseWatcher(context, attrs, key)
+      addValuePromiseWatcher(context.valuePromiseWatchers, attrs, key)
       registerRange(context, attrID, { start: defTokens.range.start, end: consumedValue.range.end })
     } else if (isAnnotationBlockDef(idPrefix, defTokens.value, context)) {
       const annoBlockID = idPrefix.createNestedID('annotation')

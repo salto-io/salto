@@ -75,7 +75,7 @@ export const parseBuffer = async (
 
   // Adding the list types so they will be accesible during merge.
   elements.push(...Object.values(context.listTypes), ...Object.values(context.mapTypes))
-  await replaceValuePromises(context)
+  await replaceValuePromises(context.valuePromiseWatchers)
   return {
     // Elements string are flatten to solve a memory leak
     elements: elements.map(flattenElementStr),

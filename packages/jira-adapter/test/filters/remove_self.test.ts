@@ -15,6 +15,7 @@
 */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { DEFAULT_CONFIG } from '../../src/config'
 import { JIRA } from '../../src/constants'
 import removeSelfFilter from '../../src/filters/remove_self'
@@ -30,6 +31,7 @@ describe('removeSelfFilter', () => {
       client,
       paginator,
       config: DEFAULT_CONFIG,
+      elementsSource: buildElementsSourceFromElements([]),
     }) as typeof filter
 
     type = new ObjectType({

@@ -125,7 +125,8 @@ describe('adapter', () => {
         expect.any(JiraClient),
         undefined,
         [],
-        undefined
+        undefined,
+        undefined,
       )
     })
 

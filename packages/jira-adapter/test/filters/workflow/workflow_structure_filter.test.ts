@@ -15,6 +15,7 @@
 */
 import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import JiraClient from '../../../src/client/client'
 import { DEFAULT_CONFIG } from '../../../src/config'
 import { JIRA, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../../src/constants'
@@ -38,7 +39,12 @@ describe('workflowStructureFilter', () => {
   let workflowType: ObjectType
   let client: JiraClient
   beforeEach(async () => {
-    workflowType = new ObjectType({ elemID: new ElemID(JIRA, WORKFLOW_TYPE_NAME) })
+    workflowType = new ObjectType({
+      elemID: new ElemID(JIRA, WORKFLOW_TYPE_NAME),
+      fields: {
+        operations: { refType: BuiltinTypes.STRING },
+      },
+    })
 
     const { client: cli, paginator } = mockClient()
     client = cli
@@ -46,6 +52,7 @@ describe('workflowStructureFilter', () => {
       client,
       paginator,
       config: DEFAULT_CONFIG,
+      elementsSource: buildElementsSourceFromElements([]),
     }) as typeof filter
   })
 

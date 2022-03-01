@@ -15,6 +15,7 @@
 */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
 import JiraClient, { PRIVATE_API_HEADERS } from '../../../src/client/client'
@@ -44,6 +45,7 @@ describe('triggersFilter', () => {
       client,
       paginator,
       config,
+      elementsSource: buildElementsSourceFromElements([]),
     }) as typeof filter
   })
 

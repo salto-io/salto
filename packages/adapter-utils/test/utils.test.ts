@@ -1312,18 +1312,18 @@ describe('Test utils.ts', () => {
       })
       it('should call resolve func on after data when add change', async () => {
         await resolveChangeElement(additionChange, getName, mockResolve)
-        expect(mockResolve).toHaveBeenCalledWith(afterData, getName)
+        expect(mockResolve).toHaveBeenCalledWith(afterData, getName, undefined)
       })
 
       it('should call resolve func on before and after data when modification change', async () => {
         await resolveChangeElement(modificationChange, getName, mockResolve)
-        expect(mockResolve).toHaveBeenCalledWith(beforeData, getName)
-        expect(mockResolve).toHaveBeenCalledWith(afterData, getName)
+        expect(mockResolve).toHaveBeenCalledWith(beforeData, getName, undefined)
+        expect(mockResolve).toHaveBeenCalledWith(afterData, getName, undefined)
       })
 
       it('should call resolve func on before data when removal change', async () => {
         await resolveChangeElement(removalChange, getName, mockResolve)
-        expect(mockResolve).toHaveBeenCalledWith(beforeData, getName)
+        expect(mockResolve).toHaveBeenCalledWith(beforeData, getName, undefined)
       })
     })
   })

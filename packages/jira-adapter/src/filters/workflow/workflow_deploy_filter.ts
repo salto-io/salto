@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, getChangeData, InstanceElement, isAdditionChange, isInstanceChange } from '@salto-io/adapter-api'
+import { AdditionChange, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, RemovalChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { resolveChangeElement, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -96,8 +96,8 @@ const getTransitionsFromService = async (
   return workflowValues.transitions ?? []
 }
 
-const deployWorkflow = async (
-  change: AdditionChange<InstanceElement>,
+export const deployWorkflow = async (
+  change: AdditionChange<InstanceElement> | RemovalChange<InstanceElement>,
   client: JiraClient,
   config: JiraConfig,
 ): Promise<void> => {
@@ -117,17 +117,20 @@ const deployWorkflow = async (
       || (path.name === 'name' && path.getFullNameParts().includes('statuses')),
   })
 
-  const transitions = await getTransitionsFromService(client, instance.value.name)
-  addTransitionIds(instance, transitions)
-  await addStepIds(instance, client, config)
+  if (isAdditionChange(resolvedChange)) {
+    const transitions = await getTransitionsFromService(client, instance.value.name)
+    addTransitionIds(instance, transitions)
+    await addStepIds(instance, client, config)
 
-  await deployTriggers(resolvedChange, client)
+    getChangeData(change).value.entityId = instance.value.entityId
+    getChangeData(change).value.transitionIds = instance.value.transitionIds
+    getChangeData(change).value.stepIds = instance.value.stepIds
 
-  getChangeData(change).value.entityId = instance.value.entityId
-  getChangeData(change).value.transitionIds = instance.value.transitionIds
-  getChangeData(change).value.stepIds = instance.value.stepIds
-
-  await deploySteps(getChangeData(change), client)
+    if (config.client.usePrivateAPI) {
+      await deployTriggers(resolvedChange, client)
+      await deploySteps(getChangeData(change), client)
+    }
+  }
 }
 
 // This filter transforms the workflow values structure so it will fit its deployment endpoint
@@ -139,7 +142,6 @@ const filter: FilterCreator = ({ config, client }) => ({
         && isAdditionChange(change)
         && getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME
     )
-
 
     const deployResult = await deployChanges(
       relevantChanges

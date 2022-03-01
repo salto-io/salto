@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Values } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockClient } from '../utils'
 import sortListsFilter from '../../src/filters/sort_lists'
 import { Filter } from '../../src/filter'
@@ -32,6 +33,7 @@ describe('sortListsFilter', () => {
       client,
       paginator,
       config: DEFAULT_CONFIG,
+      elementsSource: buildElementsSourceFromElements([]),
     })
 
     type = new ObjectType({

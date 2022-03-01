@@ -13,13 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeDataType, DeployResult, ElemID, getChangeData, InstanceElement, isAdditionChange } from '@salto-io/adapter-api'
+import { Change, ChangeDataType, DeployResult, ElemID, getChangeData, InstanceElement, isAdditionChange, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { config, deployment, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { resolveChangeElement, safeJsonStringify } from '@salto-io/adapter-utils'
+import { resolveChangeElement, resolveValues, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import JiraClient from '../client/client'
 import { getLookUpName } from '../reference_mapping'
+
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -29,6 +32,7 @@ type DeployChangeParam = {
   apiDefinitions: config.AdapterApiConfig
   fieldsToIgnore?: string[] | ((path: ElemID) => boolean)
   additionalUrlVars?: Record<string, string>
+  elementsSource?: ReadOnlyElementsSource
 }
 
 /**
@@ -40,18 +44,21 @@ export const defaultDeployChange = async ({
   apiDefinitions,
   fieldsToIgnore = [],
   additionalUrlVars,
+  elementsSource,
 }: DeployChangeParam): Promise<
   clientUtils.ResponseValue | clientUtils.ResponseValue[] | undefined
 > => {
   const changeToDeploy = await elementUtils.swagger.flattenAdditionalProperties(
-    await resolveChangeElement(change, getLookUpName)
+    await resolveChangeElement(change, getLookUpName, resolveValues, elementsSource),
+    elementsSource,
   )
   const response = await deployment.deployChange(
     changeToDeploy,
     client,
     apiDefinitions.types[getChangeData(change).elemID.typeName]?.deployRequests,
     fieldsToIgnore,
-    additionalUrlVars
+    additionalUrlVars,
+    elementsSource,
   )
 
   if (isAdditionChange(change)) {
@@ -74,8 +81,8 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
   changes: T[],
   deployChangeFunc: (change: T) => Promise<void>
 ): Promise<DeployResult> => {
-  const result = await Promise.all(
-    changes.map(async change => {
+  const result = await awu(changes)
+    .map(async change => {
       try {
         await deployChangeFunc(change)
         return change
@@ -97,7 +104,7 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
         return err
       }
     })
-  )
+    .toArray()
 
   const [errors, appliedChanges] = _.partition(result, _.isError)
   return {

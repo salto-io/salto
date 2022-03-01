@@ -15,6 +15,7 @@
 */
 import { ElemID, InstanceElement, ListType, ObjectType, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import JiraClient from '../../../src/client/client'
 import { DEFAULT_CONFIG } from '../../../src/config'
 import { JIRA, WORKFLOW_TYPE_NAME } from '../../../src/constants'
@@ -41,6 +42,7 @@ describe('workflowPropertiesFilter', () => {
       client,
       paginator,
       config: DEFAULT_CONFIG,
+      elementsSource: buildElementsSourceFromElements([]),
     }) as typeof filter
   })
 

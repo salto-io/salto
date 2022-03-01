@@ -38,7 +38,9 @@
     "@salto-io/logging": "0.3.11",
     "@salto-io/lowerdash": "0.3.11",
     "joi": "^17.4.0",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "uuid": "^8.3.0",
+    "wu": "^2.1.0"
   },
   "devDependencies": {
     "@salto-io/test-utils": "0.3.11",

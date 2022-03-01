@@ -16,6 +16,7 @@
 import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType, toChange } from '@salto-io/adapter-api'
 import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { JIRA } from '../../src/constants'
 import { mockClient } from '../utils'
 import fieldConfigurationsSchemeFilter from '../../src/filters/field_configurations_scheme'
@@ -47,6 +48,7 @@ describe('field_configurations_scheme', () => {
       client,
       paginator,
       config: DEFAULT_CONFIG,
+      elementsSource: buildElementsSourceFromElements([]),
     })
 
     fieldConfigIssueTypeItemType = new ObjectType({
@@ -154,7 +156,8 @@ describe('field_configurations_scheme', () => {
           expect.any(JiraClient),
           expect.any(Object),
           ['items'],
-          undefined
+          undefined,
+          undefined,
         )
       })
 

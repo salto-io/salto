@@ -15,7 +15,7 @@
 */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { deployment, filterUtils, client as clientUtils } from '@salto-io/adapter-components'
-import { resolveChangeElement } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, resolveChangeElement } from '@salto-io/adapter-utils'
 import { mockClient } from '../../utils'
 import { DEFAULT_CONFIG } from '../../../src/config'
 import { JIRA } from '../../../src/constants'
@@ -58,6 +58,7 @@ describe('deployContextChange', () => {
       client,
       paginator,
       config: DEFAULT_CONFIG,
+      elementsSource: buildElementsSourceFromElements([]),
     }) as typeof filter
 
     contextType = new ObjectType({
@@ -116,6 +117,7 @@ describe('deployContextChange', () => {
         'issueTypeIds',
         'projectIds',
       ],
+      undefined,
       undefined,
     )
   })

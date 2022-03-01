@@ -15,6 +15,7 @@
 */
 import { creds, CredsLease } from '@salto-io/e2e-credentials-store'
 import { logger } from '@salto-io/logging'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import JiraClient from '../src/client/client'
 import JiraAdapter, { JiraAdapterParams } from '../src/adapter'
 import { Credentials } from '../src/auth'
@@ -38,6 +39,7 @@ export const realAdapter = ({ adapterParams, credentials }: Opts, config?: JiraC
   const adapter = new JiraAdapter({
     client,
     config: config ?? DEFAULT_CONFIG,
+    elementsSource: buildElementsSourceFromElements([]),
   })
   return { client, adapter }
 }

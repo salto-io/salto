@@ -16,6 +16,7 @@
 import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType, toChange } from '@salto-io/adapter-api'
 import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { JIRA } from '../../src/constants'
 import { mockClient } from '../utils'
 import issueTypeScreenSchemeFilter from '../../src/filters/issue_type_screen_scheme'
@@ -49,6 +50,7 @@ describe('issueTypeScreenScheme', () => {
       client,
       paginator,
       config: DEFAULT_CONFIG,
+      elementsSource: buildElementsSourceFromElements([]),
     })
     issueTypeScreenSchemeItemType = new ObjectType({
       elemID: new ElemID(JIRA, 'IssueTypeScreenSchemeItem'),
@@ -140,7 +142,8 @@ describe('issueTypeScreenScheme', () => {
           client,
           DEFAULT_CONFIG.apiDefinitions.types.IssueTypeScreenScheme.deployRequests,
           ['issueTypeMappings'],
-          undefined
+          undefined,
+          undefined,
         )
       })
 

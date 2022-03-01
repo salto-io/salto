@@ -136,11 +136,12 @@ const transformWorkflowInstance = (workflowValues: Workflow): void => {
 }
 
 // This filter transforms the workflow values structure so it will fit its deployment endpoint
-const filter: FilterCreator = () => ({
+const filter: FilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]) => {
     const workflowType = findObject(elements, WORKFLOW_TYPE_NAME)
     if (workflowType !== undefined) {
       delete workflowType.fields.id
+      workflowType.fields.operations.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
     }
 
     const workflowStatusType = findObject(elements, 'WorkflowStatus')
@@ -148,7 +149,9 @@ const filter: FilterCreator = () => ({
       log.warn('WorkflowStatus type was not received in fetch')
     } else {
       workflowStatusType.fields.properties = new Field(workflowStatusType, 'properties', new MapType(BuiltinTypes.STRING))
-      workflowStatusType.fields.name.annotations[CORE_ANNOTATIONS.CREATABLE] = true
+      if (config.client.usePrivateAPI) {
+        workflowStatusType.fields.name.annotations[CORE_ANNOTATIONS.CREATABLE] = true
+      }
     }
 
     const workflowRulesType = findObject(elements, WORKFLOW_RULES_TYPE_NAME)

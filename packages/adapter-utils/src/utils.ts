@@ -431,14 +431,20 @@ export type GetLookupNameFunc = (args: GetLookupNameFuncArgs) => Promise<Value>
 
 export type ResolveValuesFunc = <T extends Element>(
   element: T,
-  getLookUpName: GetLookupNameFunc
+  getLookUpName: GetLookupNameFunc,
+  elementsSource?: ReadOnlyElementsSource
 ) => Promise<T>
 
-export const resolveValues: ResolveValuesFunc = async (element, getLookUpName) => {
-  const valuesReplacer: TransformFunc = ({ value, field, path }) => {
+export const resolveValues: ResolveValuesFunc = async (element, getLookUpName, elementsSource) => {
+  const valuesReplacer: TransformFunc = async ({ value, field, path }) => {
     if (isReferenceExpression(value)) {
       return getLookUpName({
-        ref: value,
+        // Make sure the reference here is always resolved
+        ref: value.value === undefined && elementsSource !== undefined ? new ReferenceExpression(
+          value.elemID,
+          await value.getResolvedValue(elementsSource),
+          value.topLevelParent,
+        ) : value,
         field,
         path,
       })
@@ -454,6 +460,7 @@ export const resolveValues: ResolveValuesFunc = async (element, getLookUpName) =
     element,
     transformFunc: valuesReplacer,
     strict: false,
+    elementsSource,
   })
 }
 
@@ -522,9 +529,10 @@ export const resolveChangeElement = <T extends Change<ChangeDataType> = Change<C
   change: T,
   getLookUpName: GetLookupNameFunc,
   resolveValuesFunc = resolveValues,
+  elementsSource?: ReadOnlyElementsSource,
 ): Promise<T> => applyFunctionToChangeData(
     change,
-    changeData => resolveValuesFunc(changeData, getLookUpName)
+    changeData => resolveValuesFunc(changeData, getLookUpName, elementsSource),
   )
 
 export const findElements = (elements: Iterable<Element>, id: ElemID): Iterable<Element> => (

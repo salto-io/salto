@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, Field, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isModificationChange, isRemovalOrModificationChange, ListType, ModificationChange, ObjectType, RemovalChange, Values } from '@salto-io/adapter-api'
+import { ActionName, BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, Field, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isModificationChange, isRemovalOrModificationChange, ListType, ModificationChange, ObjectType, ReadOnlyElementsSource, RemovalChange, Values } from '@salto-io/adapter-api'
 import { elements as elementUtils, client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -122,11 +122,30 @@ const updateSchemeId = async (
   }
 }
 
-const deployWorkflowScheme = async (
+export const preDeployWorkflowScheme = async (
+  instance: InstanceElement,
+  action: ActionName,
+  elementsSource?: ReadOnlyElementsSource
+): Promise<void> => {
+  if (instance.value.items !== undefined) {
+    const resolvedInstance = await resolveValues(instance, getLookUpName, elementsSource)
+    instance.value.issueTypeMappings = _(resolvedInstance.value.items)
+      .keyBy(mapping => mapping.issueType)
+      .mapValues(mapping => mapping.workflow)
+      .value()
+  }
+
+  if (action === 'modify') {
+    instance.value.updateDraftIfNeeded = true
+  }
+}
+
+export const deployWorkflowScheme = async (
   change: Change<InstanceElement>,
   client: JiraClient,
   paginator: clientUtils.Paginator,
   config: JiraConfig,
+  elementsSource?: ReadOnlyElementsSource
 ): Promise<void> => {
   const instance = getChangeData(change)
 
@@ -135,7 +154,7 @@ const deployWorkflowScheme = async (
     await updateSchemeId(change, client, paginator, config)
   }
 
-  const { statusMigrations } = (await resolveValues(instance, getLookUpName)).value
+  const { statusMigrations } = (await resolveValues(instance, getLookUpName, elementsSource)).value
   delete instance.value.statusMigrations
 
   const response = await defaultDeployChange({
@@ -143,6 +162,7 @@ const deployWorkflowScheme = async (
     client,
     apiDefinitions: config.apiDefinitions,
     fieldsToIgnore: ['items'],
+    elementsSource,
   })
 
   if (isModificationChange(change) && !Array.isArray(response) && response?.draft) {
@@ -240,20 +260,9 @@ const filter: FilterCreator = ({ config, client, paginator }) => ({
       .forEach(change => applyFunctionToChangeData<Change<InstanceElement>>(
         change,
         async instance => {
-          if (instance.value.items !== undefined) {
-            const resolvedInstance = await resolveValues(instance, getLookUpName)
-            instance.value.issueTypeMappings = _(resolvedInstance.value.items)
-              .keyBy(mapping => mapping.issueType)
-              .mapValues(mapping => mapping.workflow)
-              .value()
-          }
-
-          if (isModificationChange(change)) {
-            instance.value.updateDraftIfNeeded = true
-          }
-
+          await preDeployWorkflowScheme(instance, change.action)
           return instance
-        }
+        },
       ))
   ),
 

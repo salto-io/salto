@@ -15,6 +15,7 @@
 */
 import { ElemID, getChangeData, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { deployment, filterUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 import JiraClient from '../../../src/client/client'
 import { DEFAULT_CONFIG } from '../../../src/config'
@@ -50,6 +51,7 @@ describe('workflowDeployFilter', () => {
       client,
       paginator,
       config: DEFAULT_CONFIG,
+      elementsSource: buildElementsSourceFromElements([]),
     }) as typeof filter
   })
 
@@ -110,7 +112,8 @@ describe('workflowDeployFilter', () => {
         client,
         DEFAULT_CONFIG.apiDefinitions.types.Workflow.deployRequests,
         expect.toBeFunction(),
-        undefined
+        undefined,
+        undefined,
       )
     })
 
@@ -140,7 +143,8 @@ describe('workflowDeployFilter', () => {
         client,
         DEFAULT_CONFIG.apiDefinitions.types.Workflow.deployRequests,
         expect.toBeFunction(),
-        undefined
+        undefined,
+        undefined,
       )
     })
 
@@ -180,7 +184,8 @@ describe('workflowDeployFilter', () => {
         client,
         DEFAULT_CONFIG.apiDefinitions.types.Workflow.deployRequests,
         expect.toBeFunction(),
-        undefined
+        undefined,
+        undefined,
       )
     })
 

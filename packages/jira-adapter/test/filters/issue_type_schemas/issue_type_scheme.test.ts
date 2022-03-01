@@ -16,6 +16,7 @@
 import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType, toChange } from '@salto-io/adapter-api'
 import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { ISSUE_TYPE_SCHEMA_NAME, JIRA } from '../../../src/constants'
 import { mockClient } from '../../utils'
 import issueTypeSchemeFilter from '../../../src/filters/issue_type_schemas/issue_type_scheme'
@@ -46,6 +47,7 @@ describe('issueTypeScheme', () => {
       client,
       paginator,
       config: DEFAULT_CONFIG,
+      elementsSource: buildElementsSourceFromElements([]),
     })
     type = new ObjectType({
       elemID: new ElemID(JIRA, ISSUE_TYPE_SCHEMA_NAME),
@@ -113,7 +115,8 @@ describe('issueTypeScheme', () => {
           expect.any(JiraClient),
           expect.any(Object),
           ['issueTypeIds'],
-          undefined
+          undefined,
+          undefined,
         )
       })
 
@@ -179,7 +182,8 @@ describe('issueTypeScheme', () => {
           expect.any(JiraClient),
           expect.any(Object),
           [],
-          undefined
+          undefined,
+          undefined,
         )
       })
 

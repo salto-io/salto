@@ -15,6 +15,7 @@
 */
 import { InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import referenceBySelfLinkFilter from '../../src/filters/references_by_self_link'
 import { mockInstances, mockTypes } from '../mock_elements'
 import { mockClient, getDefaultAdapterConfig } from '../utils'
@@ -29,6 +30,7 @@ describe('referenceBySelfLinkFilter', () => {
       config: {
         ...await getDefaultAdapterConfig(),
       },
+      elementsSource: buildElementsSourceFromElements([]),
     }) as typeof filter
   })
 

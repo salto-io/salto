@@ -17,6 +17,7 @@ import { ElemID, ElemIdGetter, InstanceElement, ObjectType } from '@salto-io/ada
 import { filterUtils } from '@salto-io/adapter-components'
 import { mockFunction } from '@salto-io/test-utils'
 import _ from 'lodash'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockClient } from '../../utils'
 import { DEFAULT_CONFIG, JiraConfig } from '../../../src/config'
 import { JIRA } from '../../../src/constants'
@@ -39,6 +40,7 @@ describe('field_name_filter', () => {
       paginator,
       config,
       getElemIdFunc: elemIdGetter,
+      elementsSource: buildElementsSourceFromElements([]),
     }) as typeof filter
 
     fieldType = new ObjectType({
@@ -128,6 +130,7 @@ describe('field_name_filter', () => {
       client,
       paginator,
       config,
+      elementsSource: buildElementsSourceFromElements([]),
     }) as typeof filter
 
     const custom = new InstanceElement(

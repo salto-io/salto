@@ -17,6 +17,7 @@ import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ObjectT
 import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { JIRA } from '../../src/constants'
 import { mockClient } from '../utils'
 import workflowSchemeFilter, { MAX_TASK_CHECKS } from '../../src/filters/workflow_scheme'
@@ -49,6 +50,7 @@ describe('workflowScheme', () => {
       client,
       paginator,
       config: DEFAULT_CONFIG,
+      elementsSource: buildElementsSourceFromElements([]),
     })
     workflowSchemeType = new ObjectType({
       elemID: new ElemID(JIRA, 'WorkflowScheme'),
@@ -201,7 +203,8 @@ describe('workflowScheme', () => {
         client,
         DEFAULT_CONFIG.apiDefinitions.types.WorkflowScheme.deployRequests,
         ['items'],
-        undefined
+        undefined,
+        undefined,
       )
     })
 
@@ -254,7 +257,8 @@ describe('workflowScheme', () => {
         client,
         DEFAULT_CONFIG.apiDefinitions.types.WorkflowScheme.deployRequests,
         ['items'],
-        undefined
+        undefined,
+        undefined,
       )
 
       expect(connection.post).toHaveBeenCalledWith(
@@ -332,7 +336,8 @@ describe('workflowScheme', () => {
         client,
         DEFAULT_CONFIG.apiDefinitions.types.WorkflowScheme.deployRequests,
         ['items'],
-        undefined
+        undefined,
+        undefined,
       )
 
 
@@ -392,7 +397,8 @@ describe('workflowScheme', () => {
         client,
         DEFAULT_CONFIG.apiDefinitions.types.WorkflowScheme.deployRequests,
         ['items'],
-        undefined
+        undefined,
+        undefined,
       )
 
       expect(connection.get).toHaveBeenCalledWith(
@@ -458,7 +464,8 @@ describe('workflowScheme', () => {
         client,
         DEFAULT_CONFIG.apiDefinitions.types.WorkflowScheme.deployRequests,
         ['items'],
-        undefined
+        undefined,
+        undefined,
       )
 
       expect(instance.value.statusMigrations).toBeUndefined()

@@ -15,6 +15,7 @@
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockClient } from '../../utils'
 import statusDeploymentFilter from '../../../src/filters/statuses/status_deployment'
 import { Filter } from '../../../src/filter'
@@ -43,6 +44,7 @@ describe('statusDeploymentFilter', () => {
       client,
       paginator,
       config,
+      elementsSource: buildElementsSourceFromElements([]),
     })
 
     type = new ObjectType({

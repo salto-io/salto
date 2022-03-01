@@ -17,6 +17,7 @@ import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockClient } from '../../utils'
 import missingStatusesFilter from '../../../src/filters/statuses/missing_statuses'
 import { Filter } from '../../../src/filter'
@@ -39,6 +40,7 @@ describe('missingStatusesFilter', () => {
       client,
       paginator,
       config,
+      elementsSource: buildElementsSourceFromElements([]),
     })
 
     type = new ObjectType({

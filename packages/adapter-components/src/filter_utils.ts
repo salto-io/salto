@@ -23,22 +23,24 @@ export type FilterWith<
   M extends keyof Filter, TResult extends void | filter.FilterResult = void
 > = filter.FilterWith<TResult, M>
 
-export type FilterOpts<TClient, TContext> = {
+export type FilterOpts<TClient, TContext, TAdditional={}> = {
   client: TClient
   paginator: Paginator
   config: TContext
   getElemIdFunc?: ElemIdGetter
-}
+} & TAdditional
 
 export type FilterCreator<
-  TClient, TContext, TResult extends void | filter.FilterResult = void
+  TClient, TContext, TResult extends void | filter.FilterResult = void, TAdditional={}
 > = filter.FilterCreator<
   TResult,
-  FilterOpts<TClient, TContext>
+  FilterOpts<TClient, TContext, TAdditional>
 >
 
-export const filtersRunner = <TClient, TContext, TResult extends void | filter.FilterResult = void>(
-  opts: FilterOpts<TClient, TContext>,
-  filterCreators: ReadonlyArray<FilterCreator<TClient, TContext, TResult>>,
-  onFetchAggregator: (results: TResult[]) => TResult | void = () => undefined,
-): Required<Filter<TResult>> => filter.filtersRunner(opts, filterCreators, onFetchAggregator)
+export const filtersRunner = <
+  TClient, TContext, TResult extends void | filter.FilterResult = void, TAdditional={}
+>(
+    opts: FilterOpts<TClient, TContext, TAdditional>,
+    filterCreators: ReadonlyArray<FilterCreator<TClient, TContext, TResult, TAdditional>>,
+    onFetchAggregator: (results: TResult[]) => TResult | void = () => undefined,
+  ): Required<Filter<TResult>> => filter.filtersRunner(opts, filterCreators, onFetchAggregator)

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter } from '@salto-io/adapter-api'
+import { FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -47,6 +47,7 @@ import workflowPropertiesFilter from './filters/workflow/workflow_properties_fil
 import transitionIdsFilter from './filters/workflow/transition_ids_filter'
 import stepIdsFilter from './filters/workflow/step_ids_filter'
 import workflowDeployFilter from './filters/workflow/workflow_deploy_filter'
+import workflowModificationFilter from './filters/workflow/workflow_modification_filter'
 import triggersFilter from './filters/workflow/triggers_filter'
 import workflowSchemeFilter from './filters/workflow_scheme'
 import duplicateIdsFilter from './filters/duplicate_ids'
@@ -65,6 +66,7 @@ import userFilter from './filters/user'
 import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
+import { getChangeGroupIds } from './group_change'
 
 const {
   generateTypes,
@@ -96,6 +98,7 @@ export const DEFAULT_FILTERS = [
   triggersFilter,
   workflowPropertiesFilter,
   workflowDeployFilter,
+  workflowModificationFilter,
   workflowSchemeFilter,
   issueTypeSchemeReferences,
   issueTypeSchemeFilter,
@@ -131,6 +134,7 @@ export interface JiraAdapterParams {
   client: JiraClient
   config: JiraConfig
   getElemIdFunc?: ElemIdGetter
+  elementsSource: ReadOnlyElementsSource
 }
 
 type AdapterSwaggers = {
@@ -150,6 +154,7 @@ export default class JiraAdapter implements AdapterOperations {
     client,
     getElemIdFunc,
     config,
+    elementsSource,
   }: JiraAdapterParams) {
     this.userConfig = config
     this.getElemIdFunc = getElemIdFunc
@@ -167,6 +172,7 @@ export default class JiraAdapter implements AdapterOperations {
           paginator,
           config,
           getElemIdFunc,
+          elementsSource,
         },
         filterCreators,
         objects.concatObjects
@@ -289,6 +295,7 @@ export default class JiraAdapter implements AdapterOperations {
     return {
       changeValidator: changeValidator(this.client, this.userConfig),
       dependencyChanger,
+      getChangeGroupIds,
     }
   }
 }

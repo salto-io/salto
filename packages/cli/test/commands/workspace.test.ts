@@ -103,7 +103,7 @@ describe('workspace command group', () => {
           },
           workspace: mocks.mockWorkspace({}),
         })).toBe(CliExitCode.Success)
-        expect(callbacks.getUserBooleanInput).toHaveBeenCalledWith('Do you want to perform these actions?')
+        expect(callbacks.getUserBooleanInput).toHaveBeenCalledWith('Do you want to deploy?')
         expect(output.stdout.content.search('Canceling...')).toBeGreaterThan(0)
       })
       it('should fail if trying to clean static resources without all dependent components', async () => {

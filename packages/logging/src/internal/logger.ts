@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { format } from 'util'
 import { collections } from '@salto-io/lowerdash'
 import {
   Namespace,
@@ -23,6 +24,7 @@ import {
 import { LOG_LEVELS, LogLevel } from './level'
 import { Config, mergeConfigs, NamespaceFilter, stringToNamespaceFilter } from './config'
 import { LogTags } from './log-tags'
+import { LogTimeMiddleWare } from './log-time-middleware'
 
 export type LogMethod = (message: string | Error, ...args: unknown[]) => void
 
@@ -51,6 +53,7 @@ type HasLoggerFuncs = {
 export type Logger = BaseLogger & GlobalTags & HasLoggerFuncs & {
   readonly namespace: Namespace
   readonly time: <T>(inner: () => T, desc: string, ...descArgs: unknown[]) => T
+  assignGlobalLogTimeMiddleWare:<T> (middleware: LogTimeMiddleWare<T>) => void
 }
 
 type ResolvedConfig = Omit<Config, 'namespaceFilter'> & {
@@ -65,23 +68,21 @@ export const resolveConfig = (c: Config): ResolvedConfig => ({
 })
 
 function timeMethod<T>(
-  this: BaseLogger, inner: () => T, desc: string, ...descArgs: unknown[]
-): T
-
-function timeMethod<T>(
-  this: BaseLogger, inner: () => Promise<T>, desc: string, ...descArgs: unknown[]
-): Promise<T>
-
-function timeMethod<T>(
   this: BaseLogger, inner: () => T| Promise<T>, desc: string, ...descArgs: unknown[]
 ): T | Promise<T> {
   const before = Date.now()
+  const formattedDescription = format(desc, ...descArgs)
   const logDuration = (): void => {
-    this.log('debug', `${desc} took %o ms`, ...descArgs, Date.now() - before)
+    this.log('debug', `${formattedDescription} took %o ms`, Date.now() - before)
   }
 
-  this.log('debug', `${desc} starting`, ...descArgs)
-  const result = inner()
+  this.log('debug', `${formattedDescription} starting`)
+  let result: T | Promise<T>
+  if (global.globalLogTimeMiddleware) {
+    result = global.globalLogTimeMiddleware(inner, formattedDescription)
+  } else {
+    result = inner()
+  }
   if (result instanceof Promise) {
     return result.finally(logDuration)
   }
@@ -106,6 +107,12 @@ export const logger = (
 
   return addLogMethods(Object.assign(baseLogger, {
     namespace,
+    assignGlobalLogTimeMiddleWare: <T> (middleware: LogTimeMiddleWare<T>) => {
+      // TODO: Fix this horrendous type catastrophoe
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      global.globalLogTimeMiddleware = middleware
+    },
     log: (level: LogLevel, ...rest: Parameters<LogMethod>): void => {
       const { minLevel, namespaceFilter } = configGetter()
       if (minLevel === 'none' || !namespaceFilter(namespace)) {

@@ -201,6 +201,13 @@ const throwOnMissingSuiteAppLoginCreds = (credentials: Credentials): void => {
 const netsuiteCredentialsFromCredentials = (
   credsInstance: Readonly<InstanceElement>
 ): Credentials => {
+  const throwOnInvalidAccountId = (credentials: Credentials): void => {
+    const accountIdHasWhitespaceChar = /\s/g.test(credentials.accountId)
+    if (credentials.accountId.length === 0 || accountIdHasWhitespaceChar) {
+      throw Error(`received an invalid accountId value: (${credsInstance.value.accountId}). The accountId should not be empty nor contain whitespaces`)
+    }
+  }
+
   const credentials = {
     accountId: toCredentialsAccountId(credsInstance.value.accountId),
     tokenId: credsInstance.value.tokenId,
@@ -209,6 +216,7 @@ const netsuiteCredentialsFromCredentials = (
     suiteAppTokenSecret: credsInstance.value.suiteAppTokenSecret === '' ? undefined : credsInstance.value.suiteAppTokenSecret,
     suiteAppActivationKey: credsInstance.value.suiteAppActivationKey,
   }
+  throwOnInvalidAccountId(credentials)
   throwOnMissingSuiteAppLoginCreds(credentials)
   return credentials
 }

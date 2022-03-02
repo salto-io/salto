@@ -16,6 +16,7 @@
 import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import { FileProperties } from 'jsforce-types'
 import { logger } from '@salto-io/logging'
+import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { VALIDATION_RULES_METADATA_TYPE } from '../../constants'
 import { getAuthorAnnotations } from '../../transformers/transformer'
@@ -44,7 +45,7 @@ const fetchAllValidationRules = async (
   client: SalesforceClient
 ): Promise<Record<string, FileProperties>> => {
   const allRules = await getValidationRulesFileProperties(client)
-  return Object.fromEntries(allRules.map(fileProp => [fileProp.fullName, fileProp]))
+  return _.keyBy(allRules, 'fullName')
 }
 
 export const WARNING_MESSAGE = 'Encountered an error while trying to populate author information in some of the Salesforce configuration elements.'

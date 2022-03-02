@@ -57,7 +57,6 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
     it.each([
       'stripe.country_specs',
       'stripe.coupons',
-      'stripe.prices',
       'stripe.products',
       'stripe.reporting__report_types',
       'stripe.tax_rates',
@@ -67,7 +66,6 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
       'stripe.reporting_report_type',
       'stripe.country_spec',
       'stripe.coupon',
-      'stripe.plan',
       'stripe.tax_rate',
       'stripe.webhook_endpoint',
       'stripe.product_metadata',
@@ -79,9 +77,6 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
       'stripe.country_spec_verification_fields',
       'stripe.coupon_applies_to',
       'stripe.coupon_metadata',
-      'stripe.plan_metadata',
-      'stripe.plan_tier',
-      'stripe.transform_usage',
       'stripe.tax_rate_metadata',
       'stripe.webhook_endpoint_metadata',
     ])(

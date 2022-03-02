@@ -33,6 +33,7 @@ import customObjectsSplitFilter from './filters/custom_object_split'
 import customObjectAuthorFilter from './filters/author_information/custom_objects'
 import dataInstancesAuthorFilter from './filters/author_information/data_instances'
 import sharingRulesAuthorFilter from './filters/author_information/sharing_rules'
+import validationRulesAuthorFilter from './filters/author_information/validation_rules'
 import profileInstanceSplitFilter from './filters/profile_instance_split'
 import customObjectsInstancesFilter from './filters/custom_objects_instances'
 import profilePermissionsFilter from './filters/profile_permissions'
@@ -122,6 +123,7 @@ export const DEFAULT_FILTERS = [
   customObjectAuthorFilter,
   dataInstancesAuthorFilter,
   sharingRulesAuthorFilter,
+  validationRulesAuthorFilter,
   hideReadOnlyValuesFilter,
   // The following filters should remain last in order to make sure they fix all elements
   convertListsFilter,

@@ -271,8 +271,10 @@ export const formatChangeErrors = (
 export const formatDeployActions = ({
   wsChangeErrors,
   isPreDeploy,
-}: {wsChangeErrors: ReadonlyArray<ChangeWorkspaceError | ChangeError>
-  isPreDeploy: boolean }): string[] => {
+}: {
+  wsChangeErrors: ReadonlyArray<ChangeWorkspaceError | ChangeError>
+  isPreDeploy: boolean
+}): string[] => {
   const deployActions = _(wsChangeErrors)
     .uniqBy(wsError => wsError.message)
     .map(wsError => (isPreDeploy

@@ -26,7 +26,7 @@ const getCpqError = (
 ): ChangeError => ({
   elemID,
   severity: 'Info',
-  message: 'CPQ changes detected',
+  message: 'CPQ data changes detected',
   detailedMessage: '',
   deployActions: {
     preAction: {

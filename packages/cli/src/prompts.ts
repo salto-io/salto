@@ -55,7 +55,6 @@ export default class Prompts {
   public static readonly PLAN_STEPS_HEADER_DEPLOY = 'Salto will perform the following actions:'
   public static readonly PLAN_STEPS_HEADER_PREVIEW = 'Salto has calculated the following deployment plan:'
   public static readonly PLAN_CHANGE_ERRS_HEADER = 'Please review the following messages; changes with errors will not be deployed.'
-  // TODO: what message should be the header here?
   public static readonly DEPLOY_PRE_ACTION_HEADER = 'Before continuing to deploy, please perform the following actions:'
   public static readonly DEPLOY_POST_ACTION_HEADER = 'Some actions may be required following the completion of this deployment, please perform the following actions:'
 

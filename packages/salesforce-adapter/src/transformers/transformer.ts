@@ -1049,7 +1049,7 @@ const convertXsdTypeFuncMap: Record<string, ConvertXsdTypeFunc> = {
 // Salesforce returns nulls in metadata API as objects like { $: { 'xsi:nil': 'true' } }
 // and in retrieve API like <activateRSS xsi:nil="true"/>
 // which is transformed to { `${XML_ATTRIBUTE_PREFIX}xsi:nil`): 'true' }
-const isNull = (value: Value): boolean =>
+export const isNull = (value: Value): boolean =>
   _.isNull(value) || (_.isObject(value)
     && (_.get(value, ['$', 'xsi:nil']) === 'true'
       || _.get(value, `${XML_ATTRIBUTE_PREFIX}xsi:nil`) === 'true'))

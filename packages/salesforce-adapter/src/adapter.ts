@@ -68,6 +68,7 @@ import valueToStaticFileFilter from './filters/value_to_static_file'
 import convertMapsFilter from './filters/convert_maps'
 import elementsUrlFilter from './filters/elements_url'
 import territoryFilter from './filters/territory'
+import customMetadataRecordsFilter from './filters/custom_metadata'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { FilterCreator, Filter, FilterResult } from './filter'
@@ -99,6 +100,7 @@ export const DEFAULT_FILTERS = [
   removeRestrictionAnnotationsFilter,
   // addMissingIdsFilter should run after customObjectsFilter
   addMissingIdsFilter,
+  customMetadataRecordsFilter,
   layoutFilter,
   // profilePermissionsFilter depends on layoutFilter because layoutFilter
   // changes ElemIDs that the profile references
@@ -191,6 +193,7 @@ const metadataToRetrieveAndDeploy = [
   'AuraDefinitionBundle', // Has several fields with base64Binary encoded content
   'Certificate', // contains encoded zip content
   'ContentAsset', // contains encoded zip content
+  'CustomMetadata', // For the XML attributes
   'Dashboard', // contains encoded zip content, is under a folder
   'DashboardFolder',
   'Document', // contains encoded zip content, is under a folder

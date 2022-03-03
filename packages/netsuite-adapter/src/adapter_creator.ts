@@ -202,9 +202,9 @@ const netsuiteCredentialsFromCredentials = (
   credsInstance: Readonly<InstanceElement>
 ): Credentials => {
   const throwOnInvalidAccountId = (credentials: Credentials): void => {
-    const accountIdHasWhitespaceChar = /\s/g.test(credentials.accountId)
-    if (credentials.accountId.length === 0 || accountIdHasWhitespaceChar) {
-      throw Error(`received an invalid accountId value: (${credsInstance.value.accountId}). The accountId should not be empty nor contain whitespaces`)
+    const isValidAccountIdFormat = /^[A-Za-z0-9_\\-]+$/.test(credentials.accountId)
+    if (!isValidAccountIdFormat) {
+      throw Error(`received an invalid accountId value: (${credsInstance.value.accountId}). The accountId must be composed only from alphanumeric, '_' and '-' characters`)
     }
   }
 

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange, SaltoErrorSeverity } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { STATUS_TYPE_NAME } from '../constants'
 
@@ -28,7 +28,7 @@ export const statusValidator: ChangeValidator = async changes => (
     .filter(instance => instance.value.statusCategory === undefined)
     .map(async instance => ({
       elemID: instance.elemID,
-      severity: 'Error' as SaltoErrorSeverity,
+      severity: 'Error' as SeverityLevel,
       message: 'statusCategory is required in order to deploy statuses',
       detailedMessage: `The status ${instance.elemID.getFullName()} is missing statusCategory`,
     }))

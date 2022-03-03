@@ -639,12 +639,48 @@ export const preview = (): Plan => {
     ],
   )
   result.addNode(_.uniqueId('instance'), [], instancePlanItem)
-  const changeErrors = [{
-    elemID: new ElemID('salesforce', 'test'),
-    severity: 'Error',
-    message: 'Message key for test',
-    detailedMessage: 'Validation message',
-  }]
+  const changeErrors = [
+    {
+      elemID: new ElemID('salesforce', 'test'),
+      severity: 'Error',
+      message: 'Message key for test',
+      detailedMessage: 'Validation message',
+    },
+    {
+      elemID: new ElemID('salesforce', 'test2'),
+      severity: 'Info',
+      message: 'Info message',
+      detailedMessage: 'detailed Info message',
+      deployActions: {
+        preAction: {
+          title: 'preDeployAction',
+          description: 'description',
+          subActions: ['first subtext', 'second subtext'],
+          documentationURL: 'someURL',
+        },
+        postAction: {
+          title: 'postDeployAction',
+          subActions: ['third subtext', 'fourth subtext'],
+        },
+      },
+    },
+    {
+      elemID: new ElemID('salesforce', 'test3'),
+      severity: 'Warning',
+      message: 'Warning message',
+      detailedMessage: 'detailed Warning message',
+      deployActions: {
+        preAction: {
+          title: 'preDeployAction2',
+          subActions: ['first subtext2', 'second subtext2'],
+        },
+        postAction: {
+          title: 'postDeployAction2',
+          subActions: ['third subtext2', 'fourth subtext2'],
+        },
+      },
+    },
+  ]
   Object.assign(result, {
     itemsByEvalOrder(): Iterable<PlanItem> {
       return [leadPlanItem, accountPlanItem, activityPlanItem, instancePlanItem]

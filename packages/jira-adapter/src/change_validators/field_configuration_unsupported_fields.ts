@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ChangeValidator, compareSpecialValues, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isReferenceExpression, ModificationChange, SaltoErrorSeverity, Values } from '@salto-io/adapter-api'
+import { ChangeValidator, compareSpecialValues, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isReferenceExpression, ModificationChange, SeverityLevel, Values } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 
 const getFieldNaclRepr = (field: Values): string => (
@@ -55,7 +55,7 @@ export const unsupportedFieldConfigurationsValidator: ChangeValidator = async ch
       if (unsupportedIds.length !== 0) {
         return {
           elemID,
-          severity: 'Warning' as SaltoErrorSeverity,
+          severity: 'Warning' as SeverityLevel,
           message: `Salto can't deploy fields configuration of ${elemID.getFullName()} because they are locked`,
           detailedMessage: `Salto can't deploy the configuration of fields: ${unsupportedIds.join(', ')} because they are locked. If continuing, they will be omitted from the deployment`,
         }

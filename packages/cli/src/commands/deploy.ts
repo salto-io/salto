@@ -23,7 +23,7 @@ import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_build
 import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts } from './common/accounts'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { outputLine, errorOutputLine } from '../outputer'
-import { header, formatExecutionPlan, deployPhaseHeader, cancelDeployOutput, formatItemDone, formatItemError, formatCancelAction, formatActionInProgress, formatActionStart, deployPhaseEpilogue, formatStateRecencies } from '../formatter'
+import { header, formatExecutionPlan, deployPhaseHeader, cancelDeployOutput, formatItemDone, formatItemError, formatCancelAction, formatActionInProgress, formatActionStart, deployPhaseEpilogue, formatStateRecencies, formatDeployActions } from '../formatter'
 import Prompts from '../prompts'
 import { getUserBooleanInput } from '../callbacks'
 import { getWorkspaceTelemetryTags, updateWorkspace, isValidWorkspaceForCommand, shouldRecommendFetch } from '../workspace/workspace'
@@ -46,7 +46,8 @@ const printPlan = async (
   detailedPlan: boolean,
 ): Promise<void> => {
   const planWorkspaceErrors = await promises.array.withLimitedConcurrency(
-    actions.changeErrors.map(ce => () => workspace.transformToWorkspaceError(ce)),
+    actions.changeErrors
+      .map(ce => () => workspace.transformToWorkspaceError(ce)),
     20,
   )
   outputLine(header(Prompts.PLAN_STEPS_HEADER_DEPLOY), output)
@@ -221,6 +222,13 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
       cliExitCode = CliExitCode.AppError
     }
   }
+  const postDeployActionsOutput = formatDeployActions(
+    {
+      wsChangeErrors: actionPlan.changeErrors,
+      isPreDeploy: false,
+    }
+  )
+  outputLine(postDeployActionsOutput.join('\n'), output)
   return cliExitCode
 }
 

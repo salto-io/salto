@@ -26,7 +26,7 @@ import {
 import { Plan, PlanItem, FetchChange, FetchResult, LocalChange, getSupportedServiceAdapterNames } from '@salto-io/core'
 import { errors, SourceFragment, parser, WorkspaceComponents, StateRecency } from '@salto-io/workspace'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import Prompts from './prompts'
 
 const { awu } = collections.asynciterable
@@ -248,6 +248,9 @@ export const formatChangeErrors = (
   const formatGroupedChangeErrors = (groupedChangeErrors: ChangeWorkspaceError[]): string => {
     const errorsIndent = 2
     const firstErr: ChangeWorkspaceError = groupedChangeErrors[0]
+    if (firstErr.detailedMessage === '') {
+      return ''
+    }
     if (groupedChangeErrors.length > 1) {
       return indent(`${firstErr.severity}: ${formatError(firstErr)} (${groupedChangeErrors.length} Elements)`,
         errorsIndent)
@@ -265,6 +268,36 @@ export const formatChangeErrors = (
   return ret
 }
 
+export const formatDeployActions = ({
+  wsChangeErrors,
+  isPreDeploy,
+}: {
+  wsChangeErrors: ReadonlyArray<ChangeWorkspaceError | ChangeError>
+  isPreDeploy: boolean
+}): string[] => {
+  const deployActions = _(wsChangeErrors)
+    .uniqBy(wsError => wsError.message)
+    .map(wsError => (isPreDeploy
+      ? wsError.deployActions?.preAction
+      : wsError.deployActions?.postAction))
+    .filter(values.isDefined)
+    .value()
+  if (_.isEmpty(deployActions)) {
+    return []
+  }
+  return [emptyLine(),
+    header(isPreDeploy ? Prompts.DEPLOY_PRE_ACTION_HEADER : Prompts.DEPLOY_POST_ACTION_HEADER),
+    emptyLine(),
+    ...deployActions.flatMap(deployAction => [
+      header(deployAction.title),
+      deployAction.description ?? '',
+      ...deployAction.subActions.map(action => indent(`- ${action}`, 1)),
+      deployAction.documentationURL ?? '',
+    ]),
+    emptyLine(),
+  ]
+}
+
 export const formatExecutionPlan = async (
   plan: Plan,
   workspaceErrors: ReadonlyArray<ChangeWorkspaceError>,
@@ -272,6 +305,12 @@ export const formatExecutionPlan = async (
 ): Promise<string> => {
   const formattedPlanChangeErrors: string = formatChangeErrors(
     workspaceErrors
+  )
+  const preDeployCallToActions: string[] = formatDeployActions(
+    {
+      wsChangeErrors: workspaceErrors,
+      isPreDeploy: true,
+    }
   )
   const planErrorsOutput: string[] = _.isEmpty(formattedPlanChangeErrors)
     ? [emptyLine()]
@@ -296,6 +335,7 @@ export const formatExecutionPlan = async (
     planSteps,
     ...planErrorsOutput,
     emptyLine(),
+    ...preDeployCallToActions,
     subHeader(Prompts.EXPLAIN_PREVIEW_RESULT),
     actionCount,
     emptyLine(),

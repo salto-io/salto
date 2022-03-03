@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, Element, ElemID, SaltoErrorSeverity, isReferenceExpression } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, Element, ElemID, SeverityLevel, isReferenceExpression } from '@salto-io/adapter-api'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { values, collections } from '@salto-io/lowerdash'
 import { expressions } from '@salto-io/workspace'
@@ -44,7 +44,7 @@ export const changeValidator: ChangeValidator = async changes => (
       }
       return ({
         elemID: element.elemID,
-        severity: 'Error' as SaltoErrorSeverity,
+        severity: 'Error' as SeverityLevel,
         message: 'Element has unresolved references',
         detailedMessage: `Element ${element.elemID.getFullName()} contains unresolved references: ${unresolvedReferences.map(e => e.getFullName()).join(', ')}`,
       })

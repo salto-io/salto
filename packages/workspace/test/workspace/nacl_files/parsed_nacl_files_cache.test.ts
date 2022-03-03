@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, Value, SaltoErrorSeverity } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, Value, SeverityLevel } from '@salto-io/adapter-api'
 import { ParsedNaclFile } from '../../../src/workspace/nacl_files'
 import { InMemoryRemoteMap, CreateRemoteMapParams, RemoteMap } from '../../../src/workspace/remote_map'
 import { createParseResultCache, ParsedNaclFileCache } from '../../../src/workspace/nacl_files/parsed_nacl_files_cache'
@@ -477,14 +477,14 @@ describe('ParsedNaclFileCache', () => {
   describe('getAllErrors', () => {
     const errorA = {
       message: 'MessageA',
-      severity: 'Warning' as SaltoErrorSeverity,
+      severity: 'Warning' as SeverityLevel,
       summary: 'summary',
       subject: mockSourceRange,
       context: mockSourceRange,
     }
     const errorB = {
       message: 'MessageB',
-      severity: 'Warning' as SaltoErrorSeverity,
+      severity: 'Warning' as SeverityLevel,
       summary: 'summary',
       subject: mockSourceRange,
       context: mockSourceRange,

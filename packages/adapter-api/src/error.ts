@@ -15,13 +15,13 @@
 */
 import { ElemID } from './element_id'
 
-export type SaltoErrorSeverity = 'Error' | 'Warning'
+export type SeverityLevel = 'Error' | 'Warning' | 'Info'
 
 export type SaltoErrorSource = 'config'
 
 export type SaltoError = {
     message: string
-    severity: SaltoErrorSeverity
+    severity: SeverityLevel
     source?: SaltoErrorSource
 }
 

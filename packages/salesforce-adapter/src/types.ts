@@ -75,6 +75,7 @@ export type ChangeValidatorName = (
   | 'multipleDefaults'
   | 'picklistPromote'
   | 'validateOnlyFlag'
+  | 'cpqValidator'
 )
 export type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -470,6 +471,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     multipleDefaults: { refType: BuiltinTypes.BOOLEAN },
     picklistPromote: { refType: BuiltinTypes.BOOLEAN },
     validateOnlyFlag: { refType: BuiltinTypes.BOOLEAN },
+    cpqValidator: { refType: BuiltinTypes.BOOLEAN },
   },
 })
 

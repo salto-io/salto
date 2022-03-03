@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  Change, ChangeError, getChangeData, InstanceElement, isInstanceElement, SaltoErrorSeverity,
+  Change, ChangeError, getChangeData, InstanceElement, isInstanceElement, SeverityLevel,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { findDependingInstancesFromRefs } from '../reference_dependencies'
@@ -52,7 +52,7 @@ export const validateDependsOnInvalidElement = async (
     .filter(isInvalid)
     .map(instance => ({
       elemID: instance.elemID,
-      severity: 'Error' as SaltoErrorSeverity,
+      severity: 'Error' as SeverityLevel,
       message: 'Depends on an element that has errors',
       detailedMessage: `(${instance.elemID.getFullName()}) depends on an element that has errors`,
     }))

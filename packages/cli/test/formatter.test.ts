@@ -57,12 +57,38 @@ describe('formatter', () => {
     sourceFragments: [],
     severity: 'Error',
   }
+  const workspaceErrorWithPreDeployAction: ChangeError = {
+    elemID: new ElemID('salesforce', 'TestType'),
+    message: 'This is my error',
+    detailedMessage: 'This is my detailed message',
+    severity: 'Info',
+    deployActions: {
+      preAction: {
+        title: 'This is my title',
+        subActions: [
+          'first subtext',
+          'second subtext',
+        ],
+      },
+    },
+  }
+  const workspaceErrorWithInfoSeverity: ChangeError = {
+    elemID: new ElemID('salesforce', 'TestType'),
+    message: 'my Info message',
+    detailedMessage: '',
+    severity: 'Info',
+  }
 
   describe('createPlanOutput', () => {
     const plan = preview()
+    const changeErrors = [
+      ...plan.changeErrors,
+      workspaceErrorWithPreDeployAction,
+      workspaceErrorWithInfoSeverity,
+    ]
     let output: string
     beforeAll(async () => {
-      output = await formatExecutionPlan(plan, plan.changeErrors.map(ce => ({
+      output = await formatExecutionPlan(plan, changeErrors.map(ce => ({
         ...ce,
         sourceFragments: workspaceErrorWithSourceFragments.sourceFragments,
       })))
@@ -79,6 +105,21 @@ describe('formatter', () => {
     })
     it('should return the number of impacted types and instances', () => {
       expect(output).toMatch(`${chalk.bold('Impacts:')} 3 types and 1 instance.`)
+    })
+    it('should return pre deploy action suggestions', () => {
+      expect(output).toMatch(`${chalk.bold(Prompts.DEPLOY_PRE_ACTION_HEADER)}`)
+      expect(output).toMatch(`${chalk.bold('This is my title')}`)
+      expect(output).toMatch(/description.*first subtext.*second subtext.*someURL/s)
+    })
+    it('should not print pre deploy actions when there are none', async () => {
+      const outputWithNoDeployActions = await formatExecutionPlan(
+        plan,
+        [workspaceErrorWithInfoSeverity].map(ce => ({
+          ...ce,
+          sourceFragments: workspaceErrorWithSourceFragments.sourceFragments,
+        }))
+      )
+      expect(outputWithNoDeployActions).not.toMatch(`${chalk.bold(Prompts.DEPLOY_PRE_ACTION_HEADER)}`)
     })
   })
 

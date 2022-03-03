@@ -18,7 +18,7 @@ import moment from 'moment'
 import os from 'os'
 
 export default class Prompts {
-  public static readonly SHOULD_EXECUTE_PLAN = 'Do you want to perform these actions?'
+  public static readonly SHOULD_EXECUTE_PLAN = 'Do you want to deploy?'
 
   public static readonly CANCEL_DEPLOY_ACTION = 'Cancelled: Due to an erroneous dependency -'
   public static readonly START_DEPLOY_EXEC = 'Starting the deployment plan'
@@ -54,7 +54,9 @@ export default class Prompts {
 
   public static readonly PLAN_STEPS_HEADER_DEPLOY = 'Salto will perform the following actions:'
   public static readonly PLAN_STEPS_HEADER_PREVIEW = 'Salto has calculated the following deployment plan:'
-  public static readonly PLAN_CHANGE_ERRS_HEADER = 'Encountered the following validations and will ignore their execution:'
+  public static readonly PLAN_CHANGE_ERRS_HEADER = 'Please review the following messages; changes with errors will not be deployed.'
+  public static readonly DEPLOY_PRE_ACTION_HEADER = 'Before continuing to deploy, please perform the following actions:'
+  public static readonly DEPLOY_POST_ACTION_HEADER = 'Some actions may be required following the completion of this deployment, please perform the following actions:'
 
   public static readonly EMPTY_PLAN = 'Nothing to do.'
 

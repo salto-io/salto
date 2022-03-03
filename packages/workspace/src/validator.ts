@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { types, collections, values } from '@salto-io/lowerdash'
 import {
   Element, isObjectType, isInstanceElement, TypeElement, InstanceElement, Field, PrimitiveTypes,
-  isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
+  isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SeverityLevel,
   Values, isElement, isListType, getRestriction, isVariable, Variable, isPrimitiveValue, ListType,
   isReferenceExpression, StaticFile, isContainerType, isMapType, ObjectType,
   InstanceAnnotationTypes, GLOBAL_ADAPTER, SaltoError, ReadOnlyElementsSource, BuiltinTypes,
@@ -34,7 +34,7 @@ const { makeArray } = collections.array
 export abstract class ValidationError extends types.Bean<{
   elemID: ElemID
   error: string
-  severity: SaltoErrorSeverity
+  severity: SeverityLevel
 }> implements SaltoElementError {
   get message(): string {
     return `Error validating "${this.elemID.getFullName()}": ${this.error}`

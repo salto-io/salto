@@ -81,9 +81,20 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
       'stripe.webhook_endpoint_metadata',
     ])(
       '%s',
-      async expectedType => {
+      expectedType => {
         expect(fetchedElementsNames).toContain(expectedType)
       }
     )
+
+    it.each([
+      'stripe.plan',
+      'stripe.plan_metadata',
+      'stripe.plan_tier',
+      'stripe.transform_usage',
+      'stripe.prices',
+    ])('%s',
+      unsupportedType => {
+        expect(fetchedElementsNames).not.toContain(unsupportedType)
+      })
   })
 })

@@ -55,7 +55,6 @@ const ALL_SUPPORTED_TYPES = [
   'webhook_endpoints',
 ]
 
-// noinspection UnnecessaryLocalVariableJS
 export const DEFAULT_INCLUDE_TYPES = ALL_SUPPORTED_TYPES
 
 const DEFAULT_TYPE_CUSTOMIZATIONS: StripeApiConfig['types'] = {

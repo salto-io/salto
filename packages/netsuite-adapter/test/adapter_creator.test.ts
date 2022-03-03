@@ -151,6 +151,16 @@ describe('NetsuiteAdapter creator', () => {
 
       await expect(adapter.validateCredentials(cred)).rejects.toThrow('SuiteApp Authentication failed.')
     })
+
+    it('should throw when receiving invalid accountId', async () => {
+      const cred = credentials.clone()
+      cred.value = {
+        ...cred.value,
+        accountId: ' account-id',
+      }
+      await expect(adapter.validateCredentials(cred)).rejects
+        .toThrow(/received an invalid accountId value.*/g)
+    })
   })
 
   describe('client creation', () => {

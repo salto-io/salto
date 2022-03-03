@@ -25,6 +25,7 @@ import { credsLease, realAdapter } from './adapter'
  * for all the supported types in {@link DEFAULT_API_DEFINITIONS.swagger.typeNameOverrides}
  */
 describe('Stripe adapter E2E with real swagger and mock replies', () => {
+  let fetchedElementNames: string[]
   let fetchedSwaggerElements: Element[]
   let credLease: CredsLease<AccessTokenCredentials>
 
@@ -36,6 +37,7 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
         { reportProgress: () => null },
     })
     fetchedSwaggerElements = elements
+    fetchedElementNames = fetchedSwaggerElements.map(e => e.elemID.getFullName())
   })
 
   afterAll(async () => {
@@ -49,11 +51,6 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
   })
 
   describe('fetches swagger types', () => {
-    let fetchedElementsNames: string[]
-
-    beforeAll(() => {
-      fetchedElementsNames = fetchedSwaggerElements.map(e => e.elemID.getFullName())
-    })
     it.each([
       'stripe.country_specs',
       'stripe.coupons',
@@ -82,10 +79,12 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
     ])(
       '%s',
       expectedType => {
-        expect(fetchedElementsNames).toContain(expectedType)
+        expect(fetchedElementNames).toContain(expectedType)
       }
     )
+  })
 
+  describe('does not fetch unsupported types', () => {
     it.each([
       'stripe.plan',
       'stripe.plan_metadata',
@@ -94,7 +93,7 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
       'stripe.prices',
     ])('%s',
       unsupportedType => {
-        expect(fetchedElementsNames).not.toContain(unsupportedType)
+        expect(fetchedElementNames).not.toContain(unsupportedType)
       })
   })
 })

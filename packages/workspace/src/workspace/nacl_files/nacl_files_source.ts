@@ -23,6 +23,7 @@ import { resolvePath, TransformFuncArgs, transformElement, safeJsonStringify } f
 import { promises, values, collections } from '@salto-io/lowerdash'
 import { AdditionDiff } from '@salto-io/dag'
 import { AwuIterable } from '@salto-io/lowerdash/src/collections/asynciterable'
+import osPath from 'path'
 import { MergeError, mergeElements } from '../../merger'
 import { getChangeLocations, updateNaclFileData, getChangesToUpdate, DetailedChangeWithSource,
   getNestedStaticFiles } from './nacl_file_update'
@@ -108,6 +109,13 @@ type NaclFilesState = {
 
 const getRemoteMapNamespace = (namespace: string, name: string): string =>
   `naclFileSource-${name}-${namespace}`
+
+
+export const toPathHint = (filename: string): string[] => {
+  const dirName = osPath.dirname(filename)
+  const dirPathSplitted = (dirName === '.') ? [] : dirName.split(osPath.sep)
+  return [...dirPathSplitted, osPath.basename(filename, osPath.extname(filename))]
+}
 
 export const getElementReferenced = async (element: Element): Promise<Set<string>> => {
   const referenced = new Set<string>()
@@ -593,13 +601,28 @@ const buildNaclFilesSource = (
     naclFilesStore.get(filename)
 
   const getParsedNaclFile = async (filename: string): Promise<ParsedNaclFile | undefined> => {
+    const addPathParsedNaclFileElements = (parsed: ParsedNaclFile): ParsedNaclFile => ({
+      ...parsed,
+      elements: async () => {
+        const parsedElement = await parsed.elements()
+        return parsedElement && parsedElement.map(elem => {
+          elem.path = toPathHint(filename)
+          return elem
+        })
+      },
+    })
+
     // We don't want to parse all nacl files here when we want only parsedResult of one file.
     if (state !== undefined) {
-      return (await getState()).parsedNaclFiles.get(filename)
+      return addPathParsedNaclFileElements(
+        await (await getState()).parsedNaclFiles.get(filename)
+      )
     }
     const naclFile = await getNaclFile(filename)
     if (naclFile === undefined) return undefined
-    return toParsedNaclFile(naclFile, await parseNaclFile(naclFile, functions))
+    return addPathParsedNaclFileElements(
+      await toParsedNaclFile(naclFile, await parseNaclFile(naclFile, functions))
+    )
   }
 
   const getElementNaclFiles = async (elemID: ElemID): Promise<string[]> => {

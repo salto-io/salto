@@ -75,6 +75,7 @@ export const mockWorkspace = ({
   errors = [],
   accountConfigs = {},
   accountToServiceName = {},
+  parsedNaclFiles = {},
 }: {
   elements?: Element[]
   name?: string
@@ -85,7 +86,20 @@ export const mockWorkspace = ({
   accountConfigs?: Record<string, InstanceElement>
   getValue?: Promise<Value | undefined>
   accountToServiceName?: Record<string, string>
+  parsedNaclFiles?: Record<string, Element[]>
 }): workspace.Workspace => {
+  const elementIDtoFileMap = Object.entries(parsedNaclFiles).reduce(
+    (acc, entry) => {
+      const [filename, elems] = entry
+      elems.forEach(elem => {
+        const key = elem.elemID.getFullName()
+        acc[key] = acc[key] || []
+        acc[key].push(filename)
+      })
+      return acc
+    },
+    {} as Record<string, string[]>
+  )
   const state = mockState(ACCOUNTS, stateElements || elements, index)
   return {
     elements: jest.fn().mockImplementation(
@@ -119,5 +133,9 @@ export const mockWorkspace = ({
     errors: jest.fn().mockImplementation(() => mockErrors(errors)),
     hasErrors: () => errors.length > 0,
     getValue: async (id: ElemID) => elements.find(e => e.elemID.getFullName() === id.getFullName()),
+    getElementNaclFiles: async (id: ElemID) => elementIDtoFileMap[id.getFullName()] ?? [],
+    getParsedNaclFile: async (filename: string) => ({
+      elements: async () => parsedNaclFiles[filename],
+    }),
   } as unknown as workspace.Workspace
 }

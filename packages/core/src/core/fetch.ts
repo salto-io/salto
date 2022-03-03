@@ -27,7 +27,7 @@ import {
   applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { merger, elementSource, expressions, Workspace, pathIndex, updateElementsWithAlternativeAccount, createAdapterReplacedID } from '@salto-io/workspace'
+import { merger, elementSource, expressions, Workspace, pathIndex, updateElementsWithAlternativeAccount, createAdapterReplacedID, remoteMap } from '@salto-io/workspace'
 import { collections, promises, types, values } from '@salto-io/lowerdash'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
@@ -779,6 +779,18 @@ export const fetchChangesFromWorkspace = async (
   fromState: boolean,
   progressEmitter?: EventEmitter<FetchProgressEvents>,
 ): Promise<FetchChangesResult> => {
+  const splitElementByFile = async (element: Element): Promise<Element[]> => {
+    const elementNaclFiles = await otherWorkspace.getElementNaclFiles(element.elemID)
+    const naclFragments = (await Promise.all(
+      elementNaclFiles.map(
+        async filename => (await otherWorkspace.getParsedNaclFile(filename))?.elements()
+      )
+    )).filter(values.isDefined).flat()
+    const naclPathIndex = new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>()
+    await pathIndex.overridePathIndex(naclPathIndex, naclFragments)
+    return pathIndex.splitElementByPath(element, naclPathIndex)
+  }
+
   const getDifferentConfigs = async (): Promise<InstanceElement[]> => (
     awu(currentConfigs).filter(async config => {
       const otherConfig = await otherWorkspace.accountConfig(config.elemID.adapter)
@@ -823,9 +835,21 @@ export const fetchChangesFromWorkspace = async (
     .toArray()
 
   const otherPathIndex = await otherWorkspace.state(env).getPathIndex()
-  const unmergedElements = (await withLimitedConcurrency(wu(fullElements).map(
+  const splitByPathIndex = (await withLimitedConcurrency(wu(fullElements).map(
     elem => () => pathIndex.splitElementByPath(elem, otherPathIndex)
   ), MAX_SPLIT_CONCURRENCY)).flat()
+  const [unmergedWithPath, unmergedWithoutPath] = _.partition(
+    splitByPathIndex,
+    elem => values.isDefined(elem.path)
+  )
+  const unmergedElements = [
+    ...unmergedWithPath,
+    ...(await withLimitedConcurrency(
+      wu(unmergedWithoutPath).map(elem => () => splitElementByFile(elem)),
+      MAX_SPLIT_CONCURRENCY
+    )
+    ).flat(),
+  ]
   return createFetchChanges({
     adapterNames: fetchAccounts,
     currentConfigs,

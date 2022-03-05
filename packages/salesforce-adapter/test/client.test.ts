@@ -309,6 +309,7 @@ describe('salesforce client', () => {
     let testConnection: MockInterface<Connection>
     let nullFailingImplementation: Metadata['list']
     let rangeErrorFailingImplementation: Metadata['list']
+    let unknownErrorToRetryImplementation: Metadata['list']
 
     beforeEach(() => {
       const mockClientAndConnection = mockClient()
@@ -321,6 +322,9 @@ describe('salesforce client', () => {
       rangeErrorFailingImplementation = async () => {
         throw new RangeError('Too many properties to enumerate')
       }
+      unknownErrorToRetryImplementation = async () => {
+        throw new Error('unknown_error: retry your request')
+      }
     })
     describe('when the error is recoverable', () => {
       let result: ReturnType<typeof testClient.listMetadataObjects>
@@ -331,6 +335,7 @@ describe('salesforce client', () => {
           .mockImplementationOnce(nullFailingImplementation)
           .mockImplementationOnce(nullFailingImplementation)
           .mockImplementationOnce(rangeErrorFailingImplementation)
+          .mockImplementationOnce(unknownErrorToRetryImplementation)
           .mockResolvedValueOnce([expectedProperties])
 
         result = testClient.listMetadataObjects({ type: 'CustomObject' })

@@ -18,6 +18,7 @@ import { getParents } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { apiName, metadataType, isCustomObject, isFieldOfCustomObject, isInstanceOfCustomObject } from '../transformers/transformer'
 import { getInternalId, isInstanceOfType } from '../filters/utils'
+import { CUSTOM_METADATA_SUFFIX } from '../constants'
 
 const { isDefined } = values
 
@@ -84,7 +85,7 @@ const assignmentRulesResolver: UrlResolver = async (element, baseUrl) => {
 const metadataTypeResolver: UrlResolver = async (element, baseUrl) => {
   const internalId = getInternalId(element)
   if (isType(element)
-    && (await apiName(element))?.endsWith('__mdt')
+    && (await apiName(element))?.endsWith(CUSTOM_METADATA_SUFFIX)
     && internalId !== undefined) {
     return (new URL(`${baseUrl}lightning/setup/CustomMetadata/page?address=%2F${internalId}%3Fsetupid%3DCustomMetadata`))
   }

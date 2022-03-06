@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { ObjectType, ElemID, TypeElement, BuiltinTypes, ListType } from '@salto-io/adapter-api'
 import { SALESFORCE, INSTANCE_FULL_NAME_FIELD, ASSIGNMENT_RULES_METADATA_TYPE, WORKFLOW_METADATA_TYPE, LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE, SETTINGS_METADATA_TYPE } from '../src/constants'
-import { MetadataTypeAnnotations, MetadataObjectType } from '../src/transformers/transformer'
+import { MetadataTypeAnnotations, MetadataObjectType, createInstanceElement } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
 import { API_VERSION } from '../src/client/client'
 import { WORKFLOW_FIELD_TO_TYPE } from '../src/filters/workflow'
@@ -163,6 +163,13 @@ export const mockTypes = {
       metadataType: 'Territory2Rule',
       suffix: 'territory2Rule',
       dirName: 'territory2Models',
+    },
+  }),
+  CustomMetadata: createMetadataObjectType({
+    annotations: {
+      metadataType: 'CustomMetadata',
+      dirName: 'customMetadata',
+      suffix: 'md',
     },
   }),
 }
@@ -317,3 +324,14 @@ export const mockDefaultValues = {
     content: Buffer.from('<xml/>'),
   },
 }
+
+// Intentionally let typescript infer the return type here to avoid repeating
+// the definitions from the constants above
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+export const mockInstances = () => _.mapValues(
+  mockDefaultValues,
+  (values, typeName) => createInstanceElement(
+    values,
+    mockTypes[typeName as keyof typeof mockDefaultValues],
+  )
+)

@@ -189,12 +189,12 @@ export const transformValues = async (
         if (strict) {
           log.debug(`Value mis-match for field ${field?.name} - value is not an object`)
         }
-        return (_.isEmpty(newVal)
-          // No need to check if for isPlainObject because in
-          // this flow we already checked that it is not
-          && (Array.isArray(newVal)
-            || _.isString(newVal))
-          && !allowEmpty) ? undefined : newVal
+        // _.isEmpty returns true for primitive values (boolean, number)
+        // but we do not want to omit those, we only want to omit empty
+        // objects, arrays and strings. we don't need to check for objects here
+        // because we cannot get here with an object
+        const valueIsEmpty = (Array.isArray(newVal) || _.isString(newVal)) && _.isEmpty(newVal)
+        return (valueIsEmpty && !allowEmpty) ? undefined : newVal
       }
       const transformed = _.omitBy(
         await transformValues({

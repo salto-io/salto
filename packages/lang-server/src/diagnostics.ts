@@ -28,7 +28,7 @@ export interface SaltoDiagnostic {
 
 export type WorkspaceSaltoDiagnostics = Record<string, SaltoDiagnostic[]>
 
-const MAX_WORKSPACE_ERRORS = 30
+const MAX_WORKSPACE_ERRORS = 50
 
 export const getDiagnostics = async (
   workspace: EditorWorkspace,

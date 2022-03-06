@@ -83,6 +83,8 @@ const DEFAULT_READ_METADATA_CHUNK_SIZE: Required<ReadMetadataChunkSizeConfig> = 
 const errorMessagesToRetry = [
   'Cannot read property \'result\' of null',
   'Too many properties to enumerate',
+  'retry your request', // We saw "unknown_error: retry your request" error message,
+  //  but in case there is another error that says "retry your request", probably we should retry it
 ]
 
 type RateLimitBucketName = keyof ClientRateLimitConfig
@@ -415,7 +417,7 @@ export default class SalesforceClient {
       try {
         res = await request()
       } catch (e) {
-        if (attempts > 1 && errorMessagesToRetry.includes(e.message)) {
+        if (attempts > 1 && errorMessagesToRetry.some(message => e.message.includes(message))) {
           log.warn('Encountered invalid result from salesforce, error message: %s, will retry %d more times', e.message, attempts - 1)
           return requestWithRetry(attempts - 1)
         }

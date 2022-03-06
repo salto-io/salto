@@ -145,7 +145,6 @@ const getListDeepInnerType = async (
 const normalizeElementValues = (instance: InstanceElement): Promise<InstanceElement> => {
   const transformAdditionalProps: TransformFunc = async ({ value, field, path }) => {
     if (!_.isPlainObject(value)) {
-      // will handle in inner call
       return value
     }
 

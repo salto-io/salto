@@ -189,7 +189,10 @@ export const transformValues = async (
         if (strict) {
           log.debug(`Value mis-match for field ${field?.name} - value is not an object`)
         }
-        return (_.isEmpty(newVal) && !allowEmpty) ? undefined : newVal
+        return (_.isEmpty(newVal)
+          && (Array.isArray(newVal)
+          || _.isString(newVal))
+          && !allowEmpty) ? undefined : newVal
       }
       const transformed = _.omitBy(
         await transformValues({

@@ -934,6 +934,7 @@ describe('Test utils.ts', () => {
           elemID: new ElemID('salesforce', 'obj'),
           fields: {
             nested: { refType: nestedType },
+            numberNested: { refType: nestedType },
             nestedArray: { refType: new ListType(nestedType) },
           },
         })
@@ -942,6 +943,7 @@ describe('Test utils.ts', () => {
           otherObjType,
           {
             nested: 'aaa',
+            numberNested: 1,
             nestedArray: ['aaa', 'bbb'],
           },
         )
@@ -950,12 +952,14 @@ describe('Test utils.ts', () => {
         result = await transformElement({ element: invalidInst, transformFunc, strict: false })
         expect(isInstanceElement(result)).toBeTruthy()
         expect(result.value.nested).toEqual('aaa')
+        expect(result.value.numberNested).toEqual(1)
         expect(result.value.nestedArray).toEqual(['aaa', 'bbb'])
       })
       it('should correctly handle type inconsistencies when strict=true', async () => {
         result = await transformElement({ element: invalidInst, transformFunc, strict: true })
         expect(isInstanceElement(result)).toBeTruthy()
         expect(result.value.nested).toEqual('aaa')
+        expect(result.value.numberNested).toEqual(1)
         expect(result.value.nestedArray).toEqual(['aaa', 'bbb'])
       })
     })

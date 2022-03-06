@@ -81,9 +81,9 @@ describe('adapter', () => {
           ),
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
-        expect(elements).toHaveLength(394)
-        expect(elements.filter(isObjectType)).toHaveLength(191)
-        expect(elements.filter(isInstanceElement)).toHaveLength(203)
+        expect(elements).toHaveLength(396)
+        expect(elements.filter(isObjectType)).toHaveLength(192)
+        expect(elements.filter(isInstanceElement)).toHaveLength(204)
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'zendesk_support.account_setting',
           'zendesk_support.account_setting.instance',
@@ -126,6 +126,8 @@ describe('adapter', () => {
           'zendesk_support.app_installation__settings_objects',
           'zendesk_support.app_installations',
           'zendesk_support.app_owned',
+          'zendesk_support.app_owned.instance.xr_app',
+          'zendesk_support.app_owned__parameters',
           'zendesk_support.apps_owned',
           'zendesk_support.automation',
           'zendesk_support.automation.instance.Close_ticket_4_days_after_status_is_set_to_solved@s',

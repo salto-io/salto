@@ -125,7 +125,7 @@ SalesforceConfig => {
 
 export const createUrlFromUserInput = (value: Values): string => {
   const endpoint = value.sandbox ? 'test' : 'login'
-  return `https://${endpoint}.salesforce.com/services/oauth2/authorize?response_type=token&client_id=${value.consumerKey}&scope=refresh_token%20full&redirect_uri=http://localhost:${value.port}`
+  return `https://${endpoint}.salesforce.com/services/oauth2/authorize?response_type=token&client_id=${value.consumerKey}&scope=refresh_token%20full&redirect_uri=http://localhost:${value.port}&prompt=login%20consent`
 }
 
 const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters => ({

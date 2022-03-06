@@ -1,0 +1,143 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "SALTO: Fetch your application's configuration",
+            "type": "shell",
+            "command":"salto",
+            "args": [
+                "fetch"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        },
+        {
+            "label": "SALTO: Create environment",
+            "type": "shell",
+            "command":"salto",
+            "args": [
+                "env",
+                "create",
+                "${input:envName}"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        },
+        {
+            "label": "SALTO: List environments",
+            "type": "shell",
+            "command":"salto",
+            "args": [
+                "env",
+                "list"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        },
+        {
+            "label": "SALTO: Change current environment",
+            "type": "shell",
+            "command":"salto",
+            "args": [
+                "env",
+                "set",
+                "${input:envName}"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        },
+        {
+            "label": "SALTO: Deploy changes",
+            "type": "shell",
+            "command":"salto",
+            "args": [
+                "deploy",
+                "p"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        },
+        {
+            "label": "SALTO: Add an application",
+            "type": "shell",
+            "command":"salto",
+            "args": [
+                "service",
+                "add",
+                "${input:applications}"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        }
+    ],
+    "inputs": [
+        {
+            "id": "applications",
+            "description": "Select an application",
+            "type": "pickString",
+            "options": [
+                "salesforce",
+                "hubspot",
+                "netsuite",
+                "workato",
+                "stripe",
+                "zuora_billing",
+                "zendesk_support",
+                "jira"
+              ]
+        },
+        {
+            "id": "envName",
+            "description": "Enter environment name",
+            "type": "promptString"
+        }
+    ]
+}

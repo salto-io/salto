@@ -190,8 +190,10 @@ export const transformValues = async (
           log.debug(`Value mis-match for field ${field?.name} - value is not an object`)
         }
         return (_.isEmpty(newVal)
+          // No need to check if for isPlainObject because in
+          // this flow we already checked that it is not
           && (Array.isArray(newVal)
-          || _.isString(newVal))
+            || _.isString(newVal))
           && !allowEmpty) ? undefined : newVal
       }
       const transformed = _.omitBy(

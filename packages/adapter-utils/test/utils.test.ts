@@ -935,6 +935,7 @@ describe('Test utils.ts', () => {
           fields: {
             nested: { refType: nestedType },
             numberNested: { refType: nestedType },
+            booleanNested: { refType: nestedType },
             nestedArray: { refType: new ListType(nestedType) },
           },
         })
@@ -944,6 +945,7 @@ describe('Test utils.ts', () => {
           {
             nested: 'aaa',
             numberNested: 1,
+            booleanNested: true,
             nestedArray: ['aaa', 'bbb'],
           },
         )
@@ -953,6 +955,7 @@ describe('Test utils.ts', () => {
         expect(isInstanceElement(result)).toBeTruthy()
         expect(result.value.nested).toEqual('aaa')
         expect(result.value.numberNested).toEqual(1)
+        expect(result.value.booleanNested).toBeTruthy()
         expect(result.value.nestedArray).toEqual(['aaa', 'bbb'])
       })
       it('should correctly handle type inconsistencies when strict=true', async () => {
@@ -960,6 +963,7 @@ describe('Test utils.ts', () => {
         expect(isInstanceElement(result)).toBeTruthy()
         expect(result.value.nested).toEqual('aaa')
         expect(result.value.numberNested).toEqual(1)
+        expect(result.value.booleanNested).toBeTruthy()
         expect(result.value.nestedArray).toEqual(['aaa', 'bbb'])
       })
     })

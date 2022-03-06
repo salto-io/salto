@@ -127,6 +127,7 @@ zendesk_support {
               fieldType = "number"
             },
           ]
+          serviceUrl = "/admin/people/team/roles/{id}"
         }
         deployRequests = {
           add = {
@@ -175,6 +176,7 @@ zendesk_support {
               fieldType = "map<unknown>"
             },
           ]
+          serviceUrl = "/agent/organizations/{id}/tickets"
         }
         deployRequests = {
           add = {
@@ -223,6 +225,7 @@ zendesk_support {
               fieldType = "number"
             },
           ]
+          serviceUrl = "/admin/workspaces/agent-workspace/views/{id}"
         }
         deployRequests = {
           add = {
@@ -281,6 +284,7 @@ zendesk_support {
               fieldType = "number"
             },
           ]
+          serviceUrl = "/admin/objects-rules/rules/triggers/{id}"
         }
         deployRequests = {
           add = {
@@ -373,6 +377,7 @@ zendesk_support {
               fieldType = "number"
             },
           ]
+          serviceUrl = "/admin/objects-rules/rules/automations/{id}"
         }
         deployRequests = {
           add = {
@@ -554,6 +559,7 @@ zendesk_support {
               fieldName = "attachments"
             },
           ]
+          serviceUrl = "/admin/workspaces/agent-workspace/macros/{id}"
         }
         deployRequests = {
           add = {
@@ -999,6 +1005,7 @@ zendesk_support {
               fieldType = "number"
             },
           ]
+          serviceUrl = "/admin/objects-rules/tickets/ticket-forms/edit/{id}"
         }
         deployRequests = {
           add = {
@@ -1054,6 +1061,7 @@ zendesk_support {
               fieldType = "number"
             },
           ]
+          serviceUrl = "/admin/objects-rules/tickets/ticket-fields/{id}"
         }
         deployRequests = {
           add = {
@@ -1167,6 +1175,7 @@ zendesk_support {
               fieldType = "number"
             },
           ]
+          serviceUrl = "/agent/admin/user_fields/{id}"
         }
         deployRequests = {
           add = {
@@ -1292,6 +1301,7 @@ zendesk_support {
               fieldType = "number"
             },
           ]
+          serviceUrl = "/agent/admin/organization_fields/{id}"
         }
         deployRequests = {
           add = {
@@ -1521,9 +1531,6 @@ zendesk_support {
               fieldName = "id"
               fieldType = "number"
             },
-            {
-              fieldName = "app"
-            },
           ]
           fieldsToOmit = [
             {
@@ -1592,6 +1599,26 @@ zendesk_support {
             },
           ]
           sourceTypeName = "apps_owned__apps"
+        }
+      }
+      app_owned__parameters = {
+        transformation = {
+          fieldsToHide = [
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "id"
+            },
+            {
+              fieldName = "app_id"
+            },
+            {
+              fieldName = "created_at"
+            },
+            {
+              fieldName = "updated_at"
+            },
+          ]
         }
       }
       oauth_client = {
@@ -2229,7 +2256,7 @@ zendesk_support {
       }
       app_installations = {
         request = {
-          url = "/apps/installations?include=app"
+          url = "/apps/installations"
         }
       }
       apps_owned = {
@@ -2318,6 +2345,7 @@ zendesk_support {
               fieldType = "string"
             },
           ]
+          serviceUrl = "/admin/apps-integrations/webhooks/webhooks/{id}/details"
         }
       }
     }

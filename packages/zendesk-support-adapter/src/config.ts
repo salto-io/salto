@@ -890,7 +890,6 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       sourceTypeName: 'app_installations__installations',
       fieldsToHide: FIELDS_TO_HIDE.concat(
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'app' },
       ),
       fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'updated', fieldType: 'string' }),
       idFields: ['settings.name', 'app_id'],
@@ -921,6 +920,12 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     transformation: {
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       sourceTypeName: 'apps_owned__apps',
+    },
+  },
+  app_owned__parameters: {
+    transformation: {
+      fieldsToHide: [],
+      fieldsToOmit: [{ fieldName: 'id' }, { fieldName: 'app_id' }, { fieldName: 'created_at' }, { fieldName: 'updated_at' }],
     },
   },
   oauth_client: {

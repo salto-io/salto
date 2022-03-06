@@ -688,6 +688,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           toField: 'issueSecurityScheme',
           context: [{ name: 'projectKeyOrId', fromField: 'key' }],
           isSingle: true,
+          dataField: 'id',
         },
         {
           type: 'PageBeanIssueTypeScreenSchemesProjects',
@@ -1058,6 +1059,74 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldsToHide: [
         {
           fieldName: 'id',
+        },
+      ],
+      standaloneFields: [
+        {
+          fieldName: 'levels',
+        },
+      ],
+    },
+  },
+
+  SecuritySchemes: {
+    request: {
+      url: '/rest/api/3/issuesecurityschemes',
+      recurseInto: [
+        {
+          type: 'SecurityLevel',
+          toField: 'levels',
+          context: [
+            { name: 'id', fromField: 'id' },
+            { name: 'issueSecuritySchemeId', fromField: 'id' },
+          ],
+        },
+      ],
+    },
+  },
+
+  PageBeanIssueSecurityLevelMember: {
+    request: {
+      url: '/rest/api/3/issuesecurityschemes/{issueSecuritySchemeId}/members?issueSecurityLevelId={issueSecurityLevelId}',
+    },
+  },
+
+  IssueSecurityLevelMember: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'id' },
+        { fieldName: 'issueSecurityLevelId' },
+      ],
+    },
+  },
+
+  SecurityLevel: {
+    request: {
+      url: '/rest/api/3/issuesecurityschemes/{id}',
+      recurseInto: [
+        {
+          type: 'PageBeanIssueSecurityLevelMember',
+          toField: 'members',
+          context: [{
+            name: 'issueSecurityLevelId', fromField: 'id',
+          }],
+        },
+      ],
+    },
+    transformation: {
+      dataField: 'levels',
+      fieldTypeOverrides: [
+        { fieldName: 'levels', fieldType: 'List<SecurityLevel>' },
+        { fieldName: 'members', fieldType: 'List<IssueSecurityLevelMember>' },
+      ],
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
+      fieldsToOmit: [
+        {
+          fieldName: 'self',
         },
       ],
     },

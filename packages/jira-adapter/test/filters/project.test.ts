@@ -103,9 +103,7 @@ describe('projectFilter', () => {
             id: '7',
           },
         },
-        issueSecurityScheme: {
-          id: '8',
-        },
+        issueSecurityScheme: '8',
       }
       await filter.onFetch([type, instance])
     })

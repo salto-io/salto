@@ -16,7 +16,7 @@
 import { isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
-import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME } from './constants'
+import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 
 
@@ -260,6 +260,11 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     src: { field: 'statusCategory', parentTypes: [STATUS_TYPE_NAME] },
     serializationStrategy: 'id',
     target: { type: 'StatusCategory' },
+  },
+  {
+    src: { field: 'defaultSecurityLevelId', parentTypes: [SECURITY_SCHEME_TYPE] },
+    serializationStrategy: 'id',
+    target: { type: SECURITY_LEVEL_TYPE },
   },
 ]
 

@@ -17,6 +17,7 @@
 import { collections } from '@salto-io/lowerdash'
 import { ObjectType, ElemID, BuiltinTypes, ListType, MapType, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
+import _ from 'lodash'
 import { getAllInstances } from '../../../src/elements/swagger'
 import { returnFullEntry } from '../../../src/elements/field_finder'
 import { Paginator } from '../../../src/client'
@@ -1154,6 +1155,29 @@ describe('swagger_instance_elements', () => {
           ]
         )
         expect(cat.value).not.toHaveProperty('owners')
+      })
+
+      it('should return the data under the dataField value', async () => {
+        _.set(getAllInstancesParams, 'apiConfig.types.Pet.request.recurseInto.0.dataField', 'name')
+        instances = await getAllInstances(getAllInstancesParams)
+
+        expect(instances).toHaveLength(3)
+        const [dog, cat, fish] = instances
+        expect(dog.value).toHaveProperty(
+          'owners',
+          [
+            'o1',
+            'o2',
+          ]
+        )
+        expect(cat.value).not.toHaveProperty('owners')
+        expect(fish.value).toHaveProperty(
+          'owners',
+          [
+            'o1',
+            'o2',
+          ]
+        )
       })
     })
 

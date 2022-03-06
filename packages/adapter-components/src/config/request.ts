@@ -55,6 +55,7 @@ type RecurseIntoConfig = {
   isSingle?: boolean
   context: RecurseIntoContext[]
   conditions?: RecurseIntoCondition[]
+  dataField?: string
 }
 
 type BaseRequestConfig = {
@@ -175,6 +176,9 @@ export const createRequestConfigs = (
       },
       isSingle: {
         refType: BuiltinTypes.BOOLEAN,
+      },
+      dataField: {
+        refType: BuiltinTypes.STRING,
       },
       context: {
         refType: new ListType(recurseIntoContextType),

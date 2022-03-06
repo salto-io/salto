@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   InstanceElement, Values, ObjectType, isObjectType, ReferenceExpression, isReferenceExpression,
-  isListType, isMapType, TypeElement, PrimitiveType, MapType, ElemIdGetter,
+  isListType, isMapType, TypeElement, PrimitiveType, MapType, ElemIdGetter, Value,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -144,7 +144,7 @@ const getListDeepInnerType = async (
  */
 const normalizeElementValues = (instance: InstanceElement): Promise<InstanceElement> => {
   const transformAdditionalProps: TransformFunc = async ({ value, field, path }) => {
-    if (Array.isArray(value)) {
+    if (!_.isPlainObject(value)) {
       // will handle in inner call
       return value
     }
@@ -370,7 +370,7 @@ const getEntriesForType = async (
 
   const getExtraFieldValues = (
     entry: Values
-  ): Promise<[string, Values | Values[]][]> => Promise.all(
+  ): Promise<[string, Value | Value[]][]> => Promise.all(
     recurseInto
       .filter(({ conditions }) => shouldRecurseIntoEntry(entry, requestContext, conditions))
       .map(async nested => {
@@ -387,13 +387,18 @@ const getEntriesForType = async (
             ...nestedRequestContext,
           },
         })
+
+        const nestedData = nestedEntries.map(nestedEntry => (nested.dataField !== undefined
+          ? _.get(nestedEntry, nested.dataField)
+          : nestedEntry))
+
         if (nested.isSingle) {
-          if (nestedEntries.length === 1) {
-            return [nested.toField, nestedEntries[0]] as [string, Values]
+          if (nestedData.length === 1) {
+            return [nested.toField, nestedData[0]] as [string, Value]
           }
           log.warn(`Expected a single value in recurseInto result for ${typeName}.${nested.toField} but received: ${nestedEntries.length}, keeping as list`)
         }
-        return [nested.toField, nestedEntries] as [string, Values[]]
+        return [nested.toField, nestedData] as [string, Value[]]
       })
   )
 

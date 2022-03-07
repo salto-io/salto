@@ -209,7 +209,7 @@ describe('restore command', () => {
     })
   })
 
-  describe('should restore considering user input', () => {
+  describe('when prompting whether to perform the restore', () => {
     let workspace: Workspace
     beforeEach(async () => {
       workspace = mocks.mockWorkspace({})

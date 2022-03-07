@@ -965,7 +965,7 @@ jira {
                 },
               ]
               isSingle = true
-              dataField = "id"
+              valueField = "id"
             },
             {
               type = "PageBeanIssueTypeScreenSchemesProjects"

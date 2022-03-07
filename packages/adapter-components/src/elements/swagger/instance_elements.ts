@@ -387,9 +387,20 @@ const getEntriesForType = async (
           },
         })
 
-        const nestedData = nestedEntries.map(nestedEntry => (nested.dataField !== undefined
-          ? _.get(nestedEntry, nested.dataField)
-          : nestedEntry))
+        const nestedData = nestedEntries
+          .map(nestedEntry => {
+            const data = (nested.valueField !== undefined
+              ? _.get(nestedEntry, nested.valueField)
+              : nestedEntry)
+
+            if (data === undefined) {
+              log.warn(`No value found for nested field ${nested.valueField} in nested entry ${safeJsonStringify(nestedEntry)}`)
+            }
+
+            return data
+          })
+          .filter(lowerdashValues.isDefined)
+
 
         if (nested.isSingle) {
           if (nestedData.length === 1) {

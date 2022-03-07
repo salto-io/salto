@@ -166,6 +166,7 @@ const getEntriesForType = async (
               ...nestedRequestContext,
             },
           }))
+
           return [nested.toField, nestedEntries]
         })
     )).filter(([_fieldName, nestedEntries]) => !_.isEmpty(nestedEntries))

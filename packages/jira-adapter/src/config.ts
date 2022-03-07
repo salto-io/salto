@@ -688,7 +688,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           toField: 'issueSecurityScheme',
           context: [{ name: 'projectKeyOrId', fromField: 'key' }],
           isSingle: true,
-          dataField: 'id',
+          valueField: 'id',
         },
         {
           type: 'PageBeanIssueTypeScreenSchemesProjects',

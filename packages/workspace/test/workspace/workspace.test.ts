@@ -2579,8 +2579,9 @@ describe('workspace', () => {
       })
 
       it('should not change the persisted current environment', () => {
-        const setWorkspaceConfig = (workspaceConf.setWorkspaceConfig as jest.Mock)
-        expect(setWorkspaceConfig.mock.calls[setWorkspaceConfig.mock.calls.length - 1][0].currentEnv).toBe('default')
+        expect(workspaceConf.setWorkspaceConfig as jest.Mock).toHaveBeenCalledWith(
+          expect.objectContaining({ currentEnv: 'default' })
+        )
       })
     })
   })

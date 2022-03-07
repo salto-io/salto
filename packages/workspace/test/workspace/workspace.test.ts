@@ -2534,33 +2534,55 @@ describe('workspace', () => {
     let workspaceConf: WorkspaceConfigSource
     let workspace: Workspace
 
-    beforeEach(async () => {
-      workspaceConf = mockWorkspaceConfigSource()
-      workspace = await createWorkspace(undefined, undefined, workspaceConf)
-      await workspace.addAccount('salto', 'new')
+    describe('when creating an account', () => {
+      beforeEach(async () => {
+        workspaceConf = mockWorkspaceConfigSource({})
+        workspace = await createWorkspace(undefined, undefined, workspaceConf)
+        await workspace.addAccount('salto', 'new')
+      })
+
+      it('should change workspace state', async () => {
+        expect(workspace.accounts().includes('new')).toBeTruthy()
+      })
+
+      it('should throw account duplication error', async () => {
+        await expect(workspace.addAccount('salto', 'new')).rejects.toThrow(AccountDuplicationError)
+      })
+
+      it('should throw invalidAccountNameError', async () => {
+        await expect(workspace.addAccount('salto', 'new;;')).rejects.toThrow(InvalidAccountNameError)
+        await expect(workspace.addAccount('salto', 'new account')).rejects.toThrow(InvalidAccountNameError)
+        await expect(workspace.addAccount('salto', 'new.')).rejects.toThrow(InvalidAccountNameError)
+      })
+
+      it('should persist', () => {
+        expect(workspaceConf.setWorkspaceConfig).toHaveBeenCalledTimes(1)
+        const envs = (
+          workspaceConf.setWorkspaceConfig as jest.Mock
+        ).mock.calls[0][0].envs as EnvConfig[]
+        expect((envs as {name: string}[]).find(e => e.name === 'default'))
+          .toBeDefined()
+      })
     })
 
-    it('should change workspace state', async () => {
-      expect(workspace.accounts().includes('new')).toBeTruthy()
-    })
+    describe('when specifing an override environment', () => {
+      beforeEach(async () => {
+        workspaceConf = mockWorkspaceConfigSource({}, true)
+        workspace = await createWorkspace(undefined, undefined, workspaceConf)
+        await workspace.setCurrentEnv('inactive', false)
+        await workspace.addAccount('salto')
+      })
 
-    it('should throw account duplication error', async () => {
-      await expect(workspace.addAccount('salto', 'new')).rejects.toThrow(AccountDuplicationError)
-    })
+      it('should add the account only in the other enviroment', () => {
+        expect(workspace.accounts('default')).not.toContain('salto')
+        expect(workspace.accounts('inactive')).toContain('salto')
+      })
 
-    it('should throw invalidAccountNameError', async () => {
-      await expect(workspace.addAccount('salto', 'new;;')).rejects.toThrow(InvalidAccountNameError)
-      await expect(workspace.addAccount('salto', 'new account')).rejects.toThrow(InvalidAccountNameError)
-      await expect(workspace.addAccount('salto', 'new.')).rejects.toThrow(InvalidAccountNameError)
-    })
-
-    it('should persist', () => {
-      expect(workspaceConf.setWorkspaceConfig).toHaveBeenCalledTimes(1)
-      const envs = (
-        workspaceConf.setWorkspaceConfig as jest.Mock
-      ).mock.calls[0][0].envs as EnvConfig[]
-      expect((envs as {name: string}[]).find(e => e.name === 'default'))
-        .toBeDefined()
+      it('should not change the persisted current environment', () => {
+        expect(workspaceConf.setWorkspaceConfig as jest.Mock).toHaveBeenLastCalledWith(
+          expect.objectContaining({ currentEnv: 'default' })
+        )
+      })
     })
   })
 

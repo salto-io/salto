@@ -284,7 +284,10 @@ export const loadWorkspace = async (
     throw new Error('Workspace with no environments is illegal')
   }
   const envs = (): ReadonlyArray<string> => workspaceConfig.envs.map(e => e.name)
-  const currentEnv = (): string => workspaceConfig.currentEnv ?? workspaceConfig.envs[0].name
+  let overrideEnv: string
+  const currentEnv = (): string => overrideEnv
+    ?? workspaceConfig.currentEnv
+    ?? workspaceConfig.envs[0].name
   const getRemoteMapNamespace = (
     namespace: string, env?: string
   ): string => `workspace-${env || currentEnv()}-${namespace}`
@@ -1181,9 +1184,12 @@ export const loadWorkspace = async (
       if (!envs().includes(env)) {
         throw new UnknownEnvError(env)
       }
-      workspaceConfig.currentEnv = env
+
       if (persist) {
+        workspaceConfig.currentEnv = env
         await config.setWorkspaceConfig(workspaceConfig)
+      } else {
+        overrideEnv = env
       }
     },
 

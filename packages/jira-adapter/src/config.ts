@@ -1545,6 +1545,8 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
       },
     ],
     additionalTypes: [
+      // Needed to create a different transformation configuration for security scheme
+      // that is fetched from the recurse into of a project and a normal security scheme
       { typeName: 'ProjectSecurityScheme', cloneFrom: 'SecurityScheme' },
     ],
   },
@@ -1728,7 +1730,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
     apiDefinitions: { refType: apiDefinitionsType },
   },
   annotations: {
-    [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_CONFIG,
+    [CORE_ANNOTATIONS.DEFAULT]: _.omit(DEFAULT_CONFIG, ['apiDefinitions', 'client']),
   },
 })
 

@@ -25,13 +25,21 @@ const getWorkflowSchemeReferences = (instance: InstanceElement): string[] => [
   instance.value.defaultWorkflow?.elemID.getFullName(),
 ].filter(values.isDefined)
 
+/**
+ * We modify workflows by deleting and re-creating them. To do so we need to modify
+ * the workflow schemes that have references to the modified workflow, so we would
+ * want the workflow scheme to depends on the workflows modifications as it depends
+ * on workflows additions.
+ */
 export const workflowDependencyChanger: DependencyChanger = async changes => {
-  const workflowModifications = Array.from(changes.entries())
+  const instanceChanges = Array.from(changes.entries())
     .map(([key, change]) => ({ key, change }))
     .filter(
       (change): change is { key: collections.set.SetId; change: Change<InstanceElement> } =>
         isInstanceChange(change.change)
     )
+
+  const workflowModifications = instanceChanges
     .filter(({ change }) => getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME)
     .filter(({ change }) => isModificationChange(change))
 
@@ -40,12 +48,7 @@ export const workflowDependencyChanger: DependencyChanger = async changes => {
     ({ change }) => getChangeData(change).elemID.getFullName()
   )
 
-  const workflowSchemeChanges = Array.from(changes.entries())
-    .map(([key, change]) => ({ key, change }))
-    .filter(
-      (change): change is { key: collections.set.SetId; change: Change<InstanceElement> } =>
-        isInstanceChange(change.change)
-    )
+  const workflowSchemeChanges = instanceChanges
     .filter(({ change }) => getChangeData(change).elemID.typeName === WORKFLOW_SCHEME_TYPE_NAME)
 
 

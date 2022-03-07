@@ -13,7 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, ObjectType, Element, isObjectType } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ObjectType, Element, isObjectType, getDeepInnerType } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
+
+const { awu } = collections.asynciterable
 
 export const setDeploymentAnnotations = (contextType: ObjectType, fieldName: string): void => {
   if (contextType.fields[fieldName] !== undefined) {
@@ -26,3 +29,15 @@ export const findObject = (elements: Element[], name: string): ObjectType | unde
   elements.filter(isObjectType).find(
     element => element.elemID.name === name
   )
+
+
+export const addUpdatableAnnotationRecursively = async (type: ObjectType): Promise<void> =>
+  awu(Object.values(type.fields)).forEach(async field => {
+    if (!field.annotations[CORE_ANNOTATIONS.UPDATABLE]) {
+      field.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
+      const fieldType = await getDeepInnerType(await field.getType())
+      if (isObjectType(fieldType)) {
+        await addUpdatableAnnotationRecursively(fieldType)
+      }
+    }
+  })

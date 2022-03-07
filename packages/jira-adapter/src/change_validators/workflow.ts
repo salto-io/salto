@@ -29,8 +29,8 @@ export const workflowValidator: ChangeValidator = async changes => (
     .map(async instance => ({
       elemID: instance.elemID,
       severity: 'Error' as SeverityLevel,
-      message: 'Cannot modify a read-only workflow',
-      detailedMessage: `Cannot modify the read-only workflow ${instance.elemID.getFullName()}`,
+      message: 'Cannot remove or modify a read-only workflow',
+      detailedMessage: `Cannot remove or modify the read-only workflow ${instance.elemID.getFullName()}`,
     }))
     .toArray()
 )

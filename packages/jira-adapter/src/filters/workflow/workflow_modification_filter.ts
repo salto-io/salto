@@ -14,14 +14,14 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { AdditionChange, CORE_ANNOTATIONS, getChangeData, getDeepInnerType, InstanceElement, isInstanceChange, isModificationChange, isObjectType, isReferenceExpression, ModificationChange, ObjectType, ReadOnlyElementsSource, ReferenceExpression, RemovalChange, toChange } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { AdditionChange, CORE_ANNOTATIONS, getChangeData, InstanceElement, isInstanceChange, isModificationChange, isReferenceExpression, ModificationChange, ReadOnlyElementsSource, ReferenceExpression, RemovalChange, toChange } from '@salto-io/adapter-api'
+import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { v4 as uuidv4 } from 'uuid'
 import { transformElement } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { WORKFLOW_SCHEME_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
-import { findObject } from '../../utils'
+import { addUpdatableAnnotationRecursively, findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { deployChanges } from '../../deployment/standard_deployment'
 import JiraClient from '../../client/client'
@@ -39,7 +39,7 @@ const replaceWorkflowInScheme = async (
   beforeWorkflow: InstanceElement,
   afterWorkflow: InstanceElement,
   elementsSource: ReadOnlyElementsSource,
-): Promise<{ scheme: InstanceElement; wasChanged: boolean }> => {
+): Promise<InstanceElement | undefined> => {
   let wasChanged = false
   const instance = await transformElement({
     element: scheme,
@@ -54,17 +54,24 @@ const replaceWorkflowInScheme = async (
     },
   })
 
-  return { wasChanged, scheme: instance }
+  return wasChanged ? instance : undefined
 }
 
-export const deployWorkflowModification = async (
-  change: ModificationChange<InstanceElement>,
-  client: JiraClient,
-  paginator: clientUtils.Paginator,
-  config: JiraConfig,
-  workflowSchemes: InstanceElement[],
-  elementsSource: ReadOnlyElementsSource,
-): Promise<void> => {
+const deployWorkflowModification = async ({
+  change,
+  client,
+  paginator,
+  config,
+  workflowSchemes,
+  elementsSource,
+}: {
+  change: ModificationChange<InstanceElement>
+  client: JiraClient
+  paginator: clientUtils.Paginator
+  config: JiraConfig
+  workflowSchemes: InstanceElement[]
+  elementsSource: ReadOnlyElementsSource
+}): Promise<void> => {
   const originalInstance = getChangeData(change)
   const tempInstance = originalInstance.clone()
   tempInstance.value.name = `${tempInstance.value.name}-${uuidv4()}`
@@ -76,8 +83,7 @@ export const deployWorkflowModification = async (
       tempInstance,
       elementsSource,
     ))
-    .filter(({ wasChanged }) => wasChanged)
-    .map(({ scheme }) => scheme)
+    .filter(values.isDefined)
     .toArray()
 
   const cleanTempInstance = async (): Promise<void> => {
@@ -85,8 +91,7 @@ export const deployWorkflowModification = async (
       .map(scheme => replaceWorkflowInScheme(
         scheme, tempInstance, originalInstance, elementsSource
       ))
-      .filter(({ wasChanged }) => wasChanged)
-      .map(({ scheme }) => scheme)
+      .filter(values.isDefined)
       .toArray()
 
     await awu(updateWorkflowSchemes).forEach(async scheme => {
@@ -155,22 +160,11 @@ export const deployWorkflowModification = async (
   await cleanTempInstance()
 }
 
-
-const addUpdatableAnnotation = async (type: ObjectType): Promise<void> =>
-  awu(Object.values(type.fields)).forEach(async field => {
-    if (!field.annotations[CORE_ANNOTATIONS.UPDATABLE]) {
-      field.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
-      const fieldType = await getDeepInnerType(await field.getType())
-      if (isObjectType(fieldType)) {
-        await addUpdatableAnnotation(fieldType)
-      }
-    }
-  })
-
-
 const filter: FilterCreator = ({ client, config, elementsSource, paginator }) => ({
   onFetch: async elements => {
     if (!config.client.usePrivateAPI) {
+      log.debug('Skipping workflow modification filter because private API is not enabled')
+
       return
     }
     const workflowType = findObject(elements, WORKFLOW_TYPE_NAME)
@@ -178,7 +172,7 @@ const filter: FilterCreator = ({ client, config, elementsSource, paginator }) =>
       log.warn(`${WORKFLOW_TYPE_NAME} type was not received in fetch`)
     } else {
       workflowType.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
-      await addUpdatableAnnotation(workflowType)
+      await addUpdatableAnnotationRecursively(workflowType)
     }
   },
 
@@ -199,14 +193,14 @@ const filter: FilterCreator = ({ client, config, elementsSource, paginator }) =>
       relevantChanges
         .filter(isInstanceChange)
         .filter(isModificationChange),
-      async change => deployWorkflowModification(
+      async change => deployWorkflowModification({
         change,
         client,
         paginator,
         config,
         workflowSchemes,
         elementsSource,
-      ),
+      }),
     )
 
     return {

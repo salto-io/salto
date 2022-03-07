@@ -49,6 +49,17 @@ const printRestorePlan = async (
   outputLine(EOL, output)
 }
 
+export const shouldExecuteRestore = async (
+  force: boolean
+): Promise<boolean> => {
+  if (force) {
+    return true
+  }
+
+  return getUserBooleanInput(Prompts.SHOULD_EXECUTE_RESTORE)
+}
+
+
 type RestoreArgs = {
     elementSelectors?: string[]
     force: boolean
@@ -167,7 +178,7 @@ export const action: WorkspaceCommandAction<RestoreArgs> = async ({
     return CliExitCode.Success
   }
 
-  if (!force && !(await getUserBooleanInput(Prompts.SHOULD_EXECUTE_RESTORE))) {
+  if (!(await shouldExecuteRestore(force))) {
     outputLine(formatCancelCommand, output)
     return CliExitCode.Success
   }

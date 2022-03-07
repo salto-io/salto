@@ -684,7 +684,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           isSingle: true,
         },
         {
-          type: 'SecurityScheme',
+          type: 'ProjectSecurityScheme',
           toField: 'issueSecurityScheme',
           context: [{ name: 'projectKeyOrId', fromField: 'key' }],
           isSingle: true,
@@ -755,7 +755,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'workflowScheme', fieldType: 'WorkflowScheme' },
         { fieldName: 'permissionScheme', fieldType: 'PermissionScheme' },
         { fieldName: 'notificationScheme', fieldType: 'NotificationScheme' },
-        { fieldName: 'issueSecurityScheme', fieldType: 'SecurityScheme' },
+        { fieldName: 'issueSecurityScheme', fieldType: 'ProjectSecurityScheme' },
         { fieldName: 'issueTypeScreenScheme', fieldType: 'IssueTypeScreenScheme' },
         { fieldName: 'fieldConfigurationScheme', fieldType: 'FieldConfigurationScheme' },
         { fieldName: 'issueTypeScheme', fieldType: ISSUE_TYPE_SCHEMA_NAME },
@@ -1058,6 +1058,83 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldsToHide: [
         {
           fieldName: 'id',
+        },
+      ],
+      standaloneFields: [
+        {
+          fieldName: 'levels',
+        },
+      ],
+    },
+  },
+
+  ProjectSecurityScheme: {
+    request: {
+      url: '/rest/api/3/project/{projectKeyOrId}/issuesecuritylevelscheme',
+    },
+    transformation: {
+      dataField: '.',
+    },
+  },
+
+  SecuritySchemes: {
+    request: {
+      url: '/rest/api/3/issuesecurityschemes',
+      recurseInto: [
+        {
+          type: 'SecurityLevel',
+          toField: 'levels',
+          context: [
+            { name: 'id', fromField: 'id' },
+            { name: 'issueSecuritySchemeId', fromField: 'id' },
+          ],
+        },
+      ],
+    },
+  },
+
+  PageBeanIssueSecurityLevelMember: {
+    request: {
+      url: '/rest/api/3/issuesecurityschemes/{issueSecuritySchemeId}/members?issueSecurityLevelId={issueSecurityLevelId}',
+    },
+  },
+
+  IssueSecurityLevelMember: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'id' },
+        { fieldName: 'issueSecurityLevelId' },
+      ],
+    },
+  },
+
+  SecurityLevel: {
+    request: {
+      url: '/rest/api/3/issuesecurityschemes/{id}',
+      recurseInto: [
+        {
+          type: 'PageBeanIssueSecurityLevelMember',
+          toField: 'members',
+          context: [{
+            name: 'issueSecurityLevelId', fromField: 'id',
+          }],
+        },
+      ],
+    },
+    transformation: {
+      dataField: 'levels',
+      fieldTypeOverrides: [
+        { fieldName: 'levels', fieldType: 'List<SecurityLevel>' },
+        { fieldName: 'members', fieldType: 'List<IssueSecurityLevelMember>' },
+      ],
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
+      fieldsToOmit: [
+        {
+          fieldName: 'self',
         },
       ],
     },
@@ -1466,6 +1543,11 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
         originalName: 'PageBeanWorkflowScheme',
         newName: 'WorkflowSchemes',
       },
+    ],
+    additionalTypes: [
+      // Needed to create a different transformation configuration for security scheme
+      // that is fetched from the recurse into of a project and a normal security scheme
+      { typeName: 'ProjectSecurityScheme', cloneFrom: 'SecurityScheme' },
     ],
   },
   jiraSwagger: {

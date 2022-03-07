@@ -144,8 +144,7 @@ const getListDeepInnerType = async (
  */
 const normalizeElementValues = (instance: InstanceElement): Promise<InstanceElement> => {
   const transformAdditionalProps: TransformFunc = async ({ value, field, path }) => {
-    if (Array.isArray(value)) {
-      // will handle in inner call
+    if (!_.isPlainObject(value)) {
       return value
     }
 
@@ -387,6 +386,7 @@ const getEntriesForType = async (
             ...nestedRequestContext,
           },
         })
+
         if (nested.isSingle) {
           if (nestedEntries.length === 1) {
             return [nested.toField, nestedEntries[0]] as [string, Values]

@@ -162,7 +162,7 @@ export const action: WorkspaceCommandAction<RestoreArgs> = async ({
     return CliExitCode.Success
   }
 
-  if (changes.length === 0) {
+  if (_.isEmpty(changes)) {
     outputLine(EOL, output)
     outputLine(Prompts.FETCH_NO_CHANGES, output)
     return CliExitCode.Success

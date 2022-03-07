@@ -205,6 +205,20 @@ describe('restore command', () => {
     })
   })
 
+  describe('should deploy considering user input', async () => {
+    it('should continue with restore when user input is y', () => {
+      // TODO
+    })
+
+    it('should continue with restore when user input is n', () => {
+      // TODO
+    })
+
+    it('should not prompt to continue if there are no changes', () => {
+      // TODO
+    })
+  })
+
   it('should return error when update workspace fails', async () => {
     const workspace = mocks.mockWorkspace({})
     workspace.updateNaclFiles.mockImplementation(async () => {

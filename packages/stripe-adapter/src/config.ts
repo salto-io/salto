@@ -46,6 +46,17 @@ export type StripeConfig = {
   [API_DEFINITIONS_CONFIG]: StripeApiConfig
 }
 
+const ALL_SUPPORTED_TYPES = [
+  'country_specs',
+  'coupons',
+  'products',
+  'reporting__report_types',
+  'tax_rates',
+  'webhook_endpoints',
+]
+
+export const DEFAULT_INCLUDE_TYPES = ALL_SUPPORTED_TYPES
+
 const DEFAULT_TYPE_CUSTOMIZATIONS: StripeApiConfig['types'] = {
   coupon: {
     transformation: {
@@ -116,19 +127,8 @@ export const DEFAULT_API_DEFINITIONS: StripeApiConfig = {
     },
   },
   types: DEFAULT_TYPE_CUSTOMIZATIONS,
+  supportedTypes: ALL_SUPPORTED_TYPES,
 }
-
-const ALL_SUPPORTED_TYPES = [
-  'country_specs',
-  'coupons',
-  'products',
-  'reporting__report_types',
-  'tax_rates',
-  'webhook_endpoints',
-]
-
-// noinspection UnnecessaryLocalVariableJS
-export const DEFAULT_INCLUDE_TYPES = ALL_SUPPORTED_TYPES
 
 export const DEFAULT_CONFIG: StripeConfig = {
   [FETCH_CONFIG]: {

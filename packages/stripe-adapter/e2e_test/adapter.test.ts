@@ -25,6 +25,7 @@ import { credsLease, realAdapter } from './adapter'
  * for all the supported types in {@link DEFAULT_API_DEFINITIONS.swagger.typeNameOverrides}
  */
 describe('Stripe adapter E2E with real swagger and mock replies', () => {
+  let fetchedElementNames: string[]
   let fetchedSwaggerElements: Element[]
   let credLease: CredsLease<AccessTokenCredentials>
 
@@ -36,6 +37,7 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
         { reportProgress: () => null },
     })
     fetchedSwaggerElements = elements
+    fetchedElementNames = fetchedSwaggerElements.map(e => e.elemID.getFullName())
   })
 
   afterAll(async () => {
@@ -49,15 +51,9 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
   })
 
   describe('fetches swagger types', () => {
-    let fetchedElementsNames: string[]
-
-    beforeAll(() => {
-      fetchedElementsNames = fetchedSwaggerElements.map(e => e.elemID.getFullName())
-    })
     it.each([
       'stripe.country_specs',
       'stripe.coupons',
-      'stripe.prices',
       'stripe.products',
       'stripe.reporting__report_types',
       'stripe.tax_rates',
@@ -67,7 +63,6 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
       'stripe.reporting_report_type',
       'stripe.country_spec',
       'stripe.coupon',
-      'stripe.plan',
       'stripe.tax_rate',
       'stripe.webhook_endpoint',
       'stripe.product_metadata',
@@ -79,16 +74,26 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
       'stripe.country_spec_verification_fields',
       'stripe.coupon_applies_to',
       'stripe.coupon_metadata',
-      'stripe.plan_metadata',
-      'stripe.plan_tier',
-      'stripe.transform_usage',
       'stripe.tax_rate_metadata',
       'stripe.webhook_endpoint_metadata',
     ])(
       '%s',
-      async expectedType => {
-        expect(fetchedElementsNames).toContain(expectedType)
+      expectedType => {
+        expect(fetchedElementNames).toContain(expectedType)
       }
     )
+  })
+
+  describe('does not fetch unsupported types', () => {
+    it.each([
+      'stripe.plan',
+      'stripe.plan_metadata',
+      'stripe.plan_tier',
+      'stripe.transform_usage',
+      'stripe.prices',
+    ])('%s',
+      unsupportedType => {
+        expect(fetchedElementNames).not.toContain(unsupportedType)
+      })
   })
 })

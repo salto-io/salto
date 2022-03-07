@@ -56,7 +56,6 @@ type RestoreArgs = {
     detailedPlan: boolean
     listPlannedChanges: boolean
     mode: nacl.RoutingMode
-    yes: boolean
 } & AccountsArg & EnvArg
 
 const applyLocalChangesToWorkspace = async (
@@ -168,7 +167,7 @@ export const action: WorkspaceCommandAction<RestoreArgs> = async ({
     return CliExitCode.Success
   }
 
-  if (!input.yes && !(await getUserBooleanInput(Prompts.SHOULD_EXECUTE_RESTORE))) {
+  if (!force && !(await getUserBooleanInput(Prompts.SHOULD_EXECUTE_RESTORE))) {
     outputLine(formatCancelCommand, output)
     return CliExitCode.Success
   }

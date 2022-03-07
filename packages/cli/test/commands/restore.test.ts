@@ -70,7 +70,6 @@ describe('restore command', () => {
           listPlannedChanges: false,
           mode: 'default',
           accounts,
-          yes: true,
         },
         workspace,
       })
@@ -101,7 +100,6 @@ describe('restore command', () => {
           listPlannedChanges: false,
           mode: 'default',
           accounts,
-          yes: true,
         },
         workspace,
       })
@@ -141,7 +139,6 @@ describe('restore command', () => {
           listPlannedChanges: false,
           mode: 'default',
           accounts,
-          yes: true,
         },
         workspace,
       })
@@ -159,7 +156,6 @@ describe('restore command', () => {
           mode: 'default',
           accounts,
           env: mocks.withEnvironmentParam,
-          yes: true,
         },
         workspace,
       })
@@ -181,7 +177,6 @@ describe('restore command', () => {
           listPlannedChanges: false,
           mode: 'default',
           accounts,
-          yes: true,
         },
         workspace,
       })
@@ -236,7 +231,6 @@ describe('restore command', () => {
         listPlannedChanges: false,
         mode: 'default',
         accounts,
-        yes: true,
       },
       workspace,
     })
@@ -254,7 +248,6 @@ describe('restore command', () => {
           mode: 'default',
           accounts,
           elementSelectors: ['++'],
-          yes: true,
         },
         workspace: mocks.mockWorkspace({}),
       })
@@ -271,7 +264,6 @@ describe('restore command', () => {
           mode: 'default',
           accounts,
           elementSelectors: ['salto.*'],
-          yes: true,
         },
         workspace: mocks.mockWorkspace({}),
       })
@@ -293,7 +285,6 @@ describe('restore command', () => {
           listPlannedChanges: false,
           mode: 'default',
           accounts,
-          yes: true,
         },
         workspace,
       })
@@ -316,7 +307,6 @@ describe('restore command', () => {
           listPlannedChanges: false,
           mode: 'default',
           accounts,
-          yes: true,
         },
         workspace,
       })
@@ -339,7 +329,6 @@ describe('restore command', () => {
           listPlannedChanges: false,
           mode: 'default',
           accounts,
-          yes: true,
         },
         workspace,
       })

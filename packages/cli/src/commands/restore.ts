@@ -21,10 +21,10 @@ import { CommandConfig, LocalChange, restore, Tags } from '@salto-io/core'
 import { getChangeData, isStaticFile, isAdditionChange } from '@salto-io/adapter-api'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
-import { header, formatDetailedChanges, formatInvalidFilters, formatStepStart, formatRestoreFinish, formatStepCompleted, formatStepFailed, formatStateRecencies, formatAppliedChanges, formatShowWarning, formatListRecord } from '../formatter'
+import { header, formatDetailedChanges, formatInvalidFilters, formatStepStart, formatRestoreFinish, formatStepCompleted, formatStepFailed, formatStateRecencies, formatAppliedChanges, formatShowWarning, formatListRecord, formatCancelCommand } from '../formatter'
 import Prompts from '../prompts'
 import { getWorkspaceTelemetryTags, updateWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
-import { getApprovedChanges } from '../callbacks'
+import { getApprovedChanges, getUserBooleanInput } from '../callbacks'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts } from './common/accounts'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
@@ -56,6 +56,7 @@ type RestoreArgs = {
     detailedPlan: boolean
     listPlannedChanges: boolean
     mode: nacl.RoutingMode
+    yes: boolean
 } & AccountsArg & EnvArg
 
 const applyLocalChangesToWorkspace = async (
@@ -161,6 +162,17 @@ export const action: WorkspaceCommandAction<RestoreArgs> = async ({
     return CliExitCode.Success
   }
 
+  if (changes.length === 0) {
+    outputLine(EOL, output)
+    outputLine(Prompts.FETCH_NO_CHANGES, output)
+    return CliExitCode.Success
+  }
+
+  if (!input.yes && !(await getUserBooleanInput(Prompts.SHOULD_EXECUTE_RESTORE))) {
+    outputLine(formatCancelCommand, output)
+    return CliExitCode.Success
+  }
+
   const workspaceTags = await getWorkspaceTelemetryTags(workspace)
   const updatingWsSucceeded = await applyLocalChangesToWorkspace(
     changes,
@@ -230,6 +242,14 @@ Static resources are not supported for this operation as their content is not ke
         // 'override' and 'isolated' are undocumented
         choices: ['default', 'align', 'override', 'isolated'],
         default: 'default',
+      },
+      {
+        name: 'yes',
+        alias: 'y',
+        required: false,
+        description: 'Automatic yes to prompts',
+        type: 'boolean',
+        default: false,
       },
     ],
   },

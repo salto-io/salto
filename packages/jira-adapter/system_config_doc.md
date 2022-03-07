@@ -131,6 +131,12 @@ jira {
           newName = "WorkflowSchemes"
         },
       ]
+      additionalTypes = [
+        {
+          typeName = "ProjectSecurityScheme"
+          cloneFrom = "SecurityScheme"
+        },
+      ]
     }
     jiraSwagger = {
       url = "https://raw.githubusercontent.com/salto-io/jira-swaggers/main/software-swagger.v3.json"
@@ -956,7 +962,7 @@ jira {
               isSingle = true
             },
             {
-              type = "SecurityScheme"
+              type = "ProjectSecurityScheme"
               toField = "issueSecurityScheme"
               context = [
                 {
@@ -965,7 +971,6 @@ jira {
                 },
               ]
               isSingle = true
-              valueField = "id"
             },
             {
               type = "PageBeanIssueTypeScreenSchemesProjects"
@@ -1068,7 +1073,7 @@ jira {
             },
             {
               fieldName = "issueSecurityScheme"
-              fieldType = "SecurityScheme"
+              fieldType = "ProjectSecurityScheme"
             },
             {
               fieldName = "issueTypeScreenScheme"
@@ -1451,6 +1456,14 @@ jira {
               fieldName = "levels"
             },
           ]
+        }
+      }
+      ProjectSecurityScheme = {
+        request = {
+          url = "/rest/api/3/project/{projectKeyOrId}/issuesecuritylevelscheme"
+        }
+        transformation = {
+          dataField = "."
         }
       }
       SecuritySchemes = {

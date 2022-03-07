@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   InstanceElement, Values, ObjectType, isObjectType, ReferenceExpression, isReferenceExpression,
-  isListType, isMapType, TypeElement, PrimitiveType, MapType, ElemIdGetter, Value,
+  isListType, isMapType, TypeElement, PrimitiveType, MapType, ElemIdGetter,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -369,7 +369,7 @@ const getEntriesForType = async (
 
   const getExtraFieldValues = (
     entry: Values
-  ): Promise<[string, Value | Value[]][]> => Promise.all(
+  ): Promise<[string, Values | Values[]][]> => Promise.all(
     recurseInto
       .filter(({ conditions }) => shouldRecurseIntoEntry(entry, requestContext, conditions))
       .map(async nested => {
@@ -387,28 +387,13 @@ const getEntriesForType = async (
           },
         })
 
-        const nestedData = nestedEntries
-          .map(nestedEntry => {
-            const data = (nested.valueField !== undefined
-              ? _.get(nestedEntry, nested.valueField)
-              : nestedEntry)
-
-            if (data === undefined) {
-              log.warn(`No value found for nested field ${nested.valueField} in nested entry ${safeJsonStringify(nestedEntry)}`)
-            }
-
-            return data
-          })
-          .filter(lowerdashValues.isDefined)
-
-
         if (nested.isSingle) {
-          if (nestedData.length === 1) {
-            return [nested.toField, nestedData[0]] as [string, Value]
+          if (nestedEntries.length === 1) {
+            return [nested.toField, nestedEntries[0]] as [string, Values]
           }
           log.warn(`Expected a single value in recurseInto result for ${typeName}.${nested.toField} but received: ${nestedEntries.length}, keeping as list`)
         }
-        return [nested.toField, nestedData] as [string, Value[]]
+        return [nested.toField, nestedEntries] as [string, Values[]]
       })
   )
 

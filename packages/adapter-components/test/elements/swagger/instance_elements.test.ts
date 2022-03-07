@@ -17,7 +17,6 @@
 import { collections } from '@salto-io/lowerdash'
 import { ObjectType, ElemID, BuiltinTypes, ListType, MapType, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
-import _ from 'lodash'
 import { getAllInstances } from '../../../src/elements/swagger'
 import { returnFullEntry } from '../../../src/elements/field_finder'
 import { Paginator } from '../../../src/client'
@@ -1155,62 +1154,6 @@ describe('swagger_instance_elements', () => {
           ]
         )
         expect(cat.value).not.toHaveProperty('owners')
-      })
-
-      it('should return the data under the valueField value', async () => {
-        mockPaginator.mockImplementation(({ url }) => {
-          if (url === '/pet') {
-            return toAsyncIterable([[
-              { id: 'dog', name: 'def' },
-              { id: 'cat', name: 'def' },
-              { id: 'fish', name: 'fish' },
-            ]])
-          }
-          if (url === '/pet/dog/owner' || url === '/pet/fish/owner') {
-            return toAsyncIterable([[
-              { name: 'o1', id: 'o1' },
-              { name: 'o2', id: 'o2' },
-              { name: 'o3' },
-              { name: 'o4', id: [1] },
-              { name: 'o5', id: { key: 'value' } },
-            ]])
-          }
-          if (url === '/pet/dog/owner/o1/nicknames') {
-            return toAsyncIterable([[{ names: ['n1', 'n2'] }]])
-          }
-          if (url === '/pet/dog/owner/o2/nicknames') {
-            return toAsyncIterable([[{ names: ['n3'] }]])
-          }
-          if (url.match(/\/pet\/.*\/owner\/.*\/info/) !== null) {
-            return toAsyncIterable([[{ numOfPets: 2 }]])
-          }
-          return toAsyncIterable([[]])
-        })
-
-        _.set(getAllInstancesParams, 'apiConfig.types.Pet.request.recurseInto.0.valueField', 'id')
-        instances = await getAllInstances(getAllInstancesParams)
-
-        expect(instances).toHaveLength(3)
-        const [dog, cat, fish] = instances
-        expect(dog.value).toHaveProperty(
-          'owners',
-          [
-            'o1',
-            'o2',
-            [1],
-            { additionalProperties: { key: 'value' } },
-          ]
-        )
-        expect(cat.value).not.toHaveProperty('owners')
-        expect(fish.value).toHaveProperty(
-          'owners',
-          [
-            'o1',
-            'o2',
-            [1],
-            { additionalProperties: { key: 'value' } },
-          ]
-        )
       })
     })
 

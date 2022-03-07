@@ -684,11 +684,10 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           isSingle: true,
         },
         {
-          type: 'SecurityScheme',
+          type: 'ProjectSecurityScheme',
           toField: 'issueSecurityScheme',
           context: [{ name: 'projectKeyOrId', fromField: 'key' }],
           isSingle: true,
-          valueField: 'id',
         },
         {
           type: 'PageBeanIssueTypeScreenSchemesProjects',
@@ -756,7 +755,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'workflowScheme', fieldType: 'WorkflowScheme' },
         { fieldName: 'permissionScheme', fieldType: 'PermissionScheme' },
         { fieldName: 'notificationScheme', fieldType: 'NotificationScheme' },
-        { fieldName: 'issueSecurityScheme', fieldType: 'SecurityScheme' },
+        { fieldName: 'issueSecurityScheme', fieldType: 'ProjectSecurityScheme' },
         { fieldName: 'issueTypeScreenScheme', fieldType: 'IssueTypeScreenScheme' },
         { fieldName: 'fieldConfigurationScheme', fieldType: 'FieldConfigurationScheme' },
         { fieldName: 'issueTypeScheme', fieldType: ISSUE_TYPE_SCHEMA_NAME },
@@ -1066,6 +1065,15 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'levels',
         },
       ],
+    },
+  },
+
+  ProjectSecurityScheme: {
+    request: {
+      url: '/rest/api/3/project/{projectKeyOrId}/issuesecuritylevelscheme',
+    },
+    transformation: {
+      dataField: '.',
     },
   },
 
@@ -1536,6 +1544,9 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
         newName: 'WorkflowSchemes',
       },
     ],
+    additionalTypes: [
+      { typeName: 'ProjectSecurityScheme', cloneFrom: 'SecurityScheme' },
+    ],
   },
   jiraSwagger: {
     url: 'https://raw.githubusercontent.com/salto-io/jira-swaggers/main/software-swagger.v3.json',
@@ -1717,7 +1728,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
     apiDefinitions: { refType: apiDefinitionsType },
   },
   annotations: {
-    [CORE_ANNOTATIONS.DEFAULT]: _.omit(DEFAULT_CONFIG, ['apiDefinitions', 'client']),
+    [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_CONFIG,
   },
 })
 

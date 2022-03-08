@@ -21,10 +21,10 @@ import { CommandConfig, LocalChange, restore, Tags } from '@salto-io/core'
 import { getChangeData, isStaticFile, isAdditionChange } from '@salto-io/adapter-api'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
-import { header, formatDetailedChanges, formatInvalidFilters, formatStepStart, formatRestoreFinish, formatStepCompleted, formatStepFailed, formatStateRecencies, formatAppliedChanges, formatShowWarning, formatListRecord } from '../formatter'
+import { header, formatDetailedChanges, formatInvalidFilters, formatStepStart, formatRestoreFinish, formatStepCompleted, formatStepFailed, formatStateRecencies, formatAppliedChanges, formatShowWarning, formatListRecord, formatCancelCommand } from '../formatter'
 import Prompts from '../prompts'
 import { getWorkspaceTelemetryTags, updateWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
-import { getApprovedChanges } from '../callbacks'
+import { getApprovedChanges, getUserBooleanInput } from '../callbacks'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts } from './common/accounts'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
@@ -48,6 +48,17 @@ const printRestorePlan = async (
   }
   outputLine(EOL, output)
 }
+
+export const shouldExecuteRestore = async (
+  force: boolean
+): Promise<boolean> => {
+  if (force) {
+    return true
+  }
+
+  return getUserBooleanInput(Prompts.SHOULD_EXECUTE_RESTORE)
+}
+
 
 type RestoreArgs = {
     elementSelectors?: string[]
@@ -158,6 +169,17 @@ export const action: WorkspaceCommandAction<RestoreArgs> = async ({
   outputLine(formatStepCompleted(Prompts.RESTORE_CALC_DIFF_FINISH), output)
 
   if (dryRun) {
+    return CliExitCode.Success
+  }
+
+  if (_.isEmpty(changes)) {
+    outputLine(EOL, output)
+    outputLine(Prompts.FETCH_NO_CHANGES, output)
+    return CliExitCode.Success
+  }
+
+  if (!(await shouldExecuteRestore(force))) {
+    outputLine(formatCancelCommand, output)
     return CliExitCode.Success
   }
 

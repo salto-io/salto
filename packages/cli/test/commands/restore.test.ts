@@ -15,6 +15,7 @@
 */
 import { restore } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
+import { getUserBooleanInput } from '../../src/callbacks'
 import { CliExitCode } from '../../src/types'
 import { action } from '../../src/commands/restore'
 import * as mocks from '../mocks'
@@ -30,6 +31,10 @@ const eventsNames = {
   workspaceSize: buildEventName(commandName, 'workspaceSize'),
 }
 
+jest.mock('../../src/callbacks', () => ({
+  ...jest.requireActual<{}>('../../src/callbacks'),
+  getUserBooleanInput: jest.fn(),
+}))
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual<{}>('@salto-io/core'),
   restore: jest.fn().mockImplementation(() => Promise.resolve([])),
@@ -41,6 +46,7 @@ describe('restore command', () => {
   let telemetry: mocks.MockTelemetry
   let output: mocks.MockCliOutput
   let mockRestore: jest.MockedFunction<typeof restore>
+  let mockGetUserBooleanInput: jest.MockedFunction<typeof getUserBooleanInput>
 
   beforeEach(() => {
     const cliArgs = mocks.mockCliArgs()
@@ -52,6 +58,9 @@ describe('restore command', () => {
     mockRestore.mockResolvedValue(
       mocks.dummyChanges.map(change => ({ change, serviceChanges: [change] }))
     )
+    mockGetUserBooleanInput = getUserBooleanInput as typeof mockGetUserBooleanInput
+    mockGetUserBooleanInput.mockReset()
+    mockGetUserBooleanInput.mockResolvedValue(true)
   })
 
   describe('with errored workspace', () => {
@@ -197,6 +206,124 @@ describe('restore command', () => {
       expect(output.stdout.content).toContain('The following changes')
       expect(output.stdout.content).toContain('Finished calculating the difference')
       expect(output.stdout.content).not.toContain('Done!')
+    })
+  })
+
+  describe('when prompting whether to perform the restore', () => {
+    let workspace: Workspace
+    beforeEach(async () => {
+      workspace = mocks.mockWorkspace({})
+    })
+
+    describe('when user input is y', () => {
+      beforeEach(async () => {
+        mockGetUserBooleanInput.mockResolvedValueOnce(true)
+        await action({
+          ...cliCommandArgs,
+          input: {
+            force: false,
+            dryRun: false,
+            detailedPlan: false,
+            listPlannedChanges: false,
+            mode: 'default',
+            accounts,
+          },
+          workspace,
+        })
+      })
+
+      it('should apply changes', () => {
+        expect(output.stdout.content).toContain('Applying changes')
+        expect(workspace.updateNaclFiles).toHaveBeenCalled()
+      })
+    })
+
+    describe('when user input is n', () => {
+      let result: number
+
+      beforeEach(async () => {
+        mockGetUserBooleanInput.mockResolvedValueOnce(false)
+        result = await action({
+          ...cliCommandArgs,
+          input: {
+            force: false,
+            dryRun: false,
+            detailedPlan: false,
+            listPlannedChanges: false,
+            mode: 'default',
+            accounts,
+          },
+          workspace,
+        })
+      })
+
+      it('should return success error code', () => {
+        expect(result).toBe(CliExitCode.Success)
+      })
+
+      it('should print a message before exiting', () => {
+        expect(output.stdout.content).toContain('Canceling...')
+      })
+
+      it('should not restore any Nacls', () => {
+        expect(workspace.updateNaclFiles).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('when there are no changes', () => {
+      let result: number
+
+      beforeEach(async () => {
+        mockRestore.mockResolvedValue([])
+
+        result = await action({
+          ...cliCommandArgs,
+          input: {
+            force: false,
+            dryRun: false,
+            detailedPlan: false,
+            listPlannedChanges: false,
+            mode: 'default',
+            accounts,
+          },
+          workspace,
+        })
+      })
+
+      it('should not prompt the user', () => {
+        expect(mockGetUserBooleanInput).not.toHaveBeenCalled()
+      })
+      it('should return success', () => {
+        expect(result).toBe(CliExitCode.Success)
+      })
+      it('should print that there are not changes', () => {
+        expect(output.stdout.content).toContain('No changes found')
+      })
+    })
+
+    describe('when force flag is true', () => {
+      beforeEach(async () => {
+        await action({
+          ...cliCommandArgs,
+          input: {
+            force: true,
+            dryRun: false,
+            detailedPlan: false,
+            listPlannedChanges: false,
+            mode: 'default',
+            accounts,
+          },
+          workspace,
+        })
+      })
+
+      it('should not prompt the user', () => {
+        expect(mockGetUserBooleanInput).not.toHaveBeenCalled()
+      })
+
+      it('should execute the restore', () => {
+        expect(workspace.updateNaclFiles).toHaveBeenCalled()
+      })
     })
   })
 

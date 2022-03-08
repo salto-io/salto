@@ -451,22 +451,6 @@ Please see [Salto configuration](salto_configuration.md)
 
 See the [NaCl syntax documentation](syntax.md)
 
-## Glossary - Coming Soon!
-
-- Workspace
-- NaCl
-- Plan
-- Service / BizApp
-- Element
-- Adapter
-- Annotation
-- Type
-- Settings
-- State file(s)
-- Cache file(s)
-- SALTO_HOME
-- Environment
-
 ---
 
 # Salto's Visual Studio Code extension

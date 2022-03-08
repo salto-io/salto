@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Workspace, parser } from '@salto-io/workspace'
+import { Workspace } from '@salto-io/workspace'
 import { mockFunction } from '@salto-io/test-utils'
 import { EditorWorkspace } from '../src/workspace'
 import { getDiagnostics } from '../src/diagnostics'
@@ -45,14 +45,10 @@ describe('diagnostics', () => {
     ))
     baseWs.transformError = mockFunction<Workspace['transformError']>().mockImplementation(async err => ({
       ...err,
-      sourceFragments: [{
-        fragment: '',
-        sourceRange: {
-          start: { col: 1, line: 1, byte: 1 },
-          end: { col: 2, line: 1, byte: 2 },
-          filename: '/parse_error.nacl',
-        },
-        subRange: (err as parser.ParseError).subject,
+      sourceLocations: [{
+        start: { col: 1, line: 1, byte: 1 },
+        end: { col: 2, line: 1, byte: 2 },
+        filename: '/parse_error.nacl',
       }],
     }))
   })

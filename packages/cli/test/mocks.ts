@@ -352,16 +352,13 @@ export const mockWorkspace = ({
     hasElementsInServices: mockFunction<Workspace['hasElementsInServices']>().mockResolvedValue(true),
     hasElementsInEnv: mockFunction<Workspace['hasElementsInEnv']>().mockResolvedValue(false),
     envOfFile: mockFunction<Workspace['envOfFile']>().mockReturnValue(''),
-    getSourceFragment: mockFunction<Workspace['getSourceFragment']>().mockImplementation(
-      async sourceRange => ({ sourceRange, fragment: '' })
-    ),
     hasErrors: mockFunction<Workspace['hasErrors']>().mockResolvedValue(false),
     errors: mockFunction<Workspace['errors']>().mockResolvedValue(mockErrors([])),
     transformToWorkspaceError: mockFunction<Workspace['transformToWorkspaceError']>().mockImplementation(
-      async error => ({ ...error, sourceFragments: [] })
+      async error => ({ ...error, sourceLocations: [] })
     ) as Workspace['transformToWorkspaceError'],
     transformError: mockFunction<Workspace['transformError']>().mockImplementation(
-      async error => ({ ...error, sourceFragments: [] })
+      async error => ({ ...error, sourceLocations: [] })
     ),
     updateNaclFiles: mockFunction<Workspace['updateNaclFiles']>().mockResolvedValue({
       naclFilesChangesCount: 0,

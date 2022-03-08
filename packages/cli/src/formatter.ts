@@ -24,7 +24,7 @@ import {
   isStaticFile,
 } from '@salto-io/adapter-api'
 import { Plan, PlanItem, FetchChange, FetchResult, LocalChange, getSupportedServiceAdapterNames } from '@salto-io/core'
-import { errors, SourceFragment, parser, WorkspaceComponents, StateRecency } from '@salto-io/workspace'
+import { errors, parser, WorkspaceComponents, StateRecency } from '@salto-io/workspace'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import Prompts from './prompts'
@@ -58,38 +58,17 @@ export const formatWordsSeries = (words: string[]): string => (words.length > 1
 /**
   * Format workspace errors
   */
-const TAB = '  '
 
-const formatSourceFragmentHeader = (headerMetaData: parser.SourceRange): string =>
-  `${chalk.underline(headerMetaData.filename)}(${chalk.cyan(`line: ${headerMetaData.start.line}`)})\n`
+const formatSourceLocation = (sr: Readonly<parser.SourceRange>): string =>
+  `${chalk.underline(sr.filename)}(${chalk.cyan(`line: ${sr.start.line}`)})\n`
 
-const formatSourceFragmentWithsubRange = (sf: Readonly<SourceFragment>): string => {
-  const sourceSubRange = sf.subRange ?? sf.sourceRange
-  const beforeSubRange = sf.fragment.slice(0, sourceSubRange.start.byte - sf.sourceRange.start.byte)
-  let subRange = sf.fragment.slice(sourceSubRange.start.byte - sf.sourceRange.start.byte,
-    sourceSubRange.end.byte - sf.sourceRange.start.byte)
-  subRange = subRange === '\n' ? '\\n\n' : subRange
-  const afterSubRange = sf.fragment.slice(sourceSubRange.end.byte - sf.sourceRange.start.byte)
-  return `${formatSourceFragmentHeader(sourceSubRange)}${TAB}${
-    subHeader(beforeSubRange)
-  }${chalk.white(subRange)
-  }${subHeader(afterSubRange)}\n`
-}
-
-const formatSourceFragmentWithoutsubRange = (sf: Readonly<SourceFragment>): string =>
-  `${formatSourceFragmentHeader(sf.sourceRange)}${TAB}${
-    subHeader(sf.fragment.split('\n').join(`\n${TAB}`))}\n`
-
-const formatSourceFragment = (sf: Readonly<SourceFragment>): string =>
-  (sf.subRange ? formatSourceFragmentWithsubRange(sf) : formatSourceFragmentWithoutsubRange(sf))
-
-const formatSourceFragments = (sourceFragments: ReadonlyArray<SourceFragment>): string =>
-  (sourceFragments.length > 0
-    ? `\n on ${sourceFragments.map(formatSourceFragment).join('\n and ')}`
+const formatSourceLocations = (sourceLocations: ReadonlyArray<parser.SourceRange>): string =>
+  (sourceLocations.length > 0
+    ? `\n on ${sourceLocations.map(formatSourceLocation).join('\n and ')}`
     : '')
 
 export const formatWorkspaceError = (we: Readonly<errors.WorkspaceError<SaltoError>>): string =>
-  `${formatError(we)}${formatSourceFragments(we.sourceFragments)}`
+  `${formatError(we)}${formatSourceLocations(we.sourceLocations)}`
 
 const indent = (text: string, level: number): string => {
   const indentText = _.repeat('  ', level)

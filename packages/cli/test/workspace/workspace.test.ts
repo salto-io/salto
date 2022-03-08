@@ -36,7 +36,7 @@ const mockWsFunctions = {
   isEmpty: mockFunction<Workspace['isEmpty']>().mockResolvedValue(false),
   flush: mockFunction<Workspace['flush']>(),
   transformError: mockFunction<Workspace['transformError']>().mockImplementation(
-    error => Promise.resolve({ ...error, sourceFragments: [] })
+    error => Promise.resolve({ ...error, sourceLocations: [] })
   ),
   getTotalSize: mockFunction<Workspace['getTotalSize']>(),
   getStateRecency: mockFunction<Workspace['getStateRecency']>().mockResolvedValue({

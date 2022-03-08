@@ -27,34 +27,25 @@ import { elements, preview, detailedChange } from './mocks'
 import Prompts from '../src/prompts'
 
 describe('formatter', () => {
-  const workspaceErrorWithSourceFragments: wsErrors.WorkspaceError<SaltoError> = {
-    sourceFragments: [{
-      sourceRange: {
+  const workspaceErrorWithSourceLocations: wsErrors.WorkspaceError<SaltoError> = {
+    sourceLocations: [
+      {
         start: { byte: 20, col: 10, line: 2 },
         end: { byte: 30, col: 10, line: 3 },
         filename: 'test.nacl',
       },
-      subRange: {
-        start: { line: 2, col: 3, byte: 30 },
-        end: { line: 2, col: 4, byte: 31 },
-        filename: 'test.nacl',
-      },
-      fragment: '{ This is my first code fragment }',
-    },
-    {
-      sourceRange: {
+      {
         start: { byte: 100, col: 10, line: 10 },
         end: { byte: 150, col: 10, line: 15 },
         filename: 'test.nacl',
       },
-      fragment: '{ This is my second code fragment }',
-    }],
+    ],
     message: 'This is my error',
     severity: 'Error',
   }
   const workspaceErrorWithoutSourceFragments: wsErrors.WorkspaceError<SaltoError> = {
     message: 'This is my error',
-    sourceFragments: [],
+    sourceLocations: [],
     severity: 'Error',
   }
   const workspaceErrorWithPreDeployAction: ChangeError = {
@@ -90,7 +81,7 @@ describe('formatter', () => {
     beforeAll(async () => {
       output = await formatExecutionPlan(plan, changeErrors.map(ce => ({
         ...ce,
-        sourceFragments: workspaceErrorWithSourceFragments.sourceFragments,
+        sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
       })))
     })
 
@@ -116,7 +107,7 @@ describe('formatter', () => {
         plan,
         [workspaceErrorWithInfoSeverity].map(ce => ({
           ...ce,
-          sourceFragments: workspaceErrorWithSourceFragments.sourceFragments,
+          sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
         }))
       )
       expect(outputWithNoDeployActions).not.toMatch(`${chalk.bold(Prompts.DEPLOY_PRE_ACTION_HEADER)}`)
@@ -134,14 +125,14 @@ describe('formatter', () => {
         severity: 'Error',
         message: 'Message key for test',
         detailedMessage: 'Validation message',
-        sourceFragments: workspaceErrorWithSourceFragments.sourceFragments,
+        sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
       }]
       const output = formatChangeErrors(changeErrors)
       expect(output)
         .toContain('Error')
       expect(output)
         .toMatch(new RegExp(`.*${changeErrors[0].detailedMessage}`, 's'))
-      expect(output).toMatch(new RegExp(`.*${workspaceErrorWithSourceFragments.sourceFragments[0].sourceRange.filename}`, 's'))
+      expect(output).toMatch(new RegExp(`.*${workspaceErrorWithSourceLocations.sourceLocations[0].filename}`, 's'))
     })
     it('should have grouped validations', () => {
       const changeErrors: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [{
@@ -149,7 +140,7 @@ describe('formatter', () => {
         severity: 'Error',
         message: 'Message key for test',
         detailedMessage: 'Validation message',
-        sourceFragments: workspaceErrorWithSourceFragments.sourceFragments,
+        sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
 
       },
       {
@@ -157,7 +148,7 @@ describe('formatter', () => {
         severity: 'Error',
         message: 'Message key for test',
         detailedMessage: 'Validation message 2',
-        sourceFragments: workspaceErrorWithSourceFragments.sourceFragments,
+        sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
 
       }]
       const output = formatChangeErrors(changeErrors)
@@ -172,23 +163,21 @@ describe('formatter', () => {
         severity: 'Error',
         message: 'Different message key',
         detailedMessage: 'Validation message 3',
-        sourceFragments: workspaceErrorWithSourceFragments.sourceFragments,
+        sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
       }
       const changeErrors: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [{
         elemID: new ElemID('salesforce', 'test'),
         severity: 'Error',
         message: 'Message key for test',
         detailedMessage: 'Validation message',
-        sourceFragments: workspaceErrorWithSourceFragments.sourceFragments,
-
+        sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
       },
       {
         elemID: new ElemID('salesforce', 'test2'),
         severity: 'Error',
         message: 'Message key for test',
         detailedMessage: 'Validation message 2',
-        sourceFragments: workspaceErrorWithSourceFragments.sourceFragments,
-
+        sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
       },
       differentValidationKey]
       const output = formatChangeErrors(changeErrors)
@@ -454,19 +443,13 @@ describe('formatter', () => {
   describe('workspace error format with source fragments', () => {
     let formattedErrors: string
     beforeEach(() => {
-      formattedErrors = formatWorkspaceError(workspaceErrorWithSourceFragments)
+      formattedErrors = formatWorkspaceError(workspaceErrorWithSourceLocations)
     })
     it('should print the start line', () => {
       expect(formattedErrors).toContain('2')
     })
     it('should print the error', () => {
       expect(formattedErrors).toContain('This is my error')
-    })
-    it('should print the first code fragment', () => {
-      expect(formattedErrors).toContain('first code') // The formatted error is chalked.
-    })
-    it('should print the second code fragment', () => {
-      expect(formattedErrors).toContain('{ This is my second code fragment }')
     })
   })
   describe('workspace error format without source fragments', () => {

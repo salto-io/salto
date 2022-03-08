@@ -319,10 +319,7 @@ export class EditorWorkspace {
     const wsError = await this.workspace.transformError(error)
     return {
       ...wsError,
-      sourceFragments: wsError.sourceFragments.map(fragment => ({
-        ...fragment,
-        sourceRange: this.editorSourceRange(fragment.sourceRange),
-      })),
+      sourceLocations: wsError.sourceLocations.map(range => this.editorSourceRange(range)),
     }
   }
 

@@ -48,7 +48,7 @@ const replaceWorkflowInScheme = async (
     transformFunc: ({ value }) => {
       if (isReferenceExpression(value) && value.elemID.isEqual(beforeWorkflow.elemID)) {
         wasChanged = true
-        return new ReferenceExpression(afterWorkflow.elemID, afterWorkflow, afterWorkflow)
+        return new ReferenceExpression(afterWorkflow.elemID, afterWorkflow)
       }
       return value
     },

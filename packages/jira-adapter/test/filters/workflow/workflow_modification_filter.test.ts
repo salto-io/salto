@@ -87,7 +87,6 @@ describe('workflowModificationFilter', () => {
         defaultWorkflow: new ReferenceExpression(
           workflowInstance.elemID,
           workflowInstance,
-          workflowInstance
         ),
       }
     )
@@ -154,7 +153,6 @@ describe('workflowModificationFilter', () => {
       const tempSchemeInstance = workflowSchemeInstance.clone()
       tempSchemeInstance.value.defaultWorkflow = new ReferenceExpression(
         tempInstance.elemID,
-        tempInstance,
         tempInstance,
       )
       tempSchemeInstance.value.updateDraftIfNeeded = true
@@ -235,7 +233,6 @@ describe('workflowModificationFilter', () => {
       tempSchemeInstance.value.defaultWorkflow = new ReferenceExpression(
         tempInstance.elemID,
         tempInstance,
-        tempInstance,
       )
       tempSchemeInstance.value.updateDraftIfNeeded = true
       expect(deployWorkflowSchemeMock).toHaveBeenNthCalledWith(
@@ -291,7 +288,6 @@ describe('workflowModificationFilter', () => {
       const tempSchemeInstance = workflowSchemeInstance.clone()
       tempSchemeInstance.value.defaultWorkflow = new ReferenceExpression(
         tempInstance.elemID,
-        tempInstance,
         tempInstance,
       )
       tempSchemeInstance.value.updateDraftIfNeeded = true

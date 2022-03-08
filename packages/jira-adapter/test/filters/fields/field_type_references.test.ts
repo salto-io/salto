@@ -15,6 +15,7 @@
 */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockClient } from '../../utils'
 import { DEFAULT_CONFIG } from '../../../src/config'
 import { JIRA } from '../../../src/constants'
@@ -30,6 +31,7 @@ describe('fields_references', () => {
       client,
       paginator,
       config: DEFAULT_CONFIG,
+      elementsSource: buildElementsSourceFromElements([]),
     }) as typeof filter
 
     fieldContextType = new ObjectType({

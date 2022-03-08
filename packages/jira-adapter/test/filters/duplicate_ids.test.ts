@@ -15,6 +15,7 @@
 */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockClient } from '../utils'
 import duplicateIdsFilter from '../../src/filters/duplicate_ids'
 import { Filter } from '../../src/filter'
@@ -36,6 +37,7 @@ describe('duplicateIdsFilter', () => {
       client,
       paginator,
       config,
+      elementsSource: buildElementsSourceFromElements([]),
     })
 
     type = new ObjectType({

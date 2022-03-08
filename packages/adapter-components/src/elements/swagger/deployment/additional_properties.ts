@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ActionName, Change, InstanceElement, isMapType, isObjectType, ObjectType, Values } from '@salto-io/adapter-api'
+import { ActionName, Change, InstanceElement, isMapType, isObjectType, ObjectType, ReadOnlyElementsSource, Values } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, transformElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -25,11 +25,12 @@ const log = logger(module)
 const removeAdditionalPropertiesFlat = async (
   values: Values,
   type: ObjectType,
-  action: ActionName
+  action: ActionName,
+  elementsSource?: ReadOnlyElementsSource,
 ): Promise<void> => {
   const additionalPropertiesField = type.fields.additionalProperties
   if (additionalPropertiesField === undefined
-    || !isMapType(await additionalPropertiesField.getType())) {
+    || !isMapType(await additionalPropertiesField.getType(elementsSource))) {
     return
   }
 
@@ -55,8 +56,10 @@ const removeAdditionalPropertiesFlat = async (
  * Remove the additional properties value we added on fetch in normalizeElementValues before deploy
  * and add its values to the top level values if deployable
  */
-export const flattenAdditionalProperties = async (change: Change<InstanceElement>)
-: Promise<Change<InstanceElement>> =>
+export const flattenAdditionalProperties = async (
+  change: Change<InstanceElement>,
+  elementsSource?: ReadOnlyElementsSource
+): Promise<Change<InstanceElement>> =>
   applyFunctionToChangeData(
     change,
     async element =>
@@ -64,10 +67,13 @@ export const flattenAdditionalProperties = async (change: Change<InstanceElement
         element,
         strict: false,
         allowEmpty: true,
+        elementsSource,
         transformFunc: async ({ value, field, path }) => {
-          const type = path?.isTopLevel() ? await element.getType() : await field?.getType()
+          const type = path?.isTopLevel()
+            ? await element.getType(elementsSource)
+            : await field?.getType(elementsSource)
           if (type !== undefined && isObjectType(type) && _.isPlainObject(value)) {
-            await removeAdditionalPropertiesFlat(value, type, change.action)
+            await removeAdditionalPropertiesFlat(value, type, change.action, elementsSource)
           }
 
           return value

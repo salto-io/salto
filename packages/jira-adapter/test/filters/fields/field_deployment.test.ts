@@ -16,6 +16,7 @@
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ListType, MapType, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { deployment, filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockClient } from '../../utils'
 import { DEFAULT_CONFIG } from '../../../src/config'
 import { JIRA } from '../../../src/constants'
@@ -62,6 +63,7 @@ describe('fields_deployment', () => {
       client,
       paginator,
       config: DEFAULT_CONFIG,
+      elementsSource: buildElementsSourceFromElements([]),
     }) as typeof filter
 
     contextType = new ObjectType({
@@ -89,6 +91,7 @@ describe('fields_deployment', () => {
       client,
       DEFAULT_CONFIG.apiDefinitions.types.Field.deployRequests,
       ['contexts'],
+      undefined,
       undefined,
     )
   })

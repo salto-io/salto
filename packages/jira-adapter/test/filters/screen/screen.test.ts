@@ -16,6 +16,7 @@
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, MapType, ObjectType, toChange } from '@salto-io/adapter-api'
 import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { JIRA } from '../../../src/constants'
 import { mockClient } from '../../utils'
 import screenFilter from '../../../src/filters/screen/screen'
@@ -50,6 +51,7 @@ describe('screenFilter', () => {
       client,
       paginator,
       config: DEFAULT_CONFIG,
+      elementsSource: buildElementsSourceFromElements([]),
     })
     screenTabType = new ObjectType({
       elemID: new ElemID(JIRA, 'ScreenableTab'),
@@ -128,7 +130,8 @@ describe('screenFilter', () => {
         client,
         DEFAULT_CONFIG.apiDefinitions.types.Screen.deployRequests,
         ['tabs'],
-        undefined
+        undefined,
+        undefined,
       )
     })
 
@@ -144,7 +147,8 @@ describe('screenFilter', () => {
         client,
         DEFAULT_CONFIG.apiDefinitions.types.Screen.deployRequests,
         ['tabs', 'name'],
-        undefined
+        undefined,
+        undefined,
       )
     })
 

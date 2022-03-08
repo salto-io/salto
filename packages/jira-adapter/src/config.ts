@@ -994,7 +994,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       url: '/rest/api/3/workflow/search',
       paginationField: 'startAt',
       queryParams: {
-        expand: 'transitions,transitions.rules,statuses,statuses.properties',
+        expand: 'transitions,transitions.rules,statuses,statuses.properties,operations',
       },
     },
   },

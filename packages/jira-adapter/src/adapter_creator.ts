@@ -92,6 +92,7 @@ export const adapter: Adapter = {
       }),
       config,
       getElemIdFunc: context.getElemIdFunc,
+      elementsSource: context.elementsSource,
     })
   },
   validateCredentials: async config => {

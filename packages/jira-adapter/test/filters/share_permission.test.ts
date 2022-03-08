@@ -15,6 +15,7 @@
 */
 import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { JIRA } from '../../src/constants'
 import sharePermissionFilter from '../../src/filters/share_permission'
 import { mockClient, getDefaultAdapterConfig } from '../utils'
@@ -30,6 +31,7 @@ describe('sharePermissionFilter', () => {
       client,
       paginator,
       config: await getDefaultAdapterConfig(),
+      elementsSource: buildElementsSourceFromElements([]),
     }) as typeof filter
 
     sharePermissionType = new ObjectType({

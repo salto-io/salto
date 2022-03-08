@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ActionName, Change, ElemID, getChangeData, InstanceElement, Values } from '@salto-io/adapter-api'
+import { ActionName, Change, ElemID, getChangeData, InstanceElement, ReadOnlyElementsSource, Values } from '@salto-io/adapter-api'
 import { transformElement } from '@salto-io/adapter-utils'
 import { createUrl } from '../elements/request_parameters'
 import { HTTPWriteClientInterface } from '../client/http_client'
@@ -26,12 +26,14 @@ export type ResponseResult = ResponseValue | ResponseValue[] | undefined
 
 export const filterUndeployableValues = async (
   instance: InstanceElement,
-  action: ActionName
+  action: ActionName,
+  elementsSource?: ReadOnlyElementsSource,
 ): Promise<InstanceElement> => (
   transformElement({
     element: instance,
     strict: false,
     allowEmpty: true,
+    elementsSource,
     transformFunc: ({ value, field }) => {
       // The === false is because if the value is undefined, we don't want to filter it out
       if (field?.annotations[OPERATION_TO_ANNOTATION[action]] === false) {
@@ -44,7 +46,8 @@ export const filterUndeployableValues = async (
 
 export const filterIgnoredValues = async (
   instance: InstanceElement,
-  fieldsToIgnore: string[] | ((path: ElemID) => boolean)
+  fieldsToIgnore: string[] | ((path: ElemID) => boolean),
+  elementsSource?: ReadOnlyElementsSource,
 ): Promise<Values> => {
   if (Array.isArray(fieldsToIgnore)) {
     return _.omit(
@@ -57,6 +60,7 @@ export const filterIgnoredValues = async (
     element: instance,
     strict: false,
     allowEmpty: true,
+    elementsSource,
     transformFunc: ({ value, path }) => {
       if (path !== undefined && fieldsToIgnore(path)) {
         return undefined
@@ -82,7 +86,8 @@ export const deployChange = async (
   client: HTTPWriteClientInterface,
   endpointDetails?: DeploymentRequestsByAction,
   fieldsToIgnore: string[] | ((path: ElemID) => boolean) = [],
-  additionalUrlVars?: Record<string, string>
+  additionalUrlVars?: Record<string, string>,
+  elementsSource?: ReadOnlyElementsSource,
 ): Promise<ResponseResult> => {
   const instance = getChangeData(change)
   const endpoint = endpointDetails?.[change.action]
@@ -90,8 +95,9 @@ export const deployChange = async (
     throw new Error(`No endpoint of type ${change.action} for ${instance.elemID.typeName}`)
   }
   const valuesToDeploy = await filterIgnoredValues(
-    await filterUndeployableValues(getChangeData(change), change.action),
+    await filterUndeployableValues(getChangeData(change), change.action, elementsSource),
     fieldsToIgnore,
+    elementsSource,
   )
   const url = createUrl({
     instance,

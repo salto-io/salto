@@ -17,12 +17,14 @@ import { DependencyChanger } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { projectDependencyChanger } from './project'
+import { workflowDependencyChanger } from './workflow'
 
 const { awu } = collections.asynciterable
 
 const DEPENDENCY_CHANGERS: DependencyChanger[] = [
   deployment.dependency.removeStandaloneFieldDependency,
   projectDependencyChanger,
+  workflowDependencyChanger,
 ]
 
 export const dependencyChanger: DependencyChanger = async (

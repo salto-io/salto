@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockClient } from '../utils'
 import iconUrlFilter from '../../src/filters/icon_url'
 import { Filter } from '../../src/filter'
@@ -30,6 +31,7 @@ describe('iconUrlFilter', () => {
       client,
       paginator,
       config: DEFAULT_CONFIG,
+      elementsSource: buildElementsSourceFromElements([]),
     })
 
     type = new ObjectType({

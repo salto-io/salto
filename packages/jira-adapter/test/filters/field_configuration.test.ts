@@ -15,7 +15,7 @@
 */
 import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils, deployment } from '@salto-io/adapter-components'
-import { resolveChangeElement } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, resolveChangeElement } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
 import { getLookUpName } from '../../src/reference_mapping'
@@ -54,6 +54,7 @@ describe('fieldConfigurationFilter', () => {
       client,
       paginator,
       config: DEFAULT_CONFIG,
+      elementsSource: buildElementsSourceFromElements([]),
     }) as typeof filter
 
     fieldConfigurationItemType = new ObjectType({
@@ -167,6 +168,7 @@ describe('fieldConfigurationFilter', () => {
         DEFAULT_CONFIG.apiDefinitions.types.FieldConfiguration.deployRequests,
         ['fields'],
         undefined,
+        undefined,
       )
     })
 
@@ -177,6 +179,7 @@ describe('fieldConfigurationFilter', () => {
         mockCli,
         DEFAULT_CONFIG.apiDefinitions.types.FieldConfiguration.deployRequests,
         ['fields'],
+        undefined,
         undefined,
       )
     })

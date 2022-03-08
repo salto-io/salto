@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockClient } from '../utils'
 import avatarsFilter from '../../src/filters/avatars'
 import { Filter } from '../../src/filter'
@@ -30,6 +31,7 @@ describe('avatarsFilter', () => {
       client,
       paginator,
       config: DEFAULT_CONFIG,
+      elementsSource: buildElementsSourceFromElements([]),
     })
 
     type = new ObjectType({

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { SaltoError } from '@salto-io/adapter-api'
+import { ReadOnlyElementsSource, SaltoError } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import JiraClient from './client/client'
 import { JiraConfig } from './config'
@@ -26,4 +26,6 @@ export type FilterResult = {
 
 export type Filter = filterUtils.Filter<FilterResult>
 
-export type FilterCreator = filterUtils.FilterCreator<JiraClient, JiraConfig, FilterResult>
+export type FilterCreator = filterUtils.FilterCreator<JiraClient, JiraConfig, FilterResult, {
+  elementsSource: ReadOnlyElementsSource
+}>

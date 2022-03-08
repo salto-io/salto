@@ -16,6 +16,7 @@
 import 'jest-extended'
 import { filterUtils } from '@salto-io/adapter-components'
 import { Element, ElemID, ReferenceExpression } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { getDefaultAdapterConfig, mockClient } from '../../utils'
 import issueTypeSchemeReferences from '../../../src/filters/issue_type_schemas/issue_type_scheme_references'
 import { instanceCreators } from '../../mock_elements'
@@ -33,6 +34,7 @@ describe('issueTypeSchemeReferences', () => {
       client,
       paginator,
       config: await getDefaultAdapterConfig(),
+      elementsSource: buildElementsSourceFromElements([]),
     }) as filterUtils.FilterWith<'onFetch'>
     runFilter = async (...elements: Element[]): Promise<Element[]> => {
       await filter.onFetch(elements)

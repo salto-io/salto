@@ -15,6 +15,7 @@
 */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils, deployment } from '@salto-io/adapter-components'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { DEFAULT_CONFIG } from '../../src/config'
 import JiraClient from '../../src/client/client'
 import { JIRA } from '../../src/constants'
@@ -49,6 +50,7 @@ describe('projectComponentFilter', () => {
       client,
       paginator,
       config: DEFAULT_CONFIG,
+      elementsSource: buildElementsSourceFromElements([]),
     }) as typeof filter
 
     type = new ObjectType({

@@ -15,6 +15,7 @@
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { JIRA } from '../../src/constants'
 import boardFilter from '../../src/filters/board'
 import { mockClient, getDefaultAdapterConfig } from '../utils'
@@ -29,6 +30,7 @@ describe('boardFilter', () => {
       client,
       paginator,
       config: await getDefaultAdapterConfig(),
+      elementsSource: buildElementsSourceFromElements([]),
     }) as typeof filter
 
     type = new ObjectType({ elemID: new ElemID(JIRA, 'Board') })

@@ -15,6 +15,7 @@
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockClient } from '../utils'
 import priorityFilter from '../../src/filters/priority'
 import { Filter } from '../../src/filter'
@@ -43,6 +44,7 @@ describe('priorityFilter', () => {
       client,
       paginator,
       config,
+      elementsSource: buildElementsSourceFromElements([]),
     })
 
     type = new ObjectType({

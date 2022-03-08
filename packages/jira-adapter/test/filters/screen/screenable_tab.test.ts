@@ -112,6 +112,7 @@ describe('screenableTab', () => {
         DEFAULT_CONFIG.apiDefinitions.types.ScreenableTab.deployRequests,
         ['fields', 'position'],
         { screenId: 'screenId' },
+        undefined,
       )
     })
 
@@ -140,6 +141,7 @@ describe('screenableTab', () => {
         DEFAULT_CONFIG.apiDefinitions.types.ScreenableTab.deployRequests,
         ['fields', 'position', 'name'],
         { screenId: 'screenId' },
+        undefined,
       )
     })
 
@@ -172,6 +174,7 @@ describe('screenableTab', () => {
         DEFAULT_CONFIG.apiDefinitions.types.ScreenableTab.deployRequests,
         ['fields', 'position'],
         { screenId: 'screenId' },
+        undefined,
       )
     })
 

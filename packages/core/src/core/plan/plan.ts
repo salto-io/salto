@@ -354,7 +354,7 @@ const addDifferentElements = (
 const resolveNodeElements = (
   before: ReadOnlyElementsSource,
   after: ReadOnlyElementsSource,
-): PlanTransformer => async graph => {
+): PlanTransformer => graph => log.time(async () => {
   const beforeItemsToResolve: ChangeDataType[] = []
   const afterItemsToResolve: ChangeDataType[] = []
   wu(graph.keys()).forEach(id => {
@@ -393,7 +393,7 @@ const resolveNodeElements = (
 
 
   return graph
-}
+}, 'resolve node elements for %d nodes', graph.size)
 
 export type Plan = GroupDAG<Change> & {
   itemsByEvalOrder: () => Iterable<PlanItem>
@@ -436,7 +436,7 @@ export const defaultDependencyChangers = [
 
 const removeRedundantFieldChanges = (
   graph: GroupDAG<Change<ChangeDataType>>
-): GroupDAG<Change<ChangeDataType>> => (
+): GroupDAG<Change<ChangeDataType>> => log.time(() => (
   // If we add / remove an object type, we can omit all the field add / remove
   // changes from the same group since they are included in the parent change
   new DAG<Group<Change<ChangeDataType>>>(
@@ -461,7 +461,7 @@ const removeRedundantFieldChanges = (
       return [key, { groupKey: group.groupKey, items: filteredItems }]
     }))
   )
-)
+), 'removeRedundantFieldChanges')
 
 export type AdditionalResolveContext = {
   before: ReadonlyArray<Element>
@@ -496,12 +496,17 @@ export const getPlan = async ({
     const filterResult = await filterInvalidChanges(
       before, after, diffGraph, changeValidators,
     )
+
+    // If the graph was replaced during filtering we need to resolve the graph again to account
+    // for nodes that may have changed during the filter.
+    if (filterResult.replacedGraph) {
+      // Note - using "after" here may be incorrect because filtering could create different
+      // "after" elements
+      await resolveNodeElements(before, after)(filterResult.validDiffGraph)
+    }
+
     const customGroupKeys = await getCustomGroupIds(
-      // We need to resolve the fileted graph again.
-      // Will be removed once the everything will use element source.
-      await resolveNodeElements(before, after)(
-        filterResult.validDiffGraph
-      ),
+      filterResult.validDiffGraph,
       customGroupIdFunctions,
     )
     // build graph

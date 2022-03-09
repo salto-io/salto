@@ -27,16 +27,17 @@ const { awu } = collections.asynciterable
 type FilterResult = {
   changeErrors: ChangeError[]
   validDiffGraph: DiffGraph<ChangeDataType>
+  replacedGraph: boolean
 }
 
 type TopLevelElement = InstanceElement | TypeElement
 
-export const filterInvalidChanges = async (
+export const filterInvalidChanges = (
   beforeElements: ReadOnlyElementsSource,
   afterElements: ReadOnlyElementsSource,
   diffGraph: DiffGraph<ChangeDataType>,
   changeValidators: Record<string, ChangeValidator>,
-): Promise<FilterResult> => {
+): Promise<FilterResult> => log.time(async () => {
   const createValidTopLevelElem = (beforeTopLevelElem: TopLevelElement,
     afterTopLevelElem: TopLevelElement, elemIdsToOmit: ElemID[]): Element | undefined => {
     const elemIdFullNamesToOmit = new Set(elemIdsToOmit.map(id => id.getFullName()))
@@ -195,7 +196,7 @@ export const filterInvalidChanges = async (
 
   if (Object.keys(changeValidators).length === 0) {
     // Shortcut to avoid grouping all changes if there are no validators to run
-    return { changeErrors: [], validDiffGraph: diffGraph }
+    return { changeErrors: [], validDiffGraph: diffGraph, replacedGraph: false }
   }
 
   const changesByAdapter = collections.iterable.groupBy(
@@ -209,6 +210,10 @@ export const filterInvalidChanges = async (
     .toArray()
 
   const invalidChanges = changeErrors.filter(v => v.severity === 'Error')
+  if (invalidChanges.length === 0) {
+    // Shortcut to avoid replacing the graph if there are no errors
+    return { changeErrors, validDiffGraph: diffGraph, replacedGraph: false }
+  }
   const nodeElemIdsToOmit = new Set(
     invalidChanges.map(change => change.elemID.createBaseID().parent.getFullName())
   )
@@ -217,5 +222,9 @@ export const filterInvalidChanges = async (
     nodeElemIdsToOmit,
     validAfterElementsMap
   )
-  return { changeErrors: [...changeErrors, ...dependencyErrors], validDiffGraph }
-}
+  return {
+    changeErrors: [...changeErrors, ...dependencyErrors],
+    validDiffGraph,
+    replacedGraph: true,
+  }
+}, 'filterInvalidChanges for %d changes with %d validators', diffGraph.size, Object.keys(changeValidators).length)

@@ -41,12 +41,17 @@ export type RequiredTags = {
   app: string
 }
 
-type BaseTags = {
+export type OptionalTags = {
+  version?: string
+  versionString?: string
   workspaceID?: string
+  osArch?: string
+  osRelease?: string
+  osPlatform?: string
 }
 
-export type Tags = BaseTags & {
-  [name: string]: string | number | undefined
+export type Tags = OptionalTags & {
+  [name: string]: string | number | boolean | undefined
 }
 
 export enum EVENT_TYPES {
@@ -89,8 +94,8 @@ export type Telemetry = {
   enabled: boolean
 
   isStopped(): boolean
-  sendCountEvent(name: string, value: number, extraTags?: Tags): void
-  sendStackEvent(name: string, value: Error, extraTags?: Tags): void
+  sendCountEvent(name: string, value: number, extraTags?: OptionalTags): void
+  sendStackEvent(name: string, value: Error, extraTags?: OptionalTags): void
   stop(timeoutMs: number): Promise<void>
   flush(): Promise<void>
 }
@@ -109,7 +114,7 @@ export const telemetrySender = (
   let timer = {} as NodeJS.Timer
   let stopped = false
   let consecutiveRetryCount = 0
-  const commonTags = {
+  const commonTags: RequiredTags & OptionalTags = {
     ...tags,
     osArch: arch(),
     osRelease: release(),
@@ -122,7 +127,7 @@ export const telemetrySender = (
     },
   })
 
-  const transformTags = (extraTags: Tags): Tags => (
+  const transformTags = (extraTags: OptionalTags): Tags => (
     _({ ...commonTags, ...extraTags }).mapKeys((_v, k) => _.snakeCase(k)).value()
   )
 
@@ -180,7 +185,7 @@ export const telemetrySender = (
     return flush()
   }
 
-  const sendCountEvent = (name: string, value: number, extraTags: Tags = {}): void => {
+  const sendCountEvent = (name: string, value: number, extraTags: OptionalTags = {}): void => {
     const newEvent = {
       name: transformName(name),
       value,
@@ -191,7 +196,7 @@ export const telemetrySender = (
     newEvents.push(newEvent)
   }
 
-  const sendStackEvent = (name: string, value: Error, extraTags: Tags = {}): void => {
+  const sendStackEvent = (name: string, value: Error, extraTags: OptionalTags = {}): void => {
     const stackArray = stacktraceFromError(value)
     if (stackArray.length === 0) {
       return

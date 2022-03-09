@@ -22,6 +22,7 @@ import { processOauthCredentials } from '../../src/cli_oauth_authenticator'
 import * as mocks from '../mocks'
 import * as callbacks from '../../src/callbacks'
 import { CliExitCode } from '../../src/types'
+import { buildEventName } from '../../src/telemetry'
 
 jest.mock('../../src/cli_oauth_authenticator', () => ({
   processOauthCredentials: jest.fn().mockResolvedValue({
@@ -91,6 +92,7 @@ describe('service command group', () => {
   let cliArgs: mocks.MockCliArgs
   let output: mocks.MockCliOutput
   let workspace: mocks.MockWorkspace
+  let telemetry: mocks.MockTelemetry
   const mockGetCredentialsFromUser = mocks.createMockGetCredentialsFromUser({
     username: 'test@test',
     password: 'test',
@@ -106,6 +108,7 @@ describe('service command group', () => {
     cliArgs = mocks.mockCliArgs()
     output = cliArgs.output
     workspace = mocks.mockWorkspace({ accounts: ['salesforce', 'hubspot', 'oauthAdapter'] })
+    telemetry = cliArgs.telemetry
   })
   describe('list command', () => {
     let cliCommandArgs: mocks.MockCommandArgs
@@ -239,9 +242,10 @@ describe('service command group', () => {
       })
 
       describe('when called with a new service', () => {
-        describe('when called with login parameters', () => {
-          it('should succeed when called with valid parameters', async () => {
-            const exitCode = await addAction({
+        describe('when called with valid login parameters', () => {
+          let exitCode: number
+          beforeEach(async () => {
+            exitCode = await addAction({
               ...cliCommandArgs,
               input: {
                 serviceType: 'newAdapter',
@@ -256,8 +260,17 @@ describe('service command group', () => {
               },
               workspace,
             })
+          })
+          it('should succeed when called with valid parameters', async () => {
             expect(exitCode).toEqual(CliExitCode.Success)
           })
+          it('should report service type telemetry only of the added service', () => {
+            const eventName = buildEventName('add', 'success')
+            expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
+            expect(telemetry.getEventsMap()[eventName][0].tags).toMatchObject({ 'adapter-newAdapter': undefined })
+          })
+        })
+        describe('when called with invalid login parameters', () => {
           it('should fail when called with missing parameter', async () => {
             const exitCode = await addAction({
               ...cliCommandArgs,
@@ -274,6 +287,10 @@ describe('service command group', () => {
               workspace,
             })
             expect(exitCode).toEqual(CliExitCode.AppError)
+
+            const eventName = buildEventName('add', 'failure')
+            expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
+            expect(telemetry.getEventsMap()[eventName][0].tags).toMatchObject({ 'adapter-newAdapter': undefined })
           })
           it('should fail when called with malformed parameter', async () => {
             const exitCode = await addAction({
@@ -292,6 +309,10 @@ describe('service command group', () => {
               workspace,
             })
             expect(exitCode).toEqual(CliExitCode.AppError)
+
+            const eventName = buildEventName('add', 'failure')
+            expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
+            expect(telemetry.getEventsMap()[eventName][0].tags).toMatchObject({ 'adapter-newAdapter': undefined })
           })
         })
         describe('when called with valid credentials', () => {
@@ -529,6 +550,12 @@ describe('service command group', () => {
 
         it('should print logged in', () => {
           expect(output.stdout.content).toContain('Login information successfully updated')
+        })
+
+        it('should report telemetery for service', () => {
+          const eventName = buildEventName('login', 'success')
+          expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
+          expect(telemetry.getEventsMap()[eventName][0].tags).toMatchObject({ 'adapter-salesforce': undefined })
         })
       })
 

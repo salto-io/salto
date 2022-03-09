@@ -256,9 +256,17 @@ export const updateWorkspace = async ({
   return { success: true, numberOfAppliedChanges }
 }
 
-export const getWorkspaceTelemetryTags = async (ws: Workspace): Promise<Tags> => (
-  { workspaceID: ws.uid }
+export const getAdapterTag = (adapter: string): Tags => (
+  { [`adapter-${adapter}`]: true }
 )
+
+export const getWorkspaceTelemetryTags = async (
+  ws: Workspace,
+  adapters?: string[]
+): Promise<Tags> => {
+  const adapterTags = adapters?.map(getAdapterTag) || []
+  return _.merge({ workspaceID: ws.uid }, ...adapterTags)
+}
 
 export const applyChangesToWorkspace = async ({
   workspace, changes, cliTelemetry, workspaceTags, approveChangesCallback,

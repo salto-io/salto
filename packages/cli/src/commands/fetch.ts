@@ -31,7 +31,7 @@ import { getApprovedChanges as cliGetApprovedChanges, shouldUpdateConfig as cliS
 import { getWorkspaceTelemetryTags, updateStateOnly, applyChangesToWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { ENVIRONMENT_OPTION, EnvArg, validateAndSetEnv } from './common/env'
-import { ACCOUNTS_OPTION, AccountsArg, getAndValidateActiveAccounts } from './common/accounts'
+import { ACCOUNTS_OPTION, AccountsArg, getAndValidateActiveAccounts, getAdaptersForAccounts } from './common/accounts'
 
 const log = logger(module)
 const { series } = promises.array
@@ -91,7 +91,7 @@ export const fetchCommand = async (
     stateOnly, regenerateSaltoIds,
   }: FetchCommandArgs): Promise<CliExitCode> => {
   const bindedOutputline = (text: string): void => outputLine(text, output)
-  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+  const workspaceTags = await getWorkspaceTelemetryTags(workspace, accounts || workspace.accounts())
   const fetchProgress = new EventEmitter<FetchProgressEvents>()
   fetchProgress.on('adaptersDidInitialize', () => {
     bindedOutputline(formatFetchHeader())
@@ -389,6 +389,7 @@ const fetchDef = createWorkspaceCommand({
     ],
   },
   action,
+  getAdapters: getAdaptersForAccounts,
 })
 
 export default fetchDef

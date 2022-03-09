@@ -20,7 +20,7 @@ import { PlanItem, Plan, preview, DeployResult, ItemStatus, deploy } from '@salt
 import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
-import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts } from './common/accounts'
+import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts, getAdaptersForAccounts } from './common/accounts'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { outputLine, errorOutputLine } from '../outputer'
 import { header, formatExecutionPlan, deployPhaseHeader, cancelDeployOutput, formatItemDone, formatItemError, formatCancelAction, formatActionInProgress, formatActionStart, deployPhaseEpilogue, formatStateRecencies, formatDeployActions } from '../formatter'
@@ -161,7 +161,10 @@ const deployPlan = async (
   log.debug(`${result.errors.length} errors occurred:\n${result.errors.map(err => err.message).join('\n')}`)
 
   if (executingDeploy) {
-    const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+    const workspaceTags = await getWorkspaceTelemetryTags(
+      workspace,
+      accounts || workspace.accounts()
+    )
     cliTelemetry.actionsSuccess(nonErroredActions.length, workspaceTags)
     cliTelemetry.actionsFailure(result.errors.length, workspaceTags)
   }
@@ -260,6 +263,7 @@ const deployDef = createWorkspaceCommand({
     ],
   },
   action,
+  getAdapters: getAdaptersForAccounts,
 })
 
 export default deployDef

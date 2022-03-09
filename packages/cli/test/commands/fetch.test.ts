@@ -28,12 +28,7 @@ import { buildEventName } from '../../src/telemetry'
 
 const commandName = 'fetch'
 const eventsNames = {
-  success: buildEventName(commandName, 'success'),
-  start: buildEventName(commandName, 'start'),
-  failure: buildEventName(commandName, 'failure'),
   changes: buildEventName(commandName, 'changes'),
-  changesToApply: buildEventName(commandName, 'changesToApply'),
-  workspaceSize: buildEventName(commandName, 'workspaceSize'),
 }
 
 jest.mock('@salto-io/core', () => ({
@@ -58,6 +53,7 @@ describe('fetch command', () => {
   let output: mocks.MockCliOutput
 
   beforeEach(() => {
+    (fetch as jest.Mock).mockClear()
     const cliArgs = mocks.mockCliArgs()
     cliCommandArgs = mocks.mockCliCommandArgs(commandName, cliArgs)
     telemetry = cliArgs.telemetry
@@ -119,6 +115,35 @@ describe('fetch command', () => {
       })
       it('should send telemetry events', () => {
         expect(telemetry.getEventsMap()[eventsNames.changes]).toHaveLength(1)
+        expect(telemetry.getEventsMap()[eventsNames.changes][0].tags).toMatchObject({ 'adapter-salesforce': undefined })
+      })
+    })
+
+    describe('when using implicit all accounts', () => {
+      let workspace: mocks.MockWorkspace
+
+      beforeEach(async () => {
+        workspace = mocks.mockWorkspace({})
+        result = await action({
+          ...cliCommandArgs,
+          input: {
+            force: true,
+            mode: 'default',
+            stateOnly: false,
+            fromState: false,
+            regenerateSaltoIds: false,
+          },
+          workspace,
+        })
+      })
+
+      it('should fetch both accounts', () => {
+        expect((fetch as jest.Mock).mock.calls[0][2]).toEqual(['salesforce', 'hubspot'])
+      })
+
+      it('should send telemetry events', () => {
+        expect(telemetry.getEventsMap()[eventsNames.changes]).toHaveLength(1)
+        expect(telemetry.getEventsMap()[eventsNames.changes][0].tags).toMatchObject({ 'adapter-salesforce': undefined, 'adapter-hubspot': undefined })
       })
     })
 

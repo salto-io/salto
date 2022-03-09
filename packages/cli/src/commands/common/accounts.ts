@@ -29,6 +29,14 @@ export const ACCOUNTS_OPTION: KeyedOption<AccountsArg> = {
   type: 'stringsList',
 }
 
+export const getAdaptersForAccounts = (
+  ws: Workspace,
+  input: {
+    accounts?: string[]
+    env?: string
+  }
+): string[] => (input.accounts || ws.accounts(input.env)).map(ws.getServiceFromAccountName)
+
 export const getAndValidateActiveAccounts = (
   workspace: Workspace,
   inputAccounts?: string[]

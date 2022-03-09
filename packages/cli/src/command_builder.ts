@@ -79,6 +79,7 @@ export type WorkspaceCommandAction<T> = (args: WorkspaceCommandArgs<T>) => Promi
 type WorkspaceCommandDef<T> = {
   properties: CommandOptions<T>
   action: WorkspaceCommandAction<T>
+  getAdapters?: (ws: Workspace, input: T) => string[]
 }
 
 export const isCommand = (c?: CommandOrGroupDef): c is CommandDef<unknown> =>
@@ -216,7 +217,7 @@ export const createPublicCommandDef = <T>(def: CommandInnerDef<T>): CommandDef<T
 export const createWorkspaceCommand = <T>(
   def: WorkspaceCommandDef<T>
 ): CommandDef<T & ConfigOverrideArg> => {
-  const { properties, action } = def
+  const { properties, action, getAdapters } = def
 
   const workspaceAction: CommandDefAction<T & ConfigOverrideArg> = async args => {
     const workspace = await loadLocalWorkspace(
@@ -224,7 +225,8 @@ export const createWorkspaceCommand = <T>(
       getConfigOverrideChanges(args.input),
     )
 
-    const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+    const adapters = getAdapters?.(workspace, args.input)
+    const workspaceTags = await getWorkspaceTelemetryTags(workspace, adapters)
     args.cliTelemetry.start(workspaceTags)
 
     const result = await action({ ...args, workspace })

@@ -172,6 +172,11 @@ export const missingBlockOpen = (range: SourceRange): ParseError => createError(
   'Expected {',
 )
 
+export const contentMergeConflict = (range: SourceRange): ParseError => createError(
+  range,
+  'Content merge conflict',
+)
+
 export const invalidStringChar = (stringRange: SourceRange, errMsg: string): ParseError => {
   const errMsgPosition = Number.parseInt(_.last(errMsg.split(' ')) || '', 10)
   const range = Number.isNaN(errMsgPosition)

@@ -1183,4 +1183,75 @@ describe('parsing errors', () => {
       expect((await awu(res.elements).toArray())[0].elemID.getFullName()).toEqual('I.am')
     })
   })
+  describe('merge conflict errors', () => {
+    describe('content merge conflict', () => {
+      const nacl = `
+        rocky.racoon checked {
+          only = "us"
+        }
+        rocky.racoon checkedAgain {
+          always = "remember"
+<<<<<<< HEAD
+          only = "to lose"
+=======
+          only = "to find"
+>>>>>>>
+        }}}}
+      `
+      let res: ParseResult
+      beforeAll(async () => {
+        res = await parse(Buffer.from(nacl), 'file.nacl', {})
+      })
+      it('should raise only a conflict error', () => {
+        expect(res.errors).toHaveLength(1)
+        expect(res.errors[0].subject).toEqual({
+          start: { byte: 130, col: 1, line: 7 },
+          end: { byte: 130, col: 1, line: 7 },
+          filename: 'file.nacl',
+        })
+        expect(res.errors[0].message)
+          .toBe('Content merge conflict')
+        expect(res.errors[0].summary).toBe('Content merge conflict')
+      })
+      it('should parse the first instance correctly', async () => {
+        expect(await awu(res.elements).toArray()).toHaveLength(1)
+        const inst = (await awu(res.elements).toArray())[0] as InstanceElement
+        expect(inst.value).toEqual({ only: 'us' })
+      })
+    })
+
+    describe('non content merge conflict (lacking \'>\')', () => {
+      const nacl = `
+        rocky.racoon checked {
+          only
+        }
+        rocky.racoon checked {
+          always = "remember"
+<<<<<<< HEAD
+          only = "to lose"
+=======
+          only = "to find"
+>>>>>>
+        }
+      `
+      let res: ParseResult
+      beforeAll(async () => {
+        res = await parse(Buffer.from(nacl), 'file.nacl', {})
+      })
+      it('should raise an invalidStringChar error', () => {
+        expect(res.errors).toHaveLength(2)
+        expect(res.errors[1].subject).toEqual({
+          start: { byte: 118, col: 1, line: 7 },
+          end: { byte: 118, col: 1, line: 7 },
+          filename: 'file.nacl',
+        })
+        expect(res.errors[1].message)
+          .toBe('Invalid string character')
+        expect(res.errors[1].summary).toBe('Invalid string character')
+      })
+      it('should parse the first instance correctly', async () => {
+        expect(await awu(res.elements).toArray()).toHaveLength(1)
+      })
+    })
+  })
 })

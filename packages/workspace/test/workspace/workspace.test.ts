@@ -425,7 +425,7 @@ describe('workspace', () => {
 
   describe('getSearchableNames', () => {
     let workspace: Workspace
-    const TOTAL_NUM_ELEMENETS = 61
+    const TOTAL_NUM_ELEMENETS = 62
 
     it('should return names of top level elements and fields', async () => {
       workspace = await createWorkspace()
@@ -654,7 +654,7 @@ describe('workspace', () => {
       await workspace.removeNaclFiles(removedPaths)
       const elemMap = await getElemMap(await workspace.elements())
       expect(Object.keys(elemMap).sort())
-        .toEqual(['salesforce.RenamedType1', 'salesforce.lead', 'multi.loc'].sort())
+        .toEqual(['salesforce.RenamedType1', 'salesforce.inconsistent_case', 'salesforce.lead', 'multi.loc'].sort())
       const lead = elemMap['salesforce.lead'] as ObjectType
       expect(Object.keys(lead.fields)).toContain('ext_field')
     })
@@ -679,7 +679,7 @@ describe('workspace', () => {
       await newWorkspace.removeNaclFiles(removedPaths)
       const elemMap = await getElemMap(await newWorkspace.elements())
       expect(Object.keys(elemMap).sort())
-        .toEqual(['salesforce.RenamedType1', 'salesforce.lead', 'multi.loc'].sort())
+        .toEqual(['salesforce.RenamedType1', 'salesforce.inconsistent_case', 'salesforce.lead', 'multi.loc'].sort())
       const lead = elemMap['salesforce.lead'] as ObjectType
       expect(Object.keys(lead.fields)).toContain('ext_field')
     })
@@ -1568,6 +1568,25 @@ describe('workspace', () => {
           after: 'changed',
         },
       },
+      {
+        id: new ElemID('salesforce', 'Inconsistent_Case'),
+        action: 'add',
+        path: ['Inconsistent_Case'],
+        data: {
+          after: new ObjectType({
+            elemID: new ElemID('salesforce', 'Inconsistent_Case'),
+            // Some value to make the serialized length different from the next case
+            annotations: { someValue: 'bla' },
+          }),
+        },
+      },
+      {
+        id: new ElemID('salesforce', 'inconsistent_case'),
+        action: 'remove',
+        data: {
+          before: new ObjectType({ elemID: new ElemID('salesforce', 'inconsistent_case') }),
+        },
+      },
     ]
 
     let clonedChanges: DetailedChange[]
@@ -1666,8 +1685,8 @@ describe('workspace', () => {
       // and could possibly change. If you get a failure here and the number
       // of changes you get seems ok, you can just change numExpectedChanges
       expect(updateNaclFileResults).toEqual({
-        naclFilesChangesCount: 23,
-        stateOnlyChangesCount: 19,
+        naclFilesChangesCount: 25,
+        stateOnlyChangesCount: 20,
       })
     })
     it('should not cause parse errors', async () => {
@@ -1831,6 +1850,20 @@ describe('workspace', () => {
         filename: 'Records/Queue/QueueInstance.nacl',
         buffer: expect.stringMatching(/.*salesforce.Queue QueueInstance.*salesforce.Queue queueInstance.*/s),
       }))
+    })
+
+    it('should use existing files when different cased elements are added separately', () => {
+      // In this scenario, the addition change came with a path hint of "Inconsistent_Case"
+      // but we expect the change to go to "inconsistent_case.nacl" because that file already exists
+      expect(dirStore.set).toHaveBeenCalledWith(expect.objectContaining({
+        filename: 'inconsistent_case.nacl',
+        buffer: expect.stringMatching(/.*type salesforce.Inconsistent_Case.*someValue =.*/s),
+      }))
+    })
+
+    it('should route delete changes to the existing file even when there are different cased elements in the same update', async () => {
+      const content = dirStore.get('inconsistent_case.nacl')
+      expect(content).not.toContain(/.*type salesforce.inconsistent_case.*/)
     })
 
     it('should not add changes in hidden values', () => {

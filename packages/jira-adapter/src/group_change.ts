@@ -13,22 +13,45 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { values } from '@salto-io/lowerdash'
-import { ChangeGroupIdFunction, getChangeData, ChangeGroupId, ChangeId, isModificationChange } from '@salto-io/adapter-api'
-import wu from 'wu'
-import { WORKFLOW_TYPE_NAME } from './constants'
+import { collections, values } from '@salto-io/lowerdash'
+import { ChangeGroupIdFunction, getChangeData, ChangeGroupId, ChangeId, isModificationChange, Change, isAdditionChange } from '@salto-io/adapter-api'
+import { getParents } from '@salto-io/adapter-utils'
+import { SECURITY_LEVEL_TYPE, WORKFLOW_TYPE_NAME } from './constants'
 
+const { awu } = collections.asynciterable
+
+type ChangeIdFunction = (change: Change) => Promise<string | undefined>
+
+
+export const getWorkflowGroup: ChangeIdFunction = async change => (
+  isModificationChange(change)
+    && getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME
+    ? 'Workflow Modifications'
+    : undefined
+)
+
+export const getSecurityLevelGroup: ChangeIdFunction = async change => (
+  isAdditionChange(change)
+  && getChangeData(change).elemID.typeName === SECURITY_LEVEL_TYPE
+    ? getParents(getChangeData(change))[0].elemID.getFullName()
+    : undefined
+)
+
+const changeIdProviders: ChangeIdFunction[] = [
+  getWorkflowGroup,
+  getSecurityLevelGroup,
+]
 
 export const getChangeGroupIds: ChangeGroupIdFunction = async changes => (
   new Map(
-    wu(changes.entries())
-      .map(([id, change]) => {
-        const groupId = isModificationChange(change)
-          && getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME
-          ? 'Workflow Modifications'
-          : getChangeData(change).elemID.getFullName()
-
-        return [id, groupId] as [ChangeId, ChangeGroupId]
+    await awu(changes.entries())
+      .map(async ([id, change]) => {
+        const groupId = await awu(changeIdProviders)
+          .map(provider => provider(change))
+          .find(values.isDefined)
+        return groupId === undefined
+          ? [id, getChangeData(change).elemID.getFullName()] as [ChangeId, ChangeGroupId]
+          : [id, groupId] as [ChangeId, ChangeGroupId]
       })
       .filter(values.isDefined)
       .toArray()

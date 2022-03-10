@@ -63,12 +63,14 @@ describe('jsp_deployment', () => {
           id: '1',
           name: 'val',
           self: 'someSelf',
+          ignored: 'ignored',
         }],
       })
       const results = await deployWithJspEndpoints({
         changes: [toChange({ after: instance })],
         client,
         urls,
+        fieldsToIgnore: ['ignored'],
       })
       expect(results.errors).toHaveLength(0)
       expect(results.appliedChanges).toHaveLength(1)
@@ -93,6 +95,76 @@ describe('jsp_deployment', () => {
           headers: JSP_API_HEADERS,
         }
       )
+    })
+
+    it('should use dataField', async () => {
+      mockConnection.get.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          inner: [{
+            id: '1',
+            name: 'val',
+            self: 'someSelf',
+          }],
+        },
+      })
+      const results = await deployWithJspEndpoints({
+        changes: [toChange({ after: instance })],
+        client,
+        urls: {
+          ...urls,
+          dataField: 'inner',
+        },
+      })
+      expect(results.errors).toHaveLength(0)
+      expect(results.appliedChanges).toHaveLength(1)
+
+      expect(instance.value).toEqual({
+        id: '1',
+        name: 'val',
+      })
+    })
+
+    it('should use getNameFunction', async () => {
+      mockConnection.get.mockResolvedValueOnce({
+        status: 200,
+        data: [{
+          id: '1',
+          val: 'val',
+          self: 'someSelf',
+        }],
+      })
+      const results = await deployWithJspEndpoints({
+        changes: [toChange({ after: instance })],
+        client,
+        urls,
+        getNameFunction: values => values.val,
+      })
+      expect(results.errors).toHaveLength(0)
+      expect(results.appliedChanges).toHaveLength(1)
+
+      expect(instance.value).toEqual({
+        id: '1',
+        name: 'val',
+      })
+    })
+
+    it('should return an error when there is no name in the service values', async () => {
+      mockConnection.get.mockResolvedValueOnce({
+        status: 200,
+        data: [{
+          id: '1',
+          val: 'val',
+          self: 'someSelf',
+        }],
+      })
+      const results = await deployWithJspEndpoints({
+        changes: [toChange({ after: instance })],
+        client,
+        urls,
+      })
+      expect(results.errors).toHaveLength(1)
+      expect(results.appliedChanges).toHaveLength(0)
     })
 
     it('When no id is returned should throw an error', async () => {
@@ -217,6 +289,24 @@ describe('jsp_deployment', () => {
       expect(results.errors).toHaveLength(1)
       expect(results.appliedChanges).toHaveLength(0)
     })
+
+    it('When there is not url for modification, should throw', async () => {
+      mockConnection.get.mockResolvedValueOnce({
+        status: 200,
+        data: [{
+          id: '1',
+          name: 'val',
+          self: 'someSelf',
+        }],
+      })
+      const results = await deployWithJspEndpoints({
+        changes: [toChange({ before: instance, after: instance })],
+        client,
+        urls: _.omit(urls, 'modify'),
+      })
+      expect(results.errors).toHaveLength(1)
+      expect(results.appliedChanges).toHaveLength(0)
+    })
   })
 
   describe('on removal', () => {
@@ -249,6 +339,7 @@ describe('jsp_deployment', () => {
           name: 'val',
           id: '1',
           confirm: 'true',
+          confirmed: 'true',
         }),
         {
           headers: JSP_API_HEADERS,
@@ -287,18 +378,33 @@ describe('jsp_deployment', () => {
       expect(results.appliedChanges).toHaveLength(0)
     })
 
-    it('When there is not url for removal', async () => {
+    it('When there is no url for removal should throw an error', async () => {
       mockConnection.get.mockResolvedValueOnce({
-        status: 400,
-        data: {},
+        status: 200,
+        data: [],
       })
       const results = await deployWithJspEndpoints({
         changes: [toChange({ before: instance })],
         client,
-        urls: _.omit(urls, 'removeUrl'),
+        urls: _.omit(urls, 'remove'),
       })
       expect(results.errors).toHaveLength(1)
       expect(results.appliedChanges).toHaveLength(0)
+    })
+
+    it('Should not throw when the request fail and the instance is already deleted', async () => {
+      mockConnection.post.mockRejectedValue(new Error('some error'))
+      mockConnection.get.mockResolvedValueOnce({
+        status: 200,
+        data: [],
+      })
+      const results = await deployWithJspEndpoints({
+        changes: [toChange({ before: instance })],
+        client,
+        urls,
+      })
+      expect(results.errors).toHaveLength(0)
+      expect(results.appliedChanges).toHaveLength(1)
     })
   })
 })

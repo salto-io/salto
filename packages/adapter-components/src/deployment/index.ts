@@ -15,5 +15,5 @@
 */
 export * as changeValidators from './change_validators'
 export * as dependency from './dependency'
-export { filterUndeployableValues, deployChange, ResponseResult } from './deployment'
+export { filterUndeployableValues, filterIgnoredValues, deployChange, ResponseResult } from './deployment'
 export { OPERATION_TO_ANNOTATION } from './annotations'

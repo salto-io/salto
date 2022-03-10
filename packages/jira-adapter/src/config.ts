@@ -34,9 +34,10 @@ type JiraClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimit
 
 export type JspUrls = {
   add: string
-  modify: string
+  modify?: string
   remove?: string
   query: string
+  dataField?: string
 }
 
 type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'> & {
@@ -1066,6 +1067,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         },
       ],
     },
+    jspRequests: {
+      add: '/secure/admin/AddIssueSecurityScheme.jspa',
+      modify: '/secure/admin/EditIssueSecurityScheme.jspa',
+      remove: '/secure/admin/DeleteIssueSecurityScheme.jspa',
+      query: '/rest/api/3/issuesecurityschemes',
+      dataField: 'issueSecuritySchemes',
+    },
   },
 
   ProjectSecurityScheme: {
@@ -1102,9 +1110,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   IssueSecurityLevelMember: {
     transformation: {
       fieldsToOmit: [
-        { fieldName: 'id' },
         { fieldName: 'issueSecurityLevelId' },
       ],
+    },
+    jspRequests: {
+      add: '/secure/admin/AddIssueSecurity.jspa',
+      remove: '/secure/admin/DeleteIssueSecurity.jspa',
+      query: '/rest/api/3/issuesecurityschemes/{id}/members',
+      dataField: 'values',
     },
   },
 
@@ -1137,6 +1150,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'self',
         },
       ],
+    },
+    jspRequests: {
+      add: '/secure/admin/EditIssueSecurities!addLevel.jspa',
+      modify: '/secure/admin/EditSecurityLevel.jspa',
+      remove: '/secure/admin/DeleteIssueSecurityLevel.jspa',
+      query: '/rest/api/3/issuesecurityschemes/{id}',
+      dataField: 'levels',
     },
   },
 
@@ -1646,6 +1666,7 @@ const jspUrlsType = createMatchingObjectType<Partial<JspUrls>>({
     modify: { refType: BuiltinTypes.STRING },
     remove: { refType: BuiltinTypes.STRING },
     query: { refType: BuiltinTypes.STRING },
+    dataField: { refType: BuiltinTypes.STRING },
   },
 })
 

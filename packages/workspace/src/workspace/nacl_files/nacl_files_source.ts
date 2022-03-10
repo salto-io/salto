@@ -737,6 +737,7 @@ const buildNaclFilesSource = (
       return acc
     }, new SourceMap())
     const changesToUpdate = getChangesToUpdate(changes, mergedSourceMap)
+    const allFileNames = _.keyBy(await parsedNaclFiles.list(), name => name.toLowerCase())
     const updatedNaclFiles = (await withLimitedConcurrency(
       _(changesToUpdate)
         .map(change => getChangeLocations(change, mergedSourceMap))
@@ -744,10 +745,14 @@ const buildNaclFilesSource = (
         // Group changes file, we use lower case in order to support case insensitive file systems
         .groupBy(change => change.location.filename.toLowerCase())
         .entries()
-        .map(([_lowerCaseFilename, fileChanges]) => async ():
+        .map(([lowerCaseFilename, fileChanges]) => async ():
           Promise<ParsedNaclFile & NaclFile | undefined> => {
-          // Changes might have a different cased filename, we just take the first variation
-          const [filename] = fileChanges.map(change => change.location.filename).sort()
+          // Changes might have a different cased filename, we take the version that already exists
+          // or the first variation if this is a new file
+          const filename = (
+            allFileNames[lowerCaseFilename]
+            ?? fileChanges.map(change => change.location.filename).sort()[0]
+          )
           try {
             const naclFileData = await getNaclFileData(filename)
             const buffer = await updateNaclFileData(naclFileData, fileChanges, functions)

@@ -272,6 +272,10 @@ type salesforce.lead {
     }
   }
   `,
+  'inconsistent_case.nacl': `
+type salesforce.inconsistent_case {
+}
+`,
 }
 
 export const mockDirStore = (

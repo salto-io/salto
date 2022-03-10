@@ -80,7 +80,7 @@ const LOGIN_PARAMETER_OPTION: KeyedOption<LoginParametersArg> = {
   name: 'loginParameters',
   alias: 'p',
   required: false,
-  description: 'Service login parameter in form of NAME=VALUE',
+  description: 'Service login parameter in form of NAME=VALUE. Use in order to run this command in non interactive mode',
   type: 'stringsList',
 }
 
@@ -161,8 +161,8 @@ const getLoginInputFlow = async (
 // Add
 type AccountAddArgs = {
     login: boolean
-    serviceName: string
-    account?: string
+    serviceType: string
+    accountName?: string
 } & AuthTypeArgs & EnvArg & LoginParametersArg
 
 export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
@@ -170,55 +170,55 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
   output,
   workspace,
 }): Promise<CliExitCode> => {
-  const { login, serviceName, authType, account, loginParameters } = input
-  if (account !== undefined && !(naclCase(account) === account)) {
-    errorOutputLine(`Invalid account name: ${account}, account name may only include letters, digits or underscores`, output)
+  const { login, serviceType, authType, accountName, loginParameters } = input
+  if (accountName !== undefined && !(naclCase(accountName) === accountName)) {
+    errorOutputLine(`Invalid account name: ${accountName}, account name may only include letters, digits or underscores`, output)
     return CliExitCode.UserInputError
   }
-  if (account !== undefined && (account === '')) {
+  if (accountName !== undefined && (accountName === '')) {
     errorOutputLine('Account name may not be an empty string.', output)
     return CliExitCode.UserInputError
   }
-  if (account !== undefined && account === 'var') {
+  if (accountName !== undefined && accountName === 'var') {
     errorOutputLine('Account name may not be "var"', output)
     return CliExitCode.UserInputError
   }
-  const accountName = account ?? serviceName
+  const theAccountName = accountName ?? serviceType
   await validateAndSetEnv(workspace, input, output)
 
   const supportedServiceAdapters = getSupportedServiceAdapterNames()
-  if (!supportedServiceAdapters.includes(serviceName)) {
-    errorOutputLine(formatInvalidServiceInput(serviceName, supportedServiceAdapters), output)
+  if (!supportedServiceAdapters.includes(serviceType)) {
+    errorOutputLine(formatInvalidServiceInput(serviceType, supportedServiceAdapters), output)
     return CliExitCode.UserInputError
   }
 
-  if (workspace.accounts().includes(accountName)) {
-    errorOutputLine(formatAccountAlreadyAdded(accountName), output)
+  if (workspace.accounts().includes(theAccountName)) {
+    errorOutputLine(formatAccountAlreadyAdded(theAccountName), output)
     return CliExitCode.UserInputError
   }
 
-  await installAdapter(serviceName)
+  await installAdapter(serviceType)
   if (login) {
-    const adapterCredentialsTypes = getAdaptersCredentialsTypes([serviceName])[serviceName]
+    const adapterCredentialsTypes = getAdaptersCredentialsTypes([serviceType])[serviceType]
     try {
       await getLoginInputFlow(workspace, adapterCredentialsTypes, output,
-        authType, accountName, loginParameters)
+        authType, theAccountName, loginParameters)
     } catch (e) {
-      errorOutputLine(formatAddServiceFailed(accountName, e.message), output)
+      errorOutputLine(formatAddServiceFailed(theAccountName, e.message), output)
       return CliExitCode.AppError
     }
   }
 
-  await addAdapter(workspace, serviceName, accountName)
+  await addAdapter(workspace, serviceType, theAccountName)
   await workspace.flush()
-  outputLine(formatAccountAdded(serviceName), output)
+  outputLine(formatAccountAdded(serviceType), output)
   return CliExitCode.Success
 }
 
 const serviceAddDef = createWorkspaceCommand({
   properties: {
     name: 'add',
-    description: 'Add an account on a service to the environment',
+    description: 'Add a service account to an environment',
     keyedOptions: [
       {
         // Will be replaced with --no-login
@@ -230,9 +230,9 @@ const serviceAddDef = createWorkspaceCommand({
         required: false,
       },
       {
-        name: 'account',
+        name: 'accountName',
         type: 'string',
-        description: 'Account name for the service, in case multiple accounts are configured under the same environment.',
+        description: 'Service account name. Use in case more than one account of a certain service type is added to the same environment.',
         required: false,
       },
       AUTH_TYPE_OPTION,
@@ -241,9 +241,9 @@ const serviceAddDef = createWorkspaceCommand({
     ],
     positionalOptions: [
       {
-        name: 'serviceName',
+        name: 'serviceType',
         type: 'string',
-        description: 'The name of the service',
+        description: 'The type of the service',
         required: true,
       },
     ],
@@ -265,7 +265,7 @@ export const listAction: WorkspaceCommandAction<ServiceListArgs> = async (
 const accountListDef = createWorkspaceCommand({
   properties: {
     name: 'list',
-    description: 'List all environment accounts',
+    description: 'List all environment service accounts',
     keyedOptions: [
       ENVIRONMENT_OPTION,
     ],
@@ -309,7 +309,7 @@ export const loginAction: WorkspaceCommandAction<ServiceLoginArgs> = async ({
 const accountLoginDef = createWorkspaceCommand({
   properties: {
     name: 'login',
-    description: 'Set the account credentials',
+    description: 'Login to a service account of an environment',
     keyedOptions: [
       AUTH_TYPE_OPTION,
       ENVIRONMENT_OPTION,
@@ -319,7 +319,7 @@ const accountLoginDef = createWorkspaceCommand({
       {
         name: 'accountName',
         type: 'string',
-        description: 'The name of the account',
+        description: 'The name of the service account, usually same as service type unless specified differently when adding the account',
         required: true,
       },
     ],

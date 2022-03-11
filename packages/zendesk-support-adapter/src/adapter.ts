@@ -59,6 +59,7 @@ import appsFilter from './filters/app'
 import routingAttributeFilter from './filters/routing_attribute'
 import serviceUrlFilter from './filters/service_url'
 import slaPolicyFilter from './filters/sla_policy'
+import macroAttachmentsFilter from './filters/macro_attachments'
 import defaultDeployFilter from './filters/default_deploy'
 import { getConfigFromConfigChanges } from './config_change'
 
@@ -91,8 +92,9 @@ export const DEFAULT_FILTERS = [
   restrictionFilter,
   organizationFieldFilter,
   hardcodedChannelFilter,
-  // fieldReferencesFilter should be after usersFilter
+  // fieldReferencesFilter should be after usersFilter and macroAttachmentsFilter
   usersFilter,
+  macroAttachmentsFilter,
   fieldReferencesFilter,
   appsFilter,
   slaPolicyFilter,
@@ -109,6 +111,8 @@ export const DEFAULT_FILTERS = [
 
 const SKIP_RESOLVE_TYPE_NAMES = [
   'organization_field__custom_field_options',
+  'macro',
+  'macro_attachment',
 ]
 
 export interface ZendeskAdapterParams {
@@ -245,7 +249,8 @@ export default class ZendeskAdapter implements AdapterOperations {
   public get deployModifiers(): DeployModifiers {
     return {
       changeValidator: createChangeValidator(
-        this.userConfig[API_DEFINITIONS_CONFIG], ['organization_field__custom_field_options']
+        this.userConfig[API_DEFINITIONS_CONFIG],
+        ['organization_field__custom_field_options', 'macro_attachment'],
       ),
       dependencyChanger: deploymentUtils.dependency.removeStandaloneFieldDependency,
       getChangeGroupIds,

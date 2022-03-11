@@ -23,6 +23,11 @@ export type ChildParentRelationship = {
   child: string
   fieldName: string
 }
+
+const ADDITIONAL_CHILD_PARENT_RELATIONSHIPS: ChildParentRelationship[] = [
+  { parent: 'macro', child: 'macro_attachment', fieldName: 'attachments' },
+]
+
 export const getChildAndParentTypeNames = (config: ZendeskApiConfig): ChildParentRelationship[] => {
   const parentTypes = Object.keys(
     _.omitBy(config.types, typeConfig => _.isEmpty(typeConfig.transformation?.standaloneFields))
@@ -35,7 +40,7 @@ export const getChildAndParentTypeNames = (config: ZendeskApiConfig): ChildParen
         typeConfig.transformation?.sourceTypeName === fullChildTypeName)?.[0] ?? fullChildTypeName
       return { parent: parentType, child: childTypeName, fieldName: field.fieldName }
     })
-  })
+  }).concat(ADDITIONAL_CHILD_PARENT_RELATIONSHIPS)
 }
 
 const getIdsFromReferenceExpressions = (values: unknown): string[] =>

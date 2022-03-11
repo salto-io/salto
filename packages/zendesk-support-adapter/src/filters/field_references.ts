@@ -554,6 +554,11 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskSupportFieldReferenceDefi
     serializationStrategy: 'id',
     target: { type: 'ticket_field' },
   },
+  {
+    src: { field: 'attachments', parentTypes: ['macro'] },
+    serializationStrategy: 'id',
+    target: { type: 'macro_attachment' },
+  },
 ]
 
 const commonFieldNameToTypeMappingDefs: ZendeskSupportFieldReferenceDefinition[] = [

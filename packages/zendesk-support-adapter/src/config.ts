@@ -378,7 +378,6 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       idFields: ['title'],
       fileNameFields: ['title'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'attachments' }),
       serviceUrl: '/admin/workspaces/agent-workspace/macros/{id}',
     },
     deployRequests: {
@@ -403,6 +402,12 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
           macroId: 'id',
         },
       },
+    },
+  },
+  macro_attachment: {
+    transformation: {
+      idFields: ['filename'],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
   macro_action: {

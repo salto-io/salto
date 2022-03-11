@@ -27,12 +27,14 @@ const PARENT_GROUPED_WITH_INNER_TYPE = [
   'user_field',
   'dynamic_content_item',
   'organization_field',
+  'macro',
 ]
 const INNER_TYPE_GROUPED_WITH_PARENT = [
   'ticket_field__custom_field_options',
   'user_field__custom_field_options',
   'dynamic_content_item__variants',
   'organization_field__custom_field_options',
+  'macro_attachment',
 ]
 
 const recurseIntoInstanceChangeToGroupId: ChangeIdFunction = async change => {

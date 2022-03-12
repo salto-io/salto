@@ -683,6 +683,40 @@ describe('adapter', () => {
         'zendesk_support.group.instance.Support',
       ])
     })
+    it('should return config changes', async () => {
+      mockAxiosAdapter.onGet('/test').replyOnce(403)
+      const { updatedConfig } = await adapter.operations({
+        credentials: new InstanceElement(
+          'config',
+          usernamePasswordCredentialsType,
+          { username: 'user123', password: 'pwd456', subdomain: 'abc' },
+        ),
+        config: new InstanceElement(
+          'config',
+          configType,
+          {
+            [FETCH_CONFIG]: {
+              includeTypes: ['test'],
+            },
+            [API_DEFINITIONS_CONFIG]: {
+              types: {
+                test: {
+                  request: {
+                    url: '/test',
+                  },
+                  transformation: {
+                    dataField: 'test',
+                  },
+                },
+              },
+            },
+          },
+        ),
+        elementsSource: buildElementsSourceFromElements([]),
+      }).fetch({ progressReporter: { reportProgress: () => null } })
+      expect(updatedConfig?.config).toHaveLength(1)
+      expect(updatedConfig?.config[0].value.fetch.includeTypes).toHaveLength(0)
+    })
   })
 
   describe('deploy', () => {

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  FetchResult, AdapterOperations, DeployResult, Element, PostFetchOptions, DeployModifiers,
+  FetchResult, AdapterOperations, DeployResult, PostFetchOptions, DeployModifiers,
   FetchOptions, ElemIdGetter,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
@@ -90,7 +90,7 @@ export default class WorkatoAdapter implements AdapterOperations {
   }
 
   @logDuration('generating instances and types from service')
-  private async getElements(): Promise<Element[]> {
+  private async getElements(): Promise<ReturnType<typeof getAllElements>> {
     return getAllElements({
       adapterName: WORKATO,
       types: this.userConfig.apiDefinitions.types,
@@ -112,7 +112,7 @@ export default class WorkatoAdapter implements AdapterOperations {
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch workato account configuration..')
     progressReporter.reportProgress({ message: 'Fetching types and instances' })
-    const elements = await this.getElements()
+    const { elements } = await this.getElements()
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
     await this.createFiltersRunner().onFetch(elements)

@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { InstanceElement, ElemID } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
@@ -35,7 +36,7 @@ export const getConfigFromConfigChanges = (
   const newIncludeTypes = currentIncludeTypes
     .filter(e => !typesToRemove.includes(e))
 
-  if (newIncludeTypes === currentIncludeTypes) {
+  if (_.isEqual(newIncludeTypes, currentIncludeTypes)) {
     return undefined
   }
 

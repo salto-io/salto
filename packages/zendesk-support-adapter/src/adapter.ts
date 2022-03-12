@@ -165,10 +165,8 @@ export default class ZendeskAdapter implements AdapterOperations {
       typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
       getElemIdFunc: this.getElemIdFunc,
       hideTypes: this.userConfig.fetch.hideTypes,
-      isErrorTurnToConfigSuggestion: error => {
-        const res = error instanceof clientUtils.HTTPError && (error.response.status === 403)
-        return res
-      },
+      isErrorTurnToConfigSuggestion: error =>
+        error instanceof clientUtils.HTTPError && (error.response.status === 403),
     })
   }
 

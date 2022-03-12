@@ -56,6 +56,15 @@ type Entries = {
   nestedTypes: ObjectType[]
 }
 
+export type ConfigChangeSuggestion = {
+  typeToExclude: string
+}
+
+export type FetchElements<T> = {
+  configChanges: ConfigChangeSuggestion[]
+  elements: T
+}
+
 const getEntriesForType = async (
   params: GetEntriesParams
 ): Promise<Entries> => {
@@ -273,6 +282,7 @@ export const getAllElements = async ({
   typeDefaults,
   getElemIdFunc,
   hideTypes,
+  isErrorTurnToConfigSuggestion,
 }: {
   adapterName: string
   includeTypes: string[]
@@ -283,7 +293,8 @@ export const getAllElements = async ({
   typeDefaults: TypeDuckTypeDefaultsConfig
   getElemIdFunc?: ElemIdGetter
   hideTypes?: boolean
-}): Promise<Element[]> => {
+  isErrorTurnToConfigSuggestion?: (error: Error) => boolean
+}): Promise<FetchElements<Element[]>> => {
   const allTypesWithRequestEndpoints = includeTypes.filter(
     typeName => types[typeName].request?.url !== undefined
   )
@@ -299,13 +310,26 @@ export const getAllElements = async ({
     hideTypes,
   }
 
+  const configSuggestions: ConfigChangeSuggestion[] = []
   const elements = await getElementsWithContext({
     includeTypes: allTypesWithRequestEndpoints,
     types,
-    typeElementGetter: args => getTypeAndInstances({
-      ...elementGenerationParams,
-      ...args,
-    }),
+    typeElementGetter: async args => {
+      try {
+        return await getTypeAndInstances({
+          ...elementGenerationParams,
+          ...args,
+        })
+      } catch (e) {
+        if (isErrorTurnToConfigSuggestion?.(e) === true) {
+          configSuggestions.push({
+            typeToExclude: args.typeName,
+          })
+          return []
+        }
+        throw e
+      }
+    },
   })
   const objectTypes = Object.fromEntries(
     elements.filter(isObjectType).map(e => [e.elemID.name, e])
@@ -332,5 +356,8 @@ export const getAllElements = async ({
     typeDefaultConfig: typeDefaults,
     hideTypes,
   })
-  return instancesAndTypes
+  return {
+    elements: instancesAndTypes,
+    configChanges: _.uniqBy(configSuggestions, suggestion => suggestion.typeToExclude),
+  }
 }

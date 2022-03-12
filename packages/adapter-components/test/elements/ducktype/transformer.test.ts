@@ -537,8 +537,9 @@ describe('ducktype_transformer', () => {
         types: typesConfig,
         typeDefaults: typeDefaultConfig,
       })
-      expect(res).toHaveLength(8)
-      expect(res.map(e => e.elemID.getFullName())).toEqual([
+      const { elements } = res
+      expect(elements).toHaveLength(8)
+      expect(elements.map(e => e.elemID.getFullName())).toEqual([
         'something.folder',
         'something.permission',
         'something.file',
@@ -621,8 +622,9 @@ describe('ducktype_transformer', () => {
         },
         typeDefaults: typeDefaultConfig,
       })
-      expect(res).toHaveLength(2)
-      const overridedType = res[1] as ObjectType
+      const { elements } = res
+      expect(elements).toHaveLength(2)
+      const overridedType = elements[1] as ObjectType
       const overridedFieldType = overridedType.fields.test1
       const overridedFieldWithRestrictions = overridedType.fields.test2
       expect(overridedFieldType.refType.elemID.getFullName())

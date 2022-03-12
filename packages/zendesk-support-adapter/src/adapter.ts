@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  FetchResult, AdapterOperations, DeployResult, Element, DeployModifiers, FetchOptions,
+  FetchResult, AdapterOperations, DeployResult, DeployModifiers, FetchOptions,
   DeployOptions, Change, isInstanceChange, InstanceElement, getChangeData, ElemIdGetter,
 } from '@salto-io/adapter-api'
 import {
@@ -57,6 +57,7 @@ import appsFilter from './filters/app'
 import routingAttributeFilter from './filters/routing_attribute'
 import serviceUrlFilter from './filters/service_url'
 import defaultDeployFilter from './filters/default_deploy'
+import { getConfigFromConfigChanges } from './config_change'
 
 const log = logger(module)
 const { createPaginator } = clientUtils
@@ -110,6 +111,7 @@ export interface ZendeskAdapterParams {
   config: ZendeskConfig
   // callback function to get an existing elemId or create a new one by the ServiceIds values
   getElemIdFunc?: ElemIdGetter
+  configInstance?: InstanceElement
 }
 
 export default class ZendeskAdapter implements AdapterOperations {
@@ -118,14 +120,17 @@ export default class ZendeskAdapter implements AdapterOperations {
   private paginator: clientUtils.Paginator
   private userConfig: ZendeskConfig
   private getElemIdFunc?: ElemIdGetter
+  private configInstance?: InstanceElement
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
     client,
     getElemIdFunc,
     config,
+    configInstance,
   }: ZendeskAdapterParams) {
     this.userConfig = config
+    this.configInstance = configInstance
     this.getElemIdFunc = getElemIdFunc
     this.client = client
     this.paginator = createPaginator({
@@ -149,7 +154,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   }
 
   @logDuration('generating instances and types from service')
-  private async getElements(): Promise<Element[]> {
+  private async getElements(): Promise<ReturnType<typeof getAllElements>> {
     return getAllElements({
       adapterName: ZENDESK_SUPPORT,
       types: this.userConfig.apiDefinitions.types,
@@ -160,6 +165,10 @@ export default class ZendeskAdapter implements AdapterOperations {
       typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
       getElemIdFunc: this.getElemIdFunc,
       hideTypes: this.userConfig.fetch.hideTypes,
+      isErrorTurnToConfigSuggestion: error => {
+        const res = error instanceof clientUtils.HTTPError && (error.response.status === 403)
+        return res
+      },
     })
   }
 
@@ -171,12 +180,15 @@ export default class ZendeskAdapter implements AdapterOperations {
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch zendesk account configuration..')
     progressReporter.reportProgress({ message: 'Fetching types and instances' })
-    const elements = await this.getElements()
+    const { elements, configChanges } = await this.getElements()
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
     const result = await (await this.createFiltersRunner()).onFetch(elements) as FilterResult
-    return { elements, errors: result ? result.errors : [] }
+    const updatedConfig = this.configInstance
+      ? getConfigFromConfigChanges(configChanges, this.configInstance)
+      : undefined
+    return { elements, errors: result ? result.errors : [], updatedConfig }
   }
 
   /**

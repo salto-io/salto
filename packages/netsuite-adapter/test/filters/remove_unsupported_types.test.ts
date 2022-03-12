@@ -20,6 +20,7 @@ import { NETSUITE } from '../../src/constants'
 import NetsuiteClient from '../../src/client/client'
 import { FilterOpts } from '../../src/filter'
 import { customrecordtypeType } from '../../src/autogen/types/custom_types/customrecordtype'
+import { getDefaultAdapterConfig } from '../utils'
 
 describe('remove_unsupported_types', () => {
   let filterOpts: FilterOpts
@@ -30,7 +31,7 @@ describe('remove_unsupported_types', () => {
   const sdfSoapType = new ObjectType({ elemID: new ElemID(NETSUITE, 'CustomRecordType'), annotations: { source: 'soap' } })
   const isSuiteAppConfiguredMock = jest.fn()
 
-  beforeEach(() => {
+  beforeEach(async () => {
     elements = [sdfType, supportedSoapType, unsupportedSoapType, sdfSoapType]
     isSuiteAppConfiguredMock.mockReset()
     isSuiteAppConfiguredMock.mockReturnValue(true)
@@ -44,6 +45,7 @@ describe('remove_unsupported_types', () => {
       }) },
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
+      config: await getDefaultAdapterConfig(),
     }
   })
 

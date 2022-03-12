@@ -21,6 +21,7 @@ import NetsuiteClient from '../../../src/client/client'
 import { FilterOpts } from '../../../src/filter'
 import SuiteAppClient from '../../../src/client/suiteapp_client/suiteapp_client'
 import mockSdfClient from '../../client/sdf_client'
+import { getDefaultAdapterConfig } from '../../utils'
 
 describe('sdf internal ids tests', () => {
   let filterOpts: FilterOpts
@@ -41,7 +42,7 @@ describe('sdf internal ids tests', () => {
   } as unknown as SuiteAppClient
 
   const client = new NetsuiteClient(SDFClient, suiteAppClient)
-  beforeEach(() => {
+  beforeEach(async () => {
     customTypeObject = new ObjectType({ elemID: new ElemID(NETSUITE, 'customrecordtype') })
     accountInstance = new InstanceElement('account', new ObjectType({ elemID: new ElemID(NETSUITE, 'account') }))
     customTypeInstance = new InstanceElement('customRecordType', customTypeObject)
@@ -70,6 +71,7 @@ describe('sdf internal ids tests', () => {
       }) },
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
+      config: await getDefaultAdapterConfig(),
     }
     runSuiteQLMock.mockReset()
     runSuiteQLMock.mockResolvedValueOnce([
@@ -95,6 +97,7 @@ describe('sdf internal ids tests', () => {
         }) },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
+        config: await getDefaultAdapterConfig(),
       }
       await filterCreator(filterOpts).onFetch?.(elements)
       expect(runSuiteQLMock).not.toHaveBeenCalled()
@@ -117,6 +120,7 @@ describe('sdf internal ids tests', () => {
         }) },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
+        config: await getDefaultAdapterConfig(),
       }
       await filterCreator(filterOpts).preDeploy?.(
         instances.map(instance => toChange({ after: instance }))
@@ -137,6 +141,7 @@ describe('sdf internal ids tests', () => {
         }) },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
+        config: await getDefaultAdapterConfig(),
       }
       await filterCreator(filterOpts).onDeploy?.(
         [

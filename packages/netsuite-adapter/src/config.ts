@@ -26,7 +26,7 @@ import {
   CLIENT_CONFIG, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FETCH_TARGET, SKIP_LIST,
   SUITEAPP_CONCURRENCY_LIMIT, SUITEAPP_CLIENT_CONFIG, USE_CHANGES_DETECTION,
   CONCURRENCY_LIMIT, FETCH, INCLUDE, EXCLUDE, DEPLOY, DATASET, WORKBOOK, WARN_STALE_DATA,
-  INSTALLED_SUITEAPPS, LOCKED_ELEMENTS_TO_EXCLUDE,
+  INSTALLED_SUITEAPPS, LOCKED_ELEMENTS_TO_EXCLUDE, FETCH_AUTHOR_INFO,
 } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams } from './query'
 import { TYPES_TO_INTERNAL_ID } from './data_elements/types'
@@ -190,6 +190,7 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
     [INCLUDE]: { refType: queryParamsConfigType },
     [EXCLUDE]: { refType: queryParamsConfigType },
     [LOCKED_ELEMENTS_TO_EXCLUDE]: { refType: queryParamsConfigType },
+    [FETCH_AUTHOR_INFO]: { refType: BuiltinTypes.BOOLEAN },
   },
 })
 

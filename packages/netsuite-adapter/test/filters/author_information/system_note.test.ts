@@ -22,6 +22,7 @@ import { FilterOpts } from '../../../src/filter'
 import SuiteAppClient from '../../../src/client/suiteapp_client/suiteapp_client'
 import mockSdfClient from '../../client/sdf_client'
 import { EMPLOYEE_NAME_QUERY } from '../../../src/filters/author_information/constants'
+import { getDefaultAdapterConfig } from '../../utils'
 
 describe('netsuite system note author information', () => {
   let filterOpts: FilterOpts
@@ -42,7 +43,7 @@ describe('netsuite system note author information', () => {
 
   const client = new NetsuiteClient(SDFClient, suiteAppClient)
 
-  beforeEach(() => {
+  beforeEach(async () => {
     runSuiteQLMock.mockReset()
     runSuiteQLMock.mockResolvedValueOnce([
       { id: '1', entityid: 'user 1 name' },
@@ -79,6 +80,7 @@ describe('netsuite system note author information', () => {
       }) },
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
+      config: await getDefaultAdapterConfig(),
     }
   })
 
@@ -174,7 +176,7 @@ describe('netsuite system note author information', () => {
   })
 
   describe('no suite app client', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       filterOpts = {
         client: clientWithoutSuiteApp,
         elementsSourceIndex: { getIndexes: () => Promise.resolve({
@@ -185,6 +187,39 @@ describe('netsuite system note author information', () => {
         }) },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
+        config: await getDefaultAdapterConfig(),
+      }
+    })
+    it('should not change any elements in fetch', async () => {
+      await filterCreator(filterOpts).onFetch?.(elements)
+      expect(runSuiteQLMock).not.toHaveBeenCalled()
+      expect(Object.values(accountInstance.annotations)).toHaveLength(0)
+      expect(Object.values(customTypeInstance.annotations)).toHaveLength(0)
+      expect(Object.values(fileInstance.annotations)).toHaveLength(0)
+      expect(Object.values(folderInstance.annotations)).toHaveLength(0)
+    })
+  })
+
+  describe('fetchAuthorInformation is false', () => {
+    beforeEach(async () => {
+      const defaultConfig = await getDefaultAdapterConfig()
+      filterOpts = {
+        client,
+        elementsSourceIndex: { getIndexes: () => Promise.resolve({
+          serviceIdsIndex: {},
+          serviceIdRecordsIndex: {},
+          internalIdsIndex: {},
+          customFieldsIndex: {},
+        }) },
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+        config: {
+          ...defaultConfig,
+          fetch: {
+            ...defaultConfig.fetch,
+            fetchAuthorInformation: false,
+          },
+        },
       }
     })
     it('should not change any elements in fetch', async () => {

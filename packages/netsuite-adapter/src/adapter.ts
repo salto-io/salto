@@ -180,6 +180,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         elementsSourceIndex: this.elementsSourceIndex,
         elementsSource: this.elementsSource,
         isPartial,
+        config,
       },
       filtersCreators,
     )

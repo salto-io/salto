@@ -24,6 +24,7 @@ import { customsegmentType } from '../../src/autogen/types/custom_types/customse
 import { workflowType } from '../../src/autogen/types/custom_types/workflow'
 import { PATH, SCRIPT_ID } from '../../src/constants'
 import NetsuiteClient from '../../src/client/client'
+import { getDefaultAdapterConfig } from '../utils'
 
 
 describe('instance_references filter', () => {
@@ -118,6 +119,7 @@ describe('instance_references filter', () => {
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
+        config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
       expect(instanceWithRefs.value.refToFilePath)
@@ -130,6 +132,7 @@ describe('instance_references filter', () => {
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
+        config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
 
@@ -143,6 +146,7 @@ describe('instance_references filter', () => {
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
+        config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
 
@@ -158,6 +162,7 @@ describe('instance_references filter', () => {
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
+        config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
 
@@ -171,6 +176,7 @@ describe('instance_references filter', () => {
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
+        config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
 
@@ -184,6 +190,7 @@ describe('instance_references filter', () => {
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
+        config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
 
@@ -197,6 +204,7 @@ describe('instance_references filter', () => {
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
+        config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
 
@@ -211,6 +219,7 @@ describe('instance_references filter', () => {
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
+        config: await getDefaultAdapterConfig(),
       }).onFetch?.([customSegmentInstance, fileInstance, workflowInstance, instanceWithRefs])
 
 
@@ -224,6 +233,7 @@ describe('instance_references filter', () => {
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
+        config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
 
@@ -237,6 +247,7 @@ describe('instance_references filter', () => {
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
+        config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
 
@@ -250,6 +261,7 @@ describe('instance_references filter', () => {
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
+        config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
 
@@ -263,6 +275,7 @@ describe('instance_references filter', () => {
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
+        config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
 
@@ -276,6 +289,7 @@ describe('instance_references filter', () => {
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
+        config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
 
@@ -289,6 +303,7 @@ describe('instance_references filter', () => {
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
+        config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
 
@@ -302,6 +317,7 @@ describe('instance_references filter', () => {
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
+        config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
 
@@ -321,6 +337,7 @@ describe('instance_references filter', () => {
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: true,
+        config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
 
@@ -340,6 +357,7 @@ describe('instance_references filter', () => {
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
+        config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
 
@@ -353,6 +371,7 @@ describe('instance_references filter', () => {
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
+        config: await getDefaultAdapterConfig(),
       }).onFetch?.([customSegmentInstance, workflowInstance, instanceWithRefs])
 
 
@@ -390,6 +409,7 @@ describe('instance_references filter', () => {
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
+        config: await getDefaultAdapterConfig(),
       }).onFetch?.([instanceWithRefs])
 
 

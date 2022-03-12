@@ -21,6 +21,7 @@ import NetsuiteClient from '../../../src/client/client'
 import { FilterOpts } from '../../../src/filter'
 import SuiteAppClient from '../../../src/client/suiteapp_client/suiteapp_client'
 import mockSdfClient from '../../client/sdf_client'
+import { getDefaultAdapterConfig } from '../../utils'
 
 describe('netsuite saved searches author information tests', () => {
   let filterOpts: FilterOpts
@@ -38,7 +39,7 @@ describe('netsuite saved searches author information tests', () => {
 
   const client = new NetsuiteClient(SDFClient, suiteAppClient)
 
-  beforeEach(() => {
+  beforeEach(async () => {
     runSavedSearchQueryMock.mockReset()
     runSavedSearchQueryMock.mockResolvedValueOnce([
       { id: '1', modifiedby: [{ value: '1', text: 'user 1 name' }] },
@@ -60,6 +61,7 @@ describe('netsuite saved searches author information tests', () => {
       }) },
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
+      config: await getDefaultAdapterConfig(),
     }
   })
 
@@ -114,7 +116,7 @@ describe('netsuite saved searches author information tests', () => {
   })
 
   describe('no suite app client', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       filterOpts = {
         client: clientWithoutSuiteApp,
         elementsSourceIndex: { getIndexes: () => Promise.resolve({
@@ -125,6 +127,36 @@ describe('netsuite saved searches author information tests', () => {
         }) },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
+        config: await getDefaultAdapterConfig(),
+      }
+    })
+    it('should not change any elements in fetch', async () => {
+      await filterCreator(filterOpts).onFetch?.(elements)
+      expect(runSavedSearchQueryMock).not.toHaveBeenCalled()
+      expect(Object.values(savedSearch.annotations)).toHaveLength(0)
+    })
+  })
+
+  describe('fetchAuthorInformation is false', () => {
+    beforeEach(async () => {
+      const defaultConfig = await getDefaultAdapterConfig()
+      filterOpts = {
+        client,
+        elementsSourceIndex: { getIndexes: () => Promise.resolve({
+          serviceIdsIndex: {},
+          serviceIdRecordsIndex: {},
+          internalIdsIndex: {},
+          customFieldsIndex: {},
+        }) },
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+        config: {
+          ...defaultConfig,
+          fetch: {
+            ...defaultConfig.fetch,
+            fetchAuthorInformation: false,
+          },
+        },
       }
     })
     it('should not change any elements in fetch', async () => {

@@ -14,6 +14,14 @@
 * limitations under the License.
 */
 import { ElemID, ServiceIds } from '@salto-io/adapter-api'
+import { createDefaultInstanceFromType } from '@salto-io/adapter-utils'
+import { configType, NetsuiteConfig } from '../src/config'
+import { NETSUITE } from '../src/constants'
 
 export const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
   ElemID => new ElemID(adapterName, name)
+
+export const getDefaultAdapterConfig = async (): Promise<NetsuiteConfig> => {
+  const defaultConfigInstance = await createDefaultInstanceFromType(NETSUITE, configType)
+  return defaultConfigInstance.value as NetsuiteConfig
+}

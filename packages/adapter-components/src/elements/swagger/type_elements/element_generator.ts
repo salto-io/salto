@@ -328,7 +328,8 @@ export const generateTypes = async (
   addServiceIdAnnotations(definedTypes, types, typeDefaults)
 
   if (supportedTypes !== undefined) {
-    const recurseIntoTypes = Object.values(_.pick(types, supportedTypes))
+    // including all recurseInto types, regardless of whether they are listed or not
+    const recurseIntoTypes = Object.values(types)
       .flatMap(def => def.request?.recurseInto ?? [])
       .map(def => def.type)
     const extendedSupportedTypes = [...new Set([...supportedTypes, ...recurseIntoTypes])]

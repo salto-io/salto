@@ -393,6 +393,13 @@ describe('swagger_type_elements', () => {
                     toField: 'food',
                     context: [],
                   },
+                ],
+              },
+            },
+            Food: {
+              request: {
+                url: '/def',
+                recurseInto: [
                   {
                     type: 'Order',
                     toField: 'order',

@@ -200,7 +200,7 @@ describe('netsuite system note author information', () => {
     })
   })
 
-  describe('fetchAuthorInformation is false', () => {
+  describe('authorInformation.enable is false', () => {
     beforeEach(async () => {
       const defaultConfig = await getDefaultAdapterConfig()
       filterOpts = {
@@ -217,7 +217,9 @@ describe('netsuite system note author information', () => {
           ...defaultConfig,
           fetch: {
             ...defaultConfig.fetch,
-            fetchAuthorInformation: false,
+            authorInformation: {
+              enable: false,
+            },
           },
         },
       }

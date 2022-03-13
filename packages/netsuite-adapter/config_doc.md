@@ -40,7 +40,7 @@ netsuite {
 | ----------------------------------------------------| ------------------------| -----------
 | [fetch.include](#fetch-include-configuration-options)                                  | Include everything                               | Specifies items to fetch. Items that do not match any of the include criteria will not be fetched
 | [fetch.exclude](#fetch-exclude-configuration-options)                                  | [] (Exclude nothing)                             | Specifies items to not fetch. Items that match any of the exclude criteria will not be fetched even if they also match some of the include criteria
-| fetch.fetchAuthorInformation                        | true                    | Whether to fetch the user that made the last change for each element
+| fetch.authorInformation.enable                      | true                    | Whether to fetch the user that made the last change for each element
 | [client](#sdf-client-configuration-options)         | {} (no overrides)       | Configuration relating to the SDF client used to interact with netsuite
 | [suiteAppClient](#salto-suiteapp-client-configuration-options)             | {} (no overrides)       | Configuration relating to the Salto SuiteApp client used to interact with netsuite
 | [deploy](#salto-deploy-flags)                       | undefined. set all deploy's flags to their default value        | Configuration deploy optional flags

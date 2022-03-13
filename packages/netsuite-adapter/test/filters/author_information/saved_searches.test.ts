@@ -137,7 +137,7 @@ describe('netsuite saved searches author information tests', () => {
     })
   })
 
-  describe('fetchAuthorInformation is false', () => {
+  describe('authorInformation.enable is false', () => {
     beforeEach(async () => {
       const defaultConfig = await getDefaultAdapterConfig()
       filterOpts = {
@@ -154,7 +154,9 @@ describe('netsuite saved searches author information tests', () => {
           ...defaultConfig,
           fetch: {
             ...defaultConfig.fetch,
-            fetchAuthorInformation: false,
+            authorInformation: {
+              enable: false,
+            },
           },
         },
       }

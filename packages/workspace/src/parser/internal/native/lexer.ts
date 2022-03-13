@@ -43,13 +43,12 @@ export const TOKEN_TYPES = {
   MERGE_CONFLICT: 'mergeConflict',
   MERGE_CONFLICT_MID: 'mergeConflictMid',
   MERGE_CONFLICT_END: 'mergeConflictEnd',
+  CONFLICT_CONTENT: 'mergeConflictContent',
 }
 
 export const rules: Record<string, moo.Rules> = {
   main: {
-    [TOKEN_TYPES.MERGE_CONFLICT]: '<<<<<<<',
-    [TOKEN_TYPES.MERGE_CONFLICT_MID]: '=======',
-    [TOKEN_TYPES.MERGE_CONFLICT_END]: '>>>>>>>',
+    [TOKEN_TYPES.MERGE_CONFLICT]: { match: '<<<<<<<', push: 'mergeConflict' },
     [TOKEN_TYPES.MULTILINE_START]: { match: /'''[ \t]*[(\r\n)(\n)]/, lineBreaks: true, push: 'multilineString' },
     [TOKEN_TYPES.DOUBLE_QUOTES]: { match: '"', push: 'string' },
     [TOKEN_TYPES.NUMBER]: /-?(?:0|[1-9]\d*)(?:\.\d*)?(?:[eE][+-]?\d+)?/,
@@ -77,6 +76,11 @@ export const rules: Record<string, moo.Rules> = {
     [TOKEN_TYPES.REFERENCE]: { match: /\$\{[ \t]*[\d\w.]+[ \t]*\}/, value: s => s.slice(2, -1).trim() },
     [TOKEN_TYPES.MULTILINE_END]: { match: /^[ \t]*'''/, pop: 1 },
     [TOKEN_TYPES.CONTENT]: { match: /.*\\\$\{.*[(\r\n)(\n)]|.*?(?=\$\{)|.*[(\r\n)(\n)]/, lineBreaks: true },
+  },
+  mergeConflict: {
+    [TOKEN_TYPES.MERGE_CONFLICT_MID]: '=======',
+    [TOKEN_TYPES.MERGE_CONFLICT_END]: { match: '>>>>>>>', pop: 1 },
+    [TOKEN_TYPES.CONFLICT_CONTENT]: { match: /.*\\\$\{.*[(\r\n)(\n)]|.*?(?=\$\{)|.*[(\r\n)(\n)]/, lineBreaks: true },
   },
 }
 
@@ -108,6 +112,12 @@ const validateToken = (token?: moo.Token): token is LexerToken => {
   }
   if (token.type === undefined) {
     throw new InvalidLexerTokenError()
+  } else if (token.type === TOKEN_TYPES.MERGE_CONFLICT) {
+    if (isAtBeginningOfLine(token)) {
+      throw new ContentMergeConflictError(token as LexerToken)
+    } else {
+      throw new InvalidLexerTokenError()
+    }
   }
   return true
 }
@@ -123,14 +133,6 @@ class PeekableLexer {
 
     private advance(): LexerToken | undefined {
       let token = this.lexer.next()
-
-      if (token?.type === TOKEN_TYPES.MERGE_CONFLICT) {
-        if (isAtBeginningOfLine(token)) {
-          throw new ContentMergeConflictError(token as LexerToken)
-        } else {
-          throw new InvalidLexerTokenError()
-        }
-      }
 
       while (token && (token.type === TOKEN_TYPES.WHITESPACE
         || token.type === TOKEN_TYPES.COMMENT)) {

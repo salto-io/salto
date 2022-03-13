@@ -25,7 +25,6 @@ import { ParseContext } from './types'
 import { replaceValuePromises, positionAtStart } from './helpers'
 import { consumeVariableBlock, consumeElement } from './consumers/top_level'
 
-
 const isVariableDef = (context: ParseContext): boolean => (
   context.lexer.peek()?.type === TOKEN_TYPES.WORD
   && context.lexer.peek()?.value === Keywords.VARIABLES_DEFINITION
@@ -76,6 +75,11 @@ export const parseBuffer = async (
     } else if (e instanceof ContentMergeConflictError && e.lastValidToken) {
       const pos = positionAtStart(e.lastValidToken)
       try {
+        // Having the beginning string of a merge conflict, Salto verifies if the
+        // middle and end strings exist as well. In case they aren't exist salto
+        // raises an invalid error token, without covering the rest of the file.
+        // This is a trade off for creating a regex merge conflict token, which
+        // seems to work slowly.
         context.lexer.recover([TOKEN_TYPES.MERGE_CONFLICT_MID], true)
         context.lexer.recover([TOKEN_TYPES.MERGE_CONFLICT_END], true)
         context.errors = [contentMergeConflict({ start: pos, end: pos, filename })]

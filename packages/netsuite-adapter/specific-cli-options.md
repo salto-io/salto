@@ -1,4 +1,34 @@
 # NetSuite Specific CLI options
+
+## Non interactive Login Parameters
+Supprted parameters are:
+* `accountId` - your netsuite account id
+* `tokenId` - SDF token
+* `tokenSecret` - SDF token secret
+
+Optional params:
+* `suiteAppTokenId` - Salto SuiteApp token id 
+* `suiteAppTokenSecret` - Salto SuiteApp token secret
+* `suiteAppActivationKey` - Salto SuiteApp activation key
+
+### Example
+```
+salto service add netsuite --login-parameters accountId=SomeAccountId tokenId=SomeTokenId tokenSecret=SomeTokenSecret
+```
+
+---
+
+**Note**
+
+Salto SuiteApp authentication params are relevant only in case it is installed in your netstuite account.
+
+For more information about the salto suite app please visit https://www.suiteapp.com/Salto
+
+If you would like to install the Salto SuiteApp in your netsuite account, please contact Salto support team from https://www.salto.io/ or by sending an email to support@salto.io
+
+---
+
+
 ## Fetch Target
 Salto CLI allows the user to fetch only specific netsuite configuration elements and/or file cabinet items by appending the ```netsuite.fetchTarget.filePaths``` and ```netsuite.fetchTarget.types.[type_name]``` parameters following the ```-C``` CLI option.
 When none of the ```fetchTarget``` parameters is specified, Salto will fetch all configuration elements.

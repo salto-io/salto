@@ -171,7 +171,7 @@ describe('service command group', () => {
           await addAction({
             ...cliCommandArgs,
             input: {
-              serviceName: 'salesforce',
+              serviceType: 'salesforce',
               authType: 'basic',
               login: true,
             },
@@ -189,8 +189,8 @@ describe('service command group', () => {
           await addAction({
             ...cliCommandArgs,
             input: {
-              serviceName: 'salesforce',
-              account: 'falsd;l;l;l',
+              serviceType: 'salesforce',
+              accountName: 'falsd;l;l;l',
               authType: 'basic',
               login: true,
             },
@@ -207,8 +207,8 @@ describe('service command group', () => {
           await addAction({
             ...cliCommandArgs,
             input: {
-              serviceName: 'salesforce',
-              account: '',
+              serviceType: 'salesforce',
+              accountName: '',
               authType: 'basic',
               login: true,
             },
@@ -225,8 +225,8 @@ describe('service command group', () => {
           await addAction({
             ...cliCommandArgs,
             input: {
-              serviceName: 'salesforce',
-              account: 'var',
+              serviceType: 'salesforce',
+              accountName: 'var',
               authType: 'basic',
               login: true,
             },
@@ -244,7 +244,7 @@ describe('service command group', () => {
             const exitCode = await addAction({
               ...cliCommandArgs,
               input: {
-                serviceName: 'newAdapter',
+                serviceType: 'newAdapter',
                 authType: 'basic',
                 login: true,
                 loginParameters: [
@@ -262,7 +262,7 @@ describe('service command group', () => {
             const exitCode = await addAction({
               ...cliCommandArgs,
               input: {
-                serviceName: 'newAdapter',
+                serviceType: 'newAdapter',
                 authType: 'basic',
                 login: true,
                 loginParameters: [
@@ -279,7 +279,7 @@ describe('service command group', () => {
             const exitCode = await addAction({
               ...cliCommandArgs,
               input: {
-                serviceName: 'newAdapter',
+                serviceType: 'newAdapter',
                 authType: 'basic',
                 login: true,
                 loginParameters: [
@@ -299,7 +299,7 @@ describe('service command group', () => {
             await addAction({
               ...cliCommandArgs,
               input: {
-                serviceName: 'newAdapter',
+                serviceType: 'newAdapter',
                 authType: 'basic',
                 login: true,
               },
@@ -330,7 +330,7 @@ describe('service command group', () => {
             addAction({
               ...cliCommandArgs,
               input: {
-                serviceName: 'newAdapter',
+                serviceType: 'newAdapter',
                 authType: 'basic',
                 login: true,
               },
@@ -344,7 +344,7 @@ describe('service command group', () => {
             await addAction({
               ...cliCommandArgs,
               input: {
-                serviceName: 'newAdapter',
+                serviceType: 'newAdapter',
                 authType: 'oauth',
                 login: true,
               },
@@ -363,7 +363,7 @@ describe('service command group', () => {
             await addAction({
               ...cliCommandArgs,
               input: {
-                serviceName: 'newAdapter',
+                serviceType: 'newAdapter',
                 authType: 'basic',
                 login: true,
               },
@@ -396,7 +396,7 @@ describe('service command group', () => {
             await addAction({
               ...cliCommandArgs,
               input: {
-                serviceName: 'newAdapter',
+                serviceType: 'newAdapter',
                 authType: 'basic',
                 login: false,
               },
@@ -424,7 +424,7 @@ describe('service command group', () => {
               ...cliCommandArgs,
               input: {
                 login: true,
-                serviceName: 'hubspot',
+                serviceType: 'hubspot',
                 authType: 'basic',
               },
               workspace,
@@ -436,7 +436,7 @@ describe('service command group', () => {
               ...cliCommandArgs,
               input: {
                 login: true,
-                serviceName: 'hubspot',
+                serviceType: 'hubspot',
                 authType: 'basic',
                 env: mocks.withEnvironmentParam,
               },
@@ -454,7 +454,7 @@ describe('service command group', () => {
             errCode = await addAction({
               ...cliCommandArgs,
               input: {
-                serviceName: 'noAdapter',
+                serviceType: 'noAdapter',
                 authType: 'basic',
                 login: true,
               },
@@ -475,7 +475,7 @@ describe('service command group', () => {
             errCode = await addAction({
               ...cliCommandArgs,
               input: {
-                serviceName: 'noAdapter',
+                serviceType: 'noAdapter',
                 authType: 'basic',
                 login: false,
               },

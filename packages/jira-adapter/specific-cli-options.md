@@ -1,9 +1,19 @@
 # Jira Specific CLI options
 
-| Name                           |  Description
-| -------------------------------| ------------------------
-| jira.deploy.forceDelete        |  Whether to allow deleting data that Salto won't be able to restore. Currently only relevant for deleting projects with issues
+## Non interactive Login Parameters
+Supprted parameters are:
+* `baseUrl` - e.g. https://\<mysubdomain\>.atlassian.net/
+* `user` - Email address
+* `token`
 
+### Example
+```
+salto service add jira --login-parameters baseUrl=https://someSubDomain.atlassian.net/ user=SomeUSer token=SomeApiToken
+```
+
+
+## Force Delete
+Allow to delete data that Salto won't be able to restore. Currently only relevant for deleting projects with issues
 
 ### Example
 

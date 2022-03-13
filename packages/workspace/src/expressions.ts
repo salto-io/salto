@@ -14,10 +14,12 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { ElemID, Element, Value, ReferenceExpression, TemplateExpression, isReferenceExpression, isVariableExpression, isElement, ReadOnlyElementsSource, isVariable, isInstanceElement, isObjectType, isContainerType, isField, Field, isTypeReference, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { resolvePath, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections, promises } from '@salto-io/lowerdash'
 
+const log = logger(module)
 const { mapValuesAsync } = promises.object
 
 type WorkingSetElement = {
@@ -302,11 +304,11 @@ const resolveElement = async <T extends Element>(
   return element as T
 }
 
-export const resolve = async (
+export const resolve = (
   elements: Element[],
   elementsSource: ReadOnlyElementsSource,
   resolveRoot = false
-): Promise<Element[]> => {
+): Promise<Element[]> => log.time(async () => {
   const elementsToResolve = elements.map(_.clone)
   const resolvedElements = await awu(elementsToResolve)
     .map(element => ({ element }))
@@ -326,4 +328,4 @@ export const resolve = async (
     resolveRoot
   ))
   return elementsToResolve
-}
+}, 'resolve %d elements', elements.length)

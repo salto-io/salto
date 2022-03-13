@@ -16,7 +16,7 @@
 
 import { regex, strings } from '@salto-io/lowerdash'
 import { getCustomTypesNames } from './autogen/types'
-import { INCLUDE, EXCLUDE, LOCKED_ELEMENTS_TO_EXCLUDE } from './constants'
+import { INCLUDE, EXCLUDE, LOCKED_ELEMENTS_TO_EXCLUDE, AUTHOR_INFO_CONFIG } from './constants'
 import { SUPPORTED_TYPES, TYPES_TO_INTERNAL_ID } from './data_elements/types'
 
 export interface ObjectID {
@@ -43,6 +43,9 @@ export type FetchParams = {
   [INCLUDE]?: QueryParams
   [EXCLUDE]?: QueryParams
   [LOCKED_ELEMENTS_TO_EXCLUDE]?: QueryParams
+  [AUTHOR_INFO_CONFIG]?: {
+    enable?: boolean
+  }
 }
 
 export const convertToQueryParams = ({ types = {}, filePaths = [] }:

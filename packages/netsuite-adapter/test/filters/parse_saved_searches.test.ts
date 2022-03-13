@@ -19,6 +19,8 @@ import filterCreator from '../../src/filters/parse_saved_searchs'
 import { savedsearchType } from '../../src/autogen/types/custom_types/savedsearch'
 import NetsuiteClient from '../../src/client/client'
 import { NETSUITE, SAVED_SEARCH } from '../../src/constants'
+import { FilterOpts } from '../../src/filter'
+import { getDefaultAdapterConfig } from '../utils'
 
 jest.mock('../../src/saved_search_parsing/saved_search_parser', () => ({
   parseDefinition: jest.fn().mockResolvedValue({
@@ -29,21 +31,23 @@ jest.mock('../../src/saved_search_parsing/saved_search_parser', () => ({
 describe('parse_saved_searches filter', () => {
   let instance: InstanceElement
   let sourceInstance: InstanceElement
-  let fetchOpts = {
-    client: {} as NetsuiteClient,
-    elementsSourceIndex: {
-      getIndexes: () => Promise.resolve({
-        serviceIdsIndex: {},
-        serviceIdRecordsIndex: {},
-        internalIdsIndex: {},
-        customFieldsIndex: {},
-      }),
-    },
-    elementsSource: buildElementsSourceFromElements([]),
-    isPartial: false,
-    dataTypeNames: new Set<string>(),
-  }
-  beforeEach(() => {
+  let fetchOpts: FilterOpts
+  beforeEach(async () => {
+    fetchOpts = {
+      client: {} as NetsuiteClient,
+      elementsSourceIndex: {
+        getIndexes: () => Promise.resolve({
+          serviceIdsIndex: {},
+          serviceIdRecordsIndex: {},
+          internalIdsIndex: {},
+          customFieldsIndex: {},
+        }),
+      },
+      elementsSource: buildElementsSourceFromElements([]),
+      isPartial: false,
+      config: await getDefaultAdapterConfig(),
+    }
+
     const savedsearch = savedsearchType().type
     instance = new InstanceElement(
       'someSearch',
@@ -91,7 +95,7 @@ describe('parse_saved_searches filter', () => {
       },
       elementsSource: buildElementsSourceFromElements([sourceInstance]),
       isPartial: false,
-      dataTypeNames: new Set<string>(),
+      config: await getDefaultAdapterConfig(),
     }
     await filterCreator(fetchOpts).onFetch?.([instance])
     expect(instance.value.definition).toEqual('testDefinition')

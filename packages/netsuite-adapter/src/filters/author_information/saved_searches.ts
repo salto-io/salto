@@ -53,8 +53,14 @@ const getSavedSearchesModifiersMap = async (
     (_.isEmpty(savedSearch.modifiedby) ? [] : [savedSearch.id, savedSearch.modifiedby[0].text])))
 }
 
-const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
+const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
+    // if undefined, we want to be treated as true so we check `=== false`
+    if (config.fetch?.authorInformation?.enable === false) {
+      log.debug('Author information fetching is disabled')
+      return
+    }
+
     if (!client.isSuiteAppConfigured()) {
       return
     }

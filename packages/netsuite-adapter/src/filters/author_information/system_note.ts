@@ -137,8 +137,14 @@ const getInstancesWithInternalIds = (elements: Element[]): InstanceElement[] =>
     .filter(instance => isDefined(instance.value.internalId))
     .filter(instance => instance.elemID.typeName.toLowerCase() in TYPES_TO_INTERNAL_ID)
 
-const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
+const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
+    // if undefined, we want to be treated as true so we check `=== false`
+    if (config.fetch?.authorInformation?.enable === false) {
+      log.debug('Author information fetching is disabled')
+      return
+    }
+
     if (!client.isSuiteAppConfigured()) {
       return
     }

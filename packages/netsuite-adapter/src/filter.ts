@@ -18,6 +18,7 @@ import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import NetsuiteClient from './client/client'
 import { LazyElementsSourceIndexes } from './elements_source_index/types'
 import { DeployResult } from './types'
+import { NetsuiteConfig } from './config'
 
 export type Filter = filter.Filter<void, DeployResult>
 
@@ -28,6 +29,7 @@ export type FilterOpts = {
   elementsSourceIndex: LazyElementsSourceIndexes
   elementsSource: ReadOnlyElementsSource
   isPartial: boolean
+  config: NetsuiteConfig
 }
 
 export type FilterCreator = filter.FilterCreator<

@@ -20,6 +20,7 @@ import NetsuiteClient from '../../src/client/client'
 import { NETSUITE } from '../../src/constants'
 import { entitycustomfieldType } from '../../src/autogen/types/custom_types/entitycustomfield'
 import { FilterOpts } from '../../src/filter'
+import { getDefaultAdapterConfig } from '../utils'
 
 describe('data_types_custom_fields', () => {
   let filterOpts: FilterOpts
@@ -28,7 +29,7 @@ describe('data_types_custom_fields', () => {
 
   const Account = new ObjectType({ elemID: new ElemID(NETSUITE, 'account'), annotations: { source: 'soap' } })
 
-  beforeEach(() => {
+  beforeEach(async () => {
     type = new ObjectType({ elemID: new ElemID(NETSUITE, 'Customer'), fields: {}, annotations: { source: 'soap' } })
     instance = new InstanceElement('name', entitycustomfieldType().type, { appliestocustomer: true, scriptid: 'someid' })
 
@@ -44,6 +45,7 @@ describe('data_types_custom_fields', () => {
       },
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
+      config: await getDefaultAdapterConfig(),
     }
   })
   it('should add integer field', async () => {
@@ -99,6 +101,7 @@ describe('data_types_custom_fields', () => {
         },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: true,
+        config: await getDefaultAdapterConfig(),
       }
       await filterCreator(filterOpts).onFetch?.([type, Account])
       expect((await type.fields.custom_someid.getType()).elemID.getFullName())
@@ -123,6 +126,7 @@ describe('data_types_custom_fields', () => {
         },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: true,
+        config: await getDefaultAdapterConfig(),
       }
       await filterCreator(filterOpts).onFetch?.([type, fetchedInstance, Account])
       expect(type.fields.custom_someid).toBeUndefined()

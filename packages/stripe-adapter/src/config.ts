@@ -46,7 +46,7 @@ export type StripeConfig = {
   [API_DEFINITIONS_CONFIG]: StripeApiConfig
 }
 
-export const DEFAULT_INCLUDE_TYPES = [
+const ALL_SUPPORTED_TYPES = [
   'country_specs',
   'coupons',
   'products',
@@ -55,11 +55,7 @@ export const DEFAULT_INCLUDE_TYPES = [
   'webhook_endpoints',
 ]
 
-const ALL_SUPPORTED_TYPES = [
-  ...DEFAULT_INCLUDE_TYPES,
-  'prices',
-]
-
+export const DEFAULT_INCLUDE_TYPES = ALL_SUPPORTED_TYPES
 
 const DEFAULT_TYPE_CUSTOMIZATIONS: StripeApiConfig['types'] = {
   coupon: {

@@ -365,8 +365,7 @@ describe('swagger_type_elements', () => {
   })
 
   describe('with supportedTypes', () => {
-    let allTypes: Record<string, TypeElement>
-    beforeAll(async () => {
+    it('should only generate supported types', async () => {
       const res = await generateTypes(
         ADAPTER_NAME,
         {
@@ -376,10 +375,44 @@ describe('swagger_type_elements', () => {
           supportedTypes: ['Pet'],
         },
       )
-      allTypes = res.allTypes
+      expect(Object.keys(res.allTypes).sort()).toEqual(['Pet', 'Category', 'Tag'].sort())
     })
-    it('should only generate supported types', () => {
-      expect(Object.keys(allTypes).sort()).toEqual(['Pet', 'Category', 'Tag'].sort())
+    it('should include recurseInto types', async () => {
+      const res = await generateTypes(
+        ADAPTER_NAME,
+        {
+          swagger: { url: `${BASE_DIR}/petstore_swagger.v2.yaml` },
+          typeDefaults: { transformation: { idFields: ['name'] } },
+          types: {
+            Pet: {
+              request: {
+                url: '/abc',
+                recurseInto: [
+                  {
+                    type: 'Food',
+                    toField: 'food',
+                    context: [],
+                  },
+                ],
+              },
+            },
+            Food: {
+              request: {
+                url: '/def',
+                recurseInto: [
+                  {
+                    type: 'Order',
+                    toField: 'order',
+                    context: [],
+                  },
+                ],
+              },
+            },
+          },
+          supportedTypes: ['Pet'],
+        },
+      )
+      expect(Object.keys(res.allTypes).sort()).toEqual(['Pet', 'Category', 'Tag', 'Food', 'Order'].sort())
     })
   })
 

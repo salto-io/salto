@@ -321,7 +321,7 @@ export const getAllElements = async ({
           ...args,
         })
       } catch (e) {
-        if (isErrorTurnToConfigSuggestion?.(e) === true) {
+        if (isErrorTurnToConfigSuggestion?.(e)) {
           configSuggestions.push({
             typeToExclude: args.typeName,
           })

@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import os from 'os'
 import { collections } from '@salto-io/lowerdash'
 import { InstanceElement, ElemID } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
@@ -22,7 +23,7 @@ import { configType, FETCH_CONFIG } from './config'
 
 const { makeArray } = collections.array
 
-const MESSAGE_INTRO = 'Salto failed to fetch some items from zendesk. '
+const MESSAGE_INTRO = 'Salto failed to fetch some items from zendesk.'
 const MESSAGE_SUMMARY = 'In order to complete the fetch operation, '
 + 'Salto needs to stop managing these items by applying the following configuration change:'
 
@@ -52,6 +53,6 @@ export const getConfigFromConfigChanges = (
         },
       },
     )],
-    message: [MESSAGE_INTRO, '', MESSAGE_SUMMARY].join('\n'),
+    message: [MESSAGE_INTRO, '', MESSAGE_SUMMARY].join(os.EOL),
   }
 }

@@ -113,6 +113,7 @@ export const adapter: Adapter = {
       }),
       config,
       getElemIdFunc: context.getElemIdFunc,
+      configInstance: context.config,
     })
   },
   validateCredentials: async config => validateCredentials(

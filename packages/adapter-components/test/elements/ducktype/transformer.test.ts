@@ -20,7 +20,7 @@ import { getTypeAndInstances, getAllElements } from '../../../src/elements/duckt
 import * as typeElements from '../../../src/elements/ducktype/type_elements'
 import * as instanceElements from '../../../src/elements/ducktype/instance_elements'
 import * as transformer from '../../../src/elements/ducktype/transformer'
-import { Paginator } from '../../../src/client'
+import { HTTPError, Paginator } from '../../../src/client'
 import { TypeDuckTypeConfig, TypeDuckTypeDefaultsConfig } from '../../../src/config'
 import { simpleGetArgs, returnFullEntry, computeGetArgs } from '../../../src/elements'
 import { findDataField } from '../../../src/elements/field_finder'
@@ -537,8 +537,9 @@ describe('ducktype_transformer', () => {
         types: typesConfig,
         typeDefaults: typeDefaultConfig,
       })
-      expect(res).toHaveLength(8)
-      expect(res.map(e => e.elemID.getFullName())).toEqual([
+      const { elements } = res
+      expect(elements).toHaveLength(8)
+      expect(elements.map(e => e.elemID.getFullName())).toEqual([
         'something.folder',
         'something.permission',
         'something.file',
@@ -621,8 +622,9 @@ describe('ducktype_transformer', () => {
         },
         typeDefaults: typeDefaultConfig,
       })
-      expect(res).toHaveLength(2)
-      const overridedType = res[1] as ObjectType
+      const { elements } = res
+      expect(elements).toHaveLength(2)
+      const overridedType = elements[1] as ObjectType
       const overridedFieldType = overridedType.fields.test1
       const overridedFieldWithRestrictions = overridedType.fields.test2
       expect(overridedFieldType.refType.elemID.getFullName())
@@ -631,6 +633,42 @@ describe('ducktype_transformer', () => {
         .toEqual({
           [CORE_ANNOTATIONS.RESTRICTION]: { enforce_value: true, values: ['yes', 'no'] },
         })
+    })
+    it('should return config changes', async () => {
+      const typeToOverrideWith = 'test'
+      jest.spyOn(transformer, 'getTypeAndInstances').mockImplementation(() => {
+        throw new HTTPError('err', { data: {}, status: 403 })
+      })
+      const res = await getAllElements({
+        adapterName: 'something',
+        paginator: mockPaginator,
+        includeTypes: ['folder'],
+        computeGetArgs: simpleGetArgs,
+        nestedFieldFinder: returnFullEntry,
+        types: {
+          folder: {
+            request: {
+              url: '/folders',
+            },
+            transformation: {
+              idFields: ['name'],
+              fieldTypeOverrides: [
+                { fieldName: 'test1', fieldType: typeToOverrideWith },
+                {
+                  fieldName: 'test2',
+                  fieldType: BuiltinTypes.STRING.elemID.getFullName(),
+                  restrictions: { enforce_value: true, values: ['yes', 'no'] },
+                },
+              ],
+            },
+          },
+        },
+        typeDefaults: typeDefaultConfig,
+        isErrorTurnToConfigSuggestion: error =>
+          error instanceof HTTPError && (error.response.status === 403),
+      })
+      const { configChanges } = res
+      expect(configChanges).toEqual([{ typeToExclude: 'folder' }])
     })
   })
 })

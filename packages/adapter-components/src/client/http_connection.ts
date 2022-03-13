@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import axios, { AxiosError, AxiosBasicCredentials, AxiosRequestConfig } from 'axios'
-import axiosRetry, { isNetworkOrIdempotentRequestError } from 'axios-retry'
+import axiosRetry from 'axios-retry'
 import { AccountId } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { ClientRetryConfig } from './config'
@@ -101,7 +101,7 @@ export const createRetryOptions = (retryOptions: Required<ClientRetryConfig>): R
       retryCount)
     return retryDelay
   },
-  retryCondition: err => isNetworkOrIdempotentRequestError(err)
+  retryCondition: err => axiosRetry.isNetworkOrIdempotentRequestError(err)
     || err.response?.status === 429,
 })
 

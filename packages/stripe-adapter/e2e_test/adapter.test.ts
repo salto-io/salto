@@ -90,7 +90,6 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
       'stripe.plan_metadata',
       'stripe.plan_tier',
       'stripe.transform_usage',
-      'stripe.prices',
     ])('%s',
       unsupportedType => {
         expect(fetchedElementNames).not.toContain(unsupportedType)

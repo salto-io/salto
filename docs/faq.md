@@ -14,12 +14,14 @@ Salto consists of 3 main components:
 
 Currently, Salto supports the following services:
 
-- [Salesforce](https://github.com/salto-io/salto/tree/master/packages/salesforce-adapter)
-- [NetSuite](https://github.com/salto-io/salto/tree/master/packages/netsuite-adapter)
-- [HubSpot](https://github.com/salto-io/salto/tree/master/packages/hubspot-adapter)
-- [Workato](https://github.com/salto-io/salto/tree/master/packages/workato-adapter)
-- [Zendesk Support](https://github.com/salto-io/salto/tree/master/packages/zendesk-support-adapter)
-- [Zuora Billing](https://github.com/salto-io/salto/tree/master/packages/zuora-billing-adapter)
+- [Salesforce](../packages/salesforce-adapter)
+- [NetSuite](../packages/netsuite-adapter)
+- [HubSpot](../packages/hubspot-adapter)
+- [Workato](../packages/workato-adapter)
+- [Zendesk Support](../packages/zendesk-support-adapter)
+- [Zuora Billing](../packages/zuora-billing-adapter)
+- [Jira](../packages/jira-adapter)
+- [Stripe](../packages/stripe-adapter)
 
 Support for other services is in the works.
 

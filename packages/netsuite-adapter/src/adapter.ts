@@ -54,6 +54,7 @@ import accountSpecificValues from './filters/account_specific_values'
 import translationConverter from './filters/translation_converter'
 import systemNoteAuthorInformation from './filters/author_information/system_note'
 import savedSearchesAuthorInformation from './filters/author_information/saved_searches'
+import accountFeaturesFilter from './filters/account_features'
 import { Filter, FilterCreator } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_USE_CHANGES_DETECTION } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams } from './query'
@@ -146,6 +147,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       accountSpecificValues,
       // serviceUrls must run after suiteAppInternalIds filter
       serviceUrls,
+      accountFeaturesFilter,
     ],
     typesToSkip = [
       INTEGRATION, // The imported xml has no values, especially no SCRIPT_ID, for standard
@@ -194,7 +196,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     useChangesDetection: boolean,
     isPartial: boolean
   ): Promise<FetchByQueryReturnType> => {
-    const { customTypes, enums, fileCabinetTypes, fieldTypes } = getMetadataTypes()
+    const { customTypes, enums, additionalTypes, fieldTypes } = getMetadataTypes()
     const {
       changedObjectsQuery,
       serverTime,
@@ -232,7 +234,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const topLevelCustomTypes = getTopLevelCustomTypes(customTypes)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
     _(topLevelCustomTypes)
-      .concat(Object.values(fileCabinetTypes))
+      .concat(Object.values(additionalTypes))
       .forEach(type => {
         type.fields[LAST_FETCH_TIME] = new Field(
           type,
@@ -242,7 +244,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         )
       });
 
-    [...topLevelCustomTypes, ...Object.values(fileCabinetTypes)].forEach(type => {
+    [...topLevelCustomTypes, ...Object.values(additionalTypes)].forEach(type => {
       type.fields[APPLICATION_ID] = new Field(type, APPLICATION_ID, BuiltinTypes.STRING)
     })
 
@@ -250,7 +252,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const instances = await awu(customizationInfos).map(customizationInfo => {
       const type = isCustomTypeName(customizationInfo.typeName)
         ? customTypes[customizationInfo.typeName].type
-        : fileCabinetTypes[customizationInfo.typeName]
+        : additionalTypes[customizationInfo.typeName]
       return type
         ? createInstanceElement(customizationInfo, type, this.getElemIdFunc, serverTime)
         : undefined
@@ -259,7 +261,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const dataElements = await dataElementsPromise
 
     const elements = [
-      ...metadataTypesToList({ customTypes, enums, fileCabinetTypes, fieldTypes }),
+      ...metadataTypesToList({ customTypes, enums, additionalTypes, fieldTypes }),
       ...dataElements,
       ...instances,
       ...serverTimeElements,

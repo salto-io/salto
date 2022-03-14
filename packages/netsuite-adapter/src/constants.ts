@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 export const NETSUITE = 'netsuite'
+export const SETTINGS_PATH = 'Settings'
 export const RECORDS_PATH = 'Records'
 export const FILE_CABINET_PATH = 'FileCabinet'
 export const TYPES_PATH = 'Types'
@@ -45,6 +46,7 @@ export const WORKBOOK = 'workbook'
 export const WORKFLOW = 'workflow'
 export const FILE = 'file'
 export const FOLDER = 'folder'
+export const ACCOUNT_FEATURES = 'accountFeatures'
 
 // Fields
 export const SCRIPT_ID = 'scriptid'
@@ -59,6 +61,7 @@ export const IS_ATTRIBUTE = 'isAttribute'
 export const ADDITIONAL_FILE_SUFFIX = 'additionalFileSuffix'
 export const LIST_MAPPED_BY_FIELD = 'map_key_field'
 export const INDEX = 'index'
+export const ACCOUNT_FEATURES_VALID_STATUS_VALUES = ['ENABLED', 'DISABLED']
 
 // SDF FileCabinet top level folders
 export const FILE_CABINET_PATH_SEPARATOR = '/'

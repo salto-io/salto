@@ -120,8 +120,8 @@ describe('Adapter', () => {
     progressReporter: { reportProgress: jest.fn() },
   }
 
-  const { customTypes, enums, fileCabinetTypes, fieldTypes } = getMetadataTypes()
-  const metadataTypes = metadataTypesToList({ customTypes, enums, fileCabinetTypes, fieldTypes })
+  const { customTypes, enums, additionalTypes, fieldTypes } = getMetadataTypes()
+  const metadataTypes = metadataTypesToList({ customTypes, enums, additionalTypes, fieldTypes })
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -534,11 +534,11 @@ describe('Adapter', () => {
       })
     let instance: InstanceElement
 
-    const fileInstance = new InstanceElement('fileInstance', fileCabinetTypes[FILE], {
+    const fileInstance = new InstanceElement('fileInstance', additionalTypes[FILE], {
       [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder/content.html',
     })
 
-    const folderInstance = new InstanceElement('folderInstance', fileCabinetTypes[FOLDER], {
+    const folderInstance = new InstanceElement('folderInstance', additionalTypes[FOLDER], {
       [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder',
     })
 

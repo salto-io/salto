@@ -17,6 +17,7 @@ import _ from 'lodash'
 import {
   Change, getChangeData, InstanceElement, isAdditionOrModificationChange,
 } from '@salto-io/adapter-api'
+import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 
@@ -36,14 +37,11 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     const deployResult = await deployChanges(
       slaPoliciesChanges,
       async change => {
-        const currentInstance = getChangeData(change)
-        const newInstance = getChangeData(change).clone()
-        newInstance.value.filter = newInstance.value.filter ?? { all: [], any: [] }
-        getChangeData(change).value = newInstance.value
-        await deployChange(
-          change, client, config.apiDefinitions,
-        )
-        getChangeData(change).value = currentInstance.value
+        const clonedChange = await applyFunctionToChangeData(change, inst => inst.clone())
+        const instance = getChangeData(clonedChange)
+        instance.value.filter = instance.value.filter ?? { all: [], any: [] }
+        await deployChange(clonedChange, client, config.apiDefinitions)
+        getChangeData(change).value.id = instance.value.id
       },
     )
     return { deployResult, leftoverChanges }

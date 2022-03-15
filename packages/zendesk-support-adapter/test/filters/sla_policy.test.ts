@@ -173,8 +173,8 @@ describe('sla policy filter', () => {
 
     it('should pass the correct params to deployChange on update - with filter', async () => {
       const id = 2
-      const clonedSlaPolicyBefore = slaPolicyWithoutFilter.clone()
-      const clonedSlaPolicyAfter = slaPolicyWithoutFilter.clone()
+      const clonedSlaPolicyBefore = slaPolicyWithFilter.clone()
+      const clonedSlaPolicyAfter = slaPolicyWithFilter.clone()
       clonedSlaPolicyBefore.value.id = id
       clonedSlaPolicyAfter.value.id = id
       clonedSlaPolicyAfter.value.title = 'edited'
@@ -213,7 +213,7 @@ describe('sla policy filter', () => {
     })
 
     it('should return error if deployChange failed', async () => {
-      const clonedSlaPolicy = slaPolicyWithoutFilter.clone()
+      const clonedSlaPolicy = slaPolicyWithFilter.clone()
       mockDeployChange.mockImplementation(async () => {
         throw new Error('err')
       })

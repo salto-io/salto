@@ -56,6 +56,7 @@ import addFieldOptionsFilter from './filters/add_field_options'
 import appsFilter from './filters/app'
 import routingAttributeFilter from './filters/routing_attribute'
 import serviceUrlFilter from './filters/service_url'
+import slaPolicyFilter from './filters/sla_policy'
 import defaultDeployFilter from './filters/default_deploy'
 import { getConfigFromConfigChanges } from './config_change'
 
@@ -90,6 +91,7 @@ export const DEFAULT_FILTERS = [
   usersFilter,
   fieldReferencesFilter,
   appsFilter,
+  slaPolicyFilter,
   routingAttributeFilter,
   addFieldOptionsFilter,
   // removeDefinitionInstancesFilter should be after hardcodedChannelFilter

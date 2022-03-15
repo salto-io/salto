@@ -229,8 +229,8 @@ const toFetchChanges = (
         log.debug(
           'Found conflict on %s between %d service changes and %d pending changes. service change ids: %o, pending change ids: %o',
           id, serviceChanges.length, pendingChanges.length,
-          serviceChanges.map(change => change.id.getFullName()),
-          pendingChanges.map(change => change.id.getFullName()),
+          serviceChanges.map(change => `${change.action} ${change.id.getFullName()}`),
+          pendingChanges.map(change => `${change.action} ${change.id.getFullName()}`),
         )
       }
 

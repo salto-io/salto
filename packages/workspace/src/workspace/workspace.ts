@@ -611,12 +611,8 @@ export const loadWorkspace = async (
         )
       }
     }
-    const relevantEnvs = awu(envs())
-      .filter(async name =>
-        (workspaceChanges[name]?.changes ?? []).length > 0
-        || (stateOnlyChanges[name]?.changes ?? []).length > 0)
 
-    await relevantEnvs.forEach(async envName => { await updateWorkspace(envName) })
+    await awu(envs()).forEach(async envName => { await updateWorkspace(envName) })
     return stateToBuild
   }
 

@@ -156,12 +156,12 @@ const geoLocationElemID = new ElemID(SALESFORCE, LOCATION_INTERNAL_COMPOUND_FIEL
 
 const restrictedNumberTypeDefinitions = {
   TextLength: createRestriction({ min: 1, max: 255, enforce_value: false }),
-  TextAreaLength: createRestriction({ min: 1, max: 131072 }),
-  EncryptedTextLength: createRestriction({ min: 1, max: 175 }),
-  LongTextAreaVisibleLines: createRestriction({ min: 2, max: 50 }),
+  TextAreaLength: createRestriction({ min: 1, max: 131072, enforce_value: false }),
+  EncryptedTextLength: createRestriction({ min: 1, max: 175, enforce_value: false }),
+  LongTextAreaVisibleLines: createRestriction({ min: 2, max: 50, enforce_value: false }),
   MultiPicklistVisibleLines: createRestriction({ min: 3, max: 10, enforce_value: false }),
-  RichTextAreaVisibleLines: createRestriction({ min: 10, max: 50 }),
-  RelationshipOrder: createRestriction({ min: 0, max: 1 }),
+  RichTextAreaVisibleLines: createRestriction({ min: 10, max: 50, enforce_value: false }),
+  RelationshipOrder: createRestriction({ min: 0, max: 1, enforce_value: false }),
 }
 
 const restrictedNumberTypes = _.mapValues(

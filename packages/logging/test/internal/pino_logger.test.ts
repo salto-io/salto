@@ -573,13 +573,13 @@ describe('pino based logger', () => {
       })
     })
 
-    describe('assignGlobalLogTimeMiddleWare', () => {
-      let middlewareCalled = false
+    describe('assignGlobalLogTimeDecorator', () => {
+      let decoratorCalled = false
       beforeEach(() => {
-        middlewareCalled = false
-        logger.assignGlobalLogTimeMiddleWare(inner => {
-          middlewareCalled = true
-          return inner()
+        decoratorCalled = false
+        logger.assignGlobalLogTimeDecorator(inner => {
+          decoratorCalled = true
+          return inner
         })
       })
 
@@ -603,8 +603,8 @@ describe('pino based logger', () => {
           expect(line).toContain(`debug ${NAMESPACE} hello func 12 took`)
         })
 
-        it('expect middlewareCalled should be true', () => {
-          expect(middlewareCalled).toBeTruthy()
+        it('expect decoratorCalled should be true', () => {
+          expect(decoratorCalled).toBeTruthy()
         })
       })
 
@@ -628,8 +628,8 @@ describe('pino based logger', () => {
           expect(line).toContain(`debug ${NAMESPACE} hello func 12 took`)
         })
 
-        it('expect middlewareCalled should be true', () => {
-          expect(middlewareCalled).toBeTruthy()
+        it('expect decoratorCalled should be true', () => {
+          expect(decoratorCalled).toBeTruthy()
         })
       })
     })

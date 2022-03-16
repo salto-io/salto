@@ -24,7 +24,7 @@ import {
 import { LOG_LEVELS, LogLevel } from './level'
 import { Config, mergeConfigs, NamespaceFilter, stringToNamespaceFilter } from './config'
 import { LogTags } from './log-tags'
-import { LogTimeMiddleWare } from './log-time-middleware'
+import { LogTimeDecorator } from './log-time-decorator'
 
 export type LogMethod = (message: string | Error, ...args: unknown[]) => void
 
@@ -53,7 +53,7 @@ type HasLoggerFuncs = {
 export type Logger = BaseLogger & GlobalTags & HasLoggerFuncs & {
   readonly namespace: Namespace
   readonly time: <T>(inner: () => T, desc: string, ...descArgs: unknown[]) => T
-  assignGlobalLogTimeMiddleWare:<T> (middleware: LogTimeMiddleWare<T>) => void
+  assignGlobalLogTimeDecorator:<T> (decorator: LogTimeDecorator<T>) => void
 }
 
 type ResolvedConfig = Omit<Config, 'namespaceFilter'> & {
@@ -78,8 +78,8 @@ function timeMethod<T>(
 
   this.log('debug', `${formattedDescription} starting`)
   let result: T | Promise<T>
-  if (global.globalLogTimeMiddleware) {
-    result = global.globalLogTimeMiddleware(inner, formattedDescription)
+  if (global.globalLogTimeDecorator) {
+    result = global.globalLogTimeDecorator(inner, formattedDescription)()
   } else {
     result = inner()
   }
@@ -107,11 +107,8 @@ export const logger = (
 
   return addLogMethods(Object.assign(baseLogger, {
     namespace,
-    assignGlobalLogTimeMiddleWare: <T> (middleware: LogTimeMiddleWare<T>) => {
-      // TODO: Fix this horrendous type catastrophoe
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      global.globalLogTimeMiddleware = middleware
+    assignGlobalLogTimeDecorator: <T> (decorator: LogTimeDecorator<T>) => {
+      global.globalLogTimeDecorator = decorator
     },
     log: (level: LogLevel, ...rest: Parameters<LogMethod>): void => {
       const { minLevel, namespaceFilter } = configGetter()

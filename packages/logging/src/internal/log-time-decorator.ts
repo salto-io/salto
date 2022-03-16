@@ -13,4 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export type LogTimeMiddleWare<T> = (inner: () => T | Promise<T>, desc: string) => T | Promise<T>
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type LogTimeDecorator<T = any> = (
+  func: () => T | Promise<T>,
+  description: string,
+) => () => T | Promise<T>

@@ -29,10 +29,9 @@ import SdfClient, {
   FOLDER_ATTRIBUTES_FILE_SUFFIX,
   MINUTE_IN_MILLISECONDS,
 } from '../../src/client/sdf_client'
-import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from '../../src/client/types'
+import { CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from '../../src/client/types'
 import { fileCabinetTopLevelFolders } from '../../src/client/constants'
 import { DEFAULT_COMMAND_TIMEOUT_IN_MINUTES } from '../../src/config'
-import { FeaturesDeployError } from '../../src/errors'
 
 
 const MOCK_TEMPLATE_CONTENT = Buffer.from('Template Inner Content')
@@ -98,8 +97,6 @@ const MOCK_MANIFEST_VALID_DEPENDENCIES = `<manifest projecttype="ACCOUNTCUSTOMIZ
 </dependencies>
 </manifest>`
 
-const MOCK_FEATURES_XML = '<features><feature label="SuiteApp Control Center"><id>SUITEAPPCONTROLCENTER</id><status>ENABLED</status></feature></features>'
-
 jest.mock('@salto-io/file', () => ({
   readDir: jest.fn().mockImplementation(() => ['a.xml', 'b.xml', 'a.template.html']),
   readFile: jest.fn().mockImplementation(filePath => {
@@ -118,9 +115,6 @@ jest.mock('@salto-io/file', () => ({
 
     if (filePath.endsWith('manifest.xml')) {
       return MOCK_MANIFEST_INVALID_DEPENDENCIES
-    }
-    if (filePath.endsWith('/features.xml')) {
-      return MOCK_FEATURES_XML
     }
     return `<addressForm filename="${filePath.split('/').pop()}">`
   }),
@@ -184,16 +178,11 @@ describe('netsuite client', () => {
   const typeNames = instancesIds.map(instance => instance.type)
 
   const typeNamesQuery = buildNetsuiteQuery({
-    types: [
-      ...instancesIds.map(instance => ({ name: instance.type, ids: ['.*'] })),
-      { name: 'accountFeatures', ids: ['.*'] },
-    ],
+    types: instancesIds.map(instance => ({ name: instance.type, ids: ['.*'] })),
   })
 
   const importObjectsCommandMatcher = expect
     .objectContaining({ commandName: COMMANDS.IMPORT_OBJECTS })
-  const importConfigurationCommandMatcher = expect
-    .objectContaining({ commandName: COMMANDS.IMPORT_CONFIGURATION })
   const listObjectsCommandMatcher = expect
     .objectContaining({ commandName: COMMANDS.LIST_OBJECTS })
   const listFilesCommandMatcher = expect
@@ -342,15 +331,14 @@ describe('netsuite client', () => {
       })
       const client = mockClient({ fetchAllTypesAtOnce: true })
       const getCustomObjectsResult = await client.getCustomObjects(typeNames, typeNamesQuery)
-      expect(mockExecuteAction).toHaveBeenCalledTimes(8)
+      expect(mockExecuteAction).toHaveBeenCalledTimes(7)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, importObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, listObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importObjectsCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(7, importConfigurationCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(8, deleteAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(7, deleteAuthIdCommandMatcher)
       expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(true)
       expect(getCustomObjectsResult.failedTypes).toEqual({ lockedError: {}, unexpectedError: {} })
     })
@@ -410,7 +398,7 @@ describe('netsuite client', () => {
       const client = mockClient({ fetchAllTypesAtOnce: false })
       await client.getCustomObjects(typeNames, typeNamesQuery)
       // createProject & setupAccount & listObjects & 3*importObjects & deleteAuthId
-      const numberOfExecuteActions = 8
+      const numberOfExecuteActions = 7
       expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
@@ -433,7 +421,6 @@ describe('netsuite client', () => {
         scriptid: 'b',
       }))
 
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(7, importConfigurationCommandMatcher)
       expect(mockExecuteAction)
         .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
     })
@@ -468,7 +455,7 @@ describe('netsuite client', () => {
       const client = mockClient({ fetchAllTypesAtOnce: false })
       await client.getCustomObjects(typeNames, typeNamesQuery)
       // createProject & setupAccount & listObjects & 3*importObjects & deleteAuthId
-      const numberOfExecuteActions = 8
+      const numberOfExecuteActions = 7
       expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
@@ -491,7 +478,6 @@ describe('netsuite client', () => {
         scriptid: 'a',
       }))
 
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(7, importConfigurationCommandMatcher)
       expect(mockExecuteAction)
         .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
     })
@@ -522,7 +508,7 @@ describe('netsuite client', () => {
       const client = mockClient({ fetchAllTypesAtOnce: false, maxItemsInImportObjectsRequest: 2 })
       await client.getCustomObjects(typeNames, typeNamesQuery)
       // createProject & setupAccount & listObjects & 3*importObjects & deleteAuthId
-      const numberOfExecuteActions = 8
+      const numberOfExecuteActions = 7
       expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
@@ -545,7 +531,6 @@ describe('netsuite client', () => {
         scriptid: 'd',
       }))
 
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(7, importConfigurationCommandMatcher)
       expect(mockExecuteAction)
         .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
     })
@@ -575,9 +560,9 @@ describe('netsuite client', () => {
       expect(failedToFetchAllAtOnce).toBe(false)
       expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {} })
       expect(readDirMock).toHaveBeenCalledTimes(1)
-      expect(readFileMock).toHaveBeenCalledTimes(4)
+      expect(readFileMock).toHaveBeenCalledTimes(3)
       expect(rmMock).toHaveBeenCalledTimes(1)
-      expect(customizationInfos).toHaveLength(3)
+      expect(customizationInfos).toHaveLength(2)
       expect(customizationInfos).toEqual([{
         typeName: 'addressForm',
         scriptId: 'a',
@@ -592,19 +577,6 @@ describe('netsuite client', () => {
         scriptId: 'b',
         values: {
           '@_filename': 'b.xml',
-        },
-      },
-      {
-        scriptId: 'accountFeatures',
-        typeName: 'accountFeatures',
-        values: {
-          features: {
-            SUITEAPPCONTROLCENTER: {
-              '@_label': 'SuiteApp Control Center',
-              id: 'SUITEAPPCONTROLCENTER',
-              status: 'ENABLED',
-            },
-          },
         },
       }])
 
@@ -648,7 +620,7 @@ describe('netsuite client', () => {
       expect(failedToFetchAllAtOnce).toBe(false)
       expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {} })
       expect(readDirMock).toHaveBeenCalledTimes(2)
-      expect(readFileMock).toHaveBeenCalledTimes(7)
+      expect(readFileMock).toHaveBeenCalledTimes(6)
       expect(rmMock).toHaveBeenCalledTimes(2)
       expect(customizationInfos).toEqual([{
         typeName: 'addressForm',
@@ -664,19 +636,6 @@ describe('netsuite client', () => {
         scriptId: 'b',
         values: {
           '@_filename': 'b.xml',
-        },
-      },
-      {
-        scriptId: 'accountFeatures',
-        typeName: 'accountFeatures',
-        values: {
-          features: {
-            SUITEAPPCONTROLCENTER: {
-              '@_label': 'SuiteApp Control Center',
-              id: 'SUITEAPPCONTROLCENTER',
-              status: 'ENABLED',
-            },
-          },
         },
       },
       {
@@ -705,10 +664,9 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, listObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, listObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(7, importObjectsCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(8, importObjectsCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(9, deleteAuthIdCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(10, importConfigurationCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(11, deleteAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(8, deleteAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(9, importObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(10, deleteAuthIdCommandMatcher)
     })
 
     it('should succeed and return failedTypeToInstances that failed also after retry', async () => {
@@ -1374,40 +1332,6 @@ describe('netsuite client', () => {
         expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
-      })
-    })
-
-    describe('deploy features object', () => {
-      const featuresCustomizationInfo: CustomizationInfo = {
-        typeName: 'accountFeatures',
-        values: {
-          features: {
-            SUITEAPPCONTROLCENTER: {
-              '@_label': 'SuiteApp Control Center',
-              id: 'SUITEAPPCONTROLCENTER',
-              status: 'ENABLED',
-            },
-          },
-        },
-      }
-      it('should succeed', async () => {
-        mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: ['Configure feature -- The SUITEAPPCONTROLCENTER(Departments) feature has been DISABLED'] })
-        await client.deploy([featuresCustomizationInfo])
-        expect(writeFileMock).toHaveBeenCalledTimes(2)
-        expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('features.xml'), MOCK_FEATURES_XML)
-        expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
-        expect(rmMock).toHaveBeenCalledTimes(1)
-        expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
-        expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
-        expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
-        expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
-      })
-
-      it('should throw FeaturesDeployError on failed features deploy', async () => {
-        const errorMessage = 'Configure feature -- Enabling of the SUITEAPPCONTROLCENTER(SuiteApp Control Center) feature has FAILED'
-        mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: [errorMessage] })
-        await expect(client.deploy([featuresCustomizationInfo]))
-          .rejects.toThrow(new FeaturesDeployError(errorMessage, ['SUITEAPPCONTROLCENTER']))
       })
     })
 

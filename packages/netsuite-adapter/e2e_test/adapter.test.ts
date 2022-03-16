@@ -45,8 +45,8 @@ const { awu } = collections.asynciterable
 describe('Netsuite adapter E2E with real account', () => {
   let adapter: NetsuiteAdapter
   let credentialsLease: CredsLease<Required<Credentials>>
-  const { customTypes, enums, additionalTypes, fieldTypes } = getMetadataTypes()
-  const metadataTypes = metadataTypesToList({ customTypes, enums, additionalTypes, fieldTypes })
+  const { customTypes, enums, fileCabinetTypes, fieldTypes } = getMetadataTypes()
+  const metadataTypes = metadataTypesToList({ customTypes, enums, fileCabinetTypes, fieldTypes })
 
   const createInstanceElement = (type: string, valuesOverride: Values): InstanceElement => {
     const instValues = {
@@ -59,7 +59,7 @@ describe('Netsuite adapter E2E with real account', () => {
 
     return new InstanceElement(
       instanceName,
-      isCustomTypeName(type) ? customTypes[type].type : additionalTypes[type],
+      isCustomTypeName(type) ? customTypes[type].type : fileCabinetTypes[type],
       instValues
     )
   }

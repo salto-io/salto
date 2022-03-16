@@ -24,7 +24,7 @@ import { getMetadataTypes, getTopLevelCustomTypes } from '../src/types'
 const { awu } = collections.asynciterable
 
 describe('Types', () => {
-  const { customTypes, fieldTypes, additionalTypes } = getMetadataTypes()
+  const { customTypes, fieldTypes, fileCabinetTypes } = getMetadataTypes()
   describe('CustomTypes', () => {
     it('should have a required SCRIPT_ID field with regex restriction for all custom types', () => {
       getTopLevelCustomTypes(customTypes)
@@ -54,10 +54,10 @@ describe('Types', () => {
     })
   })
 
-  describe('Additional Types', () => {
+  describe('FileCabinetTypes', () => {
     describe('file type definition', () => {
       it('should have single fileContent field', () => {
-        expect(Object.values(additionalTypes.file.fields)
+        expect(Object.values(fileCabinetTypes.file.fields)
           .find(async f => {
             const fType = await f.getType()
             return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
@@ -66,15 +66,15 @@ describe('Types', () => {
       })
 
       it('should have service_id path field', async () => {
-        expect(Object.keys(additionalTypes.file.fields)).toContain(PATH)
-        const pathFieldType = await additionalTypes.file.fields[PATH].getType()
+        expect(Object.keys(fileCabinetTypes.file.fields)).toContain(PATH)
+        const pathFieldType = await fileCabinetTypes.file.fields[PATH].getType()
         expect(isPrimitiveType(pathFieldType) && isServiceId(pathFieldType))
           .toBe(true)
       })
 
       it('should have correct path regex restriction', () => {
-        expect(Object.keys(additionalTypes.file.fields)).toContain(PATH)
-        const pathField = additionalTypes.file.fields[PATH]
+        expect(Object.keys(fileCabinetTypes.file.fields)).toContain(PATH)
+        const pathField = fileCabinetTypes.file.fields[PATH]
         const { regex } = getRestriction(pathField)
         expect(values.isDefined(regex)).toBe(true)
         const regExpObj = new RegExp(regex as string)
@@ -89,15 +89,15 @@ describe('Types', () => {
 
     describe('folder type definition', () => {
       it('should have service_id path field', async () => {
-        expect(Object.keys(additionalTypes.folder.fields)).toContain(PATH)
-        const pathFieldType = await additionalTypes.folder.fields[PATH].getType()
+        expect(Object.keys(fileCabinetTypes.folder.fields)).toContain(PATH)
+        const pathFieldType = await fileCabinetTypes.folder.fields[PATH].getType()
         expect(isPrimitiveType(pathFieldType) && isServiceId(pathFieldType))
           .toBe(true)
       })
 
       it('should have correct path regex restriction', () => {
-        expect(Object.keys(additionalTypes.folder.fields)).toContain(PATH)
-        const pathField = additionalTypes.folder.fields[PATH]
+        expect(Object.keys(fileCabinetTypes.folder.fields)).toContain(PATH)
+        const pathField = fileCabinetTypes.folder.fields[PATH]
         const { regex } = getRestriction(pathField)
         expect(values.isDefined(regex)).toBe(true)
         const regExpObj = new RegExp(regex as string)

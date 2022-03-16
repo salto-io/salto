@@ -1254,21 +1254,35 @@ describe('parsing errors', () => {
       })
     })
 
-    describe('ignore content merge conflict (multistring)', () => {
+    describe('ignore conflicts inside multiline strings', () => {
       const nacl = `
         rocky.racoon checkedAgain {
           always = '''
             remember
 <<<<<<<
-'''
-          only = "to lose"
+            only = "to lose"
 =======
-          only = "to find"
+            only = "to find"
 >>>>>>>
-        }
-        rocky.racoon checked {
-          only
-        }
+'''
+}
+      `
+      let res: ParseResult
+      beforeAll(async () => {
+        res = await parse(Buffer.from(nacl), 'file.nacl', {})
+      })
+      it('should raise invalid block item error', () => {
+        expect(res.errors).toHaveLength(0)
+      })
+    })
+
+    describe('raise error for non-open conflict token', () => {
+      const nacl = `
+        rocky.racoon checkedAgain {
+            only = "to lose"
+=======
+            what = "to find"
+}
       `
       let res: ParseResult
       beforeAll(async () => {
@@ -1277,13 +1291,30 @@ describe('parsing errors', () => {
       it('should raise invalid block item error', () => {
         expect(res.errors).toHaveLength(1)
         expect(res.errors[0].subject).toEqual({
-          start: { byte: 120, col: 1, line: 8 },
-          end: { byte: 120, col: 1, line: 8 },
+          start: { byte: 66, col: 1, line: 4 },
+          end: { byte: 66, col: 1, line: 4 },
           filename: 'file.nacl',
         })
         expect(res.errors[0].message)
           .toBe('Invalid block item. Expected a new block or an attribute definition.')
         expect(res.errors[0].summary).toBe('Invalid block item')
+      })
+    })
+
+    describe('ignore error for non-open conflict token in multiline string', () => {
+      const nacl = `
+        rocky.racoon checkedAgain {
+            only = '''
+=======
+'''
+}
+      `
+      let res: ParseResult
+      beforeAll(async () => {
+        res = await parse(Buffer.from(nacl), 'file.nacl', {})
+      })
+      it('should have no errors', () => {
+        expect(res.errors).toHaveLength(0)
       })
     })
   })

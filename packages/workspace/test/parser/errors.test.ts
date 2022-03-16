@@ -1220,7 +1220,7 @@ describe('parsing errors', () => {
       })
     })
 
-    describe('ignore content merge conflict (lacking \'>\')', () => {
+    describe('non closed conflict markers (lacking \'>\')', () => {
       const nacl = `
         rocky.racoon checked {
           only

@@ -26,7 +26,7 @@ import { outputLine, errorOutputLine } from '../outputer'
 import { header, formatExecutionPlan, deployPhaseHeader, cancelDeployOutput, formatItemDone, formatItemError, formatCancelAction, formatActionInProgress, formatActionStart, deployPhaseEpilogue, formatStateRecencies, formatDeployActions } from '../formatter'
 import Prompts from '../prompts'
 import { getUserBooleanInput } from '../callbacks'
-import { updateWorkspace, isValidWorkspaceForCommand, shouldRecommendFetch } from '../workspace/workspace'
+import { updateWorkspace, isValidWorkspaceForCommand, shouldRecommendFetch, getWorkspaceTelemetryTags } from '../workspace/workspace'
 import { ENVIRONMENT_OPTION, EnvArg, validateAndSetEnv } from './common/env'
 
 const log = logger(module)
@@ -161,8 +161,9 @@ const deployPlan = async (
   log.debug(`${result.errors.length} errors occurred:\n${result.errors.map(err => err.message).join('\n')}`)
 
   if (executingDeploy) {
-    cliTelemetry.actionsSuccess(nonErroredActions.length)
-    cliTelemetry.actionsFailure(result.errors.length)
+    const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+    cliTelemetry.actionsSuccess(nonErroredActions.length, workspaceTags)
+    cliTelemetry.actionsFailure(result.errors.length, workspaceTags)
   }
 
   return result

@@ -1612,7 +1612,7 @@ describe('fetch from workspace', () => {
     const movedElem = new ObjectType({
       elemID: ElemID.fromFullName('salto.moved'),
       annotations: {
-        str: 'The user renamed the nacl, path should be the same',
+        str: 'The user renamed the nacl, path should be the new one',
       },
       path: ['salto', 'origLocation'],
     })
@@ -1662,8 +1662,14 @@ describe('fetch from workspace', () => {
               accountConfigs: { salto: configs[0] },
               stateElements,
               parsedNaclFiles: {
-                'salto/nopath.nacl': [noPathElementNACL],
                 'salto/moved.nacl': [movedElem],
+                'salto/nopath.nacl': [noPathElementNACL],
+                'salto/here.nacl': [editNaclElem],
+                'salto/existing/all.nacl': [existingElement],
+                'other/obj/all.nacl': [otherAdapterElem],
+                'salto/obj/annotations.nacl': [objFragAnnotations],
+                'salto/obj/customFields.nacl': [objFragCustomFields],
+                'salto/obj/objFragStdFields.nacl': [objFragStdFields],
               },
             }),
             ['salto'],

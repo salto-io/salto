@@ -771,6 +771,20 @@ const createEmptyFetchChangeDueToError = (errMsg: string): FetchChangesResult =>
   }
 }
 
+const getByPathIndexUnmergedElements = async (
+  elements: Element[],
+  workspace: Workspace,
+  env: string,
+): Promise<Element[]> => {
+  if (elements.length === 0) {
+    return elements
+  }
+  const wsPathIndex = await workspace.state(env).getPathIndex()
+  return (await withLimitedConcurrency(wu(elements).map(
+    elem => () => pathIndex.splitElementByPath(elem, wsPathIndex)
+  ), MAX_SPLIT_CONCURRENCY)).flat()
+}
+
 export const fetchChangesFromWorkspace = async (
   otherWorkspace: Workspace,
   fetchAccounts: string[],
@@ -835,22 +849,22 @@ export const fetchChangesFromWorkspace = async (
   const fullElements = await awu(await (otherElementsSource).getAll())
     .filter(elem => fetchAccounts.includes(elem.elemID.adapter))
     .toArray()
-
-  const otherPathIndex = await otherWorkspace.state(env).getPathIndex()
-  const splitByPathIndex = (await withLimitedConcurrency(wu(fullElements).map(
-    elem => () => pathIndex.splitElementByPath(elem, otherPathIndex)
-  ), MAX_SPLIT_CONCURRENCY)).flat()
+  const splitByFiles = (await withLimitedConcurrency(
+    wu(fullElements).map(elem => () => splitElementByFile(elem)),
+    MAX_SPLIT_CONCURRENCY
+  )).flat()
   const [unmergedWithPath, unmergedWithoutPath] = _.partition(
-    splitByPathIndex,
+    splitByFiles,
     elem => values.isDefined(elem.path)
+  )
+  const unmergedWithPathIndexBasedPath = await getByPathIndexUnmergedElements(
+    unmergedWithoutPath,
+    otherWorkspace,
+    env,
   )
   const unmergedElements = [
     ...unmergedWithPath,
-    ...(await withLimitedConcurrency(
-      wu(unmergedWithoutPath).map(elem => () => splitElementByFile(elem)),
-      MAX_SPLIT_CONCURRENCY
-    )
-    ).flat(),
+    ...unmergedWithPathIndexBasedPath,
   ]
   return createFetchChanges({
     adapterNames: fetchAccounts,

@@ -54,7 +54,7 @@ import { errorOutputLine, outputLine } from '../outputer'
 import { processOauthCredentials } from '../cli_oauth_authenticator'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
 import { convertValueType } from './common/config_override'
-import { getWorkspaceTelemetryTags, getAdapterTag } from '../workspace/workspace'
+import { getAdaptersTags } from './common/accounts'
 
 const { isDefined } = values
 
@@ -168,7 +168,6 @@ type AccountAddArgs = {
 
 export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
   input,
-  cliTelemetry,
   output,
   workspace,
 }): Promise<CliExitCode> => {
@@ -211,17 +210,8 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
     }
   }
 
-  const telemetryTags = await getWorkspaceTelemetryTags(workspace)
-  try {
-    await addAdapter(workspace, serviceType, theAccountName)
-    await workspace.flush()
-  } catch (e) {
-    errorOutputLine(formatAddServiceFailed(theAccountName, e.message), output)
-    cliTelemetry.failure(telemetryTags)
-    cliTelemetry.stacktrace(e, telemetryTags)
-    return CliExitCode.AppError
-  }
-
+  await addAdapter(workspace, serviceType, theAccountName)
+  await workspace.flush()
   outputLine(formatAccountAdded(serviceType), output)
   return CliExitCode.Success
 }
@@ -260,6 +250,7 @@ const serviceAddDef = createWorkspaceCommand({
     ],
   },
   action: addAction,
+  extraTelemetryTags: (_ws, input) => getAdaptersTags([input.serviceType]),
 })
 
 // List
@@ -291,7 +282,6 @@ type ServiceLoginArgs = {
 
 export const loginAction: WorkspaceCommandAction<ServiceLoginArgs> = async ({
   input,
-  cliTelemetry,
   output,
   workspace,
 }): Promise<CliExitCode> => {
@@ -309,18 +299,13 @@ export const loginAction: WorkspaceCommandAction<ServiceLoginArgs> = async ({
     outputLine(formatLoginOverride, output)
   }
 
-  cliTelemetry.start()
-  const telemetryTags = await getWorkspaceTelemetryTags(workspace, [accountName])
   try {
     await getLoginInputFlow(workspace, accountLoginStatus.configTypeOptions,
       output, authType, accountName, loginParameters)
   } catch (e) {
-    cliTelemetry.failure(telemetryTags)
-    cliTelemetry.stacktrace(e, telemetryTags)
     errorOutputLine(formatLoginToAccountFailed(accountName, e.message), output)
     return CliExitCode.AppError
   }
-  cliTelemetry.success(telemetryTags)
   return CliExitCode.Success
 }
 
@@ -343,7 +328,9 @@ const accountLoginDef = createWorkspaceCommand({
     ],
   },
   action: loginAction,
-  getAdapters: (ws, input) => [ws.getServiceFromAccountName(input.accountName)],
+  extraTelemetryTags: (ws, input) => getAdaptersTags([
+    ws.getServiceFromAccountName(input.accountName),
+  ]),
 })
 
 const accountGroupDef = createCommandGroupDef({

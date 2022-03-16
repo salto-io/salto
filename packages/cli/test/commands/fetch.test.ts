@@ -115,7 +115,6 @@ describe('fetch command', () => {
       })
       it('should send telemetry events', () => {
         expect(telemetry.getEventsMap()[eventsNames.changes]).toHaveLength(1)
-        expect(telemetry.getEventsMap()[eventsNames.changes][0].tags).toMatchObject({ 'adapter-salesforce': undefined })
       })
     })
 
@@ -143,7 +142,7 @@ describe('fetch command', () => {
 
       it('should send telemetry events', () => {
         expect(telemetry.getEventsMap()[eventsNames.changes]).toHaveLength(1)
-        expect(telemetry.getEventsMap()[eventsNames.changes][0].tags).toMatchObject({ 'adapter-salesforce': undefined, 'adapter-hubspot': undefined })
+        expect(telemetry.getEventsMap()[eventsNames.changes][0].tags).toMatchObject({ 'adapter-salesforce': true, 'adapter-hubspot': true })
       })
     })
 

@@ -267,7 +267,7 @@ describe('service command group', () => {
           it('should report service type telemetry only of the added service', () => {
             const eventName = buildEventName('add', 'success')
             expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
-            expect(telemetry.getEventsMap()[eventName][0].tags).toMatchObject({ 'adapter-newAdapter': undefined })
+            expect(telemetry.getEventsMap()[eventName][0].tags).toMatchObject({ 'adapter-newAdapter': true })
           })
         })
         describe('when called with invalid login parameters', () => {
@@ -290,7 +290,7 @@ describe('service command group', () => {
 
             const eventName = buildEventName('add', 'failure')
             expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
-            expect(telemetry.getEventsMap()[eventName][0].tags).toMatchObject({ 'adapter-newAdapter': undefined })
+            expect(telemetry.getEventsMap()[eventName][0].tags).toMatchObject({ 'adapter-newAdapter': true })
           })
           it('should fail when called with malformed parameter', async () => {
             const exitCode = await addAction({
@@ -312,7 +312,7 @@ describe('service command group', () => {
 
             const eventName = buildEventName('add', 'failure')
             expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
-            expect(telemetry.getEventsMap()[eventName][0].tags).toMatchObject({ 'adapter-newAdapter': undefined })
+            expect(telemetry.getEventsMap()[eventName][0].tags).toMatchObject({ 'adapter-newAdapter': true })
           })
         })
         describe('when called with valid credentials', () => {
@@ -555,7 +555,7 @@ describe('service command group', () => {
         it('should report telemetery for service', () => {
           const eventName = buildEventName('login', 'success')
           expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
-          expect(telemetry.getEventsMap()[eventName][0].tags).toMatchObject({ 'adapter-salesforce': undefined })
+          expect(telemetry.getEventsMap()[eventName][0].tags).toMatchObject({ 'adapter-salesforce': true })
         })
       })
 

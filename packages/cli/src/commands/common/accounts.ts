@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 import { Workspace } from '@salto-io/workspace'
+import { Tags } from '@salto-io/core'
 import { KeyedOption } from '../../types'
 
 export type AccountsArg = {
@@ -29,13 +30,25 @@ export const ACCOUNTS_OPTION: KeyedOption<AccountsArg> = {
   type: 'stringsList',
 }
 
-export const getAdaptersForAccounts = (
+export const getAdaptersTags = (adapters: string[]): Tags => (
+  Object.fromEntries(adapters.map(adapter => [`adapter-${adapter}`, true]))
+)
+
+const getAdaptersForAccounts = (
   ws: Workspace,
   input: {
     accounts?: string[]
     env?: string
   }
 ): string[] => (input.accounts || ws.accounts(input.env)).map(ws.getServiceFromAccountName)
+
+export const getTagsForAccounts = (
+  ws: Workspace,
+  input: {
+    accounts?: string[]
+    env?: string
+  }
+): Tags => getAdaptersTags(getAdaptersForAccounts(ws, input))
 
 export const getAndValidateActiveAccounts = (
   workspace: Workspace,

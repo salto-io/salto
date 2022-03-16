@@ -16,14 +16,11 @@
 import { Change, Element, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
 import { resolveValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { logger } from '@salto-io/logging'
 import JiraClient from '../client/client'
 import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
 import { getLookUpName } from '../reference_mapping'
 import { FilterCreator } from '../filter'
-import { findObject, setDeploymentAnnotations } from '../utils'
-
-const log = logger(module)
+import { findObject, setFieldDeploymentAnnotations } from '../utils'
 
 const PROJECT_TYPE_NAME = 'Project'
 
@@ -68,14 +65,12 @@ const deployProjectSchemes = async (
 const filter: FilterCreator = ({ config, client }) => ({
   onFetch: async (elements: Element[]) => {
     const projectType = findObject(elements, PROJECT_TYPE_NAME)
-    if (projectType === undefined) {
-      log.debug(`${PROJECT_TYPE_NAME} type not found`)
-    } else {
-      setDeploymentAnnotations(projectType, WORKFLOW_SCHEME_FIELD)
-      setDeploymentAnnotations(projectType, ISSUE_TYPE_SCREEN_SCHEME_FIELD)
-      setDeploymentAnnotations(projectType, FIELD_CONFIG_SCHEME_FIELD)
-      setDeploymentAnnotations(projectType, ISSUE_TYPE_SCHEME)
-      setDeploymentAnnotations(projectType, COMPONENTS_FIELD)
+    if (projectType !== undefined) {
+      setFieldDeploymentAnnotations(projectType, WORKFLOW_SCHEME_FIELD)
+      setFieldDeploymentAnnotations(projectType, ISSUE_TYPE_SCREEN_SCHEME_FIELD)
+      setFieldDeploymentAnnotations(projectType, FIELD_CONFIG_SCHEME_FIELD)
+      setFieldDeploymentAnnotations(projectType, ISSUE_TYPE_SCHEME)
+      setFieldDeploymentAnnotations(projectType, COMPONENTS_FIELD)
     }
 
     elements

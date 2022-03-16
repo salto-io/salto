@@ -16,7 +16,7 @@
 import { InstanceElement, Element, ElemID, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { CUSTOM_FIELDS_SUFFIX } from '../../src/filters/fields/field_name_filter'
-import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA, WORKFLOW_TYPE_NAME } from '../../src/constants'
+import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA, SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, WORKFLOW_TYPE_NAME } from '../../src/constants'
 import { createReference, findType } from '../utils'
 import { createBoardValues } from './board'
 import { createContextValues, createFieldValues } from './field'
@@ -27,8 +27,9 @@ import { createIssueTypeScreenSchemeValues } from './issueTypeScreenScheme'
 import { createScreenValues } from './screen'
 import { createWorkflowValues } from './workflow'
 import { createWorkflowSchemeValues } from './workflowScheme'
+import { createSecurityLevelValues, createSecuritySchemeValues } from './securityScheme'
 
-export const createInstances = (fetchedElements: Element[]): InstanceElement[] => {
+export const createInstances = (fetchedElements: Element[]): InstanceElement[][] => {
   const randomString = `createdByOssE2e${String(Date.now()).substring(6)}`
 
   const issueType = new InstanceElement(
@@ -155,22 +156,39 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[] =
     createFieldConfigurationValues(randomString, fetchedElements),
   )
 
+  const securityLevel = new InstanceElement(
+    naclCase(`${randomString}__${randomString}`),
+    findType(SECURITY_LEVEL_TYPE, fetchedElements),
+    createSecurityLevelValues(randomString, fetchedElements),
+  )
+
+  const securityScheme = new InstanceElement(
+    randomString,
+    findType(SECURITY_SCHEME_TYPE, fetchedElements),
+    createSecuritySchemeValues(randomString, securityLevel),
+  )
+
+  securityLevel.annotations[CORE_ANNOTATIONS.PARENT] = [
+    new ReferenceExpression(securityScheme.elemID, securityScheme),
+  ]
+
   return [
-    issueType,
-    field,
-    fieldContext,
-    screen,
-    workflow,
-    dashboard,
-    workflowScheme,
-    screenScheme,
-    issueTypeScreenScheme,
-    fieldConfigurationScheme,
-    board,
-    filter,
-    issueLinkType,
-    issueTypeScheme,
-    projectRole,
-    fieldConfiguration,
+    [issueType],
+    [field],
+    [fieldContext],
+    [screen],
+    [workflow],
+    [dashboard],
+    [workflowScheme],
+    [screenScheme],
+    [issueTypeScreenScheme],
+    [fieldConfigurationScheme],
+    [board],
+    [filter],
+    [issueLinkType],
+    [issueTypeScheme],
+    [projectRole],
+    [fieldConfiguration],
+    [securityScheme, securityLevel],
   ]
 }

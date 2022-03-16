@@ -16,19 +16,16 @@
 import { Change, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
 import { resolveChangeElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { logger } from '@salto-io/logging'
 import { getLookUpName } from '../reference_mapping'
 import JiraClient from '../client/client'
 import { JiraConfig } from '../config'
 import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
 import { FilterCreator } from '../filter'
-import { findObject, setDeploymentAnnotations } from '../utils'
+import { findObject, setFieldDeploymentAnnotations } from '../utils'
 import { getDiffObjects } from '../diff'
 
 const FIELD_CONFIG_SCHEME_NAME = 'FieldConfigurationScheme'
 const FIELD_CONFIG_SCHEME_ITEM_NAME = 'FieldConfigurationIssueTypeItem'
-
-const log = logger(module)
 
 const deployFieldConfigSchemeItems = async (
   change: Change<InstanceElement>,
@@ -86,19 +83,15 @@ const filter: FilterCreator = ({ config, client }) => ({
   onFetch: async elements => {
     const fieldConfigurationSchemeType = findObject(elements, FIELD_CONFIG_SCHEME_NAME)
 
-    if (fieldConfigurationSchemeType === undefined) {
-      log.warn(`${FIELD_CONFIG_SCHEME_NAME} type not found`)
-    } else {
-      setDeploymentAnnotations(fieldConfigurationSchemeType, 'items')
+    if (fieldConfigurationSchemeType !== undefined) {
+      setFieldDeploymentAnnotations(fieldConfigurationSchemeType, 'items')
     }
 
     const fieldConfigurationIssueTypeItemType = findObject(elements, FIELD_CONFIG_SCHEME_ITEM_NAME)
 
-    if (fieldConfigurationIssueTypeItemType === undefined) {
-      log.warn(`${FIELD_CONFIG_SCHEME_ITEM_NAME} type not found`)
-    } else {
-      setDeploymentAnnotations(fieldConfigurationIssueTypeItemType, 'issueTypeId')
-      setDeploymentAnnotations(fieldConfigurationIssueTypeItemType, 'fieldConfigurationId')
+    if (fieldConfigurationIssueTypeItemType !== undefined) {
+      setFieldDeploymentAnnotations(fieldConfigurationIssueTypeItemType, 'issueTypeId')
+      setFieldDeploymentAnnotations(fieldConfigurationIssueTypeItemType, 'fieldConfigurationId')
     }
   },
   deploy: async changes => {

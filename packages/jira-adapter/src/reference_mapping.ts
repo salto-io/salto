@@ -262,7 +262,7 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     target: { type: 'StatusCategory' },
   },
   {
-    src: { field: 'defaultSecurityLevelId', parentTypes: [SECURITY_SCHEME_TYPE] },
+    src: { field: 'defaultLevel', parentTypes: [SECURITY_SCHEME_TYPE] },
     serializationStrategy: 'id',
     target: { type: SECURITY_LEVEL_TYPE },
   },

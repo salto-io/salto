@@ -16,7 +16,7 @@
 import { CORE_ANNOTATIONS, Element, getChangeData, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { findObject, setDeploymentAnnotations } from '../utils'
+import { findObject, setFieldDeploymentAnnotations } from '../utils'
 import { FilterCreator } from '../filter'
 import { deployWithJspEndpoints } from '../deployment/jsp_deployment'
 import { RESOLUTION_TYPE_NAME } from '../constants'
@@ -32,15 +32,14 @@ const filter: FilterCreator = ({ client, config }) => ({
 
     const resolutionType = findObject(elements, RESOLUTION_TYPE_NAME)
     if (resolutionType === undefined) {
-      log.warn(`${RESOLUTION_TYPE_NAME} type not found, resolution filter`)
       return
     }
 
     resolutionType.annotations[CORE_ANNOTATIONS.CREATABLE] = true
     resolutionType.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
-    setDeploymentAnnotations(resolutionType, 'id')
-    setDeploymentAnnotations(resolutionType, 'name')
-    setDeploymentAnnotations(resolutionType, 'description')
+    setFieldDeploymentAnnotations(resolutionType, 'id')
+    setFieldDeploymentAnnotations(resolutionType, 'name')
+    setFieldDeploymentAnnotations(resolutionType, 'description')
   },
 
   deploy: async changes => {

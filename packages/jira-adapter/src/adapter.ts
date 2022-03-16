@@ -60,6 +60,7 @@ import contextReferencesFilter from './filters/fields/context_references_filter'
 import resolutionFilter from './filters/resolution'
 import priorityFilter from './filters/priority'
 import statusDeploymentFilter from './filters/statuses/status_deployment'
+import securitySchemeFilter from './filters/security_scheme/security_scheme'
 import avatarsFilter from './filters/avatars'
 import iconUrlFilter from './filters/icon_url'
 import userFilter from './filters/user'
@@ -110,6 +111,7 @@ export const DEFAULT_FILTERS = [
   resolutionFilter,
   priorityFilter,
   statusDeploymentFilter,
+  securitySchemeFilter,
   issueTypeScreenSchemeFilter,
   fieldConfigurationFilter,
   fieldConfigurationSchemeFilter,

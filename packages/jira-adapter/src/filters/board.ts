@@ -15,7 +15,6 @@
 */
 import { Change, CORE_ANNOTATIONS, Element, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
-import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { findObject } from '../utils'
 import { FilterCreator } from '../filter'
@@ -25,17 +24,13 @@ const { awu } = collections.asynciterable
 const BOARD_TYPE_NAME = 'Board'
 const BOARD_LOCATION_TYPE = 'project'
 
-const log = logger(module)
-
 /**
  * Change Board type structure to fit the deployment endpoint
  */
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     const boardLocationType = findObject(elements, 'Board_location')
-    if (boardLocationType === undefined) {
-      log.warn(`${BOARD_TYPE_NAME} type not found`)
-    } else {
+    if (boardLocationType !== undefined) {
       boardLocationType.fields.projectId.annotations[CORE_ANNOTATIONS.CREATABLE] = true
     }
 

@@ -22,7 +22,7 @@ import JiraClient from '../../client/client'
 import { setContextOptions, setOptionTypeDeploymentAnnotations } from './context_options'
 import { setDefaultValueTypeDeploymentAnnotations, updateDefaultValues } from './default_values'
 import { setContextField } from './issues_and_projects'
-import { setDeploymentAnnotations } from '../../utils'
+import { setFieldDeploymentAnnotations } from '../../utils'
 
 const FIELDS_TO_IGNORE = ['defaultValue', 'options']
 
@@ -101,7 +101,7 @@ export const setContextDeploymentAnnotations = async (
   contextType: ObjectType,
 ): Promise<void> => {
   await setDefaultValueTypeDeploymentAnnotations(contextType)
-  setDeploymentAnnotations(contextType, 'projectIds')
-  setDeploymentAnnotations(contextType, 'issueTypeIds')
+  setFieldDeploymentAnnotations(contextType, 'projectIds')
+  setFieldDeploymentAnnotations(contextType, 'issueTypeIds')
   await setOptionTypeDeploymentAnnotations(contextType)
 }

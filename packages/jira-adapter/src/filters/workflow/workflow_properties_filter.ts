@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { BuiltinTypes, Change, CORE_ANNOTATIONS, Element, ElemID, Field, getChangeData, isInstanceChange, isInstanceElement, ListType, ObjectType, Values } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { elements as elementUtils } from '@salto-io/adapter-components'
@@ -26,8 +25,6 @@ import { JIRA, WORKFLOW_TYPE_NAME } from '../../constants'
 const STATUS_PROPERTY_TYPE_NAME = 'StatusProperty'
 
 const { awu } = collections.asynciterable
-
-const log = logger(module)
 
 const convertStatusesPropertiesToList = (instance: WorkflowInstance): void => {
   instance.value.statuses?.forEach(status => {
@@ -69,9 +66,7 @@ const filter: FilterCreator = () => ({
     elements.push(propertyType)
 
     const workflowStatusType = findObject(elements, 'WorkflowStatus')
-    if (workflowStatusType === undefined) {
-      log.warn('WorkflowStatus type was not received in fetch')
-    } else {
+    if (workflowStatusType !== undefined) {
       workflowStatusType.fields.properties = new Field(workflowStatusType, 'properties', new ListType(propertyType), { [CORE_ANNOTATIONS.REQUIRED]: true })
     }
 

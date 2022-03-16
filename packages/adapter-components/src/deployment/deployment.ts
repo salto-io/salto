@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ActionName, Change, ElemID, getChangeData, InstanceElement, ReadOnlyElementsSource, Values } from '@salto-io/adapter-api'
+import { ActionName, Change, ElemID, getChangeData, InstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { transformElement } from '@salto-io/adapter-utils'
 import { createUrl } from '../elements/request_parameters'
 import { HTTPWriteClientInterface } from '../client/http_client'
@@ -48,15 +48,16 @@ export const filterIgnoredValues = async (
   instance: InstanceElement,
   fieldsToIgnore: string[] | ((path: ElemID) => boolean),
   elementsSource?: ReadOnlyElementsSource,
-): Promise<Values> => {
+): Promise<InstanceElement> => {
   if (Array.isArray(fieldsToIgnore)) {
-    return _.omit(
+    instance.value = _.omit(
       instance.value,
       fieldsToIgnore
     )
+    return instance
   }
 
-  return (await transformElement({
+  return transformElement({
     element: instance,
     strict: false,
     allowEmpty: true,
@@ -67,7 +68,7 @@ export const filterIgnoredValues = async (
       }
       return value
     },
-  })).value
+  })
 }
 
 /**
@@ -94,11 +95,11 @@ export const deployChange = async (
   if (endpoint === undefined) {
     throw new Error(`No endpoint of type ${change.action} for ${instance.elemID.typeName}`)
   }
-  const valuesToDeploy = await filterIgnoredValues(
+  const valuesToDeploy = (await filterIgnoredValues(
     await filterUndeployableValues(getChangeData(change), change.action, elementsSource),
     fieldsToIgnore,
     elementsSource,
-  )
+  )).value
   const url = createUrl({
     instance,
     baseUrl: endpoint.url,

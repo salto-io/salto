@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, toChange, Change } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, toChange, Change, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { getChangeGroupIds } from '../src/group_change'
-import { JIRA, WORKFLOW_TYPE_NAME } from '../src/constants'
+import { JIRA, SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, WORKFLOW_TYPE_NAME } from '../src/constants'
 
 describe('group change', () => {
   let workflowType: ObjectType
@@ -23,11 +23,32 @@ describe('group change', () => {
   let workflowInstance2: InstanceElement
   let workflowInstance3: InstanceElement
 
+  let securityLevelType: ObjectType
+  let securityLevelInstance: InstanceElement
+  let securitySchemeType: ObjectType
+  let securitySchemeInstance: InstanceElement
+
   beforeEach(() => {
     workflowType = new ObjectType({ elemID: new ElemID(JIRA, WORKFLOW_TYPE_NAME) })
     workflowInstance1 = new InstanceElement('workflow1', workflowType)
     workflowInstance2 = new InstanceElement('workflow2', workflowType)
     workflowInstance3 = new InstanceElement('workflow3', workflowType)
+
+    securityLevelType = new ObjectType({ elemID: new ElemID(JIRA, SECURITY_LEVEL_TYPE) })
+    securitySchemeType = new ObjectType({ elemID: new ElemID(JIRA, SECURITY_SCHEME_TYPE) })
+
+    securitySchemeInstance = new InstanceElement('securityScheme', securitySchemeType)
+    securityLevelInstance = new InstanceElement(
+      'securityLevel',
+      securityLevelType,
+      {},
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: [
+          new ReferenceExpression(securitySchemeInstance.elemID, securitySchemeInstance),
+        ],
+      }
+    )
   })
 
   it('should group workflow modifications', async () => {
@@ -47,5 +68,35 @@ describe('group change', () => {
     expect(changeGroupIds.get(workflowInstance2.elemID.getFullName())).toBe('Workflow Modifications')
     expect(changeGroupIds.get(workflowInstance3.elemID.getFullName()))
       .toBe(workflowInstance3.elemID.getFullName())
+  })
+
+  it('should group security scheme levels', async () => {
+    const changeGroupIds = await getChangeGroupIds(new Map<string, Change>([
+      [securityLevelInstance.elemID.getFullName(), toChange({
+        after: securityLevelInstance,
+      })],
+      [securitySchemeInstance.elemID.getFullName(), toChange({
+        after: securitySchemeInstance,
+      })],
+    ]))
+
+    expect(changeGroupIds.get(securityLevelInstance.elemID.getFullName()))
+      .toBe(securitySchemeInstance.elemID.getFullName())
+
+    expect(changeGroupIds.get(securitySchemeInstance.elemID.getFullName()))
+      .toBe(securitySchemeInstance.elemID.getFullName())
+  })
+
+  it('should throw if security scheme levels do not contain parent', async () => {
+    delete securityLevelInstance.annotations[CORE_ANNOTATIONS.PARENT]
+
+    await expect(getChangeGroupIds(new Map<string, Change>([
+      [securityLevelInstance.elemID.getFullName(), toChange({
+        after: securityLevelInstance,
+      })],
+      [securitySchemeInstance.elemID.getFullName(), toChange({
+        after: securitySchemeInstance,
+      })],
+    ]))).rejects.toThrow()
   })
 })

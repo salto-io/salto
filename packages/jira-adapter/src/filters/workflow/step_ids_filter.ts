@@ -90,9 +90,7 @@ export const addStepIds = async (
 const filter: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]) => {
     const workflowType = findObject(elements, WORKFLOW_TYPE_NAME)
-    if (workflowType === undefined) {
-      log.warn(`${WORKFLOW_TYPE_NAME} type not found`)
-    } else {
+    if (workflowType !== undefined) {
       workflowType.fields[STEP_IDS_FIELD] = new Field(
         workflowType,
         STEP_IDS_FIELD,

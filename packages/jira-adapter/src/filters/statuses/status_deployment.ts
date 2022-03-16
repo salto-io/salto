@@ -16,7 +16,7 @@
 import { CORE_ANNOTATIONS, Element, getChangeData, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { findObject, setDeploymentAnnotations } from '../../utils'
+import { findObject, setFieldDeploymentAnnotations } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { deployWithJspEndpoints } from '../../deployment/jsp_deployment'
 import { STATUS_TYPE_NAME } from '../../constants'
@@ -40,18 +40,17 @@ const filter: FilterCreator = ({ client, config }) => ({
 
     const statusType = findObject(elements, STATUS_TYPE_NAME)
     if (statusType === undefined) {
-      log.warn(`${STATUS_TYPE_NAME} type not found, skipping status deployment filter`)
       return
     }
 
     statusType.annotations[CORE_ANNOTATIONS.CREATABLE] = true
     statusType.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
     statusType.annotations[CORE_ANNOTATIONS.DELETABLE] = true
-    setDeploymentAnnotations(statusType, 'statusCategory')
-    setDeploymentAnnotations(statusType, 'description')
-    setDeploymentAnnotations(statusType, 'iconUrl')
-    setDeploymentAnnotations(statusType, 'name')
-    setDeploymentAnnotations(statusType, 'id')
+    setFieldDeploymentAnnotations(statusType, 'statusCategory')
+    setFieldDeploymentAnnotations(statusType, 'description')
+    setFieldDeploymentAnnotations(statusType, 'iconUrl')
+    setFieldDeploymentAnnotations(statusType, 'name')
+    setFieldDeploymentAnnotations(statusType, 'id')
   },
 
   deploy: async changes => {

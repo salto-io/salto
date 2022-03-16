@@ -36,11 +36,15 @@ type NameIdObject = {
 const deployChange = async (
   change: Change<InstanceElement>,
   client: JiraClient,
-  urls: JspUrls
+  urls: JspUrls,
+  fieldsToIgnore: string[],
 ): Promise<void> => {
-  const instance = await deployment.filterUndeployableValues(
-    await resolveValues(getChangeData(change), getLookUpName),
-    change.action,
+  const instance = await deployment.filterIgnoredValues(
+    await deployment.filterUndeployableValues(
+      await resolveValues(getChangeData(change), getLookUpName),
+      change.action,
+    ),
+    fieldsToIgnore,
   )
 
   if (isAdditionChange(change)) {
@@ -51,6 +55,9 @@ const deployChange = async (
   }
 
   if (isModificationChange(change)) {
+    if (urls.modify === undefined) {
+      throw new Error(`Modify ${instance.elemID.getFullName()} is not supported`)
+    }
     await client.jspPost({
       url: urls.modify,
       data: instance.value,
@@ -61,28 +68,49 @@ const deployChange = async (
     if (urls.remove === undefined) {
       throw new Error(`Remove ${instance.elemID.getFullName()} is not supported`)
     }
-    await client.jspPost({
-      url: urls.remove,
-      data: {
-        ...instance.value,
-        confirm: 'true',
-      },
-    })
+    try {
+      await client.jspPost({
+        url: urls.remove,
+        data: {
+          ...instance.value,
+          confirm: 'true',
+          confirmed: 'true',
+        },
+      })
+    } catch (err) {
+      log.debug(`Received error ${err.message} for ${instance.elemID.getFullName()}. Could be because the element is already removed`)
+    }
   }
 }
 
 const isNameIdObject = (obj: unknown): obj is NameIdObject =>
   typeof obj === 'object' && obj !== null && 'name' in obj && 'id' in obj
 
-const queryServiceValues = async (client: JiraClient, urls: JspUrls)
-: Promise<NameIdObject[]> => {
+const queryServiceValues = async (
+  client: JiraClient,
+  urls: JspUrls,
+  getNameFunction?: (values: Values) => string
+): Promise<NameIdObject[]> => {
   const response = await client.getPrivate({
     url: urls.query,
   })
-  if (!Array.isArray(response.data)) {
+
+  const data = urls.dataField !== undefined && !Array.isArray(response.data)
+    ? response.data[urls.dataField]
+    : response.data
+
+  if (!Array.isArray(data)) {
     throw new Error(`Expected array of values in response, got ${safeJsonStringify(response.data)}`)
   }
-  return response.data.filter((obj): obj is NameIdObject => {
+
+  const serviceValues = getNameFunction !== undefined
+    ? data.map(values => ({
+      ...values,
+      name: getNameFunction(values),
+    }))
+    : data
+
+  return serviceValues.filter((obj): obj is NameIdObject => {
     if (!isNameIdObject(obj)) {
       log.warn(`Received unexpected response ${safeJsonStringify(obj)} from query ${urls.query}`)
       return false
@@ -109,7 +137,8 @@ type ServiceValuesTransformer = (serviceValues: Values, currentInstance: Instanc
 const verifyDeployment = async (
   serviceValues: NameIdObject[],
   deployResult: DeployResult,
-  serviceValuesTransformer: ServiceValuesTransformer
+  serviceValuesTransformer: ServiceValuesTransformer,
+  fieldsToIgnore: string[],
 ): Promise<void> => {
   const idToValues = _.keyBy(serviceValues, value => value.id)
 
@@ -118,6 +147,7 @@ const verifyDeployment = async (
       .filter(isInstanceChange)
       .map(change => deployment.filterUndeployableValues(getChangeData(change), change.action))
       .map(instance => resolveValues(instance, getLookUpName))
+      .map(instance => deployment.filterIgnoredValues(instance, fieldsToIgnore))
       .toArray(),
     instance => instance.elemID.getFullName()
   )
@@ -126,11 +156,6 @@ const verifyDeployment = async (
     deployResult.appliedChanges,
     change => {
       const instance = deployedInstances[getChangeData(change).elemID.getFullName()]
-
-      if (instance === undefined) {
-        log.warn(`Failed to deploy ${getChangeData(change).elemID.getFullName()}, not an instance`)
-        return true
-      }
 
       if (instance.value.id === undefined) {
         log.warn(`Failed to deploy ${instance.elemID.getFullName()}, id is undefined`)
@@ -177,11 +202,15 @@ export const deployWithJspEndpoints = async ({
   client,
   urls,
   serviceValuesTransformer = _.identity,
+  fieldsToIgnore = [],
+  getNameFunction,
 } : {
   changes: Change<InstanceElement>[]
   client: JiraClient
   urls: JspUrls
   serviceValuesTransformer?: ServiceValuesTransformer
+  fieldsToIgnore?: string[]
+  getNameFunction?: (values: Values) => string
 }
 ): Promise<DeployResult> => {
   const deployResult = await deployChanges(
@@ -190,17 +219,18 @@ export const deployWithJspEndpoints = async ({
       change,
       client,
       urls,
+      fieldsToIgnore
     )
   )
 
   if (deployResult.appliedChanges.length !== 0) {
     try {
-      const serviceValues = await queryServiceValues(client, urls)
+      const serviceValues = await queryServiceValues(client, urls, getNameFunction)
       await addIdsToResults(
         deployResult.appliedChanges.filter(isInstanceChange).filter(isAdditionChange),
         serviceValues
       )
-      await verifyDeployment(serviceValues, deployResult, serviceValuesTransformer)
+      await verifyDeployment(serviceValues, deployResult, serviceValuesTransformer, fieldsToIgnore)
     } catch (err) {
       log.error(`Failed to query service values: ${err}`)
       deployResult.errors = [

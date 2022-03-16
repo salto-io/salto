@@ -13,22 +13,40 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, ObjectType, Element, isObjectType, getDeepInnerType } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ObjectType, Element, isObjectType, getDeepInnerType, InstanceElement } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
+import { JiraConfig, JspUrls } from './config'
+
+const log = logger(module)
 
 const { awu } = collections.asynciterable
 
-export const setDeploymentAnnotations = (contextType: ObjectType, fieldName: string): void => {
-  if (contextType.fields[fieldName] !== undefined) {
-    contextType.fields[fieldName].annotations[CORE_ANNOTATIONS.CREATABLE] = true
-    contextType.fields[fieldName].annotations[CORE_ANNOTATIONS.UPDATABLE] = true
+export const setFieldDeploymentAnnotations = (type: ObjectType, fieldName: string): void => {
+  if (type.fields[fieldName] !== undefined) {
+    type.fields[fieldName].annotations[CORE_ANNOTATIONS.CREATABLE] = true
+    type.fields[fieldName].annotations[CORE_ANNOTATIONS.UPDATABLE] = true
   }
 }
 
-export const findObject = (elements: Element[], name: string): ObjectType | undefined =>
-  elements.filter(isObjectType).find(
+export const setTypeDeploymentAnnotations = (type: ObjectType): void => {
+  type.annotations[CORE_ANNOTATIONS.CREATABLE] = true
+  type.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
+  type.annotations[CORE_ANNOTATIONS.DELETABLE] = true
+}
+
+export const findObject = (elements: Element[], name: string): ObjectType | undefined => {
+  const type = elements.filter(isObjectType).find(
     element => element.elemID.name === name
   )
+
+  if (type === undefined) {
+    log.warn(`${name} type not found`)
+    return undefined
+  }
+  return type
+}
 
 
 export const addUpdatableAnnotationRecursively = async (type: ObjectType): Promise<void> =>
@@ -41,3 +59,22 @@ export const addUpdatableAnnotationRecursively = async (type: ObjectType): Promi
       }
     }
   })
+
+export const getFilledJspUrls = (
+  instance: InstanceElement,
+  config: JiraConfig,
+  typeName: string
+): JspUrls => {
+  const jspRequests = config.apiDefinitions.types[typeName]?.jspRequests
+  if (jspRequests === undefined) {
+    throw new Error(`${typeName} jsp urls are missing from the configuration`)
+  }
+
+  return {
+    ...jspRequests,
+    query: elementUtils.createUrl({
+      instance,
+      baseUrl: jspRequests.query,
+    }),
+  }
+}

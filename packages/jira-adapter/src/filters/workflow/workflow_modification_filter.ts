@@ -168,9 +168,7 @@ const filter: FilterCreator = ({ client, config, elementsSource, paginator }) =>
       return
     }
     const workflowType = findObject(elements, WORKFLOW_TYPE_NAME)
-    if (workflowType === undefined) {
-      log.warn(`${WORKFLOW_TYPE_NAME} type was not received in fetch`)
-    } else {
+    if (workflowType !== undefined) {
       workflowType.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
       await addUpdatableAnnotationRecursively(workflowType)
     }

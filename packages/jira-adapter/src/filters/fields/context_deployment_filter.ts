@@ -15,28 +15,21 @@
 */
 import { Element, getChangeData, isInstanceChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { deployContextChange, setContextDeploymentAnnotations } from './contexts'
 import { deployChanges } from '../../deployment/standard_deployment'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from './constants'
-import { findObject, setDeploymentAnnotations } from '../../utils'
-
-const log = logger(module)
+import { findObject, setFieldDeploymentAnnotations } from '../../utils'
 
 const filter: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]) => {
     const fieldType = findObject(elements, FIELD_TYPE_NAME)
-    if (fieldType === undefined) {
-      log.warn(`Could not find type ${FIELD_TYPE_NAME}`)
-    } else {
-      setDeploymentAnnotations(fieldType, 'contexts')
+    if (fieldType !== undefined) {
+      setFieldDeploymentAnnotations(fieldType, 'contexts')
     }
 
     const fieldContextType = findObject(elements, FIELD_CONTEXT_TYPE_NAME)
-    if (fieldContextType === undefined) {
-      log.warn(`Could not find type ${FIELD_CONTEXT_TYPE_NAME}`)
-    } else {
+    if (fieldContextType !== undefined) {
       await setContextDeploymentAnnotations(fieldContextType)
     }
   },

@@ -30,7 +30,7 @@ import { getLookUpName } from '../src/reference_mapping'
 
 const { awu } = collections.asynciterable
 
-jest.setTimeout(30 * 1000)
+jest.setTimeout(300 * 1000)
 
 describe('Jira E2E', () => {
   let fetchedElements: Element[]
@@ -82,22 +82,23 @@ describe('Jira E2E', () => {
 
   describe('deploy', () => {
     let deployResults: DeployResult[]
-    let instances: InstanceElement[]
+    let instanceGroups: InstanceElement[][]
 
     beforeAll(async () => {
-      instances = createInstances(fetchedElements)
+      instanceGroups = createInstances(fetchedElements)
 
-      deployResults = await awu(instances).map(async instance => {
+      deployResults = await awu(instanceGroups).map(async group => {
         const res = await adapter.deploy({
           changeGroup: {
-            groupID: instance.elemID.getFullName(),
-            changes: [toChange({ after: instance })],
+            groupID: group[0].elemID.getFullName(),
+            changes: group.map(instance => toChange({ after: instance })),
           },
         })
 
         res.appliedChanges.forEach(appliedChange => {
           const appliedInstance = getChangeData(appliedChange)
-          instances
+          instanceGroups
+            .flat()
             .flatMap(getParents)
             .filter(parent => parent.elemID.isEqual(appliedInstance.elemID))
             .forEach(parent => {
@@ -122,7 +123,7 @@ describe('Jira E2E', () => {
         elements.map(e => resolveValues(e, getLookUpName))
       )
       const resolvedDeployedElements = await Promise.all(
-        instances.map(e => resolveValues(e, getLookUpName))
+        instanceGroups.flat().map(e => resolveValues(e, getLookUpName))
       )
       resolvedDeployedElements.forEach(instance => {
         expect(findInstance(instance.elemID, resolvedFetchedElements).value)
@@ -135,6 +136,17 @@ describe('Jira E2E', () => {
         .flatMap(res => res.appliedChanges)
         .filter(isAdditionChange)
         .map(change => toChange({ before: getChangeData(change) }))
+
+      removalChanges.forEach(change => {
+        const instance = getChangeData(change)
+        removalChanges
+          .map(getChangeData)
+          .flatMap(getParents)
+          .filter(parent => parent.elemID.isEqual(instance.elemID))
+          .forEach(parent => {
+            parent.resValue = instance
+          })
+      })
 
       deployResults = await Promise.all(removalChanges.map(change =>
         adapter.deploy({

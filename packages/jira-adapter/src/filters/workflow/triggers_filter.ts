@@ -48,9 +48,7 @@ const filter: FilterCreator = ({ client, config }) => ({
     elements.push(triggerType)
 
     const workflowRulesType = findObject(elements, WORKFLOW_RULES_TYPE_NAME)
-    if (workflowRulesType === undefined) {
-      log.warn(`${WORKFLOW_RULES_TYPE_NAME} type not found`)
-    } else {
+    if (workflowRulesType !== undefined) {
       workflowRulesType.fields.triggers = new Field(
         workflowRulesType,
         'triggers',

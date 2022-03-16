@@ -26,6 +26,8 @@ import { projectDeletionValidator } from './project_deletion'
 import { statusValidator } from './status'
 import { privateApiValidator } from './private_api'
 import { workflowValidator } from './workflow'
+import { dashboardGadgetsValidator } from './dashboard_gadgets'
+import { dashboardLayoutValidator } from './dashboard_layout'
 
 const {
   deployTypesNotSupportedValidator,
@@ -45,6 +47,8 @@ export default (
     statusValidator,
     privateApiValidator(config),
     workflowValidator,
+    dashboardGadgetsValidator,
+    dashboardLayoutValidator,
   ]
 
   return createChangeValidator(validators)

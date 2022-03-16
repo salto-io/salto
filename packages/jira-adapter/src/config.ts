@@ -77,6 +77,61 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       queryParams: {
         expand: 'description,owner,sharePermissions',
       },
+      recurseInto: [
+        {
+          type: 'DashboardGadgetResponse',
+          toField: 'gadgets',
+          context: [{ name: 'dashboardId', fromField: 'id' }],
+        },
+      ],
+    },
+  },
+
+  DashboardGadget: {
+    transformation: {
+      idFields: ['title', 'position.column', 'position.row'],
+      fieldTypeOverrides: [
+        { fieldName: 'properties', fieldType: 'Map<unknown>' },
+      ],
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/dashboard/{dashboardId}/gadget',
+        method: 'post',
+        urlParamsToFields: {
+          dashboardId: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/rest/api/3/dashboard/{dashboardId}/gadget/{gadgetId}',
+        method: 'put',
+        urlParamsToFields: {
+          dashboardId: '_parent.0.id',
+          gadgetId: 'id',
+        },
+      },
+      remove: {
+        url: '/rest/api/3/dashboard/{dashboardId}/gadget/{gadgetId}',
+        method: 'delete',
+        urlParamsToFields: {
+          dashboardId: '_parent.0.id',
+          gadgetId: 'id',
+        },
+      },
+    },
+  },
+
+  DashboardGadgetPosition: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'column', fieldType: 'number' },
+        { fieldName: 'row', fieldType: 'number' },
+      ],
     },
   },
 
@@ -101,7 +156,16 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
 
   Dashboard: {
+    standaloneFields: [
+      {
+        fieldName: 'gadgets',
+      },
+    ],
     transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'gadgets', fieldType: 'DashboardGadget' },
+        { fieldName: 'layout', fieldType: 'string' },
+      ],
       fieldsToHide: [
         {
           fieldName: 'id',
@@ -110,15 +174,22 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldsToOmit: [
         { fieldName: 'isFavourite' },
       ],
+      standaloneFields: [
+        {
+          fieldName: 'gadgets',
+        },
+      ],
     },
     deployRequests: {
       add: {
         url: '/rest/api/3/dashboard',
         method: 'post',
+        fieldsToIgnore: ['gadgets'],
       },
       modify: {
         url: '/rest/api/3/dashboard/{id}',
         method: 'put',
+        fieldsToIgnore: ['gadgets'],
       },
       remove: {
         url: '/rest/api/3/dashboard/{id}',
@@ -1437,7 +1508,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
 export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
   platformSwagger: {
-    url: 'https://raw.githubusercontent.com/salto-io/jira-swaggers/main/platform-swagger.v3.json',
+    url: 'https://raw.githubusercontent.com/salto-io/jira-swaggers/next-main/platform-swagger.v3.json',
     typeNameOverrides: [
       {
         originalName: 'FilterDetails',
@@ -1571,10 +1642,10 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
     ],
   },
   jiraSwagger: {
-    url: 'https://raw.githubusercontent.com/salto-io/jira-swaggers/main/software-swagger.v3.json',
+    url: 'https://raw.githubusercontent.com/salto-io/jira-swaggers/next-main/software-swagger.v3.json',
     typeNameOverrides: [
       {
-        originalName: 'agile__1_0__board@uuvuu',
+        originalName: 'rest__agile__1_0__board@uuuuvuu',
         newName: 'Boards',
       },
       {
@@ -1582,7 +1653,7 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
         newName: 'Board',
       },
       {
-        originalName: 'agile__1_0__board___boardId___configuration@uuvuuuu_00123_00125uu',
+        originalName: 'rest__agile__1_0__board___boardId___configuration@uuuuvuuuu_00123_00125uu',
         newName: 'BoardConfiguration',
       },
     ],

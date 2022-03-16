@@ -38,6 +38,9 @@ import issueTypeScreenSchemeFilter from './filters/issue_type_screen_scheme'
 import fieldConfigurationFilter from './filters/field_configuration'
 import fieldConfigurationTrashedFieldsFilter from './filters/field_configuration_trashed_fields'
 import fieldConfigurationSchemeFilter from './filters/field_configurations_scheme'
+import dashboardFilter from './filters/dashboard/dashboard_deployment'
+import dashboardLayoutFilter from './filters/dashboard/dashboard_layout'
+import gadgetFilter from './filters/dashboard/gadget'
 import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
 import projectFilter from './filters/project'
 import projectComponentFilter from './filters/project_component'
@@ -105,6 +108,9 @@ export const DEFAULT_FILTERS = [
   issueTypeSchemeFilter,
   sharePermissionFilter,
   boardFilter,
+  dashboardFilter,
+  dashboardLayoutFilter,
+  gadgetFilter,
   projectFilter,
   projectComponentFilter,
   screenFilter,

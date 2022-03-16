@@ -47,28 +47,30 @@ export const filterUndeployableValues = async (
 export const filterIgnoredValues = async (
   instance: InstanceElement,
   fieldsToIgnore: string[] | ((path: ElemID) => boolean),
+  configFieldsToIgnore: string[] = [],
   elementsSource?: ReadOnlyElementsSource,
 ): Promise<InstanceElement> => {
-  if (Array.isArray(fieldsToIgnore)) {
-    instance.value = _.omit(
-      instance.value,
-      fieldsToIgnore
-    )
-    return instance
-  }
+  const filteredInstance = _.isFunction(fieldsToIgnore)
+    ? (await transformElement({
+      element: instance,
+      strict: false,
+      allowEmpty: true,
+      elementsSource,
+      transformFunc: ({ value, path }) => {
+        if (path !== undefined && fieldsToIgnore(path)) {
+          return undefined
+        }
+        return value
+      },
+    })) : instance
 
-  return transformElement({
-    element: instance,
-    strict: false,
-    allowEmpty: true,
-    elementsSource,
-    transformFunc: ({ value, path }) => {
-      if (path !== undefined && fieldsToIgnore(path)) {
-        return undefined
-      }
-      return value
-    },
-  })
+
+  filteredInstance.value = _.omit(
+    filteredInstance.value,
+    [...configFieldsToIgnore, ...Array.isArray(fieldsToIgnore) ? fieldsToIgnore : []],
+  )
+
+  return filteredInstance
 }
 
 /**
@@ -98,8 +100,10 @@ export const deployChange = async (
   const valuesToDeploy = (await filterIgnoredValues(
     await filterUndeployableValues(getChangeData(change), change.action, elementsSource),
     fieldsToIgnore,
+    endpoint.fieldsToIgnore,
     elementsSource,
   )).value
+
   const url = createUrl({
     instance,
     baseUrl: endpoint.url,

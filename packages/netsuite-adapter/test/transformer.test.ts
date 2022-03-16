@@ -28,7 +28,6 @@ import { CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, Templat
 import { isFileCustomizationInfo, isFolderCustomizationInfo } from '../src/client/utils'
 import { entitycustomfieldType } from '../src/autogen/types/custom_types/entitycustomfield'
 import { getFileCabinetTypes } from '../src/types/file_cabinet_types'
-import { getConfigurationTypes } from '../src/types/configuration_types'
 import { customrecordtypeType } from '../src/autogen/types/custom_types/customrecordtype'
 import { emailtemplateType } from '../src/autogen/types/custom_types/emailtemplate'
 import { addressFormType } from '../src/autogen/types/custom_types/addressForm'
@@ -125,7 +124,6 @@ describe('Transformer', () => {
   const transactionForm = transactionFormType().type
   const workflow = workflowType().type
   const { file, folder } = getFileCabinetTypes()
-  const { accountFeatures } = getConfigurationTypes()
 
   describe('createInstanceElement', () => {
     const transformCustomFieldRecord = (xmlContent: string): Promise<InstanceElement> => {
@@ -368,31 +366,6 @@ describe('Transformer', () => {
           filepath: `${NETSUITE}/${FILE_CABINET_PATH}/Templates/E-mail Templates/Inner EmailTemplates Folder/content.html`,
           content: Buffer.from('dummy file content'),
         }))
-      })
-    })
-
-    describe('configuration types', () => {
-      const featuresCustomizationInfo: CustomTypeInfo = {
-        typeName: 'accountFeatures',
-        scriptId: 'accountFeatures',
-        values: {
-          features: {
-            TEST: { '@_label': 'test', id: 'TEST', status: 'ENABLED' },
-          },
-        },
-      }
-      it('should create features instance correctly', async () => {
-        const result = await createInstanceElement(
-          featuresCustomizationInfo,
-          accountFeatures,
-          mockGetElemIdFunc
-        )
-        expect(result.elemID.getFullName()).toEqual(`netsuite.accountFeatures.instance.${NAME_FROM_GET_ELEM_ID}_config`)
-        expect(result.value).toEqual({
-          features: {
-            TEST: { id: 'TEST', label: 'test', status: 'ENABLED' },
-          },
-        })
       })
     })
   })

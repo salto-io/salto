@@ -19,8 +19,6 @@ import { enums } from './autogen/types/enums'
 import { CustomType, getCustomTypes, isCustomTypeName } from './autogen/types'
 import { TypesMap } from './types/object_types'
 import { fileCabinetTypesNames, getFileCabinetTypes } from './types/file_cabinet_types'
-import { getConfigurationTypes } from './types/configuration_types'
-import { ACCOUNT_FEATURES } from './constants'
 
 export const isCustomType = (type: ObjectType | TypeReference): boolean =>
   isCustomTypeName(type.elemID.name)
@@ -37,23 +35,17 @@ export const isFileInstance = (element: Element): boolean =>
 export const isDataObjectType = (element: ObjectType): boolean =>
   element.annotations.source === 'soap'
 
-export const isConfigurationTypeName = (typeName: string): boolean =>
-  typeName === ACCOUNT_FEATURES
-
-export const isConfigurationType = (type: ObjectType | TypeReference): boolean =>
-  isConfigurationTypeName(type.elemID.name)
-
 type MetadataTypes = {
   customTypes: TypesMap<CustomType>
   enums: Readonly<Record<string, PrimitiveType>>
-  additionalTypes: Readonly<Record<string, ObjectType>>
+  fileCabinetTypes: Readonly<Record<string, ObjectType>>
   fieldTypes: Readonly<Record<string, PrimitiveType>>
 }
 
 export const getMetadataTypes = (): MetadataTypes => ({
   customTypes: getCustomTypes(),
   enums,
-  additionalTypes: { ...getFileCabinetTypes(), ...getConfigurationTypes() },
+  fileCabinetTypes: getFileCabinetTypes(),
   fieldTypes,
 })
 
@@ -64,12 +56,12 @@ export const getInnerCustomTypes = (customTypes: TypesMap<CustomType>): ObjectTy
   Object.values(customTypes).flatMap(customType => Object.values(customType.innerTypes))
 
 export const metadataTypesToList = (metadataTypes: MetadataTypes): TypeElement[] => {
-  const { customTypes, additionalTypes } = metadataTypes
+  const { customTypes, fileCabinetTypes } = metadataTypes
   return [
     ...getTopLevelCustomTypes(customTypes),
     ...getInnerCustomTypes(customTypes),
     ...Object.values(enums),
-    ...Object.values(additionalTypes),
+    ...Object.values(fileCabinetTypes),
     ...Object.values(fieldTypes),
   ]
 }

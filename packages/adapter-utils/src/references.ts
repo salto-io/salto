@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 
-import { ElemID, Element, InstanceElement,
+import { ElemID, Element,
   isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
-import { transformElement, TransformFunc } from './utils'
+import { TransformFunc } from './utils'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from './walk_element'
 
 const isReferenceOfElement = <T>(
@@ -43,18 +43,6 @@ export const createReferencesTransformFunc = (
     ? getUpdatedReference(value, targetElemId)
     : value
 ))
-
-export const updateElementReferences = async (
-  element: InstanceElement,
-  sourceElemId: ElemID,
-  targetElemId: ElemID,
-) : Promise<InstanceElement> => (
-  transformElement({
-    element,
-    transformFunc: createReferencesTransformFunc(sourceElemId, targetElemId),
-    strict: false,
-  })
-)
 
 export const getReferences = (
   element: Element,

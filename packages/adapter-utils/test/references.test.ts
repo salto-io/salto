@@ -83,7 +83,6 @@ describe('references functions', () => {
       transformFunc: createReferencesTransformFunc(mainBook.elemID, newElemID),
       strict: false,
     })
-    // const updatedInstance = await updateElementReferences(recipes[0], mainBook.elemID, newElemID)
     expect(updatedInstance.value.book_id.elemID).toEqual(newElemID)
   })
 })

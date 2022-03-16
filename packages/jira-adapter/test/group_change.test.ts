@@ -86,4 +86,17 @@ describe('group change', () => {
     expect(changeGroupIds.get(securitySchemeInstance.elemID.getFullName()))
       .toBe(securitySchemeInstance.elemID.getFullName())
   })
+
+  it('should throw if security scheme levels do not contain parent', async () => {
+    delete securityLevelInstance.annotations[CORE_ANNOTATIONS.PARENT]
+
+    await expect(getChangeGroupIds(new Map<string, Change>([
+      [securityLevelInstance.elemID.getFullName(), toChange({
+        after: securityLevelInstance,
+      })],
+      [securitySchemeInstance.elemID.getFullName(), toChange({
+        after: securitySchemeInstance,
+      })],
+    ]))).rejects.toThrow()
+  })
 })

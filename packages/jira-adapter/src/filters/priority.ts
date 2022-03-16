@@ -16,7 +16,7 @@
 import { CORE_ANNOTATIONS, Element, getChangeData, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { findObject, setDeploymentAnnotations } from '../utils'
+import { findObject, setFieldDeploymentAnnotations } from '../utils'
 import { FilterCreator } from '../filter'
 import { deployWithJspEndpoints } from '../deployment/jsp_deployment'
 import { PRIORITY_TYPE_NAME } from '../constants'
@@ -32,17 +32,16 @@ const filter: FilterCreator = ({ client, config }) => ({
 
     const priorityType = findObject(elements, PRIORITY_TYPE_NAME)
     if (priorityType === undefined) {
-      log.warn(`${PRIORITY_TYPE_NAME} type not found, skipping priority filter`)
       return
     }
 
     priorityType.annotations[CORE_ANNOTATIONS.CREATABLE] = true
     priorityType.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
-    setDeploymentAnnotations(priorityType, 'id')
-    setDeploymentAnnotations(priorityType, 'statusColor')
-    setDeploymentAnnotations(priorityType, 'description')
-    setDeploymentAnnotations(priorityType, 'iconUrl')
-    setDeploymentAnnotations(priorityType, 'name')
+    setFieldDeploymentAnnotations(priorityType, 'id')
+    setFieldDeploymentAnnotations(priorityType, 'statusColor')
+    setFieldDeploymentAnnotations(priorityType, 'description')
+    setFieldDeploymentAnnotations(priorityType, 'iconUrl')
+    setFieldDeploymentAnnotations(priorityType, 'name')
   },
 
   deploy: async changes => {

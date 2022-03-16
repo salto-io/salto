@@ -88,7 +88,6 @@ const filter: FilterCreator = ({ client, config }) => ({
 
     const statusType = findObject(elements, STATUS_TYPE_NAME)
     if (statusType === undefined) {
-      log.warn(`${STATUS_TYPE_NAME} type not found, skipping missing_statuses filter`)
       return
     }
 

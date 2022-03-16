@@ -17,7 +17,6 @@ import { AdditionChange, BuiltinTypes, CORE_ANNOTATIONS, Field, getChangeData, I
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { naclCase } from '@salto-io/adapter-utils'
-import { logger } from '@salto-io/logging'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { FilterCreator } from '../../filter'
 import JiraClient from '../../client/client'
@@ -28,8 +27,6 @@ import { findObject } from '../../utils'
 const { awu } = collections.asynciterable
 
 const SCREEN_TYPE_NAME = 'Screen'
-
-const log = logger(module)
 
 const deployTabsOrder = async (
   change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
@@ -91,9 +88,7 @@ const filter: FilterCreator = ({ config, client }) => ({
     const screenType = findObject(elements, SCREEN_TYPE_NAME)
     const screenTabType = findObject(elements, SCREEN_TAB_TYPE_NAME)
 
-    if (screenType === undefined || screenTabType === undefined) {
-      log.warn(`Could not find ${SCREEN_TYPE_NAME} or ${SCREEN_TAB_TYPE_NAME} type`)
-    } else {
+    if (screenType !== undefined && screenTabType !== undefined) {
       screenType.fields.tabs = new Field(
         screenType,
         'tabs',

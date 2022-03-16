@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, Element, Field, isInstanceElement, ListType, MapType } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
@@ -22,8 +21,6 @@ import { postFunctionType, types as postFunctionTypes } from './post_functions_t
 import { Condition, isWorkflowInstance, Rules, Status, Validator, Workflow } from './types'
 import { validatorType, types as validatorTypes } from './validators_types'
 import { WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
-
-const log = logger(module)
 
 const NOT_FETCHED_POST_FUNCTION_TYPES = [
   'GenerateChangeHistoryFunction',
@@ -145,9 +142,7 @@ const filter: FilterCreator = ({ config }) => ({
     }
 
     const workflowStatusType = findObject(elements, 'WorkflowStatus')
-    if (workflowStatusType === undefined) {
-      log.warn('WorkflowStatus type was not received in fetch')
-    } else {
+    if (workflowStatusType !== undefined) {
       workflowStatusType.fields.properties = new Field(workflowStatusType, 'properties', new MapType(BuiltinTypes.STRING))
       if (config.client.usePrivateAPI) {
         workflowStatusType.fields.name.annotations[CORE_ANNOTATIONS.CREATABLE] = true
@@ -156,9 +151,7 @@ const filter: FilterCreator = ({ config }) => ({
 
     const workflowRulesType = findObject(elements, WORKFLOW_RULES_TYPE_NAME)
 
-    if (workflowRulesType === undefined) {
-      log.warn('WorkflowRules type was not received in fetch')
-    } else {
+    if (workflowRulesType !== undefined) {
       workflowRulesType.fields.conditions = new Field(workflowRulesType, 'conditions', await workflowRulesType.fields.conditionsTree.getType())
       delete workflowRulesType.fields.conditionsTree
 

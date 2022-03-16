@@ -14,16 +14,17 @@
 * limitations under the License.
 */
 import { AdditionChange, Change, getChangeData, getDeepInnerType, InstanceElement, isAdditionChange, isObjectType, isRemovalChange, ModificationChange, toChange, Values } from '@salto-io/adapter-api'
-import { elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { resolveValues } from '@salto-io/adapter-utils'
+import { resolveValues, safeJsonStringify } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import Joi from 'joi'
 import { JiraConfig } from '../../config'
 import JiraClient from '../../client/client'
 import { deployWithJspEndpoints } from '../../deployment/jsp_deployment'
-import { LEVEL_MEMBER_TYPE_NAME } from '../../constants'
 import { getLookUpName } from '../../reference_mapping'
+import { getFilledJspUrls } from '../../utils'
+import { LEVEL_MEMBER_TYPE_NAME } from '../../constants'
 
 const log = logger(module)
 
@@ -37,7 +38,33 @@ const CUSTOM_MEMBER_TYPES: Record<string, string> = {
   projectRole: 'projectrole',
 }
 
+type Member = {
+  holder: {
+    type: string
+    parameter?: string | number
+  }
+}
+
+const MEMBER_SCHEME = Joi.object({
+  holder: Joi.object({
+    type: Joi.string().required(),
+    parameter: Joi.alternatives(Joi.string(), Joi.number()).optional(),
+  }).unknown(true).required(),
+}).unknown(true).required()
+
+const isMember = (value: unknown): value is Member => {
+  const { error } = MEMBER_SCHEME.validate(value)
+  if (error !== undefined) {
+    log.error(`Received an invalid member: ${error.message}, ${safeJsonStringify(value)}`)
+    return false
+  }
+  return true
+}
+
 const getMemberRequestValues = (member: Values, securityLevel: InstanceElement): Values => {
+  if (!isMember(member)) {
+    throw new Error(`${securityLevel.elemID.getFullName()} contains invalid members`)
+  }
   const { holder: { type, parameter } } = member
 
   const requestType = CUSTOM_MEMBER_TYPES[type] ?? type
@@ -107,20 +134,7 @@ export const deployMembers = async (
   config: JiraConfig,
   client: JiraClient,
 ): Promise<void> => {
-  const jspRequests = config.apiDefinitions.types[LEVEL_MEMBER_TYPE_NAME]?.jspRequests
-  if (jspRequests === undefined) {
-    throw new Error(`${LEVEL_MEMBER_TYPE_NAME} jsp urls are missing from the configuration`)
-  }
-
-  const urls = {
-    ...jspRequests,
-    query: elementUtils.replaceUrlParams(
-      jspRequests.query,
-      {
-        id: getChangeData(securityLevelChange).value.schemeId,
-      }
-    ),
-  }
+  const urls = getFilledJspUrls(getChangeData(securityLevelChange), config, LEVEL_MEMBER_TYPE_NAME)
 
   const memberChanges = await getMemberChanges(securityLevelChange)
 

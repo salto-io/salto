@@ -19,7 +19,7 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { getParents, resolveChangeElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { getLookUpName } from '../../reference_mapping'
-import { setDeploymentAnnotations } from '../../utils'
+import { setFieldDeploymentAnnotations } from '../../utils'
 
 const EDITABLE_FIELD_NAMES = [
   'type',
@@ -96,11 +96,11 @@ export const setDefaultValueTypeDeploymentAnnotations = async (
     throw new Error(`type ${defaultValueType.elemID.getFullName()} of ${fieldContextType.fields.defaultValue?.elemID.getFullName()} is not an object type`)
   }
 
-  setDeploymentAnnotations(fieldContextType, 'defaultValue')
+  setFieldDeploymentAnnotations(fieldContextType, 'defaultValue')
 
   EDITABLE_FIELD_NAMES.forEach((fieldName: string) => {
     if (fieldName in defaultValueType.fields) {
-      setDeploymentAnnotations(defaultValueType, fieldName)
+      setFieldDeploymentAnnotations(defaultValueType, fieldName)
     }
   })
 }

@@ -491,6 +491,17 @@ describe('securitySchemeFilter', () => {
       expect(appliedChanges).toHaveLength(0)
     })
 
+    it('should throw if level has invalid member', async () => {
+      securityLevelInstance.value.members.push({ holder: { parameter: 'parameter' } })
+
+      const { deployResult: { errors, appliedChanges } } = await filter.deploy(
+        [toChange({ after: securityLevelInstance })]
+      )
+
+      expect(appliedChanges).toHaveLength(0)
+      expect(errors).toHaveLength(1)
+    })
+
     it('should throw if members is not an object type', async () => {
       securityLevelType.fields.members = new Field(
         securityLevelType,

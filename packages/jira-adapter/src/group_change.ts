@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { collections, values } from '@salto-io/lowerdash'
-import { ChangeGroupIdFunction, getChangeData, ChangeGroupId, ChangeId, isModificationChange, Change, isAdditionChange } from '@salto-io/adapter-api'
+import { ChangeGroupIdFunction, getChangeData, ChangeGroupId, ChangeId, isModificationChange, Change, isAdditionChange, isReferenceExpression } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
 import { SECURITY_LEVEL_TYPE, WORKFLOW_TYPE_NAME } from './constants'
 
@@ -30,12 +30,20 @@ export const getWorkflowGroup: ChangeIdFunction = async change => (
     : undefined
 )
 
-export const getSecurityLevelGroup: ChangeIdFunction = async change => (
-  isAdditionChange(change)
-  && getChangeData(change).elemID.typeName === SECURITY_LEVEL_TYPE
-    ? getParents(getChangeData(change))[0].elemID.getFullName()
-    : undefined
-)
+export const getSecurityLevelGroup: ChangeIdFunction = async change => {
+  const instance = getChangeData(change)
+  if (!isAdditionChange(change)
+    || instance.elemID.typeName !== SECURITY_LEVEL_TYPE) {
+    return undefined
+  }
+
+  const parents = getParents(instance)
+  if (parents.length !== 1 || !isReferenceExpression(parents[0])) {
+    throw new Error(`${instance.elemID.getFullName()} must have exactly one reference expression parent`)
+  }
+
+  return parents[0].elemID.getFullName()
+}
 
 const changeIdProviders: ChangeIdFunction[] = [
   getWorkflowGroup,

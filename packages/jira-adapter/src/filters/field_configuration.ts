@@ -19,7 +19,7 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
 import { FilterCreator } from '../filter'
-import { setDeploymentAnnotations } from '../utils'
+import { setFieldDeploymentAnnotations } from '../utils'
 import { JiraConfig } from '../config'
 
 const FIELD_CONFIGURATION_TYPE_NAME = 'FieldConfiguration'
@@ -63,7 +63,7 @@ const filter: FilterCreator = ({ config, client }) => ({
     if (fieldConfigurationType === undefined) {
       log.warn(`${FIELD_CONFIGURATION_TYPE_NAME} type not found`)
     } else {
-      setDeploymentAnnotations(fieldConfigurationType, 'fields')
+      setFieldDeploymentAnnotations(fieldConfigurationType, 'fields')
     }
 
     const fieldConfigurationItemType = types
@@ -73,7 +73,7 @@ const filter: FilterCreator = ({ config, client }) => ({
       log.warn(`${FIELD_CONFIGURATION_ITEM_TYPE_NAME} type not found`)
     } else {
       ['id', 'description', 'isHidden', 'isRequired', 'renderer'].forEach(fieldName => {
-        setDeploymentAnnotations(fieldConfigurationItemType, fieldName)
+        setFieldDeploymentAnnotations(fieldConfigurationItemType, fieldName)
       })
     }
   },

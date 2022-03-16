@@ -20,7 +20,7 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { getLookUpName } from '../../reference_mapping'
-import { setDeploymentAnnotations } from '../../utils'
+import { setFieldDeploymentAnnotations } from '../../utils'
 
 const log = logger(module)
 
@@ -219,7 +219,7 @@ export const setContextOptions = async (
 export const setOptionTypeDeploymentAnnotations = async (
   fieldContextType: ObjectType,
 ): Promise<void> => {
-  setDeploymentAnnotations(fieldContextType, 'options')
+  setFieldDeploymentAnnotations(fieldContextType, 'options')
 
   const optionMapType = await fieldContextType.fields.options?.getType()
   if (!isMapType(optionMapType)) {
@@ -232,7 +232,7 @@ export const setOptionTypeDeploymentAnnotations = async (
 
   ['value', 'optionId', 'disabled', 'position', 'cascadingOptions'].forEach((fieldName: string) => {
     if (fieldName in optionType.fields) {
-      setDeploymentAnnotations(optionType, fieldName)
+      setFieldDeploymentAnnotations(optionType, fieldName)
     }
   })
 }

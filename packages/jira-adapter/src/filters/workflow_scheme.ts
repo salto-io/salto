@@ -173,9 +173,7 @@ export const deployWorkflowScheme = async (
 const filter: FilterCreator = ({ config, client, paginator }) => ({
   onFetch: async elements => {
     const workflowSchemeType = findObject(elements, WORKFLOW_SCHEME_TYPE)
-    if (workflowSchemeType === undefined) {
-      log.warn(`${WORKFLOW_SCHEME_TYPE} type not found`)
-    } else {
+    if (workflowSchemeType !== undefined) {
       const workflowSchemeItemType = new ObjectType({
         elemID: new ElemID(JIRA, WORKFLOW_SCHEME_ITEM_TYPE),
         fields: {

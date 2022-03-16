@@ -14,12 +14,11 @@
 * limitations under the License.
 */
 import { BuiltinTypes, Change, CORE_ANNOTATIONS, DeployResult, Element, Field, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isReferenceExpression, isRemovalChange, MapType, toChange, Values } from '@salto-io/adapter-api'
-import { elements as elementUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { objects } from '@salto-io/lowerdash'
 import { getParents } from '@salto-io/adapter-utils'
-import { findObject, setDeploymentAnnotations } from '../../utils'
+import { findObject, getFilledJspUrls, setFieldDeploymentAnnotations, setTypeDeploymentAnnotations } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { deployWithJspEndpoints } from '../../deployment/jsp_deployment'
 import { SECURITY_LEVEL_MEMBER_TYPE, SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE } from '../../constants'
@@ -67,20 +66,7 @@ const deploySecurityLevels = async (
     }
   }
 
-  const jspRequests = config.apiDefinitions.types[SECURITY_LEVEL_TYPE]?.jspRequests
-  if (jspRequests === undefined) {
-    throw new Error(`${SECURITY_LEVEL_TYPE} jsp urls are missing from the configuration`)
-  }
-
-  const urls = {
-    ...jspRequests,
-    query: elementUtils.replaceUrlParams(
-      jspRequests.query,
-      {
-        id: getChangeData(changes[0]).value.schemeId,
-      }
-    ),
-  }
+  const urls = getFilledJspUrls(getChangeData(changes[0]), config, SECURITY_LEVEL_TYPE)
 
   const deployResult = await deployWithJspEndpoints({
     changes,
@@ -143,19 +129,16 @@ const filter: FilterCreator = ({ client, config }) => ({
 
     const securityLevelType = findObject(elements, SECURITY_LEVEL_TYPE)
     if (securityLevelType === undefined) {
-      log.warn(`${SECURITY_LEVEL_TYPE} type not found`)
       return
     }
 
     const securitySchemeType = findObject(elements, SECURITY_SCHEME_TYPE)
     if (securitySchemeType === undefined) {
-      log.warn(`${SECURITY_SCHEME_TYPE} type not found`)
       return
     }
 
     const securityLevelMemberType = findObject(elements, SECURITY_LEVEL_MEMBER_TYPE)
     if (securityLevelMemberType === undefined) {
-      log.warn(`${SECURITY_LEVEL_MEMBER_TYPE} type not found`)
       return
     }
 
@@ -178,25 +161,21 @@ const filter: FilterCreator = ({ client, config }) => ({
       return
     }
 
-    securitySchemeType.annotations[CORE_ANNOTATIONS.CREATABLE] = true
-    securitySchemeType.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
-    securitySchemeType.annotations[CORE_ANNOTATIONS.DELETABLE] = true
-    setDeploymentAnnotations(securitySchemeType, 'id')
-    setDeploymentAnnotations(securitySchemeType, 'name')
-    setDeploymentAnnotations(securitySchemeType, 'description')
-    setDeploymentAnnotations(securitySchemeType, 'defaultLevel')
-    setDeploymentAnnotations(securitySchemeType, 'levels')
+    setTypeDeploymentAnnotations(securitySchemeType)
+    setFieldDeploymentAnnotations(securitySchemeType, 'id')
+    setFieldDeploymentAnnotations(securitySchemeType, 'name')
+    setFieldDeploymentAnnotations(securitySchemeType, 'description')
+    setFieldDeploymentAnnotations(securitySchemeType, 'defaultLevel')
+    setFieldDeploymentAnnotations(securitySchemeType, 'levels')
 
-    securityLevelType.annotations[CORE_ANNOTATIONS.CREATABLE] = true
-    securityLevelType.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
-    securityLevelType.annotations[CORE_ANNOTATIONS.DELETABLE] = true
-    setDeploymentAnnotations(securityLevelType, 'id')
-    setDeploymentAnnotations(securityLevelType, 'name')
-    setDeploymentAnnotations(securityLevelType, 'description')
-    setDeploymentAnnotations(securityLevelType, 'members')
+    setTypeDeploymentAnnotations(securityLevelType)
+    setFieldDeploymentAnnotations(securityLevelType, 'id')
+    setFieldDeploymentAnnotations(securityLevelType, 'name')
+    setFieldDeploymentAnnotations(securityLevelType, 'description')
+    setFieldDeploymentAnnotations(securityLevelType, 'members')
 
-    setDeploymentAnnotations(securityLevelMemberType, 'id')
-    setDeploymentAnnotations(securityLevelMemberType, 'holder')
+    setFieldDeploymentAnnotations(securityLevelMemberType, 'id')
+    setFieldDeploymentAnnotations(securityLevelMemberType, 'holder')
   },
 
   preDeploy: async changes => {
@@ -304,6 +283,7 @@ const filter: FilterCreator = ({ client, config }) => ({
 
     if (
       isReferenceExpression(securitySchemeInstance.value.defaultLevel)
+      && isInstanceElement(securitySchemeInstance.value.defaultLevel.value)
       && securitySchemeInstance.value.defaultLevel.value.value.id === undefined
     ) {
       const defaultLevelId = securitySchemeInstance.value.defaultLevel.elemID
@@ -324,6 +304,10 @@ const filter: FilterCreator = ({ client, config }) => ({
     )
 
     const schemesResults = {
+      // If schemesDeployResult contains the change and both calls to deploySecurityScheme
+      // were successful, we would want to return schemesDeployResult.appliedChanges because
+      // it contains the original addition change and not the modification change we created
+      // in this function
       appliedChanges: schemesDefaultLevelDeployResult.appliedChanges.length === 1
         && schemesDeployResult.appliedChanges.length === 1
         ? schemesDeployResult.appliedChanges

@@ -14,15 +14,12 @@
 * limitations under the License.
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, Element, Field, isInstanceElement, MapType } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { WORKFLOW_TYPE_NAME } from '../../constants'
 import { isWorkflowInstance, Transition, WorkflowInstance } from './types'
-
-const log = logger(module)
 
 export const getTransitionKey = (transition: Transition): string => [
   ..._.sortBy(transition.from ?? []),
@@ -50,9 +47,7 @@ export const addTransitionIds = (
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     const workflowType = findObject(elements, WORKFLOW_TYPE_NAME)
-    if (workflowType === undefined) {
-      log.warn(`${WORKFLOW_TYPE_NAME} type not found`)
-    } else {
+    if (workflowType !== undefined) {
       workflowType.fields.transitionIds = new Field(
         workflowType,
         'transitionIds',

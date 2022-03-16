@@ -18,13 +18,12 @@ import { flattenElementStr } from '@salto-io/adapter-utils'
 import { ParseResult } from '../../types'
 import { Keywords } from '../../language'
 import { Functions } from '../../functions'
-import Lexer, { TOKEN_TYPES, NoSuchElementError } from './lexer'
+import Lexer, { TOKEN_TYPES, NoSuchElementError, ContentMergeConflictError } from './lexer'
 import { SourceMap } from '../../source_map'
-import { unexpectedEndOfFile } from './errors'
+import { contentMergeConflict, invalidStringChar, unexpectedEndOfFile } from './errors'
 import { ParseContext } from './types'
 import { replaceValuePromises, positionAtStart } from './helpers'
 import { consumeVariableBlock, consumeElement } from './consumers/top_level'
-
 
 const isVariableDef = (context: ParseContext): boolean => (
   context.lexer.peek()?.type === TOKEN_TYPES.WORD
@@ -49,8 +48,8 @@ export const parseBuffer = async (
     valuePromiseWatchers: [],
   }
   const elements: Element[] = []
-  while (context.lexer.peek()) {
-    try {
+  try {
+    while (context.lexer.peek()) {
       if (isVariableDef(context)) {
         const consumedVariables = consumeVariableBlock(context)
         elements.push(...consumedVariables.value)
@@ -62,13 +61,33 @@ export const parseBuffer = async (
           elements.push(consumedElement.value)
         }
       }
-    } catch (e) {
-      // Catch the EOF error that is thrown by the lexer if the next function
-      // is called after all of the token were processed. This error is thrown
-      // since it should interrupt the flow of the code.
-      if (e instanceof NoSuchElementError && e.lastValidToken) {
-        const pos = positionAtStart(e.lastValidToken)
-        context.errors.push(unexpectedEndOfFile({ start: pos, end: pos, filename }))
+    }
+  } catch (e) {
+    // Catch the EOF error that is thrown by the lexer if the next function
+    // is called after all of the token were processed. This error is thrown
+    // since it should interrupt the flow of the code.
+    if (e instanceof NoSuchElementError && e.lastValidToken) {
+      const pos = positionAtStart(e.lastValidToken)
+      context.errors.push(unexpectedEndOfFile({ start: pos, end: pos, filename }))
+    // Catch the beginning string of a merge conflict and verify it by catching
+    // the middle and ending strings. In case they aren't found, raise an invalid
+    // sting error.
+    } else if (e instanceof ContentMergeConflictError && e.lastValidToken) {
+      const pos = positionAtStart(e.lastValidToken)
+      try {
+        // Having the beginning string of a merge conflict, Salto verifies if the
+        // middle and end strings exist as well. In case they aren't exist salto
+        // raises an invalid error token, without covering the rest of the file.
+        // This is a trade off for creating a regex merge conflict token, which
+        // seems to work slowly.
+        context.lexer.recover([TOKEN_TYPES.MERGE_CONFLICT_MID], true)
+        context.lexer.recover([TOKEN_TYPES.MERGE_CONFLICT_END], true)
+        context.errors = [contentMergeConflict({ start: pos, end: pos, filename })]
+      } catch {
+        context.errors.push(invalidStringChar(
+          { start: pos, end: pos, filename },
+          TOKEN_TYPES.MERGE_CONFLICT,
+        ))
       }
     }
   }

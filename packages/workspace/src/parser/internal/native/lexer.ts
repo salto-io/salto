@@ -40,10 +40,15 @@ export const TOKEN_TYPES = {
   MULTILINE_END: 'mlend',
   COMMENT: 'comment',
   INVALID: 'invalid',
+  MERGE_CONFLICT: 'mergeConflict',
+  MERGE_CONFLICT_MID: 'mergeConflictMid',
+  MERGE_CONFLICT_END: 'mergeConflictEnd',
+  CONFLICT_CONTENT: 'mergeConflictContent',
 }
 
 export const rules: Record<string, moo.Rules> = {
   main: {
+    [TOKEN_TYPES.MERGE_CONFLICT]: { match: '<<<<<<<', push: 'mergeConflict' },
     [TOKEN_TYPES.MULTILINE_START]: { match: /'''[ \t]*[(\r\n)(\n)]/, lineBreaks: true, push: 'multilineString' },
     [TOKEN_TYPES.DOUBLE_QUOTES]: { match: '"', push: 'string' },
     [TOKEN_TYPES.NUMBER]: /-?(?:0|[1-9]\d*)(?:\.\d*)?(?:[eE][+-]?\d+)?/,
@@ -72,6 +77,11 @@ export const rules: Record<string, moo.Rules> = {
     [TOKEN_TYPES.MULTILINE_END]: { match: /^[ \t]*'''/, pop: 1 },
     [TOKEN_TYPES.CONTENT]: { match: /.*\\\$\{.*[(\r\n)(\n)]|.*?(?=\$\{)|.*[(\r\n)(\n)]/, lineBreaks: true },
   },
+  mergeConflict: {
+    [TOKEN_TYPES.MERGE_CONFLICT_MID]: '=======',
+    [TOKEN_TYPES.MERGE_CONFLICT_END]: { match: '>>>>>>>', pop: 1 },
+    [TOKEN_TYPES.CONFLICT_CONTENT]: { match: /.*\\\$\{.*[(\r\n)(\n)]|.*?(?=\$\{)|.*[(\r\n)(\n)]/, lineBreaks: true },
+  },
 }
 
 export type LexerToken = Required<moo.Token>
@@ -88,12 +98,26 @@ class InvalidLexerTokenError extends Error {
   }
 }
 
+export class ContentMergeConflictError extends Error {
+  constructor(public lastValidToken?: LexerToken) {
+    super('Content merge conflict')
+  }
+}
+
+const isAtBeginningOfLine = (token: moo.Token): boolean => token.col === 1
+
 const validateToken = (token?: moo.Token): token is LexerToken => {
   if (token === undefined) {
     return false
   }
   if (token.type === undefined) {
     throw new InvalidLexerTokenError()
+  } else if (token.type === TOKEN_TYPES.MERGE_CONFLICT) {
+    if (isAtBeginningOfLine(token)) {
+      throw new ContentMergeConflictError(token as LexerToken)
+    } else {
+      throw new InvalidLexerTokenError()
+    }
   }
   return true
 }

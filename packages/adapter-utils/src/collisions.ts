@@ -73,7 +73,7 @@ const logInstancesWithCollidingElemID = async (
     log.debug(`Omitted ${instancesCount} instances of type ${type} due to Salto ID collisions`)
     Object.entries(elemIDtoInstances).forEach(([elemID, elemIDInstances]) => {
       const relevantInstanceValues = elemIDInstances
-        .map(instance => _.pickBy(instance.value, val => !_.isEmpty(val)))
+        .map(instance => _.pickBy(instance.value, val => val != null))
       const relevantInstanceValuesStr = relevantInstanceValues
         .map(instValues => safeJsonStringify(instValues, referenceExpressionStringifyReplacer, 2)).join('\n')
       log.debug(`Omitted instances of type ${type} with colliding ElemID ${elemID} with values - 

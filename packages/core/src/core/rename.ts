@@ -79,7 +79,7 @@ const isReferenceOfElement = <T>(
     isReferenceExpression(value)
     && (elemId.isEqual(value.elemID) || elemId.isParentOf(value.elemID))
 
-const getUpdatedReference = (
+export const getUpdatedReference = (
   referenceExpression: ReferenceExpression,
   targetElemId: ElemID
 ): ReferenceExpression => new ReferenceExpression(
@@ -87,6 +87,22 @@ const getUpdatedReference = (
   referenceExpression.value,
   referenceExpression.topLevelParent
 )
+
+export const updateElementReferences = async (
+  element: InstanceElement,
+  sourceElemId: ElemID,
+  targetElemId: ElemID,
+  elementsSource?: ElementsSource
+) : Promise<InstanceElement> => transformElement({
+  element,
+  transformFunc: ({ value }) => (
+    isReferenceOfElement(value, sourceElemId)
+      ? getUpdatedReference(value, targetElemId)
+      : value
+  ),
+  elementsSource,
+  strict: false,
+})
 
 const getRenameElementChanges = async (
   elementsSource: ElementsSource,
@@ -103,16 +119,8 @@ const getRenameElementChanges = async (
   }
 
   // updating references inside the renamed element
-  const updatedElements = await Promise.all(sourceElements.map(element => transformElement({
-    element,
-    transformFunc: ({ value }) => (
-      isReferenceOfElement(value, sourceElemId)
-        ? getUpdatedReference(value, targetElemId)
-        : value
-    ),
-    elementsSource,
-    strict: false,
-  })))
+  const updatedElements = await Promise.all(sourceElements
+    .map(element => updateElementReferences(element, sourceElemId, targetElemId, elementsSource)))
 
   const addChanges = updatedElements.map(element => ({
     id: targetElemId,
@@ -131,28 +139,31 @@ const getRenameElementChanges = async (
   return [removeChange, ...addChanges]
 }
 
+export const getReferences = (element: Element, sourceElemId: ElemID): {
+  path: ElemID
+  value: ReferenceExpression
+}[] => {
+  const references: { path: ElemID; value: ReferenceExpression }[] = []
+  const func: WalkOnFunc = ({ path, value }) => {
+    if (isReferenceOfElement(value, sourceElemId)) {
+      references.push({ path, value })
+      return WALK_NEXT_STEP.SKIP
+    }
+    return WALK_NEXT_STEP.RECURSE
+  }
+  walkOnElement({ element, func })
+  return references
+}
+
 const getRenameReferencesChanges = async (
   elementsSource: ElementsSource,
   sourceElemId: ElemID,
   targetElemId: ElemID
 ): Promise<DetailedChange[]> => {
-  const getReferences = (element: Element): { path: ElemID; value: ReferenceExpression }[] => {
-    const references: { path: ElemID; value: ReferenceExpression }[] = []
-    const func: WalkOnFunc = ({ path, value }) => {
-      if (isReferenceOfElement(value, sourceElemId)) {
-        references.push({ path, value })
-        return WALK_NEXT_STEP.SKIP
-      }
-      return WALK_NEXT_STEP.RECURSE
-    }
-    walkOnElement({ element, func })
-    return references
-  }
-
   const references = await awu(await elementsSource.getAll())
     // filtering the renamed element - its references are taken care in getRenameElementChanges
     .filter(element => !sourceElemId.isEqual(element.elemID))
-    .flatMap(element => getReferences(element)).toArray()
+    .flatMap(element => getReferences(element, sourceElemId)).toArray()
 
   return references.map(reference => ({
     id: reference.path,

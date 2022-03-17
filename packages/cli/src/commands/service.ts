@@ -54,7 +54,7 @@ import { errorOutputLine, outputLine } from '../outputer'
 import { processOauthCredentials } from '../cli_oauth_authenticator'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
 import { convertValueType } from './common/config_override'
-import { getAdaptersTags } from './common/accounts'
+import { getAdaptersTags, getTagsForAccounts } from './common/accounts'
 
 const { isDefined } = values
 
@@ -328,9 +328,7 @@ const accountLoginDef = createWorkspaceCommand({
     ],
   },
   action: loginAction,
-  extraTelemetryTags: (ws, input) => getAdaptersTags([
-    ws.getServiceFromAccountName(input.accountName),
-  ]),
+  extraTelemetryTags: (ws, input) => getTagsForAccounts(ws, [input.accountName], input.env),
 })
 
 const accountGroupDef = createCommandGroupDef({

@@ -298,7 +298,6 @@ export const loginAction: WorkspaceCommandAction<ServiceLoginArgs> = async ({
   if (accountLoginStatus.isLoggedIn) {
     outputLine(formatLoginOverride, output)
   }
-
   try {
     await getLoginInputFlow(workspace, accountLoginStatus.configTypeOptions,
       output, authType, accountName, loginParameters)

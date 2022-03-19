@@ -83,20 +83,21 @@ export type MockTelemetry = {
 } & Telemetry
 
 export const getMockTelemetry = (): MockTelemetry => {
+  const commonTags = { installationID: '1234', app: 'test' }
   const telemetry = telemetrySender(
     { url: '', enabled: false, token: '' },
-    { installationID: '1234', app: 'test' },
+    commonTags
   )
   const events: TelemetryEvent[] = []
   telemetry.sendCountEvent = async (
     name: string,
     value: number,
-    tags: Tags = {},
+    tags: Partial<Tags> = {},
   ): Promise<void> => {
     events.push({
       name,
       value,
-      tags,
+      tags: { ...tags, ...commonTags },
       type: EVENT_TYPES.COUNTER,
       timestamp: '',
     })

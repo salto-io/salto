@@ -149,19 +149,19 @@ describe('telemetry', () => {
 
   it('should send events with custom tags', async () => {
     const telemetry = telemetrySender(config, requiredTags)
-    const customTags: Tags = { sometag: 'someval', somenumbertag: 1, shouldBeSnake: 'sssss', workspaceID: '1234' }
+    const customTags: Partial<Tags> = { sometag: 'someval', somenumbertag: 1, shouldBeSnake: 'sssss', workspaceID: '1234' }
     telemetry.sendCountEvent('ev_with_custom_tags', 1, customTags)
     telemetry.sendCountEvent('ev_without_custom_tags', 1)
     await telemetry.stop(1)
 
     expect(reqEvents.length).toEqual(2)
-    const eventCustomTags = eventByName(`${prefix}.ev_with_custom_tags`, reqEvents)?.tags || {}
+    const eventCustomTags: Partial<Tags> = eventByName(`${prefix}.ev_with_custom_tags`, reqEvents)?.tags || {}
     expect(eventCustomTags.sometag).toEqual(customTags.sometag)
     expect(eventCustomTags.somenumbertag).toEqual(customTags.somenumbertag)
     expect(eventCustomTags.should_be_snake).toEqual(customTags.shouldBeSnake)
     expect(eventCustomTags.workspace_id).toEqual(customTags.workspaceID)
 
-    const noCustomTags = eventByName(`${prefix}.ev_without_custom_tags`, reqEvents)?.tags || {}
+    const noCustomTags: Partial<Tags> = eventByName(`${prefix}.ev_without_custom_tags`, reqEvents)?.tags || {}
     expect(Object.keys(noCustomTags).length)
       .toEqual(Object.keys(eventCustomTags).length - Object.keys(customTags).length)
     expect(noCustomTags.app).toEqual(app)

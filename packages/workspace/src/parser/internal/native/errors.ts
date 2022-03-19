@@ -174,7 +174,7 @@ export const missingBlockOpen = (range: SourceRange): ParseError => createError(
 
 export const contentMergeConflict = (range: SourceRange): ParseError => createError(
   range,
-  'Content merge conflict',
+  'Merge conflict',
 )
 
 export const invalidStringChar = (stringRange: SourceRange, errMsg: string): ParseError => {

@@ -332,8 +332,8 @@ Promise<CliExitCode> => {
   const { force, yesAll, envName } = args.input
   const configOverrides = getConfigOverrideChanges(args.input)
   const workspace = await loadLocalWorkspace(args.workspacePath, configOverrides)
-  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
-  args.cliTelemetry.start(workspaceTags)
+  args.cliTelemetry.setExtraTags(getWorkspaceTelemetryTags(workspace))
+  args.cliTelemetry.start()
 
   try {
     await maybeIsolateExistingEnv(args.output, workspace, force, yesAll)
@@ -350,10 +350,10 @@ Promise<CliExitCode> => {
     await workspace.addEnvironment(envName, rmcToEnvSource)
     await setEnvironment(envName, args.output, workspace)
     outputLine(formatCreateEnv(envName), args.output)
-    args.cliTelemetry.success(workspaceTags)
+    args.cliTelemetry.success()
     return CliExitCode.Success
   } catch (e) {
-    args.cliTelemetry.failure(workspaceTags)
+    args.cliTelemetry.failure()
     return CliExitCode.AppError
   }
 }

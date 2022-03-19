@@ -17,13 +17,13 @@ import _ from 'lodash'
 import { Workspace, nacl, createElementSelectors } from '@salto-io/workspace'
 import { EOL } from 'os'
 import { logger } from '@salto-io/logging'
-import { CommandConfig, LocalChange, restore, Tags } from '@salto-io/core'
+import { CommandConfig, LocalChange, restore } from '@salto-io/core'
 import { getChangeData, isStaticFile, isAdditionChange } from '@salto-io/adapter-api'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
 import { header, formatDetailedChanges, formatInvalidFilters, formatStepStart, formatRestoreFinish, formatStepCompleted, formatStepFailed, formatStateRecencies, formatAppliedChanges, formatShowWarning, formatListRecord, formatCancelCommand } from '../formatter'
 import Prompts from '../prompts'
-import { getWorkspaceTelemetryTags, updateWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
+import { updateWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
 import { getApprovedChanges, getUserBooleanInput } from '../callbacks'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts } from './common/accounts'
@@ -72,7 +72,6 @@ type RestoreArgs = {
 const applyLocalChangesToWorkspace = async (
   changes: LocalChange[],
   workspace: Workspace,
-  workspaceTags: Tags,
   cliTelemetry: CliTelemetry,
   config: CommandConfig,
   output: CliOutput,
@@ -84,7 +83,7 @@ const applyLocalChangesToWorkspace = async (
     ? changes
     : await getApprovedChanges(changes)
 
-  cliTelemetry.changesToApply(changesToApply.length, workspaceTags)
+  cliTelemetry.changesToApply(changesToApply.length)
   log.debug(`Applying ${changesToApply.length} semantic changes to the local workspace`)
 
   // Addition of static file is irrelevant because Salto doesn't save a copy of static files,
@@ -117,7 +116,7 @@ const applyLocalChangesToWorkspace = async (
     if (config.shouldCalcTotalSize) {
       const totalSize = await workspace.getTotalSize()
       log.debug(`Total size of the workspace is ${totalSize} bytes`)
-      cliTelemetry.workspaceSize(totalSize, workspaceTags)
+      cliTelemetry.workspaceSize(totalSize)
     }
     return true
   }
@@ -183,11 +182,9 @@ export const action: WorkspaceCommandAction<RestoreArgs> = async ({
     return CliExitCode.Success
   }
 
-  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
   const updatingWsSucceeded = await applyLocalChangesToWorkspace(
     changes,
     workspace,
-    workspaceTags,
     cliTelemetry,
     config,
     output,

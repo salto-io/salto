@@ -25,11 +25,16 @@ export const buildEventName = (
 ): string => [WORKSPACE, command, action].join(SEPARATOR)
 
 export const getCliTelemetry = (sender: Telemetry, command: string): CliTelemetry => {
-  const sendCount = (name: string, value: number, tags: Tags): void => {
-    sender.sendCountEvent(name, value, tags)
+  let extraTags: Partial<Tags> = {}
+  const setExtraTags = (tags: Partial<Tags>): void => {
+    extraTags = tags
   }
 
-  const start = (tags: Tags): void => {
+  const sendCount = (name: string, value: number, tags: Partial<Tags>): void => {
+    sender.sendCountEvent(name, value, { ...extraTags, ...tags })
+  }
+
+  const start = (tags: Partial<Tags>): void => {
     sendCount(buildEventName(command, 'start'), 1, tags)
   }
 
@@ -70,10 +75,11 @@ export const getCliTelemetry = (sender: Telemetry, command: string): CliTelemetr
   }
 
   const stacktrace = (err: Error, tags = {}): void => {
-    sender.sendStackEvent(buildEventName(command, 'failure'), err, tags)
+    sender.sendStackEvent(buildEventName(command, 'failure'), err, { ...extraTags, ...tags })
   }
 
   return {
+    setExtraTags,
     start,
     failure,
     success,

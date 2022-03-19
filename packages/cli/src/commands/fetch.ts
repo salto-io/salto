@@ -28,7 +28,7 @@ import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_build
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { formatMergeErrors, formatFetchHeader, formatFetchFinish, formatStateChanges, formatStateRecencies, formatAppliedChanges, formatFetchWarnings, formatAdapterProgress } from '../formatter'
 import { getApprovedChanges as cliGetApprovedChanges, shouldUpdateConfig as cliShouldUpdateConfig, getChangeToAlignAction } from '../callbacks'
-import { getWorkspaceTelemetryTags, updateStateOnly, applyChangesToWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
+import { updateStateOnly, applyChangesToWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { ENVIRONMENT_OPTION, EnvArg, validateAndSetEnv } from './common/env'
 import { ACCOUNTS_OPTION, AccountsArg, getAndValidateActiveAccounts, getTagsForAccounts } from './common/accounts'
@@ -91,7 +91,6 @@ export const fetchCommand = async (
     stateOnly, regenerateSaltoIds,
   }: FetchCommandArgs): Promise<CliExitCode> => {
   const bindedOutputline = (text: string): void => outputLine(text, output)
-  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
   const fetchProgress = new EventEmitter<FetchProgressEvents>()
   fetchProgress.on('adaptersDidInitialize', () => {
     bindedOutputline(formatFetchHeader())
@@ -160,7 +159,7 @@ export const fetchCommand = async (
   // and only print the merge errors
   if (!_.isEmpty(fetchResult.mergeErrors)) {
     log.debug(`fetch had ${fetchResult.mergeErrors.length} merge errors`)
-    cliTelemetry.mergeErrors(fetchResult.mergeErrors.length, workspaceTags)
+    cliTelemetry.mergeErrors(fetchResult.mergeErrors.length)
     errorOutputLine(formatMergeErrors(fetchResult.mergeErrors), output)
   }
 
@@ -197,14 +196,13 @@ export const fetchCommand = async (
 
   // Unpack changes to array so we can iterate on them more than once
   const changes = [...fetchResult.changes]
-  cliTelemetry.changes(changes.length, workspaceTags)
+  cliTelemetry.changes(changes.length)
 
   const updatingWsSucceeded = stateOnly
     ? await applyChangesToState(changes)
     : await applyChangesToWorkspace({
       workspace,
       cliTelemetry,
-      workspaceTags,
       force,
       shouldCalcTotalSize,
       output,

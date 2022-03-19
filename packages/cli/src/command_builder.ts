@@ -224,18 +224,19 @@ export const createWorkspaceCommand = <T>(
       getConfigOverrideChanges(args.input),
     )
 
-    const workspaceTags = {
-      ...await getWorkspaceTelemetryTags(workspace),
+    args.cliTelemetry.setExtraTags({
+      ...getWorkspaceTelemetryTags(workspace),
       ...extraTelemetryTags?.({ workspace, input: args.input }),
-    }
-    args.cliTelemetry.start(workspaceTags)
+    })
+
+    args.cliTelemetry.start()
 
     const result = await action({ ...args, workspace })
 
     if (result === CliExitCode.Success) {
-      args.cliTelemetry.success(workspaceTags)
+      args.cliTelemetry.success()
     } else {
-      args.cliTelemetry.failure(workspaceTags)
+      args.cliTelemetry.failure()
     }
     return result
   }

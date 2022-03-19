@@ -47,8 +47,8 @@ export const action: CommandDefAction<InitArgs> = async (
     }
     const defaultEnvName = envName ?? (await getEnvName())
     const workspace = await initLocalWorkspace(baseDir, workspaceName, defaultEnvName)
-    const workspaceTags = await getWorkspaceTelemetryTags(workspace)
-    cliTelemetry.success(workspaceTags)
+    cliTelemetry.setExtraTags(getWorkspaceTelemetryTags(workspace))
+    cliTelemetry.success()
     outputLine(Prompts.initCompleted(), output)
   } catch (e) {
     errorOutputLine(Prompts.initFailed(e.message), output)

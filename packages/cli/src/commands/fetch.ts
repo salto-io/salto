@@ -31,7 +31,7 @@ import { getApprovedChanges as cliGetApprovedChanges, shouldUpdateConfig as cliS
 import { getWorkspaceTelemetryTags, updateStateOnly, applyChangesToWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { ENVIRONMENT_OPTION, EnvArg, validateAndSetEnv } from './common/env'
-import { ACCOUNTS_OPTION, AccountsArg, getAndValidateActiveAccounts, getTagsForInputAccounts } from './common/accounts'
+import { ACCOUNTS_OPTION, AccountsArg, getAndValidateActiveAccounts, getTagsForAccounts } from './common/accounts'
 
 const log = logger(module)
 const { series } = promises.array
@@ -389,7 +389,7 @@ const fetchDef = createWorkspaceCommand({
     ],
   },
   action,
-  extraTelemetryTags: getTagsForInputAccounts,
+  extraTelemetryTags: getTagsForAccounts,
 })
 
 export default fetchDef

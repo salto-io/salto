@@ -78,7 +78,7 @@ export type WorkspaceCommandAction<T> = (args: WorkspaceCommandArgs<T>) => Promi
 type WorkspaceCommandDef<T> = {
   properties: CommandOptions<T>
   action: WorkspaceCommandAction<T>
-  extraTelemetryTags?: (ws: Workspace, input: T) => Tags
+  extraTelemetryTags?: (args: { workspace: Workspace; input: T}) => Tags
 }
 
 export const isCommand = (c?: CommandOrGroupDef): c is CommandDef<unknown> =>
@@ -226,7 +226,7 @@ export const createWorkspaceCommand = <T>(
 
     const workspaceTags = {
       ...await getWorkspaceTelemetryTags(workspace),
-      ...extraTelemetryTags?.(workspace, args.input),
+      ...extraTelemetryTags?.({ workspace, input: args.input }),
     }
     args.cliTelemetry.start(workspaceTags)
 

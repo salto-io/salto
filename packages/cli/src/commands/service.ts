@@ -250,7 +250,7 @@ const serviceAddDef = createWorkspaceCommand({
     ],
   },
   action: addAction,
-  extraTelemetryTags: (_ws, input) => getAdaptersTags([input.serviceType]),
+  extraTelemetryTags: ({ input }) => getAdaptersTags([input.serviceType]),
 })
 
 // List
@@ -327,7 +327,8 @@ const accountLoginDef = createWorkspaceCommand({
     ],
   },
   action: loginAction,
-  extraTelemetryTags: (ws, input) => getTagsForAccounts(ws, [input.accountName], input.env),
+  extraTelemetryTags: ({ workspace, input }) =>
+    getTagsForAccounts({ workspace, accounts: [input.accountName], env: input.env }),
 })
 
 const accountGroupDef = createCommandGroupDef({

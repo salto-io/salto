@@ -17,6 +17,7 @@ import _ from 'lodash'
 import { Workspace } from '@salto-io/workspace'
 import { Tags, getSupportedServiceAdapterNames } from '@salto-io/core'
 import { KeyedOption } from '../../types'
+import { EnvArg } from './env'
 
 export type AccountsArg = {
     accounts?: string[]
@@ -36,24 +37,14 @@ export const getAdaptersTags = (adapters: string[]): Tags => (
     .map(adapter => [`adapter-${adapter}`, true]))
 )
 
-const getValidAccounts = (ws: Workspace, accounts?: string[], env?: string): string[] => {
-  const validAccounts = ws.accounts(env)
-  return _.difference(validAccounts, accounts || [])
-}
-
 export const getTagsForAccounts = (
-  ws: Workspace,
-  accounts?: string[],
-  env?: string
-): Tags => getAdaptersTags(getValidAccounts(ws, accounts, env).map(ws.getServiceFromAccountName))
-
-export const getTagsForInputAccounts = (
-  ws: Workspace,
-  input: {
-    accounts?: string[]
-    env?: string
-  }
-): Tags => getTagsForAccounts(ws, input.accounts, input.env)
+  args: { workspace: Workspace } & AccountsArg & EnvArg
+): Tags => {
+  const { workspace, accounts, env } = args
+  const envAccounts = workspace.accounts(env)
+  const validAccounts = _.isEmpty(accounts) ? envAccounts : _.intersection(accounts, envAccounts)
+  return getAdaptersTags(validAccounts.map(workspace.getServiceFromAccountName))
+}
 
 export const getAndValidateActiveAccounts = (
   workspace: Workspace,

@@ -100,7 +100,7 @@ class InvalidLexerTokenError extends Error {
 
 export class ContentMergeConflictError extends Error {
   constructor(public lastValidToken?: LexerToken) {
-    super('Content merge conflict')
+    super('Merge conflict')
   }
 }
 

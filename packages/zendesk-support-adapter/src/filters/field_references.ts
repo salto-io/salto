@@ -186,6 +186,7 @@ export type ReferenceContextStrategyName = 'neighborField'
   | 'parentValue'
   | 'neighborSubject'
   | 'neighborReferenceTicketField'
+  | 'neighborReferenceTicketFormCondition'
   | 'neighborReferenceUserAndOrgField'
   | 'neighborSubjectReferenceTicketField'
   | 'neighborSubjectReferenceUserAndOrgField'
@@ -194,6 +195,7 @@ export const contextStrategyLookup: Record<
 > = {
   neighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: getValueLookupType }),
   neighborReferenceTicketField: neighborContextFunc({ contextFieldName: 'field', getLookUpName: neighborReferenceTicketFieldLookupFunc }),
+  neighborReferenceTicketFormCondition: neighborContextFunc({ contextFieldName: 'parent_field_id', getLookUpName: neighborReferenceTicketFieldLookupFunc }),
   neighborReferenceUserAndOrgField: neighborContextFunc({ contextFieldName: 'field', getLookUpName: neighborReferenceUserAndOrgFieldLookupFunc }),
   neighborSubjectReferenceTicketField: neighborContextFunc({ contextFieldName: 'subject', getLookUpName: neighborReferenceTicketFieldLookupFunc }),
   neighborSubjectReferenceUserAndOrgField: neighborContextFunc({ contextFieldName: 'subject', getLookUpName: neighborReferenceUserAndOrgFieldLookupFunc }),
@@ -332,6 +334,22 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskSupportFieldReferenceDefi
   },
   {
     src: { field: 'ticket_field_ids' },
+    serializationStrategy: 'id',
+    target: { type: 'ticket_field' },
+  },
+  {
+    src: { field: 'parent_field_id' },
+    serializationStrategy: 'id',
+    target: { type: 'ticket_field' },
+  },
+  {
+    src: {
+      field: 'id',
+      parentTypes: [
+        'ticket_form__end_user_conditions__child_fields',
+        'ticket_form__agent_conditions__child_fields',
+      ],
+    },
     serializationStrategy: 'id',
     target: { type: 'ticket_field' },
   },
@@ -601,6 +619,17 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskSupportFieldReferenceDef
     },
     zendeskSupportSerializationStrategy: 'ticketFieldOption',
     target: { typeContext: 'neighborSubjectReferenceTicketField' },
+  },
+  {
+    src: {
+      field: 'value',
+      parentTypes: [
+        'ticket_form__end_user_conditions',
+        'ticket_form__agent_conditions',
+      ],
+    },
+    zendeskSupportSerializationStrategy: 'ticketFieldOption',
+    target: { typeContext: 'neighborReferenceTicketFormCondition' },
   },
   {
     src: {

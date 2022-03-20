@@ -226,6 +226,7 @@ describe('dashboardDeploymentFilter', () => {
     it('should call layout with the right parameters on modification without gadgets', async () => {
       const instanceBefore = getChangeData(change)
       const instanceAfter = getChangeData(change).clone()
+      instanceBefore.value.layout = 'AA'
       delete instanceBefore.value.gadgets
 
       await filter.deploy([toChange({ before: instanceBefore, after: instanceAfter })])
@@ -241,6 +242,14 @@ describe('dashboardDeploymentFilter', () => {
           headers: PRIVATE_API_HEADERS,
         },
       )
+    })
+
+    it('should not call layout with if did not change', async () => {
+      const instanceBefore = getChangeData(change)
+      const instanceAfter = getChangeData(change).clone()
+
+      await filter.deploy([toChange({ before: instanceBefore, after: instanceAfter })])
+      expect(connection.put).not.toHaveBeenCalledWith()
     })
   })
 })

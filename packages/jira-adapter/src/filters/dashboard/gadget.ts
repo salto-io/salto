@@ -133,6 +133,7 @@ const filter: FilterCreator = ({ client, config }) => ({
             && isRemovalChange(change)) {
             return
           }
+          throw err
         }
 
         if (isAdditionOrModificationChange(change)) {

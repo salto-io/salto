@@ -15,8 +15,9 @@
 */
 import { Change, dependencyChange, DependencyChanger, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { getGadgetInstanceKey, getGadgetKey } from '../change_validators/dashboard_gadgets'
 import { DASHBOARD_GADGET_TYPE, DASHBOARD_TYPE } from '../constants'
 
 
@@ -40,7 +41,7 @@ export const dashboardGadgetsDependencyChanger: DependencyChanger = async change
   )
 
   const gadgetToDashboardDeps = gadgetChanges
-    .filter(({ change }) => getParents(getChangeData(change))[0].elemID.getFullName()
+    .filter(({ change }) => getParents(getChangeData(change))[0]?.elemID.getFullName()
       in idToDashboardChange)
     .flatMap(({ change, key }) => [
       dependencyChange(
@@ -55,16 +56,22 @@ export const dashboardGadgetsDependencyChanger: DependencyChanger = async change
       ),
     ])
 
+  const gadgetsMap = _.keyBy(
+    gadgetChanges,
+    ({ change }) => getGadgetInstanceKey(getChangeData(change))
+  )
+
   const gadgetsToGadgetsDeps = gadgetChanges
     .filter(({ change }) => isAdditionOrModificationChange(change))
     .flatMap(({ key, change }) => {
       const instance = getChangeData(change)
-      const deps = gadgetChanges.filter(({ change: gadgetChange }) => {
-        const gadgetInstance = getChangeData(gadgetChange)
-        return getParents(gadgetInstance)[0].elemID.isEqual(getParents(instance)[0].elemID)
-          && instance.value.position.column === gadgetInstance.value.position.column
-          && instance.value.position.row > gadgetInstance.value.position.row
-      })
+      const deps = _.range(0, instance.value.position.row)
+        .map(row => gadgetsMap[getGadgetKey(
+          getParents(instance)[0].elemID,
+          row,
+          instance.value.position.column,
+        )])
+        .filter(values.isDefined)
 
       return deps.map(
         dep => dependencyChange(

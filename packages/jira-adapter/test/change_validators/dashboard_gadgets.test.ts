@@ -74,7 +74,7 @@ describe('dashboardGadgetsValidator', () => {
           elemID: instance2.elemID,
           severity: 'Error',
           message: 'Two gadgets of the same dashboard cannot have the same position',
-          detailedMessage: 'The position of the gadget jira.DashboardGadget.instance.instance2 is already taken by another gadget in the same dashboard',
+          detailedMessage: 'The position of the gadget jira.DashboardGadget.instance.instance2 is already taken by other gadgets in the same dashboard: jira.DashboardGadget.instance.instance',
         },
       ])
   })
@@ -83,6 +83,13 @@ describe('dashboardGadgetsValidator', () => {
     elementsSource = buildElementsSourceFromElements([])
     expect(await dashboardGadgetsValidator([toChange({ after: instance })], elementsSource))
       .toEqual([])
+  })
+
+  it('should throw an error when there is no position', async () => {
+    delete instance.value.position
+    elementsSource = buildElementsSourceFromElements([])
+    await expect(dashboardGadgetsValidator([toChange({ after: instance })], elementsSource))
+      .rejects.toThrow()
   })
 
   it('should return not an error when the position is taken on different dashboard', async () => {

@@ -29,12 +29,25 @@ export const deployLayout = async (
 ): Promise<void> => {
   const instance = getChangeData(dashboardChange)
 
+  const layoutBefore = isModificationChange(dashboardChange)
+    ? dashboardChange.data.before.value.layout
+    : undefined
+
+  const layoutAfter = instance.value.layout
+
+  if (layoutBefore === layoutAfter || layoutAfter === undefined) {
+    return
+  }
+
   const gadgets = isModificationChange(dashboardChange)
     // We look on before because this happens before we update the gadgets
     ? dashboardChange.data.before.value.gadgets ?? []
     : []
 
   const columns = _(gadgets)
+    // If the layout size was reduced, we need to move the gadgets from
+    // the removed columns to the last column, and therefore we use the Math.min call
+    // (after that in the gadget deployment they will be moved to the right place)
     .groupBy(gadget => Math.min(
       gadget.value.value.position.column,
       instance.value.layout.length - 1

@@ -25,6 +25,8 @@ import { DASHBOARD_GADGET_TYPE, DASHBOARD_TYPE, JIRA } from '../../../src/consta
 import JiraClient from '../../../src/client/client'
 import { getLookUpName } from '../../../src/reference_mapping'
 
+jest.setTimeout(10000000)
+
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
   return {
@@ -253,7 +255,7 @@ describe('gadgetFilter', () => {
     let change: Change<InstanceElement>
 
     beforeEach(async () => {
-      deployChangeMock.mockClear()
+      deployChangeMock.mockReset()
 
       instance.value.properties = {
         key1: 'value1',
@@ -276,14 +278,22 @@ describe('gadgetFilter', () => {
     })
 
     it('should do nothing if removal throws 404', async () => {
-      const { deployResult } = await filter.deploy([toChange({ before: instance })])
       deployChangeMock.mockRejectedValue(new clientUtils.HTTPError('message', {
         status: 404,
         data: {},
       }))
+      const { deployResult } = await filter.deploy([toChange({ before: instance })])
 
       expect(deployResult.appliedChanges).toHaveLength(1)
       expect(deployResult.errors).toHaveLength(0)
+    })
+
+    it('should return the error if removal throws other errors', async () => {
+      deployChangeMock.mockRejectedValue(new Error('message'))
+      const { deployResult } = await filter.deploy([toChange({ before: instance })])
+
+      expect(deployResult.appliedChanges).toHaveLength(0)
+      expect(deployResult.errors).toHaveLength(1)
     })
 
     it('should call update the properties', async () => {

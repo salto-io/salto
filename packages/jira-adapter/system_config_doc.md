@@ -142,7 +142,7 @@ jira {
       url = "https://raw.githubusercontent.com/salto-io/jira-swaggers/next-main/software-swagger.v3.json"
       typeNameOverrides = [
         {
-          originalName = "agile__1_0__board@uuvuu"
+          originalName = "rest__agile__1_0__board@uuuuvuu"
           newName = "Boards"
         },
         {
@@ -150,7 +150,7 @@ jira {
           newName = "Board"
         },
         {
-          originalName = "agile__1_0__board___boardId___configuration@uuvuuuu_00123_00125uu"
+          originalName = "rest__agile__1_0__board___boardId___configuration@uuuuvuuuu_00123_00125uu"
           newName = "BoardConfiguration"
         },
       ]
@@ -183,6 +183,77 @@ jira {
           queryParams = {
             expand = "description,owner,sharePermissions"
           }
+          recurseInto = [
+            {
+              type = "DashboardGadgetResponse"
+              toField = "gadgets"
+              context = [
+                {
+                  name = "dashboardId"
+                  fromField = "id"
+                },
+              ]
+            },
+          ]
+        }
+      }
+      DashboardGadget = {
+        transformation = {
+          idFields = [
+            "title",
+            "position.column",
+            "position.row",
+          ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "properties"
+              fieldType = "Map<unknown>"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/dashboard/{dashboardId}/gadget"
+            method = "post"
+            urlParamsToFields = {
+              dashboardId = "_parent.0.id"
+            }
+          }
+          modify = {
+            url = "/rest/api/3/dashboard/{dashboardId}/gadget/{gadgetId}"
+            method = "put"
+            urlParamsToFields = {
+              dashboardId = "_parent.0.id"
+              gadgetId = "id"
+            }
+          }
+          remove = {
+            url = "/rest/api/3/dashboard/{dashboardId}/gadget/{gadgetId}"
+            method = "delete"
+            urlParamsToFields = {
+              dashboardId = "_parent.0.id"
+              gadgetId = "id"
+            }
+          }
+        }
+      }
+      DashboardGadgetPosition = {
+        transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "column"
+              fieldType = "number"
+            },
+            {
+              fieldName = "row"
+              fieldType = "number"
+            },
+          ]
         }
       }
       NotificationEvent = {
@@ -204,7 +275,22 @@ jira {
         }
       }
       Dashboard = {
+        standaloneFields = [
+          {
+            fieldName = "gadgets"
+          },
+        ]
         transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "gadgets"
+              fieldType = "DashboardGadget"
+            },
+            {
+              fieldName = "layout"
+              fieldType = "string"
+            },
+          ]
           fieldsToHide = [
             {
               fieldName = "id"
@@ -215,15 +301,26 @@ jira {
               fieldName = "isFavourite"
             },
           ]
+          standaloneFields = [
+            {
+              fieldName = "gadgets"
+            },
+          ]
         }
         deployRequests = {
           add = {
             url = "/rest/api/3/dashboard"
             method = "post"
+            fieldsToIgnore = [
+              "gadgets",
+            ]
           }
           modify = {
             url = "/rest/api/3/dashboard/{id}"
             method = "put"
+            fieldsToIgnore = [
+              "gadgets",
+            ]
           }
           remove = {
             url = "/rest/api/3/dashboard/{id}"
@@ -1371,7 +1468,7 @@ jira {
           url = "/rest/api/3/workflow/search"
           paginationField = "startAt"
           queryParams = {
-            expand = "transitions,transitions.rules,statuses,statuses.properties"
+            expand = "transitions,transitions.rules,statuses,statuses.properties,operations"
           }
         }
       }
@@ -1457,6 +1554,13 @@ jira {
             },
           ]
         }
+        jspRequests = {
+          add = "/secure/admin/AddIssueSecurityScheme.jspa"
+          modify = "/secure/admin/EditIssueSecurityScheme.jspa"
+          remove = "/secure/admin/DeleteIssueSecurityScheme.jspa"
+          query = "/rest/api/3/issuesecurityschemes"
+          dataField = "issueSecuritySchemes"
+        }
       }
       ProjectSecurityScheme = {
         request = {
@@ -1496,12 +1600,15 @@ jira {
         transformation = {
           fieldsToOmit = [
             {
-              fieldName = "id"
-            },
-            {
               fieldName = "issueSecurityLevelId"
             },
           ]
+        }
+        jspRequests = {
+          add = "/secure/admin/AddIssueSecurity.jspa"
+          remove = "/secure/admin/DeleteIssueSecurity.jspa"
+          query = "/rest/api/3/issuesecurityschemes/{schemeId}/members"
+          dataField = "values"
         }
       }
       SecurityLevel = {
@@ -1542,6 +1649,13 @@ jira {
               fieldName = "self"
             },
           ]
+        }
+        jspRequests = {
+          add = "/secure/admin/EditIssueSecurities!addLevel.jspa"
+          modify = "/secure/admin/EditSecurityLevel.jspa"
+          remove = "/secure/admin/DeleteIssueSecurityLevel.jspa"
+          query = "/rest/api/3/issuesecurityschemes/{schemeId}"
+          dataField = "levels"
         }
       }
       StatusCategory = {

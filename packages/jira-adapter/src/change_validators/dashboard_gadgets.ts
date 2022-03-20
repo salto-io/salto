@@ -13,29 +13,43 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
+import { ChangeValidator, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isReferenceExpression, SeverityLevel } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import _ from 'lodash'
 import { DASHBOARD_GADGET_TYPE } from '../constants'
 
 const { awu } = collections.asynciterable
 
-export const getGadgetKey = (instance: InstanceElement): string =>
-  `${getParents(instance)[0].elemID.name}-${instance.value.position.row}-${instance.value.position.column}`
+const log = logger(module)
+
+export const getGadgetKey = (parentId: ElemID, row: number, column: number): string =>
+  `${parentId.name}-${row}-${column}`
+
+export const getGadgetInstanceKey = (instance: InstanceElement): string => {
+  if (!isReferenceExpression(getParents(instance)[0])
+  || instance.value.position?.row === undefined
+  || instance.value.position.column === undefined) {
+    throw new Error(`Received an invalid gadget ${instance.elemID.getFullName()}`)
+  }
+
+  return getGadgetKey(
+    getParents(instance)[0].elemID,
+    instance.value.position.row,
+    instance.value.position.column
+  )
+}
 
 export const dashboardGadgetsValidator: ChangeValidator = async (changes, elementsSource) => {
   if (elementsSource === undefined) {
+    log.warn('Elements source was not passed to dashboardGadgetsValidator. Skipping validator')
     return []
   }
 
-  const gadgetsMap = _.groupBy(
-    await awu(await elementsSource.list())
-      .filter(id => id.typeName === DASHBOARD_GADGET_TYPE && id.idType === 'instance')
-      .map(id => elementsSource.get(id))
-      .toArray(),
-    getGadgetKey,
-  )
+  const gadgetsMap = await awu(await elementsSource.list())
+    .filter(id => id.typeName === DASHBOARD_GADGET_TYPE && id.idType === 'instance')
+    .map(id => elementsSource.get(id))
+    .groupBy(getGadgetInstanceKey)
 
 
   return awu(changes)
@@ -43,12 +57,12 @@ export const dashboardGadgetsValidator: ChangeValidator = async (changes, elemen
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === DASHBOARD_GADGET_TYPE)
-    .filter(instance => gadgetsMap[getGadgetKey(instance)]?.length > 1)
+    .filter(instance => gadgetsMap[getGadgetInstanceKey(instance)]?.length > 1)
     .map(async instance => ({
       elemID: instance.elemID,
       severity: 'Error' as SeverityLevel,
       message: 'Two gadgets of the same dashboard cannot have the same position',
-      detailedMessage: `The position of the gadget ${instance.elemID.getFullName()} is already taken by another gadget in the same dashboard`,
+      detailedMessage: `The position of the gadget ${instance.elemID.getFullName()} is already taken by other gadgets in the same dashboard: ${gadgetsMap[getGadgetInstanceKey(instance)].filter(gadget => !gadget.elemID.isEqual(instance.elemID)).map(gadget => gadget.elemID.getFullName()).join(', ')}`,
     }))
     .toArray()
 }

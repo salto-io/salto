@@ -27,11 +27,11 @@ const getCpqError = (
   elemID,
   severity: 'Info',
   message: 'CPQ data changes detected',
-  detailedMessage: '',
+  detailedMessage: 'CPQ data changes detected',
   deployActions: {
     preAction: {
       title: 'Disable CPQ Triggers',
-      description: 'CPQ triggers should be disabled before deploying:',
+      description: 'CPQ triggers must be disabled before deploying:',
       subActions: [
         'In Salesforce, navigate to Setup > Installed Packages > Salesforce CPQ > Configure > Additional Settings tab',
         'Check the "Triggers Disabled" checkbox',

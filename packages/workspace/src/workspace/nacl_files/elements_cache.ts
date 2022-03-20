@@ -167,7 +167,6 @@ export interface ElementMergeManager {
   mergeComponents: (updateParams: CacheChangeSetUpdate) => Promise<ChangeSet<Change>>
   // Hash access functions used when hash is, for some reason, calculated outside of update
   getHash: (prefix: string) => Promise<string | undefined>
-  setHash: (prefix: string, value: string) => Promise<void>
 }
 
 const namespaceToManager: Record<string, ElementMergeManager> = {}
@@ -223,6 +222,7 @@ export const createMergeManager = async (flushables: Flushable[],
       + (src2Changes.postChangeHash || ''))
     const cachePreChangeHash = await hashes.get(getMergedHashKey(cacheUpdate.src1Prefix,
       cacheUpdate.src2Prefix)) ?? ''
+    log.debug('Setting merged hash of namespace %s to %s', fullNamespace, postChangeHash)
     await hashes.set(getMergedHashKey(cacheUpdate.src1Prefix, cacheUpdate.src2Prefix),
       postChangeHash)
     const cacheValid = ((!preChangeHash && !cachePreChangeHash)
@@ -417,7 +417,7 @@ export const createMergeManager = async (flushables: Flushable[],
       return func(...args)
     }
 
-  const mergeManager = {
+  const mergeManager: ElementMergeManager = {
     clear: ensureInitiated(() => lock.acquire(MERGER_LOCK, clearImpl)),
     flush: ensureInitiated(async () =>
       lock.acquire(MERGER_LOCK, async () => {
@@ -438,10 +438,22 @@ export const createMergeManager = async (flushables: Flushable[],
         log.debug(`Merging components: ${cacheUpdate.src1Prefix}, ${cacheUpdate.src2Prefix}`)
         const changeResult = await updateCache(cacheUpdate)
         if (cacheUpdate.src1Changes?.postChangeHash) {
+          log.debug(
+            'Setting %s source hash in namespace %s to %s',
+            cacheUpdate.src1Prefix,
+            fullNamespace,
+            cacheUpdate.src1Changes.postChangeHash,
+          )
           await hashes.set(getSourceHashKey(cacheUpdate.src1Prefix),
             cacheUpdate.src1Changes.postChangeHash)
         }
         if (cacheUpdate.src2Changes?.postChangeHash) {
+          log.debug(
+            'Setting %s source hash in namespace %s to %s',
+            cacheUpdate.src2Prefix,
+            fullNamespace,
+            cacheUpdate.src2Changes.postChangeHash,
+          )
           await hashes.set(getSourceHashKey(cacheUpdate.src2Prefix),
             cacheUpdate.src2Changes.postChangeHash)
         }
@@ -456,9 +468,6 @@ export const createMergeManager = async (flushables: Flushable[],
       })),
     getHash: ensureInitiated(
       (prefix: string) => hashes.get(getSourceHashKey(prefix))
-    ),
-    setHash: ensureInitiated(
-      (prefix: string, value: string) => hashes.set(getSourceHashKey(prefix), value)
     ),
   }
   namespaceToManager[fullNamespace] = mergeManager

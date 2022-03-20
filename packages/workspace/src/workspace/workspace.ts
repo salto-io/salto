@@ -486,7 +486,7 @@ export const loadWorkspace = async (
         // To preserve the old ws functionality - hidden values should be added to the workspace
         // cache only if their top level element is in the nacls, or they are marked as hidden
         // (SAAS-2639)
-        const [stateChangesForExistingNaclElements, dropedStateOnlyChange] = await partition(
+        const [stateChangesForExistingNaclElements, droppedStateOnlyChange] = await partition(
           partialStateChanges.changes,
           async change => {
             const changeData = getChangeData(change)
@@ -497,8 +497,15 @@ export const loadWorkspace = async (
           }
         )
 
-        log.debug('dropped hidden changes due to missing nacl element for ids:',
-          dropedStateOnlyChange.map(getChangeData).map(elem => elem.elemID.getFullName()))
+        if (droppedStateOnlyChange.length > 0) {
+          log.debug(
+            'dropped hidden changes due to missing nacl element for ids: %s',
+            droppedStateOnlyChange
+              .map(getChangeData)
+              .map(elem => elem.elemID.getFullName())
+              .join(', ')
+          )
+        }
 
         return {
           changes: stateChangesForExistingNaclElements

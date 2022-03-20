@@ -31,7 +31,7 @@ const getCpqError = (
   deployActions: {
     preAction: {
       title: 'Disable CPQ Triggers',
-      description: 'CPQ triggers must be disabled before deploying:',
+      description: 'CPQ triggers should be disabled before deploying:',
       subActions: [
         'In Salesforce, navigate to Setup > Installed Packages > Salesforce CPQ > Configure > Additional Settings tab',
         'Check the "Triggers Disabled" checkbox',

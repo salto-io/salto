@@ -54,6 +54,7 @@ import accountSpecificValues from './filters/account_specific_values'
 import translationConverter from './filters/translation_converter'
 import systemNoteAuthorInformation from './filters/author_information/system_note'
 import savedSearchesAuthorInformation from './filters/author_information/saved_searches'
+import configElementsFilter from './filters/config_elements'
 import { Filter, FilterCreator } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_USE_CHANGES_DETECTION } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams } from './query'
@@ -144,6 +145,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       savedSearchesAuthorInformation,
       translationConverter,
       accountSpecificValues,
+      configElementsFilter,
       // serviceUrls must run after suiteAppInternalIds filter
       serviceUrls,
     ],
@@ -210,6 +212,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const dataElementsPromise = getDataElements(this.client, fetchQuery,
       this.getElemIdFunc)
 
+    const configElementsPromise = this.client.getConfigElements(fetchQuery)
+
     const getCustomObjectsResult = this.client.getCustomObjects(
       getCustomTypesNames(),
       updatedFetchQuery
@@ -257,10 +261,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
     }).filter(isInstanceElement).toArray()
 
     const dataElements = await dataElementsPromise
+    const configElements = await configElementsPromise
 
     const elements = [
       ...metadataTypesToList({ customTypes, enums, fileCabinetTypes, fieldTypes }),
       ...dataElements,
+      ...configElements,
       ...instances,
       ...serverTimeElements,
     ]

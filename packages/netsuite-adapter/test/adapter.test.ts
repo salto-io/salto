@@ -847,6 +847,7 @@ describe('Adapter', () => {
       const suiteAppClient = {
         getSystemInformation: getSystemInformationMock,
         getNetsuiteWsdl: () => undefined,
+        getConfigRecords: () => [],
       } as unknown as SuiteAppClient
 
       adapter = new NetsuiteAdapter({
@@ -876,6 +877,7 @@ describe('Adapter', () => {
       const suiteAppClient = {
         getSystemInformation: getSystemInformationMock,
         getNetsuiteWsdl: () => undefined,
+        getConfigRecords: () => [],
       } as unknown as SuiteAppClient
 
       adapter = new NetsuiteAdapter({
@@ -926,6 +928,7 @@ describe('Adapter', () => {
         suiteAppClient = {
           getSystemInformation: getSystemInformationMock,
           getNetsuiteWsdl: () => undefined,
+          getConfigRecords: () => [],
         } as unknown as SuiteAppClient
 
         adapter = new NetsuiteAdapter({

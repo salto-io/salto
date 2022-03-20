@@ -25,7 +25,7 @@ import { values, collections } from '@salto-io/lowerdash'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import * as suiteAppFileCabinet from './suiteapp_file_cabinet'
-import { isDataObjectType, isFileCabinetInstance } from './types'
+import { isConfigInstance, isDataObjectType, isFileCabinetInstance } from './types'
 import { APPLICATION_ID } from './constants'
 import { isCustomTypeName } from './autogen/types'
 import { fileCabinetTypesNames } from './types/file_cabinet_types'
@@ -39,6 +39,7 @@ export const SUITEAPP_DELETING_FILES_GROUP_ID = 'Salto SuiteApp - File Cabinet -
 export const SUITEAPP_CREATING_RECORDS_GROUP_ID = 'Salto SuiteApp - Records - Creating Records'
 export const SUITEAPP_UPDATING_RECORDS_GROUP_ID = 'Salto SuiteApp - Records - Updating Records'
 export const SUITEAPP_DELETING_RECORDS_GROUP_ID = 'Salto SuiteApp - Records - Deleting Records'
+export const SUITEAPP_UPDATING_CONFIG_GROUP_ID = 'Salto SuiteApp - Updating Config'
 
 export const SUITEAPP_FILE_CABINET_GROUPS = [
   SUITEAPP_CREATING_FILES_GROUP_ID,
@@ -159,6 +160,11 @@ const isSuiteAppRecordDeletion = async (change: Change): Promise<boolean> =>
   await isSuiteAppRecordChange(change)
   && isRemovalChange(change)
 
+const isSuiteAppConfigChange = async (change: Change): Promise<boolean> => {
+  const changeData = getChangeData(change)
+  return isInstanceElement(changeData) && isConfigInstance(changeData)
+}
+
 const getChangeGroupIdsWithSuiteApp: ChangeGroupIdFunction = async changes => {
   const conditionsToGroups = [
     { condition: isSuiteAppFileCabinetAddition, group: SUITEAPP_CREATING_FILES_GROUP_ID },
@@ -167,6 +173,7 @@ const getChangeGroupIdsWithSuiteApp: ChangeGroupIdFunction = async changes => {
     { condition: isSuiteAppRecordAddition, group: SUITEAPP_CREATING_RECORDS_GROUP_ID },
     { condition: isSuiteAppRecordModification, group: SUITEAPP_UPDATING_RECORDS_GROUP_ID },
     { condition: isSuiteAppRecordDeletion, group: SUITEAPP_DELETING_RECORDS_GROUP_ID },
+    { condition: isSuiteAppConfigChange, group: SUITEAPP_UPDATING_CONFIG_GROUP_ID },
     { condition: isSdfChange, group: SDF_CHANGE_GROUP_ID },
   ]
 

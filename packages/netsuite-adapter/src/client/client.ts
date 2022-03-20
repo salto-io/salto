@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
+import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, Element, isModificationChange, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
@@ -29,10 +29,11 @@ import { SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
 import { GetCustomObjectsResult, ImportFileCabinetResult } from './types'
 import { getReferencedInstances } from '../reference_dependencies'
 import { getLookUpName, toCustomizationInfo } from '../transformer'
-import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../group_changes'
+import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../group_changes'
 import { DeployResult } from '../types'
 import { APPLICATION_ID } from '../constants'
 import { convertInstanceMapsToLists } from '../mapped_lists/utils'
+import { getConfigDeployResult, getConfigRecordElements, getSetConfigTypes } from './config_elements'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -81,6 +82,36 @@ export default class NetsuiteClient {
       e.message = `SDF Authentication failed. ${e.message}`
       throw e
     }
+  }
+
+  @NetsuiteClient.logDecorator
+  async getConfigElements(fetchQuery: NetsuiteQuery): Promise<Element[]> {
+    if (this.suiteAppClient === undefined) {
+      return []
+    }
+    const [instances, types] = _.partition(
+      getConfigRecordElements(await this.suiteAppClient.getConfigRecords()),
+      isInstanceElement
+    )
+    const matchingInstances = instances
+      .filter(instance => fetchQuery.isTypeMatch(instance.elemID.typeName))
+    return [...types, ...matchingInstances]
+  }
+
+  @NetsuiteClient.logDecorator
+  async deployConfigChanges(
+    instancesChanges: Change<InstanceElement>[]
+  ): Promise<DeployResult> {
+    if (this.suiteAppClient === undefined) {
+      return { errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_CONFIG_GROUP_ID}" cannot be deployed`)], appliedChanges: [] }
+    }
+    const modificationChanges = instancesChanges.filter(isModificationChange)
+    return getConfigDeployResult(
+      modificationChanges,
+      await this.suiteAppClient.setConfigRecordsValues(
+        getSetConfigTypes(modificationChanges)
+      )
+    )
   }
 
   @NetsuiteClient.logDecorator
@@ -138,6 +169,10 @@ export default class NetsuiteClient {
           GROUP_TO_DEPLOY_TYPE[groupID]
         )
         : { errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${groupID}" cannot be deployed`)], appliedChanges: [] }
+    }
+
+    if (groupID === SUITEAPP_UPDATING_CONFIG_GROUP_ID) {
+      return this.deployConfigChanges(instancesChanges)
     }
 
     return this.deployRecords(changes, groupID)

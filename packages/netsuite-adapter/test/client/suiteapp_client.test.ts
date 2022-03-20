@@ -21,6 +21,7 @@ import SoapClient from '../../src/client/suiteapp_client/soap_client/soap_client
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError } from '../../src/client/suiteapp_client/errors'
 import SuiteAppClient, { PAGE_SIZE } from '../../src/client/suiteapp_client/suiteapp_client'
 import { InvalidSuiteAppCredentialsError } from '../../src/client/types'
+import { CONFIG_RECORD_TYPES } from '../../src/types'
 
 
 describe('SuiteAppClient', () => {
@@ -50,7 +51,7 @@ describe('SuiteAppClient', () => {
       mockAxiosAdapter.onPost().replyOnce(200, {
         status: 'success',
         results: {
-          appVersion: [0, 1, 3],
+          appVersion: [0, 1, 4],
           time: 1000,
         },
       })
@@ -371,6 +372,152 @@ describe('SuiteAppClient', () => {
         expect(await client.readLargeFile(1)).toEqual(new Error('bbb'))
       })
     })
+
+    describe('getConfigRecords', () => {
+      it('should return empty list when configType feature is not supported', async () => {
+        const unsupportedClient = new SuiteAppClient({
+          credentials: {
+            accountId: 'ACCOUNT_ID',
+            suiteAppTokenId: 'tokenId',
+            suiteAppTokenSecret: 'tokenSecret',
+            suiteAppActivationKey: 'activationKey',
+          },
+          globalLimiter: new Bottleneck(),
+        })
+        mockAxiosAdapter.onPost().replyOnce(200, {
+          status: 'success',
+          results: {
+            appVersion: [0, 1, 3],
+            time: 1000,
+          },
+        })
+        expect(await unsupportedClient.getConfigRecords()).toEqual([])
+        expect(mockAxiosAdapter.history.post.length).toBe(1)
+      })
+      it('should return empty list on error', async () => {
+        mockAxiosAdapter.onPost().replyOnce(200, {
+          status: 'error', message: '', error: new Error('error'),
+        })
+        expect(await client.getConfigRecords()).toEqual([])
+      })
+      it('should return empty list on invalid result', async () => {
+        mockAxiosAdapter.onPost().replyOnce(200, {
+          status: 'success',
+          results: {
+            results: ['a', 'b', 'c'],
+            errors: [],
+          },
+        })
+        expect(await client.getConfigRecords()).toEqual([])
+      })
+      it('should return only valid results', async () => {
+        mockAxiosAdapter.onPost().replyOnce(200, {
+          status: 'success',
+          results: {
+            results: [
+              {
+                configType: CONFIG_RECORD_TYPES[0],
+                fieldsDef: [],
+                data: { notFieldsProperty: {} },
+              },
+              {
+                configType: CONFIG_RECORD_TYPES[1],
+                fieldsDef: [
+                  { notFieldDefinition: true },
+                  { id: 'a', label: 'a', type: 'checkbox', selectOptions: [] },
+                ],
+                data: { fields: { a: 'T' } },
+              },
+            ],
+            errors: [],
+          },
+        })
+        expect(await client.getConfigRecords()).toEqual([{
+          configType: CONFIG_RECORD_TYPES[1],
+          fieldsDef: [{ id: 'a', label: 'a', type: 'checkbox', selectOptions: [] }],
+          data: { fields: { a: 'T' } },
+        }])
+      })
+    })
+    describe('setConfigRecordsValues', () => {
+      it('should return error when configType feature is not supported', async () => {
+        const unsupportedClient = new SuiteAppClient({
+          credentials: {
+            accountId: 'ACCOUNT_ID',
+            suiteAppTokenId: 'tokenId',
+            suiteAppTokenSecret: 'tokenSecret',
+            suiteAppActivationKey: 'activationKey',
+          },
+          globalLimiter: new Bottleneck(),
+        })
+        mockAxiosAdapter.onPost().replyOnce(200, {
+          status: 'success',
+          results: {
+            appVersion: [0, 1, 3],
+            time: 1000,
+          },
+        })
+        expect(await unsupportedClient.setConfigRecordsValues([])).toEqual({
+          errorMessage: 'SuiteApp version doesn\'t support configTypes',
+        })
+        expect(mockAxiosAdapter.history.post.length).toBe(1)
+      })
+      it('should return error on error', async () => {
+        mockAxiosAdapter.onPost().replyOnce(200, {
+          status: 'error', message: 'error', error: new Error('error'),
+        })
+        expect(await client.setConfigRecordsValues([])).toEqual({
+          errorMessage: 'Restlet request failed. Message: error, error: {}',
+        })
+      })
+      it('should return error on invalid result', async () => {
+        mockAxiosAdapter.onPost().replyOnce(200, {
+          status: 'success',
+          results: [{ a: 'a' }],
+        })
+        expect(await client.setConfigRecordsValues([])).toEqual({
+          errorMessage: expect.stringContaining('should match some schema in anyOf'),
+        })
+      })
+      it('should return error on invalid configType', async () => {
+        mockAxiosAdapter.onPost().replyOnce(200, {
+          status: 'success',
+          results: [{ configType: 'a', status: 'success' }],
+        })
+        expect(await client.setConfigRecordsValues([])).toEqual({
+          errorMessage: expect.stringContaining('should match some schema in anyOf'),
+        })
+      })
+      it('should return error on invalid status', async () => {
+        mockAxiosAdapter.onPost().replyOnce(200, {
+          status: 'success',
+          results: [{ configType: CONFIG_RECORD_TYPES[0], status: 'none' }],
+        })
+        expect(await client.setConfigRecordsValues([])).toEqual({
+          errorMessage: expect.stringContaining('should match some schema in anyOf'),
+        })
+      })
+      it('should return error on missing errorMessage', async () => {
+        mockAxiosAdapter.onPost().replyOnce(200, {
+          status: 'success',
+          results: [{ configType: CONFIG_RECORD_TYPES[0], status: 'fail' }],
+        })
+        expect(await client.setConfigRecordsValues([])).toEqual({
+          errorMessage: expect.stringContaining('should match some schema in anyOf'),
+        })
+      })
+      it('should return results', async () => {
+        const results = [
+          { configType: CONFIG_RECORD_TYPES[0], status: 'success' },
+          { configType: CONFIG_RECORD_TYPES[1], status: 'fail', errorMessage: 'error' },
+        ]
+        mockAxiosAdapter.onPost().replyOnce(200, {
+          status: 'success',
+          results,
+        })
+        expect(await client.setConfigRecordsValues([])).toEqual(results)
+      })
+    })
   })
 
   describe('validateCredentials', () => {
@@ -444,8 +591,7 @@ describe('SuiteAppClient', () => {
           time: 1000,
         },
       })
-      await client.getSystemInformation()
-      expect(client.getVersionFeatures()).toEqual({ activationKey: false })
+      expect(await client.isFeatureSupported('activationKey')).toBeFalsy()
     })
     it('should set new versionFeatures', async () => {
       mockAxiosAdapter.onPost().reply(200, {
@@ -455,8 +601,7 @@ describe('SuiteAppClient', () => {
           time: 1000,
         },
       })
-      await client.getSystemInformation()
-      expect(client.getVersionFeatures()).toEqual({ activationKey: true })
+      expect(await client.isFeatureSupported('activationKey')).toBeTruthy()
     })
     it('should set versionFeatures once on parallel request', async () => {
       mockAxiosAdapter.onPost().reply(200, {
@@ -466,12 +611,11 @@ describe('SuiteAppClient', () => {
           time: 1000,
         },
       })
-      expect(client.getVersionFeatures()).toBeUndefined()
       await Promise.all([
         client.getSystemInformation(),
         client.getSystemInformation(),
       ])
-      expect(client.getVersionFeatures()).toEqual({ activationKey: true })
+      expect(await client.isFeatureSupported('activationKey')).toBeTruthy()
       expect(mockAxiosAdapter.history.post.length).toEqual(3)
     })
     it('should not set versionFeatures when getting invalid results', async () => {
@@ -481,8 +625,7 @@ describe('SuiteAppClient', () => {
           time: 1000,
         },
       })
-      await client.getSystemInformation()
-      expect(client.getVersionFeatures()).toBeUndefined()
+      expect(await client.isFeatureSupported('activationKey')).toBeFalsy()
     })
   })
 })

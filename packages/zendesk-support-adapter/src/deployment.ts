@@ -29,15 +29,18 @@ import { ZendeskApiConfig } from './config'
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-export const addIdUponAddition = (
-  change: Change<InstanceElement>,
-  apiDefinitions: configUtils.AdapterApiConfig,
-  response: deployment.ResponseResult,
-  dataField?: string,
-): void => {
+export const addIdUponAddition = ({
+  change, apiDefinitions, response, dataField, addAlsoOnModification = false,
+}: {
+  change: Change<InstanceElement>
+  apiDefinitions: configUtils.AdapterApiConfig
+  response: deployment.ResponseResult
+  dataField?: string
+  addAlsoOnModification?: boolean
+}): void => {
   const { transformation } = apiDefinitions
     .types[getChangeData(change).elemID.typeName]
-  if (isAdditionChange(change)) {
+  if (isAdditionChange(change) || addAlsoOnModification) {
     if (Array.isArray(response)) {
       log.warn(
         'Received an array for the response of the deploy. Not updating the id of the element. Action: add. ID: %s',
@@ -106,7 +109,9 @@ export const addIdsToChildrenUponAddition = ({
           change, response, dataField, childFieldName, childUniqueFieldName,
         })
         if (child) {
-          addIdUponAddition(change, apiDefinitions, child)
+          addIdUponAddition({
+            change, apiDefinitions, response: child,
+          })
         }
       }
     })
@@ -127,7 +132,12 @@ export const deployChange = async (
       deployRequests,
       fieldsToIgnore
     )
-    addIdUponAddition(change, apiDefinitions, response, deployRequests?.add?.deployAsField)
+    addIdUponAddition({
+      change,
+      apiDefinitions,
+      response,
+      dataField: deployRequests?.add?.deployAsField,
+    })
     return response
   } catch (err) {
     throw getZendeskError(getChangeData(change).elemID.getFullName(), err)

@@ -178,7 +178,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
             url: `/macros/attachments/${attachment.id}/content`,
             responseType: 'arraybuffer',
           })
-          const content = res.data
+          const content = _.isString(res.data) ? Buffer.from(res.data) : res.data
           if (!_.isBuffer(content)) {
             log.error(`Received invalid response from Zendesk API for attachment content, ${safeJsonStringify(response.data, undefined, 2)}. Not adding macro attachments`)
             return undefined
@@ -204,7 +204,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     )
     const additionalParentChange: Change<InstanceElement>[] = []
     if (parentChanges.length === 0 && childrenChanges.length > 0) {
-      const res = await createAdditionalParentChanges(childrenChanges)
+      const res = await createAdditionalParentChanges(childrenChanges, false)
       if (!res) {
         return {
           deployResult: {
@@ -232,7 +232,13 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         }
         const instance = getChangeData(change)
         const response = await addAttachment(client, instance)
-        addIdUponAddition(change, config.apiDefinitions, response.data, MACRO_ATTACHMENT_DATA_FIELD)
+        addIdUponAddition({
+          change,
+          apiDefinitions: config.apiDefinitions,
+          response: response.data,
+          dataField: MACRO_ATTACHMENT_DATA_FIELD,
+          addAlsoOnModification: true,
+        })
         childFullNameToInstance[instance.elemID.getFullName()] = instance
       }
     )

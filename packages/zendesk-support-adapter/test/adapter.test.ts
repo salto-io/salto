@@ -17,7 +17,7 @@ import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { InstanceElement, isInstanceElement, ReferenceExpression, isRemovalChange,
-  AdapterOperations, toChange, ObjectType, ElemID, getChangeData, BuiltinTypes, isObjectType } from '@salto-io/adapter-api'
+  AdapterOperations, toChange, ObjectType, ElemID, getChangeData, BuiltinTypes } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import mockReplies from './mock_replies.json'
@@ -81,9 +81,6 @@ describe('adapter', () => {
           ),
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
-        expect(elements).toHaveLength(400)
-        expect(elements.filter(isObjectType)).toHaveLength(194)
-        expect(elements.filter(isInstanceElement)).toHaveLength(206)
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'zendesk_support.account_setting',
           'zendesk_support.account_setting.instance',
@@ -233,6 +230,8 @@ describe('adapter', () => {
           'zendesk_support.macro_action__operators',
           'zendesk_support.macro_action__values',
           'zendesk_support.macro_action__values__list',
+          'zendesk_support.macro_attachment',
+          'zendesk_support.macro_attachment.instance.Customer_not_responding__test_txt@ssuuv',
           'zendesk_support.macro_categories',
           'zendesk_support.macro_categories.instance',
           'zendesk_support.macro_category',

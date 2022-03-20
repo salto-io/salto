@@ -39,8 +39,10 @@ export const applyforInstanceChangesOfType = async (
     ))
 }
 
-export const createAdditionalParentChanges = async (childrenChanges: Change<InstanceElement>[]):
-Promise<Change<InstanceElement>[] | undefined> => {
+export const createAdditionalParentChanges = async (
+  childrenChanges: Change<InstanceElement>[],
+  shouldResolve = true,
+): Promise<Change<InstanceElement>[] | undefined> => {
   const childrenInstance = getChangeData(childrenChanges[0])
   const parents = getParents(childrenInstance)
   if (_.isEmpty(parents)
@@ -51,9 +53,10 @@ Promise<Change<InstanceElement>[] | undefined> => {
       childrenChanges.map(getChangeData).map(e => e.elemID.getFullName())}`)
     return undefined
   }
-  return awu(
-    parents.map(parent => toChange({ before: parent.value, after: parent.value }))
-  )
-    .map(change => resolveChangeElement(change, lookupFunc))
-    .toArray()
+  const changes = parents.map(parent => toChange({
+    before: parent.value.clone(), after: parent.value.clone(),
+  }))
+  return shouldResolve
+    ? awu(changes).map(change => resolveChangeElement(change, lookupFunc)).toArray()
+    : changes
 }

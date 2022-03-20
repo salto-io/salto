@@ -17,7 +17,7 @@ import { AdapterAuthentication, ObjectType } from '@salto-io/adapter-api'
 import { addAdapter, installAdapter, LoginStatus, updateCredentials, loadLocalWorkspace } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { getPrivateAdaptersNames } from '../../src/formatter'
-import { serviceAddDef, addAction, listAction, loginAction } from '../../src/commands/service'
+import { serviceAddDef, addAction, listAction, loginAction, accountLoginDef } from '../../src/commands/service'
 import { processOauthCredentials } from '../../src/cli_oauth_authenticator'
 import * as mocks from '../mocks'
 import * as callbacks from '../../src/callbacks'
@@ -173,7 +173,7 @@ describe('service command group', () => {
         Promise.resolve(mockGetCredentialsFromUser(obj)))
     }))
 
-    describe('when calling addService via the command wrapper', () => {
+    describe('when calling service add via the commander wrapper', () => {
       const { action } = serviceAddDef
       let telemetry: mocks.MockTelemetry
 
@@ -205,7 +205,7 @@ describe('service command group', () => {
       })
 
       describe('when using unknown service type', () => {
-        it('should send telemetry with any adapter tags', async () => {
+        it('should send telemetry without any adapter tags', async () => {
           await expect(action({
             ...cliArgs,
             workspacePath: '.',
@@ -582,6 +582,83 @@ describe('service command group', () => {
       jest.spyOn(callbacks, 'getCredentialsFromUser').mockImplementation((obj: ObjectType) =>
         Promise.resolve(mockGetCredentialsFromUser(obj)))
     }))
+
+    describe('when calling login via the commander wrapper', () => {
+      const { action } = accountLoginDef
+      let telemetry: mocks.MockTelemetry
+
+      beforeEach(() => {
+        cliArgs = mocks.mockCliArgs()
+        telemetry = cliArgs.telemetry
+
+        const loadWorkspace = loadLocalWorkspace as jest.MockedFunction<typeof loadLocalWorkspace>
+        loadWorkspace.mockResolvedValue(mocks.mockWorkspace({ uid: 'test' }))
+      })
+
+      describe('when using correct parameters', () => {
+        beforeEach(async () => {
+          await action({
+            ...cliArgs,
+            workspacePath: '.',
+            commanderInput: [
+              'salesforce',
+              {
+                authType: 'basic',
+                loginParameters: [
+                  'username=testUser',
+                  'password=testPassword',
+                  'token=testToken',
+                  'sandbox=y',
+                ],
+              },
+            ],
+          })
+        })
+
+        it('should send success telemetry with adapter tags', () => {
+          const eventTypes: (keyof TelemetryEventNames)[] = ['start', 'success']
+          eventTypes.forEach(eventType => {
+            const eventName = buildEventName('login', eventType)
+            expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
+            expect(telemetry.getEventsMap()[eventName][0].tags).toMatchObject({ 'adapter-salesforce': true, installationID: '1234', app: 'test', workspaceID: 'test' })
+          })
+        })
+      })
+
+      describe('when specifying an unknown account', () => {
+        it('should send telemetry without any adapter tags', async () => {
+          await expect(action({
+            ...cliArgs,
+            workspacePath: '.',
+            commanderInput: ['unknownAdapter', {}],
+          })).rejects.toThrow(new CliError(CliExitCode.UserInputError))
+
+          const eventTypes: (keyof TelemetryEventNames)[] = ['start', 'failure']
+          eventTypes.forEach(eventType => {
+            const eventName = buildEventName('login', eventType)
+            expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
+            expect(telemetry.getEventsMap()[eventName][0].tags).toStrictEqual({ app: 'test', installationID: '1234', workspaceID: 'test' })
+          })
+        })
+      })
+      describe('when login params are incorrect', () => {
+        it('should send telemetry with any adapter tags', async () => {
+          await expect(action({
+            ...cliArgs,
+            workspacePath: '.',
+            commanderInput: ['unknownAdapter', { loginParameters: ['badParam=X'] }],
+          })).rejects.toThrow(new CliError(CliExitCode.AppError))
+
+          const eventTypes: (keyof TelemetryEventNames)[] = ['start', 'failure']
+          eventTypes.forEach(eventType => {
+            const eventName = buildEventName('login', eventType)
+            expect(telemetry.getEventsMap()[eventName]).toHaveLength(1)
+            expect(telemetry.getEventsMap()[eventName][0].tags).toStrictEqual({ app: 'test', installationID: '1234', workspaceID: 'test' })
+          })
+        })
+      })
+    })
+
     describe('when the workspace loads successfully', () => {
       describe('when called with already logged in account', () => {
         beforeEach(async () => {

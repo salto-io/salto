@@ -271,11 +271,11 @@ describe('Command builder', () => {
           const events = cliArgs.telemetry.getEvents()
           expect(events).toContainEqual(expect.objectContaining({
             name: buildEventName('dummy', 'start'),
-            tags: { workspaceID: 'test' },
+            tags: { workspaceID: 'test', installationID: '1234', app: 'test' },
           }))
           expect(events).toContainEqual(expect.objectContaining({
             name: buildEventName('dummy', 'failure'),
-            tags: { workspaceID: 'test' },
+            tags: { workspaceID: 'test', installationID: '1234', app: 'test' },
           }))
         })
       })

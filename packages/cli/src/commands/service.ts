@@ -216,7 +216,7 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
   return CliExitCode.Success
 }
 
-const serviceAddDef = createWorkspaceCommand({
+export const serviceAddDef = createWorkspaceCommand({
   properties: {
     name: 'add',
     description: 'Add a service account to an environment.\n\nUse the --login-parameters option for non interactive execution.\n\nFor more information about supported login parameters please visit:\nhttps://github.com/salto-io/salto/blob/main/packages/cli/user_guide.md#non-interactive-execution',
@@ -308,7 +308,7 @@ export const loginAction: WorkspaceCommandAction<ServiceLoginArgs> = async ({
   return CliExitCode.Success
 }
 
-const accountLoginDef = createWorkspaceCommand({
+export const accountLoginDef = createWorkspaceCommand({
   properties: {
     name: 'login',
     description: 'Login to a service account of an environment.\n\nUse the --login-parameters option for non interactive execution.\n\nFor more information about supported login parameters please visit:\nhttps://github.com/salto-io/salto/blob/main/packages/cli/user_guide.md#non-interactive-execution',

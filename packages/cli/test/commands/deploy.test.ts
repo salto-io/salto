@@ -104,7 +104,7 @@ describe('deploy command', () => {
 
     it('should send telemetry', () => {
       expect(telemetry.getEventsMap()[eventsNames.actionsSuccess]).toHaveLength(1)
-      expect(telemetry.getEventsMap()[eventsNames.actionsSuccess][0].tags).toMatchObject({ 'adapter-salesforce': true })
+      expect(telemetry.getEventsMap()[eventsNames.actionsSuccess][0].tags).toContainEqual(expect.objectContaining({ 'adapter-salesforce': true }))
     })
   })
 

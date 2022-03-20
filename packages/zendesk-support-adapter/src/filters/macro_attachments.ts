@@ -257,6 +257,9 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         leftoverChanges,
       }
     }
+    const additionalParentFullNames = new Set(
+      additionalParentChange.map(getChangeData).map(inst => inst.elemID.getFullName())
+    )
     const resolvedParentChanges = await awu(
       [...parentChanges, ...additionalParentChange]
         .map(change => replaceAttachmentId(change, childFullNameToInstance))
@@ -271,7 +274,10 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     return {
       deployResult: {
         appliedChanges: [
-          ...macroDeployResult.appliedChanges, ...attachmentDeployResult.appliedChanges,
+          ...macroDeployResult.appliedChanges
+            .filter(change =>
+              !additionalParentFullNames.has(getChangeData(change).elemID.getFullName())),
+          ...attachmentDeployResult.appliedChanges,
         ],
         errors: [...macroDeployResult.errors, ...attachmentDeployResult.errors],
       },

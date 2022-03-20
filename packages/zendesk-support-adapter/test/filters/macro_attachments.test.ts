@@ -460,23 +460,20 @@ describe('macro attachment filter', () => {
       )
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
-      expect(res.deployResult.appliedChanges).toHaveLength(2)
-      expect(res.deployResult.appliedChanges[0]).toEqual(
-        { action: 'modify', data: { before: resolvedClonedBeforeMacro, after: resolvedClonedAfterMacro } }
-      )
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
       const resolvedBeforeAttachment = clonedBeforeAttachment.clone()
       const resolvedAfterAttachment = clonedAfterAttachment.clone()
       resolvedBeforeAttachment.value.content = content
       resolvedAfterAttachment.value.content = content
       resolvedAfterAttachment.value.id = newAttachmentId
-      expect(res.deployResult.appliedChanges[1].action).toEqual('modify')
+      expect(res.deployResult.appliedChanges[0].action).toEqual('modify')
       expect(
-        (res.deployResult.appliedChanges[1] as ModificationChange<InstanceElement>)
+        (res.deployResult.appliedChanges[0] as ModificationChange<InstanceElement>)
           .data.before.value
       )
         .toEqual(resolvedBeforeAttachment.value)
       expect(
-        (res.deployResult.appliedChanges[1] as ModificationChange<InstanceElement>)
+        (res.deployResult.appliedChanges[0] as ModificationChange<InstanceElement>)
           .data.after.value
       )
         .toEqual(resolvedAfterAttachment.value)

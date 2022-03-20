@@ -75,6 +75,7 @@ export type DeployRequestConfig = BaseRequestConfig & {
   urlParamsToFields?: UrlParams
   deployAsField?: string
   method: 'post' | 'put' | 'delete' | 'patch'
+  fieldsToIgnore?: string[]
 }
 
 export type DeploymentRequestsByAction = Partial<Record<ActionName, DeployRequestConfig>>

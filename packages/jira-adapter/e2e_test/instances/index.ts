@@ -28,6 +28,7 @@ import { createScreenValues } from './screen'
 import { createWorkflowValues } from './workflow'
 import { createWorkflowSchemeValues } from './workflowScheme'
 import { createSecurityLevelValues, createSecuritySchemeValues } from './securityScheme'
+import { createDashboardValues, createGadget1Values, createGadget2Values } from './dashboard'
 
 export const createInstances = (fetchedElements: Element[]): InstanceElement[][] => {
   const randomString = `createdByOssE2e${String(Date.now()).substring(6)}`
@@ -71,13 +72,23 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
   const dashboard = new InstanceElement(
     randomString,
     findType('Dashboard', fetchedElements),
-    {
-      description: randomString,
-      name: randomString,
-      sharePermissions: [
-        { type: 'authenticated' },
-      ],
-    },
+    createDashboardValues(randomString),
+  )
+
+  const dashboardGadget1 = new InstanceElement(
+    naclCase(`${randomString}__${randomString}-1_2_0`),
+    findType('DashboardGadget', fetchedElements),
+    createGadget1Values(randomString),
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(dashboard.elemID, dashboard)] }
+  )
+
+  const dashboardGadget2 = new InstanceElement(
+    naclCase(`${randomString}__${randomString}-2_2_1`),
+    findType('DashboardGadget', fetchedElements),
+    createGadget2Values(randomString),
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(dashboard.elemID, dashboard)] }
   )
 
   const workflowScheme = new InstanceElement(
@@ -179,6 +190,8 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
     [screen],
     [workflow],
     [dashboard],
+    [dashboardGadget1],
+    [dashboardGadget2],
     [workflowScheme],
     [screenScheme],
     [issueTypeScreenScheme],

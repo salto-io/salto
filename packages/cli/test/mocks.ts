@@ -92,7 +92,7 @@ export const getMockTelemetry = (): MockTelemetry => {
   telemetry.sendCountEvent = async (
     name: string,
     value: number,
-    tags: Partial<Tags> = {},
+    tags: Tags = {},
   ): Promise<void> => {
     events.push({
       name,

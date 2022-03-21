@@ -50,7 +50,7 @@ export type OptionalTags = {
   osPlatform?: string
 }
 
-export type Tags = RequiredTags & OptionalTags & {
+export type Tags = OptionalTags & {
   [name: string]: string | number | boolean | undefined
 }
 
@@ -102,7 +102,7 @@ export type Telemetry = {
 
 export const telemetrySender = (
   config: TelemetryConfig,
-  tags: Tags,
+  tags: RequiredTags & Tags,
   eventNamePrefix = DEFAULT_EVENT_NAME_PREFIX
 ): Telemetry => {
   const newEvents = [] as Array<TelemetryEvent>
@@ -127,7 +127,7 @@ export const telemetrySender = (
     },
   })
 
-  const transformTags = (extraTags: OptionalTags): Partial<Tags> => (
+  const transformTags = (extraTags: OptionalTags): Tags => (
     _({ ...commonTags, ...extraTags }).mapKeys((_v, k) => _.snakeCase(k)).value()
   )
 

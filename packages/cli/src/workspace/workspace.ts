@@ -255,7 +255,7 @@ export const updateWorkspace = async ({
   return { success: true, numberOfAppliedChanges }
 }
 
-export const getWorkspaceTelemetryTags = (ws: Workspace): Partial<Tags> => (
+export const getWorkspaceTelemetryTags = (ws: Workspace): Tags => (
   { workspaceID: ws.uid }
 )
 

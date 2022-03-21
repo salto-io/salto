@@ -96,7 +96,7 @@ export type TelemetryEventNames = {
 }
 
 export type CliTelemetry = {
-  setTags(tags: Partial<Tags>): void
+  setTags(tags: Tags): void
   start(): void
   failure(): void
   success(): void

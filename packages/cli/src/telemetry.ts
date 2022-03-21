@@ -25,8 +25,8 @@ export const buildEventName = (
 ): string => [WORKSPACE, command, action].join(SEPARATOR)
 
 export const getCliTelemetry = (sender: Telemetry, command: string): CliTelemetry => {
-  let tags: Partial<Tags> = {}
-  const setTags = (newTags: Partial<Tags>): void => {
+  let tags: Tags = {}
+  const setTags = (newTags: Tags): void => {
     tags = newTags
   }
 

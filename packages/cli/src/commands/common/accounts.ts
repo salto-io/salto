@@ -31,7 +31,7 @@ export const ACCOUNTS_OPTION: KeyedOption<AccountsArg> = {
   type: 'stringsList',
 }
 
-export const getAdaptersTags = (adapters: string[]): Partial<Tags> => (
+export const getAdaptersTags = (adapters: string[]): Tags => (
   Object.fromEntries(adapters
     .filter(adapter => getSupportedServiceAdapterNames().includes(adapter))
     .map(adapter => [`adapter-${adapter}`, true]))
@@ -43,7 +43,7 @@ const getValidAccounts = (envAccounts: string[], inputAccounts?: string[]): stri
 
 export const getTagsForAccounts = (
   args: { workspace: Workspace } & AccountsArg & EnvArg
-): Partial<Tags> => {
+): Tags => {
   const { workspace, accounts, env } = args
   return getAdaptersTags(
     getValidAccounts(workspace.accounts(env), accounts).map(workspace.getServiceFromAccountName)

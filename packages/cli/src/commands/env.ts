@@ -332,7 +332,7 @@ Promise<CliExitCode> => {
   const { force, yesAll, envName } = args.input
   const configOverrides = getConfigOverrideChanges(args.input)
   const workspace = await loadLocalWorkspace(args.workspacePath, configOverrides)
-  args.cliTelemetry.setExtraTags(getWorkspaceTelemetryTags(workspace))
+  args.cliTelemetry.setTags(getWorkspaceTelemetryTags(workspace))
   args.cliTelemetry.start()
 
   try {

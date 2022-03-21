@@ -38,7 +38,8 @@ describe('telemetry event names', () => {
     const command = 'import'
     const tags = { someTag: 'someValue' }
     cliTelemetry = getCliTelemetry(mockTelemetry, command)
-    cliTelemetry.success(tags)
+    cliTelemetry.setTags(tags)
+    cliTelemetry.success()
 
     expect(mockTelemetry.getEvents()).toHaveLength(1)
     expect(mockTelemetry.getEventsMap()).toHaveProperty([buildEventName(command, 'success')])

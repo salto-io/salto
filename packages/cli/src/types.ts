@@ -96,18 +96,18 @@ export type TelemetryEventNames = {
 }
 
 export type CliTelemetry = {
-  setExtraTags(tags: Partial<Tags>): void
-  start(tags?: Partial<Tags>): void
-  failure(tags?: Partial<Tags>): void
-  success(tags?: Partial<Tags>): void
-  mergeErrors(n: number, tags?: Partial<Tags>): void
-  changes(n: number, tags?: Partial<Tags>): void
-  changesToApply(n: number, tags?: Partial<Tags>): void
-  errors(n: number, tags?: Partial<Tags>): void
-  actionsSuccess(n: number, tags?: Partial<Tags>): void
-  actionsFailure(n: number, tags?: Partial<Tags>): void
-  workspaceSize(n: number, tags?: Partial<Tags>): void
-  stacktrace(err: Error, tags?: Partial<Tags>): void
+  setTags(tags: Partial<Tags>): void
+  start(): void
+  failure(): void
+  success(): void
+  mergeErrors(n: number): void
+  changes(n: number): void
+  changesToApply(n: number): void
+  errors(n: number): void
+  actionsSuccess(n: number): void
+  actionsFailure(n: number): void
+  workspaceSize(n: number): void
+  stacktrace(err: Error): void
 }
 
 type OptionType = {

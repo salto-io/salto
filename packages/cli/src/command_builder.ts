@@ -78,7 +78,7 @@ export type WorkspaceCommandAction<T> = (args: WorkspaceCommandArgs<T>) => Promi
 type WorkspaceCommandDef<T> = {
   properties: CommandOptions<T>
   action: WorkspaceCommandAction<T>
-  extraTelemetryTags?: (args: { workspace: Workspace; input: T}) => Partial<Tags>
+  extraTelemetryTags?: (args: { workspace: Workspace; input: T }) => Partial<Tags>
 }
 
 export const isCommand = (c?: CommandOrGroupDef): c is CommandDef<unknown> =>
@@ -224,7 +224,7 @@ export const createWorkspaceCommand = <T>(
       getConfigOverrideChanges(args.input),
     )
 
-    args.cliTelemetry.setExtraTags({
+    args.cliTelemetry.setTags({
       ...getWorkspaceTelemetryTags(workspace),
       ...extraTelemetryTags?.({ workspace, input: args.input }),
     })

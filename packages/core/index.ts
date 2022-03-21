@@ -40,7 +40,7 @@ export {
 } from './src/app_config'
 export {
   telemetrySender, Telemetry, TelemetryEvent,
-  CountEvent, StackEvent, Tags, isCountEvent,
+  CountEvent, StackEvent, Tags, RequiredTags, OptionalTags, isCountEvent,
   isStackEvent, EVENT_TYPES,
 } from './src/telemetry'
 export { localDirectoryStore } from './src/local-workspace/dir_store'

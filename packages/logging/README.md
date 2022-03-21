@@ -93,7 +93,16 @@ log.globalAssignTags({ requestId: '5', contextData: 4, calcAtRuntime: () => 'cac
 log.globalAssignTags(undefined) // Empties all assigned tags
 ```
 
+#### Assigning logTime decorator globally
 
+Assigning logTime decorator will allow to add a custom hook to all logTime calls.
+
+```typescript
+log.assignGlobalLogTimeDecorator((timedFunc, description) => { 
+  // some tracing logic
+  return timedFunc
+})
+```
 
 ## Configuring the loggers
 

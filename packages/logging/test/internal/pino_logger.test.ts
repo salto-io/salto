@@ -572,6 +572,67 @@ describe('pino based logger', () => {
         expect(line).toContain(`debug ${NAMESPACE} hello func 12 took`)
       })
     })
+
+    describe('assignGlobalLogTimeDecorator', () => {
+      let decoratorCalled = false
+      beforeEach(() => {
+        decoratorCalled = false
+        logger.assignGlobalLogTimeDecorator(inner => {
+          decoratorCalled = true
+          return inner
+        })
+      })
+
+      describe('when a sync method is given', () => {
+        const expectedResult = { hello: 'world' }
+        let result: unknown
+        let startLine: string
+
+        beforeEach(async () => {
+          result = logger.time(() => expectedResult, 'hello func %o', 12)
+          await repo.end();
+          [startLine, line] = consoleStream.contents().split(EOL)
+        })
+
+        it('should return the original value', () => {
+          expect(result).toBe(expectedResult)
+        })
+
+        it('should log the time correctly', () => {
+          expect(startLine).toContain(`debug ${NAMESPACE} hello func 12 starting`)
+          expect(line).toContain(`debug ${NAMESPACE} hello func 12 took`)
+        })
+
+        it('expect decoratorCalled should be true', () => {
+          expect(decoratorCalled).toBeTruthy()
+        })
+      })
+
+      describe('when an async method is given', () => {
+        const expectedResult = { hello: 'world' }
+        let result: unknown
+        let startLine: string
+
+        beforeEach(async () => {
+          result = await logger.time(async () => expectedResult, 'hello func %o', 12)
+          await repo.end();
+          [startLine, line] = consoleStream.contents().split('\n')
+        })
+
+        it('should return the original value', () => {
+          expect(result).toBe(expectedResult)
+        })
+
+        it('should log the time correctly', () => {
+          expect(startLine).toContain(`debug ${NAMESPACE} hello func 12 starting`)
+          expect(line).toContain(`debug ${NAMESPACE} hello func 12 took`)
+        })
+
+        it('expect decoratorCalled should be true', () => {
+          expect(decoratorCalled).toBeTruthy()
+        })
+      })
+    })
   })
   describe('logger creation', () => {
     beforeEach(() => {

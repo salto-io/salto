@@ -62,7 +62,9 @@ export const getAndValidateActiveAccounts = (
   const validAccounts = getValidAccounts(workspaceAccounts, inputAccounts)
   if (inputAccounts) {
     const diffAccounts = _.difference(inputAccounts, validAccounts)
-    throw new Error(`Not all accounts (${diffAccounts.length}) are set up for this workspace`)
+    if (diffAccounts.length > 0) {
+      throw new Error(`Not all accounts (${diffAccounts.length}) are set up for this workspace`)
+    }
   }
 
   return validAccounts

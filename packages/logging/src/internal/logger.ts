@@ -68,7 +68,7 @@ export const resolveConfig = (c: Config): ResolvedConfig => ({
 })
 
 function timeMethod<T>(
-  this: BaseLogger, inner: () => T| Promise<T>, desc: string, ...descArgs: unknown[]
+  this: BaseLogger, inner: () => T | Promise<T>, desc: string, ...descArgs: unknown[]
 ): T | Promise<T> {
   const before = Date.now()
   const formattedDescription = format(desc, ...descArgs)

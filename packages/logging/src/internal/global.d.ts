@@ -3,7 +3,7 @@ import { LogTimeDecorator } from './log-time-decorator'
 
 declare global {
   namespace NodeJS {
-    interface Global{
+    interface Global {
       globalLogTags: LogTags
       globalLogTimeDecorator: LogTimeDecorator
     }

@@ -226,6 +226,7 @@ const closeConnection = async (
 ): Promise<void> => {
   await closeDangalingConnection(connection)
   delete connPool[location]
+  log.debug('closed connection to %s', location)
 }
 
 const closeTmpConnection = async (
@@ -236,6 +237,7 @@ const closeTmpConnection = async (
   await closeDangalingConnection(connection)
   await deleteLocation(tmpLocation)
   delete (tmpDBConnections[location] ?? {})[tmpLocation]
+  log.debug('closed temporary connection to %s', tmpLocation)
 }
 
 export const closeRemoteMapsOfLocation = async (location: string): Promise<void> => {
@@ -260,6 +262,7 @@ export const closeRemoteMapsOfLocation = async (location: string): Promise<void>
       await closeDangalingConnection(conn)
     })
     delete readonlyDBConnectionsPerRemoteMap[location]
+    log.debug('closed read-only connections per remote map of location %s', location)
   }
   locationCaches.del(location)
 }
@@ -315,6 +318,7 @@ const getOpenDBConnection = async (
   isReadOnly: boolean
 ): Promise<rocksdb> => {
   const newDb = getRemoteDbImpl()(loc)
+  log.debug('opening connection to %s, read-only=%s', loc, isReadOnly)
   await promisify(newDb.open.bind(newDb, { readOnly: isReadOnly }))()
   return newDb
 }
@@ -671,6 +675,7 @@ remoteMap.RemoteMapCreator => {
           false,
           DELETE_OPERATION
         )
+        log.debug('flushed %s. results %o', namespace, { writeRes, deleteRes, wasClearCalled })
         const flushRes = writeRes || deleteRes || wasClearCalled
         wasClearCalled = false
         return flushRes

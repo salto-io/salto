@@ -319,6 +319,14 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       },
     },
   },
+  sla_policy_order: {
+    deployRequests: {
+      modify: {
+        url: '/slas/policies/reorder',
+        method: 'put',
+      },
+    },
+  },
   sla_policy_definition: {
     transformation: {
       sourceTypeName: 'sla_policies_definitions__definitions',

@@ -311,6 +311,7 @@ describe('Zendesk support adapter E2E', () => {
         'user_field_order',
         'organization_field_order',
         'ticket_form_order',
+        'sla_policy_order',
       ]
       const orderElementsElemIDs = orderElements.map(name => ({
         type: new ElemID(ZENDESK_SUPPORT, name),

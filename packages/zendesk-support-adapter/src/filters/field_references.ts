@@ -318,6 +318,11 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskSupportFieldReferenceDefi
     target: { type: 'workspace' },
   },
   {
+    src: { field: 'sla_policy_ids', parentTypes: ['sla_policy_order'] },
+    serializationStrategy: 'id',
+    target: { type: 'sla_policy' },
+  },
+  {
     src: { field: 'id', parentTypes: ['workspace__selected_macros'] },
     serializationStrategy: 'id',
     target: { type: 'macro' },

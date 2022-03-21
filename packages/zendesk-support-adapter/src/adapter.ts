@@ -41,6 +41,7 @@ import ticketFormOrderFilter from './filters/reorder/ticket_form'
 import userFieldOrderFilter from './filters/reorder/user_field'
 import organizationFieldOrderFilter from './filters/reorder/organization_field'
 import workspaceOrderFilter from './filters/reorder/workspace'
+import slaPolicyOrderFilter from './filters/reorder/sla_policy'
 import businessHoursScheduleFilter from './filters/business_hours_schedule'
 import collisionErrorsFilter from './filters/collision_errors'
 import accountSettingsFilter from './filters/account_settings'
@@ -80,6 +81,7 @@ export const DEFAULT_FILTERS = [
   userFieldOrderFilter,
   organizationFieldOrderFilter,
   workspaceOrderFilter,
+  slaPolicyOrderFilter,
   businessHoursScheduleFilter,
   collisionErrorsFilter,
   accountSettingsFilter,

@@ -139,11 +139,6 @@ describe('fetch command', () => {
       it('should fetch both accounts', () => {
         expect((fetch as jest.Mock).mock.calls[0][2]).toEqual(['salesforce', 'hubspot'])
       })
-
-      it('should send telemetry events', () => {
-        expect(telemetry.getEventsMap()[eventsNames.changes]).toHaveLength(1)
-        expect(telemetry.getEventsMap()[eventsNames.changes][0].tags).toMatchObject({ 'adapter-salesforce': true, 'adapter-hubspot': true })
-      })
     })
 
     describe('fetch command', () => {

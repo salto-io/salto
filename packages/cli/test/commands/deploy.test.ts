@@ -23,7 +23,6 @@ import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
 import { action } from '../../src/commands/deploy'
 import { version as currentVersion } from '../../src/generated/version.json'
-import { buildEventName } from '../../src/telemetry'
 
 const { InMemoryRemoteMap } = remoteMap
 const { createInMemoryElementSource } = elementSource
@@ -52,15 +51,11 @@ jest.mock('@salto-io/core', () => ({
 }))
 
 const commandName = 'deploy'
-const eventsNames = {
-  actionsSuccess: buildEventName(commandName, 'actionsSuccess'),
-}
 
 describe('deploy command', () => {
   let workspace: mocks.MockWorkspace
   let output: mocks.MockCliOutput
   let cliCommandArgs: mocks.MockCommandArgs
-  let telemetry: mocks.MockTelemetry
   const accounts = ['salesforce']
   const mockGetUserBooleanInput = callbacks.getUserBooleanInput as jest.Mock
   const mockShouldCancel = callbacks.shouldCancelCommand as jest.Mock
@@ -69,7 +64,6 @@ describe('deploy command', () => {
     const cliArgs = mocks.mockCliArgs()
     cliCommandArgs = mocks.mockCliCommandArgs(commandName, cliArgs)
     output = cliArgs.output
-    telemetry = cliArgs.telemetry
     workspace = mocks.mockWorkspace({})
     workspace.getStateRecency.mockImplementation(async accountName => ({
       serviceName: accountName, accountName, status: 'Valid', date: new Date(),
@@ -100,11 +94,6 @@ describe('deploy command', () => {
 
     it('should print success message', () => {
       expect(output.stdout.content).toContain('Deployment succeeded')
-    })
-
-    it('should send telemetry', () => {
-      expect(telemetry.getEventsMap()[eventsNames.actionsSuccess]).toHaveLength(1)
-      expect(telemetry.getEventsMap()[eventsNames.actionsSuccess][0].tags).toContainEqual(expect.objectContaining({ 'adapter-salesforce': true }))
     })
   })
 

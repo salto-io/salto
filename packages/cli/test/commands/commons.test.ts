@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Tags } from '@salto-io/core'
 import { DetailedChange, ElemID, Value } from '@salto-io/adapter-api'
 import * as mocks from '../mocks'
 import { getAndValidateActiveAccounts, getTagsForAccounts } from '../../src/commands/common/accounts'

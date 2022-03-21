@@ -288,6 +288,14 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       },
     },
   },
+  automation_order: {
+    deployRequests: {
+      modify: {
+        url: '/automations/update_many',
+        method: 'put',
+      },
+    },
+  },
   sla_policy: {
     transformation: {
       sourceTypeName: 'sla_policies__sla_policies',

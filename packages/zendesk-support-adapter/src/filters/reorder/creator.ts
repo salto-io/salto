@@ -18,24 +18,38 @@ import {
   Element, isInstanceElement, InstanceElement, ObjectType, ElemID, ListType, isObjectType,
   BuiltinTypes, ReferenceExpression, Change, getChangeData, isModificationChange, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
-import { elements as elementsUtils } from '@salto-io/adapter-components'
+import { elements as elementsUtils, config as configUtils } from '@salto-io/adapter-components'
 import { pathNaclCase } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { ZENDESK_SUPPORT } from '../../constants'
 import { deployChange } from '../../deployment'
 import { API_DEFINITIONS_CONFIG } from '../../config'
+import ZendeskClient from '../../client/client'
 
 const { TYPES_PATH, SUBTYPES_PATH, RECORDS_PATH } = elementsUtils
+
+export type DeployFuncType = (
+  change: Change<InstanceElement>,
+  client: ZendeskClient,
+  apiDefinitions: configUtils.AdapterApiConfig
+) => Promise<unknown>
 
 type ReorderFilterCreatorParams = {
   typeName: string
   orderFieldName: string
+  iterateesToSortBy?: Array<_.Many<_.ListIteratee<InstanceElement>>>
+  deployFunc?: DeployFuncType
 }
 
 export const createOrderTypeName = (typeName: string): string => `${typeName}_order`
 
 export const createReorderFilterCreator = (
-  { typeName, orderFieldName }: ReorderFilterCreatorParams
+  {
+    typeName,
+    orderFieldName,
+    iterateesToSortBy = [instance => instance.value.position],
+    deployFunc = deployChange,
+  }: ReorderFilterCreatorParams
 ): FilterCreator => ({ config, client }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     const orderTypeName = createOrderTypeName(typeName)
@@ -49,7 +63,7 @@ export const createReorderFilterCreator = (
       elements
         .filter(isInstanceElement)
         .filter(e => e.elemID.typeName === typeName),
-      inst => inst.value.position
+      ...iterateesToSortBy,
     )
       .map(inst => {
         delete inst.value.position
@@ -103,7 +117,7 @@ export const createReorderFilterCreator = (
           `only modify change is allowed on ${orderTypeName}. Found ${change.action} action`,
         )
       }
-      await deployChange(change, client, config[API_DEFINITIONS_CONFIG])
+      await deployFunc(change, client, config[API_DEFINITIONS_CONFIG])
     } catch (err) {
       if (!_.isError(err)) {
         throw err

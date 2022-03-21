@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { Tags } from '@salto-io/core'
 import { DetailedChange, ElemID, Value } from '@salto-io/adapter-api'
 import * as mocks from '../mocks'
-import { getAndValidateActiveAccounts } from '../../src/commands/common/accounts'
+import { getAndValidateActiveAccounts, getTagsForAccounts } from '../../src/commands/common/accounts'
 import { getConfigOverrideChanges } from '../../src/commands/common/config_override'
 
 describe('Commands commons tests', () => {
@@ -44,6 +45,37 @@ describe('Commands commons tests', () => {
 
     it('Should throw an error if input accounts were provided', () => {
       expect(() => getAndValidateActiveAccounts(mockWorkspace, ['wtfService'])).toThrow()
+    })
+  })
+  describe('getTagsForAccounts', () => {
+    let workspace: mocks.MockWorkspace
+
+    beforeEach(() => {
+      workspace = mocks.mockWorkspace({})
+      workspace.accounts = jest.fn().mockImplementation(
+        (env?: string): string[] => (env ? ['workato'] : ['salesforce', 'hubspot'])
+      )
+    })
+    describe('when not providing specific accounts', () => {
+      it('should return tags for all the current env accounts', () => {
+        expect(
+          getTagsForAccounts({ workspace })
+        ).toStrictEqual({ 'adapter-salesforce': true, 'adapter-hubspot': true })
+      })
+    })
+    describe('when using a different env', () => {
+      it('should return tags for the other env accounts', () => {
+        expect(
+          getTagsForAccounts({ workspace, env: 'inactive' })
+        ).toStrictEqual({ 'adapter-workato': true })
+      })
+    })
+    describe('when giving unknown accounts', () => {
+      it('should return adapter tags only for valid accounts', () => {
+        expect(
+          getTagsForAccounts({ workspace, accounts: ['salesforce', 'unknownService'] })
+        ).toStrictEqual({ 'adapter-salesforce': true })
+      })
     })
   })
   describe('getConfigOverrideChanges', () => {

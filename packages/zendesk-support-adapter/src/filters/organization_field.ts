@@ -35,26 +35,24 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       relevantChanges,
       change => getChangeData(change).elemID.typeName === ORG_FIELD_TYPE_NAME,
     )
-    const additionalParentChange: Change<InstanceElement>[] = []
-    if (parentChanges.length === 0 && childrenChanges.length > 0) {
-      const res = await createAdditionalParentChanges(childrenChanges)
-      if (!res) {
-        return {
-          deployResult: {
-            appliedChanges: [],
-            errors: childrenChanges
-              .map(getChangeData)
-              .map(e => new Error(
-                `Failed to update ${e.elemID.getFullName()} since it has no valid parent`
-              )),
-          },
-          leftoverChanges,
-        }
+    const additionalParentChanges = parentChanges.length === 0 && childrenChanges.length > 0
+      ? await createAdditionalParentChanges(childrenChanges)
+      : []
+    if (additionalParentChanges === undefined) {
+      return {
+        deployResult: {
+          appliedChanges: [],
+          errors: childrenChanges
+            .map(getChangeData)
+            .map(e => new Error(
+              `Failed to update ${e.elemID.getFullName()} since it has no valid parent`
+            )),
+        },
+        leftoverChanges,
       }
-      additionalParentChange.push(...res)
     }
     const deployResult = await deployChanges(
-      [...parentChanges, ...additionalParentChange],
+      [...parentChanges, ...additionalParentChanges],
       async change => {
         const response = await deployChange(
           change, client, config.apiDefinitions
@@ -70,7 +68,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       }
     )
     const additionalParentIds = new Set(
-      additionalParentChange.map(getChangeData).map(e => e.elemID.getFullName())
+      additionalParentChanges.map(getChangeData).map(e => e.elemID.getFullName())
     )
     return {
       deployResult: {

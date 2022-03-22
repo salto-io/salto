@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import {
   AtLeastOne, RequiredMember, hasMember, filterHasMember, ValueOf, Bean, isArrayOfType, TypeGuard,
+  isBuffer,
 } from '../src/types'
 
 // Note: some of the tests here are compile-time, so the actual assertions may look weird.
@@ -125,6 +126,14 @@ describe('types', () => {
     it('should return true if the array is empty', () => {
       const falsy: Guard = (_t: unknown): _t is MyType => false
       expect(isArrayOfType([], falsy)).toBeTruthy()
+    })
+  })
+  describe('isBuffer', () => {
+    it('should return true if the value is buffer', () => {
+      expect(isBuffer(Buffer.from('test'))).toBeTruthy()
+    })
+    it('should return false if the value is not a buffer', () => {
+      expect('test').toBeTruthy()
     })
   })
 })

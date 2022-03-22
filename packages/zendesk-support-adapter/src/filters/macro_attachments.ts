@@ -24,7 +24,7 @@ import {
 import { naclCase, pathNaclCase, resolveChangeElement, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
-import { values, collections } from '@salto-io/lowerdash'
+import { values, collections, types } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { ZENDESK_SUPPORT } from '../constants'
 import { addIdUponAddition, deployChange, deployChanges } from '../deployment'
@@ -147,48 +147,64 @@ const createAttachmentType = (hidden?: boolean): ObjectType =>
     path: [ZENDESK_SUPPORT, TYPES_PATH, SUBTYPES_PATH, MACRO_ATTACHMENT_TYPE_NAME],
   })
 
+const getAttachmentContent = async ({
+  client, attachment, macro, attachmentType,
+}: {
+  client: ZendeskClient
+  attachment: Attachment
+  macro: InstanceElement
+  attachmentType: ObjectType
+}): Promise<InstanceElement | undefined> => {
+  const res = await client.getSinglePage({
+    url: `/macros/attachments/${attachment.id}/content`,
+    responseType: 'arraybuffer',
+  })
+  const content = _.isString(res.data) ? Buffer.from(res.data) : res.data
+  if (!types.isBuffer(content)) {
+    log.error(`Received invalid response from Zendesk API for attachment content, ${safeJsonStringify(res.data, undefined, 2)}. Not adding macro attachments`)
+    return undefined
+  }
+  return createAttachmentInstance({ attachment, attachmentType, macro, content })
+}
+
+const getMacroAttachments = async ({
+  client, macro, attachmentType,
+}: {
+  client: ZendeskClient
+  macro: InstanceElement
+  attachmentType: ObjectType
+}): Promise<InstanceElement[]> => {
+  // We are ok with calling getSinglePage here
+  //  because a macro can be associated with up to five attachments.
+  const response = await client.getSinglePage({
+    url: `/macros/${macro.value.id}/attachments`,
+  })
+  if (Array.isArray(response.data)) {
+    log.error(`Received invalid response from Zendesk API, ${safeJsonStringify(response.data, undefined, 2)}. Not adding macro attachments`)
+    return []
+  }
+  const attachments = response.data.macro_attachments
+  if (!isAttachments(attachments)) {
+    return []
+  }
+  return (await Promise.all(
+    attachments.map(async attachment =>
+      getAttachmentContent({ client, attachment, macro, attachmentType }))
+  )).filter(values.isDefined)
+}
+
 /**
  * Adds the macro attachments instances
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
   onFetch: async elements => {
-    // We are ok with picking the first instance because triggerDefinition is a singleton
     const macrosWithAttachments = elements
       .filter(isInstanceElement)
       .filter(e => e.elemID.typeName === MACRO_TYPE_NAME)
       .filter(e => !_.isEmpty(e.value[ATTACHMENTS_FIELD_NAME]))
     const attachmentType = createAttachmentType(config.fetch.hideTypes)
-    const macroAttachments = (await Promise.all(macrosWithAttachments.map(async macro => {
-      // We are ok with calling getSinglePage here
-      //  because a macro can be associated with up to five attachments.
-      const response = await client.getSinglePage({
-        url: `/macros/${macro.value.id}/attachments`,
-      })
-      if (Array.isArray(response.data)) {
-        log.error(`Received invalid response from Zendesk API, ${safeJsonStringify(response.data, undefined, 2)}. Not adding macro attachments`)
-        return []
-      }
-      const attachments = response.data.macro_attachments
-      if (!isAttachments(attachments)) {
-        return []
-      }
-      return (await Promise.all(
-        attachments.map(async attachment => {
-          const res = await client.getSinglePage({
-            url: `/macros/attachments/${attachment.id}/content`,
-            responseType: 'arraybuffer',
-          })
-          const content = _.isString(res.data) ? Buffer.from(res.data) : res.data
-          if (!_.isBuffer(content)) {
-            log.error(`Received invalid response from Zendesk API for attachment content, ${safeJsonStringify(response.data, undefined, 2)}. Not adding macro attachments`)
-            return undefined
-          }
-          return createAttachmentInstance({
-            attachment, attachmentType, macro, content: content as unknown as Buffer,
-          })
-        })
-      )).filter(values.isDefined)
-    }))).flat()
+    const macroAttachments = (await Promise.all(macrosWithAttachments
+      .map(async macro => getMacroAttachments({ client, attachmentType, macro })))).flat()
     _.remove(elements, element => element.elemID.isEqual(attachmentType.elemID))
     elements.push(attachmentType, ...macroAttachments)
   },
@@ -202,23 +218,21 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       relevantChanges,
       change => getChangeData(change).elemID.typeName === MACRO_ATTACHMENT_TYPE_NAME
     )
-    const additionalParentChange: Change<InstanceElement>[] = []
-    if (parentChanges.length === 0 && childrenChanges.length > 0) {
-      const res = await createAdditionalParentChanges(childrenChanges, false)
-      if (!res) {
-        return {
-          deployResult: {
-            appliedChanges: [],
-            errors: childrenChanges
-              .map(getChangeData)
-              .map(e => new Error(
-                `Failed to update ${e.elemID.getFullName()} since it has no valid parent`
-              )),
-          },
-          leftoverChanges,
-        }
+    const additionalParentChanges = parentChanges.length === 0 && childrenChanges.length > 0
+      ? await createAdditionalParentChanges(childrenChanges, false)
+      : []
+    if (additionalParentChanges === undefined) {
+      return {
+        deployResult: {
+          appliedChanges: [],
+          errors: childrenChanges
+            .map(getChangeData)
+            .map(e => new Error(
+              `Failed to update ${e.elemID.getFullName()} since it has no valid parent`
+            )),
+        },
+        leftoverChanges,
       }
-      additionalParentChange.push(...res)
     }
     const childFullNameToInstance: Record<string, InstanceElement> = {}
     const resolvedChildrenChanges = await awu(childrenChanges)
@@ -250,7 +264,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           errors: [...parentChanges
             .map(getChangeData)
             .map(e => new Error(
-              `Failed to update ${e.elemID.getFullName()} since the deployment of it's attachments failed`
+              `Failed to update ${e.elemID.getFullName()} since the deployment of its attachments failed`
             )),
           ...attachmentDeployResult.errors],
         },
@@ -258,13 +272,12 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       }
     }
     const additionalParentFullNames = new Set(
-      additionalParentChange.map(getChangeData).map(inst => inst.elemID.getFullName())
+      additionalParentChanges.map(getChangeData).map(inst => inst.elemID.getFullName())
     )
-    const resolvedParentChanges = await awu(
-      [...parentChanges, ...additionalParentChange]
-        .map(change => replaceAttachmentId(change, childFullNameToInstance))
-    )
-      .map(change => resolveChangeElement(change, lookupFunc)).toArray()
+    const resolvedParentChanges = await awu([...parentChanges, ...additionalParentChanges])
+      .map(change => replaceAttachmentId(change, childFullNameToInstance))
+      .map(change => resolveChangeElement(change, lookupFunc))
+      .toArray()
     const macroDeployResult = await deployChanges(
       resolvedParentChanges,
       async change => {

@@ -60,7 +60,7 @@ describe('macro', () => {
       elemID: clonedInstance.elemID,
       severity: 'Error',
       message: 'Can not have more than 5 attachments in a single macro',
-      detailedMessage: `Can not have more than 5 attachments in a ${clonedInstance.elemID.getFullName()}`,
+      detailedMessage: `Can not have more than 5 attachments in ${clonedInstance.elemID.getFullName()}`,
     }])
   })
   it('should not return an error when we change macro to have 5 attachments or less', async () => {

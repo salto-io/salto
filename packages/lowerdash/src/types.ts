@@ -13,6 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
+
 export type AtLeastOne<T, U = { [K in keyof T]: Pick<T, K> }> = Partial<T> & U[keyof U]
 
 export type RequiredMember<T, M extends keyof T> = {
@@ -86,3 +88,7 @@ export const isArrayOfType = <T>(
 
 export type AllowOnly<T, K extends keyof T> = Pick<T, K> & { [P in keyof Omit<T, K>]?: never };
 export type OneOf<T, K = keyof T> = K extends keyof T ? AllowOnly<T, K> : never
+
+export function isBuffer(value: unknown): value is Buffer {
+  return _.isBuffer(value)
+}

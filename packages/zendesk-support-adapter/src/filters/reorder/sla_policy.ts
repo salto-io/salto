@@ -17,7 +17,7 @@ import { SLA_POLICY_TYPE_NAME } from '../sla_policy'
 import { createReorderFilterCreator } from './creator'
 
 /**
- * Add sla policy order element with all the user fields ordered
+ * Add sla policy order element with all the sla policies ordered
  */
 const filterCreator = createReorderFilterCreator({
   typeName: SLA_POLICY_TYPE_NAME,

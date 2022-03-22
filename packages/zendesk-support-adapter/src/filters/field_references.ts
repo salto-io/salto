@@ -323,6 +323,11 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskSupportFieldReferenceDefi
     target: { type: 'sla_policy' },
   },
   {
+    src: { field: 'ids', parentTypes: ['automation_order'] },
+    serializationStrategy: 'id',
+    target: { type: 'automation' },
+  },
+  {
     src: { field: 'id', parentTypes: ['workspace__selected_macros'] },
     serializationStrategy: 'id',
     target: { type: 'macro' },

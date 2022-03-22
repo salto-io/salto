@@ -81,9 +81,9 @@ describe('adapter', () => {
           ),
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
-        expect(elements).toHaveLength(398)
-        expect(elements.filter(isObjectType)).toHaveLength(193)
-        expect(elements.filter(isInstanceElement)).toHaveLength(205)
+        expect(elements).toHaveLength(400)
+        expect(elements.filter(isObjectType)).toHaveLength(194)
+        expect(elements.filter(isInstanceElement)).toHaveLength(206)
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'zendesk_support.account_setting',
           'zendesk_support.account_setting.instance',
@@ -139,6 +139,8 @@ describe('adapter', () => {
           'zendesk_support.automation__conditions',
           'zendesk_support.automation__conditions__all',
           'zendesk_support.automation__conditions__any',
+          'zendesk_support.automation_order',
+          'zendesk_support.automation_order.instance',
           'zendesk_support.automations',
           'zendesk_support.brand',
           'zendesk_support.brand.instance.myBrand',
@@ -536,7 +538,7 @@ describe('adapter', () => {
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
         const instances = elements.filter(isInstanceElement)
-        expect(instances).toHaveLength(9)
+        expect(instances).toHaveLength(10)
         expect(instances.map(e => e.elemID.getFullName()).sort())
           .toEqual([
             'zendesk_support.group.instance.Support',
@@ -544,12 +546,13 @@ describe('adapter', () => {
             'zendesk_support.group.instance.Support4',
             'zendesk_support.group.instance.Support5',
             // The order element are always created on fetch
+            'zendesk_support.automation_order.instance',
             'zendesk_support.organization_field_order.instance',
             'zendesk_support.sla_policy_order.instance',
             'zendesk_support.ticket_form_order.instance',
             'zendesk_support.user_field_order.instance',
             'zendesk_support.workspace_order.instance',
-          ])
+          ].sort())
       })
     })
     it('should use elemIdGetter', async () => {

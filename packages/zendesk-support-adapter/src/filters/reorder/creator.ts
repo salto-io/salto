@@ -32,12 +32,12 @@ export type DeployFuncType = (
   change: Change<InstanceElement>,
   client: ZendeskClient,
   apiDefinitions: configUtils.AdapterApiConfig
-) => Promise<unknown>
+) => Promise<void>
 
 type ReorderFilterCreatorParams = {
   typeName: string
   orderFieldName: string
-  iterateesToSortBy?: Array<_.Many<_.ListIteratee<InstanceElement>>>
+  additionalIterateesToSortBy?: Array<_.Many<_.ListIteratee<InstanceElement>>>
   deployFunc?: DeployFuncType
 }
 
@@ -47,8 +47,10 @@ export const createReorderFilterCreator = (
   {
     typeName,
     orderFieldName,
-    iterateesToSortBy = [instance => instance.value.position],
-    deployFunc = deployChange,
+    additionalIterateesToSortBy = [],
+    deployFunc = async (change, client, apiDefinitions) => {
+      await deployChange(change, client, apiDefinitions)
+    },
   }: ReorderFilterCreatorParams
 ): FilterCreator => ({ config, client }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
@@ -63,7 +65,8 @@ export const createReorderFilterCreator = (
       elements
         .filter(isInstanceElement)
         .filter(e => e.elemID.typeName === typeName),
-      ...iterateesToSortBy,
+      instance => instance.value.position,
+      ...additionalIterateesToSortBy,
     )
       .map(inst => {
         delete inst.value.position

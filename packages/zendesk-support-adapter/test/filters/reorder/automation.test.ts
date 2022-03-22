@@ -22,7 +22,7 @@ import { DEFAULT_CONFIG, DEFAULT_INCLUDE_ENDPOINTS, FETCH_CONFIG } from '../../.
 import ZendeskClient from '../../../src/client/client'
 import { ZENDESK_SUPPORT } from '../../../src/constants'
 import { paginate } from '../../../src/client/pagination'
-import filterCreator from '../../../src/filters/reorder/automation'
+import filterCreator, { ORDER_FIELD_NAME } from '../../../src/filters/reorder/automation'
 import { createOrderTypeName } from '../../../src/filters/reorder/creator'
 
 const mockDeployChange = jest.fn()
@@ -77,15 +77,15 @@ describe('automation reorder filter', () => {
           'zendesk_support.automation_order',
           'zendesk_support.automation_order.instance',
         ])
-      const ticketFormOrderType = elements
+      const automationOrderType = elements
         .find(e => isObjectType(e) && e.elemID.typeName === orderTypeName)
-      expect(ticketFormOrderType).toBeDefined()
-      const ticketFormOrderInstance = elements
+      expect(automationOrderType).toBeDefined()
+      const automationOrderInstance = elements
         .find(e => isInstanceElement(e) && e.elemID.typeName === orderTypeName)
-      expect(ticketFormOrderInstance).toBeDefined()
-      expect(ticketFormOrderInstance?.elemID.name).toEqual(ElemID.CONFIG_NAME)
-      expect((ticketFormOrderInstance as InstanceElement)?.value)
-        .toEqual({ ids: [
+      expect(automationOrderInstance).toBeDefined()
+      expect(automationOrderInstance?.elemID.name).toEqual(ElemID.CONFIG_NAME)
+      expect((automationOrderInstance as InstanceElement)?.value)
+        .toEqual({ [ORDER_FIELD_NAME]: [
           new ReferenceExpression(inst1.elemID, inst1),
           new ReferenceExpression(inst3.elemID, inst3),
           new ReferenceExpression(inst2.elemID, inst2),
@@ -136,10 +136,10 @@ describe('automation reorder filter', () => {
   describe('deploy', () => {
     const orderType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, orderTypeName) })
     const before = new InstanceElement(
-      ElemID.CONFIG_NAME, orderType, { ids: [11, 22, 33] },
+      ElemID.CONFIG_NAME, orderType, { [ORDER_FIELD_NAME]: [11, 22, 33] },
     )
     const after = new InstanceElement(
-      ElemID.CONFIG_NAME, orderType, { ids: [22, 33, 11] },
+      ElemID.CONFIG_NAME, orderType, { [ORDER_FIELD_NAME]: [22, 33, 11] },
     )
     const change: ModificationChange<InstanceElement> = {
       action: 'modify',

@@ -48,8 +48,9 @@ export const getDiagnostics = async (
       .map(err => workspace.transformError(err))
       .map(async errPromise => {
         const err = await errPromise
-        return err.sourceLocations.map(range => (
-          {
+        return err.sourceLocations.map(sl => {
+          const range = sl.subRange || sl.sourceRange
+          return {
             filename: range.filename,
             severity: err.severity,
             msg: err.message,
@@ -57,7 +58,8 @@ export const getDiagnostics = async (
               start: range.start,
               end: range.end,
             },
-          }))
+          }
+        })
       })
   )
 

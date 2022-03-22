@@ -24,7 +24,7 @@ import {
   isStaticFile,
 } from '@salto-io/adapter-api'
 import { Plan, PlanItem, FetchChange, FetchResult, LocalChange, getSupportedServiceAdapterNames } from '@salto-io/core'
-import { errors, parser, WorkspaceComponents, StateRecency } from '@salto-io/workspace'
+import { errors, SourceLocation, WorkspaceComponents, StateRecency } from '@salto-io/workspace'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import Prompts from './prompts'
@@ -59,10 +59,10 @@ export const formatWordsSeries = (words: string[]): string => (words.length > 1
   * Format workspace errors
   */
 
-const formatSourceLocation = (sr: Readonly<parser.SourceRange>): string =>
-  `${chalk.underline(sr.filename)}(${chalk.cyan(`line: ${sr.start.line}`)})\n`
+const formatSourceLocation = (sl: Readonly<SourceLocation>): string =>
+  `${chalk.underline(sl.sourceRange.filename)}(${chalk.cyan(`line: ${sl.sourceRange.start.line}`)})\n`
 
-const formatSourceLocations = (sourceLocations: ReadonlyArray<parser.SourceRange>): string =>
+const formatSourceLocations = (sourceLocations: ReadonlyArray<SourceLocation>): string =>
   (sourceLocations.length > 0
     ? `\n on ${sourceLocations.map(formatSourceLocation).join('\n and ')}`
     : '')

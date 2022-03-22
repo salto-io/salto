@@ -577,9 +577,9 @@ describe('workspace', () => {
       expect(wsErros.message).toMatch(mergeError)
       expect(wsErros.severity).toBe('Error')
       const firstSourceLocation = wsErros.sourceLocations[0]
-      expect(firstSourceLocation.filename).toBe('file.nacl')
-      expect(firstSourceLocation.start).toEqual({ byte: 26, col: 3, line: 3 })
-      expect(firstSourceLocation.end).toEqual({ byte: 79, col: 4, line: 5 })
+      expect(firstSourceLocation.sourceRange.filename).toBe('file.nacl')
+      expect(firstSourceLocation.sourceRange.start).toEqual({ byte: 26, col: 3, line: 3 })
+      expect(firstSourceLocation.sourceRange.end).toEqual({ byte: 79, col: 4, line: 5 })
     })
     it('should have merge error when hidden values are added to nacl', async () => {
       const obj = new ObjectType({

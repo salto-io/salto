@@ -58,8 +58,14 @@ const STATE_SOURCE_PREFIX = 'state_element_source'
 export const isValidEnvName = (envName: string): boolean =>
   /^[a-z0-9-_.!\s]+$/i.test(envName) && envName.length <= MAX_ENV_NAME_LEN
 
+
+export type SourceLocation = {
+  sourceRange: SourceRange
+  subRange?: SourceRange
+}
+
 export type WorkspaceError<T extends SaltoError> = Readonly<T & {
-  sourceLocations: SourceRange[]
+  sourceLocations: SourceLocation[]
 }>
 
 type RecencyStatus = 'Old' | 'Nonexistent' | 'Valid'
@@ -742,17 +748,20 @@ export const loadWorkspace = async (
 
   const transformParseError = async (error: ParseError): Promise<WorkspaceError<SaltoError>> => ({
     ...error,
-    sourceLocations: [error.context],
+    sourceLocations: [{ sourceRange: error.context, subRange: error.subject }],
   })
 
   const transformToWorkspaceError = async <T extends SaltoElementError>(saltoElemErr: T):
     Promise<Readonly<WorkspaceError<T>>> => {
     const sourceRanges = await getErrorSourceRange(saltoElemErr)
+    const sourceLocations: SourceLocation[] = await awu(sourceRanges)
+      .map(sourceRange => ({ sourceRange }))
+      .toArray()
 
     return {
       ...saltoElemErr,
       message: saltoElemErr.message,
-      sourceLocations: sourceRanges,
+      sourceLocations,
     }
   }
   const transformError = async (error: SaltoError): Promise<WorkspaceError<SaltoError>> => {

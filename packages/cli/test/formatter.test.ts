@@ -28,18 +28,25 @@ import Prompts from '../src/prompts'
 
 describe('formatter', () => {
   const workspaceErrorWithSourceLocations: wsErrors.WorkspaceError<SaltoError> = {
-    sourceLocations: [
-      {
+    sourceLocations: [{
+      sourceRange: {
         start: { byte: 20, col: 10, line: 2 },
         end: { byte: 30, col: 10, line: 3 },
         filename: 'test.nacl',
       },
-      {
+      subRange: {
+        start: { line: 2, col: 3, byte: 30 },
+        end: { line: 2, col: 4, byte: 31 },
+        filename: 'test.nacl',
+      },
+    },
+    {
+      sourceRange: {
         start: { byte: 100, col: 10, line: 10 },
         end: { byte: 150, col: 10, line: 15 },
         filename: 'test.nacl',
       },
-    ],
+    }],
     message: 'This is my error',
     severity: 'Error',
   }
@@ -132,7 +139,7 @@ describe('formatter', () => {
         .toContain('Error')
       expect(output)
         .toMatch(new RegExp(`.*${changeErrors[0].detailedMessage}`, 's'))
-      expect(output).toMatch(new RegExp(`.*${workspaceErrorWithSourceLocations.sourceLocations[0].filename}`, 's'))
+      expect(output).toMatch(new RegExp(`.*${workspaceErrorWithSourceLocations.sourceLocations[0].sourceRange.filename}`, 's'))
     })
     it('should have grouped validations', () => {
       const changeErrors: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [{

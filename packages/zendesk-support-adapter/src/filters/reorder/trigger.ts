@@ -1,0 +1,166 @@
+/*
+*                      Copyright 2022 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+import _ from 'lodash'
+import Joi from 'joi'
+import {
+  getChangeData, InstanceElement, isInstanceElement, isObjectType, Element, ReferenceExpression,
+  ObjectType, ElemID, ListType, BuiltinTypes, CORE_ANNOTATIONS,
+} from '@salto-io/adapter-api'
+import { applyFunctionToChangeData, pathNaclCase } from '@salto-io/adapter-utils'
+import { values } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
+import { elements as elementsUtils } from '@salto-io/adapter-components'
+import { FilterCreator } from '../../filter'
+import { deployChange } from '../../deployment'
+import { createOrderTypeName, createReorderFilterCreator, DeployFuncType } from './creator'
+import { ZENDESK_SUPPORT } from '../../constants'
+
+export const TRIGGER_TYPE_NAME = 'trigger'
+export const TRIGGER_CATEGORY_TYPE_NAME = 'trigger_category'
+
+const { RECORDS_PATH, SUBTYPES_PATH, TYPES_PATH } = elementsUtils
+const log = logger(module)
+
+type TriggerOrderEntry = {
+  category?: string
+  ids: number[]
+}
+const EXPECTED_TRIGGER_ORDER_ENTRY_SCHEMA = Joi.array().items(Joi.object({
+  category: Joi.string().optional(),
+  ids: Joi.array().items(Joi.number()),
+})).required()
+
+const areTriggerOrderEntries = (value: unknown): value is TriggerOrderEntry[] => {
+  const { error } = EXPECTED_TRIGGER_ORDER_ENTRY_SCHEMA.validate(value)
+  if (error !== undefined) {
+    log.warn(`Received an invalid response for the users values: ${error.message}`)
+    return false
+  }
+  return true
+}
+
+export const deployFunc: DeployFuncType = async (change, client, apiDefinitions) => {
+  const clonedChange = await applyFunctionToChangeData(change, inst => inst.clone())
+  const instance = getChangeData(clonedChange)
+  const { order } = instance.value
+  if (!areTriggerOrderEntries(order)) {
+    throw new Error('trigger_order\' order field has an invalid format')
+  }
+  const triggerCategories = order
+    .map(entry => entry.category)
+    .filter(values.isDefined)
+    .map((id, position) => ({ id: id.toString(), position: position + 1 }))
+  const triggers = order
+    .map(entry => (entry.ids ?? []).map((id, position) => ({
+      id: id.toString(),
+      position: position + 1,
+      ...(entry.category !== undefined ? { category_id: entry.category.toString() } : {}),
+    })))
+    .flat()
+  instance.value.action = 'patch'
+  instance.value.items = { trigger_categories: triggerCategories, triggers }
+  delete instance.value.order
+  await deployChange(clonedChange, client, apiDefinitions)
+}
+
+/**
+ * Add trigger order element with all the triggers ordered
+ */
+const filterCreator: FilterCreator = ({ config, client, paginator }) => ({
+  onFetch: async (elements: Element[]): Promise<void> => {
+    const orderTypeName = createOrderTypeName(TRIGGER_TYPE_NAME)
+    const triggerObjType = elements
+      .filter(isObjectType)
+      .find(e => e.elemID.name === TRIGGER_TYPE_NAME)
+    const triggerCategoryObjType = elements
+      .filter(isObjectType)
+      .find(e => e.elemID.name === TRIGGER_CATEGORY_TYPE_NAME)
+    if (triggerObjType === undefined || triggerCategoryObjType === undefined) {
+      return
+    }
+    const triggerReferences = _.sortBy(
+      elements
+        .filter(isInstanceElement)
+        .filter(e => e.elemID.typeName === TRIGGER_TYPE_NAME),
+      inst => inst.value.position,
+      inst => inst.value.title
+    )
+      .map(inst => {
+        delete inst.value.position
+        return inst
+      })
+      .map(refInst => new ReferenceExpression(refInst.elemID, refInst))
+    const triggerCategoryReferences = _.sortBy(
+      elements
+        .filter(isInstanceElement)
+        .filter(e => e.elemID.typeName === TRIGGER_CATEGORY_TYPE_NAME),
+      inst => inst.value.position
+    )
+      .map(inst => {
+        delete inst.value.position
+        return inst
+      })
+      .map(refInst => new ReferenceExpression(refInst.elemID, refInst))
+    const entryTypeName = elementsUtils.ducktype.toNestedTypeName(TRIGGER_TYPE_NAME, 'order')
+    const typeNameNaclCase = pathNaclCase(orderTypeName)
+    const entryTypeNameNaclCase = pathNaclCase(entryTypeName)
+    const entryOrderType = new ObjectType({
+      elemID: new ElemID(ZENDESK_SUPPORT, entryTypeName),
+      fields: {
+        category: { refType: BuiltinTypes.NUMBER },
+        ids: { refType: new ListType(BuiltinTypes.NUMBER) },
+      },
+      annotations: config.fetch.hideTypes ? { [CORE_ANNOTATIONS.HIDDEN]: true } : undefined,
+      path: [ZENDESK_SUPPORT, TYPES_PATH, SUBTYPES_PATH, entryTypeNameNaclCase],
+    })
+    const type = new ObjectType({
+      elemID: new ElemID(ZENDESK_SUPPORT, orderTypeName),
+      fields: { order: { refType: new ListType(entryOrderType) } },
+      annotations: config.fetch.hideTypes ? { [CORE_ANNOTATIONS.HIDDEN]: true } : undefined,
+      isSettings: true,
+      path: [ZENDESK_SUPPORT, TYPES_PATH, SUBTYPES_PATH, typeNameNaclCase],
+    })
+    const triggersByCategory = _.groupBy(
+      triggerReferences.filter(ref => ref.value.value.category_id != null),
+      ref => ref.value.value.category_id
+    )
+    const order = _.isEmpty(triggerCategoryReferences)
+      ? [{ ids: triggerReferences }]
+      : triggerCategoryReferences.map(categoryRef => ({
+        category: categoryRef,
+        ids: triggersByCategory[categoryRef.value.value.id] ?? [],
+      }))
+    const instance = new InstanceElement(
+      ElemID.CONFIG_NAME,
+      type,
+      { order },
+      [ZENDESK_SUPPORT, RECORDS_PATH, TRIGGER_TYPE_NAME, typeNameNaclCase],
+    )
+    // Those types already exist since we added the empty version of them
+    //  via the add remaining types mechanism. So we first need to remove the old versions
+    _.remove(elements, element => [
+      type.elemID.getFullName(), entryOrderType.elemID.getFullName(),
+    ].includes(element.elemID.getFullName()))
+    elements.push(type, entryOrderType, instance)
+  },
+  deploy: createReorderFilterCreator({
+    typeName: TRIGGER_TYPE_NAME,
+    orderFieldName: 'order',
+    deployFunc,
+  })({ client, config, paginator }).deploy,
+})
+
+export default filterCreator

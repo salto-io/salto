@@ -328,6 +328,16 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskSupportFieldReferenceDefi
     target: { type: 'automation' },
   },
   {
+    src: { field: 'ids', parentTypes: ['trigger_order__order'] },
+    serializationStrategy: 'id',
+    target: { type: 'trigger' },
+  },
+  {
+    src: { field: 'category', parentTypes: ['trigger_order__order'] },
+    serializationStrategy: 'id',
+    target: { type: 'trigger_category' },
+  },
+  {
     src: { field: 'id', parentTypes: ['workspace__selected_macros'] },
     serializationStrategy: 'id',
     target: { type: 'macro' },

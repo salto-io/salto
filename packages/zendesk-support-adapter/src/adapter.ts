@@ -23,7 +23,7 @@ import {
   elements as elementUtils,
   deployment as deploymentUtils,
 } from '@salto-io/adapter-components'
-import { logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
+import { logDuration, resolveChangeElement, resolveValues, restoreChangeElement, restoreValues } from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
@@ -43,6 +43,7 @@ import organizationFieldOrderFilter from './filters/reorder/organization_field'
 import workspaceOrderFilter from './filters/reorder/workspace'
 import slaPolicyOrderFilter from './filters/reorder/sla_policy'
 import automationOrderFilter from './filters/reorder/automation'
+import triggerOrderFilter from './filters/reorder/trigger'
 import businessHoursScheduleFilter from './filters/business_hours_schedule'
 import collisionErrorsFilter from './filters/collision_errors'
 import accountSettingsFilter from './filters/account_settings'
@@ -85,6 +86,7 @@ export const DEFAULT_FILTERS = [
   workspaceOrderFilter,
   slaPolicyOrderFilter,
   automationOrderFilter,
+  triggerOrderFilter,
   businessHoursScheduleFilter,
   collisionErrorsFilter,
   accountSettingsFilter,
@@ -223,7 +225,12 @@ export default class ZendeskAdapter implements AdapterOperations {
       .map(async change =>
         (SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
           ? change
-          : resolveChangeElement(change, lookupFunc)))
+          : resolveChangeElement(
+            change,
+            lookupFunc,
+            async (element, getLookUpName, elementsSource) =>
+              resolveValues(element, getLookUpName, elementsSource, true),
+          )))
       .toArray()
     await runner.preDeploy(resolvedChanges)
     const { deployResult } = await runner.deploy(resolvedChanges)
@@ -236,7 +243,13 @@ export default class ZendeskAdapter implements AdapterOperations {
     )
 
     const appliedChanges = await awu(appliedChangesBeforeRestore)
-      .map(change => restoreChangeElement(change, sourceElements, lookupFunc))
+      .map(change => restoreChangeElement(
+        change,
+        sourceElements,
+        lookupFunc,
+        async (source, targetElement, getLookUpName) =>
+          restoreValues(source, targetElement, getLookUpName, true),
+      ))
       .toArray()
     const restoredAppliedChanges = restoreInstanceTypeFromDeploy({
       appliedChanges,

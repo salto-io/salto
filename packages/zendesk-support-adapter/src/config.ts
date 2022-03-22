@@ -256,6 +256,15 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       },
     },
   },
+  trigger_order: {
+    deployRequests: {
+      modify: {
+        url: '/trigger_categories/jobs',
+        method: 'post',
+        deployAsField: 'job',
+      },
+    },
+  },
   automation: {
     transformation: {
       sourceTypeName: 'automations__automations',

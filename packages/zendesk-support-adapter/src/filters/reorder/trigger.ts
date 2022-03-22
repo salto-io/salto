@@ -35,11 +35,11 @@ const { RECORDS_PATH, SUBTYPES_PATH, TYPES_PATH } = elementsUtils
 const log = logger(module)
 
 type TriggerOrderEntry = {
-  category?: string
+  category: string
   ids: number[]
 }
 const EXPECTED_TRIGGER_ORDER_ENTRY_SCHEMA = Joi.array().items(Joi.object({
-  category: Joi.string().optional(),
+  category: Joi.string().required(),
   ids: Joi.array().items(Joi.number()),
 })).required()
 
@@ -52,7 +52,7 @@ const areTriggerOrderEntries = (value: unknown): value is TriggerOrderEntry[] =>
   return true
 }
 
-export const deployFunc: DeployFuncType = async (change, client, apiDefinitions) => {
+const deployFunc: DeployFuncType = async (change, client, apiDefinitions) => {
   const clonedChange = await applyFunctionToChangeData(change, inst => inst.clone())
   const instance = getChangeData(clonedChange)
   const { order } = instance.value
@@ -64,7 +64,7 @@ export const deployFunc: DeployFuncType = async (change, client, apiDefinitions)
     .filter(values.isDefined)
     .map((id, position) => ({ id: id.toString(), position: position + 1 }))
   const triggers = order
-    .map(entry => (entry.ids ?? []).map((id, position) => ({
+    .map(entry => entry.ids.map((id, position) => ({
       id: id.toString(),
       position: position + 1,
       ...(entry.category !== undefined ? { category_id: entry.category.toString() } : {}),
@@ -95,6 +95,7 @@ const filterCreator: FilterCreator = ({ config, client, paginator }) => ({
       elements
         .filter(isInstanceElement)
         .filter(e => e.elemID.typeName === TRIGGER_TYPE_NAME),
+      instance => !instance.value.active,
       inst => inst.value.position,
       inst => inst.value.title
     )
@@ -114,7 +115,7 @@ const filterCreator: FilterCreator = ({ config, client, paginator }) => ({
         return inst
       })
       .map(refInst => new ReferenceExpression(refInst.elemID, refInst))
-    const entryTypeName = elementsUtils.ducktype.toNestedTypeName(TRIGGER_TYPE_NAME, 'order')
+    const entryTypeName = elementsUtils.ducktype.toNestedTypeName(orderTypeName, 'order')
     const typeNameNaclCase = pathNaclCase(orderTypeName)
     const entryTypeNameNaclCase = pathNaclCase(entryTypeName)
     const entryOrderType = new ObjectType({

@@ -24,7 +24,7 @@ import {
 import { naclCase, pathNaclCase, resolveChangeElement, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
-import { values, collections, types } from '@salto-io/lowerdash'
+import { values, collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { ZENDESK_SUPPORT } from '../constants'
 import { addIdUponAddition, deployChange, deployChanges } from '../deployment'
@@ -160,7 +160,7 @@ const getAttachmentContent = async ({
     responseType: 'arraybuffer',
   })
   const content = _.isString(res.data) ? Buffer.from(res.data) : res.data
-  if (!types.isBuffer(content)) {
+  if (!Buffer.isBuffer(content)) {
     log.error(`Received invalid response from Zendesk API for attachment content, ${safeJsonStringify(res.data, undefined, 2)}. Not adding macro attachments`)
     return undefined
   }

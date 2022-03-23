@@ -184,5 +184,21 @@ describe('view reorder filter', () => {
       expect(res.deployResult.appliedChanges).toHaveLength(0)
       expect(mockDeployChange).toHaveBeenCalledTimes(0)
     })
+    it('should return an error if the ids are not numbers', async () => {
+      const res = await filter.deploy([
+        {
+          action: 'modify',
+          data: {
+            before,
+            after: new InstanceElement(
+              ElemID.CONFIG_NAME, orderType, { [ORDER_FIELD_NAME]: ['22', '33'] },
+            ),
+          },
+        },
+      ])
+      expect(res.deployResult.errors).toHaveLength(1)
+      expect(res.deployResult.appliedChanges).toHaveLength(0)
+      expect(mockDeployChange).toHaveBeenCalledTimes(0)
+    })
   })
 })

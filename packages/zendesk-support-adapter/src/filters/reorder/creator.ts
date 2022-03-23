@@ -19,7 +19,7 @@ import {
   BuiltinTypes, ReferenceExpression, Change, getChangeData, isModificationChange, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils, config as configUtils } from '@salto-io/adapter-components'
-import { applyFunctionToChangeData, pathNaclCase } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { ZENDESK_SUPPORT } from '../../constants'
 import { deployChange } from '../../deployment'
@@ -136,12 +136,19 @@ export const createReorderFilterCreator = (
   },
 })
 
+const idsAreNumbers = (ids: unknown): ids is number[] => (
+  _.isArray(ids) && ids.every(Number.isInteger)
+)
+
 export const deployFuncCreator = (fieldName: string): DeployFuncType =>
   async (change, client, apiDefinitions) => {
     const clonedChange = await applyFunctionToChangeData(change, inst => inst.clone())
     const instance = getChangeData(clonedChange)
-    const idsWithPositions = (instance.value.ids as number[])
-      .map((id, position) => ({ id, position: position + 1 }))
+    const { ids } = instance.value
+    if (!idsAreNumbers(ids)) {
+      throw new Error(`Not all the ids of ${instance.elemID.getFullName()} are numbers: ${safeJsonStringify(ids)}`)
+    }
+    const idsWithPositions = ids.map((id, position) => ({ id, position: position + 1 }))
     instance.value[fieldName] = idsWithPositions
     delete instance.value.ids
     await deployChange(clonedChange, client, apiDefinitions)

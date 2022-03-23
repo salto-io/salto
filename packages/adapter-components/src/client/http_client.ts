@@ -14,7 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { ResponseType } from 'axios'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { Connection, ConnectionCreator, createRetryOptions, createClientConnection, ResponseValue, Response } from './http_connection'
 import { AdapterClientBase } from './base'
@@ -37,6 +39,7 @@ export type ClientBaseParams = {
   url: string
   queryParams?: Record<string, string | string[]>
   headers?: Record<string, string>
+  responseType?: ResponseType
 }
 
 export type ClientDataParams = ClientBaseParams & {
@@ -173,12 +176,13 @@ export abstract class AdapterHTTPClient<
       throw new Error(`uninitialized ${this.clientName} client`)
     }
 
-    const { url, queryParams, headers } = params
+    const { url, queryParams, headers, responseType } = params
     try {
-      const requestConfig = queryParams !== undefined || headers !== undefined
+      const requestConfig = [queryParams, headers, responseType].some(values.isDefined)
         ? {
           params: queryParams,
           headers,
+          responseType,
         }
         : undefined
 

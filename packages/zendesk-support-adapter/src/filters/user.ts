@@ -72,7 +72,8 @@ const replaceConditionsAndActionsCreator = (
 ): UserReplacer => (instance, mapping) => {
   params.forEach(replacerParams => {
     const conditions = _.get(instance.value, replacerParams.fieldName)
-    if (!areConditions(conditions, instance.elemID.getFullName())) {
+    // Coditions can be undefined - in that case, we don't want to log a warning
+    if (conditions === undefined || !areConditions(conditions, instance.elemID.getFullName())) {
       return
     }
     conditions

@@ -14,23 +14,15 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import {
-  Change, getChangeData, InstanceElement, isInstanceElement, isReferenceExpression, toChange,
-} from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
-import { getParents, resolveChangeElement } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { Change, getChangeData, InstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges } from '../deployment'
 import { API_DEFINITIONS_CONFIG } from '../config'
-import { lookupFunc } from './field_references'
+import { createAdditionalParentChanges } from './utils'
 
 export const CUSTOM_FIELD_OPTIONS_FIELD_NAME = 'custom_field_options'
 export const ORG_FIELD_TYPE_NAME = 'organization_field'
 export const ORG_FIELD_OPTION_TYPE_NAME = 'organization_field__custom_field_options'
-
-const log = logger(module)
-const { awu } = collections.asynciterable
 
 const filterCreator: FilterCreator = ({ config, client }) => ({
   deploy: async (changes: Change<InstanceElement>[]) => {
@@ -43,32 +35,24 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       relevantChanges,
       change => getChangeData(change).elemID.typeName === ORG_FIELD_TYPE_NAME,
     )
-    const additionalParentChange: Change<InstanceElement>[] = []
-    if (parentChanges.length === 0 && childrenChanges.length > 0) {
-      // We aggregate by the parent full name so we know that all the children have the same parent
-      const parents = getParents(getChangeData(childrenChanges[0]))
-      if (_.isEmpty(parents)
-        || !parents.every(isReferenceExpression)
-        || !parents.every(parent => isInstanceElement(parent.value))) {
-        log.error(`Failed to update the following ${
-          ORG_FIELD_OPTION_TYPE_NAME} instances since they have no valid parent: ${
-          childrenChanges.map(getChangeData).map(e => e.elemID.getFullName())}`)
-        return {
-          deployResult: {
-            appliedChanges: [],
-            errors: childrenChanges.map(getChangeData).map(e => new Error(`Failed to update ${e.elemID.getFullName()} since it has no valid parent`)),
-          },
-          leftoverChanges,
-        }
+    const additionalParentChanges = parentChanges.length === 0 && childrenChanges.length > 0
+      ? await createAdditionalParentChanges(childrenChanges)
+      : []
+    if (additionalParentChanges === undefined) {
+      return {
+        deployResult: {
+          appliedChanges: [],
+          errors: childrenChanges
+            .map(getChangeData)
+            .map(e => new Error(
+              `Failed to update ${e.elemID.getFullName()} since it has no valid parent`
+            )),
+        },
+        leftoverChanges,
       }
-      additionalParentChange.push(...(await awu(
-        parents.map(parent => toChange({ before: parent.value, after: parent.value }))
-      )
-        .map(change => resolveChangeElement(change, lookupFunc))
-        .toArray()))
     }
     const deployResult = await deployChanges(
-      [...parentChanges, ...additionalParentChange],
+      [...parentChanges, ...additionalParentChanges],
       async change => {
         const response = await deployChange(
           change, client, config.apiDefinitions
@@ -84,7 +68,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       }
     )
     const additionalParentIds = new Set(
-      additionalParentChange.map(getChangeData).map(e => e.elemID.getFullName())
+      additionalParentChanges.map(getChangeData).map(e => e.elemID.getFullName())
     )
     return {
       deployResult: {

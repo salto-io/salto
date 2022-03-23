@@ -13,12 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { Change, ChangeDataType, getChangeData, InstanceElement,
-  isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
+  isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isReferenceExpression,
+  ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { applyFunctionToChangeData, getParents, resolveChangeElement } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
+import { lookupFunc } from './field_references'
 
 const { awu } = collections.asynciterable
+const log = logger(module)
 
 export const applyforInstanceChangesOfType = async (
   changes: Change<ChangeDataType>[],
@@ -33,4 +38,30 @@ export const applyforInstanceChangesOfType = async (
       change,
       func,
     ))
+}
+
+export const isArrayOfRefExprToInstances = (values: unknown): values is ReferenceExpression[] => (
+  _.isArray(values)
+  && values.every(isReferenceExpression)
+  && values.every(value => isInstanceElement(value.value))
+)
+
+export const createAdditionalParentChanges = async (
+  childrenChanges: Change<InstanceElement>[],
+  shouldResolve = true,
+): Promise<Change<InstanceElement>[] | undefined> => {
+  const childrenInstance = getChangeData(childrenChanges[0])
+  const parents = getParents(childrenInstance)
+  if (_.isEmpty(parents) || !isArrayOfRefExprToInstances(parents)) {
+    log.error(`Failed to update the following ${
+      childrenInstance.elemID.typeName} instances since they have no valid parent: ${
+      childrenChanges.map(getChangeData).map(e => e.elemID.getFullName())}`)
+    return undefined
+  }
+  const changes = parents.map(parent => toChange({
+    before: parent.value.clone(), after: parent.value.clone(),
+  }))
+  return shouldResolve
+    ? awu(changes).map(change => resolveChangeElement(change, lookupFunc)).toArray()
+    : changes
 }

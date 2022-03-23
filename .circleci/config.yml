@@ -276,7 +276,7 @@ jobs:
 
   sync_s3_pkg_latest:
     docker:
-      - image: circleci/python
+      - image: cimg/python:3.10
 
     steps:
       - set_s3_pkg_urls

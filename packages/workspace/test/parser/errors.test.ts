@@ -1184,7 +1184,7 @@ describe('parsing errors', () => {
     })
   })
   describe('merge conflict errors', () => {
-    describe('Merge conflict', () => {
+    describe('Unresolved merge conflict', () => {
       const nacl = `
         rocky.racoon checked {
           only = "us"
@@ -1210,8 +1210,8 @@ describe('parsing errors', () => {
           filename: 'file.nacl',
         })
         expect(res.errors[0].message)
-          .toBe('Merge conflict')
-        expect(res.errors[0].summary).toBe('Merge conflict')
+          .toBe('Unresolved merge conflict')
+        expect(res.errors[0].summary).toBe('Unresolved merge conflict')
       })
       it('should parse the first instance correctly', async () => {
         expect(await awu(res.elements).toArray()).toHaveLength(1)

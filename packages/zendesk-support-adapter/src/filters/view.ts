@@ -22,7 +22,7 @@ import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import { applyforInstanceChangesOfType } from './utils'
 
-const VIEW_TYPE_NAME = 'view'
+export const VIEW_TYPE_NAME = 'view'
 
 /**
  * Deploys views

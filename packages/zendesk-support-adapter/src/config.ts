@@ -188,6 +188,14 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       },
     },
   },
+  view_order: {
+    deployRequests: {
+      modify: {
+        url: '/views/update_many',
+        method: 'put',
+      },
+    },
+  },
   view__restriction: {
     transformation: {
       fieldTypeOverrides: [

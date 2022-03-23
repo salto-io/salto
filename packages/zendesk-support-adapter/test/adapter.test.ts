@@ -470,6 +470,8 @@ describe('adapter', () => {
           'zendesk_support.view__execution__group',
           'zendesk_support.view__execution__sort',
           'zendesk_support.view__restriction',
+          'zendesk_support.view_order',
+          'zendesk_support.view_order.instance',
           'zendesk_support.views',
           'zendesk_support.webhook',
           'zendesk_support.webhook.instance.test',
@@ -553,6 +555,7 @@ describe('adapter', () => {
             'zendesk_support.ticket_form_order.instance',
             'zendesk_support.trigger_order.instance',
             'zendesk_support.user_field_order.instance',
+            'zendesk_support.view_order.instance',
             'zendesk_support.workspace_order.instance',
           ].sort())
       })

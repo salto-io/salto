@@ -20,7 +20,6 @@ import {
   ObjectType, ElemID, ListType, BuiltinTypes, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, pathNaclCase } from '@salto-io/adapter-utils'
-import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../filter'
@@ -62,17 +61,15 @@ const deployFunc: DeployFuncType = async (change, client, apiDefinitions) => {
   }
   const triggerCategories = order
     .map(entry => entry.category)
-    .filter(values.isDefined)
     // We send position + 1, since the position in the service are starting from 1
     .map((id, position) => ({ id, position: position + 1 }))
   const triggers = order
-    .map(entry => entry.ids.map((id, position) => ({
+    .flatMap(entry => entry.ids.map((id, position) => ({
       id: id.toString(),
       // We send position + 1, since the position in the service are starting from 1
       position: position + 1,
       category_id: entry.category,
     })))
-    .flat()
   instance.value.action = 'patch'
   instance.value.items = { trigger_categories: triggerCategories, triggers }
   delete instance.value.order
@@ -139,10 +136,7 @@ const filterCreator: FilterCreator = ({ config, client, paginator }) => ({
       isSettings: true,
       path: [ZENDESK_SUPPORT, TYPES_PATH, SUBTYPES_PATH, typeNameNaclCase],
     })
-    const triggersByCategory = _.groupBy(
-      triggers.filter(ref => ref.value.category_id != null),
-      ref => ref.value.category_id
-    )
+    const triggersByCategory = _.groupBy(triggers, ref => ref.value.category_id)
     const order = triggerCategories.map(category => ({
       category: new ReferenceExpression(category.elemID, category),
       ids: (triggersByCategory[category.value.id] ?? [])

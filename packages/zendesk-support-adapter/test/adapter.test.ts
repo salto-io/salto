@@ -404,7 +404,7 @@ describe('adapter', () => {
           'zendesk_support.trigger_definitions',
           'zendesk_support.trigger_order',
           'zendesk_support.trigger_order.instance',
-          'zendesk_support.trigger_order__order',
+          'zendesk_support.trigger_order_entry',
           'zendesk_support.triggers',
           'zendesk_support.user_field',
           'zendesk_support.user_field.instance.another_text_3425',

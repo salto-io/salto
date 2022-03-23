@@ -30,6 +30,7 @@ import { ZENDESK_SUPPORT } from '../../constants'
 
 export const TRIGGER_TYPE_NAME = 'trigger'
 export const TRIGGER_CATEGORY_TYPE_NAME = 'trigger_category'
+const TRIGGER_ORDER_ENTRY_TYPE_NAME = 'trigger_order_entry'
 
 const { RECORDS_PATH, SUBTYPES_PATH, TYPES_PATH } = elementsUtils
 const log = logger(module)
@@ -62,12 +63,14 @@ const deployFunc: DeployFuncType = async (change, client, apiDefinitions) => {
   const triggerCategories = order
     .map(entry => entry.category)
     .filter(values.isDefined)
-    .map((id, position) => ({ id: id.toString(), position: position + 1 }))
+    // We send position + 1, since the position in the service are starting from 1
+    .map((id, position) => ({ id, position: position + 1 }))
   const triggers = order
     .map(entry => entry.ids.map((id, position) => ({
       id: id.toString(),
+      // We send position + 1, since the position in the service are starting from 1
       position: position + 1,
-      ...(entry.category !== undefined ? { category_id: entry.category.toString() } : {}),
+      category_id: entry.category,
     })))
     .flat()
   instance.value.action = 'patch'
@@ -88,10 +91,15 @@ const filterCreator: FilterCreator = ({ config, client, paginator }) => ({
     const triggerCategoryObjType = elements
       .filter(isObjectType)
       .find(e => e.elemID.name === TRIGGER_CATEGORY_TYPE_NAME)
-    if (triggerObjType === undefined || triggerCategoryObjType === undefined) {
+    if (triggerObjType === undefined) {
+      log.warn('Failed to find the type of trigger')
       return
     }
-    const triggerReferences = _.sortBy(
+    if (triggerCategoryObjType === undefined) {
+      log.warn('Failed to find the type of trigger_category')
+      return
+    }
+    const triggers = _.sortBy(
       elements
         .filter(isInstanceElement)
         .filter(e => e.elemID.typeName === TRIGGER_TYPE_NAME),
@@ -103,8 +111,7 @@ const filterCreator: FilterCreator = ({ config, client, paginator }) => ({
         delete inst.value.position
         return inst
       })
-      .map(refInst => new ReferenceExpression(refInst.elemID, refInst))
-    const triggerCategoryReferences = _.sortBy(
+    const triggerCategories = _.sortBy(
       elements
         .filter(isInstanceElement)
         .filter(e => e.elemID.typeName === TRIGGER_CATEGORY_TYPE_NAME),
@@ -114,12 +121,10 @@ const filterCreator: FilterCreator = ({ config, client, paginator }) => ({
         delete inst.value.position
         return inst
       })
-      .map(refInst => new ReferenceExpression(refInst.elemID, refInst))
-    const entryTypeName = elementsUtils.ducktype.toNestedTypeName(orderTypeName, 'order')
     const typeNameNaclCase = pathNaclCase(orderTypeName)
-    const entryTypeNameNaclCase = pathNaclCase(entryTypeName)
+    const entryTypeNameNaclCase = pathNaclCase(TRIGGER_ORDER_ENTRY_TYPE_NAME)
     const entryOrderType = new ObjectType({
-      elemID: new ElemID(ZENDESK_SUPPORT, entryTypeName),
+      elemID: new ElemID(ZENDESK_SUPPORT, TRIGGER_ORDER_ENTRY_TYPE_NAME),
       fields: {
         category: { refType: BuiltinTypes.NUMBER },
         ids: { refType: new ListType(BuiltinTypes.NUMBER) },
@@ -135,15 +140,14 @@ const filterCreator: FilterCreator = ({ config, client, paginator }) => ({
       path: [ZENDESK_SUPPORT, TYPES_PATH, SUBTYPES_PATH, typeNameNaclCase],
     })
     const triggersByCategory = _.groupBy(
-      triggerReferences.filter(ref => ref.value.value.category_id != null),
-      ref => ref.value.value.category_id
+      triggers.filter(ref => ref.value.category_id != null),
+      ref => ref.value.category_id
     )
-    const order = _.isEmpty(triggerCategoryReferences)
-      ? [{ ids: triggerReferences }]
-      : triggerCategoryReferences.map(categoryRef => ({
-        category: categoryRef,
-        ids: triggersByCategory[categoryRef.value.value.id] ?? [],
-      }))
+    const order = triggerCategories.map(category => ({
+      category: new ReferenceExpression(category.elemID, category),
+      ids: (triggersByCategory[category.value.id] ?? [])
+        .map(inst => new ReferenceExpression(inst.elemID, inst)),
+    }))
     const instance = new InstanceElement(
       ElemID.CONFIG_NAME,
       type,

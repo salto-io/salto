@@ -266,6 +266,11 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       },
     },
   },
+  trigger_order_entry: {
+    transformation: {
+      sourceTypeName: 'trigger_order__order',
+    },
+  },
   automation: {
     transformation: {
       sourceTypeName: 'automations__automations',

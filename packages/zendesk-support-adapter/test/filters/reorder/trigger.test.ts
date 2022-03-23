@@ -14,15 +14,15 @@
 * limitations under the License.
 */
 import {
-  ObjectType, ElemID, InstanceElement, Element, isObjectType,
-  isInstanceElement, ReferenceExpression, CORE_ANNOTATIONS, ModificationChange,
+  ObjectType, ElemID, InstanceElement, isObjectType, isInstanceElement,
+  ReferenceExpression, CORE_ANNOTATIONS, ModificationChange,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { DEFAULT_CONFIG, DEFAULT_INCLUDE_ENDPOINTS, FETCH_CONFIG } from '../../../src/config'
 import ZendeskClient from '../../../src/client/client'
 import { ZENDESK_SUPPORT } from '../../../src/constants'
 import { paginate } from '../../../src/client/pagination'
-import filterCreator from '../../../src/filters/reorder/trigger'
+import filterCreator, { TRIGGER_CATEGORY_TYPE_NAME, TRIGGER_TYPE_NAME } from '../../../src/filters/reorder/trigger'
 import { createOrderTypeName } from '../../../src/filters/reorder/creator'
 
 const mockDeployChange = jest.fn()
@@ -41,14 +41,14 @@ describe('trigger reorder filter', () => {
   let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy'>
   let filter: FilterType
-  const triggerTypeName = 'trigger'
-  const categoryTypeName = 'trigger_category'
+  const triggerTypeName = TRIGGER_TYPE_NAME
+  const categoryTypeName = TRIGGER_CATEGORY_TYPE_NAME
   const orderTypeName = createOrderTypeName(triggerTypeName)
   const triggerType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, triggerTypeName) })
   const categoryType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, categoryTypeName) })
-  const categoty1 = new InstanceElement('cate1', categoryType, { id: 1, position: 1, title: 'cate1' })
-  const categoty2 = new InstanceElement('cate2', categoryType, { id: 2, position: 2, title: 'cate3' })
-  const categoty3 = new InstanceElement('cate3', categoryType, { id: 3, position: 3, title: 'cate2' })
+  const category1 = new InstanceElement('cate1', categoryType, { id: 1, position: 1, title: 'cate1' })
+  const category2 = new InstanceElement('cate2', categoryType, { id: 2, position: 2, title: 'cate3' })
+  const category3 = new InstanceElement('cate3', categoryType, { id: 3, position: 3, title: 'cate2' })
   const trigger1 = new InstanceElement('trigger1', triggerType, { id: 11, position: 1, title: 'trigger2', category_id: '1', active: true })
   const trigger2 = new InstanceElement('trigger2', triggerType, { id: 22, position: 2, title: 'trigger1', category_id: '1', active: true })
   const trigger3 = new InstanceElement('trigger3', triggerType, { id: 33, position: 2, title: 'aaa', category_id: '2', active: true })
@@ -73,7 +73,7 @@ describe('trigger reorder filter', () => {
   describe('onFetch', () => {
     it('should create correct order element', async () => {
       const elements = [
-        triggerType, categoryType, categoty1, categoty2, categoty3,
+        triggerType, categoryType, category1, category2, category3,
         trigger1, trigger2, trigger3, trigger4, trigger5,
       ]
       await filter.onFetch(elements)
@@ -91,7 +91,7 @@ describe('trigger reorder filter', () => {
           'zendesk_support.trigger_category.instance.cate3',
           'zendesk_support.trigger_order',
           'zendesk_support.trigger_order.instance',
-          'zendesk_support.trigger_order__order',
+          'zendesk_support.trigger_order_entry',
         ])
       const triggerOrderType = elements
         .find(e => isObjectType(e) && e.elemID.typeName === orderTypeName)
@@ -103,14 +103,14 @@ describe('trigger reorder filter', () => {
       expect((triggerOrderInstance as InstanceElement)?.value)
         .toEqual({ order: [
           {
-            category: new ReferenceExpression(categoty1.elemID, categoty1),
+            category: new ReferenceExpression(category1.elemID, category1),
             ids: [
               new ReferenceExpression(trigger1.elemID, trigger1),
               new ReferenceExpression(trigger2.elemID, trigger2),
             ],
           },
           {
-            category: new ReferenceExpression(categoty2.elemID, categoty2),
+            category: new ReferenceExpression(category2.elemID, category2),
             ids: [
               new ReferenceExpression(trigger3.elemID, trigger3),
               new ReferenceExpression(trigger4.elemID, trigger4),
@@ -118,7 +118,7 @@ describe('trigger reorder filter', () => {
             ],
           },
           {
-            category: new ReferenceExpression(categoty3.elemID, categoty3),
+            category: new ReferenceExpression(category3.elemID, category3),
             ids: [],
           },
         ] })
@@ -143,7 +143,7 @@ describe('trigger reorder filter', () => {
         },
       }) as FilterType
       const elements = [
-        triggerType, categoryType, categoty1, categoty2, categoty3,
+        triggerType, categoryType, category1, category2, category3,
         trigger1, trigger2, trigger3, trigger4,
       ]
       await filterWithHideType.onFetch(elements)
@@ -160,17 +160,24 @@ describe('trigger reorder filter', () => {
           'zendesk_support.trigger_category.instance.cate3',
           'zendesk_support.trigger_order',
           'zendesk_support.trigger_order.instance',
-          'zendesk_support.trigger_order__order',
+          'zendesk_support.trigger_order_entry',
         ])
       const orderType = elements
         .find(elem => elem.elemID.getFullName() === 'zendesk_support.trigger_order')
       expect(orderType).toBeDefined()
       expect(orderType?.annotations[CORE_ANNOTATIONS.HIDDEN]).not.toBeDefined()
     })
-    it('should not create new elements if there are no triggers', async () => {
-      const elements: Element[] = []
+    it('should not create new elements if trigger type does not exist', async () => {
+      const elements = [categoryType]
       await filter.onFetch(elements)
-      expect(elements).toHaveLength(0)
+      expect(elements.map(e => e.elemID.getFullName()))
+        .toEqual(['zendesk_support.trigger_category'])
+    })
+    it('should not create new elements if trigger category type does not exist', async () => {
+      const elements = [triggerType]
+      await filter.onFetch(elements)
+      expect(elements.map(e => e.elemID.getFullName()))
+        .toEqual(['zendesk_support.trigger'])
     })
   })
   describe('deploy', () => {
@@ -244,6 +251,27 @@ describe('trigger reorder filter', () => {
     })
     it('should return an error if the order change is not modification', async () => {
       const res = await filter.deploy([{ action: 'add', data: { after } }])
+      expect(res.deployResult.errors).toHaveLength(1)
+      expect(res.deployResult.appliedChanges).toHaveLength(0)
+      expect(mockDeployChange).toHaveBeenCalledTimes(0)
+    })
+    it('should return an error if the order is in invalid format', async () => {
+      const res = await filter.deploy([{
+        action: 'modify',
+        data: {
+          before,
+          after: new InstanceElement(
+            ElemID.CONFIG_NAME,
+            orderType,
+            {
+              order: [
+                { ids: [44, 33] },
+                { category: '1', ids: [11, 22] },
+              ],
+            },
+          ),
+        },
+      }])
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)
       expect(mockDeployChange).toHaveBeenCalledTimes(0)

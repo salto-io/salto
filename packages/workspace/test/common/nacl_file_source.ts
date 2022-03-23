@@ -16,7 +16,7 @@
 import { ElemID, Element, Change, isObjectType, isStaticFile } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { resolvePath } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { collections, hash } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { NaclFilesSource, ChangeSet } from '../../src/workspace/nacl_files'
 import { Errors } from '../../src/workspace/errors'
@@ -24,7 +24,7 @@ import { SourceRange } from '../../src/parser/internal/types'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
 import { createAddChange } from '../../src/workspace/nacl_files/multi_env/projections'
 import { mockStaticFilesSource } from '../utils'
-import { SourceMap } from '../../src/parser'
+import { SourceMap, dumpElements } from '../../src/parser'
 
 const { awu } = collections.asynciterable
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
@@ -100,10 +100,11 @@ export const createMockNaclFileSource = (
     getElementNaclFiles: mockFunction<NaclFilesSource['getElementNaclFiles']>().mockImplementation(async elemID => getElementNaclFiles(elemID)),
     clone: jest.fn().mockRejectedValue(new Error('not implemented in mock')),
     getElementReferencedFiles: mockFunction<NaclFilesSource['getElementReferencedFiles']>().mockResolvedValue([]),
-    load: mockFunction<NaclFilesSource['load']>().mockResolvedValue({
+    load: mockFunction<NaclFilesSource['load']>().mockImplementation(async () => ({
       changes: currentElements.map(e => createAddChange(e, e.elemID)),
       cacheValid: true,
-    }),
+      postChangeHash: hash.toMD5(await dumpElements(currentElements)),
+    })),
     getSearchableNames: mockFunction<NaclFilesSource['getSearchableNames']>().mockResolvedValue(_.uniq(currentElements.flatMap(e => {
       const fieldNames = isObjectType(e)
         ? Object.values(e.fields).map(field => field.elemID.getFullName())

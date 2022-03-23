@@ -63,7 +63,6 @@ export type NaclFile = {
 }
 export type SourceLoadParams = {
   ignoreFileChanges?: boolean
-  env?: string
 }
 
 export type NaclFilesSource<Changes=ChangeSet<Change>> = Omit<ElementsSource, 'clear'> & {
@@ -417,11 +416,7 @@ const buildNaclFilesState = async ({
       if (oldNaclFile === undefined) {
         return
       }
-      const oldNaclFileReferenced = (await oldNaclFile.data.referenced())
-      // If one of the properties of ParsedNaclFile is undefined it is considered as not exist
-      if (oldNaclFileReferenced === undefined) {
-        return
-      }
+      const oldNaclFileReferenced = await oldNaclFile.data.referenced()
       oldNaclFileReferenced.forEach((elementFullName: string) => {
         referencedIndexDeletions[elementFullName] = referencedIndexDeletions[elementFullName]
           ?? new Set<string>()

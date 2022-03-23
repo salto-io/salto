@@ -29,7 +29,7 @@ import { ZendeskApiConfig } from './config'
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-export const addIdUponAddition = ({
+export const addId = ({
   change, apiDefinitions, response, dataField, addAlsoOnModification = false,
 }: {
   change: Change<InstanceElement>
@@ -109,7 +109,7 @@ export const addIdsToChildrenUponAddition = ({
           change, response, dataField, childFieldName, childUniqueFieldName,
         })
         if (child) {
-          addIdUponAddition({
+          addId({
             change, apiDefinitions, response: child,
           })
         }
@@ -132,7 +132,7 @@ export const deployChange = async (
       deployRequests,
       fieldsToIgnore
     )
-    addIdUponAddition({
+    addId({
       change,
       apiDefinitions,
       response,

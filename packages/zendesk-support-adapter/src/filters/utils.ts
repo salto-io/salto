@@ -15,7 +15,8 @@
 */
 import _ from 'lodash'
 import { Change, ChangeDataType, getChangeData, InstanceElement,
-  isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isReferenceExpression, toChange } from '@salto-io/adapter-api'
+  isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isReferenceExpression,
+  ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, getParents, resolveChangeElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -39,15 +40,19 @@ export const applyforInstanceChangesOfType = async (
     ))
 }
 
+export const isArrayOfRefExprToInstances = (values: unknown): values is ReferenceExpression[] => (
+  _.isArray(values)
+  && values.every(isReferenceExpression)
+  && values.every(value => isInstanceElement(value.value))
+)
+
 export const createAdditionalParentChanges = async (
   childrenChanges: Change<InstanceElement>[],
   shouldResolve = true,
 ): Promise<Change<InstanceElement>[] | undefined> => {
   const childrenInstance = getChangeData(childrenChanges[0])
   const parents = getParents(childrenInstance)
-  if (_.isEmpty(parents)
-    || !parents.every(isReferenceExpression)
-    || !parents.every(parent => isInstanceElement(parent.value))) {
+  if (_.isEmpty(parents) || !isArrayOfRefExprToInstances(parents)) {
     log.error(`Failed to update the following ${
       childrenInstance.elemID.typeName} instances since they have no valid parent: ${
       childrenChanges.map(getChangeData).map(e => e.elemID.getFullName())}`)

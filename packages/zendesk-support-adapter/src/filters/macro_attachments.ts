@@ -18,20 +18,20 @@ import Joi from 'joi'
 import FormData from 'form-data'
 import {
   BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement,
-  isInstanceElement, isReferenceExpression, isRemovalChange, isStaticFile, ObjectType,
-  ReferenceExpression, StaticFile,
+  isInstanceElement, isRemovalChange, isStaticFile, ObjectType, ReferenceExpression, StaticFile,
 } from '@salto-io/adapter-api'
-import { naclCase, pathNaclCase, resolveChangeElement, safeJsonStringify } from '@salto-io/adapter-utils'
+import { naclCase, pathNaclCase, referenceExpressionStringifyReplacer, resolveChangeElement,
+  safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { ZENDESK_SUPPORT } from '../constants'
-import { addIdUponAddition, deployChange, deployChanges } from '../deployment'
+import { addId, deployChange, deployChanges } from '../deployment'
 import { getZendeskError } from '../errors'
 import { lookupFunc } from './field_references'
 import ZendeskClient from '../client/client'
-import { createAdditionalParentChanges } from './utils'
+import { createAdditionalParentChanges, isArrayOfRefExprToInstances } from './utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -72,14 +72,20 @@ const replaceAttachmentId = (
   parentChange: Change<InstanceElement>, fullNameToInstance: Record<string, InstanceElement>,
 ): Change<InstanceElement> => {
   const parentInstance = getChangeData(parentChange)
-  parentInstance.value[ATTACHMENTS_FIELD_NAME] = parentInstance.value[ATTACHMENTS_FIELD_NAME]
-    ? parentInstance.value[ATTACHMENTS_FIELD_NAME]
-      .filter(isReferenceExpression)
-      .map((ref: ReferenceExpression) => {
-        const instance = fullNameToInstance[ref.elemID.getFullName()]
-        return instance ? new ReferenceExpression(instance.elemID, instance) : ref
-      })
-    : parentInstance.value[ATTACHMENTS_FIELD_NAME]
+  const attachments = parentInstance.value[ATTACHMENTS_FIELD_NAME]
+  if (attachments === undefined) {
+    return parentChange
+  }
+  if (!isArrayOfRefExprToInstances(attachments)) {
+    log.error(`Failed to deploy macro because its attachment field has an invalid format: ${
+      safeJsonStringify(attachments, referenceExpressionStringifyReplacer)}`)
+    throw new Error('Failed to deploy macro because its attachment field has an invalid format')
+  }
+  parentInstance.value[ATTACHMENTS_FIELD_NAME] = attachments
+    .map(ref => {
+      const instance = fullNameToInstance[ref.elemID.getFullName()]
+      return instance ? new ReferenceExpression(instance.elemID, instance) : ref
+    })
   return parentChange
 }
 
@@ -246,7 +252,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         }
         const instance = getChangeData(change)
         const response = await addAttachment(client, instance)
-        addIdUponAddition({
+        addId({
           change,
           apiDefinitions: config.apiDefinitions,
           response: response.data,

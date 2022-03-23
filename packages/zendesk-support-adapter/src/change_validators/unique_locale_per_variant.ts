@@ -15,11 +15,9 @@
 */
 import _ from 'lodash'
 import { ChangeValidator, CORE_ANNOTATIONS, getChangeData, InstanceElement, isInstanceElement,
-  isAdditionOrModificationChange, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
+  isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { VARIANTS_FIELD_NAME, DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from '../filters/dynamic_content'
-
-const areAllVariantRefExpressions = (variants: unknown): variants is ReferenceExpression[] =>
-  _.isArray(variants) && variants.every(isReferenceExpression)
+import { isArrayOfRefExprToInstances } from '../filters/utils'
 
 const createFailedToFindVariantsErrorMessage = (fullName: string): string =>
   `Can not change ${fullName} because we failed to find all the relevant variants`
@@ -39,7 +37,7 @@ export const noDuplicateLocaleIdInDynamicContentItemValidator: ChangeValidator =
     .flatMap(instance => {
       const variants = instance
         .annotations[CORE_ANNOTATIONS.PARENT]?.[0]?.value?.value?.[VARIANTS_FIELD_NAME]
-      if (!areAllVariantRefExpressions(variants)) {
+      if (!isArrayOfRefExprToInstances(variants)) {
         return [{
           elemID: instance.elemID,
           severity: 'Error',

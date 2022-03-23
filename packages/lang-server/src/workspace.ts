@@ -319,9 +319,9 @@ export class EditorWorkspace {
     const wsError = await this.workspace.transformError(error)
     return {
       ...wsError,
-      sourceLocations: wsError.sourceLocations.map(sl => ({
-        ...sl,
-        sourceRange: this.editorSourceRange(sl.sourceRange),
+      sourceLocations: wsError.sourceLocations.map(location => ({
+        ...location,
+        sourceRange: this.editorSourceRange(location.sourceRange),
       })),
     }
   }

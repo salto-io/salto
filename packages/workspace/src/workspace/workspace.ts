@@ -746,7 +746,7 @@ export const loadWorkspace = async (
       : (await getLoadedNaclFilesSource()).getSourceRanges(currentEnv(), error.elemID)
   )
 
-  const transformParseError = async (error: ParseError): Promise<WorkspaceError<SaltoError>> => ({
+  const transformParseError = (error: ParseError): WorkspaceError<SaltoError> => ({
     ...error,
     sourceLocations: [{ sourceRange: error.context, subRange: error.subject }],
   })
@@ -754,9 +754,7 @@ export const loadWorkspace = async (
   const transformToWorkspaceError = async <T extends SaltoElementError>(saltoElemErr: T):
     Promise<Readonly<WorkspaceError<T>>> => {
     const sourceRanges = await getErrorSourceRange(saltoElemErr)
-    const sourceLocations: SourceLocation[] = await awu(sourceRanges)
-      .map(sourceRange => ({ sourceRange }))
-      .toArray()
+    const sourceLocations: SourceLocation[] = sourceRanges.map(sourceRange => ({ sourceRange }))
 
     return {
       ...saltoElemErr,

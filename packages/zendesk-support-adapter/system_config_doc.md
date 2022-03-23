@@ -271,6 +271,14 @@ zendesk_support {
           }
         }
       }
+      view_order = {
+        deployRequests = {
+          modify = {
+            url = "/views/update_many"
+            method = "put"
+          }
+        }
+      }
       view__restriction = {
         transformation = {
           fieldTypeOverrides = [
@@ -606,7 +614,8 @@ zendesk_support {
               fieldType = "number"
             },
             {
-              fieldName = "attachments"
+              fieldName = "position"
+              fieldType = "number"
             },
             {
               fieldName = "position"
@@ -637,6 +646,27 @@ zendesk_support {
               macroId = "id"
             }
           }
+        }
+      }
+      macro_attachment = {
+        transformation = {
+          idFields = [
+            "filename",
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
       }
       macro_action = {

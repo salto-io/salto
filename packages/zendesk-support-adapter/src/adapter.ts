@@ -44,6 +44,7 @@ import workspaceOrderFilter from './filters/reorder/workspace'
 import slaPolicyOrderFilter from './filters/reorder/sla_policy'
 import automationOrderFilter from './filters/reorder/automation'
 import triggerOrderFilter from './filters/reorder/trigger'
+import viewOrderFilter from './filters/reorder/view'
 import businessHoursScheduleFilter from './filters/business_hours_schedule'
 import collisionErrorsFilter from './filters/collision_errors'
 import accountSettingsFilter from './filters/account_settings'
@@ -87,6 +88,7 @@ export const DEFAULT_FILTERS = [
   slaPolicyOrderFilter,
   automationOrderFilter,
   triggerOrderFilter,
+  viewOrderFilter,
   businessHoursScheduleFilter,
   collisionErrorsFilter,
   accountSettingsFilter,

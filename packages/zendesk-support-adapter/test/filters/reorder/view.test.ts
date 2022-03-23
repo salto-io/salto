@@ -22,7 +22,8 @@ import { DEFAULT_CONFIG, DEFAULT_INCLUDE_ENDPOINTS, FETCH_CONFIG } from '../../.
 import ZendeskClient from '../../../src/client/client'
 import { ZENDESK_SUPPORT } from '../../../src/constants'
 import { paginate } from '../../../src/client/pagination'
-import filterCreator, { ORDER_FIELD_NAME } from '../../../src/filters/reorder/automation'
+import filterCreator, { ORDER_FIELD_NAME } from '../../../src/filters/reorder/view'
+import { VIEW_TYPE_NAME } from '../../../src/filters/view'
 import { createOrderTypeName } from '../../../src/filters/reorder/creator'
 
 const mockDeployChange = jest.fn()
@@ -37,11 +38,11 @@ jest.mock('@salto-io/adapter-components', () => {
   }
 })
 
-describe('automation reorder filter', () => {
+describe('view reorder filter', () => {
   let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy'>
   let filter: FilterType
-  const typeName = 'automation'
+  const typeName = VIEW_TYPE_NAME
   const orderTypeName = createOrderTypeName(typeName)
   const objType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, typeName) })
   const inst1 = new InstanceElement('inst1', objType, { id: 11, position: 1, title: 'inst2' })
@@ -70,28 +71,28 @@ describe('automation reorder filter', () => {
       expect(elements).toHaveLength(6)
       expect(elements.map(e => e.elemID.getFullName()).sort())
         .toEqual([
-          'zendesk_support.automation',
-          'zendesk_support.automation.instance.inst1',
-          'zendesk_support.automation.instance.inst2',
-          'zendesk_support.automation.instance.inst3',
-          'zendesk_support.automation_order',
-          'zendesk_support.automation_order.instance',
+          'zendesk_support.view',
+          'zendesk_support.view.instance.inst1',
+          'zendesk_support.view.instance.inst2',
+          'zendesk_support.view.instance.inst3',
+          'zendesk_support.view_order',
+          'zendesk_support.view_order.instance',
         ])
-      const automationOrderType = elements
+      const viewOrderType = elements
         .find(e => isObjectType(e) && e.elemID.typeName === orderTypeName)
-      expect(automationOrderType).toBeDefined()
-      const automationOrderInstance = elements
+      expect(viewOrderType).toBeDefined()
+      const viewOrderInstance = elements
         .find(e => isInstanceElement(e) && e.elemID.typeName === orderTypeName)
-      expect(automationOrderInstance).toBeDefined()
-      expect(automationOrderInstance?.elemID.name).toEqual(ElemID.CONFIG_NAME)
-      expect((automationOrderInstance as InstanceElement)?.value)
+      expect(viewOrderInstance).toBeDefined()
+      expect(viewOrderInstance?.elemID.name).toEqual(ElemID.CONFIG_NAME)
+      expect((viewOrderInstance as InstanceElement)?.value)
         .toEqual({ [ORDER_FIELD_NAME]: [
           new ReferenceExpression(inst1.elemID, inst1),
           new ReferenceExpression(inst3.elemID, inst3),
           new ReferenceExpression(inst2.elemID, inst2),
         ] })
       const orderType = elements
-        .find(elem => elem.elemID.getFullName() === 'zendesk_support.automation_order')
+        .find(elem => elem.elemID.getFullName() === 'zendesk_support.view_order')
       expect(orderType).toBeDefined()
       expect(orderType?.annotations[CORE_ANNOTATIONS.HIDDEN]).toEqual(true)
     })
@@ -115,19 +116,19 @@ describe('automation reorder filter', () => {
       expect(elements).toHaveLength(6)
       expect(elements.map(e => e.elemID.getFullName()).sort())
         .toEqual([
-          'zendesk_support.automation',
-          'zendesk_support.automation.instance.inst1',
-          'zendesk_support.automation.instance.inst2',
-          'zendesk_support.automation.instance.inst3',
-          'zendesk_support.automation_order',
-          'zendesk_support.automation_order.instance',
+          'zendesk_support.view',
+          'zendesk_support.view.instance.inst1',
+          'zendesk_support.view.instance.inst2',
+          'zendesk_support.view.instance.inst3',
+          'zendesk_support.view_order',
+          'zendesk_support.view_order.instance',
         ])
       const orderType = elements
-        .find(elem => elem.elemID.getFullName() === 'zendesk_support.automation_order')
+        .find(elem => elem.elemID.getFullName() === 'zendesk_support.view_order')
       expect(orderType).toBeDefined()
       expect(orderType?.annotations[CORE_ANNOTATIONS.HIDDEN]).not.toBeDefined()
     })
-    it('should not create new elements if there are no automations', async () => {
+    it('should not create new elements if there are no views', async () => {
       const elements: Element[] = []
       await filter.onFetch(elements)
       expect(elements).toHaveLength(0)
@@ -152,7 +153,7 @@ describe('automation reorder filter', () => {
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
       const instanceToDeploy = after.clone()
       instanceToDeploy.value = {
-        automations: [
+        views: [
           { id: 22, position: 1 },
           { id: 33, position: 2 },
           { id: 11, position: 3 },

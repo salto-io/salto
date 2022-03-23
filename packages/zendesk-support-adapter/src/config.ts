@@ -161,7 +161,6 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       idFields: ['title'],
       fileNameFields: ['title'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'position', fieldType: 'number' }),
       serviceUrl: '/admin/workspaces/agent-workspace/views/{id}',
     },
     deployRequests: {
@@ -185,6 +184,14 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
         urlParamsToFields: {
           viewId: 'id',
         },
+      },
+    },
+  },
+  view_order: {
+    deployRequests: {
+      modify: {
+        url: '/views/update_many',
+        method: 'put',
       },
     },
   },

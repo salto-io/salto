@@ -695,45 +695,6 @@ describe('multi env source', () => {
       expect(commonSource.setNaclFiles).toHaveBeenCalled()
     })
 
-    it('should not change inner state upon set with no changes', async () => {
-      const change = { action: 'add', data: { after: inactiveFragment } } as Change<ObjectType>
-      const commonSourceName = ''
-      const mockCommonNaclFileSource = createMockNaclFileSource(
-        [commonFragment], {}, undefined, undefined, { changes: [change], cacheValid: true }
-      )
-      const primarySourceName = 'env1'
-      const mockPrimaryNaclFileSource = createMockNaclFileSource(
-        [envFragment, envObject], {}, undefined, undefined, { changes: [change], cacheValid: true }
-      )
-      const inactiveSourceName = 'env2'
-      const mockInacvtiveNaclFileSource = createMockNaclFileSource(
-        [inactiveObject], {}, undefined, undefined, { changes: [change], cacheValid: true }
-      )
-      const multiEnvSourceWithMockSources = multiEnvSource(
-        {
-          [commonSourceName]: mockCommonNaclFileSource,
-          [primarySourceName]: mockPrimaryNaclFileSource,
-          [inactiveSourceName]: mockInacvtiveNaclFileSource,
-        },
-        commonSourceName,
-        () => Promise.resolve(new InMemoryRemoteMap()),
-        true
-      )
-      await multiEnvSourceWithMockSources.load({})
-      // NOTE: the getAll call initialize the init state
-      const currentElements = await awu(
-        await multiEnvSourceWithMockSources.getAll(primarySourceName)
-      ).toArray()
-      expect(currentElements).toHaveLength(2)
-      const elementChanges = (await multiEnvSourceWithMockSources.setNaclFiles(
-        [{ filename: path.join(ENVS_PREFIX, inactiveSourceName, 'env.nacl'), buffer: 'test' }]
-      ))
-      expect(elementChanges).not.toHaveProperty(primarySourceName)
-      const elements = await awu(
-        await multiEnvSourceWithMockSources.getAll(primarySourceName)
-      ).toArray()
-      expect(elements).toHaveLength(2)
-    })
     it('should change inner state upon set with addition', async () => {
       const change = { action: 'add', data: { after: commonObject } } as Change<ObjectType>
       const commonSourceName = ''

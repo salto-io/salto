@@ -38,6 +38,16 @@ export const createMockNaclFileSource = (
   staticFileSource = mockStaticFilesSource()
 ): MockInterface<NaclFilesSource> => {
   let currentElements = elements
+  let lastReturnedHash = ''
+  const returnChanges = (changeSet: ChangeSet<Change>) => async (): Promise<ChangeSet<Change>> => {
+    const preChangeHash = lastReturnedHash
+    lastReturnedHash = hash.toMD5(await dumpElements(currentElements))
+    return {
+      preChangeHash,
+      postChangeHash: lastReturnedHash,
+      ...changeSet,
+    }
+  }
   const getElementNaclFiles = (elemID: ElemID): string[] =>
     Object.entries(naclFiles).filter(([_filename, fileElements]) => fileElements.find(
       element => resolvePath(element, elemID) !== undefined
@@ -67,14 +77,14 @@ export const createMockNaclFileSource = (
     }),
     rename: mockFunction<NaclFilesSource['rename']>().mockResolvedValue(),
     flush: mockFunction<NaclFilesSource['flush']>().mockResolvedValue(),
-    updateNaclFiles: mockFunction<NaclFilesSource['updateNaclFiles']>().mockResolvedValue(changes),
+    updateNaclFiles: mockFunction<NaclFilesSource['updateNaclFiles']>().mockImplementation(returnChanges(changes)),
     listNaclFiles: mockFunction<NaclFilesSource['listNaclFiles']>().mockResolvedValue(_.keys(naclFiles)),
     getTotalSize: mockFunction<NaclFilesSource['getTotalSize']>().mockResolvedValue(5),
     getNaclFile: mockFunction<NaclFilesSource['getNaclFile']>().mockImplementation(
       async filename => (naclFiles[filename] ? { filename, buffer: '' } : undefined)
     ),
-    setNaclFiles: mockFunction<NaclFilesSource['setNaclFiles']>().mockResolvedValue(changes),
-    removeNaclFiles: mockFunction<NaclFilesSource['removeNaclFiles']>().mockResolvedValue(changes),
+    setNaclFiles: mockFunction<NaclFilesSource['setNaclFiles']>().mockImplementation(returnChanges(changes)),
+    removeNaclFiles: mockFunction<NaclFilesSource['removeNaclFiles']>().mockImplementation(returnChanges(changes)),
     getSourceMap: mockFunction<NaclFilesSource['getSourceMap']>().mockResolvedValue(new SourceMap()),
     getSourceRanges: mockFunction<NaclFilesSource['getSourceRanges']>().mockImplementation(
       async elemID => (
@@ -100,11 +110,12 @@ export const createMockNaclFileSource = (
     getElementNaclFiles: mockFunction<NaclFilesSource['getElementNaclFiles']>().mockImplementation(async elemID => getElementNaclFiles(elemID)),
     clone: jest.fn().mockRejectedValue(new Error('not implemented in mock')),
     getElementReferencedFiles: mockFunction<NaclFilesSource['getElementReferencedFiles']>().mockResolvedValue([]),
-    load: mockFunction<NaclFilesSource['load']>().mockImplementation(async () => ({
-      changes: currentElements.map(e => createAddChange(e, e.elemID)),
-      cacheValid: true,
-      postChangeHash: hash.toMD5(await dumpElements(currentElements)),
-    })),
+    load: mockFunction<NaclFilesSource['load']>().mockImplementation(
+      returnChanges({
+        cacheValid: true,
+        changes: currentElements.map(e => createAddChange(e, e.elemID)),
+      })
+    ),
     getSearchableNames: mockFunction<NaclFilesSource['getSearchableNames']>().mockResolvedValue(_.uniq(currentElements.flatMap(e => {
       const fieldNames = isObjectType(e)
         ? Object.values(e.fields).map(field => field.elemID.getFullName())

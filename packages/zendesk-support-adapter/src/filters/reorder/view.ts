@@ -14,21 +14,22 @@
 * limitations under the License.
 */
 import { createReorderFilterCreator, deployFuncCreator } from './creator'
+import { VIEW_TYPE_NAME } from '../view'
 
 export const ORDER_FIELD_NAME = 'ids'
 
 /**
- * Add automation order element with all the automations ordered
+ * Add view order element with all the views ordered
  */
 const filterCreator = createReorderFilterCreator({
-  typeName: 'automation',
+  typeName: VIEW_TYPE_NAME,
   orderFieldName: ORDER_FIELD_NAME,
   iterateesToSortBy: [
     instance => !instance.value.active,
     instance => instance.value.position,
     instance => instance.value.title,
   ],
-  deployFunc: deployFuncCreator('automations'),
+  deployFunc: deployFuncCreator('views'),
 })
 
 export default filterCreator

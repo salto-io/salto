@@ -225,26 +225,6 @@ zendesk_support {
               fieldType = "number"
             },
           ]
-          fieldsToOmit = [
-            {
-              fieldName = "extended_input_schema"
-            },
-            {
-              fieldName = "extended_output_schema"
-            },
-            {
-              fieldName = "url"
-              fieldType = "string"
-            },
-            {
-              fieldName = "count"
-              fieldType = "number"
-            },
-            {
-              fieldName = "position"
-              fieldType = "number"
-            },
-          ]
           serviceUrl = "/admin/workspaces/agent-workspace/views/{id}"
         }
         deployRequests = {
@@ -268,6 +248,14 @@ zendesk_support {
             urlParamsToFields = {
               viewId = "id"
             }
+          }
+        }
+      }
+      view_order = {
+        deployRequests = {
+          modify = {
+            url = "/views/update_many"
+            method = "put"
           }
         }
       }
@@ -606,9 +594,6 @@ zendesk_support {
               fieldType = "number"
             },
             {
-              fieldName = "attachments"
-            },
-            {
               fieldName = "position"
               fieldType = "number"
             },
@@ -637,6 +622,27 @@ zendesk_support {
               macroId = "id"
             }
           }
+        }
+      }
+      macro_attachment = {
+        transformation = {
+          idFields = [
+            "filename",
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
       }
       macro_action = {

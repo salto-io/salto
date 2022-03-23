@@ -31,9 +31,10 @@ import { getReferencedInstances } from '../reference_dependencies'
 import { getLookUpName, toCustomizationInfo } from '../transformer'
 import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../group_changes'
 import { DeployResult } from '../types'
-import { APPLICATION_ID } from '../constants'
+import { CONFIG_FEATURES, APPLICATION_ID } from '../constants'
 import { convertInstanceMapsToLists } from '../mapped_lists/utils'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
+import { FeaturesDeployError } from '../errors'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -121,6 +122,32 @@ export default class NetsuiteClient {
     return this.sdfClient.importFileCabinetContent(query)
   }
 
+  private static getFeaturesDeployResult(
+    error: FeaturesDeployError,
+    changes: ReadonlyArray<Change<InstanceElement>>
+  ): DeployResult {
+    // this case happens when all changes where deployed successfully,
+    // except of some features in config_features
+    const [[featuresChange], successfullyDeployedChanges] = _.partition(
+      changes, change => getChangeData(change).elemID.typeName === CONFIG_FEATURES
+    )
+
+    // if some changed features are not in errors.ids we want to include the change
+    if (featuresChange && isModificationChange(featuresChange) && !_.isEqual(
+      _(featuresChange.data.before.value.feature)
+        .keyBy(feature => feature.id).omit(error.ids).value(),
+      _(featuresChange.data.after.value.feature)
+        .keyBy(feature => feature.id).omit(error.ids).value(),
+    )) {
+      successfullyDeployedChanges.push(featuresChange)
+    }
+
+    return {
+      errors: [error],
+      appliedChanges: successfullyDeployedChanges,
+    }
+  }
+
   private async sdfDeploy(
     changes: ReadonlyArray<Change<InstanceElement>>,
     deployReferencedElements: boolean
@@ -140,6 +167,9 @@ export default class NetsuiteClient {
       await this.sdfClient.deploy(customizationInfos, suiteAppId)
       return { errors: [], appliedChanges: changes }
     } catch (e) {
+      if (e instanceof FeaturesDeployError) {
+        return NetsuiteClient.getFeaturesDeployResult(e, changes)
+      }
       return { errors: [e], appliedChanges: [] }
     }
   }

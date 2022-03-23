@@ -25,7 +25,7 @@ import { values, collections } from '@salto-io/lowerdash'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import * as suiteAppFileCabinet from './suiteapp_file_cabinet'
-import { isSuiteAppConfigInstance, isDataObjectType, isFileCabinetInstance } from './types'
+import { isSuiteAppConfigInstance, isSDFConfigTypeName, isDataObjectType, isFileCabinetInstance } from './types'
 import { APPLICATION_ID } from './constants'
 import { isCustomTypeName } from './autogen/types'
 import { fileCabinetTypesNames } from './types/file_cabinet_types'
@@ -60,7 +60,8 @@ const getChangeGroupIdsWithoutSuiteApp: ChangeGroupIdFunction = async changes =>
     const changeData = getChangeData(change)
     return isInstanceElement(changeData)
       && (isCustomTypeName(changeData.elemID.typeName)
-        || fileCabinetTypesNames.has(changeData.elemID.typeName))
+        || fileCabinetTypesNames.has(changeData.elemID.typeName)
+        || isSDFConfigTypeName(changeData.elemID.typeName))
   }
   return new Map(
     wu(changes.entries())
@@ -140,6 +141,7 @@ const isSdfChange = (change: Change): boolean => {
   return isCustomTypeName(changeData.elemID.typeName)
     || (isFileCabinetInstance(changeData)
       && !suiteAppFileCabinet.isChangeDeployable(change))
+    || isSDFConfigTypeName(changeData.elemID.typeName)
 }
 
 const isSuiteAppRecordChange = async (change: Change): Promise<boolean> => {

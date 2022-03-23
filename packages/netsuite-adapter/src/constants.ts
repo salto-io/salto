@@ -93,3 +93,4 @@ export const DEPLOY = 'deploy'
 export const INSTALLED_SUITEAPPS = 'installedSuiteApps'
 
 export const ACCOUNT_SPECIFIC_VALUE = '[ACCOUNT_SPECIFIC_VALUE]'
+export const NOT_YET_SUPPORTED_VALUE = '[NOT_YET_SUPPORTED]'

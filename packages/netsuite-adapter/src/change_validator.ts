@@ -29,6 +29,7 @@ import customTypesInvalidValuesValidator from './change_validators/custom_types_
 import safeDeployValidator, { FetchByQueryFunc } from './change_validators/safe_deploy'
 import mappedListsIndexesValidator from './change_validators/mapped_lists_indexes'
 import { validateDependsOnInvalidElement } from './change_validators/dependencies'
+import notYetSupportedValuesValidator from './change_validators/not_yet_supported_values'
 
 
 const changeValidators: ChangeValidator[] = [
@@ -43,6 +44,7 @@ const changeValidators: ChangeValidator[] = [
   subInstancesValidator,
   customTypesInvalidValuesValidator,
   mappedListsIndexesValidator,
+  notYetSupportedValuesValidator,
 ]
 
 const nonSuiteAppValidators: ChangeValidator[] = [

@@ -98,9 +98,9 @@ class InvalidLexerTokenError extends Error {
   }
 }
 
-export class ContentMergeConflictError extends Error {
+export class UnresolvedMergeConflictError extends Error {
   constructor(public lastValidToken?: LexerToken) {
-    super('Merge conflict')
+    super('Unresolved merge conflict')
   }
 }
 
@@ -114,7 +114,7 @@ const validateToken = (token?: moo.Token): token is LexerToken => {
     throw new InvalidLexerTokenError()
   } else if (token.type === TOKEN_TYPES.MERGE_CONFLICT) {
     if (isAtBeginningOfLine(token)) {
-      throw new ContentMergeConflictError(token as LexerToken)
+      throw new UnresolvedMergeConflictError(token as LexerToken)
     } else {
       throw new InvalidLexerTokenError()
     }

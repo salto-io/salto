@@ -18,7 +18,7 @@ import { flattenElementStr } from '@salto-io/adapter-utils'
 import { ParseResult } from '../../types'
 import { Keywords } from '../../language'
 import { Functions } from '../../functions'
-import Lexer, { TOKEN_TYPES, NoSuchElementError, ContentMergeConflictError } from './lexer'
+import Lexer, { TOKEN_TYPES, NoSuchElementError, UnresolvedMergeConflictError } from './lexer'
 import { SourceMap } from '../../source_map'
 import { contentMergeConflict, invalidStringChar, unexpectedEndOfFile } from './errors'
 import { ParseContext } from './types'
@@ -72,7 +72,7 @@ export const parseBuffer = async (
     // Catch the beginning string of a merge conflict and verify it by catching
     // the middle and ending strings. In case they aren't found, raise an invalid
     // sting error.
-    } else if (e instanceof ContentMergeConflictError && e.lastValidToken) {
+    } else if (e instanceof UnresolvedMergeConflictError && e.lastValidToken) {
       const pos = positionAtStart(e.lastValidToken)
       try {
         // Having the beginning string of a merge conflict, Salto verifies if the

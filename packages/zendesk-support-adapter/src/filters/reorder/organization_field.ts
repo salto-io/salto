@@ -21,6 +21,10 @@ import { createReorderFilterCreator } from './creator'
 const filterCreator = createReorderFilterCreator({
   typeName: 'organization_field',
   orderFieldName: 'organization_field_ids',
+  iterateesToSortBy: [
+    instance => !instance.value.active,
+    instance => instance.value.position,
+  ],
 })
 
 export default filterCreator

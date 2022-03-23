@@ -163,6 +163,7 @@ export const replaceReferenceValues = async <
       transformFunc: transformPrimitive,
       strict: false,
       pathID: instance.elemID,
+      allowEmpty: true,
     }
   ) ?? instance.value
 }

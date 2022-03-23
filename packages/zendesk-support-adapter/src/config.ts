@@ -161,6 +161,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       idFields: ['title'],
       fileNameFields: ['title'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'position', fieldType: 'number' }),
       serviceUrl: '/admin/workspaces/agent-workspace/views/{id}',
     },
     deployRequests: {
@@ -254,6 +255,20 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
           triggerCategoryId: 'id',
         },
       },
+    },
+  },
+  trigger_order: {
+    deployRequests: {
+      modify: {
+        url: '/trigger_categories/jobs',
+        method: 'post',
+        deployAsField: 'job',
+      },
+    },
+  },
+  trigger_order_entry: {
+    transformation: {
+      sourceTypeName: 'trigger_order__order',
     },
   },
   automation: {
@@ -378,6 +393,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       idFields: ['title'],
       fileNameFields: ['title'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'position', fieldType: 'number' }),
       serviceUrl: '/admin/workspaces/agent-workspace/macros/{id}',
     },
     deployRequests: {
@@ -627,6 +643,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       fileNameFields: ['type', 'title'],
       standaloneFields: [{ fieldName: 'custom_field_options' }],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'position', fieldType: 'number' }),
       serviceUrl: '/admin/objects-rules/tickets/ticket-fields/{id}',
     },
     deployRequests: {

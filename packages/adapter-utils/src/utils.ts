@@ -432,10 +432,13 @@ export type GetLookupNameFunc = (args: GetLookupNameFuncArgs) => Promise<Value>
 export type ResolveValuesFunc = <T extends Element>(
   element: T,
   getLookUpName: GetLookupNameFunc,
-  elementsSource?: ReadOnlyElementsSource
+  elementsSource?: ReadOnlyElementsSource,
+  allowEmpty?: boolean
 ) => Promise<T>
 
-export const resolveValues: ResolveValuesFunc = async (element, getLookUpName, elementsSource) => {
+export const resolveValues: ResolveValuesFunc = async (
+  element, getLookUpName, elementsSource, allowEmpty = false,
+) => {
   const valuesReplacer: TransformFunc = async ({ value, field, path }) => {
     if (isReferenceExpression(value)) {
       return getLookUpName({
@@ -461,16 +464,20 @@ export const resolveValues: ResolveValuesFunc = async (element, getLookUpName, e
     transformFunc: valuesReplacer,
     strict: false,
     elementsSource,
+    allowEmpty,
   })
 }
 
 export type RestoreValuesFunc = <T extends Element>(
   source: T,
   targetElement: T,
-  getLookUpName: GetLookupNameFunc
+  getLookUpName: GetLookupNameFunc,
+  allowEmpty?: boolean
 ) => Promise<T>
 
-export const restoreValues: RestoreValuesFunc = async (source, targetElement, getLookUpName) => {
+export const restoreValues: RestoreValuesFunc = async (
+  source, targetElement, getLookUpName, allowEmpty = false
+) => {
   const allReferencesPaths = new Map<string, ReferenceExpression>()
   const allStaticFilesPaths = new Map<string, StaticFile>()
   const createPathMapCallback: WalkOnFunc = ({ value, path }) => {
@@ -510,6 +517,7 @@ export const restoreValues: RestoreValuesFunc = async (source, targetElement, ge
     element: targetElement,
     transformFunc: restoreValuesFunc,
     strict: false,
+    allowEmpty,
   })
 }
 

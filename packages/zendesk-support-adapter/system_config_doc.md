@@ -225,6 +225,26 @@ zendesk_support {
               fieldType = "number"
             },
           ]
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+            {
+              fieldName = "position"
+              fieldType = "number"
+            },
+          ]
           serviceUrl = "/admin/workspaces/agent-workspace/views/{id}"
         }
         deployRequests = {
@@ -354,6 +374,20 @@ zendesk_support {
           }
         }
       }
+      trigger_order = {
+        deployRequests = {
+          modify = {
+            url = "/trigger_categories/jobs"
+            method = "post"
+            deployAsField = "job"
+          }
+        }
+      }
+      trigger_order_entry = {
+        transformation = {
+          sourceTypeName = "trigger_order__order"
+        }
+      }
       automation = {
         transformation = {
           sourceTypeName = "automations__automations"
@@ -400,6 +434,14 @@ zendesk_support {
             urlParamsToFields = {
               automationId = "id"
             }
+          }
+        }
+      }
+      automation_order = {
+        deployRequests = {
+          modify = {
+            url = "/automations/update_many"
+            method = "put"
           }
         }
       }
@@ -565,6 +607,10 @@ zendesk_support {
             },
             {
               fieldName = "attachments"
+            },
+            {
+              fieldName = "position"
+              fieldType = "number"
             },
           ]
           serviceUrl = "/admin/workspaces/agent-workspace/macros/{id}"
@@ -1066,6 +1112,26 @@ zendesk_support {
             },
             {
               fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+            {
+              fieldName = "position"
               fieldType = "number"
             },
           ]

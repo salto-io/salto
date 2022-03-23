@@ -402,6 +402,9 @@ describe('adapter', () => {
           'zendesk_support.trigger_definition__conditions_any__operators',
           'zendesk_support.trigger_definition__conditions_any__values',
           'zendesk_support.trigger_definitions',
+          'zendesk_support.trigger_order',
+          'zendesk_support.trigger_order.instance',
+          'zendesk_support.trigger_order_entry',
           'zendesk_support.triggers',
           'zendesk_support.user_field',
           'zendesk_support.user_field.instance.another_text_3425',
@@ -537,7 +540,6 @@ describe('adapter', () => {
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
         const instances = elements.filter(isInstanceElement)
-        expect(instances).toHaveLength(10)
         expect(instances.map(e => e.elemID.getFullName()).sort())
           .toEqual([
             'zendesk_support.group.instance.Support',
@@ -549,6 +551,7 @@ describe('adapter', () => {
             'zendesk_support.organization_field_order.instance',
             'zendesk_support.sla_policy_order.instance',
             'zendesk_support.ticket_form_order.instance',
+            'zendesk_support.trigger_order.instance',
             'zendesk_support.user_field_order.instance',
             'zendesk_support.workspace_order.instance',
           ].sort())

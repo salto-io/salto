@@ -209,7 +209,6 @@ export const mockDefaultValues: Record<string, Values> = {
     type: 'tagger',
     title: 'Test',
     description: '',
-    position: 9999,
     active: true,
     required: false,
     collapsed_for_agents: false,

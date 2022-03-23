@@ -37,7 +37,7 @@ export type DeployFuncType = (
 type ReorderFilterCreatorParams = {
   typeName: string
   orderFieldName: string
-  additionalIterateesToSortBy?: Array<_.Many<_.ListIteratee<InstanceElement>>>
+  iterateesToSortBy?: Array<_.Many<_.ListIteratee<InstanceElement>>>
   deployFunc?: DeployFuncType
 }
 
@@ -47,7 +47,7 @@ export const createReorderFilterCreator = (
   {
     typeName,
     orderFieldName,
-    additionalIterateesToSortBy = [],
+    iterateesToSortBy = [instance => instance.value.position],
     deployFunc = async (change, client, apiDefinitions) => {
       await deployChange(change, client, apiDefinitions)
     },
@@ -65,8 +65,7 @@ export const createReorderFilterCreator = (
       elements
         .filter(isInstanceElement)
         .filter(e => e.elemID.typeName === typeName),
-      instance => instance.value.position,
-      ...additionalIterateesToSortBy,
+      ...iterateesToSortBy,
     )
       .map(inst => {
         delete inst.value.position

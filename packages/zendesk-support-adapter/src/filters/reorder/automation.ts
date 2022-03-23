@@ -36,7 +36,9 @@ export const deployFunc: DeployFuncType = async (change, client, apiDefinitions)
 const filterCreator = createReorderFilterCreator({
   typeName: 'automation',
   orderFieldName: ORDER_FIELD_NAME,
-  additionalIterateesToSortBy: [
+  iterateesToSortBy: [
+    instance => !instance.value.active,
+    instance => instance.value.position,
     instance => instance.value.title,
   ],
   deployFunc,

@@ -21,7 +21,7 @@ import SoapClient from '../../src/client/suiteapp_client/soap_client/soap_client
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError } from '../../src/client/suiteapp_client/errors'
 import SuiteAppClient, { PAGE_SIZE } from '../../src/client/suiteapp_client/suiteapp_client'
 import { InvalidSuiteAppCredentialsError } from '../../src/client/types'
-import { CONFIG_RECORD_TYPES } from '../../src/types'
+import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../src/types'
 
 
 describe('SuiteAppClient', () => {
@@ -416,12 +416,12 @@ describe('SuiteAppClient', () => {
           results: {
             results: [
               {
-                configType: CONFIG_RECORD_TYPES[0],
+                configType: SUITEAPP_CONFIG_RECORD_TYPES[0],
                 fieldsDef: [],
                 data: { notFieldsProperty: {} },
               },
               {
-                configType: CONFIG_RECORD_TYPES[1],
+                configType: SUITEAPP_CONFIG_RECORD_TYPES[1],
                 fieldsDef: [
                   { notFieldDefinition: true },
                   { id: 'a', label: 'a', type: 'checkbox', selectOptions: [] },
@@ -433,7 +433,7 @@ describe('SuiteAppClient', () => {
           },
         })
         expect(await client.getConfigRecords()).toEqual([{
-          configType: CONFIG_RECORD_TYPES[1],
+          configType: SUITEAPP_CONFIG_RECORD_TYPES[1],
           fieldsDef: [{ id: 'a', label: 'a', type: 'checkbox', selectOptions: [] }],
           data: { fields: { a: 'T' } },
         }])
@@ -491,7 +491,7 @@ describe('SuiteAppClient', () => {
       it('should return error on invalid status', async () => {
         mockAxiosAdapter.onPost().replyOnce(200, {
           status: 'success',
-          results: [{ configType: CONFIG_RECORD_TYPES[0], status: 'none' }],
+          results: [{ configType: SUITEAPP_CONFIG_RECORD_TYPES[0], status: 'none' }],
         })
         expect(await client.setConfigRecordsValues([])).toEqual({
           errorMessage: expect.stringContaining('should match some schema in anyOf'),
@@ -500,7 +500,7 @@ describe('SuiteAppClient', () => {
       it('should return error on missing errorMessage', async () => {
         mockAxiosAdapter.onPost().replyOnce(200, {
           status: 'success',
-          results: [{ configType: CONFIG_RECORD_TYPES[0], status: 'fail' }],
+          results: [{ configType: SUITEAPP_CONFIG_RECORD_TYPES[0], status: 'fail' }],
         })
         expect(await client.setConfigRecordsValues([])).toEqual({
           errorMessage: expect.stringContaining('should match some schema in anyOf'),
@@ -508,8 +508,8 @@ describe('SuiteAppClient', () => {
       })
       it('should return results', async () => {
         const results = [
-          { configType: CONFIG_RECORD_TYPES[0], status: 'success' },
-          { configType: CONFIG_RECORD_TYPES[1], status: 'fail', errorMessage: 'error' },
+          { configType: SUITEAPP_CONFIG_RECORD_TYPES[0], status: 'success' },
+          { configType: SUITEAPP_CONFIG_RECORD_TYPES[1], status: 'fail', errorMessage: 'error' },
         ]
         mockAxiosAdapter.onPost().replyOnce(200, {
           status: 'success',

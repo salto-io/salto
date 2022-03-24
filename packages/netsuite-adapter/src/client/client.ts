@@ -33,7 +33,7 @@ import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATIN
 import { DeployResult } from '../types'
 import { APPLICATION_ID } from '../constants'
 import { convertInstanceMapsToLists } from '../mapped_lists/utils'
-import { getConfigDeployResult, getConfigRecordElements, getSetConfigTypes } from './config_elements'
+import { getConfigDeployResult, getConfigRecordElements, getSetConfigTypes } from './suiteapp_client/config_elements'
 
 const { awu } = collections.asynciterable
 const log = logger(module)

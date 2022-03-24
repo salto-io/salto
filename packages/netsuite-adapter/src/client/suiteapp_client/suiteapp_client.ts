@@ -35,7 +35,7 @@ import { CallsLimiter, ConfigRecord, ConfigRecordData, GetConfigResult, CONFIG_R
   SuiteAppClientParameters, SuiteQLResults, SUITE_QL_RESULTS_SCHEMA, SystemInformation,
   SYSTEM_INFORMATION_SCHEME, FileCabinetInstanceDetails, ConfigFieldDefinition, CONFIG_FIELD_DEFINITION_SCHEMA, SetConfigType, SET_CONFIG_RESULT_SCHEMA, SetConfigRecordsValuesResult, SetConfigResult } from './types'
 import { SuiteAppCredentials, toUrlAccountId } from '../credentials'
-import { CONFIG_RECORD_TYPES } from '../../types'
+import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
 import { DEFAULT_CONCURRENCY } from '../../config'
 import { CONSUMER_KEY, CONSUMER_SECRET } from './constants'
 import SoapClient from './soap_client/soap_client'
@@ -221,7 +221,7 @@ export default class SuiteAppClient {
       }
       const result = await this.sendRestletRequest('config', {
         action: 'get',
-        types: CONFIG_RECORD_TYPES,
+        types: SUITEAPP_CONFIG_RECORD_TYPES,
       })
 
       if (!this.ajv.validate<GetConfigResult>(GET_CONFIG_RESULT_SCHEMA, result)) {
@@ -230,11 +230,11 @@ export default class SuiteAppClient {
       }
 
       const { results, errors } = result
-      if (results.length + errors.length !== CONFIG_RECORD_TYPES.length) {
+      if (results.length + errors.length !== SUITEAPP_CONFIG_RECORD_TYPES.length) {
         log.warn(
           'getConfigRecords received different amount of results than expected: %d istead of %d',
           results.length + errors.length,
-          CONFIG_RECORD_TYPES.length
+          SUITEAPP_CONFIG_RECORD_TYPES.length
         )
       }
       log.debug('getConfigRecords received errors: %o', errors)

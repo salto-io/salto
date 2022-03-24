@@ -54,7 +54,7 @@ import accountSpecificValues from './filters/account_specific_values'
 import translationConverter from './filters/translation_converter'
 import systemNoteAuthorInformation from './filters/author_information/system_note'
 import savedSearchesAuthorInformation from './filters/author_information/saved_searches'
-import configElementsFilter from './filters/config_elements'
+import suiteAppConfigElementsFilter from './filters/suiteapp_config_elements'
 import { Filter, FilterCreator } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_USE_CHANGES_DETECTION } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams } from './query'
@@ -145,7 +145,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       savedSearchesAuthorInformation,
       translationConverter,
       accountSpecificValues,
-      configElementsFilter,
+      suiteAppConfigElementsFilter,
       // serviceUrls must run after suiteAppInternalIds filter
       serviceUrls,
     ],

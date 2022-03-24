@@ -18,7 +18,7 @@ import { getChangeGroupIdsFunc, SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GRO
 import { APPLICATION_ID, NETSUITE } from '../src/constants'
 import { entitycustomfieldType } from '../src/autogen/types/custom_types/entitycustomfield'
 import { fileType } from '../src/types/file_cabinet_types'
-import { CONFIG_TYPE_NAMES } from '../src/types'
+import { SUITEAPP_CONFIG_TYPE_NAMES } from '../src/types'
 
 describe('Group Changes without Salto suiteApp', () => {
   const entitycustomfield = entitycustomfieldType().type
@@ -189,7 +189,7 @@ describe('Group Changes with Salto suiteApp', () => {
   )
 
   const configType = new ObjectType({
-    elemID: new ElemID(NETSUITE, CONFIG_TYPE_NAMES[0]),
+    elemID: new ElemID(NETSUITE, SUITEAPP_CONFIG_TYPE_NAMES[0]),
   })
 
   const configInstance = new InstanceElement(

@@ -16,7 +16,7 @@
 import { Values } from '@salto-io/adapter-api'
 import Bottleneck from 'bottleneck'
 import { SuiteAppClientConfig } from '../../config'
-import { ConfigRecordType, CONFIG_RECORD_TYPES } from '../../types'
+import { SuiteAppConfigRecordType, SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
 import { SuiteAppCredentials } from '../credentials'
 
 
@@ -261,7 +261,7 @@ export type ConfigRecordData = {
 }
 
 export type ConfigRecord = {
-  configType: ConfigRecordType
+  configType: SuiteAppConfigRecordType
   fieldsDef: ConfigFieldDefinition[]
   data: ConfigRecordData
 }
@@ -274,7 +274,7 @@ export const GET_CONFIG_RESULT_SCHEMA = {
       items: {
         type: 'object',
         properties: {
-          configType: { enum: CONFIG_RECORD_TYPES },
+          configType: { enum: SUITEAPP_CONFIG_RECORD_TYPES },
           fieldsDef: {
             type: 'array',
             items: { type: 'object' },
@@ -331,14 +331,14 @@ export const SET_CONFIG_RESULT_SCHEMA = {
     anyOf: [{
       type: 'object',
       properties: {
-        configType: { enum: CONFIG_RECORD_TYPES },
+        configType: { enum: SUITEAPP_CONFIG_RECORD_TYPES },
         status: { const: 'success' },
       },
       required: ['configType', 'status'],
     }, {
       type: 'object',
       properties: {
-        configType: { enum: CONFIG_RECORD_TYPES },
+        configType: { enum: SUITEAPP_CONFIG_RECORD_TYPES },
         status: { const: 'fail' },
         errorMessage: { type: 'string' },
       },

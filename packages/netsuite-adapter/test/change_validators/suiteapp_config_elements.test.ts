@@ -15,15 +15,15 @@
 */
 import { BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType, toChange } from '@salto-io/adapter-api'
 import { NETSUITE, SELECT_OPTION } from '../../src/constants'
-import { CONFIG_TYPE_NAMES } from '../../src/types'
-import configElementsValidator from '../../src/change_validators/config_elements'
+import { SUITEAPP_CONFIG_TYPE_NAMES } from '../../src/types'
+import suiteAppConfigElementsValidator from '../../src/change_validators/suiteapp_config_elements'
 
 describe('config elements change validator', () => {
   const selectOptionType = new ObjectType({
     elemID: new ElemID(NETSUITE, SELECT_OPTION),
   })
   const type = new ObjectType({
-    elemID: new ElemID(NETSUITE, CONFIG_TYPE_NAMES[0]),
+    elemID: new ElemID(NETSUITE, SUITEAPP_CONFIG_TYPE_NAMES[0]),
     fields: {
       checkboxField: {
         refType: BuiltinTypes.BOOLEAN,
@@ -50,50 +50,13 @@ describe('config elements change validator', () => {
     after = before.clone()
   })
 
-  it('should return errors on instance addition/removal', async () => {
-    const result = await configElementsValidator([
-      toChange({ before }),
-      toChange({ after }),
-    ])
-    expect(result.length).toBe(2)
-    expect(result[0]).toEqual({
-      elemID: after.elemID,
-      severity: 'Error',
-      message: 'Addition or removal of a config instance is not supported',
-      detailedMessage: 'Addition or removal of a config instance is not supported. This instance can only be modified.',
-    })
-    expect(result[1]).toEqual(result[0])
-  })
-  it('should return warnings/errors on values addition/removal', async () => {
-    after.value = {
-      newCheckboxField: false,
-      selectField: { value: '1', text: 'One' },
-      multiselectField: [{ value: '1', text: 'One' }],
-    }
-    const result = await configElementsValidator([
-      toChange({ before, after }),
-    ])
-    expect(result.length).toBe(2)
-    expect(result[0]).toEqual({
-      elemID: after.elemID.createNestedID('checkboxField'),
-      severity: 'Error',
-      message: 'Removal of values in a config instance is not supported',
-      detailedMessage: 'Removal of values in a config instance is not supported. Values can only be added or modified.',
-    })
-    expect(result[1]).toEqual({
-      elemID: after.elemID.createNestedID('newCheckboxField'),
-      severity: 'Warning',
-      message: 'Addition of values in a config instance may be ignored by NetSuite',
-      detailedMessage: 'Addition of values in a config instance may be ignored by NetSuite. In this case they will be deleted in the next fetch.',
-    })
-  })
   it('should return warnings on text change in \'select\' fields', async () => {
     after.value = {
       checkboxField: true,
       selectField: { value: '2', text: 'Two' },
       multiselectField: [{ value: '2', text: 'Two' }],
     }
-    const result = await configElementsValidator([
+    const result = await suiteAppConfigElementsValidator([
       toChange({ before, after }),
     ])
     expect(result.length).toBe(2)

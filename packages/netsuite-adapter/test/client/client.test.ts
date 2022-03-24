@@ -21,7 +21,7 @@ import NetsuiteClient from '../../src/client/client'
 import { SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../../src/group_changes'
 import { NETSUITE } from '../../src/constants'
 import { SetConfigType } from '../../src/client/suiteapp_client/types'
-import { CONFIG_RECORD_TYPES, CONFIG_TYPES_TO_TYPE_NAMES } from '../../src/types'
+import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../src/types'
 import { NetsuiteQuery } from '../../src/query'
 
 describe('NetsuiteClient', () => {
@@ -73,7 +73,7 @@ describe('NetsuiteClient', () => {
         isTypeMatch: jest.fn().mockResolvedValue(true),
       } as unknown as NetsuiteQuery
       getConfigRecordsMock.mockResolvedValue([{
-        configType: CONFIG_RECORD_TYPES[0],
+        configType: SUITEAPP_CONFIG_RECORD_TYPES[0],
         fieldsDef: [{ id: 'field', label: 'field', type: 'checkbox', selectOptions: [] }],
         data: { fields: { field: 'T' } },
       }])
@@ -163,9 +163,9 @@ describe('NetsuiteClient', () => {
       setConfigRecordsValuesMock.mockImplementation(types =>
         types.map(({ configType }: SetConfigType) => ({ configType, status: 'success' })))
 
-      const configType = CONFIG_RECORD_TYPES[0]
+      const configType = SUITEAPP_CONFIG_RECORD_TYPES[0]
       const configObjectType = new ObjectType({
-        elemID: new ElemID(NETSUITE, CONFIG_TYPES_TO_TYPE_NAMES[configType]),
+        elemID: new ElemID(NETSUITE, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES[configType]),
       })
 
       const results = await client.deploy(

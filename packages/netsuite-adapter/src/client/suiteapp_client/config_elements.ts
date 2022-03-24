@@ -16,9 +16,9 @@
 import os from 'os'
 import _ from 'lodash'
 import { BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, FieldDefinition, getChangeData, InstanceElement, ListType, ModificationChange, ObjectType, TypeElement } from '@salto-io/adapter-api'
-import { NETSUITE, SELECT_OPTION, SETTINGS_PATH, TYPES_PATH } from '../constants'
-import { ConfigFieldDefinition, ConfigRecord, isSuccessSetConfig, SetConfigRecordsValuesResult, SetConfigType } from './suiteapp_client/types'
-import { CONFIG_TYPES_TO_TYPE_NAMES, DeployResult } from '../types'
+import { NETSUITE, SELECT_OPTION, SETTINGS_PATH, TYPES_PATH } from '../../constants'
+import { ConfigFieldDefinition, ConfigRecord, isSuccessSetConfig, SetConfigRecordsValuesResult, SetConfigType } from './types'
+import { SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES, DeployResult } from '../../types'
 
 const CHECKBOX_TYPE = 'checkbox'
 const INTEGER_TYPE = 'integer'
@@ -94,7 +94,7 @@ export const getConfigRecordElements = (
 
   const elements = configRecords
     .flatMap(configRecord => {
-      const typeName = CONFIG_TYPES_TO_TYPE_NAMES[configRecord.configType]
+      const typeName = SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES[configRecord.configType]
       const configRecordType = new ObjectType({
         elemID: new ElemID(NETSUITE, typeName),
         fields: getFields(configRecord.fieldsDef),

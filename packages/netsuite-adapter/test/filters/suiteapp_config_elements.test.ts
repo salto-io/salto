@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 import { InstanceElement, isInstanceElement, toChange } from '@salto-io/adapter-api'
-import { getConfigRecordElements } from '../../src/client/config_elements'
-import { CONFIG_RECORD_TYPES } from '../../src/types'
-import filterCreator from '../../src/filters/config_elements'
+import { getConfigRecordElements } from '../../src/client/suiteapp_client/config_elements'
+import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../src/types'
+import filterCreator from '../../src/filters/suiteapp_config_elements'
 
 describe('configElements filter', () => {
-  const configType = CONFIG_RECORD_TYPES[0]
+  const configType = SUITEAPP_CONFIG_RECORD_TYPES[0]
   const configRecord = {
     configType,
     fieldsDef: [

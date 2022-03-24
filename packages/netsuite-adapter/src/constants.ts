@@ -46,7 +46,7 @@ export const WORKBOOK = 'workbook'
 export const WORKFLOW = 'workflow'
 export const FILE = 'file'
 export const FOLDER = 'folder'
-export const SELECT_OPTION = 'config_selectoption'
+export const SELECT_OPTION = 'selectoption'
 
 // Fields
 export const SCRIPT_ID = 'scriptid'

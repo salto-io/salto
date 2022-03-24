@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 import { BuiltinTypes, InstanceElement, isField, isInstanceElement, isObjectType, ModificationChange, toChange } from '@salto-io/adapter-api'
-import { CONFIG_RECORD_TYPES, CONFIG_TYPES_TO_TYPE_NAMES } from '../../src/types'
+import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../src/types'
 import { NETSUITE, SELECT_OPTION, SETTINGS_PATH } from '../../src/constants'
-import * as unit from '../../src/client/config_elements'
+import * as unit from '../../src/client/suiteapp_client/config_elements'
 
 describe('config elements', () => {
-  const configType = CONFIG_RECORD_TYPES[0]
+  const configType = SUITEAPP_CONFIG_RECORD_TYPES[0]
   const configRecord = {
     configType,
     fieldsDef: [
@@ -41,7 +41,8 @@ describe('config elements', () => {
     it('should create config ObjectType', () => {
       const configObjectType = elements[0]
       expect(isObjectType(configObjectType)).toBeTruthy()
-      expect(configObjectType.elemID.typeName).toEqual(CONFIG_TYPES_TO_TYPE_NAMES[configType])
+      expect(configObjectType.elemID.typeName)
+        .toEqual(SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES[configType])
 
       const fields = isObjectType(configObjectType) ? configObjectType.fields : {}
       expect(isField(fields.configType)).toBeTruthy()
@@ -74,10 +75,11 @@ describe('config elements', () => {
     it('should create config Instance', () => {
       const configInstance = elements[1]
       expect(isInstanceElement(configInstance)).toBeTruthy()
-      expect(configInstance.elemID.typeName).toEqual(CONFIG_TYPES_TO_TYPE_NAMES[configType])
+      expect(configInstance.elemID.typeName)
+        .toEqual(SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES[configType])
       expect(isInstanceElement(configInstance) && configInstance.value).toEqual({ configRecord })
       expect(configInstance.path)
-        .toEqual([NETSUITE, SETTINGS_PATH, CONFIG_TYPES_TO_TYPE_NAMES[configType]])
+        .toEqual([NETSUITE, SETTINGS_PATH, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES[configType]])
     })
     it('should create selectOption ObjectType', () => {
       const selectOptionType = elements[2]

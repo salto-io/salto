@@ -20,7 +20,7 @@ import { collections, promises } from '@salto-io/lowerdash'
 import { ConfigRecord, SelectOption } from '../client/suiteapp_client/types'
 import { SELECT_OPTION } from '../constants'
 import { FilterWith } from '../filter'
-import { isConfigInstance } from '../types'
+import { isSuiteAppConfigInstance } from '../types'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -115,7 +115,7 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
   onFetch: async elements => {
     await awu(elements)
       .filter(isInstanceElement)
-      .filter(instance => isConfigInstance(instance) && instance.value.configRecord !== undefined)
+      .filter(instance => isSuiteAppConfigInstance(instance))
       .forEach(async instance => {
         instance.value = await getConfigInstanceValue(
           instance.value.configRecord, await instance.getType()
@@ -125,7 +125,7 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
   preDeploy: async changes => {
     await awu(changes)
       .filter(isInstanceChange)
-      .filter(async change => isConfigInstance(getChangeData(change)))
+      .filter(async change => isSuiteAppConfigInstance(getChangeData(change)))
       .forEach(transformValuesForDeploy)
   },
 })

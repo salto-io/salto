@@ -109,23 +109,23 @@ export type DeployResult = AdapterApiDeployResult & {
   elemIdToInternalId?: Record<string, string>
 }
 
-export const CONFIG_RECORD_TYPES = [
+export const SUITEAPP_CONFIG_RECORD_TYPES = [
   'USER_PREFERENCES',
   'COMPANY_INFORMATION',
   'COMPANY_PREFERENCES',
   'ACCOUNTING_PREFERENCES',
 ] as const
 
-export type ConfigRecordType = typeof CONFIG_RECORD_TYPES[number]
+export type SuiteAppConfigRecordType = typeof SUITEAPP_CONFIG_RECORD_TYPES[number]
 
-export const CONFIG_TYPES_TO_TYPE_NAMES: Record<ConfigRecordType, string> = {
-  USER_PREFERENCES: 'config_userpreferences',
-  COMPANY_INFORMATION: 'config_companyinformation',
-  COMPANY_PREFERENCES: 'config_companypreferences',
-  ACCOUNTING_PREFERENCES: 'config_accountingpreferences',
+export const SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES: Record<SuiteAppConfigRecordType, string> = {
+  USER_PREFERENCES: 'userpreferences',
+  COMPANY_INFORMATION: 'companyinformation',
+  COMPANY_PREFERENCES: 'companypreferences',
+  ACCOUNTING_PREFERENCES: 'accountingpreferences',
 }
 
-export const CONFIG_TYPE_NAMES = Object.values(CONFIG_TYPES_TO_TYPE_NAMES)
+export const SUITEAPP_CONFIG_TYPE_NAMES = Object.values(SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES)
 
-export const isConfigInstance = (instance: InstanceElement): boolean =>
-  CONFIG_TYPE_NAMES.includes(instance.elemID.typeName)
+export const isSuiteAppConfigInstance = (instance: InstanceElement): boolean =>
+  SUITEAPP_CONFIG_TYPE_NAMES.includes(instance.elemID.typeName)

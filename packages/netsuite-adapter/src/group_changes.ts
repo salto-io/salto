@@ -25,7 +25,7 @@ import { values, collections } from '@salto-io/lowerdash'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import * as suiteAppFileCabinet from './suiteapp_file_cabinet'
-import { isConfigInstance, isDataObjectType, isFileCabinetInstance } from './types'
+import { isSuiteAppConfigInstance, isDataObjectType, isFileCabinetInstance } from './types'
 import { APPLICATION_ID } from './constants'
 import { isCustomTypeName } from './autogen/types'
 import { fileCabinetTypesNames } from './types/file_cabinet_types'
@@ -162,7 +162,7 @@ const isSuiteAppRecordDeletion = async (change: Change): Promise<boolean> =>
 
 const isSuiteAppConfigChange = async (change: Change): Promise<boolean> => {
   const changeData = getChangeData(change)
-  return isInstanceElement(changeData) && isConfigInstance(changeData)
+  return isInstanceElement(changeData) && isSuiteAppConfigInstance(changeData)
 }
 
 const getChangeGroupIdsWithSuiteApp: ChangeGroupIdFunction = async changes => {

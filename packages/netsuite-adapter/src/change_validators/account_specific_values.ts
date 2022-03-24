@@ -19,34 +19,15 @@ import {
   ChangeError,
   ChangeValidator,
   getChangeData,
-  InstanceElement,
   isAdditionOrModificationChange,
   isInstanceChange,
 } from '@salto-io/adapter-api'
-import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { isCustomType } from '../types'
 import { ACCOUNT_SPECIFIC_VALUE } from '../constants'
+import { isInstanceContainStringValue } from './utils'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
-
-const hasAccountSpecificValue = (instance: InstanceElement): boolean => {
-  let foundAccountSpecificValue = false
-  walkOnElement({
-    element: instance,
-    func: ({ value, path }) => {
-      if (path.isAttrID()) {
-        return WALK_NEXT_STEP.SKIP
-      }
-      if (_.isString(value) && value.includes(ACCOUNT_SPECIFIC_VALUE)) {
-        foundAccountSpecificValue = true
-        return WALK_NEXT_STEP.EXIT
-      }
-      return WALK_NEXT_STEP.RECURSE
-    },
-  })
-  return foundAccountSpecificValue
-}
 
 const changeValidator: ChangeValidator = async changes => (
   awu(changes)
@@ -57,7 +38,7 @@ const changeValidator: ChangeValidator = async changes => (
       if (!isCustomType(instance.refType)) {
         return undefined
       }
-      if (!hasAccountSpecificValue(instance)) {
+      if (!isInstanceContainStringValue(instance, ACCOUNT_SPECIFIC_VALUE)) {
         return undefined
       }
       return {

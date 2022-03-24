@@ -19,36 +19,14 @@ import {
   ChangeError,
   ChangeValidator,
   getChangeData,
-  InstanceElement,
   isAdditionOrModificationChange,
   isInstanceChange,
 } from '@salto-io/adapter-api'
-import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { isCustomType } from '../types'
 import { NOT_YET_SUPPORTED_VALUE } from '../constants'
+import { isInstanceContainStringValue } from './utils'
 
 const { awu } = collections.asynciterable
-
-const isInstanceContainStringValue = (
-  instance: InstanceElement, expectedValue: string
-): boolean => {
-  let foundValue = false
-  walkOnElement({
-    element: instance,
-    func: ({ value, path }) => {
-      if (path.isAttrID()) {
-        return WALK_NEXT_STEP.SKIP
-      }
-      if (_.isString(value) && value.includes(expectedValue)) {
-        foundValue = true
-        return WALK_NEXT_STEP.EXIT
-      }
-      return WALK_NEXT_STEP.RECURSE
-    },
-  })
-  return foundValue
-}
-
 
 const changeValidator: ChangeValidator = async changes => (
   awu(changes)

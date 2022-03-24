@@ -24,7 +24,7 @@ import {
 } from '@salto-io/adapter-api'
 import { isCustomType } from '../types'
 import { NOT_YET_SUPPORTED_VALUE } from '../constants'
-import { isInstanceContainStringValue } from './utils'
+import { isInstanceContainsStringValue } from './utils'
 
 const { awu } = collections.asynciterable
 
@@ -34,7 +34,7 @@ const changeValidator: ChangeValidator = async changes => (
     .filter(isInstanceChange)
     .map(getChangeData)
     .filter(instance => isCustomType(instance.refType))
-    .filter(instance => isInstanceContainStringValue(instance, NOT_YET_SUPPORTED_VALUE))
+    .filter(instance => isInstanceContainsStringValue(instance, NOT_YET_SUPPORTED_VALUE))
     .map(instance => ({
       elemID: instance.elemID,
       severity: 'Error',

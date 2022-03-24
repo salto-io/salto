@@ -24,7 +24,7 @@ import {
 } from '@salto-io/adapter-api'
 import { isCustomType } from '../types'
 import { ACCOUNT_SPECIFIC_VALUE } from '../constants'
-import { isInstanceContainStringValue } from './utils'
+import { isInstanceContainsStringValue } from './utils'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
@@ -38,7 +38,7 @@ const changeValidator: ChangeValidator = async changes => (
       if (!isCustomType(instance.refType)) {
         return undefined
       }
-      if (!isInstanceContainStringValue(instance, ACCOUNT_SPECIFIC_VALUE)) {
+      if (!isInstanceContainsStringValue(instance, ACCOUNT_SPECIFIC_VALUE)) {
         return undefined
       }
       return {

@@ -541,7 +541,7 @@ describe('workspace', () => {
         wu(errors.all()).map(error => erroredWorkspace.transformError(error))
       )
       expect(workspaceErrors.length).toBeGreaterThanOrEqual(1)
-      expect(workspaceErrors[0].sourceFragments).toHaveLength(1)
+      expect(workspaceErrors[0].sourceLocations).toHaveLength(1)
     })
     it('should contain validation errors', async () => {
       const erroredWorkspace = await createWorkspace(mockDirStore(['dup.nacl', 'error.nacl']))
@@ -556,7 +556,7 @@ describe('workspace', () => {
         wu(errors.all()).map(error => erroredWorkspace.transformError(error))
       )
       expect(workspaceErrors.length).toBeGreaterThanOrEqual(1)
-      expect(workspaceErrors[0].sourceFragments).toHaveLength(1)
+      expect(workspaceErrors[0].sourceLocations).toHaveLength(1)
     })
     it('should contain merge errors', async () => {
       const erroredWorkspace = await createWorkspace(mockDirStore(['error.nacl', 'reference_error.nacl']))
@@ -573,14 +573,13 @@ describe('workspace', () => {
       )
       expect(workspaceErrors).toHaveLength(1)
       const wsErros = workspaceErrors[0]
-      expect(wsErros.sourceFragments).toHaveLength(2)
+      expect(wsErros.sourceLocations).toHaveLength(2)
       expect(wsErros.message).toMatch(mergeError)
       expect(wsErros.severity).toBe('Error')
-      const firstSourceFragment = wsErros.sourceFragments[0]
-      expect(firstSourceFragment.sourceRange.filename).toBe('file.nacl')
-      expect(firstSourceFragment.sourceRange.start).toEqual({ byte: 26, col: 3, line: 3 })
-      expect(firstSourceFragment.sourceRange.end).toEqual({ byte: 79, col: 4, line: 5 })
-      expect(firstSourceFragment.fragment).toContain('salesforce.text base_field')
+      const firstSourceLocation = wsErros.sourceLocations[0]
+      expect(firstSourceLocation.sourceRange.filename).toBe('file.nacl')
+      expect(firstSourceLocation.sourceRange.start).toEqual({ byte: 26, col: 3, line: 3 })
+      expect(firstSourceLocation.sourceRange.end).toEqual({ byte: 79, col: 4, line: 5 })
     })
     it('should have merge error when hidden values are added to nacl', async () => {
       const obj = new ObjectType({
@@ -625,7 +624,7 @@ describe('workspace', () => {
       it('should return empty source fragments', async () => {
         const ws = await createWorkspace()
         const wsError = await ws.transformError({ severity: 'Warning', message: '' })
-        expect(wsError.sourceFragments).toHaveLength(0)
+        expect(wsError.sourceLocations).toHaveLength(0)
       })
     })
 

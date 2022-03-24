@@ -45,8 +45,7 @@ describe('diagnostics', () => {
     ))
     baseWs.transformError = mockFunction<Workspace['transformError']>().mockImplementation(async err => ({
       ...err,
-      sourceFragments: [{
-        fragment: '',
+      sourceLocations: [{
         sourceRange: {
           start: { col: 1, line: 1, byte: 1 },
           end: { col: 2, line: 1, byte: 2 },

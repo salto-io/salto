@@ -58,14 +58,14 @@ const STATE_SOURCE_PREFIX = 'state_element_source'
 export const isValidEnvName = (envName: string): boolean =>
   /^[a-z0-9-_.!\s]+$/i.test(envName) && envName.length <= MAX_ENV_NAME_LEN
 
-export type SourceFragment = {
+
+export type SourceLocation = {
   sourceRange: SourceRange
-  fragment: string
   subRange?: SourceRange
 }
 
 export type WorkspaceError<T extends SaltoError> = Readonly<T & {
-  sourceFragments: SourceFragment[]
+  sourceLocations: SourceLocation[]
 }>
 
 type RecencyStatus = 'Old' | 'Nonexistent' | 'Valid'
@@ -153,7 +153,6 @@ export type Workspace = {
   hasElementsInAccounts(accountNames: string[]): Promise<boolean>
   hasElementsInEnv(envName: string): Promise<boolean>
   envOfFile(filename: string): string
-  getSourceFragment(sourceRange: SourceRange): Promise<SourceFragment>
   hasErrors(env?: string): Promise<boolean>
   errors(): Promise<Readonly<Errors>>
   transformToWorkspaceError<T extends SaltoElementError>(saltoElemErr: T):
@@ -740,33 +739,6 @@ export const loadWorkspace = async (
     return elementChanges
   }
 
-  const getSourceFragment = async (
-    sourceRange: SourceRange,
-    subRange?: SourceRange,
-    sourceToUse?: Pick<NaclFilesSource, 'getNaclFile'>
-  ): Promise<SourceFragment> => {
-    const source = sourceToUse ?? await getLoadedNaclFilesSource()
-
-    const naclFile = await source.getNaclFile(sourceRange.filename)
-    log.debug(`error context: start=${sourceRange.start.byte}, end=${sourceRange.end.byte}`)
-    const fragment = naclFile
-      ? naclFile.buffer.substring(sourceRange.start.byte, sourceRange.end.byte)
-      : ''
-    if (!naclFile) {
-      log.warn('failed to resolve source fragment for %o', sourceRange)
-    }
-    return {
-      sourceRange,
-      fragment,
-      subRange,
-    }
-  }
-
-  const getErrorSource = async (error: SaltoError):
-    Promise<AdaptersConfigSource | MultiEnvSource> => (
-    error.source === 'config' ? adaptersConfig : getLoadedNaclFilesSource()
-  )
-
   const getErrorSourceRange = async <T extends SaltoElementError>(error: T):
   Promise<SourceRange[]> => (
     error.source === 'config'
@@ -774,27 +746,20 @@ export const loadWorkspace = async (
       : (await getLoadedNaclFilesSource()).getSourceRanges(currentEnv(), error.elemID)
   )
 
-  const transformParseError = async (error: ParseError): Promise<WorkspaceError<SaltoError>> => ({
+  const transformParseError = (error: ParseError): WorkspaceError<SaltoError> => ({
     ...error,
-    sourceFragments: [await getSourceFragment(
-      error.context,
-      error.subject,
-      await getErrorSource(error),
-    )],
+    sourceLocations: [{ sourceRange: error.context, subRange: error.subject }],
   })
 
   const transformToWorkspaceError = async <T extends SaltoElementError>(saltoElemErr: T):
     Promise<Readonly<WorkspaceError<T>>> => {
-    const source = await getErrorSource(saltoElemErr)
     const sourceRanges = await getErrorSourceRange(saltoElemErr)
-    const sourceFragments = await awu(sourceRanges)
-      .map(range => getSourceFragment(range, undefined, source))
-      .toArray()
+    const sourceLocations: SourceLocation[] = sourceRanges.map(sourceRange => ({ sourceRange }))
 
     return {
       ...saltoElemErr,
       message: saltoElemErr.message,
-      sourceFragments,
+      sourceLocations,
     }
   }
   const transformError = async (error: SaltoError): Promise<WorkspaceError<SaltoError>> => {
@@ -808,7 +773,7 @@ export const loadWorkspace = async (
     if (isElementError(error)) {
       return transformToWorkspaceError(error)
     }
-    return { ...error, sourceFragments: [] }
+    return { ...error, sourceLocations: [] }
   }
 
   const errors = async (env?: string): Promise<Errors> => {
@@ -1032,7 +997,6 @@ export const loadWorkspace = async (
     },
     transformToWorkspaceError,
     transformError,
-    getSourceFragment,
     flush: async (): Promise<void> => {
       if (!persistent) {
         throw new Error('Can not flush a non-persistent workspace.')

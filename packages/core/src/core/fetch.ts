@@ -815,7 +815,7 @@ export const fetchChangesFromWorkspace = async (
 
   const differentConfig = await getDifferentConfigs()
   if (!_.isEmpty(differentConfig)) {
-    return createEmptyFetchChangeDueToError(`Can not fetch from a workspace. Found different configs for ${
+    log.warn(`Found different configs for ${
       differentConfig.map(config => config.elemID.adapter).join(', ')
     }`)
   }

@@ -20,7 +20,6 @@ import {
   PrimitiveType, PrimitiveTypes, OBJECT_SERVICE_ID, InstanceElement, CORE_ANNOTATIONS,
   ListType, FieldDefinition, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ReferenceExpression,
   ReadOnlyElementsSource,
-  TypeReference,
   createRefToElmWithValue,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
@@ -1443,51 +1442,6 @@ describe('fetch from workspace', () => {
       expect(fetchRes.unmergedElements).toHaveLength(0)
       expect(fetchRes.errors).toHaveLength(1)
       expect(fetchRes.errors[0].message).toBe('Can not fetch from a workspace with errors.')
-      expect(fetchRes.errors[0].severity).toBe('Error')
-    })
-
-    it('should fail if there is a mismatch in the adapter configs', async () => {
-      const currentServiceConfigs = [
-        new InstanceElement(
-          'salto_config',
-          new TypeReference(ElemID.fromFullName('salto_config')),
-          {
-            key: 'value',
-          }
-        ),
-        new InstanceElement(
-          'salto_config2',
-          new TypeReference(ElemID.fromFullName('salto_config2')),
-          {
-            key: 'value2',
-          }
-        ),
-      ]
-
-      const sourceServiceConfigs = {
-        salto_config: currentServiceConfigs[0].clone(),
-        salto_config2: currentServiceConfigs[1].clone(),
-      }
-      sourceServiceConfigs.salto_config2.value.key = 'otherValue'
-      const sourceWS = mockWorkspace({
-        accountConfigs: sourceServiceConfigs,
-      })
-
-      const fetchRes = await fetchChangesFromWorkspace(
-        sourceWS,
-        ['salto'],
-        createInMemoryElementSource([]),
-        createInMemoryElementSource([]),
-        currentServiceConfigs,
-        'default',
-        false,
-      )
-
-      expect([...fetchRes.changes]).toHaveLength(0)
-      expect(fetchRes.elements).toHaveLength(0)
-      expect(fetchRes.unmergedElements).toHaveLength(0)
-      expect(fetchRes.errors).toHaveLength(1)
-      expect(fetchRes.errors[0].message).toBe('Can not fetch from a workspace. Found different configs for salto_config2')
       expect(fetchRes.errors[0].severity).toBe('Error')
     })
   })

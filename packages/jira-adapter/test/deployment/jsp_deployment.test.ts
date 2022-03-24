@@ -364,6 +364,32 @@ describe('jsp_deployment', () => {
       expect(results.appliedChanges).toHaveLength(0)
     })
 
+    it('Should throw when there is not query url and no queryFunction', async () => {
+      const res = await deployWithJspEndpoints({
+        changes: [toChange({ before: instance })],
+        client,
+        urls: _.omit(urls, 'query'),
+      })
+
+      expect(res.errors).toHaveLength(1)
+    })
+
+    it('Should use queryFunction when passed', async () => {
+      mockConnection.get.mockResolvedValueOnce({
+        status: 400,
+        data: {},
+      })
+
+      const res = await deployWithJspEndpoints({
+        changes: [toChange({ before: instance })],
+        client,
+        urls,
+        queryFunction: async () => [{ id: '1' }],
+      })
+
+      expect(res.errors).toHaveLength(0)
+    })
+
     it('When failed to query the instances in the service should return an error', async () => {
       mockConnection.get.mockResolvedValueOnce({
         status: 400,

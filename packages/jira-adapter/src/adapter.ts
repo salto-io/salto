@@ -64,6 +64,8 @@ import resolutionFilter from './filters/resolution'
 import priorityFilter from './filters/priority'
 import statusDeploymentFilter from './filters/statuses/status_deployment'
 import securitySchemeFilter from './filters/security_scheme/security_scheme'
+import notificationSchemeDeploymentFilter from './filters/notification_scheme/notification_scheme_deployment'
+import notificationSchemeStructureFilter from './filters/notification_scheme/notification_scheme_structure'
 import avatarsFilter from './filters/avatars'
 import iconUrlFilter from './filters/icon_url'
 import userFilter from './filters/user'
@@ -118,6 +120,8 @@ export const DEFAULT_FILTERS = [
   priorityFilter,
   statusDeploymentFilter,
   securitySchemeFilter,
+  notificationSchemeStructureFilter,
+  notificationSchemeDeploymentFilter,
   issueTypeScreenSchemeFilter,
   fieldConfigurationFilter,
   fieldConfigurationSchemeFilter,

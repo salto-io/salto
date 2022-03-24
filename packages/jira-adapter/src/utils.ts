@@ -72,7 +72,7 @@ export const getFilledJspUrls = (
 
   return {
     ...jspRequests,
-    query: elementUtils.createUrl({
+    query: jspRequests.query && elementUtils.createUrl({
       instance,
       baseUrl: jspRequests.query,
     }),

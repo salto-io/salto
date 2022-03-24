@@ -17,7 +17,7 @@ import { AdditionChange, Change, DeployResult, getChangeData, InstanceElement, i
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { resolveValues, safeJsonStringify } from '@salto-io/adapter-utils'
-import { deployment } from '@salto-io/adapter-components'
+import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { deployChanges } from './standard_deployment'
 import JiraClient from '../client/client'
@@ -89,19 +89,32 @@ const isNameIdObject = (obj: unknown): obj is NameIdObject =>
 const queryServiceValues = async (
   client: JiraClient,
   urls: JspUrls,
-  getNameFunction?: (values: Values) => string
+  getNameFunction?: (values: Values) => string,
+  queryFunction?: () => Promise<clientUtils.ResponseValue[]>
 ): Promise<NameIdObject[]> => {
-  const response = await client.getPrivate({
-    url: urls.query,
-  })
-
-  const data = urls.dataField !== undefined && !Array.isArray(response.data)
-    ? response.data[urls.dataField]
-    : response.data
-
-  if (!Array.isArray(data)) {
-    throw new Error(`Expected array of values in response, got ${safeJsonStringify(response.data)}`)
+  if (queryFunction === undefined && urls.query === undefined) {
+    throw new Error('Missing JSP query url from the configuration')
   }
+
+  const queryFromClient = async (url: string): Promise<clientUtils.ResponseValue[]> => {
+    const response = await client.getPrivate({
+      url,
+    })
+
+    const data = urls.dataField !== undefined && !Array.isArray(response.data)
+      ? response.data[urls.dataField]
+      : response.data
+
+    if (!Array.isArray(data)) {
+      throw new Error(`Expected array of values in response, got ${safeJsonStringify(response.data)}`)
+    }
+
+    return data
+  }
+
+  const data = queryFunction !== undefined
+    ? await queryFunction()
+    : await queryFromClient(urls.query as string)
 
   const serviceValues = getNameFunction !== undefined
     ? data.map(values => ({
@@ -200,6 +213,7 @@ const verifyDeployment = async (
 export const deployWithJspEndpoints = async ({
   changes,
   client,
+  queryFunction,
   urls,
   serviceValuesTransformer = _.identity,
   fieldsToIgnore = [],
@@ -207,6 +221,7 @@ export const deployWithJspEndpoints = async ({
 } : {
   changes: Change<InstanceElement>[]
   client: JiraClient
+  queryFunction?: () => Promise<clientUtils.ResponseValue[]>
   urls: JspUrls
   serviceValuesTransformer?: ServiceValuesTransformer
   fieldsToIgnore?: string[]
@@ -225,7 +240,7 @@ export const deployWithJspEndpoints = async ({
 
   if (deployResult.appliedChanges.length !== 0) {
     try {
-      const serviceValues = await queryServiceValues(client, urls, getNameFunction)
+      const serviceValues = await queryServiceValues(client, urls, getNameFunction, queryFunction)
       await addIdsToResults(
         deployResult.appliedChanges.filter(isInstanceChange).filter(isAdditionChange),
         serviceValues

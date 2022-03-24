@@ -16,7 +16,7 @@
 import { InstanceElement, Element, ElemID, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { CUSTOM_FIELDS_SUFFIX } from '../../src/filters/fields/field_name_filter'
-import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA, SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, WORKFLOW_TYPE_NAME } from '../../src/constants'
+import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA, NOTIFICATION_SCHEME_TYPE_NAME, SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, WORKFLOW_TYPE_NAME } from '../../src/constants'
 import { createReference, findType } from '../utils'
 import { createBoardValues } from './board'
 import { createContextValues, createFieldValues } from './field'
@@ -29,6 +29,7 @@ import { createWorkflowValues } from './workflow'
 import { createWorkflowSchemeValues } from './workflowScheme'
 import { createSecurityLevelValues, createSecuritySchemeValues } from './securityScheme'
 import { createDashboardValues, createGadget1Values, createGadget2Values } from './dashboard'
+import { createNotificationSchemeValues } from './notificationScheme'
 
 export const createInstances = (fetchedElements: Element[]): InstanceElement[][] => {
   const randomString = `createdByOssE2e${String(Date.now()).substring(6)}`
@@ -183,6 +184,12 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
     new ReferenceExpression(securityScheme.elemID, securityScheme),
   ]
 
+  const notificationScheme = new InstanceElement(
+    randomString,
+    findType(NOTIFICATION_SCHEME_TYPE_NAME, fetchedElements),
+    createNotificationSchemeValues(randomString),
+  )
+
   return [
     [issueType],
     [field],
@@ -203,5 +210,6 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
     [projectRole],
     [fieldConfiguration],
     [securityScheme, securityLevel],
+    [notificationScheme],
   ]
 }

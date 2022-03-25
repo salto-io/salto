@@ -22,7 +22,7 @@ import { naclCase } from '@salto-io/adapter-utils'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
-import { DEFAULT_CONFIG, API_DEFINITIONS_CONFIG } from '../src/config'
+import { DEFAULT_CONFIG, API_DEFINITIONS_CONFIG, FETCH_CONFIG } from '../src/config'
 import { ZENDESK_SUPPORT } from '../src/constants'
 import { Credentials } from '../src/auth'
 import { getChangeGroupIds } from '../src/group_change'
@@ -75,6 +75,7 @@ describe('Zendesk support adapter E2E', () => {
     const testOptionValue = uuidv4().slice(0, 8)
     let elements: Element[] = []
     const createName = (type: string): string => `Test${type}${testSuffix}`
+    const additionalTypesToFetch = ['organizations']
 
     const automationInstance = createInstanceElement(
       'automation',
@@ -216,7 +217,19 @@ describe('Zendesk support adapter E2E', () => {
 
     beforeAll(async () => {
       credLease = await credsLease()
-      adapterAttr = realAdapter({ credentials: credLease.value })
+      adapterAttr = realAdapter(
+        { credentials: credLease.value },
+        {
+          ...DEFAULT_CONFIG,
+          [FETCH_CONFIG]: {
+            ...DEFAULT_CONFIG[FETCH_CONFIG],
+            includeTypes: [
+              ...DEFAULT_CONFIG[FETCH_CONFIG].includeTypes,
+              ...additionalTypesToFetch,
+            ],
+          },
+        }
+      )
       const instancesToAdd = [
         ticketFieldInstance,
         ticketFieldOption1,
@@ -281,8 +294,8 @@ describe('Zendesk support adapter E2E', () => {
         'macro',
         'oauth_client',
         'oauth_global_client',
-        'organization_field',
         'organization',
+        'organization_field',
         'resource_collection',
         'routing_attribute',
         'sharing_agreement',

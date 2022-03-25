@@ -63,6 +63,7 @@ describe('adapter', () => {
 
   describe('fetch', () => {
     describe('full fetch', () => {
+      const additionalTypesToFetch = ['organizations']
       it('should generate the right elements on fetch', async () => {
         const { elements } = await adapter.operations({
           credentials: new InstanceElement(
@@ -75,7 +76,7 @@ describe('adapter', () => {
             configType,
             {
               [FETCH_CONFIG]: {
-                includeTypes: DEFAULT_INCLUDE_ENDPOINTS.sort(),
+                includeTypes: [...DEFAULT_INCLUDE_ENDPOINTS, ...additionalTypesToFetch].sort(),
               },
             }
           ),

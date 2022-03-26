@@ -23,6 +23,7 @@ export const SUITE_QL_RESULTS_SCHEMA = {
   type: 'object',
   properties: {
     hasMore: { type: 'boolean' },
+    totalResults: { type: 'number' },
     items: {
       type: 'array',
       items: { type: 'object' },
@@ -35,6 +36,7 @@ export const SUITE_QL_RESULTS_SCHEMA = {
 export type SuiteQLResults = {
   hasMore: boolean
   items: Values[]
+  totalResults?: number
 }
 
 export const SAVED_SEARCH_RESULTS_SCHEMA = {

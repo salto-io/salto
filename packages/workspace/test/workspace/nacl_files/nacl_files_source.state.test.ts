@@ -131,7 +131,7 @@ describe('Nacl Files Source', () => {
             }
           `,
         }
-        const res = (await naclFileSourceTest.setNaclFiles(newFile)).changes
+        const res = (await naclFileSourceTest.setNaclFiles([newFile])).changes
         expect(res).toHaveLength(1)
         const change = res[0] as unknown as ModificationChange<InstanceElement>
         expect(change).toMatchObject({
@@ -158,7 +158,7 @@ describe('Nacl Files Source', () => {
             }
           `,
         }
-        const res = (await naclFileSourceTest.setNaclFiles(newFile)).changes
+        const res = (await naclFileSourceTest.setNaclFiles([newFile])).changes
         expect(res).toHaveLength(1)
         expect(res[0] as unknown as RemovalChange<InstanceElement>).toMatchObject({
           action: 'remove',
@@ -181,7 +181,7 @@ describe('Nacl Files Source', () => {
             }
           `,
         }
-        const res = (await naclFileSourceTest.setNaclFiles(newFile)).changes
+        const res = (await naclFileSourceTest.setNaclFiles([newFile])).changes
         expect(res).toHaveLength(1)
         expect(res[0] as unknown as AdditionChange<InstanceElement>).toMatchObject({
           action: 'add',
@@ -206,7 +206,7 @@ describe('Nacl Files Source', () => {
             }
           `,
         }
-        const res = (await naclFileSourceTest.setNaclFiles(newFile)).changes
+        const res = (await naclFileSourceTest.setNaclFiles([newFile])).changes
         expect(res).toHaveLength(0)
         const allElements = await awu(await naclFileSourceTest.getAll()).toArray()
         expect(allElements).toHaveLength(2)
@@ -233,7 +233,7 @@ describe('Nacl Files Source', () => {
           filename: 'file2.nacl',
           buffer: ' ',
         }
-        const res = (await naclFileSourceTest.setNaclFiles(newFile1, newFile2)).changes
+        const res = (await naclFileSourceTest.setNaclFiles([newFile1, newFile2])).changes
         expect(res).toHaveLength(3)
         const newObjectTypeObjectMatcher = {
           elemID: objectTypeElemID,
@@ -267,7 +267,7 @@ describe('Nacl Files Source', () => {
             }
           `,
         }
-        const res = (await naclFileSourceTest.setNaclFiles(newFile)).changes
+        const res = (await naclFileSourceTest.setNaclFiles([newFile])).changes
         expect(res).toHaveLength(1)
         const elements = await awu(await naclFileSourceTest.getAll()).toArray()
         expect(elements).toHaveLength(2)
@@ -288,7 +288,7 @@ describe('Nacl Files Source', () => {
         }
         expect(await awu(await naclFileSourceTest.list()).map(e => e.getFullName()).toArray())
           .toEqual(['dummy.test', 'dummy.test.instance.inst'])
-        await naclFileSourceTest.setNaclFiles(newFile)
+        await naclFileSourceTest.setNaclFiles([newFile])
         expect(await awu(await naclFileSourceTest.list()).map(e => e.getFullName()).toArray())
           .toEqual(['dummy.test'])
       })
@@ -300,7 +300,7 @@ describe('Nacl Files Source', () => {
         const removedElemId = new ElemID('dummy', 'test')
         expect(await naclFileSourceTest.getElementReferencedFiles(removedElemId))
           .toEqual(['file2.nacl'])
-        await naclFileSourceTest.setNaclFiles(newFile)
+        await naclFileSourceTest.setNaclFiles([newFile])
         expect(await naclFileSourceTest.getElementReferencedFiles(removedElemId))
           .toEqual([])
       })
@@ -355,7 +355,7 @@ describe('Nacl Files Source', () => {
               `,
             }
             const currentElements = await awu(await naclFileSourceWithFragments.getAll()).toArray()
-            const res = (await naclFileSourceWithFragments.setNaclFiles(newFile)).changes
+            const res = (await naclFileSourceWithFragments.setNaclFiles([newFile])).changes
             expect(res).toHaveLength(2)
             const objType1ElemID = new ElemID('dummy', 'test1')
             const objType2ElemID = new ElemID('dummy', 'test2')

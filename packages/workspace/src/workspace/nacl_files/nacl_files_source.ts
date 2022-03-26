@@ -74,7 +74,7 @@ export type NaclFilesSource<Changes=ChangeSet<Change>> = Omit<ElementsSource, 'c
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
   // TODO: this should be for single?
-  setNaclFiles: (...naclFiles: NaclFile[]) => Promise<Changes>
+  setNaclFiles: (naclFiles: NaclFile[]) => Promise<Changes>
   removeNaclFiles: (...names: string[]) => Promise<Changes>
   getSourceMap: (filename: string) => Promise<SourceMap>
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
@@ -687,7 +687,7 @@ const buildNaclFilesSource = (
   }
 
   const setNaclFiles = async (
-    ...naclFiles: NaclFile[]
+    naclFiles: NaclFile[]
   ): Promise<void> => {
     const [emptyNaclFiles, nonEmptyNaclFiles] = _.partition(
       naclFiles,
@@ -786,7 +786,7 @@ const buildNaclFilesSource = (
       log.debug('going to update %d NaCl files', updatedNaclFiles.length)
       // The map is to avoid saving unnecessary fields in the nacl files
       await setNaclFiles(
-        ...updatedNaclFiles.map(file => _.pick(file, ['buffer', 'filename']))
+        updatedNaclFiles.map(file => _.pick(file, ['buffer', 'filename']))
       )
       const res = await buildNaclFilesStateInner(updatedNaclFiles)
       state = Promise.resolve(res.state)
@@ -947,8 +947,8 @@ const buildNaclFilesSource = (
       state,
     ),
     updateNaclFiles,
-    setNaclFiles: async (...naclFiles) => {
-      await setNaclFiles(...naclFiles)
+    setNaclFiles: async naclFiles => {
+      await setNaclFiles(naclFiles)
       const res = await buildNaclFilesStateInner(
         await parseNaclFiles(naclFiles, (await getState()).parsedNaclFiles, functions)
       )

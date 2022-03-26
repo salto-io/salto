@@ -721,11 +721,11 @@ export const loadWorkspace = async (
     )
 
     if (configFiles.length !== 0) {
-      await adaptersConfig.setNaclFiles(...configFiles)
+      await adaptersConfig.setNaclFiles(configFiles)
     }
 
     if (otherFiles.length !== 0) {
-      const elementChanges = await (await getLoadedNaclFilesSource()).setNaclFiles(...otherFiles)
+      const elementChanges = await (await getLoadedNaclFilesSource()).setNaclFiles(otherFiles)
       workspaceState = buildWorkspaceState({ workspaceChanges: elementChanges, validate })
       return elementChanges
     }

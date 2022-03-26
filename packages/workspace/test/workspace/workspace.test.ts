@@ -813,7 +813,7 @@ describe('workspace', () => {
 
     it('should call the adaptersConfigSource when the path is in the config dir', async () => {
       expect(naclFileStore.set as jest.Mock).not.toHaveBeenCalledWith(changedConfFile)
-      expect(mockAdaptersConfig.setNaclFiles as jest.Mock).toHaveBeenCalledWith(changedConfFile)
+      expect(mockAdaptersConfig.setNaclFiles as jest.Mock).toHaveBeenCalledWith([changedConfFile])
     })
 
     it('should return the correct changes', async () => {

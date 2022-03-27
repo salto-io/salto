@@ -209,12 +209,32 @@ const getAdapterConfigsPerAccount = async (envs: EnvConfig[]): Promise<ObjectTyp
   return Object.values(configTypesByAccount).flat()
 }
 
-export const loadLocalWorkspace = async (
+type LoadLocalWorkspaceArgs = {
+  path: string
+  configOverrides?: DetailedChange[]
+  persistent?: boolean
+  credentialSource?: cs.ConfigSource
+}
+
+// As a transitionary step, we support both a string input and an argument object
+export function loadLocalWorkspace(args: LoadLocalWorkspaceArgs): Promise<Workspace>
+// @deprecated
+export function loadLocalWorkspace(
   lookupDir: string,
   configOverrides?: DetailedChange[],
-  persistent = true,
-  credentialSource?: cs.ConfigSource
-): Promise<Workspace> => {
+  persistent?: boolean,
+): Promise<Workspace>
+
+export async function loadLocalWorkspace(
+  args: string | LoadLocalWorkspaceArgs,
+  deprecatedConfigOverrides?: DetailedChange[],
+  deprecatedPersistent = true,
+): Promise<Workspace> {
+  const lookupDir = _.isString(args) ? args : args.path
+  const configOverrides = _.isString(args) ? deprecatedConfigOverrides : args.configOverrides
+  const persistent = _.isString(args) ? deprecatedPersistent : (args.persistent ?? true)
+  const credentialSource = _.isString(args) ? undefined : args.credentialSource
+
   const baseDir = await locateWorkspaceRoot(path.resolve(lookupDir))
   if (_.isUndefined(baseDir)) {
     throw new NotAWorkspaceError()
@@ -268,8 +288,8 @@ export const loadLocalWorkspace = async (
       }
       return ws.demoteAll()
     },
-    clear: async (args: Omit<WorkspaceComponents, 'accountConfig'>) => {
-      await ws.clear(args)
+    clear: async (clearArgs: Omit<WorkspaceComponents, 'accountConfig'>) => {
+      await ws.clear(clearArgs)
       const envsDir = path.join(baseDir, ENVS_PREFIX)
       if (await isEmptyDir.notFoundAsUndefined(envsDir)) {
         await rm(envsDir)

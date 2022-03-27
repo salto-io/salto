@@ -331,7 +331,10 @@ Promise<CliExitCode> => {
   // We do it since we need the workspace config in order to create the environment source
   const { force, yesAll, envName } = args.input
   const configOverrides = getConfigOverrideChanges(args.input)
-  const workspace = await loadLocalWorkspace(args.workspacePath, configOverrides)
+  const workspace = await loadLocalWorkspace({
+    path: args.workspacePath,
+    configOverrides,
+  })
   args.cliTelemetry.setTags(getWorkspaceTelemetryTags(workspace))
   args.cliTelemetry.start()
 

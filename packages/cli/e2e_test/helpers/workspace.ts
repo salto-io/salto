@@ -170,7 +170,7 @@ export const runDeleteEnv = async (workspacePath: string, envName: string): Prom
 }
 
 export const getCurrentEnv = async (workspacePath: string): Promise<string> => {
-  const workspace = await loadLocalWorkspace(workspacePath)
+  const workspace = await loadLocalWorkspace({ path: workspacePath })
   return workspace.currentEnv()
 }
 
@@ -238,7 +238,7 @@ export const runClean = async ({
 }
 
 export const loadValidWorkspace = async (fetchOutputDir: string): Promise<Workspace> => {
-  const workspace = await loadLocalWorkspace(fetchOutputDir)
+  const workspace = await loadLocalWorkspace({ path: fetchOutputDir })
   const { errors } = await validateWorkspace(workspace)
   expect(errors).toHaveLength(0)
   return workspace
@@ -248,7 +248,7 @@ export const runPreviewGetPlan = async (
   fetchOutputDir: string,
   accounts?: string[]
 ): Promise<Plan> => {
-  const workspace = await loadLocalWorkspace(fetchOutputDir)
+  const workspace = await loadLocalWorkspace({ path: fetchOutputDir })
   return preview(workspace, accounts)
 }
 

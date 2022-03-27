@@ -37,7 +37,7 @@ const mockRemoteMapCreator = (async <T, K extends string = string>(
 ): Promise<ws.remoteMap.RemoteMap<T, K>> =>
   new ws.remoteMap.InMemoryRemoteMap<T, K>())
 
-const mockCredentialsSource = (): jest.Mocked<cs.ConfigSource> => ({
+const mockConfigSource = (): jest.Mocked<cs.ConfigSource> => ({
   get: mockFunction<cs.ConfigSource['get']>(),
   set: mockFunction<cs.ConfigSource['set']>(),
   delete: mockFunction<cs.ConfigSource['delete']>(),
@@ -176,7 +176,7 @@ describe('local workspace', () => {
     const mockLoad = ws.loadWorkspace as jest.Mock
     it('should throw error if not a workspace', async () => {
       mockExists.mockImplementation((filename: string) => (!filename.endsWith('salto.config')))
-      await expect(loadLocalWorkspace('.')).rejects.toThrow(NotAWorkspaceError)
+      await expect(loadLocalWorkspace({ path: '.' })).rejects.toThrow(NotAWorkspaceError)
     })
 
     describe('with valid workspace configuration', () => {
@@ -202,7 +202,7 @@ describe('local workspace', () => {
         })
       })
       it('should call loadWorkspace with correct input', async () => {
-        await loadLocalWorkspace('.')
+        await loadLocalWorkspace({ path: '.' })
 
         expect(mockLoad).toHaveBeenCalledTimes(1)
         const envSources: ws.EnvironmentsSources = mockLoad.mock.calls[0][3]
@@ -214,20 +214,40 @@ describe('local workspace', () => {
         expect(dirStoresBaseDirs).toContain(path.join(ENVS_PREFIX, 'default'))
       })
       describe('with custom credentials source', () => {
-        let credentialSrc: jest.Mocked<cs.ConfigSource>
+        let credentialSource: jest.Mocked<cs.ConfigSource>
         beforeEach(async () => {
-          credentialSrc = mockCredentialsSource()
-          await loadLocalWorkspace('.', [], true, credentialSrc)
+          credentialSource = mockConfigSource()
+          await loadLocalWorkspace({
+            path: '.',
+            credentialSource,
+          })
         })
         it('should use the credentials source that was passed as a paramter', async () => {
           expect(mockLoad).toHaveBeenCalledWith(
             expect.anything(),
             expect.anything(),
-            credentialSrc,
+            credentialSource,
             expect.anything(),
             expect.anything(),
             expect.anything(),
             expect.anything(),
+          )
+        })
+      })
+      describe('when called with deprecated arguments format', () => {
+        beforeEach(async () => {
+          await loadLocalWorkspace('my_path', [], false)
+        })
+        it('should pass the arguments correctly', () => {
+          expect(mockExists).toHaveBeenCalledWith(expect.stringMatching(/.*\/my_path\/salto\.config/))
+          expect(mockLoad).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.anything(),
+            expect.anything(),
+            expect.anything(),
+            expect.anything(),
+            expect.anything(),
+            false,
           )
         })
       })
@@ -260,7 +280,7 @@ describe('local workspace', () => {
     })
 
     it('should invoke the rename command on the dir stores after adding the local prefix to the env name', async () => {
-      const workspace = await loadLocalWorkspace('.')
+      const workspace = await loadLocalWorkspace({ path: '.' })
       await workspace.renameEnvironment('default', 'newEnvName')
       expect(mockRenameEnvironment).toHaveBeenCalledWith('default', 'newEnvName', 'envs/newEnvName')
     })
@@ -307,7 +327,7 @@ describe('local workspace', () => {
         repoIsEmpty.mockResolvedValueOnce(false)
         const envIsEmpty = envDirStore.isEmpty as jest.Mock
         envIsEmpty.mockResolvedValueOnce(true)
-        const workspace = await loadLocalWorkspace('.')
+        const workspace = await loadLocalWorkspace({ path: '.' })
         await awu(Object.values(wsElemSrcs.sources)).forEach(src => src.naclFiles.load({}))
         await workspace.demoteAll()
         expect(repoDirStore.rename).toHaveBeenCalled()
@@ -318,7 +338,7 @@ describe('local workspace', () => {
         repoIsEmpty.mockResolvedValueOnce(false)
         const envIsEmpty = envDirStore.isEmpty as jest.Mock
         envIsEmpty.mockResolvedValueOnce(false)
-        const workspace = await loadLocalWorkspace('/west')
+        const workspace = await loadLocalWorkspace({ path: '/west' })
         await workspace.demoteAll()
         expect(repoDirStore.rename).not.toHaveBeenCalled()
       })
@@ -350,7 +370,7 @@ describe('local workspace', () => {
         repoIsEmpty.mockResolvedValueOnce(false)
         const envIsEmpty = envDirStore.isEmpty as jest.Mock
         envIsEmpty.mockResolvedValueOnce(true)
-        const workspace = await loadLocalWorkspace('.')
+        const workspace = await loadLocalWorkspace({ path: '.' })
         await workspace.demoteAll()
         expect(repoDirStore.rename).not.toHaveBeenCalled()
       })
@@ -360,7 +380,7 @@ describe('local workspace', () => {
         repoIsEmpty.mockResolvedValueOnce(false)
         const envIsEmpty = envDirStore.isEmpty as jest.Mock
         envIsEmpty.mockResolvedValueOnce(false)
-        const workspace = await loadLocalWorkspace('/west')
+        const workspace = await loadLocalWorkspace({ path: '/west' })
         await workspace.demoteAll()
         expect(repoDirStore.rename).not.toHaveBeenCalled()
       })
@@ -395,7 +415,7 @@ describe('local workspace', () => {
       const envIsEmpty = envDirStore.isEmpty as jest.Mock
       envIsEmpty.mockResolvedValueOnce(false)
       const mockLoad = ws.loadWorkspace as jest.Mock
-      await loadLocalWorkspace('.')
+      await loadLocalWorkspace({ path: '.' })
       expect(mockLoad).toHaveBeenCalledTimes(1)
       const envSources: ws.EnvironmentsSources = mockLoad.mock.calls[0][3]
       expect(Object.keys(envSources.sources)).toHaveLength(2)
@@ -417,7 +437,7 @@ describe('local workspace', () => {
       })
     })
     it('calls workspace clear with the specified parameters and removes the empty envs folder', async () => {
-      const workspace = await loadLocalWorkspace('/west')
+      const workspace = await loadLocalWorkspace({ path: '/west' })
       const args = {
         nacl: true, state: true, cache: true, staticResources: true, credentials: true,
       }
@@ -431,7 +451,7 @@ describe('local workspace', () => {
 
     it('does not remove the envs folder if not empty', async () => {
       jest.spyOn(file.isEmptyDir, 'notFoundAsUndefined').mockReturnValueOnce(Promise.resolve(false))
-      const workspace = await loadLocalWorkspace('/west')
+      const workspace = await loadLocalWorkspace({ path: '/west' })
       const args = {
         nacl: true, state: true, cache: true, staticResources: false, credentials: true,
       }

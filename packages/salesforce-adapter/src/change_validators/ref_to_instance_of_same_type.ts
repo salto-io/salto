@@ -24,12 +24,12 @@ const { awu, groupByAsync } = collections.asynciterable
 
 const getDepOnAdditionOfSameTypeInstanceIDs = async (
   instance: InstanceElement,
-  typeToAdditionInstancesElemIDs: Record<string, ElemID[]>,
+  typeToAdditionInstancesElemIDs: Record<string, Set<ElemID>>,
 ): Promise<ElemID[]> => {
   const dependentOnAdditionInstanceIDs: ElemID[] = []
-  const typeAdditionInstancesElemIDs = typeToAdditionInstancesElemIDs[
+  const typeAdditionInstancesElemIDs = Array.from(typeToAdditionInstancesElemIDs[
     (await apiName(await (instance as InstanceElement).getType(), true))
-  ]
+  ])
   const func: WalkOnFunc = ({ value }) => {
     if (isReferenceExpression(value)
       && typeAdditionInstancesElemIDs.find(elemID => elemID.isEqual(value.elemID))) {
@@ -56,7 +56,7 @@ const changeValidator: ChangeValidator = async changes => {
       )),
     te => te.type,
   ),
-  teArr => teArr.map(te => te.elemID))
+  teArr => new Set(teArr.map(te => te.elemID)))
   return awu(changes)
     .filter(isInstanceOfCustomObjectChange)
     .filter(isAdditionChange)

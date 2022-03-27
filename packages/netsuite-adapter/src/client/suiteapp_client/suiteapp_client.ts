@@ -103,14 +103,14 @@ export default class SuiteAppClient {
   /**
    * WARNING:
    * Due to a bug in NetSuite SuiteQL, make sure to use
-   * ORDER BY <some unique identifier> ASC in your queries.
+   * ORDER BY <some unique identifier> ASC/DESC in your queries.
    * Otherwise, you might not get all the results.
    */
   public async runSuiteQL(query: string):
     Promise<Record<string, unknown>[] | undefined> {
     log.debug('Running SuiteQL query: %s', query)
     if (!/ORDER BY .* (ASC|DESC)/.test(query)) {
-      log.warn(`SuiteQL ${query} does not contain ORDER BY <unique identifier> ASC, which can cause the response to not contain all the results`)
+      log.warn(`SuiteQL ${query} does not contain ORDER BY <unique identifier> ASC/DESC, which can cause the response to not contain all the results`)
     }
     let hasMore = true
     const items: Record<string, unknown>[] = []

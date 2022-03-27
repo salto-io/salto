@@ -71,14 +71,19 @@ const buildRecordTypeSystemNotesQuery = (recordTypeIds: string[]): string => {
   const whereQuery = recordTypeIds
     .map(toRecordTypeWhereQuery)
     .join(' OR ')
-  return `SELECT name, recordid, recordtypeid FROM (SELECT name, recordid, recordtypeid, MAX(date) as date FROM systemnote WHERE ${whereQuery} GROUP BY name, recordid, recordtypeid) ORDER BY date DESC`
+  return 'SELECT name, recordid, recordtypeid FROM (SELECT name, recordid, recordtypeid,'
+    + ` MAX(date) as date FROM systemnote WHERE ${whereQuery}`
+    + ' GROUP BY name, recordid, recordtypeid) ORDER BY date DESC'
 }
 
 const buildFieldSystemNotesQuery = (fieldIds: string[]): string => {
   const whereQuery = fieldIds
     .map(toFieldWhereQuery)
     .join(' OR ')
-  return `SELECT name, field, recordid from (SELECT name, field, recordid, MAX(date) AS date FROM (SELECT name, REGEXP_SUBSTR(field, '^(${FOLDER_FIELD_IDENTIFIER}|${FILE_FIELD_IDENTIFIER})') AS field, recordid, date FROM systemnote WHERE ${whereQuery}) GROUP BY name, field, recordid) ORDER BY date DESC`
+  return 'SELECT name, field, recordid from (SELECT name, field, recordid, MAX(date) AS date'
+    + ` FROM (SELECT name, REGEXP_SUBSTR(field, '^(${FOLDER_FIELD_IDENTIFIER}|${FILE_FIELD_IDENTIFIER})')`
+    + ` AS field, recordid, date FROM systemnote WHERE ${whereQuery}) GROUP BY name, field, recordid)`
+    + ' ORDER BY date DESC'
 }
 
 const querySystemNotesByField = async (

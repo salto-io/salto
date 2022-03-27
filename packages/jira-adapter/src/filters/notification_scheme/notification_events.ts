@@ -17,7 +17,8 @@ import { AdditionChange, Change, getChangeData, getDeepInnerType, InstanceElemen
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { resolveChangeElement } from '@salto-io/adapter-utils'
+import { resolveChangeElement, safeJsonStringify } from '@salto-io/adapter-utils'
+import Joi from 'joi'
 import { getFilledJspUrls } from '../../utils'
 import JiraClient from '../../client/client'
 import { JiraConfig } from '../../config'
@@ -49,8 +50,48 @@ const EVENT_TYPES: Record<string, string> = {
   GroupCustomField: 'Group_Custom_Field_Value',
 }
 
-const transformNotificationEvent = (notificationEvent: Values): void => {
-  notificationEvent.eventType = notificationEvent.event.id
+type NotificationEvent = {
+  event?: {
+    id: number
+  }
+  eventType?: number
+  notifications?: {
+    notificationType: string
+    user?: unknown
+    additionalProperties?: unknown
+  }[]
+}
+
+type NotificationScheme = {
+  notificationSchemeEvents?: NotificationEvent[]
+}
+
+const NOTIFICATION_SCHEME = Joi.object({
+  notificationSchemeEvents: Joi.array().items(
+    Joi.object({
+      event: Joi.object({
+        id: Joi.number().required(),
+      }).unknown(true).required(),
+      notifications: Joi.array().items(
+        Joi.object({
+          notificationType: Joi.string().required(),
+        }).unknown(true)
+      ).optional(),
+    }).unknown(true)
+  ).optional(),
+}).unknown(true).required()
+
+const isNotificationScheme = (value: unknown): value is NotificationScheme => {
+  const { error } = NOTIFICATION_SCHEME.validate(value)
+  if (error !== undefined) {
+    log.error(`Received an invalid notification scheme: ${error.message}, ${safeJsonStringify(value)}`)
+    return false
+  }
+  return true
+}
+
+const transformNotificationEvent = (notificationEvent: NotificationEvent): void => {
+  notificationEvent.eventType = notificationEvent.event?.id
   delete notificationEvent.event
   notificationEvent.notifications?.forEach((notification: Values) => {
     notification.type = notification.notificationType
@@ -61,6 +102,9 @@ const transformNotificationEvent = (notificationEvent: Values): void => {
 }
 
 export const transformAllNotificationEvents = (notificationSchemeValues: Values): void => {
+  if (!isNotificationScheme(notificationSchemeValues)) {
+    throw new Error('Received an invalid notification scheme')
+  }
   notificationSchemeValues.notificationSchemeEvents
     ?.forEach(transformNotificationEvent)
 }
@@ -144,7 +188,7 @@ const getEventChanges = async (
 
   return [
     ...removedEvents.map(event => toChange({ before: event })),
-    ...newEvents.map(event => toChange({ after: event })),
+    ...newEvents.map(event => toChange({ after: event })).reverse(),
   ]
 }
 

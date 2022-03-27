@@ -261,6 +261,7 @@ describe('notificationSchemeDeploymentFilter', () => {
             },
             notifications: [{
               id: '1',
+              notificationType: 'type',
             }],
           }],
         },
@@ -269,7 +270,7 @@ describe('notificationSchemeDeploymentFilter', () => {
       expect(await eventQueryFunction()).toEqual([{
         eventTypeIds: '1',
         id: '1',
-        name: '1-undefined-undefined',
+        name: '1-type-undefined',
         schemeId: '1',
       }])
     })

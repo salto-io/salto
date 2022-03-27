@@ -75,7 +75,7 @@ export type NaclFilesSource<Changes=ChangeSet<Change>> = Omit<ElementsSource, 'c
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
   // TODO: this should be for single?
   setNaclFiles: (naclFiles: NaclFile[]) => Promise<Changes>
-  removeNaclFiles: (...names: string[]) => Promise<Changes>
+  removeNaclFiles: (names: string[]) => Promise<Changes>
   getSourceMap: (filename: string) => Promise<SourceMap>
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
   getErrors: () => Promise<Errors>
@@ -394,7 +394,6 @@ const buildNaclFilesState = async ({
         oldNaclFileElements.map(e => e.elemID.getFullName()),
         currentNaclFileElements.map(e => e.elemID.getFullName()),
       )
-
       relevantElementIDs.push(
         ...currentNaclFileElements.map(e => e.elemID),
         ...oldNaclFileElements.map(e => e.elemID),
@@ -564,6 +563,8 @@ const buildNaclFilesSource = (
         currentState.parsedNaclFiles,
         functions
       )
+      // eslint-disable-next-line no-console
+      console.log('IN THIS THING: %d', parsedModifiedFiles.length)
       const result = await buildNaclFilesState({
         newNaclFiles: parsedModifiedFiles,
         currentState,
@@ -783,6 +784,8 @@ const buildNaclFilesSource = (
     )).filter(values.isDefined)
 
     if (updatedNaclFiles.length > 0) {
+      // eslint-disable-next-line no-console
+      console.log('going to update %d NaCl files', updatedNaclFiles.length)
       log.debug('going to update %d NaCl files', updatedNaclFiles.length)
       // The map is to avoid saving unnecessary fields in the nacl files
       await setNaclFiles(
@@ -864,7 +867,7 @@ const buildNaclFilesSource = (
       return _.flatten(sourceRanges)
     },
 
-    removeNaclFiles: async (...names: string[]) => {
+    removeNaclFiles: async (names: string[]) => {
       const preChangeHash = await (await getState()).parsedNaclFiles.getHash()
       await awu(names).forEach(name => naclFilesStore.delete(name))
       const res = await buildNaclFilesStateInner(

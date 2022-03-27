@@ -99,7 +99,7 @@ export type MultiEnvSource = {
   getElementNaclFiles: (env: string, id: ElemID) => Promise<string[]>
   getElementReferencedFiles: (env: string, id: ElemID) => Promise<string[]>
   setNaclFiles: (naclFiles: NaclFile[]) => Promise<EnvsChanges>
-  removeNaclFiles: (...names: string[]) => Promise<EnvsChanges>
+  removeNaclFiles: (names: string[]) => Promise<EnvsChanges>
   getSourceMap: (filename: string) => Promise<SourceMap>
   getSourceRanges: (env: string, elemID: ElemID) => Promise<SourceRange[]>
   getErrors: (env: string) => Promise<Errors>
@@ -626,11 +626,11 @@ const buildMultiEnvSource = (
       state = buildRes.state
       return buildRes.changes
     },
-    removeNaclFiles: async (...names: string[]): Promise<EnvsChanges> => {
+    removeNaclFiles: async (names: string[]): Promise<EnvsChanges> => {
       const envNameToFilesToRemove = _.groupBy(names, getSourceNameForNaclFile)
       const envNameToChanges = await mapValuesAsync(envNameToFilesToRemove, (files, envName) =>
         getSourceFromEnvName(envName)
-          .removeNaclFiles(...files.map(fileName => getRelativePath(fileName, envName))))
+          .removeNaclFiles(files.map(fileName => getRelativePath(fileName, envName))))
       const buildRes = await buildMultiEnvState({ envChanges: envNameToChanges })
       state = buildRes.state
       return buildRes.changes

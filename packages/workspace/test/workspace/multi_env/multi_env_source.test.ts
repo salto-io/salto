@@ -731,12 +731,12 @@ describe('multi env source', () => {
   })
   describe('removeNaclFiles', () => {
     it('should forward the removeNaclFiles command to the active source', async () => {
-      await source.removeNaclFiles(path.join(ENVS_PREFIX, activePrefix, 'env.nacl'))
+      await source.removeNaclFiles([path.join(ENVS_PREFIX, activePrefix, 'env.nacl')])
       expect(envSource.removeNaclFiles).toHaveBeenCalled()
     })
 
     it('should forward the removeNaclFiles command to the common source', async () => {
-      await source.removeNaclFiles(path.join(commonPrefix, 'common.nacl'))
+      await source.removeNaclFiles([path.join(commonPrefix, 'common.nacl')])
       expect(envSource.removeNaclFiles).toHaveBeenCalled()
     })
 
@@ -764,7 +764,7 @@ describe('multi env source', () => {
       ).toArray()
       expect(currentElements).toHaveLength(2)
       const elementChanges = (await multiEnvSourceWithMockSources
-        .removeNaclFiles('test.nacl'))
+        .removeNaclFiles(['test.nacl']))
       expect(elementChanges[primarySourceName].changes).toEqual([change])
       expect(await awu(
         await multiEnvSourceWithMockSources.getAll(primarySourceName)
@@ -797,7 +797,7 @@ describe('multi env source', () => {
       ).toArray()
       expect(currentElements).toHaveLength(2)
       const elementChanges = (await multiEnvSourceWithMockSources.removeNaclFiles(
-        'test.nacl', path.join(ENVS_PREFIX, primarySourceName, 'env.nacl')
+        ['test.nacl', path.join(ENVS_PREFIX, primarySourceName, 'env.nacl')]
       ))
       expect(elementChanges[primarySourceName].changes).toEqual([removalPrimary, removalCommon])
       expect(await awu(

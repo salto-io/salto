@@ -734,7 +734,7 @@ export const loadWorkspace = async (
   }
 
   const removeNaclFiles = async (names: string[], validate = true): Promise<EnvsChanges> => {
-    const elementChanges = await (await getLoadedNaclFilesSource()).removeNaclFiles(...names)
+    const elementChanges = await (await getLoadedNaclFilesSource()).removeNaclFiles(names)
     workspaceState = buildWorkspaceState({ workspaceChanges: elementChanges, validate })
     return elementChanges
   }

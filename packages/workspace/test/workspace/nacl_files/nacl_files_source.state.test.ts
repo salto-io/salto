@@ -413,13 +413,13 @@ describe('Nacl Files Source', () => {
     })
     describe('removeNaclFiles', () => {
       it('should not change anything if the file does not exist', async () => {
-        expect((await naclFileSourceTest.removeNaclFiles('blabla')).changes).toHaveLength(0)
+        expect((await naclFileSourceTest.removeNaclFiles(['blabla'])).changes).toHaveLength(0)
         expect(await awu(await naclFileSourceTest.getAll()).toArray()).toMatchObject([
           objectTypeObjectMatcher, instanceElementObjectMatcher,
         ])
       })
       it('should remove one file correctly', async () => {
-        const { changes } = (await naclFileSourceTest.removeNaclFiles('file2.nacl'))
+        const { changes } = (await naclFileSourceTest.removeNaclFiles(['file2.nacl']))
         expect(changes).toHaveLength(2)
         expect((changes[0] as unknown as ModificationChange<ObjectType>).data.after.fields.b)
           .toBeUndefined()
@@ -448,7 +448,7 @@ describe('Nacl Files Source', () => {
       })
       it('should remove multiple files correctly', async () => {
         const { changes } = await naclFileSourceTest
-          .removeNaclFiles('file1.nacl', 'file2.nacl')
+          .removeNaclFiles(['file1.nacl', 'file2.nacl'])
         expect(changes).toMatchObject([
           {
             action: 'remove',

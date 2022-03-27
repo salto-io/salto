@@ -33,7 +33,7 @@ import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATIN
 import { DeployResult } from '../types'
 import { APPLICATION_ID } from '../constants'
 import { convertInstanceMapsToLists } from '../mapped_lists/utils'
-import { getConfigDeployResult, getConfigRecordElements, getSetConfigTypes } from './suiteapp_client/config_elements'
+import { toConfigDeployResult, getConfigRecordElements, toSetConfigTypes } from './suiteapp_client/config_elements'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -106,10 +106,10 @@ export default class NetsuiteClient {
       return { errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_CONFIG_GROUP_ID}" cannot be deployed`)], appliedChanges: [] }
     }
     const modificationChanges = instancesChanges.filter(isModificationChange)
-    return getConfigDeployResult(
+    return toConfigDeployResult(
       modificationChanges,
       await this.suiteAppClient.setConfigRecordsValues(
-        getSetConfigTypes(modificationChanges)
+        toSetConfigTypes(modificationChanges)
       )
     )
   }

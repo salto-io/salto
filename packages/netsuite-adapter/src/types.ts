@@ -119,10 +119,10 @@ export const SUITEAPP_CONFIG_RECORD_TYPES = [
 export type SuiteAppConfigRecordType = typeof SUITEAPP_CONFIG_RECORD_TYPES[number]
 
 export const SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES: Record<SuiteAppConfigRecordType, string> = {
-  USER_PREFERENCES: 'userpreferences',
-  COMPANY_INFORMATION: 'companyinformation',
-  COMPANY_PREFERENCES: 'companypreferences',
-  ACCOUNTING_PREFERENCES: 'accountingpreferences',
+  USER_PREFERENCES: 'userPreferences',
+  COMPANY_INFORMATION: 'companyInformation',
+  COMPANY_PREFERENCES: 'companyPreferences',
+  ACCOUNTING_PREFERENCES: 'accountingPreferences',
 }
 
 export const SUITEAPP_CONFIG_TYPE_NAMES = Object.values(SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES)

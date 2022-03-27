@@ -24,7 +24,7 @@ const CHECKBOX_TYPE = 'checkbox'
 const INTEGER_TYPE = 'integer'
 const SELECT_TYPE = 'select'
 const MULTISELECT_TYPE = 'multiselect'
-const FIELD_TYPES_TO_FILTER = [
+const FIELD_TYPES_TO_OMIT = [
   'never',
   'help',
   'inlinehtml',
@@ -35,7 +35,7 @@ const FIELD_TYPES_TO_FILTER = [
 
 const fieldUtils = (): {
   selectOptionType: ObjectType
-  getFields: (fieldsDef: ConfigFieldDefinition[]) => Record<string, FieldDefinition>
+  toFields: (fieldsDef: ConfigFieldDefinition[]) => Record<string, FieldDefinition>
 } => {
   const selectOptionType = new ObjectType({
     elemID: new ElemID(NETSUITE, SELECT_OPTION),
@@ -48,7 +48,7 @@ const fieldUtils = (): {
 
   const multiSelectOptionType = new ListType(selectOptionType)
 
-  const getFieldType = (type: string): TypeElement => {
+  const toFieldType = (type: string): TypeElement => {
     switch (type) {
       case CHECKBOX_TYPE:
         return BuiltinTypes.BOOLEAN
@@ -63,12 +63,12 @@ const fieldUtils = (): {
     }
   }
 
-  const getFields = (fieldsDef: ConfigFieldDefinition[]): Record<string, FieldDefinition> => ({
+  const toFields = (fieldsDef: ConfigFieldDefinition[]): Record<string, FieldDefinition> => ({
     ..._(fieldsDef)
-      .filter(field => !FIELD_TYPES_TO_FILTER.includes(field.type))
+      .filter(field => !FIELD_TYPES_TO_OMIT.includes(field.type))
       .keyBy(field => field.id)
       .mapValues(({ label, type }) => ({
-        refType: getFieldType(type),
+        refType: toFieldType(type),
         annotations: {
           label,
           type,
@@ -84,20 +84,20 @@ const fieldUtils = (): {
     },
   })
 
-  return { selectOptionType, getFields }
+  return { selectOptionType, toFields }
 }
 
 export const getConfigRecordElements = (
   configRecords: ConfigRecord[],
 ): Element[] => {
-  const { selectOptionType, getFields } = fieldUtils()
+  const { selectOptionType, toFields } = fieldUtils()
 
   const elements = configRecords
     .flatMap(configRecord => {
       const typeName = SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES[configRecord.configType]
       const configRecordType = new ObjectType({
         elemID: new ElemID(NETSUITE, typeName),
-        fields: getFields(configRecord.fieldsDef),
+        fields: toFields(configRecord.fieldsDef),
         isSettings: true,
         path: [NETSUITE, TYPES_PATH, typeName],
       })
@@ -113,7 +113,7 @@ export const getConfigRecordElements = (
   return elements.concat(selectOptionType)
 }
 
-export const getSetConfigTypes = (
+export const toSetConfigTypes = (
   changes: ModificationChange<InstanceElement>[]
 ): SetConfigType[] =>
   changes.map(change => {
@@ -125,7 +125,7 @@ export const getSetConfigTypes = (
     return { configType: after.value.configType, items }
   })
 
-export const getConfigDeployResult = (
+export const toConfigDeployResult = (
   changes: ModificationChange<InstanceElement>[],
   results: SetConfigRecordsValuesResult,
 ): DeployResult => {

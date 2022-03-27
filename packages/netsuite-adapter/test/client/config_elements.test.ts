@@ -116,7 +116,7 @@ describe('config elements', () => {
     ]
     describe('getSetConfigTypes', () => {
       it('should return result', () => {
-        expect(unit.getSetConfigTypes(changes)).toEqual([{
+        expect(unit.toSetConfigTypes(changes)).toEqual([{
           configType,
           items: [{ fieldId: 'checkboxField', value: true }],
         }])
@@ -124,19 +124,19 @@ describe('config elements', () => {
     })
     describe('getConfigDeployResult', () => {
       it('should return error on error results', () => {
-        expect(unit.getConfigDeployResult(changes, { errorMessage: 'error' }))
+        expect(unit.toConfigDeployResult(changes, { errorMessage: 'error' }))
           .toEqual({ errors: [new Error('error')], appliedChanges: [] })
       })
       it('should return error on no results', () => {
-        expect(unit.getConfigDeployResult(changes, []))
+        expect(unit.toConfigDeployResult(changes, []))
           .toEqual({ errors: [new Error('Missing deploy result for some changes')], appliedChanges: [] })
       })
       it('should return error on fail results', () => {
-        expect(unit.getConfigDeployResult(changes, [{ configType, status: 'fail', errorMessage: 'fail' }]))
+        expect(unit.toConfigDeployResult(changes, [{ configType, status: 'fail', errorMessage: 'fail' }]))
           .toEqual({ errors: [new Error(`${configType}: fail`)], appliedChanges: [] })
       })
       it('should return appliedChanges on success', () => {
-        expect(unit.getConfigDeployResult(changes, [{ configType, status: 'success' }]))
+        expect(unit.toConfigDeployResult(changes, [{ configType, status: 'success' }]))
           .toEqual({ appliedChanges: changes, errors: [] })
       })
     })

@@ -1671,6 +1671,7 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
     'CustomFieldContext',
     STATUS_TYPE_NAME,
     'Resolution',
+    'Automation',
   ],
 }
 

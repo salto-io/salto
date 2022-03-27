@@ -40,7 +40,7 @@ import { RemoteMap, RemoteMapCreator } from '../remote_map'
 import { ParsedNaclFile } from './parsed_nacl_file'
 import { ParsedNaclFileCache, createParseResultCache } from './parsed_nacl_files_cache'
 
-const { awu, concatAsync } = collections.asynciterable
+const { awu } = collections.asynciterable
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 const { withLimitedConcurrency } = promises.array
 
@@ -459,7 +459,7 @@ const buildNaclFilesState = async ({
           ))
     }).filter(values.isDefined) as AsyncIterable<Element>
   const changes = await buildNewMergedElementsAndErrors({
-    afterElements: awu(concatAsync(...newElementsToMerge, awu(unmodifiedFragments))),
+    afterElements: awu(newElementsToMerge).flat().concat(unmodifiedFragments),
     relevantElementIDs: awu(relevantElementIDs),
     currentElements: currentState.mergedElements,
     currentErrors: currentState.mergeErrors,

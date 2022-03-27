@@ -19,7 +19,8 @@ import { InstanceElement } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 
 export const isInstanceContainsStringValue = (
-  instance: InstanceElement, expectedValue: string
+  instance: InstanceElement,
+  expectedValue: string
 ): boolean => {
   let foundValue = false
   walkOnElement({

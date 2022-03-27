@@ -17,7 +17,7 @@ import { InstanceElement, toChange } from '@salto-io/adapter-api'
 import { fileType } from '../../src/types/file_cabinet_types'
 import { workflowType } from '../../src/autogen/types/custom_types/workflow'
 import notYetSupportedChangeValidator from '../../src/change_validators/not_yet_supported_values'
-import { ACCOUNT_SPECIFIC_VALUE, PATH, SCRIPT_ID, NOT_YET_SUPPORTED_VALUE } from '../../src/constants'
+import { PATH, SCRIPT_ID, NOT_YET_SUPPORTED_VALUE } from '../../src/constants'
 
 
 describe('not yet supported validator', () => {
@@ -42,7 +42,7 @@ describe('not yet supported validator', () => {
       fileType(),
       {
         [PATH]: '/Path/to/file',
-        content: ACCOUNT_SPECIFIC_VALUE,
+        content: NOT_YET_SUPPORTED_VALUE,
       }
     )
     const changeErrors = await notYetSupportedChangeValidator(
@@ -51,7 +51,7 @@ describe('not yet supported validator', () => {
     expect(changeErrors).toHaveLength(0)
   })
 
-  it('should not have ChangeError when deploying an instance without ACCOUNT_SPECIFIC_VALUE', async () => {
+  it('should not have ChangeError when deploying an instance without NOT_YET_SUPPORTED', async () => {
     const after = instance.clone()
     after.value.name = 'NewName'
     const changeErrors = await notYetSupportedChangeValidator(
@@ -60,7 +60,7 @@ describe('not yet supported validator', () => {
     expect(changeErrors).toHaveLength(0)
   })
 
-  it('should have Error ChangeError when modifying an instance with ACCOUNT_SPECIFIC_VALUE', async () => {
+  it('should have Error ChangeError when modifying an instance with NOT_YET_SUPPORTED', async () => {
     const after = instance.clone()
     after.value.name = NOT_YET_SUPPORTED_VALUE
     const changeErrors = await notYetSupportedChangeValidator(

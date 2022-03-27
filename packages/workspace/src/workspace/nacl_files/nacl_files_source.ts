@@ -563,8 +563,6 @@ const buildNaclFilesSource = (
         currentState.parsedNaclFiles,
         functions
       )
-      // eslint-disable-next-line no-console
-      console.log('IN THIS THING: %d', parsedModifiedFiles.length)
       const result = await buildNaclFilesState({
         newNaclFiles: parsedModifiedFiles,
         currentState,
@@ -784,8 +782,6 @@ const buildNaclFilesSource = (
     )).filter(values.isDefined)
 
     if (updatedNaclFiles.length > 0) {
-      // eslint-disable-next-line no-console
-      console.log('going to update %d NaCl files', updatedNaclFiles.length)
       log.debug('going to update %d NaCl files', updatedNaclFiles.length)
       // The map is to avoid saving unnecessary fields in the nacl files
       await setNaclFiles(

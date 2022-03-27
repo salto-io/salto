@@ -326,12 +326,12 @@ export class EditorWorkspace {
     }
   }
 
-  setNaclFiles(...naclFiles: nacl.NaclFile[]): Promise<void> {
+  setNaclFiles(naclFiles: nacl.NaclFile[]): Promise<void> {
     this.addPendingNaclFiles(naclFiles.map(file => this.workspaceNaclFile(file)))
     return this.triggerAggregatedSetOperation()
   }
 
-  removeNaclFiles(...names: string[]): Promise<void> {
+  removeNaclFiles(names: string[]): Promise<void> {
     this.addPendingDeletes(names.map(name => this.workspaceFilename(name)))
     return this.triggerAggregatedSetOperation()
   }

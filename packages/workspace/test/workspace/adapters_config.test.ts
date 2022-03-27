@@ -252,7 +252,7 @@ describe('adapters config', () => {
     it('setNaclFile should recalculate errors', async () => {
       jest.spyOn(validator, 'validateElements').mockResolvedValue([new validator.InvalidValueValidationError({ elemID: new ElemID('someID'), value: 'val', fieldName: 'field', expectedValue: 'expVal' })])
 
-      await configSource.setNaclFiles(...[])
+      await configSource.setNaclFiles([])
       expect(validationErrorsMap.setAll).toHaveBeenCalled()
     })
 

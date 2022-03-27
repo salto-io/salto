@@ -40,7 +40,7 @@ import { RemoteMap, RemoteMapCreator } from '../remote_map'
 import { ParsedNaclFile } from './parsed_nacl_file'
 import { ParsedNaclFileCache, createParseResultCache } from './parsed_nacl_files_cache'
 
-const { awu, concatAsync } = collections.asynciterable
+const { awu } = collections.asynciterable
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 const { withLimitedConcurrency } = promises.array
 
@@ -74,8 +74,8 @@ export type NaclFilesSource<Changes=ChangeSet<Change>> = Omit<ElementsSource, 'c
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
   // TODO: this should be for single?
-  setNaclFiles: (...naclFiles: NaclFile[]) => Promise<Changes>
-  removeNaclFiles: (...names: string[]) => Promise<Changes>
+  setNaclFiles: (naclFiles: NaclFile[]) => Promise<Changes>
+  removeNaclFiles: (names: string[]) => Promise<Changes>
   getSourceMap: (filename: string) => Promise<SourceMap>
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
   getErrors: () => Promise<Errors>
@@ -394,7 +394,6 @@ const buildNaclFilesState = async ({
         oldNaclFileElements.map(e => e.elemID.getFullName()),
         currentNaclFileElements.map(e => e.elemID.getFullName()),
       )
-
       relevantElementIDs.push(
         ...currentNaclFileElements.map(e => e.elemID),
         ...oldNaclFileElements.map(e => e.elemID),
@@ -460,7 +459,7 @@ const buildNaclFilesState = async ({
           ))
     }).filter(values.isDefined) as AsyncIterable<Element>
   const changes = await buildNewMergedElementsAndErrors({
-    afterElements: awu(concatAsync(...newElementsToMerge, awu(unmodifiedFragments))),
+    afterElements: awu(newElementsToMerge).flat().concat(unmodifiedFragments),
     relevantElementIDs: awu(relevantElementIDs),
     currentElements: currentState.mergedElements,
     currentErrors: currentState.mergeErrors,
@@ -687,7 +686,7 @@ const buildNaclFilesSource = (
   }
 
   const setNaclFiles = async (
-    ...naclFiles: NaclFile[]
+    naclFiles: NaclFile[]
   ): Promise<void> => {
     const [emptyNaclFiles, nonEmptyNaclFiles] = _.partition(
       naclFiles,
@@ -786,7 +785,7 @@ const buildNaclFilesSource = (
       log.debug('going to update %d NaCl files', updatedNaclFiles.length)
       // The map is to avoid saving unnecessary fields in the nacl files
       await setNaclFiles(
-        ...updatedNaclFiles.map(file => _.pick(file, ['buffer', 'filename']))
+        updatedNaclFiles.map(file => _.pick(file, ['buffer', 'filename']))
       )
       const res = await buildNaclFilesStateInner(updatedNaclFiles)
       state = Promise.resolve(res.state)
@@ -864,7 +863,7 @@ const buildNaclFilesSource = (
       return _.flatten(sourceRanges)
     },
 
-    removeNaclFiles: async (...names: string[]) => {
+    removeNaclFiles: async (names: string[]) => {
       const preChangeHash = await (await getState()).parsedNaclFiles.getHash()
       await awu(names).forEach(name => naclFilesStore.delete(name))
       const res = await buildNaclFilesStateInner(
@@ -947,8 +946,8 @@ const buildNaclFilesSource = (
       state,
     ),
     updateNaclFiles,
-    setNaclFiles: async (...naclFiles) => {
-      await setNaclFiles(...naclFiles)
+    setNaclFiles: async naclFiles => {
+      await setNaclFiles(naclFiles)
       const res = await buildNaclFilesStateInner(
         await parseNaclFiles(naclFiles, (await getState()).parsedNaclFiles, functions)
       )

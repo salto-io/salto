@@ -528,7 +528,7 @@ describe('multi env source', () => {
         filename: path.join(ENVS_PREFIX, activePrefix, 'env.nacl'),
         buffer: '',
       }
-      await source.setNaclFiles(naclFile)
+      await source.setNaclFiles([naclFile])
       expect(envSource.setNaclFiles).toHaveBeenCalled()
     })
 
@@ -537,7 +537,7 @@ describe('multi env source', () => {
         filename: path.join(commonPrefix, 'common.nacl'),
         buffer: '',
       }
-      await source.setNaclFiles(naclFile)
+      await source.setNaclFiles([naclFile])
       expect(commonSource.setNaclFiles).toHaveBeenCalled()
     })
 
@@ -572,7 +572,7 @@ describe('multi env source', () => {
       ).toArray()
       expect(currentElements).toHaveLength(2)
       const elementChanges = (await multiEnvSourceWithMockSources.setNaclFiles(
-        { filename: path.join(ENVS_PREFIX, inactiveSourceName, 'env.nacl'), buffer: 'test' }
+        [{ filename: path.join(ENVS_PREFIX, inactiveSourceName, 'env.nacl'), buffer: 'test' }]
       ))
       expect(elementChanges).not.toHaveProperty(primarySourceName)
       const elements = await awu(
@@ -604,7 +604,7 @@ describe('multi env source', () => {
       ).toArray()
       expect(currentElements).toHaveLength(2)
       const elementChanges = (await multiEnvSourceWithMockSources.setNaclFiles(
-        { filename: 'test', buffer: 'test' }
+        [{ filename: 'test', buffer: 'test' }]
       ))[primarySourceName].changes
       expect(elementChanges).toEqual([change])
       const mergedSaltoObject = new ObjectType({
@@ -638,7 +638,7 @@ describe('multi env source', () => {
       ).toArray()
       expect(currentElements).toHaveLength(2)
       const elementChanges = (await multiEnvSourceWithMockSources.setNaclFiles(
-        { filename: path.join(ENVS_PREFIX, primarySourceName, 'env.nacl'), buffer: 'test' }
+        [{ filename: path.join(ENVS_PREFIX, primarySourceName, 'env.nacl'), buffer: 'test' }]
       ))
       expect(elementChanges[primarySourceName].changes).toEqual([change])
       const mergedSaltoObject = new ObjectType({
@@ -683,7 +683,7 @@ describe('multi env source', () => {
       ).toArray()
       expect(currentElements).toHaveLength(2)
       const elementChanges = (await multiEnvSourceWithMockSources.setNaclFiles(
-        { filename: path.join(ENVS_PREFIX, primarySourceName, 'env.nacl'), buffer: 'test' }
+        [{ filename: path.join(ENVS_PREFIX, primarySourceName, 'env.nacl'), buffer: 'test' }]
       ))
       expect(elementChanges[primarySourceName].changes).toEqual([change])
       const mergedSaltoObject = new ObjectType({
@@ -719,10 +719,10 @@ describe('multi env source', () => {
         await multiEnvSourceWithMockSources.getAll(primarySourceName)
       ).toArray()
       expect(currentElements).toHaveLength(2)
-      const elementChanges = (await multiEnvSourceWithMockSources.setNaclFiles(
+      const elementChanges = (await multiEnvSourceWithMockSources.setNaclFiles([
         { filename: path.join(ENVS_PREFIX, primarySourceName, 'env.nacl'), buffer: 'test' },
         { filename: 'test', buffer: 'test' },
-      ))
+      ]))
       expect(elementChanges[primarySourceName].changes).toEqual([])
       expect(sortElemArray(await awu(
         await multiEnvSourceWithMockSources.getAll(primarySourceName)
@@ -731,12 +731,12 @@ describe('multi env source', () => {
   })
   describe('removeNaclFiles', () => {
     it('should forward the removeNaclFiles command to the active source', async () => {
-      await source.removeNaclFiles(path.join(ENVS_PREFIX, activePrefix, 'env.nacl'))
+      await source.removeNaclFiles([path.join(ENVS_PREFIX, activePrefix, 'env.nacl')])
       expect(envSource.removeNaclFiles).toHaveBeenCalled()
     })
 
     it('should forward the removeNaclFiles command to the common source', async () => {
-      await source.removeNaclFiles(path.join(commonPrefix, 'common.nacl'))
+      await source.removeNaclFiles([path.join(commonPrefix, 'common.nacl')])
       expect(envSource.removeNaclFiles).toHaveBeenCalled()
     })
 
@@ -764,7 +764,7 @@ describe('multi env source', () => {
       ).toArray()
       expect(currentElements).toHaveLength(2)
       const elementChanges = (await multiEnvSourceWithMockSources
-        .removeNaclFiles('test.nacl'))
+        .removeNaclFiles(['test.nacl']))
       expect(elementChanges[primarySourceName].changes).toEqual([change])
       expect(await awu(
         await multiEnvSourceWithMockSources.getAll(primarySourceName)
@@ -797,7 +797,7 @@ describe('multi env source', () => {
       ).toArray()
       expect(currentElements).toHaveLength(2)
       const elementChanges = (await multiEnvSourceWithMockSources.removeNaclFiles(
-        'test.nacl', path.join(ENVS_PREFIX, primarySourceName, 'env.nacl')
+        ['test.nacl', path.join(ENVS_PREFIX, primarySourceName, 'env.nacl')]
       ))
       expect(elementChanges[primarySourceName].changes).toEqual([removalPrimary, removalCommon])
       expect(await awu(

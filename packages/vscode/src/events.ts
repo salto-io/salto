@@ -51,7 +51,7 @@ export const onTextChangeEvent = (
     const naclFile = { filename: event.document.fileName, buffer: event.document.getText() }
     // We really do *not* want to await on this.
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    workspace.setNaclFiles(naclFile)
+    workspace.setNaclFiles([naclFile])
   }
 }
 

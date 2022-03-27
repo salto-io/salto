@@ -98,8 +98,8 @@ export type MultiEnvSource = {
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
   getElementNaclFiles: (env: string, id: ElemID) => Promise<string[]>
   getElementReferencedFiles: (env: string, id: ElemID) => Promise<string[]>
-  setNaclFiles: (...naclFiles: NaclFile[]) => Promise<EnvsChanges>
-  removeNaclFiles: (...names: string[]) => Promise<EnvsChanges>
+  setNaclFiles: (naclFiles: NaclFile[]) => Promise<EnvsChanges>
+  removeNaclFiles: (names: string[]) => Promise<EnvsChanges>
   getSourceMap: (filename: string) => Promise<SourceMap>
   getSourceRanges: (env: string, elemID: ElemID) => Promise<SourceRange[]>
   getErrors: (env: string) => Promise<Errors>
@@ -608,7 +608,7 @@ const buildMultiEnvSource = (
     getTotalSize: async (): Promise<number> => (
       _.sum(await Promise.all(Object.values(sources).map(s => s.getTotalSize())))
     ),
-    setNaclFiles: async (...naclFiles: NaclFile[]): Promise<EnvsChanges> => {
+    setNaclFiles: async (naclFiles: NaclFile[]): Promise<EnvsChanges> => {
       const envNameToNaclFiles = _.groupBy(
         naclFiles, naclFile => getSourceNameForNaclFile(naclFile.filename)
       )
@@ -620,17 +620,17 @@ const buildMultiEnvSource = (
               filename: getRelativePath(naclFile.filename, envName),
             }))
           return getSourceFromEnvName(envName)
-            .setNaclFiles(...naclFilesWithRelativePath)
+            .setNaclFiles(naclFilesWithRelativePath)
         })
       const buildRes = await buildMultiEnvState({ envChanges: envNameToChanges })
       state = buildRes.state
       return buildRes.changes
     },
-    removeNaclFiles: async (...names: string[]): Promise<EnvsChanges> => {
+    removeNaclFiles: async (names: string[]): Promise<EnvsChanges> => {
       const envNameToFilesToRemove = _.groupBy(names, getSourceNameForNaclFile)
       const envNameToChanges = await mapValuesAsync(envNameToFilesToRemove, (files, envName) =>
         getSourceFromEnvName(envName)
-          .removeNaclFiles(...files.map(fileName => getRelativePath(fileName, envName))))
+          .removeNaclFiles(files.map(fileName => getRelativePath(fileName, envName))))
       const buildRes = await buildMultiEnvState({ envChanges: envNameToChanges })
       state = buildRes.state
       return buildRes.changes

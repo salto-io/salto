@@ -210,7 +210,10 @@ const getAdapterConfigsPerAccount = async (envs: EnvConfig[]): Promise<ObjectTyp
 }
 
 export const loadLocalWorkspace = async (
-  lookupDir: string, configOverrides?: DetailedChange[], persistent = true
+  lookupDir: string,
+  configOverrides?: DetailedChange[],
+  persistent = true,
+  credentialSource?: cs.ConfigSource
 ): Promise<Workspace> => {
   const baseDir = await locateWorkspaceRoot(path.resolve(lookupDir))
   if (_.isUndefined(baseDir)) {
@@ -229,7 +232,7 @@ export const loadLocalWorkspace = async (
     configOverrides,
   )
   const envNames = envs.map(e => e.name)
-  const credentials = credentialsSource(workspaceConfig.localStorage)
+  const credentials = credentialSource ?? credentialsSource(workspaceConfig.localStorage)
 
   const elemSources = await loadLocalElementsSources(
     baseDir,

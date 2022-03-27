@@ -17,8 +17,9 @@ import path from 'path'
 import { Value } from '@salto-io/adapter-api'
 import * as ws from '@salto-io/workspace'
 import * as file from '@salto-io/file'
-import { EnvironmentsSources } from '@salto-io/workspace'
+import { EnvironmentsSources, configSource as cs } from '@salto-io/workspace'
 import { collections, values } from '@salto-io/lowerdash'
+import { mockFunction } from '@salto-io/test-utils'
 import {
   initLocalWorkspace, ExistingWorkspaceError, NotAnEmptyWorkspaceError, NotAWorkspaceError,
   loadLocalWorkspace, CREDENTIALS_CONFIG_PATH,
@@ -35,6 +36,13 @@ const mockRemoteMapCreator = (async <T, K extends string = string>(
   _opts: ws.remoteMap.CreateRemoteMapParams<T>,
 ): Promise<ws.remoteMap.RemoteMap<T, K>> =>
   new ws.remoteMap.InMemoryRemoteMap<T, K>())
+
+const mockCredentialsSource = (): jest.Mocked<cs.ConfigSource> => ({
+  get: mockFunction<cs.ConfigSource['get']>(),
+  set: mockFunction<cs.ConfigSource['set']>(),
+  delete: mockFunction<cs.ConfigSource['delete']>(),
+  rename: mockFunction<cs.ConfigSource['rename']>(),
+})
 
 jest.mock('@salto-io/file', () => ({
   ...jest.requireActual<{}>('@salto-io/file'),
@@ -171,35 +179,58 @@ describe('local workspace', () => {
       await expect(loadLocalWorkspace('.')).rejects.toThrow(NotAWorkspaceError)
     })
 
-    it('should call loadWorkspace with currect input', async () => {
-      mockExists.mockResolvedValue(true)
-      const getConf = repoDirStore.get as jest.Mock
-      getConf.mockResolvedValue({ buffer: `
-      salto {
-        uid = "98bb902f-a144-42da-9672-f36e312e8e09"
-        name = "test"
-        envs = [
-            {
-              name = "default"
-            },
-            {
-              name = "env2"
-            },
-        ]
-        currentEnv = "default"
-      }
-      `,
-      filename: '' })
-      await loadLocalWorkspace('.')
+    describe('with valid workspace configuration', () => {
+      beforeEach(() => {
+        mockExists.mockResolvedValue(true)
+        const getConf = repoDirStore.get as jest.Mock
+        getConf.mockResolvedValue({
+          filename: '',
+          buffer: `
+            salto {
+              uid = "98bb902f-a144-42da-9672-f36e312e8e09"
+              name = "test"
+              envs = [
+                  {
+                    name = "default"
+                  },
+                  {
+                    name = "env2"
+                  },
+              ]
+              currentEnv = "default"
+            }`,
+        })
+      })
+      it('should call loadWorkspace with correct input', async () => {
+        await loadLocalWorkspace('.')
 
-      expect(mockLoad).toHaveBeenCalledTimes(1)
-      const envSources: ws.EnvironmentsSources = mockLoad.mock.calls[0][3]
-      expect(Object.keys(envSources.sources)).toHaveLength(3)
-      expect(mockCreateDirStore).toHaveBeenCalledTimes(11)
-      const dirStoresBaseDirs = mockCreateDirStore.mock.calls.map(c => c[0])
-        .map(params => toWorkspaceRelative(params))
-      expect(dirStoresBaseDirs).toContain(path.join(ENVS_PREFIX, 'env2'))
-      expect(dirStoresBaseDirs).toContain(path.join(ENVS_PREFIX, 'default'))
+        expect(mockLoad).toHaveBeenCalledTimes(1)
+        const envSources: ws.EnvironmentsSources = mockLoad.mock.calls[0][3]
+        expect(Object.keys(envSources.sources)).toHaveLength(3)
+        expect(mockCreateDirStore).toHaveBeenCalledTimes(11)
+        const dirStoresBaseDirs = mockCreateDirStore.mock.calls.map(c => c[0])
+          .map(params => toWorkspaceRelative(params))
+        expect(dirStoresBaseDirs).toContain(path.join(ENVS_PREFIX, 'env2'))
+        expect(dirStoresBaseDirs).toContain(path.join(ENVS_PREFIX, 'default'))
+      })
+      describe('with custom credentials source', () => {
+        let credentialSrc: jest.Mocked<cs.ConfigSource>
+        beforeEach(async () => {
+          credentialSrc = mockCredentialsSource()
+          await loadLocalWorkspace('.', [], true, credentialSrc)
+        })
+        it('should use the credentials source that was passed as a paramter', async () => {
+          expect(mockLoad).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.anything(),
+            credentialSrc,
+            expect.anything(),
+            expect.anything(),
+            expect.anything(),
+            expect.anything(),
+          )
+        })
+      })
     })
   })
 

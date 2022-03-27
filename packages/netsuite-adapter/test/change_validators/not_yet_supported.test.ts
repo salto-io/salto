@@ -20,7 +20,7 @@ import notYetSupportedChangeValidator from '../../src/change_validators/not_yet_
 import { ACCOUNT_SPECIFIC_VALUE, PATH, SCRIPT_ID, NOT_YET_SUPPORTED_VALUE } from '../../src/constants'
 
 
-describe('account specific value validator', () => {
+describe('not yet supported validator', () => {
   const origInstance = new InstanceElement(
     'instance',
     workflowType().type,

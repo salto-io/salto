@@ -37,7 +37,7 @@ const changeValidator: ChangeValidator = async changes => (
     .map(instance => ({
       elemID: instance.elemID,
       severity: 'Error',
-      message: 'Instance has an NOT_YET_SUPPORTED value that Salto cannot deploy',
+      message: 'Instance has a NOT_YET_SUPPORTED value that Salto cannot deploy',
       detailedMessage: `Instance ${instance.elemID.getFullName()} has a NOT_YET_SUPPORTED value that Salto cannot deploy. In order to deploy the instance, please fill the NOT_YET_SUPPORTED value`,
     } as ChangeError))
     .toArray()

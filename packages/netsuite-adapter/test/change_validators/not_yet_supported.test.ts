@@ -84,7 +84,7 @@ describe('not yet supported validator', () => {
 
   it('should not have Error if NOT_YET_SUPPORTED was changed to a concrete value', async () => {
     const before = instance.clone()
-    before.value.name = `${NOT_YET_SUPPORTED_VALUE}`
+    before.value.name = NOT_YET_SUPPORTED_VALUE
     const changeErrors = await notYetSupportedChangeValidator(
       [toChange({ before, after: instance })]
     )

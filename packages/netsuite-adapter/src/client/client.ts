@@ -33,7 +33,7 @@ import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATIN
 import { DeployResult } from '../types'
 import { APPLICATION_ID } from '../constants'
 import { convertInstanceMapsToLists } from '../mapped_lists/utils'
-import { toConfigDeployResult, getConfigRecordElements, toSetConfigTypes } from './suiteapp_client/config_elements'
+import { getConfigTypes, toConfigDeployResult, toConfigRecordElements, toSetConfigTypes } from './suiteapp_client/config_elements'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -90,12 +90,12 @@ export default class NetsuiteClient {
       return []
     }
     const [instances, types] = _.partition(
-      getConfigRecordElements(await this.suiteAppClient.getConfigRecords()),
+      toConfigRecordElements(await this.suiteAppClient.getConfigRecords()),
       isInstanceElement
     )
     const matchingInstances = instances
       .filter(instance => fetchQuery.isTypeMatch(instance.elemID.typeName))
-    return [...types, ...matchingInstances]
+    return [...getConfigTypes(), ...types, ...matchingInstances]
   }
 
   @NetsuiteClient.logDecorator

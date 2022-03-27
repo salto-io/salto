@@ -15,89 +15,29 @@
 */
 import os from 'os'
 import _ from 'lodash'
-import { BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, FieldDefinition, getChangeData, InstanceElement, ListType, ModificationChange, ObjectType, TypeElement } from '@salto-io/adapter-api'
+import { BuiltinTypes, Element, ElemID, getChangeData, InstanceElement, ModificationChange, ObjectType } from '@salto-io/adapter-api'
 import { NETSUITE, SELECT_OPTION, SETTINGS_PATH, TYPES_PATH } from '../../constants'
-import { ConfigFieldDefinition, ConfigRecord, isSuccessSetConfig, SetConfigRecordsValuesResult, SetConfigType } from './types'
+import { ConfigRecord, isSuccessSetConfig, SetConfigRecordsValuesResult, SetConfigType } from './types'
 import { SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES, DeployResult } from '../../types'
 
-const CHECKBOX_TYPE = 'checkbox'
-const INTEGER_TYPE = 'integer'
-const SELECT_TYPE = 'select'
-const MULTISELECT_TYPE = 'multiselect'
-const FIELD_TYPES_TO_OMIT = [
-  'never',
-  'help',
-  'inlinehtml',
-  'label',
-  'text',
-  'textarea',
-]
+export const getConfigTypes = (): ObjectType[] => ([new ObjectType({
+  elemID: new ElemID(NETSUITE, SELECT_OPTION),
+  fields: {
+    text: { refType: BuiltinTypes.STRING },
+    value: { refType: BuiltinTypes.UNKNOWN },
+  },
+  path: [NETSUITE, TYPES_PATH, SELECT_OPTION],
+})])
 
-const fieldUtils = (): {
-  selectOptionType: ObjectType
-  toFields: (fieldsDef: ConfigFieldDefinition[]) => Record<string, FieldDefinition>
-} => {
-  const selectOptionType = new ObjectType({
-    elemID: new ElemID(NETSUITE, SELECT_OPTION),
-    fields: {
-      text: { refType: BuiltinTypes.STRING },
-      value: { refType: BuiltinTypes.UNKNOWN },
-    },
-    path: [NETSUITE, TYPES_PATH, SELECT_OPTION],
-  })
-
-  const multiSelectOptionType = new ListType(selectOptionType)
-
-  const toFieldType = (type: string): TypeElement => {
-    switch (type) {
-      case CHECKBOX_TYPE:
-        return BuiltinTypes.BOOLEAN
-      case INTEGER_TYPE:
-        return BuiltinTypes.NUMBER
-      case SELECT_TYPE:
-        return selectOptionType
-      case MULTISELECT_TYPE:
-        return multiSelectOptionType
-      default:
-        return BuiltinTypes.STRING
-    }
-  }
-
-  const toFields = (fieldsDef: ConfigFieldDefinition[]): Record<string, FieldDefinition> => ({
-    ..._(fieldsDef)
-      .filter(field => !FIELD_TYPES_TO_OMIT.includes(field.type))
-      .keyBy(field => field.id)
-      .mapValues(({ label, type }) => ({
-        refType: toFieldType(type),
-        annotations: {
-          label,
-          type,
-        },
-      }))
-      .value(),
-    configType: {
-      refType: BuiltinTypes.STRING,
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-        [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
-      },
-    },
-  })
-
-  return { selectOptionType, toFields }
-}
-
-export const getConfigRecordElements = (
+export const toConfigRecordElements = (
   configRecords: ConfigRecord[],
 ): Element[] => {
-  const { selectOptionType, toFields } = fieldUtils()
-
   const elements = configRecords
     .flatMap(configRecord => {
       const typeName = SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES[configRecord.configType]
       const configRecordType = new ObjectType({
         elemID: new ElemID(NETSUITE, typeName),
-        fields: toFields(configRecord.fieldsDef),
+        annotations: { fieldsDef: configRecord.fieldsDef },
         isSettings: true,
         path: [NETSUITE, TYPES_PATH, typeName],
       })
@@ -110,7 +50,7 @@ export const getConfigRecordElements = (
       return [configRecordType, instance]
     })
 
-  return elements.concat(selectOptionType)
+  return elements
 }
 
 export const toSetConfigTypes = (

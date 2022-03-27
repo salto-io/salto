@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { Change, Field, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isListType, isPrimitiveType, ObjectType, PrimitiveTypes, TypeElement, Value, Values } from '@salto-io/adapter-api'
+import { BuiltinTypes, Change, CORE_ANNOTATIONS, Field, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isListType, isObjectType, isPrimitiveType, ListType, ObjectType, PrimitiveTypes, TypeElement, Value, Values } from '@salto-io/adapter-api'
 import { collections, promises } from '@salto-io/lowerdash'
 import { ConfigRecord, SelectOption } from '../client/suiteapp_client/types'
 import { SELECT_OPTION } from '../constants'
@@ -27,6 +27,19 @@ const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 const { mapValuesAsync } = promises.object
 
+const CHECKBOX_TYPE = 'checkbox'
+const INTEGER_TYPE = 'integer'
+const SELECT_TYPE = 'select'
+const MULTISELECT_TYPE = 'multiselect'
+const FIELD_TYPES_TO_OMIT = [
+  'never',
+  'help',
+  'inlinehtml',
+  'label',
+  'text',
+  'textarea',
+]
+
 const BOOLEAN_TRUE = 'T'
 const BOOLEAN_FALSE = 'F'
 
@@ -37,6 +50,44 @@ const isSelectFieldType = (fieldType: TypeElement): boolean =>
 
 const isMultiSelectFieldType = (fieldType: TypeElement): boolean =>
   isListType(fieldType) && fieldType.refInnerType.elemID.typeName === SELECT_OPTION
+
+const transformType = (
+  configType: ObjectType,
+  selectOptionType: ObjectType
+): void => {
+  if (!configType.annotations.fieldsDef) {
+    return
+  }
+
+  const toFieldType = (type: string): TypeElement => {
+    switch (type) {
+      case CHECKBOX_TYPE:
+        return BuiltinTypes.BOOLEAN
+      case INTEGER_TYPE:
+        return BuiltinTypes.NUMBER
+      case SELECT_TYPE:
+        return selectOptionType
+      case MULTISELECT_TYPE:
+        return new ListType(selectOptionType)
+      default:
+        return BuiltinTypes.STRING
+    }
+  }
+
+  configType.fields = _(configType.annotations.fieldsDef)
+    .filter(field => !FIELD_TYPES_TO_OMIT.includes(field.type))
+    .keyBy(field => field.id)
+    .mapValues(({ id, label, type }) =>
+      new Field(configType, id, toFieldType(type), { label, type }))
+    .value()
+
+  configType.fields.configType = new Field(configType, 'configType', BuiltinTypes.STRING, {
+    [CORE_ANNOTATIONS.REQUIRED]: true,
+    [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+  })
+
+  configType.annotations = {}
+}
 
 const transformPrimitive = (
   value: Value,
@@ -113,12 +164,18 @@ const transformValuesForDeploy = async (change: Change<InstanceElement>): Promis
 
 const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
   onFetch: async elements => {
+    const [selectOptionType] = elements
+      .filter(isObjectType)
+      .filter(type => type.elemID.name === SELECT_OPTION)
+
     await awu(elements)
       .filter(isInstanceElement)
       .filter(instance => isSuiteAppConfigInstance(instance))
       .forEach(async instance => {
+        const type = await instance.getType()
+        transformType(type, selectOptionType)
         instance.value = await getConfigInstanceValue(
-          instance.value.configRecord, await instance.getType()
+          instance.value.configRecord, type
         )
       })
   },

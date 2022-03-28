@@ -23,9 +23,7 @@ import {
   isSaltoElementError, ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId,
   CORE_ANNOTATIONS, AdapterOperationsContext, FetchResult, isAdditionChange,
 } from '@salto-io/adapter-api'
-import {
-  applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements,
-} from '@salto-io/adapter-utils'
+import { applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { merger, elementSource, expressions, Workspace, pathIndex, updateElementsWithAlternativeAccount, createAdapterReplacedID, remoteMap } from '@salto-io/workspace'
 import { collections, promises, types, values } from '@salto-io/lowerdash'
@@ -815,9 +813,14 @@ export const fetchChangesFromWorkspace = async (
 
   const differentConfig = await getDifferentConfigs()
   if (!_.isEmpty(differentConfig)) {
-    return createEmptyFetchChangeDueToError(`Can not fetch from a workspace. Found different configs for ${
-      differentConfig.map(config => config.elemID.adapter).join(', ')
-    }`)
+    const configsByAdapter = _.groupBy(
+      [...differentConfig, ...currentConfigs],
+      config => config.elemID.adapter,
+    )
+    Object.entries(configsByAdapter).forEach(([adapter, configs]) => {
+      log.warn(`Found different configs for ${adapter} - 
+      ${configs.map(config => safeJsonStringify(config.value, undefined, 2)).join('\n')}`)
+    })
   }
   if (!fromState
     && (await otherWorkspace.errors()).hasErrors('Error')) {

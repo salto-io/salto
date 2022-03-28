@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ElemID, InstanceElement, isField, ObjectType, toChange } from '@salto-io/adapter-api'
-import { getConfigTypes } from '../../src/client/suiteapp_client/config_elements'
+import { getConfigTypes } from '../../src/suiteapp_config_elements'
 import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../src/types'
 import filterCreator from '../../src/filters/suiteapp_config_elements'
 import { NETSUITE, SELECT_OPTION } from '../../src/constants'

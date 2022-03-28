@@ -69,7 +69,7 @@ import { FetchByQueryFunc, FetchByQueryReturnType } from './change_validators/sa
 import { getChangeGroupIdsFunc } from './group_changes'
 import { getDataElements } from './data_elements/data_elements'
 import { getCustomTypesNames, isCustomTypeName } from './autogen/types'
-import { getConfigTypes, toConfigElements } from './client/suiteapp_client/config_elements'
+import { getConfigTypes, toConfigElements } from './suiteapp_config_elements'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -260,14 +260,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
     }).filter(isInstanceElement).toArray()
 
     const dataElements = await dataElementsPromise
-    const configElements = this.client.isSuiteAppConfigured()
+    const suiteAppConfigElements = this.client.isSuiteAppConfigured()
       ? toConfigElements(await this.client.getConfigRecords(), fetchQuery).concat(getConfigTypes())
       : []
 
     const elements = [
       ...metadataTypesToList({ customTypes, enums, fileCabinetTypes, fieldTypes }),
       ...dataElements,
-      ...configElements,
+      ...suiteAppConfigElements,
       ...instances,
       ...serverTimeElements,
     ]

@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import { InstanceElement, isInstanceElement, isObjectType, ModificationChange, toChange } from '@salto-io/adapter-api'
-import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../src/types'
-import { NETSUITE, SETTINGS_PATH } from '../../src/constants'
-import * as unit from '../../src/client/suiteapp_client/config_elements'
-import { NetsuiteQuery } from '../../src/query'
+import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../src/types'
+import { NETSUITE, SETTINGS_PATH } from '../src/constants'
+import * as unit from '../src/suiteapp_config_elements'
+import { NetsuiteQuery } from '../src/query'
 
 describe('config elements', () => {
   const configType = SUITEAPP_CONFIG_RECORD_TYPES[0]

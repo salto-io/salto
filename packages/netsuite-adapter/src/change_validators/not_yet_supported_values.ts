@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { values, collections } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import {
   ChangeError,
   ChangeValidator,
@@ -22,32 +22,24 @@ import {
   isInstanceChange,
 } from '@salto-io/adapter-api'
 import { isCustomType } from '../types'
-import { ACCOUNT_SPECIFIC_VALUE } from '../constants'
+import { NOT_YET_SUPPORTED_VALUE } from '../constants'
 import { isInstanceContainsStringValue } from './utils'
 
 const { awu } = collections.asynciterable
-const { isDefined } = values
 
 const changeValidator: ChangeValidator = async changes => (
   awu(changes)
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
-    .map(async change => {
-      const instance = getChangeData(change)
-      if (!isCustomType(instance.refType)) {
-        return undefined
-      }
-      if (!isInstanceContainsStringValue(instance, ACCOUNT_SPECIFIC_VALUE)) {
-        return undefined
-      }
-      return {
-        elemID: instance.elemID,
-        severity: 'Warning',
-        message: 'Element contains fields with account specific values. These fields will be skipped from the deployment.',
-        detailedMessage: 'Fields with account specific values (ACCOUNT_SPECIFIC_VALUE) will be skipped from the deployment. After deploying this element, please make sure these fields are mapped correctly in NetSuite.',
-      } as ChangeError
-    })
-    .filter(isDefined)
+    .map(getChangeData)
+    .filter(instance => isCustomType(instance.refType))
+    .filter(instance => isInstanceContainsStringValue(instance, NOT_YET_SUPPORTED_VALUE))
+    .map(instance => ({
+      elemID: instance.elemID,
+      severity: 'Error',
+      message: 'Instances with values set to \'NOT_YET_SUPPORTED\' cannot be deployed',
+      detailedMessage: 'Instances with values set to \'NOT_YET_SUPPORTED\' cannot be deployed. In order to deploy, please manually replace \'NOT_YET_SUPPORTED\' with a valid value.',
+    } as ChangeError))
     .toArray()
 )
 

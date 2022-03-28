@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
+import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, SaltoError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
@@ -289,5 +289,10 @@ export default class NetsuiteClient {
       throw new Error('Cannot call getAllRecords when SuiteApp is not installed')
     }
     return this.suiteAppClient.getAllRecords(types)
+  }
+
+  public getErrors(): SaltoError[] {
+    return this.sdfClient.getErrors()
+      .concat(this.suiteAppClient?.getErrors() ?? [])
   }
 }

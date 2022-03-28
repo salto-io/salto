@@ -109,8 +109,14 @@ describe('SuiteAppClient', () => {
 
       describe('query failure', () => {
         it('exception thrown', async () => {
-          mockAxiosAdapter.onPost().reply(() => [])
+          mockAxiosAdapter.onPost().reply(500)
           expect(await client.runSuiteQL('')).toBeUndefined()
+          expect(client.getErrors()).toEqual([
+            {
+              message: 'Some elements may not been fetched due to a SuiteQL Query Error: Request failed with status code 500',
+              severity: 'Warning',
+            },
+          ])
         })
         it('with retry', async () => {
           jest.spyOn(global, 'setTimeout').mockImplementation((cb: TimerHandler) => (_.isFunction(cb) ? cb() : undefined))
@@ -163,12 +169,18 @@ describe('SuiteAppClient', () => {
 
       describe('query failure', () => {
         it('exception thrown', async () => {
-          mockAxiosAdapter.onPost().reply(() => [])
+          mockAxiosAdapter.onPost().reply(500)
           expect(await client.runSavedSearchQuery({
             type: 'type',
             columns: [],
             filters: [],
           })).toBeUndefined()
+          expect(client.getErrors()).toEqual([
+            {
+              message: 'Some elements may not been fetched due to a Saved Search Query Error: Request failed with status code 500',
+              severity: 'Warning',
+            },
+          ])
         })
 
         it('invalid saved search results', async () => {

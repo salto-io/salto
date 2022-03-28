@@ -27,7 +27,7 @@ import { values } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { WSDL } from 'soap'
-import { InstanceElement } from '@salto-io/adapter-api'
+import { InstanceElement, SaltoError } from '@salto-io/adapter-api'
 import { CallsLimiter, ConfigRecord, ConfigRecordData, GetConfigResult, CONFIG_RECORD_DATA_SCHEMA,
   GET_CONFIG_RESULT_SCHEMA, ExistingFileCabinetInstanceDetails,
   FILES_READ_SCHEMA, HttpMethod, isError, ReadResults, RestletOperation, RestletResults,
@@ -80,6 +80,7 @@ export default class SuiteAppClient {
   private ajv: Ajv
   private soapClient: SoapClient
   private axiosClient: AxiosInstance
+  private errors: Record<string, SaltoError>
 
   private versionFeatures: VersionFeatures | undefined
   private readonly setVersionFeaturesLock: AsyncLock
@@ -102,6 +103,7 @@ export default class SuiteAppClient {
     this.axiosClient = axios.create()
     axiosRetry(this.axiosClient, createRetryOptions(DEFAULT_RETRY_OPTS))
 
+    this.errors = {}
     this.versionFeatures = undefined
     this.setVersionFeaturesLock = new AsyncLock()
   }
@@ -134,6 +136,10 @@ export default class SuiteAppClient {
         if (error instanceof InvalidSuiteAppCredentialsError) {
           throw error
         }
+        this.addWarning(
+          `SuiteQLError-${error.message}`,
+          `Some elements may not been fetched due to a SuiteQL Query Error: ${error.message}`
+        )
         return undefined
       }
     }
@@ -152,7 +158,11 @@ export default class SuiteAppClient {
         items.push(...results)
         hasMore = results.length === PAGE_SIZE
       } catch (error) {
-        log.error('Saved search query error', { error })
+        this.addWarning(
+          `SavedSearchError-${error.message}`,
+          `Some elements may not been fetched due to a Saved Search Query Error: ${error.message}`
+        )
+        log.error(error)
         return undefined
       }
     }
@@ -208,7 +218,8 @@ export default class SuiteAppClient {
         return NON_BINARY_FILETYPES.has(file.type) ? Buffer.from(file.content) : Buffer.from(file.content, 'base64')
       })
     } catch (error) {
-      log.error('error was thrown in readFiles', { error })
+      this.addWarning(`readFilesError-${error.message}`, `Failed to read some files. Error: ${error.message}`)
+      log.error(error)
       return undefined
     }
   }
@@ -497,5 +508,16 @@ export default class SuiteAppClient {
 
   public async deleteInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
     return this.soapClient.deleteInstances(instances)
+  }
+
+  private addWarning(errorType: string, message: string): void {
+    if (this.errors[errorType] === undefined) {
+      log.debug('Adding warning of type \'%s\': %s', errorType, message)
+      this.errors[errorType] = { severity: 'Warning', message }
+    }
+  }
+
+  public getErrors(): SaltoError[] {
+    return Object.values(this.errors)
   }
 }

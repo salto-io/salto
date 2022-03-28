@@ -317,10 +317,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
       failedToFetchAllAtOnce, failedFilePaths, failedTypes, this.userConfig
     )
 
+    const errors = this.client.getErrors()
+
     if (_.isUndefined(updatedConfig)) {
-      return { elements, isPartial }
+      return { elements, errors, isPartial }
     }
-    return { elements, updatedConfig, isPartial }
+    return { elements, errors, updatedConfig, isPartial }
   }
 
   private async runSuiteAppOperations(

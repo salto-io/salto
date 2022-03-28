@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { collections, decorators, objects as lowerdashObjects, promises, values as valuesUtils } from '@salto-io/lowerdash'
-import { Values, AccountId, Value } from '@salto-io/adapter-api'
+import { Values, AccountId, Value, SaltoError } from '@salto-io/adapter-api'
 import { mkdirp, readDir, readFile, writeFile, rm, rename } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
 import {
@@ -199,6 +199,7 @@ export default class SdfClient {
   private readonly setupAccountLock: AsyncLock
   private readonly baseCommandExecutor: CommandActionExecutor
   private readonly installedSuiteApps: string[]
+  private errors: Record<string, SaltoError>
 
   constructor({
     credentials,
@@ -218,6 +219,7 @@ export default class SdfClient {
       ?? DEFAULT_COMMAND_TIMEOUT_IN_MINUTES
     SdkProperties.setCommandTimeout(commandTimeoutInMinutes * MINUTE_IN_MILLISECONDS)
     this.installedSuiteApps = config?.installedSuiteApps ?? []
+    this.errors = {}
   }
 
   @SdfClient.logDecorator
@@ -580,10 +582,17 @@ export default class SdfClient {
           executor, type, ids.join(' '), suiteAppId
         )
         if (failedTypeToInstances.unexpectedError[type]?.length > 0) {
+          const { unexpectedError } = await retryFetchFailedInstances(
+            failedTypeToInstances.unexpectedError[type]
+          )
+          if (unexpectedError[type].length > 0) {
+            this.addWarning(
+              `unexpectedError-${type}`,
+              `Failed to fetch some instances of type '${type}' due to SDF unexpected error`
+            )
+          }
           failedTypeToInstances = {
-            unexpectedError: (await retryFetchFailedInstances(
-              failedTypeToInstances.unexpectedError[type]
-            )).unexpectedError,
+            unexpectedError,
             lockedError: failedTypeToInstances.lockedError,
           }
         }
@@ -688,6 +697,7 @@ export default class SdfClient {
     const lockedError = SdfClient.createFailedImportsMap(importResult.failedImports
       .filter(failedImport => {
         if (failedImport.customObject.result.message.includes('You cannot download the XML file for this object because it is locked')) {
+          this.addWarning('lockedError', 'Some instances are locked and couldn\'t be fetched')
           log.debug('Failed to fetch (%s) instance with id (%s) due to the instance being locked',
             SdfClient.fixTypeName(failedImport.customObject.type), failedImport.customObject.id)
           return true
@@ -730,6 +740,7 @@ export default class SdfClient {
         .map(folder =>
           this.executeProjectAction(COMMANDS.LIST_FILES, { folder }, executor)
             .catch(() => {
+              this.addWarning('listPathError', 'Failed to list some paths. These paths have been added to Skip List')
               log.debug(`Adding ${folder} path to skip list`)
               failedPaths.push(`^${folder}.*`)
               return undefined
@@ -964,5 +975,16 @@ export default class SdfClient {
       ACCOUNT_CONFIGURATION_DIR,
       FEATURES_XML
     )
+  }
+
+  private addWarning(errorType: string, message: string): void {
+    if (this.errors[errorType] === undefined) {
+      log.debug('Adding warning of type \'%s\': %s', errorType, message)
+      this.errors[errorType] = { severity: 'Warning', message }
+    }
+  }
+
+  public getErrors(): SaltoError[] {
+    return Object.values(this.errors)
   }
 }

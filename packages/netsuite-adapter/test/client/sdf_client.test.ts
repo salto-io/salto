@@ -795,9 +795,10 @@ describe('netsuite client', () => {
           { name: 'advancedpdftemplate' },
         ],
       })
+      const client = mockClient()
       const {
         failedTypes,
-      } = await mockClient().getCustomObjects(typeNames, query)
+      } = await client.getCustomObjects(typeNames, query)
       expect(failedTypes).toEqual({
         lockedError: {
           savedcsvimport: ['d'],
@@ -807,6 +808,20 @@ describe('netsuite client', () => {
           advancedpdftemplate: ['a'],
         },
       })
+      expect(client.getErrors()).toEqual([
+        {
+          message: 'Some instances are locked and couldn\'t be fetched',
+          severity: 'Warning',
+        },
+        {
+          message: 'Failed to fetch some instances of type \'savedcsvimport\' due to SDF unexpected error',
+          severity: 'Warning',
+        },
+        {
+          message: 'Failed to fetch some instances of type \'advancedpdftemplate\' due to SDF unexpected error',
+          severity: 'Warning',
+        },
+      ])
     })
 
     it('should succeed and return merged failedTypeToInstances when split to smaller chunks', async () => {
@@ -852,15 +867,22 @@ describe('netsuite client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
 
+      const client = mockClient()
       const {
         failedTypes,
-      } = await mockClient().getCustomObjects(typeNames, typeNamesQuery)
+      } = await client.getCustomObjects(typeNames, typeNamesQuery)
       expect(failedTypes).toEqual({
         lockedError: {},
         unexpectedError: {
           addressForm: ['a', 'b'],
         },
       })
+      expect(client.getErrors()).toEqual([
+        {
+          message: 'Failed to fetch some instances of type \'addressForm\' due to SDF unexpected error',
+          severity: 'Warning',
+        },
+      ])
     })
 
     it('should list and import only objects that match the query', async () => {

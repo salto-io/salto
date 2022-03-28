@@ -871,6 +871,7 @@ describe('Adapter', () => {
         getSystemInformation: getSystemInformationMock,
         getNetsuiteWsdl: () => undefined,
         getConfigRecords: () => [],
+        getErrors: () => [],
       } as unknown as SuiteAppClient
 
       adapter = new NetsuiteAdapter({
@@ -901,6 +902,7 @@ describe('Adapter', () => {
         getSystemInformation: getSystemInformationMock,
         getNetsuiteWsdl: () => undefined,
         getConfigRecords: () => [],
+        getErrors: () => [],
       } as unknown as SuiteAppClient
 
       adapter = new NetsuiteAdapter({
@@ -935,6 +937,25 @@ describe('Adapter', () => {
         .toEqual(new Date(1000).toJSON())
       expect(getChangedObjectsMock).not.toHaveBeenCalled()
     })
+    it('should return fetch errors', async () => {
+      const suiteAppClient = {
+        getSystemInformation: getSystemInformationMock,
+        getNetsuiteWsdl: () => undefined,
+        getConfigRecords: () => [],
+        getErrors: () => [{ severity: 'Warning', message: 'fetch error' }],
+      } as unknown as SuiteAppClient
+
+      const nsAdapter = new NetsuiteAdapter({
+        client: new NetsuiteClient(client, suiteAppClient),
+        elementsSource,
+        filtersCreators: [firstDummyFilter, secondDummyFilter],
+        config,
+        getElemIdFunc: mockGetElemIdFunc,
+      })
+
+      const { errors } = await nsAdapter.fetch(mockFetchOpts)
+      expect(errors).toEqual([{ severity: 'Warning', message: 'fetch error' }])
+    })
 
     describe('getChangedObjects', () => {
       let suiteAppClient: SuiteAppClient
@@ -952,6 +973,7 @@ describe('Adapter', () => {
           getSystemInformation: getSystemInformationMock,
           getNetsuiteWsdl: () => undefined,
           getConfigRecords: () => [],
+          getErrors: () => [],
         } as unknown as SuiteAppClient
 
         adapter = new NetsuiteAdapter({

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { naclCase, pathNaclCase } from '../src/nacl_case_utils'
+import { invertNaclCase, naclCase, pathNaclCase } from '../src/nacl_case_utils'
 
 describe('naclCase utils', () => {
   const generateRandomChar = (): string =>
@@ -94,6 +94,32 @@ describe('naclCase utils', () => {
           expect(naclCase(nameWithCharA)).not.toEqual(naclCase(nameWithCharB))
         })
       })
+    })
+  })
+  describe('invertNaclCase func', () => {
+    it('should return empty string for undefined', () => {
+      expect(invertNaclCase('')).toEqual('')
+    })
+    it('should return string if not a naclCase', () => {
+      expect(invertNaclCase('name')).toEqual('name')
+    })
+    it('should return decoded value for single default mappings', () => {
+      expect(invertNaclCase('name_@a')).toEqual('name?')
+    })
+    it('should return decoded value for double default mappings', () => {
+      expect(invertNaclCase('name_@za')).toEqual('name`')
+    })
+    it('should return decoded value for custom mappings', () => {
+      expect(invertNaclCase('name_@_00229')).toEqual('nameå')
+    })
+    it('should return decoded value for mixed mappings', () => {
+      expect(invertNaclCase('_a_b_c_d_e_f@_00229abcd_00230')).toEqual('åa?b-c\\d/eæf')
+    })
+    it('should return string if encoded suffix is empty', () => {
+      expect(invertNaclCase('name_@')).toEqual('name_')
+    })
+    it('should re-use encoded suffix for all replacements if it is only 1 char', () => {
+      expect(invertNaclCase('name____@a')).toEqual('name????')
     })
   })
 

@@ -15,24 +15,21 @@
 */
 import _ from 'lodash'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
-import { ChangeValidator, getChangeData, InstanceElement, isAdditionChange, ElemID, SeverityLevel, isReferenceExpression } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, InstanceElement, isAdditionChange, ElemID, isReferenceExpression, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import { isInstanceOfCustomObjectChange } from '../custom_object_instances_deploy'
 import { apiName } from '../transformers/transformer'
 
 const { awu, groupByAsync } = collections.asynciterable
 
-const getDepOnAdditionOfSameTypeInstanceIDs = async (
+const dependsOnElemIDs = async (
   instance: InstanceElement,
-  typeToAdditionInstancesElemIDs: Record<string, Set<ElemID>>,
+  elemIDs: ElemID[],
 ): Promise<ElemID[]> => {
   const dependentOnAdditionInstanceIDs: ElemID[] = []
-  const typeAdditionInstancesElemIDs = Array.from(typeToAdditionInstancesElemIDs[
-    (await apiName(await (instance as InstanceElement).getType(), true))
-  ])
   const func: WalkOnFunc = ({ value }) => {
     if (isReferenceExpression(value)
-      && typeAdditionInstancesElemIDs.find(elemID => elemID.isEqual(value.elemID))) {
+      && elemIDs.find(elemID => elemID.isEqual(value.elemID))) {
       dependentOnAdditionInstanceIDs.push(value.elemID)
       return WALK_NEXT_STEP.SKIP
     }
@@ -43,41 +40,37 @@ const getDepOnAdditionOfSameTypeInstanceIDs = async (
 }
 
 const changeValidator: ChangeValidator = async changes => {
-  const typeToAdditionInstancesElemIDs = _.mapValues(await groupByAsync(
+  const typeToAdditionInstances = _.mapValues(await groupByAsync(
     awu(changes)
       .filter(isInstanceOfCustomObjectChange)
+      .filter(isInstanceChange)
       .filter(isAdditionChange)
       .map(getChangeData)
       .map(async instance => (
         {
           type: (await apiName(await (instance as InstanceElement).getType(), true)),
-          elemID: instance.elemID,
+          instance,
         }
       )),
-    te => te.type,
+    ti => ti.type,
   ),
-  teArr => new Set(teArr.map(te => te.elemID)))
-  return awu(changes)
-    .filter(isInstanceOfCustomObjectChange)
-    .filter(isAdditionChange)
-    .map(getChangeData)
-    .map(async instance => {
-      const dependentOnAdditionOfSameTypeInstancesIds = await getDepOnAdditionOfSameTypeInstanceIDs(
-        instance as InstanceElement,
-        typeToAdditionInstancesElemIDs,
-      )
-      if (dependentOnAdditionOfSameTypeInstancesIds.length === 0) {
-        return undefined
-      }
-      return ({
-        elemID: instance.elemID,
-        severity: 'Error' as SeverityLevel,
-        message: 'Instance depends on a new instance that has no ID yet. Run this deploy and then deploy again to avoid this error.',
-        detailedMessage: `Instance ${instance.elemID.getFullName()} depends on new instance that has no ID yet: ${dependentOnAdditionOfSameTypeInstancesIds.map(e => e.getFullName()).join(', ')}`,
-      })
-    })
-    .filter(values.isDefined)
-    .toArray()
+  tiArr => tiArr.map(te => te.instance))
+  return awu(Object.values(typeToAdditionInstances))
+    .flatMap(async instances => {
+      const instancesElemIDs = instances.map(inst => inst.elemID)
+      return awu(instances).map(async instance => {
+        const dependentOnAdditionInstanceIDs = await dependsOnElemIDs(instance, instancesElemIDs)
+        if (dependentOnAdditionInstanceIDs.length === 0) {
+          return undefined
+        }
+        return ({
+          elemID: instance.elemID,
+          severity: 'Error' as SeverityLevel,
+          message: 'This new instance cannot be deployed, as it contains a reference to another new instance. To successfully deploy both instances, please run this deploy, then another deploy to create the referencing instance.',
+          detailedMessage: `New instance ${instance.elemID.getFullName()} cannot be deployed, as it contains a reference to another new instance ${dependentOnAdditionInstanceIDs.map(e => e.getFullName()).join(', ')}. To successfully deploy both instances, please run this deploy to create ${dependentOnAdditionInstanceIDs.map(e => e.getFullName()).join(', ')}, then another deploy to create ${instance.elemID.getFullName()}.`,
+        })
+      }).filter(values.isDefined).toArray()
+    }).toArray()
 }
 
 export default changeValidator

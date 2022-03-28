@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 import { Element, InstanceElement, isInstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { naclCase, pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
+import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
 import { elements as elementUtils, config as configUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { findObject } from '../../utils'
+import { createSchemeGuard, findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { JIRA, STATUS_TYPE_NAME } from '../../constants'
 import { JiraConfig } from '../../config'
@@ -39,14 +39,7 @@ const EXPECTED_RESULTS_SCHEME = Joi.array().items(Joi.object({
   description: Joi.string().allow('').optional(),
 }).unknown(true)).required()
 
-const isStatusesResponse = (responseValue: unknown): responseValue is Status[] => {
-  const { error } = EXPECTED_RESULTS_SCHEME.validate(responseValue)
-  if (error !== undefined) {
-    log.error(`Received an invalid response from statuses private API: ${error.message}, ${safeJsonStringify(responseValue)}`)
-    return false
-  }
-  return true
-}
+const isStatusesResponse = createSchemeGuard<Status[]>(EXPECTED_RESULTS_SCHEME, 'Received an invalid response from statuses private API')
 
 const createStatusInstance = (
   statusValues: Status,

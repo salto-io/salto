@@ -19,7 +19,7 @@ import { buildElementsSourceFromElements, safeJsonStringify } from '@salto-io/ad
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { mockClient } from '../../utils'
-import automationFetchFilter from '../../../src/filters/automation/automation_fetch'
+import automationFetchFilter, { CLOUD_RESOURCE_FIELD } from '../../../src/filters/automation/automation_fetch'
 import { DEFAULT_CONFIG, JiraConfig } from '../../../src/config'
 import { JIRA, PROJECT_TYPE } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
@@ -67,7 +67,7 @@ describe('automationFetchFilter', () => {
           status: 200,
           data: {
             unparsedData: {
-              'com.atlassian.jira.jira-client-analytics-plugin:analytics-context-provider.client-analytic-descriptors': safeJsonStringify({
+              [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
                 tenantId: 'cloudId',
               }),
             },
@@ -230,7 +230,7 @@ describe('automationFetchFilter', () => {
             status: 200,
             data: {
               unparsedData: {
-                'com.atlassian.jira.jira-client-analytics-plugin:analytics-context-provider.client-analytic-descriptors': '{}',
+                [CLOUD_RESOURCE_FIELD]: '{}',
               },
             },
           }
@@ -270,7 +270,7 @@ describe('automationFetchFilter', () => {
             status: 200,
             data: {
               unparsedData: {
-                'com.atlassian.jira.jira-client-analytics-plugin:analytics-context-provider.client-analytic-descriptors': safeJsonStringify({
+                [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
                   tenantId: 'cloudId',
                 }),
               },

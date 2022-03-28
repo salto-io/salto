@@ -14,51 +14,66 @@
 * limitations under the License.
 */
 import { ElemIdGetter, InstanceElement, isInstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
-import { naclCase, pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
+import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
 import _ from 'lodash'
+import { createSchemeGuard } from '../../utils'
 import { AUTOMATION_TYPE, JIRA, PROJECT_TYPE } from '../../constants'
 import JiraClient from '../../client/client'
 import { FilterCreator } from '../../filter'
 import { createAutomationTypes } from './types'
 
-const PAGE_SIZE = 100
+const DEFAULT_PAGE_SIZE = 100
 
 const log = logger(module)
 
-type AutomationsResponse = {
+type PageResponse = {
   total: number
   values: Values[]
 }
 
-const AUTOMATION_RESPONSE_SCHEME = Joi.object({
+const PAGE_RESPONSE_SCHEME = Joi.object({
   total: Joi.number().required(),
   values: Joi.array().items(Joi.object()).required(),
 }).unknown(true).required()
 
+export const CLOUD_RESOURCE_FIELD = 'com.atlassian.jira.jira-client-analytics-plugin:analytics-context-provider.client-analytic-descriptors'
 
 type Resources = {
   unparsedData: {
-    'com.atlassian.jira.jira-client-analytics-plugin:analytics-context-provider.client-analytic-descriptors': string
+    [CLOUD_RESOURCE_FIELD]: string
   }
 }
 
 const RESOURCES_SCHEME = Joi.object({
   unparsedData: Joi.object({
-    'com.atlassian.jira.jira-client-analytics-plugin:analytics-context-provider.client-analytic-descriptors': Joi.string().required(),
+    [CLOUD_RESOURCE_FIELD]: Joi.string().required(),
   }).unknown(true).required(),
 }).unknown(true).required()
 
-const isResources = (value: unknown): value is Resources => {
-  const { error } = RESOURCES_SCHEME.validate(value)
-  if (error !== undefined) {
-    log.error(`Received invalid resources result: ${error.message}, ${safeJsonStringify(value)}`)
-    return false
+const isResources = createSchemeGuard<Resources>(RESOURCES_SCHEME, 'Received invalid resources result')
+
+const parseCloudId = (cloudResource: string): string => {
+  try {
+    const parsedCloudResource = JSON.parse(cloudResource)
+    if (!_.isPlainObject(parsedCloudResource)) {
+      log.error(`Failed to get cloud id, received invalid response: ${cloudResource}`)
+      throw new Error('Failed to get cloud id, received invalid response')
+    }
+
+    const id = parsedCloudResource.tenantId
+    if (id === undefined) {
+      log.error(`Failed to get cloud id, tenantId not found: ${cloudResource}`)
+      throw new Error('Failed to get cloud id, tenantId not found')
+    }
+    return id
+  } catch (err) {
+    log.error(`Failed to get cloud id, could not parse json: ${err} ${cloudResource}`)
+    throw new Error(`Failed to get cloud id, could not parse json - ${err}`)
   }
-  return true
 }
 
 const getCloudId = async (client: JiraClient): Promise<string> => {
@@ -76,57 +91,48 @@ const getCloudId = async (client: JiraClient): Promise<string> => {
     throw new Error('Failed to get cloud id, received invalid response')
   }
 
-  const id = JSON.parse(response.data.unparsedData['com.atlassian.jira.jira-client-analytics-plugin:analytics-context-provider.client-analytic-descriptors']).tenantId
-  if (id === undefined) {
-    throw new Error('Failed to get cloud id, tenantId not found')
-  }
-  return id
+  return parseCloudId(response.data.unparsedData[CLOUD_RESOURCE_FIELD])
 }
 
-const isAutomationResponse = (value: unknown): value is AutomationsResponse => {
-  const { error } = AUTOMATION_RESPONSE_SCHEME.validate(value)
-  if (error !== undefined) {
-    log.error(`Received invalid automation response: ${error.message}, ${safeJsonStringify(value)}`)
-    return false
-  }
-  return true
-}
+const isPageResponse = createSchemeGuard<PageResponse>(PAGE_RESPONSE_SCHEME, 'Received an invalid page response')
 
-const requestAutomations = async (
-  cloudId: string,
+const requestPage = async (
+  url: string,
   client: JiraClient,
   offset: number,
-): Promise<AutomationsResponse> => {
+  pageSize: number,
+): Promise<PageResponse> => {
   const response = await client.post({
-    url: `/gateway/api/automation/internal-api/jira/${cloudId}/pro/rest/GLOBAL/rules`,
+    url,
     data: {
       offset,
-      limit: PAGE_SIZE,
+      limit: pageSize,
     },
   })
 
-  if (!isAutomationResponse(response.data)) {
-    throw new Error('Failed to get automations, received invalid response')
+  if (!isPageResponse(response.data)) {
+    throw new Error('Failed to get response page, received invalid response')
   }
 
   return response.data
 }
 
-const getAutomations = async (
-  cloudId: string,
+const postPaginated = async (
+  url: string,
   client: JiraClient,
+  pageSize: number,
 ): Promise<Values[]> => {
   let hasMore = true
-  const automations: Values[] = []
-  for (let offset = 0; hasMore; offset += PAGE_SIZE) {
+  const items: Values[] = []
+  for (let offset = 0; hasMore; offset += pageSize) {
     // eslint-disable-next-line no-await-in-loop
-    const response = await requestAutomations(cloudId, client, offset)
+    const response = await requestPage(url, client, offset, pageSize)
 
-    hasMore = response.total > offset + PAGE_SIZE
-    automations.push(...response.values)
+    hasMore = response.total > offset + pageSize
+    items.push(...response.values)
   }
 
-  return automations
+  return items
 }
 
 const createInstance = (
@@ -157,7 +163,11 @@ const createInstance = (
   )
 }
 
-
+/**
+ * Fetching automations from Jira using internal API endpoint.
+ * We first use `/resources` endpoint to get the cloud id of the account.
+ * Using the cloud id, we create the url to query the automations with
+ */
 const filter: FilterCreator = ({ client, getElemIdFunc, config }) => ({
   onFetch: async elements => {
     if (!config.client.usePrivateAPI) {
@@ -165,7 +175,7 @@ const filter: FilterCreator = ({ client, getElemIdFunc, config }) => ({
       return
     }
 
-    const id = await getCloudId(client)
+    const cloudId = await getCloudId(client)
 
     const idToProject = _(elements)
       .filter(isInstanceElement)
@@ -173,7 +183,11 @@ const filter: FilterCreator = ({ client, getElemIdFunc, config }) => ({
       .keyBy(instance => instance.value.id)
       .value()
 
-    const automations = await getAutomations(id, client)
+    const automations = await postPaginated(
+      `/gateway/api/automation/internal-api/jira/${cloudId}/pro/rest/GLOBAL/rules`,
+      client,
+      config.client.pageSize?.get ?? DEFAULT_PAGE_SIZE
+    )
 
     const { automationType, subTypes } = createAutomationTypes()
 

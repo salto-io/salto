@@ -21,7 +21,7 @@ import { computeGetArgs, simpleGetArgs, createUrl, replaceUrlParams } from './re
 import { RECORDS_PATH, TYPES_PATH, SUBTYPES_PATH } from './constants'
 import { findDataField, returnFullEntry, FindNestedFieldFunc } from './field_finder'
 import { filterTypes } from './type_elements'
-import { getInstanceName, generateInstanceNameFromConfig, createServiceIds } from './instance_elements'
+import { getInstanceName, generateInstanceNameFromConfig, createServiceIds, removeNullValues } from './instance_elements'
 
 export {
   ducktype,
@@ -37,4 +37,5 @@ export {
   createServiceIds,
   createUrl,
   replaceUrlParams,
+  removeNullValues,
 }

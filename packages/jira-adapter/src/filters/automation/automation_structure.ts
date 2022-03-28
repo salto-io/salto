@@ -15,6 +15,7 @@
 */
 import { InstanceElement, isInstanceElement, Values } from '@salto-io/adapter-api'
 import { transformElement } from '@salto-io/adapter-utils'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { AUTOMATION_TYPE } from '../../constants'
 import { FilterCreator } from '../../filter'
@@ -29,19 +30,6 @@ const KEYS_TO_REMOVE = [
   'ruleScope',
   'conditionParentId',
 ]
-
-const removeNullValues = async (instance: InstanceElement): Promise<void> => {
-  instance.value = (await transformElement({
-    element: instance,
-    strict: false,
-    allowEmpty: true,
-    transformFunc: async ({ value }) => (
-      value === null
-        ? undefined
-        : value
-    ),
-  })).value
-}
 
 const removeRedundantKeys = async (instance: InstanceElement): Promise<void> => {
   instance.value = (await transformElement({
@@ -76,7 +64,10 @@ const filter: FilterCreator = () => ({
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
       .forEach(async instance => {
-        await removeNullValues(instance)
+        instance.value = await elementUtils.removeNullValues(
+          instance.value,
+          await instance.getType()
+        )
         await removeRedundantKeys(instance)
         await removeInnerIds(instance)
 

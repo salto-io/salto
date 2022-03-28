@@ -22,7 +22,6 @@ import { SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID,
 import { NETSUITE } from '../../src/constants'
 import { SetConfigType } from '../../src/client/suiteapp_client/types'
 import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../src/types'
-import { NetsuiteQuery } from '../../src/query'
 
 describe('NetsuiteClient', () => {
   const sdfClient = {
@@ -64,22 +63,6 @@ describe('NetsuiteClient', () => {
     it('should return undefined when failed to get map', async () => {
       getPathToIdMapMock.mockResolvedValue(undefined)
       expect(await client.getPathInternalId('/some/path1')).toBeUndefined()
-    })
-  })
-
-  describe('getConfigElements', () => {
-    it('should return type and instance', async () => {
-      const fetchQuery = {
-        isTypeMatch: jest.fn().mockResolvedValue(true),
-      } as unknown as NetsuiteQuery
-      getConfigRecordsMock.mockResolvedValue([{
-        configType: SUITEAPP_CONFIG_RECORD_TYPES[0],
-        fieldsDef: [{ id: 'field', label: 'field', type: 'checkbox', selectOptions: [] }],
-        data: { fields: { field: 'T' } },
-      }])
-      const elements = await client.getConfigElements(fetchQuery)
-      // selectOptionType + configType + configInstance
-      expect(elements.length).toEqual(3)
     })
   })
 

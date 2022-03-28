@@ -17,6 +17,7 @@ import { InstanceElement, isInstanceElement, isObjectType, ModificationChange, t
 import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../src/types'
 import { NETSUITE, SETTINGS_PATH } from '../../src/constants'
 import * as unit from '../../src/client/suiteapp_client/config_elements'
+import { NetsuiteQuery } from '../../src/query'
 
 describe('config elements', () => {
   const configType = SUITEAPP_CONFIG_RECORD_TYPES[0]
@@ -33,7 +34,12 @@ describe('config elements', () => {
     fieldsDef,
     data: { fields: {} },
   }
-  const elements = unit.toConfigRecordElements([configRecord])
+
+  const fetchQuery = {
+    isTypeMatch: jest.fn().mockResolvedValue(true),
+  } as unknown as NetsuiteQuery
+  const elements = unit.toConfigElements([configRecord], fetchQuery)
+
   describe('getConfigRecordElements', () => {
     it('should return correct length of elements', () => {
       expect(elements.length).toBe(2)

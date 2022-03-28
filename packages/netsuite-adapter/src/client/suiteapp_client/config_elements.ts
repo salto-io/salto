@@ -15,10 +15,11 @@
 */
 import os from 'os'
 import _ from 'lodash'
-import { BuiltinTypes, Element, ElemID, getChangeData, InstanceElement, ModificationChange, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, Element, ElemID, getChangeData, InstanceElement, isInstanceElement, ModificationChange, ObjectType } from '@salto-io/adapter-api'
 import { NETSUITE, SELECT_OPTION, SETTINGS_PATH, TYPES_PATH } from '../../constants'
 import { ConfigRecord, isSuccessSetConfig, SetConfigRecordsValuesResult, SetConfigType } from './types'
 import { SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES, DeployResult } from '../../types'
+import { NetsuiteQuery } from '../../query'
 
 export const getConfigTypes = (): ObjectType[] => ([new ObjectType({
   elemID: new ElemID(NETSUITE, SELECT_OPTION),
@@ -29,8 +30,9 @@ export const getConfigTypes = (): ObjectType[] => ([new ObjectType({
   path: [NETSUITE, TYPES_PATH, SELECT_OPTION],
 })])
 
-export const toConfigRecordElements = (
+export const toConfigElements = (
   configRecords: ConfigRecord[],
+  fetchQuery: NetsuiteQuery
 ): Element[] => {
   const elements = configRecords
     .flatMap(configRecord => {
@@ -50,7 +52,10 @@ export const toConfigRecordElements = (
       return [configRecordType, instance]
     })
 
-  return elements
+  const [instances, types] = _.partition(elements, isInstanceElement)
+  const matchingInstances = instances
+    .filter(instance => fetchQuery.isTypeMatch(instance.elemID.typeName))
+  return [...types, ...matchingInstances]
 }
 
 export const toSetConfigTypes = (

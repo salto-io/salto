@@ -69,6 +69,7 @@ import { FetchByQueryFunc, FetchByQueryReturnType } from './change_validators/sa
 import { getChangeGroupIdsFunc } from './group_changes'
 import { getDataElements } from './data_elements/data_elements'
 import { getCustomTypesNames, isCustomTypeName } from './autogen/types'
+import { getConfigTypes, toConfigElements } from './client/suiteapp_client/config_elements'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -212,8 +213,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const dataElementsPromise = getDataElements(this.client, fetchQuery,
       this.getElemIdFunc)
 
-    const configElementsPromise = this.client.getConfigElements(fetchQuery)
-
     const getCustomObjectsResult = this.client.getCustomObjects(
       getCustomTypesNames(),
       updatedFetchQuery
@@ -261,7 +260,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
     }).filter(isInstanceElement).toArray()
 
     const dataElements = await dataElementsPromise
-    const configElements = await configElementsPromise
+    const configElements = this.client.isSuiteAppConfigured()
+      ? toConfigElements(await this.client.getConfigRecords(), fetchQuery).concat(getConfigTypes())
+      : []
 
     const elements = [
       ...metadataTypesToList({ customTypes, enums, fileCabinetTypes, fieldTypes }),

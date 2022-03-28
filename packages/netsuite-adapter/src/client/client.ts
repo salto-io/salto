@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, Element, isModificationChange, isInstanceElement } from '@salto-io/adapter-api'
+import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
@@ -25,7 +25,7 @@ import { Credentials, isSuiteAppCredentials, toUrlAccountId } from './credential
 import SdfClient from './sdf_client'
 import SuiteAppClient from './suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from '../suiteapp_file_cabinet'
-import { SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
+import { ConfigRecord, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
 import { GetCustomObjectsResult, ImportFileCabinetResult } from './types'
 import { getReferencedInstances } from '../reference_dependencies'
 import { getLookUpName, toCustomizationInfo } from '../transformer'
@@ -33,7 +33,7 @@ import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATIN
 import { DeployResult } from '../types'
 import { APPLICATION_ID } from '../constants'
 import { convertInstanceMapsToLists } from '../mapped_lists/utils'
-import { getConfigTypes, toConfigDeployResult, toConfigRecordElements, toSetConfigTypes } from './suiteapp_client/config_elements'
+import { toConfigDeployResult, toSetConfigTypes } from './suiteapp_client/config_elements'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -85,17 +85,8 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  async getConfigElements(fetchQuery: NetsuiteQuery): Promise<Element[]> {
-    if (this.suiteAppClient === undefined) {
-      return []
-    }
-    const [instances, types] = _.partition(
-      toConfigRecordElements(await this.suiteAppClient.getConfigRecords()),
-      isInstanceElement
-    )
-    const matchingInstances = instances
-      .filter(instance => fetchQuery.isTypeMatch(instance.elemID.typeName))
-    return [...getConfigTypes(), ...types, ...matchingInstances]
+  async getConfigRecords(): Promise<ConfigRecord[]> {
+    return this.suiteAppClient?.getConfigRecords() ?? []
   }
 
   @NetsuiteClient.logDecorator

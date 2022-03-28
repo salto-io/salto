@@ -119,9 +119,9 @@ const getConfigInstanceValue = async (
   { configType, fieldsDef, data }: ConfigRecord,
   type: ObjectType
 ): Promise<Values> => {
-  const selectOptionsMap = _.keyBy(fieldsDef, field => field.id)
+  const fieldIdToFieldDef = _.keyBy(fieldsDef, field => field.id)
   const getSelectOptionValue = (value: Value, field: Field): SelectOption =>
-    selectOptionsMap[field.name].selectOptions?.find(option => option.value === value) ?? { value, text: '' }
+    fieldIdToFieldDef[field.name].selectOptions?.find(option => option.value === value) ?? { value, text: '' }
 
   const values: Values = { ...data.fields, configType }
   return mapValuesAsync(values, async (value, fieldName) => {

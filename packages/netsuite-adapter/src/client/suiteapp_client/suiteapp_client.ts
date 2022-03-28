@@ -232,12 +232,14 @@ export default class SuiteAppClient {
       const { results, errors } = result
       if (results.length + errors.length !== SUITEAPP_CONFIG_RECORD_TYPES.length) {
         log.warn(
-          'getConfigRecords received different amount of results than expected: %d istead of %d',
+          'getConfigRecords received different amount of results than expected: %d instead of %d',
           results.length + errors.length,
           SUITEAPP_CONFIG_RECORD_TYPES.length
         )
       }
-      log.debug('getConfigRecords received errors: %o', errors)
+      if (errors.length > 0) {
+        log.debug('getConfigRecords received errors: %o', errors)
+      }
 
       return results.map(configRecord => {
         const { configType, fieldsDef, data } = configRecord

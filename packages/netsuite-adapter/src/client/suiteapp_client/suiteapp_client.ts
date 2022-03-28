@@ -103,14 +103,14 @@ export default class SuiteAppClient {
   /**
    * WARNING:
    * Due to a bug in NetSuite SuiteQL, make sure to use
-   * ORDER BY <some unique identifier> ASC in your queries.
+   * ORDER BY <some unique identifier> ASC/DESC in your queries.
    * Otherwise, you might not get all the results.
    */
   public async runSuiteQL(query: string):
     Promise<Record<string, unknown>[] | undefined> {
     log.debug('Running SuiteQL query: %s', query)
-    if (!/ORDER BY .* ASC/.test(query)) {
-      log.warn(`SuiteQL ${query} does not contain ORDER BY <unique identifier> ASC, which can cause the response to not contain all the results`)
+    if (!/ORDER BY .* (ASC|DESC)/.test(query)) {
+      log.warn(`SuiteQL ${query} does not contain ORDER BY <unique identifier> ASC/DESC, which can cause the response to not contain all the results`)
     }
     let hasMore = true
     const items: Record<string, unknown>[] = []
@@ -121,6 +121,7 @@ export default class SuiteAppClient {
         // For some reason, a "links" field with empty array is returned regardless
         // to the SELECT values in the query.
         items.push(...results.items.map(item => _.omit(item, ['links'])))
+        log.debug('SuiteQL query received %d/%d results', items.length, results.totalResults)
         hasMore = results.hasMore
       } catch (error) {
         log.error('SuiteQL query error - %s', query, { error })
@@ -130,7 +131,7 @@ export default class SuiteAppClient {
         return undefined
       }
     }
-    log.debug('Finished running SuiteQL query: %s', query)
+    log.debug('Finished running SuiteQL query with %d results: %s', items.length, query)
     return items
   }
 
@@ -248,12 +249,6 @@ export default class SuiteAppClient {
       prefer: 'transient',
     }
     const response = await this.safeAxiosPost(url.href, { q: query }, headers)
-    log.debug(
-      'SuiteQL call (postParams: %s) responsed with status %s',
-      safeJsonStringify({ query, offset, limit }),
-      response.status
-    )
-
     if (!this.ajv.validate<SuiteQLResults>(SUITE_QL_RESULTS_SCHEMA, response.data)) {
       throw new Error(`Got invalid results from the SuiteQL query: ${this.ajv.errorsText()}`)
     }

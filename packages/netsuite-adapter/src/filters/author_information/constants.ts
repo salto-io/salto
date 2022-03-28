@@ -40,26 +40,46 @@ export type EmployeeResult = {
 
 export const SYSTEM_NOTE_SCHEMA = {
   items: {
-    properties: {
-      name: {
-        type: 'string',
+    anyOf: [
+      {
+        properties: {
+          name: {
+            type: 'string',
+          },
+          field: {
+            type: 'string',
+          },
+          recordid: {
+            type: 'string',
+          },
+        },
+        required: [
+          'name',
+          'field',
+          'recordid',
+        ],
+        type: 'object',
       },
-      field: {
-        type: 'string',
+      {
+        properties: {
+          name: {
+            type: 'string',
+          },
+          recordid: {
+            type: 'string',
+          },
+          recordtypeid: {
+            type: 'string',
+          },
+        },
+        required: [
+          'name',
+          'recordid',
+          'recordtypeid',
+        ],
+        type: 'object',
       },
-      recordid: {
-        type: 'string',
-      },
-      recordtypeid: {
-        type: 'string',
-      },
-    },
-    required: [
-      'name',
-      'field',
-      'recordid',
     ],
-    type: 'object',
   },
   type: 'array',
 }
@@ -68,7 +88,10 @@ export type SystemNoteResult = {
   name: string
   field: string
   recordid: string
-  recordtypeid?: string
+} | {
+  name: string
+  recordid: string
+  recordtypeid: string
 }
 
 export const SAVED_SEARCH_RESULT_SCHEMA = {

@@ -56,12 +56,67 @@ Promise<EmployeeResult[]> => {
   return employeeResults
 }
 
-const querySystemNotes = async (client: NetsuiteClient, query: string):
-Promise<SystemNoteResult[]> => {
-  const systemNoteResults = await client.runSuiteQL(query)
-  if (systemNoteResults === undefined) {
-    return []
-  }
+const toRecordTypeWhereQuery = (recordType: string): string =>
+  `recordtypeid = '${recordType}'`
+
+// File and folder types have system notes without record type ids,
+// But they have a prefix in the field column.
+const toFieldWhereQuery = (recordType: string): string => (
+  recordType === FILE_TYPE
+    ? `field LIKE '${FILE_FIELD_IDENTIFIER}%'`
+    : `field LIKE '${FOLDER_FIELD_IDENTIFIER}%'`
+)
+
+const buildRecordTypeSystemNotesQuery = (recordTypeIds: string[]): string => {
+  const whereQuery = recordTypeIds
+    .map(toRecordTypeWhereQuery)
+    .join(' OR ')
+  return 'SELECT name, recordid, recordtypeid FROM (SELECT name, recordid, recordtypeid,'
+    + ` MAX(date) as date FROM systemnote WHERE ${whereQuery}`
+    + ' GROUP BY name, recordid, recordtypeid) ORDER BY date DESC'
+}
+
+const buildFieldSystemNotesQuery = (fieldIds: string[]): string => {
+  const whereQuery = fieldIds
+    .map(toFieldWhereQuery)
+    .join(' OR ')
+  return 'SELECT name, field, recordid from (SELECT name, field, recordid, MAX(date) AS date'
+    + ` FROM (SELECT name, REGEXP_SUBSTR(field, '^(${FOLDER_FIELD_IDENTIFIER}|${FILE_FIELD_IDENTIFIER})')`
+    + ` AS field, recordid, date FROM systemnote WHERE ${whereQuery}) GROUP BY name, field, recordid)`
+    + ' ORDER BY date DESC'
+}
+
+const querySystemNotesByField = async (
+  client: NetsuiteClient,
+  queryIds: string[]
+): Promise<Record<string, unknown>[]> => (
+  queryIds.length > 0
+    ? await client.runSuiteQL(buildFieldSystemNotesQuery(queryIds)) ?? []
+    : []
+)
+
+const querySystemNotesByRecordType = async (
+  client: NetsuiteClient,
+  queryIds: string[]
+): Promise<Record<string, unknown>[]> => (
+  queryIds.length > 0
+    ? await client.runSuiteQL(buildRecordTypeSystemNotesQuery(queryIds)) ?? []
+    : []
+)
+
+const querySystemNotes = async (
+  client: NetsuiteClient,
+  queryIds: string[]
+): Promise<SystemNoteResult[]> => {
+  const [fieldQueryIds, recordTypeQueryIds] = _.partition(
+    queryIds, id => [FILE_TYPE, FOLDER_TYPE].includes(id)
+  )
+
+  const systemNoteResults = (await Promise.all([
+    querySystemNotesByField(client, fieldQueryIds),
+    querySystemNotesByRecordType(client, recordTypeQueryIds),
+  ])).flat()
+
   const ajv = new Ajv({ allErrors: true, strict: false })
   if (!ajv.validate<SystemNoteResult[]>(SYSTEM_NOTE_SCHEMA, systemNoteResults)) {
     log.error(`Got invalid results from system note table: ${ajv.errorsText()}`)
@@ -78,35 +133,11 @@ const fetchEmployeeNames = async (client: NetsuiteClient): Promise<Record<string
   return {}
 }
 
-const getWhereQueryPart = (recordType: string): string => {
-  // File and folder types have system notes without record type ids,
-  // But they have a prefix in the field column.
-  if (recordType === FILE_TYPE) {
-    return `field LIKE '${FILE_FIELD_IDENTIFIER}%'`
-  }
-  if (recordType === FOLDER_TYPE) {
-    return `field LIKE '${FOLDER_FIELD_IDENTIFIER}%'`
-  }
-  return `recordtypeid = '${recordType}'`
-}
-
-const buildSystemNotesQuery = (instances: InstanceElement[]): string | undefined => {
-  const recordTypeIds = _.uniq(instances
-    .map(instance => TYPES_TO_INTERNAL_ID[instance.elemID.typeName.toLowerCase()]))
-  if (_.isEmpty(recordTypeIds)) {
-    return undefined
-  }
-  const whereQuery = recordTypeIds
-    .map(getWhereQueryPart)
-    .join(' OR ')
-  return `SELECT name, field, recordid, recordtypeid FROM systemnote WHERE ${whereQuery} ORDER BY date DESC`
-}
-
 const getKeyForNote = (systemNote: SystemNoteResult): string => {
-  if (isDefined(systemNote.recordtypeid)) {
+  if ('recordtypeid' in systemNote) {
     return getRecordIdAndTypeStringKey(systemNote.recordid, systemNote.recordtypeid)
   }
-  return systemNote.field.startsWith(FOLDER_FIELD_IDENTIFIER)
+  return systemNote.field === FOLDER_FIELD_IDENTIFIER
     ? getRecordIdAndTypeStringKey(systemNote.recordid, FOLDER_TYPE)
     : getRecordIdAndTypeStringKey(systemNote.recordid, FILE_TYPE)
 }
@@ -121,9 +152,12 @@ const indexSystemNotes = (systemNotes: SystemNoteResult[]): Record<string, strin
 
 const fetchSystemNotes = async (
   client: NetsuiteClient,
-  query: string
+  queryIds: string[]
 ): Promise<Record<string, string>> => {
-  const systemNotes = await querySystemNotes(client, query)
+  const systemNotes = await log.time(
+    () => querySystemNotes(client, queryIds),
+    'querySystemNotes'
+  )
   if (_.isEmpty(systemNotes)) {
     log.warn('System note query failed')
     return {}
@@ -149,15 +183,16 @@ const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'>
       return
     }
     const instancesWithInternalId = getInstancesWithInternalIds(elements)
-    const systemNoteQuery = buildSystemNotesQuery(instancesWithInternalId)
-    if (_.isUndefined(systemNoteQuery)) {
+    const queryIds = _.uniq(instancesWithInternalId
+      .map(instance => TYPES_TO_INTERNAL_ID[instance.elemID.typeName.toLowerCase()]))
+    if (_.isEmpty(queryIds)) {
       return
     }
     const employeeNames = await fetchEmployeeNames(client)
     if (_.isEmpty(employeeNames)) {
       return
     }
-    const systemNotes = await fetchSystemNotes(client, systemNoteQuery)
+    const systemNotes = await fetchSystemNotes(client, queryIds)
     if (_.isEmpty(systemNotes)) {
       return
     }

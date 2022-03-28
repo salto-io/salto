@@ -14,30 +14,13 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
-import { ChangeValidator, getChangeData, InstanceElement, isAdditionChange, ElemID, isReferenceExpression, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
+import { getAllReferencedIds } from '@salto-io/adapter-utils'
+import { ChangeValidator, getChangeData, isAdditionChange, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import { isInstanceOfCustomObjectChange } from '../custom_object_instances_deploy'
 import { apiName } from '../transformers/transformer'
 
 const { awu, groupByAsync } = collections.asynciterable
-
-const dependsOnElemIDs = async (
-  instance: InstanceElement,
-  elemIDs: ElemID[],
-): Promise<ElemID[]> => {
-  const dependentOnAdditionInstanceIDs: ElemID[] = []
-  const func: WalkOnFunc = ({ value }) => {
-    if (isReferenceExpression(value)
-      && elemIDs.find(elemID => elemID.isEqual(value.elemID))) {
-      dependentOnAdditionInstanceIDs.push(value.elemID)
-      return WALK_NEXT_STEP.SKIP
-    }
-    return WALK_NEXT_STEP.RECURSE
-  }
-  walkOnElement({ element: instance, func })
-  return dependentOnAdditionInstanceIDs
-}
 
 const changeValidator: ChangeValidator = async changes => {
   const typeToAdditionInstances = _.mapValues(await groupByAsync(
@@ -48,18 +31,20 @@ const changeValidator: ChangeValidator = async changes => {
       .map(getChangeData)
       .map(async instance => (
         {
-          type: (await apiName(await (instance as InstanceElement).getType(), true)),
+          type: (await apiName(await instance.getType())),
           instance,
         }
       )),
-    ti => ti.type,
+    typeInstance => typeInstance.type,
   ),
-  tiArr => tiArr.map(te => te.instance))
-  return awu(Object.values(typeToAdditionInstances))
-    .flatMap(async instances => {
+  typeInstances => typeInstances.map(te => te.instance))
+  return Object.values(typeToAdditionInstances)
+    .flatMap(instances => {
       const instancesElemIDs = instances.map(inst => inst.elemID)
-      return awu(instances).map(async instance => {
-        const dependentOnAdditionInstanceIDs = await dependsOnElemIDs(instance, instancesElemIDs)
+      return instances.map(instance => {
+        const referencedElemIDsStr = getAllReferencedIds(instance)
+        const dependentOnAdditionInstanceIDs = instancesElemIDs.filter(elemID =>
+          referencedElemIDsStr.has(elemID.getFullName()))
         if (dependentOnAdditionInstanceIDs.length === 0) {
           return undefined
         }
@@ -69,8 +54,8 @@ const changeValidator: ChangeValidator = async changes => {
           message: 'This new instance cannot be deployed, as it contains a reference to another new instance. To successfully deploy both instances, please run this deploy, then another deploy to create the referencing instance.',
           detailedMessage: `New instance ${instance.elemID.getFullName()} cannot be deployed, as it contains a reference to another new instance ${dependentOnAdditionInstanceIDs.map(e => e.getFullName()).join(', ')}. To successfully deploy both instances, please run this deploy to create ${dependentOnAdditionInstanceIDs.map(e => e.getFullName()).join(', ')}, then another deploy to create ${instance.elemID.getFullName()}.`,
         })
-      }).filter(values.isDefined).toArray()
-    }).toArray()
+      }).filter(values.isDefined)
+    })
 }
 
 export default changeValidator

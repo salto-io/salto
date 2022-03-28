@@ -297,7 +297,7 @@ export default class SdfClient {
 
     if (featureDeployFailes.length === 0) return
 
-    log.error('suitecloud deploy failed to configure the following features: %o', featureDeployFailes)
+    log.warn('suitecloud deploy failed to configure the following features: %o', featureDeployFailes)
     const errorIds = featureDeployFailes
       .map(line => line.match(configureFeatureFailRegex)?.groups)
       .filter(isDefined)

@@ -25,8 +25,8 @@ const DISABLED = 'DISABLED'
 
 const filterCreator = (): FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'> => ({
   onFetch: async elements => {
-    const [featuresInstance] = elements.filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === CONFIG_FEATURES)
+    const featuresInstance = elements.filter(isInstanceElement)
+      .find(instance => instance.elemID.typeName === CONFIG_FEATURES)
 
     if (!featuresInstance) return
 
@@ -50,8 +50,8 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'> => ({
     )
   },
   preDeploy: async changes => {
-    const [featuresChange] = changes.filter(isInstanceChange)
-      .filter(change => getChangeData(change).elemID.typeName === CONFIG_FEATURES)
+    const featuresChange = changes.filter(isInstanceChange)
+      .find(change => getChangeData(change).elemID.typeName === CONFIG_FEATURES)
 
     if (!featuresChange) return
 
@@ -70,7 +70,7 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'> => ({
     })
 
     const type = await getChangeData<InstanceElement>(featuresChange).getType()
-    const { companyfeatures_feature: innerFeatureType } = featuresType()
+    const { companyFeatures_feature: innerFeatureType } = featuresType()
     type.fields = {
       feature: new Field(type, 'feature', new ListType(innerFeatureType)),
     }
@@ -85,10 +85,10 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'> => ({
 
     if (errorIds.length === 0) return
 
-    const [featuresChange] = changes
+    const featuresChange = changes
       .filter(isInstanceChange)
       .filter(isModificationChange)
-      .filter(change => getChangeData(change).elemID.typeName === CONFIG_FEATURES)
+      .find(change => getChangeData(change).elemID.typeName === CONFIG_FEATURES)
 
     if (!featuresChange) return
 

@@ -125,7 +125,7 @@ describe('Transformer', () => {
   const transactionForm = transactionFormType().type
   const workflow = workflowType().type
   const { file, folder } = getFileCabinetTypes()
-  const { companyfeatures } = featuresType()
+  const { companyFeatures } = featuresType()
 
   describe('createInstanceElement', () => {
     const transformCustomFieldRecord = (xmlContent: string): Promise<InstanceElement> => {
@@ -384,10 +384,10 @@ describe('Transformer', () => {
       it('should create features instance correctly', async () => {
         const result = await createInstanceElement(
           featuresCustomizationInfo,
-          companyfeatures,
+          companyFeatures,
           mockGetElemIdFunc
         )
-        expect(result.elemID.getFullName()).toEqual(`netsuite.${CONFIG_FEATURES}.instance.${NAME_FROM_GET_ELEM_ID}_config`)
+        expect(result.elemID.getFullName()).toEqual(`netsuite.${CONFIG_FEATURES}.instance`)
         expect(result.value).toEqual({
           feature: [
             { id: 'TEST', label: 'test', status: 'ENABLED' },

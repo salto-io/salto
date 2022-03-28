@@ -122,7 +122,7 @@ export default class NetsuiteClient {
     return this.sdfClient.importFileCabinetContent(query)
   }
 
-  private static getFeaturesDeployResult(
+  private static toFeaturesDeployPartialSuccessResult(
     error: FeaturesDeployError,
     changes: ReadonlyArray<Change<InstanceElement>>
   ): DeployResult {
@@ -168,7 +168,7 @@ export default class NetsuiteClient {
       return { errors: [], appliedChanges: changes }
     } catch (e) {
       if (e instanceof FeaturesDeployError) {
-        return NetsuiteClient.getFeaturesDeployResult(e, changes)
+        return NetsuiteClient.toFeaturesDeployPartialSuccessResult(e, changes)
       }
       return { errors: [e], appliedChanges: [] }
     }

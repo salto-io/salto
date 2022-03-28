@@ -20,7 +20,7 @@ import undeployableConfigFeaturesValidator from '../../src/change_validators/und
 describe('account feautures validator', () => {
   const origInstance = new InstanceElement(
     ElemID.CONFIG_NAME,
-    featuresType().companyfeatures,
+    featuresType().companyFeatures,
     {
       ABC: true,
       SUITEAPPCONTROLCENTER: false,

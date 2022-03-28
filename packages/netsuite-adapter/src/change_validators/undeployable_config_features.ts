@@ -61,10 +61,10 @@ const getDiffFeatureNames = (change: ModificationChange<InstanceElement>): strin
     .filter(fieldName => change.data.after.value[fieldName] !== change.data.before.value[fieldName])
 
 const changeValidator: ChangeValidator = async changes => {
-  const [featuresChange] = changes
+  const featuresChange = changes
     .filter(isInstanceChange)
     .filter(isModificationChange)
-    .filter(change => getChangeData(change).elemID.typeName === CONFIG_FEATURES)
+    .find(change => getChangeData(change).elemID.typeName === CONFIG_FEATURES)
 
   if (!featuresChange) return []
 

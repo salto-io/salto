@@ -17,12 +17,13 @@
 import { BuiltinTypes, ElemID, ObjectType, ListType } from '@salto-io/adapter-api'
 import * as constants from '../constants'
 
-type FeatureTypeName = 'companyfeatures' | 'companyfeatures_feature'
+type FeatureTypeName = typeof constants.CONFIG_FEATURES
+  | typeof constants.CONFIG_FEATURES_INNER_FEATURE
 
 export const featuresType = (): Record<FeatureTypeName, ObjectType> => {
   const featuresElemID = new ElemID(constants.NETSUITE, constants.CONFIG_FEATURES)
   const features_featureElemID = new ElemID(constants.NETSUITE, `${constants.CONFIG_FEATURES}_feature`)
-  const companyfeatures_feature = new ObjectType({
+  const companyFeatures_feature = new ObjectType({
     elemID: features_featureElemID,
     fields: {
       label: { refType: BuiltinTypes.STRING },
@@ -31,17 +32,17 @@ export const featuresType = (): Record<FeatureTypeName, ObjectType> => {
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, featuresElemID.name],
   })
-  const companyfeatures = new ObjectType({
+  const companyFeatures = new ObjectType({
     elemID: featuresElemID,
     fields: {
       feature: {
-        refType: new ListType(companyfeatures_feature),
+        refType: new ListType(companyFeatures_feature),
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, featuresElemID.name],
     isSettings: true,
   })
-  return { companyfeatures, companyfeatures_feature }
+  return { companyFeatures, companyFeatures_feature }
 }
 
 export const getConfigurationTypes = (): Readonly<Record<string, ObjectType>> => ({

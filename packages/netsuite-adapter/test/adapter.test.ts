@@ -27,6 +27,7 @@ import {
   FETCH_ALL_TYPES_AT_ONCE, DEPLOY_REFERENCED_ELEMENTS,
   FETCH_TYPE_TIMEOUT_IN_MINUTES, INTEGRATION, CLIENT_CONFIG, FETCH_TARGET, NETSUITE,
   USE_CHANGES_DETECTION, FETCH, EXCLUDE, INCLUDE, SKIP_LIST, DEPLOY, WARN_STALE_DATA,
+  CONFIG_FEATURES,
 } from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import SdfClient, { convertToCustomTypeInfo } from '../src/client/sdf_client'
@@ -35,7 +36,7 @@ import { configType, getConfigFromConfigChanges, NetsuiteConfig } from '../src/c
 import { mockGetElemIdFunc } from './utils'
 import * as referenceDependenciesModule from '../src/reference_dependencies'
 import NetsuiteClient from '../src/client/client'
-import { FileCustomizationInfo, FolderCustomizationInfo } from '../src/client/types'
+import { CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo } from '../src/client/types'
 import * as changesDetector from '../src/changes_detector/changes_detector'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
 import { SERVER_TIME_TYPE_NAME } from '../src/server_time'
@@ -159,6 +160,16 @@ describe('Adapter', () => {
         fileContent: Buffer.from('Dummy content'),
       }
 
+      const featuresCustomTypeInfo: CustomTypeInfo = {
+        typeName: CONFIG_FEATURES,
+        scriptId: CONFIG_FEATURES,
+        values: {
+          feature: [
+            { id: 'feature', label: 'Feature', status: 'ENABLED' },
+          ],
+        },
+      }
+
       const xmlContent = '<entitycustomfield scriptid="custentity_my_script_id">\n'
         + '  <label>elementName</label>'
         + '</entitycustomfield>'
@@ -170,7 +181,7 @@ describe('Adapter', () => {
         })
       client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
         .mockResolvedValue({
-          elements: [customTypeInfo],
+          elements: [customTypeInfo, featuresCustomTypeInfo],
           failedToFetchAllAtOnce: false,
           failedTypes: { lockedError: {}, unexpectedError: {} },
         })
@@ -188,7 +199,8 @@ describe('Adapter', () => {
       expect(fileCabinetQuery.isFileMatch('Some/File/Regex')).toBeFalsy()
       expect(fileCabinetQuery.isFileMatch('Some/anotherFile/Regex')).toBeTruthy()
 
-      expect(elements).toHaveLength(metadataTypes.length + 3)
+      // metadataTypes + folderInstance + fileInstance + featuresInstance + customTypeInstance
+      expect(elements).toHaveLength(metadataTypes.length + 4)
 
       const customFieldType = elements.find(element =>
         element.elemID.isEqual(new ElemID(NETSUITE, ENTITY_CUSTOM_FIELD)))
@@ -219,6 +231,17 @@ describe('Adapter', () => {
         await createInstanceElement(
           folderCustomizationInfo,
           folder as ObjectType,
+          mockGetElemIdFunc
+        )
+      )
+
+      const featuresType = elements.find(element =>
+        element.elemID.isEqual(new ElemID(NETSUITE, CONFIG_FEATURES)))
+      expect(isObjectType(featuresType)).toBeTruthy()
+      expect(elements).toContainEqual(
+        await createInstanceElement(
+          featuresCustomTypeInfo,
+          featuresType as ObjectType,
           mockGetElemIdFunc
         )
       )

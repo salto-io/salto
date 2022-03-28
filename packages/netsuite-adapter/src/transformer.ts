@@ -47,19 +47,21 @@ const removeDotPrefix = (name: string): string => name.replace(/^\.+/, '_')
 export const createInstanceElement = async (customizationInfo: CustomizationInfo, type: ObjectType,
   getElemIdFunc?: ElemIdGetter, fetchTime?: Date): Promise<InstanceElement> => {
   const getInstanceName = (transformedValues: Values): string => {
-    if (!isCustomType(type) && !isFileCabinetType(type) && !isSDFConfigType(type)) {
+    if (isSDFConfigType(type)) {
+      return ElemID.CONFIG_NAME
+    }
+    if (!isCustomType(type) && !isFileCabinetType(type)) {
       throw new Error(`Failed to getInstanceName for unknown type: ${type.elemID.name}`)
     }
-    const serviceIdFieldName = isFileCabinetType(type) ? PATH : SCRIPT_ID
-    const serviceId = isSDFConfigType(type)
-      ? ElemID.CONFIG_NAME : transformedValues[serviceIdFieldName]
+    const serviceIdFieldName = isCustomType(type) ? SCRIPT_ID : PATH
     const serviceIds: ServiceIds = {
-      [serviceIdFieldName]: serviceId,
+      [serviceIdFieldName]: transformedValues[serviceIdFieldName],
       [OBJECT_SERVICE_ID]: toServiceIdsString({
         [OBJECT_NAME]: type.elemID.getFullName(),
       }),
     }
-    const desiredName = naclCase(serviceId.replace(new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}`), ''))
+    const desiredName = naclCase(transformedValues[serviceIdFieldName]
+      .replace(new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}`), ''))
     return getElemIdFunc ? getElemIdFunc(NETSUITE, serviceIds, desiredName).name : desiredName
   }
 

@@ -74,7 +74,8 @@ const changeValidator: ChangeValidator = async changes => {
       elemID: featuresChange.data.after.elemID.createNestedID(featureName),
       severity: 'Warning',
       message: 'Feature configuration is not supported',
-      detailedMessage: 'You cannot use Salto to configure this feature because it requires a Terms of Service user agreement.',
+      detailedMessage: 'This feature cannot be configured using Salto because it requires a manual'
+        + ' Terms of Service agreement in NetSuite UI. Configuring this feature will be ignored by NetSuite.',
     }))
 }
 

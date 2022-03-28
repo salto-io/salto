@@ -14,11 +14,14 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { BuiltinTypes, Field, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isModificationChange, ListType, Value } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
+import { BuiltinTypes, Field, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isModificationChange, ListType } from '@salto-io/adapter-api'
 import { FilterWith } from '../filter'
 import { CONFIG_FEATURES } from '../constants'
 import { FeaturesDeployError } from '../errors'
 import { featuresType } from '../types/configuration_types'
+
+const log = logger(module)
 
 const ENABLED = 'ENABLED'
 const DISABLED = 'DISABLED'
@@ -42,11 +45,13 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'> => ({
 
     featuresInstance.value = _.mapValues(
       features,
-      feature => (
-        [ENABLED, DISABLED].includes(feature.status)
-          ? feature.status === ENABLED
-          : feature.status
-      )
+      feature => {
+        if (![ENABLED, DISABLED].includes(feature.status)) {
+          log.warn('status attribute of feature %s is invalid: %o', feature.id, feature.status)
+          return feature.status
+        }
+        return feature.status === ENABLED
+      }
     )
   },
   preDeploy: async changes => {
@@ -55,17 +60,16 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'> => ({
 
     if (!featuresChange) return
 
-    const getStatus = (value: Value): Value => {
-      if (_.isBoolean(value)) {
-        return value ? ENABLED : DISABLED
-      }
-      return value
-    }
-
     Object.values(featuresChange.data).forEach(instance => {
       instance.value = {
         feature: Object.entries(instance.value)
-          .map(([id, value]) => ({ id, status: getStatus(value) })),
+          .map(([id, value]) => {
+            if (!_.isBoolean(value)) {
+              log.warn('value of feature %s is not boolean: %o', id, value)
+              return { id, status: value }
+            }
+            return { id, status: value ? ENABLED : DISABLED }
+          }),
       }
     })
 

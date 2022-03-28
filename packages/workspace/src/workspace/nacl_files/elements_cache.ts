@@ -216,18 +216,14 @@ export const createMergeManager = async (flushables: Flushable[],
     const src2Changes = possibleSrc2Changes ?? createEmptyChangeSet(
       await hashes.get(getSourceHashKey(cacheUpdate.src2Prefix))
     )
-    const preChangeHash = (((src1Changes.preChangeHash || '')
-      + (src2Changes.preChangeHash || '')))
-    const postChangeHash = ((src1Changes.postChangeHash || '')
-      + (src2Changes.postChangeHash || ''))
-    const cachePreChangeHash = await hashes.get(getMergedHashKey(cacheUpdate.src1Prefix,
-      cacheUpdate.src2Prefix)) ?? ''
-    log.debug('Setting merged hash of namespace %s to %s', fullNamespace, postChangeHash)
-    await hashes.set(getMergedHashKey(cacheUpdate.src1Prefix, cacheUpdate.src2Prefix),
-      postChangeHash)
-    const cacheValid = ((!preChangeHash && !cachePreChangeHash)
-      || preChangeHash === cachePreChangeHash)
-      && src1Changes.cacheValid && src2Changes.cacheValid
+    const preChangeHash = (src1Changes.preChangeHash || '') + (src2Changes.preChangeHash || '')
+    const mergedHashKey = getMergedHashKey(cacheUpdate.src1Prefix, cacheUpdate.src2Prefix)
+    const cachePreChangeHash = await hashes.get(mergedHashKey) ?? ''
+    const cacheValid = (
+      preChangeHash === cachePreChangeHash
+      && src1Changes.cacheValid
+      && src2Changes.cacheValid
+    )
     if (!src1Changes.cacheValid) {
       log.debug(`Invalid cache: ${cacheUpdate.src1Prefix}`)
     }
@@ -238,6 +234,10 @@ export const createMergeManager = async (flushables: Flushable[],
       log.debug(`Invalid cache merge between ${cacheUpdate.src1Prefix} and ${cacheUpdate.src2Prefix}`)
       log.debug(`Prechange hash: ${cachePreChangeHash} and update merged hash: ${preChangeHash}`)
     }
+    const postChangeHash = (src1Changes.postChangeHash || '') + (src2Changes.postChangeHash || '')
+    log.debug('Setting hash %s::%s to %s', fullNamespace, mergedHashKey, postChangeHash)
+    await hashes.set(mergedHashKey, postChangeHash)
+
     const getElementsToMerge = async (): Promise<{
       src1ElementsToMerge: ThenableIterable<Element>
       src2ElementsToMerge: ThenableIterable<Element>

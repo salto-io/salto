@@ -13,164 +13,293 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 import SdfClient from '../../src/client/sdf_client'
 import * as suiteAppFileCabinet from '../../src/suiteapp_file_cabinet'
 import NetsuiteClient from '../../src/client/client'
-import { SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../../src/group_changes'
+import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../../src/group_changes'
 import { NETSUITE } from '../../src/constants'
 import { SetConfigType } from '../../src/client/suiteapp_client/types'
 import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../src/types'
+import { featuresType } from '../../src/types/configuration_types'
+import { FeaturesDeployError, ObjectsDeployError } from '../../src/errors'
 
 describe('NetsuiteClient', () => {
-  const sdfClient = {
-    getCredentials: () => ({ accountId: 'someId' }),
-  } as unknown as SdfClient
+  describe('with SDF client', () => {
+    describe('deploy', () => {
+      const mockSdfDeploy = jest.fn()
+      const sdfClient = {
+        getCredentials: () => ({ accountId: 'someId' }),
+        deploy: mockSdfDeploy,
+      } as unknown as SdfClient
+      const client = new NetsuiteClient(sdfClient)
 
-  const updateInstancesMock = jest.fn()
-  const addInstancesMock = jest.fn()
-  const deleteInstancesMock = jest.fn()
-  const getConfigRecordsMock = jest.fn()
-  const setConfigRecordsValuesMock = jest.fn()
+      beforeEach(() => {
+        jest.resetAllMocks()
+      })
 
-  const suiteAppClient = {
-    updateInstances: updateInstancesMock,
-    addInstances: addInstancesMock,
-    deleteInstances: deleteInstancesMock,
-    getConfigRecords: getConfigRecordsMock,
-    setConfigRecordsValues: setConfigRecordsValuesMock,
-  } as unknown as SuiteAppClient
+      it('should deploy in chunks', async () => {
+        const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
+        const changes = _.range(60).map(index => toChange({
+          after: new InstanceElement(`instance${index}`, type, { scriptid: `id${index}` }),
+        }))
+        expect(await client.deploy(changes, SDF_CHANGE_GROUP_ID, false))
+          .toEqual({
+            errors: [],
+            appliedChanges: changes,
+          })
+        expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
+      })
 
-  const getPathToIdMapMock = jest.fn()
-  jest.spyOn(suiteAppFileCabinet, 'createSuiteAppFileCabinetOperations').mockReturnValue({
-    getPathToIdMap: getPathToIdMapMock,
-  } as unknown as suiteAppFileCabinet.SuiteAppFileCabinetOperations)
+      it('should try again to deploy after ObjectsDeployError', async () => {
+        const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
+        const objectsDeployError = new ObjectsDeployError('error', new Set(['failedObject']))
+        mockSdfDeploy.mockRejectedValueOnce(objectsDeployError)
+        const successChange = toChange({
+          after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
+        })
+        const failedChange = toChange({
+          after: new InstanceElement('failedInstance', type, { scriptid: 'failedObject' }),
+        })
+        expect(await client.deploy([successChange, failedChange], SDF_CHANGE_GROUP_ID, false))
+          .toEqual({
+            errors: [objectsDeployError],
+            appliedChanges: [successChange],
+          })
+        expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
+      })
+      it('should fail when failed changes couldn\'t be found in ObjectsDeployError', async () => {
+        const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
+        const objectsDeployError = new ObjectsDeployError('error', new Set(['unknownObject']))
+        mockSdfDeploy.mockRejectedValueOnce(objectsDeployError)
+        const successChange = toChange({
+          after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
+        })
+        const failedChange = toChange({
+          after: new InstanceElement('failedInstance', type, { scriptid: 'failedObject' }),
+        })
+        expect(await client.deploy([successChange, failedChange], SDF_CHANGE_GROUP_ID, false))
+          .toEqual({
+            errors: [objectsDeployError],
+            appliedChanges: [],
+          })
+        expect(mockSdfDeploy).toHaveBeenCalledTimes(1)
+      })
 
-  const client = new NetsuiteClient(sdfClient, suiteAppClient)
-
-  beforeEach(() => {
-    jest.resetAllMocks()
+      describe('features', () => {
+        const type = featuresType()
+        const featuresDeployError = new FeaturesDeployError('error', ['ABC'])
+        beforeEach(() => {
+          mockSdfDeploy.mockRejectedValue(featuresDeployError)
+        })
+        it('should return error only when the only feature to deployed failed', async () => {
+          const before = new InstanceElement(
+            ElemID.CONFIG_NAME,
+            type,
+            {
+              feature: {
+                ABC: { label: 'label1', id: 'ABC', status: 'DISABLED' },
+                DEF: { label: 'label2', id: 'DEF', status: 'DISABLED' },
+              },
+            }
+          )
+          const after = new InstanceElement(
+            ElemID.CONFIG_NAME,
+            type,
+            {
+              feature: {
+                ABC: { label: 'label1', id: 'ABC', status: 'ENABLED' },
+                DEF: { label: 'label2', id: 'DEF', status: 'DISABLED' },
+              },
+            }
+          )
+          const change = toChange({ before, after })
+          expect(await client.deploy([change], SDF_CHANGE_GROUP_ID, false)).toEqual({
+            errors: [featuresDeployError],
+            appliedChanges: [],
+          })
+        })
+        it('should return change and error when some features deployed and some failed', async () => {
+          const before = new InstanceElement(
+            ElemID.CONFIG_NAME,
+            type,
+            {
+              feature: {
+                ABC: { label: 'label1', id: 'ABC', status: 'DISABLED' },
+                DEF: { label: 'label2', id: 'DEF', status: 'DISABLED' },
+              },
+            }
+          )
+          const after = new InstanceElement(
+            ElemID.CONFIG_NAME,
+            type,
+            {
+              feature: {
+                ABC: { label: 'label1', id: 'ABC', status: 'ENABLED' },
+                DEF: { label: 'label2', id: 'DEF', status: 'ENABLED' },
+              },
+            }
+          )
+          const change = toChange({ before, after })
+          expect(await client.deploy([change], SDF_CHANGE_GROUP_ID, false)).toEqual({
+            errors: [featuresDeployError],
+            appliedChanges: [change],
+          })
+        })
+      })
+    })
   })
+  describe('with SuiteApp client', () => {
+    const sdfClient = {
+      getCredentials: () => ({ accountId: 'someId' }),
+    } as unknown as SdfClient
 
-  describe('getPathInternalId', () => {
-    it('should return the right id', async () => {
-      getPathToIdMapMock.mockResolvedValue({ '/some/path': 1 })
-      expect(await client.getPathInternalId('/some/path')).toBe(1)
-      expect(await client.getPathInternalId('/some/path2')).toBeUndefined()
+    const updateInstancesMock = jest.fn()
+    const addInstancesMock = jest.fn()
+    const deleteInstancesMock = jest.fn()
+    const getConfigRecordsMock = jest.fn()
+    const setConfigRecordsValuesMock = jest.fn()
+
+    const suiteAppClient = {
+      updateInstances: updateInstancesMock,
+      addInstances: addInstancesMock,
+      deleteInstances: deleteInstancesMock,
+      getConfigRecords: getConfigRecordsMock,
+      setConfigRecordsValues: setConfigRecordsValuesMock,
+    } as unknown as SuiteAppClient
+
+    const getPathToIdMapMock = jest.fn()
+    jest.spyOn(suiteAppFileCabinet, 'createSuiteAppFileCabinetOperations').mockReturnValue({
+      getPathToIdMap: getPathToIdMapMock,
+    } as unknown as suiteAppFileCabinet.SuiteAppFileCabinetOperations)
+
+    const client = new NetsuiteClient(sdfClient, suiteAppClient)
+
+    beforeEach(() => {
+      jest.resetAllMocks()
     })
 
-    it('should return undefined when failed to get map', async () => {
-      getPathToIdMapMock.mockResolvedValue(undefined)
-      expect(await client.getPathInternalId('/some/path1')).toBeUndefined()
-    })
-  })
-
-  describe('deploy', () => {
-    const type = new ObjectType({
-      elemID: new ElemID(NETSUITE, 'subsidiary'),
-    })
-    const instance1 = new InstanceElement(
-      'instance1',
-      type,
-    )
-
-    const instance2 = new InstanceElement(
-      'instance2',
-      type,
-    )
-    const change1 = toChange({ before: instance1, after: instance1 })
-    const change2 = toChange({ before: instance2, after: instance2 })
-    it('should return error if suiteApp is not installed', async () => {
-      const clientWithoutSuiteApp = new NetsuiteClient(sdfClient)
-      expect(await clientWithoutSuiteApp.deploy(
-        [change1, change2],
-        SUITEAPP_UPDATING_RECORDS_GROUP_ID,
-        false,
-      )).toEqual({
-        errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_RECORDS_GROUP_ID}" cannot be deployed`)],
-        elemIdToInternalId: {},
-        appliedChanges: [],
-      })
-      expect(await clientWithoutSuiteApp.deploy(
-        [change1, change2],
-        SUITEAPP_UPDATING_CONFIG_GROUP_ID,
-        false,
-      )).toEqual({
-        errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_CONFIG_GROUP_ID}" cannot be deployed`)],
-        appliedChanges: [],
-      })
-    })
-    it('should use updateInstances for data instances modifications', async () => {
-      updateInstancesMock.mockResolvedValue([1, new Error('error')])
-      const results = await client.deploy(
-        [change1, change2],
-        SUITEAPP_UPDATING_RECORDS_GROUP_ID,
-        false,
-      )
-      expect(results.appliedChanges).toEqual([change1])
-      expect(results.errors).toEqual([new Error('error')])
-      expect(results.elemIdToInternalId).toEqual({ [instance1.elemID.getFullName()]: '1' })
-    })
-
-    it('should use addInstances for data instances creations', async () => {
-      addInstancesMock.mockResolvedValue([1, new Error('error')])
-      const results = await client.deploy(
-        [
-          toChange({ after: instance1 }),
-          toChange({ after: instance2 }),
-        ],
-        SUITEAPP_CREATING_RECORDS_GROUP_ID,
-        false,
-      )
-      expect(results.appliedChanges).toEqual([toChange({ after: instance1 })])
-      expect(results.errors).toEqual([new Error('error')])
-      expect(results.elemIdToInternalId).toEqual({ [instance1.elemID.getFullName()]: '1' })
-    })
-
-    it('should use deleteInstances for data instances deletions', async () => {
-      deleteInstancesMock.mockResolvedValue([1, new Error('error')])
-      const results = await client.deploy(
-        [
-          toChange({ before: instance1 }),
-          toChange({ before: instance2 }),
-        ],
-        SUITEAPP_DELETING_RECORDS_GROUP_ID,
-        false,
-      )
-      expect(results.appliedChanges).toEqual([toChange({ before: instance1 })])
-      expect(results.errors).toEqual([new Error('error')])
-    })
-
-    it('should use deployConfigChanges for config instances', async () => {
-      setConfigRecordsValuesMock.mockImplementation(types =>
-        types.map(({ configType }: SetConfigType) => ({ configType, status: 'success' })))
-
-      const configType = SUITEAPP_CONFIG_RECORD_TYPES[0]
-      const configObjectType = new ObjectType({
-        elemID: new ElemID(NETSUITE, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES[configType]),
+    describe('getPathInternalId', () => {
+      it('should return the right id', async () => {
+        getPathToIdMapMock.mockResolvedValue({ '/some/path': 1 })
+        expect(await client.getPathInternalId('/some/path')).toBe(1)
+        expect(await client.getPathInternalId('/some/path2')).toBeUndefined()
       })
 
-      const results = await client.deploy(
-        [
-          toChange({
-            before: new InstanceElement(
-              ElemID.CONFIG_NAME,
-              configObjectType,
-              { configType, field: true }
-            ),
-            after: new InstanceElement(
-              ElemID.CONFIG_NAME,
-              configObjectType,
-              { configType, field: false }
-            ),
-          }),
-        ],
-        SUITEAPP_UPDATING_CONFIG_GROUP_ID,
-        false,
+      it('should return undefined when failed to get map', async () => {
+        getPathToIdMapMock.mockResolvedValue(undefined)
+        expect(await client.getPathInternalId('/some/path1')).toBeUndefined()
+      })
+    })
+
+    describe('deploy', () => {
+      const type = new ObjectType({
+        elemID: new ElemID(NETSUITE, 'subsidiary'),
+      })
+      const instance1 = new InstanceElement(
+        'instance1',
+        type,
       )
-      expect(results.appliedChanges.length).toEqual(1)
-      expect(results.errors.length).toEqual(0)
+
+      const instance2 = new InstanceElement(
+        'instance2',
+        type,
+      )
+      const change1 = toChange({ before: instance1, after: instance1 })
+      const change2 = toChange({ before: instance2, after: instance2 })
+      it('should return error if suiteApp is not installed', async () => {
+        const clientWithoutSuiteApp = new NetsuiteClient(sdfClient)
+        expect(await clientWithoutSuiteApp.deploy(
+          [change1, change2],
+          SUITEAPP_UPDATING_RECORDS_GROUP_ID,
+          false,
+        )).toEqual({
+          errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_RECORDS_GROUP_ID}" cannot be deployed`)],
+          elemIdToInternalId: {},
+          appliedChanges: [],
+        })
+        expect(await clientWithoutSuiteApp.deploy(
+          [change1, change2],
+          SUITEAPP_UPDATING_CONFIG_GROUP_ID,
+          false,
+        )).toEqual({
+          errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_CONFIG_GROUP_ID}" cannot be deployed`)],
+          appliedChanges: [],
+        })
+      })
+      it('should use updateInstances for data instances modifications', async () => {
+        updateInstancesMock.mockResolvedValue([1, new Error('error')])
+        const results = await client.deploy(
+          [change1, change2],
+          SUITEAPP_UPDATING_RECORDS_GROUP_ID,
+          false,
+        )
+        expect(results.appliedChanges).toEqual([change1])
+        expect(results.errors).toEqual([new Error('error')])
+        expect(results.elemIdToInternalId).toEqual({ [instance1.elemID.getFullName()]: '1' })
+      })
+
+      it('should use addInstances for data instances creations', async () => {
+        addInstancesMock.mockResolvedValue([1, new Error('error')])
+        const results = await client.deploy(
+          [
+            toChange({ after: instance1 }),
+            toChange({ after: instance2 }),
+          ],
+          SUITEAPP_CREATING_RECORDS_GROUP_ID,
+          false,
+        )
+        expect(results.appliedChanges).toEqual([toChange({ after: instance1 })])
+        expect(results.errors).toEqual([new Error('error')])
+        expect(results.elemIdToInternalId).toEqual({ [instance1.elemID.getFullName()]: '1' })
+      })
+
+      it('should use deleteInstances for data instances deletions', async () => {
+        deleteInstancesMock.mockResolvedValue([1, new Error('error')])
+        const results = await client.deploy(
+          [
+            toChange({ before: instance1 }),
+            toChange({ before: instance2 }),
+          ],
+          SUITEAPP_DELETING_RECORDS_GROUP_ID,
+          false,
+        )
+        expect(results.appliedChanges).toEqual([toChange({ before: instance1 })])
+        expect(results.errors).toEqual([new Error('error')])
+      })
+
+      it('should use deployConfigChanges for config instances', async () => {
+        setConfigRecordsValuesMock.mockImplementation(types =>
+          types.map(({ configType }: SetConfigType) => ({ configType, status: 'success' })))
+
+        const configType = SUITEAPP_CONFIG_RECORD_TYPES[0]
+        const configObjectType = new ObjectType({
+          elemID: new ElemID(NETSUITE, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES[configType]),
+        })
+
+        const results = await client.deploy(
+          [
+            toChange({
+              before: new InstanceElement(
+                ElemID.CONFIG_NAME,
+                configObjectType,
+                { configType, field: true }
+              ),
+              after: new InstanceElement(
+                ElemID.CONFIG_NAME,
+                configObjectType,
+                { configType, field: false }
+              ),
+            }),
+          ],
+          SUITEAPP_UPDATING_CONFIG_GROUP_ID,
+          false,
+        )
+        expect(results.appliedChanges.length).toEqual(1)
+        expect(results.errors.length).toEqual(0)
+      })
     })
   })
 })

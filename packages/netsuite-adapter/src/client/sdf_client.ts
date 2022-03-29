@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { collections, decorators, objects as lowerdashObjects, promises, values as valuesUtils } from '@salto-io/lowerdash'
+import { collections, decorators, objects as lowerdashObjects, promises, values as valuesUtils, strings } from '@salto-io/lowerdash'
 import { Values, AccountId, Value } from '@salto-io/adapter-api'
 import { mkdirp, readDir, readFile, writeFile, rm, rename } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
@@ -41,7 +41,7 @@ import {
   DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, SdfClientConfig,
 } from '../config'
 import { NetsuiteQuery, NetsuiteQueryParameters, ObjectID } from '../query'
-import { FeaturesDeployError } from '../errors'
+import { FeaturesDeployError, ObjectsDeployError } from '../errors'
 import { SdfCredentials } from './credentials'
 import {
   CustomizationInfo, CustomTypeInfo, FailedImport, FailedTypes, FileCustomizationInfo,
@@ -59,6 +59,7 @@ const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
 const { isDefined } = valuesUtils
 const { concatObjects } = lowerdashObjects
+const { matchAll } = strings
 const log = logger(module)
 
 const FAILED_TYPE_NAME_TO_REAL_NAME: Record<string, string> = {
@@ -102,6 +103,12 @@ const FEATURES_XML = 'features.xml'
 const FEATURES_TAG = 'features'
 const FEATURE_ID = 'featureId'
 const configureFeatureFailRegex = RegExp(`Configure feature -- (Enabling|Disabling) of the (?<${FEATURE_ID}>\\w+)\\(.*?\\) feature has FAILED`)
+
+const OBJECT_ID = 'objectId'
+const deployStartMessageRegex = RegExp('^Begin deployment$', 'm')
+const objectValidationErrorRegex = RegExp(`^An error occurred during custom object validation. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm')
+const deployedObjectRegex = RegExp(`^Update object -- (?<${OBJECT_ID}>[a-z0-9_]+)`, 'gm')
+const errorObjectRegex = RegExp(`^An unexpected error has occurred. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'm')
 
 export const MINUTE_IN_MILLISECONDS = 1000 * 60
 const SINGLE_OBJECT_RETRIES = 3
@@ -173,6 +180,12 @@ const writeFileInFolder = async (folderPath: string, filename: string, content: 
   osPath.resolve(folderPath, filename)
   await writeFile(osPath.resolve(folderPath, filename), content)
 }
+
+const getGroupItemFromRegex = (str: string, regex: RegExp, item: string): string[] =>
+  Array.from(matchAll(str, regex))
+    .map(r => r.groups)
+    .filter(isDefined)
+    .map(groups => groups[item])
 
 type Project = {
   projectName: string
@@ -879,19 +892,55 @@ export default class SdfClient {
     await writeFile(manifestPath, fixManifest(manifestContent, customizationInfos))
   }
 
+  private static customizeDeployError(error: Error): Error {
+    const errorMessage = error.message
+
+    if (!deployStartMessageRegex.test(errorMessage)) {
+      const validationErrorObjects = getGroupItemFromRegex(
+        errorMessage, objectValidationErrorRegex, OBJECT_ID
+      )
+      return validationErrorObjects.length > 0
+        ? new ObjectsDeployError(errorMessage, new Set(validationErrorObjects))
+        : error
+    }
+
+    const allDeployedObjects = getGroupItemFromRegex(
+      errorMessage, deployedObjectRegex, OBJECT_ID
+    )
+    const errorObject = errorMessage.match(errorObjectRegex)?.groups?.[OBJECT_ID]
+
+    if (allDeployedObjects.length === 0) {
+      return errorObject !== undefined
+        ? new ObjectsDeployError(errorMessage, new Set([errorObject]))
+        : error
+    }
+    // if errorObject doesn't exists - the last object in the error message is the one
+    // that failed the deploy
+    return new ObjectsDeployError(
+      errorMessage,
+      new Set([errorObject ?? allDeployedObjects.slice(-1)[0]])
+    )
+  }
+
   private async runDeployCommands(
     { executor, projectPath, type }: Project,
     customizationInfos: CustomizationInfo[]
   ): Promise<void> {
     await this.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {}, executor)
     await SdfClient.fixManifest(projectPath, customizationInfos)
-    await this.executeProjectAction(
-      COMMANDS.DEPLOY_PROJECT,
-      // SuiteApp project type can't contain account specific values
-      // and thus the flag is not supported
-      type === 'AccountCustomization' ? { accountspecificvalues: 'WARNING' } : {},
-      executor
-    )
+    try {
+      await this.executeProjectAction(
+        COMMANDS.DEPLOY_PROJECT,
+        // SuiteApp project type can't contain account specific values
+        // and thus the flag is not supported
+        type === 'AccountCustomization' ? { accountspecificvalues: 'WARNING' } : {},
+        executor
+      )
+    } catch (error) {
+      throw SdfClient.customizeDeployError(
+        error instanceof Error ? error : new Error(String(error))
+      )
+    }
   }
 
   private static async addCustomTypeInfoToProject(customTypeInfo: CustomTypeInfo,

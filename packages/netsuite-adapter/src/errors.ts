@@ -21,3 +21,12 @@ export class FeaturesDeployError extends Error {
     this.name = 'FeaturesDeployError'
   }
 }
+
+export class ObjectsDeployError extends Error {
+  failObjects: Set<string>
+  constructor(message: string, failObjects: Set<string>) {
+    super(message)
+    this.failObjects = failObjects
+    this.name = 'ObjectsDeployError'
+  }
+}

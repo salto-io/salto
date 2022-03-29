@@ -42,7 +42,7 @@ const getChange = (): Change<InstanceElement> => {
 
 describe('config features filter', () => {
   // eslint-disable-next-line camelcase
-  const { companyFeatures, companyFeatures_feature } = featuresType()
+  const companyFeatures = featuresType()
   describe('onFetch', () => {
     const origInstance = new InstanceElement(
       '_config',
@@ -82,7 +82,7 @@ describe('config features filter', () => {
       const fieldType = await feature.getType()
       expect(isListType(fieldType)).toBeTruthy()
       expect(isListType(fieldType) && fieldType.refInnerType.elemID.typeName)
-        .toEqual(companyFeatures_feature.elemID.typeName)
+        .toEqual(`${CONFIG_FEATURES}_feature`)
       expect(instance.value).toEqual({
         feature: [
           { id: 'ABC', status: 'ENABLED' },

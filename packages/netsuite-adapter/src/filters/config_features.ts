@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { BuiltinTypes, Field, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isModificationChange, ListType } from '@salto-io/adapter-api'
+import { BuiltinTypes, Field, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
 import { FilterWith } from '../filter'
 import { CONFIG_FEATURES } from '../constants'
 import { FeaturesDeployError } from '../errors'
@@ -74,10 +74,8 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'> => ({
     })
 
     const type = await getChangeData<InstanceElement>(featuresChange).getType()
-    const { companyFeatures_feature: innerFeatureType } = featuresType()
-    type.fields = {
-      feature: new Field(type, 'feature', new ListType(innerFeatureType)),
-    }
+    // restore the fields to the hardcoded definitions, used in fetch & deploy
+    type.fields = featuresType().fields
   },
   onDeploy: async (changes, deployInfo) => {
     const errorIds = deployInfo.errors.flatMap(error => {

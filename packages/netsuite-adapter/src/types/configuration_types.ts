@@ -17,34 +17,28 @@
 import { BuiltinTypes, ElemID, ObjectType, ListType } from '@salto-io/adapter-api'
 import * as constants from '../constants'
 
-type FeatureTypeName = typeof constants.CONFIG_FEATURES
-  | typeof constants.CONFIG_FEATURES_INNER_FEATURE
+type ConfigurationTypeName = typeof constants.CONFIG_FEATURES
 
-export const featuresType = (): Record<FeatureTypeName, ObjectType> => {
-  const featuresElemID = new ElemID(constants.NETSUITE, constants.CONFIG_FEATURES)
-  const features_featureElemID = new ElemID(constants.NETSUITE, `${constants.CONFIG_FEATURES}_feature`)
-  const companyFeatures_feature = new ObjectType({
-    elemID: features_featureElemID,
-    fields: {
-      label: { refType: BuiltinTypes.STRING },
-      id: { refType: BuiltinTypes.STRING },
-      status: { refType: BuiltinTypes.STRING },
+export const featuresType = (): ObjectType => new ObjectType({
+  elemID: new ElemID(constants.NETSUITE, constants.CONFIG_FEATURES),
+  fields: {
+    feature: {
+      refType: new ListType(
+        new ObjectType({
+          elemID: new ElemID(constants.NETSUITE, `${constants.CONFIG_FEATURES}_feature`),
+          fields: {
+            label: { refType: BuiltinTypes.STRING },
+            id: { refType: BuiltinTypes.STRING },
+            status: { refType: BuiltinTypes.STRING },
+          },
+        })
+      ),
     },
-    path: [constants.NETSUITE, constants.TYPES_PATH, featuresElemID.name],
-  })
-  const companyFeatures = new ObjectType({
-    elemID: featuresElemID,
-    fields: {
-      feature: {
-        refType: new ListType(companyFeatures_feature),
-      },
-    },
-    path: [constants.NETSUITE, constants.TYPES_PATH, featuresElemID.name],
-    isSettings: true,
-  })
-  return { companyFeatures, companyFeatures_feature }
-}
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, constants.CONFIG_FEATURES],
+  isSettings: true,
+})
 
-export const getConfigurationTypes = (): Readonly<Record<string, ObjectType>> => ({
-  ...featuresType(),
+export const getConfigurationTypes = (): Readonly<Record<ConfigurationTypeName, ObjectType>> => ({
+  companyFeatures: featuresType(),
 })

@@ -125,7 +125,7 @@ describe('Transformer', () => {
   const transactionForm = transactionFormType().type
   const workflow = workflowType().type
   const { file, folder } = getFileCabinetTypes()
-  const { companyFeatures } = featuresType()
+  const companyFeatures = featuresType()
 
   describe('createInstanceElement', () => {
     const transformCustomFieldRecord = (xmlContent: string): Promise<InstanceElement> => {

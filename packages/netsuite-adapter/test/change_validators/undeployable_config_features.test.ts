@@ -17,10 +17,10 @@ import { ElemID, InstanceElement, toChange } from '@salto-io/adapter-api'
 import { featuresType } from '../../src/types/configuration_types'
 import undeployableConfigFeaturesValidator from '../../src/change_validators/undeployable_config_features'
 
-describe('account feautures validator', () => {
+describe('undeployable config feautures validator', () => {
   const origInstance = new InstanceElement(
     ElemID.CONFIG_NAME,
-    featuresType().companyFeatures,
+    featuresType(),
     {
       ABC: true,
       SUITEAPPCONTROLCENTER: false,

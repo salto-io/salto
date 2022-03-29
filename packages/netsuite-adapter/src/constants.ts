@@ -48,7 +48,6 @@ export const FILE = 'file'
 export const FOLDER = 'folder'
 export const SELECT_OPTION = 'selectOption'
 export const CONFIG_FEATURES = 'companyFeatures'
-export const CONFIG_FEATURES_INNER_FEATURE = 'companyFeatures_feature'
 
 // Fields
 export const SCRIPT_ID = 'scriptid'

@@ -16,6 +16,7 @@
 import { Values } from '@salto-io/adapter-api'
 import Bottleneck from 'bottleneck'
 import { SuiteAppClientConfig } from '../../config'
+import { SuiteAppConfigRecordType, SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
 import { SuiteAppCredentials } from '../credentials'
 
 
@@ -180,7 +181,7 @@ type ReadFailure = {
 
 export type ReadResults = (ReadSuccess | ReadFailure)[]
 
-export type RestletOperation = 'search' | 'sysInfo' | 'readFile'
+export type RestletOperation = 'search' | 'sysInfo' | 'readFile' | 'config'
 
 export type CallsLimiter = <T>(fn: () => Promise<T>) => Promise<T>
 
@@ -214,3 +215,136 @@ export type FolderDetails = {
 export type FileCabinetInstanceDetails = FileDetails | FolderDetails
 
 export type ExistingFileCabinetInstanceDetails = FileCabinetInstanceDetails & { id: number }
+
+export const CONFIG_FIELD_DEFINITION_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: { type: 'string' },
+    label: { type: 'string' },
+    type: { type: 'string' },
+    selectOptions: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          text: { type: 'string' },
+        },
+        required: ['text', 'value'],
+      },
+    },
+  },
+  required: ['id', 'label', 'type', 'selectOptions'],
+}
+
+export type SelectOption = {
+  value: unknown
+  text: string
+}
+
+export type ConfigFieldDefinition = {
+  id: string
+  label: string
+  type: string
+  selectOptions: SelectOption[]
+}
+
+export const CONFIG_RECORD_DATA_SCHEMA = {
+  type: 'object',
+  properties: {
+    fields: { type: 'object' },
+  },
+  required: ['fields'],
+}
+
+export type ConfigRecordData = {
+  fields: Record<string, unknown>
+}
+
+export type ConfigRecord = {
+  configType: SuiteAppConfigRecordType
+  fieldsDef: ConfigFieldDefinition[]
+  data: ConfigRecordData
+}
+
+export const GET_CONFIG_RESULT_SCHEMA = {
+  type: 'object',
+  properties: {
+    results: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          configType: { enum: SUITEAPP_CONFIG_RECORD_TYPES },
+          fieldsDef: {
+            type: 'array',
+            items: { type: 'object' },
+          },
+          data: { type: 'object' },
+        },
+        required: ['configType', 'fieldsDef', 'data'],
+      },
+    },
+    errors: {
+      type: 'array',
+      items: { type: 'object' },
+    },
+  },
+  required: ['results', 'errors'],
+}
+
+export type GetConfigResult = {
+  results: ConfigRecord[]
+  errors: Values[]
+}
+
+type SetConfigField = {
+  fieldId: string
+  value: string
+}
+
+export type SetConfigType = {
+  configType: string
+  items: SetConfigField[]
+}
+
+export type SuccessSetConfig = {
+  configType: string
+  status: 'success'
+}
+
+export type FailSetConfig = {
+  configType: string
+  status: 'fail'
+  errorMessage: string
+}
+
+export type SetConfigResult = (SuccessSetConfig | FailSetConfig)[]
+
+export const isSuccessSetConfig = (
+  result: SuccessSetConfig | FailSetConfig
+): result is SuccessSetConfig =>
+  result.status === 'success'
+
+export const SET_CONFIG_RESULT_SCHEMA = {
+  type: 'array',
+  items: {
+    anyOf: [{
+      type: 'object',
+      properties: {
+        configType: { enum: SUITEAPP_CONFIG_RECORD_TYPES },
+        status: { const: 'success' },
+      },
+      required: ['configType', 'status'],
+    }, {
+      type: 'object',
+      properties: {
+        configType: { enum: SUITEAPP_CONFIG_RECORD_TYPES },
+        status: { const: 'fail' },
+        errorMessage: { type: 'string' },
+      },
+      required: ['configType', 'status', 'errorMessage'],
+    }],
+  },
+}
+
+export type SetConfigRecordsValuesResult = { errorMessage: string } | SetConfigResult

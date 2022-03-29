@@ -14,10 +14,11 @@
 * limitations under the License.
 */
 import { ChangeGroupId, ChangeId, ElemID, InstanceElement, ObjectType, toChange, Change, StaticFile, ReferenceExpression } from '@salto-io/adapter-api'
-import { getChangeGroupIdsFunc, SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../src/group_changes'
+import { getChangeGroupIdsFunc, SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../src/group_changes'
 import { APPLICATION_ID, NETSUITE } from '../src/constants'
 import { entitycustomfieldType } from '../src/autogen/types/custom_types/entitycustomfield'
 import { fileType } from '../src/types/file_cabinet_types'
+import { SUITEAPP_CONFIG_TYPE_NAMES } from '../src/types'
 
 describe('Group Changes without Salto suiteApp', () => {
   const entitycustomfield = entitycustomfieldType().type
@@ -187,6 +188,15 @@ describe('Group Changes with Salto suiteApp', () => {
     subsidiaryType,
   )
 
+  const configType = new ObjectType({
+    elemID: new ElemID(NETSUITE, SUITEAPP_CONFIG_TYPE_NAMES[0]),
+  })
+
+  const configInstance = new InstanceElement(
+    ElemID.CONFIG_NAME,
+    configType,
+  )
+
   let changeGroupIds: Map<ChangeId, ChangeGroupId>
 
 
@@ -220,6 +230,7 @@ describe('Group Changes with Salto suiteApp', () => {
         after: modifiedDataInstance,
       })],
       [deletedDataInstance.elemID.getFullName(), toChange({ before: deletedDataInstance })],
+      [configInstance.elemID.getFullName(), toChange({ after: configInstance })],
     ]))
   })
 
@@ -277,6 +288,11 @@ describe('Group Changes with Salto suiteApp', () => {
 
     expect(changeGroupIds.get(deletedDataInstance.elemID.getFullName()))
       .toEqual(SUITEAPP_DELETING_RECORDS_GROUP_ID)
+  })
+
+  it('should set correct group id for config instances', () => {
+    expect(changeGroupIds.get(configInstance.elemID.getFullName()))
+      .toEqual(SUITEAPP_UPDATING_CONFIG_GROUP_ID)
   })
 
   it('should not set group id for non SDF types instances', () => {

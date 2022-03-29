@@ -19,6 +19,7 @@ export const FILE_CABINET_PATH = 'FileCabinet'
 export const TYPES_PATH = 'Types'
 export const SUBTYPES_PATH = 'Subtypes'
 export const FIELD_TYPES_PATH = 'fieldTypes'
+export const SETTINGS_PATH = 'Settings'
 
 // Type names
 export const ADDRESS_FORM = 'addressForm'
@@ -45,6 +46,7 @@ export const WORKBOOK = 'workbook'
 export const WORKFLOW = 'workflow'
 export const FILE = 'file'
 export const FOLDER = 'folder'
+export const SELECT_OPTION = 'selectoption'
 
 // Fields
 export const SCRIPT_ID = 'scriptid'

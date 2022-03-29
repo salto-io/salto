@@ -108,3 +108,24 @@ export const FIELD_TYPES = [
 export type DeployResult = AdapterApiDeployResult & {
   elemIdToInternalId?: Record<string, string>
 }
+
+export const SUITEAPP_CONFIG_RECORD_TYPES = [
+  'USER_PREFERENCES',
+  'COMPANY_INFORMATION',
+  'COMPANY_PREFERENCES',
+  'ACCOUNTING_PREFERENCES',
+] as const
+
+export type SuiteAppConfigRecordType = typeof SUITEAPP_CONFIG_RECORD_TYPES[number]
+
+export const SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES: Record<SuiteAppConfigRecordType, string> = {
+  USER_PREFERENCES: 'userPreferences',
+  COMPANY_INFORMATION: 'companyInformation',
+  COMPANY_PREFERENCES: 'companyPreferences',
+  ACCOUNTING_PREFERENCES: 'accountingPreferences',
+}
+
+export const SUITEAPP_CONFIG_TYPE_NAMES = Object.values(SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES)
+
+export const isSuiteAppConfigInstance = (instance: InstanceElement): boolean =>
+  SUITEAPP_CONFIG_TYPE_NAMES.includes(instance.elemID.typeName)

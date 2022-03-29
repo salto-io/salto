@@ -18,8 +18,10 @@ import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 import SdfClient from '../../src/client/sdf_client'
 import * as suiteAppFileCabinet from '../../src/suiteapp_file_cabinet'
 import NetsuiteClient from '../../src/client/client'
-import { SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../../src/group_changes'
+import { SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../../src/group_changes'
 import { NETSUITE } from '../../src/constants'
+import { SetConfigType } from '../../src/client/suiteapp_client/types'
+import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../src/types'
 
 describe('NetsuiteClient', () => {
   const sdfClient = {
@@ -29,11 +31,15 @@ describe('NetsuiteClient', () => {
   const updateInstancesMock = jest.fn()
   const addInstancesMock = jest.fn()
   const deleteInstancesMock = jest.fn()
+  const getConfigRecordsMock = jest.fn()
+  const setConfigRecordsValuesMock = jest.fn()
 
   const suiteAppClient = {
     updateInstances: updateInstancesMock,
     addInstances: addInstancesMock,
     deleteInstances: deleteInstancesMock,
+    getConfigRecords: getConfigRecordsMock,
+    setConfigRecordsValues: setConfigRecordsValuesMock,
   } as unknown as SuiteAppClient
 
   const getPathToIdMapMock = jest.fn()
@@ -77,14 +83,21 @@ describe('NetsuiteClient', () => {
     const change2 = toChange({ before: instance2, after: instance2 })
     it('should return error if suiteApp is not installed', async () => {
       const clientWithoutSuiteApp = new NetsuiteClient(sdfClient)
-      const results = await clientWithoutSuiteApp.deploy(
+      expect(await clientWithoutSuiteApp.deploy(
         [change1, change2],
         SUITEAPP_UPDATING_RECORDS_GROUP_ID,
         false,
-      )
-      expect(results).toEqual({
+      )).toEqual({
         errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_RECORDS_GROUP_ID}" cannot be deployed`)],
         elemIdToInternalId: {},
+        appliedChanges: [],
+      })
+      expect(await clientWithoutSuiteApp.deploy(
+        [change1, change2],
+        SUITEAPP_UPDATING_CONFIG_GROUP_ID,
+        false,
+      )).toEqual({
+        errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_CONFIG_GROUP_ID}" cannot be deployed`)],
         appliedChanges: [],
       })
     })
@@ -127,6 +140,37 @@ describe('NetsuiteClient', () => {
       )
       expect(results.appliedChanges).toEqual([toChange({ before: instance1 })])
       expect(results.errors).toEqual([new Error('error')])
+    })
+
+    it('should use deployConfigChanges for config instances', async () => {
+      setConfigRecordsValuesMock.mockImplementation(types =>
+        types.map(({ configType }: SetConfigType) => ({ configType, status: 'success' })))
+
+      const configType = SUITEAPP_CONFIG_RECORD_TYPES[0]
+      const configObjectType = new ObjectType({
+        elemID: new ElemID(NETSUITE, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES[configType]),
+      })
+
+      const results = await client.deploy(
+        [
+          toChange({
+            before: new InstanceElement(
+              ElemID.CONFIG_NAME,
+              configObjectType,
+              { configType, field: true }
+            ),
+            after: new InstanceElement(
+              ElemID.CONFIG_NAME,
+              configObjectType,
+              { configType, field: false }
+            ),
+          }),
+        ],
+        SUITEAPP_UPDATING_CONFIG_GROUP_ID,
+        false,
+      )
+      expect(results.appliedChanges.length).toEqual(1)
+      expect(results.errors.length).toEqual(0)
     })
   })
 })

@@ -15,7 +15,9 @@
 */
 import _ from 'lodash'
 import { Workspace } from '@salto-io/workspace'
+import { Tags, getSupportedServiceAdapterNames } from '@salto-io/core'
 import { KeyedOption } from '../../types'
+import { EnvArg } from './env'
 
 export type AccountsArg = {
     accounts?: string[]
@@ -29,6 +31,25 @@ export const ACCOUNTS_OPTION: KeyedOption<AccountsArg> = {
   type: 'stringsList',
 }
 
+export const getAdaptersTags = (adapters: string[]): Tags => (
+  Object.fromEntries(adapters
+    .filter(adapter => getSupportedServiceAdapterNames().includes(adapter))
+    .map(adapter => [`adapter-${adapter}`, true]))
+)
+
+const getValidAccounts = (envAccounts: string[], inputAccounts?: string[]): string[] => (
+  _.isEmpty(inputAccounts) ? [...envAccounts] : _.intersection(inputAccounts, envAccounts)
+)
+
+export const getTagsForAccounts = (
+  args: { workspace: Workspace } & AccountsArg & EnvArg
+): Tags => {
+  const { workspace, accounts, env } = args
+  return getAdaptersTags(
+    getValidAccounts(workspace.accounts(env), accounts).map(workspace.getServiceFromAccountName)
+  )
+}
+
 export const getAndValidateActiveAccounts = (
   workspace: Workspace,
   inputAccounts?: string[]
@@ -37,12 +58,14 @@ export const getAndValidateActiveAccounts = (
   if (workspaceAccounts.length === 0) {
     throw new Error(`No services are configured for env=${workspace.currentEnv()}. Use 'salto service add'.`)
   }
-  if (inputAccounts === undefined) {
-    return [...workspaceAccounts]
+
+  const validAccounts = getValidAccounts(workspaceAccounts, inputAccounts)
+  if (inputAccounts) {
+    const diffAccounts = _.difference(inputAccounts, validAccounts)
+    if (diffAccounts.length > 0) {
+      throw new Error(`Not all accounts (${diffAccounts.length}) are set up for this workspace`)
+    }
   }
-  const diffAccounts = _.difference(inputAccounts, workspaceAccounts)
-  if (diffAccounts.length > 0) {
-    throw new Error(`Not all accounts (${diffAccounts}) are set up for this workspace`)
-  }
-  return inputAccounts
+
+  return validAccounts
 }

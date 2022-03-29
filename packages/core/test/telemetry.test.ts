@@ -155,13 +155,13 @@ describe('telemetry', () => {
     await telemetry.stop(1)
 
     expect(reqEvents.length).toEqual(2)
-    const eventCustomTags = eventByName(`${prefix}.ev_with_custom_tags`, reqEvents)?.tags || {}
+    const eventCustomTags: Tags = eventByName(`${prefix}.ev_with_custom_tags`, reqEvents)?.tags || {}
     expect(eventCustomTags.sometag).toEqual(customTags.sometag)
     expect(eventCustomTags.somenumbertag).toEqual(customTags.somenumbertag)
     expect(eventCustomTags.should_be_snake).toEqual(customTags.shouldBeSnake)
     expect(eventCustomTags.workspace_id).toEqual(customTags.workspaceID)
 
-    const noCustomTags = eventByName(`${prefix}.ev_without_custom_tags`, reqEvents)?.tags || {}
+    const noCustomTags: Tags = eventByName(`${prefix}.ev_without_custom_tags`, reqEvents)?.tags || {}
     expect(Object.keys(noCustomTags).length)
       .toEqual(Object.keys(eventCustomTags).length - Object.keys(customTags).length)
     expect(noCustomTags.app).toEqual(app)

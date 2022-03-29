@@ -245,11 +245,11 @@ describe('Command builder', () => {
           const events = cliArgs.telemetry.getEvents()
           expect(events).toContainEqual(expect.objectContaining({
             name: buildEventName('dummy', 'start'),
-            tags: { workspaceID: 'test' },
+            tags: { workspaceID: 'test', installationID: '1234', app: 'test' },
           }))
           expect(events).toContainEqual(expect.objectContaining({
             name: buildEventName('dummy', 'success'),
-            tags: { workspaceID: 'test' },
+            tags: { workspaceID: 'test', installationID: '1234', app: 'test' },
           }))
         })
       })
@@ -271,14 +271,50 @@ describe('Command builder', () => {
           const events = cliArgs.telemetry.getEvents()
           expect(events).toContainEqual(expect.objectContaining({
             name: buildEventName('dummy', 'start'),
-            tags: { workspaceID: 'test' },
+            tags: { workspaceID: 'test', installationID: '1234', app: 'test' },
           }))
           expect(events).toContainEqual(expect.objectContaining({
             name: buildEventName('dummy', 'failure'),
-            tags: { workspaceID: 'test' },
+            tags: { workspaceID: 'test', installationID: '1234', app: 'test' },
           }))
         })
       })
+    })
+  })
+
+  describe('when createWorkspaceCommand with extraTelemetryTags', () => {
+    it('should send the extra tags', async () => {
+      const dummyAction = mockFunction<WorkspaceCommandAction<{}>>()
+        .mockResolvedValue(CliExitCode.Success)
+      const command = createWorkspaceCommand({
+        properties: {
+          name: 'dummy',
+          description: 'test',
+        },
+        action: dummyAction,
+        extraTelemetryTags: _ => ({ extraTag1: 'tag1', extraTag2: 'tag2' }),
+      }) as CommandDef<unknown>
+
+      const cliArgs = mocks.mockCliArgs()
+      const workspace = mocks.mockWorkspace({ uid: 'test' })
+      const loadWorkspace = loadLocalWorkspace as jest.MockedFunction<typeof loadLocalWorkspace>
+      loadWorkspace.mockResolvedValue(workspace)
+
+      await command.action({
+        ...cliArgs,
+        workspacePath: 'test_path',
+        commanderInput: [{}],
+      })
+
+      const events = cliArgs.telemetry.getEvents()
+      expect(events).toContainEqual(expect.objectContaining({
+        name: buildEventName('dummy', 'start'),
+        tags: { workspaceID: 'test', installationID: '1234', app: 'test', extraTag1: 'tag1', extraTag2: 'tag2' },
+      }))
+      expect(events).toContainEqual(expect.objectContaining({
+        name: buildEventName('dummy', 'success'),
+        tags: { workspaceID: 'test', installationID: '1234', app: 'test', extraTag1: 'tag1', extraTag2: 'tag2' },
+      }))
     })
   })
 })

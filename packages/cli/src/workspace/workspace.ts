@@ -74,7 +74,6 @@ type ApplyChangesArgs = {
   workspace: Workspace
   changes: FetchChange[]
   cliTelemetry: CliTelemetry
-  workspaceTags: Tags
   mode: nacl.RoutingMode
   force: boolean
   shouldCalcTotalSize: boolean
@@ -256,12 +255,12 @@ export const updateWorkspace = async ({
   return { success: true, numberOfAppliedChanges }
 }
 
-export const getWorkspaceTelemetryTags = async (ws: Workspace): Promise<Tags> => (
+export const getWorkspaceTelemetryTags = (ws: Workspace): Tags => (
   { workspaceID: ws.uid }
 )
 
 export const applyChangesToWorkspace = async ({
-  workspace, changes, cliTelemetry, workspaceTags, approveChangesCallback,
+  workspace, changes, cliTelemetry, approveChangesCallback,
   mode, force, shouldCalcTotalSize, applyProgress, output,
 }: ApplyChangesArgs): Promise<boolean> => {
   // If the workspace starts empty there is no point in showing a huge amount of changes
@@ -269,7 +268,7 @@ export const applyChangesToWorkspace = async ({
     ? changes
     : await approveChangesCallback(changes)
 
-  cliTelemetry.changesToApply(changesToApply.length, workspaceTags)
+  cliTelemetry.changesToApply(changesToApply.length)
   const updatingWsEmitter = new StepEmitter<number>()
   applyProgress.emit('workspaceWillBeUpdated', updatingWsEmitter, changes.length, changesToApply.length)
   const results = await updateWorkspace({
@@ -285,7 +284,7 @@ export const applyChangesToWorkspace = async ({
     if (shouldCalcTotalSize) {
       const totalSize = await workspace.getTotalSize()
       log.debug(`Total size of the workspace is ${totalSize} bytes`)
-      cliTelemetry.workspaceSize(totalSize, workspaceTags)
+      cliTelemetry.workspaceSize(totalSize)
     }
     return true
   }

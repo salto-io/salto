@@ -54,6 +54,7 @@ import { errorOutputLine, outputLine } from '../outputer'
 import { processOauthCredentials } from '../cli_oauth_authenticator'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
 import { convertValueType } from './common/config_override'
+import { getAdaptersTags, getTagsForAccounts } from './common/accounts'
 
 const { isDefined } = values
 
@@ -215,7 +216,7 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
   return CliExitCode.Success
 }
 
-const serviceAddDef = createWorkspaceCommand({
+export const serviceAddDef = createWorkspaceCommand({
   properties: {
     name: 'add',
     description: 'Add a service account to an environment.\n\nUse the --login-parameters option for non interactive execution.\n\nFor more information about supported login parameters please visit:\nhttps://github.com/salto-io/salto/blob/main/packages/cli/user_guide.md#non-interactive-execution',
@@ -249,6 +250,7 @@ const serviceAddDef = createWorkspaceCommand({
     ],
   },
   action: addAction,
+  extraTelemetryTags: ({ input }) => getAdaptersTags([input.serviceType]),
 })
 
 // List
@@ -306,7 +308,7 @@ export const loginAction: WorkspaceCommandAction<ServiceLoginArgs> = async ({
   return CliExitCode.Success
 }
 
-const accountLoginDef = createWorkspaceCommand({
+export const accountLoginDef = createWorkspaceCommand({
   properties: {
     name: 'login',
     description: 'Login to a service account of an environment.\n\nUse the --login-parameters option for non interactive execution.\n\nFor more information about supported login parameters please visit:\nhttps://github.com/salto-io/salto/blob/main/packages/cli/user_guide.md#non-interactive-execution',
@@ -325,6 +327,8 @@ const accountLoginDef = createWorkspaceCommand({
     ],
   },
   action: loginAction,
+  extraTelemetryTags: ({ workspace, input }) =>
+    getTagsForAccounts({ workspace, accounts: [input.accountName], env: input.env }),
 })
 
 const accountGroupDef = createCommandGroupDef({

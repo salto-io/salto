@@ -56,6 +56,7 @@ In addition to the usage data, the following metadata is being sent:
   * Operating system (platform, arch and release version)
   * Workspace ID: the ID of the specific workspace (uuidv4)
   * Installation ID: an ID that is being generated in the first ever `salto init`. It's common to all of the workspaces on the same installation / computer
+  * Service Type: the type of service in use (for example "salesforce" or "netsuite")
   * App (CLI) version
 
 ## How to opt out of telemetry data collection?

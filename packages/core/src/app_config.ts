@@ -134,8 +134,8 @@ const dumpConfig = async (config: AppConfig): Promise<void> => (
 
 const mergeConfigWithEnv = async (config: AppConfig): Promise<AppConfig> => {
   config.telemetry = {
-    token: telemetryToken(),
-    url: telemetryURL(),
+    token: config.telemetry.token ?? telemetryToken(),
+    url: config.telemetry.url || telemetryURL(),
     enabled: telemetryDisabled() ? false : config.telemetry.enabled,
   }
   return config

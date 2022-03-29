@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { logger, compareLogLevels, LogLevel } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
-import { loadLocalWorkspace } from '@salto-io/core'
+import { loadLocalWorkspace, Tags } from '@salto-io/core'
 import { CliOutput, CliExitCode, CliError, PositionalOption, KeyedOption, CliArgs, CliTelemetry } from './types'
 import { getCliTelemetry } from './telemetry'
 import { getWorkspaceTelemetryTags } from './workspace/workspace'
@@ -54,7 +54,6 @@ export type CommandDef<T> = {
   action: CommandAction
 }
 
-
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export type CommandOrGroupDef = CommandsGroupDef | CommandDef<any>
 
@@ -79,6 +78,7 @@ export type WorkspaceCommandAction<T> = (args: WorkspaceCommandArgs<T>) => Promi
 type WorkspaceCommandDef<T> = {
   properties: CommandOptions<T>
   action: WorkspaceCommandAction<T>
+  extraTelemetryTags?: (args: { workspace: Workspace; input: T }) => Tags
 }
 
 export const isCommand = (c?: CommandOrGroupDef): c is CommandDef<unknown> =>
@@ -216,7 +216,7 @@ export const createPublicCommandDef = <T>(def: CommandInnerDef<T>): CommandDef<T
 export const createWorkspaceCommand = <T>(
   def: WorkspaceCommandDef<T>
 ): CommandDef<T & ConfigOverrideArg> => {
-  const { properties, action } = def
+  const { properties, action, extraTelemetryTags } = def
 
   const workspaceAction: CommandDefAction<T & ConfigOverrideArg> = async args => {
     const workspace = await loadLocalWorkspace(
@@ -224,15 +224,19 @@ export const createWorkspaceCommand = <T>(
       getConfigOverrideChanges(args.input),
     )
 
-    const workspaceTags = await getWorkspaceTelemetryTags(workspace)
-    args.cliTelemetry.start(workspaceTags)
+    args.cliTelemetry.setTags({
+      ...getWorkspaceTelemetryTags(workspace),
+      ...extraTelemetryTags?.({ workspace, input: args.input }),
+    })
+
+    args.cliTelemetry.start()
 
     const result = await action({ ...args, workspace })
 
     if (result === CliExitCode.Success) {
-      args.cliTelemetry.success(workspaceTags)
+      args.cliTelemetry.success()
     } else {
-      args.cliTelemetry.failure(workspaceTags)
+      args.cliTelemetry.failure()
     }
     return result
   }

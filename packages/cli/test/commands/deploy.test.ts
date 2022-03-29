@@ -72,6 +72,31 @@ describe('deploy command', () => {
     mockShouldCancel.mockReset()
   })
 
+  describe('when deploying changes', () => {
+    let result: number
+
+    beforeEach(async () => {
+      mockGetUserBooleanInput.mockResolvedValueOnce(true)
+      result = await action({
+        ...cliCommandArgs,
+        input: {
+          force: false,
+          dryRun: false,
+          detailedPlan: false,
+          accounts,
+        },
+        workspace,
+      })
+    })
+    it('should return success error code', () => {
+      expect(result).toBe(CliExitCode.Success)
+    })
+
+    it('should print success message', () => {
+      expect(output.stdout.content).toContain('Deployment succeeded')
+    })
+  })
+
   describe('should deploy considering user input', () => {
     it('should continue with deploy when user input is y', async () => {
       mockGetUserBooleanInput.mockResolvedValueOnce(true)

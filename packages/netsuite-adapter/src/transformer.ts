@@ -27,9 +27,10 @@ import {
   SCRIPT_ID, ADDITIONAL_FILE_SUFFIX, FILE, FILE_CABINET_PATH, PATH, FILE_CABINET_PATH_SEPARATOR,
   LAST_FETCH_TIME,
   APPLICATION_ID,
+  SETTINGS_PATH,
 } from './constants'
 import { fieldTypes } from './types/field_types'
-import { isCustomType, isFileCabinetType } from './types'
+import { isSDFConfigType, isCustomType, isFileCabinetType } from './types'
 import { isFileCustomizationInfo, isFolderCustomizationInfo, isTemplateCustomTypeInfo } from './client/utils'
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from './client/types'
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from './client/constants'
@@ -46,6 +47,9 @@ const removeDotPrefix = (name: string): string => name.replace(/^\.+/, '_')
 export const createInstanceElement = async (customizationInfo: CustomizationInfo, type: ObjectType,
   getElemIdFunc?: ElemIdGetter, fetchTime?: Date): Promise<InstanceElement> => {
   const getInstanceName = (transformedValues: Values): string => {
+    if (isSDFConfigType(type)) {
+      return ElemID.CONFIG_NAME
+    }
     if (!isCustomType(type) && !isFileCabinetType(type)) {
       throw new Error(`Failed to getInstanceName for unknown type: ${type.elemID.name}`)
     }
@@ -61,10 +65,16 @@ export const createInstanceElement = async (customizationInfo: CustomizationInfo
     return getElemIdFunc ? getElemIdFunc(NETSUITE, serviceIds, desiredName).name : desiredName
   }
 
-  const getInstancePath = (instanceName: string): string[] =>
-    (isFolderCustomizationInfo(customizationInfo) || isFileCustomizationInfo(customizationInfo)
-      ? [NETSUITE, FILE_CABINET_PATH, ...customizationInfo.path.map(removeDotPrefix)]
-      : [NETSUITE, RECORDS_PATH, type.elemID.name, instanceName])
+  const getInstancePath = (instanceName: string): string[] => {
+    if (isFolderCustomizationInfo(customizationInfo)
+      || isFileCustomizationInfo(customizationInfo)) {
+      return [NETSUITE, FILE_CABINET_PATH, ...customizationInfo.path.map(removeDotPrefix)]
+    }
+    if (isSDFConfigType(type)) {
+      return [NETSUITE, SETTINGS_PATH, type.elemID.name]
+    }
+    return [NETSUITE, RECORDS_PATH, type.elemID.name, instanceName]
+  }
 
   const transformPrimitive: TransformFunc = async ({ value, field }) => {
     const fieldType = await field?.getType()

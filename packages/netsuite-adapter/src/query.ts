@@ -16,7 +16,7 @@
 
 import { regex, strings } from '@salto-io/lowerdash'
 import { getCustomTypesNames } from './autogen/types'
-import { INCLUDE, EXCLUDE, LOCKED_ELEMENTS_TO_EXCLUDE, AUTHOR_INFO_CONFIG } from './constants'
+import { INCLUDE, EXCLUDE, LOCKED_ELEMENTS_TO_EXCLUDE, AUTHOR_INFO_CONFIG, CONFIG_FEATURES } from './constants'
 import { SUPPORTED_TYPES, TYPES_TO_INTERNAL_ID } from './data_elements/types'
 import { SUITEAPP_CONFIG_TYPE_NAMES } from './types'
 
@@ -87,6 +87,7 @@ export const validateFetchParameters = ({ types, fileCabinet }:
     ...getCustomTypesNames(),
     ...SUPPORTED_TYPES,
     ...SUITEAPP_CONFIG_TYPE_NAMES,
+    CONFIG_FEATURES,
   ]
   const receivedTypes = types.map(obj => obj.name)
   const idsRegexes = types

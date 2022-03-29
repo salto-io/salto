@@ -26,12 +26,12 @@ import _ from 'lodash'
 import each from 'jest-each'
 import NetsuiteAdapter from '../src/adapter'
 import { credsLease, realAdapter } from './adapter'
-import { getMetadataTypes, metadataTypesToList } from '../src/types'
+import { getMetadataTypes, isSDFConfigTypeName, metadataTypesToList } from '../src/types'
 import { adapter as adapterCreator } from '../src/adapter_creator'
 import {
   CUSTOM_RECORD_TYPE, EMAIL_TEMPLATE, ENTITY_CUSTOM_FIELD, FETCH_ALL_TYPES_AT_ONCE,
   FILE, FILE_CABINET_PATH_SEPARATOR, FOLDER, NETSUITE, PATH, ROLE, SCRIPT_ID,
-  SKIP_LIST,
+  SKIP_LIST, CONFIG_FEATURES,
   TRANSACTION_COLUMN_CUSTOM_FIELD,
   WARN_STALE_DATA, WORKFLOW,
 } from '../src/constants'
@@ -45,8 +45,8 @@ const { awu } = collections.asynciterable
 describe('Netsuite adapter E2E with real account', () => {
   let adapter: NetsuiteAdapter
   let credentialsLease: CredsLease<Required<Credentials>>
-  const { customTypes, enums, fileCabinetTypes, fieldTypes } = getMetadataTypes()
-  const metadataTypes = metadataTypesToList({ customTypes, enums, fileCabinetTypes, fieldTypes })
+  const { customTypes, enums, additionalTypes, fieldTypes } = getMetadataTypes()
+  const metadataTypes = metadataTypesToList({ customTypes, enums, additionalTypes, fieldTypes })
 
   const createInstanceElement = (type: string, valuesOverride: Values): InstanceElement => {
     const instValues = {
@@ -54,12 +54,14 @@ describe('Netsuite adapter E2E with real account', () => {
       ...valuesOverride,
     }
 
-    const instanceName = naclCase(instValues[isCustomTypeName(type) ? SCRIPT_ID : PATH]
-      .replace(new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}`), ''))
+    const instanceName = isSDFConfigTypeName(type)
+      ? ElemID.CONFIG_NAME
+      : naclCase(instValues[isCustomTypeName(type) ? SCRIPT_ID : PATH]
+        .replace(new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}`), ''))
 
     return new InstanceElement(
       instanceName,
-      isCustomTypeName(type) ? customTypes[type].type : fileCabinetTypes[type],
+      isCustomTypeName(type) ? customTypes[type].type : additionalTypes[type],
       instValues
     )
   }
@@ -226,6 +228,9 @@ describe('Netsuite adapter E2E with real account', () => {
         },
       }
     )
+
+    const featuresInstance = createInstanceElement(CONFIG_FEATURES, {})
+
     afterAll(async () => {
       const revertChanges: Map<ChangeId, Change<InstanceElement>> = new Map([
         ...withSuiteApp ? [subsidiaryInstance] : [],
@@ -274,6 +279,16 @@ describe('Netsuite adapter E2E with real account', () => {
       changes.set(
         changes.size.toString(),
         toChange({ before: folderToModifyBefore, after: folderToModify })
+      )
+
+      // Toggle the feature status using 'withSuiteApp'
+      const beforeFeaturesInstance = featuresInstance.clone()
+      const afterFeaturesInstance = featuresInstance.clone()
+      beforeFeaturesInstance.value.DEPARTMENTS = !withSuiteApp
+      afterFeaturesInstance.value.DEPARTMENTS = withSuiteApp
+      changes.set(
+        changes.size.toString(),
+        toChange({ before: beforeFeaturesInstance, after: afterFeaturesInstance })
       )
 
       let deployResult: DeployResult
@@ -578,6 +593,15 @@ describe('Netsuite adapter E2E with real account', () => {
           expect(fetchSubsidiary.value.name).toEqual(randomString)
           expect(fetchSubsidiary.value.internalId).toBeDefined()
         }
+      })
+
+      it(`should fetch the modified feature (status=${withSuiteApp})`, async () => {
+        const fetchFeatures = findElement(
+          fetchedInstances,
+          featuresInstance.elemID
+        ) as InstanceElement
+        // using 'withSuiteApp' to validate both boolean values
+        expect(fetchFeatures.value.DEPARTMENTS).toBe(withSuiteApp)
       })
     })
   })

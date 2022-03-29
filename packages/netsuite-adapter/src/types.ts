@@ -19,6 +19,8 @@ import { enums } from './autogen/types/enums'
 import { CustomType, getCustomTypes, isCustomTypeName } from './autogen/types'
 import { TypesMap } from './types/object_types'
 import { fileCabinetTypesNames, getFileCabinetTypes } from './types/file_cabinet_types'
+import { getConfigurationTypes } from './types/configuration_types'
+import { CONFIG_FEATURES } from './constants'
 
 export const isCustomType = (type: ObjectType | TypeReference): boolean =>
   isCustomTypeName(type.elemID.name)
@@ -38,14 +40,14 @@ export const isDataObjectType = (element: ObjectType): boolean =>
 type MetadataTypes = {
   customTypes: TypesMap<CustomType>
   enums: Readonly<Record<string, PrimitiveType>>
-  fileCabinetTypes: Readonly<Record<string, ObjectType>>
+  additionalTypes: Readonly<Record<string, ObjectType>>
   fieldTypes: Readonly<Record<string, PrimitiveType>>
 }
 
 export const getMetadataTypes = (): MetadataTypes => ({
   customTypes: getCustomTypes(),
   enums,
-  fileCabinetTypes: getFileCabinetTypes(),
+  additionalTypes: { ...getFileCabinetTypes(), ...getConfigurationTypes() },
   fieldTypes,
 })
 
@@ -56,12 +58,12 @@ export const getInnerCustomTypes = (customTypes: TypesMap<CustomType>): ObjectTy
   Object.values(customTypes).flatMap(customType => Object.values(customType.innerTypes))
 
 export const metadataTypesToList = (metadataTypes: MetadataTypes): TypeElement[] => {
-  const { customTypes, fileCabinetTypes } = metadataTypes
+  const { customTypes, additionalTypes } = metadataTypes
   return [
     ...getTopLevelCustomTypes(customTypes),
     ...getInnerCustomTypes(customTypes),
     ...Object.values(enums),
-    ...Object.values(fileCabinetTypes),
+    ...Object.values(additionalTypes),
     ...Object.values(fieldTypes),
   ]
 }
@@ -129,3 +131,9 @@ export const SUITEAPP_CONFIG_TYPE_NAMES = Object.values(SUITEAPP_CONFIG_TYPES_TO
 
 export const isSuiteAppConfigInstance = (instance: InstanceElement): boolean =>
   SUITEAPP_CONFIG_TYPE_NAMES.includes(instance.elemID.typeName)
+
+export const isSDFConfigTypeName = (typeName: string): boolean =>
+  typeName === CONFIG_FEATURES
+
+export const isSDFConfigType = (type: ObjectType | TypeReference): boolean =>
+  isSDFConfigTypeName(type.elemID.name)

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { collections, decorators, objects as lowerdashObjects, promises, values } from '@salto-io/lowerdash'
+import { collections, decorators, objects as lowerdashObjects, promises, values as valuesUtils } from '@salto-io/lowerdash'
 import { Values, AccountId, Value } from '@salto-io/adapter-api'
 import { mkdirp, readDir, readFile, writeFile, rm, rename } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
@@ -32,6 +32,7 @@ import AsyncLock from 'async-lock'
 import wu from 'wu'
 import shellQuote from 'shell-quote'
 import {
+  CONFIG_FEATURES,
   APPLICATION_ID,
   FILE_CABINET_PATH_SEPARATOR,
 } from '../constants'
@@ -40,6 +41,7 @@ import {
   DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, SdfClientConfig,
 } from '../config'
 import { NetsuiteQuery, NetsuiteQueryParameters, ObjectID } from '../query'
+import { FeaturesDeployError } from '../errors'
 import { SdfCredentials } from './credentials'
 import {
   CustomizationInfo, CustomTypeInfo, FailedImport, FailedTypes, FileCustomizationInfo,
@@ -55,7 +57,7 @@ import { fixManifest } from './manifest_utils'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
-const { isDefined } = values
+const { isDefined } = valuesUtils
 const { concatObjects } = lowerdashObjects
 const log = logger(module)
 
@@ -80,6 +82,7 @@ export const COMMANDS = {
   IMPORT_FILES: 'file:import',
   DEPLOY_PROJECT: 'project:deploy',
   ADD_PROJECT_DEPENDENCIES: 'project:adddependencies',
+  IMPORT_CONFIGURATION: 'configuration:import',
 }
 
 
@@ -93,11 +96,24 @@ const FILE_SEPARATOR = '.'
 const ALL = 'ALL'
 const ADDITIONAL_FILE_PATTERN = '.template.'
 
+const ALL_FEATURES = 'FEATURES:ALL_FEATURES'
+const ACCOUNT_CONFIGURATION_DIR = 'AccountConfiguration'
+const FEATURES_XML = 'features.xml'
+const FEATURES_TAG = 'features'
+const FEATURE_ID = 'featureId'
+const configureFeatureFailRegex = RegExp(`Configure feature -- (Enabling|Disabling) of the (?<${FEATURE_ID}>\\w+)\\(.*?\\) feature has FAILED`)
+
 export const MINUTE_IN_MILLISECONDS = 1000 * 60
 const SINGLE_OBJECT_RETRIES = 3
 const READ_CONCURRENCY = 100
 
 const baseExecutionPath = os.tmpdir()
+
+const XML_PARSE_OPTIONS: xmlParser.J2xOptionsOptional = {
+  attributeNamePrefix: ATTRIBUTE_PREFIX,
+  ignoreAttributes: false,
+  tagValueProcessor: val => he.decode(val),
+}
 
 const safeQuoteArgument = (argument: Value): Value => {
   if (typeof argument === 'string') {
@@ -108,11 +124,7 @@ const safeQuoteArgument = (argument: Value): Value => {
 
 export const convertToCustomizationInfo = (xmlContent: string):
   CustomizationInfo => {
-  const parsedXmlValues = xmlParser.parse(xmlContent, {
-    attributeNamePrefix: ATTRIBUTE_PREFIX,
-    ignoreAttributes: false,
-    tagValueProcessor: val => he.decode(val),
-  })
+  const parsedXmlValues = xmlParser.parse(xmlContent, XML_PARSE_OPTIONS)
   const typeName = Object.keys(parsedXmlValues)[0]
   return { typeName, values: parsedXmlValues[typeName] }
 }
@@ -273,11 +285,40 @@ export default class SdfClient {
     }
   }
 
+  private static verifySuccessfulDeploy(data: Value): void {
+    if (!_.isArray(data)) {
+      log.warn('suitecloud deploy returned unexpected value: %o', data)
+      return
+    }
+
+    const featureDeployFailes = data
+      .filter(_.isString)
+      .filter(line => configureFeatureFailRegex.test(line))
+
+    if (featureDeployFailes.length === 0) return
+
+    log.warn('suitecloud deploy failed to configure the following features: %o', featureDeployFailes)
+    const errorIds = featureDeployFailes
+      .map(line => line.match(configureFeatureFailRegex)?.groups)
+      .filter(isDefined)
+      .map(groups => groups[FEATURE_ID])
+
+    const errorMessage = data
+      .filter(_.isString)
+      .filter(line => errorIds.some(id => (new RegExp(`\\b${id}\\b`)).test(line)))
+      .join(os.EOL)
+
+    throw new FeaturesDeployError(errorMessage, errorIds)
+  }
+
   private static verifySuccessfulAction(actionResult: ActionResult, commandName: string):
     void {
     if (!actionResult.isSuccess()) {
       log.error(`SDF command ${commandName} has failed.`)
       throw Error(ActionResultUtils.getErrorMessagesString(actionResult))
+    }
+    if (commandName === COMMANDS.DEPLOY_PROJECT) {
+      SdfClient.verifySuccessfulDeploy(actionResult.data)
     }
   }
 
@@ -390,7 +431,7 @@ export default class SdfClient {
   @SdfClient.logDecorator
   async getCustomObjects(typeNames: string[], query: NetsuiteQuery):
     Promise<GetCustomObjectsResult> {
-    if (typeNames.every(type => !query.isTypeMatch(type))) {
+    if (typeNames.concat(CONFIG_FEATURES).every(type => !query.isTypeMatch(type))) {
       return {
         elements: [],
         failedToFetchAllAtOnce: false,
@@ -425,6 +466,15 @@ export default class SdfClient {
           if (suiteAppId !== undefined) {
             elements.forEach(e => { e.values[APPLICATION_ID] = suiteAppId })
           }
+          if (suiteAppId === undefined && query.isTypeMatch(CONFIG_FEATURES)) {
+            // use existing project to import features object
+            const { typeName, values } = await this.getFeaturesObject(executor, projectName)
+            elements.push({
+              scriptId: typeName,
+              typeName,
+              values,
+            })
+          }
           await this.projectCleanup(projectName, authId)
 
           return { elements, failedToFetchAllAtOnce, failedTypes }
@@ -444,6 +494,25 @@ export default class SdfClient {
     const failedToFetchAllAtOnce = importResult.some(res => res.failedToFetchAllAtOnce)
 
     return { elements, failedToFetchAllAtOnce, failedTypes }
+  }
+
+  private async getFeaturesObject(
+    executor: CommandActionExecutor,
+    projectName: string,
+  ): Promise<CustomizationInfo> {
+    try {
+      await this.executeProjectAction(
+        COMMANDS.IMPORT_CONFIGURATION, { configurationid: ALL_FEATURES }, executor
+      )
+      const xmlContent = await readFile(SdfClient.getFeaturesXmlPath(projectName))
+      const featuresXml = xmlParser.parse(xmlContent.toString(), XML_PARSE_OPTIONS)
+
+      const feature = makeArray(featuresXml.features?.feature)
+      return { typeName: CONFIG_FEATURES, values: { feature } }
+    } catch (e) {
+      log.error('Attempt to import features object has failed with error: %o', e)
+      return { typeName: CONFIG_FEATURES, values: { feature: [] } }
+    }
   }
 
   private async importObjects(
@@ -783,6 +852,9 @@ export default class SdfClient {
     const objectsDirPath = SdfClient.getObjectsDirPath(project.projectName)
     const fileCabinetDirPath = SdfClient.getFileCabinetDirPath(project.projectName)
     await Promise.all(customizationInfos.map(async customizationInfo => {
+      if (customizationInfo.typeName === CONFIG_FEATURES) {
+        return SdfClient.addFeaturesObjectToProject(customizationInfo, project.projectName)
+      }
       if (isCustomTypeInfo(customizationInfo)) {
         return SdfClient.addCustomTypeInfoToProject(customizationInfo, objectsDirPath)
       }
@@ -835,6 +907,20 @@ export default class SdfClient {
     }
   }
 
+  private static async addFeaturesObjectToProject(
+    customizationInfo: CustomizationInfo,
+    projectName: string
+  ): Promise<void> {
+    const { feature } = customizationInfo.values
+    await writeFile(
+      SdfClient.getFeaturesXmlPath(projectName),
+      convertToXmlContent({
+        typeName: FEATURES_TAG,
+        values: { feature },
+      })
+    )
+  }
+
   private static async addFileInfoToProject(fileCustomizationInfo: FileCustomizationInfo,
     fileCabinetDirPath: string): Promise<void> {
     const attrsFilename = fileCustomizationInfo.path.slice(-1)[0] + ATTRIBUTES_FILE_SUFFIX
@@ -869,5 +955,14 @@ export default class SdfClient {
 
   private static getFileCabinetDirPath(projectName: string): string {
     return osPath.resolve(SdfClient.getProjectPath(projectName), SRC_DIR, FILE_CABINET_DIR)
+  }
+
+  private static getFeaturesXmlPath(projectName: string): string {
+    return osPath.resolve(
+      SdfClient.getProjectPath(projectName),
+      SRC_DIR,
+      ACCOUNT_CONFIGURATION_DIR,
+      FEATURES_XML
+    )
   }
 }

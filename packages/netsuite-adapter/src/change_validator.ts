@@ -30,6 +30,7 @@ import safeDeployValidator, { FetchByQueryFunc } from './change_validators/safe_
 import mappedListsIndexesValidator from './change_validators/mapped_lists_indexes'
 import configChangesValidator from './change_validators/config_changes'
 import suiteAppConfigElementsValidator from './change_validators/suiteapp_config_elements'
+import undeployableConfigFeaturesValidator from './change_validators/undeployable_config_features'
 import { validateDependsOnInvalidElement } from './change_validators/dependencies'
 import notYetSupportedValuesValidator from './change_validators/not_yet_supported_values'
 
@@ -49,6 +50,7 @@ const changeValidators: ChangeValidator[] = [
   notYetSupportedValuesValidator,
   configChangesValidator,
   suiteAppConfigElementsValidator,
+  undeployableConfigFeaturesValidator,
 ]
 
 const nonSuiteAppValidators: ChangeValidator[] = [

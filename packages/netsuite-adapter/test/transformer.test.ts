@@ -21,13 +21,14 @@ import _ from 'lodash'
 import { createInstanceElement, getLookUpName, toCustomizationInfo } from '../src/transformer'
 import {
   ENTITY_CUSTOM_FIELD, SCRIPT_ID,
-  EMAIL_TEMPLATE, NETSUITE, RECORDS_PATH, FILE, FILE_CABINET_PATH, FOLDER, PATH,
+  EMAIL_TEMPLATE, NETSUITE, RECORDS_PATH, FILE, FILE_CABINET_PATH, FOLDER, PATH, CONFIG_FEATURES,
 } from '../src/constants'
 import { convertToCustomTypeInfo, convertToXmlContent } from '../src/client/sdf_client'
 import { CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from '../src/client/types'
 import { isFileCustomizationInfo, isFolderCustomizationInfo } from '../src/client/utils'
 import { entitycustomfieldType } from '../src/autogen/types/custom_types/entitycustomfield'
 import { getFileCabinetTypes } from '../src/types/file_cabinet_types'
+import { featuresType } from '../src/types/configuration_types'
 import { customrecordtypeType } from '../src/autogen/types/custom_types/customrecordtype'
 import { emailtemplateType } from '../src/autogen/types/custom_types/emailtemplate'
 import { addressFormType } from '../src/autogen/types/custom_types/addressForm'
@@ -124,6 +125,7 @@ describe('Transformer', () => {
   const transactionForm = transactionFormType().type
   const workflow = workflowType().type
   const { file, folder } = getFileCabinetTypes()
+  const companyFeatures = featuresType()
 
   describe('createInstanceElement', () => {
     const transformCustomFieldRecord = (xmlContent: string): Promise<InstanceElement> => {
@@ -366,6 +368,31 @@ describe('Transformer', () => {
           filepath: `${NETSUITE}/${FILE_CABINET_PATH}/Templates/E-mail Templates/Inner EmailTemplates Folder/content.html`,
           content: Buffer.from('dummy file content'),
         }))
+      })
+    })
+
+    describe('configuration types', () => {
+      const featuresCustomizationInfo: CustomTypeInfo = {
+        typeName: CONFIG_FEATURES,
+        scriptId: CONFIG_FEATURES,
+        values: {
+          feature: [
+            { '@_label': 'test', id: 'TEST', status: 'ENABLED' },
+          ],
+        },
+      }
+      it('should create features instance correctly', async () => {
+        const result = await createInstanceElement(
+          featuresCustomizationInfo,
+          companyFeatures,
+          mockGetElemIdFunc
+        )
+        expect(result.elemID.getFullName()).toEqual(`netsuite.${CONFIG_FEATURES}.instance`)
+        expect(result.value).toEqual({
+          feature: [
+            { id: 'TEST', label: 'test', status: 'ENABLED' },
+          ],
+        })
       })
     })
   })

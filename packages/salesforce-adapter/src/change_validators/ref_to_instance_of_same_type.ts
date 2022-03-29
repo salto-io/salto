@@ -53,6 +53,14 @@ const changeValidator: ChangeValidator = async changes => {
           severity: 'Error' as SeverityLevel,
           message: 'This new instance cannot be deployed, as it contains a reference to another new instance. To successfully deploy both instances, please run this deploy, then another deploy to create the referencing instance.',
           detailedMessage: `New instance ${instance.elemID.getFullName()} cannot be deployed, as it contains a reference to another new instance ${dependentOnAdditionInstanceIDs.map(e => e.getFullName()).join(', ')}. To successfully deploy both instances, please run this deploy to create ${dependentOnAdditionInstanceIDs.map(e => e.getFullName()).join(', ')}, then another deploy to create ${instance.elemID.getFullName()}.`,
+          deployActions: {
+            postAction: {
+              title: 'Deploy skipped referencing instance',
+              subActions: [
+                'Initiate another deployment and deploy skipped referencing instance',
+              ],
+            },
+          },
         })
       }).filter(values.isDefined)
     })

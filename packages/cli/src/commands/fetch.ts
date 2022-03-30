@@ -69,7 +69,10 @@ const createFetchFromWorkspaceCommand = (
 ): FetchFunc => async (workspace, progressEmitter, accounts) => {
   let otherWorkspace: Workspace
   try {
-    otherWorkspace = await loadLocalWorkspace(otherWorkspacePath, [], false)
+    otherWorkspace = await loadLocalWorkspace({
+      path: otherWorkspacePath,
+      persistent: false,
+    })
   } catch (err) {
     throw new Error(`Failed to load source workspace: ${err.message ?? err}`)
   }

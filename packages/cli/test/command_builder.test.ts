@@ -230,7 +230,9 @@ describe('Command builder', () => {
         })
         it('should pass workspace path and config overrides to the workspace', () => {
           const expectedChanges = getConfigOverrideChanges(configOverrides)
-          expect(loadLocalWorkspace).toHaveBeenCalledWith('test_path', expectedChanges)
+          expect(loadLocalWorkspace).toHaveBeenCalledWith(
+            { path: 'test_path', configOverrides: expectedChanges }
+          )
         })
       })
       describe('when action is successful', () => {

@@ -22,6 +22,7 @@ import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl, rem
   configSource as cs, staticFiles, dirStore, WorkspaceComponents, errors, elementSource,
   COMMON_ENV_PREFIX, isValidEnvName, EnvironmentSource, EnvConfig, adaptersConfigSource } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { localDirectoryStore, createExtensionFileFilter } from './dir_store'
 import { CONFIG_DIR_NAME, getConfigDir, getLocalStoragePath } from '../app_config'
 import { localState } from './state'
@@ -35,6 +36,7 @@ const { awu } = collections.asynciterable
 const { configSource } = cs
 const { FILE_EXTENSION, naclFilesSource, ENVS_PREFIX } = nacl
 const { buildStaticFilesSource } = staticFiles
+const log = logger(module)
 
 export const STATES_DIR_NAME = 'states'
 export const CREDENTIALS_CONFIG_PATH = 'credentials'
@@ -209,9 +211,19 @@ const getAdapterConfigsPerAccount = async (envs: EnvConfig[]): Promise<ObjectTyp
   return Object.values(configTypesByAccount).flat()
 }
 
-export const loadLocalWorkspace = async (
-  lookupDir: string, configOverrides?: DetailedChange[], persistent = true
-): Promise<Workspace> => {
+type LoadLocalWorkspaceArgs = {
+  path: string
+  configOverrides?: DetailedChange[]
+  persistent?: boolean
+  credentialSource?: cs.ConfigSource
+}
+
+const loadLocalWorkspaceImpl = async ({
+  path: lookupDir,
+  configOverrides,
+  persistent = true,
+  credentialSource,
+}: LoadLocalWorkspaceArgs): Promise<Workspace> => {
   const baseDir = await locateWorkspaceRoot(path.resolve(lookupDir))
   if (_.isUndefined(baseDir)) {
     throw new NotAWorkspaceError()
@@ -229,7 +241,7 @@ export const loadLocalWorkspace = async (
     configOverrides,
   )
   const envNames = envs.map(e => e.name)
-  const credentials = credentialsSource(workspaceConfig.localStorage)
+  const credentials = credentialSource ?? credentialsSource(workspaceConfig.localStorage)
 
   const elemSources = await loadLocalElementsSources(
     baseDir,
@@ -265,14 +277,35 @@ export const loadLocalWorkspace = async (
       }
       return ws.demoteAll()
     },
-    clear: async (args: Omit<WorkspaceComponents, 'accountConfig'>) => {
-      await ws.clear(args)
+    clear: async (clearArgs: Omit<WorkspaceComponents, 'accountConfig'>) => {
+      await ws.clear(clearArgs)
       const envsDir = path.join(baseDir, ENVS_PREFIX)
       if (await isEmptyDir.notFoundAsUndefined(envsDir)) {
         await rm(envsDir)
       }
     },
   }
+}
+
+// As a transitionary step, we support both a string input and an argument object
+export function loadLocalWorkspace(args: LoadLocalWorkspaceArgs): Promise<Workspace>
+// @deprecated
+export function loadLocalWorkspace(
+  lookupDir: string,
+  configOverrides?: DetailedChange[],
+  persistent?: boolean,
+): Promise<Workspace>
+
+export async function loadLocalWorkspace(
+  args: string | LoadLocalWorkspaceArgs,
+  configOverrides?: DetailedChange[],
+  persistent = true,
+): Promise<Workspace> {
+  if (_.isString(args)) {
+    log.warn('Using deprecated argument format for loadLocalWorkspace, this type of call will be deprecated soon. please pass an arguments object instead')
+    return loadLocalWorkspaceImpl({ path: args, configOverrides, persistent })
+  }
+  return loadLocalWorkspaceImpl(args)
 }
 
 export const initLocalWorkspace = async (

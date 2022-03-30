@@ -906,7 +906,9 @@ describe('fetch command', () => {
             },
             workspace,
           })
-          expect(mockLoadLocalWorkspace).toHaveBeenCalledWith(sourcePath, [], false)
+          expect(mockLoadLocalWorkspace).toHaveBeenCalledWith(
+            { path: sourcePath, persistent: false }
+          )
           expect(mockFetchFromWorkspace).toHaveBeenCalled()
           const usedArgs = mockFetchFromWorkspace.mock.calls[0][0]
           expect(usedArgs.workspace).toEqual(workspace)
@@ -938,7 +940,9 @@ describe('fetch command', () => {
             },
             workspace,
           })
-          expect(mockLoadLocalWorkspace).toHaveBeenCalledWith(sourcePath, [], false)
+          expect(mockLoadLocalWorkspace).toHaveBeenCalledWith(
+            { path: sourcePath, persistent: false }
+          )
           expect(mockFetchFromWorkspace).toHaveBeenCalled()
           const usedArgs = mockFetchFromWorkspace.mock.calls[0][0]
           expect(usedArgs.workspace).toEqual(workspace)

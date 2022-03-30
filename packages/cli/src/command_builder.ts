@@ -219,10 +219,10 @@ export const createWorkspaceCommand = <T>(
   const { properties, action, extraTelemetryTags } = def
 
   const workspaceAction: CommandDefAction<T & ConfigOverrideArg> = async args => {
-    const workspace = await loadLocalWorkspace(
-      args.workspacePath,
-      getConfigOverrideChanges(args.input),
-    )
+    const workspace = await loadLocalWorkspace({
+      path: args.workspacePath,
+      configOverrides: getConfigOverrideChanges(args.input),
+    })
 
     args.cliTelemetry.setTags({
       ...getWorkspaceTelemetryTags(workspace),

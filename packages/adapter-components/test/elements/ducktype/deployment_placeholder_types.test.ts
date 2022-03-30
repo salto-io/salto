@@ -98,7 +98,7 @@ describe('ducktype deployment functions', () => {
         },
       })
       expect(instanceForDeploy).toBeDefined()
-      expect(instanceForDeploy.refType.value).toEqual(expectedType)
+      expect(instanceForDeploy.refType.type).toEqual(expectedType)
     })
     it('should replace and restore correctly', () => {
       const originalType = instance.clone().refType
@@ -111,7 +111,7 @@ describe('ducktype deployment functions', () => {
         },
       })
       expect(instanceForDeploy).toBeDefined()
-      expect(instanceForDeploy.refType.value).toEqual(expectedType)
+      expect(instanceForDeploy.refType.type).toEqual(expectedType)
       const changes = restoreInstanceTypeFromDeploy({
         appliedChanges: [toChange({ after: instanceForDeploy.clone() })],
         originalInstanceChanges: originalChanges,
@@ -138,7 +138,7 @@ describe('ducktype deployment functions', () => {
       expect(changes).toHaveLength(1)
       const [change] = changes as Change<InstanceElement>[]
       expect(change.action).toEqual('add')
-      expect(getChangeData(change).refType.value).toEqual(objType)
+      expect(getChangeData(change).refType.type).toEqual(objType)
     })
   })
 })

@@ -21,7 +21,6 @@ import {
   isVariable, isMapType, MapType, isContainerType, createRefToElmWithValue, PlaceholderObjectType,
 } from '../src/elements'
 import { ElemID, INSTANCE_ANNOTATIONS } from '../src/element_id'
-import { TypeReference } from '../src/values'
 
 describe('Test elements.ts', () => {
   /**   ElemIDs   * */
@@ -48,9 +47,9 @@ describe('Test elements.ts', () => {
     elemID: otID,
     fields: {
       // eslint-disable-next-line camelcase
-      num_field: { refType: new TypeReference(primNum.elemID, primNum) },
+      num_field: { refType: primNum },
       // eslint-disable-next-line camelcase
-      str_field: { refType: new TypeReference(primStr.elemID, primStr) },
+      str_field: { refType: primStr },
     },
     annotationRefsOrTypes: {},
     annotations: {},
@@ -812,7 +811,7 @@ describe('Test elements.ts', () => {
       const obj = new ObjectType({ elemID: new ElemID('a', 'elemID') })
       const objRef = createRefToElmWithValue(obj)
       expect(objRef.elemID).toEqual(obj.elemID)
-      expect(objRef.value).toEqual(obj)
+      expect(objRef.type).toEqual(obj)
     })
   })
 

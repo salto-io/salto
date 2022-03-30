@@ -78,6 +78,27 @@ export class StaticFile {
   }
 }
 
+const getResolvedValue = async (
+  elemID: ElemID,
+  elementsSource?: ReadOnlyElementsSource,
+  resolvedValue?: Value
+): Promise<Value> => {
+  if (resolvedValue === undefined && elementsSource === undefined) {
+    throw new Error(
+      `Can not resolve value of reference with ElemID ${elemID.getFullName()} `
+      + 'without elementsSource because value does not exist'
+    )
+  }
+  const value = (await elementsSource?.get(elemID)) ?? resolvedValue
+  // When there's no value in the ElementSource & in the Ref
+  // Fallback to a placeholder Type. This resembles the behavior
+  // before the RefType change.
+  if (value === undefined) {
+    return new PlaceholderObjectType({ elemID })
+  }
+  return value
+}
+
 export class ReferenceExpression {
   constructor(
     public readonly elemID: ElemID,
@@ -111,22 +132,7 @@ export class ReferenceExpression {
   }
 
   async getResolvedValue(elementsSource?: ReadOnlyElementsSource): Promise<Value> {
-    if (this.resValue === undefined && elementsSource === undefined) {
-      throw new Error(
-        `Can not resolve value of reference with ElemID ${this.elemID.getFullName()} `
-        + 'without elementsSource because value does not exist'
-      )
-    }
-    const value = (await elementsSource?.get(this.elemID)) ?? this.value
-    // When there's no value in the ElementSource & in the Ref
-    // Fallback to a placeholder Type. This resembles the behavior
-    // before the RefType change.
-    if (value === undefined) {
-      return new PlaceholderObjectType({
-        elemID: this.elemID,
-      })
-    }
-    return value
+    return getResolvedValue(this.elemID, elementsSource, this.value)
   }
 }
 
@@ -146,12 +152,11 @@ export class VariableExpression extends ReferenceExpression {
   }
 }
 
-export class TypeReference extends ReferenceExpression {
+export class TypeReference {
   constructor(
     public readonly elemID: ElemID,
-    public readonly type?: TypeElement,
+    public type: TypeElement | undefined = undefined,
   ) {
-    super(elemID, type)
     if (!elemID.isTopLevel()) {
       throw new Error(
         `Invalid id for type reference: ${elemID.getFullName()}. Type reference must be top level.`
@@ -160,7 +165,7 @@ export class TypeReference extends ReferenceExpression {
   }
 
   async getResolvedValue(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
-    return super.getResolvedValue(elementsSource)
+    return getResolvedValue(this.elemID, elementsSource, this.type)
   }
 }
 

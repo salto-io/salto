@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, ElemID, Element, ObjectType, ReferenceExpression, InstanceElement } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ElemID, Element, ObjectType, InstanceElement } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { FileProperties } from 'jsforce-types'
 import { mockFileProperties, mockQueryResult } from '../../connection'
@@ -62,7 +62,7 @@ describe('data instances author information test', () => {
     ({ connection, client } = mockClient())
     testInst = new InstanceElement(
       'Custom__c',
-      new ReferenceExpression(testType.elemID, testType),
+      testType,
       { CreatedDate: 'created_date',
         CreatedById: 'creator_id',
         LastModifiedDate: 'changed_date',

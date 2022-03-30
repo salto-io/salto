@@ -20,7 +20,7 @@ import { transformElement, TransformFunc, transformValues, applyFunctionToChange
 import { CORE_ANNOTATIONS, Element, isInstanceElement, isType, TypeElement, getField,
   DetailedChange, isRemovalChange, ElemID, isObjectType, ObjectType, Values,
   isRemovalOrModificationChange, isAdditionOrModificationChange, isElement, isField,
-  ReadOnlyElementsSource, ReferenceMap, isPrimitiveType, PrimitiveType, InstanceElement, Field, isModificationChange, ModificationChange, ReferenceExpression, isReferenceExpression, MapType, getFieldType, isMapType } from '@salto-io/adapter-api'
+  ReadOnlyElementsSource, ReferenceMap, isPrimitiveType, PrimitiveType, InstanceElement, Field, isModificationChange, ModificationChange, ReferenceExpression, MapType, getFieldType, isMapType, isTypeReference } from '@salto-io/adapter-api'
 import { mergeElements, MergeResult } from '../merger'
 import { State } from './state'
 import { createAddChange, createRemoveChange } from './nacl_files/multi_env/projections'
@@ -312,8 +312,8 @@ const isAnnotationTypeChange = (
 ): change is DetailedChange & ModificationChange<ReferenceExpression> => (
   isModificationChange(change)
   && change.id.isAnnotationTypeID()
-  && (isReferenceExpression(change.data.before))
-  && (isReferenceExpression(change.data.after))
+  && (isTypeReference(change.data.before))
+  && (isTypeReference(change.data.after))
 )
 
 type EffectOnHidden = 'hide' | 'unHide' | 'none'

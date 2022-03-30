@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { CORE_ANNOTATIONS, ElemID, Element, ObjectType, PrimitiveType, PrimitiveTypes, ReferenceExpression } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ElemID, Element, ObjectType, PrimitiveType, PrimitiveTypes } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { FileProperties } from 'jsforce-types'
 import { mockFileProperties } from '../../connection'
@@ -68,7 +68,7 @@ describe('custom objects author information test', () => {
     elemID: new ElemID('salesforce', 'otherName'),
     annotations: { metadataType: CUSTOM_OBJECT, [API_NAME]: 'otherName' },
     fields: {
-      StringField__c: { refType: new ReferenceExpression(primNum.elemID, primNum) },
+      StringField__c: { refType: primNum },
     },
   })
   beforeEach(() => {
@@ -78,7 +78,7 @@ describe('custom objects author information test', () => {
       elemID: new ElemID('salesforce', 'Custom__c'),
       annotations: { metadataType: CUSTOM_OBJECT, [API_NAME]: 'Custom__c' },
       fields: {
-        StringField__c: { refType: new ReferenceExpression(primNum.elemID, primNum) },
+        StringField__c: { refType: primNum },
       },
     })
   })

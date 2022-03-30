@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 /* eslint-disable camelcase */
-import { ObjectType, ElemID, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, PrimitiveType, PrimitiveTypes, MapType, ListType, getRestriction, createRestriction, VariableExpression, Variable, StaticFile, createRefToElmWithValue } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, PrimitiveType, PrimitiveTypes, MapType, ListType, getRestriction, createRestriction, VariableExpression, Variable, StaticFile, createRefToElmWithValue, TypeReference } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import {
   validateElements, InvalidValueValidationError, CircularReferenceValidationError,
@@ -2074,7 +2074,7 @@ describe('Elements validation', () => {
     it('should throw an error when an instance type is not found', async () => {
       const instance = new InstanceElement(
         'name',
-        new ReferenceExpression(new ElemID('instance', 'notExists')),
+        new TypeReference(new ElemID('instance', 'notExists')),
       )
       const errors = await validateElements(
         [instance],

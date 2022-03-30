@@ -284,7 +284,7 @@ jira {
           fieldTypeOverrides = [
             {
               fieldName = "gadgets"
-              fieldType = "DashboardGadget"
+              fieldType = "List<DashboardGadget>"
             },
             {
               fieldName = "layout"

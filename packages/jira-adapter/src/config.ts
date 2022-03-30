@@ -163,7 +163,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     ],
     transformation: {
       fieldTypeOverrides: [
-        { fieldName: 'gadgets', fieldType: 'DashboardGadget' },
+        { fieldName: 'gadgets', fieldType: 'List<DashboardGadget>' },
         { fieldName: 'layout', fieldType: 'string' },
       ],
       fieldsToHide: [

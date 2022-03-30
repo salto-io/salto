@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, DeployResult, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isStaticFile } from '@salto-io/adapter-api'
+import { Change, DeployResult, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isStaticFile, SaltoError } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { chunks, promises, values } from '@salto-io/lowerdash'
@@ -116,7 +116,8 @@ const DEPLOY_CHUNK_SIZE = 50
 
 
 export type SuiteAppFileCabinetOperations = {
-  importFileCabinet: (query: NetsuiteQuery) => Promise<ImportFileCabinetResult>
+  importFileCabinet: (query: NetsuiteQuery) =>
+    Promise<ImportFileCabinetResult & { errors: SaltoError[] }>
   getPathToIdMap: () => Promise<Record<string, number>>
   deploy: (changes: ReadonlyArray<Change<InstanceElement>>, type: DeployType)
     => Promise<DeployResult>
@@ -170,7 +171,14 @@ SuiteAppFileCabinetOperations => {
   let queryFoldersResults: FolderResult[]
   let queryFilesResults: FileResult[]
   let pathToIdResults: Record<string, number>
+  const errors: Record<string, SaltoError> = {}
 
+  const addWarning = (errorType: string, message: string): void => {
+    if (errors[errorType] === undefined) {
+      log.debug('Adding warning of type \'%s\': %s', errorType, message)
+      errors[errorType] = { severity: 'Warning', message }
+    }
+  }
 
   const queryFolders = async (): Promise<FolderResult[]> => {
     if (queryFoldersResults === undefined) {
@@ -178,13 +186,15 @@ SuiteAppFileCabinetOperations => {
       FROM mediaitemfolder ORDER BY id ASC`)
 
       if (foldersResults === undefined) {
-        throw new Error('Failed to list folders')
+        addWarning('listFoldersError', 'Failed to list folders due to SuiteQL Query Error')
+        return []
       }
 
       const ajv = new Ajv({ allErrors: true, strict: false })
       if (!ajv.validate<FolderResult[]>(FOLDERS_SCHEMA, foldersResults)) {
         log.error(`Got invalid results from listing folders: ${ajv.errorsText()}`)
-        throw new Error('Failed to list folders')
+        addWarning('listFoldersInvalidResultsError', 'Failed to list folders due to Invalid SuiteQL Results')
+        return []
       }
       queryFoldersResults = foldersResults
     }
@@ -199,13 +209,15 @@ Promise<FileResult[]> => {
     FROM file ORDER BY id ASC`)
 
       if (filesResults === undefined) {
-        throw new Error('Failed to list files')
+        addWarning('listFilesError', 'Failed to list files due to SuiteQL Query Error')
+        return []
       }
 
       const ajv = new Ajv({ allErrors: true, strict: false })
       if (!ajv.validate<FileResult[]>(FILES_SCHEMA, filesResults)) {
         log.error(`Got invalid results from listing files: ${ajv.errorsText()}`)
-        throw new Error('Failed to list files')
+        addWarning('listFilesInvalidResultsError', 'Failed to list files due to Invalid SuiteQL Results')
+        return []
       }
 
       queryFilesResults = filesResults
@@ -222,9 +234,11 @@ Promise<FileResult[]> => {
     return [...getFullPath(idToFolder[folder.parent], idToFolder), folder.name]
   }
 
-  const importFileCabinet = async (query: NetsuiteQuery): Promise<ImportFileCabinetResult> => {
+  const importFileCabinet = async (
+    query: NetsuiteQuery
+  ): Promise<ImportFileCabinetResult & { errors: SaltoError[] }> => {
     if (!query.areSomeFilesMatch()) {
-      return { elements: [], failedPaths: { lockedError: [], otherError: [] } }
+      return { elements: [], failedPaths: { lockedError: [], otherError: [] }, errors: [] }
     }
     const [filesResults, foldersResults] = await Promise.all([
       queryFiles(),
@@ -284,11 +298,12 @@ Promise<FileResult[]> => {
 
           const results = await suiteAppClient.readFiles(fileChunk.map(f => parseInt(f.id, 10)))
           if (results === undefined) {
-            throw new Error('Request for reading files from the file cabinet failed')
+            log.error('Request for reading files from the file cabinet failed')
+            return []
           }
           log.debug(`Finished Reading files chunk ${i + 1}/${fileChunks.length} with ${fileChunk.length} files`)
 
-          return results && Promise.all(results.map(async (content, index) => {
+          return Promise.all(results.map(async (content, index) => {
             if (!(content instanceof ReadFileEncodingError)) {
               return content
             }
@@ -335,6 +350,7 @@ Promise<FileResult[]> => {
         otherError: failedPaths.map(fileCabinetPath => `/${fileCabinetPath.join('/')}`),
         lockedError: lockedPaths.map(fileCabinetPath => `/${fileCabinetPath.join('/')}`),
       },
+      errors: Object.values(errors),
     }
   }
 

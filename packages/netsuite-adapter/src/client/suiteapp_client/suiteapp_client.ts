@@ -35,7 +35,7 @@ import { CallsLimiter, ConfigRecord, ConfigRecordData, GetConfigResult, CONFIG_R
   SuiteAppClientParameters, SuiteQLResults, SUITE_QL_RESULTS_SCHEMA, SystemInformation,
   SYSTEM_INFORMATION_SCHEME, FileCabinetInstanceDetails, ConfigFieldDefinition, CONFIG_FIELD_DEFINITION_SCHEMA, SetConfigType, SET_CONFIG_RESULT_SCHEMA, SetConfigRecordsValuesResult, SetConfigResult } from './types'
 import { SuiteAppCredentials, toUrlAccountId } from '../credentials'
-import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
+import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../types'
 import { DEFAULT_CONCURRENCY } from '../../config'
 import { CONSUMER_KEY, CONSUMER_SECRET } from './constants'
 import SoapClient from './soap_client/soap_client'
@@ -201,6 +201,10 @@ export default class SuiteAppClient {
         results
       )) {
         log.error(`readFiles failed. Got invalid results: ${this.ajv.errorsText()}`)
+        this.addWarning(
+          'readFilesInvalidResultsError',
+          'Failed to read some files due to invalid result from Salto SuiteApp'
+        )
         return undefined
       }
 
@@ -237,6 +241,10 @@ export default class SuiteAppClient {
 
       if (!this.ajv.validate<GetConfigResult>(GET_CONFIG_RESULT_SCHEMA, result)) {
         log.error('getConfigRecords failed. Got invalid results: %s', this.ajv.errorsText())
+        this.addWarning(
+          'getConfigRecordsInvalidResultsError',
+          'Failed to fetch Settings types due to invalid result from Salto SuiteApp'
+        )
         return []
       }
 
@@ -256,6 +264,10 @@ export default class SuiteAppClient {
         const { configType, fieldsDef, data } = configRecord
         if (!this.ajv.validate<ConfigRecordData>(CONFIG_RECORD_DATA_SCHEMA, data)) {
           log.error('failed parsing ConfigRecordData of type \'%s\': %s', configType, this.ajv.errorsText())
+          this.addWarning(
+            `configRecordInvalidResultError-${SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES[configType]}`,
+            `Failed to fetch '${SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES[configType]}' Settings type due to invalid result from Salto SuiteApp`
+          )
           return undefined
         }
 
@@ -270,7 +282,11 @@ export default class SuiteAppClient {
         return { configType, data, fieldsDef: validatedFields }
       }).filter(isDefined)
     } catch (e) {
-      log.error('getConfigRecords failed. received error: %s', e.message)
+      this.addWarning(
+        `getConfigError-${e.message}`,
+        `Failed to fetch Settings types due to a Salto SuiteApp Error: ${e.message}`
+      )
+      log.error(e)
       return []
     }
   }
@@ -339,7 +355,8 @@ export default class SuiteAppClient {
     }
     const response = await this.safeAxiosPost(url.href, { q: query }, headers)
     if (!this.ajv.validate<SuiteQLResults>(SUITE_QL_RESULTS_SCHEMA, response.data)) {
-      throw new Error(`Got invalid results from the SuiteQL query: ${this.ajv.errorsText()}`)
+      log.error(`Got invalid results from the SuiteQL query: ${this.ajv.errorsText()}`)
+      throw new Error('Invalid SuiteQL Results')
     }
 
     return response.data
@@ -397,11 +414,13 @@ export default class SuiteAppClient {
     )
 
     if (!this.ajv.validate<RestletResults>(RESTLET_RESULTS_SCHEMA, response.data)) {
-      throw new Error(`Got invalid results from a Restlet request: ${this.ajv.errorsText()}`)
+      log.error(`Got invalid results from a Restlet request: ${this.ajv.errorsText()}`)
+      throw new Error('Salto SuiteApp Invalid Result')
     }
 
     if (isError(response.data)) {
-      throw new Error(`Restlet request failed. Message: ${response.data.message}${response.data.error ? `, error: ${safeJsonStringify(response.data.error)}` : ''}`)
+      log.error(`Restlet request failed. Message: ${response.data.message}${response.data.error ? `, error: ${safeJsonStringify(response.data.error)}` : ''}`)
+      throw new Error(`Salto SuiteApp Error - ${response.data.message}`)
     }
 
     return response.data.results
@@ -424,7 +443,8 @@ export default class SuiteAppClient {
     })
 
     if (!this.ajv.validate<SavedSearchResults>(SAVED_SEARCH_RESULTS_SCHEMA, results)) {
-      throw new Error(`Got invalid results from the saved search query: ${this.ajv.errorsText()}`)
+      log.error(`Got invalid results from the saved search query: ${this.ajv.errorsText()}`)
+      throw new Error('Salto SuiteApp Invalid Result')
     }
 
     return results

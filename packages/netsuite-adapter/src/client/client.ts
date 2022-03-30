@@ -49,6 +49,7 @@ export default class NetsuiteClient {
   private sdfClient: SdfClient
   private suiteAppClient?: SuiteAppClient
   private suiteAppFileCabinet?: SuiteAppFileCabinetOperations
+  private errors: SaltoError[]
   public readonly url: URL
 
   constructor(sdfClient: SdfClient, suiteAppClient?: SuiteAppClient) {
@@ -60,7 +61,7 @@ export default class NetsuiteClient {
       this.suiteAppFileCabinet = createSuiteAppFileCabinetOperations(this.suiteAppClient)
       log.debug('Salto SuiteApp configured')
     }
-
+    this.errors = []
     this.url = new URL(`https://${toUrlAccountId(this.sdfClient.getCredentials().accountId)}.app.netsuite.com`)
   }
 
@@ -116,7 +117,13 @@ export default class NetsuiteClient {
   async importFileCabinetContent(query: NetsuiteQuery):
     Promise<ImportFileCabinetResult> {
     if (this.suiteAppFileCabinet !== undefined) {
-      return this.suiteAppFileCabinet.importFileCabinet(query)
+      const {
+        elements,
+        failedPaths,
+        errors,
+      } = await this.suiteAppFileCabinet.importFileCabinet(query)
+      this.errors.push(...errors)
+      return { elements, failedPaths }
     }
 
     return this.sdfClient.importFileCabinetContent(query)
@@ -292,7 +299,8 @@ export default class NetsuiteClient {
   }
 
   public getErrors(): SaltoError[] {
-    return this.sdfClient.getErrors()
+    return this.errors
+      .concat(this.sdfClient.getErrors())
       .concat(this.suiteAppClient?.getErrors() ?? [])
   }
 }

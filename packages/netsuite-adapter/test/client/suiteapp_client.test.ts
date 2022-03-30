@@ -479,7 +479,7 @@ describe('SuiteAppClient', () => {
           status: 'error', message: 'error', error: new Error('error'),
         })
         expect(await client.setConfigRecordsValues([])).toEqual({
-          errorMessage: 'Restlet request failed. Message: error, error: {}',
+          errorMessage: 'Salto SuiteApp Error - error',
         })
       })
       it('should return error on invalid result', async () => {

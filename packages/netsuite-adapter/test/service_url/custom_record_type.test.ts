@@ -55,8 +55,9 @@ describe('setCustomRecordTypesUrls', () => {
     expect(notFoundElement.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
   })
 
-  it('invalid results should throw an error', async () => {
+  it('should not set url if received invalid results', async () => {
     runSuiteQlMock.mockResolvedValue([{ scriptid: 'someScriptID' }])
-    await expect(setServiceUrl(elements, client)).rejects.toThrow()
+    await setServiceUrl(elements, client)
+    expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
   })
 })

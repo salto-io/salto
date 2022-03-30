@@ -27,7 +27,8 @@ const getScriptIdToInternalId = async (
 ): Promise<Record<string, number>> => {
   const results = await client.runSuiteQL(query)
   if (!areQueryResultsValid(results)) {
-    throw new Error('Got invalid results from SuiteQL query')
+    log.debug('getScriptIdToInternalId returning empty record object')
+    return {}
   }
 
   return Object.fromEntries(

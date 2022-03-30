@@ -329,7 +329,7 @@ describe('suiteapp_file_cabinet', () => {
       expect(suiteAppClient.runSuiteQL).not.toHaveBeenCalled()
     })
 
-    it('throw an error when files query fails', async () => {
+    it('return an error when files query fails', async () => {
       mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
         if (suiteQlQuery.includes('FROM file')) {
           return undefined
@@ -341,11 +341,17 @@ describe('suiteapp_file_cabinet', () => {
         throw new Error(`Unexpected query: ${suiteQlQuery}`)
       })
 
-      await expect(createSuiteAppFileCabinetOperations(suiteAppClient)
-        .importFileCabinet(query)).rejects.toThrow()
+      expect(await createSuiteAppFileCabinetOperations(suiteAppClient).importFileCabinet(query))
+        .toEqual({
+          elements: expectedResults.filter(res => res.typeName === 'folder'),
+          errors: [
+            { message: 'Failed to list files due to SuiteQL Query Error', severity: 'Warning' },
+          ],
+          failedPaths: { lockedError: [], otherError: [] },
+        })
     })
 
-    it('throw an error when files query returns invalid results', async () => {
+    it('return an error when files query returns invalid results', async () => {
       mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
         if (suiteQlQuery.includes('FROM file')) {
           return [{ invalid: 1 }]
@@ -357,14 +363,27 @@ describe('suiteapp_file_cabinet', () => {
         throw new Error(`Unexpected query: ${suiteQlQuery}`)
       })
 
-      await expect(createSuiteAppFileCabinetOperations(suiteAppClient)
-        .importFileCabinet(query)).rejects.toThrow()
+      expect(await createSuiteAppFileCabinetOperations(suiteAppClient).importFileCabinet(query))
+        .toEqual({
+          elements: expectedResults.filter(res => res.typeName === 'folder'),
+          errors: [
+            { message: 'Failed to list files due to Invalid SuiteQL Results', severity: 'Warning' },
+          ],
+          failedPaths: { lockedError: [], otherError: [] },
+        })
     })
 
-    it('throw an error when readFiles failed', async () => {
+    it('omit elements when readFiles failed', async () => {
       mockSuiteAppClient.readFiles.mockResolvedValue(undefined)
-      await expect(createSuiteAppFileCabinetOperations(suiteAppClient)
-        .importFileCabinet(query)).rejects.toThrow()
+      expect(await createSuiteAppFileCabinetOperations(suiteAppClient).importFileCabinet(query))
+        .toEqual({
+          elements: expectedResults.filter(res => res.fileContent === undefined),
+          errors: [],
+          failedPaths: {
+            lockedError: [],
+            otherError: ['/folder5/folder3/file1', '/folder5/folder4/file2'],
+          },
+        })
     })
 
     it('throw an error when folders query fails', async () => {

@@ -140,7 +140,7 @@ describe('Adapter', () => {
         failedPaths: { lockedError: [], otherError: [] },
       })
 
-    suiteAppImportFileCabinetMock.mockResolvedValue({ elements: [], failedPaths: [] })
+    suiteAppImportFileCabinetMock.mockResolvedValue({ elements: [], failedPaths: [], errors: [] })
   })
 
   describe('fetch', () => {
@@ -938,6 +938,11 @@ describe('Adapter', () => {
       expect(getChangedObjectsMock).not.toHaveBeenCalled()
     })
     it('should return fetch errors', async () => {
+      suiteAppImportFileCabinetMock.mockResolvedValue({
+        elements: [],
+        failedPaths: [],
+        errors: [{ severity: 'Warning', message: 'file cabinet error' }],
+      })
       const suiteAppClient = {
         getSystemInformation: getSystemInformationMock,
         getNetsuiteWsdl: () => undefined,
@@ -954,7 +959,10 @@ describe('Adapter', () => {
       })
 
       const { errors } = await nsAdapter.fetch(mockFetchOpts)
-      expect(errors).toEqual([{ severity: 'Warning', message: 'fetch error' }])
+      expect(errors).toEqual([
+        { severity: 'Warning', message: 'file cabinet error' },
+        { severity: 'Warning', message: 'fetch error' },
+      ])
     })
 
     describe('getChangedObjects', () => {

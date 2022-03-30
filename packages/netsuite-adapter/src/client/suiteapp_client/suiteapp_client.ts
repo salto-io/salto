@@ -46,6 +46,7 @@ const { isDefined } = values
 const { DEFAULT_RETRY_OPTS, createRetryOptions } = clientUtils
 
 export const PAGE_SIZE = 1000
+const AXIOS_TIMEOUT = 1000 * 60 * 12 // 12 minutes timeout
 
 const log = logger(module)
 
@@ -99,7 +100,7 @@ export default class SuiteAppClient {
     this.ajv = new Ajv({ allErrors: true, strict: false })
     this.soapClient = new SoapClient(this.credentials, this.callsLimiter)
 
-    this.axiosClient = axios.create()
+    this.axiosClient = axios.create({ timeout: AXIOS_TIMEOUT })
     axiosRetry(this.axiosClient, createRetryOptions(DEFAULT_RETRY_OPTS))
 
     this.versionFeatures = undefined
@@ -306,8 +307,8 @@ export default class SuiteAppClient {
         'Received error from SuiteApp request to %s (postParams: %s) with status %s: %s',
         href,
         data,
-        e.response.status,
-        safeJsonStringify(e.response.data, undefined, 2)
+        e.response?.status ?? e.code,
+        safeJsonStringify(e.response?.data ?? e.message, undefined, 2)
       )
       if (UNAUTHORIZED_STATUSES.includes(e.response?.status)) {
         throw new InvalidSuiteAppCredentialsError()

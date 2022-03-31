@@ -57,10 +57,13 @@ describe('adapter', () => {
     getElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string): ElemID =>
       new ElemID(adapterName, name)
 
+    const config = createConfigInstance(DEFAULT_CONFIG)
+    config.value.client.usePrivateAPI = false
+
     adapter = adapterCreator.operations({
       elementsSource,
       credentials: createCredentialsInstance({ baseUrl: 'http:/jira.net', user: 'u', token: 't' }),
-      config: createConfigInstance(DEFAULT_CONFIG),
+      config,
       getElemIdFunc,
     })
   })

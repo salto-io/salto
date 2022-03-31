@@ -15,7 +15,7 @@
 */
 import { AdditionChange, Change, getChangeData, getDeepInnerType, InstanceElement, isAdditionChange, isObjectType, isRemovalChange, ModificationChange, toChange, Values } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { resolveValues, safeJsonStringify } from '@salto-io/adapter-utils'
+import { resolveValues } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
@@ -23,7 +23,7 @@ import { JiraConfig } from '../../config'
 import JiraClient from '../../client/client'
 import { deployWithJspEndpoints } from '../../deployment/jsp_deployment'
 import { getLookUpName } from '../../reference_mapping'
-import { getFilledJspUrls } from '../../utils'
+import { createSchemeGuard, getFilledJspUrls } from '../../utils'
 import { LEVEL_MEMBER_TYPE_NAME } from '../../constants'
 
 const log = logger(module)
@@ -52,14 +52,7 @@ const MEMBER_SCHEME = Joi.object({
   }).unknown(true).required(),
 }).unknown(true).required()
 
-const isMember = (value: unknown): value is Member => {
-  const { error } = MEMBER_SCHEME.validate(value)
-  if (error !== undefined) {
-    log.error(`Received an invalid member: ${error.message}, ${safeJsonStringify(value)}`)
-    return false
-  }
-  return true
-}
+const isMember = createSchemeGuard<Member>(MEMBER_SCHEME, 'Received an invalid member')
 
 const getMemberRequestValues = (member: Values, securityLevel: InstanceElement): Values => {
   if (!isMember(member)) {

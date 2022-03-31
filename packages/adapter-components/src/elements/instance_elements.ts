@@ -63,6 +63,16 @@ export const generateInstanceNameFromConfig = (
   return getInstanceName(values, idFields)
 }
 
+export const removeNullValues = async (
+  values: Values,
+  type: ObjectType
+): Promise<Values> =>
+  await transformValues({
+    values,
+    type,
+    transformFunc: ({ value }) => (value === null ? undefined : value),
+    strict: false,
+  }) ?? {}
 
 export const createServiceIds = (
   entry: Values, serviceIdField: string, typeId: ElemID
@@ -154,13 +164,7 @@ export const toBasicInstance = async ({
   return new InstanceElement(
     type.isSettings ? ElemID.CONFIG_NAME : naclName,
     type,
-    await transformValues({
-      values: entryData,
-      type,
-      // omit nulls from returned value
-      transformFunc: ({ value }) => (value === null ? undefined : value),
-      strict: false,
-    }),
+    entryData !== undefined ? await removeNullValues(entryData, type) : {},
     filePath,
     parent
       ? { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)] }

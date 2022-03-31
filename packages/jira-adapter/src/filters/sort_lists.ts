@@ -15,7 +15,7 @@
 */
 import { InstanceElement, isInstanceElement, isReferenceExpression, Value } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { WORKFLOW_TYPE_NAME } from '../constants'
+import { AUTOMATION_TYPE, WORKFLOW_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
 
 type ValueToSort = {
@@ -39,6 +39,11 @@ const VALUES_TO_SORT: ValueToSort[] = [
     typeName: 'IssueTypeScreenScheme',
     fieldName: 'issueTypeMappings',
     sortBy: ['issueTypeId.elemID.name'],
+  },
+  {
+    typeName: AUTOMATION_TYPE,
+    fieldName: 'tags',
+    sortBy: ['tagType', 'tagValue'],
   },
 ]
 

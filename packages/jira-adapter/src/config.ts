@@ -17,7 +17,8 @@ import _ from 'lodash'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, ObjectType } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
-import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA, STATUS_TYPE_NAME } from './constants'
+import { AUTOMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME } from './constants'
+import { FIELD_TYPE_NAME } from './filters/fields/constants'
 
 const { createUserFetchConfigType, createSwaggerAdapterApiConfigType } = configUtils
 
@@ -1667,10 +1668,11 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
   },
   types: DEFAULT_TYPE_CUSTOMIZATIONS,
   typesToFallbackToInternalId: [
-    'Field',
+    AUTOMATION_TYPE,
     'CustomFieldContext',
+    FIELD_TYPE_NAME,
+    RESOLUTION_TYPE_NAME,
     STATUS_TYPE_NAME,
-    'Resolution',
   ],
 }
 

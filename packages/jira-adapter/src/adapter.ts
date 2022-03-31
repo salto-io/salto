@@ -30,6 +30,8 @@ import issueTypeSchemeReferences from './filters/issue_type_schemas/issue_type_s
 import issueTypeSchemeFilter from './filters/issue_type_schemas/issue_type_scheme'
 import sharePermissionFilter from './filters/share_permission'
 import sortListsFilter from './filters/sort_lists'
+import automationFetchFilter from './filters/automation/automation_fetch'
+import automationStructureFilter from './filters/automation/automation_structure'
 import boardFilter from './filters/board'
 import screenFilter from './filters/screen/screen'
 import mapListsFilter from './filters/map_lists'
@@ -84,6 +86,8 @@ const { createPaginator, getWithOffsetAndLimit } = clientUtils
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
+  automationFetchFilter,
+  automationStructureFilter,
   missingStatusesFilter,
   // Should run before duplicateIdsFilter
   fieldNameFilter,

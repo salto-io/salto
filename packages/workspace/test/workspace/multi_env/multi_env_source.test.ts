@@ -17,20 +17,18 @@ import path from 'path'
 import { Element, ElemID, BuiltinTypes, ObjectType, DetailedChange, Change, getChangeData, StaticFile } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import * as utils from '@salto-io/adapter-utils'
-import { MockInterface } from '@salto-io/test-utils'
 import { collections } from '@salto-io/lowerdash'
 import { createElementSelectors } from '../../../src/workspace/element_selector'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
-import { multiEnvSource, ENVS_PREFIX, MultiEnvSource } from '../../../src/workspace/nacl_files/multi_env/multi_env_source'
+import { multiEnvSource, ENVS_PREFIX } from '../../../src/workspace/nacl_files/multi_env/multi_env_source'
 import * as routers from '../../../src/workspace/nacl_files/multi_env/routers'
 import { Errors } from '../../../src/workspace/errors'
 import { ValidationError } from '../../../src/validator'
 import { MergeError } from '../../../src/merger'
 import { expectToContainAllItems } from '../../common/helpers'
-import { InMemoryRemoteMap, RemoteMap, RemoteMapCreator, CreateRemoteMapParams } from '../../../src/workspace/remote_map'
+import { InMemoryRemoteMap, RemoteMap } from '../../../src/workspace/remote_map'
 import { createMockRemoteMap, mockStaticFilesSource } from '../../utils'
 import { MissingStaticFile } from '../../../src/workspace/static_files'
-import { NaclFilesSource, ChangeSet } from '../../../src/workspace/nacl_files'
 
 const { awu } = collections.asynciterable
 jest.mock('@salto-io/adapter-utils', () => ({
@@ -199,164 +197,12 @@ const source = multiEnvSource(
   true
 )
 
-type MockRemoteMapCreator = {
-  maps: Record<string, InMemoryRemoteMap<unknown>>
-  creator: RemoteMapCreator
-}
-const mockRemoteMaps = (): MockRemoteMapCreator => {
-  const maps: Record<string, InMemoryRemoteMap<unknown>> = {}
-  return {
-    maps,
-    creator: async <T, K extends string>({ namespace }: CreateRemoteMapParams<T>) => {
-      maps[namespace] = maps[namespace] ?? new InMemoryRemoteMap()
-      return maps[namespace] as unknown as RemoteMap<T, K>
-    },
-  }
-}
 
 describe('multi env source', () => {
   let referencedByIndex: RemoteMap<ElemID[]>
   beforeAll(async () => {
     await source.load({})
     referencedByIndex = createMockRemoteMap<ElemID[]>()
-  })
-  describe('load', () => {
-    let remoteMaps: MockRemoteMapCreator
-    beforeEach(() => {
-      remoteMaps = mockRemoteMaps()
-    })
-    describe('first load', () => {
-      describe('with empty sources', () => {
-        let multiSource: MultiEnvSource
-        let loadCommonSource: MockInterface<NaclFilesSource>
-        let loadEnvSource: MockInterface<NaclFilesSource>
-        let loadResult: Record<string, ChangeSet<Change>>
-        beforeEach(async () => {
-          loadCommonSource = createMockNaclFileSource([])
-          loadEnvSource = createMockNaclFileSource([])
-          multiSource = multiEnvSource(
-            {
-              [commonPrefix]: loadCommonSource,
-              [activePrefix]: loadEnvSource,
-            },
-            commonPrefix,
-            remoteMaps.creator,
-            true,
-          )
-          loadResult = await multiSource.load({})
-        })
-        it('should return valid result for all environments', () => {
-          expect(loadResult[activePrefix]).toMatchObject({
-            cacheValid: true,
-            changes: [],
-            preChangeHash: '',
-          })
-        })
-      })
-      describe('with sources that have data', () => {
-        let multiSource: MultiEnvSource
-        let loadResult: Record<string, ChangeSet<Change>>
-        beforeEach(async () => {
-          // We can re-use the sources here because the mock nacl sources don't behave correctly
-          // and will "replay" the "load" result regardless of how many times they are loaded
-          multiSource = multiEnvSource(sources, commonPrefix, remoteMaps.creator, true)
-          loadResult = await multiSource.load({})
-        })
-        it('should return merged addition changes for environment elements', () => {
-          expect(loadResult[activePrefix].changes).toHaveLength(3)
-          expect(loadResult[inactivePrefix].changes).toHaveLength(3)
-          const activeEnvObjChange = loadResult[activePrefix].changes.find(
-            change => getChangeData(change).elemID.isEqual(objectElemID)
-          ) as Change<ObjectType>
-          expect(activeEnvObjChange).toBeDefined()
-          expect(activeEnvObjChange?.action).toEqual('add')
-          expect(getChangeData(activeEnvObjChange)).toBeInstanceOf(ObjectType)
-          expect(getChangeData(activeEnvObjChange).fields).toHaveProperty('envField')
-          expect(getChangeData(activeEnvObjChange).fields).toHaveProperty('commonField')
-
-          const inactiveEnvObjChange = loadResult[inactivePrefix].changes.find(
-            change => getChangeData(change).elemID.isEqual(objectElemID)
-          ) as Change<ObjectType>
-          expect(inactiveEnvObjChange).toBeDefined()
-          expect(inactiveEnvObjChange?.action).toEqual('add')
-          expect(getChangeData(inactiveEnvObjChange)).toBeInstanceOf(ObjectType)
-          expect(getChangeData(inactiveEnvObjChange).fields).toHaveProperty('inactiveField')
-          expect(getChangeData(inactiveEnvObjChange).fields).toHaveProperty('commonField')
-        })
-
-        it('should return a unique post change hash', () => {
-          expect(loadResult[activePrefix].postChangeHash).toBeDefined()
-          expect(loadResult[inactivePrefix].postChangeHash).toBeDefined()
-        })
-      })
-    })
-
-    describe('second load', () => {
-      describe('when there are no new semantic changes but the nacl hash is changed', () => {
-        let secondLoadSource: MultiEnvSource
-        let secondLoadCommonSource: MockInterface<NaclFilesSource>
-        let secondLoadEnvSource: MockInterface<NaclFilesSource>
-        let firstLoadResult: Record<string, ChangeSet<Change>>
-        let secondLoadResult: Record<string, ChangeSet<Change>>
-        beforeEach(async () => {
-          const firstLoadCommonSource = createMockNaclFileSource([commonObject])
-          const firstLoadEnvSource = createMockNaclFileSource([envObject])
-          const firstLoadSource = multiEnvSource(
-            {
-              [activePrefix]: firstLoadEnvSource,
-              [commonPrefix]: firstLoadCommonSource,
-            },
-            commonPrefix,
-            remoteMaps.creator,
-            true,
-          )
-          firstLoadResult = await firstLoadSource.load({})
-
-          // We can call "load" again here because the mock nacl sources don't behave correctly
-          // and will "replay" the "load" result regardless of how many times they are loaded
-          const commonFirstLoadHash = (await firstLoadCommonSource.load({})).postChangeHash
-          secondLoadCommonSource = createMockNaclFileSource([])
-          secondLoadCommonSource.load.mockResolvedValue({
-            cacheValid: true,
-            changes: [],
-            preChangeHash: commonFirstLoadHash,
-            postChangeHash: commonFirstLoadHash,
-          })
-          const envFirstLoadHash = (await firstLoadEnvSource.load({})).postChangeHash
-          secondLoadEnvSource = createMockNaclFileSource([])
-          secondLoadEnvSource.load.mockResolvedValue({
-            cacheValid: true,
-            changes: [],
-            preChangeHash: envFirstLoadHash,
-            postChangeHash: 'new_hash_value',
-          })
-          // In order to simulate a second load, we load a new source with the same remote maps
-          secondLoadSource = multiEnvSource(
-            {
-              [activePrefix]: secondLoadEnvSource,
-              [commonPrefix]: secondLoadCommonSource,
-            },
-            commonPrefix,
-            remoteMaps.creator,
-            true,
-          )
-          secondLoadResult = await secondLoadSource.load({})
-        })
-        it('should have no changes on the second load', () => {
-          expect(secondLoadResult[activePrefix].changes).toHaveLength(0)
-        })
-        it('should have the same pre change hash as the first load post change hash', () => {
-          expect(secondLoadResult[activePrefix].preChangeHash).toEqual(
-            firstLoadResult[activePrefix].postChangeHash
-          )
-        })
-        it('should update the post change hash because the underlying hash changed', () => {
-          expect(secondLoadResult[activePrefix].postChangeHash).not.toEqual(
-            secondLoadResult[activePrefix].preChangeHash
-          )
-        })
-      })
-    })
   })
   describe('getNaclFile', () => {
     it('should return a Nacl file from an env', async () => {
@@ -695,6 +541,45 @@ describe('multi env source', () => {
       expect(commonSource.setNaclFiles).toHaveBeenCalled()
     })
 
+    it('should not change inner state upon set with no changes', async () => {
+      const change = { action: 'add', data: { after: inactiveFragment } } as Change<ObjectType>
+      const commonSourceName = ''
+      const mockCommonNaclFileSource = createMockNaclFileSource(
+        [commonFragment], {}, undefined, undefined, { changes: [change], cacheValid: true }
+      )
+      const primarySourceName = 'env1'
+      const mockPrimaryNaclFileSource = createMockNaclFileSource(
+        [envFragment, envObject], {}, undefined, undefined, { changes: [change], cacheValid: true }
+      )
+      const inactiveSourceName = 'env2'
+      const mockInacvtiveNaclFileSource = createMockNaclFileSource(
+        [inactiveObject], {}, undefined, undefined, { changes: [change], cacheValid: true }
+      )
+      const multiEnvSourceWithMockSources = multiEnvSource(
+        {
+          [commonSourceName]: mockCommonNaclFileSource,
+          [primarySourceName]: mockPrimaryNaclFileSource,
+          [inactiveSourceName]: mockInacvtiveNaclFileSource,
+        },
+        commonSourceName,
+        () => Promise.resolve(new InMemoryRemoteMap()),
+        true
+      )
+      await multiEnvSourceWithMockSources.load({})
+      // NOTE: the getAll call initialize the init state
+      const currentElements = await awu(
+        await multiEnvSourceWithMockSources.getAll(primarySourceName)
+      ).toArray()
+      expect(currentElements).toHaveLength(2)
+      const elementChanges = (await multiEnvSourceWithMockSources.setNaclFiles(
+        [{ filename: path.join(ENVS_PREFIX, inactiveSourceName, 'env.nacl'), buffer: 'test' }]
+      ))
+      expect(elementChanges).not.toHaveProperty(primarySourceName)
+      const elements = await awu(
+        await multiEnvSourceWithMockSources.getAll(primarySourceName)
+      ).toArray()
+      expect(elements).toHaveLength(2)
+    })
     it('should change inner state upon set with addition', async () => {
       const change = { action: 'add', data: { after: commonObject } } as Change<ObjectType>
       const commonSourceName = ''

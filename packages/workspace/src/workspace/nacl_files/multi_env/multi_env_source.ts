@@ -215,9 +215,12 @@ const buildMultiEnvSource = (
   let state = initState
   const buildMultiEnvState = async ({ envChanges = {} }: { envChanges?: EnvsChanges }):
   Promise<{ state: MultiEnvState; changes: EnvsChanges }> => {
-    const states = await mapValuesAsync(
-      envSources(),
-      async (_source, envName) => state?.states[envName] ?? buildStateForSingleEnv(envName)
+    const states: Record<string, SingleState> = Object.fromEntries(
+      (await awu(Object.keys(sources))
+        .filter(name => name !== commonSourceName)
+        .map(async name => [name, state?.states[name]
+          ?? (await buildStateForSingleEnv(name))])
+        .toArray())
     )
     let mergeManager = state?.mergeManager
     if (!mergeManager) {
@@ -234,6 +237,15 @@ const buildMultiEnvSource = (
       states,
       mergeManager,
     }
+    if (Object.values(envChanges).every(changeSet => changeSet.changes.length === 0)) {
+      return { state: current, changes: {} }
+    }
+    const changesInCommon = (envChanges[commonSourceName]
+      ?.changes ?? []).length > 0
+    const relevantEnvs = Object.keys(sources)
+      .filter(name =>
+        (name !== commonSourceName)
+        && (changesInCommon || (envChanges[name]?.changes ?? []).length > 0))
     const getEnvMergedChanges = async (
       envName: string
     ): Promise<ChangeSet<Change<ChangeDataType>>> => {
@@ -266,9 +278,10 @@ const buildMultiEnvSource = (
       })
       return changeResult
     }
-    const changes = await mapValuesAsync(
-      envSources(),
-      (_source, envName) => getEnvMergedChanges(envName)
+    const changes = Object.fromEntries(
+      await awu(relevantEnvs)
+        .map(async envName => [envName, await getEnvMergedChanges(envName)])
+        .toArray()
     )
     return {
       state: current,

@@ -18,7 +18,8 @@ import moment from 'moment'
 import os from 'os'
 
 export default class Prompts {
-  public static readonly SHOULD_EXECUTE_PLAN = 'Do you want to deploy?'
+  public static readonly SHOULD_EXECUTE_PLAN = 'Do you want to perform these actions?'
+  public static readonly SHOULD_EXECUTE_DEPLOY_PLAN = 'Do you want to deploy?'
 
   public static readonly CANCEL_DEPLOY_ACTION = 'Cancelled: Due to an erroneous dependency -'
   public static readonly START_DEPLOY_EXEC = 'Starting the deployment plan'

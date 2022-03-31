@@ -18,7 +18,6 @@ import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
 import { cleanAction, cacheUpdateAction } from '../../src/commands/workspace'
 import { CliExitCode } from '../../src/types'
-import Prompts from '../../src/prompts'
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual<{}>('@salto-io/core'),
@@ -85,7 +84,7 @@ describe('workspace command group', () => {
           },
           workspace: mocks.mockWorkspace({}),
         })).toBe(CliExitCode.Success)
-        expect(callbacks.getUserBooleanInput).toHaveBeenCalledWith(Prompts.SHOULD_EXECUTE_PLAN)
+        expect(callbacks.getUserBooleanInput).toHaveBeenCalledWith('Do you want to perform these actions?')
         expect(output.stdout.content.search('Canceling...')).toBeGreaterThan(0)
       })
       it('should prompt user and exit if no (regenerate-cache)', async () => {
@@ -104,7 +103,7 @@ describe('workspace command group', () => {
           },
           workspace: mocks.mockWorkspace({}),
         })).toBe(CliExitCode.Success)
-        expect(callbacks.getUserBooleanInput).toHaveBeenCalledWith(Prompts.SHOULD_EXECUTE_PLAN)
+        expect(callbacks.getUserBooleanInput).toHaveBeenCalledWith('Do you want to perform these actions?')
         expect(output.stdout.content.search('Canceling...')).toBeGreaterThan(0)
       })
       it('should fail if trying to clean static resources without all dependent components', async () => {
@@ -141,7 +140,7 @@ describe('workspace command group', () => {
           },
           workspace,
         })).toBe(CliExitCode.Success)
-        expect(callbacks.getUserBooleanInput).toHaveBeenCalledWith(Prompts.SHOULD_EXECUTE_PLAN)
+        expect(callbacks.getUserBooleanInput).toHaveBeenCalledWith('Do you want to perform these actions?')
         expect(core.cleanWorkspace).toHaveBeenCalledWith(workspace, {
           nacl: true,
           state: true,

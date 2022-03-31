@@ -291,6 +291,66 @@ describe('adapter', () => {
           'workato.role',
         ])
       })
+      it('should use elemIdGetter', async () => {
+        const sfdev1ConnectionId = 1234
+        const operations = adapter.operations({
+          credentials: new InstanceElement(
+            'config',
+            usernameTokenCredentialsType,
+            { username: 'user123', token: 'token456' },
+          ),
+          config: new InstanceElement(
+            'config',
+            configType,
+            {
+              [FETCH_CONFIG]: {
+                includeTypes: ['connection'],
+              },
+              [API_DEFINITIONS_CONFIG]: {
+                types: {
+                  connection: {
+                    request: {
+                      url: '/connections',
+                    },
+                  },
+                },
+              },
+            },
+          ),
+          elementsSource: buildElementsSourceFromElements([]),
+          getElemIdFunc: (adapterName, serviceIds, name) => {
+            if (Number(serviceIds.id) === sfdev1ConnectionId) {
+              return new ElemID(adapterName, 'connection', 'instance', 'sfdev1')
+            }
+            return new ElemID(adapterName, name)
+          },
+        })
+        const { elements } = await operations
+          .fetch({ progressReporter: { reportProgress: () => null } })
+        const instances = elements.filter(isInstanceElement)
+        expect(instances).toHaveLength(6)
+        expect(instances.map(e => e.elemID.getFullName()).sort()).toEqual([
+          'workato.connection.instance.HTTP_connection_1@s',
+          'workato.connection.instance.My_Gmail_connection@s',
+          'workato.connection.instance.My_Google_sheets_connection@s',
+          'workato.connection.instance.Test_NetSuite_account@s',
+          'workato.connection.instance.dev2_sfdc_account@s',
+          'workato.connection.instance.sfdev1',
+        ])
+        const response = [
+          {
+            id: sfdev1ConnectionId,
+            name: 'sfdev1 - edited',
+          },
+        ]
+        mockAxiosAdapter.onGet('/connections').replyOnce(200, response)
+        const { elements: newElements } = await operations
+          .fetch({ progressReporter: { reportProgress: () => null } })
+        const newInstances = newElements.filter(isInstanceElement)
+        expect(newInstances.map(e => e.elemID.getFullName()).sort()).toEqual([
+          'workato.connection.instance.sfdev1',
+        ])
+      })
     })
 
     describe('with postFetch', () => {

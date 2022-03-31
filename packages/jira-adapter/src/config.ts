@@ -36,7 +36,7 @@ export type JspUrls = {
   add: string
   modify?: string
   remove?: string
-  query: string
+  query?: string
   dataField?: string
 }
 
@@ -131,26 +131,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'column', fieldType: 'number' },
         { fieldName: 'row', fieldType: 'number' },
-      ],
-    },
-  },
-
-  NotificationEvent: {
-    transformation: {
-      fieldsToOmit: [
-        {
-          fieldName: 'id',
-        },
-      ],
-    },
-  },
-
-  EventNotification: {
-    transformation: {
-      fieldsToOmit: [
-        {
-          fieldName: 'id',
-        },
       ],
     },
   },
@@ -668,6 +648,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'user', fieldType: 'User' },
+        { fieldName: 'id', fieldType: 'string' },
+        { fieldName: 'notificationType', fieldType: 'string' },
       ],
     },
   },
@@ -916,6 +898,24 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
     transformation: {
       fieldsToHide: [{ fieldName: 'id' }],
+    },
+    jspRequests: {
+      add: '/secure/admin/AddNotificationScheme.jspa',
+      modify: '/secure/admin/EditNotificationScheme.jspa',
+      remove: '/secure/admin/DeleteNotificationScheme.jspa',
+    },
+  },
+  NotificationSchemeEvent: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'eventType', fieldType: 'number' },
+        { fieldName: 'notifications', fieldType: 'List<PermissionHolder>' },
+      ],
+    },
+    jspRequests: {
+      add: '/secure/admin/AddNotification.jspa',
+      remove: '/secure/admin/DeleteNotification.jspa',
+      query: '/rest/api/3/notificationscheme/{id}?expand=all',
     },
   },
   PageBeanIssueTypeScreenSchemesProjects: {

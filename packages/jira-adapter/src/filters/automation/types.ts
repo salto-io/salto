@@ -83,6 +83,6 @@ export const createAutomationTypes = (): {
 
   return {
     automationType,
-    subTypes: [actorType],
+    subTypes: [actorType, componentType, tagType],
   }
 }

@@ -42,19 +42,19 @@ const PAGE_RESPONSE_SCHEME = Joi.object({
 
 export const CLOUD_RESOURCE_FIELD = 'com.atlassian.jira.jira-client-analytics-plugin:analytics-context-provider.client-analytic-descriptors'
 
-type Resources = {
+type ResourcesResponse = {
   unparsedData: {
     [CLOUD_RESOURCE_FIELD]: string
   }
 }
 
-const RESOURCES_SCHEME = Joi.object({
+const RESOURCES_RESPONSE_SCHEME = Joi.object({
   unparsedData: Joi.object({
     [CLOUD_RESOURCE_FIELD]: Joi.string().required(),
   }).unknown(true).required(),
 }).unknown(true).required()
 
-const isResources = createSchemeGuard<Resources>(RESOURCES_SCHEME, 'Received invalid resources result')
+const isResources = createSchemeGuard<ResourcesResponse>(RESOURCES_RESPONSE_SCHEME, 'Received invalid resources result')
 
 const parseCloudId = (cloudResource: string): string => {
   try {

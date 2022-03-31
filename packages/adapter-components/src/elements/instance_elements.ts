@@ -64,7 +64,7 @@ export const generateInstanceNameFromConfig = (
 }
 
 export const removeNullValues = async (
-  values: Values | undefined,
+  values: Values,
   type: ObjectType
 ): Promise<Values> =>
   await transformValues({
@@ -164,7 +164,7 @@ export const toBasicInstance = async ({
   return new InstanceElement(
     type.isSettings ? ElemID.CONFIG_NAME : naclName,
     type,
-    await removeNullValues(entryData, type),
+    entryData !== undefined ? await removeNullValues(entryData, type) : {},
     filePath,
     parent
       ? { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)] }

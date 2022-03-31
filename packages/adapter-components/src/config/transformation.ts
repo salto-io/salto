@@ -185,18 +185,35 @@ export const validateTransoformationConfig = (
     }
   }
 
-  const validateIdFieldsConfig = (
+  const getInvalidIdFields = (
     idFields: string[],
-    typeName: string | undefined
+  ): string[] => idFields.filter(fieldName => {
+    const symbolCount = (fieldName.match(/&/g) || []).length
+    return ((symbolCount > 1)
+            || (symbolCount === 1 && !fieldName.startsWith(FIELD_REFERENCE_PREFIX))
+    )
+  })
+
+  const validateIdFieldsConfig = (
+    defaultIdFields: string[] | undefined,
   ): void => {
-    idFields.forEach(fieldName => {
-      const symbolCount = (fieldName.match(/&/g) || []).length
-      if ((symbolCount > 1)
-      || (symbolCount === 1 && !fieldName.startsWith(FIELD_REFERENCE_PREFIX))) {
-        const typeNameError = typeName !== undefined ? `of type ${typeName} ` : ''
-        throw new Error(`${fieldName} field name ${typeNameError}in idFields config is invalid`)
+    if (defaultIdFields !== undefined) {
+      const invalidDefaultIdFields = getInvalidIdFields(defaultIdFields)
+      if (invalidDefaultIdFields.length > 0) {
+        throw new Error(`Invalid idFields found in default config: ${invalidDefaultIdFields}`)
       }
-    })
+    }
+    const invalidIdFieldsTypeConfig = Object.entries(configMap).map(([type, transformation]) => {
+      if (transformation.idFields !== undefined) {
+        const invalidFieldNames = getInvalidIdFields(transformation.idFields)
+        return invalidFieldNames.length > 0 ? { type, invalidFieldNames } : undefined
+      }
+      return undefined
+    }).filter(values.isDefined)
+    if (invalidIdFieldsTypeConfig.length > 0) {
+      const invalidIdFieldsMsg = invalidIdFieldsTypeConfig.map(f => `in type: ${f.type}, invalid idFields: [${f.invalidFieldNames}]`)
+      throw new Error(`Invalid idFields found in the following types:\n${invalidIdFieldsMsg.join('\n')}`)
+    }
   }
 
   findNestedFieldDups(
@@ -230,12 +247,7 @@ export const validateTransoformationConfig = (
     throw new Error(`Singleton types should not have dataField or fileNameFields set, misconfiguration found for the following types: ${validateIsSingletonTypes.toString()}`)
   }
 
-  validateIdFieldsConfig(defaultConfig.idFields, undefined)
-  Object.entries(configMap).forEach(([type, tansformation]) => {
-    if (tansformation.idFields !== undefined) {
-      validateIdFieldsConfig(tansformation.idFields, type)
-    }
-  })
+  validateIdFieldsConfig(defaultConfig.idFields)
 }
 
 export const getTypeTransformationConfig = (

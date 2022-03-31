@@ -226,8 +226,13 @@ describe('config_transformation', () => {
           t1: {
             idFields: ['&a&'],
           },
+          t2: {
+            idFields: ['a&', 'b&'],
+          },
         },
-      )).toThrow(new Error('&a& field name of type t1 in idFields config is invalid'))
+      )).toThrow(new Error(
+        'Invalid idFields found in the following types:\nin type: t1, invalid idFields: [&a&]\nin type: t2, invalid idFields: [a&,b&]'
+      ))
       expect(() => validateTransoformationConfig(
         'PATH',
         {
@@ -241,7 +246,7 @@ describe('config_transformation', () => {
             idFields: ['a'],
           },
         },
-      )).toThrow(new Error('b& field name in idFields config is invalid'))
+      )).toThrow(new Error('Invalid idFields found in default config: b&'))
     })
   })
 

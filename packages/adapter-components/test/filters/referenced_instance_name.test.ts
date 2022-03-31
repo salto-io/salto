@@ -14,139 +14,182 @@
 * limitations under the License.
 */
 
-import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, isInstanceElement } from '@salto-io/adapter-api'
 import { references } from '@salto-io/adapter-utils'
-import { addReferencesToInstanceNames } from '../../src/filters/referenced_instance_names'
+import { addReferencesToInstanceNames, updateAllReferences, referencedInstanceNamesFilterCreator } from '../../src/filters/referenced_instance_names'
+import { FilterWith } from '../../src/filter_utils'
+import { Paginator } from '../../src/client'
 
 const { getReferences } = references
 const ADAPTER_NAME = 'myAdapter'
 
 describe('referenced instances', () => {
-  describe('addReferencesToInstanceNames', () => {
-    const generateElements = (): Element[] => {
-      const recipeType = new ObjectType({
-        elemID: new ElemID(ADAPTER_NAME, 'recipe'),
-        fields: {
-          name: { refType: BuiltinTypes.STRING },
-          book_id: { refType: BuiltinTypes.NUMBER },
-        },
-      })
-      const bookType = new ObjectType({
-        elemID: new ElemID(ADAPTER_NAME, 'book'),
-        fields: {
-          id: { refType: BuiltinTypes.NUMBER },
-          parent_book_id: { refType: BuiltinTypes.NUMBER },
-        },
-      })
-      const rootBook = new InstanceElement(
-        'rootBook',
-        bookType,
+  const generateElements = (): Element[] => {
+    const recipeType = new ObjectType({
+      elemID: new ElemID(ADAPTER_NAME, 'recipe'),
+      fields: {
+        name: { refType: BuiltinTypes.STRING },
+        book_id: { refType: BuiltinTypes.NUMBER },
+      },
+    })
+    const bookType = new ObjectType({
+      elemID: new ElemID(ADAPTER_NAME, 'book'),
+      fields: {
+        id: { refType: BuiltinTypes.NUMBER },
+        parent_book_id: { refType: BuiltinTypes.NUMBER },
+      },
+    })
+    const rootBook = new InstanceElement(
+      'rootBook',
+      bookType,
+      {
+        id: 123,
+        parent_book_id: 'ROOT',
+      },
+    )
+    const anotherBook = new InstanceElement(
+      'book',
+      bookType,
+      {
+        id: 456,
+        parent_book_id: new ReferenceExpression(rootBook.elemID, rootBook),
+      },
+    )
+    const recipes = [
+      new InstanceElement(
+        'recipe123',
+        recipeType,
         {
-          id: 123,
-          parent_book_id: 'ROOT',
+          name: 'recipe123',
+          book_id: new ReferenceExpression(rootBook.elemID, rootBook),
         },
-      )
-      const anotherBook = new InstanceElement(
-        'book',
-        bookType,
+      ),
+      new InstanceElement(
+        'recipe456',
+        recipeType,
         {
-          id: 456,
-          parent_book_id: new ReferenceExpression(rootBook.elemID, rootBook),
+          name: 'recipe456',
+          book_id: new ReferenceExpression(anotherBook.elemID, anotherBook),
         },
-      )
-      const recipes = [
-        new InstanceElement(
-          'recipe123',
-          recipeType,
-          {
-            name: 'recipe123',
-            book_id: new ReferenceExpression(rootBook.elemID, rootBook),
+      ),
+    ]
+    const sameRecipeOne = new InstanceElement(
+      'sameRecipe',
+      recipeType,
+      {
+        name: '12345',
+        book_id: new ReferenceExpression(rootBook.elemID, rootBook),
+      },
+    )
+    const sameRecipeTwo = new InstanceElement(
+      'sameRecipe',
+      recipeType,
+      {
+        name: '54321',
+        book_id: new ReferenceExpression(rootBook.elemID, rootBook),
+      },
+    )
+    return [recipeType, bookType, ...recipes, anotherBook, rootBook,
+      sameRecipeOne, sameRecipeTwo]
+  }
+  const config = {
+    apiDefinitions: {
+      types: {
+        book: {
+          transformation: {
+            idFields: ['id', '&parent_book_id'],
           },
-        ),
-        new InstanceElement(
-          'recipe456',
-          recipeType,
-          {
-            name: 'recipe456',
-            book_id: new ReferenceExpression(anotherBook.elemID, anotherBook),
+        },
+        recipe: {
+          transformation: {
+            idFields: ['name', '&book_id'],
           },
-        ),
-      ]
-      const cycleBookA = new InstanceElement(
-        'one',
-        bookType,
-        {
-          id: 12,
-          parent_book_id: null,
         },
-      )
-      const cycleBookB = new InstanceElement(
-        'two',
-        bookType,
-        {
-          id: 23,
-          parent_book_id: new ReferenceExpression(cycleBookA.elemID, cycleBookA),
+      },
+      typeDefaults: {
+        transformation: {
+          idFields: ['id'],
         },
-      )
-      const cycleBookC = new InstanceElement(
-        'three',
-        bookType,
-        {
-          id: 31,
-          parent_book_id: new ReferenceExpression(cycleBookB.elemID, cycleBookB),
-        },
-      )
-      const coolType = new ObjectType({
-        elemID: new ElemID(ADAPTER_NAME, 'cool'),
-        fields: {
-          id: { refType: BuiltinTypes.NUMBER },
-          cool_recipe: { refType: BuiltinTypes.NUMBER },
-        },
-      })
-      const aVeryCoolInstance = new InstanceElement(
-        'wow',
-        coolType,
-        {
-          id: 121212,
-          cool_recipe: new ReferenceExpression(recipes[0].elemID, recipes[0]),
-        },
-      )
-      const cyleRef = new ReferenceExpression(cycleBookC.elemID, cycleBookC)
-      cycleBookA.value.parent_book_id = cyleRef
-      return [recipeType, bookType, ...recipes, anotherBook, rootBook,
-        cycleBookA, cycleBookB, cycleBookC, coolType, aVeryCoolInstance]
-    }
+      },
+    },
+  }
+  let elements: Element[]
 
-    const transformationDefaultConfig = {
-      idFields: ['id'],
-    }
+  describe('referencedInstanceNames filter', () => {
+    type FilterType = FilterWith<'onFetch'>
+    let filter: FilterType
+
+    beforeEach(async () => {
+      jest.clearAllMocks()
+      filter = referencedInstanceNamesFilterCreator()({
+        client: {} as unknown,
+        paginator: undefined as unknown as Paginator,
+        config,
+      }) as FilterType
+    })
+    it('should add service url annotation if it is exist in the config', async () => {
+      elements = generateElements()
+      await filter.onFetch(elements)
+      expect(elements
+        .filter(isInstanceElement)
+        .map(e => e.elemID.getFullName()).sort())
+        .toEqual(['myAdapter.book.instance.123_ROOT',
+          'myAdapter.book.instance.456_123_ROOT',
+          'myAdapter.recipe.instance.recipe123_123_ROOT',
+          'myAdapter.recipe.instance.recipe456_456_123_ROOT',
+          'myAdapter.recipe.instance.sameRecipe',
+          'myAdapter.recipe.instance.sameRecipe',
+        ])
+    })
+  })
+
+  describe('addReferencesToInstanceNames function', () => {
+    const transformationDefaultConfig = config.apiDefinitions.typeDefaults.transformation
     const transformationConfigByType = {
-      recipe: {
-        idFields: ['name', '&book_id'],
-      },
-      book: {
-        idFields: ['id', '&parent_book_id'],
-      },
+      recipe: config.apiDefinitions.types.recipe.transformation,
+      book: config.apiDefinitions.types.book.transformation,
     }
-    let elements: Element[]
-
     beforeAll(() => {
       elements = generateElements()
     })
-
     it('should change name and references correctly', async () => {
       const result = await addReferencesToInstanceNames(
-        elements.slice(0, -5).concat(elements.slice(-2)),
+        elements.slice(0, 6),
         transformationConfigByType,
         transformationDefaultConfig
       )
-      expect(result.length).toEqual(8)
-      expect(result[2].elemID.name).toEqual('recipe123_123_ROOT')
-      expect(result[3].elemID.name).toEqual('recipe456_456_123_ROOT')
-      expect(result[4].elemID.name).toEqual('456_123_ROOT')
-      expect(result[5].elemID.name).toEqual('123_ROOT')
-      const ref = getReferences(result[7], result[2].elemID)
-      expect(ref[0].value.elemID).toEqual(result[2].elemID)
+      expect(result.length).toEqual(6)
+      expect(result
+        .filter(isInstanceElement)
+        .map(i => i.elemID.getFullName()).sort())
+        .toEqual(['myAdapter.book.instance.123_ROOT',
+          'myAdapter.book.instance.456_123_ROOT',
+          'myAdapter.recipe.instance.recipe123_123_ROOT',
+          'myAdapter.recipe.instance.recipe456_456_123_ROOT',
+        ])
+    })
+    it('should not change name for duplicate elemIDs', async () => {
+      const result = await addReferencesToInstanceNames(
+        elements.slice(0, 2).concat(elements.slice(4, 8)),
+        transformationConfigByType,
+        transformationDefaultConfig
+      )
+      expect(result.length).toEqual(6)
+      expect(result[4].elemID.name).toEqual('sameRecipe')
+      expect(result[5].elemID.name).toEqual('sameRecipe')
+    })
+  })
+
+  describe('updateAllReferences function', () => {
+    it('should change all references to from old ElemID to new ElemID', () => {
+      elements = generateElements()
+      const newElemID = new ElemID(ADAPTER_NAME, 'book', 'instance', 'newRootBook')
+      const instances = elements.slice(0, -2).filter(isInstanceElement)
+      updateAllReferences(instances, elements[5].elemID, newElemID)
+      const newReferences = instances.map(instance => getReferences(instance, newElemID)).flat()
+      expect(newReferences.length).toEqual(2)
+      expect(newReferences[0].value.elemID.name).toEqual('newRootBook')
+      expect(newReferences[1].value.elemID.name).toEqual('newRootBook')
     })
   })
 })

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, isInstanceElement, isReferenceExpression, InstanceElement, ElemID, ElemIdGetter } from '@salto-io/adapter-api'
+import { Element, isInstanceElement, isReferenceExpression, InstanceElement, ElemID, ElemIdGetter, isObjectType } from '@salto-io/adapter-api'
 import { filter, setPath, references, getParents, transformElement } from '@salto-io/adapter-utils'
 import { DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
@@ -24,6 +24,7 @@ import { AdapterApiConfig, getTransformationConfigByType,
   TransformationConfig, TransformationDefaultConfig, getConfigWithDefault,
   dereferenceFieldName, isReferencedIdField } from '../config'
 import { joinInstanceNameParts, getInstanceFilePath, getInstanceNaclName } from '../elements/instance_elements'
+import { findDuplicates } from '../config/validation_utils'
 
 const { awu } = collections.asynciterable
 
@@ -31,9 +32,87 @@ const log = logger(module)
 const { isDefined } = lowerDashValues
 const { getReferences, getUpdatedReference, createReferencesTransformFunc } = references
 
-type InstanceIdFields = {
-  instance: InstanceElement
-  idFields: string[]
+const getInstanceReferencedNameParts = (
+  instance: InstanceElement,
+  idFields: string[],
+): string[] => idFields.map(
+  fieldName => {
+    if (!isReferencedIdField(fieldName)) {
+      return _.get(instance.value, fieldName)
+    }
+    const fieldValue = _.get(instance.value, dereferenceFieldName(fieldName))
+    if (isReferenceExpression(fieldValue)) {
+      if (isInstanceElement(fieldValue.value)) {
+        return fieldValue.elemID.name
+      }
+      log.warn(`In instance: ${instance.elemID.getFullName()},
+        reference expression of field ${fieldName} doesn't point to an instance element`)
+    }
+    log.warn(`In instance: ${instance.elemID.getFullName()},
+      could not find reference for referenced idField: ${fieldName}, falling back to original value`)
+    return fieldValue
+  }
+)
+
+/* Finds all elemIDs that the current instance relies on based on the idFields */
+const getInstanceNameDependencies = (
+  idFields: string[],
+  instance: InstanceElement,
+): string[] => {
+  const referencedInstances = idFields
+    .filter(isReferencedIdField)
+    .map(fieldName => {
+      const fieldValue = _.get(instance.value, dereferenceFieldName(fieldName))
+      if (isReferenceExpression(fieldValue) && isInstanceElement(fieldValue.value)) {
+        return fieldValue.elemID.getFullName()
+      }
+      return undefined
+    })
+    .filter(isDefined)
+  return referencedInstances
+}
+
+/* Create new instance with the new naclName and file path */
+const getNewInstance = async (
+  currentInstance: InstanceElement,
+  newNaclName: string,
+  newFilePath: string[],
+): Promise<InstanceElement> => {
+  const { adapter, typeName } = currentInstance.elemID
+  const newElemId = new ElemID(adapter, typeName, 'instance', newNaclName)
+  const updatedInstance = await transformElement({
+    element: currentInstance,
+    transformFunc: createReferencesTransformFunc(currentInstance.elemID, newElemId),
+    strict: false,
+  })
+  return new InstanceElement(
+    newElemId.name,
+    updatedInstance.refType,
+    updatedInstance.value,
+    newFilePath,
+    updatedInstance.annotations,
+  )
+}
+
+/* Update all references for the renamed instance with the new elemId */
+export const updateAllReferences = (
+  allInstances: InstanceElement[],
+  oldElemId: ElemID,
+  newElemId: ElemID,
+): void => {
+  allInstances
+  // filtering out the renamed element,
+  // its references are taken care of in getNewInstance
+    .filter(instance => oldElemId.getFullName() !== instance.elemID.getFullName())
+    .forEach(instance => {
+      const refs = getReferences(instance, oldElemId)
+      if (refs.length > 0) {
+        refs.forEach(ref => {
+          const updatedReference = getUpdatedReference(ref.value, newElemId)
+          setPath(instance, ref.path, updatedReference)
+        })
+      }
+    })
 }
 
 /*
@@ -46,127 +125,88 @@ export const addReferencesToInstanceNames = async (
   transformationDefaultConfig: TransformationDefaultConfig,
   getElemIdFunc?: ElemIdGetter
 ): Promise<Element[]> => {
-  const hasReferencedIdFields = (
-    idFields: string[],
-  ): boolean => idFields.some(field => isReferencedIdField(field))
+  const hasReferencedIdFields = (idFields: string[]): boolean => (
+    idFields.some(field => isReferencedIdField(field))
+  )
 
   const instances = elements.filter(isInstanceElement)
-  const instancesToIdFields: InstanceIdFields[] = instances.map(instance => ({
+  const duplicateElemIds = new Set(findDuplicates(instances.map(i => i.elemID.getFullName())))
+  if (duplicateElemIds.size > 0) {
+    log.warn(`Duplicate instance names were found:${Array.from(duplicateElemIds).join(', ')}`)
+    _.remove(instances, instance => duplicateElemIds.has(instance.elemID.getFullName()))
+  }
+
+  const configByType = Object.fromEntries(
+    elements
+      .filter(isObjectType)
+      .map(type => [
+        type.elemID.name,
+        getConfigWithDefault(
+          transformationConfigByType[type.elemID.name],
+          transformationDefaultConfig
+        ),
+      ])
+  )
+  const instancesToIdFields = instances.map(instance => ({
     instance,
-    idFields: getConfigWithDefault(
-      transformationConfigByType[instance.elemID.typeName],
-      transformationDefaultConfig
-    ).idFields,
+    idFields: configByType[instance.elemID.typeName].idFields,
   }))
+  const nameToInstanceIdFields = _.keyBy(
+    instancesToIdFields,
+    obj => obj.instance.elemID.getFullName()
+  )
 
   const graph = new DAG<InstanceElement>()
   instancesToIdFields.forEach(({ instance, idFields }) => {
-    const getReferencedInstances = (): string[] => {
-      const referencedInstances = idFields
-        .filter(isReferencedIdField)
-        .map(fieldName => {
-          const fieldValue = _.get(instance.value, dereferenceFieldName(fieldName))
-          if (isReferenceExpression(fieldValue) && isInstanceElement(fieldValue.value)) {
-            return fieldValue.elemID.getFullName()
-          }
-          return undefined
-        })
-        .filter(isDefined)
-      return referencedInstances
+    if (hasReferencedIdFields(idFields)) {
+      graph.addNode(
+        instance.elemID.getFullName(),
+        getInstanceNameDependencies(idFields, instance),
+        instance,
+      )
     }
-    graph.addNode(instance.elemID.getFullName(), getReferencedInstances(), instance)
   })
 
   await awu(graph.evaluationOrder()).forEach(
     async graphNode => {
-      const instanceIdFields = instancesToIdFields
-        .find(instanceF => instanceF.instance.elemID.getFullName() === graphNode.toString())
+      const instanceIdFields = nameToInstanceIdFields[graphNode.toString()]
       if (instanceIdFields !== undefined) {
         const { instance, idFields } = instanceIdFields
-        if (idFields !== undefined && hasReferencedIdFields(idFields)) {
-          const originalName = instance.elemID.name
-          const originalFullName = instance.elemID.getFullName()
-          const newNameParts = idFields.map(
-            fieldName => {
-              if (isReferencedIdField(fieldName)) {
-                const fieldValue = _.get(instance.value, dereferenceFieldName(fieldName))
-                if (isReferenceExpression(fieldValue)) {
-                  if (isInstanceElement(fieldValue.value)) {
-                    return fieldValue.elemID.name
-                  }
-                  log.warn(`reference expression of field ${fieldName} doesn't point to an instance element`)
-                }
-                log.warn(`could not find reference for referenced idField: ${fieldName}, falling back to original value`)
-                return fieldValue
-              }
-              return _.get(instance.value, fieldName)
-            }
-          )
-          const newName = joinInstanceNameParts(newNameParts) ?? originalName
-          const parentIds = getParents(instance)
-            .filter(parent => isReferenceExpression(parent) && isInstanceElement(parent.value))
-            .map(parent => parent.value.elemID.name)
-          const parentName = joinInstanceNameParts(parentIds) ?? undefined
+        const originalFullName = instance.elemID.getFullName()
+        const newNameParts = getInstanceReferencedNameParts(instance, idFields)
+        const newName = joinInstanceNameParts(newNameParts) ?? instance.elemID.name
+        const parentIds = getParents(instance)
+          .filter(parent => isReferenceExpression(parent) && isInstanceElement(parent.value))
+          .map(parent => parent.value.elemID.name)
+        const parentName = parentIds.length > 0 ? parentIds[0] : undefined
 
-          const { typeName, adapter } = instance.elemID
-          const { fileNameFields, serviceIdField } = getConfigWithDefault(
-            transformationConfigByType[typeName],
-            transformationDefaultConfig,
-          )
+        const { typeName, adapter } = instance.elemID
+        const { fileNameFields, serviceIdField } = configByType[typeName]
 
-          const newNaclName = getInstanceNaclName({
-            entry: instance.value,
-            name: newName,
-            parentName,
-            adapterName: adapter,
-            getElemIdFunc,
-            serviceIdField,
-            typeElemId: instance.refType.elemID,
-          })
+        const newNaclName = getInstanceNaclName({
+          entry: instance.value,
+          name: newName,
+          parentName,
+          adapterName: adapter,
+          getElemIdFunc,
+          serviceIdField,
+          typeElemId: instance.refType.elemID,
+        })
 
-          const filePath = transformationConfigByType[typeName].isSingleton
-            ? instance.path
-            : getInstanceFilePath({
-              fileNameFields,
-              entry: instance.value,
-              naclName: newNaclName,
-              typeName,
-              isSettingType: false,
-              adapterName: adapter,
-            })
+        const filePath = getInstanceFilePath({
+          fileNameFields,
+          entry: instance.value,
+          naclName: newNaclName,
+          typeName,
+          isSettingType: transformationConfigByType[typeName].isSingleton ?? false,
+          adapterName: adapter,
+        })
 
-          const newElemId = new ElemID(adapter, typeName, 'instance', newNaclName)
-          const updatedInstance = await transformElement({
-            element: instance,
-            transformFunc: createReferencesTransformFunc(instance.elemID, newElemId),
-            strict: false,
-          })
-
-          const newInstance = new InstanceElement(
-            newElemId.name,
-            updatedInstance.refType,
-            updatedInstance.value,
-            filePath,
-            updatedInstance.annotations,
-          )
-
-          elements
-            .filter(isInstanceElement)
-          // filtering out the renamed element,
-          // its references are taken care of in getRenameElementChanges
-            .filter(element => originalFullName !== element.elemID.getFullName())
-            .forEach(element => {
-              const refs = getReferences(element, instance.elemID)
-              if (refs.length > 0) {
-                refs.forEach(ref => {
-                  const updatedReference = getUpdatedReference(ref.value, newElemId)
-                  setPath(element, ref.path, updatedReference)
-                })
-              }
-            })
-          const instanceIdx = elements.findIndex(e => (e.elemID.getFullName()) === originalFullName)
-          elements.splice(instanceIdx, 1, newInstance)
-        }
+        const newInstance = await getNewInstance(instance, newNaclName, filePath)
+        updateAllReferences(instances, instance.elemID, newInstance.elemID)
+        const originalInstanceIdx = elements
+          .findIndex(e => (e.elemID.getFullName()) === originalFullName)
+        elements.splice(originalInstanceIdx, 1, newInstance)
       }
     }
   )

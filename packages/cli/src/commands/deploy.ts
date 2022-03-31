@@ -68,7 +68,7 @@ export const shouldDeploy = async (
   if (_.isEmpty(actions)) {
     return false
   }
-  return getUserBooleanInput(Prompts.SHOULD_EXECUTE_PLAN)
+  return getUserBooleanInput(Prompts.SHOULD_EXECUTE_DEPLOY_PLAN)
 }
 
 type DeployArgs = {

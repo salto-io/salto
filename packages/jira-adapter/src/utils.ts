@@ -51,13 +51,14 @@ export const findObject = (elements: Element[], name: string): ObjectType | unde
 }
 
 
-export const addUpdatableAnnotationRecursively = async (type: ObjectType): Promise<void> =>
+export const addAnnotationRecursively = async (type: ObjectType, annotation: string)
+: Promise<void> =>
   awu(Object.values(type.fields)).forEach(async field => {
-    if (!field.annotations[CORE_ANNOTATIONS.UPDATABLE]) {
-      field.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
+    if (!field.annotations[annotation]) {
+      field.annotations[annotation] = true
       const fieldType = await getDeepInnerType(await field.getType())
       if (isObjectType(fieldType)) {
-        await addUpdatableAnnotationRecursively(fieldType)
+        await addAnnotationRecursively(fieldType, annotation)
       }
     }
   })

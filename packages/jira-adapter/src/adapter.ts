@@ -32,7 +32,11 @@ import sharePermissionFilter from './filters/share_permission'
 import sortListsFilter from './filters/sort_lists'
 import automationFetchFilter from './filters/automation/automation_fetch'
 import automationStructureFilter from './filters/automation/automation_structure'
-import boardFilter from './filters/board'
+import boardFilter from './filters/board/board'
+import boardColumnsFilter from './filters/board/board_columns'
+import boardSubQueryFilter from './filters/board/board_subquery'
+import boardEstimationFilter from './filters/board/board_estimation'
+import boardDeploymentFilter from './filters/board/board_deployment'
 import screenFilter from './filters/screen/screen'
 import mapListsFilter from './filters/map_lists'
 import missingStatusesFilter from './filters/statuses/missing_statuses'
@@ -114,6 +118,10 @@ export const DEFAULT_FILTERS = [
   issueTypeSchemeFilter,
   sharePermissionFilter,
   boardFilter,
+  boardColumnsFilter,
+  boardSubQueryFilter,
+  boardEstimationFilter,
+  boardDeploymentFilter,
   dashboardFilter,
   dashboardLayoutFilter,
   gadgetFilter,

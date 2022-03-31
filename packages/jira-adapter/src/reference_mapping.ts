@@ -16,7 +16,7 @@
 import { isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
-import { AUTOMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, PROJECT_TYPE, SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME } from './constants'
+import { AUTOMATION_TYPE, BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, PROJECT_TYPE, SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 
 
@@ -247,7 +247,12 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     target: { type: ISSUE_TYPE_NAME },
   },
   {
-    src: { field: 'fieldId', parentTypes: ['BoardConfiguration_estimation'] },
+    src: { field: 'field', parentTypes: [BOARD_ESTIMATION_TYPE] },
+    serializationStrategy: 'id',
+    target: { type: 'Field' },
+  },
+  {
+    src: { field: 'timeTracking', parentTypes: [BOARD_ESTIMATION_TYPE] },
     serializationStrategy: 'id',
     target: { type: 'Field' },
   },
@@ -270,6 +275,11 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     src: { field: 'projects', parentTypes: [AUTOMATION_TYPE] },
     serializationStrategy: 'id',
     target: { type: PROJECT_TYPE },
+  },
+  {
+    src: { field: 'statuses', parentTypes: ['BoardConfiguration_columnConfig_columns'] },
+    serializationStrategy: 'id',
+    target: { type: STATUS_TYPE_NAME },
   },
 ]
 

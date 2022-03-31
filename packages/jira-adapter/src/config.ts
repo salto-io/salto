@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, ObjectType } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
-import { AUTOMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME } from './constants'
+import { AUTOMATION_TYPE, BOARD_COLUMN_CONFIG_TYPE, BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME } from './constants'
 import { FIELD_TYPE_NAME } from './filters/fields/constants'
 
 const { createUserFetchConfigType, createSwaggerAdapterApiConfigType } = configUtils
@@ -176,6 +176,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         url: '/rest/api/3/dashboard/{id}',
         method: 'delete',
       },
+    },
+  },
+  BoardConfiguration_columnConfig_columns: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'statuses', fieldType: 'List<string>' },
+      ],
     },
   },
   Fields: {
@@ -1347,11 +1354,29 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
   },
 
+  BoardConfiguration_estimation: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'timeTracking', fieldType: 'string' },
+        { fieldName: 'field', fieldType: 'string' },
+      ],
+      fieldsToOmit: [
+        { fieldName: 'type' },
+      ],
+    },
+  },
+
   Board: {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'config', fieldType: 'BoardConfiguration' },
         { fieldName: 'filterId', fieldType: 'string' },
+        { fieldName: 'columnConfig', fieldType: BOARD_COLUMN_CONFIG_TYPE },
+        { fieldName: 'subQuery', fieldType: 'string' },
+        { fieldName: 'estimation', fieldType: BOARD_ESTIMATION_TYPE },
+      ],
+      fieldsToOmit: [
+        { fieldName: 'canEdit' },
       ],
       fieldsToHide: [
         {
@@ -1496,9 +1521,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   BoardConfiguration: {
     transformation: {
       fieldsToOmit: [
-        {
-          fieldName: 'id',
-        },
+        { fieldName: 'id' },
+        { fieldName: 'name' },
+        { fieldName: 'type' },
+        { fieldName: 'ranking' },
+        { fieldName: 'location' },
       ],
     },
     request: {

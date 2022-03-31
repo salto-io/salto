@@ -18,11 +18,54 @@ import { createReference } from '../utils'
 import { JIRA } from '../../src/constants'
 
 
-export const createBoardValues = (name: string, allElements: Element[]): Values => ({
-  name,
+export const createKanbanBoardValues = (name: string, allElements: Element[]): Values => ({
+  name: `kanban${name}`,
   type: 'kanban',
   location: {
     projectId: createReference(new ElemID(JIRA, 'Project', 'instance', 'Test_Project@s'), allElements),
   },
   filterId: createReference(new ElemID(JIRA, 'Filter', 'instance', 'Filter_for_TP_board@s'), allElements),
+  columnConfig: {
+    columns: [
+      {
+        name: 'first',
+      },
+      {
+        name: 'second',
+        statuses: [
+          createReference(new ElemID(JIRA, 'Status', 'instance', 'Done'), allElements),
+        ],
+        min: 2,
+        max: 4,
+      },
+    ],
+    constraintType: 'issueCount',
+  },
+  subQuery: 'fixVersion in unreleasedVersions()',
+})
+
+export const createScrumBoardValues = (name: string, allElements: Element[]): Values => ({
+  name: `scrum${name}`,
+  type: 'scrum',
+  location: {
+    projectId: createReference(new ElemID(JIRA, 'Project', 'instance', 'Test_Project@s'), allElements),
+  },
+  filterId: createReference(new ElemID(JIRA, 'Filter', 'instance', 'Filter_for_TP_board@s'), allElements),
+  columnConfig: {
+    columns: [
+      {
+        name: 'first',
+      },
+      {
+        name: 'second',
+        statuses: [
+          createReference(new ElemID(JIRA, 'Status', 'instance', 'Done'), allElements),
+        ],
+      },
+    ],
+  },
+  estimation: {
+    field: createReference(new ElemID(JIRA, 'Field', 'instance', 'Original_estimate@s'), allElements),
+    timeTracking: createReference(new ElemID(JIRA, 'Field', 'instance', 'Remaining_Estimate@s'), allElements),
+  },
 })

@@ -21,7 +21,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { transformElement } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { WORKFLOW_SCHEME_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
-import { addUpdatableAnnotationRecursively, findObject } from '../../utils'
+import { addAnnotationRecursively, findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { deployChanges } from '../../deployment/standard_deployment'
 import JiraClient from '../../client/client'
@@ -170,7 +170,7 @@ const filter: FilterCreator = ({ client, config, elementsSource, paginator }) =>
     const workflowType = findObject(elements, WORKFLOW_TYPE_NAME)
     if (workflowType !== undefined) {
       workflowType.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
-      await addUpdatableAnnotationRecursively(workflowType)
+      await addAnnotationRecursively(workflowType, CORE_ANNOTATIONS.UPDATABLE)
     }
   },
 

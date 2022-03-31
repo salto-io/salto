@@ -20,7 +20,7 @@ import { Workspace, SourceLocation, StateRecency, loadWorkspace, isValidEnvName,
   FromSourceWithEnv, COMMON_ENV_PREFIX, UpdateNaclFilesResult } from './src/workspace/workspace'
 import * as hiddenValues from './src/workspace/hidden_values'
 import * as configSource from './src/workspace/config_source'
-import {ConfigSource} from './src/workspace/config_source'
+import { ConfigSource } from './src/workspace/config_source'
 import * as workspaceConfigSource from './src/workspace/workspace_config_source'
 import * as adaptersConfigSource from './src/workspace/adapters_config_source'
 import { WorkspaceConfig, EnvConfig } from './src/workspace/config/workspace_config_types'

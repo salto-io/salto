@@ -18,7 +18,7 @@ import { SourceMap, ParseError } from '../../parser'
 
 export type ParsedNaclFileData = {
   errors: () => Promise<ParseError[] | undefined>
-  referenced: () => Promise<string[]>
+  referenced: () => Promise<string[] | undefined>
 }
 
 export type ParsedNaclFile = {

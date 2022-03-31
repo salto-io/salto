@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, isInstanceElement, isReferenceExpression, InstanceElement, ElemID, ElemIdGetter, isObjectType } from '@salto-io/adapter-api'
+import { Element, isInstanceElement, isReferenceExpression, InstanceElement, ElemID, ElemIdGetter } from '@salto-io/adapter-api'
 import { filter, setPath, references, getParents, transformElement } from '@salto-io/adapter-utils'
 import { DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
@@ -136,17 +136,18 @@ export const addReferencesToInstanceNames = async (
     _.remove(instances, instance => duplicateElemIds.has(instance.elemID.getFullName()))
   }
 
+  const instanceTypeNames = new Set(instances.map(instance => instance.elemID.typeName))
   const configByType = Object.fromEntries(
-    elements
-      .filter(isObjectType)
-      .map(type => [
-        type.elemID.name,
+    [...instanceTypeNames]
+      .map(typeName => [
+        typeName,
         getConfigWithDefault(
-          transformationConfigByType[type.elemID.name],
+          transformationConfigByType[typeName],
           transformationDefaultConfig
         ),
       ])
   )
+
   const instancesToIdFields = instances.map(instance => ({
     instance,
     idFields: configByType[instance.elemID.typeName].idFields,

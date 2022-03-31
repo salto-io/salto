@@ -76,6 +76,12 @@ describe('dynamic content references filter', () => {
           dynamicContentInstance.elemID,
           dynamicContentInstance
         ),
+        occurrences: [{
+          location: new ReferenceExpression(
+            instance.elemID.createNestedID('raw_value'),
+            '{{somePlaceholder}} {{notExistsPlaceholder}} {{somePlaceholder}}'
+          ),
+        }],
       }])
 
       expect(dynamicContentInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES])

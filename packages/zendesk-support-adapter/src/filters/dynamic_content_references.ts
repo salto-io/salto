@@ -14,10 +14,9 @@
 * limitations under the License.
 */
 import {
-  CORE_ANNOTATIONS,
   Element, InstanceElement, isInstanceElement, ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { extendGeneratedDependencies, FlatDetailedDependency, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { strings, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
@@ -28,20 +27,23 @@ const PLACEHOLDER_REGEX = /{{.+?}}/g
 const extractPlaceholders = (value: string): string[] =>
   _.uniq(Array.from(strings.matchAll(value, PLACEHOLDER_REGEX)).map(match => match[0]))
 
-const getDynamicContentReferences = (
+const getDynamicContentDependencies = (
   instance: InstanceElement,
   placeholderToItem: Record<string, InstanceElement>
-): ReferenceExpression[] => {
-  const references: ReferenceExpression[] = []
+): FlatDetailedDependency[] => {
+  const dependencies: FlatDetailedDependency[] = []
   walkOnElement({
     element: instance,
     func: ({ value, path }) => {
       if (path.name.startsWith('raw_') && typeof value === 'string') {
-        references.push(
+        dependencies.push(
           ...extractPlaceholders(value)
             .map(placeholder => placeholderToItem[placeholder])
             .filter(values.isDefined)
-            .map(itemInstance => new ReferenceExpression(itemInstance.elemID, itemInstance))
+            .map(itemInstance => ({
+              reference: new ReferenceExpression(itemInstance.elemID, itemInstance),
+              location: new ReferenceExpression(path, value),
+            }))
         )
       }
 
@@ -49,9 +51,13 @@ const getDynamicContentReferences = (
     },
   })
 
-  return references
+  return dependencies
 }
 
+/**
+ * Add dependencies from elements to dynamic content items in
+ * the _generated_ dependencies annotation
+ */
 const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     const instances = elements.filter(isInstanceElement)
@@ -62,11 +68,8 @@ const filterCreator: FilterCreator = () => ({
       .value()
 
     instances.forEach(instance => {
-      const references = getDynamicContentReferences(instance, placeholderToItem)
-      if (references.length > 0) {
-        instance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] = references
-          .map(reference => ({ reference }))
-      }
+      const dependencies = getDynamicContentDependencies(instance, placeholderToItem)
+      extendGeneratedDependencies(instance, dependencies)
     })
   },
 })

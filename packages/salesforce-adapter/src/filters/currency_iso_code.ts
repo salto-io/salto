@@ -14,12 +14,10 @@
 * limitations under the License.
 */
 import { Element, isObjectType, ObjectType, ElemID, ListType, InstanceElement, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { pathNaclCase } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { FilterWith } from '../filter'
 import { SALESFORCE, FIELD_ANNOTATIONS, RECORDS_PATH, SETTINGS_PATH, CUSTOM_VALUE } from '../constants'
 import { Types, getTypePath } from '../transformers/transformer'
-
 
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'
 const currencyCodeType = new ObjectType(
@@ -86,11 +84,9 @@ const createCurrencyCodesElements = (supportedCurrencies?: ValueSet): Element[] 
     ElemID.CONFIG_NAME,
     currencyCodeType,
     { [FIELD_ANNOTATIONS.VALUE_SET]: supportedCurrencies || [] },
-    [SALESFORCE, RECORDS_PATH, SETTINGS_PATH, pathNaclCase(currencyCodeType.elemID.name)],
+    [SALESFORCE, RECORDS_PATH, SETTINGS_PATH, currencyCodeType.elemID.name],
   )
-
   currencyCodeType.path = getTypePath(currencyCodeType)
-
   return [currencyCodeType, currencyCodesInstance]
 }
 

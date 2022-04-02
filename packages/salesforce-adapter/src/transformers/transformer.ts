@@ -1404,7 +1404,7 @@ const createIdField = (parent: ObjectType): void => {
   )
 }
 
-export const getTypePath = (element: Element, isTopLevelType?: boolean): string[] => [
+export const getTypePath = (element: Element, isTopLevelType = true): string[] => [
   SALESFORCE,
   TYPES_PATH,
   ...isTopLevelType ? [] : [SUBTYPES_PATH],

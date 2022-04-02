@@ -21,7 +21,7 @@ import { SALESFORCE, FIELD_ANNOTATIONS, RECORDS_PATH, SETTINGS_PATH, CUSTOM_VALU
 import { Types, getTypePath } from '../transformers/transformer'
 
 
-const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'
+export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'
 const currencyCodeType = new ObjectType(
   {
     elemID: new ElemID(SALESFORCE, CURRENCY_CODE_TYPE_NAME),
@@ -39,7 +39,7 @@ const currencyCodeType = new ObjectType(
 
 const CURRENCY_CODE_FIELD_NAME = 'CurrencyIsoCode'
 
-type ValueSet = object
+type ValueSet = {}
 
 type CurrencyIsoCodeType = ObjectType & {
   fields: {
@@ -82,7 +82,7 @@ const transformCurrencyIsoCodes = (element: CurrencyIsoCodeType): void => {
 }
 
 const createCurrencyCodesElements = (supportedCurrencies?: ValueSet): Element[] => {
-  const currencyCodesIntance = new InstanceElement(
+  const currencyCodesInstance = new InstanceElement(
     ElemID.CONFIG_NAME,
     currencyCodeType,
     { [FIELD_ANNOTATIONS.VALUE_SET]: supportedCurrencies || [] },
@@ -91,7 +91,7 @@ const createCurrencyCodesElements = (supportedCurrencies?: ValueSet): Element[] 
 
   currencyCodeType.path = getTypePath(currencyCodeType)
 
-  return [currencyCodeType, currencyCodesIntance]
+  return [currencyCodeType, currencyCodesInstance]
 }
 
 

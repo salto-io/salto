@@ -401,3 +401,10 @@ export const TEST_OBJECT_TO_API_MAPPING = {
 export const SCHEDULE_CONTRAINT_FIELD_TO_API_MAPPING = {
   [CPQ_ACCOUNT_NO_PRE]: CPQ_ACCOUNT,
 } as Record<string, string>
+
+// sbaa
+export const SBAA_NAMESPACE = 'sbaa'
+
+// sbaa Objects
+export const SBAA_APPROVAL_CONDITION = 'sbaa__ApprovalCondition__c'
+export const SBAA_APPROVAL_RULE = 'sbaa__ApprovalRule__c'

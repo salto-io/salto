@@ -77,6 +77,7 @@ export type ChangeValidatorName = (
   | 'validateOnlyFlag'
   | 'cpqValidator'
   | 'refToInstanceSameType'
+  | 'sbaaApprovalRulesCustomCondition'
 )
 export type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -474,6 +475,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     validateOnlyFlag: { refType: BuiltinTypes.BOOLEAN },
     cpqValidator: { refType: BuiltinTypes.BOOLEAN },
     refToInstanceSameType: { refType: BuiltinTypes.BOOLEAN },
+    sbaaApprovalRulesCustomCondition: { refType: BuiltinTypes.BOOLEAN },
   },
 })
 

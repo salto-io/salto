@@ -58,7 +58,7 @@ export const hideFields = (
  */
 export const markServiceIdField = (
   fieldName: string,
-  typeFields: Record<string, FieldDefinition>,
+  typeFields: Record<string, FieldDefinition | Field>,
   typeName: string,
 ): void => {
   const field = Object.prototype.hasOwnProperty.call(typeFields, fieldName)
@@ -78,10 +78,10 @@ export const markServiceIdField = (
   }
   switch (fieldType.primitive) {
     case (PrimitiveTypes.NUMBER):
-      field.refType = BuiltinTypes.SERVICE_ID_NUMBER
+      field.refType = createRefToElmWithValue(BuiltinTypes.SERVICE_ID_NUMBER)
       return
     case (PrimitiveTypes.STRING):
-      field.refType = BuiltinTypes.SERVICE_ID
+      field.refType = createRefToElmWithValue(BuiltinTypes.SERVICE_ID)
       return
     default:
       log.warn(

@@ -22,26 +22,25 @@ import { FIELD_TYPE_NAMES, SALESFORCE } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 import { createValueSetEntry, createCustomObjectType, findElements } from '../utils'
 
-const addPickList = (
-  parent: ObjectType,
-  name: string,
-  values: string[]
-): ObjectType => {
-  parent.fields[name] = new Field(
-    parent,
-    name,
-    Types.primitiveDataTypes[FIELD_TYPE_NAMES.PICKLIST],
-    { valueSet: values.map(value => createValueSetEntry(value, false, value, true)) },
-  )
-  return parent
+class MockObjectType extends ObjectType {
+  addPickList(name: string, values: string[]): MockObjectType {
+    this.fields[name] = new Field(
+      this,
+      name,
+      Types.primitiveDataTypes[FIELD_TYPE_NAMES.PICKLIST],
+      { valueSet: values.map(value => createValueSetEntry(value, false, value, true)) },
+    )
+    return this
+  }
 }
 
-const mockElement = (): ObjectType => createCustomObjectType('MockType', {
+
+const mockElement = (): MockObjectType => new MockObjectType(createCustomObjectType('MockType', {
   fields: {
     Id: { refType: BuiltinTypes.SERVICE_ID },
     Name: { refType: Types.primitiveDataTypes[FIELD_TYPE_NAMES.TEXT] },
   },
-})
+}))
 
 describe('currencyIsoCode filter', () => {
   const filter = currencyIsoCodeFilter() as FilterWith<'onFetch'>
@@ -51,7 +50,7 @@ describe('currencyIsoCode filter', () => {
     let originalElement: Element
 
     beforeEach(async () => {
-      elements = [addPickList(mockElement(), 'Priority', ['Low', 'Medium', 'High'])]
+      elements = [mockElement().addPickList('Priority', ['Low', 'Medium', 'High'])]
       originalElement = _.cloneDeep(elements[0])
       await filter.onFetch(elements)
     })
@@ -81,10 +80,11 @@ describe('currencyIsoCode filter', () => {
     let originalElement: Element
 
     beforeEach(async () => {
-      const element = mockElement()
-      addPickList(element, 'Priority', ['Low', 'Medium', 'High'])
-      addPickList(element, 'CurrencyIsoCode', ['USD', 'EUR'])
-      elements = [element]
+      elements = [
+        mockElement()
+          .addPickList('Priority', ['Low', 'Medium', 'High'])
+          .addPickList('CurrencyIsoCode', ['USD', 'EUR']),
+      ]
       originalElement = _.cloneDeep(elements[0])
       await filter.onFetch(elements)
     })

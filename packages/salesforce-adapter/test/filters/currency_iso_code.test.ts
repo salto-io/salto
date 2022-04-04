@@ -77,15 +77,14 @@ describe('currencyIsoCode filter', () => {
   })
 
   describe('when there are currency fields', () => {
-    let originalElement: Element
-
+    let targetElemID: ElemID
     beforeEach(async () => {
       elements = [
         mockElement()
           .addPickList('Priority', ['Low', 'Medium', 'High'])
           .addPickList('CurrencyIsoCode', ['USD', 'EUR']),
       ]
-      originalElement = _.cloneDeep(elements[0])
+      targetElemID = elements[0].elemID
       await filter.onFetch(elements)
     })
 
@@ -116,18 +115,64 @@ describe('currencyIsoCode filter', () => {
     })
 
     it('should modify the currency code fields', () => {
-      const modifiedElement = [...findElementsByID(elements, originalElement.elemID)]
+      const modifiedElement = [...findElementsByID(elements, targetElemID)]
       expect(modifiedElement).toHaveLength(1)
       expect(modifiedElement[0]).toBeInstanceOf(ObjectType)
       const { annotations } = (modifiedElement[0] as ObjectType).fields.CurrencyIsoCode
       expect(annotations).not.toHaveProperty('valueSet')
       expect(annotations).toHaveProperty('valueSetName')
     })
+
+    it('should not modify other picklist fields', () => {
+      const modifiedElement = [...findElementsByID(elements, targetElemID)]
+      expect(modifiedElement).toHaveLength(1)
+      expect(modifiedElement[0]).toBeInstanceOf(ObjectType)
+      const { annotations } = (modifiedElement[0] as ObjectType).fields.Priority
+      expect(annotations).toHaveProperty('valueSet')
+      expect(annotations).not.toHaveProperty('valueSetName')
+    })
   })
+
   describe('when there are malformed currency values', () => {
-    elements = []
+    let targetElemID: ElemID
+    beforeEach(async () => {
+      elements = [mockElement().addPickList('CurrencyIsoCode', ['USD'])]
+      delete (elements[0] as ObjectType).fields.CurrencyIsoCode.annotations.valueSet[0].label
+      targetElemID = elements[0].elemID
+      await filter.onFetch(elements)
+    })
+    it('should not modify the picklist', () => {
+      const modifiedElement = [...findElementsByID(elements, targetElemID)]
+      expect(modifiedElement).toHaveLength(1)
+      expect(modifiedElement[0]).toBeInstanceOf(ObjectType)
+      const { annotations } = (modifiedElement[0] as ObjectType).fields.CurrencyIsoCode
+      expect(annotations).toHaveProperty('valueSet')
+      expect(annotations).not.toHaveProperty('valueSetName')
+    })
   })
   describe('when there are no configured currencies', () => {
-    elements = []
+    let targetElemID: ElemID
+    beforeEach(async () => {
+      elements = [mockElement().addPickList('CurrencyIsoCode', [])]
+      targetElemID = elements[0].elemID
+      await filter.onFetch(elements)
+    })
+    it('should transform the currency iso code as ususal', () => {
+      const modifiedElement = [...findElementsByID(elements, targetElemID)]
+      expect(modifiedElement).toHaveLength(1)
+      expect(modifiedElement[0]).toBeInstanceOf(ObjectType)
+      const { annotations } = (modifiedElement[0] as ObjectType).fields.CurrencyIsoCode
+      expect(annotations).not.toHaveProperty('valueSet')
+      expect(annotations).toHaveProperty('valueSetName')
+    })
+    it('should create an empty currrency iso codes record', () => {
+      const currencyCodeRecord = findElements(elements, CURRENCY_CODE_TYPE_NAME, ElemID.CONFIG_NAME)
+      expect(currencyCodeRecord).toHaveLength(1)
+      expect(currencyCodeRecord[0]).toMatchObject({
+        value: {
+          valueSet: [],
+        },
+      })
+    })
   })
 })

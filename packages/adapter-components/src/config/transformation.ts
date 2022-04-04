@@ -21,6 +21,7 @@ import { findDuplicates } from './validation_utils'
 import { getConfigWithDefault, TypeConfig, TypeDefaultsConfig } from './shared'
 
 export const DATA_FIELD_ENTIRE_OBJECT = '.'
+export const FIELD_REFERENCE_PREFIX = '&'
 
 export type StandaloneFieldConfigType = {
   fieldName: string
@@ -184,6 +185,20 @@ export const validateTransoformationConfig = (
     }
   }
 
+  const validateIdFieldsConfig = (
+    idFields: string[],
+    typeName: string | undefined
+  ): void => {
+    idFields.forEach(fieldName => {
+      const symbolCount = (fieldName.match(/&/g) || []).length
+      if ((symbolCount > 1)
+      || (symbolCount === 1 && !fieldName.startsWith(FIELD_REFERENCE_PREFIX))) {
+        const typeNameError = typeName !== undefined ? `of type ${typeName} ` : ''
+        throw new Error(`${fieldName} field name ${typeNameError}in idFields config is invalid`)
+      }
+    })
+  }
+
   findNestedFieldDups(
     'fieldTypeOverrides',
     defaultConfig.fieldTypeOverrides,
@@ -214,6 +229,13 @@ export const validateTransoformationConfig = (
   if (validateIsSingletonTypes.length > 0) {
     throw new Error(`Singleton types should not have dataField or fileNameFields set, misconfiguration found for the following types: ${validateIsSingletonTypes.toString()}`)
   }
+
+  validateIdFieldsConfig(defaultConfig.idFields, undefined)
+  Object.entries(configMap).forEach(([type, tansformation]) => {
+    if (tansformation.idFields !== undefined) {
+      validateIdFieldsConfig(tansformation.idFields, type)
+    }
+  })
 }
 
 export const getTypeTransformationConfig = (
@@ -232,3 +254,13 @@ Record<string, TransformationConfig> => _.pickBy(
   _.mapValues(typesConfig, def => def.transformation),
   values.isDefined,
 )
+
+export const isReferencedIdField = (
+  idField: string
+): boolean => idField.startsWith(FIELD_REFERENCE_PREFIX)
+
+export const dereferenceFieldName = (
+  fieldName: string
+): string => (isReferencedIdField(fieldName)
+  ? _.trimStart(fieldName, FIELD_REFERENCE_PREFIX)
+  : fieldName)

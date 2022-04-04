@@ -14,3 +14,4 @@
 * limitations under the License.
 */
 export { serviceUrlFilterCreator } from './service_url'
+export { referencedInstanceNamesFilterCreator } from './referenced_instance_names'

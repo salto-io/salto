@@ -79,7 +79,7 @@ const transformCurrencyIsoCodes = (element: CurrencyIsoCodeType): void => {
   element.fields.CurrencyIsoCode.annotations.valueSetName = valueSetName
 }
 
-const createCurrencyCodesElements = (supportedCurrencies?: ValueSet): Element[] => {
+const createCurrencyCodesElements = (supportedCurrencies: ValueSet): Element[] => {
   const currencyCodesInstance = new InstanceElement(
     ElemID.CONFIG_NAME,
     currencyCodeType,
@@ -98,8 +98,11 @@ const createCurrencyCodesElements = (supportedCurrencies?: ValueSet): Element[] 
 const filterCreator = (): FilterWith<'onFetch'> => ({
   onFetch: async (elements: Element[]) => {
     const affectedElements = elements.filter(isObjectType).filter(isTypeWithCurrencyIsoCode)
+    if (affectedElements.length === 0) {
+      return
+    }
     elements.push(...createCurrencyCodesElements(
-      affectedElements[0]?.fields.CurrencyIsoCode.annotations.valueSet as ValueSet[]
+      affectedElements[0].fields.CurrencyIsoCode.annotations.valueSet as ValueSet[]
     ))
     affectedElements.forEach(transformCurrencyIsoCodes)
   },

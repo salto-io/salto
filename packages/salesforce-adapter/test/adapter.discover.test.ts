@@ -256,8 +256,7 @@ describe('SalesforceAdapter fetch', () => {
         + 1 /* treat blank as */
         + 1 /* value set */
         + 2 /* field dependency & value settings */
-        + 7 /* range restrictions */
-        + 2 /* currency iso codes */)
+        + 7 /* range restrictions */)
 
       const elementsMap = _.assign({}, ...result.map(t => ({ [id(t)]: t })))
       const nestingType = elementsMap['salesforce.NestingType']

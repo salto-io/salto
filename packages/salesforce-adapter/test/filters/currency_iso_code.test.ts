@@ -55,21 +55,10 @@ describe('currencyIsoCode filter', () => {
       await filter.onFetch(elements)
     })
 
-    it('should add a new settings type and a new setting instance', () => {
-      expect(elements).toHaveLength(3)
+    it('should not add any elements', () => {
+      expect(elements).toHaveLength(1)
     })
-    it('should add a correct type', () => {
-      const currencyCodesType = findElements(elements, CURRENCY_CODE_TYPE_NAME)
-      expect(currencyCodesType).toHaveLength(1)
-    })
-    it('should add an empty currecy codes ValueSet', () => {
-      const currencyCodeRecord = findElements(elements, CURRENCY_CODE_TYPE_NAME, ElemID.CONFIG_NAME)
-      expect(currencyCodeRecord).toHaveLength(1)
-      expect(currencyCodeRecord[0]).toMatchObject({
-        elemID: expect.objectContaining({ adapter: SALESFORCE, idType: 'instance', typeName: CURRENCY_CODE_TYPE_NAME }),
-        value: { valueSet: [] },
-      })
-    })
+
     it('should not change the original element', () => {
       const element = findElements(elements, 'MockType')[0]
       expect(element).toStrictEqual(originalElement)
@@ -102,8 +91,8 @@ describe('currencyIsoCode filter', () => {
     it('should create a new record with the current currencies', () => {
       const currencyCodeRecord = findElements(elements, CURRENCY_CODE_TYPE_NAME, ElemID.CONFIG_NAME)
       expect(currencyCodeRecord).toHaveLength(1)
-
       expect(currencyCodeRecord[0]).toMatchObject({
+        elemID: expect.objectContaining({ adapter: SALESFORCE, idType: 'instance', typeName: CURRENCY_CODE_TYPE_NAME }),
         path: [SALESFORCE, 'Records', 'Settings', 'CurrencyIsoCodes'],
         value: {
           valueSet: expect.arrayContaining([

@@ -192,7 +192,7 @@ const credentialsSource = (localStorage: string): cs.ConfigSource =>
     encoding: 'utf8',
   }))
 
-const getAdapterConfigsPerAccount = async (envs: EnvConfig[]): Promise<ObjectType[]> => {
+export const getAdapterConfigsPerAccount = async (envs: EnvConfig[]): Promise<ObjectType[]> => {
   const configTypesByAccount = await getAdaptersConfigTypesMap()
   const configElementSource = elementSource.createInMemoryElementSource(
     Object.values(configTypesByAccount).flat()

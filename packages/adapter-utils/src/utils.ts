@@ -23,7 +23,7 @@ import {
   Element, isInstanceElement, InstanceElement, isPrimitiveType, TypeMap, isField, ChangeDataType,
   ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isAdditionChange,
   CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
-  ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType,
+  ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType, isTypeReference,
   ReadOnlyElementsSource, ReferenceMap, TypeReference, createRefToElmWithValue, isElement,
 } from '@salto-io/adapter-api'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from './walk_element'
@@ -891,11 +891,15 @@ export const createDefaultInstanceFromType = async (name: string, objectType: Ob
 
 type Replacer = (key: string, value: Value) => Value
 
-export const referenceExpressionStringifyReplacer: Replacer = (_key, value) => (
-  isReferenceExpression(value)
-    ? `ReferenceExpression(${value.elemID.getFullName()}, ${value.value ? '<omitted>' : '<no value>'})`
-    : value
-)
+export const referenceExpressionStringifyReplacer: Replacer = (_key, value) => {
+  if (isReferenceExpression(value)) {
+    return `ReferenceExpression(${value.elemID.getFullName()}, ${value.value ? '<omitted>' : '<no value>'})`
+  }
+  if (isTypeReference(value)) {
+    return `TypeReference(${value.elemID.getFullName()}, ${value.type ? '<omitted>' : '<no value>'})`
+  }
+  return value
+}
 
 export const safeJsonStringify = (value: Value,
   replacer?: Replacer,

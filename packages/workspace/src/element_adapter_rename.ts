@@ -64,21 +64,21 @@ const recursivelyUpdateContainerType = (type: ContainerType, accountName: string
 }
 
 const updateRefTypeWithId = (refType: TypeReference, accountName: string): void => {
-  if (refType.value === undefined) {
+  if (refType.type === undefined) {
     _.set(refType, 'elemID', createAdapterReplacedID(refType.elemID, accountName))
     return
   }
-  if (isContainerType(refType.value)) {
-    refType.value = refType.value.clone()
-    recursivelyUpdateContainerType(refType.value, accountName)
+  if (isContainerType(refType.type)) {
+    refType.type = refType.type.clone()
+    recursivelyUpdateContainerType(refType.type, accountName)
   } else {
-    const newElemID = createAdapterReplacedID(refType.value.elemID, accountName)
-    if (!newElemID.isEqual(refType.value.elemID)) {
-      refType.value = refType.value.clone()
-      _.set(refType.value, 'elemID', createAdapterReplacedID(refType.value.elemID, accountName))
+    const newElemID = createAdapterReplacedID(refType.type.elemID, accountName)
+    if (!newElemID.isEqual(refType.type.elemID)) {
+      refType.type = refType.type.clone()
+      _.set(refType.type, 'elemID', createAdapterReplacedID(refType.type.elemID, accountName))
     }
   }
-  _.set(refType, 'elemID', refType.value.elemID)
+  _.set(refType, 'elemID', refType.type.elemID)
 }
 
 const transformElemIDAdapter = (accountName: string): TransformFunc => async (

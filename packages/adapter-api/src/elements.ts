@@ -36,18 +36,13 @@ export const createRefToElmWithValue = (element: TypeElement): TypeReference => 
     ?? new TypeReference(element.elemID, element)
 )
 
-// This is used to allow contructors Elements with Placeholder types
+// This is used to allow constructors Elements with Placeholder types
 // to receive TypeElement and save the appropriate Reference
-const getRefType = (typeOrRef: TypeOrRef): TypeReference =>
-  (isTypeReference(typeOrRef)
+const getRefType = (typeOrRef: TypeOrRef): TypeReference => (
+  isTypeReference(typeOrRef)
     ? typeOrRef
-    : new TypeReference(typeOrRef.elemID, typeOrRef))
-
-const getRefTypeValue = async (
-  refType: TypeReference,
-  elementsSource?: ReadOnlyElementsSource,
-): Promise<Value> =>
-  (refType.getResolvedValue(elementsSource))
+    : createRefToElmWithValue(typeOrRef)
+)
 
 /**
  * An abstract class that represent the base element.
@@ -188,7 +183,7 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
   }
 
   async getInnerType(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
-    const refInnerTypeVal = await getRefTypeValue(this.refInnerType, elementsSource)
+    const refInnerTypeVal = await this.refInnerType.getResolvedValue(elementsSource)
     // eslint-disable-next-line no-use-before-define
     if (!isType(refInnerTypeVal)) {
       throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s innerType is resolved non-TypeElement`)
@@ -250,7 +245,7 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
   }
 
   async getInnerType(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
-    const refInnerTypeVal = await getRefTypeValue(this.refInnerType, elementsSource)
+    const refInnerTypeVal = await this.refInnerType.getResolvedValue(elementsSource)
     // eslint-disable-next-line no-use-before-define
     if (!isType(refInnerTypeVal)) {
       throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s innerType is resolved non-TypeElement`)
@@ -299,7 +294,7 @@ export class Field extends Element {
   }
 
   async getType(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
-    const type = await getRefTypeValue(this.refType, elementsSource)
+    const type = await this.refType.getResolvedValue(elementsSource)
     // eslint-disable-next-line no-use-before-define
     if (!isType(type)) {
       throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s type is resolved non-TypeElement`)
@@ -464,7 +459,7 @@ export class InstanceElement extends Element {
   }
 
   async getType(elementsSource?: ReadOnlyElementsSource): Promise<ObjectType> {
-    const type = await getRefTypeValue(this.refType, elementsSource)
+    const type = await this.refType.getResolvedValue(elementsSource)
     // This can happen when the user has an instance like
     // string name {}
     // an instance like that can be created in some cases of syntax errors in the user's nacl

@@ -2107,7 +2107,7 @@ describe('Test utils.ts', () => {
     "refWithVal": "ReferenceExpression(a.b, <omitted>)",
     "refWithoutVal": "ReferenceExpression(c.d, <no value>)"
   },
-  "refType": "ReferenceExpression(salto.obj, <omitted>)"
+  "refType": "TypeReference(salto.obj, <omitted>)"
 }`)
       })
     })

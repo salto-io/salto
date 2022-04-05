@@ -3967,7 +3967,7 @@ describe('listUnresolvedReferences', () => {
       const defaultElements = createEnvElements() as InstanceElement[]
       defaultElements[3].value = {
         ...(defaultElements[3] as InstanceElement).value,
-        f3: new TypeReference(new ElemID('salesforce', 'unresolved')),
+        f3: new ReferenceExpression(new ElemID('salesforce', 'unresolved')),
       }
       const otherElements = createEnvElements().slice(1)
       workspace = await createWorkspace(

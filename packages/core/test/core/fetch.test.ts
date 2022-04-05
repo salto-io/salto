@@ -21,6 +21,7 @@ import {
   ListType, FieldDefinition, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ReferenceExpression,
   ReadOnlyElementsSource,
   createRefToElmWithValue,
+  TypeReference,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -1103,9 +1104,7 @@ describe('fetch', () => {
         const expectedHiddenInstanceAlternateId = instanceWithHiddenAlternateId.clone()
         expectedHiddenInstanceAlternateId.refType = _.clone(expectedHiddenInstanceAlternateId
           .refType)
-        expectedHiddenInstanceAlternateId.refType.value = expect.anything()
-        // refType's type property is not supposed to be transformed, so we don't assert on it.
-        _.set(expectedHiddenInstanceAlternateId.refType, 'type', expect.anything())
+        expectedHiddenInstanceAlternateId.refType.type = expect.anything()
         expect(getChangeData(changes[1].change)).toEqual(expectedHiddenInstanceAlternateId)
       })
     })
@@ -1133,9 +1132,7 @@ describe('fetch', () => {
         const expectedHiddenInstanceAlternateId = instanceWithHiddenAlternateId.clone()
         expectedHiddenInstanceAlternateId.refType = _.clone(expectedHiddenInstanceAlternateId
           .refType)
-        expectedHiddenInstanceAlternateId.refType.value = expect.anything()
-        // refType's type property is not supposed to be transformed, so we don't assert on it.
-        _.set(expectedHiddenInstanceAlternateId.refType, 'type', expect.anything())
+        expectedHiddenInstanceAlternateId.refType.type = expect.anything()
         expect(passed).toEqual([expectedHiddenInstanceAlternateId])
       })
     })
@@ -1242,10 +1239,8 @@ describe('fetch', () => {
       expectedDummy3Type1AfterRename.fields.listListStr = new Field(expectedDummy3Type1AfterRename,
         'listListStr', new ListType(new ListType(dummy3PrimStr)))
       // These next lines remove expectation from resolved values
-      expectedDummy3Type1AfterRename.fields.listListStr.refType.value = expect.anything()
-      _.set(expectedDummy3Type1AfterRename.fields.listListStr.refType, 'type', expect.anything())
-      expectedDummy3Type1AfterRename.fields.listStr.refType.value = expect.anything()
-      _.set(expectedDummy3Type1AfterRename.fields.listStr.refType, 'type', expect.anything())
+      expectedDummy3Type1AfterRename.fields.listListStr.refType.type = expect.anything()
+      expectedDummy3Type1AfterRename.fields.listStr.refType.type = expect.anything()
 
 
       const adapters = {
@@ -1584,7 +1579,7 @@ describe('fetch from workspace', () => {
       editNaclElem,
     ]
     const configs = [
-      new InstanceElement('_config', new ReferenceExpression(new ElemID('salto'))),
+      new InstanceElement('_config', new TypeReference(new ElemID('salto'))),
     ]
     const pi = new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>()
     let fetchRes: FetchChangesResult

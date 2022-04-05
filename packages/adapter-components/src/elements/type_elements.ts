@@ -16,7 +16,7 @@
 */
 import _ from 'lodash'
 import { FieldDefinition, Field, CORE_ANNOTATIONS, TypeElement, isObjectType, isContainerType,
-  getDeepInnerType, ObjectType, BuiltinTypes, createRestriction, createRefToElmWithValue, PrimitiveType, LIST_ID_PREFIX, GENERIC_ID_PREFIX, GENERIC_ID_SUFFIX, MAP_ID_PREFIX, ListType, MapType, isEqualElements, isPrimitiveType, PrimitiveTypes, isReferenceExpression } from '@salto-io/adapter-api'
+  getDeepInnerType, ObjectType, BuiltinTypes, createRestriction, createRefToElmWithValue, PrimitiveType, LIST_ID_PREFIX, GENERIC_ID_PREFIX, GENERIC_ID_SUFFIX, MAP_ID_PREFIX, ListType, MapType, isEqualElements, isPrimitiveType, PrimitiveTypes, isTypeReference } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { values, collections } from '@salto-io/lowerdash'
 import { FieldToHideType, FieldTypeOverrideType, getTypeTransformationConfig } from '../config/transformation'
@@ -58,7 +58,7 @@ export const hideFields = (
  */
 export const markServiceIdField = (
   fieldName: string,
-  typeFields: Record<string, FieldDefinition>,
+  typeFields: Record<string, FieldDefinition | Field>,
   typeName: string,
 ): void => {
   const field = Object.prototype.hasOwnProperty.call(typeFields, fieldName)
@@ -68,8 +68,8 @@ export const markServiceIdField = (
     return
   }
   log.debug('Mark field %s.%s as service_id', typeName, fieldName)
-  const fieldType = isReferenceExpression(field.refType)
-    ? field.refType.value
+  const fieldType = isTypeReference(field.refType)
+    ? field.refType.type
     : field.refType
 
   if (!isPrimitiveType(fieldType)) {

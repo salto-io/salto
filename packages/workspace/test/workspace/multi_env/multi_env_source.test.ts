@@ -289,6 +289,21 @@ describe('multi env source', () => {
           expect(loadResult[inactivePrefix].postChangeHash).toBeDefined()
         })
       })
+      describe('when ignore file changes is set', () => {
+        let multiSource: MultiEnvSource
+        let loadResult: Record<string, ChangeSet<Change>>
+        beforeEach(async () => {
+          // We can re-use the sources here because the mock nacl sources don't behave correctly
+          // and will "replay" the "load" result regardless of how many times they are loaded
+          multiSource = multiEnvSource(sources, commonPrefix, remoteMaps.creator, true)
+          loadResult = await multiSource.load({ignoreFileChanges: true})
+        })
+
+        it('should return empty change sets', () => {
+          expect(loadResult[activePrefix]).not.toBeDefined()
+          expect(loadResult[inactivePrefix]).not.toBeDefined()
+        })
+      })
     })
 
     describe('second load', () => {

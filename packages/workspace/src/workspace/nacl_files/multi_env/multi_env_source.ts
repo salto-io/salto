@@ -213,7 +213,12 @@ const buildMultiEnvSource = (
   }
 
   let state = initState
-  const buildMultiEnvState = async ({ envChanges = {} }: { envChanges?: EnvsChanges }):
+  const buildMultiEnvState = async ({
+    envChanges = {}, ignoreFileChanges = false,
+  }: {
+    envChanges?: EnvsChanges
+    ignoreFileChanges?: boolean
+  }):
   Promise<{ state: MultiEnvState; changes: EnvsChanges }> => {
     const states = await mapValuesAsync(
       envSources(),
@@ -266,10 +271,12 @@ const buildMultiEnvSource = (
       })
       return changeResult
     }
-    const changes = await mapValuesAsync(
-      envSources(),
-      (_source, envName) => getEnvMergedChanges(envName)
-    )
+    const changes = ignoreFileChanges
+      ? {}
+      : await mapValuesAsync(
+        envSources(),
+        (_source, envName) => getEnvMergedChanges(envName)
+      )
     return {
       state: current,
       changes,
@@ -519,7 +526,7 @@ const buildMultiEnvSource = (
 
   const load = async ({ ignoreFileChanges = false }: SourceLoadParams): Promise<EnvsChanges> => {
     const changes = await mapValuesAsync(sources, src => src.load({ ignoreFileChanges }))
-    const buildResults = await buildMultiEnvState({ envChanges: changes })
+    const buildResults = await buildMultiEnvState({ envChanges: changes, ignoreFileChanges })
     state = buildResults.state
     return buildResults.changes
   }

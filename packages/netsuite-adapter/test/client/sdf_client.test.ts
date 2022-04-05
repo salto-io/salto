@@ -1357,7 +1357,7 @@ File: ~/Objects/custform_114_t1441298_782.xml
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeTruthy()
-          expect(e instanceof ObjectsDeployError && e.failObjects).toEqual(new Set(['custform_114_t1441298_782']))
+          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Set(['custform_114_t1441298_782']))
         }
         expect(isRejected).toBe(true)
       })
@@ -1413,7 +1413,7 @@ File: ~/Objects/custform_15_t1049933_143.xml
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeTruthy()
-          expect(e instanceof ObjectsDeployError && e.failObjects).toEqual(new Set(['custform_15_t1049933_143']))
+          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Set(['custform_15_t1049933_143']))
         }
         expect(isRejected).toBe(true)
       })
@@ -1468,7 +1468,7 @@ File: ~/Objects/custform_15_t1049933_143.xml
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeTruthy()
-          expect(e instanceof ObjectsDeployError && e.failObjects).toEqual(new Set(['custform_15_t1049933_143']))
+          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Set(['custform_15_t1049933_143']))
         }
         expect(isRejected).toBe(true)
       })
@@ -1581,7 +1581,7 @@ Object: customrecord_flo_customization.custrecord_flo_custz_link (customrecordcu
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeTruthy()
-          expect(e instanceof ObjectsDeployError && e.failObjects).toEqual(new Set(['customrecord_flo_customization']))
+          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Set(['customrecord_flo_customization']))
         }
         expect(isRejected).toBe(true)
       })

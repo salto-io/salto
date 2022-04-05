@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 import SdfClient from '../../src/client/sdf_client'
@@ -38,19 +37,6 @@ describe('NetsuiteClient', () => {
 
       beforeEach(() => {
         jest.resetAllMocks()
-      })
-
-      it('should deploy in chunks', async () => {
-        const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
-        const changes = _.range(60).map(index => toChange({
-          after: new InstanceElement(`instance${index}`, type, { scriptid: `id${index}` }),
-        }))
-        expect(await client.deploy(changes, SDF_CHANGE_GROUP_ID, false))
-          .toEqual({
-            errors: [],
-            appliedChanges: changes,
-          })
-        expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
       })
 
       it('should try again to deploy after ObjectsDeployError', async () => {

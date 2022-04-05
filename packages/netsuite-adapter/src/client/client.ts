@@ -39,8 +39,6 @@ import { FeaturesDeployError, ObjectsDeployError } from '../errors'
 const { awu } = collections.asynciterable
 const log = logger(module)
 
-const SDF_DEPLOY_CHUNK_SIZE = 50
-
 const GROUP_TO_DEPLOY_TYPE: Record<string, DeployType> = {
   [SUITEAPP_CREATING_FILES_GROUP_ID]: 'add',
   [SUITEAPP_UPDATING_FILES_GROUP_ID]: 'update',
@@ -152,19 +150,17 @@ export default class NetsuiteClient {
     changes: ReadonlyArray<Change<InstanceElement>>
   ): Set<string> {
     const changedInstances = changes.map(getChangeData)
-    const { failObjects } = error
-
-    const failElemIDs = new Set(changedInstances
-      .filter(inst => failObjects.has(inst.value[SCRIPT_ID]))
+    const failedElemIDs = new Set(changedInstances
+      .filter(inst => error.failedObjects.has(inst.value[SCRIPT_ID]))
       .map(inst => inst.elemID.getFullName()))
 
     // in case we cannot find the failed instances we return all as failed
-    return failElemIDs.size === 0
+    return failedElemIDs.size === 0
       ? new Set(changedInstances.map(inst => inst.elemID.getFullName()))
-      : failElemIDs
+      : failedElemIDs
   }
 
-  private async sdfDeployChunk(
+  private async sdfDeploy(
     changes: ReadonlyArray<Change<InstanceElement>>,
     deployReferencedElements: boolean
   ): Promise<DeployResult> {
@@ -192,54 +188,29 @@ export default class NetsuiteClient {
         )
         return { errors, appliedChanges: changesToDeploy }
       } catch (error) {
+        errors.push(error)
         if (error instanceof FeaturesDeployError) {
           const successfullyDeployedChanges = NetsuiteClient.toFeaturesDeployPartialSuccessResult(
             error, changesToDeploy
           )
-          errors.push(error)
           return { errors, appliedChanges: successfullyDeployedChanges }
         }
         if (error instanceof ObjectsDeployError) {
-          const failElemIDs = NetsuiteClient.getFailedSdfDeployChangesElemIDs(
+          const failedElemIDs = NetsuiteClient.getFailedSdfDeployChangesElemIDs(
             error, changesToDeploy
           )
-          log.debug('sdf failed to deploy: %o', Array.from(failElemIDs))
+          log.debug('sdf failed to deploy: %o', Array.from(failedElemIDs))
           _.remove(
             changesToDeploy,
-            change => failElemIDs.has(getChangeData(change).elemID.getFullName())
+            change => failedElemIDs.has(getChangeData(change).elemID.getFullName())
           )
-          errors.push(error)
         } else {
           // unknown error
-          errors.push(error)
           return { errors, appliedChanges: [] }
         }
       }
     }
     return { errors, appliedChanges: [] }
-  }
-
-  private async sdfDeploy(
-    changes: ReadonlyArray<Change<InstanceElement>>,
-    deployReferencedElements: boolean
-  ): Promise<DeployResult> {
-    const changesChunks = _.range(changes.length)
-      .filter(num => num % SDF_DEPLOY_CHUNK_SIZE === 0)
-      .map(index => changes.slice(index, index + SDF_DEPLOY_CHUNK_SIZE))
-    log.debug('going to deploy %d sdf changes in %d chunks', changes.length, changesChunks.length)
-
-    const deployResults = await awu(changesChunks)
-      .map(async (chunk, index) => {
-        log.debug('deploying sdf chunk num. %d with %d changes', index, chunk.length)
-        const result = await this.sdfDeployChunk(chunk, deployReferencedElements)
-        log.debug('%d out of %d changes deployed successfully', result.appliedChanges.length, chunk.length)
-        return result
-      }).toArray()
-
-    const appliedChanges = deployResults.flatMap(result => result.appliedChanges)
-    const errors = deployResults.flatMap(result => result.errors)
-    log.debug('sdf deploy total applied changes - %d changes', appliedChanges.length)
-    return { errors, appliedChanges }
   }
 
   @NetsuiteClient.logDecorator

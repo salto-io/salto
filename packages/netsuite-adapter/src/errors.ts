@@ -23,10 +23,10 @@ export class FeaturesDeployError extends Error {
 }
 
 export class ObjectsDeployError extends Error {
-  failObjects: Set<string>
-  constructor(message: string, failObjects: Set<string>) {
+  failedObjects: Set<string>
+  constructor(message: string, failedObjects: Set<string>) {
     super(message)
-    this.failObjects = failObjects
+    this.failedObjects = failedObjects
     this.name = 'ObjectsDeployError'
   }
 }

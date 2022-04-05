@@ -107,7 +107,7 @@ const configureFeatureFailRegex = RegExp(`Configure feature -- (Enabling|Disabli
 const OBJECT_ID = 'objectId'
 const deployStartMessageRegex = RegExp('^Begin deployment$', 'm')
 const objectValidationErrorRegex = RegExp(`^An error occurred during custom object validation. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm')
-const deployedObjectRegex = RegExp(`^Update object -- (?<${OBJECT_ID}>[a-z0-9_]+)`, 'gm')
+const deployedObjectRegex = RegExp(`^(Create|Update) object -- (?<${OBJECT_ID}>[a-z0-9_]+)`, 'gm')
 const errorObjectRegex = RegExp(`^An unexpected error has occurred. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'm')
 
 export const MINUTE_IN_MILLISECONDS = 1000 * 60
@@ -896,6 +896,8 @@ export default class SdfClient {
     const errorMessage = error.message
 
     if (!deployStartMessageRegex.test(errorMessage)) {
+      // we'll get here when the deploy failed in the validation phase.
+      // in this case we're looking for validation error message lines.
       const validationErrorObjects = getGroupItemFromRegex(
         errorMessage, objectValidationErrorRegex, OBJECT_ID
       )

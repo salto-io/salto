@@ -49,6 +49,9 @@ export const SUITEAPP_FILE_CABINET_GROUPS = [
 
 const getSdfWithSuiteAppGroupName = (change: Change): string => {
   const element = getChangeData(change)
+  if (isSDFConfigTypeName(element.elemID.typeName)) {
+    return `${SDF_CHANGE_GROUP_ID} - Settings`
+  }
   if (!isInstanceElement(element) || element.value[APPLICATION_ID] === undefined) {
     return SDF_CHANGE_GROUP_ID
   }

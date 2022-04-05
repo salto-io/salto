@@ -64,6 +64,7 @@ const NON_BINARY_FILETYPES = new Set([
 ])
 
 const UNAUTHORIZED_STATUSES = [401, 403]
+const HTTP_SERVER_ERROR_INITIAL = '5'
 
 const ACTIVATION_KEY_APP_VERSION = '0.1.3'
 const CONFIG_TYPES_APP_VERSION = '0.1.4'
@@ -101,7 +102,15 @@ export default class SuiteAppClient {
     this.soapClient = new SoapClient(this.credentials, this.callsLimiter)
 
     this.axiosClient = axios.create({ timeout: AXIOS_TIMEOUT })
-    axiosRetry(this.axiosClient, createRetryOptions(DEFAULT_RETRY_OPTS))
+    const retryOptions = createRetryOptions(DEFAULT_RETRY_OPTS)
+    axiosRetry(
+      this.axiosClient,
+      {
+        ...retryOptions,
+        retryCondition: err => retryOptions.retryCondition?.(err)
+          || String(err.response?.status).startsWith(HTTP_SERVER_ERROR_INITIAL),
+      }
+    )
 
     this.versionFeatures = undefined
     this.setVersionFeaturesLock = new AsyncLock()

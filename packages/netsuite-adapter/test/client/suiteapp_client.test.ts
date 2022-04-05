@@ -112,7 +112,7 @@ describe('SuiteAppClient', () => {
           mockAxiosAdapter.onPost().reply(() => [])
           expect(await client.runSuiteQL('')).toBeUndefined()
         })
-        it('with retry', async () => {
+        it('with concurrency error retry', async () => {
           jest.spyOn(global, 'setTimeout').mockImplementation((cb: TimerHandler) => (_.isFunction(cb) ? cb() : undefined))
           mockAxiosAdapter
             .onPost().replyOnce(429)
@@ -123,6 +123,24 @@ describe('SuiteAppClient', () => {
 
           expect(await client.runSuiteQL('query')).toEqual([{ a: 1 }, { a: 2 }])
           expect(mockAxiosAdapter.history.post.length).toBe(2)
+        })
+        it('with server error retry', async () => {
+          jest.spyOn(global, 'setTimeout').mockImplementation((cb: TimerHandler) => (_.isFunction(cb) ? cb() : undefined))
+          mockAxiosAdapter
+            .onPost()
+            .replyOnce(500)
+            .onPost()
+            .replyOnce(501)
+            .onPost()
+            .replyOnce(502)
+            .onPost()
+            .replyOnce(200, {
+              hasMore: false,
+              items: [{ links: [], a: 1 }, { links: [], a: 2 }],
+            })
+
+          expect(await client.runSuiteQL('query')).toEqual([{ a: 1 }, { a: 2 }])
+          expect(mockAxiosAdapter.history.post.length).toBe(4)
         })
         it('invalid results', async () => {
           mockAxiosAdapter.onPost().reply(200, {})

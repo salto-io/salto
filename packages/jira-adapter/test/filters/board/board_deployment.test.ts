@@ -18,6 +18,7 @@ import { filterUtils, client as clientUtils, deployment } from '@salto-io/adapte
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
+import { COLUMNS_CONFIG_FIELD } from '../../../src/filters/board/board_columns'
 import JiraClient, { PRIVATE_API_HEADERS } from '../../../src/client/client'
 import { DEFAULT_CONFIG, JiraConfig } from '../../../src/config'
 import { BOARD_LOCATION_TYPE, BOARD_TYPE_NAME, JIRA } from '../../../src/constants'
@@ -183,7 +184,7 @@ describe('boardDeploymentFilter', () => {
           change,
           client,
           DEFAULT_CONFIG.apiDefinitions.types[BOARD_TYPE_NAME].deployRequests,
-          ['columnConfig', 'subQuery', 'estimation'],
+          [COLUMNS_CONFIG_FIELD, 'subQuery', 'estimation'],
           undefined,
           undefined
         )
@@ -295,7 +296,7 @@ describe('boardDeploymentFilter', () => {
       })
 
       it('should deploy columns when changed', async () => {
-        instance.value.columnConfig = {
+        instance.value[COLUMNS_CONFIG_FIELD] = {
           columns: [
             {
               name: 'someColumn2',

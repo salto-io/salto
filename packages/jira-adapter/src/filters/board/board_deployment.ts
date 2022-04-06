@@ -20,7 +20,7 @@ import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { BOARD_TYPE_NAME } from '../../constants'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
-import { deployColumns } from './board_columns'
+import { COLUMNS_CONFIG_FIELD, deployColumns } from './board_columns'
 import { deploySubQuery } from './board_subquery'
 import { deployEstimation } from './board_estimation'
 import JiraClient from '../../client/client'
@@ -129,7 +129,7 @@ const filter: FilterCreator = ({ config, client }) => ({
             change,
             client,
             apiDefinitions: config.apiDefinitions,
-            fieldsToIgnore: ['columnConfig', 'subQuery', 'estimation'],
+            fieldsToIgnore: [COLUMNS_CONFIG_FIELD, 'subQuery', 'estimation'],
           })
         } else {
           await deployName(change, client)

@@ -23,6 +23,9 @@ import { addAnnotationRecursively, findObject, setFieldDeploymentAnnotations } f
 import JiraClient from '../../client/client'
 import { getLookUpName } from '../../reference_mapping'
 
+const KANBAN_TYPE = 'kanban'
+export const COLUMNS_CONFIG_FIELD = 'columnConfig'
+
 const log = logger(module)
 
 const convertColumn = (column: Values): Values => ({
@@ -40,8 +43,8 @@ export const deployColumns = async (
 
   if (isModificationChange(resolvedChange)
   && _.isEqual(
-    resolvedChange.data.before.value.columnConfig,
-    resolvedChange.data.after.value.columnConfig
+    resolvedChange.data.before.value[COLUMNS_CONFIG_FIELD],
+    resolvedChange.data.after.value[COLUMNS_CONFIG_FIELD]
   )) {
     return
   }
@@ -53,12 +56,12 @@ export const deployColumns = async (
     url: '/rest/greenhopper/1.0/rapidviewconfig/columns',
     data: {
       currentStatisticsField: {
-        id: instance.value.columnConfig.constraintType !== undefined
-          ? `${instance.value.columnConfig.constraintType}_`
+        id: instance.value[COLUMNS_CONFIG_FIELD].constraintType !== undefined
+          ? `${instance.value[COLUMNS_CONFIG_FIELD].constraintType}_`
           : 'none_',
       },
       rapidViewId: instance.value.id,
-      mappedColumns: instance.value.columnConfig.columns.map(convertColumn),
+      mappedColumns: instance.value[COLUMNS_CONFIG_FIELD].columns.map(convertColumn),
     },
   })
 }
@@ -69,19 +72,20 @@ const filter: FilterCreator = ({ config }) => ({
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === BOARD_TYPE_NAME)
       .forEach(instance => {
-        instance.value.columnConfig = instance.value.config.columnConfig
-        delete instance.value.config.columnConfig
+        instance.value[COLUMNS_CONFIG_FIELD] = instance.value.config[COLUMNS_CONFIG_FIELD]
+        delete instance.value.config[COLUMNS_CONFIG_FIELD]
 
-        instance.value.columnConfig.columns.forEach((column: Values) => {
+        instance.value[COLUMNS_CONFIG_FIELD].columns.forEach((column: Values) => {
           if (column.statuses !== undefined) {
             column.statuses = column.statuses.map((status: Values) => status.id)
           }
         })
 
-        if (instance.value.type === 'kanban') {
+        if (instance.value.type === KANBAN_TYPE) {
           // In Kanban boards, the first column is always backlog, which is non-editable.
           // Not removing it will make us create another backlog column.
-          instance.value.columnConfig.columns = instance.value.columnConfig.columns.slice(1)
+          instance.value[COLUMNS_CONFIG_FIELD].columns = instance.value[COLUMNS_CONFIG_FIELD]
+            .columns.slice(1)
         }
       })
 
@@ -97,7 +101,7 @@ const filter: FilterCreator = ({ config }) => ({
       return
     }
 
-    setFieldDeploymentAnnotations(boardType, 'columnConfig')
+    setFieldDeploymentAnnotations(boardType, COLUMNS_CONFIG_FIELD)
     await addAnnotationRecursively(columnConfigType, CORE_ANNOTATIONS.CREATABLE)
     await addAnnotationRecursively(columnConfigType, CORE_ANNOTATIONS.UPDATABLE)
   },

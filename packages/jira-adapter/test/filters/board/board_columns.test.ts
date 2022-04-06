@@ -19,7 +19,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { DEFAULT_CONFIG, JiraConfig } from '../../../src/config'
 import { BOARD_COLUMN_CONFIG_TYPE, BOARD_TYPE_NAME, JIRA } from '../../../src/constants'
-import boardColumnsFilter from '../../../src/filters/board/board_columns'
+import boardColumnsFilter, { COLUMNS_CONFIG_FIELD } from '../../../src/filters/board/board_columns'
 import { mockClient } from '../../utils'
 
 describe('boardColumnsFilter', () => {
@@ -87,13 +87,13 @@ describe('boardColumnsFilter', () => {
   describe('onFetch', () => {
     it('should move column config out of config', async () => {
       await filter.onFetch([instance])
-      expect(instance.value.columnConfig).toBeDefined()
-      expect(instance.value.config.columnConfig).toBeUndefined()
+      expect(instance.value[COLUMNS_CONFIG_FIELD]).toBeDefined()
+      expect(instance.value.config[COLUMNS_CONFIG_FIELD]).toBeUndefined()
     })
 
     it('should remove first column if kanban', async () => {
       await filter.onFetch([instance])
-      expect(instance.value.columnConfig).toEqual({
+      expect(instance.value[COLUMNS_CONFIG_FIELD]).toEqual({
         columns: [
           {
             name: 'someColumn',
@@ -107,7 +107,7 @@ describe('boardColumnsFilter', () => {
     it('should not remove first column if scrum', async () => {
       instance.value.type = 'scrum'
       await filter.onFetch([instance])
-      expect(instance.value.columnConfig).toEqual({
+      expect(instance.value[COLUMNS_CONFIG_FIELD]).toEqual({
         columns: [
           {
             name: 'backlog',
@@ -123,7 +123,7 @@ describe('boardColumnsFilter', () => {
 
     it('should add deployment annotations', async () => {
       await filter.onFetch([type, columnConfigType])
-      expect(type.fields.columnConfig.annotations).toEqual({
+      expect(type.fields[COLUMNS_CONFIG_FIELD].annotations).toEqual({
         [CORE_ANNOTATIONS.CREATABLE]: true,
         [CORE_ANNOTATIONS.UPDATABLE]: true,
       })
@@ -138,7 +138,7 @@ describe('boardColumnsFilter', () => {
       config.client.usePrivateAPI = false
       await filter.onFetch([type, columnConfigType])
 
-      expect(type.fields.columnConfig.annotations).toEqual({})
+      expect(type.fields[COLUMNS_CONFIG_FIELD].annotations).toEqual({})
       expect(columnConfigType.fields.columns.annotations).toEqual({})
     })
   })

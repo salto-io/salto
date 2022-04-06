@@ -83,7 +83,8 @@ export const DEFAULT_FILTERS = [
   userFieldFilter,
   viewFilter,
   workspaceFilter,
-  // omitInactiveFilter should be before the order filters and collisionErrorsFilter
+  // omitInactiveFilter should be before:
+  //  order filters, collisionErrorsFilter and fieldReferencesFilter
   omitInactiveFilter,
   ticketFormOrderFilter,
   userFieldOrderFilter,

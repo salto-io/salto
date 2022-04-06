@@ -13,13 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isObjectType, ObjectType, ElemID, ListType, InstanceElement, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { Element, isObjectType, ObjectType, ElemID, ListType, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { FilterWith } from '../filter'
-import { SALESFORCE, FIELD_ANNOTATIONS, RECORDS_PATH, SETTINGS_PATH, CUSTOM_VALUE } from '../constants'
+import { SALESFORCE, FIELD_ANNOTATIONS, RECORDS_PATH, SETTINGS_PATH, CUSTOM_VALUE, CURRENCY_CODE_TYPE_NAME } from '../constants'
 import { Types, getTypePath } from '../transformers/transformer'
 
-export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'
 const currencyCodeType = new ObjectType(
   {
     elemID: new ElemID(SALESFORCE, CURRENCY_CODE_TYPE_NAME),
@@ -32,6 +31,7 @@ const currencyCodeType = new ObjectType(
       [CORE_ANNOTATIONS.UPDATABLE]: false,
     },
     isSettings: true,
+    path: getTypePath(CURRENCY_CODE_TYPE_NAME),
   }
 )
 
@@ -43,8 +43,8 @@ type CurrencyIsoCodeType = ObjectType & {
   fields: {
     [CURRENCY_CODE_FIELD_NAME]: {
       annotations: {
-        valueSet?: ValueSet[]
-        valueSetName?: string
+        valueSet: ValueSet[]
+        valueSetName?: ReferenceExpression
       }
     }
   }
@@ -59,36 +59,29 @@ const VALUE_SET_SCHEMA = Joi.object({
   }).required(),
 }).unknown(true).required()
 
-const TYPE_WITH_CURRENCY_ISO_CODE_SCHEMA = Joi.object({
-  fields: Joi.object({
-    [CURRENCY_CODE_FIELD_NAME]: Joi.object({
-      annotations: VALUE_SET_SCHEMA,
-    }).unknown(true).required(),
-  }).unknown(true).required(),
-}).unknown(true).required()
-
 const isTypeWithCurrencyIsoCode = (elem: ObjectType): elem is CurrencyIsoCodeType => {
-  const { error } = TYPE_WITH_CURRENCY_ISO_CODE_SCHEMA.validate(elem)
+  const { error } = VALUE_SET_SCHEMA.validate(elem.fields[CURRENCY_CODE_FIELD_NAME]?.annotations)
   return error === undefined
 }
 
-const transformCurrencyIsoCodes = (element: CurrencyIsoCodeType): void => {
-  const valueSetName = currencyCodeType.elemID.getFullName()
+const transformCurrencyIsoCodes = (
+  element: CurrencyIsoCodeType,
+  currencyCodeInstance: InstanceElement,
+): void => {
+  const valueSetName = new ReferenceExpression(currencyCodeInstance.elemID, currencyCodeInstance)
 
   delete element.fields.CurrencyIsoCode.annotations.valueSet
   element.fields.CurrencyIsoCode.annotations.valueSetName = valueSetName
 }
 
-const createCurrencyCodesElements = (supportedCurrencies: ValueSet): Element[] => {
-  const currencyCodesInstance = new InstanceElement(
+const createCurrencyCodesInstance = (supportedCurrencies: ValueSet): InstanceElement => (
+  new InstanceElement(
     ElemID.CONFIG_NAME,
     currencyCodeType,
     { [FIELD_ANNOTATIONS.VALUE_SET]: supportedCurrencies || [] },
     [SALESFORCE, RECORDS_PATH, SETTINGS_PATH, currencyCodeType.elemID.name],
   )
-  currencyCodeType.path = getTypePath(currencyCodeType)
-  return [currencyCodeType, currencyCodesInstance]
-}
+)
 
 
 /**
@@ -101,10 +94,13 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
     if (affectedElements.length === 0) {
       return
     }
-    elements.push(...createCurrencyCodesElements(
-      affectedElements[0].fields.CurrencyIsoCode.annotations.valueSet as ValueSet[]
-    ))
-    affectedElements.forEach(transformCurrencyIsoCodes)
+
+    const currencyCodeInstance = createCurrencyCodesInstance(
+      affectedElements[0].fields.CurrencyIsoCode.annotations.valueSet
+    )
+
+    elements.push(currencyCodeType, currencyCodeInstance)
+    affectedElements.forEach(element => transformCurrencyIsoCodes(element, currencyCodeInstance))
   },
 })
 

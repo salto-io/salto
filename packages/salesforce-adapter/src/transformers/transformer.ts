@@ -1404,11 +1404,11 @@ const createIdField = (parent: ObjectType): void => {
   )
 }
 
-export const getTypePath = (element: Element, isTopLevelType = true): string[] => [
+export const getTypePath = (name: string, isTopLevelType = true): string[] => [
   SALESFORCE,
   TYPES_PATH,
   ...isTopLevelType ? [] : [SUBTYPES_PATH],
-  element.elemID.name,
+  name,
 ]
 
 type CreateMetadataTypeParams = {
@@ -1439,7 +1439,7 @@ export const createMetadataTypeElements = async ({
     ..._.pickBy(annotations, isDefined),
     [METADATA_TYPE]: name,
   })
-  element.path = getTypePath(element, isTopLevelType)
+  element.path = getTypePath(element.elemID.name, isTopLevelType)
 
   const shouldCreateIdField = (): boolean => (
     (isTopLevelType || childTypeNames.has(name))

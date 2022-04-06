@@ -16,9 +16,9 @@
 import _ from 'lodash'
 import { Element, ObjectType, BuiltinTypes, Field, ElemID } from '@salto-io/adapter-api'
 import { findElements as findElementsByID } from '@salto-io/adapter-utils'
-import currencyIsoCodeFilter, { CURRENCY_CODE_TYPE_NAME } from '../../src/filters/currency_iso_code'
+import currencyIsoCodeFilter from '../../src/filters/currency_iso_code'
 import { FilterWith } from '../../src/filter'
-import { FIELD_TYPE_NAMES, SALESFORCE } from '../../src/constants'
+import { FIELD_TYPE_NAMES, SALESFORCE, CURRENCY_CODE_TYPE_NAME } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 import { createValueSetEntry, createCustomObjectType, findElements } from '../utils'
 

@@ -49,7 +49,7 @@ export type ZendeskClientConfig = clientUtils.ClientBaseConfig<clientUtils.Clien
 
 export type ZendeskFetchConfig = configUtils.DuckTypeUserFetchConfig
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
-  configUtils.DuckTypeTransformationConfig & { dropInactive?: boolean }
+  configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean }
 >
 
 export type ZendeskConfig = {

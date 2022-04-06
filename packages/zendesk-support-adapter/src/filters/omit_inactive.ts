@@ -15,18 +15,29 @@
 */
 import _ from 'lodash'
 import { isInstanceElement, Element } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { API_DEFINITIONS_CONFIG } from '../config'
 
+const log = logger(module)
+
 /**
- * Hide inactive instances
+ * Omit inactive instances
  */
 const filterCreator: FilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]) => {
-    _.remove(elements, elem =>
-      (isInstanceElement(elem)
-        && config[API_DEFINITIONS_CONFIG].types[elem.elemID.typeName]?.transformation?.dropInactive
-        && elem.value.active === false))
+    const shouldRemoveElement = (element: Element): boolean =>
+      (isInstanceElement(element)
+        && config[API_DEFINITIONS_CONFIG]
+          .types[element.elemID.typeName]?.transformation?.omitInactive === true
+        && element.value.active === false)
+
+    const elemFullNamesToOmit = elements
+      .filter(shouldRemoveElement)
+      .map(element => element.elemID.getFullName())
+    log.debug('%d instances were omitted because they were inactive. IDs: %o',
+      elemFullNamesToOmit.length, elemFullNamesToOmit)
+    _.remove(elements, shouldRemoveElement)
   },
 })
 

@@ -18,7 +18,7 @@ import { CredsLease } from '@salto-io/e2e-credentials-store'
 import {
   toChange, FetchResult, InstanceElement, ReferenceExpression, isReferenceExpression,
   isInstanceElement, DeployResult, Values, isStaticFile, StaticFile, FetchOptions, Change,
-  ChangeId, ChangeGroupId, ElemID, ObjectType, BuiltinTypes, ChangeError,
+  ChangeId, ChangeGroupId, ElemID, ObjectType, BuiltinTypes, ChangeError, getChangeData,
 } from '@salto-io/adapter-api'
 import { findElement, naclCase } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
@@ -132,6 +132,29 @@ describe('Netsuite adapter E2E with real account', () => {
         workflowToCreate.value.workflowstates.workflowstate[1][SCRIPT_ID],
         workflowToCreate
       )
+
+    const invalidWorkflowScriptID = 'customworkflow_slt_e2e_test_invalid'
+    const invalidWorkflowInstance = createInstanceElement(
+      WORKFLOW,
+      {
+        scriptid: invalidWorkflowScriptID,
+        name: randomString,
+        workflowcustomfields: {},
+        workflowstates: {
+          workflowstate: [{
+            scriptid: 'workflowstate_state1_invalid',
+            workflowtransitions: {
+              workflowtransition: [
+                {
+                  scriptid: 'workflowtransition_transition1_invalid',
+                  tostate: '-1',
+                },
+              ],
+            },
+          }],
+        },
+      }
+    )
 
     const emailTemplateToCreate = createInstanceElement(
       EMAIL_TEMPLATE,
@@ -269,6 +292,7 @@ describe('Netsuite adapter E2E with real account', () => {
         workflowToCreate,
         emailTemplateToCreate,
         fileToCreate,
+        invalidWorkflowInstance,
         ...withSuiteApp ? [subsidiaryInstance] : [],
       ].map((instanceToCreate, index) => [index.toString(), toChange({ after: instanceToCreate })]))
 
@@ -324,8 +348,15 @@ describe('Netsuite adapter E2E with real account', () => {
       })
 
       it('should deploy new records', async () => {
-        expect(deployResult.errors).toHaveLength(0)
-        expect(deployResult.appliedChanges).toHaveLength(changes.size)
+        expect(deployResult.errors).toHaveLength(1)
+        expect(deployResult.appliedChanges).toHaveLength(changes.size - 1)
+      })
+      it('should not deploy invalid record', async () => {
+        expect(Array.from(changes.values()).map(getChangeData)
+          .find(change => change.elemID.name === invalidWorkflowScriptID)).toBeDefined()
+        expect(deployResult.appliedChanges.map(getChangeData)
+          .find(change => change.elemID.name === invalidWorkflowScriptID)).toBeUndefined()
+        expect(deployResult.errors[0].message).toContain(`An error occurred during custom object validation. (${invalidWorkflowScriptID})`)
       })
     })
 

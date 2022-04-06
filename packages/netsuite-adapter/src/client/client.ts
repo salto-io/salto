@@ -31,10 +31,10 @@ import { getReferencedInstances } from '../reference_dependencies'
 import { getLookUpName, toCustomizationInfo } from '../transformer'
 import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../group_changes'
 import { DeployResult } from '../types'
-import { CONFIG_FEATURES, APPLICATION_ID } from '../constants'
+import { CONFIG_FEATURES, APPLICATION_ID, SCRIPT_ID } from '../constants'
 import { convertInstanceMapsToLists } from '../mapped_lists/utils'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
-import { FeaturesDeployError } from '../errors'
+import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError } from '../errors'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -125,7 +125,7 @@ export default class NetsuiteClient {
   private static toFeaturesDeployPartialSuccessResult(
     error: FeaturesDeployError,
     changes: ReadonlyArray<Change<InstanceElement>>
-  ): DeployResult {
+  ): Change[] {
     // this case happens when all changes where deployed successfully,
     // except of some features in config_features
     const [[featuresChange], successfullyDeployedChanges] = _.partition(
@@ -142,36 +142,82 @@ export default class NetsuiteClient {
       successfullyDeployedChanges.push(featuresChange)
     }
 
-    return {
-      errors: [error],
-      appliedChanges: successfullyDeployedChanges,
-    }
+    return successfullyDeployedChanges
+  }
+
+  private static getFailedSdfDeployChangesElemIDs(
+    error: ObjectsDeployError,
+    changes: ReadonlyArray<Change<InstanceElement>>
+  ): Set<string> {
+    const changedInstances = changes.map(getChangeData)
+    const failedElemIDs = new Set(changedInstances
+      .filter(inst => error.failedObjects.has(inst.value[SCRIPT_ID]))
+      .map(inst => inst.elemID.getFullName()))
+
+    // in case we cannot find the failed instances we return all as failed
+    return failedElemIDs.size === 0
+      ? new Set(changedInstances.map(inst => inst.elemID.getFullName()))
+      : failedElemIDs
   }
 
   private async sdfDeploy(
     changes: ReadonlyArray<Change<InstanceElement>>,
     deployReferencedElements: boolean
   ): Promise<DeployResult> {
-    const changedInstances = changes.map(getChangeData)
-    const customizationInfos = await awu(await getReferencedInstances(
-      changedInstances,
-      deployReferencedElements
-    )).map(instance => resolveValues(instance, getLookUpName))
-      .map(convertInstanceMapsToLists)
-      .map(toCustomizationInfo)
-      .toArray()
-
+    const changesToDeploy = Array.from(changes)
     const suiteAppId = getChangeData(changes[0]).value[APPLICATION_ID]
+    const errors: Error[] = []
 
-    try {
-      await this.sdfClient.deploy(customizationInfos, suiteAppId)
-      return { errors: [], appliedChanges: changes }
-    } catch (e) {
-      if (e instanceof FeaturesDeployError) {
-        return NetsuiteClient.toFeaturesDeployPartialSuccessResult(e, changes)
+    while (changesToDeploy.length > 0) {
+      const changedInstances = changesToDeploy.map(getChangeData)
+      // eslint-disable-next-line no-await-in-loop
+      const customizationInfos = await awu(await getReferencedInstances(
+        changedInstances,
+        deployReferencedElements
+      )).map(instance => resolveValues(instance, getLookUpName))
+        .map(convertInstanceMapsToLists)
+        .map(toCustomizationInfo)
+        .toArray()
+
+      try {
+        log.debug('deploying %d changes', changesToDeploy.length)
+        // eslint-disable-next-line no-await-in-loop
+        await log.time(
+          () => this.sdfClient.deploy(customizationInfos, suiteAppId),
+          'sdfDeploy'
+        )
+        return { errors, appliedChanges: changesToDeploy }
+      } catch (error) {
+        errors.push(error)
+        if (error instanceof FeaturesDeployError) {
+          const successfullyDeployedChanges = NetsuiteClient.toFeaturesDeployPartialSuccessResult(
+            error, changesToDeploy
+          )
+          return { errors, appliedChanges: successfullyDeployedChanges }
+        }
+        if (error instanceof ObjectsDeployError) {
+          const failedElemIDs = NetsuiteClient.getFailedSdfDeployChangesElemIDs(
+            error, changesToDeploy
+          )
+          log.debug('sdf failed to deploy: %o', Array.from(failedElemIDs))
+          _.remove(
+            changesToDeploy,
+            change => failedElemIDs.has(getChangeData(change).elemID.getFullName())
+          )
+        } else if (error instanceof SettingsDeployError) {
+          const { failedConfigTypes } = error
+          log.debug('sdf failed to deploy: %o', Array.from(failedConfigTypes))
+          _.remove(
+            changesToDeploy,
+            change => failedConfigTypes.has(getChangeData(change).elemID.typeName)
+          )
+        } else {
+          // unknown error
+          return { errors, appliedChanges: [] }
+        }
       }
-      return { errors: [e], appliedChanges: [] }
     }
+    return { errors, appliedChanges: [] }
   }
 
   @NetsuiteClient.logDecorator

@@ -41,7 +41,7 @@ import {
   DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, SdfClientConfig,
 } from '../config'
 import { NetsuiteQuery, NetsuiteQueryParameters, ObjectID } from '../query'
-import { FeaturesDeployError, ObjectsDeployError } from '../errors'
+import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError } from '../errors'
 import { SdfCredentials } from './credentials'
 import {
   CustomizationInfo, CustomTypeInfo, FailedImport, FailedTypes, FileCustomizationInfo,
@@ -106,6 +106,7 @@ const configureFeatureFailRegex = RegExp(`Configure feature -- (Enabling|Disabli
 
 const OBJECT_ID = 'objectId'
 const deployStartMessageRegex = RegExp('^Begin deployment$', 'm')
+const settingsValidationErrorRegex = RegExp('^Validation of account settings failed.$', 'm')
 const objectValidationErrorRegex = RegExp(`^An error occurred during custom object validation. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm')
 const deployedObjectRegex = RegExp(`^(Create|Update) object -- (?<${OBJECT_ID}>[a-z0-9_]+)`, 'gm')
 const errorObjectRegex = RegExp(`^An unexpected error has occurred. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'm')
@@ -895,6 +896,9 @@ export default class SdfClient {
   private static customizeDeployError(error: Error): Error {
     const errorMessage = error.message
 
+    if (settingsValidationErrorRegex.test(errorMessage)) {
+      return new SettingsDeployError(errorMessage, new Set([CONFIG_FEATURES]))
+    }
     if (!deployStartMessageRegex.test(errorMessage)) {
       // we'll get here when the deploy failed in the validation phase.
       // in this case we're looking for validation error message lines.

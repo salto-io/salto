@@ -30,3 +30,12 @@ export class ObjectsDeployError extends Error {
     this.name = 'ObjectsDeployError'
   }
 }
+
+export class SettingsDeployError extends Error {
+  failedConfigTypes: Set<string>
+  constructor(message: string, failedConfigTypes: Set<string>) {
+    super(message)
+    this.failedConfigTypes = failedConfigTypes
+    this.name = 'SettingsDeployError'
+  }
+}

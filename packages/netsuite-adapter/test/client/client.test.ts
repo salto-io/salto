@@ -23,7 +23,7 @@ import { NETSUITE } from '../../src/constants'
 import { SetConfigType } from '../../src/client/suiteapp_client/types'
 import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../src/types'
 import { featuresType } from '../../src/types/configuration_types'
-import { FeaturesDeployError, ObjectsDeployError } from '../../src/errors'
+import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
 
 describe('NetsuiteClient', () => {
   describe('with SDF client', () => {
@@ -72,6 +72,24 @@ describe('NetsuiteClient', () => {
             appliedChanges: [],
           })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(1)
+      })
+      it('should try again to deploy after SettingsDeployError', async () => {
+        const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
+        const settingsType = new ObjectType({ elemID: new ElemID(NETSUITE, 'settingsType') })
+        const settingsDeployError = new SettingsDeployError('error', new Set(['settingsType']))
+        mockSdfDeploy.mockRejectedValueOnce(settingsDeployError)
+        const successChange = toChange({
+          after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
+        })
+        const failedChange = toChange({
+          after: new InstanceElement(ElemID.CONFIG_NAME, settingsType),
+        })
+        expect(await client.deploy([successChange, failedChange], SDF_CHANGE_GROUP_ID, false))
+          .toEqual({
+            errors: [settingsDeployError],
+            appliedChanges: [successChange],
+          })
+        expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
       })
 
       describe('features', () => {

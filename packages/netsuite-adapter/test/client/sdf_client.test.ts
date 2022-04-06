@@ -33,7 +33,7 @@ import SdfClient, {
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from '../../src/client/types'
 import { fileCabinetTopLevelFolders } from '../../src/client/constants'
 import { DEFAULT_COMMAND_TIMEOUT_IN_MINUTES } from '../../src/config'
-import { FeaturesDeployError, ObjectsDeployError } from '../../src/errors'
+import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
 
 
 const MOCK_TEMPLATE_CONTENT = Buffer.from('Template Inner Content')
@@ -1582,6 +1582,65 @@ Object: customrecord_flo_customization.custrecord_flo_custz_link (customrecordcu
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeTruthy()
           expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Set(['customrecord_flo_customization']))
+        }
+        expect(isRejected).toBe(true)
+      })
+      it('should throw SettingsDeployError when deploy failed on settings validation', async () => {
+        const errorMessage = `
+The deployment process has encountered an error.
+Deploying to TSTDRV2259448 - Salto Extended Dev - Administrator.
+2022-04-06 03:06:46 (PST) Installation started
+Info -- Account [(PRODUCTION) Salto Extended Dev]
+Info -- Account Customization Project [TempSdfProject-e1b95f15-077e-4b41-8a72-572492527886]
+Info -- Framework Version [1.0]
+Validate manifest -- Success
+Validate deploy file -- Success
+Validate configuration -- Success
+Validate objects -- Success
+Validate files -- Success
+Validate folders -- Success
+Validate translation imports -- Success
+Validation of referenceability from custom objects to translations collection strings in progress. -- Success
+Validate preferences -- Success
+Validate flags -- Success
+Validate for circular dependencies -- Success
+
+WARNING -- One or more potential issues were found during custom object validation. (customrecord_flo_customization)
+Details: Circular dependencies detected. The following custom objects reference each other in a way that creates direct dependencies: customrecord_flo_customization -> tab_281_t1049933_607 -> customrecord_flo_customization 
+If deployment fails, ensure that each custom object does not reference any custom object that references it.
+File: ~/Objects/customrecord_flo_customization.xml
+Validate account settings -- Success
+Validate Custom Objects against the Account -- Failed
+Validate file cabinet items against the account -- Failed
+Validate translation imports against the account -- Failed
+Validation of references to translation collection strings against account in progress. -- Failed
+*** ERROR ***
+
+Validation of account settings failed.
+
+An error occurred during configuration validation.
+Details: Disable the SUPPLYCHAINPREDICTEDRISKS(Supply Chain Predicted Risks) feature before disabling the SUPPLYCHAINCONTROLTOWER(Supply Chain Control Tower) feature.
+File: ~/AccountConfiguration/features.xml`
+        mockExecuteAction.mockImplementation(({ commandName }) => {
+          if (commandName === COMMANDS.DEPLOY_PROJECT) {
+            throw errorMessage
+          }
+          return { isSuccess: () => true }
+        })
+        let isRejected: boolean
+        try {
+          await client.deploy([{
+            typeName: 'typeName',
+            values: {
+              key: 'val',
+            },
+            scriptId: 'scriptId',
+          } as CustomTypeInfo])
+          isRejected = false
+        } catch (e) {
+          isRejected = true
+          expect(e instanceof SettingsDeployError).toBeTruthy()
+          expect(e instanceof SettingsDeployError && e.failedConfigTypes).toEqual(new Set(['companyFeatures']))
         }
         expect(isRejected).toBe(true)
       })

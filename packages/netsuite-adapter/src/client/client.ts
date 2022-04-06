@@ -34,7 +34,7 @@ import { DeployResult } from '../types'
 import { CONFIG_FEATURES, APPLICATION_ID, SCRIPT_ID } from '../constants'
 import { convertInstanceMapsToLists } from '../mapped_lists/utils'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
-import { FeaturesDeployError, ObjectsDeployError } from '../errors'
+import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError } from '../errors'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -203,6 +203,13 @@ export default class NetsuiteClient {
           _.remove(
             changesToDeploy,
             change => failedElemIDs.has(getChangeData(change).elemID.getFullName())
+          )
+        } else if (error instanceof SettingsDeployError) {
+          const { failedConfigTypes } = error
+          log.debug('sdf failed to deploy: %o', Array.from(failedConfigTypes))
+          _.remove(
+            changesToDeploy,
+            change => failedConfigTypes.has(getChangeData(change).elemID.typeName)
           )
         } else {
           // unknown error

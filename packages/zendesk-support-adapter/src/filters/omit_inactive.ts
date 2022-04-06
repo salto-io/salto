@@ -30,7 +30,9 @@ const filterCreator: FilterCreator = ({ config }) => ({
       (isInstanceElement(element)
         && config[API_DEFINITIONS_CONFIG]
           .types[element.elemID.typeName]?.transformation?.omitInactive === true
-        && element.value.active === false)
+        && (element.elemID.typeName === 'webhook'
+          ? element.value.status === 'inactive'
+          : element.value.active === false))
 
     const elemFullNamesToOmit = elements
       .filter(shouldRemoveElement)

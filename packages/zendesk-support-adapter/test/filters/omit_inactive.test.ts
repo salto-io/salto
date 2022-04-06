@@ -29,11 +29,15 @@ describe('omit inactive', () => {
   const objType1 = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'trigger') })
   const objType2 = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'view') })
   const objType3 = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'macro') })
+  const webhookObjType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'webhook') })
   const inst1 = new InstanceElement('inst1', objType1, { name: 'test', active: true })
   const inst2 = new InstanceElement('inst2', objType1, { name: 'test', active: false })
   const inst3 = new InstanceElement('inst1', objType2, { name: 'test', active: false })
   const inst4 = new InstanceElement('inst1', objType3, { name: 'test', active: false })
   const inst5 = new InstanceElement('inst2', objType3, { name: 'test', active: true })
+  const webhook1 = new InstanceElement('inst1', webhookObjType, { name: 'test', status: 'active' })
+  const webhook2 = new InstanceElement('inst2', webhookObjType, { name: 'test', status: 'inactive' })
+  const webhook3 = new InstanceElement('inst3', webhookObjType, { name: 'test' })
 
   beforeEach(async () => {
     jest.clearAllMocks()
@@ -61,6 +65,11 @@ describe('omit inactive', () => {
                 omitInactive: true,
               },
             },
+            webhook: {
+              transformation: {
+                omitInactive: true,
+              },
+            },
           },
         },
       },
@@ -69,6 +78,18 @@ describe('omit inactive', () => {
 
   describe('onFetch', () => {
     it('should omit inactive instances if the omitInactive is true', async () => {
+      const elements = [inst1, inst2, inst3, inst4, inst5, webhook1, webhook2, webhook3]
+      await filter.onFetch(elements)
+      expect(elements.map(elem => elem.elemID.getFullName()))
+        .toEqual([
+          inst1.elemID.getFullName(),
+          inst3.elemID.getFullName(),
+          inst5.elemID.getFullName(),
+          webhook1.elemID.getFullName(),
+          webhook3.elemID.getFullName(),
+        ])
+    })
+    it('should omit inactive webhooks', async () => {
       const elements = [inst1, inst2, inst3, inst4, inst5]
       await filter.onFetch(elements)
       expect(elements.map(elem => elem.elemID.getFullName()))

@@ -63,6 +63,10 @@ const NON_BINARY_FILETYPES = new Set([
   'XMLDOC',
 ])
 
+const REQUEST_HEADERS = {
+  'Content-Type': 'application/json',
+}
+
 const UNAUTHORIZED_STATUSES = [401, 403]
 const HTTP_SERVER_ERROR_INITIAL = '5'
 
@@ -303,13 +307,18 @@ export default class SuiteAppClient {
   private async safeAxiosPost(
     href: string,
     data: unknown,
-    headers: unknown
+    headers: Record<string, unknown>
   ): Promise<AxiosResponse> {
     try {
       return await this.callsLimiter(() => this.axiosClient.post(
         href,
         data,
-        { headers },
+        {
+          headers: {
+            ...headers,
+            ...this.generateAuthHeader(href, 'POST'),
+          },
+        },
       ))
     } catch (e) {
       log.warn(
@@ -333,7 +342,7 @@ export default class SuiteAppClient {
     url.searchParams.append('offset', offset.toString())
 
     const headers = {
-      ...this.generateHeaders(url, 'POST'),
+      ...REQUEST_HEADERS,
       prefer: 'transient',
     }
     const response = await this.safeAxiosPost(url.href, { q: query }, headers)
@@ -386,7 +395,7 @@ export default class SuiteAppClient {
       this.versionFeatures?.activationKey && this.credentials.suiteAppActivationKey
         ? { operation, args, activationKey: this.credentials.suiteAppActivationKey }
         : { operation, args },
-      this.generateHeaders(this.restletUrl, 'POST')
+      REQUEST_HEADERS
     )
     log.debug(
       'Restlet call to operation %s (postParams: %s) responsed with status %s',
@@ -429,14 +438,7 @@ export default class SuiteAppClient {
     return results
   }
 
-  private generateHeaders(url: URL, method: HttpMethod): Record<string, string> {
-    return {
-      ...this.generateAuthHeader(url, method),
-      'Content-Type': 'application/json',
-    }
-  }
-
-  private generateAuthHeader(url: URL, method: HttpMethod): OAuth.Header {
+  private generateAuthHeader(url: string, method: HttpMethod): OAuth.Header {
     const oauth = new OAuth({
       consumer: {
         key: CONSUMER_KEY,
@@ -451,17 +453,12 @@ export default class SuiteAppClient {
       },
     })
 
-    const requestData = {
-      url: url.href,
-      method,
-    }
-
     const token = {
       key: this.credentials.suiteAppTokenId,
       secret: this.credentials.suiteAppTokenSecret,
     }
 
-    return oauth.toHeader(oauth.authorize(requestData, token))
+    return oauth.toHeader(oauth.authorize({ url, method }, token))
   }
 
   // This function should be used for files which are bigger than 10 mb,

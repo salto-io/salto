@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { Element, ObjectType, BuiltinTypes, Field, ElemID } from '@salto-io/adapter-api'
 import { findElements as findElementsByID } from '@salto-io/adapter-utils'
 import currencyIsoCodeFilter from '../../src/filters/currency_iso_code'
@@ -22,36 +21,41 @@ import { FIELD_TYPE_NAMES, SALESFORCE, CURRENCY_CODE_TYPE_NAME } from '../../src
 import { Types } from '../../src/transformers/transformer'
 import { createValueSetEntry, createCustomObjectType, findElements } from '../utils'
 
-class MockObjectType extends ObjectType {
-  addPickList(name: string, values: string[]): MockObjectType {
-    this.fields[name] = new Field(
-      this,
+type PicklistDefinition = {
+  name: string
+  values: string[]
+}
+
+const createMockElemenet = (...picklists: PicklistDefinition[]): ObjectType => {
+  const elem = createCustomObjectType('MockType', {
+    fields: {
+      Id: { refType: BuiltinTypes.SERVICE_ID },
+      Name: { refType: Types.primitiveDataTypes[FIELD_TYPE_NAMES.TEXT] },
+    },
+  })
+
+  picklists.forEach(({ name, values }) => {
+    elem.fields[name] = new Field(
+      elem,
       name,
       Types.primitiveDataTypes[FIELD_TYPE_NAMES.PICKLIST],
       { valueSet: values.map(value => createValueSetEntry(value, false, value, true)) },
     )
-    return this
-  }
+  })
+
+  return elem
 }
-
-
-const mockElement = (): MockObjectType => new MockObjectType(createCustomObjectType('MockType', {
-  fields: {
-    Id: { refType: BuiltinTypes.SERVICE_ID },
-    Name: { refType: Types.primitiveDataTypes[FIELD_TYPE_NAMES.TEXT] },
-  },
-}))
 
 describe('currencyIsoCode filter', () => {
   const filter = currencyIsoCodeFilter() as FilterWith<'onFetch'>
-  let elements: Element[]
 
   describe('when there are no currency fields', () => {
+    let elements: Element[]
     let originalElement: Element
 
     beforeEach(async () => {
-      elements = [mockElement().addPickList('Priority', ['Low', 'Medium', 'High'])]
-      originalElement = _.cloneDeep(elements[0])
+      elements = [createMockElemenet({ name: 'Priority', values: ['Low', 'Medium', 'High'] })]
+      originalElement = elements[0].clone()
       await filter.onFetch(elements)
     })
 
@@ -66,12 +70,15 @@ describe('currencyIsoCode filter', () => {
   })
 
   describe('when there are currency fields', () => {
+    let elements: Element[]
     let targetElemID: ElemID
+
     beforeEach(async () => {
       elements = [
-        mockElement()
-          .addPickList('Priority', ['Low', 'Medium', 'High'])
-          .addPickList('CurrencyIsoCode', ['USD', 'EUR']),
+        createMockElemenet(
+          { name: 'Priority', values: ['Low', 'Medium', 'High'] },
+          { name: 'CurrencyIsoCode', values: ['USD', 'EUR'] },
+        ),
       ]
       targetElemID = elements[0].elemID
       await filter.onFetch(elements)
@@ -81,7 +88,6 @@ describe('currencyIsoCode filter', () => {
       const currencyCodesType = findElements(elements, CURRENCY_CODE_TYPE_NAME)
       expect(currencyCodesType).toHaveLength(1)
       expect(currencyCodesType[0]).toMatchObject(expect.objectContaining({
-        elemID: expect.objectContaining({ adapter: SALESFORCE, idType: 'type', typeName: CURRENCY_CODE_TYPE_NAME }),
         isSettings: true,
         fields: expect.objectContaining({ valueSet: expect.objectContaining({}) }),
         path: [SALESFORCE, 'Types', 'CurrencyIsoCodes'],
@@ -92,7 +98,6 @@ describe('currencyIsoCode filter', () => {
       const currencyCodeRecord = findElements(elements, CURRENCY_CODE_TYPE_NAME, ElemID.CONFIG_NAME)
       expect(currencyCodeRecord).toHaveLength(1)
       expect(currencyCodeRecord[0]).toMatchObject({
-        elemID: expect.objectContaining({ adapter: SALESFORCE, idType: 'instance', typeName: CURRENCY_CODE_TYPE_NAME }),
         path: [SALESFORCE, 'Records', 'Settings', 'CurrencyIsoCodes'],
         value: {
           valueSet: expect.arrayContaining([
@@ -123,9 +128,11 @@ describe('currencyIsoCode filter', () => {
   })
 
   describe('when there are malformed currency values', () => {
+    let elements: Element[]
     let targetElemID: ElemID
+
     beforeEach(async () => {
-      elements = [mockElement().addPickList('CurrencyIsoCode', ['USD'])]
+      elements = [createMockElemenet({ name: 'CurrencyIsoCode', values: ['USD'] })]
       delete (elements[0] as ObjectType).fields.CurrencyIsoCode.annotations.valueSet[0].label
       targetElemID = elements[0].elemID
       await filter.onFetch(elements)
@@ -140,9 +147,11 @@ describe('currencyIsoCode filter', () => {
     })
   })
   describe('when there are no configured currencies', () => {
+    let elements: Element[]
     let targetElemID: ElemID
+
     beforeEach(async () => {
-      elements = [mockElement().addPickList('CurrencyIsoCode', [])]
+      elements = [createMockElemenet({ name: 'CurrencyIsoCode', values: [] })]
       targetElemID = elements[0].elemID
       await filter.onFetch(elements)
     })

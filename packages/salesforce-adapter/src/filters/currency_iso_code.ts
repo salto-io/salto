@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { Element, isObjectType, ObjectType, ElemID, ListType, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { FilterWith } from '../filter'
@@ -60,6 +61,9 @@ const VALUE_SET_SCHEMA = Joi.object({
 }).unknown(true).required()
 
 const isTypeWithCurrencyIsoCode = (elem: ObjectType): elem is CurrencyIsoCodeType => {
+  if (!_.has(elem.fields, CURRENCY_CODE_FIELD_NAME)) {
+    return false
+  }
   const { error } = VALUE_SET_SCHEMA.validate(elem.fields[CURRENCY_CODE_FIELD_NAME]?.annotations)
   return error === undefined
 }
@@ -68,10 +72,13 @@ const transformCurrencyIsoCodes = (
   element: CurrencyIsoCodeType,
   currencyCodeInstance: InstanceElement,
 ): void => {
-  const valueSetName = new ReferenceExpression(currencyCodeInstance.elemID, currencyCodeInstance)
+  const currencyIsoCodesRef = new ReferenceExpression(
+    currencyCodeInstance.elemID,
+    currencyCodeInstance
+  )
 
   delete element.fields.CurrencyIsoCode.annotations.valueSet
-  element.fields.CurrencyIsoCode.annotations.valueSetName = valueSetName
+  element.fields.CurrencyIsoCode.annotations.valueSetName = currencyIsoCodesRef
 }
 
 const createCurrencyCodesInstance = (supportedCurrencies: ValueSet): InstanceElement => (

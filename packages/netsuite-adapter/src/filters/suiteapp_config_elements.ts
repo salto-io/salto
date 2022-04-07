@@ -43,6 +43,8 @@ const FIELD_TYPES_TO_OMIT = [
 const BOOLEAN_TRUE = 'T'
 const BOOLEAN_FALSE = 'F'
 
+const VALUE_UNDEFINED = 'undefined'
+
 const MULTISELECT_DELIMITER = '\u0005'
 
 const isSelectFieldType = (fieldType: TypeElement): boolean =>
@@ -125,6 +127,8 @@ const getConfigInstanceValue = async (
 
   const values: Values = { ...data.fields, configType }
   return mapValuesAsync(values, async (value, fieldName) => {
+    if (value === VALUE_UNDEFINED) return undefined
+
     const field = type.fields[fieldName]
     if (!field) return undefined
 

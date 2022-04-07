@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ObjectType, BuiltinTypes, Field, ElemID } from '@salto-io/adapter-api'
+import { Element, ObjectType, BuiltinTypes, ElemID } from '@salto-io/adapter-api'
 import { findElements as findElementsByID } from '@salto-io/adapter-utils'
 import currencyIsoCodeFilter from '../../src/filters/currency_iso_code'
 import { FilterWith } from '../../src/filter'
@@ -26,25 +26,19 @@ type PicklistDefinition = {
   values: string[]
 }
 
-const createMockElemenet = (...picklists: PicklistDefinition[]): ObjectType => {
-  const elem = createCustomObjectType('MockType', {
-    fields: {
-      Id: { refType: BuiltinTypes.SERVICE_ID },
-      Name: { refType: Types.primitiveDataTypes[FIELD_TYPE_NAMES.TEXT] },
-    },
-  })
 
-  picklists.forEach(({ name, values }) => {
-    elem.fields[name] = new Field(
-      elem,
-      name,
-      Types.primitiveDataTypes[FIELD_TYPE_NAMES.PICKLIST],
-      { valueSet: values.map(value => createValueSetEntry(value, false, value, true)) },
-    )
-  })
-
-  return elem
-}
+const createMockElemenet = (...picklists: PicklistDefinition[]): ObjectType => createCustomObjectType('MockType', {
+  fields: {
+    Id: { refType: BuiltinTypes.SERVICE_ID },
+    Name: { refType: Types.primitiveDataTypes[FIELD_TYPE_NAMES.TEXT] },
+    ...Object.fromEntries(picklists.map(({ name, values }) => [name, {
+      refType: Types.primitiveDataTypes[FIELD_TYPE_NAMES.PICKLIST],
+      annotations: {
+        valueSet: values.map(value => createValueSetEntry(value, false, value, true)),
+      },
+    }])),
+  },
+})
 
 describe('currencyIsoCode filter', () => {
   const filter = currencyIsoCodeFilter() as FilterWith<'onFetch'>

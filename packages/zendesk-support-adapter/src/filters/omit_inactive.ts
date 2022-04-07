@@ -21,6 +21,15 @@ import { API_DEFINITIONS_CONFIG } from '../config'
 
 const log = logger(module)
 
+// We can't omit inactive instances of those types because we need
+//  all the instance in order to reorder them
+const CAN_NOT_OMIT_INACTIVE_TYPE_NAMES = [
+  'user_field',
+  'organization_field',
+  'workspace',
+  'ticket_form',
+]
+
 /**
  * Omit inactive instances
  */
@@ -28,6 +37,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]) => {
     const shouldRemoveElement = (element: Element): boolean =>
       (isInstanceElement(element)
+        && !CAN_NOT_OMIT_INACTIVE_TYPE_NAMES.includes(element.elemID.typeName)
         && config[API_DEFINITIONS_CONFIG]
           .types[element.elemID.typeName]?.transformation?.omitInactive === true
         && (element.elemID.typeName === 'webhook'
@@ -37,8 +47,10 @@ const filterCreator: FilterCreator = ({ config }) => ({
     const elemFullNamesToOmit = elements
       .filter(shouldRemoveElement)
       .map(element => element.elemID.getFullName())
-    log.debug('%d instances were omitted because they were inactive. IDs: %o',
-      elemFullNamesToOmit.length, elemFullNamesToOmit)
+    if (elemFullNamesToOmit.length > 0) {
+      log.debug('%d instances were omitted because they were inactive. IDs: %o',
+        elemFullNamesToOmit.length, elemFullNamesToOmit)
+    }
     _.remove(elements, shouldRemoveElement)
   },
 })

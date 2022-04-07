@@ -70,6 +70,11 @@ describe('omit inactive', () => {
                 omitInactive: true,
               },
             },
+            ticket_form: {
+              transformation: {
+                omitInactive: true,
+              },
+            },
           },
         },
       },
@@ -113,6 +118,14 @@ describe('omit inactive', () => {
       await filter.onFetch(elements)
       expect(elements.map(elem => elem.elemID.getFullName()))
         .toEqual([activeInst.elemID.getFullName()])
+    })
+    it('should not omit instance of types that we need their inactive instances for reorder', async () => {
+      const ticketFormObjType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'ticket_form') })
+      const ticketForm = new InstanceElement('inst1', ticketFormObjType, { name: 'test', active: false })
+      const elements = [ticketForm]
+      await filter.onFetch(elements)
+      expect(elements.map(elem => elem.elemID.getFullName()))
+        .toEqual([ticketForm.elemID.getFullName()])
     })
   })
 })

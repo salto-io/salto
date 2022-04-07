@@ -48,7 +48,9 @@ export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 export type ZendeskClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
 
 export type ZendeskFetchConfig = configUtils.DuckTypeUserFetchConfig
-export type ZendeskApiConfig = configUtils.AdapterDuckTypeApiConfig
+export type ZendeskApiConfig = configUtils.AdapterApiConfig<
+  configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean }
+>
 
 export type ZendeskConfig = {
   [CLIENT_CONFIG]?: ZendeskClientConfig
@@ -56,7 +58,7 @@ export type ZendeskConfig = {
   [API_DEFINITIONS_CONFIG]: ZendeskApiConfig
 }
 
-export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
+export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   // types that should exist in workspace
   group: {
     transformation: {

@@ -63,6 +63,7 @@ import routingAttributeFilter from './filters/routing_attribute'
 import serviceUrlFilter from './filters/service_url'
 import slaPolicyFilter from './filters/sla_policy'
 import macroAttachmentsFilter from './filters/macro_attachments'
+import omitInactiveFilter from './filters/omit_inactive'
 import defaultDeployFilter from './filters/default_deploy'
 import { getConfigFromConfigChanges } from './config_change'
 
@@ -82,6 +83,9 @@ export const DEFAULT_FILTERS = [
   userFieldFilter,
   viewFilter,
   workspaceFilter,
+  // omitInactiveFilter should be before:
+  //  order filters, collisionErrorsFilter and fieldReferencesFilter
+  omitInactiveFilter,
   ticketFormOrderFilter,
   userFieldOrderFilter,
   organizationFieldOrderFilter,

@@ -56,6 +56,7 @@ import workflowModificationFilter from './filters/workflow/workflow_modification
 import triggersFilter from './filters/workflow/triggers_filter'
 import workflowSchemeFilter from './filters/workflow_scheme'
 import duplicateIdsFilter from './filters/duplicate_ids'
+import unresolvedParentsFilter from './filters/unresolved_parents'
 import fieldNameFilter from './filters/fields/field_name_filter'
 import fieldStructureFilter from './filters/fields/field_structure_filter'
 import fieldDeploymentFilter from './filters/fields/field_deployment_filter'
@@ -96,6 +97,8 @@ export const DEFAULT_FILTERS = [
   fieldStructureFilter,
   // This should run here again because fieldStructureFilter creates the instances and references
   duplicateIdsFilter,
+  // This must run after duplicateIdsFilter
+  unresolvedParentsFilter,
   contextReferencesFilter,
   fieldTypeReferencesFilter,
   fieldDeploymentFilter,

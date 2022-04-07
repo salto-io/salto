@@ -64,7 +64,7 @@ describe('currencyIsoCode filter', () => {
     })
 
     it('should not change the original element', () => {
-      const element = findElements(elements, 'MockType')[0]
+      const element = elements[0]
       expect(element).toStrictEqual(originalElement)
     })
   })

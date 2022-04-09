@@ -54,7 +54,7 @@ const isChannels = (values: unknown): values is Channel[] => {
 /**
  * Adds the hardcoded channel instances in order to add references to them
  */
-const filterCreator: FilterCreator = ({ config }) => ({
+const filterCreator: FilterCreator = () => ({
   onFetch: async elements => {
     // We are ok with picking the first instance because triggerDefinition is a singleton
     const triggerDefinitionInstance = elements
@@ -77,7 +77,6 @@ const filterCreator: FilterCreator = ({ config }) => ({
         },
         name: { refType: BuiltinTypes.STRING },
       },
-      annotations: config.fetch.hideTypes ? { [CORE_ANNOTATIONS.HIDDEN]: true } : undefined,
       path: [ZENDESK_SUPPORT, TYPES_PATH, SUBTYPES_PATH, CHANNEL_TYPE_NAME],
     })
     if (channels.length !== (new Set(channels.map(c => c.value))).size) {

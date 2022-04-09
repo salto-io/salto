@@ -15,10 +15,10 @@
 */
 import {
   ObjectType, ElemID, InstanceElement, isObjectType, isInstanceElement,
-  ReferenceExpression, CORE_ANNOTATIONS, ModificationChange,
+  ReferenceExpression, ModificationChange,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
-import { DEFAULT_CONFIG, DEFAULT_INCLUDE_ENDPOINTS, FETCH_CONFIG } from '../../../src/config'
+import { DEFAULT_CONFIG } from '../../../src/config'
 import ZendeskClient from '../../../src/client/client'
 import { ZENDESK_SUPPORT } from '../../../src/constants'
 import { paginate } from '../../../src/client/pagination'
@@ -129,47 +129,6 @@ describe('trigger reorder filter', () => {
       const orderType = elements
         .find(elem => elem.elemID.getFullName() === 'zendesk_support.trigger_order')
       expect(orderType).toBeDefined()
-      expect(orderType?.annotations[CORE_ANNOTATIONS.HIDDEN]).toEqual(true)
-    })
-    it('should create correct order element with non hidden types', async () => {
-      const filterWithHideType = filterCreator({
-        client,
-        paginator: clientUtils.createPaginator({
-          client,
-          paginationFuncCreator: paginate,
-        }),
-        config: {
-          ...DEFAULT_CONFIG,
-          [FETCH_CONFIG]: {
-            includeTypes: DEFAULT_INCLUDE_ENDPOINTS,
-            hideTypes: false,
-          },
-        },
-      }) as FilterType
-      const elements = [
-        triggerType, categoryType, category1, category2, category3,
-        trigger1, trigger2, trigger3, trigger4,
-      ]
-      await filterWithHideType.onFetch(elements)
-      expect(elements.map(e => e.elemID.getFullName()).sort())
-        .toEqual([
-          'zendesk_support.trigger',
-          'zendesk_support.trigger.instance.trigger1',
-          'zendesk_support.trigger.instance.trigger2',
-          'zendesk_support.trigger.instance.trigger3',
-          'zendesk_support.trigger.instance.trigger4',
-          'zendesk_support.trigger_category',
-          'zendesk_support.trigger_category.instance.cate1',
-          'zendesk_support.trigger_category.instance.cate2',
-          'zendesk_support.trigger_category.instance.cate3',
-          'zendesk_support.trigger_order',
-          'zendesk_support.trigger_order.instance',
-          'zendesk_support.trigger_order_entry',
-        ])
-      const orderType = elements
-        .find(elem => elem.elemID.getFullName() === 'zendesk_support.trigger_order')
-      expect(orderType).toBeDefined()
-      expect(orderType?.annotations[CORE_ANNOTATIONS.HIDDEN]).not.toBeDefined()
     })
     it('should not create new elements if trigger type does not exist', async () => {
       const elements = [categoryType]

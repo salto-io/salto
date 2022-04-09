@@ -66,6 +66,7 @@ import macroAttachmentsFilter from './filters/macro_attachments'
 import omitInactiveFilter from './filters/omit_inactive'
 import tagsFilter from './filters/tag'
 import defaultDeployFilter from './filters/default_deploy'
+import hideTypesFilter from './filters/hide_types'
 import { getConfigFromConfigChanges } from './config_change'
 
 const log = logger(module)
@@ -117,6 +118,8 @@ export const DEFAULT_FILTERS = [
   unorderedListsFilter,
   dynamicContentReferencesFilter,
   serviceUrlFilter,
+  // hideTypesFilter should be the last onFetch filter
+  hideTypesFilter,
   // defaultDeployFilter should be last!
   defaultDeployFilter,
 ]

@@ -41,6 +41,9 @@ const SPECIAL_CONTEXT_NAMES: Record<string, string> = {
   notification_webhook: 'webhook',
   via_id: 'channel',
   current_via_id: 'channel',
+  current_tags: 'tag',
+  set_tags: 'tag',
+  remove_tags: 'tag',
 }
 
 /**

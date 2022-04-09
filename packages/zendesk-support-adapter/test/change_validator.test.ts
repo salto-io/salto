@@ -21,12 +21,12 @@ import { ZENDESK_SUPPORT } from '../src/constants'
 describe('change validator creator', () => {
   describe('deployNotSupportedValidator', () => {
     it('should not fail if there are no deploy changes', async () => {
-      expect(await createChangeValidator(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG], [])([]))
+      expect(await createChangeValidator(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG], [], [])([]))
         .toEqual([])
     })
 
     it('should fail each change individually', async () => {
-      expect(await createChangeValidator(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG], [])([
+      expect(await createChangeValidator(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG], [], [])([
         toChange({ after: new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'obj') }) }),
         toChange({ before: new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'obj2') }) }),
       ])).toEqual([
@@ -48,7 +48,7 @@ describe('change validator creator', () => {
   describe('checkDeploymentBasedOnConfigValidator', () => {
     it('should fail each change individually', async () => {
       const type = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'obj') })
-      expect(await createChangeValidator(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG], [])([
+      expect(await createChangeValidator(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG], [], [])([
         toChange({ after: new InstanceElement('inst1', type) }),
         toChange({ before: new InstanceElement('inst2', type) }),
       ])).toEqual([

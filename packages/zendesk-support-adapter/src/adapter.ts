@@ -64,6 +64,7 @@ import serviceUrlFilter from './filters/service_url'
 import slaPolicyFilter from './filters/sla_policy'
 import macroAttachmentsFilter from './filters/macro_attachments'
 import omitInactiveFilter from './filters/omit_inactive'
+import tagsFilter from './filters/tag'
 import defaultDeployFilter from './filters/default_deploy'
 import { getConfigFromConfigChanges } from './config_change'
 
@@ -109,6 +110,7 @@ export const DEFAULT_FILTERS = [
   slaPolicyFilter,
   routingAttributeFilter,
   addFieldOptionsFilter,
+  tagsFilter,
   // removeDefinitionInstancesFilter should be after hardcodedChannelFilter
   removeDefinitionInstancesFilter,
   // unorderedListsFilter should run after fieldReferencesFilter
@@ -272,6 +274,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       changeValidator: createChangeValidator(
         this.userConfig[API_DEFINITIONS_CONFIG],
         ['organization_field__custom_field_options', 'macro_attachment'],
+        ['tag'],
       ),
       dependencyChanger: deploymentUtils.dependency.removeStandaloneFieldDependency,
       getChangeGroupIds,

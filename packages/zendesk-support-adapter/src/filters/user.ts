@@ -17,10 +17,11 @@ import _ from 'lodash'
 import Joi from 'joi'
 import { logger } from '@salto-io/logging'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { applyFunctionToChangeData, safeJsonStringify } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { Change, getChangeData, InstanceElement, isInstanceElement, Values } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
+import { areConditions } from './utils'
 
 const log = logger(module)
 const { toArrayAsync, awu } = collections.asynciterable
@@ -31,31 +32,16 @@ type User = {
   id: number
   email: string
 }
-type Condition = {
-  field: string
-}
 
 const EXPECTED_USER_SCHEMA = Joi.array().items(Joi.object({
   id: Joi.number().required(),
   email: Joi.string().required(),
 }).unknown(true)).required()
 
-const EXPECTED_CONDITION_SCHEMA = Joi.array().items(Joi.object({
-  field: Joi.string().required(),
-}).unknown(true)).required()
-
 const areUsers = (values: unknown): values is User[] => {
   const { error } = EXPECTED_USER_SCHEMA.validate(values)
   if (error !== undefined) {
     log.warn(`Received an invalid response for the users values: ${error.message}`)
-    return false
-  }
-  return true
-}
-const areConditions = (values: unknown, fullName: string): values is Condition[] => {
-  const { error } = EXPECTED_CONDITION_SCHEMA.validate(values)
-  if (error !== undefined) {
-    log.warn(`Received an invalid values for conditions on ${fullName}: ${safeJsonStringify(values)}`)
     return false
   }
   return true

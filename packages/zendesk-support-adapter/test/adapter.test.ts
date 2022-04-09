@@ -331,6 +331,8 @@ describe('adapter', () => {
           'zendesk_support.support_address',
           'zendesk_support.support_address.instance.myBrand',
           'zendesk_support.support_addresses',
+          'zendesk_support.tag',
+          'zendesk_support.tag.instance.Social',
           'zendesk_support.target',
           'zendesk_support.target.instance.Slack_integration_Endpoint_url_target_v2@ssuuu',
           'zendesk_support.targets',

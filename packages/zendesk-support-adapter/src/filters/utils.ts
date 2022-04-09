@@ -14,16 +14,22 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import Joi from 'joi'
 import { Change, ChangeDataType, getChangeData, InstanceElement,
   isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isReferenceExpression,
   ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData, getParents, resolveChangeElement } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, getParents, resolveChangeElement, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { lookupFunc } from './field_references'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
+
+export type Condition = {
+  field: string
+  value?: unknown
+}
 
 export const applyforInstanceChangesOfType = async (
   changes: Change<ChangeDataType>[],
@@ -64,4 +70,18 @@ export const createAdditionalParentChanges = async (
   return shouldResolve
     ? awu(changes).map(change => resolveChangeElement(change, lookupFunc)).toArray()
     : changes
+}
+
+const EXPECTED_CONDITION_SCHEMA = Joi.array().items(Joi.object({
+  field: Joi.string().required(),
+  value: Joi.optional(),
+}).unknown(true)).required()
+
+export const areConditions = (values: unknown, fullName: string): values is Condition[] => {
+  const { error } = EXPECTED_CONDITION_SCHEMA.validate(values)
+  if (error !== undefined) {
+    log.warn(`Received an invalid values for conditions on ${fullName}: ${safeJsonStringify(values)}`)
+    return false
+  }
+  return true
 }

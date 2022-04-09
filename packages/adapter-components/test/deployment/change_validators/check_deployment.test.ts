@@ -118,4 +118,15 @@ describe('checkDeploymentBasedOnConfigValidator', () => {
       detailedMessage: `Salto does not support "remove" of ${instance.elemID.getFullName()}`,
     }])
   })
+  it('should not return an error when operation deployed type in in the skipped list', async () => {
+    const typeName = 'testChild'
+    const instance = new InstanceElement(
+      'test',
+      new ObjectType({ elemID: new ElemID('dum', typeName) }),
+    )
+    const errors = await createCheckDeploymentBasedOnConfigValidator(apiConfig, [], [typeName])(
+      [toChange({ after: instance })],
+    )
+    expect(errors).toEqual([])
+  })
 })

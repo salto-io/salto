@@ -1,0 +1,223 @@
+/*
+*                      Copyright 2022 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+import { CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isModificationChange, Values } from '@salto-io/adapter-api'
+import { client as clientUtils } from '@salto-io/adapter-components'
+import { logger } from '@salto-io/logging'
+import _ from 'lodash'
+import { resolveValues } from '@salto-io/adapter-utils'
+import Joi from 'joi'
+import { AUTOMATION_TYPE } from '../../constants'
+import { addAnnotationRecursively, createSchemeGuard, findObject, setTypeDeploymentAnnotations } from '../../utils'
+import { FilterCreator } from '../../filter'
+import { deployChanges } from '../../deployment/standard_deployment'
+import JiraClient from '../../client/client'
+import { getLookUpName } from '../../reference_mapping'
+import { getCloudId } from './cloud_id'
+
+
+const log = logger(module)
+
+const PROJECT_TYPE_TO_RESOURCE_TYPE: Record<string, string> = {
+  software: 'jira-software',
+  service_desk: 'jira-servicedesk',
+  business: 'jira-core',
+}
+
+const generateRuleScopes = (instance: InstanceElement, cloudId: string): string[] => {
+  if ((instance.value.projects ?? []).length === 0) {
+    return [`ari:cloud:jira::site/${cloudId}`]
+  }
+
+  return instance.value.projects.map((project: Values) => {
+    if (project.projectId !== undefined) {
+      return `ari:cloud:jira:${cloudId}:project/${project.projectId}`
+    }
+
+    return `ari:cloud:${PROJECT_TYPE_TO_RESOURCE_TYPE[project.projectTypeKey]}::site/${cloudId}`
+  })
+}
+
+const importAutomation = async (
+  instance: InstanceElement,
+  client: JiraClient,
+  cloudId: string,
+): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> => {
+  const resolvedInstance = await resolveValues(instance, getLookUpName)
+
+  const ruleScopes = generateRuleScopes(resolvedInstance, cloudId)
+
+  const data = {
+    rules: [{
+      ...resolvedInstance.value,
+      ruleScope: {
+        resources: ruleScopes,
+      },
+    }],
+  }
+
+  return client.postPrivate({
+    url: `/gateway/api/automation/internal-api/jira/${cloudId}/pro/rest/GLOBAL/rule/import`,
+    data,
+  })
+}
+
+type ImportResponse = {
+  id: number
+  name: string
+  created: number
+  projects: {
+    projectId: string
+  }[]
+}[]
+
+const IMPORT_RESPONSE_SCHEME = Joi.array().items(
+  Joi.object({
+    id: Joi.number().required(),
+    name: Joi.string().required(),
+    created: Joi.number().required(),
+    projects: Joi.array().items(
+      Joi.object({
+        projectId: Joi.string().allow(null),
+      }).unknown(true),
+    ).required(),
+  }).unknown(true),
+)
+
+const isImportResponse = createSchemeGuard<ImportResponse>(IMPORT_RESPONSE_SCHEME, 'Received an invalid automation import response')
+
+const getAutomationIdentifier = (values: Values): string =>
+  [values.name, ...(values.projects ?? []).map((project: Values) => project.projectId)].join('_')
+
+const setInstanceId = async (
+  instance: InstanceElement,
+  response: clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>
+): Promise<void> => {
+  if (!isImportResponse(response.data)) {
+    throw new Error(`Received an invalid automation response when attempting to create automation: ${instance.elemID.getFullName()}`)
+  }
+
+  const automationById = _.groupBy(response.data, automation => getAutomationIdentifier(automation))
+
+  const instanceIdentifier = getAutomationIdentifier(
+    (await resolveValues(instance, getLookUpName)).value
+  )
+
+  if (automationById[instanceIdentifier] === undefined) {
+    throw new Error(`Deployment failed for automation: ${instance.elemID.getFullName()}`)
+  }
+
+  if (automationById[instanceIdentifier].length > 1) {
+    throw new Error(`Cannot find if of automation: ${instance.elemID.getFullName()} after the deployment, there is more than one automation with the same name ${instance.value.name}`)
+  }
+
+  instance.value.id = automationById[instanceIdentifier][0].id
+  instance.value.created = automationById[instanceIdentifier][0].created
+}
+
+const removeAutomation = async (
+  instance: InstanceElement,
+  client: JiraClient,
+  cloudId: string,
+): Promise<void> => {
+  await client.deletePrivate({
+    url: `/gateway/api/automation/internal-api/jira/${cloudId}/pro/rest/GLOBAL/rule/${instance.value.id}`,
+  })
+}
+
+const updateAutomation = async (
+  instance: InstanceElement,
+  client: JiraClient,
+  cloudId: string,
+): Promise<void> => {
+  const resolvedInstance = await resolveValues(instance, getLookUpName)
+
+  const ruleScopes = generateRuleScopes(resolvedInstance, cloudId)
+
+  const data = {
+    ruleConfigBean: {
+      ...resolvedInstance.value,
+      ruleScope: {
+        resources: ruleScopes,
+      },
+    },
+  }
+
+  await client.putPrivate({
+    url: `/gateway/api/automation/internal-api/jira/${cloudId}/pro/rest/GLOBAL/rule/${instance.value.id}`,
+    data,
+  })
+}
+
+const createAutomation = async (
+  instance: InstanceElement,
+  client: JiraClient,
+  cloudId: string,
+): Promise<void> => {
+  const response = await importAutomation(instance, client, cloudId)
+  await setInstanceId(instance, response)
+  if (instance.value.state === 'ENABLED') {
+    // Import automation ignore the state and always create the automation as disabled
+    await updateAutomation(instance, client, cloudId)
+  }
+}
+
+const filter: FilterCreator = ({ client, config }) => ({
+  onFetch: async elements => {
+    if (!config.client.usePrivateAPI) {
+      log.debug('Skipping automation deployment filter because private API is not enabled')
+      return
+    }
+
+    const automationType = findObject(elements, AUTOMATION_TYPE)
+    if (automationType === undefined) {
+      return
+    }
+
+    await addAnnotationRecursively(automationType, CORE_ANNOTATIONS.CREATABLE)
+    await addAnnotationRecursively(automationType, CORE_ANNOTATIONS.UPDATABLE)
+    setTypeDeploymentAnnotations(automationType)
+  },
+
+  deploy: async changes => {
+    const [relevantChanges, leftoverChanges] = _.partition(
+      changes,
+      change => isInstanceChange(change)
+        && getChangeData(change).elemID.typeName === AUTOMATION_TYPE
+    )
+
+
+    const deployResult = await deployChanges(
+      relevantChanges.filter(isInstanceChange),
+      async change => {
+        const cloudId = await getCloudId(client)
+        if (isAdditionChange(change)) {
+          await createAutomation(getChangeData(change), client, cloudId)
+        } else if (isModificationChange(change)) {
+          await updateAutomation(getChangeData(change), client, cloudId)
+        } else {
+          await removeAutomation(getChangeData(change), client, cloudId)
+        }
+      }
+    )
+
+    return {
+      leftoverChanges,
+      deployResult,
+    }
+  },
+})
+
+export default filter

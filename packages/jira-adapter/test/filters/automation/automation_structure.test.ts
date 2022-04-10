@@ -56,12 +56,16 @@ describe('automationFetchFilter', () => {
             id: '2',
             component: 'ACTION',
             value: null,
-            created: 1234,
+            updated: 1234,
           },
         ],
         projects: [
           {
             projectId: '3',
+            projectTypeKey: 'key',
+          },
+          {
+            projectTypeKey: 'key2',
           },
         ],
       }
@@ -69,11 +73,6 @@ describe('automationFetchFilter', () => {
   })
 
   describe('onFetch', () => {
-    it('should remove trigger.component', async () => {
-      await filter.onFetch([instance])
-      expect(instance.value.trigger.component).toBeUndefined()
-    })
-
     it('should remove null values', async () => {
       await filter.onFetch([instance])
       expect(instance.value.components[0].value).toBeUndefined()
@@ -86,12 +85,19 @@ describe('automationFetchFilter', () => {
 
     it('should remove redundant keys', async () => {
       await filter.onFetch([instance])
-      expect(instance.value.components[0].created).toBeUndefined()
+      expect(instance.value.components[0].updated).toBeUndefined()
     })
 
     it('should restructure projects value', async () => {
       await filter.onFetch([instance])
-      expect(instance.value.projects).toEqual(['3'])
+      expect(instance.value.projects).toEqual([
+        {
+          projectId: '3',
+        },
+        {
+          projectTypeKey: 'key2',
+        },
+      ])
     })
   })
 })

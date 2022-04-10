@@ -51,8 +51,10 @@ export const findObject = (elements: Element[], name: string): ObjectType | unde
 }
 
 
-export const addAnnotationRecursively = async (type: ObjectType, annotation: string)
-: Promise<void> =>
+export const addAnnotationRecursively = async (
+  type: ObjectType,
+  annotation: string
+): Promise<void> =>
   awu(Object.values(type.fields)).forEach(async field => {
     if (!field.annotations[annotation]) {
       field.annotations[annotation] = true

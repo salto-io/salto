@@ -37,6 +37,7 @@ import boardColumnsFilter from './filters/board/board_columns'
 import boardSubQueryFilter from './filters/board/board_subquery'
 import boardEstimationFilter from './filters/board/board_estimation'
 import boardDeploymentFilter from './filters/board/board_deployment'
+import automationDeploymentFilter from './filters/automation/automation_deployment'
 import screenFilter from './filters/screen/screen'
 import mapListsFilter from './filters/map_lists'
 import missingStatusesFilter from './filters/statuses/missing_statuses'
@@ -93,6 +94,7 @@ const log = logger(module)
 export const DEFAULT_FILTERS = [
   automationFetchFilter,
   automationStructureFilter,
+  automationDeploymentFilter,
   missingStatusesFilter,
   // Should run before duplicateIdsFilter
   fieldNameFilter,

@@ -24,7 +24,6 @@ const { awu } = collections.asynciterable
 
 const KEYS_TO_REMOVE = [
   'clientKey',
-  'created',
   'updated',
   'parentId',
   'ruleScope',
@@ -71,10 +70,13 @@ const filter: FilterCreator = () => ({
         await removeRedundantKeys(instance)
         await removeInnerIds(instance)
 
-        delete instance.value.trigger?.component
-
         instance.value.projects = instance.value.projects
-          ?.map(({ projectId }: Values) => projectId)
+          ?.map(
+            ({ projectId, projectTypeKey }: Values) => (
+              projectId !== undefined
+                ? { projectId }
+                : { projectTypeKey })
+          )
       }),
 })
 

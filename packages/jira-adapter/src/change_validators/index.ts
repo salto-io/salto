@@ -28,6 +28,7 @@ import { privateApiValidator } from './private_api'
 import { workflowValidator } from './workflow'
 import { dashboardGadgetsValidator } from './dashboard_gadgets'
 import { dashboardLayoutValidator } from './dashboard_layout'
+import { automationsValidator } from './automations'
 
 const {
   deployTypesNotSupportedValidator,
@@ -49,6 +50,7 @@ export default (
     workflowValidator,
     dashboardGadgetsValidator,
     dashboardLayoutValidator,
+    automationsValidator,
   ]
 
   return createChangeValidator(validators)

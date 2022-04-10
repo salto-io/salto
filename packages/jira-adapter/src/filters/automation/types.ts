@@ -16,7 +16,7 @@
 
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, ObjectType } from '@salto-io/adapter-api'
 import { elements } from '@salto-io/adapter-components'
-import { AUTOMATION_TYPE, JIRA } from '../../constants'
+import { AUTOMATION_PROJECT_TYPE, AUTOMATION_TYPE, JIRA } from '../../constants'
 
 export const createAutomationTypes = (): {
   automationType: ObjectType
@@ -57,6 +57,15 @@ export const createAutomationTypes = (): {
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, 'AutomationTag'],
   })
 
+  const projectType = new ObjectType({
+    elemID: new ElemID(JIRA, AUTOMATION_PROJECT_TYPE),
+    fields: {
+      projectId: { refType: BuiltinTypes.STRING },
+      projectTypeKey: { refType: BuiltinTypes.STRING },
+    },
+    path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_PROJECT_TYPE],
+  })
+
   const automationType = new ObjectType({
     elemID: new ElemID(JIRA, AUTOMATION_TYPE),
     fields: {
@@ -67,10 +76,16 @@ export const createAutomationTypes = (): {
         },
       },
       name: { refType: BuiltinTypes.STRING },
+      created: {
+        refType: BuiltinTypes.NUMBER,
+        annotations: {
+          [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+        },
+      },
       state: { refType: BuiltinTypes.STRING },
       authorAccountId: { refType: BuiltinTypes.STRING },
       actor: { refType: actorType },
-      projects: { refType: new ListType(BuiltinTypes.STRING) },
+      projects: { refType: new ListType(projectType) },
       trigger: { refType: componentType },
       components: { refType: new ListType(componentType) },
       tags: { refType: new ListType(tagType) },
@@ -83,6 +98,6 @@ export const createAutomationTypes = (): {
 
   return {
     automationType,
-    subTypes: [actorType, componentType, tagType],
+    subTypes: [actorType, componentType, tagType, projectType],
   }
 }

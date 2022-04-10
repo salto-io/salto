@@ -225,26 +225,6 @@ zendesk_support {
               fieldType = "number"
             },
           ]
-          fieldsToOmit = [
-            {
-              fieldName = "extended_input_schema"
-            },
-            {
-              fieldName = "extended_output_schema"
-            },
-            {
-              fieldName = "url"
-              fieldType = "string"
-            },
-            {
-              fieldName = "count"
-              fieldType = "number"
-            },
-            {
-              fieldName = "position"
-              fieldType = "number"
-            },
-          ]
           serviceUrl = "/admin/workspaces/agent-workspace/views/{id}"
         }
         deployRequests = {
@@ -611,10 +591,6 @@ zendesk_support {
             },
             {
               fieldName = "count"
-              fieldType = "number"
-            },
-            {
-              fieldName = "position"
               fieldType = "number"
             },
             {
@@ -1219,6 +1195,9 @@ zendesk_support {
           }
         }
         transformation = {
+          idFields = [
+            "value",
+          ]
           fieldsToHide = [
             {
               fieldName = "created_at"
@@ -1333,6 +1312,9 @@ zendesk_support {
           }
         }
         transformation = {
+          idFields = [
+            "value",
+          ]
           fieldsToHide = [
             {
               fieldName = "created_at"
@@ -1433,6 +1415,9 @@ zendesk_support {
       }
       organization_field__custom_field_options = {
         transformation = {
+          idFields = [
+            "value",
+          ]
           fieldsToHide = [
             {
               fieldName = "created_at"

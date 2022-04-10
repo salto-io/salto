@@ -707,6 +707,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
     transformation: {
+      idFields: ['value'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
@@ -773,6 +774,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
     transformation: {
+      idFields: ['value'],
       fieldsToHide: FIELDS_TO_HIDE.concat(
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'default', fieldType: 'boolean' },
@@ -824,6 +826,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   organization_field__custom_field_options: {
     transformation: {
+      idFields: ['value'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },

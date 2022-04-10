@@ -20,11 +20,11 @@ import {
   ChangeValidator, Change, ChangeError, DependencyChanger, ChangeGroupIdFunction, getChangeData,
   isAdditionOrRemovalChange, isFieldChange, ReadOnlyElementsSource, ElemID, isVariable,
   Value, isReferenceExpression, compareSpecialValues, BuiltinTypesByFullName, isAdditionChange,
-  isModificationChange, isRemovalChange, ReferenceExpression,
+  isModificationChange, isRemovalChange, ReferenceExpression, ObjectType,
 } from '@salto-io/adapter-api'
 import { DataNodeMap, DiffNode, DiffGraph, Group, GroupDAG, DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
-import { expressions, elementSource } from '@salto-io/workspace'
+import { expressions } from '@salto-io/workspace'
 import { collections, values } from '@salto-io/lowerdash'
 import { PlanItem, addPlanItemAccessors, PlanItemId } from './plan_item'
 import { buildGroupedGraphFromDiffGraph, getCustomGroupIds } from './group'
@@ -34,7 +34,7 @@ import { PlanTransformer, changeId } from './common'
 
 const { awu, iterateTogether } = collections.asynciterable
 type BeforeAfter<T> = collections.asynciterable.BeforeAfter<T>
-const { resolve, resolveReferenceExpression } = expressions
+const { resolve } = expressions
 
 const log = logger(module)
 
@@ -59,6 +59,16 @@ const shouldResolve = (ref: ReferenceExpression): boolean => (
   !ref.elemID.isBaseID() || ref.elemID.idType === 'var'
 )
 
+const resolveSingleReferenceExpression = async (
+  reference: ReferenceExpression,
+  elementsSource: ReadOnlyElementsSource,
+): Promise<ReferenceExpression> => {
+  // Hack to resolve a single reference without having to resolve everything at once
+  const dummyElem = new ObjectType({ elemID: new ElemID('_resolve', 'dummy'), annotations: { reference } })
+  const [resolvedDummyElem] = await resolve([dummyElem], elementsSource)
+  return resolvedDummyElem.annotations.reference
+}
+
 
 const areReferencesEqual = async (
   first: Value,
@@ -79,7 +89,7 @@ const areReferencesEqual = async (
   if (isReferenceExpression(first) && shouldResolve(first)) {
     const firstValue = first.value !== undefined
       ? first.value
-      : (await resolveReferenceExpression(first, firstSrc, {})).value
+      : (await resolveSingleReferenceExpression(first, firstSrc)).value
     return {
       returnCode: 'recurse',
       returnValue: { firstValue, secondValue: second },
@@ -91,7 +101,7 @@ const areReferencesEqual = async (
   if (isReferenceExpression(second) && shouldResolve(second)) {
     const secondValue = second.value !== undefined
       ? second.value
-      : (await resolveReferenceExpression(second, secondSrc, {})).value
+      : (await resolveSingleReferenceExpression(second, secondSrc)).value
     return {
       returnCode: 'recurse',
       returnValue: { firstValue: first, secondValue },
@@ -312,8 +322,11 @@ const addDifferentElements = (
       )
     ))
   }
-  const isSpecialId = (id: string): boolean => (BuiltinTypesByFullName[id] !== undefined
-    || elementSource.shouldResolveAsContainerType(id))
+
+  const isSpecialId = (id: ElemID): boolean => (
+    BuiltinTypesByFullName[id.getFullName()] !== undefined
+    || id.getContainerPrefixAndInnerType() !== undefined
+  )
   /**
    * Ids that represent types or containers need to be handled separately,
    * because they would not necessary be included in getAll.
@@ -321,11 +334,12 @@ const addDifferentElements = (
   const handleSpecialIds = async (
     elementPair: BeforeAfter<ChangeDataType>
   ): Promise<BeforeAfter<ChangeDataType>> => {
-    if (elementPair.before && isSpecialId(elementPair.before.elemID.getFullName())) {
-      return { before: elementPair.before, after: await after.get(elementPair.before.elemID) }
-    }
-    if (elementPair.after && isSpecialId(elementPair.after.elemID.getFullName())) {
-      return { before: await before.get(elementPair.after.elemID), after: elementPair.after }
+    const id = elementPair.before?.elemID ?? elementPair.after?.elemID
+    if (id !== undefined && isSpecialId(id)) {
+      return {
+        before: elementPair.before ?? await before.get(id),
+        after: elementPair.after ?? await after.get(id),
+      }
     }
     return elementPair
   }
@@ -368,11 +382,11 @@ const resolveNodeElements = (
   })
 
   const resolvedBefore = _.keyBy(
-    await resolve(beforeItemsToResolve, before, true),
+    await resolve(beforeItemsToResolve, before),
     e => e.elemID.getFullName()
   ) as Record<string, ChangeDataType>
   const resolvedAfter = _.keyBy(
-    await resolve(afterItemsToResolve, after, true),
+    await resolve(afterItemsToResolve, after),
     e => e.elemID.getFullName()
   ) as Record<string, ChangeDataType>
 

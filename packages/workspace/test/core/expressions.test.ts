@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, ObjectType, BuiltinTypes, InstanceElement, Element, ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable, isVariableExpression, isReferenceExpression, StaticFile, PrimitiveType, PrimitiveTypes, TypeReference } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, BuiltinTypes, InstanceElement, Element, ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable, isVariableExpression, isReferenceExpression, StaticFile, PrimitiveType, PrimitiveTypes, TypeReference, MapType, TypeElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { TestFuncImpl, getFieldsAndAnnoTypes } from '../utils'
 import { resolve, UnresolvedReference, CircularReference } from '../../src/expressions'
@@ -345,9 +345,10 @@ describe('Test Salto Expressions', () => {
 
     it('should not resolve additional context', async () => {
       const inst = new InstanceElement('second', simpleRefType, {})
-      const refToInst = new ReferenceExpression(inst.elemID)
-      const context = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'name'),
-        refToInst)
+      const context = new Variable(
+        new ElemID(ElemID.VARIABLES_NAMESPACE, 'name'),
+        refTo(inst),
+      )
       const refInst = new InstanceElement(
         'first',
         simpleRefType,
@@ -362,6 +363,9 @@ describe('Test Salto Expressions', () => {
       ]))).toArray())
       expect(res).toHaveLength(1)
       expect((res[0] as InstanceElement).value.test.value).toEqual(inst)
+      // Should not resolve the input
+      expect(refInst.value.test.value).toBeUndefined()
+      expect(context.value.value).toBeUndefined()
     })
 
     it('should use elements over additional context', async () => {
@@ -408,7 +412,7 @@ describe('Test Salto Expressions', () => {
       expect(resInst.refType.elemID).toBe(resObj.elemID)
     })
 
-    it('should resolve the top level element in a reference when resolveRoot is true', async () => {
+    it('should resolve the top level element in a reference', async () => {
       const refTargetInstObj = new ObjectType({
         elemID: ElemID.fromFullName('salto.testObj'),
       })
@@ -431,40 +435,11 @@ describe('Test Salto Expressions', () => {
             refTargetInstObj, instanceToResolveObj, refTargetInst, instanceToResolve,
           ]
         ),
-        true
       )).toArray()) as [InstanceElement]
       const resolvedRef = resovledElems[0].value.test as ReferenceExpression
       const resolvedValue = resolvedRef.topLevelParent as InstanceElement
       const resolvedValueType = await resolvedValue.getType() as ObjectType
       expect(resolvedValueType).toEqual(refTargetInstObj)
-    })
-
-    it('should not resolve the top level element in a reference when resolveRoot is false', async () => {
-      const refTargetInstObj = new ObjectType({
-        elemID: ElemID.fromFullName('salto.testObj'),
-      })
-      // We need to object types here since if we were to use the same type, it would have been
-      // resolved when `instanceToResolve` would have been resolved.
-      const instanceToResolveObj = new ObjectType({
-        elemID: ElemID.fromFullName('salto.testObj2'),
-      })
-      const refTargetInst = new InstanceElement('rrr', new TypeReference(refTargetInstObj.elemID), {
-        test: 'okok',
-      })
-      const instanceToResolve = new InstanceElement('rrr', new TypeReference(instanceToResolveObj.elemID), {
-        test: refTo(refTargetInst, 'test'),
-      })
-      const elems = [instanceToResolve]
-      const resovledElems = (await awu(await resolve(
-        elems,
-        createInMemoryElementSource(
-          [
-            refTargetInstObj, instanceToResolveObj, refTargetInst, instanceToResolve,
-          ]
-        ),
-      )).toArray()) as [InstanceElement]
-      const resolvedRef = resovledElems[0].value.test as ReferenceExpression
-      expect(resolvedRef.topLevelParent).not.toBeDefined()
     })
 
     it('should resolve instance with references to itself', async () => {
@@ -518,19 +493,86 @@ describe('Test Salto Expressions', () => {
         }
       )
       const elements = [firstRef, secondRef]
-      const element = (await awu(
-        await resolve(elements, createInMemoryElementSource(
-          [
-            firstRef,
-            secondRef,
-            refType,
-            ...await getFieldsAndAnnoTypes(refType),
-          ]
-        ))
-      ).toArray())[1] as InstanceElement
-      expect(element.value.into).toEqual(
+      const resolvedElements = await resolve(
+        elements,
+        createInMemoryElementSource([
+          firstRef,
+          secondRef,
+          refType,
+          ...await getFieldsAndAnnoTypes(refType),
+        ]),
+      )
+      const element = resolvedElements[1] as InstanceElement
+      expect(element.value.into.value).toEqual(
         'Well, you made a long journey from Milano to Minsk, Rochelle Rochelle'
       )
+    })
+    it('should detect circular reference in template expressions', async () => {
+      const refType = new ObjectType({
+        elemID: new ElemID('salto', 'simple'),
+      })
+      const firstRef = new InstanceElement(
+        'first',
+        refType,
+        { value: new ReferenceExpression(refType.elemID.createNestedID('instance', 'second', 'template')) }
+      )
+      const secondRef = new InstanceElement(
+        'second',
+        refType,
+        {
+          template: new TemplateExpression({
+            parts: ['template value is: ', refTo(firstRef, 'value')],
+          }),
+        }
+      )
+      const origElements = [refType, firstRef, secondRef]
+      const resolvedElements = await resolve(origElements, createInMemoryElementSource())
+      expect(resolvedElements).toHaveLength(origElements.length)
+      const [resFirst, resSecond] = resolvedElements.slice(1) as InstanceElement[]
+      expect(resFirst.value.value.value).toBeInstanceOf(CircularReference)
+      expect(resSecond.value.template.parts[1].value).toBeInstanceOf(CircularReference)
+    })
+  })
+
+  describe('resolve types', () => {
+    describe('with container types', () => {
+      let innerObjType: ObjectType
+      let outerObjType: ObjectType
+      let resolved: [ObjectType]
+      let resolvedInnerType: TypeElement | undefined
+      beforeEach(async () => {
+        innerObjType = new ObjectType({ elemID: new ElemID('salto', 'inner') })
+        outerObjType = new ObjectType({
+          elemID: new ElemID('salto', 'outer'),
+          fields: {
+            listObj: { refType: new ListType(innerObjType) },
+            mapObj: { refType: new MapType(innerObjType) },
+            nestedContainers: { refType: new ListType(new MapType(new ListType(innerObjType))) },
+          },
+        })
+        resolved = await resolve(
+          [outerObjType],
+          createInMemoryElementSource([innerObjType]),
+        ) as typeof resolved
+        resolvedInnerType = (resolved[0].fields.listObj.refType.type as ListType)?.refInnerType.type
+      })
+      it('should resolve field types to the same inner object type', () => {
+        expect(resolved[0].fields.listObj.refType.type).toBeInstanceOf(ListType)
+        expect(resolved[0].fields.mapObj.refType.type).toBeInstanceOf(MapType)
+        const listInner = (resolved[0].fields.listObj.refType.type as ListType).refInnerType.type
+        const mapInner = (resolved[0].fields.mapObj.refType.type as MapType).refInnerType.type
+        expect(listInner).toBe(mapInner)
+      })
+      it('should handle multi-level containers', () => {
+        const nestedFieldType = resolved[0].fields.nestedContainers.refType.type
+        expect(nestedFieldType).toBeInstanceOf(ListType)
+        const innerType = (nestedFieldType as ListType).refInnerType.type
+        expect(innerType).toBeInstanceOf(MapType)
+        const innerInnerType = (innerType as MapType).refInnerType.type
+        expect(innerInnerType).toBeInstanceOf(ListType)
+        const innerInnerInnerType = (innerInnerType as ListType).refInnerType.type
+        expect(innerInnerInnerType).toBe(resolvedInnerType)
+      })
     })
   })
 })

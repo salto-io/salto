@@ -393,7 +393,6 @@ const fetchAndProcessMergeErrors = async (
     const configClones = (await expressions.resolve(
       configs,
       buildElementsSourceFromElements([]),
-      true
     )).filter(isInstanceElement)
     await updateElementsWithAlternativeAccount(
       configClones,
@@ -421,7 +420,6 @@ const fetchAndProcessMergeErrors = async (
     fetchResult.elements = await expressions.resolve(
       fetchResult.elements,
       stateElements,
-      true
     )
     await updateElementsWithAlternativeAccount(fetchResult.elements, accountName, service)
     if (fetchResult.updatedConfig) {

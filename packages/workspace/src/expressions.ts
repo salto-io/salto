@@ -13,28 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
+import wu from 'wu'
 import { logger } from '@salto-io/logging'
-import { ElemID, Element, Value, ReferenceExpression, TemplateExpression, isReferenceExpression, isVariableExpression, isElement, ReadOnlyElementsSource, isVariable, isInstanceElement, isObjectType, isContainerType, isField, Field, isTypeReference, createRefToElmWithValue } from '@salto-io/adapter-api'
-import { resolvePath, TransformFunc, transformValues } from '@salto-io/adapter-utils'
-import { collections, promises } from '@salto-io/lowerdash'
+import { ElemID, Element, ReferenceExpression, TemplateExpression, isReferenceExpression, isElement, ReadOnlyElementsSource, isVariable, isInstanceElement, isObjectType, isContainerType, BuiltinTypes, CoreAnnotationTypes, TypeReference, isType, PlaceholderObjectType, Expression, isTemplateExpression, isExpression, isField } from '@salto-io/adapter-api'
+import { resolvePath, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { values } from '@salto-io/lowerdash'
+import { DataNodeMap } from '@salto-io/dag'
+import { buildContainerType } from './workspace/elements_source'
 
 const log = logger(module)
-const { mapValuesAsync } = promises.object
-
-type WorkingSetElement = {
-  element: Element
-  resolved?: boolean
-}
-
-const { awu } = collections.asynciterable
-type Resolver<T> = (
-  v: T,
-  elementsSource: ReadOnlyElementsSource,
-  workingSetElements: Record<string, WorkingSetElement>,
-  resolveRoot: boolean,
-  visited?: Set<string>
-) => Promise<Value>
 
 export class UnresolvedReference {
   constructor(public target: ElemID) {
@@ -45,287 +32,317 @@ export class CircularReference {
   constructor(public ref: string) {}
 }
 
-const getResolvedElement = async (
-  elemID: ElemID,
+const markCircularReferences = (referenceGraph: DataNodeMap<Expression>): void => {
+  const cycle = referenceGraph.getCycle()
+  if (cycle === undefined) {
+    return
+  }
+  // Get all references that depend on anything in the cycle we found
+  const referenceIdsInCycle = referenceGraph.getComponent({ roots: cycle.flat(), reverse: true })
+  // Mark these as circular references
+  wu(referenceIdsInCycle)
+    .map(refId => referenceGraph.getData(refId))
+    .forEach(ref => {
+      if (isReferenceExpression(ref)) {
+        ref.value = new CircularReference(ref.elemID.getFullName())
+      } else if (isTemplateExpression(ref)) {
+        ref.parts.forEach(part => {
+          if (isReferenceExpression(part)) {
+            part.value = new CircularReference(part.elemID.getFullName())
+          }
+        })
+      }
+    })
+  // Remove the references we marked and run again in case there is another cycle
+  markCircularReferences(referenceGraph.cloneWithout(referenceIdsInCycle))
+}
+
+const setTypeOnReference = (reference: TypeReference, type: unknown): void => {
+  if (isType(type)) {
+    reference.type = type
+  } else {
+    // As a last resort, resolve to a placeholder type to mark this as a missing type
+    reference.type = new PlaceholderObjectType({ elemID: reference.elemID })
+  }
+}
+
+const getResolvedType = (
+  typeId: ElemID,
+  resolvedElements: Map<string, Element>
+): Element | undefined => {
+  const resolvedType = resolvedElements.get(typeId.getFullName())
+  if (resolvedType !== undefined) {
+    return resolvedType
+  }
+  // In case we are looking for a container type that doesn't exist yet
+  // we can create it immediately if the inner type exists
+  const containerInfo = typeId.getContainerPrefixAndInnerType()
+  if (containerInfo !== undefined) {
+    const inner = getResolvedType(
+      ElemID.fromFullName(containerInfo.innerTypeName),
+      resolvedElements,
+    )
+    if (isType(inner)) {
+      const containerType = buildContainerType(containerInfo.prefix, inner)
+      resolvedElements.set(typeId.getFullName(), containerType)
+      return containerType
+    }
+  }
+  return undefined
+}
+
+const getElementCloneFromSource = async (
+  id: ElemID,
   elementsSource: ReadOnlyElementsSource,
-  workingSetElements: Record<string, WorkingSetElement>,
 ): Promise<Element | undefined> => {
-  if (workingSetElements[elemID.getFullName()] !== undefined) {
-    return workingSetElements[elemID.getFullName()].element
-  }
-  const element = await elementsSource.get(elemID)
-  if (element !== undefined) {
-    return _.clone(element)
-  }
-  return element
-}
-
-let resolveTemplateExpression: Resolver<TemplateExpression>
-
-const resolveMaybeExpression: Resolver<Value> = async (
-  value: Value,
-  elementsSource: ReadOnlyElementsSource,
-  workingSetElements: Record<string, WorkingSetElement>,
-  resolveRoot: boolean,
-  visited: Set<string> = new Set<string>(),
-): Promise<Value> => {
-  if (isReferenceExpression(value)) {
-    // eslint-disable-next-line no-use-before-define
-    return resolveReferenceExpression(
-      value,
-      elementsSource,
-      workingSetElements,
-      visited,
-      resolveRoot
-    )
-  }
-
-  if (value instanceof TemplateExpression) {
-    return resolveTemplateExpression(
-      value,
-      elementsSource,
-      workingSetElements,
-      resolveRoot,
-      visited
-    )
-  }
-
-  if (isElement(value)) {
-    // eslint-disable-next-line no-use-before-define
-    return (await resolveElement(
-      value,
-      elementsSource,
-      workingSetElements,
-      resolveRoot
-    )) ?? value
-  }
-  return value
-}
-
-export const resolveReferenceExpression = async (
-  expression: ReferenceExpression,
-  elementsSource: ReadOnlyElementsSource,
-  workingSetElements: Record<string, WorkingSetElement>,
-  visited: Set<string> = new Set<string>(),
-  resolveRoot = false
-): Promise<ReferenceExpression> => {
-  const { traversalParts } = expression
-  const traversal = traversalParts.join(ElemID.NAMESPACE_SEPARATOR)
-
-  if (visited.has(traversal)) {
-    return expression.createWithValue(new CircularReference(traversal))
-  }
-  visited.add(traversal)
-
-  const fullElemID = ElemID.fromFullName(traversal)
-  const { parent } = fullElemID.createTopLevelParentID()
-  // Validation should throw an error if there is no match
-  const rootElement = workingSetElements[parent.getFullName()]?.element
-    ?? await elementsSource.get(parent)
-
-  if (!rootElement) {
-    return expression.createWithValue(new UnresolvedReference(fullElemID))
-  }
-
-  // eslint-disable-next-line no-use-before-define
-  const resolvedRootElement = resolveRoot ? await resolveElement(
-    rootElement,
-    elementsSource,
-    workingSetElements,
-    resolveRoot
-  ) : undefined
-
-  const value = resolvePath(rootElement, fullElemID)
-
-
-  if (value === undefined) {
-    return expression.createWithValue(new UnresolvedReference(fullElemID))
-  }
-
-  /**
-  When resolving a VariableExpression which references a Variable element, we should get a
-  VariableExpression with the value of that variable as its value.
-  So Variable elements should not appear in the value of VariableExpressions.
-  */
-  if (isVariableExpression(expression)) {
-    // Replace the Variable element by its value.
-    return expression.createWithValue(
-      await resolveMaybeExpression(
-        value.value,
-        elementsSource,
-        workingSetElements,
-        resolveRoot,
-        visited
-      ) ?? value.value,
-      resolvedRootElement,
-    )
-  }
-  return (expression as ReferenceExpression).createWithValue(
-    await resolveMaybeExpression(value, elementsSource, workingSetElements, resolveRoot, visited)
-      ?? value,
-    resolvedRootElement,
-  )
-}
-
-resolveTemplateExpression = async (
-  expression: TemplateExpression,
-  elementsSource: ReadOnlyElementsSource,
-  workingSetElements: Record<string, WorkingSetElement>,
-  resolveRoot: boolean,
-  visited: Set<string> = new Set<string>(),
-): Promise<Value> => (await awu(expression.parts)
-  .map(async p => {
-    const res = await resolveMaybeExpression(
-      p, elementsSource, workingSetElements, resolveRoot, visited
-    )
-    return res ? res?.value ?? res : p
-  }).toArray())
-  .join('')
-
-const resolveElement = async <T extends Element>(
-  elementToResolve: T,
-  elementsSource: ReadOnlyElementsSource,
-  workingSetElements: Record<string, WorkingSetElement>,
-  resolveRoot: boolean
-): Promise<T> => {
-  const clonedRefs: Record<string, ReferenceExpression> = {}
-  const referenceCloner: TransformFunc = ({ value }) => {
-    if (isReferenceExpression(value)) {
-      clonedRefs[value.elemID.getFullName()] = clonedRefs[value.elemID.getFullName()]
-        || _.clone(value)
-      return clonedRefs[value.elemID.getFullName()]
+  const elem = await elementsSource.get(id)
+  if (!isElement(elem)) {
+    if (elem !== undefined) {
+      // we can expect to get "undefined" sometimes, but we should never get something
+      // that is not undefined and not an element
+      log.warn('resolve expected element at ID %s but found %s', id.getFullName(), elem)
     }
-    return resolveMaybeExpression(
-      value,
-      elementsSource,
-      workingSetElements,
-      resolveRoot && !isTypeReference(value),
-      undefined,
-    )
+    return undefined
+  }
+  // We create a clone because we must not modify the element from the read only source
+  const elemToResolve = elem.clone()
+  return elemToResolve
+}
+
+type ResolveContext = {
+  resolvedElements: Map<string, Element>
+  elementsSource: ReadOnlyElementsSource
+  referenceDependencies: DataNodeMap<Expression>
+  pendingAsyncResolves: Map<string, Promise<Element | undefined>>
+  pendingAsyncOperations: Promise<unknown>[]
+}
+type ResolveFunctions = {
+  resolveTypeReference: (reference: TypeReference) => void
+
+  resolveReferenceExpression: (
+    reference: ReferenceExpression,
+    referenceSourceID: ElemID,
+    template?: TemplateExpression,
+  ) => void
+
+  resolveTemplateExpression: (
+    template: TemplateExpression,
+    referenceSourceID: ElemID
+  ) => void
+}
+
+const getResolveFunctions = ({
+  resolvedElements,
+  elementsSource,
+  referenceDependencies,
+  pendingAsyncResolves,
+  pendingAsyncOperations,
+}: ResolveContext): ResolveFunctions => {
+  const getElementClone = (id: ElemID): Promise<Element | undefined> => {
+    const pendingResolve = pendingAsyncResolves.get(id.getFullName())
+    if (pendingResolve !== undefined) {
+      return pendingResolve
+    }
+    const newPendingResolve = getElementCloneFromSource(id, elementsSource)
+    pendingAsyncResolves.set(id.getFullName(), newPendingResolve)
+    return newPendingResolve
   }
 
-  if (workingSetElements[elementToResolve.elemID.getFullName()]?.resolved) {
-    return workingSetElements[elementToResolve.elemID.getFullName()].element as T
+  const setValueOnReference = (
+    reference: ReferenceExpression,
+    parent: Element | undefined,
+    referenceSourceID: ElemID,
+    template?: TemplateExpression,
+  ): void => {
+    if (parent === undefined) {
+      reference.value = new UnresolvedReference(reference.elemID)
+      return
+    }
+    const value = resolvePath(parent, reference.elemID)
+    if (value === undefined) {
+      reference.value = new UnresolvedReference(reference.elemID)
+      return
+    }
+    // Because variables get resolved directly to their value, in order to identify circular
+    // references we need to "dereference" variables here.
+    // this is only for circular reference checking
+    const targetValue = isVariable(value) ? value.value : value
+    if (isExpression(targetValue)) {
+      // This has the potential to be a circular reference, we add a dependency saying our reference
+      // depends on our target ID, once we finish resolving all references we'll be able to know if
+      // there were any cycles
+      // Note - currently we only mark direct cycles as circular references, if the cycle is not
+      //   direct (i.e - we reference an object and that object contains a reference back), we do
+      //   not consider that a circular reference
+      const outgoingReferences = isReferenceExpression(targetValue)
+        ? [reference]
+        : targetValue.parts.filter(isReferenceExpression)
+
+      referenceDependencies.addNode(
+        referenceSourceID.getFullName(),
+        outgoingReferences.map(outgoingRef => outgoingRef.elemID.getFullName()),
+        template ?? reference,
+      )
+    }
+    reference.value = value
+    reference.topLevelParent = parent
   }
-  if (workingSetElements[elementToResolve.elemID.getFullName()] === undefined) {
-    workingSetElements[elementToResolve.elemID.getFullName()] = {
-      element: _.clone(elementToResolve),
+
+  const resolveTypeReference = (reference: TypeReference): void => {
+    const syncResolvedType = getResolvedType(reference.elemID, resolvedElements)
+    if (syncResolvedType !== undefined) {
+      setTypeOnReference(reference, syncResolvedType)
+    } else {
+      // For container types we only need to get the inner type, we will handle creating
+      // the container type in "getResolvedType" after the promise is resolved
+      const typeId = ElemID.getTypeOrContainerTypeID(reference.elemID)
+      const pendingResolve = getElementClone(typeId)
+      pendingAsyncOperations.push(
+        pendingResolve.then(resolveResult => {
+          if (resolveResult === undefined) {
+            setTypeOnReference(reference, resolveResult)
+          } else {
+            const resolvedType = getResolvedType(
+              reference.elemID,
+              new Map([[resolveResult.elemID.getFullName(), resolveResult]])
+            )
+            setTypeOnReference(reference, resolvedType)
+          }
+        })
+      )
     }
   }
 
-  const { element } = workingSetElements[elementToResolve.elemID.getFullName()]
-  // Mark this as resolved before resolving to prevent cycles
-  workingSetElements[element.elemID.getFullName()].resolved = true
-
-
-  const elementAnnoTypes = await element.getAnnotationTypes(elementsSource)
-  element.annotationRefTypes = await mapValuesAsync(
-    elementAnnoTypes,
-    async type => createRefToElmWithValue(
-      await resolveElement(type, elementsSource, workingSetElements, resolveRoot)
-    )
-  )
-
-  element.annotations = (await transformValues({
-    values: element.annotations,
-    transformFunc: referenceCloner,
-    type: elementAnnoTypes,
-    elementsSource,
-    strict: false,
-    allowEmpty: true,
-  }) ?? {})
-
-  if (isContainerType(element)) {
-    element.refInnerType = createRefToElmWithValue(
-      await resolveElement(
-        await element.getInnerType(elementsSource),
-        elementsSource,
-        workingSetElements,
-        resolveRoot
+  const resolveReferenceExpression = (
+    reference: ReferenceExpression,
+    referenceSourceID: ElemID,
+    template?: TemplateExpression,
+  ): void => {
+    const { parent } = reference.elemID.createTopLevelParentID()
+    const resolvedParent = resolvedElements.get(parent.getFullName())
+    if (resolvedParent !== undefined) {
+      setValueOnReference(reference, resolvedParent, referenceSourceID, template)
+    } else {
+      const pendingResolve = getElementClone(parent)
+      pendingAsyncOperations.push(
+        pendingResolve.then(resParent => {
+          setValueOnReference(reference, resParent, referenceSourceID, template)
+        })
       )
-    )
+    }
   }
 
-  if (isInstanceElement(element) || isField(element)) {
-    element.refType = createRefToElmWithValue(
-      await resolveElement(
-        await element.getType(elementsSource),
-        elementsSource,
-        workingSetElements,
-        resolveRoot
-      )
-    )
+  const resolveTemplateExpression = (
+    template: TemplateExpression,
+    referenceSourceID: ElemID
+  ): void => {
+    template.parts
+      .filter(isReferenceExpression)
+      .forEach(innerRef => {
+        resolveReferenceExpression(innerRef, referenceSourceID, template)
+      })
   }
 
-  if (isInstanceElement(element)) {
-    element.value = (await transformValues({
-      transformFunc: referenceCloner,
-      values: element.value,
-      elementsSource,
-      strict: false,
-      type: await element.getType(elementsSource),
-      allowEmpty: true,
-    })) ?? {}
+  return {
+    resolveTypeReference,
+    resolveReferenceExpression,
+    resolveTemplateExpression,
   }
-
-  if (isObjectType(element)) {
-    element.fields = await mapValuesAsync(
-      element.fields,
-      field => resolveElement(
-        field,
-        elementsSource,
-        workingSetElements,
-        resolveRoot
-      )
-    ) as Record<string, Field>
-  }
-
-  if (isVariable(element)) {
-    element.value = await resolveMaybeExpression(
-      element.value,
-      elementsSource,
-      workingSetElements,
-      resolveRoot,
-      new Set()
-    )
-  }
-
-  await awu(Object.values(clonedRefs)).forEach(async ref => {
-    const resolvedRef = await resolveMaybeExpression(
-      ref,
-      elementsSource,
-      workingSetElements,
-      resolveRoot,
-      new Set()
-    )
-    ref.value = resolvedRef.value
-    ref.topLevelParent = resolvedRef.topLevelParent
-  })
-  return element as T
 }
 
+// export const resolve = resolveOld
 export const resolve = (
   elements: Element[],
-  elementsSource: ReadOnlyElementsSource,
-  resolveRoot = false
+  elementsSource: ReadOnlyElementsSource
 ): Promise<Element[]> => log.time(async () => {
-  const elementsToResolve = elements.map(_.clone)
-  const resolvedElements = await awu(elementsToResolve)
-    .map(element => ({ element }))
-    .keyBy(
-      workingSetElement => workingSetElement.element.elemID.getFullName()
-    )
+  // Create a clone of the input elements to ensure we do not modify the input
+  const elementsToResolve = elements.map(e => e.clone())
 
-  const contextedElementsGetter: ReadOnlyElementsSource = {
-    ...elementsSource,
-    get: id =>
-      (getResolvedElement(id, elementsSource, resolvedElements)),
+  const resolvedElements = new Map(
+    elementsToResolve
+      .concat(Object.values(BuiltinTypes))
+      .concat(Object.values(CoreAnnotationTypes))
+      .map(elem => [elem.elemID.getFullName(), elem])
+  )
+
+  // This graph will hold references that depend on other references
+  // this will be used to find reference cycles once we finished resolving all references
+  const referenceDependencies = new DataNodeMap<Expression>()
+
+  const resolveElementGroup = async (elementGroup: Element[]): Promise<void> => {
+    // This map will hold a promise for each async resolve that is required in this element group
+    const pendingAsyncResolves = new Map<string, Promise<Element | undefined>>()
+    const pendingAsyncOperations: Promise<unknown>[] = []
+
+    const {
+      resolveTypeReference,
+      resolveReferenceExpression,
+      resolveTemplateExpression,
+    } = getResolveFunctions({
+      resolvedElements,
+      elementsSource,
+      referenceDependencies,
+      pendingAsyncResolves,
+      pendingAsyncOperations,
+    })
+
+    const resolveSingleElement = (element: Element): void => {
+      if (isInstanceElement(element)) {
+        resolveTypeReference(element.refType)
+      }
+      if (isType(element)) {
+        Object.values(element.annotationRefTypes)
+          .forEach(resolveTypeReference)
+      }
+      if (isObjectType(element)) {
+        Object.values(element.fields)
+          .forEach(field => resolveTypeReference(field.refType))
+      }
+      if (isContainerType(element)) {
+        resolveTypeReference(element.refInnerType)
+      }
+      if (isField(element)) {
+        // Note - if we got a field as input, we are not resolving its parent
+        resolveTypeReference(element.refType)
+      }
+
+      walkOnElement({
+        element,
+        func: ({ value, path }) => {
+          if (isReferenceExpression(value)) {
+            resolveReferenceExpression(value, path)
+            return WALK_NEXT_STEP.SKIP
+          }
+          if (isTemplateExpression(value)) {
+            resolveTemplateExpression(value, path)
+            return WALK_NEXT_STEP.SKIP
+          }
+          return WALK_NEXT_STEP.RECURSE
+        },
+      })
+    }
+
+    // Note - resolveSingleElement fills pendingAsyncResolves as a side effect
+    elementGroup.forEach(resolveSingleElement)
+
+    const nextLevelToResolve = (await Promise.all(pendingAsyncResolves.values()))
+      .filter(values.isDefined)
+    // Wait for all pending operations, not just the resolved
+    await Promise.all(pendingAsyncOperations)
+
+    if (nextLevelToResolve.length > 0) {
+      nextLevelToResolve.forEach(elem => resolvedElements.set(elem.elemID.getFullName(), elem))
+      await resolveElementGroup(nextLevelToResolve)
+    }
   }
-  await awu(elementsToResolve).forEach(e => resolveElement(
-    e,
-    contextedElementsGetter,
-    resolvedElements,
-    resolveRoot
-  ))
+
+  await resolveElementGroup(elementsToResolve)
+  log.debug('resolve handled a total of %d elements', resolvedElements.size)
+
+  // Note - resolveElementGroup fills referenceDependencies as a side effect
+  // now that referenceDependencies contains all the dependencies, we can find cycles
+  // and mark them as circular references
+  markCircularReferences(referenceDependencies)
+
   return elementsToResolve
 }, 'resolve %d elements', elements.length)

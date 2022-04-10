@@ -1558,12 +1558,13 @@ describe('Elements validation', () => {
 
       it('should not return an error when matching list item', async () => {
         extInst.value.list.push('abc')
+        const nestedTypes = await getFieldsAndAnnoTypes(nestedType)
         const errors = await validateElements(
           [extInst],
           createInMemoryElementSource([
             extInst,
             nestedType,
-            ...await getFieldsAndAnnoTypes(nestedType),
+            ...nestedTypes,
           ])
         )
         expect(errors).toHaveLength(0)

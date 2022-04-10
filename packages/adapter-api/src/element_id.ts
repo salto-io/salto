@@ -24,6 +24,7 @@ export const LIST_ID_PREFIX = 'List'
 export const GENERIC_ID_PREFIX = '<'
 export const GENERIC_ID_SUFFIX = '>'
 
+export type ContainerTypeName = 'Map' | 'List'
 const CONTAINER_PREFIXES = [MAP_ID_PREFIX, LIST_ID_PREFIX]
 const CONTAINER_PARTS_REGEX = new RegExp(`^(${CONTAINER_PREFIXES.join('|')})${GENERIC_ID_PREFIX}(.+)${GENERIC_ID_SUFFIX}$`)
 
@@ -39,10 +40,14 @@ export const INSTANCE_ANNOTATIONS = {
   CHANGED_AT: CORE_ANNOTATIONS.CHANGED_AT,
 }
 
-const getContainerPrefix = (fullName: string): {prefix: string; innerName: string} | undefined => {
-  const [prefix, innerName] = fullName.match(CONTAINER_PARTS_REGEX)?.slice(1) ?? []
-  if (prefix !== undefined && innerName !== undefined) {
-    return { prefix, innerName }
+type ContainerPrefixAndInnerType = {
+  prefix: ContainerTypeName
+  innerTypeName: string
+}
+const getContainerPrefix = (fullName: string): ContainerPrefixAndInnerType | undefined => {
+  const [prefix, innerTypeName] = fullName.match(CONTAINER_PARTS_REGEX)?.slice(1) ?? []
+  if (prefix !== undefined && innerTypeName !== undefined) {
+    return { prefix: prefix as ContainerTypeName, innerTypeName }
   }
   return undefined
 }
@@ -287,5 +292,12 @@ export class ElemID {
 
   isAnnotationTypeID(): boolean {
     return this.idType === 'annotation'
+  }
+
+  getContainerPrefixAndInnerType(): ContainerPrefixAndInnerType | undefined {
+    if (this.adapter === '' && this.isTopLevel()) {
+      return getContainerPrefix(this.typeName)
+    }
+    return undefined
   }
 }

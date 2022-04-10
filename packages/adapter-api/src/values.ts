@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { hash as hashUtils, types } from '@salto-io/lowerdash'
+import { hash as hashUtils } from '@salto-io/lowerdash'
 // import { ElementsSource } from '@salto-io/workspace'
 import { ElemID } from './element_id'
 // There is a real cycle here and alternatively elements.ts should be defined in the same file
 // eslint-disable-next-line import/no-cycle
-import { Element, ReadOnlyElementsSource, PlaceholderObjectType, TypeElement } from './elements'
+import { Element, ReadOnlyElementsSource, PlaceholderObjectType, TypeElement, isVariable } from './elements'
 
 export type PrimitiveValue = string | boolean | number
 
@@ -117,14 +117,18 @@ export class ReferenceExpression {
     return new ExpressionCtor(this.elemID, resValue, resTopLevelParent)
   }
 
-  get traversalParts(): string[] {
-    return this.elemID.getFullNameParts()
+  clone(): this {
+    type CtorType = (new (...args: ConstructorParameters<typeof ReferenceExpression>) => this)
+    const ExpressionCtor = this.constructor as CtorType
+    return new ExpressionCtor(this.elemID, this.resValue, this.topLevelParent)
   }
 
   get value(): Value {
-    return (this.resValue instanceof ReferenceExpression)
-      ? this.resValue.value
-      : this.resValue
+    // Dereference variables and recursive reference expressions
+    const innerValue = isVariable(this.resValue) ? this.resValue.value : this.resValue
+    return (innerValue instanceof ReferenceExpression)
+      ? innerValue.value
+      : innerValue
   }
 
   set value(value: Value) {
@@ -136,11 +140,16 @@ export class ReferenceExpression {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isReferenceExpression = (value: any): value is ReferenceExpression => (
+  value instanceof ReferenceExpression
+)
+
 export class VariableExpression extends ReferenceExpression {
   constructor(
-    public readonly elemID: ElemID,
+    elemID: ElemID,
     resValue?: Value,
-    public readonly topLevelParent?: Element
+    topLevelParent?: Element
   ) {
     super(elemID, resValue, topLevelParent)
     // This is to prevent programing errors since the parser will always create
@@ -164,13 +173,31 @@ export class TypeReference {
     }
   }
 
+  clone(): TypeReference {
+    return new TypeReference(this.elemID, this.type)
+  }
+
   async getResolvedValue(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
     return getResolvedValue(this.elemID, elementsSource, this.type)
   }
 }
 
+export type TemplatePart = string | ReferenceExpression
+
+export class TemplateExpression {
+  parts: TemplatePart[]
+
+  constructor({ parts }: { parts: TemplatePart[] }) {
+    this.parts = parts
+  }
+
+  get value(): string {
+    return this.parts.map(part => (isReferenceExpression(part) ? part.value : part)).join('')
+  }
+}
 // eslint-disable-next-line no-use-before-define
-export class TemplateExpression extends types.Bean<{ parts: TemplatePart[] }> { }
+// export class TemplateExpression extends types.Bean<{ parts: TemplatePart[] }> { }
+
 
 export type Expression = ReferenceExpression | TemplateExpression
 
@@ -180,16 +207,10 @@ export const isStaticFile = (value: any): value is StaticFile => (
 )
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isReferenceExpression = (value: any): value is ReferenceExpression => (
-  value instanceof ReferenceExpression
-)
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isTypeReference = (value: any): value is TypeReference => (
   value instanceof TypeReference
 )
 
-export type TemplatePart = string | Expression
 /*
   Benchmarking reveals that looping on strings is extremely expensive.
   It seems that random access to a string is, for some reason, a bit expensive.
@@ -246,4 +267,20 @@ export const isExpression = (value: any): value is Expression => (
 
 export const isPrimitiveValue = (value: Value): value is PrimitiveValue => (
   value === undefined || value === null || ['string', 'number', 'boolean'].includes(typeof value)
+)
+
+// A _.cloneDeep variation that stops at references to avoid creating recursive clones
+// of elements and element parts.
+// This is not completely safe as it will keep references pointing to the original values
+// so use with caution
+export const cloneDeepWithoutRefs = <T>(value: T): T => (
+  _.cloneDeepWith(value, val => {
+    if (isReferenceExpression(val)) {
+      return val.clone()
+    }
+    if (isTypeReference(val)) {
+      return new TypeReference(val.elemID, val.type)
+    }
+    return undefined
+  })
 )

@@ -1254,7 +1254,7 @@ describe('fetch', () => {
           postFetch: mockFunction<Required<AdapterOperations>['postFetch']>().mockResolvedValue(),
         },
         dummy3: {
-          fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [dummy3Type1], isPartial: false }),
+          fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [dummy3Type1, dummy2PrimStr], isPartial: false }),
           deploy: mockFunction<AdapterOperations['deploy']>(),
           postFetch: mockFunction<Required<AdapterOperations>['postFetch']>().mockResolvedValue(),
         },

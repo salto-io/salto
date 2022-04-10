@@ -34,17 +34,16 @@ export const automationsValidator: ChangeValidator = async (changes, elementsSou
     .groupBy(instance => instance.value.name)
 
 
-  return awu(changes)
+  return changes
     .filter(isInstanceChange)
     .filter(isAdditionChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
     .filter(instance => nameToAutomations[instance.value.name].length > 1)
-    .map(async instance => ({
+    .map(instance => ({
       elemID: instance.elemID,
       severity: 'Error' as SeverityLevel,
       message: 'Automation name is already in use',
       detailedMessage: `The name ${instance.value.name} of ${instance.elemID.getFullName()} is already used by other automations: ${nameToAutomations[instance.value.name].filter(inst => !inst.elemID.isEqual(instance.elemID)).map(inst => inst.elemID.getFullName()).join(', ')}.`,
     }))
-    .toArray()
 }

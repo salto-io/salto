@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 import { Element, InstanceElement, isInstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { createSchemeGuard, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
 import { elements as elementUtils, config as configUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { createSchemeGuard, findObject } from '../../utils'
+import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { JIRA, STATUS_TYPE_NAME } from '../../constants'
 import { JiraConfig } from '../../config'

@@ -17,8 +17,6 @@ import { CORE_ANNOTATIONS, ObjectType, Element, isObjectType, getDeepInnerType, 
 import { logger } from '@salto-io/logging'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
-import Joi from 'joi'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { JiraConfig, JspUrls } from './config'
 
 const log = logger(module)
@@ -83,13 +81,3 @@ export const getFilledJspUrls = (
     }),
   }
 }
-
-export const createSchemeGuard = <T>(scheme: Joi.AnySchema, errorMessage: string)
-: (value: unknown) => value is T => (value): value is T => {
-    const { error } = scheme.validate(value)
-    if (error !== undefined) {
-      log.error(`${errorMessage}: ${error.message}, ${safeJsonStringify(value)}`)
-      return false
-    }
-    return true
-  }

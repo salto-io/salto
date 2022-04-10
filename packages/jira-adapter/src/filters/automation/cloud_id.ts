@@ -13,11 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
 import _ from 'lodash'
 import JiraClient from '../../client/client'
-import { createSchemeGuard } from '../../utils'
 
 const log = logger(module)
 

@@ -17,10 +17,10 @@ import { CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isI
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { resolveValues } from '@salto-io/adapter-utils'
+import { createSchemeGuard, resolveValues } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { AUTOMATION_TYPE } from '../../constants'
-import { addAnnotationRecursively, createSchemeGuard, findObject, setTypeDeploymentAnnotations } from '../../utils'
+import { addAnnotationRecursively, findObject, setTypeDeploymentAnnotations } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { deployChanges } from '../../deployment/standard_deployment'
 import JiraClient from '../../client/client'
@@ -35,6 +35,30 @@ const PROJECT_TYPE_TO_RESOURCE_TYPE: Record<string, string> = {
   service_desk: 'jira-servicedesk',
   business: 'jira-core',
 }
+
+type ImportResponse = {
+  id: number
+  name: string
+  created: number
+  projects: {
+    projectId: string
+  }[]
+}[]
+
+const IMPORT_RESPONSE_SCHEME = Joi.array().items(
+  Joi.object({
+    id: Joi.number().required(),
+    name: Joi.string().required(),
+    created: Joi.number().required(),
+    projects: Joi.array().items(
+      Joi.object({
+        projectId: Joi.string().allow(null),
+      }).unknown(true),
+    ).required(),
+  }).unknown(true),
+)
+
+const isImportResponse = createSchemeGuard<ImportResponse>(IMPORT_RESPONSE_SCHEME, 'Received an invalid automation import response')
 
 const generateRuleScopes = (instance: InstanceElement, cloudId: string): string[] => {
   if ((instance.value.projects ?? []).length === 0) {
@@ -73,30 +97,6 @@ const importAutomation = async (
     data,
   })
 }
-
-type ImportResponse = {
-  id: number
-  name: string
-  created: number
-  projects: {
-    projectId: string
-  }[]
-}[]
-
-const IMPORT_RESPONSE_SCHEME = Joi.array().items(
-  Joi.object({
-    id: Joi.number().required(),
-    name: Joi.string().required(),
-    created: Joi.number().required(),
-    projects: Joi.array().items(
-      Joi.object({
-        projectId: Joi.string().allow(null),
-      }).unknown(true),
-    ).required(),
-  }).unknown(true),
-)
-
-const isImportResponse = createSchemeGuard<ImportResponse>(IMPORT_RESPONSE_SCHEME, 'Received an invalid automation import response')
 
 const getAutomationIdentifier = (values: Values): string =>
   [values.name, ...(values.projects ?? []).map((project: Values) => project.projectId)].join('_')

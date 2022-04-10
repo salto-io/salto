@@ -24,7 +24,14 @@ const { OPERATION_TO_ANNOTATION } = deployment
 
 const ERROR_MESSAGE = (id: ElemID): string => `The change of ${id.getFullName()} is not supported and will be omitted from deploy`
 
-const detailedErrorMessage = (action: Change['action'], path: ElemID): string =>
+const detailedNestedElementErrorMessage = (
+  path: ElemID,
+): string => {
+  const nestedPart = path.getFullNameParts().slice(path.nestingLevel * -1).join('.')
+  return `Deploying "${nestedPart}" in ${path.createBaseID().parent.getFullName()} is not supported`
+}
+
+const detailedTopLevelErrorMessage = (action: Change['action'], path: ElemID): string =>
   `"${action}" operation on ${path.getFullName()} is not supported`
 
 const isDeploymentSupported = (element: Element, action: Change['action']): boolean =>
@@ -67,7 +74,7 @@ export const checkDeploymentAnnotationsValidator: ChangeValidator = async change
           elemID: instance.elemID,
           severity: 'Error',
           message: ERROR_MESSAGE(type.elemID),
-          detailedMessage: detailedErrorMessage(change.action, instance.elemID),
+          detailedMessage: detailedTopLevelErrorMessage(change.action, instance.elemID),
         }]
       }
 
@@ -81,7 +88,7 @@ export const checkDeploymentAnnotationsValidator: ChangeValidator = async change
         elemID: instance.elemID,
         severity: 'Warning',
         message: ERROR_MESSAGE(field),
-        detailedMessage: detailedErrorMessage(change.action, path),
+        detailedMessage: detailedNestedElementErrorMessage(path),
       }))
     })
     .flat()

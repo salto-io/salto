@@ -85,7 +85,7 @@ describe('checkDeploymentAnnotationsValidator', () => {
       elemID: instance.elemID,
       severity: 'Warning',
       message: `The change of ${type.fields.notUpdatableField.elemID.getFullName()} is not supported and will be omitted from deploy`,
-      detailedMessage: `"modify" operation on ${instance.elemID.createNestedID('notUpdatableField').getFullName()} is not supported`,
+      detailedMessage: 'Deploying "notUpdatableField" in adapter.test.instance.instance is not supported',
     }])
   })
 
@@ -99,7 +99,7 @@ describe('checkDeploymentAnnotationsValidator', () => {
       elemID: instance.elemID,
       severity: 'Warning',
       message: `The change of ${type.fields.notUpdatableField.elemID.getFullName()} is not supported and will be omitted from deploy`,
-      detailedMessage: `"modify" operation on ${instance.elemID.createNestedID('inner', 'notUpdatableField').getFullName()} is not supported`,
+      detailedMessage: 'Deploying "inner.notUpdatableField" in adapter.test.instance.instance is not supported',
     }])
   })
 

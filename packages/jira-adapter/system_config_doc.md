@@ -130,6 +130,10 @@ jira {
           originalName = "PageBeanWorkflowScheme"
           newName = "WorkflowSchemes"
         },
+        {
+          originalName = "rest__api__3__events"
+          newName = "IssueEvents"
+        },
       ]
       additionalTypes = [
         {
@@ -252,24 +256,6 @@ jira {
             {
               fieldName = "row"
               fieldType = "number"
-            },
-          ]
-        }
-      }
-      NotificationEvent = {
-        transformation = {
-          fieldsToOmit = [
-            {
-              fieldName = "id"
-            },
-          ]
-        }
-      }
-      EventNotification = {
-        transformation = {
-          fieldsToOmit = [
-            {
-              fieldName = "id"
             },
           ]
         }
@@ -949,6 +935,14 @@ jira {
               fieldName = "user"
               fieldType = "User"
             },
+            {
+              fieldName = "id"
+              fieldType = "string"
+            },
+            {
+              fieldName = "notificationType"
+              fieldType = "string"
+            },
           ]
         }
       }
@@ -1304,6 +1298,30 @@ jira {
               fieldName = "id"
             },
           ]
+        }
+        jspRequests = {
+          add = "/secure/admin/AddNotificationScheme.jspa"
+          modify = "/secure/admin/EditNotificationScheme.jspa"
+          remove = "/secure/admin/DeleteNotificationScheme.jspa"
+        }
+      }
+      NotificationSchemeEvent = {
+        transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "eventType"
+              fieldType = "number"
+            },
+            {
+              fieldName = "notifications"
+              fieldType = "List<PermissionHolder>"
+            },
+          ]
+        }
+        jspRequests = {
+          add = "/secure/admin/AddNotification.jspa"
+          remove = "/secure/admin/DeleteNotification.jspa"
+          query = "/rest/api/3/notificationscheme/{id}?expand=all"
         }
       }
       PageBeanIssueTypeScreenSchemesProjects = {
@@ -1865,6 +1883,15 @@ jira {
           }
         }
       }
+      IssueEvent = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
       Priority = {
         transformation = {
           fieldsToHide = [
@@ -1943,10 +1970,11 @@ jira {
       }
     }
     typesToFallbackToInternalId = [
-      "Field",
+      "Automation",
       "CustomFieldContext",
-      "Status",
+      "Field",
       "Resolution",
+      "Status",
     ]
   }
 }

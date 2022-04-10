@@ -1453,6 +1453,16 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
   },
 
+  IssueEvent: {
+    transformation: {
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+        },
+      ],
+    },
+  },
+
   Priority: {
     transformation: {
       fieldsToHide: [
@@ -1661,6 +1671,10 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
       {
         originalName: 'PageBeanWorkflowScheme',
         newName: 'WorkflowSchemes',
+      },
+      {
+        originalName: 'rest__api__3__events',
+        newName: 'IssueEvents',
       },
     ],
     additionalTypes: [

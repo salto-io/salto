@@ -29,6 +29,10 @@ const log = logger(module)
 const { validateClientConfig, createRetryOptions, DEFAULT_RETRY_OPTS } = clientUtils
 const { validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } = configUtils
 
+const TYPES_TO_ADD_TO_CONFIG = [
+  'IssueEvents',
+]
+
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => (
   config.value as Credentials
 )
@@ -65,6 +69,11 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
     _.omit(DEFAULT_CONFIG, 'fetch'),
     config?.value
   )
+
+  fullConfig.fetch.includeTypes = [
+    ...fullConfig.fetch.includeTypes ?? [],
+    ...TYPES_TO_ADD_TO_CONFIG,
+  ]
   validateConfig(fullConfig)
 
   // Hack to make sure this is coupled with the type definition of JiraConfig

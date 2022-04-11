@@ -45,6 +45,11 @@ const VALUES_TO_SORT: ValueToSort[] = [
     fieldName: 'tags',
     sortBy: ['tagType', 'tagValue'],
   },
+  {
+    typeName: WORKFLOW_TYPE_NAME,
+    fieldName: 'transitions',
+    sortBy: ['name'],
+  },
 ]
 
 const getValue = (value: Value): Value => (

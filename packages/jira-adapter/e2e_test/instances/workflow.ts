@@ -22,6 +22,62 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
   description: name,
   transitions: [
     {
+      name: 'Build Broken',
+      description: '',
+      to: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'Backlog'), allElements),
+      type: 'global',
+      rules: {
+        triggers: [
+          {
+            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:commit-created-trigger',
+          },
+          {
+            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:review-closed-trigger',
+          },
+          {
+            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:pull-request-declined-trigger',
+          },
+          {
+            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:pull-request-created-trigger',
+          },
+          {
+            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:pull-request-merged-trigger',
+          },
+          {
+            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:pull-request-reopened-trigger',
+          },
+          {
+            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:branch-created-trigger',
+          },
+          {
+            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:review-started-trigger',
+          },
+          {
+            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:review-abandoned-trigger',
+          },
+          {
+            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:review-approval-trigger',
+          },
+          {
+            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:review-rejected-trigger',
+          },
+          {
+            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:review-summarized-trigger',
+          },
+        ],
+        postFunctions: [
+          {
+            type: 'FireIssueEventFunction',
+            configuration: {
+              event: {
+                id: '13',
+              },
+            },
+          },
+        ],
+      },
+    },
+    {
       name: 'Create',
       description: '',
       to: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'Backlog'), allElements),
@@ -96,62 +152,6 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
             configuration: {
               event: {
                 id: '1',
-              },
-            },
-          },
-        ],
-      },
-    },
-    {
-      name: 'Build Broken',
-      description: '',
-      to: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'Backlog'), allElements),
-      type: 'global',
-      rules: {
-        triggers: [
-          {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:commit-created-trigger',
-          },
-          {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:review-closed-trigger',
-          },
-          {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:pull-request-declined-trigger',
-          },
-          {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:pull-request-created-trigger',
-          },
-          {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:pull-request-merged-trigger',
-          },
-          {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:pull-request-reopened-trigger',
-          },
-          {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:branch-created-trigger',
-          },
-          {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:review-started-trigger',
-          },
-          {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:review-abandoned-trigger',
-          },
-          {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:review-approval-trigger',
-          },
-          {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:review-rejected-trigger',
-          },
-          {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:review-summarized-trigger',
-          },
-        ],
-        postFunctions: [
-          {
-            type: 'FireIssueEventFunction',
-            configuration: {
-              event: {
-                id: '13',
               },
             },
           },

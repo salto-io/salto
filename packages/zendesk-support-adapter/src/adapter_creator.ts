@@ -30,7 +30,7 @@ const { validateCredentials, validateClientConfig } = clientUtils
 const { validateDuckTypeApiDefinitionConfig } = configUtils
 const InvalidCredentialErrorMessages = ['Error: Could not login to zendesk_support: Unauthorized - update credentials and try again']
 const isInValidCredentials = (error: Error): boolean =>
-  error.message in InvalidCredentialErrorMessages
+  InvalidCredentialErrorMessages.includes(error.message)
 
 
 /*

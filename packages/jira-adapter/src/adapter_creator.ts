@@ -28,9 +28,9 @@ import { createConnection, validateCredentials } from './client/connection'
 const log = logger(module)
 const { validateClientConfig, createRetryOptions, DEFAULT_RETRY_OPTS } = clientUtils
 const { validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } = configUtils
-const InvalidCredentialErrorMessages = ['Error: Could not login to jira: Invalid Credentials']
+const InvalidCredentialErrorMessages = ['Invalid Credentials']
 const isInValidCredentials = (error: Error): boolean =>
-  error.message in InvalidCredentialErrorMessages
+  InvalidCredentialErrorMessages.includes(error.message)
 
 const TYPES_TO_ADD_TO_CONFIG = [
   'IssueEvents',

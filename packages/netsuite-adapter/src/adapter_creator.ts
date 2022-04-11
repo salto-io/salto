@@ -49,6 +49,10 @@ const configID = new ElemID(NETSUITE)
 // Taken from https://github.com/salto-io/netsuite-suitecloud-sdk/blob/e009e0eefcd918635353d093be6a6c2222d223b8/packages/node-cli/src/validation/InteractiveAnswersValidator.js#L27
 const SUITEAPP_ID_FORMAT_REGEX = /^[a-z0-9]+(\.[a-z0-9]+){2}$/
 
+const InvalidCredentialErrorMessages = ['Salto SuiteApp Authentication failed.']
+const isInValidCredentials = (error: Error): boolean =>
+  InvalidCredentialErrorMessages.some(errorMessage => error.message.includes(errorMessage))
+
 // The SuiteApp fields are commented out until we will be ready to expose them to the user
 export const defaultCredentialsType = new ObjectType({
   elemID: configID,
@@ -259,7 +263,14 @@ export const adapter: Adapter = {
   operations: context => getAdapterOperations(context),
   validateCredentials: async config => {
     const credentials = netsuiteCredentialsFromCredentials(config)
-    return NetsuiteClient.validateCredentials(credentials)
+    try {
+      return await NetsuiteClient.validateCredentials(credentials)
+    } catch (error) {
+      if (error instanceof Error && isInValidCredentials(error)) {
+        return error
+      }
+      throw error
+    }
   },
   authenticationMethods: {
     basic: {

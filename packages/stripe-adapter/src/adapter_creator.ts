@@ -31,6 +31,9 @@ import { createConnection } from './client/connection'
 const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
 const { validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } = configUtils
+const InvalidCredentialErrorMessages = ['Error: Could not login to stripe: Unauthorized - update credentials and try again']
+const isInValidCredentials = (error: Error): boolean =>
+  error.message in InvalidCredentialErrorMessages
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => ({
   token: config.value.token,
@@ -77,12 +80,21 @@ export const adapter: Adapter = {
       config,
     })
   },
-  validateCredentials: async config => validateCredentials(
-    credentialsFromConfig(config),
-    {
-      createConnection,
-    },
-  ),
+  validateCredentials: async config => {
+    try {
+      return await validateCredentials(
+        credentialsFromConfig(config),
+        {
+          createConnection,
+        },
+      )
+    } catch (error) {
+      if (error instanceof Error && isInValidCredentials(error)) {
+        return error
+      }
+      throw error
+    }
+  },
   authenticationMethods: {
     basic: {
       credentialsType: accessTokenCredentialsType,

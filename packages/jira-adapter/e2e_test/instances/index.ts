@@ -18,7 +18,7 @@ import { naclCase } from '@salto-io/adapter-utils'
 import { CUSTOM_FIELDS_SUFFIX } from '../../src/filters/fields/field_name_filter'
 import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA, NOTIFICATION_SCHEME_TYPE_NAME, SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, WORKFLOW_TYPE_NAME } from '../../src/constants'
 import { createReference, findType } from '../utils'
-import { createBoardValues } from './board'
+import { createKanbanBoardValues, createScrumBoardValues } from './board'
 import { createContextValues, createFieldValues } from './field'
 import { createFieldConfigurationValues } from './fieldConfiguration'
 import { createFieldConfigurationSchemeValues } from './fieldConfigurationScheme'
@@ -122,10 +122,16 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
     createFieldConfigurationSchemeValues(randomString, fetchedElements),
   )
 
-  const board = new InstanceElement(
-    randomString,
+  const kanbanBoard = new InstanceElement(
+    `kanban${randomString}`,
     findType('Board', fetchedElements),
-    createBoardValues(randomString, fetchedElements),
+    createKanbanBoardValues(randomString, fetchedElements),
+  )
+
+  const scrumBoard = new InstanceElement(
+    `scrum${randomString}`,
+    findType('Board', fetchedElements),
+    createScrumBoardValues(randomString, fetchedElements),
   )
 
   const filter = new InstanceElement(
@@ -203,7 +209,8 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
     [screenScheme],
     [issueTypeScreenScheme],
     [fieldConfigurationScheme],
-    [board],
+    [kanbanBoard],
+    [scrumBoard],
     [filter],
     [issueLinkType],
     [issueTypeScheme],

@@ -16,9 +16,9 @@
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { JIRA } from '../../src/constants'
-import boardFilter from '../../src/filters/board'
-import { mockClient, getDefaultAdapterConfig } from '../utils'
+import { JIRA } from '../../../src/constants'
+import boardFilter from '../../../src/filters/board/board'
+import { mockClient, getDefaultAdapterConfig } from '../../utils'
 
 describe('boardFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
@@ -71,42 +71,6 @@ describe('boardFilter', () => {
       await filter.onFetch([boardLocationType])
       expect(boardLocationType.fields.projectId.annotations).toEqual({
         [CORE_ANNOTATIONS.CREATABLE]: true,
-      })
-    })
-
-    it('should fix rankCustomFieldId value', async () => {
-      instance.value = {
-        config: {
-          ranking: {
-            rankCustomFieldId: 1,
-          },
-        },
-      }
-      await filter.onFetch([instance])
-      expect(instance.value).toEqual({
-        config: {
-          ranking: {
-            rankCustomFieldId: 'customfield_1',
-          },
-        },
-      })
-    })
-
-    it('should not change rankCustomFieldId if its already fixed', async () => {
-      instance.value = {
-        config: {
-          ranking: {
-            rankCustomFieldId: 'customfield_1',
-          },
-        },
-      }
-      await filter.onFetch([instance])
-      expect(instance.value).toEqual({
-        config: {
-          ranking: {
-            rankCustomFieldId: 'customfield_1',
-          },
-        },
       })
     })
 

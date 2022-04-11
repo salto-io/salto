@@ -16,12 +16,12 @@
 import { Change, CORE_ANNOTATIONS, Element, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { findObject } from '../utils'
-import { FilterCreator } from '../filter'
+import { findObject } from '../../utils'
+import { FilterCreator } from '../../filter'
+import { BOARD_TYPE_NAME } from '../../constants'
 
 const { awu } = collections.asynciterable
 
-const BOARD_TYPE_NAME = 'Board'
 const BOARD_LOCATION_TYPE = 'project'
 
 /**
@@ -40,15 +40,6 @@ const filter: FilterCreator = () => ({
       .forEach(instance => {
         instance.value.filterId = instance.value.config?.filter?.id
         delete instance.value.config?.filter
-
-        // Field ids is of the form "customfield_<id>", but specifically here,
-        // we get only the <id> part, so in order to create a reference to the
-        // field, we fix the id here
-        const rankFieldId = instance.value.config?.ranking?.rankCustomFieldId
-        if (rankFieldId !== undefined && !rankFieldId.toString().startsWith('customfield_')) {
-          // No need to revert it pre deploy since it is not deployable
-          instance.value.config.ranking.rankCustomFieldId = `customfield_${rankFieldId}`
-        }
       })
   },
 

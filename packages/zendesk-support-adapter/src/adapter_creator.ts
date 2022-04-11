@@ -28,6 +28,10 @@ import { createConnection } from './client/connection'
 const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
 const { validateDuckTypeApiDefinitionConfig } = configUtils
+const InvalidCredentialErrorMessages = ['Error: Could not login to zendesk_support: Unauthorized - update credentials and try again']
+const isInValidCredentials = (error: Error): boolean =>
+  error.message in InvalidCredentialErrorMessages
+
 
 /*
 
@@ -116,12 +120,21 @@ export const adapter: Adapter = {
       configInstance: context.config,
     })
   },
-  validateCredentials: async config => validateCredentials(
-    credentialsFromConfig(config),
-    {
-      createConnection,
-    },
-  ),
+  validateCredentials: async config => {
+    try {
+      return await validateCredentials(
+        credentialsFromConfig(config),
+        {
+          createConnection,
+        },
+      )
+    } catch (error) {
+      if (error instanceof Error && isInValidCredentials(error)) {
+        return error
+      }
+      throw error
+    }
+  },
   authenticationMethods: {
     basic: {
       credentialsType: usernamePasswordCredentialsType,

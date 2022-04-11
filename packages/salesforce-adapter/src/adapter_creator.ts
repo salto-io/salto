@@ -35,7 +35,7 @@ import { ConfigChange } from './config_change'
 
 const log = logger(module)
 
-const InvalidCredentialErrorMessages = ['Error: Could not login to salesforce: INVALID_LOGIN: Invalid username, password, security token; or user locked out.']
+const InvalidCredentialErrorMessages = ['INVALID_LOGIN: Invalid username, password, security token; or user locked out.']
 const isInValidCredentials = (error: Error): boolean =>
   InvalidCredentialErrorMessages.includes(error.message)
 

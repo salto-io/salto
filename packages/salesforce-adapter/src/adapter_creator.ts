@@ -37,7 +37,7 @@ const log = logger(module)
 
 const InvalidCredentialErrorMessages = ['Error: Could not login to salesforce: INVALID_LOGIN: Invalid username, password, security token; or user locked out.']
 const isInValidCredentials = (error: Error): boolean =>
-  error.message in InvalidCredentialErrorMessages
+  InvalidCredentialErrorMessages.includes(error.message)
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
   if (isAccessTokenConfig(config)) {

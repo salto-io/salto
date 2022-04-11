@@ -29,7 +29,7 @@ const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
 const InvalidCredentialErrorMessages = ['Error: Could not login to workato: Unauthorized - update credentials and try again']
 const isInValidCredentials = (error: Error): boolean =>
-  error.message in InvalidCredentialErrorMessages
+  InvalidCredentialErrorMessages.includes(error.message)
 
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => ({

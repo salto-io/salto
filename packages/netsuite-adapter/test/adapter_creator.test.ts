@@ -138,7 +138,7 @@ describe('NetsuiteAdapter creator', () => {
       await expect(adapter.validateCredentials(cred)).rejects.toThrow('SDF Authentication failed.')
     })
 
-    it('SuiteApp validation failure should throw SuiteApp error', async () => {
+    it('SuiteApp validation failure should return SuiteApp error', async () => {
       suiteAppClientValidateMock.mockRejectedValue(new Error(''))
 
       const cred = credentials.clone()
@@ -148,8 +148,8 @@ describe('NetsuiteAdapter creator', () => {
         suiteAppTokenSecret: 'bbb',
         suiteAppActivationKey: 'ccc',
       }
-
-      await expect(adapter.validateCredentials(cred)).rejects.toThrow('SuiteApp Authentication failed.')
+      const result = await adapter.validateCredentials(cred)
+      expect(result instanceof Error).toBeTruthy()
     })
 
     it('should throw when receiving invalid accountId', async () => {

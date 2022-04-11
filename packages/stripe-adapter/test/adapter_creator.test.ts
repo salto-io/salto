@@ -191,14 +191,15 @@ describe('adapter creator', () => {
     expect(connection.createConnection).toHaveBeenCalledTimes(1)
   })
 
-  it('should throw UnauthorizedError when auth validation returns an unexpected HTTP code', async () => {
+  it('should return UnauthorizedError when auth validation returns an unexpected HTTP code', async () => {
     jest.spyOn(connection, 'createConnection')
     mockAxiosAdapter.onGet('/v1/products').reply(203)
-    await expect(() => adapter.validateCredentials(new InstanceElement(
+    const result = await adapter.validateCredentials(new InstanceElement(
       'config',
       accessTokenCredentialsType,
       { token: 'aaa' },
-    ))).rejects.toThrow(new clientUtils.UnauthorizedError('Unauthorized - update credentials and try again'))
+    ))
+    expect(result).toBeInstanceOf(clientUtils.UnauthorizedError)
     expect(connection.createConnection).toHaveBeenCalledTimes(1)
   })
 })

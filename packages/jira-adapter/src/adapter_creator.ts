@@ -16,9 +16,10 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  InstanceElement, Adapter, Values,
+  InstanceElement, Adapter, Values, AccountId,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import { filterErrorsBy } from '@salto-io/adapter-utils/'
 import JiraClient from './client/client'
 import JiraAdapter from './adapter'
 import { Credentials, basicAuthCredentialsType } from './auth'
@@ -110,16 +111,9 @@ export const adapter: Adapter = {
   },
   validateCredentials: async config => {
     const connection = createConnection(createRetryOptions(DEFAULT_RETRY_OPTS))
-    try {
-      return await validateCredentials({
-        connection: await connection.login(credentialsFromConfig(config)),
-      })
-    } catch (error) {
-      if (error instanceof Error && isInValidCredentials(error)) {
-        return error
-      }
-      throw error
-    }
+    const validateCredentialsFunction = async (): Promise<AccountId> =>
+      validateCredentials({ connection: await connection.login(credentialsFromConfig(config)) })
+    return filterErrorsBy<AccountId>(validateCredentialsFunction, isInValidCredentials)
   },
   authenticationMethods: {
     basic: {

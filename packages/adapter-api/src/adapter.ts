@@ -122,7 +122,7 @@ export type AccountId = string
 
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations
-  validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountId>
+  validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountId|Error>
   authenticationMethods: AdapterAuthentication
   configType?: ObjectType
   getDefaultConfig?: () => Promise<InstanceElement[]>

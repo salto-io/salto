@@ -16,13 +16,14 @@
 import { AdditionChange, CORE_ANNOTATIONS, Element, getChangeData, InstanceElement, isInstanceElement, isModificationChange, ModificationChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
-import { resolveChangeElement } from '@salto-io/adapter-utils'
+import { resolveChangeElement, createSchemeGuard } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { BOARD_ESTIMATION_TYPE, BOARD_TYPE_NAME } from '../../constants'
-import { addAnnotationRecursively, createSchemeGuard, findObject, setFieldDeploymentAnnotations } from '../../utils'
+import { addAnnotationRecursively, findObject, setFieldDeploymentAnnotations } from '../../utils'
 import JiraClient from '../../client/client'
 import { getLookUpName } from '../../reference_mapping'
+
 
 const log = logger(module)
 

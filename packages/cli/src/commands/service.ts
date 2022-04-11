@@ -30,6 +30,7 @@ import {
   installAdapter,
   LoginStatus,
   updateCredentials,
+  verifyCredentials,
 } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { naclCase } from '@salto-io/adapter-utils'
@@ -154,6 +155,10 @@ const getLoginInputFlow = async (
     ? createConfigFromLoginParameters(loginParameters)
     : getCredentialsFromUser
   const newConfig = await getLoginConfig(authType, authMethods, output, getLoginInput)
+  const result = await verifyCredentials(newConfig)
+  if (result instanceof Error) {
+    throw result
+  }
   await updateCredentials(workspace, newConfig, account)
   output.stdout.write(EOL)
   outputLine(formatLoginUpdated, output)

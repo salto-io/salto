@@ -15,10 +15,11 @@
 */
 import { logger } from '@salto-io/logging'
 import {
-  InstanceElement, Adapter,
+  InstanceElement, Adapter, AccountId,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
+import { filterErrorsBy } from '@salto-io/adapter-utils'
 import StripeClient from './client/client'
 import StripeAdapter from './adapter'
 import {
@@ -81,19 +82,14 @@ export const adapter: Adapter = {
     })
   },
   validateCredentials: async config => {
-    try {
-      return await validateCredentials(
+    const validateCredentialsFunction = async (): Promise<AccountId> =>
+      validateCredentials(
         credentialsFromConfig(config),
         {
           createConnection,
         },
       )
-    } catch (error) {
-      if (error instanceof Error && isInValidCredentials(error)) {
-        return error
-      }
-      throw error
-    }
+    return filterErrorsBy<AccountId>(validateCredentialsFunction, isInValidCredentials)
   },
   authenticationMethods: {
     basic: {

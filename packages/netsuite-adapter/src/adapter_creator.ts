@@ -13,12 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Adapter, BuiltinTypes, ElemID, InstanceElement, ObjectType, AdapterInstallResult, AdapterOperationsContext, AdapterOperations } from '@salto-io/adapter-api'
+import { Adapter, BuiltinTypes, ElemID, InstanceElement, ObjectType, AdapterInstallResult, AdapterOperationsContext, AdapterOperations, AccountId } from '@salto-io/adapter-api'
 import { collections, regex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { SdkDownloadService } from '@salto-io/suitecloud-cli'
 import Bottleneck from 'bottleneck'
+import { filterErrorsBy } from '@salto-io/adapter-utils'
 import { configType, DEFAULT_CONCURRENCY, NetsuiteConfig, validateDeployParams } from './config'
 import {
   NETSUITE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, CLIENT_CONFIG,
@@ -263,14 +264,9 @@ export const adapter: Adapter = {
   operations: context => getAdapterOperations(context),
   validateCredentials: async config => {
     const credentials = netsuiteCredentialsFromCredentials(config)
-    try {
-      return await NetsuiteClient.validateCredentials(credentials)
-    } catch (error) {
-      if (error instanceof Error && isInValidCredentials(error)) {
-        return error
-      }
-      throw error
-    }
+    const validateCredentialsFunction = async (): Promise<AccountId> =>
+      NetsuiteClient.validateCredentials(credentials)
+    return filterErrorsBy<AccountId>(validateCredentialsFunction, isInValidCredentials)
   },
   authenticationMethods: {
     basic: {

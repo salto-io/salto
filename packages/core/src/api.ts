@@ -59,7 +59,7 @@ const getAdapterFromLoginConfig = (loginConfig: Readonly<InstanceElement>): Adap
 
 export const verifyCredentials = async (
   loginConfig: Readonly<InstanceElement>,
-): Promise<AccountId> => {
+): Promise<AccountId|Error> => {
   const adapterCreator = getAdapterFromLoginConfig(loginConfig)
   if (adapterCreator) {
     return adapterCreator.validateCredentials(loginConfig)

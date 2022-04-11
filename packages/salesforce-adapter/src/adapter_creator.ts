@@ -35,6 +35,9 @@ import { ConfigChange } from './config_change'
 
 const log = logger(module)
 
+const InvalidCredentialErrorMessages = ['Error: Could not login to salesforce: INVALID_LOGIN: Invalid username, password, security token; or user locked out.']
+const isInValidCredentials = (error: Error): boolean =>
+  error.message in InvalidCredentialErrorMessages
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
   if (isAccessTokenConfig(config)) {
@@ -184,7 +187,16 @@ export const adapter: Adapter = {
       },
     }
   },
-  validateCredentials: async config => validateCredentials(credentialsFromConfig(config)),
+  validateCredentials: async config => {
+    try {
+      return await validateCredentials(credentialsFromConfig(config))
+    } catch (error) {
+      if (error instanceof Error && isInValidCredentials(error)) {
+        return error
+      }
+      throw error
+    }
+  },
   authenticationMethods: {
     basic: {
       credentialsType: usernamePasswordCredentialsType,

@@ -840,8 +840,11 @@ export const fetchChangesFromWorkspace = async (
     .toArray()
 
   const otherPathIndex = await otherWorkspace.state(env).getPathIndex()
+  const inMemoryOtherPathIndex = new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>(
+    await awu(otherPathIndex.entries()).toArray(),
+  )
   const splitByPathIndex = (await withLimitedConcurrency(wu(fullElements).map(
-    elem => () => pathIndex.splitElementByPath(elem, otherPathIndex)
+    elem => () => pathIndex.splitElementByPath(elem, inMemoryOtherPathIndex)
   ), MAX_SPLIT_CONCURRENCY)).flat()
   const [unmergedWithPath, unmergedWithoutPath] = _.partition(
     splitByPathIndex,

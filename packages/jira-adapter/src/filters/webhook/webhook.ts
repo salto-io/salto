@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, ElemIdGetter, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isModificationChange, ObjectType, Values } from '@salto-io/adapter-api'
-import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { naclCase, pathNaclCase, createSchemeGuard } from '@salto-io/adapter-utils'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
@@ -24,7 +24,6 @@ import JiraClient from '../../client/client'
 import { FilterCreator } from '../../filter'
 import { createWebhookTypes } from './types'
 import { deployChanges } from '../../deployment/standard_deployment'
-import { createSchemeGuard } from '../../utils'
 
 const log = logger(module)
 

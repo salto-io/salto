@@ -30,7 +30,6 @@ import {
   installAdapter,
   LoginStatus,
   updateCredentials,
-  verifyCredentials,
 } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { naclCase } from '@salto-io/adapter-utils'

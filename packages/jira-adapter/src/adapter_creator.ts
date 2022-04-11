@@ -70,6 +70,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
     config?.value
   )
 
+  // We can remove this once SALTO-1792 is implemented
   fullConfig.fetch.includeTypes = [
     ...fullConfig.fetch.includeTypes ?? [],
     ...TYPES_TO_ADD_TO_CONFIG,

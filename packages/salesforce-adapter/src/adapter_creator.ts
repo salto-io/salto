@@ -18,7 +18,9 @@ import { logger } from '@salto-io/logging'
 import {
   InstanceElement, Adapter, OAuthRequestParameters, OauthAccessTokenResponse,
   Values,
+  AccountId,
 } from '@salto-io/adapter-api'
+import { filterErrorsBy } from '@salto-io/adapter-utils'
 import SalesforceClient, { validateCredentials } from './client/client'
 import SalesforceAdapter from './adapter'
 import { configType, usernamePasswordCredentialsType, oauthRequestParameters,
@@ -188,14 +190,9 @@ export const adapter: Adapter = {
     }
   },
   validateCredentials: async config => {
-    try {
-      return await validateCredentials(credentialsFromConfig(config))
-    } catch (error) {
-      if (error instanceof Error && isInValidCredentials(error)) {
-        return error
-      }
-      throw error
-    }
+    const validateCredentialsFunction = async (): Promise<AccountId> =>
+      validateCredentials(credentialsFromConfig(config))
+    return filterErrorsBy<AccountId>(validateCredentialsFunction, isInValidCredentials)
   },
   authenticationMethods: {
     basic: {

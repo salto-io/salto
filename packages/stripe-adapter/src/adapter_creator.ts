@@ -31,7 +31,7 @@ import { createConnection } from './client/connection'
 const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
 const { validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } = configUtils
-const InvalidCredentialErrorMessages = ['Error: Could not login to stripe: Unauthorized - update credentials and try again']
+const InvalidCredentialErrorMessages = ['Unauthorized - update credentials and try again']
 const isInValidCredentials = (error: Error): boolean =>
   InvalidCredentialErrorMessages.includes(error.message)
 

@@ -28,7 +28,7 @@ import { createConnection } from './client/connection'
 const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
 const { validateDuckTypeApiDefinitionConfig } = configUtils
-const InvalidCredentialErrorMessages = ['Error: Could not login to zendesk_support: Unauthorized - update credentials and try again']
+const InvalidCredentialErrorMessages = ['Unauthorized - update credentials and try again']
 const isInValidCredentials = (error: Error): boolean =>
   InvalidCredentialErrorMessages.includes(error.message)
 

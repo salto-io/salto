@@ -155,10 +155,6 @@ const getLoginInputFlow = async (
     ? createConfigFromLoginParameters(loginParameters)
     : getCredentialsFromUser
   const newConfig = await getLoginConfig(authType, authMethods, output, getLoginInput)
-  const result = await verifyCredentials(newConfig)
-  if (result instanceof Error) {
-    throw result
-  }
   await updateCredentials(workspace, newConfig, account)
   output.stdout.write(EOL)
   outputLine(formatLoginUpdated, output)

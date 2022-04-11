@@ -72,6 +72,10 @@ export const updateCredentials = async (
   newConfig: Readonly<InstanceElement>,
   account?: string
 ): Promise<void> => {
+  const result = await verifyCredentials(newConfig)
+  if (result instanceof Error) {
+    throw result
+  }
   await workspace.updateAccountCredentials(account ?? newConfig.elemID.adapter, newConfig)
   log.debug(`persisted new configs for adapter: ${newConfig.elemID.adapter}`)
 }

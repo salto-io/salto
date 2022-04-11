@@ -18,6 +18,10 @@ import HubspotClient, { Credentials } from './client/client'
 import HubspotAdapter from './adapter'
 
 const configID = new ElemID('hubspot')
+const InvalidCredentialErrorMessages = ['The API key provided is invalid']
+const isInValidCredentials = (error: Error): boolean =>
+  InvalidCredentialErrorMessages.some(errorMessage => error.message.includes(errorMessage))
+
 
 export const defaultCredentialsType = new ObjectType({
   elemID: configID,
@@ -39,7 +43,16 @@ export const adapter: Adapter = {
   operations: context => new HubspotAdapter({
     client: clientFromCredentials(context.credentials),
   }),
-  validateCredentials: config => HubspotClient.validateCredentials(credentialsFromConfig(config)),
+  validateCredentials: async config => {
+    try {
+      return await HubspotClient.validateCredentials(credentialsFromConfig(config))
+    } catch (error) {
+      if (error instanceof Error && isInValidCredentials(error)) {
+        return error
+      }
+      throw error
+    }
+  },
   authenticationMethods: {
     basic: {
       credentialsType: defaultCredentialsType,

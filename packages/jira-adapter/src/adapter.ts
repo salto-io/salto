@@ -38,6 +38,7 @@ import boardSubQueryFilter from './filters/board/board_subquery'
 import boardEstimationFilter from './filters/board/board_estimation'
 import boardDeploymentFilter from './filters/board/board_deployment'
 import automationDeploymentFilter from './filters/automation/automation_deployment'
+import webhookFilter from './filters/webhook/webhook'
 import screenFilter from './filters/screen/screen'
 import mapListsFilter from './filters/map_lists'
 import missingStatusesFilter from './filters/statuses/missing_statuses'
@@ -95,6 +96,7 @@ export const DEFAULT_FILTERS = [
   automationFetchFilter,
   automationStructureFilter,
   automationDeploymentFilter,
+  webhookFilter,
   missingStatusesFilter,
   // Should run before duplicateIdsFilter
   fieldNameFilter,

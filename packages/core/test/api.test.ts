@@ -389,17 +389,9 @@ describe('api.ts', () => {
         await api.updateCredentials(ws, newConf)
         expect(ws.updateAccountCredentials).toHaveBeenCalledTimes(1)
       })
-      it('should call validateCredentials', async () => {
-        const newConf = mockConfigInstance.clone()
-        newConf.value.password = 'bla'
-
-        await api.updateCredentials(ws, newConf)
-
-        expect(mockAdapter.validateCredentials).toHaveBeenCalledTimes(1)
-      })
     })
 
-    describe('validateCredentials', () => {
+    describe('verifyCredentials', () => {
       it('should throw if passed unknown account name', () => {
         const newConfType = new ObjectType({
           elemID: new ElemID('unknownAccount'),
@@ -410,7 +402,7 @@ describe('api.ts', () => {
         return expect(api.verifyCredentials(newConf)).rejects
           .toThrow('unknown adapter: unknownAccount')
       })
-      it('should call validateConfig of adapterCreator', async () => {
+      it('should call validateCredentials of adapterCreator', async () => {
         const newConf = mockConfigInstance.clone()
         newConf.value.password = 'bla'
 

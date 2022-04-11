@@ -27,6 +27,10 @@ import { createConnection } from './client/connection'
 
 const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
+const InvalidCredentialErrorMessages = ['Error: Could not login to workato: Unauthorized - update credentials and try again']
+const isInValidCredentials = (error: Error): boolean =>
+  error.message in InvalidCredentialErrorMessages
+
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => ({
   username: config.value.username,
@@ -74,12 +78,21 @@ export const adapter: Adapter = {
       getElemIdFunc: context.getElemIdFunc,
     })
   },
-  validateCredentials: async config => validateCredentials(
-    credentialsFromConfig(config),
-    {
-      createConnection,
-    },
-  ),
+  validateCredentials: async config => {
+    try {
+      return await validateCredentials(
+        credentialsFromConfig(config),
+        {
+          createConnection,
+        },
+      )
+    } catch (error) {
+      if (error instanceof Error && isInValidCredentials(error)) {
+        return error
+      }
+      throw error
+    }
+  },
   authenticationMethods: {
     basic: {
       credentialsType: usernameTokenCredentialsType,

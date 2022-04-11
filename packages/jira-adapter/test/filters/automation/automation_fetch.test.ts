@@ -19,11 +19,12 @@ import { buildElementsSourceFromElements, safeJsonStringify } from '@salto-io/ad
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { mockClient } from '../../utils'
-import automationFetchFilter, { CLOUD_RESOURCE_FIELD } from '../../../src/filters/automation/automation_fetch'
+import automationFetchFilter from '../../../src/filters/automation/automation_fetch'
 import { DEFAULT_CONFIG, JiraConfig } from '../../../src/config'
 import { JIRA, PROJECT_TYPE } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
 import { createAutomationTypes } from '../../../src/filters/automation/types'
+import { CLOUD_RESOURCE_FIELD } from '../../../src/filters/automation/cloud_id'
 
 
 describe('automationFetchFilter', () => {
@@ -191,6 +192,46 @@ describe('automationFetchFilter', () => {
             status: 200,
             data: {
               unparsedData: {
+              },
+            },
+          }
+        }
+
+        if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules') {
+          return {
+            status: 200,
+            data: {
+              total: 1,
+              values: [
+                {
+                  id: '1',
+                  name: 'automationName',
+                  projects: [
+                    {
+                      projectId: '2',
+                    },
+                  ],
+                },
+              ],
+            },
+          }
+        }
+
+        throw new Error(`Unexpected url ${url}`)
+      })
+
+      const elements = [projectInstance]
+      await expect(filter.onFetch(elements)).rejects.toThrow()
+    })
+
+    it('should throw if cloud resource is not an object', async () => {
+      connection.post.mockImplementation(async url => {
+        if (url === '/rest/webResources/1.0/resources') {
+          return {
+            status: 200,
+            data: {
+              unparsedData: {
+                [CLOUD_RESOURCE_FIELD]: '[]',
               },
             },
           }

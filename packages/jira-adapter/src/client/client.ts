@@ -114,10 +114,46 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
     })
   }
 
+  public async deletePrivate(
+    args: clientUtils.ClientBaseParams,
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    return this.delete({
+      ...args,
+      headers: {
+        ...PRIVATE_API_HEADERS,
+        ...(args.headers ?? {}),
+      },
+    })
+  }
+
   public async putPrivate(
     args: clientUtils.ClientDataParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
     return this.put({
+      ...args,
+      headers: {
+        ...PRIVATE_API_HEADERS,
+        ...(args.headers ?? {}),
+      },
+    })
+  }
+
+  public async postPrivate(
+    args: clientUtils.ClientDataParams,
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    return this.post({
+      ...args,
+      headers: {
+        ...PRIVATE_API_HEADERS,
+        ...(args.headers ?? {}),
+      },
+    })
+  }
+
+  public async patchPrivate(
+    args: clientUtils.ClientDataParams,
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    return this.patch({
       ...args,
       headers: {
         ...PRIVATE_API_HEADERS,

@@ -26,6 +26,7 @@ import {
   ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType, isTypeReference,
   ReadOnlyElementsSource, ReferenceMap, TypeReference, createRefToElmWithValue, isElement,
 } from '@salto-io/adapter-api'
+import Joi from 'joi'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from './walk_element'
 
 const { mapValuesAsync } = promises.object
@@ -966,3 +967,13 @@ export const resolveTypeShallow = async (
       resolveTypeShallow(field, elementsSource))
   }
 }
+
+export const createSchemeGuard = <T>(scheme: Joi.AnySchema, errorMessage: string)
+: (value: unknown) => value is T => (value): value is T => {
+    const { error } = scheme.validate(value)
+    if (error !== undefined) {
+      log.error(`${errorMessage}: ${error.message}, ${safeJsonStringify(value)}`)
+      return false
+    }
+    return true
+  }

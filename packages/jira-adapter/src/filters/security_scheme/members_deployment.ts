@@ -15,7 +15,7 @@
 */
 import { AdditionChange, Change, getChangeData, getDeepInnerType, InstanceElement, isAdditionChange, isObjectType, isRemovalChange, ModificationChange, toChange, Values } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { resolveValues } from '@salto-io/adapter-utils'
+import { createSchemeGuard, resolveValues } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
@@ -23,7 +23,7 @@ import { JiraConfig } from '../../config'
 import JiraClient from '../../client/client'
 import { deployWithJspEndpoints } from '../../deployment/jsp_deployment'
 import { getLookUpName } from '../../reference_mapping'
-import { createSchemeGuard, getFilledJspUrls } from '../../utils'
+import { getFilledJspUrls } from '../../utils'
 import { LEVEL_MEMBER_TYPE_NAME } from '../../constants'
 
 const log = logger(module)

@@ -25,6 +25,7 @@ import {
 import { AdditionDiff, RemovalDiff, ModificationDiff } from '@salto-io/dag'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
+import Joi from 'joi'
 import {
   transformValues, resolvePath, TransformFunc, restoreValues, resolveValues, resolveChangeElement,
   findElement, findElements, findObjectType, GetLookupNameFunc, safeJsonStringify,
@@ -33,6 +34,7 @@ import {
   restoreChangeElement, RestoreValuesFunc, getAllReferencedIds, applyFunctionToChangeData,
   transformElement, toObjectType, getParents, resolveTypeShallow,
   referenceExpressionStringifyReplacer,
+  createSchemeGuard,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 
@@ -2240,6 +2242,17 @@ describe('Test utils.ts', () => {
       expect(clonedInst.refType.type).toBeUndefined()
       await resolveTypeShallow(clonedInst, elementsSource)
       expect(await clonedInst.getType()).toEqual(objWithResolvedWithAdditionalField)
+    })
+  })
+
+  describe('createSchemeGuard', () => {
+    it('Should create a scheme guard for a given scheme', () => {
+      const scheme = Joi.object({
+        a: Joi.string().required(),
+      })
+      const schemeGuard = createSchemeGuard<{a: string}>(scheme, 'message')
+      expect(schemeGuard({ a: 'string' })).toBeTruthy()
+      expect(schemeGuard({ a: 2 })).toBeFalsy()
     })
   })
 })

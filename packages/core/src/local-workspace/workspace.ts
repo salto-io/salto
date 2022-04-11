@@ -20,7 +20,8 @@ import { DetailedChange, ObjectType } from '@salto-io/adapter-api'
 import { exists, isEmptyDir, rm } from '@salto-io/file'
 import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl, remoteMap,
   configSource as cs, staticFiles, dirStore, WorkspaceComponents, errors, elementSource,
-  COMMON_ENV_PREFIX, isValidEnvName, EnvironmentSource, EnvConfig, adaptersConfigSource } from '@salto-io/workspace'
+  COMMON_ENV_PREFIX, isValidEnvName, EnvironmentSource, EnvConfig, adaptersConfigSource,
+  createAdapterReplacedID } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { localDirectoryStore, createExtensionFileFilter } from './dir_store'
@@ -204,7 +205,8 @@ export const getAdapterConfigsPerAccount = async (envs: EnvConfig[]): Promise<Ob
     const adapter = differentlyNamedAccounts[account]
     const adapterConfigs = configTypesByAccount[adapter]
     const additionalConfigs = await adaptersConfigSource.calculateAdditionalConfigTypes(
-      configElementSource, adapterConfigs.map(conf => conf.elemID), adapter, account
+      configElementSource, adapterConfigs
+        .map(conf => createAdapterReplacedID(conf.elemID, account)), adapter, account
     )
     configTypesByAccount[account] = additionalConfigs
   })

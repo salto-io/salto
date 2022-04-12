@@ -185,14 +185,13 @@ export const validateTransoformationConfig = (
     }
   }
 
-  const getInvalidIdFields = (
-    idFields: string[],
-  ): string[] => idFields.filter(fieldName => {
-    const symbolCount = (fieldName.match(/&/g) || []).length
-    return ((symbolCount > 1)
+  const getInvalidIdFields = (idFields: string[]): string[] => (
+    idFields.filter(fieldName => {
+      const symbolCount = (fieldName.match(/&/g) || []).length
+      return (symbolCount > 1)
             || (symbolCount === 1 && !fieldName.startsWith(FIELD_REFERENCE_PREFIX))
-    )
-  })
+    })
+  )
 
   const validateIdFieldsConfig = (
     defaultIdFields: string[] | undefined,

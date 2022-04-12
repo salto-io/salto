@@ -32,7 +32,7 @@ const log = logger(module)
 const { isDefined } = lowerDashValues
 const { getReferences, getUpdatedReference, createReferencesTransformFunc } = references
 
-const getInstanceReferencedNameParts = (
+const createInstanceReferencedNameParts = (
   instance: InstanceElement,
   idFields: string[],
 ): string[] => idFields.map(
@@ -74,8 +74,46 @@ const getInstanceNameDependencies = (
   return referencedInstances
 }
 
+/* Calculates the new instance name and file path */
+const createInstanceNameAndFilePath = (
+  instance: InstanceElement,
+  idFields: string[],
+  configByType: Record<string, TransformationConfig>,
+  getElemIdFunc?: ElemIdGetter,
+): { newNaclName: string; filePath: string[] } => {
+  const newNameParts = createInstanceReferencedNameParts(instance, idFields)
+  const newName = joinInstanceNameParts(newNameParts) ?? instance.elemID.name
+  const parentIds = getParents(instance)
+    .filter(parent => isReferenceExpression(parent) && isInstanceElement(parent.value))
+    .map(parent => parent.value.elemID.name)
+  const parentName = parentIds.length > 0 ? parentIds[0] : undefined
+
+  const { typeName, adapter } = instance.elemID
+  const { fileNameFields, serviceIdField } = configByType[typeName]
+
+  const newNaclName = getInstanceNaclName({
+    entry: instance.value,
+    name: newName,
+    parentName,
+    adapterName: adapter,
+    getElemIdFunc,
+    serviceIdField,
+    typeElemId: instance.refType.elemID,
+  })
+
+  const filePath = getInstanceFilePath({
+    fileNameFields,
+    entry: instance.value,
+    naclName: newNaclName,
+    typeName,
+    isSettingType: configByType[typeName].isSingleton ?? false,
+    adapterName: adapter,
+  })
+  return { newNaclName, filePath }
+}
+
 /* Create new instance with the new naclName and file path */
-const getNewInstance = async (
+const createNewInstance = async (
   currentInstance: InstanceElement,
   newNaclName: string,
   newFilePath: string[],
@@ -104,7 +142,7 @@ export const updateAllReferences = (
 ): void => {
   allInstances
   // filtering out the renamed element,
-  // its references are taken care of in getNewInstance
+  // its references are taken care of in createNewInstance
     .filter(instance => oldElemId.getFullName() !== instance.elemID.getFullName())
     .forEach(instance => {
       const refs = getReferences(instance, oldElemId)
@@ -117,38 +155,14 @@ export const updateAllReferences = (
     })
 }
 
-/*
- * Utility function that finds instance elements whose id relies on the ids of other instances,
- * and replaces them with updated instances with the correct id and file path.
- */
-export const addReferencesToInstanceNames = async (
-  elements: Element[],
-  transformationConfigByType: Record<string, TransformationConfig>,
-  transformationDefaultConfig: TransformationDefaultConfig,
-  getElemIdFunc?: ElemIdGetter
-): Promise<Element[]> => {
+/* Create a graph with instance names as nodes and instance name dependencies as edges */
+const createGraph = (
+  instances: InstanceElement[],
+  instancesToIdFields: {instance: InstanceElement; idFields: string[]}[]
+): DAG<InstanceElement> => {
   const hasReferencedIdFields = (idFields: string[]): boolean => (
     idFields.some(field => isReferencedIdField(field))
   )
-
-  const instances = elements.filter(isInstanceElement)
-  const instanceTypeNames = new Set(instances.map(instance => instance.elemID.typeName))
-  const configByType = Object.fromEntries(
-    [...instanceTypeNames]
-      .map(typeName => [
-        typeName,
-        getConfigWithDefault(
-          transformationConfigByType[typeName],
-          transformationDefaultConfig
-        ),
-      ])
-  )
-
-  const instancesToIdFields = instances.map(instance => ({
-    instance,
-    idFields: configByType[instance.elemID.typeName].idFields,
-  }))
-
   const duplicateElemIds = new Set(findDuplicates(instances.map(i => i.elemID.getFullName())))
   const duplicateIdsToLog = new Set<string>()
   const isDuplicateInstance = (instanceFullName: string): boolean => {
@@ -180,6 +194,38 @@ export const addReferencesToInstanceNames = async (
   if (duplicateIdsToLog.size > 0) {
     log.warn(`Duplicate instance names were found:${Array.from(duplicateIdsToLog).join(', ')}`)
   }
+  return graph
+}
+
+/*
+ * Utility function that finds instance elements whose id relies on the ids of other instances,
+ * and replaces them with updated instances with the correct id and file path.
+ */
+export const addReferencesToInstanceNames = async (
+  elements: Element[],
+  transformationConfigByType: Record<string, TransformationConfig>,
+  transformationDefaultConfig: TransformationDefaultConfig,
+  getElemIdFunc?: ElemIdGetter
+): Promise<Element[]> => {
+  const instances = elements.filter(isInstanceElement)
+  const instanceTypeNames = new Set(instances.map(instance => instance.elemID.typeName))
+  const configByType = Object.fromEntries(
+    [...instanceTypeNames]
+      .map(typeName => [
+        typeName,
+        getConfigWithDefault(
+          transformationConfigByType[typeName],
+          transformationDefaultConfig
+        ),
+      ])
+  )
+
+  const instancesToIdFields = instances.map(instance => ({
+    instance,
+    idFields: configByType[instance.elemID.typeName].idFields,
+  }))
+
+  const graph = createGraph(instances, instancesToIdFields)
 
   const nameToInstanceIdFields = _.keyBy(
     instancesToIdFields,
@@ -192,36 +238,13 @@ export const addReferencesToInstanceNames = async (
       if (instanceIdFields !== undefined) {
         const { instance, idFields } = instanceIdFields
         const originalFullName = instance.elemID.getFullName()
-        const newNameParts = getInstanceReferencedNameParts(instance, idFields)
-        const newName = joinInstanceNameParts(newNameParts) ?? instance.elemID.name
-        const parentIds = getParents(instance)
-          .filter(parent => isReferenceExpression(parent) && isInstanceElement(parent.value))
-          .map(parent => parent.value.elemID.name)
-        const parentName = parentIds.length > 0 ? parentIds[0] : undefined
-
-        const { typeName, adapter } = instance.elemID
-        const { fileNameFields, serviceIdField } = configByType[typeName]
-
-        const newNaclName = getInstanceNaclName({
-          entry: instance.value,
-          name: newName,
-          parentName,
-          adapterName: adapter,
+        const { newNaclName, filePath } = createInstanceNameAndFilePath(
+          instance,
+          idFields,
+          configByType,
           getElemIdFunc,
-          serviceIdField,
-          typeElemId: instance.refType.elemID,
-        })
-
-        const filePath = getInstanceFilePath({
-          fileNameFields,
-          entry: instance.value,
-          naclName: newNaclName,
-          typeName,
-          isSettingType: transformationConfigByType[typeName].isSingleton ?? false,
-          adapterName: adapter,
-        })
-
-        const newInstance = await getNewInstance(instance, newNaclName, filePath)
+        )
+        const newInstance = await createNewInstance(instance, newNaclName, filePath)
         updateAllReferences(
           elements.filter(isInstanceElement),
           instance.elemID,

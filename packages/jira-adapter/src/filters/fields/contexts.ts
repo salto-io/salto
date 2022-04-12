@@ -61,8 +61,7 @@ export const deployContextChange = async (
   } catch (err) {
     if (isRemovalChange(change)
       && err instanceof clientUtils.HTTPError
-      && Array.isArray(err.response.data.errorMessages)
-      && err.response.data.errorMessages.includes('The custom field was not found.')
+      && err.response.status === 404
     ) {
       return
     }

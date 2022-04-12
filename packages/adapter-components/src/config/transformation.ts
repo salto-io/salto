@@ -196,6 +196,7 @@ export const validateTransoformationConfig = (
 
   const validateIdFieldsConfig = (
     defaultIdFields: string[] | undefined,
+    idFieldsByType: Record<string, string[] | undefined>,
   ): void => {
     if (defaultIdFields !== undefined) {
       const invalidDefaultIdFields = getInvalidIdFields(defaultIdFields)
@@ -203,13 +204,15 @@ export const validateTransoformationConfig = (
         throw new Error(`Invalid idFields found in default config: ${invalidDefaultIdFields}`)
       }
     }
-    const invalidIdFieldsTypeConfig = Object.entries(configMap).map(([type, transformation]) => {
-      if (transformation.idFields !== undefined) {
-        const invalidFieldNames = getInvalidIdFields(transformation.idFields)
-        return invalidFieldNames.length > 0 ? { type, invalidFieldNames } : undefined
-      }
-      return undefined
-    }).filter(values.isDefined)
+    const invalidIdFieldsTypeConfig = Object.entries(idFieldsByType)
+      .filter(([_typeName, idFields]) => idFields)
+      .map(([type, idFields]) => {
+        const invalidFieldNames = getInvalidIdFields(idFields ?? [])
+        if (invalidFieldNames.length > 0) {
+          return { type, invalidFieldNames }
+        }
+        return undefined
+      }).filter(values.isDefined)
     if (invalidIdFieldsTypeConfig.length > 0) {
       const invalidIdFieldsMsg = invalidIdFieldsTypeConfig.map(f => `in type: ${f.type}, invalid idFields: [${f.invalidFieldNames}]`)
       throw new Error(`Invalid idFields found in the following types:\n${invalidIdFieldsMsg.join('\n')}`)
@@ -247,7 +250,7 @@ export const validateTransoformationConfig = (
     throw new Error(`Singleton types should not have dataField or fileNameFields set, misconfiguration found for the following types: ${validateIsSingletonTypes.toString()}`)
   }
 
-  validateIdFieldsConfig(defaultConfig.idFields)
+  validateIdFieldsConfig(defaultConfig.idFields, _.mapValues(configMap, c => c.idFields))
 }
 
 export const getTypeTransformationConfig = (

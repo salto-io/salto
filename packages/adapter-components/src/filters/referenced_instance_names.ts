@@ -46,10 +46,12 @@ const getInstanceReferencedNameParts = (
         return fieldValue.elemID.name
       }
       log.warn(`In instance: ${instance.elemID.getFullName()},
-        reference expression of field ${fieldName} doesn't point to an instance element`)
-    }
-    log.warn(`In instance: ${instance.elemID.getFullName()},
+        the reference expression: ${fieldValue.elemID.getFullName},
+        of field ${fieldName} doesn't point to an instance element`)
+    } else {
+      log.warn(`In instance: ${instance.elemID.getFullName()},
       could not find reference for referenced idField: ${fieldName}, falling back to original value`)
+    }
     return fieldValue
   }
 )
@@ -130,12 +132,6 @@ export const addReferencesToInstanceNames = async (
   )
 
   const instances = elements.filter(isInstanceElement)
-  const duplicateElemIds = new Set(findDuplicates(instances.map(i => i.elemID.getFullName())))
-  if (duplicateElemIds.size > 0) {
-    log.warn(`Duplicate instance names were found:${Array.from(duplicateElemIds).join(', ')}`)
-    _.remove(instances, instance => duplicateElemIds.has(instance.elemID.getFullName()))
-  }
-
   const instanceTypeNames = new Set(instances.map(instance => instance.elemID.typeName))
   const configByType = Object.fromEntries(
     [...instanceTypeNames]
@@ -152,21 +148,43 @@ export const addReferencesToInstanceNames = async (
     instance,
     idFields: configByType[instance.elemID.typeName].idFields,
   }))
-  const nameToInstanceIdFields = _.keyBy(
-    instancesToIdFields,
-    obj => obj.instance.elemID.getFullName()
-  )
+
+  const duplicateElemIds = new Set(findDuplicates(instances.map(i => i.elemID.getFullName())))
+  const duplicateIdsToLog = new Set<string>()
+  const isDuplicateInstance = (instanceFullName: string): boolean => {
+    if (duplicateElemIds.has(instanceFullName)) {
+      _.remove(instancesToIdFields, obj => obj.instance.elemID.getFullName() === instanceFullName)
+      duplicateIdsToLog.add(instanceFullName)
+      return true
+    }
+    return false
+  }
 
   const graph = new DAG<InstanceElement>()
   instancesToIdFields.forEach(({ instance, idFields }) => {
     if (hasReferencedIdFields(idFields)) {
-      graph.addNode(
-        instance.elemID.getFullName(),
-        getInstanceNameDependencies(idFields, instance),
-        instance,
-      )
+      // removing duplicate elemIDs to create a graph
+      // we can traverse based on references to unique elemIDs
+      if (!isDuplicateInstance(instance.elemID.getFullName())) {
+        const nameDependencies = getInstanceNameDependencies(idFields, instance)
+          .filter(instanceName => !isDuplicateInstance(instanceName))
+        graph.addNode(
+          instance.elemID.getFullName(),
+          nameDependencies,
+          instance,
+        )
+      }
     }
   })
+
+  if (duplicateIdsToLog.size > 0) {
+    log.warn(`Duplicate instance names were found:${Array.from(duplicateIdsToLog).join(', ')}`)
+  }
+
+  const nameToInstanceIdFields = _.keyBy(
+    instancesToIdFields,
+    obj => obj.instance.elemID.getFullName()
+  )
 
   await awu(graph.evaluationOrder()).forEach(
     async graphNode => {
@@ -204,7 +222,11 @@ export const addReferencesToInstanceNames = async (
         })
 
         const newInstance = await getNewInstance(instance, newNaclName, filePath)
-        updateAllReferences(instances, instance.elemID, newInstance.elemID)
+        updateAllReferences(
+          elements.filter(isInstanceElement),
+          instance.elemID,
+          newInstance.elemID
+        )
         const originalInstanceIdx = elements
           .findIndex(e => (e.elemID.getFullName()) === originalFullName)
         elements.splice(originalInstanceIdx, 1, newInstance)

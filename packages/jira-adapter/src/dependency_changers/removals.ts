@@ -41,6 +41,7 @@ export const removalsDependencyChanger: DependencyChanger = async changes => {
         .filter(id => id in removalsChanges)
         .map(id => removalsChanges[id])
         .map(({ key }) => key)
+        .filter(key => key !== deskKey)
 
       return referencedKeys.map(
         sourceKey => dependencyChange(

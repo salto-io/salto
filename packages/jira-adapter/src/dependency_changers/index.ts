@@ -18,6 +18,7 @@ import { deployment } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { dashboardGadgetsDependencyChanger } from './dashboard_gadgets'
 import { projectDependencyChanger } from './project'
+import { removalsDependencyChanger } from './removals'
 import { workflowDependencyChanger } from './workflow'
 
 const { awu } = collections.asynciterable
@@ -27,6 +28,7 @@ const DEPENDENCY_CHANGERS: DependencyChanger[] = [
   projectDependencyChanger,
   workflowDependencyChanger,
   dashboardGadgetsDependencyChanger,
+  removalsDependencyChanger,
 ]
 
 export const dependencyChanger: DependencyChanger = async (

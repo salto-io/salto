@@ -21,10 +21,10 @@ import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from './walk_element'
 
 const isReferenceOfElement = <T>(
   value: T,
-  elemId: ElemID
+  elemId?: ElemID
 ): boolean =>
     isReferenceExpression(value)
-    && (elemId.isEqual(value.elemID) || elemId.isParentOf(value.elemID))
+    && (elemId === undefined || elemId.isEqual(value.elemID) || elemId.isParentOf(value.elemID))
 
 export const getUpdatedReference = (
   referenceExpression: ReferenceExpression,
@@ -46,7 +46,7 @@ export const createReferencesTransformFunc = (
 
 export const getReferences = (
   element: Element,
-  sourceElemId: ElemID
+  sourceElemId?: ElemID
 ): { path: ElemID; value: ReferenceExpression }[] => {
   const references: { path: ElemID; value: ReferenceExpression }[] = []
   const func: WalkOnFunc = ({ path, value }) => {

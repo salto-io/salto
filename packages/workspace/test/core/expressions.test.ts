@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, ObjectType, BuiltinTypes, InstanceElement, Element, ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable, isVariableExpression, isReferenceExpression, StaticFile, PrimitiveType, PrimitiveTypes, TypeReference, MapType, TypeElement } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, BuiltinTypes, InstanceElement, Element, ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable, isVariableExpression, isReferenceExpression, StaticFile, PrimitiveType, PrimitiveTypes, TypeReference, MapType, TypeElement, Field, PlaceholderObjectType } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { TestFuncImpl, getFieldsAndAnnoTypes } from '../utils'
 import { resolve, UnresolvedReference, CircularReference } from '../../src/expressions'
@@ -407,9 +407,9 @@ describe('Test Salto Expressions', () => {
         )
       )).toArray()) as [InstanceElement, ObjectType, PrimitiveType]
       const [resInst, resObj, resPrim] = all
-      expect(resObj.fields.f.refType.elemID).toBe(resPrim.elemID)
-      expect(resObj.annotationRefTypes.a.elemID).toBe(resPrim.elemID)
-      expect(resInst.refType.elemID).toBe(resObj.elemID)
+      expect(resObj.fields.f.refType.type).toBe(resPrim)
+      expect(resObj.annotationRefTypes.a.type).toBe(resPrim)
+      expect(resInst.refType.type).toBe(resObj)
     })
 
     it('should resolve the top level element in a reference', async () => {
@@ -464,6 +464,46 @@ describe('Test Salto Expressions', () => {
       ])) as [InstanceElement]
       expect(resolvedInstance.value.b.ref.value).toBe(2)
       expect(resolvedInstance.value.a.ref.value.ref.value).toBe(2)
+    })
+  })
+
+  describe('with field input', () => {
+    let objectType: ObjectType
+    let fieldType: ObjectType
+    let referencedType: ObjectType
+    let resolvedField: Field
+    beforeEach(async () => {
+      fieldType = new ObjectType({ elemID: new ElemID('salto', 'field') })
+      referencedType = new ObjectType({
+        elemID: new ElemID('salto', 'referenced'),
+        annotations: { value: 'value' },
+      })
+      objectType = new ObjectType({
+        elemID: new ElemID('salto', 'obj'),
+        fields: {
+          field: {
+            refType: fieldType,
+            annotations: { ref: refTo(referencedType, 'attr', 'value') },
+          },
+        },
+      })
+      const fieldToResolve = objectType.fields.field
+      const resolved = await resolve(
+        [fieldToResolve],
+        createInMemoryElementSource(
+          [fieldType, referencedType, objectType]
+        )
+      )
+      expect(resolved).toHaveLength(1)
+      expect(resolved[0]).toBeInstanceOf(Field)
+      resolvedField = resolved[0] as Field
+    })
+    it('should resolve field type', () => {
+      // We can compare to the unresolved field type because there is nothing to resolve in it
+      expect(resolvedField.refType.type).toEqual(fieldType)
+    })
+    it('should resolve references in the field', () => {
+      expect(resolvedField.annotations.ref.value).toEqual(referencedType.annotations.value)
     })
   })
 
@@ -535,6 +575,19 @@ describe('Test Salto Expressions', () => {
   })
 
   describe('resolve types', () => {
+    describe('with missing types', () => {
+      let resolvedInstance: InstanceElement
+      beforeEach(async () => {
+        const missingType = new ObjectType({ elemID: new ElemID('salto', 'missing') })
+        const instance = new InstanceElement('inst', missingType, {})
+        const resolved = await resolve([instance], createInMemoryElementSource([]))
+        expect(resolved[0]).toBeInstanceOf(InstanceElement)
+        resolvedInstance = resolved[0] as InstanceElement
+      })
+      it('should detect missing type and put a placeholder type there', () => {
+        expect(resolvedInstance.refType.type).toBeInstanceOf(PlaceholderObjectType)
+      })
+    })
     describe('with container types', () => {
       let innerObjType: ObjectType
       let outerObjType: ObjectType

@@ -45,12 +45,12 @@ const markCircularReferences = (referenceGraph: DataNodeMap<Expression>): void =
     .forEach(ref => {
       if (isReferenceExpression(ref)) {
         ref.value = new CircularReference(ref.elemID.getFullName())
-      } else if (isTemplateExpression(ref)) {
-        ref.parts.forEach(part => {
-          if (isReferenceExpression(part)) {
-            part.value = new CircularReference(part.elemID.getFullName())
-          }
-        })
+      } else {
+        ref.parts
+          .filter(isReferenceExpression)
+          .forEach(innerRef => {
+            innerRef.value = new CircularReference(innerRef.elemID.getFullName())
+          })
       }
     })
   // Remove the references we marked and run again in case there is another cycle

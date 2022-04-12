@@ -21,6 +21,7 @@ import {
   isVariable, isMapType, MapType, isContainerType, createRefToElmWithValue, PlaceholderObjectType,
 } from '../src/elements'
 import { ElemID, INSTANCE_ANNOTATIONS } from '../src/element_id'
+import { TypeReference } from '../src/values'
 
 describe('Test elements.ts', () => {
   /**   ElemIDs   * */
@@ -277,6 +278,9 @@ describe('Test elements.ts', () => {
     const configTypeId = new ElemID('adapter')
     const configInstId = configTypeId.createNestedID('instance', ElemID.CONFIG_NAME)
     const variableId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName')
+    const listId = new ListType(new TypeReference(typeId)).elemID
+    const mapId = new MapType(new TypeReference(typeId)).elemID
+    const nestedListId = new ListType(new TypeReference(listId)).elemID
 
     describe('constructor', () => {
       it('should throw error on variables not in the var namespace', () => {
@@ -360,7 +364,7 @@ describe('Test elements.ts', () => {
     describe('fromFullName', () => {
       it('should create elem ID from its full name', () => {
         [typeId, fieldId, annotationTypesId, annotationTypeId, typeInstId, valueId, configTypeId,
-          configInstId, variableId]
+          configInstId, variableId, listId, mapId, nestedListId]
           .forEach(id => expect(ElemID.fromFullName(id.getFullName())).toEqual(id))
       })
       it('should fail on invalid id type', () => {
@@ -369,7 +373,7 @@ describe('Test elements.ts', () => {
     })
 
     describe('getTypeOrContainerTypeID', () => {
-      const elemID = new ElemID('adapter', 'typeName', 'type', 'name')
+      const elemID = new ElemID('adapter', 'typeName')
       const newObjectType = new ObjectType({ elemID })
       it('Should return the ElemID if non-container type', () => {
         expect(ElemID.getTypeOrContainerTypeID(newObjectType.elemID).isEqual(elemID)).toBeTruthy()
@@ -394,6 +398,37 @@ describe('Test elements.ts', () => {
       it('Should throw an error if <> structure is illegal in the elemID', () => {
         const invalidElemID = new ElemID('', '<invalid>>')
         expect(() => ElemID.getTypeOrContainerTypeID(invalidElemID)).toThrow()
+      })
+    })
+
+    describe('getContainerPrefixAndInnerType', () => {
+      it('should return undefined for a non container element ID', () => {
+        const id = new ElemID('salto', 'typeId')
+        expect(id.getContainerPrefixAndInnerType()).toBeUndefined()
+      })
+      describe('with container ID', () => {
+        const mapOfString = new MapType(BuiltinTypes.STRING)
+        const listOfMapType = new ListType(mapOfString)
+        describe('with nested list type', () => {
+          it('should return container type and inner type name', () => {
+            const containerInfo = listOfMapType.elemID.getContainerPrefixAndInnerType()
+            expect(containerInfo).toBeDefined()
+            expect(containerInfo?.prefix).toEqual('List')
+            expect(containerInfo?.innerTypeName).toEqual(
+              listOfMapType.refInnerType.elemID.getFullName()
+            )
+          })
+        })
+        describe('with map type', () => {
+          it('should return container type and inner type name', () => {
+            const containerInfo = mapOfString.elemID.getContainerPrefixAndInnerType()
+            expect(containerInfo).toBeDefined()
+            expect(containerInfo?.prefix).toEqual('Map')
+            expect(containerInfo?.innerTypeName).toEqual(
+              mapOfString.refInnerType.elemID.getFullName()
+            )
+          })
+        })
       })
     })
 

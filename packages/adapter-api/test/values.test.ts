@@ -16,24 +16,119 @@
 
 import { ElemID } from '../src/element_id'
 import { StaticFile, isEqualValues, VariableExpression,
-  ReferenceExpression, isStaticFile, calculateStaticFileHash, isPrimitiveValue, TemplateExpression, TypeReference } from '../src/values'
+  ReferenceExpression, isStaticFile, calculateStaticFileHash, isPrimitiveValue, TemplateExpression, TypeReference, Values, cloneDeepWithoutRefs } from '../src/values'
 import { BuiltinTypes } from '../src/builtins'
+import { ObjectType, InstanceElement, Variable } from '../src/elements'
 
 describe('Values', () => {
-  describe('ReferenceExpression.createWithValue', () => {
-    it('should return correct type', () => {
-      const varElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName')
-      const varExp = new VariableExpression(varElemId, 17)
-      const varExpAsRef = varExp as ReferenceExpression
-      const newVarExp = varExpAsRef.createWithValue(undefined)
-      expect(newVarExp instanceof VariableExpression).toBe(true)
-      expect(newVarExp.value).toBe(undefined)
+  describe('ReferenceExpression', () => {
+    describe('createWithValue', () => {
+      it('should return correct type', () => {
+        const varElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName')
+        const varExp = new VariableExpression(varElemId, 17)
+        const varExpAsRef = varExp as ReferenceExpression
+        const newVarExp = varExpAsRef.createWithValue(undefined)
+        expect(newVarExp instanceof VariableExpression).toBe(true)
+        expect(newVarExp.value).toBe(undefined)
+      })
+      it('should return correct value', () => {
+        const varElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName')
+        const varExp = new VariableExpression(varElemId, 17)
+        const newVarExp = varExp.createWithValue(16)
+        expect(newVarExp.value).toBe(16)
+      })
     })
-    it('should return correct value', () => {
-      const varElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName')
-      const varExp = new VariableExpression(varElemId, 17)
-      const newVarExp = varExp.createWithValue(16)
-      expect(newVarExp.value).toBe(16)
+    describe('clone', () => {
+      let origRef: ReferenceExpression
+      let clonedRef: ReferenceExpression
+      beforeEach(() => {
+        const targetObj = new ObjectType({
+          elemID: new ElemID('salto', 'obj'),
+          annotations: {
+            val: [1, 2, 3],
+          },
+        })
+        origRef = new ReferenceExpression(
+          targetObj.elemID.createNestedID('attr', 'val'),
+          targetObj.annotations.val,
+          targetObj
+        )
+        clonedRef = origRef.clone()
+      })
+      it('should create a new reference', () => {
+        expect(clonedRef).not.toBe(origRef)
+      })
+      it('should not clone the resolved value or the top level parent', () => {
+        expect(clonedRef.value).toBe(origRef.value)
+        expect(clonedRef.topLevelParent).toBe(origRef.topLevelParent)
+      })
+    })
+    describe('value', () => {
+      let refToValue: ReferenceExpression
+      beforeEach(() => {
+        const targetInst = new InstanceElement(
+          'test',
+          new ObjectType({ elemID: new ElemID('salto', 'test') }),
+          { value: 'val' }
+        )
+        refToValue = new ReferenceExpression(
+          targetInst.elemID.createNestedID('value'),
+          targetInst.value.value,
+          targetInst,
+        )
+      })
+      describe('with normal value', () => {
+        it('should return the resolved value', () => {
+          expect(refToValue.value).toEqual('val')
+        })
+      })
+      describe('with reference value', () => {
+        let ref: ReferenceExpression
+        beforeEach(() => {
+          ref = new ReferenceExpression(new ElemID('salto', 'test', 'attr', 'foo'), refToValue)
+        })
+        it('should return the target reference\'s value', () => {
+          expect(ref.value).toEqual('val')
+        })
+      })
+      describe('with variable value', () => {
+        let ref: ReferenceExpression
+        beforeEach(() => {
+          const refToRefToValue = new ReferenceExpression(
+            new ElemID('salto', 'test', 'attr', 'foo'),
+            refToValue,
+          )
+          const variable = new Variable(new ElemID('var', 'ref'), refToRefToValue)
+          ref = new ReferenceExpression(
+            new ElemID('salto', 'test', 'attr', 'bla'),
+            variable,
+          )
+        })
+        it('should return the variable\'s value', () => {
+          expect(ref.value).toEqual('val')
+        })
+      })
+    })
+  })
+
+  describe('TemplateExpression', () => {
+    describe('value accessor', () => {
+      let template: TemplateExpression
+      beforeEach(() => {
+        const refTarget = new ObjectType({
+          elemID: new ElemID('salto', 'test'),
+          annotations: { value: 'bla' },
+        })
+        const ref = new ReferenceExpression(
+          refTarget.elemID.createNestedID('attr', 'value'),
+          refTarget.annotations.value,
+          refTarget,
+        )
+        template = new TemplateExpression({ parts: ['pre ', ref, ' post'] })
+      })
+      it('should resolve value to a joined string', () => {
+        expect(template.value).toEqual('pre bla post')
+      })
     })
   })
 
@@ -155,6 +250,60 @@ describe('Values', () => {
         getAll: jest.fn(),
       })
       expect(res.elemID.getFullName()).toEqual(elemID.getFullName())
+    })
+  })
+  describe('cloneDeepWithoutRefs', () => {
+    let referenceTarget: ObjectType
+    let originalValues: Values
+    let clonedValues: Values
+    beforeEach(() => {
+      referenceTarget = new ObjectType({
+        elemID: new ElemID('salto', 'obj'),
+        annotations: {
+          bla: 'bla',
+        },
+      })
+      originalValues = {
+        obj: { a: 1 },
+        arr: [1, 2, 3],
+        ref: new ReferenceExpression(referenceTarget.elemID, referenceTarget, referenceTarget),
+        template: new TemplateExpression({
+          parts: [
+            'a',
+            new ReferenceExpression(referenceTarget.elemID.createNestedID('attr', 'bla'), 'bla', referenceTarget),
+            'b',
+          ],
+        }),
+        type: new TypeReference(referenceTarget.elemID, referenceTarget),
+      }
+      clonedValues = cloneDeepWithoutRefs(originalValues)
+    })
+    it('should clone objects, arrays and references', () => {
+      expect(clonedValues.obj).toEqual(originalValues.obj)
+      expect(clonedValues.obj).not.toBe(originalValues.obj)
+
+      expect(clonedValues.arr).toEqual(originalValues.arr)
+      expect(clonedValues.arr).not.toBe(originalValues.arr)
+
+      expect(clonedValues.ref).toEqual(originalValues.ref)
+      expect(clonedValues.ref).not.toBe(originalValues.ref)
+
+      expect(clonedValues.template).toEqual(originalValues.template)
+      expect(clonedValues.template).not.toBe(originalValues.template)
+
+      expect(clonedValues.type).toEqual(originalValues.type)
+      expect(clonedValues.type).not.toBe(originalValues.type)
+    })
+    it('should not clone reference values', () => {
+      expect(clonedValues.ref.resValue).toBe(originalValues.ref.resValue)
+      expect(clonedValues.ref.topLevelParent).toBe(originalValues.ref.topLevelParent)
+
+      const clonedRefInTemplate = clonedValues.template.parts[1]
+      const origRefInTemplate = originalValues.template.parts[1]
+      expect(clonedRefInTemplate.resValue).toBe(origRefInTemplate.resValue)
+      expect(clonedRefInTemplate.topLevelParent).toBe(origRefInTemplate.topLevelParent)
+
+      expect(clonedValues.type.type).toBe(originalValues.type.type)
     })
   })
 })

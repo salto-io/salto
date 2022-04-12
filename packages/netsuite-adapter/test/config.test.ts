@@ -357,4 +357,13 @@ describe('config', () => {
     })
     expect(configChange?.message).toBe(UPDATE_SUITEAPP_TYPES_CONFIG_FORMAT)
   })
+
+  describe('should have a correct default fetch config', () => {
+    it('should exclude all types in a correct syntax', () => {
+      expect(fetchDefault[EXCLUDE]?.types)
+        .toContainEqual({
+          name: 'assemblyItem|lotNumberedAssemblyItem|serializedAssemblyItem|descriptionItem|discountItem|kitItem|markupItem|nonInventoryPurchaseItem|nonInventorySaleItem|nonInventoryResaleItem|otherChargeSaleItem|otherChargeResaleItem|otherChargePurchaseItem|paymentItem|serviceResaleItem|servicePurchaseItem|serviceSaleItem|subtotalItem|inventoryItem|lotNumberedInventoryItem|serializedInventoryItem|itemGroup',
+        })
+    })
+  })
 })

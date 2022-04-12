@@ -29,7 +29,7 @@ import {
   INSTALLED_SUITEAPPS, LOCKED_ELEMENTS_TO_EXCLUDE, AUTHOR_INFO_CONFIG,
 } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams } from './query'
-import { TYPES_TO_INTERNAL_ID } from './data_elements/types'
+import { ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from './data_elements/types'
 import { FailedFiles, FailedTypes } from './client/types'
 
 const { makeArray } = collections.array
@@ -175,10 +175,13 @@ export const fetchDefault: FetchParams = {
       { name: 'manufacturingCostTemplate' },
       { name: 'partner' },
       { name: 'solution' },
-
-      // the two below require special features enabled in the account. O.W fetch will fail
-      { name: 'giftCertificateItem' },
-      { name: 'downloadItem' },
+      { name: 'giftCertificateItem' }, // requires special features enabled in the account. O.W fetch will fail
+      { name: 'downloadItem' }, // requires special features enabled in the account. O.W fetch will fail
+      {
+        name: Object.keys(ITEM_TYPE_TO_SEARCH_STRING)
+          .filter(itemTypeName => !['giftCertificateItem', 'downloadItem'].includes(itemTypeName))
+          .join('|'),
+      }, // may be a lot of data that takes a lot of time to fetch
     ],
     fileCabinet: [],
   },

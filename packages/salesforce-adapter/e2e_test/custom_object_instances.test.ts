@@ -24,7 +24,7 @@ import SalesforceAdapter, { testHelpers } from '../index'
 import realAdapter from './adapter'
 import SalesforceClient from '../src/client/client'
 import { UsernamePasswordCredentials } from '../src/types'
-import { runFiltersOnFetch, createElement, removeElementAndVerify, createInstance, getRecordOfInstance, fetchTypes, getMetadataInstance } from './utils'
+import { runFiltersOnFetch, createElement, removeElementAndVerify, createInstance, getRecordOfInstance, fetchTypes, getMetadataInstance, removeElement, removeElementIfAlreadyExists } from './utils'
 import { apiName, isInstanceOfCustomObject } from '../src/transformers/transformer'
 import customObjectsFilter from '../src/filters/custom_objects'
 import customObjectsInstancesFilter from '../src/filters/custom_objects_instances'
@@ -40,6 +40,36 @@ describe('custom object instances e2e', () => {
   jest.setTimeout(1000000)
 
   const productTwoMetadataName = 'Product2'
+
+  const productTwoInstanceValue = {
+    Name: 'TestProductName',
+    ProductCode: 'GC198',
+    IsActive: true,
+    IsArchived: false,
+    SBQQ__Component__c: false,
+    SBQQ__CostEditable__c: false,
+    SBQQ__CustomConfigurationRequired__c: false,
+    SBQQ__DescriptionLocked__c: false,
+    SBQQ__EnableLargeConfiguration__c: false,
+    SBQQ__ExcludeFromMaintenance__c: false,
+    SBQQ__ExcludeFromOpportunity__c: false,
+    SBQQ__ExternallyConfigurable__c: false,
+    SBQQ__HasConfigurationAttributes__c: false,
+    SBQQ__HasConsumptionSchedule__c: false,
+    SBQQ__Hidden__c: false,
+    SBQQ__HidePriceInSearchResults__c: false,
+    SBQQ__IncludeInMaintenance__c: false,
+    SBQQ__NewQuoteGroup__c: false,
+    SBQQ__NonDiscountable__c: false,
+    SBQQ__NonPartnerDiscountable__c: false,
+    SBQQ__Optional__c: false,
+    SBQQ__PriceEditable__c: false,
+    SBQQ__PricingMethodEditable__c: false,
+    SBQQ__QuantityEditable__c: true,
+    SBQQ__ReconfigurationDisabled__c: false,
+    SBQQ__Taxable__c: false,
+    fullName: 'TestProductName',
+  }
 
   let client: SalesforceClient
   let adapter: SalesforceAdapter
@@ -129,37 +159,8 @@ describe('custom object instances e2e', () => {
           .find(async e => isObjectType(e) && (await apiName(e, true) === productTwoMetadataName))
         expect(productTwoObjectType).toBeDefined()
         expect(isObjectType(productTwoObjectType)).toBeTruthy()
-        const value = {
-          Name: 'TestProductName',
-          ProductCode: 'GC198',
-          IsActive: true,
-          IsArchived: false,
-          SBQQ__Component__c: false,
-          SBQQ__CostEditable__c: false,
-          SBQQ__CustomConfigurationRequired__c: false,
-          SBQQ__DescriptionLocked__c: false,
-          SBQQ__EnableLargeConfiguration__c: false,
-          SBQQ__ExcludeFromMaintenance__c: false,
-          SBQQ__ExcludeFromOpportunity__c: false,
-          SBQQ__ExternallyConfigurable__c: false,
-          SBQQ__HasConfigurationAttributes__c: false,
-          SBQQ__HasConsumptionSchedule__c: false,
-          SBQQ__Hidden__c: false,
-          SBQQ__HidePriceInSearchResults__c: false,
-          SBQQ__IncludeInMaintenance__c: false,
-          SBQQ__NewQuoteGroup__c: false,
-          SBQQ__NonDiscountable__c: false,
-          SBQQ__NonPartnerDiscountable__c: false,
-          SBQQ__Optional__c: false,
-          SBQQ__PriceEditable__c: false,
-          SBQQ__PricingMethodEditable__c: false,
-          SBQQ__QuantityEditable__c: true,
-          SBQQ__ReconfigurationDisabled__c: false,
-          SBQQ__Taxable__c: false,
-          fullName: 'TestProductName',
-        }
         const instance = createInstance({
-          value,
+          value: productTwoInstanceValue,
           type: productTwoObjectType as ObjectType,
         })
         createdInstance = await createElement(
@@ -192,6 +193,20 @@ describe('custom object instances e2e', () => {
     describe('should delete custom object instance', () => {
       it('should delete custom object instance', async () => {
         await removeElementAndVerify(adapter, client, createdInstance)
+      })
+
+      it('should not fail for a non-existing instance', async () => {
+        const productTwoObjectType = await awu(elements)
+          .find(async e => isObjectType(e) && (await apiName(e, true) === productTwoMetadataName))
+        const element = await createElement(adapter, createInstance({
+          value: productTwoInstanceValue,
+          type: productTwoObjectType as ObjectType,
+        }))
+        await removeElementIfAlreadyExists(client, element)
+
+        const result = await removeElement(adapter, element)
+        expect(result).toBeDefined()
+        expect(result).toMatchObject({ errors: [] })
       })
     })
   })

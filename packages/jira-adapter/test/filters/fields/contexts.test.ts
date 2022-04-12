@@ -139,9 +139,7 @@ describe('deployContextChange', () => {
     deployChangeMock.mockImplementation(async () => {
       throw new clientUtils.HTTPError('message', {
         status: 404,
-        data: {
-          errorMessages: ['The custom field was not found.'],
-        },
+        data: {},
       })
     })
 
@@ -167,10 +165,8 @@ describe('deployContextChange', () => {
 
     deployChangeMock.mockImplementation(async () => {
       throw new clientUtils.HTTPError('message', {
-        status: 404,
-        data: {
-          errorMessages: ['other'],
-        },
+        status: 500,
+        data: {},
       })
     })
 

@@ -125,6 +125,8 @@ export const deployWorkflow = async (
     getChangeData(change).value.entityId = instance.value.entityId
     getChangeData(change).value.transitionIds = instance.value.transitionIds
     getChangeData(change).value.stepIds = instance.value.stepIds
+    // If we created the workflow we can edit it
+    getChangeData(change).value.operations = { canEdit: true }
 
     if (config.client.usePrivateAPI) {
       await deployTriggers(resolvedChange, client)

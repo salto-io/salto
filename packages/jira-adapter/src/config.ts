@@ -1676,6 +1676,10 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
         originalName: 'rest__api__3__events',
         newName: 'IssueEvents',
       },
+      {
+        originalName: 'Webhook',
+        newName: 'AppWebhook',
+      },
     ],
     additionalTypes: [
       // Needed to create a different transformation configuration for security scheme

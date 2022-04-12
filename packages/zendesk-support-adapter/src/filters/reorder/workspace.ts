@@ -15,12 +15,15 @@
 */
 import { createReorderFilterCreator } from './creator'
 
+export const TYPE_NAME = 'workspace'
+
 /**
  * Add workspace order element with all the workspaces ordered
  */
 const filterCreator = createReorderFilterCreator({
-  typeName: 'workspace',
+  typeName: TYPE_NAME,
   orderFieldName: 'ids',
+  activeFieldName: 'activated',
 })
 
 export default filterCreator

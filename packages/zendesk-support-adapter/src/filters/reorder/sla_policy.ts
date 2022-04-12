@@ -16,11 +16,13 @@
 import { SLA_POLICY_TYPE_NAME } from '../sla_policy'
 import { createReorderFilterCreator } from './creator'
 
+export const TYPE_NAME = SLA_POLICY_TYPE_NAME
+
 /**
  * Add sla policy order element with all the sla policies ordered
  */
 const filterCreator = createReorderFilterCreator({
-  typeName: SLA_POLICY_TYPE_NAME,
+  typeName: TYPE_NAME,
   orderFieldName: 'sla_policy_ids',
 })
 

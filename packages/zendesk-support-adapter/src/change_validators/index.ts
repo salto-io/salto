@@ -24,3 +24,4 @@ export { removedFromParentValidatorCreator } from './child_parent/removed_from_p
 export { parentAnnotationToHaveSingleValueValidatorCreator } from './child_parent/parent_annotation_has_single_value'
 export { customRoleNameValidator } from './custom_role'
 export { invalidActionsValidator } from './invalid_actions'
+export { orderInstanceContainsAllTheInstancesValidator } from './order'

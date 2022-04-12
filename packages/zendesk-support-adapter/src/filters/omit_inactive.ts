@@ -24,9 +24,6 @@ const log = logger(module)
 // We can't omit inactive instances of those types because we need
 //  all the instance in order to reorder them
 const CAN_NOT_OMIT_INACTIVE_TYPE_NAMES = [
-  'user_field',
-  'organization_field',
-  'workspace',
   'ticket_form',
 ]
 

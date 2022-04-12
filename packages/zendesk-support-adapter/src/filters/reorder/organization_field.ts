@@ -15,16 +15,19 @@
 */
 import { createReorderFilterCreator } from './creator'
 
+export const TYPE_NAME = 'organization_field'
+
 /**
  * Add organization field order element with all the organization fields ordered
  */
 const filterCreator = createReorderFilterCreator({
-  typeName: 'organization_field',
+  typeName: TYPE_NAME,
   orderFieldName: 'organization_field_ids',
   iterateesToSortBy: [
     instance => !instance.value.active,
     instance => instance.value.position,
   ],
+  activeFieldName: 'active',
 })
 
 export default filterCreator

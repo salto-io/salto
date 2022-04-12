@@ -15,12 +15,15 @@
 */
 import { createReorderFilterCreator } from './creator'
 
+export const TYPE_NAME = 'ticket_form'
+
 /**
  * Add ticket forms order element with all the ticket forms ordered
  */
 const filterCreator = createReorderFilterCreator({
-  typeName: 'ticket_form',
+  typeName: TYPE_NAME,
   orderFieldName: 'ticket_form_ids',
+  activeFieldName: 'active',
 })
 
 export default filterCreator

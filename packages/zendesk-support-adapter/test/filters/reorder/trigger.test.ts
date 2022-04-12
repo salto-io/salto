@@ -22,7 +22,7 @@ import { DEFAULT_CONFIG, DEFAULT_INCLUDE_ENDPOINTS, FETCH_CONFIG } from '../../.
 import ZendeskClient from '../../../src/client/client'
 import { ZENDESK_SUPPORT } from '../../../src/constants'
 import { paginate } from '../../../src/client/pagination'
-import filterCreator, { TRIGGER_CATEGORY_TYPE_NAME, TRIGGER_TYPE_NAME } from '../../../src/filters/reorder/trigger'
+import filterCreator, { TRIGGER_CATEGORY_TYPE_NAME, TYPE_NAME as TRIGGER_TYPE_NAME } from '../../../src/filters/reorder/trigger'
 import { createOrderTypeName } from '../../../src/filters/reorder/creator'
 
 const mockDeployChange = jest.fn()
@@ -104,22 +104,26 @@ describe('trigger reorder filter', () => {
         .toEqual({ order: [
           {
             category: new ReferenceExpression(category1.elemID, category1),
-            ids: [
+            active: [
               new ReferenceExpression(trigger1.elemID, trigger1),
               new ReferenceExpression(trigger2.elemID, trigger2),
             ],
+            inactive: [],
           },
           {
             category: new ReferenceExpression(category2.elemID, category2),
-            ids: [
+            active: [
               new ReferenceExpression(trigger3.elemID, trigger3),
               new ReferenceExpression(trigger4.elemID, trigger4),
+            ],
+            inactive: [
               new ReferenceExpression(trigger5.elemID, trigger5),
             ],
           },
           {
             category: new ReferenceExpression(category3.elemID, category3),
-            ids: [],
+            active: [],
+            inactive: [],
           },
         ] })
       const orderType = elements
@@ -187,9 +191,9 @@ describe('trigger reorder filter', () => {
       orderType,
       {
         order: [
-          { category: '1', ids: [11, 22] },
-          { category: '2', ids: [33, 44] },
-          { category: '3', ids: [] },
+          { category: '1', active: [11, 22], inactive: [55, 66] },
+          { category: '2', active: [33, 44], inactive: [] },
+          { category: '3', active: [], inactive: [] },
         ],
       },
     )
@@ -198,9 +202,9 @@ describe('trigger reorder filter', () => {
       orderType,
       {
         order: [
-          { category: '2', ids: [44, 33] },
-          { category: '3', ids: [] },
-          { category: '1', ids: [11, 22] },
+          { category: '2', active: [44, 33], inactive: [] },
+          { category: '3', active: [], inactive: [] },
+          { category: '1', active: [11, 22], inactive: [66, 55] },
         ],
       },
     )
@@ -227,6 +231,8 @@ describe('trigger reorder filter', () => {
             { id: '33', position: 2, category_id: '2' },
             { id: '11', position: 1, category_id: '1' },
             { id: '22', position: 2, category_id: '1' },
+            { id: '66', position: 3, category_id: '1' },
+            { id: '55', position: 4, category_id: '1' },
           ],
         },
       }

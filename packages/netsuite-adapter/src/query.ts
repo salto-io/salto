@@ -61,6 +61,7 @@ export type NetsuiteQuery = {
   isObjectMatch: (objectID: ObjectID) => boolean
   isFileMatch: (filePath: string) => boolean
   areSomeFilesMatch: () => boolean
+  getFileCabinetMatchers: () => ReadonlyArray<string>
 }
 
 const checkTypeNameRegMatch = (type: FetchTypeQueryParams, str: string): boolean =>
@@ -145,6 +146,7 @@ export const buildNetsuiteQuery = (
     isFileMatch: filePath =>
       fileCabinet.some(reg => new RegExp(`^${reg}$`).test(filePath)),
     areSomeFilesMatch: () => fileCabinet.length !== 0,
+    getFileCabinetMatchers: () => fileCabinet,
   }
 }
 
@@ -157,7 +159,10 @@ export const andQuery = (firstQuery: NetsuiteQuery, secondQuery: NetsuiteQuery):
     firstQuery.isObjectMatch(objectID) && secondQuery.isObjectMatch(objectID),
   isFileMatch: filePath =>
     firstQuery.isFileMatch(filePath) && secondQuery.isFileMatch(filePath),
-  areSomeFilesMatch: () => firstQuery.areSomeFilesMatch() && secondQuery.areSomeFilesMatch(),
+  areSomeFilesMatch: () =>
+    firstQuery.areSomeFilesMatch() && secondQuery.areSomeFilesMatch(),
+  getFileCabinetMatchers: () =>
+    firstQuery.getFileCabinetMatchers().concat(secondQuery.getFileCabinetMatchers()),
 })
 
 export const notQuery = (query: NetsuiteQuery): NetsuiteQuery => ({
@@ -166,4 +171,5 @@ export const notQuery = (query: NetsuiteQuery): NetsuiteQuery => ({
   isObjectMatch: objectID => !query.isObjectMatch(objectID),
   isFileMatch: filePath => !query.isFileMatch(filePath),
   areSomeFilesMatch: () => true,
+  getFileCabinetMatchers: () => [],
 })

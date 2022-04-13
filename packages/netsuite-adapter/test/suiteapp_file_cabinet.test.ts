@@ -63,7 +63,14 @@ describe('suiteapp_file_cabinet', () => {
     url: 'someUrl',
   }]
 
-  const foldersQueryResponse = [{
+  const topLevelFoldersResponse = [{
+    id: '5',
+    isinactive: 'F',
+    isprivate: 'T',
+    name: 'folder5',
+  }]
+
+  const subFoldersQueryResponse = [{
     id: '3',
     isinactive: 'F',
     isprivate: 'F',
@@ -80,15 +87,20 @@ describe('suiteapp_file_cabinet', () => {
     parent: '5',
     bundleable: 'T',
     description: 'desc4',
-  },
-  {
-    id: '5',
-    isinactive: 'F',
-    isprivate: 'T',
-    name: 'folder5',
   }]
 
   const expectedResults = [
+    {
+      path: ['folder5'],
+      typeName: 'folder',
+      values: {
+        bundleable: 'F',
+        isinactive: 'F',
+        isprivate: 'T',
+        description: '',
+        internalId: '5',
+      },
+    },
     {
       path: ['folder5', 'folder3'],
       typeName: 'folder',
@@ -109,17 +121,6 @@ describe('suiteapp_file_cabinet', () => {
         isinactive: 'T',
         isprivate: 'T',
         internalId: '4',
-      },
-    },
-    {
-      path: ['folder5'],
-      typeName: 'folder',
-      values: {
-        bundleable: 'F',
-        isinactive: 'F',
-        isprivate: 'T',
-        description: '',
-        internalId: '5',
       },
     },
     {
@@ -166,6 +167,17 @@ describe('suiteapp_file_cabinet', () => {
     },
   ]
 
+  const getFoldersResponse = (suiteQlQuery: string):
+  (typeof topLevelFoldersResponse | typeof subFoldersQueryResponse) => {
+    if (suiteQlQuery.includes('istoplevel = \'T\'')) {
+      return topLevelFoldersResponse
+    }
+    if (suiteQlQuery.includes('istoplevel = \'F\'')) {
+      return subFoldersQueryResponse
+    }
+    throw new Error('missing \'istoplevel\' criteria')
+  }
+
   const filesContent: Record<string, Buffer> = {
     1: Buffer.from('a'.repeat(10)),
     2: Buffer.from('b'.repeat(20)),
@@ -192,6 +204,7 @@ describe('suiteapp_file_cabinet', () => {
     query = {
       isFileMatch: jest.fn().mockReturnValue(true),
       areSomeFilesMatch: jest.fn().mockReturnValue(true),
+      getFileCabinetMatchers: jest.fn().mockReturnValue(['.*']),
     } as unknown as MockInterface<NetsuiteQuery>
 
     mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
@@ -200,7 +213,7 @@ describe('suiteapp_file_cabinet', () => {
       }
 
       if (suiteQlQuery.includes('FROM mediaitemfolder')) {
-        return foldersQueryResponse
+        return getFoldersResponse(suiteQlQuery)
       }
       throw new Error(`Unexpected query: ${suiteQlQuery}`)
     })
@@ -256,7 +269,7 @@ describe('suiteapp_file_cabinet', () => {
         }
 
         if (suiteQlQuery.includes('FROM mediaitemfolder')) {
-          return foldersQueryResponse
+          return getFoldersResponse(suiteQlQuery)
         }
         throw new Error(`Unexpected query: ${suiteQlQuery}`)
       })
@@ -315,7 +328,7 @@ describe('suiteapp_file_cabinet', () => {
         .importFileCabinet(query)
       expect(elements).toEqual([
         expectedResults[0],
-        expectedResults[2],
+        expectedResults[1],
         expectedResults[4],
         expectedResults[5],
       ])
@@ -336,7 +349,7 @@ describe('suiteapp_file_cabinet', () => {
         }
 
         if (suiteQlQuery.includes('FROM mediaitemfolder')) {
-          return foldersQueryResponse
+          return getFoldersResponse(suiteQlQuery)
         }
         throw new Error(`Unexpected query: ${suiteQlQuery}`)
       })
@@ -352,7 +365,7 @@ describe('suiteapp_file_cabinet', () => {
         }
 
         if (suiteQlQuery.includes('FROM mediaitemfolder')) {
-          return foldersQueryResponse
+          return getFoldersResponse(suiteQlQuery)
         }
         throw new Error(`Unexpected query: ${suiteQlQuery}`)
       })
@@ -397,6 +410,23 @@ describe('suiteapp_file_cabinet', () => {
 
       await expect(createSuiteAppFileCabinetOperations(suiteAppClient)
         .importFileCabinet(query)).rejects.toThrow()
+    })
+
+    it('throw an error when no folder matches the query', async () => {
+      query.getFileCabinetMatchers.mockReturnValue([])
+      mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
+        if (suiteQlQuery.includes('FROM file')) {
+          return filesQueryResponse
+        }
+
+        if (suiteQlQuery.includes('FROM mediaitemfolder')) {
+          return getFoldersResponse(suiteQlQuery)
+        }
+        throw new Error(`Unexpected query: ${suiteQlQuery}`)
+      })
+
+      await expect(createSuiteAppFileCabinetOperations(suiteAppClient)
+        .importFileCabinet(query)).rejects.toThrow('No folder matches the query')
     })
   })
 

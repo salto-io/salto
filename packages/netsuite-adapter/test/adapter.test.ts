@@ -859,6 +859,7 @@ describe('Adapter', () => {
         isObjectMatch: objectID => objectID.instanceId.startsWith('aa'),
         isFileMatch: () => true,
         areSomeFilesMatch: () => true,
+        getFileCabinetMatchers: () => [],
       })
 
       getSystemInformationMock.mockReset()

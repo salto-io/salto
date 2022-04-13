@@ -113,7 +113,7 @@ type FileResult = {
 const FILES_CHUNK_SIZE = 5 * 1024 * 1024
 const MAX_DEPLOYABLE_FILE_SIZE = 10 * 1024 * 1024
 const DEPLOY_CHUNK_SIZE = 50
-
+const MAX_ITEMS_IN_WHERE_QUERY = 200
 
 export type SuiteAppFileCabinetOperations = {
   importFileCabinet: (query: NetsuiteQuery) => Promise<ImportFileCabinetResult>
@@ -165,50 +165,83 @@ export const isChangeDeployable = (
   return true
 }
 
+const toSubMatchers = (matchersList: ReadonlyArray<string>): RegExp[] =>
+  matchersList.flatMap(
+    matcher => _.range(matcher.length).map(i => new RegExp(`^${matcher.slice(0, i + 1)}$`))
+  )
+
 export const createSuiteAppFileCabinetOperations = (suiteAppClient: SuiteAppClient):
 SuiteAppFileCabinetOperations => {
-  let queryFoldersResults: FolderResult[]
+  let queryTopLevelFoldersResults: FolderResult[]
+  let querySubFoldersResults: FolderResult[]
   let queryFilesResults: FileResult[]
   let pathToIdResults: Record<string, number>
 
+  const queryFolders = async (whereQuery: string): Promise<FolderResult[]> => {
+    const foldersResults = await suiteAppClient.runSuiteQL(
+      'SELECT name, id, bundleable, isinactive, isprivate, description, parent'
+      + ` FROM mediaitemfolder WHERE ${whereQuery} ORDER BY id ASC`
+    )
 
-  const queryFolders = async (): Promise<FolderResult[]> => {
-    if (queryFoldersResults === undefined) {
-      const foldersResults = await suiteAppClient.runSuiteQL(`SELECT name, id, bundleable, isinactive, isprivate, description, parent 
-      FROM mediaitemfolder ORDER BY id ASC`)
-
-      if (foldersResults === undefined) {
-        throw new Error('Failed to list folders')
-      }
-
-      const ajv = new Ajv({ allErrors: true, strict: false })
-      if (!ajv.validate<FolderResult[]>(FOLDERS_SCHEMA, foldersResults)) {
-        log.error(`Got invalid results from listing folders: ${ajv.errorsText()}`)
-        throw new Error('Failed to list folders')
-      }
-      queryFoldersResults = foldersResults
+    if (foldersResults === undefined) {
+      throw new Error('Failed to list folders')
     }
 
-    return queryFoldersResults
+    const ajv = new Ajv({ allErrors: true, strict: false })
+    if (!ajv.validate<FolderResult[]>(FOLDERS_SCHEMA, foldersResults)) {
+      log.error(`Got invalid results from listing folders: ${ajv.errorsText()}`)
+      throw new Error('Failed to list folders')
+    }
+
+    return foldersResults
   }
 
-  const queryFiles = async ():
-Promise<FileResult[]> => {
-    if (queryFoldersResults === undefined) {
-      const filesResults = await suiteAppClient.runSuiteQL(`SELECT name, id, filesize, bundleable, isinactive, isonline, addtimestamptourl, hideinbundle, description, folder, islink, url 
-    FROM file ORDER BY id ASC`)
+  const queryTopLevelFolders = async (): Promise<FolderResult[]> => {
+    if (queryTopLevelFoldersResults === undefined) {
+      queryTopLevelFoldersResults = await queryFolders('istoplevel = \'T\'')
+    }
+    return queryTopLevelFoldersResults
+  }
 
-      if (filesResults === undefined) {
-        throw new Error('Failed to list files')
-      }
+  const querySubFolders = async (topLevelFolders: FolderResult[] = []): Promise<FolderResult[]> => {
+    if (querySubFoldersResults === undefined) {
+      const subFolderCriteria = 'istoplevel = \'F\''
+      const whereQuery = topLevelFolders.length > 0
+        ? `${subFolderCriteria} AND (${topLevelFolders.map(folder => `appfolder LIKE '${folder.name}%'`).join(' OR ')})`
+        : subFolderCriteria
+      querySubFoldersResults = await queryFolders(whereQuery)
+    }
+    return querySubFoldersResults
+  }
 
-      const ajv = new Ajv({ allErrors: true, strict: false })
-      if (!ajv.validate<FileResult[]>(FILES_SCHEMA, filesResults)) {
-        log.error(`Got invalid results from listing files: ${ajv.errorsText()}`)
-        throw new Error('Failed to list files')
-      }
+  const queryFiles = async (foldersToQuery: string[] = []): Promise<FileResult[]> => {
+    if (queryFilesResults === undefined) {
+      const fileCriteria = 'hideinbundle = \'F\''
+      const whereQueries = foldersToQuery.length > 0
+        ? _.chunk(foldersToQuery, MAX_ITEMS_IN_WHERE_QUERY).map(foldersToQueryChunk =>
+          `${fileCriteria} AND (${foldersToQueryChunk.map(folderId => `folder = '${folderId}'`).join(' OR ')})`)
+        : [fileCriteria]
 
-      queryFilesResults = filesResults
+      const results = await Promise.all(whereQueries.map(async whereQuery => {
+        const filesResults = await suiteAppClient.runSuiteQL(
+          'SELECT name, id, filesize, bundleable, isinactive, isonline,'
+          + ' addtimestamptourl, hideinbundle, description, folder, islink, url'
+          + ` FROM file WHERE ${whereQuery} ORDER BY id ASC`
+        )
+
+        if (filesResults === undefined) {
+          throw new Error('Failed to list files')
+        }
+
+        const ajv = new Ajv({ allErrors: true, strict: false })
+        if (!ajv.validate<FileResult[]>(FILES_SCHEMA, filesResults)) {
+          log.error(`Got invalid results from listing files: ${ajv.errorsText()}`)
+          throw new Error('Failed to list files')
+        }
+        return filesResults
+      }))
+
+      queryFilesResults = results.flat()
     }
 
     return queryFilesResults
@@ -226,11 +259,17 @@ Promise<FileResult[]> => {
     if (!query.areSomeFilesMatch()) {
       return { elements: [], failedPaths: { lockedError: [], otherError: [] } }
     }
-    const [filesResults, foldersResults] = await Promise.all([
-      queryFiles(),
-      queryFolders(),
-    ])
 
+    const topLevelMatchers = toSubMatchers(query.getFileCabinetMatchers())
+    const topLevelFoldersResults = (await queryTopLevelFolders())
+      .filter(folder => topLevelMatchers.some(matcher => matcher.test(`/${folder.name}`)))
+
+    if (topLevelFoldersResults.length === 0) {
+      throw new Error('No folder matches the query')
+    }
+    const subFoldersResults = await querySubFolders(topLevelFoldersResults)
+
+    const foldersResults = topLevelFoldersResults.concat(subFoldersResults)
     const idToFolder = _.keyBy(foldersResults, folder => folder.id)
 
     const foldersCustomizationInfo = foldersResults.map(folder => ({
@@ -245,6 +284,8 @@ Promise<FileResult[]> => {
       },
     })).filter(folder => query.isFileMatch(`/${folder.path.join('/')}`))
 
+    const filesResults = await queryFiles(foldersCustomizationInfo
+      .map(item => item.values.internalId))
     const filesCustomizations = filesResults.map(file => ({
       path: [...getFullPath(idToFolder[file.folder], idToFolder), file.name],
       typeName: 'file',
@@ -342,7 +383,7 @@ Promise<FileResult[]> => {
   Promise<Record<string, number>> => {
     if (pathToIdResults === undefined) {
       const files = await queryFiles()
-      const folders = await queryFolders()
+      const folders = (await queryTopLevelFolders()).concat(await querySubFolders())
       const idToFolder = _.keyBy(folders, folder => folder.id)
       pathToIdResults = Object.fromEntries([
         ...files.map(file => [`/${[...getFullPath(idToFolder[file.folder], idToFolder), file.name].join('/')}`, parseInt(file.id, 10)]),

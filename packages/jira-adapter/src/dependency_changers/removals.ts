@@ -31,7 +31,7 @@ export const removalsDependencyChanger: DependencyChanger = async changes => {
     .value()
 
   return Array.from(changes.entries())
-    .flatMap(([deskKey, change]) => {
+    .flatMap(([destKey, change]) => {
       if (isAdditionChange(change)) {
         return []
       }
@@ -41,13 +41,13 @@ export const removalsDependencyChanger: DependencyChanger = async changes => {
         .filter(id => id in removalsChanges)
         .map(id => removalsChanges[id])
         .map(({ key }) => key)
-        .filter(key => key !== deskKey)
+        .filter(key => key !== destKey)
 
       return referencedKeys.map(
         sourceKey => dependencyChange(
           'add',
           sourceKey,
-          deskKey,
+          destKey,
         )
       )
     })

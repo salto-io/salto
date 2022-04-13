@@ -129,7 +129,7 @@ describe('checkDeploymentBasedOnConfigValidator', () => {
       new ObjectType({ elemID: new ElemID('dum', typeName) }),
     )
     const errors = await createCheckDeploymentBasedOnConfigValidator({
-      apiConfig, typesDeployedViaParent: [], typesWithNoDeploy: [typeName]
+      apiConfig, typesDeployedViaParent: [], typesWithNoDeploy: [typeName],
     })(
       [toChange({ after: instance })],
     )

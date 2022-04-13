@@ -25,3 +25,4 @@ export { parentAnnotationToHaveSingleValueValidatorCreator } from './child_paren
 export { customRoleNameValidator } from './custom_role'
 export { invalidActionsValidator } from './invalid_actions'
 export { orderInstanceContainsAllTheInstancesValidator } from './order'
+export { triggerOrderInstanceContainsAllTheInstancesValidator } from './trigger_order'

@@ -24,7 +24,6 @@ import { TYPE_NAME as AUTOMATION_TYPE_NAME } from '../filters/reorder/automation
 import { TYPE_NAME as ORG_FIELD_TYPE_NAME } from '../filters/reorder/organization_field'
 import { TYPE_NAME as SLA_POLICY_TYPE_NAME } from '../filters/reorder/sla_policy'
 import { TYPE_NAME as TICKET_FORM_TYPE_NAME } from '../filters/reorder/ticket_form'
-import { TYPE_NAME as TRIGGER_TYPE_NAME } from '../filters/reorder/trigger'
 import { TYPE_NAME as USER_FIELD_TYPE_NAME } from '../filters/reorder/user_field'
 import { TYPE_NAME as VIEW_TYPE_NAME } from '../filters/reorder/view'
 import { TYPE_NAME as WORKSPACE_TYPE_NAME } from '../filters/reorder/workspace'
@@ -37,7 +36,6 @@ const RELEVANT_TYPE_NAMES = [
   ORG_FIELD_TYPE_NAME,
   SLA_POLICY_TYPE_NAME,
   TICKET_FORM_TYPE_NAME,
-  TRIGGER_TYPE_NAME,
   USER_FIELD_TYPE_NAME,
   VIEW_TYPE_NAME,
   WORKSPACE_TYPE_NAME,
@@ -78,26 +76,9 @@ export const orderInstanceContainsAllTheInstancesValidator: ChangeValidator = as
   return relevantInstances
     .flatMap(instance => {
       const orderTypeName = createOrderTypeName(instance.elemID.typeName)
-      const orderInstances = relevantOrderInstances[orderTypeName]
-      if (orderInstances === undefined) {
-        log.error(`Order instance ${orderTypeName} must exist`)
-        return [{
-          elemID: instance.elemID,
-          severity: 'Error',
-          message: `Can not change ${instance.elemID.typeName} instance because ${orderTypeName} instance does not exist`,
-          detailedMessage: `Can not change ${instance.elemID.getFullName()} because ${orderTypeName} instance does not exist`,
-        }]
-      }
-      if (orderInstances.length !== 1) {
-        log.error(`There should be a single ${orderTypeName} instance`)
-        return [{
-          elemID: instance.elemID,
-          severity: 'Error',
-          message: `Can not change ${instance.elemID.typeName} instance because there should be a single ${orderTypeName} instance`,
-          detailedMessage: `Can not change ${instance.elemID.getFullName()} because there should be a single ${orderTypeName} instance`,
-        }]
-      }
-      const [orderInstance] = orderInstances
+      // We can assume that we have only one order instances because
+      //  we can't add or remove order instances
+      const [orderInstance] = relevantOrderInstances[orderTypeName]
       const instanceActivityValue = instance.value[TYPE_NAME_TO_SPECIAL_ACTIVE_FIELD_NAME[instance.elemID.typeName] ?? 'active']
       const orderListOfInstanceActivity = instanceActivityValue
         ? orderInstance.value.active

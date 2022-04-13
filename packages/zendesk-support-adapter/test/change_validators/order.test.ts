@@ -97,41 +97,6 @@ describe('orderInstanceContainsAllTheInstancesValidator', () => {
     )
     expect(errors).toHaveLength(0)
   })
-  it('should return an error if there is no order instance', async () => {
-    const elementsSource = buildElementsSourceFromElements([
-      automationType, automationOrderType, automation1, automation2, automation3,
-    ].map(e => e.clone()))
-    const elementsToAdd = [automation3.clone()]
-    const errors = await orderInstanceContainsAllTheInstancesValidator(
-      elementsToAdd.map(e => toChange({ after: e })),
-      elementsSource,
-    )
-    const orderTypeName = createOrderTypeName(automation3.elemID.typeName)
-    expect(errors).toEqual([{
-      elemID: automation3.elemID,
-      severity: 'Error',
-      message: `Can not change ${automation3.elemID.typeName} instance because ${orderTypeName} instance does not exist`,
-      detailedMessage: `Can not change ${automation3.elemID.getFullName()} because ${orderTypeName} instance does not exist`,
-    }])
-  })
-  it('should return an error if there is more than 1 order instances', async () => {
-    const elementsSource = buildElementsSourceFromElements([
-      automationType, automationOrderType, automation1, automation2,
-      automation3, automationOrder, automationOrder,
-    ].map(e => e.clone()))
-    const elementsToAdd = [automation3.clone()]
-    const errors = await orderInstanceContainsAllTheInstancesValidator(
-      elementsToAdd.map(e => toChange({ after: e })),
-      elementsSource,
-    )
-    const orderTypeName = createOrderTypeName(automation3.elemID.typeName)
-    expect(errors).toEqual([{
-      elemID: automation3.elemID,
-      severity: 'Error',
-      message: `Can not change ${automation3.elemID.typeName} instance because there should be a single ${orderTypeName} instance`,
-      detailedMessage: `Can not change ${automation3.elemID.getFullName()} because there should be a single ${orderTypeName} instance`,
-    }])
-  })
   it('should return an error if the instance does not exist in the correct activity list', async () => {
     const invalidOrderInstance = new InstanceElement(
       ElemID.CONFIG_NAME,

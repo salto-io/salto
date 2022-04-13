@@ -28,6 +28,7 @@ import {
   customRoleNameValidator,
   invalidActionsValidator,
   orderInstanceContainsAllTheInstancesValidator,
+  triggerOrderInstanceContainsAllTheInstancesValidator,
 } from './change_validators'
 
 const {
@@ -54,6 +55,7 @@ export default (
     customRoleNameValidator,
     invalidActionsValidator,
     orderInstanceContainsAllTheInstancesValidator,
+    triggerOrderInstanceContainsAllTheInstancesValidator,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

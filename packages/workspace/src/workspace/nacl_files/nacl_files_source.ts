@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import wu from 'wu'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { Element, ElemID, Value, DetailedChange, isElement, getChangeData, isObjectType,
@@ -428,7 +429,7 @@ const buildNaclFilesState = async ({
         referencedIndexDeletions[elementFullName].add(oldNaclFile.filename)
       })
       const oldNaclFileElements = await oldNaclFile.elements() ?? []
-      await awu(oldNaclFileElements).forEach(element => {
+      oldNaclFileElements.forEach(element => {
         const elementFullName = element.elemID.getFullName()
         elementsIndexDeletions[elementFullName] = elementsIndexDeletions[elementFullName]
           ?? new Set<string>()
@@ -543,21 +544,28 @@ const buildNaclFilesSource = (
       const cacheFilenames = await currentState.parsedNaclFiles.list()
       const naclFilenames = new Set(await naclFilesStore.list())
       const fileNames = new Set()
-      await awu(cacheFilenames).forEach(async filename => {
-        const naclFile = (naclFilenames.has(filename) && await naclFilesStore.get(filename))
-          || { filename, buffer: '' }
-        const validCache = await currentState.parsedNaclFiles.hasValid(naclFile)
-        if (!validCache) {
-          modifiedNaclFiles.push(naclFile)
-        }
-        fileNames.add(filename)
-      })
-      await awu(naclFilenames).forEach(async filename => {
-        if (!fileNames.has(filename)) {
-          modifiedNaclFiles.push(await naclFilesStore.get(filename) ?? { filename, buffer: '' })
-        }
-        fileNames.add(filename)
-      })
+      await withLimitedConcurrency(
+        cacheFilenames.map(filename => async () => {
+          const naclFile = (naclFilenames.has(filename) && await naclFilesStore.get(filename))
+            || { filename, buffer: '' }
+          const validCache = await currentState.parsedNaclFiles.hasValid(naclFile)
+          if (!validCache) {
+            modifiedNaclFiles.push(naclFile)
+          }
+          fileNames.add(filename)
+          return undefined
+        }),
+        CACHE_READ_CONCURRENCY,
+      )
+      await withLimitedConcurrency(
+        wu(naclFilenames).map(filename => async () => {
+          if (!fileNames.has(filename)) {
+            modifiedNaclFiles.push(await naclFilesStore.get(filename) ?? { filename, buffer: '' })
+          }
+          fileNames.add(filename)
+        }),
+        CACHE_READ_CONCURRENCY,
+      )
       const parsedModifiedFiles = await parseNaclFiles(
         modifiedNaclFiles,
         currentState.parsedNaclFiles,
@@ -631,9 +639,9 @@ const buildNaclFilesSource = (
     ) ?? []
     return (await Promise.all(topLevelFiles.map(async filename => {
       const fragments = await (await (await getState()).parsedNaclFiles.get(filename)).elements()
-      return values.isDefined(
-        await awu(fragments ?? []).find(fragment => resolvePath(fragment, elemID) !== undefined)
-      ) ? filename : undefined
+      return wu(fragments ?? []).some(fragment => resolvePath(fragment, elemID) !== undefined)
+        ? filename
+        : undefined
     }))).filter(values.isDefined)
   }
 

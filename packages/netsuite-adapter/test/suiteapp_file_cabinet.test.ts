@@ -413,7 +413,7 @@ describe('suiteapp_file_cabinet', () => {
     })
 
     it('throw an error when no folder matches the query', async () => {
-      query.getFileCabinetMatchers.mockReturnValue([])
+      query.getFileCabinetMatchers.mockReturnValue(['no-match'])
       mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
         if (suiteQlQuery.includes('FROM file')) {
           return filesQueryResponse

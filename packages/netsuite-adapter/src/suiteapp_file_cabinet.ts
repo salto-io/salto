@@ -214,12 +214,12 @@ SuiteAppFileCabinetOperations => {
     return querySubFoldersResults
   }
 
-  const queryFiles = async (foldersToQuery: string[] = []): Promise<FileResult[]> => {
+  const queryFiles = async (foldersToQuery: FolderResult[] = []): Promise<FileResult[]> => {
     if (queryFilesResults === undefined) {
       const fileCriteria = 'hideinbundle = \'F\''
       const whereQueries = foldersToQuery.length > 0
         ? _.chunk(foldersToQuery, MAX_ITEMS_IN_WHERE_QUERY).map(foldersToQueryChunk =>
-          `${fileCriteria} AND (${foldersToQueryChunk.map(folderId => `folder = '${folderId}'`).join(' OR ')})`)
+          `${fileCriteria} AND (${foldersToQueryChunk.map(folder => `folder = '${folder.id}'`).join(' OR ')})`)
         : [fileCriteria]
 
       const results = await Promise.all(whereQueries.map(async whereQuery => {
@@ -261,15 +261,18 @@ SuiteAppFileCabinetOperations => {
     }
 
     const topLevelMatchers = toSubMatchers(query.getFileCabinetMatchers())
-    const topLevelFoldersResults = (await queryTopLevelFolders())
-      .filter(folder => topLevelMatchers.some(matcher => matcher.test(`/${folder.name}`)))
+    const topLevelFoldersResults = topLevelMatchers.length > 0
+      ? (await queryTopLevelFolders())
+        .filter(folder => topLevelMatchers.some(matcher => matcher.test(`/${folder.name}`)))
+      : await queryTopLevelFolders()
 
     if (topLevelFoldersResults.length === 0) {
       throw new Error('No folder matches the query')
     }
-    const subFoldersResults = await querySubFolders(topLevelFoldersResults)
 
+    const subFoldersResults = await querySubFolders(topLevelFoldersResults)
     const foldersResults = topLevelFoldersResults.concat(subFoldersResults)
+    const filesResults = await queryFiles(foldersResults)
     const idToFolder = _.keyBy(foldersResults, folder => folder.id)
 
     const foldersCustomizationInfo = foldersResults.map(folder => ({
@@ -284,8 +287,6 @@ SuiteAppFileCabinetOperations => {
       },
     })).filter(folder => query.isFileMatch(`/${folder.path.join('/')}`))
 
-    const filesResults = await queryFiles(foldersCustomizationInfo
-      .map(item => item.values.internalId))
     const filesCustomizations = filesResults.map(file => ({
       path: [...getFullPath(idToFolder[file.folder], idToFolder), file.name],
       typeName: 'file',

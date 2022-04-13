@@ -269,11 +269,10 @@ const updateInstances: CrudFn = async (
 
 const ALREADY_DELETED_ERROR = 'ENTITY_IS_DELETED:entity is deleted:--'
 
-const isSilencedError = (error: string): boolean => error === ALREADY_DELETED_ERROR
-
-export const removeSilencedDeleteErrors = (result: BatchResultInfo): BatchResultInfo => {
+const removeSilencedDeleteErrors = (result: BatchResultInfo): BatchResultInfo => {
   if (!_.isEmpty(result.errors)) {
-    const [silencedErrors, realErrors] = _.partition(result.errors, isSilencedError)
+    const [silencedErrors, realErrors] = _.partition(result.errors,
+      error => error === ALREADY_DELETED_ERROR)
     log.debug('Ignoring delete errors: %s%s', EOL, silencedErrors.join(EOL))
     return { ...result, success: result.success || _.isEmpty(realErrors), errors: realErrors }
   }
@@ -281,7 +280,7 @@ export const removeSilencedDeleteErrors = (result: BatchResultInfo): BatchResult
   return result
 }
 
-const deleteInstances: CrudFn = async (
+export const deleteInstances: CrudFn = async (
   { typeName,
     instances,
     client }

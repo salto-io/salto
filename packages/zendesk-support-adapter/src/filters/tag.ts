@@ -20,21 +20,23 @@ import {
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { ZENDESK_SUPPORT } from '../constants'
 import { FilterCreator } from '../filter'
 import { areConditions } from './utils'
 
-const RELEVANT_TYPE_NAMES = [
-  'automation',
-  'trigger',
-  'view',
-  'macro',
-  'sla_policy',
-  'workspace',
-]
+const log = logger(module)
+
 const RELEVANT_FIELD_NAMES = ['current_tags', 'remove_tags', 'set_tags']
-const RELEVANT_CONDITION_FIELD_NAMES = ['actions', 'conditions.all', 'conditions.any', 'filter.all', 'filter.any']
+const TYPE_NAME_TO_RELEVANT_FIELD_NAMES: Record<string, string[]> = {
+  automation: ['actions', 'conditions.all', 'conditions.any'],
+  trigger: ['actions', 'conditions.all', 'conditions.any'],
+  view: ['conditions.all', 'conditions.any'],
+  macro: ['actions'],
+  sla_policy: ['filter.all', 'filter.any'],
+  workspace: ['conditions.all', 'conditions.any'],
+}
 export const TAG_TYPE_NAME = 'tag'
 
 const { RECORDS_PATH, TYPES_PATH } = elementsUtils
@@ -45,13 +47,13 @@ const extractTags = (value: string): string[] =>
   value.split(TAG_SEPERATOR).filter(tag => !_.isEmpty(tag))
 
 const replaceTagsWithReferences = (instance: InstanceElement): string[] => {
-  const tags: string[] = []
-  RELEVANT_CONDITION_FIELD_NAMES
+  const tags: string[] = [];
+  (TYPE_NAME_TO_RELEVANT_FIELD_NAMES[instance.elemID.typeName] ?? [])
     .forEach(fieldName => {
       const conditions = _.get(instance.value, fieldName)
       const fullName = instance.elemID
         .createNestedID(...fieldName.split(ElemID.NAMESPACE_SEPARATOR)).getFullName()
-      if (!areConditions(conditions, fullName)) {
+      if (conditions === undefined || !areConditions(conditions, fullName)) {
         return
       }
       conditions.forEach(condition => {
@@ -69,35 +71,36 @@ const replaceTagsWithReferences = (instance: InstanceElement): string[] => {
 }
 
 const serializeReferencesToTags = (instance: InstanceElement): void => {
-  RELEVANT_CONDITION_FIELD_NAMES
+  (TYPE_NAME_TO_RELEVANT_FIELD_NAMES[instance.elemID.typeName] ?? [])
     .forEach(fieldName => {
       const conditions = _.get(instance.value, fieldName)
       const fullName = instance.elemID
-        .createNestedID(...fieldName.split(ElemID.NAMESPACE_SEPARATOR)).getFullName()
-      if (!areConditions(conditions, fullName)) {
+        .createNestedID(...fieldName.split(ElemID.NAMESPACE_SEPARATOR))
+        .getFullName()
+      if (conditions === undefined || !areConditions(conditions, fullName)) {
         return
       }
       conditions.forEach(condition => {
-        if (
-          RELEVANT_FIELD_NAMES.includes(condition.field)
-          && _.isArray(condition.value)
-          && condition.value.every(_.isString)
-        ) {
-          condition.value = condition.value.join(TAG_SEPERATOR)
+        if (RELEVANT_FIELD_NAMES.includes(condition.field)) {
+          if (_.isArray(condition.value) && condition.value.every(_.isString)) {
+            condition.value = condition.value.join(TAG_SEPERATOR)
+          } else {
+            log.warn('Tags values are in invalid format: %o', condition.value)
+          }
         }
       })
     })
 }
 
 /**
- * Add dependencies from elements to dynamic content items in
- * the _generated_ dependencies annotation
+ * Extract tags references from business rules that refers to them
  */
 const filterCreator: FilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     const instances = elements
       .filter(isInstanceElement)
-      .filter(instance => RELEVANT_TYPE_NAMES.includes(instance.elemID.typeName))
+      .filter(instance => Object.keys(TYPE_NAME_TO_RELEVANT_FIELD_NAMES)
+        .includes(instance.elemID.typeName))
 
     const tags = instances.map(instance => replaceTagsWithReferences(instance)).flat()
     const tagObjectType = new ObjectType({
@@ -120,6 +123,9 @@ const filterCreator: FilterCreator = ({ config }) => ({
     // We do this trick to avoid calling push with the spread notation
     [tagObjectType, tagInstances].flat().forEach(element => { elements.push(element) })
   },
+  // Tag is not an object in Zendesk, and there is no meaning to "deploy" tag
+  // Therefore, we created an empty deploy function that always "succeed"
+  // We basically don't deploy anything
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [tagsChanges, leftoverChanges] = _.partition(
       changes,
@@ -129,7 +135,8 @@ const filterCreator: FilterCreator = ({ config }) => ({
   },
   preDeploy: async (changes: Change<InstanceElement>[]) => {
     const relevantChanges = changes
-      .filter(change => RELEVANT_TYPE_NAMES.includes(getChangeData(change).elemID.typeName))
+      .filter(change => Object.keys(TYPE_NAME_TO_RELEVANT_FIELD_NAMES)
+        .includes(getChangeData(change).elemID.typeName))
     if (_.isEmpty(relevantChanges)) {
       return
     }
@@ -145,7 +152,8 @@ const filterCreator: FilterCreator = ({ config }) => ({
   },
   onDeploy: async (changes: Change<InstanceElement>[]) => {
     const relevantChanges = changes
-      .filter(change => RELEVANT_TYPE_NAMES.includes(getChangeData(change).elemID.typeName))
+      .filter(change => Object.keys(TYPE_NAME_TO_RELEVANT_FIELD_NAMES)
+        .includes(getChangeData(change).elemID.typeName))
     if (_.isEmpty(relevantChanges)) {
       return
     }

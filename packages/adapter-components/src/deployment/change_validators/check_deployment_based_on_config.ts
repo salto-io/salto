@@ -47,11 +47,13 @@ const createChangeErrors = (
   return []
 }
 
-export const createCheckDeploymentBasedOnConfigValidator = (
-  apiConfig: AdapterApiConfig,
-  typesDeployedViaParent: string[] = [],
-  typesWithNoDeploy: string[] = [],
-): ChangeValidator => async changes => (
+export const createCheckDeploymentBasedOnConfigValidator = ({
+  apiConfig, typesDeployedViaParent = [], typesWithNoDeploy = [],
+}: {
+  apiConfig: AdapterApiConfig
+  typesDeployedViaParent?: string[]
+  typesWithNoDeploy?: string[]
+}): ChangeValidator => async changes => (
   awu(changes)
     .map(async (change: Change<Element>): Promise<(ChangeError | undefined)[]> => {
       const element = getChangeData(change)

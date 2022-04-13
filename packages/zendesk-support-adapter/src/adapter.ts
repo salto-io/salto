@@ -271,11 +271,11 @@ export default class ZendeskAdapter implements AdapterOperations {
   // eslint-disable-next-line class-methods-use-this
   public get deployModifiers(): DeployModifiers {
     return {
-      changeValidator: createChangeValidator(
-        this.userConfig[API_DEFINITIONS_CONFIG],
-        ['organization_field__custom_field_options', 'macro_attachment'],
-        ['tag'],
-      ),
+      changeValidator: createChangeValidator({
+        apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
+        typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment'],
+        typesWithNoDeploy: ['tag'],
+      }),
       dependencyChanger: deploymentUtils.dependency.removeStandaloneFieldDependency,
       getChangeGroupIds,
     }

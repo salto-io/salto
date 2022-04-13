@@ -396,7 +396,7 @@ describe('Zendesk support adapter E2E', () => {
             .filter(isInstanceElement)
           expect(userFieldsOrderInstance).toHaveLength(1)
           const order = userFieldsOrderInstance[0]
-          expect(order.value.user_field_ids
+          expect(order.value.active
             .map((ref: ReferenceExpression) => ref.elemID.getFullName()))
             .toContain(instance.elemID.getFullName())
         })

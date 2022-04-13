@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Change, ChangeValidator, getChangeData,
-  InstanceElement,
-  isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
+import { Change, ChangeValidator, getChangeData, InstanceElement,
+  isAdditionOrModificationChange, isInstanceChange, isInstanceElement,
+  isReferenceExpression } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { createOrderTypeName } from '../filters/reorder/creator'
@@ -48,6 +48,12 @@ const TYPE_NAME_TO_SPECIAL_ACTIVE_FIELD_NAME: Record<string, string> = {
 const isRelevantChange = (change: Change<InstanceElement>): boolean =>
   (RELEVANT_TYPE_NAMES.includes(getChangeData(change).elemID.typeName))
 
+const isInstanceInOrderList = (orderList: unknown, instance: InstanceElement): boolean =>
+  _.isArray(orderList)
+    && (orderList
+      .filter(isReferenceExpression)
+      .find(ref => ref.elemID.isEqual(instance.elemID))) !== undefined
+
 export const orderInstanceContainsAllTheInstancesValidator: ChangeValidator = async (
   changes, elementSource
 ) => {
@@ -72,26 +78,24 @@ export const orderInstanceContainsAllTheInstancesValidator: ChangeValidator = as
     .filter(id => id.idType === 'instance')
     .map(id => elementSource.get(id))
     .filter(isInstanceElement)
-    .groupBy(inst => inst.elemID.typeName)
+    .keyBy(inst => inst.elemID.typeName)
   return relevantInstances
     .flatMap(instance => {
       const orderTypeName = createOrderTypeName(instance.elemID.typeName)
       // We can assume that we have only one order instances because
       //  we can't add or remove order instances
-      const [orderInstance] = relevantOrderInstances[orderTypeName]
+      const orderInstance = relevantOrderInstances[orderTypeName]
+      if (orderInstance === undefined) {
+        log.error('Failed to find order instance of instance: %s', instance.elemID.getFullName())
+        return []
+      }
       const instanceActivityValue = instance.value[TYPE_NAME_TO_SPECIAL_ACTIVE_FIELD_NAME[instance.elemID.typeName] ?? 'active']
-      const orderListOfInstanceActivity = instanceActivityValue
-        ? orderInstance.value.active
-        : orderInstance.value.inactive
-      const orderListOfTheOtherInstanceActivity = instanceActivityValue
-        ? orderInstance.value.inactive
-        : orderInstance.value.active
-      if (!(
-        _.isArray(orderListOfInstanceActivity)
-        && orderListOfInstanceActivity
-          .filter(isReferenceExpression)
-          .find(ref => ref.elemID.isEqual(instance.elemID))
-      )) {
+      const [
+        orderListOfInstanceActivity, orderListOfTheOtherInstanceActivity,
+      ] = instanceActivityValue
+        ? [orderInstance.value.active, orderInstance.value.inactive]
+        : [orderInstance.value.inactive, orderInstance.value.active]
+      if (!isInstanceInOrderList(orderListOfInstanceActivity, instance)) {
         return [{
           elemID: instance.elemID,
           severity: 'Error',
@@ -99,10 +103,7 @@ export const orderInstanceContainsAllTheInstancesValidator: ChangeValidator = as
           detailedMessage: `Can not change ${instance.elemID.getFullName()} because it was not found in the ${orderTypeName} instance`,
         }]
       }
-      if (_.isArray(orderListOfTheOtherInstanceActivity)
-        && orderListOfTheOtherInstanceActivity
-          .filter(isReferenceExpression)
-          .find(ref => ref.elemID.isEqual(instance.elemID))) {
+      if (isInstanceInOrderList(orderListOfTheOtherInstanceActivity, instance)) {
         return [{
           elemID: instance.elemID,
           severity: 'Error',

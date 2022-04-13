@@ -78,7 +78,6 @@ const deployFunc: DeployFuncType = async (change, client, apiDefinitions) => {
   await deployChange(clonedChange, client, apiDefinitions)
 }
 
-// TODO: fix this filter
 /**
  * Add trigger order element with all the triggers ordered
  */

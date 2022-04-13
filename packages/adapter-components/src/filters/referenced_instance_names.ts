@@ -167,7 +167,6 @@ const createGraph = (
   const duplicateIdsToLog = new Set<string>()
   const isDuplicateInstance = (instanceFullName: string): boolean => {
     if (duplicateElemIds.has(instanceFullName)) {
-      _.remove(instancesToIdFields, obj => obj.instance.elemID.getFullName() === instanceFullName)
       duplicateIdsToLog.add(instanceFullName)
       return true
     }

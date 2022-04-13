@@ -89,8 +89,16 @@ describe('referenced instances', () => {
         book_id: new ReferenceExpression(rootBook.elemID, rootBook),
       },
     )
+    const lastRecipe = new InstanceElement(
+      'last',
+      recipeType,
+      {
+        name: 'lastRecipe',
+        book_id: new ReferenceExpression(anotherBook.elemID, anotherBook),
+      },
+    )
     return [recipeType, bookType, ...recipes, anotherBook, rootBook,
-      sameRecipeOne, sameRecipeTwo]
+      sameRecipeOne, sameRecipeTwo, lastRecipe]
   }
   const config = {
     apiDefinitions: {
@@ -127,7 +135,7 @@ describe('referenced instances', () => {
         config,
       }) as FilterType
     })
-    it('should add service url annotation if it is exist in the config', async () => {
+    it('should rename the elements correctly when the filter is called', async () => {
       elements = generateElements()
       await filter.onFetch(elements)
       expect(elements
@@ -135,6 +143,7 @@ describe('referenced instances', () => {
         .map(e => e.elemID.getFullName()).sort())
         .toEqual(['myAdapter.book.instance.123_ROOT',
           'myAdapter.book.instance.456_123_ROOT',
+          'myAdapter.recipe.instance.lastRecipe_456_123_ROOT',
           'myAdapter.recipe.instance.recipe123_123_ROOT',
           'myAdapter.recipe.instance.recipe456_456_123_ROOT',
           'myAdapter.recipe.instance.sameRecipe',
@@ -170,13 +179,21 @@ describe('referenced instances', () => {
     })
     it('should not change name for duplicate elemIDs', async () => {
       const result = await addReferencesToInstanceNames(
-        elements.slice(0, 2).concat(elements.slice(4, 8)),
+        elements.slice(0, 2).concat(elements.slice(4)),
         transformationConfigByType,
         transformationDefaultConfig
       )
-      expect(result.length).toEqual(6)
-      expect(result[4].elemID.name).toEqual('sameRecipe')
-      expect(result[5].elemID.name).toEqual('sameRecipe')
+      expect(result.length).toEqual(7)
+      expect(result
+        .map(e => e.elemID.getFullName()).sort())
+        .toEqual(['myAdapter.book',
+          'myAdapter.book.instance.123_ROOT',
+          'myAdapter.book.instance.456_123_ROOT',
+          'myAdapter.recipe',
+          'myAdapter.recipe.instance.lastRecipe_456_123_ROOT',
+          'myAdapter.recipe.instance.sameRecipe',
+          'myAdapter.recipe.instance.sameRecipe',
+        ])
     })
   })
 
@@ -184,12 +201,14 @@ describe('referenced instances', () => {
     it('should change all references to from old ElemID to new ElemID', () => {
       elements = generateElements()
       const newElemID = new ElemID(ADAPTER_NAME, 'book', 'instance', 'newRootBook')
-      const instances = elements.slice(0, -2).filter(isInstanceElement)
+      const instances = elements.filter(isInstanceElement)
       updateAllReferences(instances, elements[5].elemID, newElemID)
       const newReferences = instances.map(instance => getReferences(instance, newElemID)).flat()
-      expect(newReferences.length).toEqual(2)
-      expect(newReferences[0].value.elemID.name).toEqual('newRootBook')
-      expect(newReferences[1].value.elemID.name).toEqual('newRootBook')
+      expect(newReferences.length).toEqual(4)
+      expect(newReferences[0].path.getFullName()).toEqual('myAdapter.recipe.instance.recipe123.book_id')
+      expect(newReferences[1].path.getFullName()).toEqual('myAdapter.book.instance.book.parent_book_id')
+      expect(newReferences[2].path.getFullName()).toEqual('myAdapter.recipe.instance.sameRecipe.book_id')
+      expect(newReferences[3].path.getFullName()).toEqual('myAdapter.recipe.instance.sameRecipe.book_id')
     })
   })
 })

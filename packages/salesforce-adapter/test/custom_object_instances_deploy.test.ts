@@ -198,40 +198,45 @@ describe('Custom Object Deploy', () => {
     beforeEach(() => {
       clientBulkOpSpy.mockReset()
     })
-    it('should remove "already deleted" errors, but not other errors', () => {
+    it('should remove "already deleted" errors, but not other errors', async () => {
       clientBulkOpSpy.mockResolvedValue([
         { id: '', errors: ['error1', 'ENTITY_IS_DELETED:entity is deleted:--', 'error2'] },
       ])
-      expect(deleteInstances({ typeName, instances, client }))
-        .toMatchObject({ errors: ['error1', 'error2'] })
+      const result = await deleteInstances({ typeName, instances, client })
+      expect(result).toHaveLength(1)
+      expect(result[0].result).toMatchObject({ errors: ['error1', 'error2'] })
     })
-    it('should mark success if no other errors left', () => {
+    it('should mark success if no other errors left', async () => {
       clientBulkOpSpy.mockResolvedValue([
         { id: '', success: false, errors: ['ENTITY_IS_DELETED:entity is deleted:--'] },
       ])
-      expect(deleteInstances({ typeName, instances, client }))
-        .toMatchObject({ success: true, errors: [] })
+      const result = await deleteInstances({ typeName, instances, client })
+      expect(result).toHaveLength(1)
+      expect(result[0].result).toMatchObject({ success: true, errors: [] })
     })
-    it('should not mark success if other errors exist', () => {
+    it('should not mark success if other errors exist', async () => {
       clientBulkOpSpy.mockResolvedValue([
         { id: '', errors: ['error1'] },
       ])
-      expect(deleteInstances({ typeName, instances, client }))
-        .toMatchObject({ success: false, errors: ['error1'] })
+      const result = await deleteInstances({ typeName, instances, client })
+      expect(result).toHaveLength(1)
+      expect(result[0].result).toMatchObject({ success: false, errors: ['error1'] })
     })
-    it('should not mark success if no errors were removed', () => {
+    it('should not mark success if no errors were removed', async () => {
       clientBulkOpSpy.mockResolvedValue([
         { id: '', success: false, errors: [] },
       ])
-      expect(deleteInstances({ typeName, instances, client }))
-        .toMatchObject({ success: false, errors: [] })
+      const result = await deleteInstances({ typeName, instances, client })
+      expect(result).toHaveLength(1)
+      expect(result[0].result).toMatchObject({ success: false, errors: [] })
     })
-    it('should keep the result success if it was success beforehand', () => {
+    it('should keep the result success if it was success beforehand', async () => {
       clientBulkOpSpy.mockResolvedValue([
         { id: '', success: true, errors: ['error'] },
       ])
-      expect(deleteInstances({ typeName, instances, client }))
-        .toMatchObject({ success: true, errors: ['error'] })
+      const result = await deleteInstances({ typeName, instances, client })
+      expect(result).toHaveLength(1)
+      expect(result[0].result).toMatchObject({ success: true, errors: ['error'] })
     })
   })
 })

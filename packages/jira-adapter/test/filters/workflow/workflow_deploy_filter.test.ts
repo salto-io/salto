@@ -117,6 +117,20 @@ describe('workflowDeployFilter', () => {
       )
     })
 
+    it('should add operations value', async () => {
+      const change = toChange({
+        after: new InstanceElement(
+          'instance',
+          workflowType,
+          WITH_PERMISSION_VALIDATORS
+        ),
+      })
+
+      await filter.deploy([change])
+
+      expect(getChangeData(change).value.operations).toEqual({ canEdit: true })
+    })
+
     it('should not change the values if there are no transitions', async () => {
       const change = toChange({
         after: new InstanceElement(

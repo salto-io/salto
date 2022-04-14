@@ -1110,6 +1110,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'created' },
         { fieldName: 'updated' },
       ],
+      serviceUrl: '/secure/admin/workflows/ViewWorkflowSteps.jspa?workflowMode=live&workflowName={name}',
     },
     deployRequests: {
       add: {

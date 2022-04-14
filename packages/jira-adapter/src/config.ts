@@ -1866,6 +1866,11 @@ const createClientConfigType = (): ObjectType => {
   return configType
 }
 
+export type FilterContext = {
+  fetch: JiraFetchConfig
+  apiDefinitions: JiraApiConfig
+}
+
 const jiraDeployConfigType = new ObjectType({
   elemID: new ElemID(JIRA, 'DeployConfig'),
   fields: {

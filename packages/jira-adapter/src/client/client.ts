@@ -64,6 +64,10 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
     )
   }
 
+  public getUrl(): URL {
+    return new URL(this.credentials.baseUrl)
+  }
+
   public get baseUrl(): string {
     return this.credentials.baseUrl
   }

@@ -18,7 +18,7 @@ import {
   isInstanceElement, ObjectType, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
-import { applyFunctionToChangeData, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, naclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -38,6 +38,7 @@ const TYPE_NAME_TO_RELEVANT_FIELD_NAMES: Record<string, string[]> = {
   workspace: ['conditions.all', 'conditions.any'],
 }
 export const TAG_TYPE_NAME = 'tag'
+const TAGS_FILE_NAME = 'tags'
 
 const { RECORDS_PATH, TYPES_PATH } = elementsUtils
 const { awu } = collections.asynciterable
@@ -117,7 +118,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
           naclCase(tag),
           tagObjectType,
           { id: tag },
-          [ZENDESK_SUPPORT, RECORDS_PATH, TAG_TYPE_NAME, pathNaclCase(tag)]
+          [ZENDESK_SUPPORT, RECORDS_PATH, TAG_TYPE_NAME, TAGS_FILE_NAME]
         ))
       .value();
     // We do this trick to avoid calling push with the spread notation

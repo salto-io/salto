@@ -126,8 +126,8 @@ describe('triggerOrderInstanceContainsAllTheInstancesValidator', () => {
     expect(errors).toEqual([{
       elemID: trigger3.elemID,
       severity: 'Error',
-      message: `Can not change ${trigger3.elemID.typeName} instance because it was not found in the ${orderTypeName} instance in the correct place`,
-      detailedMessage: `Can not change ${trigger3.elemID.getFullName()} because it was not found in the ${orderTypeName} instance in the correct place under ${category1.elemID.getFullName()} category`,
+      message: `Order not specified for instance of type ${trigger3.elemID.typeName} in the ${orderTypeName} instance. Please make sure to place it under the ${category1.elemID.name} category in the inactive list`,
+      detailedMessage: `Order not specified for ${trigger3.elemID.name} of type ${trigger3.elemID.typeName} in the ${orderTypeName} instance. Please make sure to place it under the ${category1.elemID.name} category in the inactive list`,
     }])
   })
   it('should return an error if the instance does exist in the wrong activity list in the same category', async () => {
@@ -165,7 +165,10 @@ describe('triggerOrderInstanceContainsAllTheInstancesValidator', () => {
       elementsSource,
     )
     expect(errors).toEqual([createWrongPlaceErrorMessage(
-      trigger3.elemID, createOrderTypeName(trigger3.elemID.typeName), category1.elemID.getFullName()
+      trigger3.elemID,
+      createOrderTypeName(trigger3.elemID.typeName),
+      category1.elemID.name,
+      false
     )])
   })
   it('should return an error if the instance does exist in the wrong activity list in the wrong category', async () => {
@@ -204,7 +207,10 @@ describe('triggerOrderInstanceContainsAllTheInstancesValidator', () => {
       elementsSource,
     )
     expect(errors).toEqual([createWrongPlaceErrorMessage(
-      trigger3.elemID, createOrderTypeName(trigger3.elemID.typeName), category2.elemID.getFullName()
+      trigger3.elemID,
+      createOrderTypeName(trigger3.elemID.typeName),
+      category2.elemID.name,
+      false,
     )])
   })
   it('should not return an error if there is no elements source', async () => {
@@ -266,8 +272,8 @@ describe('triggerOrderInstanceContainsAllTheInstancesValidator', () => {
     expect(errors).toEqual([{
       elemID: invalidTrigger.elemID,
       severity: 'Error',
-      message: `Can not change ${invalidTrigger.elemID.typeName} instance because it's category id is invalid`,
-      detailedMessage: `Can not change ${invalidTrigger.elemID.getFullName()} because it's category id is invalid`,
+      message: `Invalid category id for instance of type ${invalidTrigger.elemID.typeName}`,
+      detailedMessage: `Invalid category id for ${invalidTrigger.elemID.name} of type ${invalidTrigger.elemID.typeName}`,
     }])
   })
 })

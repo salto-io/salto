@@ -99,8 +99,8 @@ export const orderInstanceContainsAllTheInstancesValidator: ChangeValidator = as
         return [{
           elemID: instance.elemID,
           severity: 'Error',
-          message: `Order not specified for instance of type ${instance.elemID.typeName}. Please make sure to include it in the ${orderTypeName} instance under the ${instanceActivityValue ? 'active' : 'inactive'} list`,
-          detailedMessage: `Order not specified for ${instance.elemID.name} of type ${instance.elemID.typeName}. Please make sure to include it in the ${orderTypeName} instance under the ${instanceActivityValue ? 'active' : 'inactive'} list`,
+          message: `Order not specified for instance of type ${instance.elemID.typeName} in the ${orderTypeName} instance. Please make sure to include it in the ${orderTypeName} instance under the ${instanceActivityValue ? 'active' : 'inactive'} list`,
+          detailedMessage: `Order not specified for ${instance.elemID.name} of type ${instance.elemID.typeName} in the ${orderTypeName} instance. Please make sure to include it in the ${orderTypeName} instance under the ${instanceActivityValue ? 'active' : 'inactive'} list`,
         }]
       }
       if (isInstanceInOrderList(orderListOfTheOtherInstanceActivity, instance)) {

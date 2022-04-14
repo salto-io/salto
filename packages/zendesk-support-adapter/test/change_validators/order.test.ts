@@ -122,8 +122,8 @@ describe('orderInstanceContainsAllTheInstancesValidator', () => {
     expect(errors).toEqual([{
       elemID: automation3.elemID,
       severity: 'Error',
-      message: `Can not change ${automation3.elemID.typeName} instance because it was not found in the ${orderTypeName} instance`,
-      detailedMessage: `Can not change ${automation3.elemID.getFullName()} because it was not found in the ${orderTypeName} instance`,
+      message: `Order not specified for instance of type ${automation3.elemID.typeName} in the ${orderTypeName} instance. Please make sure to include it in the ${orderTypeName} instance under the inactive list`,
+      detailedMessage: `Order not specified for ${automation3.elemID.name} of type ${automation3.elemID.typeName} in the ${orderTypeName} instance. Please make sure to include it in the ${orderTypeName} instance under the inactive list`,
     }])
   })
   it('should return an error if the instance exist on the other activity list', async () => {
@@ -154,8 +154,8 @@ describe('orderInstanceContainsAllTheInstancesValidator', () => {
     expect(errors).toEqual([{
       elemID: workspace1.elemID,
       severity: 'Error',
-      message: `Can not change ${workspace1.elemID.typeName} instance because it is apprear in the other activity list of the ${orderTypeName} instance`,
-      detailedMessage: `Can not change ${workspace1.elemID.getFullName()} because it is apprear in the other activity list of the ${orderTypeName} instance`,
+      message: `instance of type ${workspace1.elemID.typeName} is misplaced in the ${orderTypeName} instance. Please make sure to place it under the active list`,
+      detailedMessage: `${workspace1.elemID.name} of type ${workspace1.elemID.typeName} is misplaced in the ${orderTypeName} instance. Please make sure to place it under the active list`,
     }])
   })
   it('should not return an error if there is no elements source', async () => {

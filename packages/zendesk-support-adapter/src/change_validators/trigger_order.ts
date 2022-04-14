@@ -83,8 +83,8 @@ export const triggerOrderInstanceContainsAllTheInstancesValidator: ChangeValidat
         return [{
           elemID: instance.elemID,
           severity: 'Error',
-          message: `Order not specified for instance of type ${instance.elemID.typeName}. Please make sure to place it under the ${categoryId.elemID.name} category in the ${instanceActivityValue ? 'active' : 'inactive'} list`,
-          detailedMessage: `Order not specified for ${instance.elemID.name} of type ${instance.elemID.typeName}. Please make sure to place it under the ${categoryId.elemID.name} category in the ${instanceActivityValue ? 'active' : 'inactive'} list`,
+          message: `Order not specified for instance of type ${instance.elemID.typeName} in the ${triggerOrderTypeName} instance. Please make sure to place it under the ${categoryId.elemID.name} category in the ${instanceActivityValue ? 'active' : 'inactive'} list`,
+          detailedMessage: `Order not specified for ${instance.elemID.name} of type ${instance.elemID.typeName} in the ${triggerOrderTypeName} instance. Please make sure to place it under the ${categoryId.elemID.name} category in the ${instanceActivityValue ? 'active' : 'inactive'} list`,
         }]
       }
       if ((instanceActivityValue ? orderEntry.inactive : orderEntry.active)

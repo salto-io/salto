@@ -250,7 +250,6 @@ const getResolveFunctions = ({
   }
 }
 
-// export const resolve = resolveOld
 export const resolve = (
   elements: Element[],
   elementsSource: ReadOnlyElementsSource

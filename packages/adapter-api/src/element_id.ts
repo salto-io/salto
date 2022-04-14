@@ -295,7 +295,7 @@ export class ElemID {
   }
 
   getContainerPrefixAndInnerType(): ContainerPrefixAndInnerType | undefined {
-    if (this.adapter === '' && this.isTopLevel()) {
+    if (this.adapter === '' && this.idType === 'type') {
       return getContainerPrefix(this.typeName)
     }
     return undefined

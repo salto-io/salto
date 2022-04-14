@@ -17,12 +17,13 @@ import { createReorderFilterCreator, deployFuncCreator } from './creator'
 import { VIEW_TYPE_NAME } from '../view'
 
 export const ORDER_FIELD_NAME = 'ids'
+export const TYPE_NAME = VIEW_TYPE_NAME
 
 /**
  * Add view order element with all the views ordered
  */
 const filterCreator = createReorderFilterCreator({
-  typeName: VIEW_TYPE_NAME,
+  typeName: TYPE_NAME,
   orderFieldName: ORDER_FIELD_NAME,
   iterateesToSortBy: [
     instance => !instance.value.active,
@@ -30,6 +31,7 @@ const filterCreator = createReorderFilterCreator({
     instance => instance.value.title,
   ],
   deployFunc: deployFuncCreator('views'),
+  activeFieldName: 'active',
 })
 
 export default filterCreator

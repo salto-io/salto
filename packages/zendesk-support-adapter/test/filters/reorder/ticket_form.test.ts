@@ -16,6 +16,7 @@
 import {
   ObjectType, ElemID, InstanceElement, Element, isObjectType,
   isInstanceElement, ReferenceExpression, ModificationChange, CORE_ANNOTATIONS,
+  toChange, getChangeData,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { DEFAULT_CONFIG, DEFAULT_INCLUDE_ENDPOINTS, FETCH_CONFIG } from '../../../src/config'
@@ -39,13 +40,14 @@ jest.mock('@salto-io/adapter-components', () => {
 
 describe('ticket form reorder filter', () => {
   let client: ZendeskClient
-  type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy'>
+  type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
   let filter: FilterType
   const typeName = 'ticket_form'
   const orderTypeName = createOrderTypeName(typeName)
   const objType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, typeName) })
-  const inst1 = new InstanceElement('inst1', objType, { id: 11, position: 1, name: 'inst1' })
-  const inst2 = new InstanceElement('inst2', objType, { id: 22, position: 2, name: 'inst2' })
+  const inst1 = new InstanceElement('inst1', objType, { id: 11, position: 1, name: 'inst1', active: true })
+  const inst2 = new InstanceElement('inst2', objType, { id: 22, position: 2, name: 'inst2', active: true })
+  const inst3 = new InstanceElement('inst3', objType, { id: 33, position: 3, name: 'inst2', active: false })
 
   beforeEach(async () => {
     jest.clearAllMocks()
@@ -64,14 +66,14 @@ describe('ticket form reorder filter', () => {
 
   describe('onFetch', () => {
     it('should create correct order element', async () => {
-      const elements = [objType, inst1, inst2]
+      const elements = [objType, inst1, inst2, inst3]
       await filter.onFetch(elements)
-      expect(elements).toHaveLength(5)
       expect(elements.map(e => e.elemID.getFullName()).sort())
         .toEqual([
           'zendesk_support.ticket_form',
           'zendesk_support.ticket_form.instance.inst1',
           'zendesk_support.ticket_form.instance.inst2',
+          'zendesk_support.ticket_form.instance.inst3',
           'zendesk_support.ticket_form_order',
           'zendesk_support.ticket_form_order.instance',
         ])
@@ -83,10 +85,15 @@ describe('ticket form reorder filter', () => {
       expect(ticketFormOrderInstance).toBeDefined()
       expect(ticketFormOrderInstance?.elemID.name).toEqual(ElemID.CONFIG_NAME)
       expect((ticketFormOrderInstance as InstanceElement)?.value)
-        .toEqual({ ticket_form_ids: [
-          new ReferenceExpression(inst1.elemID, inst1),
-          new ReferenceExpression(inst2.elemID, inst2),
-        ] })
+        .toEqual({
+          active: [
+            new ReferenceExpression(inst1.elemID, inst1),
+            new ReferenceExpression(inst2.elemID, inst2),
+          ],
+          inactive: [
+            new ReferenceExpression(inst3.elemID, inst3),
+          ],
+        })
     })
     it('should create correct order element with hidden types', async () => {
       const filterWithHideType = filterCreator({
@@ -160,6 +167,46 @@ describe('ticket form reorder filter', () => {
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)
       expect(mockDeployChange).toHaveBeenCalledTimes(0)
+    })
+  })
+  describe('preDeploy', () => {
+    it('should change the order values to be in the correct deploy format', async () => {
+      const resolvedOrder = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, orderTypeName) }),
+        {
+          active: [11, 33],
+          inactive: [22, 44],
+        },
+      )
+      const changes = [toChange({ after: resolvedOrder })]
+      await filter.preDeploy(changes)
+      const [order] = changes.map(getChangeData)
+      expect(order?.value).toEqual({
+        active: [11, 33],
+        inactive: [22, 44],
+        ticket_form_ids: [11, 33, 22, 44],
+      })
+    })
+  })
+  describe('onDeploy', () => {
+    it('should revert the order values from the deploy format', async () => {
+      const resolvedOrder = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, orderTypeName) }),
+        {
+          active: [11, 33],
+          inactive: [22, 44],
+          ticket_form_ids: [11, 33, 22, 44],
+        },
+      )
+      const changes = [toChange({ after: resolvedOrder })]
+      await filter.onDeploy(changes)
+      const [order] = changes.map(getChangeData)
+      expect(order?.value).toEqual({
+        active: [11, 33],
+        inactive: [22, 44],
+      })
     })
   })
 })

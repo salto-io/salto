@@ -16,12 +16,13 @@
 import { createReorderFilterCreator, deployFuncCreator } from './creator'
 
 export const ORDER_FIELD_NAME = 'ids'
+export const TYPE_NAME = 'automation'
 
 /**
  * Add automation order element with all the automations ordered
  */
 const filterCreator = createReorderFilterCreator({
-  typeName: 'automation',
+  typeName: TYPE_NAME,
   orderFieldName: ORDER_FIELD_NAME,
   iterateesToSortBy: [
     instance => !instance.value.active,
@@ -29,6 +30,7 @@ const filterCreator = createReorderFilterCreator({
     instance => instance.value.title,
   ],
   deployFunc: deployFuncCreator('automations'),
+  activeFieldName: 'active',
 })
 
 export default filterCreator

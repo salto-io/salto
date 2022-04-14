@@ -27,6 +27,8 @@ import {
   parentAnnotationToHaveSingleValueValidatorCreator,
   customRoleNameValidator,
   invalidActionsValidator,
+  orderInstanceContainsAllTheInstancesValidator,
+  triggerOrderInstanceContainsAllTheInstancesValidator,
 } from './change_validators'
 
 const {
@@ -60,6 +62,8 @@ export default ({
     onlyOneTicketFormDefaultValidator,
     customRoleNameValidator,
     invalidActionsValidator,
+    orderInstanceContainsAllTheInstancesValidator,
+    triggerOrderInstanceContainsAllTheInstancesValidator,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

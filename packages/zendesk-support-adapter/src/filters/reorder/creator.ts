@@ -16,7 +16,8 @@
 import _ from 'lodash'
 import {
   Element, isInstanceElement, InstanceElement, ObjectType, ElemID, ListType, isObjectType,
-  BuiltinTypes, ReferenceExpression, Change, getChangeData, isModificationChange, CORE_ANNOTATIONS,
+  BuiltinTypes, ReferenceExpression, Change, getChangeData, isModificationChange,
+  CORE_ANNOTATIONS, isInstanceChange,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils, config as configUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
@@ -39,6 +40,9 @@ type ReorderFilterCreatorParams = {
   orderFieldName: string
   iterateesToSortBy?: Array<_.Many<_.ListIteratee<InstanceElement>>>
   deployFunc?: DeployFuncType
+  // Note: if no active field name is provided,
+  //  we don't split the instances to active and inactive lists
+  activeFieldName?: string
 }
 
 export const createOrderTypeName = (typeName: string): string => `${typeName}_order`
@@ -51,6 +55,7 @@ export const createReorderFilterCreator = (
     deployFunc = async (change, client, apiDefinitions) => {
       await deployChange(change, client, apiDefinitions)
     },
+    activeFieldName,
   }: ReorderFilterCreatorParams
 ): FilterCreator => ({ config, client }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
@@ -76,7 +81,10 @@ export const createReorderFilterCreator = (
     const type = new ObjectType({
       elemID: new ElemID(ZENDESK_SUPPORT, orderTypeName),
       fields: {
-        [orderFieldName]: {
+        active: {
+          refType: new ListType(BuiltinTypes.NUMBER),
+        },
+        inactive: {
           refType: new ListType(BuiltinTypes.NUMBER),
         },
       },
@@ -87,13 +95,36 @@ export const createReorderFilterCreator = (
     const instance = new InstanceElement(
       ElemID.CONFIG_NAME,
       type,
-      { [orderFieldName]: instancesReferences },
+      activeFieldName
+        ? {
+          active: instancesReferences.filter(ref => ref.value.value[activeFieldName]),
+          inactive: instancesReferences.filter(ref => !ref.value.value[activeFieldName]),
+        }
+        : { active: instancesReferences },
       [ZENDESK_SUPPORT, RECORDS_PATH, typeName, typeNameNaclCase],
     )
     // Those types already exist since we added the empty version of them
     //  via the add remaining types mechanism. So we first need to remove the old versions
     _.remove(elements, element => element.elemID.isEqual(type.elemID))
     elements.push(type, instance)
+  },
+  preDeploy: async changes => {
+    changes
+      .filter(isInstanceChange)
+      .map(getChangeData)
+      .filter(instance => instance.elemID.typeName === createOrderTypeName(typeName))
+      .forEach(instance => {
+        instance.value[orderFieldName] = instance.value.active.concat(instance.value.inactive)
+      })
+  },
+  onDeploy: async changes => {
+    changes
+      .filter(isInstanceChange)
+      .map(getChangeData)
+      .filter(instance => instance.elemID.typeName === createOrderTypeName(typeName))
+      .forEach(instance => {
+        delete instance.value[orderFieldName]
+      })
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const orderTypeName = createOrderTypeName(typeName)

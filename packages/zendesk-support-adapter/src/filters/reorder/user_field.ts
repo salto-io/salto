@@ -16,12 +16,15 @@
 import { USER_FIELD_TYPE_NAME } from '../custom_field_options/user_field'
 import { createReorderFilterCreator } from './creator'
 
+export const TYPE_NAME = USER_FIELD_TYPE_NAME
+
 /**
  * Add user field order element with all the user fields ordered
  */
 const filterCreator = createReorderFilterCreator({
-  typeName: USER_FIELD_TYPE_NAME,
+  typeName: TYPE_NAME,
   orderFieldName: 'user_field_ids',
+  activeFieldName: 'active',
 })
 
 export default filterCreator

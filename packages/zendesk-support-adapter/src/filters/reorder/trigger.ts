@@ -27,7 +27,7 @@ import { deployChange } from '../../deployment'
 import { createOrderTypeName, createReorderFilterCreator, DeployFuncType } from './creator'
 import { ZENDESK_SUPPORT } from '../../constants'
 
-export const TRIGGER_TYPE_NAME = 'trigger'
+export const TYPE_NAME = 'trigger'
 export const TRIGGER_CATEGORY_TYPE_NAME = 'trigger_category'
 const TRIGGER_ORDER_ENTRY_TYPE_NAME = 'trigger_order_entry'
 
@@ -36,11 +36,13 @@ const log = logger(module)
 
 type TriggerOrderEntry = {
   category: string
-  ids: number[]
+  active: number[]
+  inactive: number[]
 }
 const EXPECTED_TRIGGER_ORDER_ENTRY_SCHEMA = Joi.array().items(Joi.object({
   category: Joi.string().required(),
-  ids: Joi.array().items(Joi.number()),
+  active: Joi.array().items(Joi.number()),
+  inactive: Joi.array().items(Joi.number()),
 })).required()
 
 const areTriggerOrderEntries = (value: unknown): value is TriggerOrderEntry[] => {
@@ -64,7 +66,7 @@ const deployFunc: DeployFuncType = async (change, client, apiDefinitions) => {
     // We send position + 1, since the position in the service are starting from 1
     .map((id, position) => ({ id, position: position + 1 }))
   const triggers = order
-    .flatMap(entry => entry.ids.map((id, position) => ({
+    .flatMap(entry => entry.active.concat(entry.inactive).map((id, position) => ({
       id: id.toString(),
       // We send position + 1, since the position in the service are starting from 1
       position: position + 1,
@@ -81,10 +83,10 @@ const deployFunc: DeployFuncType = async (change, client, apiDefinitions) => {
  */
 const filterCreator: FilterCreator = ({ config, client, paginator }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
-    const orderTypeName = createOrderTypeName(TRIGGER_TYPE_NAME)
+    const orderTypeName = createOrderTypeName(TYPE_NAME)
     const triggerObjType = elements
       .filter(isObjectType)
-      .find(e => e.elemID.name === TRIGGER_TYPE_NAME)
+      .find(e => e.elemID.name === TYPE_NAME)
     const triggerCategoryObjType = elements
       .filter(isObjectType)
       .find(e => e.elemID.name === TRIGGER_CATEGORY_TYPE_NAME)
@@ -99,7 +101,7 @@ const filterCreator: FilterCreator = ({ config, client, paginator }) => ({
     const triggers = _.sortBy(
       elements
         .filter(isInstanceElement)
-        .filter(e => e.elemID.typeName === TRIGGER_TYPE_NAME),
+        .filter(e => e.elemID.typeName === TYPE_NAME),
       instance => !instance.value.active,
       inst => inst.value.position,
       inst => inst.value.title
@@ -124,7 +126,8 @@ const filterCreator: FilterCreator = ({ config, client, paginator }) => ({
       elemID: new ElemID(ZENDESK_SUPPORT, TRIGGER_ORDER_ENTRY_TYPE_NAME),
       fields: {
         category: { refType: BuiltinTypes.NUMBER },
-        ids: { refType: new ListType(BuiltinTypes.NUMBER) },
+        active: { refType: new ListType(BuiltinTypes.NUMBER) },
+        inactive: { refType: new ListType(BuiltinTypes.NUMBER) },
       },
       annotations: config.fetch.hideTypes ? { [CORE_ANNOTATIONS.HIDDEN]: true } : undefined,
       path: [ZENDESK_SUPPORT, TYPES_PATH, SUBTYPES_PATH, entryTypeNameNaclCase],
@@ -137,16 +140,23 @@ const filterCreator: FilterCreator = ({ config, client, paginator }) => ({
       path: [ZENDESK_SUPPORT, TYPES_PATH, SUBTYPES_PATH, typeNameNaclCase],
     })
     const triggersByCategory = _.groupBy(triggers, ref => ref.value.category_id)
-    const order = triggerCategories.map(category => ({
-      category: new ReferenceExpression(category.elemID, category),
-      ids: (triggersByCategory[category.value.id] ?? [])
-        .map(inst => new ReferenceExpression(inst.elemID, inst)),
-    }))
+    const order = triggerCategories.map(category => {
+      const [active, inactive] = _.partition(
+        (triggersByCategory[category.value.id] ?? [])
+          .map(inst => new ReferenceExpression(inst.elemID, inst)),
+        ref => ref.value.value.active
+      )
+      return {
+        category: new ReferenceExpression(category.elemID, category),
+        active,
+        inactive,
+      }
+    })
     const instance = new InstanceElement(
       ElemID.CONFIG_NAME,
       type,
       { order },
-      [ZENDESK_SUPPORT, RECORDS_PATH, TRIGGER_TYPE_NAME, typeNameNaclCase],
+      [ZENDESK_SUPPORT, RECORDS_PATH, TYPE_NAME, typeNameNaclCase],
     )
     // Those types already exist since we added the empty version of them
     //  via the add remaining types mechanism. So we first need to remove the old versions
@@ -156,9 +166,10 @@ const filterCreator: FilterCreator = ({ config, client, paginator }) => ({
     elements.push(type, entryOrderType, instance)
   },
   deploy: createReorderFilterCreator({
-    typeName: TRIGGER_TYPE_NAME,
+    typeName: TYPE_NAME,
     orderFieldName: 'order',
     deployFunc,
+    activeFieldName: 'active',
   })({ client, config, paginator }).deploy,
 })
 

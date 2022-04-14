@@ -16,6 +16,7 @@
 import {
   ObjectType, ElemID, InstanceElement, Element, isObjectType,
   isInstanceElement, ReferenceExpression, ModificationChange, CORE_ANNOTATIONS,
+  toChange, getChangeData,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { DEFAULT_CONFIG, DEFAULT_INCLUDE_ENDPOINTS, FETCH_CONFIG } from '../../../src/config'
@@ -40,14 +41,14 @@ jest.mock('@salto-io/adapter-components', () => {
 
 describe('view reorder filter', () => {
   let client: ZendeskClient
-  type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy'>
+  type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
   let filter: FilterType
   const typeName = VIEW_TYPE_NAME
   const orderTypeName = createOrderTypeName(typeName)
   const objType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, typeName) })
-  const inst1 = new InstanceElement('inst1', objType, { id: 11, position: 1, title: 'inst2' })
-  const inst2 = new InstanceElement('inst2', objType, { id: 22, position: 2, title: 'inst1' })
-  const inst3 = new InstanceElement('inst3', objType, { id: 22, position: 2, title: 'aaa' })
+  const inst1 = new InstanceElement('inst1', objType, { id: 11, position: 1, title: 'inst2', active: true })
+  const inst2 = new InstanceElement('inst2', objType, { id: 22, position: 2, title: 'inst1', active: true })
+  const inst3 = new InstanceElement('inst3', objType, { id: 22, position: 2, title: 'aaa', active: false })
 
   beforeEach(async () => {
     jest.clearAllMocks()
@@ -86,11 +87,15 @@ describe('view reorder filter', () => {
       expect(viewOrderInstance).toBeDefined()
       expect(viewOrderInstance?.elemID.name).toEqual(ElemID.CONFIG_NAME)
       expect((viewOrderInstance as InstanceElement)?.value)
-        .toEqual({ [ORDER_FIELD_NAME]: [
-          new ReferenceExpression(inst1.elemID, inst1),
-          new ReferenceExpression(inst3.elemID, inst3),
-          new ReferenceExpression(inst2.elemID, inst2),
-        ] })
+        .toEqual({
+          active: [
+            new ReferenceExpression(inst1.elemID, inst1),
+            new ReferenceExpression(inst2.elemID, inst2),
+          ],
+          inactive: [
+            new ReferenceExpression(inst3.elemID, inst3),
+          ],
+        })
       const orderType = elements
         .find(elem => elem.elemID.getFullName() === 'zendesk_support.view_order')
       expect(orderType).toBeDefined()
@@ -199,6 +204,46 @@ describe('view reorder filter', () => {
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)
       expect(mockDeployChange).toHaveBeenCalledTimes(0)
+    })
+  })
+  describe('preDeploy', () => {
+    it('should change the order values to be in the correct deploy format', async () => {
+      const resolvedOrder = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, orderTypeName) }),
+        {
+          active: [11, 33],
+          inactive: [22, 44],
+        },
+      )
+      const changes = [toChange({ after: resolvedOrder })]
+      await filter.preDeploy(changes)
+      const [order] = changes.map(getChangeData)
+      expect(order?.value).toEqual({
+        active: [11, 33],
+        inactive: [22, 44],
+        ids: [11, 33, 22, 44],
+      })
+    })
+  })
+  describe('onDeploy', () => {
+    it('should revert the order values from the deploy format', async () => {
+      const resolvedOrder = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, orderTypeName) }),
+        {
+          active: [11, 33],
+          inactive: [22, 44],
+          ids: [11, 33, 22, 44],
+        },
+      )
+      const changes = [toChange({ after: resolvedOrder })]
+      await filter.onDeploy(changes)
+      const [order] = changes.map(getChangeData)
+      expect(order?.value).toEqual({
+        active: [11, 33],
+        inactive: [22, 44],
+      })
     })
   })
 })

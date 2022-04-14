@@ -12,6 +12,7 @@
     "index.ts"
   ],
   "references": [
+      { "path": "../dag" },
       { "path": "../lowerdash" },
       { "path": "../logging" },
       { "path": "../adapter-api" },

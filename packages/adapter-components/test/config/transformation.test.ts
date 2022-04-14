@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ListType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { createTransformationConfigTypes, validateTransoformationConfig } from '../../src/config'
+import { createTransformationConfigTypes, validateTransoformationConfig, dereferenceFieldName } from '../../src/config'
 
 describe('config_transformation', () => {
   describe('createTransformationConfigTypes', () => {
@@ -213,5 +213,46 @@ describe('config_transformation', () => {
         },
       )).toThrow(new Error('Singleton types should not have dataField or fileNameFields set, misconfiguration found for the following types: t1,t2'))
     })
+    it('should fail if idFields name are invalid', () => {
+      expect(() => validateTransoformationConfig(
+        'PATH',
+        {
+          idFields: ['a', 'b', 'c'],
+          fieldsToOmit: [
+            { fieldName: 'abc', fieldType: 'something' },
+          ],
+        },
+        {
+          t1: {
+            idFields: ['&a&'],
+          },
+          t2: {
+            idFields: ['a&', 'b&'],
+          },
+        },
+      )).toThrow(new Error(
+        'Invalid idFields found in the following types:\nin type: t1, invalid idFields: [&a&]\nin type: t2, invalid idFields: [a&,b&]'
+      ))
+      expect(() => validateTransoformationConfig(
+        'PATH',
+        {
+          idFields: ['a', 'b&', 'c'],
+          fieldsToOmit: [
+            { fieldName: 'abc', fieldType: 'something' },
+          ],
+        },
+        {
+          t1: {
+            idFields: ['a'],
+          },
+        },
+      )).toThrow(new Error('Invalid idFields found in default config: b&'))
+    })
+  })
+
+  describe('idFields util functions', () => {
+    const idFields = ['id', '&folder_id']
+    const dereferencedIdFields = idFields.map(fieldName => dereferenceFieldName(fieldName))
+    expect(dereferencedIdFields).toEqual(['id', 'folder_id'])
   })
 })

@@ -21,6 +21,7 @@ import { findDuplicates } from './validation_utils'
 import { getConfigWithDefault, TypeConfig, TypeDefaultsConfig } from './shared'
 
 export const DATA_FIELD_ENTIRE_OBJECT = '.'
+export const FIELD_REFERENCE_PREFIX = '&'
 
 export type StandaloneFieldConfigType = {
   fieldName: string
@@ -184,6 +185,39 @@ export const validateTransoformationConfig = (
     }
   }
 
+  const getInvalidIdFields = (idFields: string[]): string[] => (
+    idFields.filter(fieldName => {
+      const symbolCount = (fieldName.match(/&/g) || []).length
+      return (symbolCount > 1)
+            || (symbolCount === 1 && !fieldName.startsWith(FIELD_REFERENCE_PREFIX))
+    })
+  )
+
+  const validateIdFieldsConfig = (
+    defaultIdFields: string[] | undefined,
+    idFieldsByType: Record<string, string[] | undefined>,
+  ): void => {
+    if (defaultIdFields !== undefined) {
+      const invalidDefaultIdFields = getInvalidIdFields(defaultIdFields)
+      if (invalidDefaultIdFields.length > 0) {
+        throw new Error(`Invalid idFields found in default config: ${invalidDefaultIdFields}`)
+      }
+    }
+    const invalidIdFieldsTypeConfig = Object.entries(idFieldsByType)
+      .filter(([_typeName, idFields]) => idFields)
+      .map(([type, idFields]) => {
+        const invalidFieldNames = getInvalidIdFields(idFields ?? [])
+        if (invalidFieldNames.length > 0) {
+          return { type, invalidFieldNames }
+        }
+        return undefined
+      }).filter(values.isDefined)
+    if (invalidIdFieldsTypeConfig.length > 0) {
+      const invalidIdFieldsMsg = invalidIdFieldsTypeConfig.map(f => `in type: ${f.type}, invalid idFields: [${f.invalidFieldNames}]`)
+      throw new Error(`Invalid idFields found in the following types:\n${invalidIdFieldsMsg.join('\n')}`)
+    }
+  }
+
   findNestedFieldDups(
     'fieldTypeOverrides',
     defaultConfig.fieldTypeOverrides,
@@ -214,6 +248,8 @@ export const validateTransoformationConfig = (
   if (validateIsSingletonTypes.length > 0) {
     throw new Error(`Singleton types should not have dataField or fileNameFields set, misconfiguration found for the following types: ${validateIsSingletonTypes.toString()}`)
   }
+
+  validateIdFieldsConfig(defaultConfig.idFields, _.mapValues(configMap, c => c.idFields))
 }
 
 export const getTypeTransformationConfig = (
@@ -232,3 +268,13 @@ Record<string, TransformationConfig> => _.pickBy(
   _.mapValues(typesConfig, def => def.transformation),
   values.isDefined,
 )
+
+export const isReferencedIdField = (
+  idField: string
+): boolean => idField.startsWith(FIELD_REFERENCE_PREFIX)
+
+export const dereferenceFieldName = (
+  fieldName: string
+): string => (isReferencedIdField(fieldName)
+  ? _.trimStart(fieldName, FIELD_REFERENCE_PREFIX)
+  : fieldName)

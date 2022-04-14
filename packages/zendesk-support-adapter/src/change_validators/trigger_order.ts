@@ -29,12 +29,12 @@ const isRelevantChange = (change: Change<InstanceElement>): boolean =>
   (getChangeData(change).elemID.typeName === TRIGGER_TYPE_NAME)
 
 export const createWrongPlaceErrorMessage = (
-  instanceId: ElemID, orderTypeName: string, categoryFullName: string
+  instanceId: ElemID, orderTypeName: string, categoryFullName: string, active: boolean,
 ): ChangeError => ({
   elemID: instanceId,
   severity: 'Error',
-  message: `Can not change ${instanceId.typeName} instance because it was found in ${orderTypeName} instance in the wrong place`,
-  detailedMessage: `Can not change ${instanceId.getFullName()} because it was found in ${orderTypeName} instance in the wrong place under ${categoryFullName} category`,
+  message: `instance of type ${instanceId.typeName} is misplaced in the ${orderTypeName} instance. Please make sure to place it under the ${categoryFullName} category in the ${active ? 'active' : 'inactive'} list`,
+  detailedMessage: `${instanceId.name} of type ${instanceId.typeName} is misplaced in the ${orderTypeName} instance. Please make sure to place it under the ${categoryFullName} category in the ${active ? 'active' : 'inactive'} list`,
 })
 
 export const triggerOrderInstanceContainsAllTheInstancesValidator: ChangeValidator = async (
@@ -67,8 +67,8 @@ export const triggerOrderInstanceContainsAllTheInstancesValidator: ChangeValidat
         return {
           elemID: instance.elemID,
           severity: 'Error',
-          message: `Can not change ${instance.elemID.typeName} instance because it's category id is invalid`,
-          detailedMessage: `Can not change ${instance.elemID.getFullName()} because it's category id is invalid`,
+          message: `Invalid category id for instance of type ${instance.elemID.typeName}`,
+          detailedMessage: `Invalid category id for ${instance.elemID.name} of type ${instance.elemID.typeName}`,
         }
       }
       const instanceActivityValue = instance.value.active
@@ -83,15 +83,18 @@ export const triggerOrderInstanceContainsAllTheInstancesValidator: ChangeValidat
         return [{
           elemID: instance.elemID,
           severity: 'Error',
-          message: `Can not change ${instance.elemID.typeName} instance because it was not found in the ${triggerOrderTypeName} instance in the correct place`,
-          detailedMessage: `Can not change ${instance.elemID.getFullName()} because it was not found in the ${triggerOrderTypeName} instance in the correct place under ${categoryId.elemID.getFullName()} category`,
+          message: `Order not specified for instance of type ${instance.elemID.typeName}. Please make sure to place it under the ${categoryId.elemID.name} category in the ${instanceActivityValue ? 'active' : 'inactive'} list`,
+          detailedMessage: `Order not specified for ${instance.elemID.name} of type ${instance.elemID.typeName}. Please make sure to place it under the ${categoryId.elemID.name} category in the ${instanceActivityValue ? 'active' : 'inactive'} list`,
         }]
       }
       if ((instanceActivityValue ? orderEntry.inactive : orderEntry.active)
         .filter(isReferenceExpression)
         .find((ref: ReferenceExpression) => ref.elemID.isEqual(instance.elemID))) {
         return [createWrongPlaceErrorMessage(
-          instance.elemID, triggerOrderTypeName, categoryId.elemID.getFullName()
+          instance.elemID,
+          triggerOrderTypeName,
+          categoryId.elemID.name,
+          instanceActivityValue,
         )]
       }
       return orderInstance.value.order
@@ -110,8 +113,9 @@ export const triggerOrderInstanceContainsAllTheInstancesValidator: ChangeValidat
               instance.elemID,
               triggerOrderTypeName,
               isReferenceExpression(entry.category)
-                ? entry.category.elemID.getFullName()
-                : entry.category
+                ? entry.category.elemID.name
+                : entry.category,
+              instanceActivityValue,
             )]
           }
           return []

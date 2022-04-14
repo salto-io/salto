@@ -131,13 +131,14 @@ describe('Zendesk support adapter E2E', () => {
       elemID: new ElemID(ZENDESK_SUPPORT, 'ticket_field__custom_field_options'),
     })
     const ticketFieldOption1Name = `ticketFieldOption1${testSuffix}`
+    const ticketFieldOption1Value = `v1t${testOptionValue}`
     const ticketFieldOption1 = new InstanceElement(
-      `${ticketFieldInstance.elemID.name}__${ticketFieldOption1Name}`,
+      `${ticketFieldInstance.elemID.name}__${ticketFieldOption1Value}`,
       ticketFieldOptionType,
       {
         name: ticketFieldOption1Name,
         raw_name: ticketFieldOption1Name,
-        value: `v1t${testOptionValue}`,
+        value: ticketFieldOption1Value,
       },
       undefined,
       {
@@ -147,13 +148,14 @@ describe('Zendesk support adapter E2E', () => {
       },
     )
     const ticketFieldOption2Name = `ticketFieldOption2${testSuffix}`
+    const ticketFieldOption2Value = `v2t${testOptionValue}`
     const ticketFieldOption2 = new InstanceElement(
-      `${ticketFieldInstance.elemID.name}__${ticketFieldOption2Name}`,
+      `${ticketFieldInstance.elemID.name}__${ticketFieldOption2Value}`,
       ticketFieldOptionType,
       {
         name: ticketFieldOption2Name,
         raw_name: ticketFieldOption2Name,
-        value: `v2t${testOptionValue}`,
+        value: ticketFieldOption2Value,
       },
       undefined,
       {
@@ -178,13 +180,14 @@ describe('Zendesk support adapter E2E', () => {
       elemID: new ElemID(ZENDESK_SUPPORT, 'user_field__custom_field_options'),
     })
     const userFieldOption1Name = `userFieldOption1${testSuffix}`
+    const userFieldOption1Value = `v1u${testOptionValue}`
     const userFieldOption1 = new InstanceElement(
-      `${userFieldInstance.elemID.name}__${userFieldOption1Name}`,
+      `${userFieldInstance.elemID.name}__${userFieldOption1Value}`,
       userFieldOptionType,
       {
         name: userFieldOption1Name,
         raw_name: userFieldOption1Name,
-        value: `v1u${testOptionValue}`,
+        value: userFieldOption1Value,
       },
       undefined,
       {
@@ -194,13 +197,14 @@ describe('Zendesk support adapter E2E', () => {
       },
     )
     const userFieldOption2Name = `userFieldOption2${testSuffix}`
+    const userFieldOption2Value = `v2u${testOptionValue}`
     const userFieldOption2 = new InstanceElement(
-      `${userFieldInstance.elemID.name}__${userFieldOption2Name}`,
+      `${userFieldInstance.elemID.name}__${userFieldOption2Value}`,
       userFieldOptionType,
       {
         name: userFieldOption2Name,
         raw_name: userFieldOption2Name,
-        value: `v2u${testOptionValue}`,
+        value: userFieldOption2Value,
       },
       undefined,
       {

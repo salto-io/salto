@@ -441,34 +441,33 @@ export const deserialize = async (
   staticFileReviver?: StaticFileReviver,
 ): Promise<Element[]> => {
   const res = await generalDeserialize<Element>(data)
-  let { staticFiles } = res
   const { elements } = res
 
   if (staticFileReviver) {
-    staticFiles = _.fromPairs(
-      await awu(Object.entries(staticFiles))
+    const staticFiles = Object.fromEntries(
+      await awu(Object.entries(res.staticFiles))
         .map(async ([key, val]) => ([key, await staticFileReviver(val)]))
         .toArray()
     )
+    const reviveStaticFiles = (values: Values): Values => _.cloneDeepWith(values, v => {
+      if (isStaticFile(v)) {
+        return staticFiles[v.filepath]
+      }
+      return undefined
+    })
+    elements.forEach(element => {
+      element.annotations = reviveStaticFiles(element.annotations)
+      if (isObjectType(element)) {
+        Object.values(element.fields).forEach(field => {
+          field.annotations = reviveStaticFiles(field.annotations)
+        })
+      }
+      if (isInstanceElement(element)) {
+        element.value = reviveStaticFiles(element.value)
+      }
+    })
   }
 
-  const reviveStaticFiles = (values: Values): Values => _.cloneDeepWith(values, v => {
-    if (isStaticFile(v)) {
-      return staticFiles[v.filepath]
-    }
-    return undefined
-  })
-  elements.forEach(element => {
-    element.annotations = reviveStaticFiles(element.annotations)
-    if (isObjectType(element)) {
-      Object.values(element.fields).forEach(field => {
-        field.annotations = reviveStaticFiles(field.annotations)
-      })
-    }
-    if (isInstanceElement(element)) {
-      element.value = reviveStaticFiles(element.value)
-    }
-  })
   if (elements.some(elem => !isElement(elem))) {
     throw new Error('Deserialization failed. At least one element did not deserialize to an Element')
   }

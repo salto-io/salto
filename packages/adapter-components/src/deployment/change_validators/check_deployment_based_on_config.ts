@@ -47,9 +47,13 @@ const createChangeErrors = (
   return []
 }
 
-export const createCheckDeploymentBasedOnConfigValidator = (
-  apiConfig: AdapterApiConfig, typesDeployedViaParent: string[] = []
-): ChangeValidator => async changes => (
+export const createCheckDeploymentBasedOnConfigValidator = ({
+  apiConfig, typesDeployedViaParent = [], typesWithNoDeploy = [],
+}: {
+  apiConfig: AdapterApiConfig
+  typesDeployedViaParent?: string[]
+  typesWithNoDeploy?: string[]
+}): ChangeValidator => async changes => (
   awu(changes)
     .map(async (change: Change<Element>): Promise<(ChangeError | undefined)[]> => {
       const element = getChangeData(change)
@@ -59,6 +63,9 @@ export const createCheckDeploymentBasedOnConfigValidator = (
       const getChangeErrorsByTypeName = (typeName: string): ChangeError[] => {
         const typeConfig = apiConfig?.types?.[typeName]?.deployRequests ?? {}
         return createChangeErrors(typeConfig, element.elemID, change.action)
+      }
+      if (typesWithNoDeploy.includes(element.elemID.typeName)) {
+        return []
       }
       if (typesDeployedViaParent.includes(element.elemID.typeName)) {
         const parents = getParents(element)

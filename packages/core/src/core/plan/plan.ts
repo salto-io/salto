@@ -20,7 +20,7 @@ import {
   ChangeValidator, Change, ChangeError, DependencyChanger, ChangeGroupIdFunction, getChangeData,
   isAdditionOrRemovalChange, isFieldChange, ReadOnlyElementsSource, ElemID, isVariable,
   Value, isReferenceExpression, compareSpecialValues, BuiltinTypesByFullName, isAdditionChange,
-  isModificationChange, isRemovalChange, ReferenceExpression, ObjectType,
+  isModificationChange, isRemovalChange, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { DataNodeMap, DiffNode, DiffGraph, Group, GroupDAG, DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
@@ -59,14 +59,23 @@ const shouldResolve = (ref: ReferenceExpression): boolean => (
   !ref.elemID.isBaseID() || ref.elemID.idType === 'var'
 )
 
-const resolveSingleReferenceExpression = async (
+const getReferenceValue = async (
   reference: ReferenceExpression,
   elementsSource: ReadOnlyElementsSource,
-): Promise<ReferenceExpression> => {
-  // Hack to resolve a single reference without having to resolve everything at once
-  const dummyElem = new ObjectType({ elemID: new ElemID('_resolve', 'dummy'), annotations: { reference } })
-  const [resolvedDummyElem] = await resolve([dummyElem], elementsSource)
-  return resolvedDummyElem.annotations.reference
+  visitedReferences: Set<string>,
+): Promise<Value> => {
+  const targetId = reference.elemID.getFullName()
+  if (visitedReferences.has(targetId)) {
+    // Circular reference, to avoid infinite recursion we need to return something
+    // the chosen behavior for now is to return "undefined"
+    // this may cause circular references to compare equal if we compare to undefined
+    // but this shouldn't matter much as we assume the user has already seen the warning
+    // about having a circular reference before getting to this point
+    return undefined
+  }
+  visitedReferences.add(targetId)
+  const refValue = reference.value ?? await elementsSource.get(reference.elemID)
+  return isVariable(refValue) ? refValue.value : refValue
 }
 
 
@@ -74,7 +83,9 @@ const areReferencesEqual = async (
   first: Value,
   second: Value,
   firstSrc: ReadOnlyElementsSource,
-  secondSrc: ReadOnlyElementsSource
+  secondSrc: ReadOnlyElementsSource,
+  firstVisitedReferences: Set<string>,
+  secondVisitedReferences: Set<string>,
 ): Promise<ReferenceCompareReturnValue> => {
   // if both values are ReferenceExpressions they are compared by their elemID
   if (isReferenceExpression(first) && isReferenceExpression(second)) {
@@ -87,28 +98,28 @@ const areReferencesEqual = async (
   // if only first value is a ReferenceExpression and it should be resolved -
   // its value is compared with the second value
   if (isReferenceExpression(first) && shouldResolve(first)) {
-    const firstValue = first.value !== undefined
-      ? first.value
-      : (await resolveSingleReferenceExpression(first, firstSrc)).value
     return {
       returnCode: 'recurse',
-      returnValue: { firstValue, secondValue: second },
+      returnValue: {
+        firstValue: await getReferenceValue(first, firstSrc, firstVisitedReferences),
+        secondValue: second,
+      },
     }
   }
 
   // if only second value is a ReferenceExpression and it should be resolved -
   // its value is compared with the first value
   if (isReferenceExpression(second) && shouldResolve(second)) {
-    const secondValue = second.value !== undefined
-      ? second.value
-      : (await resolveSingleReferenceExpression(second, secondSrc)).value
     return {
       returnCode: 'recurse',
-      returnValue: { firstValue: first, secondValue },
+      returnValue: {
+        firstValue: first,
+        secondValue: await getReferenceValue(second, secondSrc, secondVisitedReferences),
+      },
     }
   }
 
-  // if we got here, as we asume that one of the compared values is a ReferenceExpression,
+  // if we got here, as we assume that one of the compared values is a ReferenceExpression,
   // we need to return false because a non-resolved reference isn't equal to a non-reference value
   return {
     returnCode: 'return',
@@ -123,18 +134,34 @@ const compareValuesAndLazyResolveRefs = async (
   first: Value,
   second: Value,
   firstSrc: ReadOnlyElementsSource,
-  secondSrc: ReadOnlyElementsSource
+  secondSrc: ReadOnlyElementsSource,
+  firstVisitedReferences = new Set<string>(),
+  secondVisitedReferences = new Set<string>(),
 ): Promise<boolean> => {
   // compareSpecialValues doesn't compare nested references right if they are not recursively
   // resolved. We are using here lazy resolving so we can't use compareSpecialValues to compare
   // references
   if (isReferenceExpression(first) || isReferenceExpression(second)) {
-    const referencesCompareResult = await areReferencesEqual(first, second, firstSrc, secondSrc)
+    // The following call to areReferencesEqual will potentially modify the visited sets.
+    // we want to avoid affecting the visited sets above this recursion level so we have
+    // to make a copy here
+    const firstVisited = new Set(firstVisitedReferences)
+    const secondVisited = new Set(secondVisitedReferences)
+    const referencesCompareResult = await areReferencesEqual(
+      first, second, firstSrc, secondSrc, firstVisited, secondVisited,
+    )
     if (referencesCompareResult.returnCode === 'return') {
       return referencesCompareResult.returnValue
     }
     const { firstValue, secondValue } = referencesCompareResult.returnValue
-    return compareValuesAndLazyResolveRefs(firstValue, secondValue, firstSrc, secondSrc)
+    return compareValuesAndLazyResolveRefs(
+      firstValue,
+      secondValue,
+      firstSrc,
+      secondSrc,
+      firstVisited,
+      secondVisited,
+    )
   }
 
   const specialCompareRes = compareSpecialValues(first, second)
@@ -154,7 +181,9 @@ const compareValuesAndLazyResolveRefs = async (
         value,
         second[index],
         firstSrc,
-        secondSrc
+        secondSrc,
+        firstVisitedReferences,
+        secondVisitedReferences,
       )
     ))
   }
@@ -168,7 +197,9 @@ const compareValuesAndLazyResolveRefs = async (
         first[key],
         second[key],
         firstSrc,
-        secondSrc
+        secondSrc,
+        firstVisitedReferences,
+        secondVisitedReferences,
       )
     )
   }

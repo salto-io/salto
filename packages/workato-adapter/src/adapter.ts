@@ -28,6 +28,7 @@ import fieldReferencesFilter from './filters/field_references'
 import fixMultienvIDs from './filters/fix_multienv_ids'
 import recipeCrossServiceReferencesFilter from './filters/cross_service/recipe_references'
 import serviceUrlFilter from './filters/service_url'
+import ducktypeCommonFilters from './filters/ducktype_common'
 import { WORKATO } from './constants'
 import changeValidator from './change_validator'
 import { paginate } from './client/pagination'
@@ -45,6 +46,7 @@ export const DEFAULT_FILTERS = [
   fieldReferencesFilter,
   recipeCrossServiceReferencesFilter,
   serviceUrlFilter,
+  ...ducktypeCommonFilters,
 ]
 
 export interface WorkatoAdapterParams {
@@ -99,7 +101,6 @@ export default class WorkatoAdapter implements AdapterOperations {
       nestedFieldFinder: returnFullEntry,
       computeGetArgs: simpleGetArgs,
       typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
-      hideTypes: this.userConfig.fetch.hideTypes,
       getElemIdFunc: this.getElemIdFunc,
     })
   }

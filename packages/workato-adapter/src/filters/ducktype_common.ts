@@ -13,22 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { filters } from '@salto-io/adapter-components'
+import { FilterContext } from '../config'
 import { FilterCreator } from '../filter'
+import ZendeskClient from '../client/client'
 
 /**
- * Hide types if needed
+ * Filter creators of all the common ducktype filters
  */
-const filterCreator: FilterCreator = ({ config }) => ({
-  onFetch: async (elements: Element[]) => {
-    if (config.fetch.hideTypes) {
-      elements
-        .filter(isObjectType)
-        .forEach(objType => {
-          objType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
-        })
-    }
-  },
-})
+const filterCreators: FilterCreator[] = filters.ducktype
+  .DUCKTYPE_MANDATORY_FILTER_CREATORS
+  .map(filterCreator => params =>
+    filterCreator<ZendeskClient, FilterContext>()(params))
 
-export default filterCreator
+export default filterCreators

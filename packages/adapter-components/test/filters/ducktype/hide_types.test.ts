@@ -14,38 +14,27 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, isObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
-import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
-import ZendeskClient from '../../src/client/client'
-import { ZENDESK_SUPPORT } from '../../src/constants'
-import { paginate } from '../../src/client/pagination'
-import filterCreator from '../../src/filters/hide_types'
+import { FilterWith } from '../../../src/filter_utils'
+import { Paginator } from '../../../src/client'
+import { hideTypesFilterCreator } from '../../../src/filters/ducktype/hide_types'
 
 describe('hide types filter', () => {
-  let client: ZendeskClient
-  type FilterType = filterUtils.FilterWith<'onFetch'>
-  const objType1 = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 't1') })
-  const objType2 = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 't2') })
+  type FilterType = FilterWith<'onFetch'>
+  const objType1 = new ObjectType({ elemID: new ElemID('adapter', 't1') })
+  const objType2 = new ObjectType({ elemID: new ElemID('adapter', 't2') })
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
   })
 
   const createFilter = (hideTypes: boolean): FilterType =>
-  filterCreator({
-    client,
-    paginator: clientUtils.createPaginator({
-      client,
-      paginationFuncCreator: paginate,
-    }),
+  hideTypesFilterCreator()({
+    client: {} as unknown,
+    paginator: undefined as unknown as Paginator,
     config: {
-      ...DEFAULT_CONFIG,
       fetch: {
-        ...DEFAULT_CONFIG[FETCH_CONFIG],
         hideTypes,
+        includeTypes: ['t1', 't2'],
       },
     },
   }) as FilterType
@@ -60,8 +49,8 @@ describe('hide types filter', () => {
       await filter.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName()).sort())
         .toEqual([
-          'zendesk_support.t1',
-          'zendesk_support.t2',
+          'adapter.t1',
+          'adapter.t2',
         ])
       const t1 = elements
         .filter(isObjectType)
@@ -81,8 +70,8 @@ describe('hide types filter', () => {
       await filter.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName()).sort())
         .toEqual([
-          'zendesk_support.t1',
-          'zendesk_support.t2',
+          'adapter.t1',
+          'adapter.t2',
         ])
       const t1 = elements
         .filter(isObjectType)

@@ -66,7 +66,7 @@ import macroAttachmentsFilter from './filters/macro_attachments'
 import omitInactiveFilter from './filters/omit_inactive'
 import tagsFilter from './filters/tag'
 import defaultDeployFilter from './filters/default_deploy'
-import hideTypesFilter from './filters/hide_types'
+import ducktypeCommonFilters from './filters/ducktype_common'
 import { getConfigFromConfigChanges } from './config_change'
 
 const log = logger(module)
@@ -118,8 +118,7 @@ export const DEFAULT_FILTERS = [
   unorderedListsFilter,
   dynamicContentReferencesFilter,
   serviceUrlFilter,
-  // hideTypesFilter should be the last onFetch filter
-  hideTypesFilter,
+  ...ducktypeCommonFilters,
   // defaultDeployFilter should be last!
   defaultDeployFilter,
 ]
@@ -189,7 +188,6 @@ export default class ZendeskAdapter implements AdapterOperations {
       computeGetArgs,
       typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
       getElemIdFunc: this.getElemIdFunc,
-      hideTypes: this.userConfig.fetch.hideTypes,
       isErrorTurnToConfigSuggestion: error =>
         error instanceof clientUtils.HTTPError && (error.response.status === 403),
     })

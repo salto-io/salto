@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  BuiltinTypes, Change, CORE_ANNOTATIONS, Element, ElemID, getChangeData, InstanceElement,
+  BuiltinTypes, Change, Element, ElemID, getChangeData, InstanceElement,
   isInstanceElement, ObjectType, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
@@ -96,7 +96,7 @@ const serializeReferencesToTags = (instance: InstanceElement): void => {
 /**
  * Extract tags references from business rules that refers to them
  */
-const filterCreator: FilterCreator = ({ config }) => ({
+const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     const instances = elements
       .filter(isInstanceElement)
@@ -107,7 +107,6 @@ const filterCreator: FilterCreator = ({ config }) => ({
     const tagObjectType = new ObjectType({
       elemID: new ElemID(ZENDESK_SUPPORT, TAG_TYPE_NAME),
       fields: { id: { refType: BuiltinTypes.STRING } },
-      annotations: config.fetch.hideTypes ? { [CORE_ANNOTATIONS.HIDDEN]: true } : undefined,
       path: [ZENDESK_SUPPORT, TYPES_PATH, TAG_TYPE_NAME],
     })
     const tagInstances = _(tags)

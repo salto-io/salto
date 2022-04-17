@@ -137,7 +137,7 @@ const filter: FilterCreator = ({ config, client }) => ({
           await deployFilter(change, client)
         }
 
-        await deployColumns(change, client)
+        await deployColumns(change, client, config.client.boardColumnRetry)
         await deploySubQuery(change, client)
         await deployEstimation(change, client)
       }

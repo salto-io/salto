@@ -15,8 +15,9 @@
 */
 import { AdditionChange, CORE_ANNOTATIONS, Element, getChangeData, InstanceElement, isInstanceElement, isModificationChange, ModificationChange, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { resolveChangeElement } from '@salto-io/adapter-utils'
+import { createSchemeGuard, resolveChangeElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+import Joi from 'joi'
 import { FilterCreator } from '../../filter'
 import { BOARD_COLUMN_CONFIG_TYPE, BOARD_TYPE_NAME } from '../../constants'
 import { addAnnotationRecursively, findObject, setFieldDeploymentAnnotations } from '../../utils'
@@ -28,6 +29,20 @@ export const COLUMNS_CONFIG_FIELD = 'columnConfig'
 
 const log = logger(module)
 
+type UpdateColumnsResponse = {
+  mappedColumns: {
+    name: string
+  }[]
+}
+
+const UPDATE_COLUMNS_RESPONSE_SCHEME = Joi.object({
+  mappedColumns: Joi.array().items(Joi.object({
+    name: Joi.string().required(),
+  }).unknown(true)).required(),
+}).unknown(true).required()
+
+const isUpdateColumnsResponse = createSchemeGuard<UpdateColumnsResponse>(UPDATE_COLUMNS_RESPONSE_SCHEME, 'Received an invalid columns update response')
+
 const convertColumn = (column: Values): Values => ({
   name: column.name,
   mappedStatuses: (column.statuses ?? []).map((id: string) => ({ id })),
@@ -38,6 +53,7 @@ const convertColumn = (column: Values): Values => ({
 export const deployColumns = async (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
   client: JiraClient,
+  retriesLeft: number,
 ): Promise<void> => {
   const resolvedChange = await resolveChangeElement(change, getLookUpName)
 
@@ -51,8 +67,7 @@ export const deployColumns = async (
 
   const instance = getChangeData(resolvedChange)
 
-
-  await client.putPrivate({
+  const response = await client.putPrivate({
     url: '/rest/greenhopper/1.0/rapidviewconfig/columns',
     data: {
       currentStatisticsField: {
@@ -64,6 +79,28 @@ export const deployColumns = async (
       mappedColumns: instance.value[COLUMNS_CONFIG_FIELD].columns.map(convertColumn),
     },
   })
+
+  if (!isUpdateColumnsResponse(response.data)) {
+    throw new Error(`Received an invalid response from Jira when updating the columns of ${instance.elemID.getFullName()}`)
+  }
+
+  const columnsToUpdate = instance.value[COLUMNS_CONFIG_FIELD].columns
+    .map(({ name }: Values) => name)
+
+  const updatedColumns = response.data.mappedColumns.map(({ name }) => name)
+  if (instance.value.type === KANBAN_TYPE) {
+    // In Kanban boards, the first column is always backlog, which is non-editable.
+    updatedColumns.shift()
+  }
+
+  if (!_.isEqual(columnsToUpdate, updatedColumns)) {
+    log.warn(`Failed to update columns of ${instance.elemID.getFullName()} - ${updatedColumns.join(', ')}`)
+    if (retriesLeft > 0) {
+      await deployColumns(change, client, retriesLeft - 1)
+    } else {
+      throw new Error(`Failed to update columns of ${instance.elemID.getFullName()}`)
+    }
+  }
 }
 
 const filter: FilterCreator = ({ config }) => ({

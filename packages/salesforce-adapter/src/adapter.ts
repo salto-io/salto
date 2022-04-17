@@ -69,6 +69,7 @@ import convertMapsFilter from './filters/convert_maps'
 import elementsUrlFilter from './filters/elements_url'
 import territoryFilter from './filters/territory'
 import customMetadataRecordsFilter from './filters/custom_metadata'
+import currencyIsoCodeFilter from './filters/currency_iso_code'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { FilterCreator, Filter, FilterResult } from './filter'
@@ -127,6 +128,7 @@ export const DEFAULT_FILTERS = [
   sharingRulesAuthorFilter,
   validationRulesAuthorFilter,
   hideReadOnlyValuesFilter,
+  currencyIsoCodeFilter,
   // The following filters should remain last in order to make sure they fix all elements
   convertListsFilter,
   convertTypeFilter,

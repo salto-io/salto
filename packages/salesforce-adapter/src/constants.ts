@@ -338,6 +338,9 @@ export const TERRITORY2_RULE_TYPE = 'Territory2Rule'
 export const LIGHTNING_PAGE_TYPE = 'LightningPage'
 export const FLEXI_PAGE_TYPE = 'FlexiPage'
 
+// Artifitial Types
+export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'
+
 // Retrieve constants
 export const RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX = /Load of metadata from db failed for metadata of type:(?<type>\w+) and file name:(?<instance>\w+).$/
 

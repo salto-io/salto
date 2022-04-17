@@ -251,7 +251,7 @@ export class Types {
   })
 
   private static valueSetElemID = new ElemID(SALESFORCE, FIELD_ANNOTATIONS.VALUE_SET)
-  private static valueSetType = new ObjectType({
+  public static valueSetType = new ObjectType({
     elemID: Types.valueSetElemID,
     fields: {
       [CUSTOM_VALUE.FULL_NAME]: { refType: BuiltinTypes.STRING },
@@ -1404,6 +1404,13 @@ const createIdField = (parent: ObjectType): void => {
   )
 }
 
+export const getTypePath = (name: string, isTopLevelType = true): string[] => [
+  SALESFORCE,
+  TYPES_PATH,
+  ...isTopLevelType ? [] : [SUBTYPES_PATH],
+  name,
+]
+
 type CreateMetadataTypeParams = {
   name: string
   fields: ValueTypeField[]
@@ -1432,12 +1439,7 @@ export const createMetadataTypeElements = async ({
     ..._.pickBy(annotations, isDefined),
     [METADATA_TYPE]: name,
   })
-  element.path = [
-    SALESFORCE,
-    TYPES_PATH,
-    ...isTopLevelType ? [] : [SUBTYPES_PATH],
-    element.elemID.name,
-  ]
+  element.path = getTypePath(element.elemID.name, isTopLevelType)
 
   const shouldCreateIdField = (): boolean => (
     (isTopLevelType || childTypeNames.has(name))

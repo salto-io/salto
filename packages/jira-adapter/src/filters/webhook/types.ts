@@ -25,7 +25,7 @@ export const createWebhookTypes = (): {
   const filtersType = new ObjectType({
     elemID: new ElemID(JIRA, 'WebhookFilters'),
     fields: {
-      'issue-related-events-section': {
+      issue_related_events_section: {
         refType: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.CREATABLE]: true,
@@ -68,7 +68,7 @@ export const createWebhookTypes = (): {
           [CORE_ANNOTATIONS.UPDATABLE]: true,
         },
       },
-      filtersType: {
+      filters: {
         refType: filtersType,
         annotations: {
           [CORE_ANNOTATIONS.CREATABLE]: true,

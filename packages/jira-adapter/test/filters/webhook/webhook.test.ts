@@ -27,16 +27,29 @@ import { JIRA, WEBHOOK_TYPE } from '../../../src/constants'
 
 
 describe('webhookFilter', () => {
-  let filter: filterUtils.FilterWith<'onFetch' | 'deploy'>
+  let filter: filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
   let config: JiraConfig
   let client: JiraClient
   let connection: MockInterface<clientUtils.APIConnection>
-
+  let type: ObjectType
+  let instance: InstanceElement
 
   beforeEach(async () => {
     const { client: cli, paginator, connection: conn } = mockClient()
     client = cli
     connection = conn
+
+    type = new ObjectType({
+      elemID: new ElemID(JIRA, WEBHOOK_TYPE),
+    })
+
+    instance = new InstanceElement(
+      'instance',
+      type,
+      {
+        name: 'someName',
+      }
+    )
 
     config = _.cloneDeep(DEFAULT_CONFIG)
     filter = webhookFilter({
@@ -44,13 +57,23 @@ describe('webhookFilter', () => {
       paginator,
       config,
       elementsSource: buildElementsSourceFromElements([]),
-    }) as filterUtils.FilterWith<'onFetch' | 'deploy'>
+    }) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
 
     connection.get.mockResolvedValue({
       status: 200,
       data: [
         {
           name: 'someName',
+          self: 'https://someUrl/rest/webhooks/1.0/webhook/3',
+          lastUpdatedUser: 'ug:193ee60b-5f81-454f-a6c6-0a64e6f68294',
+          lastUpdatedDisplayName: 'someUser',
+          lastUpdated: 1649521874248,
+        },
+        {
+          name: 'someName2',
+          filters: {
+            'issue-related-events-section': 'someFilter',
+          },
           self: 'https://someUrl/rest/webhooks/1.0/webhook/3',
           lastUpdatedUser: 'ug:193ee60b-5f81-454f-a6c6-0a64e6f68294',
           lastUpdatedDisplayName: 'someUser',
@@ -67,21 +90,34 @@ describe('webhookFilter', () => {
 
       const webhookTypes = createWebhookTypes()
       expect(elements).toHaveLength(
-        1 // new webhook instance
+        2 // new webhook instances
         + 1 // webhook top level type
         + webhookTypes.subTypes.length
       )
 
-      const webhook = elements[0] as InstanceElement
+      const [webhook1, webhook2] = elements as InstanceElement[]
 
-      expect(webhook.elemID.getFullName()).toEqual('jira.Webhook.instance.someName')
+      expect(webhook1.elemID.getFullName()).toEqual('jira.Webhook.instance.someName')
 
-      expect(webhook.value).toEqual({
+      expect(webhook1.value).toEqual({
         id: '3',
         name: 'someName',
+        filters: {},
       })
 
-      expect(webhook.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBe('someUser')
+      expect(webhook1.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBe('someUser')
+
+      expect(webhook2.elemID.getFullName()).toEqual('jira.Webhook.instance.someName2')
+
+      expect(webhook2.value).toEqual({
+        id: '3',
+        name: 'someName2',
+        filters: {
+          issue_related_events_section: 'someFilter',
+        },
+      })
+
+      expect(webhook2.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBe('someUser')
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/webhooks/1.0/webhook',
@@ -99,7 +135,7 @@ describe('webhookFilter', () => {
         config,
         elementsSource: buildElementsSourceFromElements([]),
         getElemIdFunc: () => new ElemID(JIRA, 'someName2'),
-      }) as filterUtils.FilterWith<'onFetch' | 'deploy'>
+      }) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
       const elements: Element[] = []
       await filter.onFetch(elements)
 
@@ -118,22 +154,62 @@ describe('webhookFilter', () => {
     })
   })
 
-  describe('deploy', () => {
-    let type: ObjectType
-    let instance: InstanceElement
-
-    beforeEach(() => {
-      type = new ObjectType({
-        elemID: new ElemID(JIRA, WEBHOOK_TYPE),
+  describe('preDeploy', () => {
+    it('should replace field name', async () => {
+      instance.value.filters = {
+        issue_related_events_section: 'someFilter',
+      }
+      const change = toChange({
+        after: instance,
       })
 
-      instance = new InstanceElement(
-        'instance',
-        type,
-        {
-          name: 'someName',
-        }
-      )
+      await filter.preDeploy([change])
+
+      expect(instance.value.filters).toEqual({
+        'issue-related-events-section': 'someFilter',
+      })
+    })
+
+    it('should do nothing if filters is undefined', async () => {
+      const change = toChange({
+        after: instance,
+      })
+
+      await filter.preDeploy([change])
+
+      expect(instance.value.filters).toBeUndefined()
+    })
+  })
+
+  describe('onDeploy', () => {
+    it('should replace field name', async () => {
+      instance.value.filters = {
+        'issue-related-events-section': 'someFilter',
+      }
+      const change = toChange({
+        after: instance,
+      })
+
+      await filter.onDeploy([change])
+
+      expect(instance.value.filters).toEqual({
+        issue_related_events_section: 'someFilter',
+      })
+    })
+
+    it('should do nothing if filters is undefined', async () => {
+      const change = toChange({
+        after: instance,
+      })
+
+      await filter.onDeploy([change])
+
+      expect(instance.value.filters).toBeUndefined()
+    })
+  })
+
+  describe('deploy', () => {
+    beforeEach(() => {
       connection.post.mockResolvedValue({
         status: 201,
         data: {

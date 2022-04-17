@@ -20,7 +20,7 @@ export const createWebhookValues = (name: string): Values => ({
   url: `https://example.com/rest/webhooks/${name}`,
   excludeBody: true,
   filters: {
-    'issue-related-events-section': 'status = Done',
+    issue_related_events_section: 'status = Done',
   },
   events: [
     'option_watching_changed',

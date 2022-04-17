@@ -13,17 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, ElemIdGetter, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isModificationChange, ObjectType, Values } from '@salto-io/adapter-api'
-import { naclCase, pathNaclCase, createSchemeGuard } from '@salto-io/adapter-utils'
+import { Change, CORE_ANNOTATIONS, ElemIdGetter, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isModificationChange, ObjectType, Values } from '@salto-io/adapter-api'
+import { naclCase, pathNaclCase, createSchemeGuard, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
 import _ from 'lodash'
+import { collections } from '@salto-io/lowerdash'
 import { JIRA, WEBHOOK_TYPE } from '../../constants'
 import JiraClient from '../../client/client'
 import { FilterCreator } from '../../filter'
 import { createWebhookTypes } from './types'
 import { deployChanges } from '../../deployment/standard_deployment'
+
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -58,7 +61,14 @@ const createInstance = (
   return new InstanceElement(
     instanceName,
     type,
-    values,
+    {
+      ...values,
+      filters: _.pickBy({
+        ...(values.filters ?? {}),
+        'issue-related-events-section': undefined,
+        issue_related_events_section: values.filters?.['issue-related-events-section'],
+      }, values.isDefined),
+    },
     [JIRA, elementUtils.RECORDS_PATH, WEBHOOK_TYPE, pathNaclCase(instanceName)],
   )
 }
@@ -141,6 +151,42 @@ const filter: FilterCreator = ({ client, getElemIdFunc, config }) => ({
 
     webhookInstances.forEach(instance => elements.push(instance))
     elements.push(webhookType, ...subTypes)
+  },
+
+  preDeploy: async changes => {
+    await awu(changes)
+      .filter(isInstanceChange)
+      .filter(change => getChangeData(change).elemID.typeName === WEBHOOK_TYPE)
+      .forEach(async change => {
+        await applyFunctionToChangeData<Change<InstanceElement>>(
+          change,
+          instance => {
+            if (instance.value.filters?.issue_related_events_section !== undefined) {
+              instance.value.filters['issue-related-events-section'] = instance.value.filters.issue_related_events_section
+              delete instance.value.filters.issue_related_events_section
+            }
+            return instance
+          }
+        )
+      })
+  },
+
+  onDeploy: async changes => {
+    await awu(changes)
+      .filter(isInstanceChange)
+      .filter(change => getChangeData(change).elemID.typeName === WEBHOOK_TYPE)
+      .forEach(async change => {
+        await applyFunctionToChangeData<Change<InstanceElement>>(
+          change,
+          instance => {
+            if (instance.value.filters?.['issue-related-events-section'] !== undefined) {
+              instance.value.filters.issue_related_events_section = instance.value.filters['issue-related-events-section']
+              delete instance.value.filters['issue-related-events-section']
+            }
+            return instance
+          }
+        )
+      })
   },
 
   deploy: async changes => {

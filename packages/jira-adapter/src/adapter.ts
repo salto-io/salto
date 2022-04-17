@@ -77,6 +77,7 @@ import notificationSchemeDeploymentFilter from './filters/notification_scheme/no
 import notificationSchemeStructureFilter from './filters/notification_scheme/notification_scheme_structure'
 import avatarsFilter from './filters/avatars'
 import iconUrlFilter from './filters/icon_url'
+import jqlReferencesFilter from './filters/jql/jql_references'
 import userFilter from './filters/user'
 import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
@@ -145,6 +146,7 @@ export const DEFAULT_FILTERS = [
   fieldConfigurationFilter,
   fieldConfigurationSchemeFilter,
   userFilter,
+  jqlReferencesFilter,
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,

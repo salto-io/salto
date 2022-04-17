@@ -22,6 +22,7 @@ import { isJqlFieldDetails, JqlFieldDetails } from './types'
 
 const JQL_NAME_TO_FIELD_NAME: Record<string, string | undefined> = {
   issuetype: 'issue type',
+  type: 'issue type',
 }
 
 type JqlContext = {

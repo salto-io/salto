@@ -31,6 +31,7 @@ type JiraClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimit
   & {
     fieldConfigurationItemsDeploymentLimit: number
     usePrivateAPI: boolean
+    boardColumnRetry: number
   }
 
 export type JspUrls = {
@@ -1829,6 +1830,7 @@ export const DEFAULT_CONFIG: JiraConfig = {
   // Jira does not allow more items in a single request than this
     fieldConfigurationItemsDeploymentLimit: 100,
     usePrivateAPI: true,
+    boardColumnRetry: 5,
   },
   fetch: {
     includeTypes: DEFAULT_INCLUDE_ENDPOINTS,
@@ -1846,6 +1848,10 @@ const createClientConfigType = (): ObjectType => {
   )
   configType.fields.usePrivateAPI = new Field(
     configType, 'usePrivateAPI', BuiltinTypes.BOOLEAN
+  )
+
+  configType.fields.boardColumnRetry = new Field(
+    configType, 'boardColumnRetry', BuiltinTypes.NUMBER
   )
   return configType
 }

@@ -24,7 +24,6 @@ import { addAnnotationRecursively, findObject, setFieldDeploymentAnnotations } f
 import JiraClient from '../../client/client'
 import { getLookUpName } from '../../reference_mapping'
 
-const MAX_RETRIES = 5
 const KANBAN_TYPE = 'kanban'
 export const COLUMNS_CONFIG_FIELD = 'columnConfig'
 
@@ -54,7 +53,7 @@ const convertColumn = (column: Values): Values => ({
 export const deployColumns = async (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
   client: JiraClient,
-  retriesLeft = MAX_RETRIES,
+  retriesLeft: number,
 ): Promise<void> => {
   const resolvedChange = await resolveChangeElement(change, getLookUpName)
 
@@ -95,6 +94,7 @@ export const deployColumns = async (
   }
 
   if (!_.isEqual(columnsToUpdate, updatedColumns)) {
+    log.warn(`Failed to update columns of ${instance.elemID.getFullName()} - ${updatedColumns.join(', ')}`)
     if (retriesLeft > 0) {
       await deployColumns(change, client, retriesLeft - 1)
     } else {

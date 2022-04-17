@@ -23,6 +23,7 @@ export const MAP_ID_PREFIX = 'Map'
 export const LIST_ID_PREFIX = 'List'
 export const GENERIC_ID_PREFIX = '<'
 export const GENERIC_ID_SUFFIX = '>'
+export const GLOBAL_ADAPTER = ''
 
 export type ContainerTypeName = 'Map' | 'List'
 const CONTAINER_PREFIXES = [MAP_ID_PREFIX, LIST_ID_PREFIX]
@@ -77,7 +78,7 @@ export class ElemID {
   static fromFullName(fullName: string): ElemID {
     const containerNameParts = getContainerPrefix(fullName)
     if (containerNameParts !== undefined) {
-      return new ElemID('', fullName)
+      return new ElemID(GLOBAL_ADAPTER, fullName)
     }
     const [adapter, typeName, idType, ...name] = fullName.split(ElemID.NAMESPACE_SEPARATOR)
     if (idType === undefined) {
@@ -295,7 +296,7 @@ export class ElemID {
   }
 
   getContainerPrefixAndInnerType(): ContainerPrefixAndInnerType | undefined {
-    if (this.adapter === '' && this.idType === 'type') {
+    if (this.adapter === GLOBAL_ADAPTER && this.idType === 'type') {
       return getContainerPrefix(this.typeName)
     }
     return undefined

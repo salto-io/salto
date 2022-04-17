@@ -18,7 +18,7 @@
 import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { ElemID, LIST_ID_PREFIX, MAP_ID_PREFIX } from './element_id'
+import { ElemID, LIST_ID_PREFIX, MAP_ID_PREFIX, GLOBAL_ADAPTER } from './element_id'
 // There is a real cycle here and alternatively values.ts should be defined in the same file
 // eslint-disable-next-line import/no-cycle
 import { Values, isEqualValues, Value, TypeReference, isTypeReference, cloneDeepWithoutRefs } from './values'
@@ -75,9 +75,6 @@ export abstract class Element {
     this.path = path
   }
 
-  /**
-   * Return a deep copy of the instance annotations values.
-   */
   protected cloneAnnotations(): Values {
     return cloneDeepWithoutRefs(this.annotations)
   }
@@ -171,7 +168,7 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
   }
 
   static createElemID(innerTypeOrRef: TypeOrRef): ElemID {
-    return new ElemID('', `${LIST_ID_PREFIX}<${innerTypeOrRef.elemID.getFullName()}>`)
+    return new ElemID(GLOBAL_ADAPTER, `${LIST_ID_PREFIX}<${innerTypeOrRef.elemID.getFullName()}>`)
   }
 
   isEqual(other: ListType): boolean {
@@ -231,7 +228,7 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
   }
 
   static createElemID(innerTypeOrRef: TypeOrRef): ElemID {
-    return new ElemID('', `${MAP_ID_PREFIX}<${innerTypeOrRef.elemID.getFullName()}>`)
+    return new ElemID(GLOBAL_ADAPTER, `${MAP_ID_PREFIX}<${innerTypeOrRef.elemID.getFullName()}>`)
   }
 
   isEqual(other: MapType): boolean {

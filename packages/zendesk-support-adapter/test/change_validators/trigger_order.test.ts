@@ -126,8 +126,8 @@ describe('triggerOrderInstanceContainsAllTheInstancesValidator', () => {
     expect(errors).toEqual([{
       elemID: trigger3.elemID,
       severity: 'Error',
-      message: `Order not specified for instance of type ${trigger3.elemID.typeName} in the ${orderTypeName} instance. Please make sure to place it under the ${category1.elemID.name} category in the inactive list`,
-      detailedMessage: `Order not specified for ${trigger3.elemID.name} of type ${trigger3.elemID.typeName} in the ${orderTypeName} instance. Please make sure to place it under the ${category1.elemID.name} category in the inactive list`,
+      message: `Instance order not specified in ${orderTypeName}`,
+      detailedMessage: `Order not specified for instance ${trigger3.elemID.name} of type ${trigger3.elemID.typeName} in ${orderTypeName}. Please make sure to place it under the ${category1.elemID.name} category in the inactive list`,
     }])
   })
   it('should return an error if the instance does exist in the wrong activity list in the same category', async () => {
@@ -272,8 +272,8 @@ describe('triggerOrderInstanceContainsAllTheInstancesValidator', () => {
     expect(errors).toEqual([{
       elemID: invalidTrigger.elemID,
       severity: 'Error',
-      message: `Invalid category id for instance of type ${invalidTrigger.elemID.typeName}`,
-      detailedMessage: `Invalid category id for ${invalidTrigger.elemID.name} of type ${invalidTrigger.elemID.typeName}`,
+      message: 'Invalid category id',
+      detailedMessage: `Invalid category id '${invalidTrigger.value.category_id}' for instance ${invalidTrigger.elemID.name} of type ${invalidTrigger.elemID.typeName}`,
     }])
   })
 })

@@ -63,7 +63,6 @@ const addFieldTypeAndInstances = async ({
   transformationConfigByType,
   transformationDefaultConfig,
   getElemIdFunc,
-  hideTypes,
 }: {
   adapterName: string
   typeName: string
@@ -73,7 +72,6 @@ const addFieldTypeAndInstances = async ({
   transformationConfigByType: Record<string, TransformationConfig>
   transformationDefaultConfig: TransformationDefaultConfig
   getElemIdFunc?: ElemIdGetter
-  hideTypes?: boolean
 }): Promise<Element[]> => {
   if (type.fields[fieldName] === undefined) {
     log.info('type %s field %s does not exist (maybe it is not populated by any of the instances), not extracting field', type.elemID.name, fieldName)
@@ -102,7 +100,6 @@ const addFieldTypeAndInstances = async ({
       isSubType: true,
       transformationConfigByType,
       transformationDefaultConfig,
-      hideTypes,
     })
     type.fields[fieldName].refType = isListType(currentType)
       ? createRefToElmWithValue(new ListType(fieldType.type))
@@ -161,14 +158,12 @@ export const extractStandaloneFields = async ({
   transformationDefaultConfig,
   adapterName,
   getElemIdFunc,
-  hideTypes,
 }: {
   elements: Element[]
   transformationConfigByType: Record<string, TransformationConfig>
   transformationDefaultConfig: TransformationDefaultConfig
   adapterName: string
   getElemIdFunc?: ElemIdGetter
-  hideTypes?: boolean
 }): Promise<void> => {
   const allTypes = _.keyBy(elements.filter(isObjectType), e => e.elemID.name)
   const allInstancesbyType = _.groupBy(
@@ -207,7 +202,6 @@ export const extractStandaloneFields = async ({
           transformationConfigByType,
           transformationDefaultConfig,
           getElemIdFunc,
-          hideTypes,
         }))
       })
     })

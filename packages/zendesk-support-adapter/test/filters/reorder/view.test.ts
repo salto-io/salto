@@ -15,11 +15,11 @@
 */
 import {
   ObjectType, ElemID, InstanceElement, Element, isObjectType,
-  isInstanceElement, ReferenceExpression, ModificationChange, CORE_ANNOTATIONS,
+  isInstanceElement, ReferenceExpression, ModificationChange,
   toChange, getChangeData,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
-import { DEFAULT_CONFIG, DEFAULT_INCLUDE_ENDPOINTS, FETCH_CONFIG } from '../../../src/config'
+import { DEFAULT_CONFIG } from '../../../src/config'
 import ZendeskClient from '../../../src/client/client'
 import { ZENDESK_SUPPORT } from '../../../src/constants'
 import { paginate } from '../../../src/client/pagination'
@@ -99,39 +99,6 @@ describe('view reorder filter', () => {
       const orderType = elements
         .find(elem => elem.elemID.getFullName() === 'zendesk_support.view_order')
       expect(orderType).toBeDefined()
-      expect(orderType?.annotations[CORE_ANNOTATIONS.HIDDEN]).toEqual(true)
-    })
-    it('should create correct order element with non hidden types', async () => {
-      const filterWithHideType = filterCreator({
-        client,
-        paginator: clientUtils.createPaginator({
-          client,
-          paginationFuncCreator: paginate,
-        }),
-        config: {
-          ...DEFAULT_CONFIG,
-          [FETCH_CONFIG]: {
-            includeTypes: DEFAULT_INCLUDE_ENDPOINTS,
-            hideTypes: false,
-          },
-        },
-      }) as FilterType
-      const elements = [objType, inst1, inst2, inst3]
-      await filterWithHideType.onFetch(elements)
-      expect(elements).toHaveLength(6)
-      expect(elements.map(e => e.elemID.getFullName()).sort())
-        .toEqual([
-          'zendesk_support.view',
-          'zendesk_support.view.instance.inst1',
-          'zendesk_support.view.instance.inst2',
-          'zendesk_support.view.instance.inst3',
-          'zendesk_support.view_order',
-          'zendesk_support.view_order.instance',
-        ])
-      const orderType = elements
-        .find(elem => elem.elemID.getFullName() === 'zendesk_support.view_order')
-      expect(orderType).toBeDefined()
-      expect(orderType?.annotations[CORE_ANNOTATIONS.HIDDEN]).not.toBeDefined()
     })
     it('should not create new elements if there are no views', async () => {
       const elements: Element[] = []

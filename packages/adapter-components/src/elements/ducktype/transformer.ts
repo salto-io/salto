@@ -47,7 +47,6 @@ type GetEntriesParams = {
   contextElements?: Record<string, Element[]>
   requestContext?: Record<string, unknown>
   getElemIdFunc?: ElemIdGetter
-  hideTypes?: boolean
 }
 
 type Entries = {
@@ -70,7 +69,7 @@ const getEntriesForType = async (
 ): Promise<Entries> => {
   const {
     typeName, paginator, typesConfig, typeDefaultConfig, contextElements,
-    requestContext, nestedFieldFinder, computeGetArgs, adapterName, getElemIdFunc, hideTypes,
+    requestContext, nestedFieldFinder, computeGetArgs, adapterName, getElemIdFunc,
   } = params
   const typeConfig = typesConfig[typeName]
   if (typeConfig === undefined) {
@@ -113,7 +112,6 @@ const getEntriesForType = async (
     hasDynamicFields: hasDynamicFields === true,
     transformationConfigByType,
     transformationDefaultConfig,
-    hideTypes,
   })
   // find the field and type containing the actual instances
   const nestedFieldDetails = await nestedFieldFinder(type, fieldsToOmit, dataField)
@@ -199,7 +197,6 @@ const getEntriesForType = async (
     hasDynamicFields: hasDynamicFields === true,
     transformationConfigByType,
     transformationDefaultConfig,
-    hideTypes,
   })
   return {
     instances: instances.map(inst => new InstanceElement(
@@ -222,7 +219,6 @@ export const getTypeAndInstances = async ({
   computeGetArgs,
   typesConfig,
   typeDefaultConfig,
-  hideTypes,
   contextElements,
   getElemIdFunc,
 }: {
@@ -233,7 +229,6 @@ export const getTypeAndInstances = async ({
   computeGetArgs: ComputeGetArgsFunc
   typesConfig: Record<string, TypeDuckTypeConfig>
   typeDefaultConfig: TypeDuckTypeDefaultsConfig
-  hideTypes?: boolean
   contextElements?: Record<string, Element[]>
   getElemIdFunc?: ElemIdGetter
 }): Promise<Element[]> => {
@@ -245,7 +240,6 @@ export const getTypeAndInstances = async ({
     nestedFieldFinder,
     typeDefaultConfig,
     typesConfig,
-    hideTypes,
     contextElements,
     getElemIdFunc,
   })
@@ -259,7 +253,6 @@ export const getTypeAndInstances = async ({
     transformationConfigByType,
     transformationDefaultConfig: typeDefaultConfig.transformation,
     getElemIdFunc,
-    hideTypes,
   })
   return elements
 }
@@ -281,7 +274,6 @@ export const getAllElements = async ({
   computeGetArgs,
   typeDefaults,
   getElemIdFunc,
-  hideTypes,
   isErrorTurnToConfigSuggestion,
 }: {
   adapterName: string
@@ -292,7 +284,6 @@ export const getAllElements = async ({
   computeGetArgs: ComputeGetArgsFunc
   typeDefaults: TypeDuckTypeDefaultsConfig
   getElemIdFunc?: ElemIdGetter
-  hideTypes?: boolean
   isErrorTurnToConfigSuggestion?: (error: Error) => boolean
 }): Promise<FetchElements<Element[]>> => {
   const allTypesWithRequestEndpoints = includeTypes.filter(
@@ -307,7 +298,6 @@ export const getAllElements = async ({
     typesConfig: types,
     typeDefaultConfig: typeDefaults,
     getElemIdFunc,
-    hideTypes,
   }
 
   const configSuggestions: ConfigChangeSuggestion[] = []
@@ -354,7 +344,6 @@ export const getAllElements = async ({
     typesConfig: types,
     includeTypes,
     typeDefaultConfig: typeDefaults,
-    hideTypes,
   })
   return {
     elements: instancesAndTypes,

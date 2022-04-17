@@ -16,8 +16,7 @@
 import _ from 'lodash'
 import {
   Element, isInstanceElement, InstanceElement, ObjectType, ElemID, ListType, isObjectType,
-  BuiltinTypes, ReferenceExpression, Change, getChangeData, isModificationChange,
-  CORE_ANNOTATIONS, isInstanceChange,
+  BuiltinTypes, ReferenceExpression, Change, getChangeData, isModificationChange, isInstanceChange,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils, config as configUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
@@ -88,7 +87,6 @@ export const createReorderFilterCreator = (
           refType: new ListType(BuiltinTypes.NUMBER),
         },
       },
-      annotations: config.fetch.hideTypes ? { [CORE_ANNOTATIONS.HIDDEN]: true } : undefined,
       isSettings: true,
       path: [ZENDESK_SUPPORT, TYPES_PATH, SUBTYPES_PATH, typeNameNaclCase],
     })

@@ -137,7 +137,7 @@ const createAttachmentInstance = ({
   )
 }
 
-const createAttachmentType = (hidden?: boolean): ObjectType =>
+const createAttachmentType = (): ObjectType =>
   new ObjectType({
     elemID: new ElemID(ZENDESK_SUPPORT, MACRO_ATTACHMENT_TYPE_NAME),
     fields: {
@@ -149,7 +149,6 @@ const createAttachmentType = (hidden?: boolean): ObjectType =>
       contentType: { refType: BuiltinTypes.STRING },
       content: { refType: BuiltinTypes.STRING },
     },
-    annotations: hidden ? { [CORE_ANNOTATIONS.HIDDEN]: true } : undefined,
     path: [ZENDESK_SUPPORT, TYPES_PATH, SUBTYPES_PATH, MACRO_ATTACHMENT_TYPE_NAME],
   })
 
@@ -208,7 +207,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       .filter(isInstanceElement)
       .filter(e => e.elemID.typeName === MACRO_TYPE_NAME)
       .filter(e => !_.isEmpty(e.value[ATTACHMENTS_FIELD_NAME]))
-    const attachmentType = createAttachmentType(config.fetch.hideTypes)
+    const attachmentType = createAttachmentType()
     const macroAttachments = (await Promise.all(macrosWithAttachments
       .map(async macro => getMacroAttachments({ client, attachmentType, macro })))).flat()
     _.remove(elements, element => element.elemID.isEqual(attachmentType.elemID))

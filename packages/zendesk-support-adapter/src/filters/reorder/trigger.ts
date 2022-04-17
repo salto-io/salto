@@ -17,7 +17,7 @@ import _ from 'lodash'
 import Joi from 'joi'
 import {
   getChangeData, InstanceElement, isInstanceElement, isObjectType, Element, ReferenceExpression,
-  ObjectType, ElemID, ListType, BuiltinTypes, CORE_ANNOTATIONS,
+  ObjectType, ElemID, ListType, BuiltinTypes,
 } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, pathNaclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -129,13 +129,11 @@ const filterCreator: FilterCreator = ({ config, client, paginator }) => ({
         active: { refType: new ListType(BuiltinTypes.NUMBER) },
         inactive: { refType: new ListType(BuiltinTypes.NUMBER) },
       },
-      annotations: config.fetch.hideTypes ? { [CORE_ANNOTATIONS.HIDDEN]: true } : undefined,
       path: [ZENDESK_SUPPORT, TYPES_PATH, SUBTYPES_PATH, entryTypeNameNaclCase],
     })
     const type = new ObjectType({
       elemID: new ElemID(ZENDESK_SUPPORT, orderTypeName),
       fields: { order: { refType: new ListType(entryOrderType) } },
-      annotations: config.fetch.hideTypes ? { [CORE_ANNOTATIONS.HIDDEN]: true } : undefined,
       isSettings: true,
       path: [ZENDESK_SUPPORT, TYPES_PATH, SUBTYPES_PATH, typeNameNaclCase],
     })

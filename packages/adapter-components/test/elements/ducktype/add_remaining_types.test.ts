@@ -76,7 +76,6 @@ describe('add remaining types', () => {
       adapterName: ADAPTER_NAME,
       includeTypes,
       typeDefaultConfig,
-      hideTypes: false,
     })
     expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
       'myAdapter.file',
@@ -101,7 +100,6 @@ describe('add remaining types', () => {
       adapterName: ADAPTER_NAME,
       includeTypes,
       typeDefaultConfig,
-      hideTypes: false,
     })
     expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
       'myAdapter.file',

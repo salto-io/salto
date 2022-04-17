@@ -13,6 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { serviceUrlFilterCreator } from './service_url'
-export { referencedInstanceNamesFilterCreator } from './referenced_instance_names'
-export * as ducktype from './ducktype'
+import { filters } from '@salto-io/adapter-components'
+import { FilterContext } from '../config'
+import { FilterCreator } from '../filter'
+import ZendeskClient from '../client/client'
+
+/**
+ * Filter creators of all the common ducktype filters
+ */
+const filterCreators: FilterCreator[] = filters.ducktype
+  .DUCKTYPE_MANDATORY_FILTER_CREATORS
+  .map(filterCreator => params =>
+    filterCreator<ZendeskClient, FilterContext>()(params))
+
+export default filterCreators

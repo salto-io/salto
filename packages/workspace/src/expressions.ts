@@ -188,25 +188,25 @@ const getResolveFunctions = ({
     reference.topLevelParent = parent
   }
 
-  const resolveTypeReference = (reference: TypeReference): void => {
-    const syncResolvedType = getResolvedType(reference.elemID, resolvedElements)
+  const resolveTypeReference = (typeReference: TypeReference): void => {
+    const syncResolvedType = getResolvedType(typeReference.elemID, resolvedElements)
     if (syncResolvedType !== undefined) {
-      setTypeOnReference(reference, syncResolvedType)
+      setTypeOnReference(typeReference, syncResolvedType)
     } else {
       // For container types we only need to get the inner type, we will handle creating
       // the container type in "getResolvedType" after the promise is resolved
-      const typeId = ElemID.getTypeOrContainerTypeID(reference.elemID)
+      const typeId = ElemID.getTypeOrContainerTypeID(typeReference.elemID)
       const pendingResolve = getElementClone(typeId)
       pendingAsyncOperations.push(
         pendingResolve.then(resolveResult => {
           if (resolveResult === undefined) {
-            setTypeOnReference(reference, resolveResult)
+            setTypeOnReference(typeReference, resolveResult)
           } else {
             const resolvedType = getResolvedType(
-              reference.elemID,
+              typeReference.elemID,
               new Map([[resolveResult.elemID.getFullName(), resolveResult]])
             )
-            setTypeOnReference(reference, resolvedType)
+            setTypeOnReference(typeReference, resolvedType)
           }
         })
       )
@@ -321,7 +321,7 @@ export const resolve = (
       })
     }
 
-    // Note - resolveSingleElement fills pendingAsyncResolves as a side effect
+    // Note - this fills pendingAsyncResolves and pendingAsyncOperations as a side effect
     elementGroup.forEach(resolveSingleElement)
 
     const nextLevelToResolve = (await Promise.all(pendingAsyncResolves.values()))

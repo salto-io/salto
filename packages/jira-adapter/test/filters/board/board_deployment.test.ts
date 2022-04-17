@@ -171,6 +171,17 @@ describe('boardDeploymentFilter', () => {
 
     beforeEach(() => {
       deployChangeMock.mockReset()
+
+      connection.put.mockResolvedValue({
+        status: 200,
+        data: {
+          mappedColumns: [
+            {
+              name: 'someColumn',
+            },
+          ],
+        },
+      })
     })
 
     describe('creation', () => {
@@ -296,6 +307,17 @@ describe('boardDeploymentFilter', () => {
       })
 
       it('should deploy columns when changed', async () => {
+        connection.put.mockResolvedValue({
+          status: 200,
+          data: {
+            mappedColumns: [
+              {
+                name: 'someColumn2',
+              },
+            ],
+          },
+        })
+
         instance.value[COLUMNS_CONFIG_FIELD] = {
           columns: [
             {
@@ -327,6 +349,167 @@ describe('boardDeploymentFilter', () => {
         )
 
         expect(connection.put).toHaveBeenCalledOnce()
+      })
+
+      it('should deploy columns of a kanban when changed', async () => {
+        connection.put.mockResolvedValue({
+          status: 200,
+          data: {
+            mappedColumns: [
+              {
+                name: 'backlog',
+              },
+              {
+                name: 'someColumn2',
+              },
+            ],
+          },
+        })
+
+        instance.value[COLUMNS_CONFIG_FIELD] = {
+          columns: [
+            {
+              name: 'someColumn2',
+            },
+          ],
+        }
+
+        instance.value.type = 'kanban'
+
+        await filter.deploy([change])
+
+        expect(connection.put).toHaveBeenCalledWith(
+          '/rest/greenhopper/1.0/rapidviewconfig/columns',
+          {
+            currentStatisticsField: {
+              id: 'none_',
+            },
+            rapidViewId: '1',
+            mappedColumns: [
+              {
+                name: 'someColumn2',
+                mappedStatuses: [],
+                min: '',
+                max: '',
+              },
+            ],
+          },
+          {
+            headers: PRIVATE_API_HEADERS,
+          }
+        )
+
+        expect(connection.put).toHaveBeenCalledOnce()
+      })
+
+      it('should retry deploy columns', async () => {
+        connection.put.mockResolvedValueOnce({
+          status: 200,
+          data: {
+            mappedColumns: [
+              {
+                name: 'someColumn',
+              },
+            ],
+          },
+        })
+
+        connection.put.mockResolvedValueOnce({
+          status: 200,
+          data: {
+            mappedColumns: [
+              {
+                name: 'someColumn',
+              },
+            ],
+          },
+        })
+
+        connection.put.mockResolvedValueOnce({
+          status: 200,
+          data: {
+            mappedColumns: [
+              {
+                name: 'someColumn2',
+              },
+            ],
+          },
+        })
+
+        instance.value[COLUMNS_CONFIG_FIELD] = {
+          columns: [
+            {
+              name: 'someColumn2',
+            },
+          ],
+        }
+        await filter.deploy([change])
+
+        expect(connection.put).toHaveBeenCalledWith(
+          '/rest/greenhopper/1.0/rapidviewconfig/columns',
+          {
+            currentStatisticsField: {
+              id: 'none_',
+            },
+            rapidViewId: '1',
+            mappedColumns: [
+              {
+                name: 'someColumn2',
+                mappedStatuses: [],
+                min: '',
+                max: '',
+              },
+            ],
+          },
+          {
+            headers: PRIVATE_API_HEADERS,
+          }
+        )
+
+        expect(connection.put).toHaveBeenCalledTimes(3)
+      })
+
+      it('should throw if deploy columns does not change the columns', async () => {
+        connection.put.mockResolvedValue({
+          status: 200,
+          data: {
+            mappedColumns: [
+              {
+                name: 'someColumn',
+              },
+            ],
+          },
+        })
+
+        instance.value[COLUMNS_CONFIG_FIELD] = {
+          columns: [
+            {
+              name: 'someColumn2',
+            },
+          ],
+        }
+        const { deployResult } = await filter.deploy([change])
+
+        expect(connection.put).toHaveBeenCalledTimes(6)
+        expect(deployResult.errors).toHaveLength(1)
+      })
+
+      it('should throw if update columns response is invalid', async () => {
+        connection.put.mockResolvedValue({
+          status: 200,
+          data: {
+          },
+        })
+
+        instance.value[COLUMNS_CONFIG_FIELD] = {
+          columns: [
+            {
+              name: 'someColumn2',
+            },
+          ],
+        }
+        const { deployResult } = await filter.deploy([change])
+        expect(deployResult.errors).toHaveLength(1)
       })
 
       it('should deploy sub query when changed', async () => {

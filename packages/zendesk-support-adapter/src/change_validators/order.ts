@@ -99,16 +99,16 @@ export const orderInstanceContainsAllTheInstancesValidator: ChangeValidator = as
         return [{
           elemID: instance.elemID,
           severity: 'Error',
-          message: `Order not specified for instance of type ${instance.elemID.typeName} in the ${orderTypeName} instance. Please make sure to include it in the ${orderTypeName} instance under the ${instanceActivityValue ? 'active' : 'inactive'} list`,
-          detailedMessage: `Order not specified for ${instance.elemID.name} of type ${instance.elemID.typeName} in the ${orderTypeName} instance. Please make sure to include it in the ${orderTypeName} instance under the ${instanceActivityValue ? 'active' : 'inactive'} list`,
+          message: `Instance order not specified in ${orderTypeName}`,
+          detailedMessage: `Order not specified for instance ${instance.elemID.name} of type ${instance.elemID.typeName}. Please make sure to include it in ${orderTypeName} under the ${instanceActivityValue ? 'active' : 'inactive'} list`,
         }]
       }
       if (isInstanceInOrderList(orderListOfTheOtherInstanceActivity, instance)) {
         return [{
           elemID: instance.elemID,
           severity: 'Error',
-          message: `instance of type ${instance.elemID.typeName} is misplaced in the ${orderTypeName} instance. Please make sure to place it under the ${instanceActivityValue ? 'active' : 'inactive'} list`,
-          detailedMessage: `${instance.elemID.name} of type ${instance.elemID.typeName} is misplaced in the ${orderTypeName} instance. Please make sure to place it under the ${instanceActivityValue ? 'active' : 'inactive'} list`,
+          message: `Instance misplaced in ${orderTypeName}`,
+          detailedMessage: `Instance ${instance.elemID.name} of type ${instance.elemID.typeName} is misplaced in ${orderTypeName}. Please make sure to place it under the ${instanceActivityValue ? 'active' : 'inactive'} list`,
         }]
       }
       return []

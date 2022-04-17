@@ -33,8 +33,8 @@ export const createWrongPlaceErrorMessage = (
 ): ChangeError => ({
   elemID: instanceId,
   severity: 'Error',
-  message: `instance of type ${instanceId.typeName} is misplaced in the ${orderTypeName} instance. Please make sure to place it under the ${categoryFullName} category in the ${active ? 'active' : 'inactive'} list`,
-  detailedMessage: `${instanceId.name} of type ${instanceId.typeName} is misplaced in the ${orderTypeName} instance. Please make sure to place it under the ${categoryFullName} category in the ${active ? 'active' : 'inactive'} list`,
+  message: `Instance misplaced in ${orderTypeName}`,
+  detailedMessage: `Instance ${instanceId.name} of type ${instanceId.typeName} is misplaced in ${orderTypeName}. Please make sure to place it under the ${categoryFullName} category in the ${active ? 'active' : 'inactive'} list`,
 })
 
 export const triggerOrderInstanceContainsAllTheInstancesValidator: ChangeValidator = async (
@@ -67,8 +67,8 @@ export const triggerOrderInstanceContainsAllTheInstancesValidator: ChangeValidat
         return {
           elemID: instance.elemID,
           severity: 'Error',
-          message: `Invalid category id for instance of type ${instance.elemID.typeName}`,
-          detailedMessage: `Invalid category id for ${instance.elemID.name} of type ${instance.elemID.typeName}`,
+          message: 'Invalid category id',
+          detailedMessage: `Invalid category id '${categoryId}' for instance ${instance.elemID.name} of type ${instance.elemID.typeName}`,
         }
       }
       const instanceActivityValue = instance.value.active
@@ -83,8 +83,8 @@ export const triggerOrderInstanceContainsAllTheInstancesValidator: ChangeValidat
         return [{
           elemID: instance.elemID,
           severity: 'Error',
-          message: `Order not specified for instance of type ${instance.elemID.typeName} in the ${triggerOrderTypeName} instance. Please make sure to place it under the ${categoryId.elemID.name} category in the ${instanceActivityValue ? 'active' : 'inactive'} list`,
-          detailedMessage: `Order not specified for ${instance.elemID.name} of type ${instance.elemID.typeName} in the ${triggerOrderTypeName} instance. Please make sure to place it under the ${categoryId.elemID.name} category in the ${instanceActivityValue ? 'active' : 'inactive'} list`,
+          message: `Instance order not specified in ${triggerOrderTypeName}`,
+          detailedMessage: `Order not specified for instance ${instance.elemID.name} of type ${instance.elemID.typeName} in ${triggerOrderTypeName}. Please make sure to place it under the ${categoryId.elemID.name} category in the ${instanceActivityValue ? 'active' : 'inactive'} list`,
         }]
       }
       if ((instanceActivityValue ? orderEntry.inactive : orderEntry.active)

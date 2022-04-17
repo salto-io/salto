@@ -25,31 +25,25 @@ const JQL_NAME_TO_FIELD_NAME: Record<string, string | undefined> = {
   type: 'issue type',
 }
 
-type JqlContext = {
-  type: string
-  field: string
+const CONTEXT_TYPE_TO_FIELD: Record<string, string> = {
+  [FIELD_TYPE_NAME]: 'name',
+  [PROJECT_TYPE]: 'key',
+  [STATUS_TYPE_NAME]: 'name',
+  [RESOLUTION_TYPE_NAME]: 'name',
+  [PRIORITY_TYPE_NAME]: 'name',
+  [ISSUE_TYPE_NAME]: 'name',
 }
-
-const CONTEXT_TYPES: JqlContext[] = [
-  { type: FIELD_TYPE_NAME, field: 'name' },
-  { type: PROJECT_TYPE, field: 'key' },
-  { type: STATUS_TYPE_NAME, field: 'name' },
-  { type: RESOLUTION_TYPE_NAME, field: 'name' },
-  { type: PRIORITY_TYPE_NAME, field: 'name' },
-  { type: ISSUE_TYPE_NAME, field: 'name' },
-]
 
 export const generateJqlContext = (
   instances: InstanceElement[],
 ): Record<string, Record<string, InstanceElement>> =>
   _(instances)
-    .filter(instance => CONTEXT_TYPES.map(({ type }) => type).includes(instance.elemID.typeName))
+    .filter(instance => instance.elemID.typeName in CONTEXT_TYPE_TO_FIELD)
     .groupBy(instance => instance.elemID.typeName)
     .mapValues(instanceGroup => _.keyBy(
-      instanceGroup.filter(instance => typeof instance.value.name === 'string'),
+      instanceGroup.filter(instance => _.isString(instance.value.name)),
       instance => {
-        const fieldName = (CONTEXT_TYPES
-          .find(({ type }) => type === instance.elemID.typeName) as JqlContext).field
+        const fieldName = CONTEXT_TYPE_TO_FIELD[instance.elemID.typeName]
         return instance.value[fieldName].toLowerCase() as string
       },
     ))

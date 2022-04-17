@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
-import { extendGeneratedDependencies, transformElement } from '@salto-io/adapter-utils'
+import { extendGeneratedDependencies } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -30,9 +30,9 @@ const log = logger(module)
 const JQL_CHUNK_SIZE = 1000
 
 const JQL_FIELDS = [
-  { type: 'Filter', name: 'jql' },
-  { type: 'Board', name: 'subQuery' },
-  { type: 'WebhookFilters', name: 'issue_related_events_section' },
+  { type: 'Filter', path: ['jql'] },
+  { type: 'Board', path: ['subQuery'] },
+  { type: 'Webhook', path: ['filters', 'issue_related_events_section'] },
 ]
 
 type JqlDetails = {
@@ -41,26 +41,14 @@ type JqlDetails = {
 }
 
 
-const getJqls = async (instance: InstanceElement): Promise<JqlDetails[]> => {
-  const jqls: JqlDetails[] = []
-  await transformElement({
-    element: instance,
-    transformFunc: ({ value, field, path }) => {
-      const isJql = JQL_FIELDS.some(({ name, type }) =>
-        field?.name === name && field.parent.elemID.name === type)
-
-      if (isJql && path !== undefined) {
-        jqls.push({
-          jql: value,
-          path,
-        })
-      }
-      return value
-    },
-  })
-
-  return jqls
-}
+const getJqls = async (instance: InstanceElement): Promise<JqlDetails[]> =>
+  JQL_FIELDS
+    .filter(({ type }) => type === instance.elemID.typeName)
+    .map(({ path }) => ({
+      path: instance.elemID.createNestedID(...path),
+      jql: _.get(instance.value, path),
+    }))
+    .filter(({ jql }) => _.isString(jql))
 
 const requestJqlsStructure = async (jqls: string[], client: JiraClient): Promise<ParsedJql[]> => {
   log.debug(`About to request JQL structure for ${jqls.length} unique JQLs`)

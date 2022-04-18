@@ -60,7 +60,7 @@ function validateConfig(config: Values): asserts config is JiraConfig {
   Object.values(getApiDefinitions(apiDefinitions)).forEach(swaggerDef => {
     validateSwaggerApiDefinitionConfig('apiDefinitions', swaggerDef)
   })
-  validateSwaggerFetchConfig('fetch', 'apiDefinitions', fetch, apiDefinitions)
+  validateSwaggerFetchConfig('fetch', fetch, apiDefinitions)
   validateFetchConfig(fetch)
 }
 

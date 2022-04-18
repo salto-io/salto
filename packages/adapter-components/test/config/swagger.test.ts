@@ -120,6 +120,7 @@ describe('config_swagger', () => {
               },
             },
           },
+          supportedTypes: {},
         },
       )).not.toThrow()
     })
@@ -153,6 +154,7 @@ describe('config_swagger', () => {
               },
             },
           },
+          supportedTypes: {},
         },
       )).toThrow(new Error('Invalid type names in PATH: bbb were renamed in PATH.typeNameOverrides'))
     })
@@ -184,6 +186,7 @@ describe('config_swagger', () => {
               },
             },
           },
+          supportedTypes: {},
         },
       )).toThrow(new Error('Duplicate type names in PATH.typeNameOverrides: bbb,eee'))
     })
@@ -217,49 +220,16 @@ describe('config_swagger', () => {
               },
             },
           },
-          supportedTypes: ['aaa'],
+          supportedTypes: { aa: ['aaa'] },
         },
       )).not.toThrow()
     })
   })
 
   describe('validateFetchConfig', () => {
-    it('should validate successfully when supportedTypes is undefined', () => {
-      expect(() => validateSwaggerFetchConfig(
-        'FETCH_PATH',
-        'API_PATH',
-        {
-          includeTypes: ['a', 'bla'],
-        },
-        {
-          swagger: {
-            url: 'www.url.com',
-          },
-          typeDefaults: {
-            transformation: {
-              idFields: ['id'],
-            },
-          },
-          types: {
-            a: {
-              request: {
-                url: '/x/a',
-              },
-            },
-            bla: {
-              request: {
-                url: '/bla',
-              },
-            },
-          },
-        },
-      )).not.toThrow()
-    })
-
     it('should validate successfully when values are valid', () => {
       expect(() => validateSwaggerFetchConfig(
         'FETCH_PATH',
-        'API_PATH',
         {
           includeTypes: ['a', 'bla'],
         },
@@ -267,7 +237,7 @@ describe('config_swagger', () => {
           swagger: {
             url: 'www.url.com',
           },
-          supportedTypes: ['a', 'bla', 'lala'],
+          supportedTypes: { aa: ['a', 'bla', 'lala'] },
           typeDefaults: {
             transformation: {
               idFields: ['id'],
@@ -292,7 +262,6 @@ describe('config_swagger', () => {
     it('should throw when there are invalid includeTypes', () => {
       expect(() => validateSwaggerFetchConfig(
         'FETCH_PATH',
-        'API_PATH',
         {
           includeTypes: ['a', 'unknown'],
         },
@@ -300,7 +269,7 @@ describe('config_swagger', () => {
           swagger: {
             url: 'www.url.com',
           },
-          supportedTypes: ['a', 'bla', 'lala'],
+          supportedTypes: { aa: ['a', 'bla', 'lala'] },
           typeDefaults: {
             transformation: {
               idFields: ['id'],
@@ -319,7 +288,7 @@ describe('config_swagger', () => {
             },
           },
         },
-      )).toThrow(new Error('Invalid type names in FETCH_PATH.includeTypes: unknown are not listed as supported types in API_PATH.supportedTypes.'))
+      )).toThrow(new Error('Invalid type names in FETCH_PATH.includeTypes: unknown are not supported.'))
     })
   })
 })

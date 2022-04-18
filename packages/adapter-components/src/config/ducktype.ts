@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { ObjectType, BuiltinTypes, FieldDefinition } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
-import { AdapterApiConfig, createAdapterApiConfigType, UserFetchConfig, TypeConfig, TypeDefaultsConfig } from './shared'
+import { AdapterApiConfig, createAdapterApiConfigType, UserFetchConfig, TypeConfig, TypeDefaultsConfig, validateSupportedTypes } from './shared'
 import { TransformationConfig, TransformationDefaultConfig, createTransformationConfigTypes, validateTransoformationConfig, getTransformationConfigByType } from './transformation'
 import { createRequestConfigs, validateRequestConfig } from './request'
 
@@ -93,6 +93,7 @@ export const validateFetchConfig = (
   userFetchConfig: DuckTypeUserFetchConfig,
   adapterApiConfig: AdapterApiConfig,
 ): void => {
+  validateSupportedTypes(fetchConfigPath, userFetchConfig, adapterApiConfig)
   const typeNames = new Set(Object.keys(adapterApiConfig.types))
   const invalidIncludeTypes = userFetchConfig.includeTypes.filter(
     name => !typeNames.has(name)

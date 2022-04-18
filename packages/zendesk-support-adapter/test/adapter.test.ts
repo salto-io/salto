@@ -700,6 +700,7 @@ describe('adapter', () => {
                   },
                 },
               },
+              supportedTypes: { test: ['test'] },
             },
           },
         ),
@@ -739,7 +740,7 @@ describe('adapter', () => {
           configType,
           {
             [FETCH_CONFIG]: {
-              includeTypes: ['group', 'groups', 'brand', 'brands'],
+              includeTypes: ['groups', 'brands'],
             },
             [API_DEFINITIONS_CONFIG]: {
               types: {

@@ -17,6 +17,7 @@ import {
   ObjectType, ElemID, InstanceElement, Element, isInstanceElement, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
+import { SUPPORTED_TYPES } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
 import { ZENDESK_SUPPORT } from '../../src/constants'
@@ -142,6 +143,7 @@ describe('Unordered lists filter', () => {
             },
           },
           types: {},
+          supportedTypes: SUPPORTED_TYPES,
         },
       },
     }) as FilterType

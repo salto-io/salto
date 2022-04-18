@@ -20,10 +20,11 @@ describe('config_ducktype', () => {
   describe('createAdapterApiConfigType', () => {
     it('should return default config type when no custom fields were added', async () => {
       const configType = createDucktypeAdapterApiConfigType({ adapter: 'myAdapter' })
-      expect(Object.keys(configType.fields)).toHaveLength(3)
+      expect(Object.keys(configType.fields)).toHaveLength(4)
       expect(configType.fields.types).toBeDefined()
       expect(configType.fields.typeDefaults).toBeDefined()
       expect(configType.fields.apiVersion).toBeDefined()
+      expect(configType.fields.supportedTypes).toBeDefined()
       const types = await configType.fields.types.getType() as MapType
       expect(types).toBeInstanceOf(MapType)
       const typesInner = await types.getInnerType() as ObjectType
@@ -52,10 +53,11 @@ describe('config_ducktype', () => {
           b: { refType: BuiltinTypes.NUMBER },
         },
       })
-      expect(Object.keys(configType.fields)).toHaveLength(3)
+      expect(Object.keys(configType.fields)).toHaveLength(4)
       expect(configType.fields.types).toBeDefined()
       expect(configType.fields.typeDefaults).toBeDefined()
       expect(configType.fields.apiVersion).toBeDefined()
+      expect(configType.fields.supportedTypes).toBeDefined()
       const types = await configType.fields.types.getType() as MapType
       expect(types).toBeInstanceOf(MapType)
       const typesInner = await types.getInnerType() as ObjectType
@@ -103,6 +105,7 @@ describe('config_ducktype', () => {
               },
             },
           },
+          supportedTypes: {},
         },
       )).not.toThrow()
     })
@@ -131,6 +134,7 @@ describe('config_ducktype', () => {
               },
             },
           },
+          supportedTypes: {},
         },
       )).toThrow(new Error('Duplicate fieldsToOmit params found in PATH for the following types: abc'))
     })
@@ -161,6 +165,7 @@ describe('config_ducktype', () => {
               },
             },
           },
+          supportedTypes: { aa: ['a', 'bla'] },
         },
       )).not.toThrow()
     })
@@ -188,8 +193,38 @@ describe('config_ducktype', () => {
               },
             },
           },
+          supportedTypes: { a: ['a', 'unknown'] },
         },
       )).toThrow(new Error('Invalid type names in PATH: unknown'))
+    })
+
+    it('should throw when type in includeTypes is not in supportedTypes', () => {
+      expect(() => validateDuckTypeFetchConfig(
+        'PATH',
+        {
+          includeTypes: ['a'],
+        },
+        {
+          typeDefaults: {
+            transformation: {
+              idFields: ['id'],
+            },
+          },
+          types: {
+            a: {
+              request: {
+                url: '/x/a',
+              },
+            },
+            bla: {
+              request: {
+                url: '/bla',
+              },
+            },
+          },
+          supportedTypes: {},
+        },
+      )).toThrow(new Error('Invalid type names in PATH.includeTypes: a are not supported.'))
     })
   })
 })

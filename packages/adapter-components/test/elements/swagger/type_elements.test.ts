@@ -56,6 +56,20 @@ describe('swagger_type_elements', () => {
               },
             },
             types: {},
+            supportedTypes: {
+              Category: ['Category'],
+              Food: ['Food'],
+              FoodAndCategory: ['FoodAndCategory'],
+              Order: ['Order'],
+              Pet: ['Pet'],
+              Tag: ['Tag'],
+              User: ['User'],
+              foodDetails: ['foodDetails'],
+              pet__findByStatus: ['pet__findByStatus'],
+              pet__findByTags: ['pet__findByTags'],
+              store__inventory: ['store__inventory'],
+              ...Object.fromEntries(extraTypes.map(type => [type, [type]])),
+            },
           },
         )
         expect(Object.keys(allTypes).sort()).toEqual([...expectedTypes, ...extraTypes].sort())
@@ -224,6 +238,21 @@ describe('swagger_type_elements', () => {
                 },
               },
             },
+            supportedTypes: {
+              Category: ['Category'],
+              Food: ['Food'],
+              FoodAndCategory: ['FoodAndCategory'],
+              Order: ['Order'],
+              Pet2: ['Pet2'],
+              Pet3: ['Pet3'],
+              PetByTag: ['PetByTag'],
+              Pet__new: ['Pet__new'],
+              Tag: ['Tag'],
+              User: ['User'],
+              foodDetails: ['foodDetails'],
+              pet__findByStatus: ['pet__findByStatus'],
+              store__inventory: ['store__inventory'],
+            },
           },
         )
         allTypes = res.allTypes
@@ -306,6 +335,7 @@ describe('swagger_type_elements', () => {
             swagger: { url: `${BASE_DIR}/invalid_swagger.yaml` },
             typeDefaults: { transformation: { idFields: ['name'] } },
             types: {},
+            supportedTypes: {},
           }
         )).rejects.toThrow(new Error('Unrecognized Swagger version: 1.0. Expected 2.0'))
       })
@@ -316,6 +346,7 @@ describe('swagger_type_elements', () => {
             swagger: { url: `${BASE_DIR}/invalid_openapi.yaml` },
             typeDefaults: { transformation: { idFields: ['name'] } },
             types: {},
+            supportedTypes: {},
           }
         )).rejects.toThrow(new Error('Unsupported OpenAPI version: 4.0.1. Swagger Parser only supports versions 3.0.0, 3.0.1, 3.0.2, 3.0.3'))
       })
@@ -329,6 +360,10 @@ describe('swagger_type_elements', () => {
             swagger: { url: '/non/existent/path' },
             typeDefaults: { transformation: { idFields: ['name'] } },
             types: {},
+            supportedTypes: {
+              X: ['X'],
+              a__b: ['a__b'],
+            },
           },
           {
             schemas: {
@@ -372,7 +407,7 @@ describe('swagger_type_elements', () => {
           swagger: { url: `${BASE_DIR}/petstore_swagger.v2.yaml` },
           typeDefaults: { transformation: { idFields: ['name'] } },
           types: {},
-          supportedTypes: ['Pet'],
+          supportedTypes: { a: ['Pet'] },
         },
       )
       expect(Object.keys(res.allTypes).sort()).toEqual(['Pet', 'Category', 'Tag'].sort())
@@ -409,7 +444,7 @@ describe('swagger_type_elements', () => {
               },
             },
           },
-          supportedTypes: ['Pet'],
+          supportedTypes: { a: ['Pet'] },
         },
       )
       expect(Object.keys(res.allTypes).sort()).toEqual(['Pet', 'Category', 'Tag', 'Food', 'Order'].sort())

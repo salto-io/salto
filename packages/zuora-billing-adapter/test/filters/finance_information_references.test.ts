@@ -15,6 +15,7 @@
 */
 import { ObjectType, ElemID, InstanceElement, Element, ReferenceExpression } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
+import { SUPPORTED_TYPES } from '../../src/config'
 import ZuoraClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
 import { ZUORA_BILLING, PRODUCT_RATE_PLAN_TYPE, ACCOUNTING_CODE_ITEM_TYPE } from '../../src/constants'
@@ -100,6 +101,7 @@ describe('finance information references filter', () => {
             },
           },
           types: {},
+          supportedTypes: SUPPORTED_TYPES,
         },
       },
     }) as FilterType

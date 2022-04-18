@@ -1530,6 +1530,45 @@ export const DEFAULT_INCLUDE_ENDPOINTS: string[] = [
   'workspaces',
 ]
 
+export const SUPPORTED_TYPES = {
+  account_setting: ['account_settings'],
+  app_installation: ['app_installations'],
+  app_owned: ['apps_owned'],
+  automation: ['automations'],
+  brand: ['brands'],
+  business_hours_schedule: ['business_hours_schedules'],
+  custom_role: ['custom_roles'],
+  dynamic_content_item: ['dynamic_content_item'],
+  group: ['groups'],
+  locale: ['locales'],
+  macro_categories: ['macro_categories'],
+  macro: ['macros'],
+  macro_action: ['macros_actions'],
+  macro_definition: ['macros_definitions'],
+  monitored_twitter_handle: ['monitored_twitter_handles'],
+  oauth_client: ['oauth_clients'],
+  oauth_global_client: ['oauth_global_clients'],
+  organization: ['organizations'],
+  organization_field: ['organization_fields'],
+  resource_collection: ['resource_collections'],
+  routing_attribute_definition: ['routing_attribute_definitions'],
+  routing_attribute: ['routing_attributes'],
+  sharing_agreement: ['sharing_agreements'],
+  sla_policy: ['sla_policies'],
+  sla_policy_definition: ['sla_policies_definitions'],
+  support_address: ['support_addresses'],
+  target: ['targets'],
+  ticket_field: ['ticket_fields'],
+  ticket_form: ['ticket_forms'],
+  trigger_category: ['trigger_categories'],
+  trigger_definitions: ['trigger_definitions'],
+  trigger: ['triggers'],
+  user_field: ['user_fields'],
+  view: ['views'],
+  webhook: ['webhooks'],
+  workspace: ['workspaces'],
+}
+
 export const DEFAULT_CONFIG: ZendeskConfig = {
   [FETCH_CONFIG]: {
     includeTypes: DEFAULT_INCLUDE_ENDPOINTS,
@@ -1549,6 +1588,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
       },
     },
     types: DEFAULT_TYPES,
+    supportedTypes: SUPPORTED_TYPES,
   },
 }
 

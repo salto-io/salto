@@ -41,6 +41,7 @@ export type AdapterApiConfig<
   apiVersion?: string
   typeDefaults: TypeDefaultsConfig<TD>
   types: Record<string, TypeConfig<T>>
+  supportedTypes: Record<string, string[]>
 }
 
 export type UserFetchConfig = {
@@ -101,6 +102,9 @@ export const createAdapterApiConfigType = ({
       apiVersion: {
         refType: BuiltinTypes.STRING,
       },
+      supportedTypes: {
+        refType: new MapType(new ListType(BuiltinTypes.STRING)),
+      },
       ...additionalFields,
     },
   })
@@ -133,3 +137,20 @@ export const getConfigWithDefault = <
       defaultConfig,
     )
   )
+
+/**
+ * Verify that all fetch types are supported.
+ */
+export const validateSupportedTypes = (
+  fetchConfigPath: string,
+  userFetchConfig: UserFetchConfig,
+  adapterApiConfig: AdapterApiConfig,
+): void => {
+  const supportedTypesNames = new Set(Object.values(adapterApiConfig.supportedTypes).flat())
+  const invalidIncludedTypes = userFetchConfig.includeTypes.filter(
+    name => !supportedTypesNames.has(name)
+  )
+  if (invalidIncludedTypes.length > 0) {
+    throw Error(`Invalid type names in ${fetchConfigPath}.includeTypes: ${invalidIncludedTypes} are not supported.`)
+  }
+}

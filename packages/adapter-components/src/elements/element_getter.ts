@@ -20,6 +20,17 @@ import { TypeConfig } from '../config'
 
 const { isDefined } = lowerdashValues
 
+export const getDependencies = (
+  types: string[],
+  typeConfigs: Record<string, TypeConfig>,
+): string[] =>
+  // for now assuming flat dependencies for simplicity.
+  // will replace with a DAG (with support for concurrency) when needed
+  types
+    .flatMap(typeName => typeConfigs[typeName]?.request?.dependsOn?.map(({ from }) => from.type))
+    .filter(isDefined)
+
+
 /**
  * Helper for fetch orchestration - concurrently fetch elements for the types specified in the
  * configuration, allowing one level of dependencies between the type's endpoints based on the
@@ -46,9 +57,7 @@ export const getElementsWithContext = async <E extends Element>({
 
   // some type requests need to extract context and parameters from other types -
   // if these types are not listed in the includeTypes, they will be fetched but not persisted
-  const additionalContextTypes: string[] = [...dependentEndpoints]
-    .flatMap(typeName => types[typeName].request?.dependsOn?.map(({ from }) => from.type))
-    .filter(isDefined)
+  const additionalContextTypes: string[] = getDependencies([...dependentEndpoints], types)
     .filter(typeName => !independentEndpoints.has(typeName))
 
   const contextElements: Record<string, {

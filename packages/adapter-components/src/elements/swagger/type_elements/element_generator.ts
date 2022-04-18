@@ -29,6 +29,7 @@ import { fixTypes, defineAdditionalTypes } from './type_config_override'
 import { filterTypes, markServiceIdField } from '../../type_elements'
 import { LoadedSwagger } from '../swagger'
 import { getConfigWithDefault } from '../../../config/shared'
+import { getDependencies } from '../../element_getter'
 
 const { isDefined } = lowerdashValues
 const { isArrayOfType } = lowerdashTypes
@@ -327,26 +328,30 @@ export const generateTypes = async (
 
   addServiceIdAnnotations(definedTypes, types, typeDefaults)
 
-  if (supportedTypes !== undefined) {
-    // including all recurseInto types, regardless of whether they are listed or not
-    const recurseIntoTypes = Object.values(types)
-      .flatMap(def => def.request?.recurseInto ?? [])
-      .map(def => def.type)
-    const extendedSupportedTypes = [...new Set([...supportedTypes, ...recurseIntoTypes])]
-    const filteredTypes = await filterTypes(
-      adapterName,
-      Object.values(definedTypes),
-      extendedSupportedTypes,
-    )
+  // including all recurseInto types, regardless of whether they are listed or not
+  const recurseIntoTypes = Object.values(types)
+    .flatMap(def => def.request?.recurseInto ?? [])
+    .map(def => def.type)
 
-    return {
-      allTypes: _.keyBy(filteredTypes, type => type.elemID.name),
-      parsedConfigs,
-    }
-  }
+  const typesToFetch = [
+    ...Object.values(supportedTypes).flat(),
+    ...Object.keys(supportedTypes).flat(),
+    ...recurseIntoTypes,
+  ]
+
+  const extendedSupportedTypes = _.uniq([
+    ...typesToFetch,
+    ...getDependencies(typesToFetch, types),
+  ])
+
+  const filteredTypes = await filterTypes(
+    adapterName,
+    Object.values(definedTypes),
+    extendedSupportedTypes,
+  )
 
   return {
-    allTypes: definedTypes,
+    allTypes: _.keyBy(filteredTypes, type => type.elemID.name),
     parsedConfigs,
   }
 }

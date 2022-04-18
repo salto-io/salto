@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { AUTOMATION_TYPE, BOARD_COLUMN_CONFIG_TYPE, BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME } from './constants'
 import { FIELD_TYPE_NAME } from './filters/fields/constants'
@@ -1545,6 +1545,48 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
 }
 
+const SUPPORTED_TYPES = {
+  ApplicationProperty: ['ApplicationProperties'],
+  ApplicationRole: ['ApplicationRoles'],
+  AttachmentSettings: ['AttachmentSettings'],
+  Configuration: ['Configuration'],
+  TimeTrackingProvider: ['TimeTrackingProviders'],
+  Dashboard: ['Dashboards'],
+  Field: ['Fields'],
+  FieldConfiguration: ['FieldConfigurations'],
+  FieldConfigurationScheme: ['FieldsConfigurationScheme'],
+  // Should remove when doing the configuration migration
+  FieldsConfigurationIssueTypeItem: ['FieldsConfigurationIssueTypeItem'],
+  Filter: ['Filters'],
+  IssueLinkType: ['IssueLinkTypes'],
+  IssueEvent: ['IssueEvents'],
+  IssueType: ['IssueType'],
+  SecurityScheme: ['SecuritySchemes'],
+  IssueTypeScheme: ['IssueTypeSchemes'],
+  // Should remove when doing the configuration migration
+  IssueTypeSchemeMappings: ['IssueTypeSchemeMappings'],
+  IssueTypeScreenScheme: ['IssueTypeScreenSchemes'],
+  // Should remove when doing the configuration migration
+  IssueTypeScreenSchemeItems: ['IssueTypeScreenSchemeItems'],
+  NotificationScheme: ['NotificationSchemes'],
+  Permissions_permissions: ['Permissions'],
+  PermissionScheme: ['PermissionSchemes'],
+  Priority: ['Priorities'],
+  ProjectCategory: ['ProjectCategories'],
+  Project: ['Projects'],
+  ProjectType: ['ProjectTypes'],
+  Resolution: ['Resolutions'],
+  ProjectRole: ['Roles'],
+  Screen: ['Screens'],
+  ScreenScheme: ['ScreenSchemes'],
+  Status: ['Statuses'],
+  StatusCategory: ['StatusCategories'],
+  Workflow: ['Workflows'],
+  WorkflowScheme: ['WorkflowSchemes'],
+  ServerInformation: ['ServerInformation'],
+  Board: ['Boards'],
+}
+
 export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
   platformSwagger: {
     url: 'https://raw.githubusercontent.com/salto-io/jira-swaggers/main/platform-swagger.v3.json',
@@ -1720,6 +1762,7 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
     RESOLUTION_TYPE_NAME,
     STATUS_TYPE_NAME,
   ],
+  supportedTypes: SUPPORTED_TYPES,
 }
 
 export const DEFAULT_INCLUDE_ENDPOINTS: string[] = [
@@ -1817,7 +1860,7 @@ const apiDefinitionsType = createMatchingObjectType<Partial<JiraApiConfig>>({
       refType: defaultApiDefinitionsType.fields.swagger.refType,
     },
     supportedTypes: {
-      refType: new ListType(BuiltinTypes.STRING),
+      refType: new MapType(new ListType(BuiltinTypes.STRING)),
     },
     typesToFallbackToInternalId: {
       refType: new ListType(BuiltinTypes.STRING),

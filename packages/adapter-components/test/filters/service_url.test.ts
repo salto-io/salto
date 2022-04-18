@@ -44,6 +44,7 @@ describe('service url filter', () => {
           typeDefaults: {
             transformation: { idFields: ['id'] },
           },
+          supportedTypes: {},
         },
       },
     }) as FilterType

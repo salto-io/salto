@@ -106,6 +106,10 @@ describe('adapter creator', () => {
                 },
               },
             },
+            supportedTypes: {
+              a: ['a'],
+              b: ['b'],
+            },
           },
         },
       ),

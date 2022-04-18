@@ -13,11 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ElemID, Value, BuiltinTypesByFullName, ListType, MapType, isContainerType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { Element, ElemID, Value, BuiltinTypesByFullName, ListType, MapType, isContainerType, ReadOnlyElementsSource, ContainerTypeName, TypeElement } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { resolvePath } from '@salto-io/adapter-utils'
 import { RemoteMap, InMemoryRemoteMap } from './remote_map'
-import { Keywords } from '../parser/language'
 
 const { awu } = collections.asynciterable
 
@@ -38,38 +37,27 @@ export interface ElementsSource {
   isEmpty(): Promise<boolean>
 }
 
-export const shouldResolveAsContainerType = (elemName: string): boolean =>
-  (elemName.startsWith(Keywords.LIST_PREFIX)
-    || elemName.startsWith(Keywords.MAP_PREFIX))
-    && (elemName.endsWith(Keywords.GENERICS_SUFFIX))
+export function buildContainerType<T extends TypeElement>(
+  prefix: ContainerTypeName,
+  innerType: T
+): MapType<T> | ListType<T>
+export function buildContainerType(
+  prefix: ContainerTypeName,
+  innerType: undefined
+): undefined
 
-const getContainerType = async (fullName: string,
-  source: ElementsSource): Promise<Value> => {
-  if (fullName.startsWith(Keywords.LIST_PREFIX) && fullName.endsWith(Keywords.GENERICS_SUFFIX)) {
-    const innerElem = await source.get(
-      ElemID.fromFullName(fullName.substring(
-        Keywords.LIST_PREFIX.length,
-        fullName.length - Keywords.GENERICS_SUFFIX.length
-      ))
-    )
-    if (innerElem === undefined) {
-      return undefined
-    }
-    return new ListType(innerElem)
+export function buildContainerType(
+  prefix: ContainerTypeName,
+  innerType?: TypeElement
+): MapType | ListType | undefined {
+  if (innerType === undefined) {
+    return undefined
   }
-  if (fullName.startsWith(Keywords.MAP_PREFIX) && fullName.endsWith(Keywords.GENERICS_SUFFIX)) {
-    const innerElem = await source.get(
-      ElemID.fromFullName(fullName.substring(
-        Keywords.MAP_PREFIX.length,
-        fullName.length - Keywords.GENERICS_SUFFIX.length
-      ))
-    )
-    if (innerElem === undefined) {
-      return undefined
-    }
-    return new MapType(innerElem)
+  const typeCtors: Record<ContainerTypeName, new (innerType: TypeElement) => MapType | ListType> = {
+    List: ListType,
+    Map: MapType,
   }
-  throw new Error('Not a container type')
+  return new typeCtors[prefix](innerType)
 }
 
 export class RemoteElementSource implements ElementsSource {
@@ -92,8 +80,12 @@ export class RemoteElementSource implements ElementsSource {
     if (BuiltinTypesByFullName[elemFullName] !== undefined) {
       return BuiltinTypesByFullName[elemFullName]
     }
-    if (shouldResolveAsContainerType(elemFullName)) {
-      return getContainerType(elemFullName, this)
+    const containerTypeInfo = id.getContainerPrefixAndInnerType()
+    if (containerTypeInfo !== undefined) {
+      return buildContainerType(
+        containerTypeInfo.prefix,
+        await this.get(ElemID.fromFullName(containerTypeInfo.innerTypeName))
+      )
     }
     const { parent } = id.createTopLevelParentID()
     const topLevel = await this.elements.get(parent.getFullName())

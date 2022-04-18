@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Value, StaticFile, calculateStaticFileHash, ObjectType, isObjectType, TypeElement } from '@salto-io/adapter-api'
+import { Value, StaticFile, calculateStaticFileHash, isObjectType, TypeElement } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { Functions, FunctionImplementation, FunctionExpression } from '../src/parser/functions'
@@ -153,21 +153,20 @@ export const exampleStaticFileWithContent = new StaticFile({
 })
 
 export const getFieldsAndAnnoTypes = async (
-  objType: ObjectType,
+  type: TypeElement,
   touched: string[] = []
 ): Promise<TypeElement[]> => {
-  const fieldTypes = await awu(Object.values(objType.fields)).map(f => f.getType()).toArray()
-  const annoTypes = Object.values(await objType.getAnnotationTypes())
+  const fieldTypes = isObjectType(type)
+    ? await awu(Object.values(type.fields)).map(f => f.getType()).toArray()
+    : []
+  const annoTypes = Object.values(await type.getAnnotationTypes())
 
-  return awu([...fieldTypes, ...annoTypes]).flatMap(async type => {
-    if (touched.includes(type.elemID.getFullName())) {
+  return awu([...fieldTypes, ...annoTypes]).flatMap(async nestedType => {
+    if (touched.includes(nestedType.elemID.getFullName())) {
       return [undefined]
     }
-    touched.push(type.elemID.getFullName())
-    if (!isObjectType(type)) {
-      return [type]
-    }
-    return [type, ...await getFieldsAndAnnoTypes(type, touched)]
+    touched.push(nestedType.elemID.getFullName())
+    return [nestedType, ...await getFieldsAndAnnoTypes(nestedType, touched)]
   }).filter(isDefined)
     .toArray()
 }

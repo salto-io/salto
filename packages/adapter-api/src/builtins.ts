@@ -14,14 +14,12 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, INSTANCE_ANNOTATIONS } from './element_id'
+import { ElemID, INSTANCE_ANNOTATIONS, GLOBAL_ADAPTER } from './element_id'
 import { Element, TypeMap, ObjectType, PrimitiveType, PrimitiveTypes, ListType, BuiltinTypesRefByFullName } from './elements'
 import { TypeReference } from './values'
 import { CORE_ANNOTATIONS } from './core_annotations'
 
 export { CORE_ANNOTATIONS }
-
-export const GLOBAL_ADAPTER = ''
 
 const StandardBuiltinTypes = {
   STRING: new PrimitiveType({

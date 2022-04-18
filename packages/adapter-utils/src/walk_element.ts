@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  ElemID, Values, Value, isInstanceElement, isType, isObjectType, isElement, Element,
+  ElemID, Values, Value, isInstanceElement, isType, isObjectType, isElement, Element, isVariable,
 } from '@salto-io/adapter-api'
 
 export enum WALK_NEXT_STEP {
@@ -62,6 +62,12 @@ export const walkOnValue = (
         run(current.fields, current.elemID.createNestedID('field'))
       } else if (isInstanceElement(current)) {
         runOnValues(current.value)
+      } else if (isVariable(current)) {
+        // We only support primitive variables for now, if we try to create nested IDs we will fail
+        // so until we support it, we do not recurse into variables, we only get the top level.
+        // hopefully this comment is long and memorable enough that when we implement support for
+        // non primitive variables we also change this to "run(current.value, current.elemID)"
+        func({ value: current.value, path: current.elemID })
       }
     } else if (_.isArray(current)) {
       current.forEach((item, index) => run(item, keyPathID?.createNestedID(String(index))))

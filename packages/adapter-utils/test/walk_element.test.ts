@@ -15,7 +15,7 @@
 */
 import {
   InstanceElement, ObjectType, PrimitiveTypes, PrimitiveType, ReferenceExpression,
-  ElemID, ListType, BuiltinTypes, CORE_ANNOTATIONS, MapType,
+  ElemID, ListType, BuiltinTypes, CORE_ANNOTATIONS, MapType, Variable, Value,
 } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import { walkOnElement, WALK_NEXT_STEP, WalkOnFunc, walkOnValue } from '../src/walk_element'
@@ -156,6 +156,14 @@ describe('Test walk_element.ts', () => {
           'test.test.field.f1',
         ])
       })
+      it('should throw error if an error is thrown from the handler function', () => {
+        const error = new Error('my error')
+        expect(() => walkOnValue({
+          value: objType,
+          elemId: objType.elemID,
+          func: () => { throw error },
+        })).toThrow(error)
+      })
       it('should walk only on top level', () => {
         const paths: string[] = []
         const func = mockFunction<WalkOnFunc>()
@@ -228,6 +236,27 @@ describe('Test walk_element.ts', () => {
           })
         walkOnValue({ value: inst.value, elemId: inst.elemID, func })
         expect(paths).toEqual([inst.elemID.getFullName()])
+      })
+    })
+    describe('with a variable', () => {
+      let iteratedValues: { path: ElemID; value: Value }[]
+      let variable: Variable
+      beforeEach(() => {
+        iteratedValues = []
+        variable = new Variable(new ElemID('var', 'myVar'), 'myValue')
+        walkOnElement({
+          element: variable,
+          func: ({ value, path }) => {
+            iteratedValues.push({ value, path })
+            return WALK_NEXT_STEP.RECURSE
+          },
+        })
+      })
+      it('should iterate the variable and the value inside the variable', () => {
+        expect(iteratedValues).toEqual([
+          { path: variable.elemID, value: variable },
+          { path: variable.elemID, value: variable.value },
+        ])
       })
     })
   })

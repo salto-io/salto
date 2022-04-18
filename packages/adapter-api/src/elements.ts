@@ -18,10 +18,10 @@
 import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { ElemID, LIST_ID_PREFIX, MAP_ID_PREFIX } from './element_id'
+import { ElemID, LIST_ID_PREFIX, MAP_ID_PREFIX, GLOBAL_ADAPTER } from './element_id'
 // There is a real cycle here and alternatively values.ts should be defined in the same file
 // eslint-disable-next-line import/no-cycle
-import { Values, isEqualValues, Value, TypeReference, isTypeReference } from './values'
+import { Values, isEqualValues, Value, TypeReference, isTypeReference, cloneDeepWithoutRefs } from './values'
 
 const { awu } = collections.asynciterable
 const { mapValuesAsync } = promises.object
@@ -75,11 +75,12 @@ export abstract class Element {
     this.path = path
   }
 
-  /**
-   * Return a deep copy of the instance annotations values.
-   */
   protected cloneAnnotations(): Values {
-    return _.cloneDeep(this.annotations)
+    return cloneDeepWithoutRefs(this.annotations)
+  }
+
+  protected cloneAnnotationTypes(): ReferenceMap {
+    return _.mapValues(this.annotationRefTypes, type => type.clone())
   }
 
   isEqual(other: Element): boolean {
@@ -167,7 +168,7 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
   }
 
   static createElemID(innerTypeOrRef: TypeOrRef): ElemID {
-    return new ElemID('', `${LIST_ID_PREFIX}<${innerTypeOrRef.elemID.getFullName()}>`)
+    return new ElemID(GLOBAL_ADAPTER, `${LIST_ID_PREFIX}<${innerTypeOrRef.elemID.getFullName()}>`)
   }
 
   isEqual(other: ListType): boolean {
@@ -177,9 +178,7 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
   }
 
   clone(): ListType {
-    return new ListType(
-      new TypeReference(this.refInnerType.elemID, this.refInnerType.type)
-    )
+    return new ListType(this.refInnerType.clone())
   }
 
   async getInnerType(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
@@ -229,7 +228,7 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
   }
 
   static createElemID(innerTypeOrRef: TypeOrRef): ElemID {
-    return new ElemID('', `${MAP_ID_PREFIX}<${innerTypeOrRef.elemID.getFullName()}>`)
+    return new ElemID(GLOBAL_ADAPTER, `${MAP_ID_PREFIX}<${innerTypeOrRef.elemID.getFullName()}>`)
   }
 
   isEqual(other: MapType): boolean {
@@ -239,9 +238,7 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
   }
 
   clone(): MapType {
-    return new MapType(
-      new TypeReference(this.refInnerType.elemID, this.refInnerType.type)
-    )
+    return new MapType(this.refInnerType.clone())
   }
 
   async getInnerType(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
@@ -311,8 +308,8 @@ export class Field extends Element {
     return new Field(
       this.parent,
       this.name,
-      this.refType,
-      annotations === undefined ? _.cloneDeep(this.annotations) : annotations,
+      this.refType.clone(),
+      annotations === undefined ? this.cloneAnnotations() : annotations,
     )
   }
 }
@@ -353,7 +350,7 @@ export class PrimitiveType<Primitive extends PrimitiveTypes = PrimitiveTypes> ex
     const res: PrimitiveType = new PrimitiveType({
       elemID: this.elemID,
       primitive: this.primitive,
-      annotationRefsOrTypes: this.annotationRefTypes,
+      annotationRefsOrTypes: this.cloneAnnotationTypes(),
       annotations: this.cloneAnnotations(),
     })
     res.annotate(additionalAnnotations)
@@ -418,15 +415,13 @@ export class ObjectType extends Element {
    * @return {ObjectType} the cloned instance
    */
   clone(additionalAnnotations: Values = {}): ObjectType {
-    const clonedAnnotations = this.cloneAnnotations()
-    const clonedFields = this.cloneFields()
     const { isSettings } = this
 
     const res: ObjectType = new ObjectType({
       elemID: this.elemID,
-      fields: clonedFields,
-      annotationRefsOrTypes: this.annotationRefTypes,
-      annotations: clonedAnnotations,
+      fields: this.cloneFields(),
+      annotationRefsOrTypes: this.cloneAnnotationTypes(),
+      annotations: this.cloneAnnotations(),
       isSettings,
       path: this.path !== undefined ? [...this.path] : undefined,
     })
@@ -484,8 +479,13 @@ export class InstanceElement extends Element {
    * @return {InstanceElement} the cloned instance
    */
   clone(): InstanceElement {
-    return new InstanceElement(this.elemID.name, this.refType, _.cloneDeep(this.value), this.path,
-      _.cloneDeep(this.annotations))
+    return new InstanceElement(
+      this.elemID.name,
+      this.refType.clone(),
+      cloneDeepWithoutRefs(this.value),
+      this.path,
+      cloneDeepWithoutRefs(this.annotations),
+    )
   }
 }
 
@@ -501,7 +501,7 @@ export class Variable extends Element {
   }
 
   clone(): Variable {
-    return new Variable(this.elemID, _.cloneDeep(this.value), this.path)
+    return new Variable(this.elemID, cloneDeepWithoutRefs(this.value), this.path)
   }
 }
 

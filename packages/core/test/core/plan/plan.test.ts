@@ -337,6 +337,31 @@ describe('getPlan', () => {
     expect(plan.size).toBe(0)
   })
 
+  it('when there is a circular reference in an instance it should behave as undefined', async () => {
+    const type = new ObjectType({
+      elemID: new ElemID('adapter', 'type'),
+      fields: {
+        value: { refType: BuiltinTypes.STRING },
+      },
+    })
+    const inst1 = new InstanceElement(
+      'instance1',
+      type,
+      { value: new ReferenceExpression(type.elemID.createNestedID('instance', 'instance1', 'value')) }
+    )
+    const inst2 = new InstanceElement(
+      'instance1',
+      type,
+      { value: 'value' }
+    )
+
+    const plan = await getPlan({
+      before: createElementSource([type, inst1]),
+      after: createElementSource([type, inst2]),
+    })
+    expect(plan.size).toEqual(1)
+  })
+
   it('when reference in instance changes but the value is the same should have a change in plan', async () => {
     // This behavior works for fetch but it is not really the correct behavior for deploy:
     // If there is no difference in the value to be deployed, it should not be a change in the plan

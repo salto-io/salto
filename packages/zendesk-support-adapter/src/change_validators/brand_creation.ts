@@ -27,7 +27,7 @@ export const brandCreationValidator: ChangeValidator = async changes => (
       [{
         elemID: instance.elemID,
         severity: 'Warning',
-        message: `Brand subdomains are globally unique, please make sure to set an available subdomain for brand ${instance.value.name} before attempting to create it from Salto`,
+        message: 'Verify brand subdomain uniqueness',
         detailedMessage: `Brand subdomains are globally unique, please make sure to set an available subdomain for brand ${instance.value.name} before attempting to create it from Salto`,
       }]
     ))

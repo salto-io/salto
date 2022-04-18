@@ -33,7 +33,7 @@ describe('brandCreationValidator', () => {
     expect(errors).toEqual([{
       elemID: brandInstance.elemID,
       severity: 'Warning',
-      message: `Brand subdomains are globally unique, please make sure to set an available subdomain for brand ${brandInstance.value.name} before attempting to create it from Salto`,
+      message: 'Verify brand subdomain uniqueness',
       detailedMessage: `Brand subdomains are globally unique, please make sure to set an available subdomain for brand ${brandInstance.value.name} before attempting to create it from Salto`,
     }])
   })

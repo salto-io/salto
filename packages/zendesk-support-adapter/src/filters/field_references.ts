@@ -18,6 +18,7 @@ import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
+import { BRAND_NAME } from '../constants'
 
 const { neighborContextGetter } = referenceUtils
 
@@ -233,22 +234,22 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskSupportFieldReferenceDefi
   {
     src: { field: 'brand_id' },
     serializationStrategy: 'id',
-    target: { type: 'brand' },
+    target: { type: BRAND_NAME },
   },
   {
     src: { field: 'brand_ids' },
     serializationStrategy: 'id',
-    target: { type: 'brand' },
+    target: { type: BRAND_NAME },
   },
   {
     src: { field: 'default_brand_id' },
     serializationStrategy: 'id',
-    target: { type: 'brand' },
+    target: { type: BRAND_NAME },
   },
   {
     src: { field: 'restricted_brand_ids' },
     serializationStrategy: 'id',
-    target: { type: 'brand' },
+    target: { type: BRAND_NAME },
   },
   {
     src: { field: 'category_id' },

@@ -29,6 +29,7 @@ import {
   invalidActionsValidator,
   orderInstanceContainsAllTheInstancesValidator,
   triggerOrderInstanceContainsAllTheInstancesValidator,
+  brandCreationValidator,
 } from './change_validators'
 
 const {
@@ -64,6 +65,7 @@ export default ({
     invalidActionsValidator,
     orderInstanceContainsAllTheInstancesValidator,
     triggerOrderInstanceContainsAllTheInstancesValidator,
+    brandCreationValidator,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

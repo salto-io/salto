@@ -15,3 +15,4 @@
 */
 const ZENDESK = 'zendesk'
 export const ZENDESK_SUPPORT = `${ZENDESK}_support`
+export const BRAND_NAME = 'brand'

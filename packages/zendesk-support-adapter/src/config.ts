@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ElemID, CORE_ANNOTATIONS, BuiltinTypes } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
-import { ZENDESK_SUPPORT } from './constants'
+import { BRAND_NAME, ZENDESK_SUPPORT } from './constants'
 
 const { createClientConfigType } = clientUtils
 const {
@@ -454,7 +454,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
   },
-  brand: {
+  [BRAND_NAME]: {
     transformation: {
       sourceTypeName: 'brands__brands',
       // We currently not supporting in attachements

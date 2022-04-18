@@ -33,12 +33,6 @@ describe('referenced id fields filter', () => {
     dynamicContentItemVarObj,
     { locale_id: new ReferenceExpression(localeIns.elemID, localeIns), content: 'abc' },
   )
-  // const testObjType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'test') })
-  // const testInst = new InstanceElement(
-  //   'test',
-  //   testObjType,
-  //   { locale_id: new ReferenceExpression(localeIns.elemID, localeIns), name: 'test' },
-  // )
   beforeEach(async () => {
     jest.clearAllMocks()
     client = new ZendeskClient({

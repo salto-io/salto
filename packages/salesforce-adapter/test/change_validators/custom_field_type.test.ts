@@ -13,22 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  ChangeError, ElemID, Field, ObjectType, toChange,
-} from '@salto-io/adapter-api'
+import { ChangeError, Field, ObjectType, toChange, BuiltinTypes } from '@salto-io/adapter-api'
 import { Types } from '../../src/transformers/transformer'
 import customFieldTypeValidator from '../../src/change_validators/custom_field_type'
-import { CUSTOM_OBJECT } from '../../src/constants'
-import { createField } from '../utils'
+import { CUSTOM_OBJECT_ID_FIELD } from '../../src/constants'
+import { createField, createCustomObjectType } from '../utils'
 
 describe('custom field type change validator', () => {
   describe('onUpdate', () => {
     let customObj: ObjectType
     beforeEach(() => {
-      customObj = new ObjectType({
-        elemID: new ElemID('salesforce', 'obj'),
-        annotations: { metadataType: CUSTOM_OBJECT, apiName: 'obj__c' },
-      })
+      customObj = createCustomObjectType('obj__c', {})
     })
 
     const runChangeValidator = (before: Field | undefined, after: Field):
@@ -86,6 +81,11 @@ describe('custom field type change validator', () => {
       const changeErrors = await customFieldTypeValidator([
         toChange({ before: customObj, after: customObj.clone() }),
       ])
+      expect(changeErrors).toHaveLength(0)
+    })
+    it('should have no error when trying to create custom object with system fields', async () => {
+      const field = new Field(customObj, CUSTOM_OBJECT_ID_FIELD, BuiltinTypes.SERVICE_ID)
+      const changeErrors = await runChangeValidator(undefined, field)
       expect(changeErrors).toHaveLength(0)
     })
   })

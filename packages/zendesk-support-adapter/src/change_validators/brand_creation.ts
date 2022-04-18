@@ -15,8 +15,7 @@
 */
 import { ChangeValidator, getChangeData,
   isAdditionChange, isInstanceElement } from '@salto-io/adapter-api'
-
-export const BRAND_NAME = 'brand'
+import { BRAND_NAME } from '../constants'
 
 export const brandCreationValidator: ChangeValidator = async changes => (
   changes

@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { ZENDESK_SUPPORT } from '../../src/constants'
-import { brandCreationValidator, BRAND_NAME } from '../../src/change_validators/brand_creation'
+import { BRAND_NAME, ZENDESK_SUPPORT } from '../../src/constants'
+import { brandCreationValidator } from '../../src/change_validators/brand_creation'
 
 describe('brandCreationValidator', () => {
   const brandType = new ObjectType({

@@ -22,27 +22,26 @@ export const createNotificationSchemeValues = (name: string): Values => ({
     {
       notifications: [
         {
-          type: 'CurrentAssignee',
-        },
-        {
-          type: 'Reporter',
-        },
-        {
-          type: 'CurrentUser',
-        },
-        {
-          type: 'ProjectLead',
+          type: 'AllWatchers',
         },
         {
           type: 'ComponentLead',
         },
         {
+          type: 'CurrentAssignee',
+        },
+        {
+          type: 'CurrentUser',
+        },
+        {
           parameter: 'email@gmail.com',
           type: 'EmailAddress',
         },
-
         {
-          type: 'AllWatchers',
+          type: 'ProjectLead',
+        },
+        {
+          type: 'Reporter',
         },
       ],
       eventType: 1,

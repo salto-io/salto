@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Values } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression, Values } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockClient } from '../utils'
 import sortListsFilter from '../../src/filters/sort_lists'
@@ -23,7 +23,7 @@ import { JIRA } from '../../src/constants'
 
 describe('sortListsFilter', () => {
   let filter: Filter
-  let type: ObjectType
+  let permissionSchemeType: ObjectType
   let instance: InstanceElement
   let sortedValues: Values
   beforeEach(async () => {
@@ -36,13 +36,16 @@ describe('sortListsFilter', () => {
       elementsSource: buildElementsSourceFromElements([]),
     })
 
-    type = new ObjectType({
+    permissionSchemeType = new ObjectType({
       elemID: new ElemID(JIRA, 'PermissionScheme'),
+      fields: {
+        permissions: { refType: new ListType(BuiltinTypes.UNKNOWN) },
+      },
     })
 
     instance = new InstanceElement(
       'instance',
-      type,
+      permissionSchemeType,
       {
         permissions: [
           {
@@ -129,6 +132,52 @@ describe('sortListsFilter', () => {
       delete instance.value.permissions
       await filter.onFetch?.([instance])
       expect(instance.value).toEqual({})
+    })
+
+    it('should sort inner lists', async () => {
+      const type = new ObjectType({
+        elemID: new ElemID(JIRA, 'someType'),
+        fields: {
+          schemes: {
+            refType: new ListType(permissionSchemeType),
+          },
+        },
+      })
+
+      const inst = new InstanceElement(
+        'instance',
+        type,
+        {
+          schemes: [
+            {
+              permissions: [
+                {
+                  permission: 'B',
+                },
+                {
+                  permission: 'A',
+                },
+              ],
+            },
+          ],
+        }
+      )
+
+      await filter.onFetch?.([inst])
+      expect(inst.value).toEqual({
+        schemes: [
+          {
+            permissions: [
+              {
+                permission: 'A',
+              },
+              {
+                permission: 'B',
+              },
+            ],
+          },
+        ],
+      })
     })
   })
 })

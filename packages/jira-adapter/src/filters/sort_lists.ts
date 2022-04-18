@@ -14,9 +14,13 @@
 * limitations under the License.
 */
 import { InstanceElement, isInstanceElement, isReferenceExpression, Value } from '@salto-io/adapter-api'
+import { transformValues } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { AUTOMATION_TYPE, WORKFLOW_TYPE_NAME } from '../constants'
+import { AUTOMATION_TYPE, NOTIFICATION_EVENT_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
+
+const { awu } = collections.asynciterable
 
 type ValueToSort = {
   typeName: string
@@ -50,13 +54,49 @@ const VALUES_TO_SORT: ValueToSort[] = [
     fieldName: 'transitions',
     sortBy: ['name'],
   },
+  {
+    typeName: NOTIFICATION_EVENT_TYPE_NAME,
+    fieldName: 'notifications',
+    sortBy: ['type', 'parameter.elemID.name', 'parameter'],
+  },
 ]
 
 const getValue = (value: Value): Value => (
   isReferenceExpression(value) ? value.elemID.getFullName() : value
 )
 
-const sortLists = (instance: InstanceElement): void => {
+const sortLists = async (instance: InstanceElement): Promise<void> => {
+  instance.value = await transformValues({
+    values: instance.value,
+    type: await instance.getType(),
+    strict: false,
+    allowEmpty: true,
+    transformFunc: async ({ value, field }) => {
+      if (field === undefined) {
+        return value
+      }
+      VALUES_TO_SORT
+        .filter(
+          ({ typeName, fieldName }) =>
+            field.parent.elemID.typeName === typeName
+              && field.name === fieldName
+            && Array.isArray(value)
+        )
+        .forEach(({ sortBy }) => {
+          _.assign(
+            value,
+            _.orderBy(
+              value,
+              sortBy.map(fieldPath => item => getValue(_.get(item, fieldPath))),
+            )
+          )
+        })
+
+      return value
+    },
+  }) ?? {}
+
+
   VALUES_TO_SORT
     .filter(({ typeName }) => instance.elemID.typeName === typeName)
     .forEach(({ fieldName, sortBy }) => {
@@ -73,7 +113,7 @@ const sortLists = (instance: InstanceElement): void => {
 
 const filter: FilterCreator = () => ({
   onFetch: async elements => {
-    elements
+    await awu(elements)
       .filter(isInstanceElement)
       .forEach(sortLists)
   },

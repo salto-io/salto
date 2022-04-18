@@ -188,7 +188,7 @@ const getEventChanges = async (
 
   return [
     ...removedEvents.map(event => toChange({ before: event })),
-    ...newEvents.map(event => toChange({ after: event })).reverse(),
+    ...newEvents.map(event => toChange({ after: event })),
   ]
 }
 

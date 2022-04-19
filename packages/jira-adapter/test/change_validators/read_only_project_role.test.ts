@@ -46,7 +46,7 @@ describe('read only project role change validator test', () => {
   it('should return an error if the instance that was removed was read only', async () => {
     expect(await readOnlyProjectRoleChangeValidator([
       toChange({
-        after: readOnlyInstance,
+        before: readOnlyInstance,
       }),
     ])).toEqual([
       {
@@ -63,6 +63,6 @@ describe('read only project role change validator test', () => {
         before: normalInstance,
         after: normalInstance,
       }),
-    ])).toBe([])
+    ])).toBeEmpty()
   })
 })

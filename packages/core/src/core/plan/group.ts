@@ -31,18 +31,19 @@ export const getCustomGroupIds = async (
     wu(changes.keys()).map(id => ({ id, change: changes.getData(id) })),
     ({ change }) => getChangeData(change).elemID.adapter,
   )
-  const changeGroups = await awu(changesPerAdapter.entries())
+  const changeGroupInfoPerAdapter = await awu(changesPerAdapter.entries())
     .filter(([adapterName]) => adapterName in customGroupIdFunctions)
     .map(([name, adapterChanges]) => (
       customGroupIdFunctions[name](new Map(adapterChanges.map(({ id, change }) => [id, change])))
     )).toArray()
 
   const mergedChangeGroupIdMap = new Map<ChangeId, ChangeGroupId>(
-    changeGroups.flatMap(({ changeGroupIdMap }) => [...(changeGroupIdMap.entries())])
+    changeGroupInfoPerAdapter.flatMap(({ changeGroupIdMap }) => [...changeGroupIdMap.entries()])
   )
 
   return {
-    changeGroupIdMap: mergedChangeGroupIdMap, ...mergeChangeGroupOptions(...changeGroups),
+    changeGroupIdMap: mergedChangeGroupIdMap,
+    ...mergeChangeGroupOptions(...changeGroupInfoPerAdapter),
   }
 }
 

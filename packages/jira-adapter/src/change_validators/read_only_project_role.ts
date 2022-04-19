@@ -15,12 +15,14 @@
 */
 import { ChangeValidator, getChangeData, isInstanceChange, isRemovalOrModificationChange, SeverityLevel } from '@salto-io/adapter-api'
 
+export const RoleName = 'atlassian-addons-project-access'
+
 export const readOnlyProjectRoleChangeValidator: ChangeValidator = async changes => (
   changes
     .filter(isInstanceChange)
     .filter(isRemovalOrModificationChange)
     .filter(change => getChangeData(change).elemID.typeName === 'ProjectRole')
-    .filter(change => getChangeData(change).value.name === 'atlassian-addons-project-access')
+    .filter(change => getChangeData(change).value.name === RoleName)
     .map(change => ({
       elemID: getChangeData(change).elemID,
       severity: 'Error' as SeverityLevel,

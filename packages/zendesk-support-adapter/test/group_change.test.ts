@@ -70,7 +70,7 @@ describe('Group changes function', () => {
   let changeGroupIds: Map<ChangeId, ChangeGroupId>
 
   beforeAll(async () => {
-    changeGroupIds = await getChangeGroupIds(new Map<string, Change>([
+    changeGroupIds = (await getChangeGroupIds(new Map<string, Change>([
       [ticketFieldObjType.elemID.getFullName(), toChange({ after: ticketFieldObjType })],
       [groupInstance1.elemID.getFullName(), toChange({ after: groupInstance1 })],
       [ticketField1.elemID.getFullName(), toChange({ after: ticketField1 })],
@@ -78,7 +78,7 @@ describe('Group changes function', () => {
       [ticketField2.elemID.getFullName(), toChange({ after: ticketField2 })],
       [option2.elemID.getFullName(), toChange({ after: option2 })],
       [groupInstance2.elemID.getFullName(), toChange({ before: groupInstance2 })],
-    ]))
+    ]))).changeGroupIdMap
   })
 
   describe('groups by type', () => {

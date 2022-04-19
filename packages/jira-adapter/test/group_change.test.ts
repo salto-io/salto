@@ -52,7 +52,7 @@ describe('group change', () => {
   })
 
   it('should group workflow modifications', async () => {
-    const changeGroupIds = await getChangeGroupIds(new Map<string, Change>([
+    const changeGroupIds = (await getChangeGroupIds(new Map<string, Change>([
       [workflowInstance1.elemID.getFullName(), toChange({
         before: workflowInstance1,
         after: workflowInstance1,
@@ -62,7 +62,7 @@ describe('group change', () => {
         after: workflowInstance2,
       })],
       [workflowInstance3.elemID.getFullName(), toChange({ after: workflowInstance3 })],
-    ]))
+    ]))).changeGroupIdMap
 
     expect(changeGroupIds.get(workflowInstance1.elemID.getFullName())).toBe('Workflow Modifications')
     expect(changeGroupIds.get(workflowInstance2.elemID.getFullName())).toBe('Workflow Modifications')
@@ -71,14 +71,14 @@ describe('group change', () => {
   })
 
   it('should group security scheme levels', async () => {
-    const changeGroupIds = await getChangeGroupIds(new Map<string, Change>([
+    const changeGroupIds = (await getChangeGroupIds(new Map<string, Change>([
       [securityLevelInstance.elemID.getFullName(), toChange({
         after: securityLevelInstance,
       })],
       [securitySchemeInstance.elemID.getFullName(), toChange({
         after: securitySchemeInstance,
       })],
-    ]))
+    ]))).changeGroupIdMap
 
     expect(changeGroupIds.get(securityLevelInstance.elemID.getFullName()))
       .toBe(securitySchemeInstance.elemID.getFullName())

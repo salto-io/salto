@@ -60,8 +60,8 @@ const changeIdProviders: ChangeIdFunction[] = [
   typeNameChangeGroupId,
 ]
 
-export const getChangeGroupIds: ChangeGroupIdFunction = async changes => (
-  new Map(
+export const getChangeGroupIds: ChangeGroupIdFunction = async changes => ({
+  changeGroupIdMap: new Map(
     await awu(changes.entries())
       .map(async ([id, change]) => {
         const groupId = await awu(changeIdProviders)
@@ -73,5 +73,5 @@ export const getChangeGroupIds: ChangeGroupIdFunction = async changes => (
       })
       .filter(values.isDefined)
       .toArray()
-  )
-)
+  ),
+})

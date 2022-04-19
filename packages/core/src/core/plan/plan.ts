@@ -550,13 +550,17 @@ export const getPlan = async ({
       await resolveNodeElements(before, after)(filterResult.validDiffGraph)
     }
 
-    const customGroupKeys = await getCustomGroupIds(
+    const { changeGroupIdMap, ...changeGroupOptions } = await getCustomGroupIds(
       filterResult.validDiffGraph,
       customGroupIdFunctions,
     )
     // build graph
     const groupedGraph = removeRedundantFieldChanges(
-      buildGroupedGraphFromDiffGraph(filterResult.validDiffGraph, customGroupKeys)
+      buildGroupedGraphFromDiffGraph(
+        filterResult.validDiffGraph,
+        changeGroupIdMap,
+        changeGroupOptions
+      )
     )
     // build plan
     return addPlanFunctions(groupedGraph, filterResult.changeErrors)

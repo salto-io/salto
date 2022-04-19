@@ -63,11 +63,13 @@ const getChangeGroupIdsWithoutSuiteApp: ChangeGroupIdFunction = async changes =>
         || fileCabinetTypesNames.has(changeData.elemID.typeName)
         || isSDFConfigTypeName(changeData.elemID.typeName))
   }
-  return new Map(
-    wu(changes.entries())
-      .filter(([_id, change]) => isSdfChange(change))
-      .map(([id, change]) => [id, getSdfWithSuiteAppGroupName(change)])
-  )
+  return {
+    changeGroupIdMap: new Map(
+      wu(changes.entries())
+        .filter(([_id, change]) => isSdfChange(change))
+        .map(([id, change]) => [id, getSdfWithSuiteAppGroupName(change)])
+    ),
+  }
 }
 
 const getRecordDependencies = (element: InstanceElement): string[] => {
@@ -206,7 +208,7 @@ const getChangeGroupIdsWithSuiteApp: ChangeGroupIdFunction = async changes => {
         : chunks.map((chunk, i): [collections.set.SetId, string][] => chunk.map(id => [id, `${groupId} - ${i + 1}/${chunks.length}`])).flat()
     }).toArray()
 
-  return new Map(groups)
+  return { changeGroupIdMap: new Map(groups) }
 }
 
 export const getChangeGroupIdsFunc = (isSuiteAppConfigured: boolean): ChangeGroupIdFunction =>

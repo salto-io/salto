@@ -253,7 +253,7 @@ describe('Zendesk support adapter E2E', () => {
         .map(inst => [inst.elemID.getFullName(), toChange({ after: inst })])))
       groupIdToInstances = _.groupBy(
         instancesToAdd,
-        inst => changeGroups.get(inst.elemID.getFullName())
+        inst => changeGroups.changeGroupIdMap.get(inst.elemID.getFullName())
       )
       const changes = _.mapValues(
         groupIdToInstances,

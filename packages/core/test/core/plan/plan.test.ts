@@ -152,7 +152,9 @@ describe('getPlan', () => {
   describe('with custom group key function', () => {
     let plan: Plan
     let changeGroup: PlanItem
-    const dummyGroupKeyFunc = mockFunction<ChangeGroupIdFunction>().mockResolvedValue(new Map())
+    const dummyGroupKeyFunc = mockFunction<ChangeGroupIdFunction>().mockResolvedValue(
+      { changeGroupIdMap: new Map() }
+    )
     beforeAll(async () => {
       const before = mock.getAllElements()
       const after = mock.getAllElements()
@@ -163,7 +165,10 @@ describe('getPlan', () => {
         before: createElementSource(before),
         after: createElementSource(after),
         customGroupIdFunctions: {
-          salto: async changes => new Map([...changes.entries()].map(([changeId]) => [changeId, 'all'])),
+          salto: async changes => ({
+            changeGroupIdMap: new Map([...changes.entries()]
+              .map(([changeId]) => [changeId, 'all'])),
+          }),
           dummy: dummyGroupKeyFunc,
         },
       })

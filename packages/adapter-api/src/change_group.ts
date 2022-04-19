@@ -23,5 +23,20 @@ export type ChangeGroup<ChangeType = Change<ChangeDataType>> = {
   changes: ReadonlyArray<ChangeType>
 }
 
-export type ChangeGroupIdFunction = (changes: Map<ChangeId, Change>) =>
-  Promise<Map<ChangeId, ChangeGroupId>>
+export type ChangeGroupOptions = {
+  disjointGroups?: Set<ChangeGroupId>
+}
+
+export const mergeChangeGroupOptions = (
+  ...changeGroupOptions: ChangeGroupOptions[]
+): ChangeGroupOptions => (
+  {
+    disjointGroups: new Set<ChangeGroupId>(
+      ...changeGroupOptions.flatMap(options => options.disjointGroups ?? [])
+    ),
+  }
+)
+
+export type ChangeGroupIdFunction = (
+  changes: Map<ChangeId, Change>
+) => Promise<{changeGroupIdMap: Map<ChangeId, ChangeGroupId>} & ChangeGroupOptions>

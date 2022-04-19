@@ -33,7 +33,7 @@ describe('serviceUrls', () => {
 
   beforeEach(() => {
     jest.resetAllMocks()
-    getPathInternalIdMock.mockResolvedValue(1)
+    getPathInternalIdMock.mockReturnValue(1)
     isSuiteAppConfiguredMock.mockReturnValue(true)
     elements = [
       new InstanceElement('A', fileType(), { path: '/path/A' }),
@@ -48,6 +48,7 @@ describe('serviceUrls', () => {
         serviceIdRecordsIndex: {},
         internalIdsIndex: {},
         customFieldsIndex: {},
+        pathToInternalIdsIndex: {},
       }) },
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
@@ -64,6 +65,7 @@ describe('serviceUrls', () => {
         serviceIdRecordsIndex: {},
         internalIdsIndex: {},
         customFieldsIndex: {},
+        pathToInternalIdsIndex: {},
       }) },
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,

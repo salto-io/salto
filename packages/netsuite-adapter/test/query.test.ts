@@ -51,6 +51,17 @@ describe('NetsuiteQuery', () => {
         })
       })
 
+      describe('isParentFolderMatch', () => {
+        it('should match folder paths that match the received regexes', () => {
+          expect(query.isParentFolderMatch('e')).toBeTruthy()
+          expect(query.isParentFolderMatch('f')).toBeTruthy()
+        })
+
+        it('should not match folder paths that do not match the received regexes', () => {
+          expect(query.isParentFolderMatch('ef')).toBeFalsy()
+        })
+      })
+
       describe('isObjectMatch', () => {
         it('should match objects that match the received regexes', () => {
           expect(query.isObjectMatch({ instanceId: 'aaaaaa', type: 'addressForm' })).toBeTruthy()
@@ -282,6 +293,12 @@ describe('NetsuiteQuery', () => {
       expect(bothQuery.isFileMatch('bbbdddd')).toBeTruthy()
       expect(bothQuery.isFileMatch('bbb')).toBeFalsy()
       expect(bothQuery.isFileMatch('ddd')).toBeFalsy()
+    })
+
+    it('should match only folders that match both queries', () => {
+      expect(bothQuery.isParentFolderMatch('bb')).toBeTruthy()
+      expect(bothQuery.isParentFolderMatch('bbd')).toBeFalsy()
+      expect(bothQuery.isParentFolderMatch('ddd')).toBeFalsy()
     })
 
     it('should match only objects that match both queries', () => {

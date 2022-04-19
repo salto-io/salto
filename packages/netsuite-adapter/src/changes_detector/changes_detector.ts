@@ -178,7 +178,7 @@ export const getChangedObjects = async (
       || types.has(objectID.type),
     isFileMatch: filePath => filePaths.has(filePath)
       || unresolvedFolderPaths.some(path => filePath.startsWith(path)),
+    isParentFolderMatch: query.isParentFolderMatch,
     areSomeFilesMatch: () => filePaths.size !== 0 || folderPaths.length !== 0,
-    getFileCabinetMatchers: () => query.getFileCabinetMatchers(),
   }
 }

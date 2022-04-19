@@ -24,6 +24,7 @@ import { ReadFileEncodingError, ReadFileInsufficientPermissionError } from './cl
 import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
 import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from './client/suiteapp_client/types'
 import { ImportFileCabinetResult } from './client/types'
+import { LazyElementsSourceIndexes } from './elements_source_index/types'
 import { NetsuiteQuery } from './query'
 import { isFileCabinetType, isFileInstance } from './types'
 
@@ -110,6 +111,11 @@ type FileResult = {
   folder: string
 }
 
+type FileCabinetResults = {
+  filesResults: FileResult[]
+  foldersResults: FolderResult[]
+}
+
 const FILES_CHUNK_SIZE = 5 * 1024 * 1024
 const MAX_DEPLOYABLE_FILE_SIZE = 10 * 1024 * 1024
 const DEPLOY_CHUNK_SIZE = 50
@@ -117,9 +123,12 @@ const MAX_ITEMS_IN_WHERE_QUERY = 200
 
 export type SuiteAppFileCabinetOperations = {
   importFileCabinet: (query: NetsuiteQuery) => Promise<ImportFileCabinetResult>
-  getPathToIdMap: () => Promise<Record<string, number>>
-  deploy: (changes: ReadonlyArray<Change<InstanceElement>>, type: DeployType)
-    => Promise<DeployResult>
+  getPathToIdMap: () => Record<string, number>
+  deploy: (
+    changes: ReadonlyArray<Change<InstanceElement>>,
+    type: DeployType,
+    elementsSourceIndex: LazyElementsSourceIndexes
+  ) => Promise<DeployResult>
 }
 
 const getContent = (content: unknown): Buffer => {
@@ -165,17 +174,9 @@ export const isChangeDeployable = (
   return true
 }
 
-const toSubMatchers = (matchersList: ReadonlyArray<string>): RegExp[] =>
-  matchersList.flatMap(
-    matcher => _.range(matcher.length).map(i => new RegExp(`^${matcher.slice(0, i + 1)}$`))
-  )
-
 export const createSuiteAppFileCabinetOperations = (suiteAppClient: SuiteAppClient):
 SuiteAppFileCabinetOperations => {
-  let queryTopLevelFoldersResults: FolderResult[]
-  let querySubFoldersResults: FolderResult[]
-  let queryFilesResults: FileResult[]
-  let pathToIdResults: Record<string, number>
+  let fileCabinetResults: FileCabinetResults
 
   const queryFolders = async (whereQuery: string): Promise<FolderResult[]> => {
     const foldersResults = await suiteAppClient.runSuiteQL(
@@ -196,55 +197,67 @@ SuiteAppFileCabinetOperations => {
     return foldersResults
   }
 
-  const queryTopLevelFolders = async (): Promise<FolderResult[]> => {
-    if (queryTopLevelFoldersResults === undefined) {
-      queryTopLevelFoldersResults = await queryFolders('istoplevel = \'T\'')
-    }
-    return queryTopLevelFoldersResults
+  const queryTopLevelFolders = async (): Promise<FolderResult[]> =>
+    queryFolders('istoplevel = \'T\'')
+
+  const querySubFolders = async (topLevelFolders: FolderResult[]): Promise<FolderResult[]> => {
+    const subFolderCriteria = 'istoplevel = \'F\''
+    const whereQuery = topLevelFolders.length > 0
+      ? `${subFolderCriteria} AND (${topLevelFolders.map(folder => `appfolder LIKE '${folder.name}%'`).join(' OR ')})`
+      : subFolderCriteria
+    return queryFolders(whereQuery)
   }
 
-  const querySubFolders = async (topLevelFolders: FolderResult[] = []): Promise<FolderResult[]> => {
-    if (querySubFoldersResults === undefined) {
-      const subFolderCriteria = 'istoplevel = \'F\''
-      const whereQuery = topLevelFolders.length > 0
-        ? `${subFolderCriteria} AND (${topLevelFolders.map(folder => `appfolder LIKE '${folder.name}%'`).join(' OR ')})`
-        : subFolderCriteria
-      querySubFoldersResults = await queryFolders(whereQuery)
-    }
-    return querySubFoldersResults
+  const queryFiles = async (foldersToQuery: FolderResult[]): Promise<FileResult[]> => {
+    const fileCriteria = 'hideinbundle = \'F\''
+    const whereQueries = foldersToQuery.length > 0
+      ? _.chunk(foldersToQuery, MAX_ITEMS_IN_WHERE_QUERY).map(foldersToQueryChunk =>
+        `${fileCriteria} AND (${foldersToQueryChunk.map(folder => `folder = '${folder.id}'`).join(' OR ')})`)
+      : [fileCriteria]
+
+    const results = await Promise.all(whereQueries.map(async whereQuery => {
+      const filesResults = await suiteAppClient.runSuiteQL(
+        'SELECT name, id, filesize, bundleable, isinactive, isonline,'
+        + ' addtimestamptourl, hideinbundle, description, folder, islink, url'
+        + ` FROM file WHERE ${whereQuery} ORDER BY id ASC`
+      )
+
+      if (filesResults === undefined) {
+        throw new Error('Failed to list files')
+      }
+
+      const ajv = new Ajv({ allErrors: true, strict: false })
+      if (!ajv.validate<FileResult[]>(FILES_SCHEMA, filesResults)) {
+        log.error(`Got invalid results from listing files: ${ajv.errorsText()}`)
+        throw new Error('Failed to list files')
+      }
+      return filesResults
+    }))
+
+    return results.flat()
   }
 
-  const queryFiles = async (foldersToQuery: FolderResult[] = []): Promise<FileResult[]> => {
-    if (queryFilesResults === undefined) {
-      const fileCriteria = 'hideinbundle = \'F\''
-      const whereQueries = foldersToQuery.length > 0
-        ? _.chunk(foldersToQuery, MAX_ITEMS_IN_WHERE_QUERY).map(foldersToQueryChunk =>
-          `${fileCriteria} AND (${foldersToQueryChunk.map(folder => `folder = '${folder.id}'`).join(' OR ')})`)
-        : [fileCriteria]
+  const queryFileCabinet = async (query: NetsuiteQuery): Promise<FileCabinetResults> => {
+    if (fileCabinetResults === undefined) {
+      const topLevelFoldersResults = (await queryTopLevelFolders())
+        .filter(folder => query.isParentFolderMatch(`/${folder.name}`))
 
-      const results = await Promise.all(whereQueries.map(async whereQuery => {
-        const filesResults = await suiteAppClient.runSuiteQL(
-          'SELECT name, id, filesize, bundleable, isinactive, isonline,'
-          + ' addtimestamptourl, hideinbundle, description, folder, islink, url'
-          + ` FROM file WHERE ${whereQuery} ORDER BY id ASC`
-        )
+      if (topLevelFoldersResults.length === 0) {
+        log.warn('No top level folder matched the adapter\'s query. returning empty result')
+        fileCabinetResults = { foldersResults: [], filesResults: [] }
+        return fileCabinetResults
+      }
+      log.debug(
+        'the following top level folders have been queried: %o',
+        topLevelFoldersResults.map(folder => folder.name)
+      )
 
-        if (filesResults === undefined) {
-          throw new Error('Failed to list files')
-        }
-
-        const ajv = new Ajv({ allErrors: true, strict: false })
-        if (!ajv.validate<FileResult[]>(FILES_SCHEMA, filesResults)) {
-          log.error(`Got invalid results from listing files: ${ajv.errorsText()}`)
-          throw new Error('Failed to list files')
-        }
-        return filesResults
-      }))
-
-      queryFilesResults = results.flat()
+      const subFoldersResults = await querySubFolders(topLevelFoldersResults)
+      const foldersResults = topLevelFoldersResults.concat(subFoldersResults)
+      const filesResults = await queryFiles(foldersResults)
+      fileCabinetResults = { foldersResults, filesResults }
     }
-
-    return queryFilesResults
+    return fileCabinetResults
   }
 
   const getFullPath = (folder: FolderResult, idToFolder: Record<string, FolderResult>):
@@ -260,19 +273,7 @@ SuiteAppFileCabinetOperations => {
       return { elements: [], failedPaths: { lockedError: [], otherError: [] } }
     }
 
-    const topLevelMatchers = toSubMatchers(query.getFileCabinetMatchers())
-    const topLevelFoldersResults = topLevelMatchers.length > 0
-      ? (await queryTopLevelFolders())
-        .filter(folder => topLevelMatchers.some(matcher => matcher.test(`/${folder.name}`)))
-      : await queryTopLevelFolders()
-
-    if (topLevelFoldersResults.length === 0) {
-      throw new Error('No folder matches the query')
-    }
-
-    const subFoldersResults = await querySubFolders(topLevelFoldersResults)
-    const foldersResults = topLevelFoldersResults.concat(subFoldersResults)
-    const filesResults = await queryFiles(foldersResults)
+    const { foldersResults, filesResults } = await queryFileCabinet(query)
     const idToFolder = _.keyBy(foldersResults, folder => folder.id)
 
     const foldersCustomizationInfo = foldersResults.map(folder => ({
@@ -380,18 +381,22 @@ SuiteAppFileCabinetOperations => {
     }
   }
 
-  const getPathToIdMap = async ():
-  Promise<Record<string, number>> => {
-    if (pathToIdResults === undefined) {
-      const files = await queryFiles()
-      const folders = (await queryTopLevelFolders()).concat(await querySubFolders())
-      const idToFolder = _.keyBy(folders, folder => folder.id)
-      pathToIdResults = Object.fromEntries([
-        ...files.map(file => [`/${[...getFullPath(idToFolder[file.folder], idToFolder), file.name].join('/')}`, parseInt(file.id, 10)]),
-        ...folders.map(folder => [`/${getFullPath(folder, idToFolder).join('/')}`, parseInt(folder.id, 10)]),
-      ])
+  const getPathToIdMap = (): Record<string, number> => {
+    if (fileCabinetResults === undefined) {
+      throw new Error('missing fileCabinet results cache')
     }
-    return pathToIdResults
+    const { foldersResults, filesResults } = fileCabinetResults
+    const idToFolder = _.keyBy(foldersResults, folder => folder.id)
+    return Object.fromEntries([
+      ...filesResults.map(file => [
+        `/${[...getFullPath(idToFolder[file.folder], idToFolder), file.name].join('/')}`,
+        parseInt(file.id, 10),
+      ]),
+      ...foldersResults.map(folder => [
+        `/${getFullPath(folder, idToFolder).join('/')}`,
+        parseInt(folder.id, 10),
+      ]),
+    ])
   }
 
   const convertToFileCabinetDetails = (
@@ -561,13 +566,13 @@ SuiteAppFileCabinetOperations => {
 
   const deploy = async (
     changes: ReadonlyArray<Change<InstanceElement>>,
-    type: DeployType
+    type: DeployType,
+    elementsSourceIndex: LazyElementsSourceIndexes
   ): Promise<DeployResult> => {
-    const pathToId = await getPathToIdMap()
-
+    const { pathToInternalIdsIndex } = await elementsSourceIndex.getIndexes()
     return type === 'update'
-      ? deployChanges(changes, pathToId, 'update')
-      : deployAdditionsOrDeletions(changes, pathToId, type)
+      ? deployChanges(changes, pathToInternalIdsIndex, 'update')
+      : deployAdditionsOrDeletions(changes, pathToInternalIdsIndex, type)
   }
 
   return {

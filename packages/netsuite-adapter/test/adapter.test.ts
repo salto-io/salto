@@ -858,8 +858,8 @@ describe('Adapter', () => {
         areAllObjectsMatch: () => false,
         isObjectMatch: objectID => objectID.instanceId.startsWith('aa'),
         isFileMatch: () => true,
+        isParentFolderMatch: () => true,
         areSomeFilesMatch: () => true,
-        getFileCabinetMatchers: () => [],
       })
 
       getSystemInformationMock.mockReset()

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
+import _ from 'lodash'
 import { regex, strings } from '@salto-io/lowerdash'
 import { getCustomTypesNames } from './autogen/types'
 import { INCLUDE, EXCLUDE, LOCKED_ELEMENTS_TO_EXCLUDE, AUTHOR_INFO_CONFIG, CONFIG_FEATURES } from './constants'
@@ -60,8 +60,8 @@ export type NetsuiteQuery = {
   areAllObjectsMatch: (typeName: string) => boolean
   isObjectMatch: (objectID: ObjectID) => boolean
   isFileMatch: (filePath: string) => boolean
+  isParentFolderMatch: (folderPath: string) => boolean
   areSomeFilesMatch: () => boolean
-  getFileCabinetMatchers: () => ReadonlyArray<string>
 }
 
 const checkTypeNameRegMatch = (type: FetchTypeQueryParams, str: string): boolean =>
@@ -132,9 +132,15 @@ export const buildNetsuiteQuery = (
 
   const matchingTypes = (typeName: string): FetchTypeQueryParams[] =>
     fixedTypes.filter(type => checkTypeNameRegMatch(type, typeName))
+
   const matchingTypesRegexes = (typeName: string): string[] =>
     matchingTypes(typeName)
       .flatMap(type => type.ids ?? ['.*'])
+
+  const parentFolderMatchers = fileCabinet.flatMap(
+    matcher => _.range(matcher.length).map(i => new RegExp(`^${matcher.slice(0, i + 1)}$`))
+  )
+
   return {
     isTypeMatch: typeName => matchingTypes(typeName).length > 0,
     areAllObjectsMatch: typeName =>
@@ -145,8 +151,9 @@ export const buildNetsuiteQuery = (
         .some(reg => new RegExp(`^${reg}$`).test(objectID.instanceId)),
     isFileMatch: filePath =>
       fileCabinet.some(reg => new RegExp(`^${reg}$`).test(filePath)),
+    isParentFolderMatch: folderPath =>
+      parentFolderMatchers.some(matcher => matcher.test(folderPath)),
     areSomeFilesMatch: () => fileCabinet.length !== 0,
-    getFileCabinetMatchers: () => fileCabinet,
   }
 }
 
@@ -159,10 +166,10 @@ export const andQuery = (firstQuery: NetsuiteQuery, secondQuery: NetsuiteQuery):
     firstQuery.isObjectMatch(objectID) && secondQuery.isObjectMatch(objectID),
   isFileMatch: filePath =>
     firstQuery.isFileMatch(filePath) && secondQuery.isFileMatch(filePath),
+  isParentFolderMatch: folderPath =>
+    firstQuery.isParentFolderMatch(folderPath) && secondQuery.isParentFolderMatch(folderPath),
   areSomeFilesMatch: () =>
     firstQuery.areSomeFilesMatch() && secondQuery.areSomeFilesMatch(),
-  getFileCabinetMatchers: () =>
-    firstQuery.getFileCabinetMatchers().concat(secondQuery.getFileCabinetMatchers()),
 })
 
 export const notQuery = (query: NetsuiteQuery): NetsuiteQuery => ({
@@ -170,6 +177,6 @@ export const notQuery = (query: NetsuiteQuery): NetsuiteQuery => ({
   areAllObjectsMatch: typeName => !query.isTypeMatch(typeName),
   isObjectMatch: objectID => !query.isObjectMatch(objectID),
   isFileMatch: filePath => !query.isFileMatch(filePath),
+  isParentFolderMatch: () => true,
   areSomeFilesMatch: () => true,
-  getFileCabinetMatchers: () => [],
 })

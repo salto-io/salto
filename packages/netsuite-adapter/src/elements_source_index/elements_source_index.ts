@@ -18,6 +18,7 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { LAST_FETCH_TIME } from '../constants'
+import { isFileCabinetInstance } from '../types'
 import { getInstanceServiceIdRecords } from '../filters/instance_references'
 import { ElementsSourceIndexes, ElementsSourceValue, LazyElementsSourceIndexes, ServiceIdRecords } from './types'
 import { getServiceId } from '../transformer'
@@ -36,6 +37,7 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
   const serviceIdRecordsIndex: ServiceIdRecords = {}
   const internalIdsIndex: Record<string, ElementsSourceValue> = {}
   const customFieldsIndex: Record<string, InstanceElement[]> = {}
+  const pathToInternalIdsIndex: Record<string, number> = {}
 
   const updateServiceIdIndex = async (element: InstanceElement): Promise<void> => {
     const serviceIdRecords = await getInstanceServiceIdRecords(element, elementsSource)
@@ -77,15 +79,31 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
       })
   }
 
+  const updatePathToInternalIdsIndex = (element: InstanceElement): void => {
+    if (!isFileCabinetInstance(element)) return
+
+    const { path, internalId } = element.value
+    if (path === undefined || internalId === undefined) return
+
+    pathToInternalIdsIndex[path] = parseInt(internalId, 10)
+  }
+
   await awu(await elementsSource.getAll())
     .filter(isInstanceElement)
     .forEach(async element => {
       await updateServiceIdIndex(element)
       await updateInternalIdsIndex(element)
       updateCustomFieldsIndex(element)
+      updatePathToInternalIdsIndex(element)
     })
   log.debug('finished creating elements source index')
-  return { serviceIdsIndex, serviceIdRecordsIndex, internalIdsIndex, customFieldsIndex }
+  return {
+    serviceIdsIndex,
+    serviceIdRecordsIndex,
+    internalIdsIndex,
+    customFieldsIndex,
+    pathToInternalIdsIndex,
+  }
 }
 
 export const createElementsSourceIndex = (

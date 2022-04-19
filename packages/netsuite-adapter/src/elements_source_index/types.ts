@@ -27,6 +27,7 @@ export type ElementsSourceIndexes = {
   serviceIdRecordsIndex: ServiceIdRecords
   internalIdsIndex: Record<string, ElementsSourceValue>
   customFieldsIndex: Record<string, InstanceElement[]>
+  pathToInternalIdsIndex: Record<string, number>
 }
 
 export type LazyElementsSourceIndexes = {

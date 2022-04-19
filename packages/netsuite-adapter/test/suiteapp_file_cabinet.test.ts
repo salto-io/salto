@@ -23,6 +23,7 @@ import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionErr
 import { customtransactiontypeType } from '../src/autogen/types/custom_types/customtransactiontype'
 import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from '../src/client/suiteapp_client/types'
 import { getFileCabinetTypes } from '../src/types/file_cabinet_types'
+import { ElementsSourceIndexes } from '../src/elements_source_index/types'
 
 describe('suiteapp_file_cabinet', () => {
   const filesQueryResponse = [{
@@ -204,7 +205,7 @@ describe('suiteapp_file_cabinet', () => {
     query = {
       isFileMatch: jest.fn().mockReturnValue(true),
       areSomeFilesMatch: jest.fn().mockReturnValue(true),
-      getFileCabinetMatchers: jest.fn().mockReturnValue(['.*']),
+      isParentFolderMatch: jest.fn().mockReturnValue(true),
     } as unknown as MockInterface<NetsuiteQuery>
 
     mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
@@ -225,9 +226,17 @@ describe('suiteapp_file_cabinet', () => {
 
   describe('importFileCabinet', () => {
     it('should return all the files', async () => {
-      const { elements } = await createSuiteAppFileCabinetOperations(suiteAppClient)
-        .importFileCabinet(query)
+      const suiteAppFileCabinet = createSuiteAppFileCabinetOperations(suiteAppClient)
+      const { elements } = await suiteAppFileCabinet.importFileCabinet(query)
       expect(elements).toEqual(expectedResults)
+      expect(suiteAppFileCabinet.getPathToIdMap()).toEqual({
+        '/folder5': 5,
+        '/folder5/folder3': 3,
+        '/folder5/folder3/file1': 1,
+        '/folder5/folder4': 4,
+        '/folder5/folder4/file2': 2,
+        '/folder5/folder4/file6': 6,
+      })
     })
 
     it('should use SOAP if ReadFileEncodingError was thrown', async () => {
@@ -334,6 +343,25 @@ describe('suiteapp_file_cabinet', () => {
       ])
     })
 
+    it('return empty result when no top level folder matches the adapter\'s query', async () => {
+      query.isParentFolderMatch.mockReturnValue(false)
+      mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
+        if (suiteQlQuery.includes('FROM file')) {
+          return filesQueryResponse
+        }
+
+        if (suiteQlQuery.includes('FROM mediaitemfolder')) {
+          return getFoldersResponse(suiteQlQuery)
+        }
+        throw new Error(`Unexpected query: ${suiteQlQuery}`)
+      })
+
+      const suiteAppFileCabinet = createSuiteAppFileCabinetOperations(suiteAppClient)
+      expect(await suiteAppFileCabinet.importFileCabinet(query))
+        .toEqual({ elements: [], failedPaths: { lockedError: [], otherError: [] } })
+      expect(mockSuiteAppClient.runSuiteQL).toHaveBeenCalledTimes(1)
+    })
+
     it('should not run queries of no files are matched', async () => {
       query.areSomeFilesMatch.mockReturnValue(false)
       const { elements } = await createSuiteAppFileCabinetOperations(suiteAppClient)
@@ -411,23 +439,6 @@ describe('suiteapp_file_cabinet', () => {
       await expect(createSuiteAppFileCabinetOperations(suiteAppClient)
         .importFileCabinet(query)).rejects.toThrow()
     })
-
-    it('throw an error when no folder matches the query', async () => {
-      query.getFileCabinetMatchers.mockReturnValue(['no-match'])
-      mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
-        if (suiteQlQuery.includes('FROM file')) {
-          return filesQueryResponse
-        }
-
-        if (suiteQlQuery.includes('FROM mediaitemfolder')) {
-          return getFoldersResponse(suiteQlQuery)
-        }
-        throw new Error(`Unexpected query: ${suiteQlQuery}`)
-      })
-
-      await expect(createSuiteAppFileCabinetOperations(suiteAppClient)
-        .importFileCabinet(query)).rejects.toThrow('No folder matches the query')
-    })
   })
 
   describe('isChangeDeployable', () => {
@@ -503,6 +514,15 @@ describe('suiteapp_file_cabinet', () => {
 
   describe('deploy', () => {
     let changes: Change<InstanceElement>[]
+    const elementsSourceIndexes = {
+      getIndexes: async () => ({
+        pathToInternalIdsIndex: {
+          ...Object.fromEntries(_.range(100).map(i => [`/instance${i}`, i])),
+          '/instance1/instance101': 101,
+        },
+      } as unknown as ElementsSourceIndexes),
+    }
+
     beforeEach(() => {
       mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
         if (suiteQlQuery.includes('FROM file')) {
@@ -566,7 +586,7 @@ describe('suiteapp_file_cabinet', () => {
       it('should return only error if api calls fails', async () => {
         mockSuiteAppClient.updateFileCabinetInstances.mockRejectedValue(new Error('someError'))
         const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
-          .deploy([changes[0]], 'update')
+          .deploy([changes[0]], 'update', elementsSourceIndexes)
         expect(errors).toEqual([new Error('someError')])
         expect(appliedChanges).toHaveLength(0)
       })
@@ -574,7 +594,7 @@ describe('suiteapp_file_cabinet', () => {
       it('should return applied changes for successful updates and errors for others', async () => {
         mockSuiteAppClient.updateFileCabinetInstances.mockResolvedValue([0, new Error('someError')])
         const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
-          .deploy(changes.slice(0, 2), 'update')
+          .deploy(changes.slice(0, 2), 'update', elementsSourceIndexes)
         expect(errors).toEqual([new Error('someError')])
         expect(appliedChanges).toHaveLength(1)
       })
@@ -599,7 +619,7 @@ describe('suiteapp_file_cabinet', () => {
         })
 
         const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
-          .deploy([change], 'update')
+          .deploy([change], 'update', elementsSourceIndexes)
         expect(errors).toEqual([new Error('Failed to find the internal id of the file /instance10000')])
         expect(appliedChanges).toHaveLength(0)
         expect(mockSuiteAppClient.updateFileCabinetInstances).not.toHaveBeenCalledWith()
@@ -626,7 +646,7 @@ describe('suiteapp_file_cabinet', () => {
 
         mockSuiteAppClient.updateFileCabinetInstances.mockRejectedValue(new Error('someError'))
         const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
-          .deploy([changes[0], notExistsChange], 'update')
+          .deploy([changes[0], notExistsChange], 'update', elementsSourceIndexes)
         expect(errors).toEqual([
           new Error('someError'),
           new Error('Failed to find the internal id of the file /instance10000'),
@@ -655,13 +675,13 @@ describe('suiteapp_file_cabinet', () => {
         })
 
         const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
-          .deploy([change], 'update')
+          .deploy([change], 'update', elementsSourceIndexes)
         expect(errors).toEqual([new Error('Directory /someFolder was not found when attempting to deploy a file with path /someFolder/instance1')])
         expect(appliedChanges).toHaveLength(0)
       })
       it('should deploy in chunks', async () => {
         const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
-          .deploy(changes, 'update')
+          .deploy(changes, 'update', elementsSourceIndexes)
         expect(errors).toHaveLength(0)
         expect(appliedChanges).toEqual(changes)
         expect(mockSuiteAppClient.updateFileCabinetInstances.mock.calls[0][0]
@@ -717,7 +737,7 @@ describe('suiteapp_file_cabinet', () => {
         ]
 
         const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
-          .deploy(changes, 'add')
+          .deploy(changes, 'add', elementsSourceIndexes)
         expect(errors).toHaveLength(0)
         expect(appliedChanges).toHaveLength(3)
 
@@ -779,7 +799,7 @@ describe('suiteapp_file_cabinet', () => {
         ]
 
         const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
-          .deploy(changes, 'delete')
+          .deploy(changes, 'delete', elementsSourceIndexes)
         expect(errors).toHaveLength(0)
         expect(appliedChanges).toHaveLength(3)
 

@@ -33,7 +33,7 @@ import {
   FILE, FILE_CABINET_PATH_SEPARATOR, FOLDER, NETSUITE, PATH, ROLE, SCRIPT_ID,
   SKIP_LIST, CONFIG_FEATURES,
   TRANSACTION_COLUMN_CUSTOM_FIELD,
-  WARN_STALE_DATA, WORKFLOW,
+  WARN_STALE_DATA, WORKFLOW, FETCH, INCLUDE,
 } from '../src/constants'
 import { mockDefaultValues } from './mock_elements'
 import { Credentials } from '../src/client/credentials'
@@ -317,8 +317,19 @@ describe('Netsuite adapter E2E with real account', () => {
 
       let deployResult: DeployResult
       beforeAll(async () => {
-        const adapterAttr = realAdapter(
+        const adapterAttrWithoutElementsSource = realAdapter(
           { credentials: credentialsLease.value, withSuiteApp },
+          { [FETCH]: { [INCLUDE]: { types: [], fileCabinet: ['/Images.*'] } } }
+        )
+        const mockFetchOpts: MockInterface<FetchOptions> = {
+          progressReporter: { reportProgress: jest.fn() },
+        }
+        const { elements } = withSuiteApp
+          ? await adapterAttrWithoutElementsSource.adapter.fetch(mockFetchOpts)
+          : { elements: [] }
+
+        const adapterAttr = realAdapter(
+          { credentials: credentialsLease.value, withSuiteApp, elements },
         )
         adapter = adapterAttr.adapter
 

@@ -42,6 +42,7 @@ describe('remove_unsupported_types', () => {
         serviceIdRecordsIndex: {},
         internalIdsIndex: {},
         customFieldsIndex: {},
+        pathToInternalIdsIndex: {},
       }) },
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,

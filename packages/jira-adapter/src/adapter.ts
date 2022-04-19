@@ -69,7 +69,8 @@ import fieldDeploymentFilter from './filters/fields/field_deployment_filter'
 import contextDeploymentFilter from './filters/fields/context_deployment_filter'
 import fieldTypeReferencesFilter from './filters/fields/field_type_references_filter'
 import contextReferencesFilter from './filters/fields/context_references_filter'
-import serviceUrlFilter from './filters/service_url'
+import serviceUrlInformationFilter from './filters/service_url/service_url_information'
+import serviceUrlFilter from './filters/service_url/service_url'
 import resolutionFilter from './filters/resolution'
 import priorityFilter from './filters/priority'
 import statusDeploymentFilter from './filters/statuses/status_deployment'
@@ -149,6 +150,7 @@ export const DEFAULT_FILTERS = [
   issueTypeScreenSchemeFilter,
   fieldConfigurationFilter,
   fieldConfigurationSchemeFilter,
+  serviceUrlInformationFilter,
   serviceUrlFilter,
   userFilter,
   forbiddenPermissionSchemeFilter,

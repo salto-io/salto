@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import { filters } from '@salto-io/adapter-components'
-import JiraClient from '../client/client'
-import { FilterContext } from '../config'
-import { FilterCreator, FilterResult } from '../filter'
+import JiraClient from '../../client/client'
+import { FilterContext } from '../../config'
+import { FilterCreator, FilterResult } from '../../filter'
 
 const filter: FilterCreator = params =>
   filters.serviceUrlFilterCreator<JiraClient, FilterContext, FilterResult>(

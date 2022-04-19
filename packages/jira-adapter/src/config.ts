@@ -70,6 +70,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     transformation: {
       dataField: '.',
       isSingleton: true,
+      serviceUrl: '/secure/admin/ViewApplicationProperties.jspa',
     },
   },
   Dashboards: {
@@ -100,8 +101,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
-      serviceUrl: '/jira/dashboards/10001/edit?maximized={id}'
-      // need to switch 10001 to parent dashboard id
     },
     deployRequests: {
       add: {
@@ -250,8 +249,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'contextIssueTypes', fieldType: 'list<IssueTypeToContextMapping>' },
         { fieldName: 'contextProjects', fieldType: 'list<CustomFieldContextProjectMapping>' },
       ],
-      serviceUrl: '/secure/admin/EditCustomField!default.jspa?id={id}',
-      // need switch id for internal id number
     },
     deployRequests: {
       add: {
@@ -328,8 +325,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'isGlobalContext' },
         { fieldName: 'isAnyIssueType' },
       ],
-      serviceUrl: '/secure/admin/ConfigureCustomField!default.jspa?customFieldId={id}',
-    // need switch id for internal id number
     },
     deployRequests: {
       add: {
@@ -900,8 +895,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'assignee' },
         { fieldName: 'componentBean' },
       ],
-      serviceUrl: '/issues/?jql=project%20%3D%20%22LOL%22%20AND%20component%20%3D%20%22{name}%22',
-      // switch lol for parent project name
     },
     deployRequests: {
       add: {
@@ -1400,8 +1393,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'subQuery', fieldType: 'string' },
         { fieldName: 'estimation', fieldType: BOARD_ESTIMATION_TYPE },
       ],
-      serviceUrl: 'https://guytest.atlassian.net/jira/software/projects/WOQW/boards/{id}',
-      // switch woqw to board's name minus the "board" suffix
       fieldsToOmit: [
         { fieldName: 'canEdit' },
       ],

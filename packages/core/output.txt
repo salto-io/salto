@@ -1,0 +1,4032 @@
+CREATING Q1
+[]
+CLIENT Redis {
+  options: {
+    enableReadyCheck: false,
+    port: 6379,
+    host: '127.0.0.1',
+    db: 0,
+    retryStrategy: [Function: retryStrategy],
+    family: 4,
+    connectTimeout: 10000,
+    disconnectTimeout: 2000,
+    keepAlive: 0,
+    noDelay: true,
+    connectionName: null,
+    sentinels: null,
+    name: null,
+    role: 'master',
+    sentinelRetryStrategy: [Function: sentinelRetryStrategy],
+    sentinelReconnectStrategy: [Function: sentinelReconnectStrategy],
+    natMap: null,
+    enableTLSForSentinelMode: false,
+    updateSentinels: true,
+    failoverDetector: false,
+    username: null,
+    password: null,
+    dropBufferSupport: false,
+    enableOfflineQueue: true,
+    autoResubscribe: true,
+    autoResendUnfulfilledCommands: true,
+    lazyConnect: false,
+    keyPrefix: '',
+    reconnectOnError: null,
+    readOnly: false,
+    stringNumbers: false,
+    maxRetriesPerRequest: 20,
+    maxLoadingRetryTime: 10000,
+    enableAutoPipelining: false,
+    autoPipeliningIgnoredCommands: [],
+    maxScriptsCachingTime: 60000,
+    sentinelMaxConnections: 10,
+    showFriendlyErrorStack: false
+  },
+  _events: [Object: null prototype] { error: [Function: bound emit] },
+  _eventsCount: 1,
+  _maxListeners: undefined,
+  scriptsSet: {},
+  addedBuiltinSet: Set {},
+  commandQueue: Denque {
+    _head: 2,
+    _tail: 2,
+    _capacity: undefined,
+    _capacityMask: 3,
+    _list: [ undefined, undefined, <2 empty items> ]
+  },
+  offlineQueue: Denque {
+    _head: 0,
+    _tail: 0,
+    _capacity: undefined,
+    _capacityMask: 3,
+    _list: [ <4 empty items> ]
+  },
+  connectionEpoch: 1,
+  connector: StandaloneConnector {
+    connecting: true,
+    disconnectTimeout: 2000,
+    options: {
+      enableReadyCheck: false,
+      port: 6379,
+      host: '127.0.0.1',
+      db: 0,
+      retryStrategy: [Function: retryStrategy],
+      family: 4,
+      connectTimeout: 10000,
+      disconnectTimeout: 2000,
+      keepAlive: 0,
+      noDelay: true,
+      connectionName: null,
+      sentinels: null,
+      name: null,
+      role: 'master',
+      sentinelRetryStrategy: [Function: sentinelRetryStrategy],
+      sentinelReconnectStrategy: [Function: sentinelReconnectStrategy],
+      natMap: null,
+      enableTLSForSentinelMode: false,
+      updateSentinels: true,
+      failoverDetector: false,
+      username: null,
+      password: null,
+      dropBufferSupport: false,
+      enableOfflineQueue: true,
+      autoResubscribe: true,
+      autoResendUnfulfilledCommands: true,
+      lazyConnect: false,
+      keyPrefix: '',
+      reconnectOnError: null,
+      readOnly: false,
+      stringNumbers: false,
+      maxRetriesPerRequest: 20,
+      maxLoadingRetryTime: 10000,
+      enableAutoPipelining: false,
+      autoPipeliningIgnoredCommands: [],
+      maxScriptsCachingTime: 60000,
+      sentinelMaxConnections: 10,
+      showFriendlyErrorStack: false
+    },
+    stream: Socket {
+      connecting: false,
+      _hadError: false,
+      _parent: null,
+      _host: null,
+      _readableState: [ReadableState],
+      readable: true,
+      _events: [Object: null prototype],
+      _eventsCount: 5,
+      _maxListeners: undefined,
+      _writableState: [WritableState],
+      writable: true,
+      allowHalfOpen: false,
+      _sockname: null,
+      _pendingData: null,
+      _pendingEncoding: '',
+      server: null,
+      _server: null,
+      timeout: 0,
+      [Symbol(asyncId)]: 10,
+      [Symbol(kHandle)]: [TCP],
+      [Symbol(kSetNoDelay)]: true,
+      [Symbol(lastWriteQueueSize)]: 0,
+      [Symbol(timeout)]: Timeout {
+        _idleTimeout: -1,
+        _idlePrev: null,
+        _idleNext: null,
+        _idleStart: 150,
+        _onTimeout: null,
+        _timerArgs: undefined,
+        _repeat: null,
+        _destroyed: true,
+        [Symbol(refed)]: false,
+        [Symbol(kHasPrimitive)]: false,
+        [Symbol(asyncId)]: 13,
+        [Symbol(triggerId)]: 0
+      },
+      [Symbol(kBuffer)]: null,
+      [Symbol(kBufferCb)]: null,
+      [Symbol(kBufferGen)]: null,
+      [Symbol(kCapture)]: false,
+      [Symbol(kBytesRead)]: 0,
+      [Symbol(kBytesWritten)]: 0
+    }
+  },
+  retryAttempts: 0,
+  _addedScriptHashes: {},
+  _autoPipelines: Map {},
+  _runningAutoPipelines: Set {},
+  _addedScriptHashesCleanInterval: Timeout {
+    _idleTimeout: 60000,
+    _idlePrev: [TimersList],
+    _idleNext: [TimersList],
+    _idleStart: 145,
+    _onTimeout: [Function],
+    _timerArgs: undefined,
+    _repeat: 60000,
+    _destroyed: false,
+    [Symbol(refed)]: true,
+    [Symbol(kHasPrimitive)]: false,
+    [Symbol(asyncId)]: 6,
+    [Symbol(triggerId)]: 1
+  },
+  status: 'ready',
+  condition: { select: 0, auth: null, subscriber: false },
+  stream: Socket {
+    connecting: false,
+    _hadError: false,
+    _parent: null,
+    _host: null,
+    _readableState: ReadableState {
+      objectMode: false,
+      highWaterMark: 16384,
+      buffer: BufferList { head: null, tail: null, length: 0 },
+      length: 0,
+      pipes: null,
+      pipesCount: 0,
+      flowing: true,
+      ended: false,
+      endEmitted: false,
+      reading: true,
+      sync: false,
+      needReadable: true,
+      emittedReadable: false,
+      readableListening: false,
+      resumeScheduled: false,
+      emitClose: false,
+      autoDestroy: false,
+      destroyed: false,
+      defaultEncoding: 'utf8',
+      awaitDrainWriters: null,
+      multiAwaitDrain: false,
+      readingMore: false,
+      decoder: null,
+      encoding: null,
+      [Symbol(kPaused)]: false
+    },
+    readable: true,
+    _events: [Object: null prototype] {
+      end: [Function: onReadableStreamEnd],
+      error: [Array],
+      timeout: [Function],
+      close: [Function],
+      data: [Function]
+    },
+    _eventsCount: 5,
+    _maxListeners: undefined,
+    _writableState: WritableState {
+      objectMode: false,
+      highWaterMark: 16384,
+      finalCalled: false,
+      needDrain: false,
+      ending: false,
+      ended: false,
+      finished: false,
+      destroyed: false,
+      decodeStrings: false,
+      defaultEncoding: 'utf8',
+      length: 0,
+      writing: false,
+      corked: 0,
+      sync: false,
+      bufferProcessing: false,
+      onwrite: [Function: bound onwrite],
+      writecb: null,
+      writelen: 0,
+      afterWriteTickInfo: null,
+      bufferedRequest: null,
+      lastBufferedRequest: null,
+      pendingcb: 0,
+      prefinished: false,
+      errorEmitted: false,
+      emitClose: false,
+      autoDestroy: false,
+      bufferedRequestCount: 0,
+      corkedRequestsFree: [Object]
+    },
+    writable: true,
+    allowHalfOpen: false,
+    _sockname: null,
+    _pendingData: null,
+    _pendingEncoding: '',
+    server: null,
+    _server: null,
+    timeout: 0,
+    [Symbol(asyncId)]: 10,
+    [Symbol(kHandle)]: TCP {
+      reading: true,
+      onconnection: null,
+      [Symbol(owner_symbol)]: [Circular]
+    },
+    [Symbol(kSetNoDelay)]: true,
+    [Symbol(lastWriteQueueSize)]: 0,
+    [Symbol(timeout)]: Timeout {
+      _idleTimeout: -1,
+      _idlePrev: null,
+      _idleNext: null,
+      _idleStart: 150,
+      _onTimeout: null,
+      _timerArgs: undefined,
+      _repeat: null,
+      _destroyed: true,
+      [Symbol(refed)]: false,
+      [Symbol(kHasPrimitive)]: false,
+      [Symbol(asyncId)]: 13,
+      [Symbol(triggerId)]: 0
+    },
+    [Symbol(kBuffer)]: null,
+    [Symbol(kBufferCb)]: null,
+    [Symbol(kBufferGen)]: null,
+    [Symbol(kCapture)]: false,
+    [Symbol(kBytesRead)]: 0,
+    [Symbol(kBytesWritten)]: 0
+  },
+  [Symbol(kCapture)]: false
+}
+ID? undefined
+STARTING TO PROCESS 0
+PROCSSING Q1
+CREATING Q1
+[]
+CLIENT Redis {
+  options: {
+    enableReadyCheck: false,
+    port: 6379,
+    host: '127.0.0.1',
+    db: 0,
+    retryStrategy: [Function: retryStrategy],
+    family: 4,
+    connectTimeout: 10000,
+    disconnectTimeout: 2000,
+    keepAlive: 0,
+    noDelay: true,
+    connectionName: null,
+    sentinels: null,
+    name: null,
+    role: 'master',
+    sentinelRetryStrategy: [Function: sentinelRetryStrategy],
+    sentinelReconnectStrategy: [Function: sentinelReconnectStrategy],
+    natMap: null,
+    enableTLSForSentinelMode: false,
+    updateSentinels: true,
+    failoverDetector: false,
+    username: null,
+    password: null,
+    dropBufferSupport: false,
+    enableOfflineQueue: true,
+    autoResubscribe: true,
+    autoResendUnfulfilledCommands: true,
+    lazyConnect: false,
+    keyPrefix: '',
+    reconnectOnError: null,
+    readOnly: false,
+    stringNumbers: false,
+    maxRetriesPerRequest: 20,
+    maxLoadingRetryTime: 10000,
+    enableAutoPipelining: false,
+    autoPipeliningIgnoredCommands: [],
+    maxScriptsCachingTime: 60000,
+    sentinelMaxConnections: 10,
+    showFriendlyErrorStack: false
+  },
+  _events: [Object: null prototype] { error: [Function: bound emit] },
+  _eventsCount: 1,
+  _maxListeners: undefined,
+  scriptsSet: {},
+  addedBuiltinSet: Set {},
+  commandQueue: Denque {
+    _head: 2,
+    _tail: 2,
+    _capacity: undefined,
+    _capacityMask: 3,
+    _list: [ undefined, undefined, <2 empty items> ]
+  },
+  offlineQueue: Denque {
+    _head: 0,
+    _tail: 0,
+    _capacity: undefined,
+    _capacityMask: 3,
+    _list: [ <4 empty items> ]
+  },
+  connectionEpoch: 1,
+  connector: StandaloneConnector {
+    connecting: true,
+    disconnectTimeout: 2000,
+    options: {
+      enableReadyCheck: false,
+      port: 6379,
+      host: '127.0.0.1',
+      db: 0,
+      retryStrategy: [Function: retryStrategy],
+      family: 4,
+      connectTimeout: 10000,
+      disconnectTimeout: 2000,
+      keepAlive: 0,
+      noDelay: true,
+      connectionName: null,
+      sentinels: null,
+      name: null,
+      role: 'master',
+      sentinelRetryStrategy: [Function: sentinelRetryStrategy],
+      sentinelReconnectStrategy: [Function: sentinelReconnectStrategy],
+      natMap: null,
+      enableTLSForSentinelMode: false,
+      updateSentinels: true,
+      failoverDetector: false,
+      username: null,
+      password: null,
+      dropBufferSupport: false,
+      enableOfflineQueue: true,
+      autoResubscribe: true,
+      autoResendUnfulfilledCommands: true,
+      lazyConnect: false,
+      keyPrefix: '',
+      reconnectOnError: null,
+      readOnly: false,
+      stringNumbers: false,
+      maxRetriesPerRequest: 20,
+      maxLoadingRetryTime: 10000,
+      enableAutoPipelining: false,
+      autoPipeliningIgnoredCommands: [],
+      maxScriptsCachingTime: 60000,
+      sentinelMaxConnections: 10,
+      showFriendlyErrorStack: false
+    },
+    stream: Socket {
+      connecting: false,
+      _hadError: false,
+      _parent: null,
+      _host: null,
+      _readableState: [ReadableState],
+      readable: true,
+      _events: [Object: null prototype],
+      _eventsCount: 5,
+      _maxListeners: undefined,
+      _writableState: [WritableState],
+      writable: true,
+      allowHalfOpen: false,
+      _sockname: null,
+      _pendingData: null,
+      _pendingEncoding: '',
+      server: null,
+      _server: null,
+      timeout: 0,
+      [Symbol(asyncId)]: 119,
+      [Symbol(kHandle)]: [TCP],
+      [Symbol(kSetNoDelay)]: true,
+      [Symbol(lastWriteQueueSize)]: 0,
+      [Symbol(timeout)]: Timeout {
+        _idleTimeout: -1,
+        _idlePrev: null,
+        _idleNext: null,
+        _idleStart: 162,
+        _onTimeout: null,
+        _timerArgs: undefined,
+        _repeat: null,
+        _destroyed: true,
+        [Symbol(refed)]: false,
+        [Symbol(kHasPrimitive)]: false,
+        [Symbol(asyncId)]: 124,
+        [Symbol(triggerId)]: 0
+      },
+      [Symbol(kBuffer)]: null,
+      [Symbol(kBufferCb)]: null,
+      [Symbol(kBufferGen)]: null,
+      [Symbol(kCapture)]: false,
+      [Symbol(kBytesRead)]: 0,
+      [Symbol(kBytesWritten)]: 0
+    }
+  },
+  retryAttempts: 0,
+  _addedScriptHashes: {},
+  _autoPipelines: Map {},
+  _runningAutoPipelines: Set {},
+  _addedScriptHashesCleanInterval: Timeout {
+    _idleTimeout: 60000,
+    _idlePrev: [Timeout],
+    _idleNext: [Timeout],
+    _idleStart: 160,
+    _onTimeout: [Function],
+    _timerArgs: undefined,
+    _repeat: 60000,
+    _destroyed: false,
+    [Symbol(refed)]: true,
+    [Symbol(kHasPrimitive)]: false,
+    [Symbol(asyncId)]: 113,
+    [Symbol(triggerId)]: 0
+  },
+  status: 'ready',
+  condition: { select: 0, auth: null, subscriber: false },
+  stream: Socket {
+    connecting: false,
+    _hadError: false,
+    _parent: null,
+    _host: null,
+    _readableState: ReadableState {
+      objectMode: false,
+      highWaterMark: 16384,
+      buffer: BufferList { head: null, tail: null, length: 0 },
+      length: 0,
+      pipes: null,
+      pipesCount: 0,
+      flowing: true,
+      ended: false,
+      endEmitted: false,
+      reading: true,
+      sync: false,
+      needReadable: true,
+      emittedReadable: false,
+      readableListening: false,
+      resumeScheduled: false,
+      emitClose: false,
+      autoDestroy: false,
+      destroyed: false,
+      defaultEncoding: 'utf8',
+      awaitDrainWriters: null,
+      multiAwaitDrain: false,
+      readingMore: false,
+      decoder: null,
+      encoding: null,
+      [Symbol(kPaused)]: false
+    },
+    readable: true,
+    _events: [Object: null prototype] {
+      end: [Function: onReadableStreamEnd],
+      error: [Array],
+      timeout: [Function],
+      close: [Function],
+      data: [Function]
+    },
+    _eventsCount: 5,
+    _maxListeners: undefined,
+    _writableState: WritableState {
+      objectMode: false,
+      highWaterMark: 16384,
+      finalCalled: false,
+      needDrain: false,
+      ending: false,
+      ended: false,
+      finished: false,
+      destroyed: false,
+      decodeStrings: false,
+      defaultEncoding: 'utf8',
+      length: 0,
+      writing: false,
+      corked: 0,
+      sync: false,
+      bufferProcessing: false,
+      onwrite: [Function: bound onwrite],
+      writecb: null,
+      writelen: 0,
+      afterWriteTickInfo: null,
+      bufferedRequest: null,
+      lastBufferedRequest: null,
+      pendingcb: 0,
+      prefinished: false,
+      errorEmitted: false,
+      emitClose: false,
+      autoDestroy: false,
+      bufferedRequestCount: 0,
+      corkedRequestsFree: [Object]
+    },
+    writable: true,
+    allowHalfOpen: false,
+    _sockname: null,
+    _pendingData: null,
+    _pendingEncoding: '',
+    server: null,
+    _server: null,
+    timeout: 0,
+    [Symbol(asyncId)]: 119,
+    [Symbol(kHandle)]: TCP {
+      reading: true,
+      onconnection: null,
+      [Symbol(owner_symbol)]: [Circular]
+    },
+    [Symbol(kSetNoDelay)]: true,
+    [Symbol(lastWriteQueueSize)]: 0,
+    [Symbol(timeout)]: Timeout {
+      _idleTimeout: -1,
+      _idlePrev: null,
+      _idleNext: null,
+      _idleStart: 162,
+      _onTimeout: null,
+      _timerArgs: undefined,
+      _repeat: null,
+      _destroyed: true,
+      [Symbol(refed)]: false,
+      [Symbol(kHasPrimitive)]: false,
+      [Symbol(asyncId)]: 124,
+      [Symbol(triggerId)]: 0
+    },
+    [Symbol(kBuffer)]: null,
+    [Symbol(kBufferCb)]: null,
+    [Symbol(kBufferGen)]: null,
+    [Symbol(kCapture)]: false,
+    [Symbol(kBytesRead)]: 0,
+    [Symbol(kBytesWritten)]: 0
+  },
+  [Symbol(kCapture)]: false
+}
+ID? undefined
+STARTING TO PROCESS 0
+PROCSSING Q1
+CREATING Q1
+[
+  {
+    id: '211',
+    addr: '172.18.0.1:37910',
+    fd: '11',
+    name: 'Q1',
+    age: '0',
+    idle: '0',
+    flags: 'N',
+    db: '0',
+    sub: '0',
+    psub: '0',
+    multi: '-1',
+    qbuf: '0',
+    'qbuf-free': '32768',
+    obl: '0',
+    oll: '0',
+    omem: '0',
+    events: 'r',
+    cmd: 'client'
+  }
+]
+CLIENT Redis {
+  options: {
+    enableReadyCheck: false,
+    port: 6379,
+    host: '127.0.0.1',
+    db: 0,
+    retryStrategy: [Function: retryStrategy],
+    family: 4,
+    connectTimeout: 10000,
+    disconnectTimeout: 2000,
+    keepAlive: 0,
+    noDelay: true,
+    connectionName: null,
+    sentinels: null,
+    name: null,
+    role: 'master',
+    sentinelRetryStrategy: [Function: sentinelRetryStrategy],
+    sentinelReconnectStrategy: [Function: sentinelReconnectStrategy],
+    natMap: null,
+    enableTLSForSentinelMode: false,
+    updateSentinels: true,
+    failoverDetector: false,
+    username: null,
+    password: null,
+    dropBufferSupport: false,
+    enableOfflineQueue: true,
+    autoResubscribe: true,
+    autoResendUnfulfilledCommands: true,
+    lazyConnect: false,
+    keyPrefix: '',
+    reconnectOnError: null,
+    readOnly: false,
+    stringNumbers: false,
+    maxRetriesPerRequest: 20,
+    maxLoadingRetryTime: 10000,
+    enableAutoPipelining: false,
+    autoPipeliningIgnoredCommands: [],
+    maxScriptsCachingTime: 60000,
+    sentinelMaxConnections: 10,
+    showFriendlyErrorStack: false
+  },
+  _events: [Object: null prototype] { error: [Function: bound emit] },
+  _eventsCount: 1,
+  _maxListeners: undefined,
+  scriptsSet: {
+    addJob: Script {
+      lua: '--[[\n' +
+        '  Adds a job to the queue by doing the following:\n' +
+        '    - Increases the job counter if needed.\n' +
+        '    - Creates a new job key with the job data.\n' +
+        '\n' +
+        '    - if delayed:\n' +
+        '      - computes timestamp.\n' +
+        '      - adds to delayed zset.\n' +
+        "      - Emits a global event 'delayed' if the job is delayed.\n" +
+        '    - if not delayed\n' +
+        '      - Adds the jobId to the wait/paused list in one of three ways:\n' +
+        '         - LIFO\n' +
+        '         - FIFO\n' +
+        '         - prioritized.\n' +
+        '      - Adds the job to the "added" list so that workers gets notified.\n' +
+        '\n' +
+        '    Input:\n' +
+        "      KEYS[1] 'wait',\n" +
+        "      KEYS[2] 'paused'\n" +
+        "      KEYS[3] 'meta-paused'\n" +
+        "      KEYS[4] 'id'\n" +
+        "      KEYS[5] 'delayed'\n" +
+        "      KEYS[6] 'priority'\n" +
+        '\n' +
+        '      ARGV[1]  key prefix,\n' +
+        '      ARGV[2]  custom id (will not generate one automatically)\n' +
+        '      ARGV[3]  name\n' +
+        '      ARGV[4]  data (json stringified job data)\n' +
+        '      ARGV[5]  opts (json stringified job opts)\n' +
+        '      ARGV[6]  timestamp\n' +
+        '      ARGV[7]  delay\n' +
+        '      ARGV[8]  delayedTimestamp\n' +
+        '      ARGV[9]  priority\n' +
+        '      ARGV[10] LIFO\n' +
+        '      ARGV[11] token\n' +
+        ']]\n' +
+        'local jobId\n' +
+        'local jobIdKey\n' +
+        'local rcall = redis.call\n' +
+        '\n' +
+        'local jobCounter = rcall("INCR", KEYS[4])\n' +
+        '\n' +
+        'if ARGV[2] == "" then\n' +
+        '  jobId = jobCounter\n' +
+        '  jobIdKey = ARGV[1] .. jobId\n' +
+        'else\n' +
+        '  jobId = ARGV[2]\n' +
+        '  jobIdKey = ARGV[1] .. jobId\n' +
+        '  if rcall("EXISTS", jobIdKey) == 1 then\n' +
+        '    return jobId .. "" -- convert to string\n' +
+        '  end\n' +
+        'end\n' +
+        '\n' +
+        '-- Store the job.\n' +
+        'rcall("HMSET", jobIdKey, "name", ARGV[3], "data", ARGV[4], "opts", ARGV[5], "timestamp", ARGV[6], "delay", ARGV[7], "priority", ARGV[9])\n' +
+        '\n' +
+        '-- Check if job is delayed\n' +
+        'local delayedTimestamp = tonumber(ARGV[8])\n' +
+        'if(delayedTimestamp ~= 0) then\n' +
+        '  local timestamp = delayedTimestamp * 0x1000 + bit.band(jobCounter, 0xfff)\n' +
+        '  rcall("ZADD", KEYS[5], timestamp, jobId)\n' +
+        '  rcall("PUBLISH", KEYS[5], delayedTimestamp)\n' +
+        'else\n' +
+        '  local target\n' +
+        '\n' +
+        '  -- Whe check for the meta-paused key to decide if we are paused or not\n' +
+        '  -- (since an empty list and !EXISTS are not really the same)\n' +
+        '  local paused\n' +
+        '  if rcall("EXISTS", KEYS[3]) ~= 1 then\n' +
+        '    target = KEYS[1]\n' +
+        '    paused = false\n' +
+        '  else\n' +
+        '    target = KEYS[2]\n' +
+        '    paused = true\n' +
+        '  end\n' +
+        '\n' +
+        '  -- Standard or priority add\n' +
+        '  local priority = tonumber(ARGV[9])\n' +
+        '  if priority == 0 then\n' +
+        '      -- LIFO or FIFO\n' +
+        '    rcall(ARGV[10], target, jobId)\n' +
+        '  else\n' +
+        '    -- Priority add\n' +
+        '    rcall("ZADD", KEYS[6], priority, jobId)\n' +
+        '    local count = rcall("ZCOUNT", KEYS[6], 0, priority)\n' +
+        '\n' +
+        '    local len = rcall("LLEN", target)\n' +
+        '    local id = rcall("LINDEX", target, len - (count-1))\n' +
+        '    if id then\n' +
+        '      rcall("LINSERT", target, "BEFORE", id, jobId)\n' +
+        '    else\n' +
+        '      rcall("RPUSH", target, jobId)\n' +
+        '    end\n' +
+        '\n' +
+        '  end\n' +
+        '\n' +
+        '  -- Emit waiting event (wait..ing@token)\n' +
+        '  rcall("PUBLISH", KEYS[1] .. "ing@" .. ARGV[11], jobId)\n' +
+        'end\n' +
+        '\n' +
+        'return jobId .. "" -- convert to string\n',
+      numberOfKeys: 6,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '8f55ae4a3be429c6d38c5d5db3e80edf89197b64'
+    },
+    cleanJobsInSet: Script {
+      lua: '--[[\n' +
+        '  Remove jobs from the specific set.\n' +
+        '\n' +
+        '  Input:\n' +
+        '    KEYS[1]  set key,\n' +
+        '    KEYS[2]  priority key\n' +
+        '    KEYS[3]  rate limiter key\n' +
+        '\n' +
+        '    ARGV[1]  jobId\n' +
+        '    ARGV[2]  timestamp\n' +
+        '    ARGV[3]  limit the number of jobs to be removed. 0 is unlimited\n' +
+        "    ARGV[4]  set name, can be any of 'wait', 'active', 'paused', 'delayed', 'completed', or 'failed'\n" +
+        ']]\n' +
+        '\n' +
+        'local setKey = KEYS[1]\n' +
+        'local priorityKey = KEYS[2]\n' +
+        'local rateLimiterKey = KEYS[3]\n' +
+        '\n' +
+        'local jobKeyPrefix = ARGV[1]\n' +
+        'local maxTimestamp = ARGV[2]\n' +
+        'local limitStr = ARGV[3]\n' +
+        'local setName = ARGV[4]\n' +
+        '\n' +
+        'local command = "ZRANGE"\n' +
+        'local isList = false\n' +
+        'local rcall = redis.call\n' +
+        '\n' +
+        'if setName == "wait" or setName == "active" or setName == "paused" then\n' +
+        '  command = "LRANGE"\n' +
+        '  isList = true\n' +
+        'end\n' +
+        '\n' +
+        'local limit = tonumber(limitStr)\n' +
+        'local rangeStart = 0\n' +
+        'local rangeEnd = -1\n' +
+        '\n' +
+        "-- If we're only deleting _n_ items, avoid retrieving all items\n" +
+        '-- for faster performance\n' +
+        '--\n' +
+        "-- Start from the tail of the list, since that's where oldest elements\n" +
+        '-- are generally added for FIFO lists\n' +
+        'if limit > 0 then\n' +
+        '  rangeStart = -1 - limit + 1\n' +
+        '  rangeEnd = -1\n' +
+        'end\n' +
+        '\n' +
+        'local jobIds = rcall(command, setKey, rangeStart, rangeEnd)\n' +
+        'local deleted = {}\n' +
+        'local deletedCount = 0\n' +
+        'local jobTS\n' +
+        '\n' +
+        '-- Run this loop:\n' +
+        '-- - Once, if limit is -1 or 0\n' +
+        '-- - As many times as needed if limit is positive\n' +
+        'while ((limit <= 0 or deletedCount < limit) and next(jobIds, nil) ~= nil) do\n' +
+        '  for _, jobId in ipairs(jobIds) do\n' +
+        '    if limit > 0 and deletedCount >= limit then\n' +
+        '      break\n' +
+        '    end\n' +
+        '\n' +
+        '    local jobKey = jobKeyPrefix .. jobId\n' +
+        '    if (rcall("EXISTS", jobKey .. ":lock") == 0) then\n' +
+        '      jobTS = rcall("HGET", jobKey, "timestamp")\n' +
+        '      if (not jobTS or jobTS < maxTimestamp) then\n' +
+        '        if isList then\n' +
+        '          rcall("LREM", setKey, 0, jobId)\n' +
+        '        else\n' +
+        '          rcall("ZREM", setKey, jobId)\n' +
+        '        end\n' +
+        '        rcall("ZREM", priorityKey, jobId)\n' +
+        '        rcall("DEL", jobKey)\n' +
+        '        rcall("DEL", jobKey .. ":logs")\n' +
+        '\n' +
+        '        -- delete keys related to rate limiter\n' +
+        '        -- NOTE: this code is unncessary for other sets than wait, paused and delayed.\n' +
+        '        local limiterIndexTable = rateLimiterKey .. ":index"\n' +
+        '        local limitedSetKey = rcall("HGET", limiterIndexTable, jobId)\n' +
+        '\n' +
+        '        if limitedSetKey then\n' +
+        '          rcall("SREM", limitedSetKey, jobId)\n' +
+        '          rcall("HDEL", limiterIndexTable, jobId)\n' +
+        '        end\n' +
+        '\n' +
+        '        deletedCount = deletedCount + 1\n' +
+        '        table.insert(deleted, jobId)\n' +
+        '      end\n' +
+        '    end\n' +
+        '  end\n' +
+        '\n' +
+        "  -- If we didn't have a limit, return immediately. We should have deleted\n" +
+        '  -- all the jobs we can\n' +
+        '  if limit <= 0 then\n' +
+        '    break\n' +
+        '  end\n' +
+        '\n' +
+        '  if deletedCount < limit then\n' +
+        "    -- We didn't delete enough. Look for more to delete\n" +
+        '    rangeStart = rangeStart - limit\n' +
+        '    rangeEnd = rangeEnd - limit\n' +
+        '    jobIds = rcall(command, setKey, rangeStart, rangeEnd)\n' +
+        '  end\n' +
+        'end\n' +
+        '\n' +
+        'return deleted\n',
+      numberOfKeys: 3,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '1cfc5d067bae20dc0d7472640e8bd34b52ff1876'
+    },
+    extendLock: Script {
+      lua: '--[[\n' +
+        '  Extend lock and removes the job from the stalled set.\n' +
+        '\n' +
+        '  Input:\n' +
+        "    KEYS[1] 'lock',\n" +
+        "    KEYS[2] 'stalled'\n" +
+        '\n' +
+        '    ARGV[1]  token\n' +
+        '    ARGV[2]  lock duration in milliseconds\n' +
+        '    ARGV[3]  jobid\n' +
+        '\n' +
+        '  Output:\n' +
+        '    "1" if lock extended succesfully.\n' +
+        ']]\n' +
+        'local rcall = redis.call\n' +
+        'if rcall("GET", KEYS[1]) == ARGV[1] then\n' +
+        '  if rcall("SET", KEYS[1], ARGV[1], "PX", ARGV[2]) then\n' +
+        '    rcall("SREM", KEYS[2], ARGV[3])\n' +
+        '    return 1\n' +
+        '  end\n' +
+        'end\n' +
+        'return 0\n',
+      numberOfKeys: 2,
+      keyPrefix: '',
+      readOnly: false,
+      sha: 'c6ed452951e812762c85593af7eca25bd798e3fd'
+    },
+    isFinished: Script {
+      lua: '--[[\n' +
+        '  Checks if a job is finished (.i.e. is in the completed or failed set)\n' +
+        '\n' +
+        '  Input: \n' +
+        '    KEYS[1] completed key\n' +
+        '    KEYS[2] failed key\n' +
+        '\n' +
+        '    ARGV[1] job id\n' +
+        '  Output:\n' +
+        '    0 - not finished.\n' +
+        '    1 - completed.\n' +
+        '    2 - failed.\n' +
+        ']]\n' +
+        'if redis.call("ZSCORE", KEYS[1], ARGV[1]) ~= false then\n' +
+        '  return 1\n' +
+        'end\n' +
+        '\n' +
+        'if redis.call("ZSCORE", KEYS[2], ARGV[1]) ~= false then\n' +
+        '  return 2\n' +
+        'end\n' +
+        '\n' +
+        'return redis.call("ZSCORE", KEYS[2], ARGV[1])\n',
+      numberOfKeys: 2,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '74c8631221de82c9ac8c1cb76e574a903fa0228c'
+    },
+    isJobInList: Script {
+      lua: '--[[\n' +
+        '      Checks if job is in a given list.\n' +
+        '\n' +
+        '      Input:\n' +
+        '        KEYS[1]\n' +
+        '        ARGV[1]\n' +
+        '\n' +
+        '      Output:\n' +
+        '        1 if element found in the list.\n' +
+        ']]\n' +
+        'local function item_in_list (list, item)\n' +
+        '  for _, v in pairs(list) do\n' +
+        '    if v == item then\n' +
+        '      return 1\n' +
+        '    end\n' +
+        '  end\n' +
+        '  return nil\n' +
+        'end\n' +
+        'local items = redis.call("LRANGE", KEYS[1] , 0, -1)\n' +
+        'return item_in_list(items, ARGV[1])\n',
+      numberOfKeys: 1,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '82cbb92bba99b2af0310f5151f2267ab7d17a0d7'
+    },
+    moveStalledJobsToWait: Script {
+      lua: '--[[\n' +
+        '  Move stalled jobs to wait.\n' +
+        '\n' +
+        '    Input:\n' +
+        "      KEYS[1] 'stalled' (SET)\n" +
+        "      KEYS[2] 'wait',   (LIST)\n" +
+        "      KEYS[3] 'active', (LIST)\n" +
+        "      KEYS[4] 'failed', (ZSET)\n" +
+        "      KEYS[5] 'stalled-check', (KEY)\n" +
+        '\n' +
+        "      KEYS[6] 'meta-paused', (KEY)\n" +
+        "      KEYS[7] 'paused', (LIST)\n" +
+        '\n' +
+        '      ARGV[1]  Max stalled job count\n' +
+        "      ARGV[2]  queue.toKey('')\n" +
+        '      ARGV[3]  timestamp\n' +
+        '      ARGV[4]  max check time\n' +
+        '\n' +
+        '    Events:\n' +
+        "      'stalled' with stalled job id.\n" +
+        ']]\n' +
+        '\n' +
+        'local rcall = redis.call\n' +
+        '\n' +
+        '-- Check if we need to check for stalled jobs now.\n' +
+        'if rcall("EXISTS", KEYS[5]) == 1 then\n' +
+        '  return {{}, {}}\n' +
+        'end\n' +
+        '\n' +
+        'rcall("SET", KEYS[5], ARGV[3], "PX", ARGV[4])\n' +
+        '\n' +
+        '-- Move all stalled jobs to wait\n' +
+        "local stalling = rcall('SMEMBERS', KEYS[1])\n" +
+        'local stalled = {}\n' +
+        'local failed = {}\n' +
+        'if(#stalling > 0) then\n' +
+        '\n' +
+        '  local dst\n' +
+        '  -- wait or paused destination\n' +
+        '  if rcall("EXISTS", KEYS[6]) ~= 1 then\n' +
+        '    dst = KEYS[2]\n' +
+        '  else\n' +
+        '    dst = KEYS[7]\n' +
+        '  end\n' +
+        '\n' +
+        "  rcall('DEL', KEYS[1])\n" +
+        '\n' +
+        '  local MAX_STALLED_JOB_COUNT = tonumber(ARGV[1])\n' +
+        '\n' +
+        '  -- Remove from active list\n' +
+        '  for i, jobId in ipairs(stalling) do\n' +
+        '    local jobKey = ARGV[2] .. jobId\n' +
+        '\n' +
+        '    -- Check that the lock is also missing, then we can handle this job as really stalled.\n' +
+        '    if(rcall("EXISTS", jobKey .. ":lock") == 0) then\n' +
+        '      --  Remove from the active queue.\n' +
+        '      local removed = rcall("LREM", KEYS[3], 1, jobId)\n' +
+        '\n' +
+        '      if(removed > 0) then\n' +
+        '        -- If this job has been stalled too many times, such as if it crashes the worker, then fail it.\n' +
+        '        local stalledCount = rcall("HINCRBY", jobKey, "stalledCounter", 1)\n' +
+        '        if(stalledCount > MAX_STALLED_JOB_COUNT) then\n' +
+        '          rcall("ZADD", KEYS[4], ARGV[3], jobId)\n' +
+        '          rcall("HSET", jobKey, "failedReason", "job stalled more than allowable limit")\n' +
+        '          rcall("PUBLISH", KEYS[4],  "{\\"jobId\\":\\"" .. jobId .. "\\", \\"val\\": \\"job stalled more than maxStalledCount\\"}")\n' +
+        '          table.insert(failed, jobId)\n' +
+        '        else\n' +
+        '          -- Move the job back to the wait queue, to immediately be picked up by a waiting worker.\n' +
+        '          rcall("RPUSH", dst, jobId)\n' +
+        "          rcall('PUBLISH', KEYS[1] .. '@', jobId)\n" +
+        '          table.insert(stalled, jobId)\n' +
+        '        end\n' +
+        '      end\n' +
+        '    end\n' +
+        '  end\n' +
+        'end\n' +
+        '\n' +
+        '-- Mark potentially stalled jobs\n' +
+        "local active = rcall('LRANGE', KEYS[3], 0, -1)\n" +
+        'if(#active > 0) then\n' +
+        "  rcall('SADD', KEYS[1], unpack(active))\n" +
+        'end\n' +
+        '\n' +
+        'return {failed, stalled}\n',
+      numberOfKeys: 7,
+      keyPrefix: '',
+      readOnly: false,
+      sha: 'ff9c18634832b0b4115a19b4de5f4788a7cfbd4e'
+    },
+    moveToActive: Script {
+      lua: '--[[\n' +
+        '  Move next job to be processed to active, lock it and fetch its data. The job\n' +
+        '  may be delayed, in that case we need to move it to the delayed set instead.\n' +
+        '\n' +
+        '  This operation guarantees that the worker owns the job during the locks\n' +
+        '  expiration time. The worker is responsible of keeping the lock fresh\n' +
+        '  so that no other worker picks this job again.\n' +
+        '\n' +
+        '  Input:\n' +
+        '      KEYS[1] wait key\n' +
+        '      KEYS[2] active key\n' +
+        '      KEYS[3] priority key\n' +
+        '      KEYS[4] active event key\n' +
+        '      KEYS[5] stalled key\n' +
+        '\n' +
+        '      -- Rate limiting\n' +
+        '      KEYS[6] rate limiter key\n' +
+        '      KEYS[7] delayed key\n' +
+        '\n' +
+        '      --\n' +
+        '      KEYS[8] drained key\n' +
+        '\n' +
+        '      ARGV[1] key prefix\n' +
+        '      ARGV[2] lock token\n' +
+        '      ARGV[3] lock duration in milliseconds\n' +
+        '      ARGV[4] timestamp\n' +
+        '      ARGV[5] optional jobid\n' +
+        '\n' +
+        '      ARGV[6] optional jobs per time unit (rate limiter)\n' +
+        '      ARGV[7] optional time unit (rate limiter)\n' +
+        '      ARGV[8] optional do not do anything with job if rate limit hit\n' +
+        '      ARGV[9] optional rate limit by key\n' +
+        ']]\n' +
+        '\n' +
+        'local rcall = redis.call\n' +
+        '\n' +
+        'local rateLimit = function(jobId, maxJobs)\n' +
+        '  local rateLimiterKey = KEYS[6];\n' +
+        '  local limiterIndexTable = rateLimiterKey .. ":index"\n' +
+        '\n' +
+        '  -- Rate limit by group?\n' +
+        '  if(ARGV[9]) then\n' +
+        '    local group = string.match(jobId, "[^:]+$")\n' +
+        '    if group ~= nil then\n' +
+        '      rateLimiterKey = rateLimiterKey .. ":" .. group\n' +
+        '    end\n' +
+        '  end\n' +
+        '\n' +
+        '  -- -- key for storing rate limited jobs\n' +
+        '  -- When a job has been previously rate limited it should be part of this set\n' +
+        '  -- if the job is back here means that the delay time for this job has passed and now we should\n' +
+        '  -- be able to process it again.\n' +
+        '  local limitedSetKey = rateLimiterKey .. ":limited"\n' +
+        '  local delay = 0\n' +
+        '\n' +
+        '  -- -- Check if job was already limited\n' +
+        '  local isLimited = rcall("SISMEMBER", limitedSetKey, jobId);\n' +
+        '\n' +
+        '  if isLimited == 1 then\n' +
+        '     -- Remove from limited zset since we are going to try to process it\n' +
+        '     rcall("SREM", limitedSetKey, jobId)\n' +
+        '     rcall("HDEL", limiterIndexTable, jobId)\n' +
+        '  else\n' +
+        '    -- If not, check if there are any limited jobs\n' +
+        '    -- If the job has not been rate limited, we should check if there are any other rate limited jobs, because if that\n' +
+        '    -- is the case we do not want to process this job, just calculate a delay for it and put it to "sleep".\n' +
+        '    local numLimitedJobs = rcall("SCARD", limitedSetKey)\n' +
+        '\n' +
+        '    if numLimitedJobs > 0 then\n' +
+        '      -- Note, add some slack to compensate for drift.\n' +
+        '      delay = ((numLimitedJobs * ARGV[7] * 1.1) /  maxJobs) + tonumber(rcall("PTTL", rateLimiterKey))\n' +
+        '    end\n' +
+        '  end\n' +
+        '\n' +
+        '  local jobCounter = tonumber(rcall("GET", rateLimiterKey))\n' +
+        '  if(jobCounter == nil) then\n' +
+        '    jobCounter = 0\n' +
+        '  end\n' +
+        '  -- check if rate limit hit\n' +
+        '  if (delay == 0) and (jobCounter >= maxJobs) then\n' +
+        '    -- Seems like there are no current rated limited jobs, but the jobCounter has exceeded the number of jobs for this unit of time so we need to rate limit this job.\n' +
+        '    local exceedingJobs = jobCounter - maxJobs\n' +
+        '    delay = tonumber(rcall("PTTL", rateLimiterKey)) + ((exceedingJobs) * ARGV[7]) / maxJobs\n' +
+        '  end\n' +
+        '\n' +
+        '  if delay > 0 then\n' +
+        '    local bounceBack = ARGV[8]\n' +
+        "    if bounceBack == 'false' then\n" +
+        '      local timestamp = delay + tonumber(ARGV[4])\n' +
+        '      -- put job into delayed queue\n' +
+        '      rcall("ZADD", KEYS[7], timestamp * 0x1000 + bit.band(jobCounter, 0xfff), jobId)\n' +
+        '      rcall("PUBLISH", KEYS[7], timestamp)\n' +
+        '      rcall("SADD", limitedSetKey, jobId)\n' +
+        '\n' +
+        '      -- store index so that we can delete rate limited data\n' +
+        '      rcall("HSET", limiterIndexTable, jobId, limitedSetKey)\n' +
+        '\n' +
+        '    end\n' +
+        '\n' +
+        '    -- remove from active queue\n' +
+        '    rcall("LREM", KEYS[2], 1, jobId)\n' +
+        '    return true\n' +
+        '  else\n' +
+        '    -- false indicates not rate limited\n' +
+        '    -- increment jobCounter only when a job is not rate limited\n' +
+        '    if (jobCounter == 0) then\n' +
+        '      rcall("PSETEX", rateLimiterKey, ARGV[7], 1)\n' +
+        '    else\n' +
+        '      rcall("INCR", rateLimiterKey)\n' +
+        '    end\n' +
+        '    return false\n' +
+        '  end\n' +
+        'end\n' +
+        '\n' +
+        'local jobId = ARGV[5]\n' +
+        '\n' +
+        "if jobId ~= '' then\n" +
+        '  -- clean stalled key\n' +
+        '  rcall("SREM", KEYS[5], jobId)\n' +
+        'else\n' +
+        '  -- move from wait to active\n' +
+        '  jobId = rcall("RPOPLPUSH", KEYS[1], KEYS[2])\n' +
+        'end\n' +
+        '\n' +
+        'if jobId then\n' +
+        '  -- Check if we need to perform rate limiting.\n' +
+        '  local maxJobs = tonumber(ARGV[6])\n' +
+        '\n' +
+        '  if maxJobs then\n' +
+        '    if rateLimit(jobId, maxJobs) then\n' +
+        '       return\n' +
+        '    end\n' +
+        '  end\n' +
+        '\n' +
+        '  -- get a lock\n' +
+        '  local jobKey = ARGV[1] .. jobId\n' +
+        "  local lockKey = jobKey .. ':lock'\n" +
+        '  rcall("SET", lockKey, ARGV[2], "PX", ARGV[3])\n' +
+        '\n' +
+        '  -- remove from priority\n' +
+        '  rcall("ZREM", KEYS[3], jobId)\n' +
+        '  rcall("PUBLISH", KEYS[4], jobId)\n' +
+        '  rcall("HSET", jobKey, "processedOn", ARGV[4])\n' +
+        '\n' +
+        '  return {rcall("HGETALL", jobKey), jobId} -- get job data\n' +
+        'else\n' +
+        '  rcall("PUBLISH", KEYS[8], "")\n' +
+        'end\n' +
+        '\n',
+      numberOfKeys: 8,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '35a42b6e9b3f713ca5e7e8a0e2bd1c8d3f281bf4'
+    },
+    moveToDelayed: Script {
+      lua: '--[[\n' +
+        '  Moves job from active to delayed set.\n' +
+        '\n' +
+        '  Input: \n' +
+        '    KEYS[1] active key\n' +
+        '    KEYS[2] delayed key\n' +
+        '    KEYS[3] job key\n' +
+        '\n' +
+        '    ARGV[1] delayedTimestamp\n' +
+        '    ARGV[2] the id of the job\n' +
+        '    ARGV[3] queue token\n' +
+        '\n' +
+        '  Output:\n' +
+        '    0 - OK\n' +
+        '   -1 - Missing job.\n' +
+        '   -2 - Job is locked.\n' +
+        '\n' +
+        '  Events:\n' +
+        '    - delayed key.\n' +
+        ']]\n' +
+        'local rcall = redis.call\n' +
+        '\n' +
+        'if rcall("EXISTS", KEYS[3]) == 1 then\n' +
+        '\n' +
+        '  -- Check for job lock\n' +
+        '  if ARGV[3] ~= "0" then\n' +
+        "    local lockKey = KEYS[3] .. ':lock'\n" +
+        '    local lock = rcall("GET", lockKey)\n' +
+        '    if lock ~= ARGV[3] then\n' +
+        '      return -2\n' +
+        '    end\n' +
+        '  end\n' +
+        '  \n' +
+        '  local score = tonumber(ARGV[1])\n' +
+        '  rcall("ZADD", KEYS[2], score, ARGV[2])\n' +
+        '  rcall("PUBLISH", KEYS[2], (score / 0x1000))\n' +
+        '  rcall("LREM", KEYS[1], 0, ARGV[2])\n' +
+        '\n' +
+        '  return 0\n' +
+        'else\n' +
+        '  return -1\n' +
+        'end\n',
+      numberOfKeys: 3,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '301e478c9cd4a021fdbd774030f40294c0c7826e'
+    },
+    moveToFinished: Script {
+      lua: '--[[\n' +
+        '  Move job from active to a finished status (completed or failed)\n' +
+        '  A job can only be moved to completed if it was active.\n' +
+        '  The job must be locked before it can be moved to a finished status,\n' +
+        '  and the lock must be released in this script.\n' +
+        '\n' +
+        '     Input:\n' +
+        '      KEYS[1] active key\n' +
+        '      KEYS[2] completed/failed key\n' +
+        '      KEYS[3] jobId key\n' +
+        '\n' +
+        '      KEYS[4] wait key\n' +
+        '      KEYS[5] priority key\n' +
+        '      KEYS[6] active event key\n' +
+        '\n' +
+        '      KEYS[7] delayed key\n' +
+        '      KEYS[8] stalled key\n' +
+        '\n' +
+        '      ARGV[1]  jobId\n' +
+        '      ARGV[2]  timestamp\n' +
+        '      ARGV[3]  msg property\n' +
+        '      ARGV[4]  return value / failed reason\n' +
+        '      ARGV[5]  token\n' +
+        '      ARGV[6]  shouldRemove\n' +
+        '      ARGV[7]  event data (? maybe just send jobid).\n' +
+        '      ARGV[8]  should fetch next job\n' +
+        '      ARGV[9]  base key\n' +
+        '\n' +
+        '     Output:\n' +
+        '      0 OK\n' +
+        '      -1 Missing key.\n' +
+        '      -2 Missing lock.\n' +
+        '\n' +
+        '     Events:\n' +
+        "      'completed/failed'\n" +
+        ']]\n' +
+        'local rcall = redis.call\n' +
+        '\n' +
+        'if rcall("EXISTS", KEYS[3]) == 1 then -- // Make sure job exists\n' +
+        '  if ARGV[5] ~= "0" then\n' +
+        "    local lockKey = KEYS[3] .. ':lock'\n" +
+        '    if rcall("GET", lockKey) == ARGV[5] then\n' +
+        '      rcall("DEL", lockKey)\n' +
+        '      rcall("SREM", KEYS[8], ARGV[1])\n' +
+        '    else\n' +
+        '      return -2\n' +
+        '    end\n' +
+        '  end\n' +
+        '\n' +
+        '  -- Remove from active list\n' +
+        '  rcall("LREM", KEYS[1], -1, ARGV[1])\n' +
+        '\n' +
+        '  -- Remove job?\n' +
+        '  local keepJobs = cmsgpack.unpack(ARGV[6])\n' +
+        "  local maxCount = keepJobs['count']\n" +
+        "  local maxAge = keepJobs['age']\n" +
+        '  local targetSet = KEYS[2]\n' +
+        '  local timestamp = ARGV[2]\n' +
+        '\n' +
+        '  if maxCount ~= 0 then\n' +
+        '\n' +
+        '    -- Add to complete/failed set\n' +
+        '    rcall("ZADD", targetSet, timestamp, ARGV[1])\n' +
+        '    rcall("HMSET", KEYS[3], ARGV[3], ARGV[4], "finishedOn", timestamp) -- "returnvalue" / "failedReason" and "finishedOn"\n' +
+        '\n' +
+        '    local function removeJobs(jobIds)\n' +
+        '      for i, jobId in ipairs(jobIds) do\n' +
+        '        local jobKey = ARGV[9] .. jobId\n' +
+        "        local jobLogKey = jobKey .. ':logs'\n" +
+        '        rcall("DEL", jobKey, jobLogKey)\n' +
+        '      end\n' +
+        '    end\n' +
+        '    \n' +
+        '    -- Remove old jobs?\n' +
+        '    if maxAge ~= nil then\n' +
+        '      local start = timestamp - maxAge * 1000\n' +
+        '      local jobIds = rcall("ZREVRANGEBYSCORE", targetSet, start, "-inf")\n' +
+        '      removeJobs(jobIds)\n' +
+        '      rcall("ZREMRANGEBYSCORE", targetSet, "-inf", start)\n' +
+        '    end\n' +
+        '\n' +
+        '    if maxCount ~= nil and maxCount > 0 then\n' +
+        '      local start = maxCount\n' +
+        '      local jobIds = rcall("ZREVRANGE", targetSet, start, -1)\n' +
+        '      removeJobs(jobIds)\n' +
+        '      rcall("ZREMRANGEBYRANK", targetSet, 0, -(maxCount + 1));\n' +
+        '    end\n' +
+        '  else\n' +
+        "    local jobLogKey = KEYS[3] .. ':logs'\n" +
+        '    rcall("DEL", KEYS[3], jobLogKey)\n' +
+        '  end\n' +
+        '\n' +
+        '  rcall("PUBLISH", targetSet, ARGV[7])\n' +
+        '\n' +
+        '  -- Try to get next job to avoid an extra roundtrip if the queue is not closing, \n' +
+        '  -- and not rate limited.\n' +
+        '  if(ARGV[8] == "1") then\n' +
+        '    -- move from wait to active \n' +
+        '    local jobId = rcall("RPOPLPUSH", KEYS[4], KEYS[1])\n' +
+        '    if jobId then\n' +
+        '      local jobKey = ARGV[9] .. jobId\n' +
+        "      local lockKey = jobKey .. ':lock'\n" +
+        '\n' +
+        '      -- get a lock\n' +
+        '      rcall("SET", lockKey, ARGV[11], "PX", ARGV[10])\n' +
+        '\n' +
+        '      rcall("ZREM", KEYS[5], jobId) -- remove from priority\n' +
+        '      rcall("PUBLISH", KEYS[6], jobId)\n' +
+        '      rcall("HSET", jobKey, "processedOn", ARGV[2]) \n' +
+        '\n' +
+        '      return {rcall("HGETALL", jobKey), jobId} -- get job data\n' +
+        '    end\n' +
+        '  end\n' +
+        '\n' +
+        '  return 0\n' +
+        'else\n' +
+        '  return -1\n' +
+        'end\n',
+      numberOfKeys: 8,
+      keyPrefix: '',
+      readOnly: false,
+      sha: 'c44a64d10fca16f471a000b53b475e1b143a0a53'
+    },
+    obliterate: Script {
+      lua: '--[[\n' +
+        '    Completely obliterates a queue and all of its contents\n' +
+        '     Input:\n' +
+        '\n' +
+        '        KEYS[1] meta-paused\n' +
+        '        KEYS[2] base\n' +
+        '        \n' +
+        '        ARGV[1]  count\n' +
+        '        ARGV[2]  force\n' +
+        ']]\n' +
+        '\n' +
+        '-- This command completely destroys a queue including all of its jobs, current or past \n' +
+        '-- leaving no trace of its existence. Since this script needs to iterate to find all the job\n' +
+        '-- keys, consider that this call may be slow for very large queues.\n' +
+        '\n' +
+        '-- The queue needs to be "paused" or it will return an error\n' +
+        '-- If the queue has currently active jobs then the script by default will return error,\n' +
+        '-- however this behaviour can be overrided using the `force` option.\n' +
+        'local maxCount = tonumber(ARGV[1])\n' +
+        'local baseKey = KEYS[2]\n' +
+        '\n' +
+        'local rcall = redis.call\n' +
+        'local function getListItems(keyName, max)\n' +
+        "    return rcall('LRANGE', keyName, 0, max - 1)\n" +
+        'end\n' +
+        '\n' +
+        'local function getZSetItems(keyName, max)\n' +
+        "    return rcall('ZRANGE', keyName, 0, max - 1)\n" +
+        'end\n' +
+        '\n' +
+        'local function removeJobs(parentKey, keys)\n' +
+        '    for i, key in ipairs(keys) do\n' +
+        '        rcall("DEL", baseKey .. key)\n' +
+        `        rcall("DEL", baseKey .. key .. ':logs')\n` +
+        '    end\n' +
+        '    maxCount = maxCount - #keys\n' +
+        'end\n' +
+        '\n' +
+        'local function removeListJobs(keyName, max)\n' +
+        '    local jobs = getListItems(keyName, max)\n' +
+        '    removeJobs(keyName, jobs)\n' +
+        '    rcall("LTRIM", keyName, #jobs, -1)\n' +
+        'end\n' +
+        '\n' +
+        'local function removeZSetJobs(keyName, max)\n' +
+        '    local jobs = getZSetItems(keyName, max)\n' +
+        '    removeJobs(keyName, jobs)\n' +
+        '    if(#jobs > 0) then\n' +
+        '        rcall("ZREM", keyName, unpack(jobs))\n' +
+        '    end\n' +
+        'end\n' +
+        '\n' +
+        'local function removeLockKeys(keys)\n' +
+        '    for i, key in ipairs(keys) do\n' +
+        `        rcall("DEL", baseKey .. key .. ':lock')\n` +
+        '    end\n' +
+        'end\n' +
+        '\n' +
+        '-- 1) Check if paused, if not return with error.\n' +
+        'if rcall("EXISTS", KEYS[1]) ~= 1 then\n' +
+        '    return -1 -- Error, NotPaused\n' +
+        'end\n' +
+        '\n' +
+        '-- 2) Check if there are active jobs, if there are and not "force" return error.\n' +
+        "local activeKey = baseKey .. 'active'\n" +
+        'local activeJobs = getListItems(activeKey, maxCount)\n' +
+        'if (#activeJobs > 0) then\n' +
+        '    if(ARGV[2] == "") then \n' +
+        '        return -2 -- Error, ExistsActiveJobs\n' +
+        '    end\n' +
+        'end\n' +
+        '\n' +
+        'removeLockKeys(activeJobs)\n' +
+        'removeJobs(activeKey, activeJobs)\n' +
+        'rcall("LTRIM", activeKey, #activeJobs, -1)\n' +
+        'if(maxCount <= 0) then\n' +
+        '    return 1\n' +
+        'end\n' +
+        '\n' +
+        "local waitKey = baseKey .. 'paused'\n" +
+        'removeListJobs(waitKey, maxCount)\n' +
+        'if(maxCount <= 0) then\n' +
+        '    return 1\n' +
+        'end\n' +
+        '\n' +
+        "local delayedKey = baseKey .. 'delayed'\n" +
+        'removeZSetJobs(delayedKey, maxCount)\n' +
+        'if(maxCount <= 0) then\n' +
+        '    return 1\n' +
+        'end\n' +
+        '\n' +
+        "local completedKey = baseKey .. 'completed'\n" +
+        'removeZSetJobs(completedKey, maxCount)\n' +
+        'if(maxCount <= 0) then\n' +
+        '    return 1\n' +
+        'end\n' +
+        '\n' +
+        "local failedKey = baseKey .. 'failed'\n" +
+        'removeZSetJobs(failedKey, maxCount)\n' +
+        'if(maxCount <= 0) then\n' +
+        '    return 1\n' +
+        'end\n' +
+        '\n' +
+        'if(maxCount > 0) then\n' +
+        `    rcall("DEL", baseKey .. 'priority')\n` +
+        `    rcall("DEL", baseKey .. 'stalled-check')\n` +
+        `    rcall("DEL", baseKey .. 'stalled')\n` +
+        `    rcall("DEL", baseKey .. 'meta-paused')\n` +
+        `    rcall("DEL", baseKey .. 'meta')\n` +
+        `    rcall("DEL", baseKey .. 'id')\n` +
+        `    rcall("DEL", baseKey .. 'repeat')\n` +
+        '    return 0\n' +
+        'else\n' +
+        '    return 1\n' +
+        'end\n',
+      numberOfKeys: 2,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '9a64d4813b55c6f2ff1588f9f4b7d78153765a60'
+    },
+    pause: Script {
+      lua: '--[[\n' +
+        '  Pauses or resumes a queue globably.\n' +
+        '\n' +
+        '   Input:\n' +
+        "      KEYS[1] 'wait' or 'paused''\n" +
+        "      KEYS[2] 'paused' or 'wait'\n" +
+        "      KEYS[3] 'meta-paused'\n" +
+        "      KEYS[4] 'paused' o 'resumed' event.\n" +
+        "      KEYS[5] 'meta' this key is only used in BullMQ and above.\n" +
+        '\n' +
+        "      ARGV[1] 'paused' or 'resumed'\n" +
+        '\n' +
+        '    Event:\n' +
+        '      publish paused or resumed event.\n' +
+        ']]\n' +
+        'local rcall = redis.call\n' +
+        '\n' +
+        'if rcall("EXISTS", KEYS[1]) == 1 then\n' +
+        '  rcall("RENAME", KEYS[1], KEYS[2])\n' +
+        'end\n' +
+        '\n' +
+        'if ARGV[1] == "paused" then\n' +
+        '  rcall("SET", KEYS[3], 1)\n' +
+        '\n' +
+        '  -- for forwards compatibility\n' +
+        '  rcall("HSET", KEYS[5], "paused", 1)\n' +
+        'else\n' +
+        '  rcall("DEL", KEYS[3])\n' +
+        '\n' +
+        '  -- for forwards compatibility\n' +
+        '  rcall("HDEL", KEYS[5], "paused")\n' +
+        '\n' +
+        'end\n' +
+        '\n' +
+        'rcall("PUBLISH", KEYS[4], ARGV[1])\n',
+      numberOfKeys: 5,
+      keyPrefix: '',
+      readOnly: false,
+      sha: 'b5c132cc42afbaa657233d28131a3a0486b47807'
+    },
+    promote: Script {
+      lua: '--[[\n' +
+        '  Promotes a job that is currently "delayed" to the "waiting" state\n' +
+        '\n' +
+        '     Input:\n' +
+        "      KEYS[1] 'delayed'\n" +
+        "      KEYS[2] 'wait'\n" +
+        "      KEYS[3] 'paused'\n" +
+        "      KEYS[4] 'priority'\n" +
+        '\n' +
+        "      ARGV[1]  queue.toKey('')\n" +
+        '      ARGV[2]  jobId\n' +
+        '      ARGV[3]  queue token\n' +
+        '\n' +
+        '     Events:\n' +
+        "      'waiting'\n" +
+        ']]\n' +
+        'local rcall = redis.call;\n' +
+        'local jobId = ARGV[2]\n' +
+        '\n' +
+        'if redis.call("ZREM", KEYS[1], jobId) == 1 then\n' +
+        '  local priority = tonumber(rcall("HGET", ARGV[1] .. jobId, "priority")) or 0\n' +
+        '\n' +
+        '  local target = KEYS[2];\n' +
+        '\n' +
+        '  if rcall("EXISTS", KEYS[3]) == 1 then\n' +
+        '    target = KEYS[3]\n' +
+        '  end\n' +
+        '\n' +
+        '  if priority == 0 then\n' +
+        '    -- LIFO or FIFO\n' +
+        '    rcall("LPUSH", target, jobId)\n' +
+        '  else\n' +
+        '    -- Priority add\n' +
+        '    rcall("ZADD", KEYS[4], priority, jobId)\n' +
+        '    local count = rcall("ZCOUNT", KEYS[4], 0, priority)\n' +
+        '\n' +
+        '    local len = rcall("LLEN", target)\n' +
+        '    local id = rcall("LINDEX", target, len - (count - 1))\n' +
+        '    if id then\n' +
+        '      rcall("LINSERT", target, "BEFORE", id, jobId)\n' +
+        '    else\n' +
+        '      rcall("RPUSH", target, jobId)\n' +
+        '    end\n' +
+        '  end\n' +
+        '\n' +
+        '  -- Emit waiting event (wait..ing@token)\n' +
+        '  rcall("PUBLISH", KEYS[2] .. "ing@" .. ARGV[3], jobId)\n' +
+        '\n' +
+        '  rcall("HSET", ARGV[1] .. jobId, "delay", 0)\n' +
+        '\n' +
+        '  return 0\n' +
+        'else\n' +
+        '  return -1\n' +
+        'end\n',
+      numberOfKeys: 4,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '00cdb888b8a724c56f93cd402fee30cc2f1ab01c'
+    },
+    releaseLock: Script {
+      lua: '--[[\n' +
+        '  Release lock\n' +
+        '\n' +
+        '     Input:\n' +
+        "        KEYS[1] 'lock',\n" +
+        '      \n' +
+        '        ARGV[1]  token\n' +
+        '        ARGV[2]  lock duration in milliseconds\n' +
+        '      \n' +
+        '      Output:\n' +
+        '        "OK" if lock extented succesfully.\n' +
+        ']]\n' +
+        'local rcall = redis.call\n' +
+        '\n' +
+        'if rcall("GET", KEYS[1]) == ARGV[1] then\n' +
+        '  return rcall("DEL", KEYS[1])\n' +
+        'else\n' +
+        '  return 0\n' +
+        'end\n',
+      numberOfKeys: 1,
+      keyPrefix: '',
+      readOnly: false,
+      sha: 'b92b329e6dc2a8f2feaf3cf73e687c732b0fc43d'
+    },
+    removeJob: Script {
+      lua: '--[[\n' +
+        '    Remove a job from all the queues it may be in as well as all its data.\n' +
+        '    In order to be able to remove a job, it must be unlocked.\n' +
+        '\n' +
+        '     Input:\n' +
+        "      KEYS[1] 'active',\n" +
+        "      KEYS[2] 'wait',\n" +
+        "      KEYS[3] 'delayed',\n" +
+        "      KEYS[4] 'paused',\n" +
+        "      KEYS[5] 'completed',\n" +
+        "      KEYS[6] 'failed',\n" +
+        "      KEYS[7] 'priority',\n" +
+        '      KEYS[8] jobId\n' +
+        '      KEYS[9] job logs\n' +
+        '      KEYS[10] rate limiter index table\n' +
+        '\n' +
+        '      ARGV[1]  jobId\n' +
+        '      ARGV[2]  lock token\n' +
+        '\n' +
+        '     Events:\n' +
+        "      'removed'\n" +
+        ']]\n' +
+        '\n' +
+        "-- TODO PUBLISH global event 'removed'\n" +
+        '\n' +
+        'local rcall = redis.call\n' +
+        "local lockKey = KEYS[8] .. ':lock'\n" +
+        'local lock = redis.call("GET", lockKey)\n' +
+        'if not lock then             -- or (lock == ARGV[2])) then\n' +
+        '  local jobId = ARGV[1]\n' +
+        '  rcall("LREM", KEYS[1], 0, jobId)\n' +
+        '  rcall("LREM", KEYS[2], 0, jobId)\n' +
+        '  rcall("ZREM", KEYS[3], jobId)\n' +
+        '  rcall("LREM", KEYS[4], 0, jobId)\n' +
+        '  rcall("ZREM", KEYS[5], jobId)\n' +
+        '  rcall("ZREM", KEYS[6], jobId)\n' +
+        '  rcall("ZREM", KEYS[7], jobId)\n' +
+        '  rcall("DEL", KEYS[8])\n' +
+        '  rcall("DEL", KEYS[9])\n' +
+        '\n' +
+        '  -- delete keys related to rate limiter\n' +
+        '  local limiterIndexTable = KEYS[10] .. ":index"\n' +
+        '  local limitedSetKey = rcall("HGET", limiterIndexTable, jobId)\n' +
+        '  if limitedSetKey then\n' +
+        '    rcall("SREM", limitedSetKey, jobId)\n' +
+        '    rcall("HDEL", limiterIndexTable, jobId)\n' +
+        '  end\n' +
+        '  return 1\n' +
+        'else\n' +
+        '  return 0\n' +
+        'end\n',
+      numberOfKeys: 10,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '451d4221d6a7ff2251cd0864ab0a28bdba5ea099'
+    },
+    removeJobs: Script {
+      lua: '--[[\n' +
+        '    Remove all jobs matching a given pattern from all the queues they may be in as well as all its data.\n' +
+        '    In order to be able to remove any job, they must be unlocked.\n' +
+        '\n' +
+        '     Input:\n' +
+        "      KEYS[1] 'active',\n" +
+        "      KEYS[2] 'wait',\n" +
+        "      KEYS[3] 'delayed',\n" +
+        "      KEYS[4] 'paused',\n" +
+        "      KEYS[5] 'completed',\n" +
+        "      KEYS[6] 'failed',\n" +
+        "      KEYS[7] 'priority',\n" +
+        "      KEYS[8] 'rate-limiter'\n" +
+        '\n' +
+        '      ARGV[1]  prefix\n' +
+        '      ARGV[2]  pattern\n' +
+        '      ARGV[3]  cursor\n' +
+        '\n' +
+        '     Events:\n' +
+        "      'removed'\n" +
+        ']]\n' +
+        '\n' +
+        "-- TODO PUBLISH global events 'removed'\n" +
+        '\n' +
+        'local rcall = redis.call\n' +
+        'local result = rcall("SCAN", ARGV[3], "MATCH", ARGV[1] .. ARGV[2])\n' +
+        'local cursor = result[1];\n' +
+        'local jobKeys = result[2];\n' +
+        'local removed = {}\n' +
+        '\n' +
+        'local prefixLen = string.len(ARGV[1]) + 1\n' +
+        'for i, jobKey in ipairs(jobKeys) do\n' +
+        '    local keyTypeResp = rcall("TYPE", jobKey)\n' +
+        '    if keyTypeResp["ok"] == "hash" then\n' +
+        '        local jobId = string.sub(jobKey, prefixLen)\n' +
+        "        local lockKey = jobKey .. ':lock'\n" +
+        '        local lock = redis.call("GET", lockKey)\n' +
+        '        if not lock then\n' +
+        '            rcall("LREM", KEYS[1], 0, jobId)\n' +
+        '            rcall("LREM", KEYS[2], 0, jobId)\n' +
+        '            rcall("ZREM", KEYS[3], jobId)\n' +
+        '            rcall("LREM", KEYS[4], 0, jobId)\n' +
+        '            rcall("ZREM", KEYS[5], jobId)\n' +
+        '            rcall("ZREM", KEYS[6], jobId)\n' +
+        '            rcall("ZREM", KEYS[7], jobId)\n' +
+        '            rcall("DEL", jobKey)\n' +
+        `            rcall("DEL", jobKey .. ':logs')\n` +
+        '\n' +
+        '            -- delete keys related to rate limiter\n' +
+        '            local limiterIndexTable = KEYS[8] .. ":index"\n' +
+        '            local limitedSetKey = rcall("HGET", limiterIndexTable, jobId)\n' +
+        '\n' +
+        '            if limitedSetKey then\n' +
+        '                rcall("SREM", limitedSetKey, jobId)\n' +
+        '                rcall("HDEL", limiterIndexTable, jobId)\n' +
+        '            end\n' +
+        '            table.insert(removed, jobId)\n' +
+        '        end\n' +
+        '    end\n' +
+        'end\n' +
+        'return {cursor, removed}\n',
+      numberOfKeys: 8,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '861a68c53fd5ffc59654877019b25298f921a75e'
+    },
+    removeRepeatable: Script {
+      lua: '\n' +
+        '--[[\n' +
+        '  Removes a repeatable job\n' +
+        '  Input:\n' +
+        '    KEYS[1] repeat jobs key\n' +
+        '    KEYS[2] delayed jobs key\n' +
+        '\n' +
+        '    ARGV[1] repeat job id\n' +
+        '    ARGV[2] repeat job key\n' +
+        '    ARGV[3] queue key\n' +
+        ']]\n' +
+        'local millis = redis.call("ZSCORE", KEYS[1], ARGV[2])\n' +
+        '\n' +
+        'if(millis) then\n' +
+        '  -- Delete next programmed job.\n' +
+        '  local repeatJobId = ARGV[1] .. millis\n' +
+        '  if(redis.call("ZREM", KEYS[2], repeatJobId) == 1) then\n' +
+        '    redis.call("DEL", ARGV[3] .. repeatJobId)\n' +
+        '  end\n' +
+        'end\n' +
+        '\n' +
+        'redis.call("ZREM", KEYS[1], ARGV[2]);\n',
+      numberOfKeys: 2,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '4c65f1e9f1d304006a37cd2fb97903d30efcec82'
+    },
+    reprocessJob: Script {
+      lua: '--[[\n' +
+        '  Attempts to reprocess a job\n' +
+        '\n' +
+        '  Input:\n' +
+        '    KEYS[1] job key\n' +
+        '    KEYS[2] job lock key\n' +
+        '    KEYS[3] job state\n' +
+        '    KEYS[4] wait key\n' +
+        '\n' +
+        '    ARGV[1] job.id,\n' +
+        "    ARGV[2] (job.opts.lifo ? 'R' : 'L') + 'PUSH'\n" +
+        '    ARGV[3] token\n' +
+        '    ARGV[4] timestamp\n' +
+        '\n' +
+        '  Output:\n' +
+        '    1 means the operation was a success\n' +
+        '    0 means the job does not exist\n' +
+        "    -1 means the job is currently locked and can't be retried.\n" +
+        '    -2 means the job was not found in the expected set.\n' +
+        '\n' +
+        '\n' +
+        ']]\n' +
+        'if (redis.call("EXISTS", KEYS[1]) == 1) then\n' +
+        '  if (redis.call("EXISTS", KEYS[2]) == 0) then\n' +
+        '    redis.call("HDEL", KEYS[1], "finishedOn", "processedOn", "failedReason")\n' +
+        '    redis.call("HSET", KEYS[1], "retriedOn", ARGV[4])\n' +
+        '\n' +
+        '    if (redis.call("ZREM", KEYS[3], ARGV[1]) == 1) then\n' +
+        '      redis.call(ARGV[2], KEYS[4], ARGV[1])\n' +
+        '\n' +
+        '      -- Emit waiting event (wait..ing@token)\n' +
+        '      redis.call("PUBLISH", KEYS[4] .. "ing@" .. ARGV[3], ARGV[1])\n' +
+        '      return 1\n' +
+        '    else\n' +
+        '      return -2\n' +
+        '    end\n' +
+        '  else\n' +
+        '    return -1\n' +
+        '  end\n' +
+        'else\n' +
+        '  return 0\n' +
+        'end\n',
+      numberOfKeys: 4,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '3b39a2178fb7cc5991af55dbabbaae5d267a6fac'
+    },
+    retryJob: Script {
+      lua: '--[[\n' +
+        '  Retries a failed job by moving it back to the wait queue.\n' +
+        '\n' +
+        '    Input:\n' +
+        "      KEYS[1] 'active',\n" +
+        "      KEYS[2] 'wait'\n" +
+        '      KEYS[3] jobId\n' +
+        '\n' +
+        '      ARGV[1]  pushCmd\n' +
+        '      ARGV[2]  jobId\n' +
+        '      ARGV[3]  token\n' +
+        '\n' +
+        '    Events:\n' +
+        "      'prefix:added'\n" +
+        '\n' +
+        '    Output:\n' +
+        '     0  - OK\n' +
+        '     -1 - Missing key\n' +
+        '     -2 - Job Not locked\n' +
+        ']]\n' +
+        'if redis.call("EXISTS", KEYS[3]) == 1 then\n' +
+        '\n' +
+        '  -- Check for job lock\n' +
+        '  if ARGV[3] ~= "0" then\n' +
+        "    local lockKey = KEYS[3] .. ':lock'\n" +
+        '    local lock = redis.call("GET", lockKey)\n' +
+        '    if redis.call("GET", lockKey) ~= ARGV[3] then\n' +
+        '      return -2\n' +
+        '    end\n' +
+        '  end\n' +
+        '\n' +
+        '  redis.call("LREM", KEYS[1], 0, ARGV[2])\n' +
+        '  redis.call(ARGV[1], KEYS[2], ARGV[2])\n' +
+        '\n' +
+        '  return 0\n' +
+        'else\n' +
+        '  return -1\n' +
+        'end\n',
+      numberOfKeys: 3,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '994d9d7c16725b3c04eaabd5f268233bfc7e198d'
+    },
+    retryJobs: Script {
+      lua: '--[[\n' +
+        '  Attempts to retry all failed jobs\n' +
+        '\n' +
+        '  Input:\n' +
+        '    KEYS[1] base key\n' +
+        '    KEYS[2] failed state key\n' +
+        '    KEYS[3] wait state key\n' +
+        '\n' +
+        '    ARGV[1]  count\n' +
+        '\n' +
+        '  Output:\n' +
+        '    1  means the operation is not completed\n' +
+        '    0  means the operation is completed\n' +
+        ']]\n' +
+        'local baseKey = KEYS[1]\n' +
+        'local maxCount = tonumber(ARGV[1])\n' +
+        '\n' +
+        'local rcall = redis.call;\n' +
+        '\n' +
+        'local function batches(n, batchSize)\n' +
+        '  local i = 0\n' +
+        '\n' +
+        '  return function()\n' +
+        '    local from = i * batchSize + 1\n' +
+        '    i = i + 1\n' +
+        '    if (from <= n) then\n' +
+        '      local to = math.min(from + batchSize - 1, n)\n' +
+        '      return from, to\n' +
+        '    end\n' +
+        '  end\n' +
+        'end\n' +
+        '\n' +
+        'local function getZSetItems(keyName, max)\n' +
+        "  return rcall('ZRANGE', keyName, 0, max - 1)\n" +
+        'end\n' +
+        '\n' +
+        'local jobs = getZSetItems(KEYS[2], maxCount)\n' +
+        '\n' +
+        'if (#jobs > 0) then\n' +
+        '  for i, key in ipairs(jobs) do\n' +
+        '    local jobKey = baseKey .. key\n' +
+        '    rcall("HDEL", jobKey, "finishedOn", "processedOn", "failedReason")\n' +
+        '  end\n' +
+        '\n' +
+        '  for from, to in batches(#jobs, 7000) do\n' +
+        '    rcall("ZREM", KEYS[2], unpack(jobs, from, to))\n' +
+        '    rcall("LPUSH", KEYS[3], unpack(jobs, from, to))\n' +
+        '  end\n' +
+        'end\n' +
+        '\n' +
+        'maxCount = maxCount - #jobs\n' +
+        '\n' +
+        'if(maxCount <= 0) then\n' +
+        '  return 1\n' +
+        'end\n' +
+        '\n' +
+        'return 0\n',
+      numberOfKeys: 3,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '610ad36ecbdebe32ee5bf5971793b3c87068b5f9'
+    },
+    takeLock: Script {
+      lua: '--[[\n' +
+        '  Takes a lock\n' +
+        '\n' +
+        '     Input:\n' +
+        "        KEYS[1] 'lock',\n" +
+        '      \n' +
+        '        ARGV[1]  token\n' +
+        '        ARGV[2]  lock duration in milliseconds\n' +
+        '      \n' +
+        '      Output:\n' +
+        '        "OK" if lock taken successfully.\n' +
+        ']]\n' +
+        'if redis.call("SET", KEYS[1], ARGV[1], "NX", "PX", ARGV[2]) then\n' +
+        '  return 1\n' +
+        'else\n' +
+        '  return 0\n' +
+        'end\n',
+      numberOfKeys: 1,
+      keyPrefix: '',
+      readOnly: false,
+      sha: 'f121e6c1f5001a422ce7fd946c1396c43d26a62f'
+    },
+    updateDelaySet: Script {
+      lua: '--[[\n' +
+        '  Updates the delay set, by picking a delayed job that should\n' +
+        '  be processed now.\n' +
+        '\n' +
+        '     Input:\n' +
+        "      KEYS[1] 'delayed'\n" +
+        "      KEYS[2] 'active'\n" +
+        "      KEYS[3] 'wait'\n" +
+        "      KEYS[4] 'priority'\n" +
+        '\n' +
+        "      KEYS[5] 'paused'\n" +
+        "      KEYS[6] 'meta-paused'\n" +
+        '\n' +
+        "      ARGV[1]  queue.toKey('')\n" +
+        '      ARGV[2]  delayed timestamp\n' +
+        '      ARGV[3]  queue token\n' +
+        '\n' +
+        '     Events:\n' +
+        "      'removed'\n" +
+        ']]\n' +
+        'local rcall = redis.call;\n' +
+        '\n' +
+        '-- Try to get as much as 1000 jobs at once\n' +
+        'local jobs = rcall("ZRANGEBYSCORE", KEYS[1], 0, tonumber(ARGV[2]) * 0x1000, "LIMIT", 0, 1000)\n' +
+        '\n' +
+        'if(#jobs > 0) then\n' +
+        '  rcall("ZREM", KEYS[1], unpack(jobs))\n' +
+        '\n' +
+        '  -- check if we need to use push in paused instead of waiting\n' +
+        '  local target;\n' +
+        '  if rcall("EXISTS", KEYS[6]) ~= 1 then\n' +
+        '    target = KEYS[3]\n' +
+        '  else\n' +
+        '    target = KEYS[5]\n' +
+        '  end\n' +
+        '\n' +
+        '  for _, jobId in ipairs(jobs) do\n' +
+        '    -- Is this really needed?\n' +
+        '    rcall("LREM", KEYS[2], 0, jobId)\n' +
+        '\n' +
+        '    local priority = tonumber(rcall("HGET", ARGV[1] .. jobId, "priority")) or 0\n' +
+        '  \n' +
+        '    if priority == 0 then\n' +
+        '      -- LIFO or FIFO\n' +
+        '      rcall("LPUSH", target, jobId)\n' +
+        '    else\n' +
+        '      -- Priority add\n' +
+        '      rcall("ZADD", KEYS[4], priority, jobId)\n' +
+        '      local count = rcall("ZCOUNT", KEYS[4], 0, priority)\n' +
+        '  \n' +
+        '      local len = rcall("LLEN", target)\n' +
+        '      local id = rcall("LINDEX", target, len - (count-1))\n' +
+        '      if id then\n' +
+        '        rcall("LINSERT", target, "BEFORE", id, jobId)\n' +
+        '      else\n' +
+        '        rcall("RPUSH", target, jobId)\n' +
+        '      end\n' +
+        '    end\n' +
+        '  \n' +
+        '    -- Emit waiting event (wait..ing@token)\n' +
+        '    rcall("PUBLISH", KEYS[3] .. "ing@" .. ARGV[3], jobId)\n' +
+        '    rcall("HSET", ARGV[1] .. jobId, "delay", 0)\n' +
+        '  end\n' +
+        'end\n' +
+        '\n' +
+        'local nextTimestamp = rcall("ZRANGE", KEYS[1], 0, 0, "WITHSCORES")[2]\n' +
+        'if(nextTimestamp ~= nil) then\n' +
+        '  rcall("PUBLISH", KEYS[1], nextTimestamp / 0x1000)\n' +
+        'end\n' +
+        'return nextTimestamp\n',
+      numberOfKeys: 6,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '8b912cdc5b4c20108ef73d952464fba3a7470d7b'
+    },
+    updateProgress: Script {
+      lua: '--[[\n' +
+        '  Update job progress\n' +
+        '\n' +
+        '     Input:\n' +
+        '        KEYS[1] Job id key\n' +
+        '        KEYS[2] progress event key\n' +
+        '      \n' +
+        '        ARGV[1] progress\n' +
+        '        ARGV[2] event data\n' +
+        '\n' +
+        '      Event:\n' +
+        '        progress(jobId, progress)\n' +
+        ']]\n' +
+        'redis.call("HSET", KEYS[1], "progress", ARGV[1])\n' +
+        'redis.call("PUBLISH", KEYS[2], ARGV[2])\n',
+      numberOfKeys: 2,
+      keyPrefix: '',
+      readOnly: false,
+      sha: 'dabbb2936c9094b642797567a5bb872ad562cf9b'
+    }
+  },
+  addedBuiltinSet: Set {},
+  commandQueue: Denque {
+    _head: 2,
+    _tail: 2,
+    _capacity: undefined,
+    _capacityMask: 3,
+    _list: [ undefined, undefined, <2 empty items> ]
+  },
+  offlineQueue: Denque {
+    _head: 0,
+    _tail: 0,
+    _capacity: undefined,
+    _capacityMask: 3,
+    _list: [ <4 empty items> ]
+  },
+  connectionEpoch: 1,
+  connector: StandaloneConnector {
+    connecting: true,
+    disconnectTimeout: 2000,
+    options: {
+      enableReadyCheck: false,
+      port: 6379,
+      host: '127.0.0.1',
+      db: 0,
+      retryStrategy: [Function: retryStrategy],
+      family: 4,
+      connectTimeout: 10000,
+      disconnectTimeout: 2000,
+      keepAlive: 0,
+      noDelay: true,
+      connectionName: null,
+      sentinels: null,
+      name: null,
+      role: 'master',
+      sentinelRetryStrategy: [Function: sentinelRetryStrategy],
+      sentinelReconnectStrategy: [Function: sentinelReconnectStrategy],
+      natMap: null,
+      enableTLSForSentinelMode: false,
+      updateSentinels: true,
+      failoverDetector: false,
+      username: null,
+      password: null,
+      dropBufferSupport: false,
+      enableOfflineQueue: true,
+      autoResubscribe: true,
+      autoResendUnfulfilledCommands: true,
+      lazyConnect: false,
+      keyPrefix: '',
+      reconnectOnError: null,
+      readOnly: false,
+      stringNumbers: false,
+      maxRetriesPerRequest: 20,
+      maxLoadingRetryTime: 10000,
+      enableAutoPipelining: false,
+      autoPipeliningIgnoredCommands: [],
+      maxScriptsCachingTime: 60000,
+      sentinelMaxConnections: 10,
+      showFriendlyErrorStack: false
+    },
+    stream: Socket {
+      connecting: false,
+      _hadError: false,
+      _parent: null,
+      _host: null,
+      _readableState: [ReadableState],
+      readable: true,
+      _events: [Object: null prototype],
+      _eventsCount: 5,
+      _maxListeners: undefined,
+      _writableState: [WritableState],
+      writable: true,
+      allowHalfOpen: false,
+      _sockname: null,
+      _pendingData: null,
+      _pendingEncoding: '',
+      server: null,
+      _server: null,
+      timeout: 0,
+      [Symbol(asyncId)]: 332,
+      [Symbol(kHandle)]: [TCP],
+      [Symbol(kSetNoDelay)]: true,
+      [Symbol(lastWriteQueueSize)]: 0,
+      [Symbol(timeout)]: Timeout {
+        _idleTimeout: -1,
+        _idlePrev: null,
+        _idleNext: null,
+        _idleStart: 168,
+        _onTimeout: null,
+        _timerArgs: undefined,
+        _repeat: null,
+        _destroyed: true,
+        [Symbol(refed)]: false,
+        [Symbol(kHasPrimitive)]: false,
+        [Symbol(asyncId)]: 337,
+        [Symbol(triggerId)]: 0
+      },
+      [Symbol(kBuffer)]: null,
+      [Symbol(kBufferCb)]: null,
+      [Symbol(kBufferGen)]: null,
+      [Symbol(kCapture)]: false,
+      [Symbol(kBytesRead)]: 0,
+      [Symbol(kBytesWritten)]: 0
+    }
+  },
+  retryAttempts: 0,
+  _addedScriptHashes: {},
+  _autoPipelines: Map {},
+  _runningAutoPipelines: Set {},
+  _addedScriptHashesCleanInterval: Timeout {
+    _idleTimeout: 60000,
+    _idlePrev: [Timeout],
+    _idleNext: [Timeout],
+    _idleStart: 166,
+    _onTimeout: [Function],
+    _timerArgs: undefined,
+    _repeat: 60000,
+    _destroyed: false,
+    [Symbol(refed)]: true,
+    [Symbol(kHasPrimitive)]: false,
+    [Symbol(asyncId)]: 327,
+    [Symbol(triggerId)]: 0
+  },
+  status: 'ready',
+  condition: { select: 0, auth: null, subscriber: false },
+  addJob: [Function],
+  addJobBuffer: [Function],
+  cleanJobsInSet: [Function],
+  cleanJobsInSetBuffer: [Function],
+  extendLock: [Function],
+  extendLockBuffer: [Function],
+  isFinished: [Function],
+  isFinishedBuffer: [Function],
+  isJobInList: [Function],
+  isJobInListBuffer: [Function],
+  moveStalledJobsToWait: [Function],
+  moveStalledJobsToWaitBuffer: [Function],
+  moveToActive: [Function],
+  moveToActiveBuffer: [Function],
+  moveToDelayed: [Function],
+  moveToDelayedBuffer: [Function],
+  moveToFinished: [Function],
+  moveToFinishedBuffer: [Function],
+  obliterate: [Function],
+  obliterateBuffer: [Function],
+  pause: [Function],
+  pauseBuffer: [Function],
+  promote: [Function],
+  promoteBuffer: [Function],
+  releaseLock: [Function],
+  releaseLockBuffer: [Function],
+  removeJob: [Function],
+  removeJobBuffer: [Function],
+  removeJobs: [Function],
+  removeJobsBuffer: [Function],
+  removeRepeatable: [Function],
+  removeRepeatableBuffer: [Function],
+  reprocessJob: [Function],
+  reprocessJobBuffer: [Function],
+  retryJob: [Function],
+  retryJobBuffer: [Function],
+  retryJobs: [Function],
+  retryJobsBuffer: [Function],
+  takeLock: [Function],
+  takeLockBuffer: [Function],
+  updateDelaySet: [Function],
+  updateDelaySetBuffer: [Function],
+  updateProgress: [Function],
+  updateProgressBuffer: [Function],
+  stream: Socket {
+    connecting: false,
+    _hadError: false,
+    _parent: null,
+    _host: null,
+    _readableState: ReadableState {
+      objectMode: false,
+      highWaterMark: 16384,
+      buffer: BufferList { head: null, tail: null, length: 0 },
+      length: 0,
+      pipes: null,
+      pipesCount: 0,
+      flowing: true,
+      ended: false,
+      endEmitted: false,
+      reading: true,
+      sync: false,
+      needReadable: true,
+      emittedReadable: false,
+      readableListening: false,
+      resumeScheduled: false,
+      emitClose: false,
+      autoDestroy: false,
+      destroyed: false,
+      defaultEncoding: 'utf8',
+      awaitDrainWriters: null,
+      multiAwaitDrain: false,
+      readingMore: false,
+      decoder: null,
+      encoding: null,
+      [Symbol(kPaused)]: false
+    },
+    readable: true,
+    _events: [Object: null prototype] {
+      end: [Function: onReadableStreamEnd],
+      error: [Array],
+      timeout: [Function],
+      close: [Function],
+      data: [Function]
+    },
+    _eventsCount: 5,
+    _maxListeners: undefined,
+    _writableState: WritableState {
+      objectMode: false,
+      highWaterMark: 16384,
+      finalCalled: false,
+      needDrain: false,
+      ending: false,
+      ended: false,
+      finished: false,
+      destroyed: false,
+      decodeStrings: false,
+      defaultEncoding: 'utf8',
+      length: 0,
+      writing: false,
+      corked: 0,
+      sync: false,
+      bufferProcessing: false,
+      onwrite: [Function: bound onwrite],
+      writecb: null,
+      writelen: 0,
+      afterWriteTickInfo: null,
+      bufferedRequest: null,
+      lastBufferedRequest: null,
+      pendingcb: 0,
+      prefinished: false,
+      errorEmitted: false,
+      emitClose: false,
+      autoDestroy: false,
+      bufferedRequestCount: 0,
+      corkedRequestsFree: [Object]
+    },
+    writable: true,
+    allowHalfOpen: false,
+    _sockname: null,
+    _pendingData: null,
+    _pendingEncoding: '',
+    server: null,
+    _server: null,
+    timeout: 0,
+    [Symbol(asyncId)]: 332,
+    [Symbol(kHandle)]: TCP {
+      reading: true,
+      onconnection: null,
+      [Symbol(owner_symbol)]: [Circular]
+    },
+    [Symbol(kSetNoDelay)]: true,
+    [Symbol(lastWriteQueueSize)]: 0,
+    [Symbol(timeout)]: Timeout {
+      _idleTimeout: -1,
+      _idlePrev: null,
+      _idleNext: null,
+      _idleStart: 168,
+      _onTimeout: null,
+      _timerArgs: undefined,
+      _repeat: null,
+      _destroyed: true,
+      [Symbol(refed)]: false,
+      [Symbol(kHasPrimitive)]: false,
+      [Symbol(asyncId)]: 337,
+      [Symbol(triggerId)]: 0
+    },
+    [Symbol(kBuffer)]: null,
+    [Symbol(kBufferCb)]: null,
+    [Symbol(kBufferGen)]: null,
+    [Symbol(kCapture)]: false,
+    [Symbol(kBytesRead)]: 0,
+    [Symbol(kBytesWritten)]: 0
+  },
+  [Symbol(kCapture)]: false
+}
+ID? undefined
+STARTING TO PROCESS 1
+PROCSSING Q1
+CREATING Q2
+[]
+CLIENT Redis {
+  options: {
+    enableReadyCheck: false,
+    port: 6379,
+    host: '127.0.0.1',
+    db: 0,
+    retryStrategy: [Function: retryStrategy],
+    family: 4,
+    connectTimeout: 10000,
+    disconnectTimeout: 2000,
+    keepAlive: 0,
+    noDelay: true,
+    connectionName: null,
+    sentinels: null,
+    name: null,
+    role: 'master',
+    sentinelRetryStrategy: [Function: sentinelRetryStrategy],
+    sentinelReconnectStrategy: [Function: sentinelReconnectStrategy],
+    natMap: null,
+    enableTLSForSentinelMode: false,
+    updateSentinels: true,
+    failoverDetector: false,
+    username: null,
+    password: null,
+    dropBufferSupport: false,
+    enableOfflineQueue: true,
+    autoResubscribe: true,
+    autoResendUnfulfilledCommands: true,
+    lazyConnect: false,
+    keyPrefix: '',
+    reconnectOnError: null,
+    readOnly: false,
+    stringNumbers: false,
+    maxRetriesPerRequest: 20,
+    maxLoadingRetryTime: 10000,
+    enableAutoPipelining: false,
+    autoPipeliningIgnoredCommands: [],
+    maxScriptsCachingTime: 60000,
+    sentinelMaxConnections: 10,
+    showFriendlyErrorStack: false
+  },
+  _events: [Object: null prototype] { error: [Function: bound emit] },
+  _eventsCount: 1,
+  _maxListeners: undefined,
+  scriptsSet: {
+    addJob: Script {
+      lua: '--[[\n' +
+        '  Adds a job to the queue by doing the following:\n' +
+        '    - Increases the job counter if needed.\n' +
+        '    - Creates a new job key with the job data.\n' +
+        '\n' +
+        '    - if delayed:\n' +
+        '      - computes timestamp.\n' +
+        '      - adds to delayed zset.\n' +
+        "      - Emits a global event 'delayed' if the job is delayed.\n" +
+        '    - if not delayed\n' +
+        '      - Adds the jobId to the wait/paused list in one of three ways:\n' +
+        '         - LIFO\n' +
+        '         - FIFO\n' +
+        '         - prioritized.\n' +
+        '      - Adds the job to the "added" list so that workers gets notified.\n' +
+        '\n' +
+        '    Input:\n' +
+        "      KEYS[1] 'wait',\n" +
+        "      KEYS[2] 'paused'\n" +
+        "      KEYS[3] 'meta-paused'\n" +
+        "      KEYS[4] 'id'\n" +
+        "      KEYS[5] 'delayed'\n" +
+        "      KEYS[6] 'priority'\n" +
+        '\n' +
+        '      ARGV[1]  key prefix,\n' +
+        '      ARGV[2]  custom id (will not generate one automatically)\n' +
+        '      ARGV[3]  name\n' +
+        '      ARGV[4]  data (json stringified job data)\n' +
+        '      ARGV[5]  opts (json stringified job opts)\n' +
+        '      ARGV[6]  timestamp\n' +
+        '      ARGV[7]  delay\n' +
+        '      ARGV[8]  delayedTimestamp\n' +
+        '      ARGV[9]  priority\n' +
+        '      ARGV[10] LIFO\n' +
+        '      ARGV[11] token\n' +
+        ']]\n' +
+        'local jobId\n' +
+        'local jobIdKey\n' +
+        'local rcall = redis.call\n' +
+        '\n' +
+        'local jobCounter = rcall("INCR", KEYS[4])\n' +
+        '\n' +
+        'if ARGV[2] == "" then\n' +
+        '  jobId = jobCounter\n' +
+        '  jobIdKey = ARGV[1] .. jobId\n' +
+        'else\n' +
+        '  jobId = ARGV[2]\n' +
+        '  jobIdKey = ARGV[1] .. jobId\n' +
+        '  if rcall("EXISTS", jobIdKey) == 1 then\n' +
+        '    return jobId .. "" -- convert to string\n' +
+        '  end\n' +
+        'end\n' +
+        '\n' +
+        '-- Store the job.\n' +
+        'rcall("HMSET", jobIdKey, "name", ARGV[3], "data", ARGV[4], "opts", ARGV[5], "timestamp", ARGV[6], "delay", ARGV[7], "priority", ARGV[9])\n' +
+        '\n' +
+        '-- Check if job is delayed\n' +
+        'local delayedTimestamp = tonumber(ARGV[8])\n' +
+        'if(delayedTimestamp ~= 0) then\n' +
+        '  local timestamp = delayedTimestamp * 0x1000 + bit.band(jobCounter, 0xfff)\n' +
+        '  rcall("ZADD", KEYS[5], timestamp, jobId)\n' +
+        '  rcall("PUBLISH", KEYS[5], delayedTimestamp)\n' +
+        'else\n' +
+        '  local target\n' +
+        '\n' +
+        '  -- Whe check for the meta-paused key to decide if we are paused or not\n' +
+        '  -- (since an empty list and !EXISTS are not really the same)\n' +
+        '  local paused\n' +
+        '  if rcall("EXISTS", KEYS[3]) ~= 1 then\n' +
+        '    target = KEYS[1]\n' +
+        '    paused = false\n' +
+        '  else\n' +
+        '    target = KEYS[2]\n' +
+        '    paused = true\n' +
+        '  end\n' +
+        '\n' +
+        '  -- Standard or priority add\n' +
+        '  local priority = tonumber(ARGV[9])\n' +
+        '  if priority == 0 then\n' +
+        '      -- LIFO or FIFO\n' +
+        '    rcall(ARGV[10], target, jobId)\n' +
+        '  else\n' +
+        '    -- Priority add\n' +
+        '    rcall("ZADD", KEYS[6], priority, jobId)\n' +
+        '    local count = rcall("ZCOUNT", KEYS[6], 0, priority)\n' +
+        '\n' +
+        '    local len = rcall("LLEN", target)\n' +
+        '    local id = rcall("LINDEX", target, len - (count-1))\n' +
+        '    if id then\n' +
+        '      rcall("LINSERT", target, "BEFORE", id, jobId)\n' +
+        '    else\n' +
+        '      rcall("RPUSH", target, jobId)\n' +
+        '    end\n' +
+        '\n' +
+        '  end\n' +
+        '\n' +
+        '  -- Emit waiting event (wait..ing@token)\n' +
+        '  rcall("PUBLISH", KEYS[1] .. "ing@" .. ARGV[11], jobId)\n' +
+        'end\n' +
+        '\n' +
+        'return jobId .. "" -- convert to string\n',
+      numberOfKeys: 6,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '8f55ae4a3be429c6d38c5d5db3e80edf89197b64'
+    },
+    cleanJobsInSet: Script {
+      lua: '--[[\n' +
+        '  Remove jobs from the specific set.\n' +
+        '\n' +
+        '  Input:\n' +
+        '    KEYS[1]  set key,\n' +
+        '    KEYS[2]  priority key\n' +
+        '    KEYS[3]  rate limiter key\n' +
+        '\n' +
+        '    ARGV[1]  jobId\n' +
+        '    ARGV[2]  timestamp\n' +
+        '    ARGV[3]  limit the number of jobs to be removed. 0 is unlimited\n' +
+        "    ARGV[4]  set name, can be any of 'wait', 'active', 'paused', 'delayed', 'completed', or 'failed'\n" +
+        ']]\n' +
+        '\n' +
+        'local setKey = KEYS[1]\n' +
+        'local priorityKey = KEYS[2]\n' +
+        'local rateLimiterKey = KEYS[3]\n' +
+        '\n' +
+        'local jobKeyPrefix = ARGV[1]\n' +
+        'local maxTimestamp = ARGV[2]\n' +
+        'local limitStr = ARGV[3]\n' +
+        'local setName = ARGV[4]\n' +
+        '\n' +
+        'local command = "ZRANGE"\n' +
+        'local isList = false\n' +
+        'local rcall = redis.call\n' +
+        '\n' +
+        'if setName == "wait" or setName == "active" or setName == "paused" then\n' +
+        '  command = "LRANGE"\n' +
+        '  isList = true\n' +
+        'end\n' +
+        '\n' +
+        'local limit = tonumber(limitStr)\n' +
+        'local rangeStart = 0\n' +
+        'local rangeEnd = -1\n' +
+        '\n' +
+        "-- If we're only deleting _n_ items, avoid retrieving all items\n" +
+        '-- for faster performance\n' +
+        '--\n' +
+        "-- Start from the tail of the list, since that's where oldest elements\n" +
+        '-- are generally added for FIFO lists\n' +
+        'if limit > 0 then\n' +
+        '  rangeStart = -1 - limit + 1\n' +
+        '  rangeEnd = -1\n' +
+        'end\n' +
+        '\n' +
+        'local jobIds = rcall(command, setKey, rangeStart, rangeEnd)\n' +
+        'local deleted = {}\n' +
+        'local deletedCount = 0\n' +
+        'local jobTS\n' +
+        '\n' +
+        '-- Run this loop:\n' +
+        '-- - Once, if limit is -1 or 0\n' +
+        '-- - As many times as needed if limit is positive\n' +
+        'while ((limit <= 0 or deletedCount < limit) and next(jobIds, nil) ~= nil) do\n' +
+        '  for _, jobId in ipairs(jobIds) do\n' +
+        '    if limit > 0 and deletedCount >= limit then\n' +
+        '      break\n' +
+        '    end\n' +
+        '\n' +
+        '    local jobKey = jobKeyPrefix .. jobId\n' +
+        '    if (rcall("EXISTS", jobKey .. ":lock") == 0) then\n' +
+        '      jobTS = rcall("HGET", jobKey, "timestamp")\n' +
+        '      if (not jobTS or jobTS < maxTimestamp) then\n' +
+        '        if isList then\n' +
+        '          rcall("LREM", setKey, 0, jobId)\n' +
+        '        else\n' +
+        '          rcall("ZREM", setKey, jobId)\n' +
+        '        end\n' +
+        '        rcall("ZREM", priorityKey, jobId)\n' +
+        '        rcall("DEL", jobKey)\n' +
+        '        rcall("DEL", jobKey .. ":logs")\n' +
+        '\n' +
+        '        -- delete keys related to rate limiter\n' +
+        '        -- NOTE: this code is unncessary for other sets than wait, paused and delayed.\n' +
+        '        local limiterIndexTable = rateLimiterKey .. ":index"\n' +
+        '        local limitedSetKey = rcall("HGET", limiterIndexTable, jobId)\n' +
+        '\n' +
+        '        if limitedSetKey then\n' +
+        '          rcall("SREM", limitedSetKey, jobId)\n' +
+        '          rcall("HDEL", limiterIndexTable, jobId)\n' +
+        '        end\n' +
+        '\n' +
+        '        deletedCount = deletedCount + 1\n' +
+        '        table.insert(deleted, jobId)\n' +
+        '      end\n' +
+        '    end\n' +
+        '  end\n' +
+        '\n' +
+        "  -- If we didn't have a limit, return immediately. We should have deleted\n" +
+        '  -- all the jobs we can\n' +
+        '  if limit <= 0 then\n' +
+        '    break\n' +
+        '  end\n' +
+        '\n' +
+        '  if deletedCount < limit then\n' +
+        "    -- We didn't delete enough. Look for more to delete\n" +
+        '    rangeStart = rangeStart - limit\n' +
+        '    rangeEnd = rangeEnd - limit\n' +
+        '    jobIds = rcall(command, setKey, rangeStart, rangeEnd)\n' +
+        '  end\n' +
+        'end\n' +
+        '\n' +
+        'return deleted\n',
+      numberOfKeys: 3,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '1cfc5d067bae20dc0d7472640e8bd34b52ff1876'
+    },
+    extendLock: Script {
+      lua: '--[[\n' +
+        '  Extend lock and removes the job from the stalled set.\n' +
+        '\n' +
+        '  Input:\n' +
+        "    KEYS[1] 'lock',\n" +
+        "    KEYS[2] 'stalled'\n" +
+        '\n' +
+        '    ARGV[1]  token\n' +
+        '    ARGV[2]  lock duration in milliseconds\n' +
+        '    ARGV[3]  jobid\n' +
+        '\n' +
+        '  Output:\n' +
+        '    "1" if lock extended succesfully.\n' +
+        ']]\n' +
+        'local rcall = redis.call\n' +
+        'if rcall("GET", KEYS[1]) == ARGV[1] then\n' +
+        '  if rcall("SET", KEYS[1], ARGV[1], "PX", ARGV[2]) then\n' +
+        '    rcall("SREM", KEYS[2], ARGV[3])\n' +
+        '    return 1\n' +
+        '  end\n' +
+        'end\n' +
+        'return 0\n',
+      numberOfKeys: 2,
+      keyPrefix: '',
+      readOnly: false,
+      sha: 'c6ed452951e812762c85593af7eca25bd798e3fd'
+    },
+    isFinished: Script {
+      lua: '--[[\n' +
+        '  Checks if a job is finished (.i.e. is in the completed or failed set)\n' +
+        '\n' +
+        '  Input: \n' +
+        '    KEYS[1] completed key\n' +
+        '    KEYS[2] failed key\n' +
+        '\n' +
+        '    ARGV[1] job id\n' +
+        '  Output:\n' +
+        '    0 - not finished.\n' +
+        '    1 - completed.\n' +
+        '    2 - failed.\n' +
+        ']]\n' +
+        'if redis.call("ZSCORE", KEYS[1], ARGV[1]) ~= false then\n' +
+        '  return 1\n' +
+        'end\n' +
+        '\n' +
+        'if redis.call("ZSCORE", KEYS[2], ARGV[1]) ~= false then\n' +
+        '  return 2\n' +
+        'end\n' +
+        '\n' +
+        'return redis.call("ZSCORE", KEYS[2], ARGV[1])\n',
+      numberOfKeys: 2,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '74c8631221de82c9ac8c1cb76e574a903fa0228c'
+    },
+    isJobInList: Script {
+      lua: '--[[\n' +
+        '      Checks if job is in a given list.\n' +
+        '\n' +
+        '      Input:\n' +
+        '        KEYS[1]\n' +
+        '        ARGV[1]\n' +
+        '\n' +
+        '      Output:\n' +
+        '        1 if element found in the list.\n' +
+        ']]\n' +
+        'local function item_in_list (list, item)\n' +
+        '  for _, v in pairs(list) do\n' +
+        '    if v == item then\n' +
+        '      return 1\n' +
+        '    end\n' +
+        '  end\n' +
+        '  return nil\n' +
+        'end\n' +
+        'local items = redis.call("LRANGE", KEYS[1] , 0, -1)\n' +
+        'return item_in_list(items, ARGV[1])\n',
+      numberOfKeys: 1,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '82cbb92bba99b2af0310f5151f2267ab7d17a0d7'
+    },
+    moveStalledJobsToWait: Script {
+      lua: '--[[\n' +
+        '  Move stalled jobs to wait.\n' +
+        '\n' +
+        '    Input:\n' +
+        "      KEYS[1] 'stalled' (SET)\n" +
+        "      KEYS[2] 'wait',   (LIST)\n" +
+        "      KEYS[3] 'active', (LIST)\n" +
+        "      KEYS[4] 'failed', (ZSET)\n" +
+        "      KEYS[5] 'stalled-check', (KEY)\n" +
+        '\n' +
+        "      KEYS[6] 'meta-paused', (KEY)\n" +
+        "      KEYS[7] 'paused', (LIST)\n" +
+        '\n' +
+        '      ARGV[1]  Max stalled job count\n' +
+        "      ARGV[2]  queue.toKey('')\n" +
+        '      ARGV[3]  timestamp\n' +
+        '      ARGV[4]  max check time\n' +
+        '\n' +
+        '    Events:\n' +
+        "      'stalled' with stalled job id.\n" +
+        ']]\n' +
+        '\n' +
+        'local rcall = redis.call\n' +
+        '\n' +
+        '-- Check if we need to check for stalled jobs now.\n' +
+        'if rcall("EXISTS", KEYS[5]) == 1 then\n' +
+        '  return {{}, {}}\n' +
+        'end\n' +
+        '\n' +
+        'rcall("SET", KEYS[5], ARGV[3], "PX", ARGV[4])\n' +
+        '\n' +
+        '-- Move all stalled jobs to wait\n' +
+        "local stalling = rcall('SMEMBERS', KEYS[1])\n" +
+        'local stalled = {}\n' +
+        'local failed = {}\n' +
+        'if(#stalling > 0) then\n' +
+        '\n' +
+        '  local dst\n' +
+        '  -- wait or paused destination\n' +
+        '  if rcall("EXISTS", KEYS[6]) ~= 1 then\n' +
+        '    dst = KEYS[2]\n' +
+        '  else\n' +
+        '    dst = KEYS[7]\n' +
+        '  end\n' +
+        '\n' +
+        "  rcall('DEL', KEYS[1])\n" +
+        '\n' +
+        '  local MAX_STALLED_JOB_COUNT = tonumber(ARGV[1])\n' +
+        '\n' +
+        '  -- Remove from active list\n' +
+        '  for i, jobId in ipairs(stalling) do\n' +
+        '    local jobKey = ARGV[2] .. jobId\n' +
+        '\n' +
+        '    -- Check that the lock is also missing, then we can handle this job as really stalled.\n' +
+        '    if(rcall("EXISTS", jobKey .. ":lock") == 0) then\n' +
+        '      --  Remove from the active queue.\n' +
+        '      local removed = rcall("LREM", KEYS[3], 1, jobId)\n' +
+        '\n' +
+        '      if(removed > 0) then\n' +
+        '        -- If this job has been stalled too many times, such as if it crashes the worker, then fail it.\n' +
+        '        local stalledCount = rcall("HINCRBY", jobKey, "stalledCounter", 1)\n' +
+        '        if(stalledCount > MAX_STALLED_JOB_COUNT) then\n' +
+        '          rcall("ZADD", KEYS[4], ARGV[3], jobId)\n' +
+        '          rcall("HSET", jobKey, "failedReason", "job stalled more than allowable limit")\n' +
+        '          rcall("PUBLISH", KEYS[4],  "{\\"jobId\\":\\"" .. jobId .. "\\", \\"val\\": \\"job stalled more than maxStalledCount\\"}")\n' +
+        '          table.insert(failed, jobId)\n' +
+        '        else\n' +
+        '          -- Move the job back to the wait queue, to immediately be picked up by a waiting worker.\n' +
+        '          rcall("RPUSH", dst, jobId)\n' +
+        "          rcall('PUBLISH', KEYS[1] .. '@', jobId)\n" +
+        '          table.insert(stalled, jobId)\n' +
+        '        end\n' +
+        '      end\n' +
+        '    end\n' +
+        '  end\n' +
+        'end\n' +
+        '\n' +
+        '-- Mark potentially stalled jobs\n' +
+        "local active = rcall('LRANGE', KEYS[3], 0, -1)\n" +
+        'if(#active > 0) then\n' +
+        "  rcall('SADD', KEYS[1], unpack(active))\n" +
+        'end\n' +
+        '\n' +
+        'return {failed, stalled}\n',
+      numberOfKeys: 7,
+      keyPrefix: '',
+      readOnly: false,
+      sha: 'ff9c18634832b0b4115a19b4de5f4788a7cfbd4e'
+    },
+    moveToActive: Script {
+      lua: '--[[\n' +
+        '  Move next job to be processed to active, lock it and fetch its data. The job\n' +
+        '  may be delayed, in that case we need to move it to the delayed set instead.\n' +
+        '\n' +
+        '  This operation guarantees that the worker owns the job during the locks\n' +
+        '  expiration time. The worker is responsible of keeping the lock fresh\n' +
+        '  so that no other worker picks this job again.\n' +
+        '\n' +
+        '  Input:\n' +
+        '      KEYS[1] wait key\n' +
+        '      KEYS[2] active key\n' +
+        '      KEYS[3] priority key\n' +
+        '      KEYS[4] active event key\n' +
+        '      KEYS[5] stalled key\n' +
+        '\n' +
+        '      -- Rate limiting\n' +
+        '      KEYS[6] rate limiter key\n' +
+        '      KEYS[7] delayed key\n' +
+        '\n' +
+        '      --\n' +
+        '      KEYS[8] drained key\n' +
+        '\n' +
+        '      ARGV[1] key prefix\n' +
+        '      ARGV[2] lock token\n' +
+        '      ARGV[3] lock duration in milliseconds\n' +
+        '      ARGV[4] timestamp\n' +
+        '      ARGV[5] optional jobid\n' +
+        '\n' +
+        '      ARGV[6] optional jobs per time unit (rate limiter)\n' +
+        '      ARGV[7] optional time unit (rate limiter)\n' +
+        '      ARGV[8] optional do not do anything with job if rate limit hit\n' +
+        '      ARGV[9] optional rate limit by key\n' +
+        ']]\n' +
+        '\n' +
+        'local rcall = redis.call\n' +
+        '\n' +
+        'local rateLimit = function(jobId, maxJobs)\n' +
+        '  local rateLimiterKey = KEYS[6];\n' +
+        '  local limiterIndexTable = rateLimiterKey .. ":index"\n' +
+        '\n' +
+        '  -- Rate limit by group?\n' +
+        '  if(ARGV[9]) then\n' +
+        '    local group = string.match(jobId, "[^:]+$")\n' +
+        '    if group ~= nil then\n' +
+        '      rateLimiterKey = rateLimiterKey .. ":" .. group\n' +
+        '    end\n' +
+        '  end\n' +
+        '\n' +
+        '  -- -- key for storing rate limited jobs\n' +
+        '  -- When a job has been previously rate limited it should be part of this set\n' +
+        '  -- if the job is back here means that the delay time for this job has passed and now we should\n' +
+        '  -- be able to process it again.\n' +
+        '  local limitedSetKey = rateLimiterKey .. ":limited"\n' +
+        '  local delay = 0\n' +
+        '\n' +
+        '  -- -- Check if job was already limited\n' +
+        '  local isLimited = rcall("SISMEMBER", limitedSetKey, jobId);\n' +
+        '\n' +
+        '  if isLimited == 1 then\n' +
+        '     -- Remove from limited zset since we are going to try to process it\n' +
+        '     rcall("SREM", limitedSetKey, jobId)\n' +
+        '     rcall("HDEL", limiterIndexTable, jobId)\n' +
+        '  else\n' +
+        '    -- If not, check if there are any limited jobs\n' +
+        '    -- If the job has not been rate limited, we should check if there are any other rate limited jobs, because if that\n' +
+        '    -- is the case we do not want to process this job, just calculate a delay for it and put it to "sleep".\n' +
+        '    local numLimitedJobs = rcall("SCARD", limitedSetKey)\n' +
+        '\n' +
+        '    if numLimitedJobs > 0 then\n' +
+        '      -- Note, add some slack to compensate for drift.\n' +
+        '      delay = ((numLimitedJobs * ARGV[7] * 1.1) /  maxJobs) + tonumber(rcall("PTTL", rateLimiterKey))\n' +
+        '    end\n' +
+        '  end\n' +
+        '\n' +
+        '  local jobCounter = tonumber(rcall("GET", rateLimiterKey))\n' +
+        '  if(jobCounter == nil) then\n' +
+        '    jobCounter = 0\n' +
+        '  end\n' +
+        '  -- check if rate limit hit\n' +
+        '  if (delay == 0) and (jobCounter >= maxJobs) then\n' +
+        '    -- Seems like there are no current rated limited jobs, but the jobCounter has exceeded the number of jobs for this unit of time so we need to rate limit this job.\n' +
+        '    local exceedingJobs = jobCounter - maxJobs\n' +
+        '    delay = tonumber(rcall("PTTL", rateLimiterKey)) + ((exceedingJobs) * ARGV[7]) / maxJobs\n' +
+        '  end\n' +
+        '\n' +
+        '  if delay > 0 then\n' +
+        '    local bounceBack = ARGV[8]\n' +
+        "    if bounceBack == 'false' then\n" +
+        '      local timestamp = delay + tonumber(ARGV[4])\n' +
+        '      -- put job into delayed queue\n' +
+        '      rcall("ZADD", KEYS[7], timestamp * 0x1000 + bit.band(jobCounter, 0xfff), jobId)\n' +
+        '      rcall("PUBLISH", KEYS[7], timestamp)\n' +
+        '      rcall("SADD", limitedSetKey, jobId)\n' +
+        '\n' +
+        '      -- store index so that we can delete rate limited data\n' +
+        '      rcall("HSET", limiterIndexTable, jobId, limitedSetKey)\n' +
+        '\n' +
+        '    end\n' +
+        '\n' +
+        '    -- remove from active queue\n' +
+        '    rcall("LREM", KEYS[2], 1, jobId)\n' +
+        '    return true\n' +
+        '  else\n' +
+        '    -- false indicates not rate limited\n' +
+        '    -- increment jobCounter only when a job is not rate limited\n' +
+        '    if (jobCounter == 0) then\n' +
+        '      rcall("PSETEX", rateLimiterKey, ARGV[7], 1)\n' +
+        '    else\n' +
+        '      rcall("INCR", rateLimiterKey)\n' +
+        '    end\n' +
+        '    return false\n' +
+        '  end\n' +
+        'end\n' +
+        '\n' +
+        'local jobId = ARGV[5]\n' +
+        '\n' +
+        "if jobId ~= '' then\n" +
+        '  -- clean stalled key\n' +
+        '  rcall("SREM", KEYS[5], jobId)\n' +
+        'else\n' +
+        '  -- move from wait to active\n' +
+        '  jobId = rcall("RPOPLPUSH", KEYS[1], KEYS[2])\n' +
+        'end\n' +
+        '\n' +
+        'if jobId then\n' +
+        '  -- Check if we need to perform rate limiting.\n' +
+        '  local maxJobs = tonumber(ARGV[6])\n' +
+        '\n' +
+        '  if maxJobs then\n' +
+        '    if rateLimit(jobId, maxJobs) then\n' +
+        '       return\n' +
+        '    end\n' +
+        '  end\n' +
+        '\n' +
+        '  -- get a lock\n' +
+        '  local jobKey = ARGV[1] .. jobId\n' +
+        "  local lockKey = jobKey .. ':lock'\n" +
+        '  rcall("SET", lockKey, ARGV[2], "PX", ARGV[3])\n' +
+        '\n' +
+        '  -- remove from priority\n' +
+        '  rcall("ZREM", KEYS[3], jobId)\n' +
+        '  rcall("PUBLISH", KEYS[4], jobId)\n' +
+        '  rcall("HSET", jobKey, "processedOn", ARGV[4])\n' +
+        '\n' +
+        '  return {rcall("HGETALL", jobKey), jobId} -- get job data\n' +
+        'else\n' +
+        '  rcall("PUBLISH", KEYS[8], "")\n' +
+        'end\n' +
+        '\n',
+      numberOfKeys: 8,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '35a42b6e9b3f713ca5e7e8a0e2bd1c8d3f281bf4'
+    },
+    moveToDelayed: Script {
+      lua: '--[[\n' +
+        '  Moves job from active to delayed set.\n' +
+        '\n' +
+        '  Input: \n' +
+        '    KEYS[1] active key\n' +
+        '    KEYS[2] delayed key\n' +
+        '    KEYS[3] job key\n' +
+        '\n' +
+        '    ARGV[1] delayedTimestamp\n' +
+        '    ARGV[2] the id of the job\n' +
+        '    ARGV[3] queue token\n' +
+        '\n' +
+        '  Output:\n' +
+        '    0 - OK\n' +
+        '   -1 - Missing job.\n' +
+        '   -2 - Job is locked.\n' +
+        '\n' +
+        '  Events:\n' +
+        '    - delayed key.\n' +
+        ']]\n' +
+        'local rcall = redis.call\n' +
+        '\n' +
+        'if rcall("EXISTS", KEYS[3]) == 1 then\n' +
+        '\n' +
+        '  -- Check for job lock\n' +
+        '  if ARGV[3] ~= "0" then\n' +
+        "    local lockKey = KEYS[3] .. ':lock'\n" +
+        '    local lock = rcall("GET", lockKey)\n' +
+        '    if lock ~= ARGV[3] then\n' +
+        '      return -2\n' +
+        '    end\n' +
+        '  end\n' +
+        '  \n' +
+        '  local score = tonumber(ARGV[1])\n' +
+        '  rcall("ZADD", KEYS[2], score, ARGV[2])\n' +
+        '  rcall("PUBLISH", KEYS[2], (score / 0x1000))\n' +
+        '  rcall("LREM", KEYS[1], 0, ARGV[2])\n' +
+        '\n' +
+        '  return 0\n' +
+        'else\n' +
+        '  return -1\n' +
+        'end\n',
+      numberOfKeys: 3,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '301e478c9cd4a021fdbd774030f40294c0c7826e'
+    },
+    moveToFinished: Script {
+      lua: '--[[\n' +
+        '  Move job from active to a finished status (completed or failed)\n' +
+        '  A job can only be moved to completed if it was active.\n' +
+        '  The job must be locked before it can be moved to a finished status,\n' +
+        '  and the lock must be released in this script.\n' +
+        '\n' +
+        '     Input:\n' +
+        '      KEYS[1] active key\n' +
+        '      KEYS[2] completed/failed key\n' +
+        '      KEYS[3] jobId key\n' +
+        '\n' +
+        '      KEYS[4] wait key\n' +
+        '      KEYS[5] priority key\n' +
+        '      KEYS[6] active event key\n' +
+        '\n' +
+        '      KEYS[7] delayed key\n' +
+        '      KEYS[8] stalled key\n' +
+        '\n' +
+        '      ARGV[1]  jobId\n' +
+        '      ARGV[2]  timestamp\n' +
+        '      ARGV[3]  msg property\n' +
+        '      ARGV[4]  return value / failed reason\n' +
+        '      ARGV[5]  token\n' +
+        '      ARGV[6]  shouldRemove\n' +
+        '      ARGV[7]  event data (? maybe just send jobid).\n' +
+        '      ARGV[8]  should fetch next job\n' +
+        '      ARGV[9]  base key\n' +
+        '\n' +
+        '     Output:\n' +
+        '      0 OK\n' +
+        '      -1 Missing key.\n' +
+        '      -2 Missing lock.\n' +
+        '\n' +
+        '     Events:\n' +
+        "      'completed/failed'\n" +
+        ']]\n' +
+        'local rcall = redis.call\n' +
+        '\n' +
+        'if rcall("EXISTS", KEYS[3]) == 1 then -- // Make sure job exists\n' +
+        '  if ARGV[5] ~= "0" then\n' +
+        "    local lockKey = KEYS[3] .. ':lock'\n" +
+        '    if rcall("GET", lockKey) == ARGV[5] then\n' +
+        '      rcall("DEL", lockKey)\n' +
+        '      rcall("SREM", KEYS[8], ARGV[1])\n' +
+        '    else\n' +
+        '      return -2\n' +
+        '    end\n' +
+        '  end\n' +
+        '\n' +
+        '  -- Remove from active list\n' +
+        '  rcall("LREM", KEYS[1], -1, ARGV[1])\n' +
+        '\n' +
+        '  -- Remove job?\n' +
+        '  local keepJobs = cmsgpack.unpack(ARGV[6])\n' +
+        "  local maxCount = keepJobs['count']\n" +
+        "  local maxAge = keepJobs['age']\n" +
+        '  local targetSet = KEYS[2]\n' +
+        '  local timestamp = ARGV[2]\n' +
+        '\n' +
+        '  if maxCount ~= 0 then\n' +
+        '\n' +
+        '    -- Add to complete/failed set\n' +
+        '    rcall("ZADD", targetSet, timestamp, ARGV[1])\n' +
+        '    rcall("HMSET", KEYS[3], ARGV[3], ARGV[4], "finishedOn", timestamp) -- "returnvalue" / "failedReason" and "finishedOn"\n' +
+        '\n' +
+        '    local function removeJobs(jobIds)\n' +
+        '      for i, jobId in ipairs(jobIds) do\n' +
+        '        local jobKey = ARGV[9] .. jobId\n' +
+        "        local jobLogKey = jobKey .. ':logs'\n" +
+        '        rcall("DEL", jobKey, jobLogKey)\n' +
+        '      end\n' +
+        '    end\n' +
+        '    \n' +
+        '    -- Remove old jobs?\n' +
+        '    if maxAge ~= nil then\n' +
+        '      local start = timestamp - maxAge * 1000\n' +
+        '      local jobIds = rcall("ZREVRANGEBYSCORE", targetSet, start, "-inf")\n' +
+        '      removeJobs(jobIds)\n' +
+        '      rcall("ZREMRANGEBYSCORE", targetSet, "-inf", start)\n' +
+        '    end\n' +
+        '\n' +
+        '    if maxCount ~= nil and maxCount > 0 then\n' +
+        '      local start = maxCount\n' +
+        '      local jobIds = rcall("ZREVRANGE", targetSet, start, -1)\n' +
+        '      removeJobs(jobIds)\n' +
+        '      rcall("ZREMRANGEBYRANK", targetSet, 0, -(maxCount + 1));\n' +
+        '    end\n' +
+        '  else\n' +
+        "    local jobLogKey = KEYS[3] .. ':logs'\n" +
+        '    rcall("DEL", KEYS[3], jobLogKey)\n' +
+        '  end\n' +
+        '\n' +
+        '  rcall("PUBLISH", targetSet, ARGV[7])\n' +
+        '\n' +
+        '  -- Try to get next job to avoid an extra roundtrip if the queue is not closing, \n' +
+        '  -- and not rate limited.\n' +
+        '  if(ARGV[8] == "1") then\n' +
+        '    -- move from wait to active \n' +
+        '    local jobId = rcall("RPOPLPUSH", KEYS[4], KEYS[1])\n' +
+        '    if jobId then\n' +
+        '      local jobKey = ARGV[9] .. jobId\n' +
+        "      local lockKey = jobKey .. ':lock'\n" +
+        '\n' +
+        '      -- get a lock\n' +
+        '      rcall("SET", lockKey, ARGV[11], "PX", ARGV[10])\n' +
+        '\n' +
+        '      rcall("ZREM", KEYS[5], jobId) -- remove from priority\n' +
+        '      rcall("PUBLISH", KEYS[6], jobId)\n' +
+        '      rcall("HSET", jobKey, "processedOn", ARGV[2]) \n' +
+        '\n' +
+        '      return {rcall("HGETALL", jobKey), jobId} -- get job data\n' +
+        '    end\n' +
+        '  end\n' +
+        '\n' +
+        '  return 0\n' +
+        'else\n' +
+        '  return -1\n' +
+        'end\n',
+      numberOfKeys: 8,
+      keyPrefix: '',
+      readOnly: false,
+      sha: 'c44a64d10fca16f471a000b53b475e1b143a0a53'
+    },
+    obliterate: Script {
+      lua: '--[[\n' +
+        '    Completely obliterates a queue and all of its contents\n' +
+        '     Input:\n' +
+        '\n' +
+        '        KEYS[1] meta-paused\n' +
+        '        KEYS[2] base\n' +
+        '        \n' +
+        '        ARGV[1]  count\n' +
+        '        ARGV[2]  force\n' +
+        ']]\n' +
+        '\n' +
+        '-- This command completely destroys a queue including all of its jobs, current or past \n' +
+        '-- leaving no trace of its existence. Since this script needs to iterate to find all the job\n' +
+        '-- keys, consider that this call may be slow for very large queues.\n' +
+        '\n' +
+        '-- The queue needs to be "paused" or it will return an error\n' +
+        '-- If the queue has currently active jobs then the script by default will return error,\n' +
+        '-- however this behaviour can be overrided using the `force` option.\n' +
+        'local maxCount = tonumber(ARGV[1])\n' +
+        'local baseKey = KEYS[2]\n' +
+        '\n' +
+        'local rcall = redis.call\n' +
+        'local function getListItems(keyName, max)\n' +
+        "    return rcall('LRANGE', keyName, 0, max - 1)\n" +
+        'end\n' +
+        '\n' +
+        'local function getZSetItems(keyName, max)\n' +
+        "    return rcall('ZRANGE', keyName, 0, max - 1)\n" +
+        'end\n' +
+        '\n' +
+        'local function removeJobs(parentKey, keys)\n' +
+        '    for i, key in ipairs(keys) do\n' +
+        '        rcall("DEL", baseKey .. key)\n' +
+        `        rcall("DEL", baseKey .. key .. ':logs')\n` +
+        '    end\n' +
+        '    maxCount = maxCount - #keys\n' +
+        'end\n' +
+        '\n' +
+        'local function removeListJobs(keyName, max)\n' +
+        '    local jobs = getListItems(keyName, max)\n' +
+        '    removeJobs(keyName, jobs)\n' +
+        '    rcall("LTRIM", keyName, #jobs, -1)\n' +
+        'end\n' +
+        '\n' +
+        'local function removeZSetJobs(keyName, max)\n' +
+        '    local jobs = getZSetItems(keyName, max)\n' +
+        '    removeJobs(keyName, jobs)\n' +
+        '    if(#jobs > 0) then\n' +
+        '        rcall("ZREM", keyName, unpack(jobs))\n' +
+        '    end\n' +
+        'end\n' +
+        '\n' +
+        'local function removeLockKeys(keys)\n' +
+        '    for i, key in ipairs(keys) do\n' +
+        `        rcall("DEL", baseKey .. key .. ':lock')\n` +
+        '    end\n' +
+        'end\n' +
+        '\n' +
+        '-- 1) Check if paused, if not return with error.\n' +
+        'if rcall("EXISTS", KEYS[1]) ~= 1 then\n' +
+        '    return -1 -- Error, NotPaused\n' +
+        'end\n' +
+        '\n' +
+        '-- 2) Check if there are active jobs, if there are and not "force" return error.\n' +
+        "local activeKey = baseKey .. 'active'\n" +
+        'local activeJobs = getListItems(activeKey, maxCount)\n' +
+        'if (#activeJobs > 0) then\n' +
+        '    if(ARGV[2] == "") then \n' +
+        '        return -2 -- Error, ExistsActiveJobs\n' +
+        '    end\n' +
+        'end\n' +
+        '\n' +
+        'removeLockKeys(activeJobs)\n' +
+        'removeJobs(activeKey, activeJobs)\n' +
+        'rcall("LTRIM", activeKey, #activeJobs, -1)\n' +
+        'if(maxCount <= 0) then\n' +
+        '    return 1\n' +
+        'end\n' +
+        '\n' +
+        "local waitKey = baseKey .. 'paused'\n" +
+        'removeListJobs(waitKey, maxCount)\n' +
+        'if(maxCount <= 0) then\n' +
+        '    return 1\n' +
+        'end\n' +
+        '\n' +
+        "local delayedKey = baseKey .. 'delayed'\n" +
+        'removeZSetJobs(delayedKey, maxCount)\n' +
+        'if(maxCount <= 0) then\n' +
+        '    return 1\n' +
+        'end\n' +
+        '\n' +
+        "local completedKey = baseKey .. 'completed'\n" +
+        'removeZSetJobs(completedKey, maxCount)\n' +
+        'if(maxCount <= 0) then\n' +
+        '    return 1\n' +
+        'end\n' +
+        '\n' +
+        "local failedKey = baseKey .. 'failed'\n" +
+        'removeZSetJobs(failedKey, maxCount)\n' +
+        'if(maxCount <= 0) then\n' +
+        '    return 1\n' +
+        'end\n' +
+        '\n' +
+        'if(maxCount > 0) then\n' +
+        `    rcall("DEL", baseKey .. 'priority')\n` +
+        `    rcall("DEL", baseKey .. 'stalled-check')\n` +
+        `    rcall("DEL", baseKey .. 'stalled')\n` +
+        `    rcall("DEL", baseKey .. 'meta-paused')\n` +
+        `    rcall("DEL", baseKey .. 'meta')\n` +
+        `    rcall("DEL", baseKey .. 'id')\n` +
+        `    rcall("DEL", baseKey .. 'repeat')\n` +
+        '    return 0\n' +
+        'else\n' +
+        '    return 1\n' +
+        'end\n',
+      numberOfKeys: 2,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '9a64d4813b55c6f2ff1588f9f4b7d78153765a60'
+    },
+    pause: Script {
+      lua: '--[[\n' +
+        '  Pauses or resumes a queue globably.\n' +
+        '\n' +
+        '   Input:\n' +
+        "      KEYS[1] 'wait' or 'paused''\n" +
+        "      KEYS[2] 'paused' or 'wait'\n" +
+        "      KEYS[3] 'meta-paused'\n" +
+        "      KEYS[4] 'paused' o 'resumed' event.\n" +
+        "      KEYS[5] 'meta' this key is only used in BullMQ and above.\n" +
+        '\n' +
+        "      ARGV[1] 'paused' or 'resumed'\n" +
+        '\n' +
+        '    Event:\n' +
+        '      publish paused or resumed event.\n' +
+        ']]\n' +
+        'local rcall = redis.call\n' +
+        '\n' +
+        'if rcall("EXISTS", KEYS[1]) == 1 then\n' +
+        '  rcall("RENAME", KEYS[1], KEYS[2])\n' +
+        'end\n' +
+        '\n' +
+        'if ARGV[1] == "paused" then\n' +
+        '  rcall("SET", KEYS[3], 1)\n' +
+        '\n' +
+        '  -- for forwards compatibility\n' +
+        '  rcall("HSET", KEYS[5], "paused", 1)\n' +
+        'else\n' +
+        '  rcall("DEL", KEYS[3])\n' +
+        '\n' +
+        '  -- for forwards compatibility\n' +
+        '  rcall("HDEL", KEYS[5], "paused")\n' +
+        '\n' +
+        'end\n' +
+        '\n' +
+        'rcall("PUBLISH", KEYS[4], ARGV[1])\n',
+      numberOfKeys: 5,
+      keyPrefix: '',
+      readOnly: false,
+      sha: 'b5c132cc42afbaa657233d28131a3a0486b47807'
+    },
+    promote: Script {
+      lua: '--[[\n' +
+        '  Promotes a job that is currently "delayed" to the "waiting" state\n' +
+        '\n' +
+        '     Input:\n' +
+        "      KEYS[1] 'delayed'\n" +
+        "      KEYS[2] 'wait'\n" +
+        "      KEYS[3] 'paused'\n" +
+        "      KEYS[4] 'priority'\n" +
+        '\n' +
+        "      ARGV[1]  queue.toKey('')\n" +
+        '      ARGV[2]  jobId\n' +
+        '      ARGV[3]  queue token\n' +
+        '\n' +
+        '     Events:\n' +
+        "      'waiting'\n" +
+        ']]\n' +
+        'local rcall = redis.call;\n' +
+        'local jobId = ARGV[2]\n' +
+        '\n' +
+        'if redis.call("ZREM", KEYS[1], jobId) == 1 then\n' +
+        '  local priority = tonumber(rcall("HGET", ARGV[1] .. jobId, "priority")) or 0\n' +
+        '\n' +
+        '  local target = KEYS[2];\n' +
+        '\n' +
+        '  if rcall("EXISTS", KEYS[3]) == 1 then\n' +
+        '    target = KEYS[3]\n' +
+        '  end\n' +
+        '\n' +
+        '  if priority == 0 then\n' +
+        '    -- LIFO or FIFO\n' +
+        '    rcall("LPUSH", target, jobId)\n' +
+        '  else\n' +
+        '    -- Priority add\n' +
+        '    rcall("ZADD", KEYS[4], priority, jobId)\n' +
+        '    local count = rcall("ZCOUNT", KEYS[4], 0, priority)\n' +
+        '\n' +
+        '    local len = rcall("LLEN", target)\n' +
+        '    local id = rcall("LINDEX", target, len - (count - 1))\n' +
+        '    if id then\n' +
+        '      rcall("LINSERT", target, "BEFORE", id, jobId)\n' +
+        '    else\n' +
+        '      rcall("RPUSH", target, jobId)\n' +
+        '    end\n' +
+        '  end\n' +
+        '\n' +
+        '  -- Emit waiting event (wait..ing@token)\n' +
+        '  rcall("PUBLISH", KEYS[2] .. "ing@" .. ARGV[3], jobId)\n' +
+        '\n' +
+        '  rcall("HSET", ARGV[1] .. jobId, "delay", 0)\n' +
+        '\n' +
+        '  return 0\n' +
+        'else\n' +
+        '  return -1\n' +
+        'end\n',
+      numberOfKeys: 4,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '00cdb888b8a724c56f93cd402fee30cc2f1ab01c'
+    },
+    releaseLock: Script {
+      lua: '--[[\n' +
+        '  Release lock\n' +
+        '\n' +
+        '     Input:\n' +
+        "        KEYS[1] 'lock',\n" +
+        '      \n' +
+        '        ARGV[1]  token\n' +
+        '        ARGV[2]  lock duration in milliseconds\n' +
+        '      \n' +
+        '      Output:\n' +
+        '        "OK" if lock extented succesfully.\n' +
+        ']]\n' +
+        'local rcall = redis.call\n' +
+        '\n' +
+        'if rcall("GET", KEYS[1]) == ARGV[1] then\n' +
+        '  return rcall("DEL", KEYS[1])\n' +
+        'else\n' +
+        '  return 0\n' +
+        'end\n',
+      numberOfKeys: 1,
+      keyPrefix: '',
+      readOnly: false,
+      sha: 'b92b329e6dc2a8f2feaf3cf73e687c732b0fc43d'
+    },
+    removeJob: Script {
+      lua: '--[[\n' +
+        '    Remove a job from all the queues it may be in as well as all its data.\n' +
+        '    In order to be able to remove a job, it must be unlocked.\n' +
+        '\n' +
+        '     Input:\n' +
+        "      KEYS[1] 'active',\n" +
+        "      KEYS[2] 'wait',\n" +
+        "      KEYS[3] 'delayed',\n" +
+        "      KEYS[4] 'paused',\n" +
+        "      KEYS[5] 'completed',\n" +
+        "      KEYS[6] 'failed',\n" +
+        "      KEYS[7] 'priority',\n" +
+        '      KEYS[8] jobId\n' +
+        '      KEYS[9] job logs\n' +
+        '      KEYS[10] rate limiter index table\n' +
+        '\n' +
+        '      ARGV[1]  jobId\n' +
+        '      ARGV[2]  lock token\n' +
+        '\n' +
+        '     Events:\n' +
+        "      'removed'\n" +
+        ']]\n' +
+        '\n' +
+        "-- TODO PUBLISH global event 'removed'\n" +
+        '\n' +
+        'local rcall = redis.call\n' +
+        "local lockKey = KEYS[8] .. ':lock'\n" +
+        'local lock = redis.call("GET", lockKey)\n' +
+        'if not lock then             -- or (lock == ARGV[2])) then\n' +
+        '  local jobId = ARGV[1]\n' +
+        '  rcall("LREM", KEYS[1], 0, jobId)\n' +
+        '  rcall("LREM", KEYS[2], 0, jobId)\n' +
+        '  rcall("ZREM", KEYS[3], jobId)\n' +
+        '  rcall("LREM", KEYS[4], 0, jobId)\n' +
+        '  rcall("ZREM", KEYS[5], jobId)\n' +
+        '  rcall("ZREM", KEYS[6], jobId)\n' +
+        '  rcall("ZREM", KEYS[7], jobId)\n' +
+        '  rcall("DEL", KEYS[8])\n' +
+        '  rcall("DEL", KEYS[9])\n' +
+        '\n' +
+        '  -- delete keys related to rate limiter\n' +
+        '  local limiterIndexTable = KEYS[10] .. ":index"\n' +
+        '  local limitedSetKey = rcall("HGET", limiterIndexTable, jobId)\n' +
+        '  if limitedSetKey then\n' +
+        '    rcall("SREM", limitedSetKey, jobId)\n' +
+        '    rcall("HDEL", limiterIndexTable, jobId)\n' +
+        '  end\n' +
+        '  return 1\n' +
+        'else\n' +
+        '  return 0\n' +
+        'end\n',
+      numberOfKeys: 10,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '451d4221d6a7ff2251cd0864ab0a28bdba5ea099'
+    },
+    removeJobs: Script {
+      lua: '--[[\n' +
+        '    Remove all jobs matching a given pattern from all the queues they may be in as well as all its data.\n' +
+        '    In order to be able to remove any job, they must be unlocked.\n' +
+        '\n' +
+        '     Input:\n' +
+        "      KEYS[1] 'active',\n" +
+        "      KEYS[2] 'wait',\n" +
+        "      KEYS[3] 'delayed',\n" +
+        "      KEYS[4] 'paused',\n" +
+        "      KEYS[5] 'completed',\n" +
+        "      KEYS[6] 'failed',\n" +
+        "      KEYS[7] 'priority',\n" +
+        "      KEYS[8] 'rate-limiter'\n" +
+        '\n' +
+        '      ARGV[1]  prefix\n' +
+        '      ARGV[2]  pattern\n' +
+        '      ARGV[3]  cursor\n' +
+        '\n' +
+        '     Events:\n' +
+        "      'removed'\n" +
+        ']]\n' +
+        '\n' +
+        "-- TODO PUBLISH global events 'removed'\n" +
+        '\n' +
+        'local rcall = redis.call\n' +
+        'local result = rcall("SCAN", ARGV[3], "MATCH", ARGV[1] .. ARGV[2])\n' +
+        'local cursor = result[1];\n' +
+        'local jobKeys = result[2];\n' +
+        'local removed = {}\n' +
+        '\n' +
+        'local prefixLen = string.len(ARGV[1]) + 1\n' +
+        'for i, jobKey in ipairs(jobKeys) do\n' +
+        '    local keyTypeResp = rcall("TYPE", jobKey)\n' +
+        '    if keyTypeResp["ok"] == "hash" then\n' +
+        '        local jobId = string.sub(jobKey, prefixLen)\n' +
+        "        local lockKey = jobKey .. ':lock'\n" +
+        '        local lock = redis.call("GET", lockKey)\n' +
+        '        if not lock then\n' +
+        '            rcall("LREM", KEYS[1], 0, jobId)\n' +
+        '            rcall("LREM", KEYS[2], 0, jobId)\n' +
+        '            rcall("ZREM", KEYS[3], jobId)\n' +
+        '            rcall("LREM", KEYS[4], 0, jobId)\n' +
+        '            rcall("ZREM", KEYS[5], jobId)\n' +
+        '            rcall("ZREM", KEYS[6], jobId)\n' +
+        '            rcall("ZREM", KEYS[7], jobId)\n' +
+        '            rcall("DEL", jobKey)\n' +
+        `            rcall("DEL", jobKey .. ':logs')\n` +
+        '\n' +
+        '            -- delete keys related to rate limiter\n' +
+        '            local limiterIndexTable = KEYS[8] .. ":index"\n' +
+        '            local limitedSetKey = rcall("HGET", limiterIndexTable, jobId)\n' +
+        '\n' +
+        '            if limitedSetKey then\n' +
+        '                rcall("SREM", limitedSetKey, jobId)\n' +
+        '                rcall("HDEL", limiterIndexTable, jobId)\n' +
+        '            end\n' +
+        '            table.insert(removed, jobId)\n' +
+        '        end\n' +
+        '    end\n' +
+        'end\n' +
+        'return {cursor, removed}\n',
+      numberOfKeys: 8,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '861a68c53fd5ffc59654877019b25298f921a75e'
+    },
+    removeRepeatable: Script {
+      lua: '\n' +
+        '--[[\n' +
+        '  Removes a repeatable job\n' +
+        '  Input:\n' +
+        '    KEYS[1] repeat jobs key\n' +
+        '    KEYS[2] delayed jobs key\n' +
+        '\n' +
+        '    ARGV[1] repeat job id\n' +
+        '    ARGV[2] repeat job key\n' +
+        '    ARGV[3] queue key\n' +
+        ']]\n' +
+        'local millis = redis.call("ZSCORE", KEYS[1], ARGV[2])\n' +
+        '\n' +
+        'if(millis) then\n' +
+        '  -- Delete next programmed job.\n' +
+        '  local repeatJobId = ARGV[1] .. millis\n' +
+        '  if(redis.call("ZREM", KEYS[2], repeatJobId) == 1) then\n' +
+        '    redis.call("DEL", ARGV[3] .. repeatJobId)\n' +
+        '  end\n' +
+        'end\n' +
+        '\n' +
+        'redis.call("ZREM", KEYS[1], ARGV[2]);\n',
+      numberOfKeys: 2,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '4c65f1e9f1d304006a37cd2fb97903d30efcec82'
+    },
+    reprocessJob: Script {
+      lua: '--[[\n' +
+        '  Attempts to reprocess a job\n' +
+        '\n' +
+        '  Input:\n' +
+        '    KEYS[1] job key\n' +
+        '    KEYS[2] job lock key\n' +
+        '    KEYS[3] job state\n' +
+        '    KEYS[4] wait key\n' +
+        '\n' +
+        '    ARGV[1] job.id,\n' +
+        "    ARGV[2] (job.opts.lifo ? 'R' : 'L') + 'PUSH'\n" +
+        '    ARGV[3] token\n' +
+        '    ARGV[4] timestamp\n' +
+        '\n' +
+        '  Output:\n' +
+        '    1 means the operation was a success\n' +
+        '    0 means the job does not exist\n' +
+        "    -1 means the job is currently locked and can't be retried.\n" +
+        '    -2 means the job was not found in the expected set.\n' +
+        '\n' +
+        '\n' +
+        ']]\n' +
+        'if (redis.call("EXISTS", KEYS[1]) == 1) then\n' +
+        '  if (redis.call("EXISTS", KEYS[2]) == 0) then\n' +
+        '    redis.call("HDEL", KEYS[1], "finishedOn", "processedOn", "failedReason")\n' +
+        '    redis.call("HSET", KEYS[1], "retriedOn", ARGV[4])\n' +
+        '\n' +
+        '    if (redis.call("ZREM", KEYS[3], ARGV[1]) == 1) then\n' +
+        '      redis.call(ARGV[2], KEYS[4], ARGV[1])\n' +
+        '\n' +
+        '      -- Emit waiting event (wait..ing@token)\n' +
+        '      redis.call("PUBLISH", KEYS[4] .. "ing@" .. ARGV[3], ARGV[1])\n' +
+        '      return 1\n' +
+        '    else\n' +
+        '      return -2\n' +
+        '    end\n' +
+        '  else\n' +
+        '    return -1\n' +
+        '  end\n' +
+        'else\n' +
+        '  return 0\n' +
+        'end\n',
+      numberOfKeys: 4,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '3b39a2178fb7cc5991af55dbabbaae5d267a6fac'
+    },
+    retryJob: Script {
+      lua: '--[[\n' +
+        '  Retries a failed job by moving it back to the wait queue.\n' +
+        '\n' +
+        '    Input:\n' +
+        "      KEYS[1] 'active',\n" +
+        "      KEYS[2] 'wait'\n" +
+        '      KEYS[3] jobId\n' +
+        '\n' +
+        '      ARGV[1]  pushCmd\n' +
+        '      ARGV[2]  jobId\n' +
+        '      ARGV[3]  token\n' +
+        '\n' +
+        '    Events:\n' +
+        "      'prefix:added'\n" +
+        '\n' +
+        '    Output:\n' +
+        '     0  - OK\n' +
+        '     -1 - Missing key\n' +
+        '     -2 - Job Not locked\n' +
+        ']]\n' +
+        'if redis.call("EXISTS", KEYS[3]) == 1 then\n' +
+        '\n' +
+        '  -- Check for job lock\n' +
+        '  if ARGV[3] ~= "0" then\n' +
+        "    local lockKey = KEYS[3] .. ':lock'\n" +
+        '    local lock = redis.call("GET", lockKey)\n' +
+        '    if redis.call("GET", lockKey) ~= ARGV[3] then\n' +
+        '      return -2\n' +
+        '    end\n' +
+        '  end\n' +
+        '\n' +
+        '  redis.call("LREM", KEYS[1], 0, ARGV[2])\n' +
+        '  redis.call(ARGV[1], KEYS[2], ARGV[2])\n' +
+        '\n' +
+        '  return 0\n' +
+        'else\n' +
+        '  return -1\n' +
+        'end\n',
+      numberOfKeys: 3,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '994d9d7c16725b3c04eaabd5f268233bfc7e198d'
+    },
+    retryJobs: Script {
+      lua: '--[[\n' +
+        '  Attempts to retry all failed jobs\n' +
+        '\n' +
+        '  Input:\n' +
+        '    KEYS[1] base key\n' +
+        '    KEYS[2] failed state key\n' +
+        '    KEYS[3] wait state key\n' +
+        '\n' +
+        '    ARGV[1]  count\n' +
+        '\n' +
+        '  Output:\n' +
+        '    1  means the operation is not completed\n' +
+        '    0  means the operation is completed\n' +
+        ']]\n' +
+        'local baseKey = KEYS[1]\n' +
+        'local maxCount = tonumber(ARGV[1])\n' +
+        '\n' +
+        'local rcall = redis.call;\n' +
+        '\n' +
+        'local function batches(n, batchSize)\n' +
+        '  local i = 0\n' +
+        '\n' +
+        '  return function()\n' +
+        '    local from = i * batchSize + 1\n' +
+        '    i = i + 1\n' +
+        '    if (from <= n) then\n' +
+        '      local to = math.min(from + batchSize - 1, n)\n' +
+        '      return from, to\n' +
+        '    end\n' +
+        '  end\n' +
+        'end\n' +
+        '\n' +
+        'local function getZSetItems(keyName, max)\n' +
+        "  return rcall('ZRANGE', keyName, 0, max - 1)\n" +
+        'end\n' +
+        '\n' +
+        'local jobs = getZSetItems(KEYS[2], maxCount)\n' +
+        '\n' +
+        'if (#jobs > 0) then\n' +
+        '  for i, key in ipairs(jobs) do\n' +
+        '    local jobKey = baseKey .. key\n' +
+        '    rcall("HDEL", jobKey, "finishedOn", "processedOn", "failedReason")\n' +
+        '  end\n' +
+        '\n' +
+        '  for from, to in batches(#jobs, 7000) do\n' +
+        '    rcall("ZREM", KEYS[2], unpack(jobs, from, to))\n' +
+        '    rcall("LPUSH", KEYS[3], unpack(jobs, from, to))\n' +
+        '  end\n' +
+        'end\n' +
+        '\n' +
+        'maxCount = maxCount - #jobs\n' +
+        '\n' +
+        'if(maxCount <= 0) then\n' +
+        '  return 1\n' +
+        'end\n' +
+        '\n' +
+        'return 0\n',
+      numberOfKeys: 3,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '610ad36ecbdebe32ee5bf5971793b3c87068b5f9'
+    },
+    takeLock: Script {
+      lua: '--[[\n' +
+        '  Takes a lock\n' +
+        '\n' +
+        '     Input:\n' +
+        "        KEYS[1] 'lock',\n" +
+        '      \n' +
+        '        ARGV[1]  token\n' +
+        '        ARGV[2]  lock duration in milliseconds\n' +
+        '      \n' +
+        '      Output:\n' +
+        '        "OK" if lock taken successfully.\n' +
+        ']]\n' +
+        'if redis.call("SET", KEYS[1], ARGV[1], "NX", "PX", ARGV[2]) then\n' +
+        '  return 1\n' +
+        'else\n' +
+        '  return 0\n' +
+        'end\n',
+      numberOfKeys: 1,
+      keyPrefix: '',
+      readOnly: false,
+      sha: 'f121e6c1f5001a422ce7fd946c1396c43d26a62f'
+    },
+    updateDelaySet: Script {
+      lua: '--[[\n' +
+        '  Updates the delay set, by picking a delayed job that should\n' +
+        '  be processed now.\n' +
+        '\n' +
+        '     Input:\n' +
+        "      KEYS[1] 'delayed'\n" +
+        "      KEYS[2] 'active'\n" +
+        "      KEYS[3] 'wait'\n" +
+        "      KEYS[4] 'priority'\n" +
+        '\n' +
+        "      KEYS[5] 'paused'\n" +
+        "      KEYS[6] 'meta-paused'\n" +
+        '\n' +
+        "      ARGV[1]  queue.toKey('')\n" +
+        '      ARGV[2]  delayed timestamp\n' +
+        '      ARGV[3]  queue token\n' +
+        '\n' +
+        '     Events:\n' +
+        "      'removed'\n" +
+        ']]\n' +
+        'local rcall = redis.call;\n' +
+        '\n' +
+        '-- Try to get as much as 1000 jobs at once\n' +
+        'local jobs = rcall("ZRANGEBYSCORE", KEYS[1], 0, tonumber(ARGV[2]) * 0x1000, "LIMIT", 0, 1000)\n' +
+        '\n' +
+        'if(#jobs > 0) then\n' +
+        '  rcall("ZREM", KEYS[1], unpack(jobs))\n' +
+        '\n' +
+        '  -- check if we need to use push in paused instead of waiting\n' +
+        '  local target;\n' +
+        '  if rcall("EXISTS", KEYS[6]) ~= 1 then\n' +
+        '    target = KEYS[3]\n' +
+        '  else\n' +
+        '    target = KEYS[5]\n' +
+        '  end\n' +
+        '\n' +
+        '  for _, jobId in ipairs(jobs) do\n' +
+        '    -- Is this really needed?\n' +
+        '    rcall("LREM", KEYS[2], 0, jobId)\n' +
+        '\n' +
+        '    local priority = tonumber(rcall("HGET", ARGV[1] .. jobId, "priority")) or 0\n' +
+        '  \n' +
+        '    if priority == 0 then\n' +
+        '      -- LIFO or FIFO\n' +
+        '      rcall("LPUSH", target, jobId)\n' +
+        '    else\n' +
+        '      -- Priority add\n' +
+        '      rcall("ZADD", KEYS[4], priority, jobId)\n' +
+        '      local count = rcall("ZCOUNT", KEYS[4], 0, priority)\n' +
+        '  \n' +
+        '      local len = rcall("LLEN", target)\n' +
+        '      local id = rcall("LINDEX", target, len - (count-1))\n' +
+        '      if id then\n' +
+        '        rcall("LINSERT", target, "BEFORE", id, jobId)\n' +
+        '      else\n' +
+        '        rcall("RPUSH", target, jobId)\n' +
+        '      end\n' +
+        '    end\n' +
+        '  \n' +
+        '    -- Emit waiting event (wait..ing@token)\n' +
+        '    rcall("PUBLISH", KEYS[3] .. "ing@" .. ARGV[3], jobId)\n' +
+        '    rcall("HSET", ARGV[1] .. jobId, "delay", 0)\n' +
+        '  end\n' +
+        'end\n' +
+        '\n' +
+        'local nextTimestamp = rcall("ZRANGE", KEYS[1], 0, 0, "WITHSCORES")[2]\n' +
+        'if(nextTimestamp ~= nil) then\n' +
+        '  rcall("PUBLISH", KEYS[1], nextTimestamp / 0x1000)\n' +
+        'end\n' +
+        'return nextTimestamp\n',
+      numberOfKeys: 6,
+      keyPrefix: '',
+      readOnly: false,
+      sha: '8b912cdc5b4c20108ef73d952464fba3a7470d7b'
+    },
+    updateProgress: Script {
+      lua: '--[[\n' +
+        '  Update job progress\n' +
+        '\n' +
+        '     Input:\n' +
+        '        KEYS[1] Job id key\n' +
+        '        KEYS[2] progress event key\n' +
+        '      \n' +
+        '        ARGV[1] progress\n' +
+        '        ARGV[2] event data\n' +
+        '\n' +
+        '      Event:\n' +
+        '        progress(jobId, progress)\n' +
+        ']]\n' +
+        'redis.call("HSET", KEYS[1], "progress", ARGV[1])\n' +
+        'redis.call("PUBLISH", KEYS[2], ARGV[2])\n',
+      numberOfKeys: 2,
+      keyPrefix: '',
+      readOnly: false,
+      sha: 'dabbb2936c9094b642797567a5bb872ad562cf9b'
+    }
+  },
+  addedBuiltinSet: Set {},
+  commandQueue: Denque {
+    _head: 2,
+    _tail: 2,
+    _capacity: undefined,
+    _capacityMask: 3,
+    _list: [ undefined, undefined, <2 empty items> ]
+  },
+  offlineQueue: Denque {
+    _head: 0,
+    _tail: 0,
+    _capacity: undefined,
+    _capacityMask: 3,
+    _list: [ <4 empty items> ]
+  },
+  connectionEpoch: 1,
+  connector: StandaloneConnector {
+    connecting: true,
+    disconnectTimeout: 2000,
+    options: {
+      enableReadyCheck: false,
+      port: 6379,
+      host: '127.0.0.1',
+      db: 0,
+      retryStrategy: [Function: retryStrategy],
+      family: 4,
+      connectTimeout: 10000,
+      disconnectTimeout: 2000,
+      keepAlive: 0,
+      noDelay: true,
+      connectionName: null,
+      sentinels: null,
+      name: null,
+      role: 'master',
+      sentinelRetryStrategy: [Function: sentinelRetryStrategy],
+      sentinelReconnectStrategy: [Function: sentinelReconnectStrategy],
+      natMap: null,
+      enableTLSForSentinelMode: false,
+      updateSentinels: true,
+      failoverDetector: false,
+      username: null,
+      password: null,
+      dropBufferSupport: false,
+      enableOfflineQueue: true,
+      autoResubscribe: true,
+      autoResendUnfulfilledCommands: true,
+      lazyConnect: false,
+      keyPrefix: '',
+      reconnectOnError: null,
+      readOnly: false,
+      stringNumbers: false,
+      maxRetriesPerRequest: 20,
+      maxLoadingRetryTime: 10000,
+      enableAutoPipelining: false,
+      autoPipeliningIgnoredCommands: [],
+      maxScriptsCachingTime: 60000,
+      sentinelMaxConnections: 10,
+      showFriendlyErrorStack: false
+    },
+    stream: Socket {
+      connecting: false,
+      _hadError: false,
+      _parent: null,
+      _host: null,
+      _readableState: [ReadableState],
+      readable: true,
+      _events: [Object: null prototype],
+      _eventsCount: 5,
+      _maxListeners: undefined,
+      _writableState: [WritableState],
+      writable: true,
+      allowHalfOpen: false,
+      _sockname: null,
+      _pendingData: null,
+      _pendingEncoding: '',
+      server: null,
+      _server: null,
+      timeout: 0,
+      [Symbol(asyncId)]: 419,
+      [Symbol(kHandle)]: [TCP],
+      [Symbol(kSetNoDelay)]: true,
+      [Symbol(lastWriteQueueSize)]: 0,
+      [Symbol(timeout)]: Timeout {
+        _idleTimeout: -1,
+        _idlePrev: null,
+        _idleNext: null,
+        _idleStart: 5175,
+        _onTimeout: null,
+        _timerArgs: undefined,
+        _repeat: null,
+        _destroyed: true,
+        [Symbol(refed)]: false,
+        [Symbol(kHasPrimitive)]: false,
+        [Symbol(asyncId)]: 422,
+        [Symbol(triggerId)]: 0
+      },
+      [Symbol(kBuffer)]: null,
+      [Symbol(kBufferCb)]: null,
+      [Symbol(kBufferGen)]: null,
+      [Symbol(kCapture)]: false,
+      [Symbol(kBytesRead)]: 0,
+      [Symbol(kBytesWritten)]: 0
+    }
+  },
+  retryAttempts: 0,
+  _addedScriptHashes: {},
+  _autoPipelines: Map {},
+  _runningAutoPipelines: Set {},
+  _addedScriptHashesCleanInterval: Timeout {
+    _idleTimeout: 60000,
+    _idlePrev: [TimersList],
+    _idleNext: [Timeout],
+    _idleStart: 5174,
+    _onTimeout: [Function],
+    _timerArgs: undefined,
+    _repeat: 60000,
+    _destroyed: false,
+    [Symbol(refed)]: true,
+    [Symbol(kHasPrimitive)]: false,
+    [Symbol(asyncId)]: 416,
+    [Symbol(triggerId)]: 0
+  },
+  status: 'ready',
+  condition: { select: 0, auth: null, subscriber: false },
+  addJob: [Function],
+  addJobBuffer: [Function],
+  cleanJobsInSet: [Function],
+  cleanJobsInSetBuffer: [Function],
+  extendLock: [Function],
+  extendLockBuffer: [Function],
+  isFinished: [Function],
+  isFinishedBuffer: [Function],
+  isJobInList: [Function],
+  isJobInListBuffer: [Function],
+  moveStalledJobsToWait: [Function],
+  moveStalledJobsToWaitBuffer: [Function],
+  moveToActive: [Function],
+  moveToActiveBuffer: [Function],
+  moveToDelayed: [Function],
+  moveToDelayedBuffer: [Function],
+  moveToFinished: [Function],
+  moveToFinishedBuffer: [Function],
+  obliterate: [Function],
+  obliterateBuffer: [Function],
+  pause: [Function],
+  pauseBuffer: [Function],
+  promote: [Function],
+  promoteBuffer: [Function],
+  releaseLock: [Function],
+  releaseLockBuffer: [Function],
+  removeJob: [Function],
+  removeJobBuffer: [Function],
+  removeJobs: [Function],
+  removeJobsBuffer: [Function],
+  removeRepeatable: [Function],
+  removeRepeatableBuffer: [Function],
+  reprocessJob: [Function],
+  reprocessJobBuffer: [Function],
+  retryJob: [Function],
+  retryJobBuffer: [Function],
+  retryJobs: [Function],
+  retryJobsBuffer: [Function],
+  takeLock: [Function],
+  takeLockBuffer: [Function],
+  updateDelaySet: [Function],
+  updateDelaySetBuffer: [Function],
+  updateProgress: [Function],
+  updateProgressBuffer: [Function],
+  stream: Socket {
+    connecting: false,
+    _hadError: false,
+    _parent: null,
+    _host: null,
+    _readableState: ReadableState {
+      objectMode: false,
+      highWaterMark: 16384,
+      buffer: BufferList { head: null, tail: null, length: 0 },
+      length: 0,
+      pipes: null,
+      pipesCount: 0,
+      flowing: true,
+      ended: false,
+      endEmitted: false,
+      reading: true,
+      sync: false,
+      needReadable: true,
+      emittedReadable: false,
+      readableListening: false,
+      resumeScheduled: false,
+      emitClose: false,
+      autoDestroy: false,
+      destroyed: false,
+      defaultEncoding: 'utf8',
+      awaitDrainWriters: null,
+      multiAwaitDrain: false,
+      readingMore: false,
+      decoder: null,
+      encoding: null,
+      [Symbol(kPaused)]: false
+    },
+    readable: true,
+    _events: [Object: null prototype] {
+      end: [Function: onReadableStreamEnd],
+      error: [Array],
+      timeout: [Function],
+      close: [Function],
+      data: [Function]
+    },
+    _eventsCount: 5,
+    _maxListeners: undefined,
+    _writableState: WritableState {
+      objectMode: false,
+      highWaterMark: 16384,
+      finalCalled: false,
+      needDrain: false,
+      ending: false,
+      ended: false,
+      finished: false,
+      destroyed: false,
+      decodeStrings: false,
+      defaultEncoding: 'utf8',
+      length: 0,
+      writing: false,
+      corked: 0,
+      sync: false,
+      bufferProcessing: false,
+      onwrite: [Function: bound onwrite],
+      writecb: null,
+      writelen: 0,
+      afterWriteTickInfo: null,
+      bufferedRequest: null,
+      lastBufferedRequest: null,
+      pendingcb: 0,
+      prefinished: false,
+      errorEmitted: false,
+      emitClose: false,
+      autoDestroy: false,
+      bufferedRequestCount: 0,
+      corkedRequestsFree: [Object]
+    },
+    writable: true,
+    allowHalfOpen: false,
+    _sockname: null,
+    _pendingData: null,
+    _pendingEncoding: '',
+    server: null,
+    _server: null,
+    timeout: 0,
+    [Symbol(asyncId)]: 419,
+    [Symbol(kHandle)]: TCP {
+      reading: true,
+      onconnection: null,
+      [Symbol(owner_symbol)]: [Circular]
+    },
+    [Symbol(kSetNoDelay)]: true,
+    [Symbol(lastWriteQueueSize)]: 0,
+    [Symbol(timeout)]: Timeout {
+      _idleTimeout: -1,
+      _idlePrev: null,
+      _idleNext: null,
+      _idleStart: 5175,
+      _onTimeout: null,
+      _timerArgs: undefined,
+      _repeat: null,
+      _destroyed: true,
+      [Symbol(refed)]: false,
+      [Symbol(kHasPrimitive)]: false,
+      [Symbol(asyncId)]: 422,
+      [Symbol(triggerId)]: 0
+    },
+    [Symbol(kBuffer)]: null,
+    [Symbol(kBufferCb)]: null,
+    [Symbol(kBufferGen)]: null,
+    [Symbol(kCapture)]: false,
+    [Symbol(kBytesRead)]: 0,
+    [Symbol(kBytesWritten)]: 0
+  },
+  [Symbol(kCapture)]: false
+}
+ID? undefined
+STARTING TO PROCESS 0
+PROCSSING Q2
+Adding undefined to Q1

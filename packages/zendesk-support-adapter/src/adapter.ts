@@ -67,6 +67,7 @@ import omitInactiveFilter from './filters/omit_inactive'
 import tagsFilter from './filters/tag'
 import defaultDeployFilter from './filters/default_deploy'
 import ducktypeCommonFilters from './filters/ducktype_common'
+import referencedIdFieldsFilter from './filters/referenced_id_fields'
 import { getConfigFromConfigChanges } from './config_change'
 
 const log = logger(module)
@@ -117,6 +118,7 @@ export const DEFAULT_FILTERS = [
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,
   dynamicContentReferencesFilter,
+  referencedIdFieldsFilter,
   serviceUrlFilter,
   ...ducktypeCommonFilters,
   // defaultDeployFilter should be last!
@@ -170,6 +172,7 @@ export default class ZendeskAdapter implements AdapterOperations {
             fetch: config.fetch,
             apiDefinitions: config.apiDefinitions,
           },
+          getElemIdFunc,
         },
         filterCreators,
         concatObjects,

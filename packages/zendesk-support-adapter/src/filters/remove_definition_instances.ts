@@ -17,6 +17,9 @@ import _ from 'lodash'
 import { isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 
+// We don't fetch those type names (except for trigger_definition) by default
+// But since we did in the past and we want to be backward compatible, we keep them in the filter
+// Can be removed after SALTO-1792
 const DEFINITION_TYPE_NAMES = [
   'macro_definition',
   'macros_actions',

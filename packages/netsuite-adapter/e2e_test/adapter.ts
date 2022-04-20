@@ -17,6 +17,7 @@
 import { logger } from '@salto-io/logging'
 import { creds, CredsLease } from '@salto-io/e2e-credentials-store'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { Element } from '@salto-io/adapter-api'
 import Bottleneck from 'bottleneck'
 import { Credentials, toCredentialsAccountId } from '../src/client/credentials'
 import SdfClient from '../src/client/sdf_client'
@@ -28,18 +29,18 @@ import { credsSpec } from './jest_environment'
 import NetsuiteClient from '../src/client/client'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
 
-
 const log = logger(module)
 
 type Opts = {
   adapterParams?: Partial<NetsuiteAdapterParams>
+  elements?: Element[]
   credentials: Required<Credentials>
   withSuiteApp: boolean
 }
 
 export const realAdapter = (
-  { adapterParams, credentials, withSuiteApp }: Opts,
-  config?: NetsuiteConfig
+  { adapterParams, credentials, withSuiteApp, elements = [] }: Opts,
+  config?: NetsuiteConfig,
 ): { client: NetsuiteClient; adapter: NetsuiteAdapter } => {
   const netsuiteCredentials = {
     ...credentials,
@@ -59,7 +60,7 @@ export const realAdapter = (
     }) : undefined)
   const adapter = new NetsuiteAdapter({
     client,
-    elementsSource: buildElementsSourceFromElements([]),
+    elementsSource: buildElementsSourceFromElements(elements),
     config: config ?? {},
     ...adapterParams || { getElemIdFunc: mockGetElemIdFunc },
   })

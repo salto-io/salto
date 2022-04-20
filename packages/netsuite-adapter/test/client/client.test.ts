@@ -24,6 +24,7 @@ import { SetConfigType } from '../../src/client/suiteapp_client/types'
 import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../src/types'
 import { featuresType } from '../../src/types/configuration_types'
 import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
+import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 
 describe('NetsuiteClient', () => {
   describe('with SDF client', () => {
@@ -33,6 +34,7 @@ describe('NetsuiteClient', () => {
         getCredentials: () => ({ accountId: 'someId' }),
         deploy: mockSdfDeploy,
       } as unknown as SdfClient
+      const mockElementsSourceIndex = jest.fn() as unknown as LazyElementsSourceIndexes
       const client = new NetsuiteClient(sdfClient)
 
       beforeEach(() => {
@@ -49,11 +51,15 @@ describe('NetsuiteClient', () => {
         const failedChange = toChange({
           after: new InstanceElement('failedInstance', type, { scriptid: 'failedObject' }),
         })
-        expect(await client.deploy([successChange, failedChange], SDF_CHANGE_GROUP_ID, false))
-          .toEqual({
-            errors: [objectsDeployError],
-            appliedChanges: [successChange],
-          })
+        expect(await client.deploy(
+          [successChange, failedChange],
+          SDF_CHANGE_GROUP_ID,
+          false,
+          mockElementsSourceIndex,
+        )).toEqual({
+          errors: [objectsDeployError],
+          appliedChanges: [successChange],
+        })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
       })
       it('should fail when failed changes couldn\'t be found in ObjectsDeployError', async () => {
@@ -66,11 +72,15 @@ describe('NetsuiteClient', () => {
         const failedChange = toChange({
           after: new InstanceElement('failedInstance', type, { scriptid: 'failedObject' }),
         })
-        expect(await client.deploy([successChange, failedChange], SDF_CHANGE_GROUP_ID, false))
-          .toEqual({
-            errors: [objectsDeployError],
-            appliedChanges: [],
-          })
+        expect(await client.deploy(
+          [successChange, failedChange],
+          SDF_CHANGE_GROUP_ID,
+          false,
+          mockElementsSourceIndex,
+        )).toEqual({
+          errors: [objectsDeployError],
+          appliedChanges: [],
+        })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(1)
       })
       it('should try again to deploy after SettingsDeployError', async () => {
@@ -84,11 +94,15 @@ describe('NetsuiteClient', () => {
         const failedChange = toChange({
           after: new InstanceElement(ElemID.CONFIG_NAME, settingsType),
         })
-        expect(await client.deploy([successChange, failedChange], SDF_CHANGE_GROUP_ID, false))
-          .toEqual({
-            errors: [settingsDeployError],
-            appliedChanges: [successChange],
-          })
+        expect(await client.deploy(
+          [successChange, failedChange],
+          SDF_CHANGE_GROUP_ID,
+          false,
+          mockElementsSourceIndex
+        )).toEqual({
+          errors: [settingsDeployError],
+          appliedChanges: [successChange],
+        })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
       })
 
@@ -120,7 +134,12 @@ describe('NetsuiteClient', () => {
             }
           )
           const change = toChange({ before, after })
-          expect(await client.deploy([change], SDF_CHANGE_GROUP_ID, false)).toEqual({
+          expect(await client.deploy(
+            [change],
+            SDF_CHANGE_GROUP_ID,
+            false,
+            mockElementsSourceIndex
+          )).toEqual({
             errors: [featuresDeployError],
             appliedChanges: [],
           })
@@ -147,7 +166,12 @@ describe('NetsuiteClient', () => {
             }
           )
           const change = toChange({ before, after })
-          expect(await client.deploy([change], SDF_CHANGE_GROUP_ID, false)).toEqual({
+          expect(await client.deploy(
+            [change],
+            SDF_CHANGE_GROUP_ID,
+            false,
+            mockElementsSourceIndex
+          )).toEqual({
             errors: [featuresDeployError],
             appliedChanges: [change],
           })
@@ -179,6 +203,8 @@ describe('NetsuiteClient', () => {
       getPathToIdMap: getPathToIdMapMock,
     } as unknown as suiteAppFileCabinet.SuiteAppFileCabinetOperations)
 
+    const mockElementsSourceIndex = jest.fn() as unknown as LazyElementsSourceIndexes
+
     const client = new NetsuiteClient(sdfClient, suiteAppClient)
 
     beforeEach(() => {
@@ -187,14 +213,14 @@ describe('NetsuiteClient', () => {
 
     describe('getPathInternalId', () => {
       it('should return the right id', async () => {
-        getPathToIdMapMock.mockResolvedValue({ '/some/path': 1 })
-        expect(await client.getPathInternalId('/some/path')).toBe(1)
-        expect(await client.getPathInternalId('/some/path2')).toBeUndefined()
+        getPathToIdMapMock.mockReturnValue({ '/some/path': 1 })
+        expect(client.getPathInternalId('/some/path')).toBe(1)
+        expect(client.getPathInternalId('/some/path2')).toBeUndefined()
       })
 
       it('should return undefined when failed to get map', async () => {
         getPathToIdMapMock.mockResolvedValue(undefined)
-        expect(await client.getPathInternalId('/some/path1')).toBeUndefined()
+        expect(client.getPathInternalId('/some/path1')).toBeUndefined()
       })
     })
 
@@ -219,6 +245,7 @@ describe('NetsuiteClient', () => {
           [change1, change2],
           SUITEAPP_UPDATING_RECORDS_GROUP_ID,
           false,
+          mockElementsSourceIndex
         )).toEqual({
           errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_RECORDS_GROUP_ID}" cannot be deployed`)],
           elemIdToInternalId: {},
@@ -228,6 +255,7 @@ describe('NetsuiteClient', () => {
           [change1, change2],
           SUITEAPP_UPDATING_CONFIG_GROUP_ID,
           false,
+          mockElementsSourceIndex
         )).toEqual({
           errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_CONFIG_GROUP_ID}" cannot be deployed`)],
           appliedChanges: [],
@@ -239,6 +267,7 @@ describe('NetsuiteClient', () => {
           [change1, change2],
           SUITEAPP_UPDATING_RECORDS_GROUP_ID,
           false,
+          mockElementsSourceIndex
         )
         expect(results.appliedChanges).toEqual([change1])
         expect(results.errors).toEqual([new Error('error')])
@@ -254,6 +283,7 @@ describe('NetsuiteClient', () => {
           ],
           SUITEAPP_CREATING_RECORDS_GROUP_ID,
           false,
+          mockElementsSourceIndex
         )
         expect(results.appliedChanges).toEqual([toChange({ after: instance1 })])
         expect(results.errors).toEqual([new Error('error')])
@@ -269,6 +299,7 @@ describe('NetsuiteClient', () => {
           ],
           SUITEAPP_DELETING_RECORDS_GROUP_ID,
           false,
+          mockElementsSourceIndex
         )
         expect(results.appliedChanges).toEqual([toChange({ before: instance1 })])
         expect(results.errors).toEqual([new Error('error')])
@@ -300,6 +331,7 @@ describe('NetsuiteClient', () => {
           ],
           SUITEAPP_UPDATING_CONFIG_GROUP_ID,
           false,
+          mockElementsSourceIndex
         )
         expect(results.appliedChanges.length).toEqual(1)
         expect(results.errors.length).toEqual(0)

@@ -34,8 +34,8 @@ describe('setFileCabinetUrls', () => {
 
   beforeEach(() => {
     jest.resetAllMocks()
-    getPathInternalIdMock.mockResolvedValueOnce(1)
-    getPathInternalIdMock.mockResolvedValueOnce(2)
+    getPathInternalIdMock.mockReturnValueOnce(1)
+    getPathInternalIdMock.mockReturnValueOnce(2)
   })
 
   it('should set the right url', async () => {

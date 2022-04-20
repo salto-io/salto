@@ -32,6 +32,7 @@ import { getLookUpName, toCustomizationInfo } from '../transformer'
 import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../group_changes'
 import { DeployResult } from '../types'
 import { CONFIG_FEATURES, APPLICATION_ID, SCRIPT_ID } from '../constants'
+import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 import { convertInstanceMapsToLists } from '../mapped_lists/utils'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
 import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError } from '../errors'
@@ -221,7 +222,12 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  public async deploy(changes: Change[], groupID: string, deployReferencedElements: boolean):
+  public async deploy(
+    changes: Change[],
+    groupID: string,
+    deployReferencedElements: boolean,
+    elementsSourceIndex: LazyElementsSourceIndexes
+  ):
     Promise<DeployResult> {
     const instancesChanges = changes.filter(isInstanceChange)
 
@@ -233,7 +239,8 @@ export default class NetsuiteClient {
       return this.suiteAppFileCabinet !== undefined
         ? this.suiteAppFileCabinet.deploy(
           instancesChanges,
-          GROUP_TO_DEPLOY_TYPE[groupID]
+          GROUP_TO_DEPLOY_TYPE[groupID],
+          elementsSourceIndex
         )
         : { errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${groupID}" cannot be deployed`)], appliedChanges: [] }
     }
@@ -306,8 +313,8 @@ export default class NetsuiteClient {
     return this.suiteAppClient !== undefined
   }
 
-  public async getPathInternalId(path: string): Promise<number | undefined> {
-    const pathToId = await this.suiteAppFileCabinet?.getPathToIdMap() ?? {}
+  public getPathInternalId(path: string): number | undefined {
+    const pathToId = this.suiteAppFileCabinet?.getPathToIdMap() ?? {}
     return pathToId[path]
   }
 

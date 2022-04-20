@@ -164,10 +164,6 @@ const breakupDisjointGroup = <T>(
       wu(nodeIds).forEach(nodeId => { nodeIdToNewGroup.set(nodeId, groupId) })
     })
 
-  if (groupGraph.size !== 0) {
-    throw new CircularDependencyError(groupGraph)
-  }
-
   return (id: NodeId) => nodeIdToNewGroup.get(id) || groupKey(id)
 }
 

@@ -14,12 +14,19 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Field, Value, Element, isInstanceElement } from '@salto-io/adapter-api'
+import { Field, Value, Element, isInstanceElement, InstanceElement, ObjectType, ElemID } from '@salto-io/adapter-api'
 import { types } from '@salto-io/lowerdash'
-import { GetLookupNameFunc } from '@salto-io/adapter-utils'
+import { GetLookupNameFunc, naclCase } from '@salto-io/adapter-utils'
 
 export type ApiNameFunc = (elem: Element) => string
 export type LookupFunc = (val: Value, context?: string) => string
+export type CreateMissingRefFunc = (
+  params: { value: string; adapter: string; typeName?: string }
+) => Element | undefined
+export type CheckMissingRefFunc = (element: Element) => boolean
+
+const MISSING_REF_PREFIX = 'missing_'
+const MISSING_ANNOTATION = 'missing'
 
 export type ReferenceSerializationStrategy = {
   serialize: GetLookupNameFunc
@@ -44,6 +51,32 @@ export const ReferenceSerializationStrategyLookup: Record<
     serialize: ({ ref }) => ref.value.value.name,
     lookup: val => val,
     lookupIndexName: 'name',
+  },
+}
+
+export type MissingReferenceStrategy = {
+  create: CreateMissingRefFunc
+  check: CheckMissingRefFunc
+}
+
+export type MissingReferenceStrategyName = 'typeAndValue'
+export const MissingReferenceStrategyLookup: Record<
+MissingReferenceStrategyName, MissingReferenceStrategy
+> = {
+  typeAndValue: {
+    create: ({ value, adapter, typeName }) => {
+      if (!_.isString(typeName) || !value) {
+        return undefined
+      }
+      return new InstanceElement(
+        naclCase(`${MISSING_REF_PREFIX}${value}`),
+        new ObjectType({ elemID: new ElemID(adapter, typeName) }),
+        {},
+        undefined,
+        { [MISSING_ANNOTATION]: true },
+      )
+    },
+    check: element => element.annotations[MISSING_ANNOTATION] === true,
   },
 }
 
@@ -89,6 +122,8 @@ export type FieldReferenceDefinition<
   serializationStrategy?: ReferenceSerializationStrategyName
   // If target is missing, the definition is used for resolving
   target?: ReferenceTargetDefinition<T>
+  // If missingRefStrategy is missing, we won't replace broken values with missing references
+  missingRefStrategy?: MissingReferenceStrategyName
 }
 
 // We can extract the api name from the elem id as long as we don't support renaming
@@ -97,12 +132,14 @@ const elemLookupName: ApiNameFunc = elem => elem.elemID.name
 type FieldReferenceResolverDetails<T extends string> = {
   serializationStrategy: ReferenceSerializationStrategy
   target?: ExtendedReferenceTargetDefinition<T>
+  missingRefStrategy?: MissingReferenceStrategy
 }
 
 export class FieldReferenceResolver<T extends string> {
   src: SourceDef
   serializationStrategy: ReferenceSerializationStrategy
   target?: ExtendedReferenceTargetDefinition<T>
+  missingRefStrategy?: MissingReferenceStrategy
 
   constructor(def: FieldReferenceDefinition<T>) {
     this.src = def.src
@@ -111,6 +148,9 @@ export class FieldReferenceResolver<T extends string> {
     ]
     this.target = def.target
       ? { ...def.target, lookup: this.serializationStrategy.lookup }
+      : undefined
+    this.missingRefStrategy = def.missingRefStrategy
+      ? MissingReferenceStrategyLookup[def.missingRefStrategy]
       : undefined
   }
 

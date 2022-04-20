@@ -21,6 +21,7 @@ import { values as lowerDashValues, collections, multiIndex } from '@salto-io/lo
 import {
   ReferenceSerializationStrategy, ExtendedReferenceTargetDefinition, ReferenceResolverFinder,
   FieldReferenceResolver, generateReferenceResolverFinder, FieldReferenceDefinition,
+  CreateMissingRefFunc, CheckMissingRefFunc,
 } from './reference_mapping'
 import { ContextFunc } from './context'
 
@@ -55,12 +56,13 @@ export const replaceReferenceValues = async <
   contextStrategyLookup?: Record<T, ContextFunc>
   isEqualValue?: ValueIsEqualFunc
 }): Promise<Values> => {
-  const getRefElem = async ({ val, target, field, path, lookupIndexName }: {
+  const getRefElem = async ({ val, target, field, path, lookupIndexName, createMissingReference }: {
     val: string | number
     field: Field
     path?: ElemID
     target: ExtendedReferenceTargetDefinition<T>
     lookupIndexName?: string
+    createMissingReference?: CreateMissingRefFunc
   }): Promise<Element | undefined> => {
     const defaultIndex = Object.values(elemLookupMaps).length === 1
       ? Object.values(elemLookupMaps)[0]
@@ -99,11 +101,10 @@ export const replaceReferenceValues = async <
     const elemType = target.type ?? await typeContextFunc({
       instance, elemByElemID, field, fieldPath: path,
     })
-
-    return findElem(
-      target.lookup(val, elemParent),
-      elemType,
-    )
+    return findElem(target.lookup(val, elemParent), elemType)
+    ?? createMissingReference?.({
+      value: val.toString(), typeName: elemType, adapter: field.elemID.adapter,
+    })
   }
 
   const replacePrimitive = async (
@@ -112,17 +113,23 @@ export const replaceReferenceValues = async <
     const toValidatedReference = async (
       serializer: ReferenceSerializationStrategy,
       elem: Element | undefined,
+      checkMissingRef?: CheckMissingRefFunc,
     ): Promise<ReferenceExpression | undefined> => {
       if (elem === undefined) {
         return undefined
       }
-      const res = (
-        isEqualValue(
-          await serializer.serialize({ ref: new ReferenceExpression(elem.elemID, elem), field }),
-          val,
-        ) ? new ReferenceExpression(elem.elemID, elem)
-          : undefined
-      )
+      let res: ReferenceExpression | undefined
+      if (checkMissingRef && checkMissingRef(elem)) {
+        res = new ReferenceExpression(elem.elemID)
+      } else {
+        res = (
+          isEqualValue(
+            await serializer.serialize({ ref: new ReferenceExpression(elem.elemID, elem), field }),
+            val,
+          ) ? new ReferenceExpression(elem.elemID, elem)
+            : undefined
+        )
+      }
       if (res !== undefined) {
         fieldsWithResolvedReferences.add(field.elemID.getFullName())
       }
@@ -139,7 +146,9 @@ export const replaceReferenceValues = async <
           path,
           target: refResolver.target as ExtendedReferenceTargetDefinition<T>,
           lookupIndexName: refResolver.serializationStrategy.lookupIndexName,
+          createMissingReference: refResolver.missingRefStrategy?.create,
         }),
+        refResolver.missingRefStrategy?.check,
       ))
       .filter(isDefined)
       .peek()

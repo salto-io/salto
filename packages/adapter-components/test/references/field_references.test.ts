@@ -132,6 +132,20 @@ describe('Field references', () => {
       value: { refType: BuiltinTypes.STRING },
     },
   })
+  const ticketFieldType = new ObjectType({
+    elemID: new ElemID(ADAPTER_NAME, 'ticket_field'),
+    fields: {
+      id: { refType: BuiltinTypes.STRING },
+      value: { refType: BuiltinTypes.STRING },
+    },
+  })
+  const triggerType = new ObjectType({
+    elemID: new ElemID(ADAPTER_NAME, 'trigger'),
+    fields: {
+      id: { refType: BuiltinTypes.STRING },
+      ticket_field_id: { refType: BuiltinTypes.STRING },
+    },
+  })
 
   const generateElements = (
   ): Element[] => ([
@@ -160,6 +174,8 @@ describe('Field references', () => {
     someTypeWithNestedValueList,
     someTypeWithNestedListOfValuesAndValue,
     type1,
+    ticketFieldType,
+    triggerType,
     new InstanceElement('productABC', productType, { name: 'ABC' }),
     new InstanceElement('brand1', brandType, { id: 1001 }),
     new InstanceElement('brand2', brandType, { id: 1002 }),
@@ -195,6 +211,10 @@ describe('Field references', () => {
       fail: 'fail',
       value: 'fail',
     }),
+    new InstanceElement('tf1', ticketFieldType, { id: '3001', value: 'field1' }),
+    new InstanceElement('trigger1', triggerType, { id: '3002', ticket_field_id: '3001' }),
+    new InstanceElement('trigger2', triggerType, { id: '3003', ticket_field_id: '3111' }),
+    new InstanceElement('trigger3', triggerType, { id: '3004', ticket_field_id: '' }),
   ])
 
   describe('addReferences', () => {
@@ -244,6 +264,12 @@ describe('Field references', () => {
         src: { field: 'product' },
         serializationStrategy: 'name',
         target: { type: 'product' },
+      },
+      {
+        src: { field: 'ticket_field_id', parentTypes: ['trigger'] },
+        serializationStrategy: 'id',
+        target: { type: 'ticket_field' },
+        missingRefStrategy: 'typeAndValue',
       },
     ]
 
@@ -344,6 +370,24 @@ describe('Field references', () => {
       )[0] as InstanceElement
       expect(inst.value.subjectAndValues[0].valueList[0].value).toBeInstanceOf(ReferenceExpression)
       expect(inst.value.subjectAndValues[0].valueList[0].value.elemID.getFullName()).toEqual('myAdapter.brand.instance.brand1')
+    })
+    it('should create missing reference if missing reference strategy was specified and the instance is missing', () => {
+      const triggerWithResolvedReference = elements.filter(
+        e => isInstanceElement(e) && e.elemID.name === 'trigger1'
+      )[0] as InstanceElement
+      expect(triggerWithResolvedReference.value.ticket_field_id.value)
+        .toBeInstanceOf(InstanceElement)
+      const triggerWithMissingReference = elements.filter(
+        e => isInstanceElement(e) && e.elemID.name === 'trigger2'
+      )[0] as InstanceElement
+      expect(triggerWithMissingReference.value.ticket_field_id.value)
+        .toEqual(undefined)
+    })
+    it('should not create missing reference if the value is empty', () => {
+      const inst = elements.filter(
+        e => isInstanceElement(e) && e.elemID.name === 'trigger3'
+      )[0] as InstanceElement
+      expect(inst.value.ticket_field_id).toEqual('')
     })
   })
 

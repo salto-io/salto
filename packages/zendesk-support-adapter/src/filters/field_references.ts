@@ -220,7 +220,7 @@ export class ZendeskSupportFieldReferenceResolver extends referenceUtils.FieldRe
   ReferenceContextStrategyName
 > {
   constructor(def: ZendeskSupportFieldReferenceDefinition) {
-    super({ src: def.src })
+    super({ src: def.src, missingRefStrategy: def.missingRefStrategy })
     this.serializationStrategy = ZendeskSupportReferenceSerializationStrategyLookup[
       def.zendeskSupportSerializationStrategy ?? def.serializationStrategy ?? 'fullValue'
     ]
@@ -662,6 +662,7 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskSupportFieldReferenceDef
     },
     zendeskSupportSerializationStrategy: 'ticketFieldOption',
     target: { typeContext: 'neighborReferenceTicketField' },
+    missingRefStrategy: 'typeAndValue',
   },
   {
     src: {
@@ -677,6 +678,7 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskSupportFieldReferenceDef
     },
     zendeskSupportSerializationStrategy: 'userFieldOption',
     target: { typeContext: 'neighborReferenceUserAndOrgField' },
+    missingRefStrategy: 'typeAndValue',
   },
   {
     src: {

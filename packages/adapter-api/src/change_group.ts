@@ -13,8 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { values } from '@salto-io/lowerdash'
 import { Change, ChangeDataType } from './change'
 import { ChangeId } from './dependency_changer'
+
+const { isDefined } = values
 
 export type ChangeGroupId = string
 
@@ -32,7 +35,10 @@ export const mergeChangeGroupOptions = (
 ): ChangeGroupOptions => (
   {
     disjointGroups: new Set<ChangeGroupId>(
-      ...changeGroupOptions.flatMap(options => options.disjointGroups ?? [])
+      changeGroupOptions
+        .map(options => options.disjointGroups)
+        .filter(isDefined)
+        .flatMap(groups => [...groups])
     ),
   }
 )

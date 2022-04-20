@@ -86,7 +86,7 @@ describe('configElements filter', () => {
 
   describe('onFetch', () => {
     it('should transform type', async () => {
-      await filterCreator().onFetch([selectOptionType, instance, type])
+      await filterCreator().onFetch([selectOptionType, type])
       expect(isField(type.fields.configType)).toBeTruthy()
 
       expect(isField(type.fields.checkboxField)).toBeTruthy()

@@ -129,6 +129,9 @@ export const SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES: Record<SuiteAppConfigRecordTyp
 
 export const SUITEAPP_CONFIG_TYPE_NAMES = Object.values(SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES)
 
+export const isSuiteAppConfigType = (type: ObjectType): boolean =>
+  SUITEAPP_CONFIG_TYPE_NAMES.includes(type.elemID.name)
+
 export const isSuiteAppConfigInstance = (instance: InstanceElement): boolean =>
   SUITEAPP_CONFIG_TYPE_NAMES.includes(instance.elemID.typeName)
 

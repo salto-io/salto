@@ -20,7 +20,7 @@ import { collections, promises } from '@salto-io/lowerdash'
 import { ConfigRecord, SelectOption } from '../client/suiteapp_client/types'
 import { SELECT_OPTION } from '../constants'
 import { FilterWith } from '../filter'
-import { isSuiteAppConfigInstance } from '../types'
+import { isSuiteAppConfigInstance, isSuiteAppConfigType } from '../types'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -173,13 +173,18 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
       .filter(type => type.elemID.name === SELECT_OPTION)
 
     await awu(elements)
+      .filter(isObjectType)
+      .filter(type => isSuiteAppConfigType(type))
+      .forEach(type => {
+        transformType(type, selectOptionType)
+      })
+
+    await awu(elements)
       .filter(isInstanceElement)
       .filter(instance => isSuiteAppConfigInstance(instance))
       .forEach(async instance => {
-        const type = await instance.getType()
-        transformType(type, selectOptionType)
         instance.value = await getConfigInstanceValue(
-          instance.value.configRecord, type
+          instance.value.configRecord, await instance.getType()
         )
       })
   },

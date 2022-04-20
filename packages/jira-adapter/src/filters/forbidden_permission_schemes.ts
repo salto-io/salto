@@ -31,7 +31,7 @@ const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     elements.filter(isPermissionScheme).filter(isInstanceElement).forEach(element => {
       _.remove(element.value.permissions,
-        (p:{ permission: string }) => UnsupportedPermissionSchemes.includes(p.permission))
+        (p: { permission: string }) => UnsupportedPermissionSchemes.includes(p.permission))
     })
   },
 })

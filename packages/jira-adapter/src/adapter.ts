@@ -150,8 +150,6 @@ export const DEFAULT_FILTERS = [
   issueTypeScreenSchemeFilter,
   fieldConfigurationFilter,
   fieldConfigurationSchemeFilter,
-  serviceUrlInformationFilter,
-  serviceUrlFilter,
   userFilter,
   forbiddenPermissionSchemeFilter,
   jqlReferencesFilter,
@@ -166,6 +164,8 @@ export const DEFAULT_FILTERS = [
   sortListsFilter,
   // Must run after fieldReferencesFilter
   mapListsFilter,
+  serviceUrlInformationFilter,
+  serviceUrlFilter,
   hiddenValuesInListsFilter,
   // Must be last
   defaultInstancesDeployFilter,

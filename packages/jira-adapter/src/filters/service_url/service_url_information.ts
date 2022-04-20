@@ -26,11 +26,21 @@ type ServiceUrlInformation = {
 const getParentId = (instance: InstanceElement): string =>
   getParents(instance)[0].resValue.value.id
 
+const createAutomationServiceUrl = (instance: InstanceElement): string | undefined => {
+  if (instance.value.projects === undefined || instance.value.projects[0].projectId === undefined) {
+    return undefined
+  }
+  const projectKey = instance.value.projects[0].projectId.resValue.value.key
+  return `/jira/software/projects/${projectKey}/settings/automate#/rule/${instance.value.id}`
+}
+
 const createBoardServiceUrl = (instance: InstanceElement): string =>
   `/jira/software/projects/${instance.value.name.replace(' board', '')}/boards/${instance.value.id}`
 
-const createProjectComponentServiceUrl = (instance: InstanceElement): string =>
-  `/plugins/servlet/project-config/${getParentId(instance)}/administer-components?filter=${instance.value.name}&orderDirection=DESC&orderField=NAME&page=1`
+const createProjectComponentServiceUrl = (instance: InstanceElement): string => {
+  const parentKey = getParents(instance)[0].resValue.value.key
+  return `/plugins/servlet/project-config/${parentKey}/administer-components?filter=${instance.value.name}&orderDirection=DESC&orderField=NAME&page=1`
+}
 
 const createCustomFieldContextServiceUrl = (instance: InstanceElement): string | undefined => {
   const parentId = getParentId(instance)
@@ -49,7 +59,7 @@ const createFieldServiceUrl = (instance: InstanceElement): string | undefined =>
 }
 
 const createDashboardGadgetServiceUrl = (instance: InstanceElement): string =>
-  `/jira/dashboards/${getParentId(instance)}/edit?maximized=${instance.value.id}`
+  `/jira/dashboards/${getParentId(instance)}?maximized=${instance.value.id}`
 
 const boardInformation: ServiceUrlInformation = {
   typeName: 'Board',
@@ -76,12 +86,18 @@ const DashboardGadgetInformation: ServiceUrlInformation = {
   informationSupplier: createDashboardGadgetServiceUrl,
 }
 
+const AutomationInformation: ServiceUrlInformation = {
+  typeName: 'Automation',
+  informationSupplier: createAutomationServiceUrl,
+}
+
 const serviceUrlInformation: ServiceUrlInformation[] = [
   boardInformation,
   ProjectComponentInformation,
   CustomFieldContextInformation,
   FieldInformation,
   DashboardGadgetInformation,
+  AutomationInformation,
 ]
 
 const filter: FilterCreator = params => ({

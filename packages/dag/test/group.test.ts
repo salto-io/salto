@@ -109,13 +109,7 @@ describe('buildGroupGraph', () => {
       compareGroup(groupGraph[2], 'group1', [{ key: 'group1_n2', data: 'n2_data' }])
       compareGroup(groupGraph[3], 'group2', [{ key: 'group2_n4', data: 'n4_data' }])
     })
-    it('should fail if all the nodes are connected', () => {
-      origin.addNode('group1_n1', ['group1_n2'], 'n1_data')
-      origin.addNode('group1_n2', ['group1_n3'], 'n2_data')
-      origin.addNode('group1_n3', ['group1_n1'], 'n3_data')
-      expect(() => buildAcyclicGroupedGraph(origin, groupKey, new Set(['group1']))).toThrow()
-    })
-    it('should fail error if there is a cycle', () => {
+    it('should fail if there is a cycle', () => {
       origin.addNode('group1_n1', [], 'n1_data')
       origin.addNode('group1_n2', ['group1_n3'], 'n2_data')
       origin.addNode('group1_n3', ['group1_n2'], 'n3_data')

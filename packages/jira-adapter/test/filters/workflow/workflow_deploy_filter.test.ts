@@ -117,6 +117,77 @@ describe('workflowDeployFilter', () => {
       )
     })
 
+    it('should change ids from number to string on condition configuration', async () => {
+      const change = toChange({
+        after: new InstanceElement(
+          'instance',
+          workflowType,
+          {
+            name: 'name',
+            transitions: [
+              {
+                type: 'initial',
+                rules: {
+                  conditions: {
+                    configuration: {
+                      id: 1,
+                      other: 3,
+                    },
+                    conditions: [
+                      {
+                        configuration: [{
+                          id: 2,
+                        }],
+                      },
+                    ],
+                  },
+                },
+              },
+            ],
+          },
+        ),
+      })
+
+      await filter.deploy([change])
+
+      expect(deployChangeMock).toHaveBeenCalledWith(
+        toChange({
+          after: new InstanceElement(
+            'instance',
+            workflowType,
+            {
+              name: 'name',
+              transitions: [
+                {
+                  type: 'initial',
+                  rules: {
+                    conditions: {
+                      configuration: {
+                        id: '1',
+                        other: 3,
+                      },
+                      conditions: [
+                        {
+                          configuration: [{
+                            id: '2',
+                          }],
+                        },
+                      ],
+                    },
+                  },
+                },
+              ],
+            },
+          ),
+        }),
+        client,
+        DEFAULT_CONFIG.apiDefinitions.types.Workflow.deployRequests,
+        expect.toBeFunction(),
+        undefined,
+        undefined,
+      )
+    })
+
     it('should add operations value', async () => {
       const change = toChange({
         after: new InstanceElement(

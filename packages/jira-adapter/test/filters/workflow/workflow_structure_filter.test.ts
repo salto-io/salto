@@ -121,6 +121,21 @@ describe('workflowStructureFilter', () => {
       expect((await workflowRulesType.fields.validators.getType()).elemID.getFullName()).toBe('List<jira.Validator>')
     })
 
+    it('should replace conditions configuration types and and return the new types', async () => {
+      const workflowConditionType = new ObjectType({
+        elemID: new ElemID(JIRA, 'WorkflowCondition'),
+        fields: {
+          configuration: {
+            refType: BuiltinTypes.STRING,
+          },
+        },
+      })
+      const elements = [workflowConditionType]
+      await filter.onFetch(elements)
+      expect(elements.length).toBeGreaterThan(1)
+      expect((await workflowConditionType.fields.configuration.getType()).elemID.getFullName()).toBe('jira.ConditionConfiguration')
+    })
+
     it('should split the id value to entityId and name in Workflow instances', async () => {
       const instance = new InstanceElement(
         'instance',
@@ -242,6 +257,58 @@ describe('workflowStructureFilter', () => {
                 conditions: [{
                   type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesCondition',
                   configuration: {
+                  },
+                }],
+              },
+            },
+          },
+        ],
+      })
+    })
+
+    it('should remove name values from condition configuration', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        workflowType,
+        {
+          transitions: [
+            {
+              rules: {
+                conditionsTree: {
+                  type: 'type',
+                  configuration: {
+                    name: 'name',
+                    other: 'other',
+                  },
+                  conditions: [{
+                    type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesCondition',
+                    configuration: {
+                      vals: [{
+                        name: 'name',
+                      }],
+                    },
+                  }],
+                },
+              },
+            },
+          ],
+        }
+      )
+      await filter.onFetch([instance])
+      expect(instance.value).toEqual({
+        transitions: [
+          {
+            rules: {
+              conditions: {
+                type: 'type',
+                configuration: {
+                  other: 'other',
+                },
+                conditions: [{
+                  type: 'com.innovalog.jmwe.jira-misc-workflow-extensions__LinkIssuesCondition',
+                  configuration: {
+                    vals: [{
+                    }],
                   },
                 }],
               },

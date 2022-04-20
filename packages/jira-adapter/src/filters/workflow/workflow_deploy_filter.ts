@@ -96,6 +96,20 @@ const getTransitionsFromService = async (
   return workflowValues.transitions ?? []
 }
 
+const changeIdsToString = (
+  values: Record<string | number, unknown>,
+): void => {
+  if (typeof values.id === 'number') {
+    values.id = values.id.toString()
+  }
+  Object.values(values).forEach(value => {
+    if (typeof value === 'object' && value !== null) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      changeIdsToString(value as Record<string | number, unknown>)
+    }
+  })
+}
+
 export const deployWorkflow = async (
   change: AdditionChange<InstanceElement> | RemovalChange<InstanceElement>,
   client: JiraClient,
@@ -108,6 +122,10 @@ export const deployWorkflow = async (
     throw new Error(`instance ${instance.elemID.getFullName()} is not valid for deployment`)
   }
   removeCreateIssuePermissionValidator(instance)
+  instance.value.transitions?.forEach(transition => {
+    changeIdsToString(transition.rules?.conditions ?? {})
+  })
+
   await defaultDeployChange({
     change: resolvedChange,
     client,

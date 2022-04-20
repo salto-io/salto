@@ -20,12 +20,15 @@ import { TypeConfig } from '../config'
 
 const { isDefined } = lowerdashValues
 
+/**
+ * Get all dependencies types (by the usage of "dependsOn")
+ * of a list of types from the configuration
+ */
 export const getDependencies = (
   types: string[],
   typeConfigs: Record<string, TypeConfig>,
 ): string[] =>
   // for now assuming flat dependencies for simplicity.
-  // will replace with a DAG (with support for concurrency) when needed
   types
     .flatMap(typeName => typeConfigs[typeName]?.request?.dependsOn?.map(({ from }) => from.type))
     .filter(isDefined)

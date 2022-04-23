@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, RemovalChange } from '@salto-io/adapter-api'
+import { AdditionChange, ElemID, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, RemovalChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { resolveChangeElement, safeJsonStringify } from '@salto-io/adapter-utils'
+import { resolveChangeElement, safeJsonStringify, walkOnValue, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
 import { FilterCreator } from '../../filter'
@@ -24,7 +24,7 @@ import JiraClient from '../../client/client'
 import { JiraConfig } from '../../config'
 import { getLookUpName } from '../../reference_mapping'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
-import { WORKFLOW_TYPE_NAME } from '../../constants'
+import { JIRA, WORKFLOW_TYPE_NAME } from '../../constants'
 import { addTransitionIds } from './transition_ids_filter'
 import { deployTriggers } from './triggers_deployment'
 import { addStepIds } from './step_ids_filter'
@@ -99,14 +99,15 @@ const getTransitionsFromService = async (
 const changeIdsToString = (
   values: Record<string | number, unknown>,
 ): void => {
-  if (typeof values.id === 'number') {
-    values.id = values.id.toString()
-  }
-  Object.values(values).forEach(value => {
-    if (typeof value === 'object' && value !== null) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      changeIdsToString(value as Record<string | number, unknown>)
-    }
+  walkOnValue({
+    elemId: new ElemID(JIRA, WORKFLOW_TYPE_NAME, 'instance', 'workflow'),
+    value: values,
+    func: ({ value }) => {
+      if (typeof value.id === 'number') {
+        value.id = value.id.toString()
+      }
+      return WALK_NEXT_STEP.RECURSE
+    },
   })
 }
 

@@ -75,6 +75,7 @@ import statusDeploymentFilter from './filters/statuses/status_deployment'
 import securitySchemeFilter from './filters/security_scheme/security_scheme'
 import notificationSchemeDeploymentFilter from './filters/notification_scheme/notification_scheme_deployment'
 import notificationSchemeStructureFilter from './filters/notification_scheme/notification_scheme_structure'
+import forbiddenPermissionSchemeFilter from './filters/forbidden_permission_schemes'
 import avatarsFilter from './filters/avatars'
 import iconUrlFilter from './filters/icon_url'
 import jqlReferencesFilter from './filters/jql/jql_references'
@@ -146,6 +147,7 @@ export const DEFAULT_FILTERS = [
   fieldConfigurationFilter,
   fieldConfigurationSchemeFilter,
   userFilter,
+  forbiddenPermissionSchemeFilter,
   jqlReferencesFilter,
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter

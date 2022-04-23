@@ -291,6 +291,21 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     serializationStrategy: 'id',
     target: { type: 'IssueEvent' },
   },
+  {
+    src: { field: 'fieldId', parentTypes: ['ConditionConfiguration'] },
+    serializationStrategy: 'id',
+    target: { type: 'Field' },
+  },
+  {
+    src: { field: 'id', parentTypes: ['ConditionStatus'] },
+    serializationStrategy: 'id',
+    target: { type: 'Status' },
+  },
+  {
+    src: { field: 'id', parentTypes: ['ConditionProjectRole'] },
+    serializationStrategy: 'id',
+    target: { type: 'ProjectRole' },
+  },
 ]
 
 const lookupNameFuncs: GetLookupNameFunc[] = [

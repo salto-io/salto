@@ -13,14 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, Element, Field, isInstanceElement, ListType, MapType } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, Field, isInstanceElement, ListType, MapType } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { walkOnValue, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { postFunctionType, types as postFunctionTypes } from './post_functions_types'
+import { createConditionConfigurationTypes } from './conditions_types'
 import { Condition, isWorkflowInstance, Rules, Status, Validator, Workflow } from './types'
 import { validatorType, types as validatorTypes } from './validators_types'
-import { WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
+import { JIRA, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
 
 const NOT_FETCHED_POST_FUNCTION_TYPES = [
   'GenerateChangeHistoryFunction',
@@ -100,9 +102,26 @@ const transformValidator = (validator: Validator): void => {
   }
 }
 
+const removeNameValues = (values: Record<string | number, unknown>): void => {
+  walkOnValue({
+    elemId: new ElemID(JIRA, WORKFLOW_TYPE_NAME, 'instance', 'workflow'),
+    value: values,
+    func: ({ value }) => {
+      if (_.isPlainObject(value)) {
+        delete value.name
+      }
+      return WALK_NEXT_STEP.RECURSE
+    },
+  })
+}
+
 const transformCondition = (condition: Condition): void => {
   if (isExtensionType(condition.type)) {
     delete condition.configuration?.id
+  }
+
+  if (condition.configuration !== undefined) {
+    removeNameValues(condition.configuration)
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -151,6 +170,8 @@ const filter: FilterCreator = ({ config }) => ({
 
     const workflowRulesType = findObject(elements, WORKFLOW_RULES_TYPE_NAME)
 
+    const conditionConfigurationTypes = createConditionConfigurationTypes()
+
     if (workflowRulesType !== undefined) {
       workflowRulesType.fields.conditions = new Field(workflowRulesType, 'conditions', await workflowRulesType.fields.conditionsTree.getType())
       delete workflowRulesType.fields.conditionsTree
@@ -158,8 +179,16 @@ const filter: FilterCreator = ({ config }) => ({
       workflowRulesType.fields.postFunctions = new Field(workflowRulesType, 'postFunctions', new ListType(postFunctionType))
       workflowRulesType.fields.validators = new Field(workflowRulesType, 'validators', new ListType(validatorType))
     }
+
+    const worfkflowConditionType = findObject(elements, 'WorkflowCondition')
+
+    if (worfkflowConditionType !== undefined) {
+      worfkflowConditionType.fields.configuration = new Field(worfkflowConditionType, 'configuration', conditionConfigurationTypes.type)
+    }
+
     elements.push(...postFunctionTypes)
     elements.push(...validatorTypes)
+    elements.push(conditionConfigurationTypes.type, ...conditionConfigurationTypes.subTypes)
 
     elements
       .filter(isInstanceElement)

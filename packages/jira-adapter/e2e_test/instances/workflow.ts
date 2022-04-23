@@ -238,7 +238,7 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
           {
             type: 'FieldHasSingleValueValidator',
             configuration: {
-              fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Creator'), allElements),
+              fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Remaining_Estimate@s'), allElements),
               excludeSubtasks: true,
             },
           },
@@ -254,7 +254,114 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
           },
         ],
         conditions: {
-          type: 'AlwaysFalseCondition',
+          operator: 'AND',
+          conditions: [
+            {
+              type: 'AlwaysFalseCondition',
+            },
+            {
+              type: 'AlwaysFalseCondition',
+            },
+            {
+              type: 'BlockInProgressApprovalCondition',
+            },
+            {
+              type: 'RemoteOnlyCondition',
+            },
+            {
+              type: 'AllowOnlyAssignee',
+            },
+            {
+              type: 'OnlyBambooNotificationsCondition',
+            },
+            {
+              type: 'AllowOnlyReporter',
+            },
+            {
+              type: 'PermissionCondition',
+              configuration: {
+                permissionKey: 'DELETE_ISSUES',
+              },
+            },
+            {
+              type: 'PreviousStatusCondition',
+              configuration: {
+                ignoreLoopTransitions: true,
+                includeCurrentStatus: true,
+                mostRecentStatusOnly: true,
+                reverseCondition: true,
+                previousStatus: {
+                  id: createReference(new ElemID(JIRA, 'Status', 'instance', 'Done'), allElements),
+                },
+              },
+            },
+            {
+              type: 'SeparationOfDutiesCondition',
+              configuration: {
+                toStatus: {
+                  id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'Backlog'), allElements),
+                },
+                fromStatus: {
+                  id: createReference(new ElemID(JIRA, 'Status', 'instance', 'Done'), allElements),
+                },
+              },
+            },
+            {
+              type: 'SubTaskBlockingCondition',
+              configuration: {
+                statuses: [
+                  {
+                    id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'Backlog'), allElements),
+                  },
+                  {
+                    id: createReference(new ElemID(JIRA, 'Status', 'instance', 'Done'), allElements),
+                  },
+                ],
+              },
+            },
+            {
+              type: 'UserInAnyGroupCondition',
+              configuration: {
+                groups: [
+                  'system-administrators',
+                ],
+              },
+            },
+            {
+              type: 'InAnyProjectRoleCondition',
+              configuration: {
+                projectRoles: [
+                  {
+                    id: createReference(new ElemID(JIRA, 'ProjectRole', 'instance', 'Administrators'), allElements),
+                  },
+                ],
+              },
+            },
+            {
+              type: 'UserIsInCustomFieldCondition',
+              configuration: {
+                allowUserInField: false,
+                fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee'), allElements),
+              },
+            },
+            {
+              type: 'InProjectRoleCondition',
+              configuration: {
+                projectRole: {
+                  id: createReference(new ElemID(JIRA, 'ProjectRole', 'instance', 'Administrators'), allElements),
+                },
+              },
+            },
+            {
+              type: 'ValueFieldCondition',
+              configuration: {
+                fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Remaining_Estimate@s'), allElements),
+                fieldValue: 'val',
+                comparisonType: 'STRING',
+                comparator: '>',
+              },
+            },
+          ],
         },
       },
     },

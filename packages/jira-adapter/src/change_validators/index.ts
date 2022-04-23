@@ -17,6 +17,7 @@ import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { createChangeValidator } from '@salto-io/adapter-utils'
 import { unsupportedFieldConfigurationsValidator } from './field_configuration_unsupported_fields'
+import { readOnlyProjectRoleChangeValidator } from './read_only_project_role'
 import { defaultFieldConfigurationValidator } from './default_field_configuration'
 import { issueTypeSchemeValidator } from './issue_type_scheme'
 import { screenValidator } from './screen'
@@ -41,6 +42,7 @@ export default (
   const validators: ChangeValidator[] = [
     deployTypesNotSupportedValidator,
     unsupportedFieldConfigurationsValidator,
+    readOnlyProjectRoleChangeValidator,
     defaultFieldConfigurationValidator,
     screenValidator,
     issueTypeSchemeValidator,

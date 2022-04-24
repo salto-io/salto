@@ -24,6 +24,7 @@ import ZuoraClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
 import { ZUORA_BILLING, WORKFLOW_DETAILED_TYPE, TASK_TYPE, STANDARD_OBJECT, METADATA_TYPE, WORKFLOW_EXPORT_TYPE, OBJECT_TYPE } from '../../src/constants'
 import filterCreator from '../../src/filters/workflow_and_task_references'
+import { SUPPORTED_TYPES } from '../../src/config'
 
 /* eslint-disable camelcase */
 
@@ -359,6 +360,7 @@ describe('Workflow and task references filter', () => {
             },
           },
           types: {},
+          supportedTypes: SUPPORTED_TYPES,
         },
       },
     }) as FilterType

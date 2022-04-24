@@ -897,6 +897,82 @@ zuora_billing {
         }
       }
     }
+    supportedTypes = {
+      AccountingCodeItem = [
+        "AccountingCodes",
+      ]
+      AccountingPeriod = [
+        "AccountingPeriods",
+      ]
+      ProductType = [
+        "CatalogProduct",
+      ]
+      Objects = [
+        "CustomObject",
+        "StandardObject",
+      ]
+      EventTrigger = [
+        "EventTriggers",
+      ]
+      HostedPage = [
+        "HostedPages",
+      ]
+      NotificationDefinitions = [
+        "NotificationDefinitions",
+      ]
+      NotificationEmailTemplates = [
+        "NotificationEmailTemplates",
+      ]
+      PaymentGatewayResponse = [
+        "PaymentGateways",
+      ]
+      SequenceSet = [
+        "SequenceSets",
+      ]
+      WorkflowExport = [
+        "WorkflowExport",
+      ]
+      Settings_AccountingRules = "Settings_AccountingRules"
+      Settings_AgingBucket = "Settings_AgingBucket"
+      Settings_AllNotifications = "Settings_AllNotifications"
+      Settings_AllPaymentTerms = "Settings_AllPaymentTerms"
+      Settings_AllRevenueRecognition = "Settings_AllRevenueRecognition"
+      Settings_AllTaxCode = "Settings_AllTaxCode"
+      Settings_ApplicationRules = "Settings_ApplicationRules"
+      Settings_BatchAlias = "Settings_BatchAlias"
+      Settings_BillingCycleType = "Settings_BillingCycleType"
+      Settings_BillingListPriceBase = "Settings_BillingListPriceBase"
+      Settings_BillingPeriod = "Settings_BillingPeriod"
+      Settings_BillingPeriodStart = "Settings_BillingPeriodStart"
+      Settings_BillingRules = "Settings_BillingRules"
+      Settings_ChargeModel = "Settings_ChargeModel"
+      Settings_ChargeType = "Settings_ChargeType"
+      Settings_CommunicationProfiles = "Settings_CommunicationProfiles"
+      Settings_Currencies = "Settings_Currencies"
+      Settings_DiscountSettings = "Settings_DiscountSettings"
+      Settings_DocPrefix = "Settings_DocPrefix"
+      Settings_FxCurrency = "Settings_FxCurrency"
+      Settings_GetTaxCompanies = "Settings_GetTaxCompanies"
+      Settings_GlSegments = "Settings_GlSegments"
+      Settings_HostedPaymentPages = "Settings_HostedPaymentPages"
+      Settings_NumberAndSku = "Settings_NumberAndSku"
+      Settings_PaymentGateways = "Settings_PaymentGateways"
+      Settings_PaymentMethods = "Settings_PaymentMethods"
+      Settings_PaymentRetryRules = "Settings_PaymentRetryRules"
+      Settings_PaymentRules = "Settings_PaymentRules"
+      Settings_ReasonCodes = "Settings_ReasonCodes"
+      Settings_RevenueEventTypes = "Settings_RevenueEventTypes"
+      Settings_RevenueRecognitionModels = "Settings_RevenueRecognitionModels"
+      Settings_revenueRecognitionRuleDtos = "Settings_revenueRecognitionRuleDtos"
+      Settings_RevenueRecognitionStatus = "Settings_RevenueRecognitionStatus"
+      Settings_RevenueStartDate = "Settings_RevenueStartDate"
+      Settings_RolesPage = "Settings_RolesPage"
+      Settings_SegmentationRules = "Settings_SegmentationRules"
+      Settings_SubscriptionSetting = "Settings_SubscriptionSetting"
+      Settings_UnitsOfMeasureList = "Settings_UnitsOfMeasureList"
+      Settings_TaxEngines = "Settings_TaxEngines"
+      ListAllSettings = "ListAllSettings"
+    }
   }
 }
 ```

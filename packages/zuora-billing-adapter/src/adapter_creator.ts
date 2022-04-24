@@ -61,7 +61,6 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
   validateSwaggerFetchConfig(
     FETCH_CONFIG,
-    API_DEFINITIONS_CONFIG,
     fetch,
     apiDefinitions
   )

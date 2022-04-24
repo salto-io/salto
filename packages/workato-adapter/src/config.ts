@@ -53,6 +53,18 @@ export type WorkatoConfig = {
   [API_DEFINITIONS_CONFIG]: WorkatoApiConfig
 }
 
+export const SUPPORTED_TYPES = {
+  [API_ACCESS_PROFILE_TYPE]: [API_ACCESS_PROFILE_TYPE],
+  [API_CLIENT_TYPE]: [API_CLIENT_TYPE],
+  [API_ENDPOINT_TYPE]: [API_ENDPOINT_TYPE],
+  [API_COLLECTION_TYPE]: [API_COLLECTION_TYPE],
+  [CONNECTION_TYPE]: [CONNECTION_TYPE],
+  [FOLDER_TYPE]: [FOLDER_TYPE],
+  [PROPERTY_TYPE]: [PROPERTY_TYPE],
+  [RECIPE_TYPE]: [RECIPE_TYPE],
+  [ROLE_TYPE]: [ROLE_TYPE],
+}
+
 export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   [CONNECTION_TYPE]: {
     request: {
@@ -207,6 +219,7 @@ export const DEFAULT_CONFIG: WorkatoConfig = {
       },
     },
     types: DEFAULT_TYPES,
+    supportedTypes: SUPPORTED_TYPES,
   },
 }
 

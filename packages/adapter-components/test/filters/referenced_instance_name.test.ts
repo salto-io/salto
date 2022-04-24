@@ -119,6 +119,7 @@ describe('referenced instances', () => {
           idFields: ['id'],
         },
       },
+      supportedTypes: {},
     },
   }
   let elements: Element[]

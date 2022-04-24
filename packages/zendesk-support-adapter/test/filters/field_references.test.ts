@@ -19,7 +19,7 @@ import { client as clientUtils, filterUtils } from '@salto-io/adapter-components
 import filterCreator from '../../src/filters/field_references'
 import ZendeskClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
-import { DEFAULT_TYPES, DEFAULT_ID_FIELDS } from '../../src/config'
+import { DEFAULT_TYPES, DEFAULT_ID_FIELDS, SUPPORTED_TYPES } from '../../src/config'
 import { ZENDESK_SUPPORT } from '../../src/constants'
 
 describe('References by id filter', () => {
@@ -48,6 +48,7 @@ describe('References by id filter', () => {
             },
           },
           types: DEFAULT_TYPES,
+          supportedTypes: SUPPORTED_TYPES,
         },
       },
     }) as FilterType

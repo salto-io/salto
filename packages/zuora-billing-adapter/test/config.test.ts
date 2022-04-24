@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { getUpdatedConfig, FETCH_CONFIG, DEFAULT_INCLUDE_TYPES, DEFAULT_SETTINGS_INCLUDE_TYPES, API_DEFINITIONS_CONFIG, DEFAULT_API_DEFINITIONS } from '../src/config'
+import { getUpdatedConfig, FETCH_CONFIG, DEFAULT_INCLUDE_TYPES, DEFAULT_SETTINGS_INCLUDE_TYPES, API_DEFINITIONS_CONFIG, DEFAULT_API_DEFINITIONS, SUPPORTED_TYPES } from '../src/config'
 
 describe('config', () => {
   describe('getUpdatedConfig', () => {
@@ -49,6 +49,7 @@ describe('config', () => {
               },
             },
           },
+          supportedTypes: SUPPORTED_TYPES,
         },
       }
       const res = getUpdatedConfig(initialConfig)
@@ -72,6 +73,7 @@ describe('config', () => {
               },
             },
           },
+          supportedTypes: SUPPORTED_TYPES,
         },
       })
     })

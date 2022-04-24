@@ -20,7 +20,7 @@ import { getParents } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/fix_multienv_ids'
 import WorkatoClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
-import { DEFAULT_TYPES, DEFAULT_ID_FIELDS } from '../../src/config'
+import { DEFAULT_TYPES, DEFAULT_ID_FIELDS, SUPPORTED_TYPES } from '../../src/config'
 import { WORKATO } from '../../src/constants'
 
 describe('Fix multienv ids filter', () => {
@@ -64,6 +64,7 @@ describe('Fix multienv ids filter', () => {
             },
             DEFAULT_TYPES,
           ),
+          supportedTypes: SUPPORTED_TYPES,
         },
       },
     }) as FilterType
@@ -205,6 +206,7 @@ describe('Fix multienv ids filter', () => {
               },
               DEFAULT_TYPES,
             ),
+            supportedTypes: SUPPORTED_TYPES,
           },
         },
       }) as FilterType

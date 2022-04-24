@@ -35,6 +35,7 @@ describe('checkDeploymentBasedOnConfigValidator', () => {
         },
       },
     },
+    supportedTypes: {},
   }
   beforeEach(() => {
     type = new ObjectType({ elemID: new ElemID('dum', 'test') })

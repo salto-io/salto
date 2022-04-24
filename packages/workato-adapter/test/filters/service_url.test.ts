@@ -18,7 +18,7 @@ import { client as clientUtils, filterUtils } from '@salto-io/adapter-components
 import filterCreator from '../../src/filters/service_url'
 import WorkatoClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
-import { DEFAULT_TYPES, DEFAULT_ID_FIELDS } from '../../src/config'
+import { DEFAULT_TYPES, DEFAULT_ID_FIELDS, SUPPORTED_TYPES } from '../../src/config'
 import { CONNECTION_TYPE, RECIPE_TYPE, RECIPE_CODE_TYPE, WORKATO, FOLDER_TYPE, ROLE_TYPE, API_COLLECTION_TYPE, API_ENDPOINT_TYPE, PROPERTY_TYPE, API_CLIENT_TYPE } from '../../src/constants'
 
 
@@ -103,6 +103,7 @@ describe('service_url', () => {
             },
           },
           types: DEFAULT_TYPES,
+          supportedTypes: SUPPORTED_TYPES,
         },
       },
     }) as FilterType

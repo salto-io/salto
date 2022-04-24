@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, ListType } from '@salto-io/adapter-api'
 import { types, values as lowerDashValues } from '@salto-io/lowerdash'
-import { AdapterApiConfig, createAdapterApiConfigType, TypeConfig, TypeDefaultsConfig, UserFetchConfig } from './shared'
+import { AdapterApiConfig, createAdapterApiConfigType, TypeConfig, TypeDefaultsConfig, UserFetchConfig, validateSupportedTypes } from './shared'
 import { createRequestConfigs, validateRequestConfig } from './request'
 import { createTransformationConfigTypes, getTransformationConfigByType, validateTransoformationConfig } from './transformation'
 import { findDuplicates } from './validation_utils'
@@ -53,9 +53,6 @@ export type TypeSwaggerDefaultConfig = TypeDefaultsConfig
 
 export type AdapterSwaggerApiConfig = AdapterApiConfig & {
   swagger: SwaggerDefinitionBaseConfig
-
-  // if undefined - generate all types. if defined - should not be empty
-  supportedTypes?: string[]
 }
 export type RequestableAdapterSwaggerApiConfig = AdapterSwaggerApiConfig & {
   types: Record<string, RequestableTypeSwaggerConfig>
@@ -145,7 +142,6 @@ export const createSwaggerAdapterApiConfigType = ({
       swagger: {
         refType: createSwaggerDefinitionsBaseConfigType(adapter),
       },
-      supportedTypes: { refType: new ListType(BuiltinTypes.STRING) },
     },
   })
 }
@@ -189,17 +185,8 @@ export const validateApiDefinitionConfig = (
  */
 export const validateFetchConfig = (
   fetchConfigPath: string,
-  apiConfigPath: string,
   userFetchConfig: UserFetchConfig,
   adapterApiConfig: AdapterSwaggerApiConfig,
 ): void => {
-  if (adapterApiConfig.supportedTypes !== undefined) {
-    const supportedTypesNames = new Set(adapterApiConfig.supportedTypes)
-    const invalidIncludedTypes = userFetchConfig.includeTypes.filter(
-      name => !supportedTypesNames.has(name)
-    )
-    if (invalidIncludedTypes.length > 0) {
-      throw Error(`Invalid type names in ${fetchConfigPath}.includeTypes: ${invalidIncludedTypes} are not listed as supported types in ${apiConfigPath}.supportedTypes.`)
-    }
-  }
+  validateSupportedTypes(fetchConfigPath, userFetchConfig, adapterApiConfig)
 }

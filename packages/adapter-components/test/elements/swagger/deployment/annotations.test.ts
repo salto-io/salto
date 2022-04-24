@@ -84,6 +84,7 @@ describe('addDeploymentAnnotations', () => {
           },
         },
       },
+      supportedTypes: {},
     }
 
     mockSwagger = {

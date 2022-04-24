@@ -15,6 +15,7 @@
 */
 import { ObjectType, ElemID, InstanceElement, Element, ReferenceExpression, BuiltinTypes } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
+import { SUPPORTED_TYPES } from '../../src/config'
 import ZuoraClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
 import { ZUORA_BILLING, TASK_TYPE, STANDARD_OBJECT, METADATA_TYPE, SETTINGS_TYPE_PREFIX, OBJECT_TYPE } from '../../src/constants'
@@ -142,6 +143,7 @@ describe('object references filter', () => {
             },
           },
           types: {},
+          supportedTypes: SUPPORTED_TYPES,
         },
       },
     }) as FilterType

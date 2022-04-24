@@ -15,7 +15,7 @@
 */
 import { ObjectType, ElemID, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
-import { DEFAULT_CONFIG } from '../../src/config'
+import { DEFAULT_CONFIG, SUPPORTED_TYPES } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
 import { ZENDESK_SUPPORT } from '../../src/constants'
 import { paginate } from '../../src/client/pagination'
@@ -79,6 +79,7 @@ describe('referenced id fields filter', () => {
               },
             },
           },
+          supportedTypes: SUPPORTED_TYPES,
         },
       },
     }) as FilterType

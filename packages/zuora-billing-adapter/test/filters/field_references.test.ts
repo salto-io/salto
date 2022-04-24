@@ -19,6 +19,7 @@ import filterCreator from '../../src/filters/field_references'
 import ZuoraClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
 import { SETTINGS_TYPE_PREFIX, TASK_TYPE, WORKFLOW_DETAILED_TYPE, ZUORA_BILLING } from '../../src/constants'
+import { SUPPORTED_TYPES } from '../../src/config'
 
 
 describe('Field references filter', () => {
@@ -48,6 +49,7 @@ describe('Field references filter', () => {
             },
           },
           types: {},
+          supportedTypes: SUPPORTED_TYPES,
         },
       },
     }) as FilterType

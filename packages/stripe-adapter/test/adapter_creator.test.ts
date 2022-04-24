@@ -177,7 +177,7 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
-    })).toThrow(new Error('Invalid type names in fetch.includeTypes: stripe.v1__country_specs are not listed as supported types in apiDefinitions.supportedTypes.'))
+    })).toThrow(new Error('Invalid type names in fetch.includeTypes: stripe.v1__country_specs are not supported.'))
   })
 
   it('should validate credentials using createConnection', async () => {

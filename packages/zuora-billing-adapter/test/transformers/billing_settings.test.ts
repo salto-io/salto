@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { InstanceElement, ObjectType, ElemID, ListType, BuiltinTypes, isEqualElements } from '@salto-io/adapter-api'
+import { SUPPORTED_TYPES } from '../../src/config'
 import { ZUORA_BILLING, LIST_ALL_SETTINGS_TYPE } from '../../src/constants'
 import { generateBillingSettingsTypes } from '../../src/transformers/billing_settings'
 
@@ -43,6 +44,7 @@ describe('billing_settings transformer', () => {
           swagger: { url: 'ignored' },
           types: {},
           typeDefaults: { transformation: { idFields: ['a'] } },
+          supportedTypes: SUPPORTED_TYPES,
         },
       )).toEqual({ allTypes: {}, parsedConfigs: {} })
       expect(await generateBillingSettingsTypes(
@@ -54,6 +56,7 @@ describe('billing_settings transformer', () => {
           swagger: { url: 'ignored' },
           types: {},
           typeDefaults: { transformation: { idFields: ['a'] } },
+          supportedTypes: SUPPORTED_TYPES,
         },
       )).toEqual({ allTypes: {}, parsedConfigs: {} })
     })
@@ -137,6 +140,10 @@ describe('billing_settings transformer', () => {
           swagger: { url: 'ignored' },
           types: {},
           typeDefaults: { transformation: { idFields: ['a'] } },
+          supportedTypes: {
+            Settings_AAA: ['Settings_AAA'],
+            Settings_ABC: ['Settings_ABC'],
+          },
         },
       )
       // eslint-disable-next-line camelcase

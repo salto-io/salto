@@ -18,7 +18,7 @@ import { client as clientUtils, filterUtils } from '@salto-io/adapter-components
 import filterCreator from '../../src/filters/add_root_folder'
 import WorkatoClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
-import { DEFAULT_TYPES, DEFAULT_ID_FIELDS } from '../../src/config'
+import { DEFAULT_TYPES, DEFAULT_ID_FIELDS, SUPPORTED_TYPES } from '../../src/config'
 import { WORKATO } from '../../src/constants'
 
 
@@ -48,6 +48,7 @@ describe('Field references filter', () => {
             },
           },
           types: DEFAULT_TYPES,
+          supportedTypes: SUPPORTED_TYPES,
         },
       },
     }) as FilterType

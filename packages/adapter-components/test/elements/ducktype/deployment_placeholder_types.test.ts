@@ -95,6 +95,7 @@ describe('ducktype deployment functions', () => {
         config: {
           typeDefaults: { transformation: { idFields: ['id'] } },
           types: { obj: { transformation: { idFields: ['id'] } } },
+          supportedTypes: {},
         },
       })
       expect(instanceForDeploy).toBeDefined()
@@ -108,6 +109,7 @@ describe('ducktype deployment functions', () => {
         config: {
           typeDefaults: { transformation: { idFields: ['id'] } },
           types: { obj: { transformation: { idFields: ['id'] } } },
+          supportedTypes: {},
         },
       })
       expect(instanceForDeploy).toBeDefined()

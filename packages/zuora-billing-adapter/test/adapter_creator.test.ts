@@ -171,7 +171,7 @@ describe('adapter creator', () => {
         {
           fetch: {
             includeTypes: [
-              'CatalogProduct',
+              'CatalogProduct2',
             ],
           },
           apiDefinitions: {
@@ -189,12 +189,12 @@ describe('adapter creator', () => {
                 },
               },
             },
-            supportedTypes: [],
+            supportedTypes: {},
           },
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
-    })).toThrow(new Error('Invalid type names in fetch.includeTypes: CatalogProduct are not listed as supported types in apiDefinitions.supportedTypes.'))
+    })).toThrow(new Error('Invalid type names in fetch.includeTypes: CatalogProduct2 are not supported.'))
   })
 
   it('should throw error on invalid credentials', () => {

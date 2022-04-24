@@ -37,6 +37,7 @@ describe('generateInstanceNameFromConfig', () => {
             },
           },
         },
+        supportedTypes: {},
       }
     )).toBe('id')
   })
@@ -54,6 +55,7 @@ describe('generateInstanceNameFromConfig', () => {
           },
         },
         types: {},
+        supportedTypes: {},
       }
     )).toBe('name')
   })

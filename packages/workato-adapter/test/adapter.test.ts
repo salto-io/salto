@@ -23,6 +23,7 @@ import mockReplies from './mock_replies.json'
 import { adapter } from '../src/adapter_creator'
 import { usernameTokenCredentialsType } from '../src/auth'
 import { configType, FETCH_CONFIG, DEFAULT_TYPES, API_DEFINITIONS_CONFIG } from '../src/config'
+import { RECIPE_CODE_TYPE } from '../src/constants'
 
 type MockReply = {
   url: string
@@ -65,7 +66,8 @@ describe('adapter', () => {
             configType,
             {
               [FETCH_CONFIG]: {
-                includeTypes: [...Object.keys(DEFAULT_TYPES)].sort(),
+                includeTypes: [...Object.keys(DEFAULT_TYPES)].sort()
+                  .filter(type => type !== RECIPE_CODE_TYPE),
               },
             }
           ),
@@ -385,7 +387,8 @@ describe('adapter', () => {
             configType,
             {
               [FETCH_CONFIG]: {
-                includeTypes: [...Object.keys(DEFAULT_TYPES)].sort(),
+                includeTypes: [...Object.keys(DEFAULT_TYPES)].sort()
+                  .filter(type => type !== RECIPE_CODE_TYPE),
                 serviceConnectionNames: {
                   salesforce: ['sfdev1'],
                   salesforce2: ['dev2 sfdc account'],
@@ -438,7 +441,8 @@ describe('adapter', () => {
           configType,
           {
             [FETCH_CONFIG]: {
-              includeTypes: [...Object.keys(DEFAULT_TYPES)].sort(),
+              includeTypes: [...Object.keys(DEFAULT_TYPES)].sort()
+                .filter(type => type !== RECIPE_CODE_TYPE),
             },
           }
         ),

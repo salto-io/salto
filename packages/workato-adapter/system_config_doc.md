@@ -24,12 +24,44 @@ workato {
             fieldName = "extended_output_schema"
           },
         ]
+        serviceIdField = "id"
       }
     }
     types = {
       connection = {
         request = {
           url = "/connections"
+        }
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "authorized_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "authorization_status"
+              fieldType = "string"
+            },
+          ]
         }
       }
       recipe = {
@@ -41,6 +73,14 @@ workato {
           idFields = [
             "name",
             "id",
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+            {
+              fieldName = "user_id"
+            },
           ]
           fieldsToOmit = [
             {
@@ -66,12 +106,24 @@ workato {
             {
               fieldName = "job_failed_count"
             },
+            {
+              fieldName = "copy_count"
+            },
+            {
+              fieldName = "lifetime_task_count"
+            },
           ]
           standaloneFields = [
             {
               fieldName = "code"
               parseJSON = true
             },
+          ]
+        }
+      }
+      recipe__code = {
+        transformation = {
+          idFields = [
           ]
         }
       }
@@ -88,12 +140,24 @@ workato {
             "name",
             "parent_id",
           ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
         }
       }
       api_collection = {
         request = {
           url = "/api_collections"
           paginationField = "page"
+        }
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
         }
       }
       api_endpoint = {
@@ -106,6 +170,11 @@ workato {
             "name",
             "base_path",
           ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
         }
       }
       api_client = {
@@ -113,16 +182,37 @@ workato {
           url = "/api_clients"
           paginationField = "page"
         }
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
       }
       api_access_profile = {
         request = {
           url = "/api_access_profiles"
           paginationField = "page"
         }
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
       }
       role = {
         request = {
           url = "/roles"
+        }
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
         }
       }
       property = {
@@ -134,8 +224,38 @@ workato {
         }
         transformation = {
           hasDynamicFields = true
+          isSingleton = true
         }
       }
+    }
+    supportedTypes = {
+      api_access_profile = [
+        "api_access_profile",
+      ]
+      api_client = [
+        "api_client",
+      ]
+      api_endpoint = [
+        "api_endpoint",
+      ]
+      api_collection = [
+        "api_collection",
+      ]
+      connection = [
+        "connection",
+      ]
+      folder = [
+        "folder",
+      ]
+      property = [
+        "property",
+      ]
+      recipe = [
+        "recipe",
+      ]
+      role = [
+        "role",
+      ]
     }
   }
 }

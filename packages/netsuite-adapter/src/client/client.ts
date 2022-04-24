@@ -337,6 +337,7 @@ export default class NetsuiteClient {
     return this.suiteAppClient?.getNetsuiteWsdl()
   }
 
+  @NetsuiteClient.logDecorator
   public async getAllRecords(types: string[]): Promise<Record<string, unknown>[]> {
     if (this.suiteAppClient === undefined) {
       throw new Error('Cannot call getAllRecords when SuiteApp is not installed')

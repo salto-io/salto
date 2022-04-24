@@ -337,7 +337,10 @@ export default class SoapClient {
     const client = await this.getClient()
     try {
       return await this.callsLimiter(
-        async () => SoapClient.soapRequestWithRetries(client, operation, body)
+        async () => log.time(
+          () => SoapClient.soapRequestWithRetries(client, operation, body),
+          `${operation}-soap-request`
+        )
       )
     } catch (e) {
       log.warn('Received error from NetSuite SuiteApp Soap request: operation - %s, body - %o, error - %o', operation, body, e)
@@ -352,7 +355,6 @@ export default class SoapClient {
     return `${strings.capitalizeFirstLetter(type)}Search`
   }
 
-  @retryOnBadResponse
   public async getAllRecords(types: string[]): Promise<Record<string, unknown>[]> {
     log.debug(`Getting all records of ${types.join(', ')}`)
 
@@ -431,6 +433,7 @@ export default class SoapClient {
     }
   }
 
+  @retryOnBadResponse
   private async runDeployAction(instances: InstanceElement[], body: Record<string, unknown>, action: 'updateList' | 'addList' | 'deleteList'): Promise<(number | Error)[]> {
     const response = await this.sendSoapRequest(action, body)
     if (!this.ajv.validate<DeployListResults>(
@@ -458,7 +461,6 @@ export default class SoapClient {
     })
   }
 
-  @retryOnBadResponse
   public async updateInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
     const body = {
       attributes: {
@@ -471,7 +473,6 @@ export default class SoapClient {
     return this.runDeployAction(instances, body, 'updateList')
   }
 
-  @retryOnBadResponse
   public async addInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
     const body = {
       attributes: {
@@ -484,7 +485,6 @@ export default class SoapClient {
     return this.runDeployAction(instances, body, 'addList')
   }
 
-  @retryOnBadResponse
   public async deleteInstances(instances: InstanceElement[]):
   Promise<(number | Error)[]> {
     const body = {
@@ -526,6 +526,7 @@ export default class SoapClient {
     ).flat()
   }
 
+  @retryOnBadResponse
   private async sendGetAllRequest(type: string): Promise<Record<string, unknown>[]> {
     const body = {
       record: {
@@ -548,6 +549,7 @@ export default class SoapClient {
     return response.getAllResult.recordList.record
   }
 
+  @retryOnBadResponse
   private async sendSearchRequest(
     type: string,
     namespace: string,
@@ -594,6 +596,7 @@ export default class SoapClient {
     return response
   }
 
+  @retryOnBadResponse
   private async sendSearchWithIdRequest(
     args: {
       searchId: string

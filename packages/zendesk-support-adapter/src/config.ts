@@ -1562,6 +1562,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
       { type: 'organization' },
     ],
     hideTypes: true,
+    enableMissingReferences: true,
   },
   [API_DEFINITIONS_CONFIG]: {
     typeDefaults: {
@@ -1590,7 +1591,10 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
     [FETCH_CONFIG]: {
       refType: createUserFetchConfigType(
         ZENDESK_SUPPORT,
-        { hideTypes: { refType: BuiltinTypes.BOOLEAN } },
+        {
+          hideTypes: { refType: BuiltinTypes.BOOLEAN },
+          enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
+        },
       ),
     },
     [API_DEFINITIONS_CONFIG]: {
@@ -1599,7 +1603,9 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
   },
   annotations: {
     [CORE_ANNOTATIONS.DEFAULT]: _.omit(
-      DEFAULT_CONFIG, API_DEFINITIONS_CONFIG, `${FETCH_CONFIG}.hideTypes`
+      DEFAULT_CONFIG, API_DEFINITIONS_CONFIG,
+      `${FETCH_CONFIG}.hideTypes`,
+      `${FETCH_CONFIG}.enableMissingReferences`,
     ),
   },
 })

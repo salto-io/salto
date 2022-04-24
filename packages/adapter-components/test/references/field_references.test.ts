@@ -371,23 +371,53 @@ describe('Field references', () => {
       expect(inst.value.subjectAndValues[0].valueList[0].value).toBeInstanceOf(ReferenceExpression)
       expect(inst.value.subjectAndValues[0].valueList[0].value.elemID.getFullName()).toEqual('myAdapter.brand.instance.brand1')
     })
-    it('should create missing reference if missing reference strategy was specified and the instance is missing', () => {
-      const triggerWithResolvedReference = elements.filter(
-        e => isInstanceElement(e) && e.elemID.name === 'trigger1'
-      )[0] as InstanceElement
-      expect(triggerWithResolvedReference.value.ticket_field_id.value)
-        .toBeInstanceOf(InstanceElement)
+    it('should not create missing reference if enableMissingReference is false (or not specified)', async () => {
       const triggerWithMissingReference = elements.filter(
         e => isInstanceElement(e) && e.elemID.name === 'trigger2'
       )[0] as InstanceElement
-      expect(triggerWithMissingReference.value.ticket_field_id.value)
-        .toEqual(undefined)
+      expect(triggerWithMissingReference.value.ticket_field_id)
+        .not.toBeInstanceOf(ReferenceExpression)
     })
-    it('should not create missing reference if the value is empty', () => {
-      const inst = elements.filter(
-        e => isInstanceElement(e) && e.elemID.name === 'trigger3'
-      )[0] as InstanceElement
-      expect(inst.value.ticket_field_id).toEqual('')
+    describe('enable missing references is true', () => {
+      let clonedElements: Element[] = []
+      beforeEach(async () => {
+        clonedElements = generateElements()
+        await addReferences({
+          elements: clonedElements,
+          defs: fieldNameToTypeMappingDefs,
+          fieldsToGroupBy: ['id', 'name'],
+          contextStrategyLookup: {
+            parentSubject: neighborContextFunc({ contextFieldName: 'subject', levelsUp: 1, contextValueMapper: val => val.replace('_id', '') }),
+            parentValue: neighborContextFunc({ contextFieldName: 'value', levelsUp: 2, contextValueMapper: val => val.replace('_id', '') }),
+            neighborRef: neighborContextFunc({ contextFieldName: 'ref' }),
+            fail: neighborContextFunc({ contextFieldName: 'product', contextValueMapper: () => { throw new Error('fail') } }),
+          },
+          enableMissingReferences: true,
+        })
+      })
+      it('should create missing reference', async () => {
+        const triggerWithResolvedReference = clonedElements.filter(
+          e => isInstanceElement(e) && e.elemID.name === 'trigger1'
+        )[0] as InstanceElement
+        expect(triggerWithResolvedReference.value.ticket_field_id)
+          .toBeInstanceOf(ReferenceExpression)
+        expect(triggerWithResolvedReference.value.ticket_field_id.value)
+          .toBeInstanceOf(InstanceElement)
+        const triggerWithMissingReference = clonedElements.filter(
+          e => isInstanceElement(e) && e.elemID.name === 'trigger2'
+        )[0] as InstanceElement
+        expect(triggerWithMissingReference.value.ticket_field_id)
+          .toBeInstanceOf(ReferenceExpression)
+        // Should not be a resolved reference
+        expect(triggerWithMissingReference.value.ticket_field_id.value)
+          .toEqual(undefined)
+      })
+      it('should not create missing reference if the value is empty', () => {
+        const inst = clonedElements.filter(
+          e => isInstanceElement(e) && e.elemID.name === 'trigger3'
+        )[0] as InstanceElement
+        expect(inst.value.ticket_field_id).toEqual('')
+      })
     })
   })
 

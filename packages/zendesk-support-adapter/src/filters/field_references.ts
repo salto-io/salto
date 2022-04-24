@@ -19,6 +19,7 @@ import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { BRAND_NAME } from '../constants'
+import { FETCH_CONFIG } from '../config'
 
 const { neighborContextGetter } = referenceUtils
 
@@ -757,7 +758,7 @@ export const lookupFunc = referenceUtils.generateLookupFunc(
 /**
  * Convert field values into references, based on predefined rules.
  */
-const filter: FilterCreator = () => ({
+const filter: FilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]) => {
     const addReferences = async (refDefs: ZendeskSupportFieldReferenceDefinition[]):
     Promise<void> => {
@@ -769,6 +770,7 @@ const filter: FilterCreator = () => ({
         // since ids and references to ids vary inconsistently between string/number, allow both
         isEqualValue: (lhs, rhs) => _.toString(lhs) === _.toString(rhs),
         fieldReferenceResolverCreator: defs => new ZendeskSupportFieldReferenceResolver(defs),
+        enableMissingReferences: config[FETCH_CONFIG].enableMissingReferences,
       })
     }
     await addReferences(

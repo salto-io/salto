@@ -191,6 +191,7 @@ export const addReferences = async <
   contextStrategyLookup,
   isEqualValue,
   fieldReferenceResolverCreator,
+  enableMissingReferences = false,
 }: {
   elements: Element[]
   defs: GenericFieldReferenceDefinition[]
@@ -199,9 +200,14 @@ export const addReferences = async <
   isEqualValue?: ValueIsEqualFunc
   fieldReferenceResolverCreator?:
     (def: GenericFieldReferenceDefinition) => FieldReferenceResolver<T>
+  enableMissingReferences?: boolean
 }): Promise<void> => {
+  const fixedDefs = defs
+    .map(def => (
+      enableMissingReferences ? def : _.omit(def, 'missingRefStrategy')
+    )) as GenericFieldReferenceDefinition[]
   const resolverFinder = generateReferenceResolverFinder<T, GenericFieldReferenceDefinition>(
-    defs, fieldReferenceResolverCreator
+    fixedDefs, fieldReferenceResolverCreator
   )
   const instances = elements.filter(isInstanceElement)
 

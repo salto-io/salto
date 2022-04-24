@@ -51,6 +51,7 @@ type FetchEntry = {
 export type UserFetchConfig = {
   include: FetchEntry[]
   exclude: FetchEntry[]
+  enableMissingReferences?: boolean
 }
 
 export const createAdapterApiConfigType = ({

@@ -13,90 +13,36 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, DetailedChange, ElemID, ReadOnlyElementsSource, isAdditionChange, isRemovalChange, Change } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
+import { DetailedChange, ElemID, getChangeData, isAdditionChange, isRemovalChange } from '@salto-io/adapter-api'
+import { WalkOnFunc, walkOnValue, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { ElementSelector, selectElementIdsByTraversal, elementSource, Workspace, remoteMap } from '@salto-io/workspace'
-import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { IDFilter, getPlan, Plan } from './plan/plan'
-import { filterPlanItem } from './plan/plan_item'
+import { IDFilter, getPlan } from './plan/plan'
 
+const log = logger(module)
 const { awu } = collections.asynciterable
 
-const isIdRelevant = (relevantIds: ElemID[], id: ElemID): boolean =>
+const isChangeIdRelevant = ({ id }: DetailedChange, relevantIds: ElemID[]): boolean =>
   relevantIds.some(elemId =>
-    id.isParentOf(elemId) || elemId.getFullName() === id.getFullName() || elemId.isParentOf(id))
+    id.isParentOf(elemId) || elemId.isEqual(id) || elemId.isParentOf(id))
 
-const filterRelevantParts = (
-  elementIds: ElemID[],
-): TransformFunc => ({ path, value }) => {
-  if (path !== undefined) {
-    if (isIdRelevant(elementIds, path)) {
-      return value
+const isChangeValueRelevant = (
+  change: DetailedChange,
+  relevantIds: ElemID[]
+): boolean => {
+  let isMatch = false
+  const func: WalkOnFunc = ({ path }) => {
+    if (relevantIds.some(elemId => elemId.isEqual(path) || elemId.isParentOf(path))) {
+      isMatch = true
+      return WALK_NEXT_STEP.EXIT
     }
+    return WALK_NEXT_STEP.RECURSE
   }
-  return undefined
-}
-
-const filterElementByRelevance = async (
-  elem: Element,
-  relevantIds: ElemID[],
-  topLevelIds: Set<string>,
-  elementsSource: ReadOnlyElementsSource
-): Promise<Element | undefined> => {
-  if (topLevelIds.has(elem.elemID.createTopLevelParentID().parent.getFullName())) {
-    return transformElement({
-      element: elem,
-      transformFunc: filterRelevantParts(relevantIds),
-      runOnFields: true,
-      strict: false,
-      elementsSource,
-    })
-  }
-  return undefined
-}
-
-const filterPlanItemsByRelevance = async (
-  plan: Plan,
-  toElementsSrc: elementSource.ElementsSource,
-  fromElementsSrc: elementSource.ElementsSource,
-  toElementIdsFiltered: ElemID[],
-  fromElementIdsFiltered: ElemID[],
-): Promise<DetailedChange[]> => {
-  const toTopLevelElementIdsFiltered = new Set<string>(toElementIdsFiltered
-    .map(id => id.createTopLevelParentID().parent.getFullName()))
-  const fromTopLevelElementIdsFiltered = new Set<string>(fromElementIdsFiltered
-    .map(id => id.createTopLevelParentID().parent.getFullName()))
-  return awu(plan.itemsByEvalOrder())
-    .map(item => filterPlanItem(
-      item,
-      async change => {
-        const before = isAdditionChange(change)
-          ? undefined : await filterElementByRelevance(
-            change.data.before,
-            toElementIdsFiltered,
-            toTopLevelElementIdsFiltered,
-            toElementsSrc
-          )
-        const after = isRemovalChange(change)
-          ? undefined : await filterElementByRelevance(
-            change.data.after,
-            fromElementIdsFiltered,
-            fromTopLevelElementIdsFiltered,
-            fromElementsSrc
-          )
-        if (after === undefined && before === undefined) {
-          return undefined
-        }
-        return {
-          ...change,
-          data: { before, after },
-        } as Change
-      }
-    ))
-    .flatMap(planItem => planItem.detailedChanges())
-    .toArray()
+  walkOnValue({ elemId: change.id, value: getChangeData(change), func })
+  return isMatch
 }
 
 const getFilteredIds = async (
@@ -104,12 +50,71 @@ const getFilteredIds = async (
   source: elementSource.ElementsSource,
   referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
 ): Promise<ElemID[]> => (
-  awu(await selectElementIdsByTraversal({
+  log.time(async () => awu(await selectElementIdsByTraversal({
     selectors,
     source,
     referenceSourcesIndex,
-  })).toArray()
+  })).toArray(), 'diff.getFilteredIds')
 )
+
+const createMatchers = async (
+  beforeElementsSrc: elementSource.ElementsSource,
+  afterElementsSrc: elementSource.ElementsSource,
+  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
+  elementSelectors: ElementSelector[]
+): Promise<{
+  isChangeMatchSelectors: (change: DetailedChange) => boolean
+  isTopLevelElementMatchSelectors: (elemID: ElemID) => boolean
+}> => {
+  const beforeMatchingElemIDs = await getFilteredIds(
+    elementSelectors,
+    beforeElementsSrc,
+    referenceSourcesIndex,
+  )
+  const afterMatchingElemIDs = await getFilteredIds(
+    elementSelectors,
+    afterElementsSrc,
+    referenceSourcesIndex,
+  )
+  const allMatchingElemIDs = _.uniqBy(
+    beforeMatchingElemIDs.concat(afterMatchingElemIDs),
+    id => id.getFullName()
+  )
+
+  const allMatchingTopLevelElemIDsSet = new Set<string>(allMatchingElemIDs
+    .map(id => id.createTopLevelParentID().parent.getFullName()))
+  const isTopLevelElementMatchSelectors = (elemID: ElemID): boolean =>
+    allMatchingTopLevelElemIDsSet.has(elemID.getFullName())
+
+  // skipping change matching filtering when all selectors are top level
+  if (allMatchingElemIDs.length === allMatchingTopLevelElemIDsSet.size
+    && allMatchingElemIDs.every(id => allMatchingTopLevelElemIDsSet.has(id.getFullName()))) {
+    return {
+      isTopLevelElementMatchSelectors,
+      isChangeMatchSelectors: () => true,
+    }
+  }
+
+  const getRelevantIds = (change: DetailedChange): ElemID[] => {
+    if (isRemovalChange(change)) {
+      return beforeMatchingElemIDs
+    }
+    if (isAdditionChange(change)) {
+      return afterMatchingElemIDs
+    }
+    return allMatchingElemIDs
+  }
+
+  const isChangeMatchSelectors = (change: DetailedChange): boolean => {
+    const relevantIds = getRelevantIds(change)
+    return isChangeIdRelevant(change, relevantIds) && isChangeValueRelevant(change, relevantIds)
+  }
+
+  return {
+    isChangeMatchSelectors,
+    isTopLevelElementMatchSelectors,
+  }
+}
 
 export const createDiffChanges = async (
   toElementsSrc: elementSource.ElementsSource,
@@ -118,32 +123,30 @@ export const createDiffChanges = async (
   elementSelectors: ElementSelector[] = [],
   topLevelFilters: IDFilter[] = []
 ): Promise<DetailedChange[]> => {
+  if (elementSelectors.length > 0) {
+    const matchers = await createMatchers(
+      toElementsSrc,
+      fromElementsSrc,
+      referenceSourcesIndex,
+      elementSelectors
+    )
+    const plan = await log.time(() => getPlan({
+      before: toElementsSrc,
+      after: fromElementsSrc,
+      dependencyChangers: [],
+      topLevelFilters: topLevelFilters.concat(matchers.isTopLevelElementMatchSelectors),
+    }), 'diff.getPlan')
+    return awu(plan.itemsByEvalOrder())
+      .flatMap(item => item.detailedChanges())
+      .filter(matchers.isChangeMatchSelectors)
+      .toArray()
+  }
   const plan = await getPlan({
     before: toElementsSrc,
     after: fromElementsSrc,
     dependencyChangers: [],
     topLevelFilters,
   })
-
-  if (elementSelectors.length > 0) {
-    const toElementIdsFiltered = await getFilteredIds(
-      elementSelectors,
-      toElementsSrc,
-      referenceSourcesIndex,
-    )
-    const fromElementIdsFiltered = await getFilteredIds(
-      elementSelectors,
-      fromElementsSrc,
-      referenceSourcesIndex,
-    )
-    return filterPlanItemsByRelevance(
-      plan,
-      toElementsSrc,
-      fromElementsSrc,
-      toElementIdsFiltered,
-      fromElementIdsFiltered
-    )
-  }
   return wu(plan.itemsByEvalOrder())
     .map(item => item.detailedChanges())
     .flatten()

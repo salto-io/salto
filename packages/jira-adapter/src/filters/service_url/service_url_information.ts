@@ -18,9 +18,9 @@ import { getParents } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 
 
-type ServiceUrlInformation = {
+type ServiceUrlSupplier = {
     typeName: string
-    informationSupplier: (instance: InstanceElement) => string | undefined
+    supplier: (instance: InstanceElement) => string | undefined
 }
 
 const getParentId = (instance: InstanceElement): string =>
@@ -61,53 +61,65 @@ const createFieldServiceUrl = (instance: InstanceElement): string | undefined =>
 const createDashboardGadgetServiceUrl = (instance: InstanceElement): string =>
   `/jira/dashboards/${getParentId(instance)}?maximized=${instance.value.id}`
 
-const boardInformation: ServiceUrlInformation = {
+const boardInformation: ServiceUrlSupplier = {
   typeName: 'Board',
-  informationSupplier: createBoardServiceUrl,
+  supplier: createBoardServiceUrl,
 }
 
-const ProjectComponentInformation: ServiceUrlInformation = {
+const ProjectComponentInformation: ServiceUrlSupplier = {
   typeName: 'ProjectComponent',
-  informationSupplier: createProjectComponentServiceUrl,
+  supplier: createProjectComponentServiceUrl,
 }
 
-const CustomFieldContextInformation: ServiceUrlInformation = {
+const CustomFieldContextInformation: ServiceUrlSupplier = {
   typeName: 'CustomFieldContext',
-  informationSupplier: createCustomFieldContextServiceUrl,
+  supplier: createCustomFieldContextServiceUrl,
 }
 
-const FieldInformation: ServiceUrlInformation = {
+const FieldInformation: ServiceUrlSupplier = {
   typeName: 'Field',
-  informationSupplier: createFieldServiceUrl,
+  supplier: createFieldServiceUrl,
 }
 
-const DashboardGadgetInformation: ServiceUrlInformation = {
+const DashboardGadgetInformation: ServiceUrlSupplier = {
   typeName: 'DashboardGadget',
-  informationSupplier: createDashboardGadgetServiceUrl,
+  supplier: createDashboardGadgetServiceUrl,
 }
 
-const AutomationInformation: ServiceUrlInformation = {
+const AutomationInformation: ServiceUrlSupplier = {
   typeName: 'Automation',
-  informationSupplier: createAutomationServiceUrl,
+  supplier: createAutomationServiceUrl,
 }
 
-const serviceUrlInformation: ServiceUrlInformation[] = [
+const WebhookInformation: ServiceUrlSupplier = {
+  typeName: 'Webhook',
+  supplier: (_: InstanceElement) => '/plugins/servlet/webhooks#',
+}
+
+const IssueEventInformation: ServiceUrlSupplier = {
+  typeName: 'IssueEvent',
+  supplier: (_: InstanceElement) => '/secure/admin/ListEventTypes.jspa',
+}
+
+const serviceUrlInformation: ServiceUrlSupplier[] = [
   boardInformation,
   ProjectComponentInformation,
   CustomFieldContextInformation,
   FieldInformation,
   DashboardGadgetInformation,
   AutomationInformation,
+  WebhookInformation,
+  IssueEventInformation,
 ]
 
 const filter: FilterCreator = params => ({
   onFetch: async (elements: Element[]) => {
-    const supplyServiceUrl = (information: ServiceUrlInformation): void => {
+    const supplyServiceUrl = (information: ServiceUrlSupplier): void => {
       elements
         .filter(isInstanceElement)
         .filter(instance => instance.elemID.typeName === information.typeName)
         .forEach(instance => {
-          const serviceUrl = information.informationSupplier(instance)
+          const serviceUrl = information.supplier(instance)
           if (serviceUrl) {
             instance.annotate(
               { [CORE_ANNOTATIONS.SERVICE_URL]:

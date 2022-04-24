@@ -1160,6 +1160,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'levels',
         },
       ],
+      serviceUrl: '/secure/admin/EditIssueSecurityScheme!default.jspa?=&schemeId={id}',
     },
     jspRequests: {
       add: '/secure/admin/AddIssueSecurityScheme.jspa',

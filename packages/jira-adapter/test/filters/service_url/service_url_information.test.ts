@@ -44,7 +44,7 @@ describe('service url information filter', () => {
 
   describe('onFetch', () => {
     describe('Board type', () => {
-      it('should add service url annotation if it is exist in the config', async () => {
+      it('should add service url annotation', async () => {
         const objType = new ObjectType({ elemID: new ElemID(JIRA, 'Board') })
         const elements = [new InstanceElement('Board', objType, { id: 11, name: 'wow board' })]
         await filter.onFetch(elements)
@@ -57,7 +57,7 @@ describe('service url information filter', () => {
       })
     })
     describe('ProjectComponent type', () => {
-      it('should add service url annotation if it is exist in the config', async () => {
+      it('should add service url annotation', async () => {
         const objType = new ObjectType({ elemID: new ElemID(JIRA, 'ProjectComponent') })
         const elements = [new InstanceElement('ProjectComponent', objType, { name: 'test' }, undefined, { _parent: testParent })]
         await filter.onFetch(elements)
@@ -70,7 +70,7 @@ describe('service url information filter', () => {
       })
     })
     describe('CustomFieldContext type', () => {
-      it('should add service url annotation if it is exist in the config', async () => {
+      it('should add service url annotation for context of custom field', async () => {
         const objType = new ObjectType({ elemID: new ElemID(JIRA, 'CustomFieldContext') })
         const elements = [new InstanceElement('CustomFieldContext', objType, { id: 11 }, undefined, { _parent: testParent })]
         await filter.onFetch(elements)
@@ -81,9 +81,19 @@ describe('service url information filter', () => {
           [CORE_ANNOTATIONS.SERVICE_URL]: 'https://ori-salto-test.atlassian.net/secure/admin/ManageConfigurationScheme!default.jspa?=&customFieldId=test&fieldConfigSchemeId=11',
         }))
       })
+      it('should not add service url annotation for non custom field context', async () => {
+        const nonCustomParent = { resValue: { value: { key: 'test', id: 'test' } } }
+        const objType = new ObjectType({ elemID: new ElemID(JIRA, 'CustomFieldContext') })
+        const elements = [new InstanceElement('CustomFieldContext', objType, { id: '11' }, undefined, { _parent: nonCustomParent })]
+        await filter.onFetch(elements)
+        expect(elements.map(e => e.elemID.getFullName()).sort())
+          .toEqual(['jira.CustomFieldContext.instance.CustomFieldContext'])
+        const [instance] = elements
+        expect(instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).not.toBeDefined()
+      })
     })
     describe('Field type', () => {
-      it('should add service url annotation if it is exist in the config', async () => {
+      it('should add service url annotation for custom field', async () => {
         const objType = new ObjectType({ elemID: new ElemID(JIRA, 'Field') })
         const elements = [new InstanceElement('Field', objType, { id: 'customfield_11' })]
         await filter.onFetch(elements)
@@ -94,18 +104,18 @@ describe('service url information filter', () => {
           [CORE_ANNOTATIONS.SERVICE_URL]: 'https://ori-salto-test.atlassian.net/secure/admin/EditCustomField!default.jspa?id=11',
         })
       })
-      it('should not add service url annotation if field is not custom', async () => {
+      it('should not add service url annotation for non custom field', async () => {
         const objType = new ObjectType({ elemID: new ElemID(JIRA, 'Field') })
         const elements = [new InstanceElement('Field', objType, { id: '11' })]
         await filter.onFetch(elements)
         expect(elements.map(e => e.elemID.getFullName()).sort())
           .toEqual(['jira.Field.instance.Field'])
         const [instance] = elements
-        expect(instance.annotations).toEqual({})
+        expect(instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).not.toBeDefined()
       })
     })
     describe('DashboardGadget type', () => {
-      it('should add service url annotation if it is exist in the config', async () => {
+      it('should add service url annotation', async () => {
         const objType = new ObjectType({ elemID: new ElemID(JIRA, 'DashboardGadget') })
         const elements = [new InstanceElement('DashboardGadget', objType, { id: 11 }, undefined, { _parent: testParent })]
         await filter.onFetch(elements)
@@ -118,7 +128,7 @@ describe('service url information filter', () => {
       })
     })
     describe('Automation type', () => {
-      it('should add service url annotation if it is exist in the config', async () => {
+      it('should add service url annotation for automation with project key', async () => {
         const objType = new ObjectType({ elemID: new ElemID(JIRA, 'Automation') })
         const elements = [new InstanceElement('Automation', objType, { id: 11, projects: [{ projectId: { resValue: { value: { key: 'test' } } } }] })]
         await filter.onFetch(elements)
@@ -129,9 +139,18 @@ describe('service url information filter', () => {
           [CORE_ANNOTATIONS.SERVICE_URL]: 'https://ori-salto-test.atlassian.net/jira/software/projects/test/settings/automate#/rule/11',
         })
       })
+      it('should not add service url annotation for automation without project key', async () => {
+        const objType = new ObjectType({ elemID: new ElemID(JIRA, 'Automation') })
+        const elements = [new InstanceElement('Automation', objType, { id: '11' })]
+        await filter.onFetch(elements)
+        expect(elements.map(e => e.elemID.getFullName()).sort())
+          .toEqual(['jira.Automation.instance.Automation'])
+        const [instance] = elements
+        expect(instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).not.toBeDefined()
+      })
     })
     describe('Webhook type', () => {
-      it('should add service url annotation if it is exist in the config', async () => {
+      it('should add service url annotation', async () => {
         const objType = new ObjectType({ elemID: new ElemID(JIRA, 'Webhook') })
         const elements = [new InstanceElement('Webhook', objType, { id: 11 })]
         await filter.onFetch(elements)
@@ -144,7 +163,7 @@ describe('service url information filter', () => {
       })
     })
     describe('IssueEvent type', () => {
-      it('should add service url annotation if it is exist in the config', async () => {
+      it('should add service url annotation', async () => {
         const objType = new ObjectType({ elemID: new ElemID(JIRA, 'IssueEvent') })
         const elements = [new InstanceElement('IssueEvent', objType, { id: 11 })]
         await filter.onFetch(elements)

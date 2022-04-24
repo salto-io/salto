@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { DEFAULT_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
@@ -49,7 +49,9 @@ describe('remove definition instances', () => {
   })
 
   describe('onFetch', () => {
-    it('should change the hidden value annotation of the relevant types', async () => {
+    // NOTE: We disabled this test in order to debug SALTO-2202
+    // eslint-disable-next-line jest/no-disabled-tests
+    it.skip('should remove the instances of the relevant types', async () => {
       const elements = [
         randomObjType, instanceRandomObj, triggerDefinitionObjType,
         triggerDefinition, macrosActionsObjType, macrosActions,
@@ -61,6 +63,21 @@ describe('remove definition instances', () => {
         'zendesk_support.trigger_definition',
         'zendesk_support.macros_actions',
       ])
+    })
+    // NOTE: Should be removed once we finish to debug SALTO-2202
+    it('should change the hidden value annotation of the relevant types', async () => {
+      const elements = [
+        randomObjType, instanceRandomObj, triggerDefinitionObjType, macrosActionsObjType,
+      ]
+      await filter.onFetch(elements)
+      expect(elements.map(e => e.elemID.getFullName())).toEqual([
+        'zendesk_support.obj',
+        'zendesk_support.obj.instance.test',
+        'zendesk_support.trigger_definition',
+        'zendesk_support.macros_actions',
+      ])
+      expect(triggerDefinitionObjType.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]).toEqual(true)
+      expect(macrosActionsObjType.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]).toEqual(true)
     })
   })
 })

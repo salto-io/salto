@@ -15,8 +15,10 @@
 */
 import { Element, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, getChangeData, isInstanceChange, isAdditionChange } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 
+const log = logger(module)
 
 type ServiceUrlSupplier = {
     typeName: string
@@ -115,37 +117,45 @@ const serviceUrlInformation: ServiceUrlSupplier[] = [
 const filter: FilterCreator = params => ({
   onFetch: async (elements: Element[]) => {
     const supplyServiceUrl = (information: ServiceUrlSupplier): void => {
-      elements
-        .filter(isInstanceElement)
-        .filter(instance => instance.elemID.typeName === information.typeName)
-        .forEach(instance => {
-          const serviceUrl = information.supplier(instance)
-          if (serviceUrl) {
-            instance.annotate(
-              { [CORE_ANNOTATIONS.SERVICE_URL]:
-                new URL(serviceUrl, params.client.getUrl().href).href },
-            )
-          }
-        })
+      try {
+        elements
+          .filter(isInstanceElement)
+          .filter(instance => instance.elemID.typeName === information.typeName)
+          .forEach(instance => {
+            const serviceUrl = information.supplier(instance)
+            if (serviceUrl) {
+              instance.annotate(
+                { [CORE_ANNOTATIONS.SERVICE_URL]:
+                  new URL(serviceUrl, params.client.getUrl().href).href },
+              )
+            }
+          })
+      } catch (error) {
+        log.error(`Failed to supply service url for ${information.typeName}`, error)
+      }
     }
     serviceUrlInformation.forEach(supplyServiceUrl)
   },
   onDeploy: async changes => {
     const supplyServiceUrl = (information: ServiceUrlSupplier): void => {
-      changes
-        .filter(isInstanceChange)
-        .filter(isAdditionChange)
-        .map(getChangeData)
-        .filter(instance => instance.elemID.typeName === information.typeName)
-        .forEach(instance => {
-          const serviceUrl = information.supplier(instance)
-          if (serviceUrl) {
-            instance.annotate(
-              { [CORE_ANNOTATIONS.SERVICE_URL]:
-                new URL(serviceUrl, params.client.getUrl().href).href },
-            )
-          }
-        })
+      try {
+        changes
+          .filter(isInstanceChange)
+          .filter(isAdditionChange)
+          .map(getChangeData)
+          .filter(instance => instance.elemID.typeName === information.typeName)
+          .forEach(instance => {
+            const serviceUrl = information.supplier(instance)
+            if (serviceUrl) {
+              instance.annotate(
+                { [CORE_ANNOTATIONS.SERVICE_URL]:
+                  new URL(serviceUrl, params.client.getUrl().href).href },
+              )
+            }
+          })
+      } catch (error) {
+        log.warn(`Failed to supply service url for ${information.typeName} elements`, error)
+      }
     }
     serviceUrlInformation.forEach(supplyServiceUrl)
   },

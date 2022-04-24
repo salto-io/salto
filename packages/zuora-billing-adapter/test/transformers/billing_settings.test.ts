@@ -141,8 +141,8 @@ describe('billing_settings transformer', () => {
           types: {},
           typeDefaults: { transformation: { idFields: ['a'] } },
           supportedTypes: {
-            Settings_AAA: ['AAA'],
-            Settings_ABC: ['ABC'],
+            Settings_AAA: ['Settings_AAA'],
+            Settings_ABC: ['Settings_ABC'],
           },
         },
       )

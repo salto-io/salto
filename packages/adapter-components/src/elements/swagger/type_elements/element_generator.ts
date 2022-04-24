@@ -335,7 +335,6 @@ export const generateTypes = async (
 
   const typesToFetch = [
     ...Object.values(supportedTypes).flat(),
-    ...Object.keys(supportedTypes).flat(),
     ...recurseIntoTypes,
   ]
 

@@ -13,8 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
-import { isInstanceElement } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, isObjectType } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 
 // We don't fetch those type names (except for trigger_definition) by default
@@ -33,9 +32,14 @@ const DEFINITION_TYPE_NAMES = [
  */
 const filterCreator: FilterCreator = () => ({
   onFetch: async elements => {
-    _.remove(elements,
-      element =>
-        isInstanceElement(element) && DEFINITION_TYPE_NAMES.includes(element.elemID.typeName))
+    // NOTE: changed to be hidden (instead of removing the elements) in order to debug SALTO-2202
+    // We will change the implementation back to removing the elements once we will figure it out
+    elements
+      .filter(element => DEFINITION_TYPE_NAMES.includes(element.elemID.typeName))
+      .filter(isObjectType)
+      .forEach(element => {
+        element.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
+      })
   },
 })
 

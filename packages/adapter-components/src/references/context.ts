@@ -101,10 +101,7 @@ export const neighborContextGetter = ({
     if (!_.isString(contextStr)) {
       return undefined
     }
-    if (contextValueMapper) {
-      return contextValueMapper(contextStr)
-    }
-    return shouldResolve ? contextStr : undefined
+    return contextValueMapper ? contextValueMapper(contextStr) : contextStr
   } catch (e) {
     log.error('could not resolve context for reference. error: %s, params: %s, stack: %s', e, { fieldPath, contextFieldName, levelsUp }, e.stack)
     return undefined

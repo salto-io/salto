@@ -51,7 +51,7 @@ const SPECIAL_CONTEXT_NAMES: Record<string, string> = {
  * For strings with an id-related suffix (_id or _ids), remove the suffix.
  * e.g. `abc_id` => `abc`.
  */
-const getValueLookupType = (val: string): string | undefined => {
+const getValueLookupType: referenceUtils.ContextValueMapperFunc = val => {
   const specialTypeName = SPECIAL_CONTEXT_NAMES[val]
   if (specialTypeName !== undefined) {
     return specialTypeName
@@ -64,7 +64,7 @@ const getValueLookupType = (val: string): string | undefined => {
   return valParts.join('_')
 }
 
-const getLowerCaseSingularLookupType = (val: string): string | undefined => {
+const getLowerCaseSingularLookupType: referenceUtils.ContextValueMapperFunc = val => {
   const lowercaseVal = val.toLowerCase()
   // for now this simple conversion to singular form seems good enough, but
   // we may need to improve it later on
@@ -100,6 +100,9 @@ const neighborReferenceTicketFieldLookupFunc: GetLookupNameFunc = async ({ ref }
   return undefined
 }
 
+const neighborReferenceTicketFieldLookupType: referenceUtils.ContextValueMapperFunc = val =>
+  (val === TICKET_FIELD_OPTION_TYPE_NAME ? val : undefined)
+
 const neighborReferenceUserAndOrgFieldLookupFunc: GetLookupNameFunc = async ({ ref }) => {
   if (isInstanceElement(ref.value) && ref.value.value.type === 'dropdown') {
     if (ref.elemID.typeName === USER_FIELD_TYPE_NAME) {
@@ -111,6 +114,9 @@ const neighborReferenceUserAndOrgFieldLookupFunc: GetLookupNameFunc = async ({ r
   }
   return undefined
 }
+
+const neighborReferenceUserAndOrgFieldLookupType: referenceUtils.ContextValueMapperFunc = val =>
+  ([USER_FIELD_OPTION_TYPE_NAME, ORG_FIELD_OPTION_TYPE_NAME].includes(val) ? val : undefined)
 
 const getSerializationStrategyOfCustomFieldByContainingType = (
   prefix: string,
@@ -198,11 +204,11 @@ export const contextStrategyLookup: Record<
   ReferenceContextStrategyName, referenceUtils.ContextFunc
 > = {
   neighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: getValueLookupType }),
-  neighborReferenceTicketField: neighborContextFunc({ contextFieldName: 'field', getLookUpName: neighborReferenceTicketFieldLookupFunc }),
-  neighborReferenceTicketFormCondition: neighborContextFunc({ contextFieldName: 'parent_field_id', getLookUpName: neighborReferenceTicketFieldLookupFunc }),
-  neighborReferenceUserAndOrgField: neighborContextFunc({ contextFieldName: 'field', getLookUpName: neighborReferenceUserAndOrgFieldLookupFunc }),
-  neighborSubjectReferenceTicketField: neighborContextFunc({ contextFieldName: 'subject', getLookUpName: neighborReferenceTicketFieldLookupFunc }),
-  neighborSubjectReferenceUserAndOrgField: neighborContextFunc({ contextFieldName: 'subject', getLookUpName: neighborReferenceUserAndOrgFieldLookupFunc }),
+  neighborReferenceTicketField: neighborContextFunc({ contextFieldName: 'field', getLookUpName: neighborReferenceTicketFieldLookupFunc, contextValueMapper: neighborReferenceTicketFieldLookupType }),
+  neighborReferenceTicketFormCondition: neighborContextFunc({ contextFieldName: 'parent_field_id', getLookUpName: neighborReferenceTicketFieldLookupFunc, contextValueMapper: neighborReferenceTicketFieldLookupType }),
+  neighborReferenceUserAndOrgField: neighborContextFunc({ contextFieldName: 'field', getLookUpName: neighborReferenceUserAndOrgFieldLookupFunc, contextValueMapper: neighborReferenceUserAndOrgFieldLookupType }),
+  neighborSubjectReferenceTicketField: neighborContextFunc({ contextFieldName: 'subject', getLookUpName: neighborReferenceTicketFieldLookupFunc, contextValueMapper: neighborReferenceTicketFieldLookupType }),
+  neighborSubjectReferenceUserAndOrgField: neighborContextFunc({ contextFieldName: 'subject', getLookUpName: neighborReferenceUserAndOrgFieldLookupFunc, contextValueMapper: neighborReferenceUserAndOrgFieldLookupType }),
   neighborType: neighborContextFunc({ contextFieldName: 'type', contextValueMapper: getLowerCaseSingularLookupType }),
   parentSubject: neighborContextFunc({ contextFieldName: 'subject', levelsUp: 1, contextValueMapper: getValueLookupType }),
   neighborSubject: neighborContextFunc({ contextFieldName: 'subject', contextValueMapper: getValueLookupType }),

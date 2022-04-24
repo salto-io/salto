@@ -1561,7 +1561,7 @@ export const SUPPORTED_TYPES = {
   ticket_field: ['ticket_fields'],
   ticket_form: ['ticket_forms'],
   trigger_category: ['trigger_categories'],
-  trigger_definitions: ['trigger_definitions'],
+  trigger_definition: ['trigger_definitions'],
   trigger: ['triggers'],
   user_field: ['user_fields'],
   view: ['views'],

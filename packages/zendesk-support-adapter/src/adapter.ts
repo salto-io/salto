@@ -65,6 +65,7 @@ import slaPolicyFilter from './filters/sla_policy'
 import macroAttachmentsFilter from './filters/macro_attachments'
 import omitInactiveFilter from './filters/omit_inactive'
 import tagsFilter from './filters/tag'
+import webhookFilter from './filters/webhook'
 import defaultDeployFilter from './filters/default_deploy'
 import ducktypeCommonFilters from './filters/ducktype_common'
 import referencedIdFieldsFilter from './filters/referenced_id_fields'
@@ -113,6 +114,7 @@ export const DEFAULT_FILTERS = [
   routingAttributeFilter,
   addFieldOptionsFilter,
   tagsFilter,
+  webhookFilter,
   // removeDefinitionInstancesFilter should be after hardcodedChannelFilter
   removeDefinitionInstancesFilter,
   // unorderedListsFilter should run after fieldReferencesFilter

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, InstanceElement, isInstanceElement, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { Element, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, getChangeData, isInstanceChange, isAdditionChange } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 
@@ -117,6 +117,25 @@ const filter: FilterCreator = params => ({
     const supplyServiceUrl = (information: ServiceUrlSupplier): void => {
       elements
         .filter(isInstanceElement)
+        .filter(instance => instance.elemID.typeName === information.typeName)
+        .forEach(instance => {
+          const serviceUrl = information.supplier(instance)
+          if (serviceUrl) {
+            instance.annotate(
+              { [CORE_ANNOTATIONS.SERVICE_URL]:
+                new URL(serviceUrl, params.client.getUrl().href).href },
+            )
+          }
+        })
+    }
+    serviceUrlInformation.forEach(supplyServiceUrl)
+  },
+  onDeploy: async changes => {
+    const supplyServiceUrl = (information: ServiceUrlSupplier): void => {
+      changes
+        .filter(isInstanceChange)
+        .filter(isAdditionChange)
+        .map(getChangeData)
         .filter(instance => instance.elemID.typeName === information.typeName)
         .forEach(instance => {
           const serviceUrl = information.supplier(instance)

@@ -68,6 +68,15 @@ describe('service url information filter', () => {
           [CORE_ANNOTATIONS.SERVICE_URL]: 'https://ori-salto-test.atlassian.net/plugins/servlet/project-config/test/administer-components?filter=test&orderDirection=DESC&orderField=NAME&page=1',
         }))
       })
+      it('should not add service url annotation without parent', async () => {
+        const objType = new ObjectType({ elemID: new ElemID(JIRA, 'ProjectComponent') })
+        const elements = [new InstanceElement('ProjectComponent', objType, { id: '11' })]
+        await filter.onFetch(elements)
+        expect(elements.map(e => e.elemID.getFullName()).sort())
+          .toEqual(['jira.ProjectComponent.instance.ProjectComponent'])
+        const [instance] = elements
+        expect(instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).not.toBeDefined()
+      })
     })
     describe('CustomFieldContext type', () => {
       it('should add service url annotation for context of custom field', async () => {
@@ -201,6 +210,15 @@ describe('service url information filter', () => {
         expect(instance.annotations).toEqual(expect.objectContaining({
           [CORE_ANNOTATIONS.SERVICE_URL]: 'https://ori-salto-test.atlassian.net/plugins/servlet/project-config/test/administer-components?filter=test&orderDirection=DESC&orderField=NAME&page=1',
         }))
+      })
+      it('should not add service url annotation without parent', async () => {
+        const objType = new ObjectType({ elemID: new ElemID(JIRA, 'ProjectComponent') })
+        const elements = [new InstanceElement('ProjectComponent', objType, { id: '11' })]
+        await filter.onDeploy(elements.map(inst => toChange({ after: inst })))
+        expect(elements.map(e => e.elemID.getFullName()).sort())
+          .toEqual(['jira.ProjectComponent.instance.ProjectComponent'])
+        const [instance] = elements
+        expect(instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).not.toBeDefined()
       })
     })
     describe('CustomFieldContext type', () => {

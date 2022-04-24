@@ -134,6 +134,26 @@ stripe {
         }
       }
     }
+    supportedTypes = {
+      country_spec = [
+        "country_specs",
+      ]
+      coupon = [
+        "coupons",
+      ]
+      product = [
+        "products",
+      ]
+      reporting__report_type = [
+        "reporting__report_types",
+      ]
+      tax_rate = [
+        "tax_rates",
+      ]
+      webhook_endpoint = [
+        "webhook_endpoints",
+      ]
+    }
   }
 }
 ```

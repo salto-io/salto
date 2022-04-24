@@ -134,6 +134,10 @@ jira {
           originalName = "rest__api__3__events"
           newName = "IssueEvents"
         },
+        {
+          originalName = "Webhook"
+          newName = "AppWebhook"
+        },
       ]
       additionalTypes = [
         {
@@ -312,6 +316,16 @@ jira {
             url = "/rest/api/3/dashboard/{id}"
             method = "delete"
           }
+        }
+      }
+      BoardConfiguration_columnConfig_columns = {
+        transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "statuses"
+              fieldType = "List<string>"
+            },
+          ]
         }
       }
       Fields = {
@@ -1799,6 +1813,25 @@ jira {
           ]
         }
       }
+      BoardConfiguration_estimation = {
+        transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "timeTracking"
+              fieldType = "string"
+            },
+            {
+              fieldName = "field"
+              fieldType = "string"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "type"
+            },
+          ]
+        }
+      }
       Board = {
         transformation = {
           fieldTypeOverrides = [
@@ -1809,6 +1842,23 @@ jira {
             {
               fieldName = "filterId"
               fieldType = "string"
+            },
+            {
+              fieldName = "columnConfig"
+              fieldType = "BoardConfiguration_columnConfig"
+            },
+            {
+              fieldName = "subQuery"
+              fieldType = "string"
+            },
+            {
+              fieldName = "estimation"
+              fieldType = "BoardConfiguration_estimation"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "canEdit"
             },
           ]
           fieldsToHide = [
@@ -1962,6 +2012,18 @@ jira {
             {
               fieldName = "id"
             },
+            {
+              fieldName = "name"
+            },
+            {
+              fieldName = "type"
+            },
+            {
+              fieldName = "ranking"
+            },
+            {
+              fieldName = "location"
+            },
           ]
         }
         request = {
@@ -1976,6 +2038,116 @@ jira {
       "Resolution",
       "Status",
     ]
+    supportedTypes = {
+      ApplicationProperty = [
+        "ApplicationProperties",
+      ]
+      ApplicationRole = [
+        "ApplicationRoles",
+      ]
+      AttachmentSettings = [
+        "AttachmentSettings",
+      ]
+      Configuration = [
+        "Configuration",
+      ]
+      TimeTrackingProvider = [
+        "TimeTrackingProviders",
+      ]
+      Dashboard = [
+        "Dashboards",
+      ]
+      Field = [
+        "Fields",
+      ]
+      FieldConfiguration = [
+        "FieldConfigurations",
+      ]
+      FieldConfigurationScheme = [
+        "FieldsConfigurationScheme",
+      ]
+      FieldsConfigurationIssueTypeItem = [
+        "FieldsConfigurationIssueTypeItem",
+      ]
+      Filter = [
+        "Filters",
+      ]
+      IssueLinkType = [
+        "IssueLinkTypes",
+      ]
+      IssueEvent = [
+        "IssueEvents",
+      ]
+      IssueType = [
+        "IssueType",
+      ]
+      SecurityScheme = [
+        "SecuritySchemes",
+      ]
+      IssueTypeScheme = [
+        "IssueTypeSchemes",
+      ]
+      IssueTypeSchemeMappings = [
+        "IssueTypeSchemeMappings",
+      ]
+      IssueTypeScreenScheme = [
+        "IssueTypeScreenSchemes",
+      ]
+      IssueTypeScreenSchemeItems = [
+        "IssueTypeScreenSchemeItems",
+      ]
+      NotificationScheme = [
+        "NotificationSchemes",
+      ]
+      Permissions_permissions = [
+        "Permissions",
+      ]
+      PermissionScheme = [
+        "PermissionSchemes",
+      ]
+      Priority = [
+        "Priorities",
+      ]
+      ProjectCategory = [
+        "ProjectCategories",
+      ]
+      Project = [
+        "Projects",
+      ]
+      ProjectType = [
+        "ProjectTypes",
+      ]
+      Resolution = [
+        "Resolutions",
+      ]
+      ProjectRole = [
+        "Roles",
+      ]
+      Screen = [
+        "Screens",
+      ]
+      ScreenScheme = [
+        "ScreenSchemes",
+      ]
+      Status = [
+        "Statuses",
+      ]
+      StatusCategory = [
+        "StatusCategories",
+      ]
+      Workflow = [
+        "Workflows",
+      ]
+      WorkflowScheme = [
+        "WorkflowSchemes",
+      ]
+      ServerInformation = [
+        "ServerInformation",
+      ]
+      Board = [
+        "Boards",
+      ]
+    }
   }
 }
 ```

@@ -28,9 +28,6 @@ import { createConnection, validateCredentials } from './client/connection'
 const log = logger(module)
 const { validateClientConfig, createRetryOptions, DEFAULT_RETRY_OPTS } = clientUtils
 const { validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } = configUtils
-const InvalidCredentialErrorMessages = ['Invalid Credentials']
-export const isInValidCredentials = (error: Error): boolean =>
-  InvalidCredentialErrorMessages.includes(error.message)
 
 const TYPES_TO_ADD_TO_CONFIG = [
   'IssueEvents',

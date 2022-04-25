@@ -35,10 +35,6 @@ import { ConfigChange } from './config_change'
 
 const log = logger(module)
 
-const InvalidCredentialErrorMessages = ['INVALID_LOGIN: Invalid username, password, security token; or user locked out.']
-export const isInValidCredentials = (error: Error): boolean =>
-  InvalidCredentialErrorMessages.includes(error.message)
-
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
   if (isAccessTokenConfig(config)) {
     return new OauthAccessTokenCredentials({

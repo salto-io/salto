@@ -25,7 +25,7 @@ import {
   BatchResultInfo, BulkLoadOperation,
 } from 'jsforce'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { flatValues } from '@salto-io/adapter-utils'
+import { CredentialError, flatValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
 import { AccountId, Value } from '@salto-io/adapter-api'
@@ -62,6 +62,10 @@ const MAX_ITEMS_IN_READ_METADATA_REQUEST = 10
 // Salesforce limitation of maximum number of ListMetadataQuery per listMetadata call
 //  https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_listmetadata.htm?search_text=listmetadata
 const MAX_ITEMS_IN_LIST_METADATA_REQUEST = 3
+
+const InvalidCredentialErrorMessages = ['INVALID_LOGIN: Invalid username, password, security token; or user locked out.']
+export const isInValidCredentials = (error: Error): boolean =>
+  InvalidCredentialErrorMessages.includes(error.message)
 
 const DEFAULT_RETRY_OPTS: Required<ClientRetryConfig> = {
   maxAttempts: 5, // try 5 times
@@ -358,17 +362,23 @@ export const getConnectionDetails = async (
 export const validateCredentials = async (
   creds: Credentials, minApiRequestsRemaining = 0, connection?: Connection,
 ): Promise<AccountId> => {
-  const { remainingDailyRequests, orgId } = await getConnectionDetails(
-    creds, connection
-  )
-  if (remainingDailyRequests < minApiRequestsRemaining) {
-    throw new ApiLimitsTooLowError(
-      `Remaining limits: ${remainingDailyRequests}, needed: ${minApiRequestsRemaining}`
+  try {
+    const { remainingDailyRequests, orgId } = await getConnectionDetails(
+      creds, connection
     )
+    if (remainingDailyRequests < minApiRequestsRemaining) {
+      throw new ApiLimitsTooLowError(
+        `Remaining limits: ${remainingDailyRequests}, needed: ${minApiRequestsRemaining}`
+      )
+    }
+    return orgId
+  } catch (error) {
+    if (error instanceof Error && isInValidCredentials(error)) {
+      throw new CredentialError(error.message)
+    }
+    throw error
   }
-  return orgId
 }
-
 export default class SalesforceClient {
   private readonly retryOptions: RequestRetryOptions
   private readonly conn: Connection

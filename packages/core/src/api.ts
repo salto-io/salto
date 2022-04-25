@@ -256,27 +256,42 @@ export const fetch: FetchFunc = async (
   if (progressEmitter) {
     progressEmitter.emit('adaptersDidInitialize')
   }
-  const {
-    changes, elements, mergeErrors, errors, updatedConfig,
-    configChanges, accountNameToConfigMessage, unmergedElements,
-  } = await fetchChanges(
-    accountToAdapter,
-    await workspace.elements(),
-    workspace.state(),
-    accountToServiceNameMap,
-    currentConfigs,
-    progressEmitter,
-  )
-  log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
-  await updateStateWithFetchResults(workspace, elements, unmergedElements, fetchAccounts)
-  return {
-    changes,
-    fetchErrors: errors,
-    mergeErrors,
-    success: true,
-    configChanges,
-    updatedConfig,
-    accountNameToConfigMessage,
+  try {
+    const {
+      changes, elements, mergeErrors, errors, updatedConfig,
+      configChanges, accountNameToConfigMessage, unmergedElements,
+    } = await fetchChanges(
+      accountToAdapter,
+      await workspace.elements(),
+      workspace.state(),
+      accountToServiceNameMap,
+      currentConfigs,
+      progressEmitter,
+    )
+    log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
+    await updateStateWithFetchResults(workspace, elements, unmergedElements, fetchAccounts)
+    return {
+      changes,
+      fetchErrors: errors,
+      mergeErrors,
+      success: true,
+      configChanges,
+      updatedConfig,
+      accountNameToConfigMessage,
+    }
+  } catch (e) {
+    if (e instanceof Error && isCredentialError(e)) {
+      return {
+        changes: [],
+        fetchErrors: [{ message: e.message, severity: 'Error' }],
+        mergeErrors: [],
+        success: false,
+        undefined,
+        updatedConfig: {},
+        accountNameToConfigMessage: undefined,
+      }
+    }
+    throw e
   }
 }
 

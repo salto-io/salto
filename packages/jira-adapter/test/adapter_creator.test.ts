@@ -42,7 +42,7 @@ describe('adapter creator', () => {
 
   describe('validateCredentials', () => {
     describe('with valid credentials', () => {
-      let accountId: AccountId|Error
+      let accountId: AccountId
       beforeEach(async () => {
         mockAxiosAdapter.onGet().reply(200, { baseUrl: 'http://my_account.net' })
         accountId = await adapter.validateCredentials(
@@ -58,7 +58,7 @@ describe('adapter creator', () => {
     })
 
     describe('with invalid credentials', () => {
-      let result: Promise<AccountId|Error>
+      let result: Promise<AccountId>
       beforeEach(() => {
         mockAxiosAdapter.onGet().reply(403)
         result = adapter.validateCredentials(

@@ -13,22 +13,46 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import {
-  Element, isInstanceElement,
+  Element, isInstanceElement, isObjectType, InstanceElement, Values, ObjectType,
 } from '@salto-io/adapter-api'
-import {
-  MapKeyFunc, mapKeysRecursive,
-} from '@salto-io/adapter-utils'
+import { transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { FilterWith } from '../filter'
-import { XML_ATTRIBUTE_PREFIX } from '../constants'
+import { IS_ATTRIBUTE, XML_ATTRIBUTE_PREFIX } from '../constants'
 import { metadataType } from '../transformers/transformer'
 import { metadataTypesWithAttributes } from '../transformers/xml_transformer'
 
 const { awu } = collections.asynciterable
 
+const removeAttributePrefixForValue = (
+  value: Values,
+  type?: ObjectType
+): Values => {
+  if (_.isUndefined(type)) {
+    return value
+  }
 
-const removeAttributePrefixFunc: MapKeyFunc = ({ key }) => key.replace(XML_ATTRIBUTE_PREFIX, '')
+  return _.mapKeys(value, (_val, key) => {
+    const potentialKey = key.replace(XML_ATTRIBUTE_PREFIX, '')
+    return type.fields[potentialKey]?.annotations[IS_ATTRIBUTE] ? potentialKey : key
+  })
+}
+
+const removeAttributePrefix = async (instance: InstanceElement): Promise<void> => {
+  const type = await instance.getType()
+  instance.value = removeAttributePrefixForValue(instance.value, type)
+  instance.value = await transformValues({
+    values: instance.value,
+    type,
+    strict: false,
+    transformFunc: async ({ value, field }) => {
+      const fieldType = await field?.getType()
+      return isObjectType(fieldType) ? removeAttributePrefixForValue(value, fieldType) : value
+    },
+  }) ?? instance.value
+}
 
 const filterCreator = (): FilterWith<'onFetch'> => ({
   /**
@@ -38,9 +62,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
     await awu(elements)
       .filter(isInstanceElement)
       .filter(async inst => metadataTypesWithAttributes.includes(await metadataType(inst)))
-      .forEach(inst => {
-        inst.value = mapKeysRecursive(inst.value, removeAttributePrefixFunc, inst.elemID)
-      })
+      .forEach(removeAttributePrefix)
   },
 })
 

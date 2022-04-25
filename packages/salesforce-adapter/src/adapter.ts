@@ -119,7 +119,6 @@ export const DEFAULT_FILTERS = [
   valueSetFilter,
   globalValueSetFilter,
   staticResourceFileExtFilter,
-  xmlAttributesFilter,
   profilePathsFilter,
   territoryFilter,
   elementsUrlFilter,
@@ -132,6 +131,8 @@ export const DEFAULT_FILTERS = [
   // The following filters should remain last in order to make sure they fix all elements
   convertListsFilter,
   convertTypeFilter,
+  // should run after convertListsFilter
+  xmlAttributesFilter,
   replaceFieldValuesFilter,
   valueToStaticFileFilter,
   fieldReferencesFilter,

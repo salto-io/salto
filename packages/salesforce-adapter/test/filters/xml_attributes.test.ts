@@ -22,6 +22,8 @@ import filterCreator from '../../src/filters/xml_attributes'
 const isAttributeTrue = 'isAttributeTrue'
 const isAttributeFalse = 'isAttributeFalse'
 const noIsAttribute = 'noIsAttribute'
+const fieldWithAttributes = 'fieldWithAttributes'
+const fieldWithoutAttributes = 'fieldWithoutAttributes'
 
 const withAttributePrefix = (str: string): string => `${XML_ATTRIBUTE_PREFIX}${str}`
 
@@ -54,6 +56,21 @@ describe('XML Attributes Filter', () => {
     { [METADATA_TYPE]: 'TypeWithoutAttributes' }
   )
 
+  const nestedTypeWithAttributes = new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'parentType'),
+    fields: {
+      [fieldWithAttributes]: {
+        refType: typeWithAttributes,
+      },
+      [fieldWithoutAttributes]: {
+        refType: typeWithoutAttributes,
+      },
+    },
+    annotations: {
+      [METADATA_TYPE]: LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
+    },
+  })
+
   const filter = filterCreator() as FilterWith<'onFetch'>
 
 
@@ -77,17 +94,32 @@ describe('XML Attributes Filter', () => {
       _.clone(instanceValues),
     )
 
+    const instanceWithNestedAttributes = new InstanceElement(
+      'instanceWithNestedAttributes',
+      nestedTypeWithAttributes,
+      {
+        [fieldWithAttributes]: _.clone(instanceValues),
+        [fieldWithoutAttributes]: _.clone(instanceValues),
+      },
+    )
+
     beforeAll(async () => {
-      await filter.onFetch([instanceWithAttributes, instanceWithoutAttributes])
+      await filter.onFetch([
+        instanceWithAttributes,
+        instanceWithoutAttributes,
+        instanceWithNestedAttributes,
+      ])
     })
 
     it('should remove the XML_ATTRIBUTE_PREFIX prefix from keys when type has attributes', async () => {
       expect(instanceWithAttributes.value[isAttributeTrue]).toEqual(isAttributeTrue)
-      expect(instanceWithAttributes.value[isAttributeFalse]).toEqual(isAttributeFalse)
-      expect(instanceWithAttributes.value[noIsAttribute]).toEqual(noIsAttribute)
+      expect(instanceWithAttributes.value[isAttributeFalse]).toBeUndefined()
+      expect(instanceWithAttributes.value[noIsAttribute]).toBeUndefined()
       expect(instanceWithAttributes.value[withAttributePrefix(isAttributeTrue)]).toBeUndefined()
-      expect(instanceWithAttributes.value[withAttributePrefix(isAttributeFalse)]).toBeUndefined()
-      expect(instanceWithAttributes.value[withAttributePrefix(noIsAttribute)]).toBeUndefined()
+      expect(instanceWithAttributes.value[withAttributePrefix(isAttributeFalse)])
+        .toEqual(isAttributeFalse)
+      expect(instanceWithAttributes.value[withAttributePrefix(noIsAttribute)])
+        .toEqual(noIsAttribute)
     })
 
     it('should not remove the XML_ATTRIBUTE_PREFIX prefix from keys when type has no attributes', async () => {
@@ -100,6 +132,26 @@ describe('XML Attributes Filter', () => {
         .toEqual(isAttributeFalse)
       expect(instanceWithoutAttributes.value[withAttributePrefix(noIsAttribute)])
         .toEqual(noIsAttribute)
+    })
+
+    it('should remove the XML_ATTRIBUTE_PREFIX prefix from nested fields', async () => {
+      const nestedField = instanceWithNestedAttributes.value[fieldWithAttributes]
+      expect(nestedField[isAttributeTrue]).toEqual(isAttributeTrue)
+      expect(nestedField[isAttributeFalse]).toBeUndefined()
+      expect(nestedField[noIsAttribute]).toBeUndefined()
+      expect(nestedField[withAttributePrefix(isAttributeTrue)]).toBeUndefined()
+      expect(nestedField[withAttributePrefix(isAttributeFalse)]).toEqual(isAttributeFalse)
+      expect(nestedField[withAttributePrefix(noIsAttribute)]).toEqual(noIsAttribute)
+    })
+
+    it('should remove the XML_ATTRIBUTE_PREFIX prefix from nested fields even for a type without attributes', async () => {
+      const nestedField = instanceWithNestedAttributes.value[fieldWithoutAttributes]
+      expect(nestedField[isAttributeTrue]).toEqual(isAttributeTrue)
+      expect(nestedField[isAttributeFalse]).toBeUndefined()
+      expect(nestedField[noIsAttribute]).toBeUndefined()
+      expect(nestedField[withAttributePrefix(isAttributeTrue)]).toBeUndefined()
+      expect(nestedField[withAttributePrefix(isAttributeFalse)]).toEqual(isAttributeFalse)
+      expect(nestedField[withAttributePrefix(noIsAttribute)]).toEqual(noIsAttribute)
     })
   })
 })

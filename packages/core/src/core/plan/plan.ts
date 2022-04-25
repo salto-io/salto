@@ -550,7 +550,7 @@ export const getPlan = async ({
       await resolveNodeElements(before, after)(filterResult.validDiffGraph)
     }
 
-    const { changeGroupIdMap, ...changeGroupOptions } = await getCustomGroupIds(
+    const { changeGroupIdMap, disjointGroups } = await getCustomGroupIds(
       filterResult.validDiffGraph,
       customGroupIdFunctions,
     )
@@ -559,7 +559,7 @@ export const getPlan = async ({
       buildGroupedGraphFromDiffGraph(
         filterResult.validDiffGraph,
         changeGroupIdMap,
-        changeGroupOptions
+        disjointGroups
       )
     )
     // build plan

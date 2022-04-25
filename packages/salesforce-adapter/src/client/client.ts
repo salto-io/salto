@@ -332,7 +332,14 @@ const createConnectionFromCredentials = (
 export const loginFromCredentialsAndReturnOrgId = async (
   connection: Connection, creds: Credentials): Promise<string> => {
   if (creds instanceof UsernamePasswordCredentials) {
-    return (await connection.login(creds.username, creds.password + (creds.apiToken ?? ''))).organizationId
+    try {
+      return (await connection.login(creds.username, creds.password + (creds.apiToken ?? ''))).organizationId
+    } catch (error) {
+      if (error instanceof Error && isInValidCredentials(error)) {
+        throw new CredentialError(error.message)
+      }
+      throw error
+    }
   }
   // Oauth connection doesn't require further login
   const identityInfo = await connection.identity()
@@ -362,22 +369,15 @@ export const getConnectionDetails = async (
 export const validateCredentials = async (
   creds: Credentials, minApiRequestsRemaining = 0, connection?: Connection,
 ): Promise<AccountId> => {
-  try {
-    const { remainingDailyRequests, orgId } = await getConnectionDetails(
-      creds, connection
+  const { remainingDailyRequests, orgId } = await getConnectionDetails(
+    creds, connection
+  )
+  if (remainingDailyRequests < minApiRequestsRemaining) {
+    throw new ApiLimitsTooLowError(
+      `Remaining limits: ${remainingDailyRequests}, needed: ${minApiRequestsRemaining}`
     )
-    if (remainingDailyRequests < minApiRequestsRemaining) {
-      throw new ApiLimitsTooLowError(
-        `Remaining limits: ${remainingDailyRequests}, needed: ${minApiRequestsRemaining}`
-      )
-    }
-    return orgId
-  } catch (error) {
-    if (error instanceof Error && isInValidCredentials(error)) {
-      throw new CredentialError(error.message)
-    }
-    throw error
   }
+  return orgId
 }
 export default class SalesforceClient {
   private readonly retryOptions: RequestRetryOptions

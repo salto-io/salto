@@ -1492,6 +1492,28 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       serviceUrl: '/admin/apps-integrations/webhooks/webhooks/{id}/details',
     },
+    deployRequests: {
+      add: {
+        url: '/webhooks',
+        deployAsField: 'webhook',
+        method: 'post',
+      },
+      modify: {
+        url: '/webhooks/{webhookId}',
+        method: 'patch',
+        deployAsField: 'webhook',
+        urlParamsToFields: {
+          webhookId: 'id',
+        },
+      },
+      remove: {
+        url: '/webhooks/{webhookId}',
+        method: 'delete',
+        urlParamsToFields: {
+          webhookId: 'id',
+        },
+      },
+    },
   },
   // not included yet: satisfaction_reason (returns 403), sunshine apis
 }

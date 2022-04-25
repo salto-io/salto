@@ -25,6 +25,20 @@ import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
 import { Workspace, ElementSelector, elementSource } from '@salto-io/workspace'
 import { EOL } from 'os'
+import { ErrorFilter, filterErrorsBy } from '@salto-io/adapter-utils'
+import { isInValidCredentials as jiraErrorFilter } from '@salto-io/jira-adapter/src/adapter_creator'
+import { isInValidCredentials as salesforceErrorFilter } from '@salto-io/salesforce-adapter/src/adapter_creator'
+import { isInValidCredentials as workatoErrorFilter } from '@salto-io/workato-adapter/src/adapter_creator'
+import { isInValidCredentials as netsuiteErrorFilter } from '@salto-io/netsuite-adapter/src/adapter_creator'
+import { isInValidCredentials as zendeskErrorFilter } from '@salto-io/zendesk-support-adapter/src/adapter_creator'
+import { isInValidCredentials as stripeErrorFilter } from '@salto-io/stripe-adapter/src/adapter_creator'
+import { JIRA } from '@salto-io/jira-adapter/src/constants'
+import { SALESFORCE } from '@salto-io/salesforce-adapter/src/constants'
+import { WORKATO } from '@salto-io/workato-adapter/src/constants'
+import { STRIPE } from '@salto-io/stripe-adapter/src/constants'
+import { NETSUITE } from '@salto-io/netsuite-adapter/src/constants'
+import { ZENDESK_SUPPORT } from '@salto-io/zendesk-support-adapter/src/constants'
+import { ZUORA_BILLING } from '@salto-io/zuora-billing-adapter/src/constants'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
   adapterCreators, getAdaptersCredentialsTypes, getAdapters, getAdapterDependencyChangers,
@@ -53,16 +67,30 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 const { mapValuesAsync } = promises.object
+const AdapterToErrorFilterMap = {
+  [JIRA]: jiraErrorFilter,
+  [SALESFORCE]: salesforceErrorFilter,
+  [WORKATO]: workatoErrorFilter,
+  [NETSUITE]: netsuiteErrorFilter,
+  [ZENDESK_SUPPORT]: zendeskErrorFilter,
+  [STRIPE]: stripeErrorFilter,
+  [ZUORA_BILLING]: () => false,
+}
 
 const getAdapterFromLoginConfig = (loginConfig: Readonly<InstanceElement>): Adapter =>
   adapterCreators[loginConfig.elemID.adapter]
+
+const getAdapterErrorFilter = (loginConfig: Readonly<InstanceElement>): ErrorFilter =>
+  AdapterToErrorFilterMap[loginConfig.elemID.adapter]
 
 export const verifyCredentials = async (
   loginConfig: Readonly<InstanceElement>,
 ): Promise<AccountId|Error> => {
   const adapterCreator = getAdapterFromLoginConfig(loginConfig)
   if (adapterCreator) {
-    return adapterCreator.validateCredentials(loginConfig)
+    const validateCredentialsMethod = async (): Promise<string> =>
+      adapterCreator.validateCredentials(loginConfig)
+    return filterErrorsBy<string>(validateCredentialsMethod, getAdapterErrorFilter(loginConfig))
   }
   throw new Error(`unknown adapter: ${loginConfig.elemID.adapter}`)
 }

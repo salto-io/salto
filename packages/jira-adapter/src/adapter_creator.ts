@@ -16,10 +16,9 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  InstanceElement, Adapter, Values, AccountId,
+  InstanceElement, Adapter, Values,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
-import { filterErrorsBy } from '@salto-io/adapter-utils/'
 import JiraClient from './client/client'
 import JiraAdapter from './adapter'
 import { Credentials, basicAuthCredentialsType } from './auth'
@@ -30,7 +29,7 @@ const log = logger(module)
 const { validateClientConfig, createRetryOptions, DEFAULT_RETRY_OPTS } = clientUtils
 const { validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } = configUtils
 const InvalidCredentialErrorMessages = ['Invalid Credentials']
-const isInValidCredentials = (error: Error): boolean =>
+export const isInValidCredentials = (error: Error): boolean =>
   InvalidCredentialErrorMessages.includes(error.message)
 
 const TYPES_TO_ADD_TO_CONFIG = [
@@ -111,9 +110,9 @@ export const adapter: Adapter = {
   },
   validateCredentials: async config => {
     const connection = createConnection(createRetryOptions(DEFAULT_RETRY_OPTS))
-    const validateCredentialsFunction = async (): Promise<AccountId> =>
-      validateCredentials({ connection: await connection.login(credentialsFromConfig(config)) })
-    return filterErrorsBy<AccountId>(validateCredentialsFunction, isInValidCredentials)
+    return validateCredentials(
+      { connection: await connection.login(credentialsFromConfig(config)) }
+    )
   },
   authenticationMethods: {
     basic: {

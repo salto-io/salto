@@ -15,6 +15,7 @@
 */
 import { AccountId } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
+import { CredentialError } from '@salto-io/adapter-utils'
 import { Credentials } from '../auth'
 
 const isAuthorized = async (connection: clientUtils.APIConnection): Promise<boolean> => {
@@ -40,7 +41,7 @@ export const validateCredentials = async (
   if (await isAuthorized(connection)) {
     return getBaseUrl(connection)
   }
-  throw new Error('Invalid Credentials')
+  throw new CredentialError('Invalid Credentials')
 }
 
 export const createConnection: clientUtils.ConnectionCreator<Credentials> = retryOptions => (

@@ -27,9 +27,6 @@ const DEFINITION_TYPE_NAMES = [
   'routing_attribute_definition',
 ]
 
-/**
- * Removes the definition instances
- */
 const filterCreator: FilterCreator = () => ({
   onFetch: async elements => {
     // NOTE: changed to be hidden (instead of removing the elements) in order to debug SALTO-2202

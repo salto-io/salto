@@ -18,13 +18,13 @@ import { ChangeGroupIdFunctionReturn } from '@salto-io/adapter-api'
 import { mergeChangeGroupInfo } from '../../../src/core/plan/group'
 
 describe('getCustomGroupId', () => {
-  it('should do nothing for a single ChangeGroupOptions', () => {
+  it('should do nothing for a single group info', () => {
     const groupInfo: ChangeGroupIdFunctionReturn = { changeGroupIdMap: new Map(), disjointGroups: new Set('abc') }
     expect(mergeChangeGroupInfo([groupInfo])).toMatchObject({
       disjointGroups: new Set('abc'),
     })
   })
-  it('should correcly merge disjoint ChangeGroupOptions', () => {
+  it('should correcly merge several group infos', () => {
     const groups1 = { changeGroupIdMap: new Map([['A', 'A1'], ['B', 'B1']]), disjointGroups: new Set('a') }
     const groups2 = { changeGroupIdMap: new Map([['C', 'C1']]), disjointGroups: new Set('bcd') }
     const groups3 = { changeGroupIdMap: new Map(), disjointGroups: new Set('be') }

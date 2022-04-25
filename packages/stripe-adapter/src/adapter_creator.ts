@@ -15,11 +15,10 @@
 */
 import { logger } from '@salto-io/logging'
 import {
-  InstanceElement, Adapter, AccountId,
+  InstanceElement, Adapter,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { filterErrorsBy } from '@salto-io/adapter-utils'
 import StripeClient from './client/client'
 import StripeAdapter from './adapter'
 import {
@@ -33,7 +32,7 @@ const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
 const { validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } = configUtils
 const InvalidCredentialErrorMessages = ['Unauthorized - update credentials and try again']
-const isInValidCredentials = (error: Error): boolean =>
+export const isInValidCredentials = (error: Error): boolean =>
   InvalidCredentialErrorMessages.includes(error.message)
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => ({
@@ -81,16 +80,12 @@ export const adapter: Adapter = {
       config,
     })
   },
-  validateCredentials: async config => {
-    const validateCredentialsFunction = async (): Promise<AccountId> =>
-      validateCredentials(
-        credentialsFromConfig(config),
-        {
-          createConnection,
-        },
-      )
-    return filterErrorsBy<AccountId>(validateCredentialsFunction, isInValidCredentials)
-  },
+  validateCredentials: async config => validateCredentials(
+    credentialsFromConfig(config),
+    {
+      createConnection,
+    },
+  ),
   authenticationMethods: {
     basic: {
       credentialsType: accessTokenCredentialsType,

@@ -14,9 +14,8 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { InstanceElement, Adapter, AccountId } from '@salto-io/adapter-api'
+import { InstanceElement, Adapter } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
-import { filterErrorsBy } from '@salto-io/adapter-utils'
 import WorkatoAdapter from './adapter'
 import { Credentials, usernameTokenCredentialsType } from './auth'
 import {
@@ -29,7 +28,7 @@ import { createConnection } from './client/connection'
 const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
 const InvalidCredentialErrorMessages = ['Unauthorized - update credentials and try again']
-const isInValidCredentials = (error: Error): boolean =>
+export const isInValidCredentials = (error: Error): boolean =>
   InvalidCredentialErrorMessages.includes(error.message)
 
 
@@ -79,16 +78,12 @@ export const adapter: Adapter = {
       getElemIdFunc: context.getElemIdFunc,
     })
   },
-  validateCredentials: async config => {
-    const validateCredentialsFunction = async (): Promise<AccountId> =>
-      validateCredentials(
-        credentialsFromConfig(config),
-        {
-          createConnection,
-        },
-      )
-    return filterErrorsBy<AccountId>(validateCredentialsFunction, isInValidCredentials)
-  },
+  validateCredentials: async config => validateCredentials(
+    credentialsFromConfig(config),
+    {
+      createConnection,
+    },
+  ),
   authenticationMethods: {
     basic: {
       credentialsType: usernameTokenCredentialsType,

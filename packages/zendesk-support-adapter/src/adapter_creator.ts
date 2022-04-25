@@ -14,9 +14,8 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { InstanceElement, Adapter, Values, OAuthRequestParameters, OauthAccessTokenResponse, AccountId } from '@salto-io/adapter-api'
+import { InstanceElement, Adapter, Values, OAuthRequestParameters, OauthAccessTokenResponse } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
-import { filterErrorsBy } from '@salto-io/adapter-utils'
 import ZendeskAdapter from './adapter'
 import { Credentials, oauthAccessTokenCredentialsType, oauthRequestParametersType, usernamePasswordCredentialsType } from './auth'
 import {
@@ -30,7 +29,7 @@ const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
 const { validateDuckTypeApiDefinitionConfig } = configUtils
 const InvalidCredentialErrorMessages = ['Unauthorized - update credentials and try again']
-const isInValidCredentials = (error: Error): boolean =>
+export const isInValidCredentials = (error: Error): boolean =>
   InvalidCredentialErrorMessages.includes(error.message)
 
 
@@ -121,16 +120,12 @@ export const adapter: Adapter = {
       configInstance: context.config,
     })
   },
-  validateCredentials: async config => {
-    const validateCredentialsFunction = async (): Promise<AccountId> =>
-      validateCredentials(
-        credentialsFromConfig(config),
-        {
-          createConnection,
-        },
-      )
-    return filterErrorsBy<AccountId>(validateCredentialsFunction, isInValidCredentials)
-  },
+  validateCredentials: async config => validateCredentials(
+    credentialsFromConfig(config),
+    {
+      createConnection,
+    },
+  ),
   authenticationMethods: {
     basic: {
       credentialsType: usernamePasswordCredentialsType,

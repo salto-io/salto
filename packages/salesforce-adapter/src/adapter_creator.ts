@@ -18,9 +18,7 @@ import { logger } from '@salto-io/logging'
 import {
   InstanceElement, Adapter, OAuthRequestParameters, OauthAccessTokenResponse,
   Values,
-  AccountId,
 } from '@salto-io/adapter-api'
-import { filterErrorsBy } from '@salto-io/adapter-utils'
 import SalesforceClient, { validateCredentials } from './client/client'
 import SalesforceAdapter from './adapter'
 import { configType, usernamePasswordCredentialsType, oauthRequestParameters,
@@ -38,7 +36,7 @@ import { ConfigChange } from './config_change'
 const log = logger(module)
 
 const InvalidCredentialErrorMessages = ['INVALID_LOGIN: Invalid username, password, security token; or user locked out.']
-const isInValidCredentials = (error: Error): boolean =>
+export const isInValidCredentials = (error: Error): boolean =>
   InvalidCredentialErrorMessages.includes(error.message)
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
@@ -189,11 +187,7 @@ export const adapter: Adapter = {
       },
     }
   },
-  validateCredentials: async config => {
-    const validateCredentialsFunction = async (): Promise<AccountId> =>
-      validateCredentials(credentialsFromConfig(config))
-    return filterErrorsBy<AccountId>(validateCredentialsFunction, isInValidCredentials)
-  },
+  validateCredentials: async config => validateCredentials(credentialsFromConfig(config)),
   authenticationMethods: {
     basic: {
       credentialsType: usernamePasswordCredentialsType,

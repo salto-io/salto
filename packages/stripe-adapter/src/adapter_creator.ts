@@ -31,9 +31,6 @@ import { createConnection } from './client/connection'
 const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
 const { validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } = configUtils
-const InvalidCredentialErrorMessages = ['Unauthorized - update credentials and try again']
-export const isInValidCredentials = (error: Error): boolean =>
-  InvalidCredentialErrorMessages.includes(error.message)
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => ({
   token: config.value.token,

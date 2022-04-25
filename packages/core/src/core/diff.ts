@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { DetailedChange, ElemID, getChangeData, isAdditionChange, isRemovalChange } from '@salto-io/adapter-api'
+import { DetailedChange, ElemID, getChangeData, isRemovalChange } from '@salto-io/adapter-api'
 import { WalkOnFunc, walkOnValue, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { ElementSelector, selectElementIdsByTraversal, elementSource, Workspace, remoteMap } from '@salto-io/workspace'
 import wu from 'wu'
@@ -76,37 +76,26 @@ const createMatchers = async (
     afterElementsSrc,
     referenceSourcesIndex,
   )
-  const allMatchingElemIDs = _.uniqBy(
-    beforeMatchingElemIDs.concat(afterMatchingElemIDs),
-    id => id.getFullName()
-  )
 
-  const allMatchingTopLevelElemIDsSet = new Set<string>(allMatchingElemIDs
-    .map(id => id.createTopLevelParentID().parent.getFullName()))
+  const allMatchingTopLevelElemIDsSet = new Set<string>(
+    beforeMatchingElemIDs.concat(afterMatchingElemIDs)
+      .map(id => id.createTopLevelParentID().parent.getFullName())
+  )
   const isTopLevelElementMatchSelectors = (elemID: ElemID): boolean =>
     allMatchingTopLevelElemIDsSet.has(elemID.getFullName())
 
   // skipping change matching filtering when all selectors are top level
-  if (allMatchingElemIDs.length === allMatchingTopLevelElemIDsSet.size
-    && allMatchingElemIDs.every(id => allMatchingTopLevelElemIDsSet.has(id.getFullName()))) {
+  if (beforeMatchingElemIDs.every(id => id.isTopLevel())
+    && afterMatchingElemIDs.every(id => id.isTopLevel())) {
+    log.debug('all selectors are top level. skipping change matching filtering')
     return {
       isTopLevelElementMatchSelectors,
       isChangeMatchSelectors: () => true,
     }
   }
 
-  const getRelevantIds = (change: DetailedChange): ElemID[] => {
-    if (isRemovalChange(change)) {
-      return beforeMatchingElemIDs
-    }
-    if (isAdditionChange(change)) {
-      return afterMatchingElemIDs
-    }
-    return allMatchingElemIDs
-  }
-
   const isChangeMatchSelectors = (change: DetailedChange): boolean => {
-    const relevantIds = getRelevantIds(change)
+    const relevantIds = isRemovalChange(change) ? beforeMatchingElemIDs : afterMatchingElemIDs
     return isChangeIdRelevant(change, relevantIds) && isChangeValueRelevant(change, relevantIds)
   }
 
@@ -130,12 +119,12 @@ export const createDiffChanges = async (
       referenceSourcesIndex,
       elementSelectors
     )
-    const plan = await log.time(() => getPlan({
+    const plan = await getPlan({
       before: toElementsSrc,
       after: fromElementsSrc,
       dependencyChangers: [],
       topLevelFilters: topLevelFilters.concat(matchers.isTopLevelElementMatchSelectors),
-    }), 'diff.getPlan')
+    })
     return awu(plan.itemsByEvalOrder())
       .flatMap(item => item.detailedChanges())
       .filter(matchers.isChangeMatchSelectors)

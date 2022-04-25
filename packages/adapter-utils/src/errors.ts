@@ -16,6 +16,11 @@
 
 export type ErrorFilter = (error: Error) => boolean
 
+export class CredentialError extends Error {}
+
+export const isCredentialError = (error: Error): error is CredentialError =>
+  error instanceof CredentialError
+
 export const filterErrorsBy = async <T>(func: () => Promise<T>, filter: ErrorFilter):
 Promise<T|Error> => {
   try {

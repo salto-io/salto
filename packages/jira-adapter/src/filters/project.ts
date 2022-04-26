@@ -14,8 +14,9 @@
 * limitations under the License.
 */
 import { Change, Element, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
-import { resolveValues } from '@salto-io/adapter-utils'
+import { createSchemeGuard, resolveValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+import Joi from 'joi'
 import JiraClient from '../client/client'
 import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
 import { getLookUpName } from '../reference_mapping'
@@ -57,6 +58,40 @@ const deployProjectSchemes = async (
   await deployScheme(instance, client, ISSUE_TYPE_SCREEN_SCHEME_FIELD, 'issueTypeScreenSchemeId')
   await deployScheme(instance, client, FIELD_CONFIG_SCHEME_FIELD, 'fieldConfigurationSchemeId')
   await deployScheme(instance, client, ISSUE_TYPE_SCHEME, 'issueTypeSchemeId')
+}
+
+type ComponentsResponse = {
+  components?: {
+    id: string
+  }[]
+}
+
+const COMPONENTS_RESPONSE_SCHEME = Joi.object({
+  components: Joi.array().items(Joi.object({
+    id: Joi.string().required(),
+  }).unknown(true)),
+}).unknown(true).required()
+
+const isComponentsResponse = createSchemeGuard<ComponentsResponse>(COMPONENTS_RESPONSE_SCHEME, 'Received an invalid project component response')
+
+const getProjectComponentIds = async (projectId: number, client: JiraClient): Promise<string[]> => {
+  const response = await client.getSinglePage({
+    url: `/rest/api/3/project/${projectId}`,
+  })
+
+  if (!isComponentsResponse(response.data)) {
+    throw new Error('Received an invalid project component response')
+  }
+
+  return response.data.components?.map(({ id }) => id) || []
+}
+
+const removeComponents = async (projectId: number, client: JiraClient): Promise<void> => {
+  const componentIds = await getProjectComponentIds(projectId, client)
+
+  await Promise.all(componentIds.map(id => client.delete({
+    url: `/rest/api/3/component/${id}`,
+  })))
 }
 
 /**
@@ -121,6 +156,13 @@ const filter: FilterCreator = ({ config, client }) => ({
         })
         if (isModificationChange(change)) {
           await deployProjectSchemes(change, client)
+        }
+
+        if (isAdditionChange(change)) {
+          // In some projects, some components are created as a side effect
+          // when creating the project. We want to remove these and deploy
+          // the components that are in the NaCls
+          await removeComponents(getChangeData(change).value.id, client)
         }
       }
     )

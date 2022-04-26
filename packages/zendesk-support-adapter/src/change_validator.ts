@@ -27,6 +27,7 @@ import {
   parentAnnotationToHaveSingleValueValidatorCreator,
   customRoleNameValidator,
   invalidActionsValidator,
+  instanceHasOrderValidator,
   orderInstanceContainsAllTheInstancesValidator,
   triggerOrderInstanceContainsAllTheInstancesValidator,
   brandCreationValidator,
@@ -66,6 +67,7 @@ export default ({
     invalidActionsValidator,
     orderInstanceContainsAllTheInstancesValidator,
     triggerOrderInstanceContainsAllTheInstancesValidator,
+    instanceHasOrderValidator,
     brandCreationValidator,
     webhookAuthDataValidator,
   ]

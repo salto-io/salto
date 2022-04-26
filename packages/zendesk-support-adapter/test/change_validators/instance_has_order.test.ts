@@ -16,10 +16,10 @@
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { ZENDESK_SUPPORT } from '../../src/constants'
-import { orderInstanceContainsAllTheInstancesValidator } from '../../src/change_validators/order'
+import { instanceHasOrderValidator } from '../../src/change_validators/instance_has_order'
 import { createOrderTypeName } from '../../src/filters/reorder/creator'
 
-describe('orderInstanceContainsAllTheInstancesValidator', () => {
+describe('instanceHasOrderValidator', () => {
   const automationType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'automation') })
   const automationOrderType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, createOrderTypeName('automation')) })
   const workspaceType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'workspace') })
@@ -90,7 +90,7 @@ describe('orderInstanceContainsAllTheInstancesValidator', () => {
     ].map(e => e.clone()))
     const elementsToAdd = [automationToAdd, workspaceToAdd]
     const elementsToModify = [automationOrder, workspaceOrder]
-    const errors = await orderInstanceContainsAllTheInstancesValidator(
+    const errors = await instanceHasOrderValidator(
       elementsToAdd.map(e => toChange({ after: e }))
         .concat(elementsToModify.map(e => toChange({ before: e, after: e }))),
       elementsSource,
@@ -114,14 +114,14 @@ describe('orderInstanceContainsAllTheInstancesValidator', () => {
       automation3, invalidOrderInstance,
     ].map(e => e.clone()))
     const elementsToAdd = [automation3.clone()]
-    const errors = await orderInstanceContainsAllTheInstancesValidator(
+    const errors = await instanceHasOrderValidator(
       elementsToAdd.map(e => toChange({ after: e })),
       elementsSource,
     )
     const orderTypeName = createOrderTypeName(automation3.elemID.typeName)
     expect(errors).toEqual([{
       elemID: automation3.elemID,
-      severity: 'Error',
+      severity: 'Warning',
       message: `Instance order not specified in ${orderTypeName}`,
       detailedMessage: `Order not specified for instance ${automation3.elemID.name} of type ${automation3.elemID.typeName}. Please make sure to include it in ${orderTypeName} under the inactive list`,
     }])
@@ -146,14 +146,14 @@ describe('orderInstanceContainsAllTheInstancesValidator', () => {
       workspace3, invalidOrderInstance,
     ].map(e => e.clone()))
     const elementsToAdd = [workspace1.clone()]
-    const errors = await orderInstanceContainsAllTheInstancesValidator(
+    const errors = await instanceHasOrderValidator(
       elementsToAdd.map(e => toChange({ after: e })),
       elementsSource,
     )
     const orderTypeName = createOrderTypeName(workspace1.elemID.typeName)
     expect(errors).toEqual([{
       elemID: workspace1.elemID,
-      severity: 'Error',
+      severity: 'Warning',
       message: `Instance misplaced in ${orderTypeName}`,
       detailedMessage: `Instance ${workspace1.elemID.name} of type ${workspace1.elemID.typeName} is misplaced in ${orderTypeName}. Please make sure to place it under the active list`,
     }])
@@ -174,7 +174,7 @@ describe('orderInstanceContainsAllTheInstancesValidator', () => {
       },
     )
     const elementsToAdd = [workspace1.clone(), invalidOrderInstance.clone()]
-    const errors = await orderInstanceContainsAllTheInstancesValidator(
+    const errors = await instanceHasOrderValidator(
       elementsToAdd.map(e => toChange({ after: e })),
     )
     expect(errors).toHaveLength(0)

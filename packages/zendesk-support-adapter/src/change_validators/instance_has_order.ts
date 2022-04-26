@@ -31,7 +31,7 @@ import { TYPE_NAME as WORKSPACE_TYPE_NAME } from '../filters/reorder/workspace'
 const { awu } = collections.asynciterable
 const log = logger(module)
 
-const RELEVANT_TYPE_NAMES = [
+export const RELEVANT_TYPE_NAMES = [
   AUTOMATION_TYPE_NAME,
   ORG_FIELD_TYPE_NAME,
   SLA_POLICY_TYPE_NAME,
@@ -48,13 +48,36 @@ const TYPE_NAME_TO_SPECIAL_ACTIVE_FIELD_NAME: Record<string, string> = {
 const isRelevantChange = (change: Change<InstanceElement>): boolean =>
   (RELEVANT_TYPE_NAMES.includes(getChangeData(change).elemID.typeName))
 
+const getInstanceActivityValue = (instance: InstanceElement): boolean =>
+  instance.value[TYPE_NAME_TO_SPECIAL_ACTIVE_FIELD_NAME[instance.elemID.typeName] ?? 'active']
+
 const isInstanceInOrderList = (orderList: unknown, instance: InstanceElement): boolean =>
   _.isArray(orderList)
     && (orderList
       .filter(isReferenceExpression)
       .find(ref => ref.elemID.isEqual(instance.elemID))) !== undefined
 
-export const orderInstanceContainsAllTheInstancesValidator: ChangeValidator = async (
+export const isInstanceInCorrectOrderList = (
+  orderInstance: InstanceElement, instance: InstanceElement
+): boolean =>
+  isInstanceInOrderList(
+    getInstanceActivityValue(instance)
+      ? orderInstance.value.active
+      : orderInstance.value.inactive,
+    instance,
+  )
+
+export const isInstanceInWrongOrderList = (
+  orderInstance: InstanceElement, instance: InstanceElement
+): boolean =>
+  isInstanceInOrderList(
+    getInstanceActivityValue(instance)
+      ? orderInstance.value.inactive
+      : orderInstance.value.active,
+    instance,
+  )
+
+export const instanceHasOrderValidator: ChangeValidator = async (
   changes, elementSource
 ) => {
   const relevantInstances = changes
@@ -66,7 +89,7 @@ export const orderInstanceContainsAllTheInstancesValidator: ChangeValidator = as
     return []
   }
   if (elementSource === undefined) {
-    log.error('Failed to run orderInstanceContainsAllTheInstancesValidator because no element source was provided')
+    log.error('Failed to run instanceHasOrderValidator because no element source was provided')
     return []
   }
   const relevantOrderTypeNames = _(relevantInstances)
@@ -89,26 +112,21 @@ export const orderInstanceContainsAllTheInstancesValidator: ChangeValidator = as
         log.error('Failed to find order instance of instance: %s', instance.elemID.getFullName())
         return []
       }
-      const instanceActivityValue = instance.value[TYPE_NAME_TO_SPECIAL_ACTIVE_FIELD_NAME[instance.elemID.typeName] ?? 'active']
-      const [
-        orderListOfInstanceActivity, orderListOfTheOtherInstanceActivity,
-      ] = instanceActivityValue
-        ? [orderInstance.value.active, orderInstance.value.inactive]
-        : [orderInstance.value.inactive, orderInstance.value.active]
-      if (!isInstanceInOrderList(orderListOfInstanceActivity, instance)) {
+      const active = getInstanceActivityValue(instance)
+      if (!isInstanceInCorrectOrderList(orderInstance, instance)) {
         return [{
           elemID: instance.elemID,
-          severity: 'Error',
+          severity: 'Warning',
           message: `Instance order not specified in ${orderTypeName}`,
-          detailedMessage: `Order not specified for instance ${instance.elemID.name} of type ${instance.elemID.typeName}. Please make sure to include it in ${orderTypeName} under the ${instanceActivityValue ? 'active' : 'inactive'} list`,
+          detailedMessage: `Order not specified for instance ${instance.elemID.name} of type ${instance.elemID.typeName}. Please make sure to include it in ${orderTypeName} under the ${active ? 'active' : 'inactive'} list`,
         }]
       }
-      if (isInstanceInOrderList(orderListOfTheOtherInstanceActivity, instance)) {
+      if (isInstanceInWrongOrderList(orderInstance, instance)) {
         return [{
           elemID: instance.elemID,
-          severity: 'Error',
+          severity: 'Warning',
           message: `Instance misplaced in ${orderTypeName}`,
-          detailedMessage: `Instance ${instance.elemID.name} of type ${instance.elemID.typeName} is misplaced in ${orderTypeName}. Please make sure to place it under the ${instanceActivityValue ? 'active' : 'inactive'} list`,
+          detailedMessage: `Instance ${instance.elemID.name} of type ${instance.elemID.typeName} is misplaced in ${orderTypeName}. Please make sure to place it under the ${active ? 'active' : 'inactive'} list`,
         }]
       }
       return []

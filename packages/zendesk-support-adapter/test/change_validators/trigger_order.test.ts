@@ -125,7 +125,7 @@ describe('triggerOrderInstanceContainsAllTheInstancesValidator', () => {
     const orderTypeName = createOrderTypeName(trigger3.elemID.typeName)
     expect(errors).toEqual([{
       elemID: trigger3.elemID,
-      severity: 'Error',
+      severity: 'Warning',
       message: `Instance order not specified in ${orderTypeName}`,
       detailedMessage: `Order not specified for instance ${trigger3.elemID.name} of type ${trigger3.elemID.typeName} in ${orderTypeName}. Please make sure to place it under the ${category1.elemID.name} category in the inactive list`,
     }])

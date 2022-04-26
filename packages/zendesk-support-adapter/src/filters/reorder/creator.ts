@@ -44,7 +44,11 @@ type ReorderFilterCreatorParams = {
   activeFieldName?: string
 }
 
-export const createOrderTypeName = (typeName: string): string => `${typeName}_order`
+const ORDER_TYPE_NAME_PREFIX = '_order'
+export const createOrderTypeName = (typeName: string): string =>
+  `${typeName}${ORDER_TYPE_NAME_PREFIX}`
+export const getTypeNameFromOrderTypeName = (orderTypeName: string): string =>
+  orderTypeName.slice(0, -ORDER_TYPE_NAME_PREFIX.length)
 
 export const createReorderFilterCreator = (
   {

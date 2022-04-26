@@ -14,11 +14,13 @@
 * limitations under the License.
 */
 import { client as clientUtils } from '@salto-io/adapter-components'
+import { logger } from '@salto-io/logging'
 import { createConnection, instanceUrl } from './connection'
 import { ZENDESK_SUPPORT } from '../constants'
 import { Credentials } from '../auth'
 
 const { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
+const log = logger(module)
 
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
@@ -51,5 +53,22 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
 
   public getUrl(): URL {
     return new URL(instanceUrl(this.credentials.subdomain))
+  }
+
+  public async getSinglePage(
+    args: clientUtils.ClientBaseParams,
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    try {
+      return await super.getSinglePage(args)
+    } catch (e) {
+      if (e.response.status === 404) {
+        log.warn('Suppressing 404 error %o', e)
+        return {
+          data: [],
+          status: 404,
+        }
+      }
+      throw e
+    }
   }
 }

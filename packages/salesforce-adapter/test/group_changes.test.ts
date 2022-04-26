@@ -95,7 +95,7 @@ describe('Group changes function', () => {
   const differentModifyInstance = new InstanceElement('differentModifyInstance', differentCustomObject)
 
   beforeAll(async () => {
-    changeGroupIds = await getChangeGroupIds(new Map<string, Change>([
+    changeGroupIds = (await getChangeGroupIds(new Map<string, Change>([
       [customObject.elemID.getFullName(), toChange({ after: customObject })],
       [metadataInstance.elemID.getFullName(), toChange({ before: metadataInstance })],
       [addInstance.elemID.getFullName(), toChange({ after: addInstance })],
@@ -110,7 +110,7 @@ describe('Group changes function', () => {
         toChange({ before: anotherModifyInstance, after: anotherModifyInstance })],
       [differentModifyInstance.elemID.getFullName(),
         toChange({ before: differentModifyInstance, after: differentModifyInstance })],
-    ]))
+    ]))).changeGroupIdMap
   })
 
   describe('groups of metadata', () => {

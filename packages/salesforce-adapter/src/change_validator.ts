@@ -27,7 +27,6 @@ import multipleDefaultsValidator from './change_validators/multiple_defaults'
 import picklistPromoteValidator from './change_validators/picklist_promote'
 import createValidateOnlyFlagValidator from './change_validators/validate_only_flag'
 import cpqValidator from './change_validators/cpq_trigger'
-import refToInstanceSameType from './change_validators/ref_to_instance_of_same_type'
 import sbaaApprovalRulesCustomCondition from './change_validators/sbaa_approval_rules_custom_condition'
 import { ChangeValidatorName, SalesforceConfig } from './types'
 
@@ -44,7 +43,6 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   picklistPromote: () => picklistPromoteValidator,
   validateOnlyFlag: createValidateOnlyFlagValidator,
   cpqValidator: () => cpqValidator,
-  refToInstanceSameType: () => refToInstanceSameType,
   sbaaApprovalRulesCustomCondition: () => sbaaApprovalRulesCustomCondition,
 }
 

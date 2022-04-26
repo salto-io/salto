@@ -267,7 +267,7 @@ describe('Netsuite adapter E2E with real account', () => {
       }
 
       const idToGroup = (await adapter?.deployModifiers
-        ?.getChangeGroupIds?.(revertChanges)) as Map<ChangeId, ChangeGroupId>
+        ?.getChangeGroupIds?.(revertChanges))?.changeGroupIdMap as Map<ChangeId, ChangeGroupId>
       const changesGroups = _(revertChanges)
         .entries()
         .groupBy(([id, _change]) => idToGroup.get(id))
@@ -334,7 +334,7 @@ describe('Netsuite adapter E2E with real account', () => {
         adapter = adapterAttr.adapter
 
         const idToGroup = (await adapter?.deployModifiers
-          ?.getChangeGroupIds?.(changes)) as Map<ChangeId, ChangeGroupId>
+          ?.getChangeGroupIds?.(changes))?.changeGroupIdMap as Map<ChangeId, ChangeGroupId>
         const changesGroups = _(changes)
           .entries()
           .groupBy(([id, _change]) => idToGroup.get(id))

@@ -108,6 +108,10 @@ zuora_billing {
           originalName = "settings__tax_engines@uub"
           newName = "Settings_TaxEngines"
         },
+        {
+          originalName = "Settings_RevenueRecognitionRuleObject"
+          newName = "Settings_revenueRecognitionRuleDtos"
+        },
       ]
     }
     typeDefaults = {

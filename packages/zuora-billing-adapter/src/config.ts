@@ -616,6 +616,9 @@ const DEFAULT_SWAGGER_CONFIG: ZuoraApiConfig['swagger'] = {
 const SETTINGS_SWAGGER_CONFIG: ZuoraApiConfig['settingsSwagger'] = {
   typeNameOverrides: [
     { originalName: 'settings__tax_engines@uub', newName: `${SETTINGS_TYPE_PREFIX}TaxEngines` },
+    // map to old name for backward-compatibility reasons -
+    // can be updated once all workspaces are migrated to SALTO-1792
+    { originalName: `${SETTINGS_TYPE_PREFIX}RevenueRecognitionRuleObject`, newName: `${SETTINGS_TYPE_PREFIX}revenueRecognitionRuleDtos` },
   ],
 }
 

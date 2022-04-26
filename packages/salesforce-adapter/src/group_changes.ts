@@ -29,6 +29,8 @@ type ChangeIdFunction = (change: Change) => Promise<ChangeGroupDescription> | Ch
 
 const instanceOfCustomObjectChangeToGroupId: ChangeIdFunction = async change => ({
   groupId: `${change.action}_${await apiName(await (getChangeData(change) as InstanceElement).getType())}_instances`,
+  // CustomObjects instances might have references to instances of the same type (via Lookup
+  // fields), and if we deploy them together the reference gets removed.
   disjoint: isAdditionChange(change),
 })
 
@@ -41,7 +43,8 @@ export const getChangeGroupIds: ChangeGroupIdFunction = async changes => {
 
   await awu(changes.entries()).forEach(async ([changeId, change]) => {
     const groupIdFunc = await isInstanceOfCustomObjectChange(change)
-      ? instanceOfCustomObjectChangeToGroupId : deployableMetadataChangeGroupId
+      ? instanceOfCustomObjectChangeToGroupId
+      : deployableMetadataChangeGroupId
     const { groupId, disjoint } = await groupIdFunc(change)
 
     changeGroupIdMap.set(changeId, groupId)

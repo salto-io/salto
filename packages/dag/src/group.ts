@@ -146,13 +146,13 @@ const buildPossiblyCyclicGroupGraph = <T>(
   return graph
 }
 
-const breakupDisjointGroup = <T>(
+const breakToDisjointGroup = <T>(
   groupId: string,
   groupNodeIds: Set<NodeId>,
   source: DataNodeMap<T>,
   groupKey: GroupKeyFunc,
 ): GroupKeyFunc => {
-  const nodeIdToNewGroup = new Map()
+  const nodeIdToNewGroup = new Map<NodeId, string>()
   const groupGraph = wu(groupNodeIds)
     .reduce((acc, nodeId) => {
       acc.addNode(nodeId, intersection(source.get(nodeId), groupNodeIds), nodeId)
@@ -189,10 +189,9 @@ const breakToDisjointGroups = <T>(
 
   return wu(groups.keys())
     .filter(groupId => disjointGroups.has(groupId))
-    .reduce((updatedGroupKey, groupId) => (
-      breakupDisjointGroup(groupId, groups.get(groupId), source, updatedGroupKey)
-    ),
-    groupKey)
+    .reduce((updatedGroupKey, groupId) => breakToDisjointGroup(
+      groupId, groups.get(groupId), source, updatedGroupKey
+    ), groupKey)
 }
 
 const buildAcyclicGroupedGraphImpl = <T>(

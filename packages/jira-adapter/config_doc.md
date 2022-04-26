@@ -31,6 +31,7 @@ jira {
 | ---------------------------------------------------------| ------------------------------| -----------
 | [client](#client-configuration-options)                  | `{}` (no overrides)             | Configuration relating to the client used to interact with JIRA
 | [fetch](#fetch-configuration-options)                    | `{}` (no overrides)             | Configuration relating to the endpoints that will be queried during fetch
+| [masking](#masking-configuration-options)                | `{}` (mask nothing)           | Configuration to mask sensitive data from the NaCls
 
 ### Client configuration options
 
@@ -61,3 +62,8 @@ jira {
 |---------------------------------------------|-----------------------------------|------------
 | includeTypes                                | []                                | List of types to fetch
 | fallbackToInternalId                        | false                             | Whether to add the internal ids to the instance name when the name is not unique among the instances of that type
+
+## Masking configuration options
+| Name                                        | Default when undefined            | Description
+|---------------------------------------------|-----------------------------------|------------
+| headers                                     | []                                | List of regexes of header keys to mask their values (currently only relevant for Automations)

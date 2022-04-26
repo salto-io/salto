@@ -83,6 +83,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
     client: null,
     fetch: null,
     deploy: null,
+    masking: null,
   }
   Object.keys(fullConfig)
     .filter(k => !Object.keys(adapterConfig).includes(k))

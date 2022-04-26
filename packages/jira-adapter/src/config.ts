@@ -1814,11 +1814,16 @@ type JiraFetchConfig = configUtils.UserFetchConfig & {
   fallbackToInternalId?: boolean
 }
 
+type MaskingConfig = {
+  headers: string[]
+}
+
 export type JiraConfig = {
   client: JiraClientConfig
   fetch: JiraFetchConfig
   deploy: JiraDeployConfig
   apiDefinitions: JiraApiConfig
+  masking: MaskingConfig
 }
 
 const jspUrlsType = createMatchingObjectType<Partial<JspUrls>>({
@@ -1882,6 +1887,9 @@ export const DEFAULT_CONFIG: JiraConfig = {
     forceDelete: false,
   },
   apiDefinitions: DEFAULT_API_DEFINITIONS,
+  masking: {
+    headers: [],
+  },
 }
 
 const createClientConfigType = (): ObjectType => {
@@ -1909,6 +1917,15 @@ const jiraDeployConfigType = new ObjectType({
 const fetchConfigType = createUserFetchConfigType(JIRA)
 fetchConfigType.fields.fallbackToInternalId = new Field(fetchConfigType, 'fallbackToInternalId', BuiltinTypes.BOOLEAN)
 
+const maskingConfigType = createMatchingObjectType<Partial<MaskingConfig>>({
+  elemID: new ElemID(JIRA),
+  fields: {
+    headers: {
+      refType: new ListType(BuiltinTypes.STRING),
+    },
+  },
+})
+
 export const configType = createMatchingObjectType<Partial<JiraConfig>>({
   elemID: new ElemID(JIRA),
   fields: {
@@ -1916,6 +1933,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
     deploy: { refType: jiraDeployConfigType },
     fetch: { refType: fetchConfigType },
     apiDefinitions: { refType: apiDefinitionsType },
+    masking: { refType: maskingConfigType },
   },
   annotations: {
     [CORE_ANNOTATIONS.DEFAULT]: _.omit(DEFAULT_CONFIG, ['apiDefinitions', 'client']),

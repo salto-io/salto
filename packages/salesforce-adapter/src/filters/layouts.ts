@@ -33,7 +33,7 @@ const { awu } = collections.asynciterable
 
 const log = logger(module)
 
-const LAYOUT_FULLNAME_SEPERATOR = '-'
+const LAYOUT_FULLNAME_SEPARATOR = '-'
 export const LAYOUT_TYPE_ID = new ElemID(SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE)
 export const WEBLINK_TYPE_ID = new ElemID(SALESFORCE, WEBLINK_METADATA_TYPE)
 
@@ -44,8 +44,8 @@ export const specialLayoutObjects = new Map([
 
 // Layout full name starts with related sobject and then '-'
 const layoutObjAndName = async (fullName: string): Promise<[string, string]> => {
-  const [obj, ...name] = fullName.split(LAYOUT_FULLNAME_SEPERATOR)
-  return [specialLayoutObjects.get(obj) ?? obj, name.join(LAYOUT_FULLNAME_SEPERATOR)]
+  const [obj, ...name] = fullName.split(LAYOUT_FULLNAME_SEPARATOR)
+  return [specialLayoutObjects.get(obj) ?? obj, name.join(LAYOUT_FULLNAME_SEPARATOR)]
 }
 
 const fixLayoutPath = async (
@@ -53,6 +53,9 @@ const fixLayoutPath = async (
   customObject: ObjectType,
   layoutName: string,
 ): Promise<void> => {
+  if (layoutName.includes('Yariv Layout')) {
+    console.log('Yariv Layout name: %s \nnaclCase(layoutName): %s \npathNaclCase(naclCase(layoutName)): %s', layoutName, naclCase(layoutName), pathNaclCase(naclCase(layoutName)))
+  }
   layout.path = [
     ...await getObjectDirectoryPath(customObject),
     layout.elemID.typeName,
@@ -64,7 +67,7 @@ const transformPrefixedLayoutFileProp = async (fileProp: FileProperties):
   Promise<FileProperties> => {
   const [layoutObjName, layoutName] = await layoutObjAndName(fileProp.fullName)
   const fixedLayoutName = prefixNameIfNecessary(layoutName, fileProp.namespacePrefix)
-  return { ...fileProp, fullName: [layoutObjName, fixedLayoutName].join(LAYOUT_FULLNAME_SEPERATOR) }
+  return { ...fileProp, fullName: [layoutObjName, fixedLayoutName].join(LAYOUT_FULLNAME_SEPARATOR) }
 }
 
 const createLayoutMetadataInstances = async (
@@ -81,8 +84,11 @@ const createLayoutMetadataInstances = async (
   const { elements: fileProps, configChanges } = await listMetadataObjects(
     client, LAYOUT_TYPE_ID_METADATA_TYPE, [],
   )
+  console.log('fileProps[0]: %o', fileProps[0])
 
   const correctedFileProps = await Promise.all(fileProps.map(transformPrefixedLayoutFileProp))
+  console.log('correctedFileProps[0]: %o', correctedFileProps[0])
+
   const instances = await fetchMetadataInstances({
     client,
     fileProps: correctedFileProps,
@@ -111,6 +117,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const { elements: layouts,
       configChanges } = await createLayoutMetadataInstances(config, client, elements)
     if (layouts.length === 0) {
+      console.log('created 0 layouts')
       return {}
     }
     const referenceElements = buildElementsSourceForFetch(elements, config)
@@ -121,13 +128,17 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       map: obj => obj.elemID,
     })
 
+
     await awu(layouts).forEach(async layout => {
       const [layoutObjName, layoutName] = await layoutObjAndName(await apiName(layout))
+      console.log('[layoutObjName, layoutName]: %o', [layoutObjName, layoutName])
+      console.log('apiName: %s', await apiName(layout))
       const layoutObjId = apiNameToCustomObject.get(layoutObjName)
       const layoutObj = layoutObjId !== undefined
         ? await referenceElements.get(layoutObjId)
         : undefined
       if (layoutObj === undefined || !(await isCustomObject(layoutObj))) {
+        console.log('Could not find object %s for layout %s', layoutObjName, layoutName)
         log.debug('Could not find object %s for layout %s', layoutObjName, layoutName)
         return
       }
@@ -136,6 +147,9 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       await fixLayoutPath(layout, layoutObj, layoutName)
     })
 
+    console.log('created instances with names: %o', layouts.filter(inst => inst.elemID.name.includes('Yariv')).map(inst => inst.elemID.name)[0])
+    console.log('created instances with fullname parts: %o', layouts.map(inst => inst.elemID.getFullNameParts())[0])
+    console.log('created instances with instance?.path: %o', layouts.filter(inst => !inst.elemID.name.startsWith('SBQQ') && !inst.elemID.name.startsWith('sbaa')).map(inst => inst.path))
     elements.push(...layouts)
 
     return {

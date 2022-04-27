@@ -28,9 +28,9 @@ const { awu } = collections.asynciterable
 
 const removeAttributePrefixForValue = (
   value: Values,
-  type?: ObjectType
+  type: ObjectType
 ): Values => {
-  if (_.isUndefined(type)) {
+  if (!_.isPlainObject(value)) {
     return value
   }
 

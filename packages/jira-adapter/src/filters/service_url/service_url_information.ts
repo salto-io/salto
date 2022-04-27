@@ -98,11 +98,6 @@ const WebhookInformation: ServiceUrlSupplier = {
   supplier: (_: InstanceElement) => '/plugins/servlet/webhooks#',
 }
 
-const IssueEventInformation: ServiceUrlSupplier = {
-  typeName: 'IssueEvent',
-  supplier: (_: InstanceElement) => '/secure/admin/ListEventTypes.jspa',
-}
-
 const serviceUrlInformation: ServiceUrlSupplier[] = [
   boardInformation,
   ProjectComponentInformation,
@@ -111,7 +106,6 @@ const serviceUrlInformation: ServiceUrlSupplier[] = [
   DashboardGadgetInformation,
   AutomationInformation,
   WebhookInformation,
-  IssueEventInformation,
 ]
 
 const filter: FilterCreator = params => ({

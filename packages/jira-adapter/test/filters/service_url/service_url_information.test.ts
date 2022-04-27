@@ -171,19 +171,6 @@ describe('service url information filter', () => {
         })
       })
     })
-    describe('IssueEvent type', () => {
-      it('should add service url annotation', async () => {
-        const objType = new ObjectType({ elemID: new ElemID(JIRA, 'IssueEvent') })
-        const elements = [new InstanceElement('IssueEvent', objType, { id: 11 })]
-        await filter.onFetch(elements)
-        expect(elements.map(e => e.elemID.getFullName()).sort())
-          .toEqual(['jira.IssueEvent.instance.IssueEvent'])
-        const [instance] = elements
-        expect(instance.annotations).toEqual({
-          [CORE_ANNOTATIONS.SERVICE_URL]: 'https://ori-salto-test.atlassian.net/secure/admin/ListEventTypes.jspa',
-        })
-      })
-    })
   })
   describe('onDeploy', () => {
     describe('Board type', () => {
@@ -311,19 +298,6 @@ describe('service url information filter', () => {
         const [instance] = elements
         expect(instance.annotations).toEqual({
           [CORE_ANNOTATIONS.SERVICE_URL]: 'https://ori-salto-test.atlassian.net/plugins/servlet/webhooks#',
-        })
-      })
-    })
-    describe('IssueEvent type', () => {
-      it('should add service url annotation', async () => {
-        const objType = new ObjectType({ elemID: new ElemID(JIRA, 'IssueEvent') })
-        const elements = [new InstanceElement('IssueEvent', objType, { id: 11 })]
-        await filter.onDeploy(elements.map(inst => toChange({ after: inst })))
-        expect(elements.map(e => e.elemID.getFullName()).sort())
-          .toEqual(['jira.IssueEvent.instance.IssueEvent'])
-        const [instance] = elements
-        expect(instance.annotations).toEqual({
-          [CORE_ANNOTATIONS.SERVICE_URL]: 'https://ori-salto-test.atlassian.net/secure/admin/ListEventTypes.jspa',
         })
       })
     })

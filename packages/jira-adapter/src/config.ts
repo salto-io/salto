@@ -1481,6 +1481,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
+      serviceUrl: '/secure/admin/ListEventTypes.jspa',
     },
   },
 

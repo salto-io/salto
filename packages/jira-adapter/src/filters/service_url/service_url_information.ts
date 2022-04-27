@@ -108,50 +108,46 @@ const serviceUrlInformation: ServiceUrlSupplier[] = [
   WebhookInformation,
 ]
 
+const supplyServiceUrl = (
+  instances: InstanceElement[],
+  supplier: ServiceUrlSupplier,
+  baseUrl: string
+): void => {
+  try {
+    instances.forEach(instance => {
+      const serviceUrl = supplier.supplier(instance)
+      if (serviceUrl) {
+        instance.annotate(
+          { [CORE_ANNOTATIONS.SERVICE_URL]:
+            new URL(serviceUrl, baseUrl).href },
+        )
+      }
+    })
+  } catch (error) {
+    log.error(`Failed to supply service url for ${supplier.typeName}`, error)
+  }
+}
+
 const filter: FilterCreator = params => ({
   onFetch: async (elements: Element[]) => {
-    const supplyServiceUrl = (information: ServiceUrlSupplier): void => {
-      try {
-        elements
-          .filter(isInstanceElement)
-          .filter(instance => instance.elemID.typeName === information.typeName)
-          .forEach(instance => {
-            const serviceUrl = information.supplier(instance)
-            if (serviceUrl) {
-              instance.annotate(
-                { [CORE_ANNOTATIONS.SERVICE_URL]:
-                  new URL(serviceUrl, params.client.getUrl().href).href },
-              )
-            }
-          })
-      } catch (error) {
-        log.error(`Failed to supply service url for ${information.typeName}`, error)
-      }
+    const filterElementsBySupplier = (information: ServiceUrlSupplier): void => {
+      const instances = elements
+        .filter(isInstanceElement)
+        .filter(instance => instance.elemID.typeName === information.typeName)
+      supplyServiceUrl(instances, information, params.client.getUrl().href)
     }
-    serviceUrlInformation.forEach(supplyServiceUrl)
+    serviceUrlInformation.forEach(filterElementsBySupplier)
   },
   onDeploy: async changes => {
-    const supplyServiceUrl = (information: ServiceUrlSupplier): void => {
-      try {
-        changes
-          .filter(isInstanceChange)
-          .filter(isAdditionChange)
-          .map(getChangeData)
-          .filter(instance => instance.elemID.typeName === information.typeName)
-          .forEach(instance => {
-            const serviceUrl = information.supplier(instance)
-            if (serviceUrl) {
-              instance.annotate(
-                { [CORE_ANNOTATIONS.SERVICE_URL]:
-                  new URL(serviceUrl, params.client.getUrl().href).href },
-              )
-            }
-          })
-      } catch (error) {
-        log.warn(`Failed to supply service url for ${information.typeName} elements`, error)
-      }
+    const filterElementsBySupplier = (information: ServiceUrlSupplier): void => {
+      const instances = changes
+        .filter(isInstanceChange)
+        .filter(isAdditionChange)
+        .map(getChangeData)
+        .filter(instance => instance.elemID.typeName === information.typeName)
+      supplyServiceUrl(instances, information, params.client.getUrl().href)
     }
-    serviceUrlInformation.forEach(supplyServiceUrl)
+    serviceUrlInformation.forEach(filterElementsBySupplier)
   },
 })
 

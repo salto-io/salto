@@ -18,7 +18,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/data_instances_references'
 import NetsuiteClient from '../../src/client/client'
 import { NETSUITE } from '../../src/constants'
-import { getDefaultAdapterConfig } from '../utils'
+import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../utils'
 
 describe('data_instances_references', () => {
   const firstType = new ObjectType({
@@ -56,13 +56,7 @@ describe('data_instances_references', () => {
       const filterOpts = {
         client: {} as NetsuiteClient,
         elementsSourceIndex: {
-          getIndexes: () => Promise.resolve({
-            serviceIdsIndex: {},
-            serviceIdRecordsIndex: {},
-            internalIdsIndex: {},
-            customFieldsIndex: {},
-            pathToInternalIdsIndex: {},
-          }),
+          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
         },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -84,13 +78,7 @@ describe('data_instances_references', () => {
         elements: [instance],
         client: {} as NetsuiteClient,
         elementsSourceIndex: {
-          getIndexes: () => Promise.resolve({
-            serviceIdsIndex: {},
-            serviceIdRecordsIndex: {},
-            internalIdsIndex: {},
-            customFieldsIndex: {},
-            pathToInternalIdsIndex: {},
-          }),
+          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
         },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -117,13 +105,10 @@ describe('data_instances_references', () => {
         client: {} as NetsuiteClient,
         elementsSourceIndex: {
           getIndexes: () => Promise.resolve({
-            serviceIdsIndex: {},
-            serviceIdRecordsIndex: {},
+            ...createEmptyElementsSourceIndexes(),
             internalIdsIndex: {
               'firstType-1': { elemID: referencedInstance.elemID },
             },
-            customFieldsIndex: {},
-            pathToInternalIdsIndex: {},
           }),
         },
         elementsSource: buildElementsSourceFromElements([]),
@@ -151,13 +136,7 @@ describe('data_instances_references', () => {
       const fetchOpts = {
         client: {} as NetsuiteClient,
         elementsSourceIndex: {
-          getIndexes: () => Promise.resolve({
-            serviceIdsIndex: {},
-            serviceIdRecordsIndex: {},
-            internalIdsIndex: {},
-            customFieldsIndex: {},
-            pathToInternalIdsIndex: {},
-          }),
+          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
         },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -186,13 +165,7 @@ describe('data_instances_references', () => {
       const fetchOpts = {
         client: {} as NetsuiteClient,
         elementsSourceIndex: {
-          getIndexes: () => Promise.resolve({
-            serviceIdsIndex: {},
-            serviceIdRecordsIndex: {},
-            internalIdsIndex: {},
-            customFieldsIndex: {},
-            pathToInternalIdsIndex: {},
-          }),
+          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
         },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -222,13 +195,7 @@ describe('data_instances_references', () => {
       const fetchOpts = {
         client: {} as NetsuiteClient,
         elementsSourceIndex: {
-          getIndexes: () => Promise.resolve({
-            serviceIdsIndex: {},
-            serviceIdRecordsIndex: {},
-            internalIdsIndex: {},
-            customFieldsIndex: {},
-            pathToInternalIdsIndex: {},
-          }),
+          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
         },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,

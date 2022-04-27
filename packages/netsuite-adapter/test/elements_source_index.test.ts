@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { getFileCabinetTypes } from '../src/types/file_cabinet_types'
 import { entitycustomfieldType } from '../src/autogen/types/custom_types/entitycustomfield'
@@ -114,5 +114,14 @@ describe('createElementsSourceIndex', () => {
         '/folder1': 0,
         '/folder1/file1': 1,
       })
+  })
+
+  it('should create the right elemIdToChangeByIndex index', async () => {
+    const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'someType') })
+    const instance = new InstanceElement('inst', type, {}, undefined, { [CORE_ANNOTATIONS.CHANGED_BY]: 'user name' })
+    getAllMock.mockImplementation(buildElementsSourceFromElements([instance]).getAll)
+
+    expect((await createElementsSourceIndex(elementsSource).getIndexes()).elemIdToChangeByIndex)
+      .toEqual({ 'netsuite.someType.instance.inst': 'user name' })
   })
 })

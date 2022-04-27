@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, isInstanceElement, ReadOnlyElementsSource, TypeElement } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, ReadOnlyElementsSource, TypeElement, TypeReference } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -27,17 +27,19 @@ import { getFieldInstanceTypes } from '../data_elements/custom_fields'
 const { awu } = collections.asynciterable
 const log = logger(module)
 
-export const getDataInstanceId = (internalId: string, type: TypeElement): string => `${type.elemID.name}-${internalId}`
-
+export const getDataInstanceId = (
+  internalId: string,
+  type: TypeElement | TypeReference
+): string => `${type.elemID.name}-${internalId}`
 
 const createIndexes = async (elementsSource: ReadOnlyElementsSource):
   Promise<ElementsSourceIndexes> => {
-  log.debug('Starting to create elements source index')
   const serviceIdsIndex: Record<string, ElementsSourceValue> = {}
   const serviceIdRecordsIndex: ServiceIdRecords = {}
   const internalIdsIndex: Record<string, ElementsSourceValue> = {}
   const customFieldsIndex: Record<string, InstanceElement[]> = {}
   const pathToInternalIdsIndex: Record<string, number> = {}
+  const elemIdToChangeByIndex: Record<string, string> = {}
 
   const updateServiceIdIndex = async (element: InstanceElement): Promise<void> => {
     const serviceIdRecords = await getInstanceServiceIdRecords(element, elementsSource)
@@ -54,7 +56,7 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
     )
   }
 
-  const updateInternalIdsIndex = async (element: InstanceElement): Promise<void> => {
+  const updateInternalIdsIndex = (element: InstanceElement): void => {
     const { internalId, isSubInstance } = element.value
     if (internalId === undefined || isSubInstance) {
       return
@@ -63,7 +65,7 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
     const rawLastFetchTime = element.value[LAST_FETCH_TIME]
     const lastFetchTime = rawLastFetchTime && new Date(rawLastFetchTime)
 
-    internalIdsIndex[getDataInstanceId(internalId, await element.getType(elementsSource))] = {
+    internalIdsIndex[getDataInstanceId(internalId, element.refType)] = {
       elemID: element.elemID,
       lastFetchTime,
     }
@@ -88,21 +90,30 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
     pathToInternalIdsIndex[path] = parseInt(internalId, 10)
   }
 
+  const updateElemIdToChangedByIndex = (element: InstanceElement): void => {
+    const changeBy = element.annotations[CORE_ANNOTATIONS.CHANGED_BY]
+    if (changeBy !== undefined) {
+      elemIdToChangeByIndex[element.elemID.getFullName()] = changeBy
+    }
+  }
+
   await awu(await elementsSource.getAll())
     .filter(isInstanceElement)
     .forEach(async element => {
       await updateServiceIdIndex(element)
-      await updateInternalIdsIndex(element)
+      updateInternalIdsIndex(element)
       updateCustomFieldsIndex(element)
       updatePathToInternalIdsIndex(element)
+      updateElemIdToChangedByIndex(element)
     })
-  log.debug('finished creating elements source index')
+
   return {
     serviceIdsIndex,
     serviceIdRecordsIndex,
     internalIdsIndex,
     customFieldsIndex,
     pathToInternalIdsIndex,
+    elemIdToChangeByIndex,
   }
 }
 
@@ -113,7 +124,7 @@ export const createElementsSourceIndex = (
   return {
     getIndexes: async () => {
       if (cachedIndex === undefined) {
-        cachedIndex = await createIndexes(elementsSource)
+        cachedIndex = await log.time(() => createIndexes(elementsSource), 'createIndexes')
       }
       return cachedIndex
     },

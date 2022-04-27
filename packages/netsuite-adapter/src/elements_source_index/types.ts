@@ -28,6 +28,7 @@ export type ElementsSourceIndexes = {
   internalIdsIndex: Record<string, ElementsSourceValue>
   customFieldsIndex: Record<string, InstanceElement[]>
   pathToInternalIdsIndex: Record<string, number>
+  elemIdToChangeByIndex: Record<string, string>
 }
 
 export type LazyElementsSourceIndexes = {

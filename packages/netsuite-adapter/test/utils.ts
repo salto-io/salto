@@ -15,6 +15,7 @@
 */
 import { ElemID, ServiceIds } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType } from '@salto-io/adapter-utils'
+import { ElementsSourceIndexes } from '../src/elements_source_index/types'
 import { configType, NetsuiteConfig } from '../src/config'
 import { NETSUITE } from '../src/constants'
 
@@ -25,3 +26,12 @@ export const getDefaultAdapterConfig = async (): Promise<NetsuiteConfig> => {
   const defaultConfigInstance = await createDefaultInstanceFromType(NETSUITE, configType)
   return defaultConfigInstance.value as NetsuiteConfig
 }
+
+export const createEmptyElementsSourceIndexes = (): ElementsSourceIndexes => ({
+  serviceIdsIndex: {},
+  serviceIdRecordsIndex: {},
+  internalIdsIndex: {},
+  customFieldsIndex: {},
+  pathToInternalIdsIndex: {},
+  elemIdToChangeByIndex: {},
+})

@@ -98,15 +98,15 @@ export const orderInstanceContainsAllTheInstancesValidator: ChangeValidator = as
       if (!isInstanceInOrderList(orderListOfInstanceActivity, instance)) {
         return [{
           elemID: instance.elemID,
-          severity: 'Error',
+          severity: 'Warning',
           message: `Instance order not specified in ${orderTypeName}`,
-          detailedMessage: `Order not specified for instance ${instance.elemID.name} of type ${instance.elemID.typeName}. Please make sure to include it in ${orderTypeName} under the ${instanceActivityValue ? 'active' : 'inactive'} list`,
+          detailedMessage: `Instance ${instance.elemID.name} of type ${instance.elemID.typeName} not listed in ${instance.elemID.typeName} sort order, and will be added at the end by default. If order is important, please include it in ${orderTypeName} under the ${instanceActivityValue ? 'active' : 'inactive'} list`,
         }]
       }
       if (isInstanceInOrderList(orderListOfTheOtherInstanceActivity, instance)) {
         return [{
           elemID: instance.elemID,
-          severity: 'Error',
+          severity: 'Warning',
           message: `Instance misplaced in ${orderTypeName}`,
           detailedMessage: `Instance ${instance.elemID.name} of type ${instance.elemID.typeName} is misplaced in ${orderTypeName}. Please make sure to place it under the ${instanceActivityValue ? 'active' : 'inactive'} list`,
         }]

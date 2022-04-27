@@ -296,7 +296,7 @@ describe('multi env source', () => {
           // We can re-use the sources here because the mock nacl sources don't behave correctly
           // and will "replay" the "load" result regardless of how many times they are loaded
           multiSource = multiEnvSource(sources, commonPrefix, remoteMaps.creator, true)
-          loadResult = await multiSource.load({ignoreFileChanges: true})
+          loadResult = await multiSource.load({ ignoreFileChanges: true })
         })
 
         it('should return empty change sets', () => {

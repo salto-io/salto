@@ -204,6 +204,8 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
     }
     const lastFetchTime = await getLastServerTime(elementsSource)
     if (lastFetchTime === undefined) {
+      // in order to reduce the fetch duration we want to query author information
+      // only since last fetch, and not querying at all on the first fetch
       log.debug('skipping author information fetching on first fetch')
       return
     }
@@ -214,9 +216,11 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
       return
     }
     const employeeNames = await fetchEmployeeNames(client)
-    const systemNotes = await fetchSystemNotes(client, queryIds, lastFetchTime)
+    const systemNotes = _.isEmpty(employeeNames)
+      ? await fetchSystemNotes(client, queryIds, lastFetchTime)
+      : {}
     const { elemIdToChangeByIndex } = await elementsSourceIndex.getIndexes()
-    if ((_.isEmpty(employeeNames) || _.isEmpty(systemNotes)) && _.isEmpty(elemIdToChangeByIndex)) {
+    if (_.isEmpty(systemNotes) && _.isEmpty(elemIdToChangeByIndex)) {
       return
     }
     instancesWithInternalId.forEach(instance => {

@@ -55,6 +55,9 @@ const createFieldServiceUrl = (instance: InstanceElement): string | undefined =>
 const createDashboardGadgetServiceUrl = (instance: InstanceElement): string =>
   `/jira/dashboards/${getParentId(instance)}?maximized=${instance.value.id}`
 
+const createSecurityLevelServiceUrl = (instance: InstanceElement): string =>
+  `/secure/admin/EditSecurityLevel!default.jspa?levelId=${instance.value.id}&schemeId=${getParentId(instance)}`
+
 const boardInformation: ServiceUrlSupplier = {
   typeName: 'Board',
   supplier: createBoardServiceUrl,
@@ -85,6 +88,12 @@ const WebhookInformation: ServiceUrlSupplier = {
   supplier: (_: InstanceElement) => '/plugins/servlet/webhooks#',
 }
 
+const SecurityLevelInformation: ServiceUrlSupplier = {
+  typeName: 'SecurityLevel',
+  supplier: createSecurityLevelServiceUrl,
+
+}
+
 const serviceUrlInformation: ServiceUrlSupplier[] = [
   boardInformation,
   ProjectComponentInformation,
@@ -92,6 +101,7 @@ const serviceUrlInformation: ServiceUrlSupplier[] = [
   FieldInformation,
   DashboardGadgetInformation,
   WebhookInformation,
+  SecurityLevelInformation,
 ]
 
 const supplyServiceUrl = (

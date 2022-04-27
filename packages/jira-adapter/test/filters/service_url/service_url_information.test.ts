@@ -136,6 +136,19 @@ describe('service url information filter', () => {
         }))
       })
     })
+    describe('SecurityLevel type', () => {
+      it('should add service url annotation', async () => {
+        const objType = new ObjectType({ elemID: new ElemID(JIRA, 'SecurityLevel') })
+        const elements = [new InstanceElement('SecurityLevel', objType, { id: 11 }, undefined, { _parent: testParent })]
+        await filter.onFetch(elements)
+        expect(elements.map(e => e.elemID.getFullName()).sort())
+          .toEqual(['jira.SecurityLevel.instance.SecurityLevel'])
+        const [instance] = elements
+        expect(instance.annotations).toEqual(expect.objectContaining({
+          [CORE_ANNOTATIONS.SERVICE_URL]: 'https://ori-salto-test.atlassian.net/secure/admin/EditSecurityLevel!default.jspa?levelId=11&schemeId=customfield_test',
+        }))
+      })
+    })
     describe('Webhook type', () => {
       it('should add service url annotation', async () => {
         const objType = new ObjectType({ elemID: new ElemID(JIRA, 'Webhook') })
@@ -241,6 +254,19 @@ describe('service url information filter', () => {
         const [instance] = elements
         expect(instance.annotations).toEqual(expect.objectContaining({
           [CORE_ANNOTATIONS.SERVICE_URL]: 'https://ori-salto-test.atlassian.net/jira/dashboards/customfield_test?maximized=11',
+        }))
+      })
+    })
+    describe('SecurityLevel type', () => {
+      it('should add service url annotation', async () => {
+        const objType = new ObjectType({ elemID: new ElemID(JIRA, 'SecurityLevel') })
+        const elements = [new InstanceElement('SecurityLevel', objType, { id: 11 }, undefined, { _parent: testParent })]
+        await filter.onDeploy(elements.map(inst => toChange({ after: inst })))
+        expect(elements.map(e => e.elemID.getFullName()).sort())
+          .toEqual(['jira.SecurityLevel.instance.SecurityLevel'])
+        const [instance] = elements
+        expect(instance.annotations).toEqual(expect.objectContaining({
+          [CORE_ANNOTATIONS.SERVICE_URL]: 'https://ori-salto-test.atlassian.net/secure/admin/EditSecurityLevel!default.jspa?levelId=11&schemeId=customfield_test',
         }))
       })
     })

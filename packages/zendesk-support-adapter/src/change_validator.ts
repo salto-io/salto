@@ -28,6 +28,7 @@ import {
   customRoleNameValidator,
   invalidActionsValidator,
   instanceHasOrderValidator,
+  triggerInstanceHasOrderValidator,
   orderInstanceContainsAllTheInstancesValidator,
   triggerOrderInstanceContainsAllTheInstancesValidator,
   brandCreationValidator,
@@ -68,6 +69,7 @@ export default ({
     orderInstanceContainsAllTheInstancesValidator,
     triggerOrderInstanceContainsAllTheInstancesValidator,
     instanceHasOrderValidator,
+    triggerInstanceHasOrderValidator,
     brandCreationValidator,
     webhookAuthDataValidator,
   ]

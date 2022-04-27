@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Change, ChangeValidator, getChangeData, InstanceElement,
+import { Change, ChangeError, ChangeValidator, getChangeData, InstanceElement,
   isAdditionOrModificationChange, isInstanceChange, isInstanceElement,
   isReferenceExpression } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
@@ -48,7 +48,7 @@ const TYPE_NAME_TO_SPECIAL_ACTIVE_FIELD_NAME: Record<string, string> = {
 const isRelevantChange = (change: Change<InstanceElement>): boolean =>
   (RELEVANT_TYPE_NAMES.includes(getChangeData(change).elemID.typeName))
 
-const getInstanceActivityValue = (instance: InstanceElement): boolean =>
+export const getInstanceActivityValue = (instance: InstanceElement): boolean =>
   instance.value[TYPE_NAME_TO_SPECIAL_ACTIVE_FIELD_NAME[instance.elemID.typeName] ?? 'active']
 
 const isInstanceInOrderList = (orderList: unknown, instance: InstanceElement): boolean =>
@@ -113,22 +113,27 @@ export const instanceHasOrderValidator: ChangeValidator = async (
         return []
       }
       const active = getInstanceActivityValue(instance)
-      if (!isInstanceInCorrectOrderList(orderInstance, instance)) {
-        return [{
-          elemID: instance.elemID,
-          severity: 'Warning',
-          message: `Instance order not specified in ${orderTypeName}`,
-          detailedMessage: `Order not specified for instance ${instance.elemID.name} of type ${instance.elemID.typeName}. Please make sure to include it in ${orderTypeName} under the ${active ? 'active' : 'inactive'} list`,
-        }]
-      }
-      if (isInstanceInWrongOrderList(orderInstance, instance)) {
-        return [{
-          elemID: instance.elemID,
-          severity: 'Warning',
-          message: `Instance misplaced in ${orderTypeName}`,
-          detailedMessage: `Instance ${instance.elemID.name} of type ${instance.elemID.typeName} is misplaced in ${orderTypeName}. Please make sure to place it under the ${active ? 'active' : 'inactive'} list`,
-        }]
-      }
-      return []
+      return [
+        ...(
+          !isInstanceInCorrectOrderList(orderInstance, instance)
+            ? [{
+              elemID: instance.elemID,
+              severity: 'Warning',
+              message: `Instance order not specified in ${orderTypeName}`,
+              detailedMessage: `Order not specified for instance ${instance.elemID.name} of type ${instance.elemID.typeName}. Please make sure to include it in ${orderTypeName} under the ${active ? 'active' : 'inactive'} list`,
+            }]
+            : []
+        ),
+        ...(
+          isInstanceInWrongOrderList(orderInstance, instance)
+            ? [{
+              elemID: instance.elemID,
+              severity: 'Warning',
+              message: `Instance misplaced in ${orderTypeName}`,
+              detailedMessage: `Instance ${instance.elemID.name} of type ${instance.elemID.typeName} is misplaced in ${orderTypeName}. Please make sure to place it under the ${active ? 'active' : 'inactive'} list`,
+            }]
+            : []
+        ),
+      ] as ChangeError[]
     })
 }

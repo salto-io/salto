@@ -16,11 +16,11 @@
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { ZENDESK_SUPPORT } from '../../src/constants'
-import { createWrongPlaceErrorMessage, triggerOrderInstanceContainsAllTheInstancesValidator } from '../../src/change_validators/trigger_order'
+import { createWrongPlaceErrorMessage, triggerInstanceHasOrderValidator } from '../../src/change_validators/trigger_has_order'
 import { TYPE_NAME as TRIGGER_TYPE_NAME, TRIGGER_CATEGORY_TYPE_NAME } from '../../src/filters/reorder/trigger'
 import { createOrderTypeName } from '../../src/filters/reorder/creator'
 
-describe('triggerOrderInstanceContainsAllTheInstancesValidator', () => {
+describe('triggerInstanceHasOrderValidator', () => {
   const triggerType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, TRIGGER_TYPE_NAME) })
   const triggerCategoryType = new ObjectType({
     elemID: new ElemID(ZENDESK_SUPPORT, TRIGGER_CATEGORY_TYPE_NAME),
@@ -84,7 +84,7 @@ describe('triggerOrderInstanceContainsAllTheInstancesValidator', () => {
     ].map(e => e.clone()))
     const elementsToAdd = [triggerToAdd]
     const elementsToModify = [orderInstance]
-    const errors = await triggerOrderInstanceContainsAllTheInstancesValidator(
+    const errors = await triggerInstanceHasOrderValidator(
       elementsToAdd.map(e => toChange({ after: e }))
         .concat(elementsToModify.map(e => toChange({ before: e, after: e }))),
       elementsSource,
@@ -118,7 +118,7 @@ describe('triggerOrderInstanceContainsAllTheInstancesValidator', () => {
       trigger1, trigger2, trigger3, invalidOrderInstance,
     ].map(e => e.clone()))
     const elementsToAdd = [trigger3.clone()]
-    const errors = await triggerOrderInstanceContainsAllTheInstancesValidator(
+    const errors = await triggerInstanceHasOrderValidator(
       elementsToAdd.map(e => toChange({ after: e })),
       elementsSource,
     )
@@ -129,6 +129,60 @@ describe('triggerOrderInstanceContainsAllTheInstancesValidator', () => {
       message: `Instance order not specified in ${orderTypeName}`,
       detailedMessage: `Order not specified for instance ${trigger3.elemID.name} of type ${trigger3.elemID.typeName} in ${orderTypeName}. Please make sure to place it under the ${category1.elemID.name} category in the inactive list`,
     }])
+  })
+  it('should return multiple errors if the instance does not exist in the correct activity list but exist in others', async () => {
+    const invalidOrderInstance = new InstanceElement(
+      ElemID.CONFIG_NAME,
+      triggerOrderType,
+      {
+        order: [
+          {
+            category: new ReferenceExpression(category1.elemID, category1),
+            active: [
+              new ReferenceExpression(trigger1.elemID, trigger1),
+              new ReferenceExpression(trigger2.elemID, trigger2),
+              new ReferenceExpression(trigger3.elemID, trigger3),
+            ],
+            inactive: [],
+          },
+          {
+            category: new ReferenceExpression(category2.elemID, category2),
+            active: [],
+            inactive: [new ReferenceExpression(trigger3.elemID, trigger3)],
+          },
+        ],
+      },
+    )
+    const elementsSource = buildElementsSourceFromElements([
+      triggerType, triggerOrderType, triggerCategoryType, category1, category2,
+      trigger1, trigger2, trigger3, invalidOrderInstance,
+    ].map(e => e.clone()))
+    const elementsToAdd = [trigger3.clone()]
+    const errors = await triggerInstanceHasOrderValidator(
+      elementsToAdd.map(e => toChange({ after: e })),
+      elementsSource,
+    )
+    const orderTypeName = createOrderTypeName(trigger3.elemID.typeName)
+    expect(errors).toEqual([
+      {
+        elemID: trigger3.elemID,
+        severity: 'Warning',
+        message: `Instance order not specified in ${orderTypeName}`,
+        detailedMessage: `Order not specified for instance ${trigger3.elemID.name} of type ${trigger3.elemID.typeName} in ${orderTypeName}. Please make sure to place it under the ${category1.elemID.name} category in the inactive list`,
+      },
+      createWrongPlaceErrorMessage(
+        trigger3.elemID,
+        createOrderTypeName(trigger3.elemID.typeName),
+        category1.elemID.name,
+        false
+      ),
+      createWrongPlaceErrorMessage(
+        trigger3.elemID,
+        createOrderTypeName(trigger3.elemID.typeName),
+        category2.elemID.name,
+        false
+      ),
+    ])
   })
   it('should return an error if the instance does exist in the wrong activity list in the same category', async () => {
     const invalidOrderInstance = new InstanceElement(
@@ -160,7 +214,7 @@ describe('triggerOrderInstanceContainsAllTheInstancesValidator', () => {
       trigger1, trigger2, trigger3, invalidOrderInstance,
     ].map(e => e.clone()))
     const elementsToAdd = [trigger3.clone()]
-    const errors = await triggerOrderInstanceContainsAllTheInstancesValidator(
+    const errors = await triggerInstanceHasOrderValidator(
       elementsToAdd.map(e => toChange({ after: e })),
       elementsSource,
     )
@@ -202,7 +256,7 @@ describe('triggerOrderInstanceContainsAllTheInstancesValidator', () => {
       trigger1, trigger2, trigger3, invalidOrderInstance,
     ].map(e => e.clone()))
     const elementsToAdd = [trigger3.clone()]
-    const errors = await triggerOrderInstanceContainsAllTheInstancesValidator(
+    const errors = await triggerInstanceHasOrderValidator(
       elementsToAdd.map(e => toChange({ after: e })),
       elementsSource,
     )
@@ -240,7 +294,7 @@ describe('triggerOrderInstanceContainsAllTheInstancesValidator', () => {
       },
     )
     const elementsToAdd = [trigger3.clone(), invalidOrderInstance.clone()]
-    const errors = await triggerOrderInstanceContainsAllTheInstancesValidator(
+    const errors = await triggerInstanceHasOrderValidator(
       elementsToAdd.map(e => toChange({ after: e })),
     )
     expect(errors).toHaveLength(0)
@@ -251,7 +305,7 @@ describe('triggerOrderInstanceContainsAllTheInstancesValidator', () => {
       triggerType, triggerOrderType, triggerCategoryType, category1, category2,
       trigger1, trigger2, trigger3,
     ].map(e => e.clone()))
-    const errors = await triggerOrderInstanceContainsAllTheInstancesValidator(
+    const errors = await triggerInstanceHasOrderValidator(
       elementsToAdd.map(e => toChange({ after: e })),
       elementsSource,
     )
@@ -265,7 +319,7 @@ describe('triggerOrderInstanceContainsAllTheInstancesValidator', () => {
       triggerType, triggerOrderType, triggerCategoryType, category1, category2,
       trigger1, trigger2, trigger3, orderInstance,
     ].map(e => e.clone()))
-    const errors = await triggerOrderInstanceContainsAllTheInstancesValidator(
+    const errors = await triggerInstanceHasOrderValidator(
       elementsToAdd.map(e => toChange({ after: e })),
       elementsSource,
     )

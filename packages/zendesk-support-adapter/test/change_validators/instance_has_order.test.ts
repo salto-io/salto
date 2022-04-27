@@ -158,6 +158,45 @@ describe('instanceHasOrderValidator', () => {
       detailedMessage: `Instance ${workspace1.elemID.name} of type ${workspace1.elemID.typeName} is misplaced in ${orderTypeName}. Please make sure to place it under the active list`,
     }])
   })
+  it('should return two errors if the instance exist on the other activity list', async () => {
+    const invalidOrderInstance = new InstanceElement(
+      ElemID.CONFIG_NAME,
+      workspaceOrderType,
+      {
+        active: [
+          new ReferenceExpression(workspace2.elemID, workspace2),
+        ],
+        inactive: [
+          new ReferenceExpression(workspace3.elemID, workspace3),
+          new ReferenceExpression(workspace1.elemID, workspace1),
+        ],
+      },
+    )
+    const elementsSource = buildElementsSourceFromElements([
+      workspaceType, workspaceOrderType, workspace1, workspace2,
+      workspace3, invalidOrderInstance,
+    ].map(e => e.clone()))
+    const elementsToAdd = [workspace1.clone()]
+    const errors = await instanceHasOrderValidator(
+      elementsToAdd.map(e => toChange({ after: e })),
+      elementsSource,
+    )
+    const orderTypeName = createOrderTypeName(workspace1.elemID.typeName)
+    expect(errors).toEqual([
+      {
+        elemID: workspace1.elemID,
+        severity: 'Warning',
+        message: `Instance order not specified in ${orderTypeName}`,
+        detailedMessage: `Order not specified for instance ${workspace1.elemID.name} of type ${workspace1.elemID.typeName}. Please make sure to include it in ${orderTypeName} under the active list`,
+      },
+      {
+        elemID: workspace1.elemID,
+        severity: 'Warning',
+        message: `Instance misplaced in ${orderTypeName}`,
+        detailedMessage: `Instance ${workspace1.elemID.name} of type ${workspace1.elemID.typeName} is misplaced in ${orderTypeName}. Please make sure to place it under the active list`,
+      },
+    ])
+  })
   it('should not return an error if there is no elements source', async () => {
     const invalidOrderInstance = new InstanceElement(
       ElemID.CONFIG_NAME,

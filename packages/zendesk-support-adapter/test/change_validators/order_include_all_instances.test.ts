@@ -93,6 +93,35 @@ describe('orderInstanceContainsAllTheInstancesValidator', () => {
     )
     expect(errors).toHaveLength(0)
   })
+  it('should return an error if an instance is appearing twice in the same list', async () => {
+    const invalidOrderInstance = new InstanceElement(
+      ElemID.CONFIG_NAME,
+      automationOrderType,
+      {
+        active: [
+          new ReferenceExpression(automation1.elemID, automation1),
+          new ReferenceExpression(automation2.elemID, automation2),
+          new ReferenceExpression(automation1.elemID, automation1),
+        ],
+        inactive: [new ReferenceExpression(automation3.elemID, automation3)],
+      },
+    )
+    const elementsSource = buildElementsSourceFromElements([
+      automationType, automationOrderType, automation1, automation2,
+      automation3, invalidOrderInstance,
+    ].map(e => e.clone()))
+    const elementsToModify = [invalidOrderInstance.clone()]
+    const errors = await orderInstanceContainsAllTheInstancesValidator(
+      elementsToModify.map(e => toChange({ before: e, after: e })),
+      elementsSource,
+    )
+    expect(errors).toEqual([{
+      elemID: invalidOrderInstance.elemID,
+      severity: 'Error',
+      message: `Some instances were found multiple times in order instance ${invalidOrderInstance.elemID.typeName} under the active list`,
+      detailedMessage: `Order was specified multiple times under the active list for the following instances of type automation: automation1. Please make sure to include it in ${invalidOrderInstance.elemID.typeName} under the correct list once`,
+    }])
+  })
   it('should return an error if the instance does not exist in the correct activity list', async () => {
     const invalidOrderInstance = new InstanceElement(
       ElemID.CONFIG_NAME,
@@ -151,6 +180,44 @@ describe('orderInstanceContainsAllTheInstancesValidator', () => {
       message: `Some instances were misplaced in order instance ${invalidOrderInstance.elemID.typeName}`,
       detailedMessage: `The following instances of type ${workspaceType.elemID.typeName} were misplaced: workspace1. Please make sure to include it in ${invalidOrderInstance.elemID.typeName} under the correct list`,
     }])
+  })
+  it('should return two errors if the instance exist only on the other activity list', async () => {
+    const invalidOrderInstance = new InstanceElement(
+      ElemID.CONFIG_NAME,
+      workspaceOrderType,
+      {
+        active: [
+          new ReferenceExpression(workspace2.elemID, workspace2),
+        ],
+        inactive: [
+          new ReferenceExpression(workspace3.elemID, workspace3),
+          new ReferenceExpression(workspace1.elemID, workspace1),
+        ],
+      },
+    )
+    const elementsSource = buildElementsSourceFromElements([
+      workspaceType, workspaceOrderType, workspace1, workspace2,
+      workspace3, invalidOrderInstance,
+    ].map(e => e.clone()))
+    const elementsToModify = [invalidOrderInstance.clone()]
+    const errors = await orderInstanceContainsAllTheInstancesValidator(
+      elementsToModify.map(e => toChange({ before: e, after: e })),
+      elementsSource,
+    )
+    expect(errors).toEqual([
+      {
+        elemID: invalidOrderInstance.elemID,
+        severity: 'Error',
+        message: `Some instances were not found in order instance ${invalidOrderInstance.elemID.typeName}`,
+        detailedMessage: `Order not specified for the following instances of type ${workspaceType.elemID.typeName}: workspace1. Please make sure to include it in ${invalidOrderInstance.elemID.typeName} under the correct list`,
+      },
+      {
+        elemID: invalidOrderInstance.elemID,
+        severity: 'Error',
+        message: `Some instances were misplaced in order instance ${invalidOrderInstance.elemID.typeName}`,
+        detailedMessage: `The following instances of type ${workspaceType.elemID.typeName} were misplaced: workspace1. Please make sure to include it in ${invalidOrderInstance.elemID.typeName} under the correct list`,
+      },
+    ])
   })
   it('should not return an error if there is no elements source', async () => {
     const invalidOrderInstance = new InstanceElement(

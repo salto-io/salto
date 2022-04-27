@@ -39,6 +39,11 @@ const createAutomationServiceUrl = (instance: InstanceElement): string | undefin
 const createBoardServiceUrl = (instance: InstanceElement): string =>
   `/jira/software/projects/${instance.value.name.replace(' board', '')}/boards/${instance.value.id}`
 
+const createProjectComponentServiceUrl = (instance: InstanceElement): string => {
+  const parentKey = getParents(instance)[0].resValue.value.key
+  return `/plugins/servlet/project-config/${parentKey}/administer-components?filter=${instance.value.name}&orderDirection=DESC&orderField=NAME&page=1`
+}
+
 const createCustomFieldContextServiceUrl = (instance: InstanceElement): string | undefined => {
   const parentId = getParentId(instance)
   if (!parentId.startsWith('customfield_')) {
@@ -58,6 +63,11 @@ const createFieldServiceUrl = (instance: InstanceElement): string | undefined =>
 const boardInformation: ServiceUrlSupplier = {
   typeName: 'Board',
   supplier: createBoardServiceUrl,
+}
+
+const ProjectComponentInformation: ServiceUrlSupplier = {
+  typeName: 'ProjectComponent',
+  supplier: createProjectComponentServiceUrl,
 }
 
 const CustomFieldContextInformation: ServiceUrlSupplier = {
@@ -82,6 +92,7 @@ const WebhookInformation: ServiceUrlSupplier = {
 
 const serviceUrlInformation: ServiceUrlSupplier[] = [
   boardInformation,
+  ProjectComponentInformation,
   CustomFieldContextInformation,
   FieldInformation,
   AutomationInformation,

@@ -896,7 +896,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'assignee' },
         { fieldName: 'componentBean' },
       ],
-      serviceUrl: '/plugins/servlet/project-config/{_parent.0.value.key}/administer-components?filter={name}&orderDirection=DESC&orderField=NAME&page=1',
     },
     deployRequests: {
       add: {

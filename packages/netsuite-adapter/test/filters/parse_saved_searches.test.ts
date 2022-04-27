@@ -20,7 +20,7 @@ import { savedsearchType } from '../../src/autogen/types/custom_types/savedsearc
 import NetsuiteClient from '../../src/client/client'
 import { NETSUITE, SAVED_SEARCH } from '../../src/constants'
 import { FilterOpts } from '../../src/filter'
-import { getDefaultAdapterConfig } from '../utils'
+import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../utils'
 
 jest.mock('../../src/saved_search_parsing/saved_search_parser', () => ({
   parseDefinition: jest.fn().mockResolvedValue({
@@ -36,13 +36,7 @@ describe('parse_saved_searches filter', () => {
     fetchOpts = {
       client: {} as NetsuiteClient,
       elementsSourceIndex: {
-        getIndexes: () => Promise.resolve({
-          serviceIdsIndex: {},
-          serviceIdRecordsIndex: {},
-          internalIdsIndex: {},
-          customFieldsIndex: {},
-          pathToInternalIdsIndex: {},
-        }),
+        getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
       },
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
@@ -87,13 +81,7 @@ describe('parse_saved_searches filter', () => {
     fetchOpts = {
       client: {} as NetsuiteClient,
       elementsSourceIndex: {
-        getIndexes: () => Promise.resolve({
-          serviceIdsIndex: {},
-          serviceIdRecordsIndex: {},
-          internalIdsIndex: {},
-          customFieldsIndex: {},
-          pathToInternalIdsIndex: {},
-        }),
+        getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
       },
       elementsSource: buildElementsSourceFromElements([sourceInstance]),
       isPartial: false,

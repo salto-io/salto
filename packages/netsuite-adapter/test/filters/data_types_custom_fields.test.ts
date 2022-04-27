@@ -20,7 +20,7 @@ import NetsuiteClient from '../../src/client/client'
 import { NETSUITE } from '../../src/constants'
 import { entitycustomfieldType } from '../../src/autogen/types/custom_types/entitycustomfield'
 import { FilterOpts } from '../../src/filter'
-import { getDefaultAdapterConfig } from '../utils'
+import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../utils'
 
 describe('data_types_custom_fields', () => {
   let filterOpts: FilterOpts
@@ -36,13 +36,7 @@ describe('data_types_custom_fields', () => {
     filterOpts = {
       client: {} as NetsuiteClient,
       elementsSourceIndex: {
-        getIndexes: () => Promise.resolve({
-          serviceIdsIndex: {},
-          serviceIdRecordsIndex: {},
-          internalIdsIndex: {},
-          customFieldsIndex: {},
-          pathToInternalIdsIndex: {},
-        }),
+        getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
       },
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
@@ -94,11 +88,8 @@ describe('data_types_custom_fields', () => {
         client: {} as NetsuiteClient,
         elementsSourceIndex: {
           getIndexes: () => Promise.resolve({
-            serviceIdsIndex: {},
-            serviceIdRecordsIndex: {},
-            internalIdsIndex: {},
+            ...createEmptyElementsSourceIndexes(),
             customFieldsIndex: { Customer: [instance] },
-            pathToInternalIdsIndex: {},
           }),
         },
         elementsSource: buildElementsSourceFromElements([]),
@@ -120,11 +111,8 @@ describe('data_types_custom_fields', () => {
         client: {} as NetsuiteClient,
         elementsSourceIndex: {
           getIndexes: () => Promise.resolve({
-            serviceIdsIndex: {},
-            serviceIdRecordsIndex: {},
-            internalIdsIndex: {},
+            ...createEmptyElementsSourceIndexes(),
             customFieldsIndex: { Customer: [instance] },
-            pathToInternalIdsIndex: {},
           }),
         },
         elementsSource: buildElementsSourceFromElements([]),

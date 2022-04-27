@@ -101,7 +101,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
-      serviceUrl: '/jira/dashboards/{_parent.0.value.id}?maximized={id}',
     },
     deployRequests: {
       add: {

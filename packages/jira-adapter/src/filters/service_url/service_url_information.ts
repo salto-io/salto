@@ -60,6 +60,9 @@ const createFieldServiceUrl = (instance: InstanceElement): string | undefined =>
   return `/secure/admin/EditCustomField!default.jspa?id=${instance.value.id.replace('customfield_', '')}`
 }
 
+const createDashboardGadgetServiceUrl = (instance: InstanceElement): string =>
+  `/jira/dashboards/${getParentId(instance)}?maximized=${instance.value.id}`
+
 const boardInformation: ServiceUrlSupplier = {
   typeName: 'Board',
   supplier: createBoardServiceUrl,
@@ -80,6 +83,11 @@ const FieldInformation: ServiceUrlSupplier = {
   supplier: createFieldServiceUrl,
 }
 
+const DashboardGadgetInformation: ServiceUrlSupplier = {
+  typeName: 'DashboardGadget',
+  supplier: createDashboardGadgetServiceUrl,
+}
+
 const AutomationInformation: ServiceUrlSupplier = {
   typeName: 'Automation',
   supplier: createAutomationServiceUrl,
@@ -95,6 +103,7 @@ const serviceUrlInformation: ServiceUrlSupplier[] = [
   ProjectComponentInformation,
   CustomFieldContextInformation,
   FieldInformation,
+  DashboardGadgetInformation,
   AutomationInformation,
   WebhookInformation,
 ]

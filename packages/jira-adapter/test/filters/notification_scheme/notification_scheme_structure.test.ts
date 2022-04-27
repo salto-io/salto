@@ -15,7 +15,7 @@
 */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { filterUtils } from '@salto-io/adapter-components'
+import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../../utils'
 import notificationSchemeStructureFilter from '../../../src/filters/notification_scheme/notification_scheme_structure'
 import { DEFAULT_CONFIG } from '../../../src/config'
@@ -34,6 +34,7 @@ describe('notificationSchemeStructureFilter', () => {
       paginator,
       config: DEFAULT_CONFIG,
       elementsSource: buildElementsSourceFromElements([]),
+      fetchQuery: elementUtils.query.createMockQuery(),
     }) as filterUtils.FilterWith<'onFetch'>
 
     notificationSchemeType = new ObjectType({

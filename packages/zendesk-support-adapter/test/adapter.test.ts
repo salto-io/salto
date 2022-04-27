@@ -23,7 +23,7 @@ import { elements as elementsUtils } from '@salto-io/adapter-components'
 import mockReplies from './mock_replies.json'
 import { adapter } from '../src/adapter_creator'
 import { usernamePasswordCredentialsType } from '../src/auth'
-import { configType, FETCH_CONFIG, API_DEFINITIONS_CONFIG, DEFAULT_INCLUDE_ENDPOINTS } from '../src/config'
+import { configType, FETCH_CONFIG, API_DEFINITIONS_CONFIG } from '../src/config'
 import { ZENDESK_SUPPORT } from '../src/constants'
 
 type MockReply = {
@@ -63,7 +63,6 @@ describe('adapter', () => {
 
   describe('fetch', () => {
     describe('full fetch', () => {
-      const additionalTypesToFetch = ['organizations']
       it('should generate the right elements on fetch', async () => {
         const { elements } = await adapter.operations({
           credentials: new InstanceElement(
@@ -76,7 +75,10 @@ describe('adapter', () => {
             configType,
             {
               [FETCH_CONFIG]: {
-                includeTypes: [...DEFAULT_INCLUDE_ENDPOINTS, ...additionalTypesToFetch].sort(),
+                include: [{
+                  type: '.*',
+                }],
+                exclude: [],
               },
             }
           ),
@@ -500,7 +502,10 @@ describe('adapter', () => {
             configType,
             {
               [FETCH_CONFIG]: {
-                includeTypes: ['groups'],
+                include: [{
+                  type: 'group',
+                }],
+                exclude: [],
               },
               [API_DEFINITIONS_CONFIG]: {
                 types: {
@@ -555,7 +560,11 @@ describe('adapter', () => {
           configType,
           {
             [FETCH_CONFIG]: {
-              includeTypes: ['groups'],
+              include: [{
+                type: 'group',
+              }],
+              exclude: [],
+
             },
             [API_DEFINITIONS_CONFIG]: {
               types: {
@@ -689,7 +698,10 @@ describe('adapter', () => {
           configType,
           {
             [FETCH_CONFIG]: {
-              includeTypes: ['test'],
+              include: [{
+                type: 'test',
+              }],
+              exclude: [],
             },
             [API_DEFINITIONS_CONFIG]: {
               types: {
@@ -709,7 +721,9 @@ describe('adapter', () => {
         elementsSource: buildElementsSourceFromElements([]),
       }).fetch({ progressReporter: { reportProgress: () => null } })
       expect(updatedConfig?.config).toHaveLength(1)
-      expect(updatedConfig?.config[0].value.fetch.includeTypes).toHaveLength(0)
+      expect(updatedConfig?.config[0].value.fetch.exclude).toEqual([{
+        type: 'test',
+      }])
     })
   })
 
@@ -742,7 +756,15 @@ describe('adapter', () => {
           configType,
           {
             [FETCH_CONFIG]: {
-              includeTypes: ['groups', 'brands'],
+              include: [
+                {
+                  type: 'group',
+                },
+                {
+                  type: 'brand',
+                },
+              ],
+              exclude: [],
             },
             [API_DEFINITIONS_CONFIG]: {
               types: {

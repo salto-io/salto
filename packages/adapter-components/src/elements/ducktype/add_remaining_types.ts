@@ -29,12 +29,12 @@ import { getTransformationConfigByType, TypeDuckTypeConfig, TypeDuckTypeDefaults
  * Note: modifies the elements array in-place.
  */
 export const addRemainingTypes = ({
-  elements, typesConfig, adapterName, includeTypes, typeDefaultConfig,
+  elements, typesConfig, adapterName, supportedTypes, typeDefaultConfig,
 }: {
   elements: Element[]
   typesConfig: Record<string, TypeDuckTypeConfig>
   adapterName: string
-  includeTypes: string[]
+  supportedTypes: Record<string, string[]>
   typeDefaultConfig: TypeDuckTypeDefaultsConfig
 }): void => {
   const sourceTypeNameToTypeName = _(typesConfig)
@@ -68,7 +68,7 @@ export const addRemainingTypes = ({
       hasDynamicFields: false,
       transformationConfigByType: getTransformationConfigByType(typesConfig),
       transformationDefaultConfig: typeDefaultConfig.transformation,
-      isSubType: !includeTypes.includes(sourceTypeNameToTypeName[typeName]),
+      isSubType: !Object.values(supportedTypes).flat().includes(sourceTypeNameToTypeName[typeName]),
     }).type)
   elements.push(...typesToAdd)
 }

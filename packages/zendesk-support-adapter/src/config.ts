@@ -1518,40 +1518,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   // not included yet: satisfaction_reason (returns 403), sunshine apis
 }
 
-export const DEFAULT_INCLUDE_ENDPOINTS: string[] = [
-  'account_settings',
-  'app_installations',
-  'apps_owned',
-  'automations',
-  'brands',
-  'business_hours_schedules',
-  'custom_roles',
-  'dynamic_content_item',
-  'groups',
-  'locales',
-  'macro_categories',
-  'macros',
-  'monitored_twitter_handles',
-  'oauth_clients',
-  'oauth_global_clients',
-  'organization_fields',
-  'resource_collections',
-  'routing_attributes',
-  'sharing_agreements',
-  'sla_policies',
-  'support_addresses',
-  'targets',
-  'ticket_fields',
-  'ticket_forms',
-  'trigger_categories',
-  'trigger_definitions',
-  'triggers',
-  'user_fields',
-  'views',
-  'webhooks',
-  'workspaces',
-]
-
 export const SUPPORTED_TYPES = {
   account_setting: ['account_settings'],
   app_installation: ['app_installations'],
@@ -1565,19 +1531,15 @@ export const SUPPORTED_TYPES = {
   locale: ['locales'],
   macro_categories: ['macro_categories'],
   macro: ['macros'],
-  macro_action: ['macros_actions'],
-  macro_definition: ['macros_definitions'],
   monitored_twitter_handle: ['monitored_twitter_handles'],
   oauth_client: ['oauth_clients'],
   oauth_global_client: ['oauth_global_clients'],
   organization: ['organizations'],
   organization_field: ['organization_fields'],
   resource_collection: ['resource_collections'],
-  routing_attribute_definition: ['routing_attribute_definitions'],
   routing_attribute: ['routing_attributes'],
   sharing_agreement: ['sharing_agreements'],
   sla_policy: ['sla_policies'],
-  sla_policy_definition: ['sla_policies_definitions'],
   support_address: ['support_addresses'],
   target: ['targets'],
   ticket_field: ['ticket_fields'],
@@ -1593,7 +1555,12 @@ export const SUPPORTED_TYPES = {
 
 export const DEFAULT_CONFIG: ZendeskConfig = {
   [FETCH_CONFIG]: {
-    includeTypes: DEFAULT_INCLUDE_ENDPOINTS,
+    include: [{
+      type: '.*',
+    }],
+    exclude: [
+      { type: 'organization' },
+    ],
     hideTypes: true,
   },
   [API_DEFINITIONS_CONFIG]: {

@@ -13,17 +13,12 @@ workato {
     }
   }
   fetch = {
-    includeTypes = [
-      "api_access_profiles",
-      "api_clients",
-      "api_collections",
-      "api_endpoints",
-      "connections",
-      "folders",
-      "properties",
-      "recipes",
-      "roles",
+    include = [
+      {
+        type = ".*"
+      },
     ]
+    exclude = []
     serviceConnectionNames = {
       salesforce = [
         "Salesforce sandbox 1 primary connection",
@@ -67,17 +62,14 @@ workato {
 
 ## Fetch configuration options
 
-| Name                                        | Default when undefined   | Description
-|---------------------------------------------|--------------------------|------------
-| includeTypes                                | [                        | List of types to fetch
-|                                             |   "api_access_profiles", |
-|                                             |   "api_clients",         |
-|                                             |   "api_collections",     |
-|                                             |   "api_endpoints",       |
-|                                             |   "connections",         |
-|                                             |   "folders",             |
-|                                             |   "properties",          |
-|                                             |   "recipes",             |
-|                                             |   "roles",               |
-|                                             |  ]                       |
+| Name                                        | Default when undefined            | Description
+|---------------------------------------------|-----------------------------------|------------
+| [include](#fetch-entry-options)               | [{ type = ".*" }]                 | List of entries to determine what instances to include in the fetch
+| [exclude](#fetch-entry-options)               | []                                | List of entries to determine what instances to exclude in the fetch
 | serviceConnectionNames                      |                          | Mapping from adapter name to workato connection name(s), which is used for resolving the relevant elements into references across multiple adapters in the same environment. Currently salesforce and netsuite are supported
+
+## Fetch entry options
+
+| Name                                        | Default when undefined            | Description
+|---------------------------------------------|-----------------------------------|------------
+| type                                        | ""                                | A regex of the Salto type name to include in the entry

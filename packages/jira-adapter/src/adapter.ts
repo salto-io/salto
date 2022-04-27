@@ -92,6 +92,7 @@ const {
   loadSwagger,
   addDeploymentAnnotations,
 } = elementUtils.swagger
+
 const { createPaginator, getWithOffsetAndLimit } = clientUtils
 const log = logger(module)
 
@@ -185,6 +186,7 @@ export default class JiraAdapter implements AdapterOperations {
   private userConfig: JiraConfig
   private paginator: clientUtils.Paginator
   private getElemIdFunc?: ElemIdGetter
+  private fetchQuery: elementUtils.query.ElementsQuery
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -201,6 +203,9 @@ export default class JiraAdapter implements AdapterOperations {
       paginationFuncCreator: getWithOffsetAndLimit,
       customEntryExtractor: removeScopedObjects,
     })
+
+    this.fetchQuery = elementUtils.query.createElementsQuery(this.userConfig.fetch)
+
     this.paginator = paginator
     this.createFiltersRunner = () => (
       filtersRunner(
@@ -210,6 +215,7 @@ export default class JiraAdapter implements AdapterOperations {
           config,
           getElemIdFunc,
           elementsSource,
+          fetchQuery: this.fetchQuery,
         },
         filterCreators,
         objects.concatObjects
@@ -267,7 +273,8 @@ export default class JiraAdapter implements AdapterOperations {
       paginator: this.paginator,
       objectTypes: _.pickBy(allTypes, isObjectType),
       apiConfig: updatedApiDefinitionsConfig,
-      fetchConfig: this.userConfig.fetch,
+      fetchQuery: this.fetchQuery,
+      supportedTypes: this.userConfig.apiDefinitions.supportedTypes,
       getElemIdFunc: this.getElemIdFunc,
     })
   }
@@ -297,6 +304,7 @@ export default class JiraAdapter implements AdapterOperations {
       Object.values(swaggers),
       this.userConfig.apiDefinitions,
     )
+
     return filterResult.errors !== undefined
       ? { elements, errors: filterResult.errors }
       : { elements }

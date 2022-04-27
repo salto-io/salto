@@ -67,14 +67,19 @@ describe('add remaining types', () => {
       },
     },
   }
-  const includeTypes = ['dir', 'file', 'permission', 'workflow']
+  const supportedTypes = {
+    dir: ['dir'],
+    file: ['file'],
+    permission: ['permission'],
+    workflow: ['workflow'],
+  }
   it('should create all the needed types if elements exist', () => {
     const elements: Element[] = []
     addRemainingTypes({
       elements,
       typesConfig,
       adapterName: ADAPTER_NAME,
-      includeTypes,
+      supportedTypes,
       typeDefaultConfig,
     })
     expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
@@ -98,7 +103,7 @@ describe('add remaining types', () => {
       elements,
       typesConfig,
       adapterName: ADAPTER_NAME,
-      includeTypes,
+      supportedTypes,
       typeDefaultConfig,
     })
     expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([

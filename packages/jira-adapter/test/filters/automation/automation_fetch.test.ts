@@ -16,7 +16,7 @@
 import { ElemID, InstanceElement, ObjectType, Element } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { buildElementsSourceFromElements, safeJsonStringify } from '@salto-io/adapter-utils'
-import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { mockClient } from '../../utils'
 import automationFetchFilter from '../../../src/filters/automation/automation_fetch'
@@ -47,6 +47,7 @@ describe('automationFetchFilter', () => {
       paginator,
       config,
       elementsSource: buildElementsSourceFromElements([]),
+      fetchQuery: elementUtils.query.createMockQuery(),
     }) as filterUtils.FilterWith<'onFetch'>
 
     projectType = new ObjectType({
@@ -168,6 +169,7 @@ describe('automationFetchFilter', () => {
         config,
         elementsSource: buildElementsSourceFromElements([]),
         getElemIdFunc: () => new ElemID(JIRA, 'someName'),
+        fetchQuery: elementUtils.query.createMockQuery(),
       }) as filterUtils.FilterWith<'onFetch'>
 
       const elements = [projectInstance]

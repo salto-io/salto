@@ -350,7 +350,8 @@ describe('Workflow and task references filter', () => {
       }),
       config: {
         fetch: {
-          includeTypes: [],
+          include: [],
+          exclude: [],
         },
         apiDefinitions: {
           swagger: { url: 'ignore' },

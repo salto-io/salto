@@ -17,13 +17,14 @@ import { isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
+import { FIELD_TYPE_NAME } from './fields/constants'
 
 const log = logger(module)
 
-const filter: FilterCreator = ({ config }) => ({
+const filter: FilterCreator = ({ fetchQuery }) => ({
   onFetch: async elements => {
-    if (!config.fetch.includeTypes.includes('Fields')) {
-      log.warn('Fields is not included in the fetch list so we cannot know whether they are relevant. Skipping the field_configuration_trashed_fields')
+    if (!fetchQuery.isTypeMatch(FIELD_TYPE_NAME)) {
+      log.warn('Field type is not included in the fetch list so we cannot know what fields is in trash. Skipping the field_configuration_trashed_fields')
       return
     }
 

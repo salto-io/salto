@@ -1765,47 +1765,6 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
   supportedTypes: SUPPORTED_TYPES,
 }
 
-export const DEFAULT_INCLUDE_ENDPOINTS: string[] = [
-  // platform api
-  'ApplicationProperties',
-  'ApplicationRoles',
-  'AttachmentSettings',
-  'Configuration',
-  'TimeTrackingProviders',
-  'Dashboards',
-  'Fields',
-  'FieldConfigurations',
-  'FieldsConfigurationScheme',
-  'FieldsConfigurationIssueTypeItem',
-  'Filters',
-  ISSUE_TYPE_NAME,
-  'IssueLinkTypes',
-  'SecuritySchemes',
-  'IssueTypeSchemes',
-  'IssueTypeSchemeMappings',
-  'IssueTypeScreenSchemes',
-  'IssueTypeScreenSchemeItems',
-  'NotificationSchemes',
-  'Permissions',
-  'PermissionSchemes',
-  'Priorities',
-  'ProjectCategories',
-  'Projects',
-  'ProjectTypes',
-  'Resolutions',
-  'Roles',
-  'Screens',
-  'ScreenSchemes',
-  'Statuses',
-  'StatusCategories',
-  'Workflows',
-  'WorkflowSchemes',
-  'ServerInformation',
-
-  // jira api
-  'Boards',
-]
-
 type JiraDeployConfig = {
   forceDelete: boolean
 }
@@ -1881,7 +1840,10 @@ export const DEFAULT_CONFIG: JiraConfig = {
     boardColumnRetry: 5,
   },
   fetch: {
-    includeTypes: DEFAULT_INCLUDE_ENDPOINTS,
+    include: [{
+      type: '.*',
+    }],
+    exclude: [],
   },
   deploy: {
     forceDelete: false,

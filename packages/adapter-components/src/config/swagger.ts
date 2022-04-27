@@ -188,5 +188,9 @@ export const validateFetchConfig = (
   userFetchConfig: UserFetchConfig,
   adapterApiConfig: AdapterSwaggerApiConfig,
 ): void => {
-  validateSupportedTypes(fetchConfigPath, userFetchConfig, adapterApiConfig)
+  validateSupportedTypes(
+    fetchConfigPath,
+    userFetchConfig,
+    Object.keys(adapterApiConfig.supportedTypes)
+  )
 }

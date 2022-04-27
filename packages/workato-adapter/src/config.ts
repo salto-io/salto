@@ -205,9 +205,10 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
 
 export const DEFAULT_CONFIG: WorkatoConfig = {
   [FETCH_CONFIG]: {
-    includeTypes: [
-      ...Object.keys(_.pickBy(DEFAULT_TYPES, def => def.request !== undefined)),
-    ].sort(),
+    include: [{
+      type: '.*',
+    }],
+    exclude: [],
     hideTypes: true,
   },
   [API_DEFINITIONS_CONFIG]: {

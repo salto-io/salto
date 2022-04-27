@@ -15,7 +15,7 @@
 */
 import { logger } from '@salto-io/logging'
 import {
-  InstanceElement, Adapter,
+  InstanceElement, Adapter, ElemID,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
@@ -27,6 +27,7 @@ import {
   FETCH_CONFIG, DEFAULT_CONFIG, ZuoraApiConfig,
 } from './config'
 import { createConnection } from './client/connection'
+import { SETTINGS_TYPE_PREFIX } from './constants'
 
 const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
@@ -78,15 +79,43 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
 
 export const adapter: Adapter = {
   operations: context => {
-    const config = adapterConfigFromConfig(context.config)
+    if (context.config?.value.fetch?.settingsIncludeTypes !== undefined) {
+      context.config.value.fetch.includeTypes = [
+        ...(context.config.value.fetch.includeTypes ?? []),
+        ...context.config.value.fetch.settingsIncludeTypes.map((typeName: string) => `${SETTINGS_TYPE_PREFIX}${typeName}`),
+      ]
+      delete context.config.value.fetch.settingsIncludeTypes
+    }
+    const updatedConfig = configUtils.migrations.migrateDeprecatedIncludeList(
+      // Creating new instance is required because the type is not resolved in context.config
+      new InstanceElement(
+        ElemID.CONFIG_NAME,
+        configType,
+        context.config?.value
+      ),
+      DEFAULT_CONFIG,
+    )
+    const config = adapterConfigFromConfig(updatedConfig?.config[0] ?? context.config)
     const credentials = credentialsFromConfig(context.credentials)
-    return new ZuoraAdapter({
+    const adapterOperations = new ZuoraAdapter({
       client: new ZuoraClient({
         credentials,
         config: config[CLIENT_CONFIG],
       }),
       config,
     })
+
+    return {
+      deploy: adapterOperations.deploy.bind(adapterOperations),
+      fetch: async args => {
+        const fetchRes = await adapterOperations.fetch(args)
+        return {
+          ...fetchRes,
+          updatedConfig: fetchRes.updatedConfig ?? updatedConfig,
+        }
+      },
+      deployModifiers: adapterOperations.deployModifiers,
+    }
   },
   validateCredentials: async config => validateCredentials(
     credentialsFromConfig(config),

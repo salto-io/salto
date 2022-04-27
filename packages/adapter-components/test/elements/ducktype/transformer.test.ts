@@ -24,6 +24,7 @@ import { HTTPError, Paginator } from '../../../src/client'
 import { TypeDuckTypeConfig, TypeDuckTypeDefaultsConfig } from '../../../src/config'
 import { simpleGetArgs, returnFullEntry, computeGetArgs } from '../../../src/elements'
 import { findDataField } from '../../../src/elements/field_finder'
+import { createElementsQuery } from '../../../src/elements/query'
 
 describe('ducktype_transformer', () => {
   describe('getTypeAndInstances', () => {
@@ -531,14 +532,25 @@ describe('ducktype_transformer', () => {
       const res = await getAllElements({
         adapterName: 'something',
         paginator: mockPaginator,
-        includeTypes: ['folder', 'file', 'permission'],
+        fetchQuery: createElementsQuery({
+          include: [
+            { type: 'folder' },
+            { type: 'file' },
+            { type: 'permission' },
+          ],
+          exclude: [],
+        }),
+        supportedTypes: {
+          folder: ['folder'],
+          file: ['file'],
+          permission: ['permission'],
+        },
         computeGetArgs: simpleGetArgs,
         nestedFieldFinder: returnFullEntry,
         types: typesConfig,
         typeDefaults: typeDefaultConfig,
       })
       const { elements } = res
-      expect(elements).toHaveLength(8)
       expect(elements.map(e => e.elemID.getFullName())).toEqual([
         'something.folder',
         'something.permission',
@@ -599,7 +611,15 @@ describe('ducktype_transformer', () => {
       const res = await getAllElements({
         adapterName: 'something',
         paginator: mockPaginator,
-        includeTypes: ['folder'],
+        fetchQuery: createElementsQuery({
+          include: [
+            { type: 'folder' },
+          ],
+          exclude: [],
+        }),
+        supportedTypes: {
+          folder: ['folder'],
+        },
         computeGetArgs: simpleGetArgs,
         nestedFieldFinder: returnFullEntry,
         types: {
@@ -642,7 +662,15 @@ describe('ducktype_transformer', () => {
       const res = await getAllElements({
         adapterName: 'something',
         paginator: mockPaginator,
-        includeTypes: ['folder'],
+        fetchQuery: createElementsQuery({
+          include: [
+            { type: 'folder' },
+          ],
+          exclude: [],
+        }),
+        supportedTypes: {
+          folder: ['folder'],
+        },
         computeGetArgs: simpleGetArgs,
         nestedFieldFinder: returnFullEntry,
         types: {

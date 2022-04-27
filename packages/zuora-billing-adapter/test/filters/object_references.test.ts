@@ -133,7 +133,8 @@ describe('object references filter', () => {
       }),
       config: {
         fetch: {
-          includeTypes: [],
+          include: [],
+          exclude: [],
         },
         apiDefinitions: {
           swagger: { url: 'ignore' },

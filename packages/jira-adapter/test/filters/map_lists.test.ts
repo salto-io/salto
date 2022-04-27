@@ -15,6 +15,7 @@
 */
 import { BuiltinTypes, ElemID, Field, InstanceElement, isMapType, ListType, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../utils'
 import mapListsFilter from '../../src/filters/map_lists'
 import { Filter } from '../../src/filter'
@@ -32,6 +33,7 @@ describe('mapListsFilter', () => {
       paginator,
       config: DEFAULT_CONFIG,
       elementsSource: buildElementsSourceFromElements([]),
+      fetchQuery: elementUtils.query.createMockQuery(),
     })
 
     type = new ObjectType({

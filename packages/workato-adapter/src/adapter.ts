@@ -22,7 +22,7 @@ import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import WorkatoClient from './client/client'
 import { FilterCreator, Filter, filtersRunner } from './filter'
-import { WorkatoConfig } from './config'
+import { FETCH_CONFIG, WorkatoConfig } from './config'
 import addRootFolderFilter from './filters/add_root_folder'
 import fieldReferencesFilter from './filters/field_references'
 import fixMultienvIDs from './filters/fix_multienv_ids'
@@ -96,7 +96,8 @@ export default class WorkatoAdapter implements AdapterOperations {
     return getAllElements({
       adapterName: WORKATO,
       types: this.userConfig.apiDefinitions.types,
-      includeTypes: this.userConfig.fetch.includeTypes,
+      supportedTypes: this.userConfig.apiDefinitions.supportedTypes,
+      fetchQuery: elementUtils.query.createElementsQuery(this.userConfig[FETCH_CONFIG]),
       paginator: this.paginator,
       nestedFieldFinder: returnFullEntry,
       computeGetArgs: simpleGetArgs,

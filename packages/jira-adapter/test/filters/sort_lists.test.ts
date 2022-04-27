@@ -15,6 +15,7 @@
 */
 import { BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression, Values } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../utils'
 import sortListsFilter from '../../src/filters/sort_lists'
 import { Filter } from '../../src/filter'
@@ -34,6 +35,7 @@ describe('sortListsFilter', () => {
       paginator,
       config: DEFAULT_CONFIG,
       elementsSource: buildElementsSourceFromElements([]),
+      fetchQuery: elementUtils.query.createMockQuery(),
     })
 
     permissionSchemeType = new ObjectType({

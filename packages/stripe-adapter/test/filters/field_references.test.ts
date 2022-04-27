@@ -18,7 +18,7 @@ import { client as clientUtils, filterUtils } from '@salto-io/adapter-components
 import filterCreator from '../../src/filters/field_references'
 import StripeClient from '../../src/client/client'
 import { STRIPE } from '../../src/constants'
-import { FETCH_CONFIG, DEFAULT_INCLUDE_TYPES, API_DEFINITIONS_CONFIG, DEFAULT_API_DEFINITIONS } from '../../src/config'
+import { DEFAULT_CONFIG } from '../../src/config'
 
 describe('Field references filter', () => {
   let client: StripeClient
@@ -35,12 +35,7 @@ describe('Field references filter', () => {
         client,
         paginationFuncCreator: () => clientUtils.getWithCursorPagination(),
       }),
-      config: {
-        [FETCH_CONFIG]: {
-          includeTypes: DEFAULT_INCLUDE_TYPES,
-        },
-        [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
-      },
+      config: DEFAULT_CONFIG,
     }) as FilterType
   })
 

@@ -46,16 +46,14 @@ export type StripeConfig = {
   [API_DEFINITIONS_CONFIG]: StripeApiConfig
 }
 
-const ALL_SUPPORTED_TYPES = {
+export const ALL_SUPPORTED_TYPES = {
   country_spec: ['country_specs'],
   coupon: ['coupons'],
   product: ['products'],
-  reporting__report_type: ['reporting__report_types'],
+  reporting_report_type: ['reporting__report_types'],
   tax_rate: ['tax_rates'],
   webhook_endpoint: ['webhook_endpoints'],
 }
-
-export const DEFAULT_INCLUDE_TYPES = Object.values(ALL_SUPPORTED_TYPES).flat()
 
 const DEFAULT_TYPE_CUSTOMIZATIONS: StripeApiConfig['types'] = {
   coupon: {
@@ -132,7 +130,10 @@ export const DEFAULT_API_DEFINITIONS: StripeApiConfig = {
 
 export const DEFAULT_CONFIG: StripeConfig = {
   [FETCH_CONFIG]: {
-    includeTypes: DEFAULT_INCLUDE_TYPES,
+    include: [{
+      type: '.*',
+    }],
+    exclude: [],
   },
   [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
 }

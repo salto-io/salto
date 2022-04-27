@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { InstanceElement, Adapter } from '@salto-io/adapter-api'
+import { InstanceElement, Adapter, ElemID } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import WorkatoAdapter from './adapter'
 import { Credentials, usernameTokenCredentialsType } from './auth'
@@ -63,9 +63,19 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
 
 export const adapter: Adapter = {
   operations: context => {
-    const config = adapterConfigFromConfig(context.config)
+    const updatedConfig = configUtils.migrations.migrateDeprecatedIncludeList(
+      // Creating new instance is required because the type is not resolved in context.config
+      new InstanceElement(
+        ElemID.CONFIG_NAME,
+        configType,
+        context.config?.value
+      ),
+      DEFAULT_CONFIG,
+    )
+
+    const config = adapterConfigFromConfig(updatedConfig?.config[0] ?? context.config)
     const credentials = credentialsFromConfig(context.credentials)
-    return new WorkatoAdapter({
+    const adapterOperations = new WorkatoAdapter({
       client: new WorkatoClient({
         credentials,
         config: config[CLIENT_CONFIG],
@@ -73,6 +83,19 @@ export const adapter: Adapter = {
       config,
       getElemIdFunc: context.getElemIdFunc,
     })
+
+    return {
+      deploy: adapterOperations.deploy.bind(adapterOperations),
+      fetch: async args => {
+        const fetchRes = await adapterOperations.fetch(args)
+        return {
+          ...fetchRes,
+          updatedConfig: fetchRes.updatedConfig ?? updatedConfig,
+        }
+      },
+      deployModifiers: adapterOperations.deployModifiers,
+      postFetch: adapterOperations.postFetch.bind(adapterOperations),
+    }
   },
   validateCredentials: async config => validateCredentials(
     credentialsFromConfig(config),

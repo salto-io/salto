@@ -25,13 +25,14 @@ import { ADDITIONAL_PROPERTIES_FIELD, ARRAY_ITEMS_FIELD } from './type_elements/
 import { InstanceCreationParams, shouldRecurseIntoEntry, toBasicInstance } from '../instance_elements'
 import { UnauthorizedError, Paginator, PageEntriesExtractor } from '../../client'
 import {
-  UserFetchConfig, TypeSwaggerDefaultConfig, TransformationConfig, TransformationDefaultConfig,
+  TypeSwaggerDefaultConfig, TransformationConfig, TransformationDefaultConfig,
   AdapterSwaggerApiConfig, TypeSwaggerConfig, getConfigWithDefault, getTransformationConfigByType,
 } from '../../config'
 import { findDataField, FindNestedFieldFunc } from '../field_finder'
 import { computeGetArgs as defaultComputeGetArgs, ComputeGetArgsFunc } from '../request_parameters'
 import { getElementsWithContext } from '../element_getter'
 import { TimeoutError } from '../../client/http_client'
+import { ElementsQuery } from '../query'
 
 const { makeArray } = collections.array
 const { toArrayAsync, awu } = collections.asynciterable
@@ -451,7 +452,8 @@ const getInstancesForType = async (params: GetEntriesParams): Promise<InstanceEl
 export const getAllInstances = async ({
   paginator,
   apiConfig,
-  fetchConfig,
+  fetchQuery,
+  supportedTypes,
   objectTypes,
   nestedFieldFinder = findDataField,
   computeGetArgs = defaultComputeGetArgs,
@@ -459,7 +461,8 @@ export const getAllInstances = async ({
 }: {
   paginator: Paginator
   apiConfig: Pick<AdapterSwaggerApiConfig, 'types' | 'typeDefaults'>
-  fetchConfig: UserFetchConfig
+  fetchQuery: ElementsQuery
+  supportedTypes: Record<string, string[]>
   objectTypes: Record<string, ObjectType>
   nestedFieldFinder?: FindNestedFieldFunc
   computeGetArgs?: ComputeGetArgsFunc
@@ -478,8 +481,9 @@ export const getAllInstances = async ({
   }
 
   return getElementsWithContext({
-    includeTypes: fetchConfig.includeTypes,
+    fetchQuery,
     types: apiConfig.types,
+    supportedTypes,
     typeElementGetter: args => getInstancesForType({
       ...elementGenerationParams,
       ...args,

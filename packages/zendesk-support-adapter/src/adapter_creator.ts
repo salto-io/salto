@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { InstanceElement, Adapter, Values, OAuthRequestParameters, OauthAccessTokenResponse } from '@salto-io/adapter-api'
+import { InstanceElement, Adapter, Values, OAuthRequestParameters, OauthAccessTokenResponse, ElemID } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import ZendeskAdapter from './adapter'
 import { Credentials, oauthAccessTokenCredentialsType, oauthRequestParametersType, usernamePasswordCredentialsType } from './auth'
@@ -104,9 +104,18 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
 
 export const adapter: Adapter = {
   operations: context => {
-    const config = adapterConfigFromConfig(context.config)
+    const updatedConfig = configUtils.migrations.migrateDeprecatedIncludeList(
+      // Creating new instance is required because the type is not resolved in context.config
+      new InstanceElement(
+        ElemID.CONFIG_NAME,
+        configType,
+        context.config?.value
+      ),
+      DEFAULT_CONFIG,
+    )
+    const config = adapterConfigFromConfig(updatedConfig?.config[0] ?? context.config)
     const credentials = credentialsFromConfig(context.credentials)
-    return new ZendeskAdapter({
+    const adapterOperations = new ZendeskAdapter({
       client: new ZendeskClient({
         credentials,
         config: config[CLIENT_CONFIG],
@@ -115,6 +124,18 @@ export const adapter: Adapter = {
       getElemIdFunc: context.getElemIdFunc,
       configInstance: context.config,
     })
+
+    return {
+      deploy: adapterOperations.deploy.bind(adapterOperations),
+      fetch: async args => {
+        const fetchRes = await adapterOperations.fetch(args)
+        return {
+          ...fetchRes,
+          updatedConfig: fetchRes.updatedConfig ?? updatedConfig,
+        }
+      },
+      deployModifiers: adapterOperations.deployModifiers,
+    }
   },
   validateCredentials: async config => validateCredentials(
     credentialsFromConfig(config),

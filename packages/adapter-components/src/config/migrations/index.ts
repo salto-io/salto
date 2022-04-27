@@ -13,20 +13,4 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ReadOnlyElementsSource, SaltoError } from '@salto-io/adapter-api'
-import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import JiraClient from './client/client'
-import { JiraConfig } from './config'
-
-export const { filtersRunner } = filterUtils
-
-export type FilterResult = {
-  errors?: SaltoError[]
-}
-
-export type Filter = filterUtils.Filter<FilterResult>
-
-export type FilterCreator = filterUtils.FilterCreator<JiraClient, JiraConfig, FilterResult, {
-  elementsSource: ReadOnlyElementsSource
-  fetchQuery: elementUtils.query.ElementsQuery
-}>
+export { migrateDeprecatedIncludeList } from './fetch_migration'

@@ -20,7 +20,7 @@ import { getParents } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/fix_multienv_ids'
 import WorkatoClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
-import { DEFAULT_TYPES, DEFAULT_ID_FIELDS, SUPPORTED_TYPES } from '../../src/config'
+import { DEFAULT_TYPES, DEFAULT_ID_FIELDS, SUPPORTED_TYPES, DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { WORKATO } from '../../src/constants'
 
 describe('Fix multienv ids filter', () => {
@@ -39,9 +39,7 @@ describe('Fix multienv ids filter', () => {
         paginationFuncCreator: paginate,
       }),
       config: {
-        fetch: {
-          includeTypes: ['recipe', 'folder'],
-        },
+        fetch: DEFAULT_CONFIG[FETCH_CONFIG],
         apiDefinitions: {
           typeDefaults: {
             transformation: {
@@ -186,9 +184,7 @@ describe('Fix multienv ids filter', () => {
           paginationFuncCreator: paginate,
         }),
         config: {
-          fetch: {
-            includeTypes: ['recipe', 'folder'],
-          },
+          fetch: DEFAULT_CONFIG[FETCH_CONFIG],
           apiDefinitions: {
             typeDefaults: {
               transformation: {

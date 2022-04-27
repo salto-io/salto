@@ -17,7 +17,6 @@ import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { ObjectType, InstanceElement, OAuthMethod } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import ZendeskAdapter from '../src/adapter'
 import { adapter, createUrlFromUserInput } from '../src/adapter_creator'
 import { oauthAccessTokenCredentialsType, usernamePasswordCredentialsType } from '../src/auth'
 import { configType } from '../src/config'
@@ -76,7 +75,10 @@ describe('adapter creator', () => {
         adapter.configType as ObjectType,
         {
           fetch: {
-            includeTypes: [],
+            include: [{
+              type: '.*',
+            }],
+            exclude: [],
           },
           apiDefinitions: {
             types: {},
@@ -84,7 +86,7 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
-    })).toBeInstanceOf(ZendeskAdapter)
+    })).toBeDefined()
 
     // with OAuth auth method
     expect(adapter.operations({
@@ -102,7 +104,10 @@ describe('adapter creator', () => {
         adapter.configType as ObjectType,
         {
           fetch: {
-            includeTypes: [],
+            include: [{
+              type: '.*',
+            }],
+            exclude: [],
           },
           apiDefinitions: {
             types: {},
@@ -110,7 +115,7 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
-    })).toBeInstanceOf(ZendeskAdapter)
+    })).toBeDefined()
   })
 
   it('should ignore unexpected configuration values', () => {
@@ -122,7 +127,10 @@ describe('adapter creator', () => {
         adapter.configType as ObjectType,
         {
           fetch: {
-            includeTypes: [],
+            include: [{
+              type: '.*',
+            }],
+            exclude: [],
           },
           apiDefinitions: {
             types: {},
@@ -131,7 +139,7 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
-    })).toBeInstanceOf(ZendeskAdapter)
+    })).toBeDefined()
   })
 
   it('should throw error on inconsistent configuration between fetch and apiDefinitions', () => {
@@ -143,10 +151,11 @@ describe('adapter creator', () => {
         adapter.configType as ObjectType,
         {
           fetch: {
-            includeTypes: [
-              'a',
-              'b',
+            include: [
+              { type: 'a' },
+              { type: 'b' },
             ],
+            exclude: [],
           },
           apiDefinitions: {
             types: {
@@ -164,7 +173,7 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
-    })).toThrow(new Error('Invalid type names in fetch: a,b'))
+    })).toThrow(new Error('Invalid type names in fetch: a,b does not match any of the supported types.'))
   })
 
   it('should return right url for oauth request', () => {

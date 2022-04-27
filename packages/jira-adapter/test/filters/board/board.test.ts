@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { filterUtils } from '@salto-io/adapter-components'
+import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { JIRA } from '../../../src/constants'
 import boardFilter from '../../../src/filters/board/board'
@@ -31,6 +31,7 @@ describe('boardFilter', () => {
       paginator,
       config: await getDefaultAdapterConfig(),
       elementsSource: buildElementsSourceFromElements([]),
+      fetchQuery: elementUtils.query.createMockQuery(),
     }) as typeof filter
 
     type = new ObjectType({ elemID: new ElemID(JIRA, 'Board') })

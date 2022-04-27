@@ -13,37 +13,15 @@ zendesk_support {
     }
   }
   fetch = {
-    includeTypes = [
-      "account_settings",
-      "app_installations",
-      "apps_owned",
-      "automations",
-      "brands",
-      "business_hours_schedules",
-      "custom_roles",
-      "dynamic_content_item",
-      "groups",
-      "locales",
-      "macro_categories",
-      "macros",
-      "monitored_twitter_handles",
-      "oauth_clients",
-      "oauth_global_clients",
-      "organization_fields",
-      "organizations",
-      "resource_collections",
-      "routing_attributes",
-      "sharing_agreements",
-      "sla_policies",
-      "support_addresses",
-      "targets",
-      "ticket_fields",
-      "ticket_forms",
-      "trigger_categories",
-      "triggers",
-      "user_fields",
-      "views",
-      "workspaces",
+    include = [
+      {
+        type = ".*"
+      },
+    ]
+    exclude = [
+      {
+        type = "organization"
+      },
     ]
   }
 }
@@ -79,37 +57,13 @@ zendesk_support {
 
 ## Fetch configuration options
 
-| Name                                        | Default when undefined   | Description
-|---------------------------------------------|--------------------------|------------
-| includeTypes                                | [                        | List of types to fetch
-|                                             |   "account_settings",
-|                                             |   "app_installations",
-|                                             |   "apps_owned",
-|                                             |   "automations",
-|                                             |   "brands",
-|                                             |   "business_hours_schedules",
-|                                             |   "custom_roles",
-|                                             |   "dynamic_content_item",
-|                                             |   "groups",
-|                                             |   "locales",
-|                                             |   "macro_categories",
-|                                             |   "macros",
-|                                             |   "monitored_twitter_handles",
-|                                             |   "oauth_clients",
-|                                             |   "oauth_global_clients",
-|                                             |   "organization_fields",
-|                                             |   "organizations",
-|                                             |   "resource_collections",
-|                                             |   "routing_attributes",
-|                                             |   "sharing_agreements",
-|                                             |   "sla_policies",
-|                                             |   "support_addresses",
-|                                             |   "targets",
-|                                             |   "ticket_fields",
-|                                             |   "ticket_forms",
-|                                             |   "trigger_categories",
-|                                             |   "triggers",
-|                                             |   "user_fields",
-|                                             |   "views",
-|                                             |   "workspaces",
-|                                             |  ]                       |
+| Name                                        | Default when undefined            | Description
+|---------------------------------------------|-----------------------------------|------------
+| [include](#fetch-entry-options)               | [{ type = ".*" }]                 | List of entries to determine what instances to include in the fetch
+| [exclude](#fetch-entry-options)               | []                                | List of entries to determine what instances to exclude in the fetch
+
+## Fetch entry options
+
+| Name                                        | Default when undefined            | Description
+|---------------------------------------------|-----------------------------------|------------
+| type                                        | ""                                | A regex of the Salto type name to include in the entry

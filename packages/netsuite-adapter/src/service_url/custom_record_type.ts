@@ -16,8 +16,8 @@
 import { setInstancesUrls } from './instances_urls'
 import { ServiceUrlSetter } from './types'
 
-const setServiceUrl: ServiceUrlSetter = async (elements, client) =>
-  setInstancesUrls({
+const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
+  await setInstancesUrls({
     elements,
     client,
     filter: element => ['customrecordtype', 'customsegment'].includes(element.refType.elemID.name),
@@ -25,5 +25,6 @@ const setServiceUrl: ServiceUrlSetter = async (elements, client) =>
     generateUrl: id => `app/common/custom/custrecord.nl?id=${id}`,
     elementToId: element => (element.refType.elemID.name === 'customsegment' ? `customrecord_${element.value.scriptid}` : element.value.scriptid),
   })
+}
 
 export default setServiceUrl

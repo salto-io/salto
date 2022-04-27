@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator, FilterWith } from '../filter'
 import setFileCabinetUrls from '../service_url/file_cabinet'
@@ -28,8 +29,9 @@ import setConstantUrls from '../service_url/constant_urls'
 import setSuiteAppUrls from '../service_url/suiteapp_elements_url'
 
 const log = logger(module)
+const { awu } = collections.asynciterable
 
-const SERVICE_URL_SETTERS = [
+const SERVICE_URL_SETTERS = {
   setFileCabinetUrls,
   setScriptsUrls,
   setCustomFieldsUrls,
@@ -41,17 +43,16 @@ const SERVICE_URL_SETTERS = [
   setSavedSearchUrls,
   setConstantUrls,
   setSuiteAppUrls,
-]
+}
 
 const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
     if (!client.isSuiteAppConfigured()) {
       return
     }
-
-    log.debug('Start fetching service urls')
-    await Promise.all(SERVICE_URL_SETTERS.map(setter => setter(elements, client)))
-    log.debug('Finished fetching service urls')
+    await awu(Object.entries(SERVICE_URL_SETTERS)).forEach(
+      ([setterName, setter]) => log.time(() => setter(elements, client), `serviceUrls.${setterName}`)
+    )
   },
 })
 

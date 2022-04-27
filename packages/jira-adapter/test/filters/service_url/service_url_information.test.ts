@@ -123,19 +123,6 @@ describe('service url information filter', () => {
         expect(instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).not.toBeDefined()
       })
     })
-    describe('DashboardGadget type', () => {
-      it('should add service url annotation', async () => {
-        const objType = new ObjectType({ elemID: new ElemID(JIRA, 'DashboardGadget') })
-        const elements = [new InstanceElement('DashboardGadget', objType, { id: 11 }, undefined, { _parent: testParent })]
-        await filter.onFetch(elements)
-        expect(elements.map(e => e.elemID.getFullName()).sort())
-          .toEqual(['jira.DashboardGadget.instance.DashboardGadget'])
-        const [instance] = elements
-        expect(instance.annotations).toEqual(expect.objectContaining({
-          [CORE_ANNOTATIONS.SERVICE_URL]: 'https://ori-salto-test.atlassian.net/jira/dashboards/customfield_test?maximized=11',
-        }))
-      })
-    })
     describe('Automation type', () => {
       it('should add service url annotation for automation with project key', async () => {
         const objType = new ObjectType({ elemID: new ElemID(JIRA, 'Automation') })
@@ -251,19 +238,6 @@ describe('service url information filter', () => {
           .toEqual(['jira.Field.instance.Field'])
         const [instance] = elements
         expect(instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).not.toBeDefined()
-      })
-    })
-    describe('DashboardGadget type', () => {
-      it('should add service url annotation', async () => {
-        const objType = new ObjectType({ elemID: new ElemID(JIRA, 'DashboardGadget') })
-        const elements = [new InstanceElement('DashboardGadget', objType, { id: 11 }, undefined, { _parent: testParent })]
-        await filter.onDeploy(elements.map(inst => toChange({ after: inst })))
-        expect(elements.map(e => e.elemID.getFullName()).sort())
-          .toEqual(['jira.DashboardGadget.instance.DashboardGadget'])
-        const [instance] = elements
-        expect(instance.annotations).toEqual(expect.objectContaining({
-          [CORE_ANNOTATIONS.SERVICE_URL]: 'https://ori-salto-test.atlassian.net/jira/dashboards/customfield_test?maximized=11',
-        }))
       })
     })
     describe('Automation type', () => {

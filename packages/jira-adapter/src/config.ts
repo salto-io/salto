@@ -1484,12 +1484,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
   },
 
-  WebHook: {
-    transformation: {
-      serviceUrl: '/plugins/servlet/webhooks#',
-    },
-  },
-
   IssueEvent: {
     transformation: {
       fieldsToHide: [

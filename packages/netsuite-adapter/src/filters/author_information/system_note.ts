@@ -216,7 +216,7 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
       return
     }
     const employeeNames = await fetchEmployeeNames(client)
-    const systemNotes = _.isEmpty(employeeNames)
+    const systemNotes = !_.isEmpty(employeeNames)
       ? await fetchSystemNotes(client, queryIds, lastFetchTime)
       : {}
     const { elemIdToChangeByIndex } = await elementsSourceIndex.getIndexes()

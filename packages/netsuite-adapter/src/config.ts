@@ -157,7 +157,6 @@ export const fetchDefault: FetchParams = {
     fileCabinet: [
       '^/SuiteScripts.*',
       '^/Templates.*',
-      '^/SuiteBundles.*',
     ],
   },
   [EXCLUDE]: {
@@ -183,7 +182,9 @@ export const fetchDefault: FetchParams = {
           .join('|'),
       }, // may be a lot of data that takes a lot of time to fetch
     ],
-    fileCabinet: [],
+    fileCabinet: [
+      '^/Templates/Letter Templates/Mail Merge Folder*',
+    ],
   },
 }
 

@@ -134,7 +134,7 @@ const filter: FilterCreator = params => ({
       const instances = elements
         .filter(isInstanceElement)
         .filter(instance => instance.elemID.typeName === information.typeName)
-      supplyServiceUrl(instances, information, params.client.getUrl().href)
+      supplyServiceUrl(instances, information, params.client.baseUrl)
     }
     serviceUrlInformation.forEach(filterElementsBySupplier)
   },
@@ -145,7 +145,7 @@ const filter: FilterCreator = params => ({
         .filter(isAdditionChange)
         .map(getChangeData)
         .filter(instance => instance.elemID.typeName === information.typeName)
-      supplyServiceUrl(instances, information, params.client.getUrl().href)
+      supplyServiceUrl(instances, information, params.client.baseUrl)
     }
     serviceUrlInformation.forEach(filterElementsBySupplier)
   },

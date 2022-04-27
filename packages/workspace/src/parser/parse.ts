@@ -34,6 +34,10 @@ const log = logger(module)
 // Re-export these types because we do not want code outside the parser to import hcl
 export type SourceRange = InternalSourceRange
 
+export type ParseOptions = {
+  createSourceMap?: boolean
+}
+
 /**
  * Parse a Nacl file
  *
@@ -47,9 +51,10 @@ export const parse = async (
   naclFile: Buffer,
   filename: string,
   functions: Functions = {},
+  options?: ParseOptions,
 ): Promise<Required<ParseResult>> => {
   const srcString = naclFile.toString()
-  return parseBuffer(srcString, filename, functions)
+  return parseBuffer(srcString, filename, functions, options?.createSourceMap)
 }
 
 export type Token = {

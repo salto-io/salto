@@ -40,6 +40,7 @@ import { Functions } from '../../parser/functions'
 import { RemoteMap, RemoteMapCreator } from '../remote_map'
 import { ParsedNaclFile } from './parsed_nacl_file'
 import { ParsedNaclFileCache, createParseResultCache } from './parsed_nacl_files_cache'
+import { ParseOptions } from '../../parser/parse'
 
 const { awu } = collections.asynciterable
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
@@ -162,32 +163,42 @@ export const getElementReferenced = async (element: Element): Promise<Set<string
 export const toParsedNaclFile = async (
   naclFile: NaclFile,
   parseResult: ParseResult
-): Promise<ParsedNaclFile> => {
-  let referenced: string[]
-  return {
-    filename: naclFile.filename,
-    elements: () => awu(parseResult.elements).toArray(),
-    data: {
-      errors: () => Promise.resolve(parseResult.errors),
-      referenced: async () => {
-        if (referenced === undefined) {
-          referenced = await awu(parseResult.elements)
-            .flatMap(getElementReferenced)
-            .uniquify(s => s)
-            .toArray()
-        }
-        return referenced
+): Promise<ParsedNaclFile> => log.time(
+  async () => {
+    let referenced: string[]
+    return {
+      filename: naclFile.filename,
+      elements: () => awu(parseResult.elements).toArray(),
+      data: {
+        errors: () => Promise.resolve(parseResult.errors),
+        referenced: async () => {
+          if (referenced === undefined) {
+            referenced = await awu(parseResult.elements)
+              .flatMap(getElementReferenced)
+              .uniquify(s => s)
+              .toArray()
+          }
+          return referenced
+        },
       },
-    },
-    buffer: naclFile.buffer,
-    sourceMap: () => Promise.resolve(parseResult.sourceMap),
-  }
-}
+      buffer: naclFile.buffer,
+      sourceMap: () => Promise.resolve(parseResult.sourceMap),
+    }
+  },
+  'toParsedNaclFile %s', naclFile.filename
+)
 
 const parseNaclFile = async (
-  naclFile: NaclFile, functions: Functions
-): Promise<Required<ParseResult>> =>
-  (parse(Buffer.from(naclFile.buffer), naclFile.filename, functions))
+  naclFile: NaclFile, functions: Functions, options?: ParseOptions
+): Promise<Required<ParseResult>> => (
+  parse(
+    Buffer.from(naclFile.buffer),
+    naclFile.filename,
+    functions,
+    // Default to not create a source map since we don't need it in most flows
+    options ?? { createSourceMap: false },
+  )
+)
 
 const parseNaclFiles = async (
   naclFiles: NaclFile[], cache: ParsedNaclFileCache, functions: Functions
@@ -656,7 +667,7 @@ const buildNaclFilesSource = (
       log.error('failed to find %s in NaCl file store', filename)
       return new SourceMap()
     }
-    const parsedResult = await parseNaclFile(naclFile, functions)
+    const parsedResult = await parseNaclFile(naclFile, functions, { createSourceMap: true })
     const newParsedNaclFile = await toParsedNaclFile(naclFile, parsedResult)
     await (await getState()).parsedNaclFiles.put(filename, newParsedNaclFile)
     return parsedResult.sourceMap

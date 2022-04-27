@@ -25,7 +25,7 @@ import { registerTestFunction } from '../utils'
 import {
   Functions,
 } from '../../src/parser/functions'
-import { SourceRange, parse, SourceMap, tokenizeContent } from '../../src/parser'
+import { SourceRange, parse, SourceMap, tokenizeContent, ParseResult } from '../../src/parser'
 
 const { awu } = collections.asynciterable
 const funcName = 'funcush'
@@ -817,6 +817,22 @@ describe('Salto parser', () => {
     expect(result.elements).toHaveLength(1)
     expect((result.elements as InstanceElement[])[0].elemID)
       .toEqual(new ElemID('salesforce', 'anotherType'))
+  })
+
+  describe('parse options', () => {
+    describe('with createSourceMap=false', () => {
+      let result: ParseResult
+      beforeEach(async () => {
+        const body = `
+        type salesforce.Bla {
+          asd = "foo"
+        }`
+        result = await parse(Buffer.from(body), 'none', functions, { createSourceMap: false })
+      })
+      it('should not create a source map', () => {
+        expect(result.sourceMap).toBeUndefined()
+      })
+    })
   })
 
   describe('tokenizeContent', () => {

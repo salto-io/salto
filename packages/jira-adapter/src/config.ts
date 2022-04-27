@@ -1520,7 +1520,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'userCount' },
         { fieldName: 'remainingSeats' },
       ],
-      serviceUrl: '/secure/project/EditProjectRole!default.jspa?id={id}',
     },
   },
 

@@ -1247,6 +1247,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'self',
         },
       ],
+      serviceUrl: '/secure/admin/EditIssueSecurityScheme!default.jspa?schemeId={id}',
     },
     jspRequests: {
       add: '/secure/admin/EditIssueSecurities!addLevel.jspa',
@@ -1348,6 +1349,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   AttachmentSettings: {
     transformation: {
       isSingleton: true,
+      serviceUrl: '/secure/admin/ViewAttachmentSettings.jspa',
     },
   },
   Permissions_permissions: {
@@ -1475,6 +1477,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       },
     },
   },
+
+  TimeTrackingProvider: {
+    transformation: {
+      serviceUrl: '/secure/admin/TimeTrackingAdmin.jspa',
+    },
+  },
+
   WebHook: {
     transformation: {
       serviceUrl: '/plugins/servlet/webhooks#',
@@ -1514,6 +1523,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'userCount' },
         { fieldName: 'remainingSeats' },
       ],
+      serviceUrl: '/secure/project/EditProjectRole!default.jspa?id={id}',
     },
   },
 

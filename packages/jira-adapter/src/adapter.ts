@@ -44,7 +44,7 @@ import mapListsFilter from './filters/map_lists'
 import missingStatusesFilter from './filters/statuses/missing_statuses'
 import issueTypeScreenSchemeFilter from './filters/issue_type_screen_scheme'
 import fieldConfigurationFilter from './filters/field_configuration'
-import fieldConfigurationTrashedFieldsFilter from './filters/field_configuration_trashed_fields'
+import fieldConfigurationIrrelevantFields from './filters/field_configuration_irrelevant_fields'
 import fieldConfigurationSchemeFilter from './filters/field_configurations_scheme'
 import dashboardFilter from './filters/dashboard/dashboard_deployment'
 import dashboardLayoutFilter from './filters/dashboard/dashboard_layout'
@@ -156,7 +156,7 @@ export const DEFAULT_FILTERS = [
   removeSelfFilter,
   fieldReferencesFilter,
   // Must run after fieldReferencesFilter
-  fieldConfigurationTrashedFieldsFilter,
+  fieldConfigurationIrrelevantFields,
   // Must run after fieldReferencesFilter
   sortListsFilter,
   // Must run after fieldReferencesFilter

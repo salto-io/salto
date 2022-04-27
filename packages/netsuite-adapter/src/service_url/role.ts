@@ -17,13 +17,14 @@
 import { setInstancesUrls } from './instances_urls'
 import { ServiceUrlSetter } from './types'
 
-const setServiceUrl: ServiceUrlSetter = async (elements, client) =>
-  setInstancesUrls({
+const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
+  await setInstancesUrls({
     elements,
     client,
     filter: element => element.refType.elemID.name === 'role',
     query: 'SELECT id, scriptid FROM role ORDER BY id ASC',
     generateUrl: id => `app/setup/role.nl?id=${id}`,
   })
+}
 
 export default setServiceUrl

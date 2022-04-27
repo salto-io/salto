@@ -18,13 +18,14 @@ import { setInstancesUrls } from './instances_urls'
 import { ServiceUrlSetter } from './types'
 
 
-const setServiceUrl: ServiceUrlSetter = async (elements, client) =>
-  setInstancesUrls({
+const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
+  await setInstancesUrls({
     elements,
     client,
     filter: element => element.refType.elemID.name === 'sublist',
     query: 'SELECT id, scriptid FROM sublist ORDER BY id ASC',
     generateUrl: id => `app/common/custom/sublist.nl?id=${id}`,
   })
+}
 
 export default setServiceUrl

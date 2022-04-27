@@ -177,6 +177,7 @@ export const isChangeDeployable = (
 export const createSuiteAppFileCabinetOperations = (suiteAppClient: SuiteAppClient):
 SuiteAppFileCabinetOperations => {
   let fileCabinetResults: FileCabinetResults
+  let pathToIdResults: Record<string, number>
 
   const queryFolders = async (whereQuery: string): Promise<FolderResult[]> => {
     const foldersResults = await suiteAppClient.runSuiteQL(
@@ -382,21 +383,25 @@ SuiteAppFileCabinetOperations => {
   }
 
   const getPathToIdMap = (): Record<string, number> => {
-    if (fileCabinetResults === undefined) {
-      throw new Error('missing fileCabinet results cache')
+    if (pathToIdResults === undefined) {
+      log.debug('creating pathToId mapping')
+      if (fileCabinetResults === undefined) {
+        throw new Error('missing fileCabinet results cache')
+      }
+      const { foldersResults, filesResults } = fileCabinetResults
+      const idToFolder = _.keyBy(foldersResults, folder => folder.id)
+      pathToIdResults = Object.fromEntries([
+        ...filesResults.map(file => [
+          `/${[...getFullPath(idToFolder[file.folder], idToFolder), file.name].join('/')}`,
+          parseInt(file.id, 10),
+        ]),
+        ...foldersResults.map(folder => [
+          `/${getFullPath(folder, idToFolder).join('/')}`,
+          parseInt(folder.id, 10),
+        ]),
+      ])
     }
-    const { foldersResults, filesResults } = fileCabinetResults
-    const idToFolder = _.keyBy(foldersResults, folder => folder.id)
-    return Object.fromEntries([
-      ...filesResults.map(file => [
-        `/${[...getFullPath(idToFolder[file.folder], idToFolder), file.name].join('/')}`,
-        parseInt(file.id, 10),
-      ]),
-      ...foldersResults.map(folder => [
-        `/${getFullPath(folder, idToFolder).join('/')}`,
-        parseInt(folder.id, 10),
-      ]),
-    ])
+    return pathToIdResults
   }
 
   const convertToFileCabinetDetails = (

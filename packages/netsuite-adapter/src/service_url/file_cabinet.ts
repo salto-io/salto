@@ -23,7 +23,7 @@ import NetsuiteClient from '../client/client'
 const log = logger(module)
 
 const generateUrl = (element: InstanceElement, client: NetsuiteClient): string | undefined => {
-  const id = client.getPathInternalId(element.value.path)
+  const id = element.value.internalId ?? client.getPathInternalId(element.value.path)
   if (id === undefined) {
     log.warn(`Did not find the internal id of ${element.elemID.getFullName()}`)
     return undefined
@@ -34,7 +34,7 @@ const generateUrl = (element: InstanceElement, client: NetsuiteClient): string |
     : `app/common/media/mediaitemfolder.nl?id=${id}`
 }
 
-const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
+const setServiceUrl: ServiceUrlSetter = (elements, client) => {
   elements.filter(isFileCabinetInstance).forEach(element => {
     const url = generateUrl(element, client)
     if (url !== undefined) {

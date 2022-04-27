@@ -31,13 +31,14 @@ const generateUrl = (id: number, element: InstanceElement):
   return `app/common/scripting/plugintype.nl?scripttype=PLUGINTYPE&id=${id}`
 }
 
-const setServiceUrl: ServiceUrlSetter = async (elements, client) =>
-  setInstancesUrls({
+const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
+  await setInstancesUrls({
     elements,
     client,
     filter: element => SUPPORTED_TYPES.includes(element.refType.elemID.name),
     query: 'SELECT id, scriptid FROM script ORDER BY id ASC',
     generateUrl,
   })
+}
 
 export default setServiceUrl

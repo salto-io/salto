@@ -1815,7 +1815,7 @@ type JiraFetchConfig = configUtils.UserFetchConfig & {
 }
 
 type MaskingConfig = {
-  headers: string[]
+  automationHeaders: string[]
 }
 
 export type JiraConfig = {
@@ -1888,7 +1888,7 @@ export const DEFAULT_CONFIG: JiraConfig = {
   },
   apiDefinitions: DEFAULT_API_DEFINITIONS,
   masking: {
-    headers: [],
+    automationHeaders: [],
   },
 }
 
@@ -1920,7 +1920,7 @@ fetchConfigType.fields.fallbackToInternalId = new Field(fetchConfigType, 'fallba
 const maskingConfigType = createMatchingObjectType<Partial<MaskingConfig>>({
   elemID: new ElemID(JIRA),
   fields: {
-    headers: {
+    automationHeaders: {
       refType: new ListType(BuiltinTypes.STRING),
     },
   },
@@ -1936,7 +1936,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
     masking: { refType: maskingConfigType },
   },
   annotations: {
-    [CORE_ANNOTATIONS.DEFAULT]: _.omit(DEFAULT_CONFIG, ['apiDefinitions', 'client']),
+    [CORE_ANNOTATIONS.DEFAULT]: _.omit(DEFAULT_CONFIG, ['apiDefinitions', 'client', 'masking']),
   },
 })
 

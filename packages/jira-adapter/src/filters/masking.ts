@@ -31,8 +31,8 @@ type Header = {
 
 const HEADERS_SCHEME = Joi.array().items(
   Joi.object({
-    name: string(),
-    value: string(),
+    name: string().allow('').required(),
+    value: string().allow('').required(),
   }).unknown(true)
 )
 
@@ -58,7 +58,7 @@ const maskHeaders = (
  */
 const filter: FilterCreator = ({ config }) => ({
   onFetch: async elements => {
-    if (config.masking.headers.length === 0) {
+    if (config.masking.automationHeaders.length === 0) {
       return
     }
 
@@ -70,7 +70,7 @@ const filter: FilterCreator = ({ config }) => ({
           element: instance,
           func: ({ path, value }) => {
             if (path.name === 'headers' && isHeaders(value)) {
-              maskHeaders(value, config.masking.headers, instance.elemID)
+              maskHeaders(value, config.masking.automationHeaders, instance.elemID)
             }
 
             return WALK_NEXT_STEP.RECURSE

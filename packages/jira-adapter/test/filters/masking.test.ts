@@ -68,7 +68,7 @@ describe('maskingFilter', () => {
 
   describe('onFetch', () => {
     it('should mask the sensitive headers', async () => {
-      config.masking.headers = [
+      config.masking.automationHeaders = [
         'name.*',
       ]
 

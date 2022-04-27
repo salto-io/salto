@@ -58,17 +58,40 @@ describe('maskingValidator', () => {
         message: 'Masked data will be deployed to the service',
         detailedMessage: '',
         deployActions: {
-          preAction: {
-            title: 'Masked data will be overridden in the service',
-            description: `${instance.elemID.getFullName()} contains masked values which will override the real values in the service when deploying`,
-            subActions: [],
-          },
           postAction: {
-            title: 'Update masked data in the service',
-            description: `Please updated the masked values that were deployed to the service in ${instance.elemID.getFullName()} in the service`,
+            title: 'Update deployed masked data',
+            description: 'Please update the masked values that were deployed to Jira in the jira.Automation.instance.instance automation',
             subActions: [
-              `Go to https://ori-salto-test.atlassian.net/jira/settings/automation#/rule-list, and open the automation of ${instance.elemID.getFullName()}`,
-              'Go over the headers with masked values (headers with <SECRET_TOKEN> values) and set the real values',
+              'Go to https://ori-salto-test.atlassian.net/jira/settings/automation#/rule-list, and open the jira.Automation.instance.instance automation',
+              'Go over the headers with masked values (headers with <SECRET_TOKEN> value) and set the real values',
+              'Click "Save"',
+              'Click "Publish changes"',
+            ],
+          },
+        },
+      },
+    ])
+  })
+
+  it('should return a warning on modification if have a masked value', async () => {
+    expect(await maskingValidator(client)([
+      toChange({
+        before: instance,
+        after: instance,
+      }),
+    ])).toEqual([
+      {
+        elemID: instance.elemID,
+        severity: 'Warning',
+        message: 'Masked data will be deployed to the service',
+        detailedMessage: 'jira.Automation.instance.instance contains masked values which will override the real values in the service when deploying and may prevent this automation from operating correctly',
+        deployActions: {
+          postAction: {
+            title: 'Update deployed masked data',
+            description: 'Please update the masked values that were deployed to Jira in the jira.Automation.instance.instance automation',
+            subActions: [
+              'Go to https://ori-salto-test.atlassian.net/jira/settings/automation#/rule-list, and open the jira.Automation.instance.instance automation',
+              'Go over the headers with masked values (headers with <SECRET_TOKEN> value) and set the real values',
               'Click "Save"',
               'Click "Publish changes"',
             ],

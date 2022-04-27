@@ -66,4 +66,4 @@ jira {
 ## Masking configuration options
 | Name                                        | Default when undefined            | Description
 |---------------------------------------------|-----------------------------------|------------
-| headers                                     | []                                | List of regexes of header keys to mask their values (currently only relevant for Automations)
+| automationHeaders                                     | []                                | List of regexes of header keys in Automations to mask their values

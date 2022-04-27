@@ -29,6 +29,7 @@ import { privateApiValidator } from './private_api'
 import { workflowValidator } from './workflow'
 import { dashboardGadgetsValidator } from './dashboard_gadgets'
 import { dashboardLayoutValidator } from './dashboard_layout'
+import { maskingValidator } from './masking'
 import { automationsValidator } from './automations'
 
 const {
@@ -53,6 +54,7 @@ export default (
     dashboardGadgetsValidator,
     dashboardLayoutValidator,
     automationsValidator,
+    maskingValidator(client),
   ]
 
   return createChangeValidator(validators)

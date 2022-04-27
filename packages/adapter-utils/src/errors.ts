@@ -16,7 +16,11 @@
 
 export type ErrorFilter = (error: Error) => boolean
 
-export class CredentialError extends Error {}
+export class CredentialError extends Error {
+  constructor(message: string) {
+    super(`CredentialError: ${message}`)
+  }
+}
 
 export const isCredentialError = (error: Error): error is CredentialError =>
   error instanceof CredentialError

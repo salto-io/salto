@@ -136,28 +136,6 @@ describe('service url information filter', () => {
         }))
       })
     })
-    describe('Automation type', () => {
-      it('should add service url annotation for automation with project key', async () => {
-        const objType = new ObjectType({ elemID: new ElemID(JIRA, 'Automation') })
-        const elements = [new InstanceElement('Automation', objType, { id: 11, projects: [{ projectId: { resValue: { value: { key: 'test' } } } }] })]
-        await filter.onFetch(elements)
-        expect(elements.map(e => e.elemID.getFullName()).sort())
-          .toEqual(['jira.Automation.instance.Automation'])
-        const [instance] = elements
-        expect(instance.annotations).toEqual({
-          [CORE_ANNOTATIONS.SERVICE_URL]: 'https://ori-salto-test.atlassian.net/jira/software/projects/test/settings/automate#/rule/11',
-        })
-      })
-      it('should not add service url annotation for automation without project key', async () => {
-        const objType = new ObjectType({ elemID: new ElemID(JIRA, 'Automation') })
-        const elements = [new InstanceElement('Automation', objType, { id: '11' })]
-        await filter.onFetch(elements)
-        expect(elements.map(e => e.elemID.getFullName()).sort())
-          .toEqual(['jira.Automation.instance.Automation'])
-        const [instance] = elements
-        expect(instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).not.toBeDefined()
-      })
-    })
     describe('Webhook type', () => {
       it('should add service url annotation', async () => {
         const objType = new ObjectType({ elemID: new ElemID(JIRA, 'Webhook') })
@@ -264,28 +242,6 @@ describe('service url information filter', () => {
         expect(instance.annotations).toEqual(expect.objectContaining({
           [CORE_ANNOTATIONS.SERVICE_URL]: 'https://ori-salto-test.atlassian.net/jira/dashboards/customfield_test?maximized=11',
         }))
-      })
-    })
-    describe('Automation type', () => {
-      it('should add service url annotation for automation with project key', async () => {
-        const objType = new ObjectType({ elemID: new ElemID(JIRA, 'Automation') })
-        const elements = [new InstanceElement('Automation', objType, { id: 11, projects: [{ projectId: { resValue: { value: { key: 'test' } } } }] })]
-        await filter.onDeploy(elements.map(inst => toChange({ after: inst })))
-        expect(elements.map(e => e.elemID.getFullName()).sort())
-          .toEqual(['jira.Automation.instance.Automation'])
-        const [instance] = elements
-        expect(instance.annotations).toEqual({
-          [CORE_ANNOTATIONS.SERVICE_URL]: 'https://ori-salto-test.atlassian.net/jira/software/projects/test/settings/automate#/rule/11',
-        })
-      })
-      it('should not add service url annotation for automation without project key', async () => {
-        const objType = new ObjectType({ elemID: new ElemID(JIRA, 'Automation') })
-        const elements = [new InstanceElement('Automation', objType, { id: '11' })]
-        await filter.onDeploy(elements.map(inst => toChange({ after: inst })))
-        expect(elements.map(e => e.elemID.getFullName()).sort())
-          .toEqual(['jira.Automation.instance.Automation'])
-        const [instance] = elements
-        expect(instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).not.toBeDefined()
       })
     })
     describe('Webhook type', () => {

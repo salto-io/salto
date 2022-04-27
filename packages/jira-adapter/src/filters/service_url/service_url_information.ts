@@ -28,14 +28,6 @@ type ServiceUrlSupplier = {
 const getParentId = (instance: InstanceElement): string =>
   getParents(instance)[0].resValue.value.id
 
-const createAutomationServiceUrl = (instance: InstanceElement): string | undefined => {
-  if (instance.value.projects === undefined || instance.value.projects[0].projectId === undefined) {
-    return undefined
-  }
-  const projectKey = instance.value.projects[0].projectId.resValue.value.key
-  return `/jira/software/projects/${projectKey}/settings/automate#/rule/${instance.value.id}`
-}
-
 const createBoardServiceUrl = (instance: InstanceElement): string =>
   `/jira/software/projects/${instance.value.name.replace(' board', '')}/boards/${instance.value.id}`
 
@@ -88,11 +80,6 @@ const DashboardGadgetInformation: ServiceUrlSupplier = {
   supplier: createDashboardGadgetServiceUrl,
 }
 
-const AutomationInformation: ServiceUrlSupplier = {
-  typeName: 'Automation',
-  supplier: createAutomationServiceUrl,
-}
-
 const WebhookInformation: ServiceUrlSupplier = {
   typeName: 'Webhook',
   supplier: (_: InstanceElement) => '/plugins/servlet/webhooks#',
@@ -104,7 +91,6 @@ const serviceUrlInformation: ServiceUrlSupplier[] = [
   CustomFieldContextInformation,
   FieldInformation,
   DashboardGadgetInformation,
-  AutomationInformation,
   WebhookInformation,
 ]
 

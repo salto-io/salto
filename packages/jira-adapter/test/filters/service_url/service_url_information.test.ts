@@ -145,19 +145,6 @@ describe('service url information filter', () => {
         expect(instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).not.toBeDefined()
       })
     })
-    describe('Webhook type', () => {
-      it('should add service url annotation', async () => {
-        const objType = new ObjectType({ elemID: new ElemID(JIRA, 'Webhook') })
-        const elements = [new InstanceElement('Webhook', objType, { id: 11 })]
-        await filter.onFetch(elements)
-        expect(elements.map(e => e.elemID.getFullName()).sort())
-          .toEqual(['jira.Webhook.instance.Webhook'])
-        const [instance] = elements
-        expect(instance.annotations).toEqual({
-          [CORE_ANNOTATIONS.SERVICE_URL]: 'https://ori-salto-test.atlassian.net/plugins/servlet/webhooks#',
-        })
-      })
-    })
   })
   describe('onDeploy', () => {
     describe('Board type', () => {
@@ -260,19 +247,6 @@ describe('service url information filter', () => {
           .toEqual(['jira.Automation.instance.Automation'])
         const [instance] = elements
         expect(instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).not.toBeDefined()
-      })
-    })
-    describe('Webhook type', () => {
-      it('should add service url annotation', async () => {
-        const objType = new ObjectType({ elemID: new ElemID(JIRA, 'Webhook') })
-        const elements = [new InstanceElement('Webhook', objType, { id: 11 })]
-        await filter.onDeploy(elements.map(inst => toChange({ after: inst })))
-        expect(elements.map(e => e.elemID.getFullName()).sort())
-          .toEqual(['jira.Webhook.instance.Webhook'])
-        const [instance] = elements
-        expect(instance.annotations).toEqual({
-          [CORE_ANNOTATIONS.SERVICE_URL]: 'https://ori-salto-test.atlassian.net/plugins/servlet/webhooks#',
-        })
       })
     })
   })

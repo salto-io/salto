@@ -85,18 +85,12 @@ const AutomationInformation: ServiceUrlSupplier = {
   supplier: createAutomationServiceUrl,
 }
 
-const WebhookInformation: ServiceUrlSupplier = {
-  typeName: 'Webhook',
-  supplier: (_: InstanceElement) => '/plugins/servlet/webhooks#',
-}
-
 const serviceUrlInformation: ServiceUrlSupplier[] = [
   boardInformation,
   ProjectComponentInformation,
   CustomFieldContextInformation,
   FieldInformation,
   AutomationInformation,
-  WebhookInformation,
 ]
 
 const supplyServiceUrl = (

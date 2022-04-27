@@ -15,11 +15,11 @@
 */
 import { filters } from '@salto-io/adapter-components'
 import JiraClient from '../../client/client'
-import { FilterContext } from '../../config'
+import { JiraConfig } from '../../config'
 import { FilterCreator, FilterResult } from '../../filter'
 
 const filter: FilterCreator = params =>
-  filters.serviceUrlFilterCreator<JiraClient, FilterContext, FilterResult>(
+  filters.serviceUrlFilterCreator<JiraClient, JiraConfig, FilterResult>(
     params.client.getUrl().href
   )(params)
 

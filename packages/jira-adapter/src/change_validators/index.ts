@@ -54,7 +54,7 @@ export default (
     dashboardGadgetsValidator,
     dashboardLayoutValidator,
     automationsValidator,
-    maskingValidator,
+    maskingValidator(client),
   ]
 
   return createChangeValidator(validators)

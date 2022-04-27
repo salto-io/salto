@@ -17,12 +17,16 @@ import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter
 import { MASK_VALUE } from '../../src/filters/masking'
 import { maskingValidator } from '../../src/change_validators/masking'
 import { AUTOMATION_TYPE, JIRA } from '../../src/constants'
+import { mockClient } from '../utils'
+import JiraClient from '../../src/client/client'
 
 describe('maskingValidator', () => {
   let type: ObjectType
   let instance: InstanceElement
+  let client: JiraClient
 
   beforeEach(() => {
+    client = mockClient().client
     type = new ObjectType({ elemID: new ElemID(JIRA, AUTOMATION_TYPE) })
     instance = new InstanceElement(
       'instance',
@@ -43,7 +47,7 @@ describe('maskingValidator', () => {
   })
 
   it('should return an info have a masked value', async () => {
-    expect(await maskingValidator([
+    expect(await maskingValidator(client)([
       toChange({
         after: instance,
       }),
@@ -63,7 +67,7 @@ describe('maskingValidator', () => {
             title: 'Update masked data in the service',
             description: `Please updated the masked values that were deployed to the service in ${instance.elemID.getFullName()} in the service`,
             subActions: [
-              `In the Jira UI, open System > Global automation, and open the automation of ${instance.elemID.getFullName()}`,
+              `Go to https://ori-salto-test.atlassian.net/jira/settings/automation#/rule-list, and open the automation of ${instance.elemID.getFullName()}`,
               'Go over the headers with masked values (headers with <SECRET_TOKEN> values) and set the real values',
               'Click "Save"',
               'Click "Publish changes"',
@@ -79,7 +83,7 @@ describe('maskingValidator', () => {
       name: 'notMasked',
       value: 'value',
     }
-    expect(await maskingValidator([
+    expect(await maskingValidator(client)([
       toChange({
         after: instance,
       }),

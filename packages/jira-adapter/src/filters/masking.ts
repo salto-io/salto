@@ -14,8 +14,9 @@
 * limitations under the License.
 */
 import { ElemID, isInstanceElement } from '@salto-io/adapter-api'
-import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { createSchemeGuard, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import Joi, { string } from 'joi'
 import { AUTOMATION_TYPE } from '../constants'
 import { FilterCreator } from '../filter'
 
@@ -27,6 +28,15 @@ type Header = {
   name: string
   value: string
 }
+
+const HEADERS_SCHEME = Joi.array().items(
+  Joi.object({
+    name: string(),
+    value: string(),
+  }).unknown(true)
+)
+
+const isHeaders = createSchemeGuard<Header[]>(HEADERS_SCHEME, 'Found an invalid headers in automation')
 
 const maskHeaders = (
   headers: Header[],
@@ -59,7 +69,7 @@ const filter: FilterCreator = ({ config }) => ({
         walkOnElement({
           element: instance,
           func: ({ path, value }) => {
-            if (path.name === 'headers') {
+            if (path.name === 'headers' && isHeaders(value)) {
               maskHeaders(value, config.masking.headers, instance.elemID)
             }
 

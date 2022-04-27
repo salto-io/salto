@@ -17,10 +17,11 @@ import { ChangeError, ChangeValidator, ElemID, getChangeData,
   InstanceElement,
   isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import JiraClient from '../client/client'
 import { AUTOMATION_TYPE } from '../constants'
 import { MASK_VALUE } from '../filters/masking'
 
-export const createChangeError = (instanceElemId: ElemID): ChangeError => ({
+export const createChangeError = (instanceElemId: ElemID, client: JiraClient): ChangeError => ({
   elemID: instanceElemId,
   severity: 'Info',
   message: 'Masked data will be deployed to the service',
@@ -35,7 +36,7 @@ export const createChangeError = (instanceElemId: ElemID): ChangeError => ({
       title: 'Update masked data in the service',
       description: `Please updated the masked values that were deployed to the service in ${instanceElemId.getFullName()} in the service`,
       subActions: [
-        `In the Jira UI, open System > Global automation, and open the automation of ${instanceElemId.getFullName()}`,
+        `Go to ${new URL('/jira/settings/automation#/rule-list', client.baseUrl).href}, and open the automation of ${instanceElemId.getFullName()}`,
         'Go over the headers with masked values (headers with <SECRET_TOKEN> values) and set the real values',
         'Click "Save"',
         'Click "Publish changes"',
@@ -60,12 +61,13 @@ const doesHaveMaskedValues = (instance: InstanceElement): boolean => {
   return maskedValueFound
 }
 
-export const maskingValidator: ChangeValidator = async changes => (
-  changes
-    .filter(isAdditionOrModificationChange)
-    .filter(isInstanceChange)
-    .filter(change => getChangeData(change).elemID.typeName === AUTOMATION_TYPE)
-    .map(getChangeData)
-    .filter(doesHaveMaskedValues)
-    .flatMap(instance => ([createChangeError(instance.elemID)]))
-)
+export const maskingValidator: (client: JiraClient) =>
+  ChangeValidator = client => async changes => (
+    changes
+      .filter(isAdditionOrModificationChange)
+      .filter(isInstanceChange)
+      .filter(change => getChangeData(change).elemID.typeName === AUTOMATION_TYPE)
+      .map(getChangeData)
+      .filter(doesHaveMaskedValues)
+      .flatMap(instance => ([createChangeError(instance.elemID, client)]))
+  )

@@ -187,7 +187,10 @@ export const addElementParentReference = (instance: InstanceElement,
 export const fullApiName = (parent: string, child: string): string =>
   ([parent, child].join(API_NAME_SEPARATOR))
 
-export const getFullName = (name: string, namespacePrefix: string | undefined): string => {
+export const prefixNameIfNecessary = (
+  name: string,
+  namespacePrefix: string | undefined
+): string => {
   const namePrefix = namespacePrefix
     ? `${namespacePrefix}${NAMESPACE_SEPARATOR}` : ''
   return name.startsWith(namePrefix) ? name : `${namePrefix}${name}`

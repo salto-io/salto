@@ -22,7 +22,7 @@ import { multiIndex, collections } from '@salto-io/lowerdash'
 import { FileProperties } from 'jsforce-types'
 import { apiName, isCustomObject } from '../transformers/transformer'
 import { FilterContext, FilterCreator, FilterResult } from '../filter'
-import { addElementParentReference, buildElementsSourceForFetch, getFullName } from './utils'
+import { addElementParentReference, buildElementsSourceForFetch, prefixNameIfNecessary } from './utils'
 import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE } from '../constants'
 import { getObjectDirectoryPath } from './custom_objects'
 import { FetchElements } from '../types'
@@ -63,7 +63,7 @@ const fixLayoutPath = async (
 const transformPrefixedLayoutFileProp = async (fileProp: FileProperties):
   Promise<FileProperties> => {
   const [layoutObjName, layoutName] = await layoutObjAndName(fileProp.fullName)
-  const fixedLayoutName = getFullName(layoutName, fileProp.namespacePrefix)
+  const fixedLayoutName = prefixNameIfNecessary(layoutName, fileProp.namespacePrefix)
   return { ...fileProp, fullName: [layoutObjName, fixedLayoutName].join(LAYOUT_FULLNAME_SEPERATOR) }
 }
 

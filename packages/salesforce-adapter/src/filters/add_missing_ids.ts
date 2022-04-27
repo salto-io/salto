@@ -21,7 +21,7 @@ import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { apiName, metadataType } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
-import { getFullName, getInternalId, setInternalId, ensureSafeFilterFetch } from './utils'
+import { prefixNameIfNecessary, getInternalId, setInternalId, ensureSafeFilterFetch } from './utils'
 
 const log = logger(module)
 const { awu, groupByAsync } = collections.asynciterable
@@ -36,7 +36,7 @@ export const getIdsForType = async (
   return Object.fromEntries(
     result
       .filter(info => info.id !== undefined && info.id !== '')
-      .map(info => [getFullName(info.fullName, info.namespacePrefix), info.id])
+      .map(info => [prefixNameIfNecessary(info.fullName, info.namespacePrefix), info.id])
   )
 }
 

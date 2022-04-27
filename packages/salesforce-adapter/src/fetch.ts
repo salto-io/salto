@@ -26,7 +26,7 @@ import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, crea
 import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements, getAuthorAnnotations } from './transformers/transformer'
 import { fromRetrieveResult, toRetrieveRequest, getManifestTypeName } from './transformers/xml_transformer'
 import { MetadataQuery } from './fetch_profile/metadata_query'
-import { getFullName } from './filters/utils'
+import { prefixNameIfNecessary } from './filters/utils'
 
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
@@ -122,7 +122,7 @@ export const fetchMetadataInstances = async ({
     metadataTypeName,
     fileProps.map(
       prop => ({
-        name: getFullName(prop.fullName, prop.namespacePrefix),
+        name: prefixNameIfNecessary(prop.fullName, prop.namespacePrefix),
         namespace: getNamespace(prop),
       })
     ).filter(
@@ -136,7 +136,7 @@ export const fetchMetadataInstances = async ({
 
   const filePropertiesMap = _.keyBy(
     fileProps,
-    fileProp => getFullName(fileProp.fullName, fileProp.namespacePrefix)
+    fileProp => prefixNameIfNecessary(fileProp.fullName, fileProp.namespacePrefix)
   )
   const elements = metadataInfos
     .filter(m => !_.isEmpty(m))

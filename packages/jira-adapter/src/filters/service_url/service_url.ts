@@ -20,7 +20,7 @@ import { FilterCreator, FilterResult } from '../../filter'
 
 const filter: FilterCreator = params =>
   filters.serviceUrlFilterCreator<JiraClient, JiraConfig, FilterResult>(
-    params.client.getUrl().href
+    params.client.baseUrl
   )(params)
 
 export default filter

@@ -25,14 +25,30 @@ import { IDFilter, getPlan } from './plan/plan'
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-const isChangeIdRelevant = ({ id }: DetailedChange, relevantIds: ElemID[]): boolean =>
-  relevantIds.some(elemId =>
-    id.isParentOf(elemId) || elemId.isEqual(id) || elemId.isParentOf(id))
-
-const isChangeValueRelevant = (
+const isChangeRelevant = (
   change: DetailedChange,
-  relevantIds: ElemID[]
+  matchingElemIDsByTopLevel: Record<string, ElemID[]>
 ): boolean => {
+  // this function has several steps in order to optimize its run time
+  // step 1: get the elemIDs matching the top level element of the change.
+  // if there are none - return false
+  const matchingElemIDs = matchingElemIDsByTopLevel[
+    change.id.createTopLevelParentID().parent.getFullName()
+  ]
+  if (matchingElemIDs === undefined) {
+    return false
+  }
+  // step 2: get the parent/child elemIDs of the change and filter out the "siblings"
+  // if there are none - return false. if there are elemIDs - use the filtered list later
+  const relevantIds = matchingElemIDs.filter(elemId =>
+    change.id.isParentOf(elemId) || elemId.isEqual(change.id) || elemId.isParentOf(change.id))
+
+  if (relevantIds.length === 0) {
+    return false
+  }
+
+  // step 3: walk on the change's value and look for an equal/parent elemID in the filtered list
+  // from before. if there's a match - stop and return true. otherwise return false.
   let isMatch = false
   const func: WalkOnFunc = ({ path }) => {
     if (relevantIds.some(elemId => elemId.isEqual(path) || elemId.isParentOf(path))) {
@@ -45,7 +61,7 @@ const isChangeValueRelevant = (
   return isMatch
 }
 
-const getFilteredIds = async (
+const getFilteredIds = (
   selectors: ElementSelector[],
   source: elementSource.ElementsSource,
   referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
@@ -94,9 +110,21 @@ const createMatchers = async (
     }
   }
 
+  // group the matching elemIDs by top level to make it more efficient to get them by a change's id
+  const beforeMatchingElemIDsByTopLevel = _.groupBy(
+    beforeMatchingElemIDs,
+    elemId => elemId.createTopLevelParentID().parent.getFullName()
+  )
+  const afterMatchingElemIDsByTopLevel = _.groupBy(
+    afterMatchingElemIDs,
+    elemId => elemId.createTopLevelParentID().parent.getFullName()
+  )
+
   const isChangeMatchSelectors = (change: DetailedChange): boolean => {
-    const relevantIds = isRemovalChange(change) ? beforeMatchingElemIDs : afterMatchingElemIDs
-    return isChangeIdRelevant(change, relevantIds) && isChangeValueRelevant(change, relevantIds)
+    const matchingElemIDsByTopLevel = isRemovalChange(change)
+      ? beforeMatchingElemIDsByTopLevel
+      : afterMatchingElemIDsByTopLevel
+    return isChangeRelevant(change, matchingElemIDsByTopLevel)
   }
 
   return {

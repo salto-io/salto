@@ -18,10 +18,6 @@ import wu from 'wu'
 import { NodeId, Group, ActionName } from '@salto-io/dag'
 import { Change, getChangeData, DetailedChange } from '@salto-io/adapter-api'
 import { detailedCompare } from '@salto-io/adapter-utils'
-import { values, collections } from '@salto-io/lowerdash'
-
-const { awu } = collections.asynciterable
-type SetId = collections.set.SetId
 
 export type PlanItemId = NodeId
 export type PlanItem = Group<Change> & {
@@ -60,14 +56,3 @@ export const addPlanItemAccessors = (group: Group<Change>): PlanItem => Object.a
       .flatten()
   },
 })
-
-export const filterPlanItem = async (
-  planItem: PlanItem,
-  func: (change: Change) => Promise<Change | undefined>
-) : Promise<PlanItem> => {
-  const filteredItems = new Map(await awu(planItem.items.entries())
-    .map(async ([setID, change]) => [setID, await func(change)])
-    .filter(([_setID, change]) => values.isDefined(change))
-    .toArray() as Iterable<[SetId, Change]>)
-  return addPlanItemAccessors({ items: filteredItems, groupKey: planItem.groupKey })
-}

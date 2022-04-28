@@ -291,7 +291,7 @@ describe('element selector', () => {
     const elements = [
       new ElemID('salesforce', 'value'),
       new ElemID('netsuite', 'value'),
-      new ElemID('hubspot', 'value'),
+      new ElemID('jira', 'value'),
     ]
     const selectedElements = await selectElements({ elements, selectors: ['salesforce.*', 'netsuite.*'] })
     expect(selectedElements).toEqual([elements[0], elements[1]])
@@ -300,7 +300,7 @@ describe('element selector', () => {
     const elements = [
       new ElemID('salesforce', 'value'),
       new ElemID('netsuite', 'value'),
-      new ElemID('hubspot', 'value'),
+      new ElemID('jira', 'value'),
     ]
     expect(await selectElements({ elements, selectors: [] })).toEqual(elements)
   })
@@ -323,7 +323,7 @@ describe('element selector', () => {
       new ElemID('netsuite', 'dontinclude'),
       new ElemID('NetSuite', 'Value'),
       new ElemID('hubsPot', 'value', 'attr', 'sOmetHing'),
-      new ElemID('hubspot', 'value', 'attr', 'other'),
+      new ElemID('jira', 'value', 'attr', 'other'),
     ]
     const selectedElements = await selectElements({
       elements,

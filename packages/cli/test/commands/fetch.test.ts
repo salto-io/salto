@@ -137,7 +137,7 @@ describe('fetch command', () => {
       })
 
       it('should fetch both accounts', () => {
-        expect((fetch as jest.Mock).mock.calls[0][2]).toEqual(['salesforce', 'hubspot'])
+        expect((fetch as jest.Mock).mock.calls[0][2]).toEqual(['salesforce', 'netsuite'])
       })
     })
 

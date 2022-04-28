@@ -28,7 +28,6 @@
         { "path": "../dag" },
         { "path": "../dummy-adapter" },
         { "path": "../file" },
-        { "path": "../hubspot-adapter" },
         { "path": "../jira-adapter" },
         { "path": "../logging" },
         { "path": "../lowerdash" },

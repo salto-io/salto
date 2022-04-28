@@ -38,7 +38,6 @@
     "@salto-io/dag": "0.3.15",
     "@salto-io/dummy-adapter": "0.3.15",
     "@salto-io/file": "0.3.15",
-    "@salto-io/hubspot-adapter": "0.3.15",
     "@salto-io/jira-adapter": "0.3.15",
     "@salto-io/logging": "0.3.15",
     "@salto-io/lowerdash": "0.3.15",

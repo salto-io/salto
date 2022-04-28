@@ -46,7 +46,7 @@
     "jszip": "^3.2.2",
     "lodash": "^4.17.21",
     "mime-types": "^2.1.27",
-    "requestretry": "^4.0.2",
+    "requestretry": "^7.0.0",
     "wu": "^2.1.0"
   },
   "devDependencies": {

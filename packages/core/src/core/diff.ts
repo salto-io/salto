@@ -77,13 +77,13 @@ const createMatchers = async (
     }
   }
 
-  // this set will be used to look for a change's id or its parents
+  // this set will be used to check if a change is a child of a selector-matched elemID
   const beforeMatchingElemIDsSet = new Set(beforeMatchingElemIDs
     .map(elemId => elemId.getFullName()))
   const afterMatchingElemIDsSet = new Set(afterMatchingElemIDs
     .map(elemId => elemId.getFullName()))
 
-  // this set will be used to check if a change's id is a parent of a selector-matched elemID
+  // this set will be used to check if a change is equal/parent of a selector-matched elemID
   const beforeAllParentsMatchingElemIDsSet = new Set(beforeMatchingElemIDs
     .flatMap(createAllElemIdParents)
     .map(elemId => elemId.getFullName()))
@@ -91,23 +91,28 @@ const createMatchers = async (
     .flatMap(createAllElemIdParents)
     .map(elemId => elemId.getFullName()))
 
-  const isChangeIdEqualOrChildOfMatchingElemId = (change: DetailedChange): boolean => {
+  const isChangeIdChildOfMatchingElemId = (change: DetailedChange): boolean => {
     const matchingElemIDsSet = isRemovalChange(change)
       ? beforeMatchingElemIDsSet
       : afterMatchingElemIDsSet
-    return createAllElemIdParents(change.id)
+    return createAllElemIdParents(change.id.createParentID())
       .some(elemId => matchingElemIDsSet.has(elemId.getFullName()))
   }
 
-  const isChangeIdParentOfMatchingElemId = (change: DetailedChange): boolean => {
+  const isChangeIdEqualOrParentOfMatchingElemId = (change: DetailedChange): boolean => {
     const allParentsMatchingElemIDsSet = isRemovalChange(change)
       ? beforeAllParentsMatchingElemIDsSet
       : afterAllParentsMatchingElemIDsSet
     return allParentsMatchingElemIDsSet.has(change.id.getFullName())
   }
 
+  // A change is matched if its ID matches exactly or is nested under an ID that was matched
+  // by the selectors. A change is also matched if it is a parent of one of the IDs that were
+  // matched by the selectors - this is correct because if an ID was matched, it means it exists,
+  // and therefore a change to the parent must contain the matched value.
   const isChangeMatchSelectors = (change: DetailedChange): boolean =>
-    isChangeIdEqualOrChildOfMatchingElemId(change) || isChangeIdParentOfMatchingElemId(change)
+    isChangeIdEqualOrParentOfMatchingElemId(change)
+      || isChangeIdChildOfMatchingElemId(change)
 
   return {
     isChangeMatchSelectors,

@@ -14,8 +14,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { DetailedChange, ElemID, getChangeData, isRemovalChange } from '@salto-io/adapter-api'
-import { WalkOnFunc, walkOnValue, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { DetailedChange, ElemID, isRemovalChange } from '@salto-io/adapter-api'
 import { ElementSelector, selectElementIdsByTraversal, elementSource, Workspace, remoteMap } from '@salto-io/workspace'
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
@@ -25,41 +24,9 @@ import { IDFilter, getPlan } from './plan/plan'
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-const isChangeRelevant = (
-  change: DetailedChange,
-  matchingElemIDsByTopLevel: Record<string, ElemID[]>
-): boolean => {
-  // this function has several steps in order to optimize its run time
-  // step 1: get the elemIDs matching the top level element of the change.
-  // if there are none - return false
-  const matchingElemIDs = matchingElemIDsByTopLevel[
-    change.id.createTopLevelParentID().parent.getFullName()
-  ]
-  if (matchingElemIDs === undefined) {
-    return false
-  }
-  // step 2: get the parent/child elemIDs of the change and filter out the "siblings"
-  // if there are none - return false. if there are elemIDs - use the filtered list later
-  const relevantIds = matchingElemIDs.filter(elemId =>
-    change.id.isParentOf(elemId) || elemId.isEqual(change.id) || elemId.isParentOf(change.id))
-
-  if (relevantIds.length === 0) {
-    return false
-  }
-
-  // step 3: walk on the change's value and look for an equal/parent elemID in the filtered list
-  // from before. if there's a match - stop and return true. otherwise return false.
-  let isMatch = false
-  const func: WalkOnFunc = ({ path }) => {
-    if (relevantIds.some(elemId => elemId.isEqual(path) || elemId.isParentOf(path))) {
-      isMatch = true
-      return WALK_NEXT_STEP.EXIT
-    }
-    return WALK_NEXT_STEP.RECURSE
-  }
-  walkOnValue({ elemId: change.id, value: getChangeData(change), func })
-  return isMatch
-}
+const createAllElemIdParents = (elemId: ElemID): ElemID[] => (
+  elemId.isTopLevel() ? [elemId] : [elemId, ...createAllElemIdParents(elemId.createParentID())]
+)
 
 const getFilteredIds = (
   selectors: ElementSelector[],
@@ -110,22 +77,37 @@ const createMatchers = async (
     }
   }
 
-  // group the matching elemIDs by top level to make it more efficient to get them by a change's id
-  const beforeMatchingElemIDsByTopLevel = _.groupBy(
-    beforeMatchingElemIDs,
-    elemId => elemId.createTopLevelParentID().parent.getFullName()
-  )
-  const afterMatchingElemIDsByTopLevel = _.groupBy(
-    afterMatchingElemIDs,
-    elemId => elemId.createTopLevelParentID().parent.getFullName()
-  )
+  // this set will be used to look for a change's id or its parents
+  const beforeMatchingElemIDsSet = new Set(beforeMatchingElemIDs
+    .map(elemId => elemId.getFullName()))
+  const afterMatchingElemIDsSet = new Set(afterMatchingElemIDs
+    .map(elemId => elemId.getFullName()))
 
-  const isChangeMatchSelectors = (change: DetailedChange): boolean => {
-    const matchingElemIDsByTopLevel = isRemovalChange(change)
-      ? beforeMatchingElemIDsByTopLevel
-      : afterMatchingElemIDsByTopLevel
-    return isChangeRelevant(change, matchingElemIDsByTopLevel)
+  // this set will be used to check if a change's id is a parent of a selector-matched elemID
+  const beforeAllParentsMatchingElemIDsSet = new Set(beforeMatchingElemIDs
+    .flatMap(createAllElemIdParents)
+    .map(elemId => elemId.getFullName()))
+  const afterAllParentsMatchingElemIDsSet = new Set(afterMatchingElemIDs
+    .flatMap(createAllElemIdParents)
+    .map(elemId => elemId.getFullName()))
+
+  const isChangeIdEqualOrChildOfMatchingElemId = (change: DetailedChange): boolean => {
+    const matchingElemIDsSet = isRemovalChange(change)
+      ? beforeMatchingElemIDsSet
+      : afterMatchingElemIDsSet
+    return createAllElemIdParents(change.id)
+      .some(elemId => matchingElemIDsSet.has(elemId.getFullName()))
   }
+
+  const isChangeIdParentOfMatchingElemId = (change: DetailedChange): boolean => {
+    const allParentsMatchingElemIDsSet = isRemovalChange(change)
+      ? beforeAllParentsMatchingElemIDsSet
+      : afterAllParentsMatchingElemIDsSet
+    return allParentsMatchingElemIDsSet.has(change.id.getFullName())
+  }
+
+  const isChangeMatchSelectors = (change: DetailedChange): boolean =>
+    isChangeIdEqualOrChildOfMatchingElemId(change) || isChangeIdParentOfMatchingElemId(change)
 
   return {
     isChangeMatchSelectors,

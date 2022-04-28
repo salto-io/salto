@@ -24,10 +24,24 @@ import { getObjectDirectoryPath } from '../../src/filters/custom_objects'
 
 describe('Test layout filter', () => {
   describe('Test layout fetch', () => {
-    const fetch = async (apiName: string): Promise<void> => {
+    let testSObj: ObjectType
+    let testSobjPath: string[]
+    let instance: InstanceElement | undefined
+    let targetFullName: string
+    const fetch = async ({
+      apiName,
+      namespacePrefix,
+      layoutNameIncludesPrefix = false,
+    }:
+      {
+        apiName: string
+        namespacePrefix?: string
+        layoutNameIncludesPrefix?: boolean
+        customObject?: boolean
+
+      }): Promise<void> => {
+      targetFullName = namespacePrefix ? 'SBQQ__TestApiName-SBQQ__Test Layout' : `${apiName}-Test Layout`
       const { client } = mockClient()
-      const shortName = 'Test Layout'
-      const fullName = `${apiName}-${shortName}`
       client.listMetadataObjects = jest.fn()
         .mockReturnValue({
           result: [
@@ -36,13 +50,14 @@ describe('Test layout filter', () => {
               createdByName: 'aaaaaaaaa',
               createdDate: '2020-08-25T11:39:01.000Z',
               fileName: 'layouts/Test.layout',
-              fullName,
+              fullName: layoutNameIncludesPrefix ? `${apiName}-SBQQ__Test Layout` : `${apiName}-Test Layout`,
               id: 'aaaaaaaaa',
               lastModifiedById: 'aaaaaaaaa',
               lastModifiedByName: 'aaaaaaaaa',
               lastModifiedDate: '2020-08-25T11:40:45.000Z',
               manageableState: 'installed',
               type: 'Layout',
+              namespacePrefix,
             },
           ],
         })
@@ -73,7 +88,7 @@ describe('Test layout filter', () => {
           return { result, errors: [] }
         })
 
-      const testSObj = createCustomObjectType(
+      testSObj = createCustomObjectType(
         apiName,
         {
           fields: {
@@ -88,7 +103,8 @@ describe('Test layout filter', () => {
           },
         }
       )
-      const testSobjPath = [...await getObjectDirectoryPath(testSObj), pathNaclCase(apiName)]
+
+      testSobjPath = [...await getObjectDirectoryPath(testSObj), pathNaclCase(targetFullName)]
       testSObj.path = testSobjPath
       const testLayoutType = new ObjectType({
         elemID: new ElemID(constants.SALESFORCE,
@@ -111,10 +127,11 @@ describe('Test layout filter', () => {
 
       const filter = makeFilter({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
       await filter.onFetch(elements)
-      const instance = elements
+      instance = elements
         .filter(isInstanceElement)
         .find(inst => inst.elemID.typeName === constants.LAYOUT_TYPE_ID_METADATA_TYPE)
-      expect(instance?.elemID).toEqual(LAYOUT_TYPE_ID.createNestedID('instance', naclCase(fullName)))
+
+      expect(instance?.elemID).toEqual(LAYOUT_TYPE_ID.createNestedID('instance', naclCase(targetFullName)))
       expect(instance?.path?.slice(0, -1)).toEqual([...testSobjPath.slice(0, -1), 'Layout'])
       expect(instance?.annotations[CORE_ANNOTATIONS.PARENT]).toContainEqual(
         new ReferenceExpression(testSObj.elemID)
@@ -122,14 +139,38 @@ describe('Test layout filter', () => {
     }
 
     it('should add relation between layout to related sobject', async () => {
-      await fetch('TestApiName')
+      await fetch({ apiName: 'TestApiName' })
     })
     it('should add relation between layout to related custom sobject', async () => {
-      await fetch('TestApiName__c')
+      await fetch({ apiName: 'TestApiName__c' })
     })
-    // it('should not transform instance name if it is already fixed', async () => {
-    //   await fetch('Test', { fixedName: true })
-    // })
+
+    describe('installed packages', () => {
+      describe('if the API name already includes namespacePrefix', () => {
+        describe('if layout name does not include prefix', () => {
+          it('should give correct instance name and path', async () => {
+            await fetch({ apiName: 'SBQQ__TestApiName', namespacePrefix: 'SBQQ', layoutNameIncludesPrefix: false })
+          })
+        })
+        describe('if layout name already includes prefix', () => {
+          it('should give correct instance name and path', async () => {
+            await fetch({ apiName: 'SBQQ__TestApiName', namespacePrefix: 'SBQQ', layoutNameIncludesPrefix: true })
+          })
+        })
+      })
+      describe('if the API name does not include namespacePrefix', () => {
+        describe('if layout name already includes namespacePrefix', () => {
+          it('should not add prefix to the instance\'s name', async () => {
+            await fetch({ apiName: 'TestApiName', namespacePrefix: 'SBQQ', layoutNameIncludesPrefix: true })
+          })
+        })
+        describe('if layout  name does not include prefix', () => {
+          it('should add prefix to the layout\'s name', async () => {
+            await fetch({ apiName: 'TestApiName', namespacePrefix: 'SBQQ', layoutNameIncludesPrefix: false })
+          })
+        })
+      })
+    })
   })
 })
 

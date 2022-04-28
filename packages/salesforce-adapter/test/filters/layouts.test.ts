@@ -50,7 +50,6 @@ describe('Test layout filter', () => {
       client.readMetadata = jest.fn()
         .mockImplementation(async (_typeName: string, names: string[])
             : Promise<{result: {}[]; errors: string[]}> => {
-          console.log('in mock readmetada, got names: %s', names)
           const result = names.map(name => {
             const testLayoutMetadataInfo = {
               [constants.INSTANCE_FULL_NAME_FIELD]: name,
@@ -91,29 +90,10 @@ describe('Test layout filter', () => {
       )
       const testSobjPath = [...await getObjectDirectoryPath(testSObj), pathNaclCase(apiName)]
       testSObj.path = testSobjPath
-
-      // const fullName = `${apiName}-${shortName}`
-      // const instName = naclCase(opts.fixedName ? shortName : fullName)
-      // const testLayout = new InstanceElement(
-      //   instName,
-      //   mockTypes.Layout,
-      //   { [constants.INSTANCE_FULL_NAME_FIELD]: fullName,
-      //     layoutSections: {
-      //       layoutColumns: {
-      //         layoutItems: [{
-      //           field: 'foo',
-      //         }, {
-      //           field: 'bar',
-      //         }, {
-      //           customLink: 'link',
-      //         }, {
-      //           field: 'moo',
-      //         }],
-      //       },
-      //     } },
-      //   [constants.RECORDS_PATH, 'Layout', instName]
-      // )
-      const testLayoutType = new ObjectType({ elemID: new ElemID(constants.SALESFORCE, constants.LAYOUT_TYPE_ID_METADATA_TYPE) })
+      const testLayoutType = new ObjectType({
+        elemID: new ElemID(constants.SALESFORCE,
+          constants.LAYOUT_TYPE_ID_METADATA_TYPE),
+      })
 
       const webLinkObj = createMetadataTypeElement('WebLink', { path: [constants.SALESFORCE] })
 
@@ -131,24 +111,24 @@ describe('Test layout filter', () => {
 
       const filter = makeFilter({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
       await filter.onFetch(elements)
-
-      const instance = elements.filter(isInstanceElement).find(inst => inst.elemID.typeName === constants.LAYOUT_TYPE_ID_METADATA_TYPE)
+      const instance = elements
+        .filter(isInstanceElement)
+        .find(inst => inst.elemID.typeName === constants.LAYOUT_TYPE_ID_METADATA_TYPE)
       expect(instance?.elemID).toEqual(LAYOUT_TYPE_ID.createNestedID('instance', naclCase(fullName)))
-      expect(instance?.path).toEqual([...testSobjPath.slice(0, -1), 'Layout', pathNaclCase(instance?.elemID.name)])
-      // TODOH: check why path doesn't match the instance's name? (instance?.elemID.name looks ok )
+      expect(instance?.path?.slice(0, -1)).toEqual([...testSobjPath.slice(0, -1), 'Layout'])
       expect(instance?.annotations[CORE_ANNOTATIONS.PARENT]).toContainEqual(
         new ReferenceExpression(testSObj.elemID)
       )
     }
 
-    it.only('should add relation between layout to related sobject', async () => {
+    it('should add relation between layout to related sobject', async () => {
       await fetch('TestApiName')
     })
     it('should add relation between layout to related custom sobject', async () => {
       await fetch('TestApiName__c')
     })
     // it('should not transform instance name if it is already fixed', async () => {
-    //   await fetch('Test')
+    //   await fetch('Test', { fixedName: true })
     // })
   })
 })

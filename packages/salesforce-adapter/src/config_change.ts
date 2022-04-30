@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ListMetadataQuery, RetrieveResult } from 'jsforce-types'
 import { collections, values } from '@salto-io/lowerdash'
 import { Values, InstanceElement, ElemID } from '@salto-io/adapter-api'
-import { ConfigChangeSuggestion, configType, isDataManagementConfigSuggestions, isMetadataConfigSuggestions, SalesforceConfig, DataManagementConfig } from './types'
+import { ConfigChangeSuggestion, configType, isDataManagementConfigSuggestions, isMetadataConfigSuggestions, SalesforceConfig, DataManagementConfig, isRetrieveSizeConfigSuggstion } from './types'
 import * as constants from './constants'
 
 const { isDefined } = values
@@ -107,7 +107,11 @@ export const getConfigFromConfigChanges = (
     .filter(isDataManagementConfigSuggestions)
     .map(config => config.value)
 
-  if ([newMetadataExclude, dataObjectsToExclude]
+  const maxItemsInRetrieveRequest = configChanges
+    .filter(isRetrieveSizeConfigSuggstion)
+    .map(config => config.value)
+
+  if ([newMetadataExclude, dataObjectsToExclude, maxItemsInRetrieveRequest]
     .every(_.isEmpty)) {
     return undefined
   }
@@ -152,7 +156,9 @@ export const getConfigFromConfigChanges = (
             saltoIDSettings: _.pickBy(data.saltoIDSettings, isDefined),
           },
         }, isDefined),
-        maxItemsInRetrieveRequest: currentConfig.maxItemsInRetrieveRequest,
+        maxItemsInRetrieveRequest: maxItemsInRetrieveRequest.length > 0
+          ? maxItemsInRetrieveRequest[0]
+          : currentConfig.maxItemsInRetrieveRequest,
         useOldProfiles: currentConfig.useOldProfiles,
         client: currentConfig.client,
       }, isDefined)

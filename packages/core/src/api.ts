@@ -210,6 +210,7 @@ export type FetchResult = {
   configChanges?: Plan
   updatedConfig : Record<string, InstanceElement[]>
   accountNameToConfigMessage?: Record<string, string>
+  authenticationError?: Error
 }
 export type FetchFunc = (
   workspace: Workspace,
@@ -293,15 +294,16 @@ export const fetch: FetchFunc = async (
       accountNameToConfigMessage,
     }
   } catch (e) {
-    if (e instanceof Error && isCredentialError(e)) {
+    if (isCredentialError(e)) {
       return {
         changes: [],
-        fetchErrors: [{ message: e.message, severity: 'Error' }],
+        fetchErrors: [],
         mergeErrors: [],
         success: false,
         undefined,
         updatedConfig: {},
         accountNameToConfigMessage: undefined,
+        authenticationError: e,
       }
     }
     throw e

@@ -14,15 +14,13 @@
 * limitations under the License.
 */
 
-import { filterErrorsBy } from '../src/errors'
+import { CredentialError, isCredentialError } from '../src/errors'
 
-describe('filterErrorsBy', () => {
-  it('should return an error', async () => {
-    const error = new Error('test')
-    expect(await filterErrorsBy(() => Promise.reject(error), () => true)).toBe(error)
+describe('is credential error', () => {
+  it('false', async () => {
+    expect(isCredentialError(new Error('test'))).toBe(false)
   })
-  it('should throw an error', async () => {
-    const error = new Error('test')
-    await expect(filterErrorsBy(() => Promise.reject(error), () => false)).rejects.toThrow()
+  it('true', async () => {
+    expect(isCredentialError(new CredentialError('test'))).toBe(false)
   })
 })

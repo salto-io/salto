@@ -335,10 +335,7 @@ export const loginFromCredentialsAndReturnOrgId = async (
     try {
       return (await connection.login(creds.username, creds.password + (creds.apiToken ?? ''))).organizationId
     } catch (error) {
-      if (error instanceof Error && isInValidCredentials(error)) {
-        throw new CredentialError(error.message)
-      }
-      throw error
+      throw new CredentialError(error.message)
     }
   }
   // Oauth connection doesn't require further login

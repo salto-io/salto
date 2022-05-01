@@ -25,7 +25,7 @@ import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
 import { Workspace, ElementSelector, elementSource } from '@salto-io/workspace'
 import { EOL } from 'os'
-import { filterErrorsBy, isCredentialError } from '@salto-io/adapter-utils'
+import { isCredentialError } from '@salto-io/adapter-utils'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
   adapterCreators, getAdaptersCredentialsTypes, getAdapters, getAdapterDependencyChangers,
@@ -58,14 +58,31 @@ const { mapValuesAsync } = promises.object
 const getAdapterFromLoginConfig = (loginConfig: Readonly<InstanceElement>): Adapter =>
   adapterCreators[loginConfig.elemID.adapter]
 
+type VerifyCredentialsResult = {
+    success: true
+    accountId: AccountId
+} | {
+  success: false
+  error: Error
+}
+
 export const verifyCredentials = async (
   loginConfig: Readonly<InstanceElement>,
-): Promise<AccountId|Error> => {
+): Promise<VerifyCredentialsResult> => {
   const adapterCreator = getAdapterFromLoginConfig(loginConfig)
   if (adapterCreator) {
-    const validateCredentialsMethod = async (): Promise<string> =>
-      adapterCreator.validateCredentials(loginConfig)
-    return filterErrorsBy<string>(validateCredentialsMethod, isCredentialError)
+    try {
+      const accountId = await adapterCreator.validateCredentials(loginConfig)
+      return { success: true, accountId }
+    } catch (error) {
+      if (isCredentialError(error)) {
+        return {
+          success: false,
+          error,
+        }
+      }
+      throw error
+    }
   }
   throw new Error(`unknown adapter: ${loginConfig.elemID.adapter}`)
 }
@@ -75,10 +92,6 @@ export const updateCredentials = async (
   newConfig: Readonly<InstanceElement>,
   account?: string
 ): Promise<void> => {
-  const result = await verifyCredentials(newConfig)
-  if (result instanceof Error) {
-    throw result
-  }
   await workspace.updateAccountCredentials(account ?? newConfig.elemID.adapter, newConfig)
   log.debug(`persisted new configs for adapter: ${newConfig.elemID.adapter}`)
 }

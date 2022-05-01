@@ -16,23 +16,7 @@
 
 export type ErrorFilter = (error: Error) => boolean
 
-export class CredentialError extends Error {
-  constructor(message: string) {
-    super(`CredentialError: ${message}`)
-  }
-}
+export class CredentialError extends Error {}
 
-export const isCredentialError = (error: Error): error is CredentialError =>
+export const isCredentialError = (error: unknown): error is CredentialError =>
   error instanceof CredentialError
-
-export const filterErrorsBy = async <T>(func: () => Promise<T>, filter: ErrorFilter):
-Promise<T|Error> => {
-  try {
-    return await func()
-  } catch (error) {
-    if (error instanceof Error && filter(error)) {
-      return Promise.resolve(error)
-    }
-    throw error
-  }
-}

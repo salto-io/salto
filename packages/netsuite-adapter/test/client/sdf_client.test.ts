@@ -30,11 +30,15 @@ import SdfClient, {
   FOLDER_ATTRIBUTES_FILE_SUFFIX,
   MINUTE_IN_MILLISECONDS,
 } from '../../src/client/sdf_client'
-import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from '../../src/client/types'
+import { AdditionalSdfDeployDependencies, CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from '../../src/client/types'
 import { fileCabinetTopLevelFolders } from '../../src/client/constants'
 import { DEFAULT_COMMAND_TIMEOUT_IN_MINUTES } from '../../src/config'
 import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
 
+const DEFAULT_DEPLOY_PARAMS: [undefined, AdditionalSdfDeployDependencies] = [
+  undefined,
+  { objects: [], features: [] },
+]
 
 const MOCK_TEMPLATE_CONTENT = Buffer.from('Template Inner Content')
 const MOCK_FILE_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}content.html`
@@ -1236,7 +1240,7 @@ describe('sdf client', () => {
           },
           scriptId,
         } as CustomTypeInfo
-        await client.deploy([customTypeInfo])
+        await client.deploy([customTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
         expect(writeFileMock).toHaveBeenCalledTimes(2)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`),
           '<typeName><key>val</key></typeName>')
@@ -1258,7 +1262,7 @@ describe('sdf client', () => {
           },
           scriptId,
         } as CustomTypeInfo
-        await client.deploy([customTypeInfo], 'a.b.c')
+        await client.deploy([customTypeInfo], 'a.b.c', DEFAULT_DEPLOY_PARAMS[1])
         expect(renameMock).toHaveBeenCalled()
         expect(writeFileMock).toHaveBeenCalledTimes(2)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`),
@@ -1282,7 +1286,7 @@ describe('sdf client', () => {
           fileContent: MOCK_TEMPLATE_CONTENT,
           fileExtension: 'html',
         } as TemplateCustomTypeInfo
-        await client.deploy([templateCustomTypeInfo])
+        await client.deploy([templateCustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
         expect(writeFileMock).toHaveBeenCalledTimes(3)
         expect(writeFileMock)
           .toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`), '<typeName><key>val</key></typeName>')
@@ -1300,7 +1304,7 @@ describe('sdf client', () => {
         mockExecuteAction.mockImplementation(() => {
           throw errorMessage
         })
-        await expect(client.deploy([{} as CustomTypeInfo])).rejects
+        await expect(client.deploy([{} as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)).rejects
           .toThrow(new Error(errorMessage))
       })
 
@@ -1309,7 +1313,7 @@ describe('sdf client', () => {
         mockExecuteAction.mockImplementation(() => {
           throw new Error(errorMessage)
         })
-        await expect(client.deploy([{} as CustomTypeInfo])).rejects
+        await expect(client.deploy([{} as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)).rejects
           .toThrow(new Error(errorMessage))
       })
       it('should throw ObjectsDeployError when deploy failed on object validation', async () => {
@@ -1352,7 +1356,7 @@ File: ~/Objects/custform_114_t1441298_782.xml
               key: 'val',
             },
             scriptId: 'scriptId',
-          } as CustomTypeInfo])
+          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
           isRejected = false
         } catch (e) {
           isRejected = true
@@ -1408,7 +1412,7 @@ File: ~/Objects/custform_15_t1049933_143.xml
               key: 'val',
             },
             scriptId: 'scriptId',
-          } as CustomTypeInfo])
+          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
           isRejected = false
         } catch (e) {
           isRejected = true
@@ -1463,7 +1467,7 @@ File: ~/Objects/custform_15_t1049933_143.xml
               key: 'val',
             },
             scriptId: 'scriptId',
-          } as CustomTypeInfo])
+          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
           isRejected = false
         } catch (e) {
           isRejected = true
@@ -1519,7 +1523,7 @@ Object: customrecord_flo_customization.custrecord_flo_custz_link (customrecordcu
               key: 'val',
             },
             scriptId: 'scriptId',
-          } as CustomTypeInfo])
+          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
           isRejected = false
         } catch (e) {
           isRejected = true
@@ -1576,7 +1580,7 @@ Object: customrecord_flo_customization.custrecord_flo_custz_link (customrecordcu
               key: 'val',
             },
             scriptId: 'scriptId',
-          } as CustomTypeInfo])
+          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
           isRejected = false
         } catch (e) {
           isRejected = true
@@ -1635,7 +1639,7 @@ File: ~/AccountConfiguration/features.xml`
               key: 'val',
             },
             scriptId: 'scriptId',
-          } as CustomTypeInfo])
+          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
           isRejected = false
         } catch (e) {
           isRejected = true
@@ -1656,7 +1660,7 @@ File: ~/AccountConfiguration/features.xml`
           },
           path: ['Templates', 'E-mail Templates', 'InnerFolder'],
         }
-        await client.deploy([folderCustomizationInfo])
+        await client.deploy([folderCustomizationInfo], ...DEFAULT_DEPLOY_PARAMS)
         expect(mkdirpMock).toHaveBeenCalledTimes(1)
         expect(mkdirpMock)
           .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}`))
@@ -1684,7 +1688,7 @@ File: ~/AccountConfiguration/features.xml`
           path: ['Templates', 'E-mail Templates', 'InnerFolder', 'content.html'],
           fileContent: dummyFileContent,
         }
-        await client.deploy([fileCustomizationInfo])
+        await client.deploy([fileCustomizationInfo], ...DEFAULT_DEPLOY_PARAMS)
         expect(mkdirpMock).toHaveBeenCalledTimes(2)
         expect(mkdirpMock)
           .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}`))
@@ -1718,7 +1722,7 @@ File: ~/AccountConfiguration/features.xml`
       }
       it('should succeed', async () => {
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: ['Configure feature -- The SUITEAPPCONTROLCENTER(Departments) feature has been DISABLED'] })
-        await client.deploy([featuresCustomizationInfo])
+        await client.deploy([featuresCustomizationInfo], ...DEFAULT_DEPLOY_PARAMS)
         expect(writeFileMock).toHaveBeenCalledTimes(2)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('features.xml'), MOCK_FEATURES_XML)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
@@ -1732,7 +1736,7 @@ File: ~/AccountConfiguration/features.xml`
       it('should throw FeaturesDeployError on failed features deploy', async () => {
         const errorMessage = 'Configure feature -- Enabling of the SUITEAPPCONTROLCENTER(SuiteApp Control Center) feature has FAILED'
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: [errorMessage] })
-        await expect(client.deploy([featuresCustomizationInfo]))
+        await expect(client.deploy([featuresCustomizationInfo], ...DEFAULT_DEPLOY_PARAMS))
           .rejects.toThrow(new FeaturesDeployError(errorMessage, ['SUITEAPPCONTROLCENTER']))
       })
     })
@@ -1751,7 +1755,7 @@ File: ~/AccountConfiguration/features.xml`
         values: { key: 'val' },
         scriptId: scriptId2,
       }
-      await client.deploy([customTypeInfo1, customTypeInfo2])
+      await client.deploy([customTypeInfo1, customTypeInfo2], ...DEFAULT_DEPLOY_PARAMS)
       expect(writeFileMock).toHaveBeenCalledTimes(3)
       expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId1}.xml`),
         '<typeName><key>val</key></typeName>')

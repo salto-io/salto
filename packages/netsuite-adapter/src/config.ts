@@ -26,11 +26,11 @@ import {
   CLIENT_CONFIG, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FETCH_TARGET, SKIP_LIST,
   SUITEAPP_CONCURRENCY_LIMIT, SUITEAPP_CLIENT_CONFIG, USE_CHANGES_DETECTION,
   CONCURRENCY_LIMIT, FETCH, INCLUDE, EXCLUDE, DEPLOY, DATASET, WORKBOOK, WARN_STALE_DATA,
-  INSTALLED_SUITEAPPS, LOCKED_ELEMENTS_TO_EXCLUDE, AUTHOR_INFO_CONFIG,
+  INSTALLED_SUITEAPPS, LOCKED_ELEMENTS_TO_EXCLUDE, AUTHOR_INFO_CONFIG, ADDITIONAL_DEPS,
 } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from './data_elements/types'
-import { FailedFiles, FailedTypes } from './client/types'
+import { AdditionalSdfDeployDependencies, FailedFiles, FailedTypes } from './client/types'
 
 const { makeArray } = collections.array
 
@@ -210,18 +210,34 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
 export type DeployParams = {
   [WARN_STALE_DATA]?: boolean
   [DEPLOY_REFERENCED_ELEMENTS]?: boolean
+  [ADDITIONAL_DEPS]?: Partial<AdditionalSdfDeployDependencies>
 }
+
+const additionalDependenciesType = createMatchingObjectType<
+Partial<AdditionalSdfDeployDependencies>
+>({
+  elemID: new ElemID(NETSUITE, ADDITIONAL_DEPS),
+  fields: {
+    features: { refType: new ListType(BuiltinTypes.STRING) },
+    objects: { refType: new ListType(BuiltinTypes.STRING) },
+  },
+})
 
 const deployConfigType = createMatchingObjectType<DeployParams>({
   elemID: new ElemID(NETSUITE, 'deployConfig'),
   fields: {
     [WARN_STALE_DATA]: { refType: BuiltinTypes.BOOLEAN },
     [DEPLOY_REFERENCED_ELEMENTS]: { refType: BuiltinTypes.BOOLEAN },
+    [ADDITIONAL_DEPS]: { refType: additionalDependenciesType },
   },
 })
 
 export const validateDeployParams = (
-  { deployReferencedElements, warnOnStaleWorkspaceData }: Partial<DeployParams>
+  {
+    deployReferencedElements,
+    warnOnStaleWorkspaceData,
+    additionalDependencies,
+  }: Partial<DeployParams>
 ): void => {
   if (deployReferencedElements !== undefined
     && typeof deployReferencedElements !== 'boolean') {
@@ -230,6 +246,22 @@ export const validateDeployParams = (
   if (warnOnStaleWorkspaceData !== undefined
     && typeof warnOnStaleWorkspaceData !== 'boolean') {
     throw new Error(`Expected "warnOnStaleWorkspaceData" to be a boolean or to be undefined, but received:\n ${warnOnStaleWorkspaceData}`)
+  }
+  if (additionalDependencies !== undefined) {
+    if (!_.isObject(additionalDependencies)) {
+      throw new Error(`Expected "additionalDependencies" to be an object or to be undefined, but received:\n ${additionalDependencies}`)
+    }
+    const { features, objects } = additionalDependencies
+    if (features !== undefined && (
+      !_.isArray(features) || features.some(feature => typeof feature !== 'string')
+    )) {
+      throw new Error(`Expected "features" to be a list of strings or to be undefined, but received:\n ${features}`)
+    }
+    if (objects !== undefined && (
+      !_.isArray(objects) || objects.some(obj => typeof obj !== 'string')
+    )) {
+      throw new Error(`Expected "objects" to be a list of strings or to be undefined, but received:\n ${objects}`)
+    }
   }
 }
 

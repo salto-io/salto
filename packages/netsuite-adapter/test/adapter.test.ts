@@ -28,6 +28,7 @@ import {
   FETCH_TYPE_TIMEOUT_IN_MINUTES, INTEGRATION, CLIENT_CONFIG, FETCH_TARGET, NETSUITE,
   USE_CHANGES_DETECTION, FETCH, EXCLUDE, INCLUDE, SKIP_LIST, DEPLOY, WARN_STALE_DATA,
   CONFIG_FEATURES,
+  ADDITIONAL_DEPS,
 } from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import SdfClient, { convertToCustomTypeInfo } from '../src/client/sdf_client'
@@ -36,7 +37,7 @@ import { configType, getConfigFromConfigChanges, NetsuiteConfig } from '../src/c
 import { mockGetElemIdFunc } from './utils'
 import * as referenceDependenciesModule from '../src/reference_dependencies'
 import NetsuiteClient from '../src/client/client'
-import { CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo } from '../src/client/types'
+import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo } from '../src/client/types'
 import * as changesDetector from '../src/changes_detector/changes_detector'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
 import { SERVER_TIME_TYPE_NAME } from '../src/server_time'
@@ -587,7 +588,11 @@ describe('Adapter', () => {
         const expectedResolvedInstance = instance.clone()
         expectedResolvedInstance.value.description = 'description value'
         expect(client.deploy)
-          .toHaveBeenCalledWith([await toCustomizationInfo(expectedResolvedInstance)], undefined)
+          .toHaveBeenCalledWith(
+            [await toCustomizationInfo(expectedResolvedInstance)],
+            undefined,
+            { objects: [], features: [] }
+          )
         expect(post.isEqual(instance)).toBe(true)
       })
 
@@ -599,6 +604,7 @@ describe('Adapter', () => {
         expect(client.deploy).toHaveBeenCalledWith(
           [await toCustomizationInfo(fileInstance)],
           undefined,
+          { objects: [], features: [] }
         )
         expect(post.isEqual(fileInstance)).toBe(true)
       })
@@ -611,6 +617,7 @@ describe('Adapter', () => {
         expect(client.deploy).toHaveBeenCalledWith(
           [await toCustomizationInfo(folderInstance)],
           undefined,
+          { objects: [], features: [] }
         )
         expect(post.isEqual(folderInstance)).toBe(true)
       })
@@ -627,7 +634,7 @@ describe('Adapter', () => {
         })
         expect(client.deploy).toHaveBeenCalledWith(expect.arrayContaining(
           [await toCustomizationInfo(folderInstance), await toCustomizationInfo(fileInstance)]
-        ), undefined)
+        ), undefined, { objects: [], features: [] })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(2)
       })
@@ -646,7 +653,7 @@ describe('Adapter', () => {
         })
         expect(client.deploy).toHaveBeenCalledWith(expect.arrayContaining(
           [await toCustomizationInfo(folderInstance), await toCustomizationInfo(fileInstance)]
-        ), undefined)
+        ), undefined, { objects: [], features: [] })
         expect(result.errors).toHaveLength(1)
         expect(result.errors).toEqual([clientError])
         expect(result.appliedChanges).toHaveLength(0)
@@ -675,6 +682,7 @@ describe('Adapter', () => {
           .toHaveBeenCalledWith(
             [await toCustomizationInfo(expectedResolvedInstance)],
             undefined,
+            { objects: [], features: [] },
           )
         expect(post).toEqual(instance)
       })
@@ -687,6 +695,7 @@ describe('Adapter', () => {
         expect(client.deploy).toHaveBeenCalledWith(
           [await toCustomizationInfo(fileInstance)],
           undefined,
+          { objects: [], features: [] }
         )
         expect(post).toEqual(fileInstance)
       })
@@ -699,6 +708,7 @@ describe('Adapter', () => {
         expect(client.deploy).toHaveBeenCalledWith(
           [await toCustomizationInfo(folderInstance)],
           undefined,
+          { objects: [], features: [] }
         )
         expect(post).toEqual(folderInstance)
       })
@@ -717,7 +727,11 @@ describe('Adapter', () => {
         const expectedResolvedAfter = after.clone()
         expectedResolvedAfter.value.description = 'edited description value'
         expect(client.deploy)
-          .toHaveBeenCalledWith([await toCustomizationInfo(expectedResolvedAfter)], undefined)
+          .toHaveBeenCalledWith(
+            [await toCustomizationInfo(expectedResolvedAfter)],
+            undefined,
+            { objects: [], features: [] }
+          )
         expect(post).toEqual(after)
       })
     })
@@ -752,6 +766,55 @@ describe('Adapter', () => {
       it('should call getReferencedInstances with deployReferencedElements=false', async () => {
         await adapterAdd(instance)
         expect(getReferencedInstancesMock).toHaveBeenCalledWith([instance], false)
+      })
+    })
+    describe('additional sdf dependencies', () => {
+      let custInfo: CustomizationInfo
+      beforeAll(async () => {
+        const expectedResolvedInstance = instance.clone()
+        expectedResolvedInstance.value.description = 'description value'
+        custInfo = await toCustomizationInfo(expectedResolvedInstance)
+      })
+      it('should call deploy with additional dependencies', async () => {
+        const configWithAdditionalSdfDependencies = {
+          [TYPES_TO_SKIP]: [SAVED_SEARCH, TRANSACTION_FORM],
+          [FETCH_ALL_TYPES_AT_ONCE]: true,
+          [DEPLOY]: {
+            [ADDITIONAL_DEPS]: {
+              features: ['addedFeature'],
+              objects: ['addedObject'],
+            },
+          },
+        }
+        const netsuiteAdapterWithAdditionalSdfDependencies = new NetsuiteAdapter({
+          client: new NetsuiteClient(client),
+          elementsSource: buildElementsSourceFromElements([]),
+          filtersCreators: [firstDummyFilter, secondDummyFilter],
+          config: configWithAdditionalSdfDependencies,
+          getElemIdFunc: mockGetElemIdFunc,
+        })
+
+        await netsuiteAdapterWithAdditionalSdfDependencies.deploy({
+          changeGroup: {
+            groupID: SDF_CHANGE_GROUP_ID,
+            changes: [{ action: 'add', data: { after: instance } }],
+          },
+        })
+
+        expect(client.deploy).toHaveBeenCalledWith(
+          [custInfo],
+          undefined,
+          { objects: ['addedObject'], features: ['addedFeature'] }
+        )
+      })
+
+      it('should call deploy without additional dependencies', async () => {
+        await adapterAdd(instance)
+        expect(client.deploy).toHaveBeenCalledWith(
+          [custInfo],
+          undefined,
+          { objects: [], features: [] }
+        )
       })
     })
 

@@ -78,6 +78,11 @@ export type ImportObjectsResult = {
   failedImports: FailedImport[]
 }
 
+export type AdditionalSdfDeployDependencies = {
+  features: string[]
+  objects: string[]
+}
+
 export class InvalidSuiteAppCredentialsError extends Error {
   constructor() {
     super('Invalid SuiteApp credentials')

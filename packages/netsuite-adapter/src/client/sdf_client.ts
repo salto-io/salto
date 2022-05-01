@@ -44,6 +44,7 @@ import { NetsuiteQuery, NetsuiteQueryParameters, ObjectID } from '../query'
 import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError } from '../errors'
 import { SdfCredentials } from './credentials'
 import {
+  AdditionalSdfDeployDependencies,
   CustomizationInfo, CustomTypeInfo, FailedImport, FailedTypes, FileCustomizationInfo,
   FolderCustomizationInfo, GetCustomObjectsResult, ImportFileCabinetResult, ImportObjectsResult,
   TemplateCustomTypeInfo,
@@ -861,7 +862,11 @@ export default class SdfClient {
   }
 
   @SdfClient.logDecorator
-  async deploy(customizationInfos: CustomizationInfo[], suiteAppId?: string): Promise<void> {
+  async deploy(
+    customizationInfos: CustomizationInfo[],
+    suiteAppId: string | undefined,
+    additionalDependencies: AdditionalSdfDeployDependencies,
+  ): Promise<void> {
     const project = await this.initProject(suiteAppId)
     const objectsDirPath = SdfClient.getObjectsDirPath(project.projectName)
     const fileCabinetDirPath = SdfClient.getFileCabinetDirPath(project.projectName)
@@ -880,17 +885,21 @@ export default class SdfClient {
       }
       throw new Error(`Failed to deploy invalid customizationInfo: ${customizationInfo}`)
     }))
-    await this.runDeployCommands(project, customizationInfos)
+    await this.runDeployCommands(project, customizationInfos, additionalDependencies)
     await this.projectCleanup(project.projectName, project.authId)
   }
 
   private static async fixManifest(
     projectPath: string,
-    customizationInfos: CustomizationInfo[]
+    customizationInfos: CustomizationInfo[],
+    additionalDependencies: AdditionalSdfDeployDependencies
   ): Promise<void> {
     const manifestPath = osPath.join(projectPath, 'src', 'manifest.xml')
     const manifestContent = (await readFile(manifestPath)).toString()
-    await writeFile(manifestPath, fixManifest(manifestContent, customizationInfos))
+    await writeFile(
+      manifestPath,
+      fixManifest(manifestContent, customizationInfos, additionalDependencies)
+    )
   }
 
   private static customizeDeployError(error: Error): Error {
@@ -930,10 +939,11 @@ export default class SdfClient {
 
   private async runDeployCommands(
     { executor, projectPath, type }: Project,
-    customizationInfos: CustomizationInfo[]
+    customizationInfos: CustomizationInfo[],
+    additionalDependencies: AdditionalSdfDeployDependencies
   ): Promise<void> {
     await this.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {}, executor)
-    await SdfClient.fixManifest(projectPath, customizationInfos)
+    await SdfClient.fixManifest(projectPath, customizationInfos, additionalDependencies)
     try {
       await this.executeProjectAction(
         COMMANDS.DEPLOY_PROJECT,

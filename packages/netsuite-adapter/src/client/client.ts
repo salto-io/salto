@@ -200,14 +200,19 @@ export default class NetsuiteClient {
           const failedElemIDs = NetsuiteClient.getFailedSdfDeployChangesElemIDs(
             error, changesToDeploy
           )
-          log.debug('sdf failed to deploy: %o', Array.from(failedElemIDs))
+          log.debug('objects deploy error: sdf failed to deploy: %o', Array.from(failedElemIDs))
           _.remove(
             changesToDeploy,
             change => failedElemIDs.has(getChangeData(change).elemID.getFullName())
           )
         } else if (error instanceof SettingsDeployError) {
           const { failedConfigTypes } = error
-          log.debug('sdf failed to deploy: %o', Array.from(failedConfigTypes))
+          if (!changesToDeploy.some(change =>
+            failedConfigTypes.has(getChangeData(change).elemID.typeName))) {
+            log.debug('settings deploy error: no changes matched the failedConfigType list: %o', Array.from(failedConfigTypes))
+            return { errors, appliedChanges: [] }
+          }
+          log.debug('settings deploy error: sdf failed to deploy: %o', Array.from(failedConfigTypes))
           _.remove(
             changesToDeploy,
             change => failedConfigTypes.has(getChangeData(change).elemID.typeName)

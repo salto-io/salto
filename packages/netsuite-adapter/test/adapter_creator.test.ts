@@ -148,6 +148,7 @@ describe('NetsuiteAdapter creator', () => {
         suiteAppTokenSecret: 'bbb',
         suiteAppActivationKey: 'ccc',
       }
+
       await expect(adapter.validateCredentials(cred)).rejects.toThrow('SuiteApp Authentication failed.')
     })
 

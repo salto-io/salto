@@ -63,10 +63,6 @@ const MAX_ITEMS_IN_READ_METADATA_REQUEST = 10
 //  https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_listmetadata.htm?search_text=listmetadata
 const MAX_ITEMS_IN_LIST_METADATA_REQUEST = 3
 
-const InvalidCredentialErrorMessages = ['INVALID_LOGIN: Invalid username, password, security token; or user locked out.']
-export const isInValidCredentials = (error: Error): boolean =>
-  InvalidCredentialErrorMessages.includes(error.message)
-
 const DEFAULT_RETRY_OPTS: Required<ClientRetryConfig> = {
   maxAttempts: 5, // try 5 times
   retryDelay: 5000, // wait for 5s before trying again

@@ -18,6 +18,7 @@ import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, Ins
 import * as workspace from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
+import { CredentialError } from '@salto-io/adapter-utils'
 import * as api from '../src/api'
 import * as plan from '../src/core/plan/plan'
 import * as fetch from '../src/core/fetch'
@@ -187,6 +188,21 @@ describe('api.ts', () => {
       })
       it('should not call flush', () => {
         expect(ws.flush).not.toHaveBeenCalled()
+      })
+    })
+    describe('fetch failed', () => {
+      let ws: workspace.Workspace
+      beforeAll(() => {
+        ws = mockWorkspace({ stateElements: [] })
+      })
+      it('to return credential error', async () => {
+        mockFetchChanges.mockRejectedValueOnce(new CredentialError('test'))
+        const result = await api.fetch(ws, undefined, [mockService])
+        expect(result).toEqual(expect.objectContaining({ fetchErrors: expect.arrayContaining([{ message: 'test', severity: 'Error' }]) }))
+      })
+      it('throw unexpected error', async () => {
+        mockFetchChanges.mockRejectedValueOnce(new Error('test'))
+        await expect(api.fetch(ws, undefined, [mockService])).rejects.toThrow()
       })
     })
   })

@@ -105,6 +105,24 @@ describe('NetsuiteClient', () => {
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
       })
+      it('should not try again to deploy if SettingsDeployError doesn\'t contain an actual failing change', async () => {
+        const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
+        const settingsDeployError = new SettingsDeployError('error', new Set(['settingsType']))
+        mockSdfDeploy.mockRejectedValue(settingsDeployError)
+        const change = toChange({
+          after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
+        })
+        expect(await client.deploy(
+          [change],
+          SDF_CHANGE_GROUP_ID,
+          false,
+          mockElementsSourceIndex
+        )).toEqual({
+          errors: [settingsDeployError],
+          appliedChanges: [],
+        })
+        expect(mockSdfDeploy).toHaveBeenCalledTimes(1)
+      })
 
       describe('features', () => {
         const type = featuresType()

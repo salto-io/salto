@@ -292,11 +292,11 @@ export const fetch: FetchFunc = async (
       updatedConfig,
       accountNameToConfigMessage,
     }
-  } catch (e) {
-    if (e instanceof Error && isCredentialError(e)) {
+  } catch (error) {
+    if (isCredentialError(error)) {
       return {
         changes: [],
-        fetchErrors: [{ message: e.message, severity: 'Error' }],
+        fetchErrors: [{ message: error.message, severity: 'Error' }],
         mergeErrors: [],
         success: false,
         undefined,
@@ -304,7 +304,7 @@ export const fetch: FetchFunc = async (
         accountNameToConfigMessage: undefined,
       }
     }
-    throw e
+    throw error
   }
 }
 

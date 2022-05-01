@@ -183,7 +183,7 @@ export const fetchDefault: FetchParams = {
       }, // may be a lot of data that takes a lot of time to fetch
     ],
     fileCabinet: [
-      '^/Templates/Letter Templates/Mail Merge Folder*',
+      '^/Templates/Letter Templates/Mail Merge Folder.*',
     ],
   },
 }

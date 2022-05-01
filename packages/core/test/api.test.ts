@@ -389,14 +389,6 @@ describe('api.ts', () => {
         await api.updateCredentials(ws, newConf)
         expect(ws.updateAccountCredentials).toHaveBeenCalledTimes(1)
       })
-      it('should call validateCredentials', async () => {
-        const newConf = mockConfigInstance.clone()
-        newConf.value.password = 'bla'
-
-        await api.updateCredentials(ws, newConf)
-
-        expect(mockAdapter.validateCredentials).toHaveBeenCalledTimes(1)
-      })
     })
 
     describe('verifyCredentials', () => {

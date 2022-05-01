@@ -156,9 +156,8 @@ export const getConfigFromConfigChanges = (
             saltoIDSettings: _.pickBy(data.saltoIDSettings, isDefined),
           },
         }, isDefined),
-        maxItemsInRetrieveRequest: maxItemsInRetrieveRequest.length > 0
-          ? maxItemsInRetrieveRequest[0]
-          : currentConfig.maxItemsInRetrieveRequest,
+        maxItemsInRetrieveRequest: maxItemsInRetrieveRequest[0]
+          ?? currentConfig.maxItemsInRetrieveRequest,
         useOldProfiles: currentConfig.useOldProfiles,
         client: currentConfig.client,
       }, isDefined)

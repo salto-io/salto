@@ -32,31 +32,6 @@ const { makeArray } = collections.array
 const { awu, keyByAsync } = collections.asynciterable
 const log = logger(module)
 
-export class LimitExceededError extends Error {}
-
-export const retryOnSizeLimitExceeded = async <T>(
-  retrieveFunc: (chunkSize: number) => Promise<T>,
-  maxItems: number,
-  itemCount: number,
-): Promise<{ instances: T; suggestedMaxItems: number }> => {
-  try {
-    return {
-      instances: await retrieveFunc(maxItems),
-      suggestedMaxItems: maxItems,
-    }
-  } catch (e) {
-    if (e instanceof LimitExceededError
-      && maxItems > MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST) {
-      const newMaxItems = Math.max(Math.floor(Math.min(maxItems, itemCount) / 2),
-        MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST)
-
-      log.warn('retrieve request for %d files failed. re-trying with %d files.', maxItems, newMaxItems)
-      return retryOnSizeLimitExceeded(retrieveFunc, newMaxItems, itemCount)
-    }
-    throw e
-  }
-}
-
 export const fetchMetadataType = async (
   client: SalesforceClient,
   typeInfo: MetadataObject,
@@ -267,14 +242,29 @@ export const retrieveMetadataInstances = async ({
     log.debug('retrieving types %s', typesToRetrieve)
     const request = toRetrieveRequest(filesToRetrieve)
     const result = await client.retrieve(request)
-    if (result.errorStatusCode === RETRIEVE_SIZE_LIMIT_ERROR) {
-      throw new LimitExceededError()
-    }
 
     log.debug(
       'retrieve result for types %s: %o',
       typesToRetrieve, _.omit(result, ['zipFile', 'fileProperties']),
     )
+
+    if (result.errorStatusCode === RETRIEVE_SIZE_LIMIT_ERROR) {
+      if (fileProps.length <= MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST) {
+        configChanges.push(...fileProps.map(fileProp =>
+          createSkippedListConfigChange(fileProp.type, fileProp.fullName)))
+        log.warn(`retrieve request for ${typesToRetrieve} failed: ${result.errorStatusCode} ${result.errorMessage}, adding to skip list`)
+        return []
+      }
+
+      const chunkSize = Math.max(
+        Math.ceil(fileProps.length / 2),
+        MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST
+      )
+      log.debug('reducing retrieve item count %d -> %d', fileProps.length, chunkSize)
+      configChanges.push({ type: MAX_ITEMS_IN_RETRIEVE_REQUEST, value: chunkSize })
+      return (await Promise.all(_.chunk(fileProps, chunkSize).map(retrieveInstances))).flat()
+    }
+
     configChanges.push(...createRetrieveConfigChange(result))
     // Unclear when / why this can happen, but it seems like sometimes zipFile is not a string
     // TODO: investigate further why this happens and find a better solution than just failing
@@ -302,21 +292,11 @@ export const retrieveMetadataInstances = async ({
 
   log.info('going to retrieve %d files', filesToRetrieve.length)
 
-  const { instances, suggestedMaxItems } = await retryOnSizeLimitExceeded(
-    chunkSize => Promise.all(
-      _.chunk(filesToRetrieve, chunkSize)
-        .filter(filesChunk => filesChunk.length > 0)
-        .map(filesChunk => retrieveInstances(filesChunk))
-    ),
-    maxItemsInRetrieveRequest,
-    filesToRetrieve.length,
+  const instances = await Promise.all(
+    _.chunk(filesToRetrieve, maxItemsInRetrieveRequest)
+      .filter(filesChunk => filesChunk.length > 0)
+      .map(filesChunk => retrieveInstances(filesChunk))
   )
-  if (suggestedMaxItems < maxItemsInRetrieveRequest) {
-    configChanges.push({
-      type: MAX_ITEMS_IN_RETRIEVE_REQUEST,
-      value: suggestedMaxItems,
-    })
-  }
 
   return {
     elements: _.flatten(instances),

@@ -7208,7 +7208,7 @@ jsesc@^2.5.1:
 
 "jsforce-types@https://github.com/salto-io/jsforce-types.git":
   version "0.1.0"
-  resolved "https://github.com/salto-io/jsforce-types.git#c4769ae5cb243711bb940c0be6a771305edc315f"
+  resolved "https://github.com/salto-io/jsforce-types.git#20b33d28914afd524345bf06d9528d1b886e85f3"
 
 "jsforce@https://github.com/salto-io/jsforce.git":
   version "1.9.3"

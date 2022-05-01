@@ -36,6 +36,31 @@ const { makeArray } = collections.array
 const { awu, keyByAsync } = collections.asynciterable
 const log = logger(module)
 
+export class LimitExceededError extends Error {}
+
+export const retryOnSizeLimitExceeded = async <T>(
+  retrieveFunc: (chunkSize: number) => Promise<T>,
+  maxItems: number,
+  itemCount: number,
+): Promise<{ instances: T; suggestedMaxItems: number }> => {
+  try {
+    return {
+      instances: await retrieveFunc(maxItems),
+      suggestedMaxItems: maxItems,
+    }
+  } catch (e) {
+    if (e instanceof LimitExceededError
+      && maxItems > MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST) {
+      const newMaxItems = Math.max(Math.floor(Math.min(maxItems, itemCount) / 2),
+        MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST)
+
+      log.warn('retrieve request for %d files failed. re-trying with %d files.', maxItems, newMaxItems)
+      return retryOnSizeLimitExceeded(retrieveFunc, newMaxItems, itemCount)
+    }
+    throw e
+  }
+}
+
 export const fetchMetadataType = async (
   client: SalesforceClient,
   typeInfo: MetadataObject,
@@ -258,7 +283,7 @@ export const retrieveMetadataInstances = async ({
     const request = toRetrieveRequest(filesToRetrieve)
     const result = await client.retrieve(request)
     if (result.errorStatusCode === RETRIEVE_SIZE_LIMIT_ERROR) {
-      throw new Error(RETRIEVE_SIZE_LIMIT_ERROR)
+      throw new LimitExceededError()
     }
 
     log.debug(
@@ -292,30 +317,7 @@ export const retrieveMetadataInstances = async ({
 
   log.info('going to retrieve %d files', filesToRetrieve.length)
 
-  const retryOnFileLimit = async <T>(
-    retrieveFunc: (chunkSize: number) => Promise<T>,
-    maxItems: number,
-    itemCount: number,
-  ): Promise<{ instances: T; suggestedMaxItems: number }> => {
-    try {
-      return {
-        instances: await retrieveFunc(maxItems),
-        suggestedMaxItems: maxItems,
-      }
-    } catch (e) {
-      if (e.message === RETRIEVE_SIZE_LIMIT_ERROR
-        && maxItems > MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST) {
-        const newMaxItems = Math.max(Math.floor(Math.min(maxItems, itemCount) / 2),
-          MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST)
-
-        log.warn('retrieve request for %d files failed. re-trying with %d files.', maxItems, newMaxItems)
-        return retryOnFileLimit(retrieveFunc, newMaxItems, itemCount)
-      }
-      throw e
-    }
-  }
-
-  const { instances, suggestedMaxItems } = await retryOnFileLimit(
+  const { instances, suggestedMaxItems } = await retryOnSizeLimitExceeded(
     chunkSize => Promise.all(
       _.chunk(filesToRetrieve, chunkSize)
         .filter(filesChunk => filesChunk.length > 0)

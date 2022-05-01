@@ -17,10 +17,10 @@
 import { CredentialError, isCredentialError } from '../src/errors'
 
 describe('is credential error', () => {
-  it('false', async () => {
-    expect(isCredentialError(new Error('test'))).toBe(false)
+  it('should return false', () => {
+    expect(isCredentialError(new Error('test'))).toBeFalsy()
   })
-  it('true', async () => {
-    expect(isCredentialError(new CredentialError('test'))).toBe(false)
+  it('should return true', () => {
+    expect(isCredentialError(new CredentialError('test'))).toBeTruthy()
   })
 })

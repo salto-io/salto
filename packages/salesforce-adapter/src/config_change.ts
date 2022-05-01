@@ -110,6 +110,7 @@ export const getConfigFromConfigChanges = (
   const maxItemsInRetrieveRequest = configChanges
     .filter(isRetrieveSizeConfigSuggstion)
     .map(config => config.value)
+    .sort()
 
   if ([newMetadataExclude, dataObjectsToExclude, maxItemsInRetrieveRequest]
     .every(_.isEmpty)) {

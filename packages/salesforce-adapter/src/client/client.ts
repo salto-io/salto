@@ -600,9 +600,7 @@ export default class SalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'retrieve' })
   @logDecorator()
   @requiresLogin()
-  public async retrieve(
-    retrieveRequest: RetrieveRequest
-  ): Promise<RetrieveResult & { errorStatusCode?: string }> {
+  public async retrieve(retrieveRequest: RetrieveRequest): Promise<RetrieveResult> {
     return flatValues(
       await this.retryOnBadResponse(() => this.conn.metadata.retrieve(retrieveRequest).complete())
     )

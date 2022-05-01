@@ -21,7 +21,7 @@ import { getAllInstances } from '../../../src/elements/swagger'
 import { returnFullEntry } from '../../../src/elements/field_finder'
 import { Paginator } from '../../../src/client'
 import { simpleGetArgs } from '../../../src/elements/request_parameters'
-import { createElementsQuery } from '../../../src/elements/query'
+import { createElementQuery } from '../../../src/elements/query'
 
 const { toAsyncIterable } = collections.asynciterable
 
@@ -145,7 +145,7 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchQuery: createElementsQuery({
+        fetchQuery: createElementQuery({
           include: [
             { type: 'Owner' },
             { type: 'Pet' },
@@ -238,7 +238,7 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchQuery: createElementsQuery({
+        fetchQuery: createElementQuery({
           include: [
             { type: 'Owner' },
             { type: 'Pet' },
@@ -300,7 +300,7 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchQuery: createElementsQuery({
+        fetchQuery: createElementQuery({
           include: [
             { type: 'Owner' },
             { type: 'Pet' },
@@ -420,7 +420,7 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchQuery: createElementsQuery({
+        fetchQuery: createElementQuery({
           include: [
             { type: 'Owner' },
             { type: 'Pet' },
@@ -479,7 +479,7 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchQuery: createElementsQuery({
+        fetchQuery: createElementQuery({
           include: [
             { type: 'Owner' },
             { type: 'Pet' },
@@ -560,7 +560,7 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchQuery: createElementsQuery({
+        fetchQuery: createElementQuery({
           include: [
             { type: 'Owner' },
             { type: 'Pet' },
@@ -628,7 +628,7 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchQuery: createElementsQuery({
+        fetchQuery: createElementQuery({
           include: [
             { type: 'Pet' },
           ],
@@ -718,7 +718,7 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchQuery: createElementsQuery({
+        fetchQuery: createElementQuery({
           include: [
             { type: 'Pet' },
           ],
@@ -842,7 +842,7 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchQuery: createElementsQuery({
+        fetchQuery: createElementQuery({
           include: [
             { type: 'AllCustomObjects' },
           ],
@@ -911,7 +911,7 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchQuery: createElementsQuery({
+        fetchQuery: createElementQuery({
           include: [
             { type: 'Pet' },
           ],
@@ -982,7 +982,7 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchQuery: createElementsQuery({
+        fetchQuery: createElementQuery({
           include: [
             { type: 'Pet' },
           ],
@@ -1110,7 +1110,7 @@ describe('swagger_instance_elements', () => {
               },
             },
           },
-          fetchQuery: createElementsQuery({
+          fetchQuery: createElementQuery({
             include: [
               { type: 'Pet' },
             ],
@@ -1257,7 +1257,7 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchQuery: createElementsQuery({
+        fetchQuery: createElementQuery({
           include: [
             { type: 'Owner' },
           ],
@@ -1284,7 +1284,7 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchQuery: createElementsQuery({
+        fetchQuery: createElementQuery({
           include: [
             { type: 'Bla' },
           ],
@@ -1311,7 +1311,7 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchQuery: createElementsQuery({
+        fetchQuery: createElementQuery({
           include: [
             { type: 'Pet' },
           ],
@@ -1403,7 +1403,7 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchQuery: createElementsQuery({
+        fetchQuery: createElementQuery({
           include: [
             { type: 'Owner' },
           ],
@@ -1451,7 +1451,7 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchQuery: createElementsQuery({
+        fetchQuery: createElementQuery({
           include: [
             { type: 'Pet' },
           ],

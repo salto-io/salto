@@ -15,7 +15,7 @@
 */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { AdapterApiConfig } from '../../../src/config/shared'
-import { migrateDeprecatedIncludeList } from '../../../src/config/migrations/fetch_migration'
+import { migrateDeprecatedIncludeList } from '../../../src/config/config_migrations/fetch_migration'
 
 describe('migrateDeprecatedIncludeList', () => {
   let config: InstanceElement

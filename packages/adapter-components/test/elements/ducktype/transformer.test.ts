@@ -24,7 +24,7 @@ import { HTTPError, Paginator } from '../../../src/client'
 import { TypeDuckTypeConfig, TypeDuckTypeDefaultsConfig } from '../../../src/config'
 import { simpleGetArgs, returnFullEntry, computeGetArgs } from '../../../src/elements'
 import { findDataField } from '../../../src/elements/field_finder'
-import { createElementsQuery } from '../../../src/elements/query'
+import { createElementQuery } from '../../../src/elements/query'
 
 describe('ducktype_transformer', () => {
   describe('getTypeAndInstances', () => {
@@ -532,7 +532,7 @@ describe('ducktype_transformer', () => {
       const res = await getAllElements({
         adapterName: 'something',
         paginator: mockPaginator,
-        fetchQuery: createElementsQuery({
+        fetchQuery: createElementQuery({
           include: [
             { type: 'folder' },
             { type: 'file' },
@@ -611,7 +611,7 @@ describe('ducktype_transformer', () => {
       const res = await getAllElements({
         adapterName: 'something',
         paginator: mockPaginator,
-        fetchQuery: createElementsQuery({
+        fetchQuery: createElementQuery({
           include: [
             { type: 'folder' },
           ],
@@ -662,7 +662,7 @@ describe('ducktype_transformer', () => {
       const res = await getAllElements({
         adapterName: 'something',
         paginator: mockPaginator,
-        fetchQuery: createElementsQuery({
+        fetchQuery: createElementQuery({
           include: [
             { type: 'folder' },
           ],

@@ -103,7 +103,7 @@ export default class StripeAdapter implements AdapterOperations {
       objectTypes: _.pickBy(allTypes, isObjectType),
       apiConfig: updatedApiDefinitionsConfig,
       supportedTypes: this.userConfig[API_DEFINITIONS_CONFIG].supportedTypes,
-      fetchQuery: elementUtils.query.createElementsQuery(this.userConfig[FETCH_CONFIG]),
+      fetchQuery: elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG]),
     })
   }
 

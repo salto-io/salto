@@ -209,7 +209,7 @@ describe('config_ducktype', () => {
             unknown: ['unknown'],
           },
         },
-      )).toThrow(new Error('Invalid type names in PATH: unknown does not match any of the supported types.'))
+      )).toThrow(new Error('Invalid type names in PATH: unknown does not match any of the supported types. Please fix the type names to match at least one supported type.'))
     })
 
     it('should throw when type in includeTypes is not in supportedTypes', () => {
@@ -241,7 +241,7 @@ describe('config_ducktype', () => {
           },
           supportedTypes: {},
         },
-      )).toThrow(new Error('Invalid type names in PATH: a does not match any of the supported types.'))
+      )).toThrow(new Error('Invalid type names in PATH: a does not match any of the supported types. Please fix the type names to match at least one supported type.'))
     })
   })
 })

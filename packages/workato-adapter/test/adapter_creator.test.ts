@@ -116,7 +116,7 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
-    })).toThrow(new Error('Invalid type names in fetch: a,b does not match any of the supported types.'))
+    })).toThrow(new Error('Invalid type names in fetch: a,b does not match any of the supported types. Please fix the type names to match at least one supported type.'))
   })
 
   // Skipped until we decide how fetch is supposed to know which service connection is supported.

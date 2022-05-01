@@ -72,7 +72,7 @@ export default class ZuoraAdapter implements AdapterOperations {
   private client: ZuoraClient
   private paginator: clientUtils.Paginator
   private userConfig: ZuoraConfig
-  private fetchQuery: elementUtils.query.ElementsQuery
+  private fetchQuery: elementUtils.query.ElementQuery
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -89,7 +89,7 @@ export default class ZuoraAdapter implements AdapterOperations {
     this.createFiltersRunner = () => (
       filtersRunner({ client, paginator, config }, filterCreators)
     )
-    this.fetchQuery = elementUtils.query.createElementsQuery(config[FETCH_CONFIG])
+    this.fetchQuery = elementUtils.query.createElementQuery(config[FETCH_CONFIG])
   }
 
   private apiDefinitions(
@@ -174,7 +174,7 @@ export default class ZuoraAdapter implements AdapterOperations {
     // standard objects are not included in the swagger and need special handling - done in a filter
     const standardObjectTypeName = getStandardObjectTypeName(this.apiDefinitions(parsedConfigs))
 
-    const fetchQuery: elementUtils.query.ElementsQuery = {
+    const fetchQuery: elementUtils.query.ElementQuery = {
       isTypeMatch: typeName => typeName !== standardObjectTypeName
         && this.fetchQuery.isTypeMatch(typeName),
     }

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { ElemID, CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
 import { ZUORA_BILLING, CUSTOM_OBJECT_DEFINITION_TYPE, LIST_ALL_SETTINGS_TYPE, SETTINGS_TYPE_PREFIX, TASK_TYPE, WORKFLOW_DETAILED_TYPE, WORKFLOW_EXPORT_TYPE, PRODUCT_RATE_PLAN_TYPE, ACCOUNTING_CODE_ITEM_TYPE } from './constants'
 
 const { createClientConfigType } = clientUtils
@@ -692,14 +692,7 @@ export const DEFAULT_API_DEFINITIONS: ZuoraApiConfig = {
 }
 
 export const DEFAULT_CONFIG: ZuoraConfig = {
-  [FETCH_CONFIG]: {
-    include: [
-      {
-        type: '.*',
-      },
-    ],
-    exclude: [],
-  },
+  [FETCH_CONFIG]: elements.query.INCLUDE_ALL_CONFIG,
   [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
 }
 

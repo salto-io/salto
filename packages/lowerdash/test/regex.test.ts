@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isValidRegex } from '../src/regex'
+import { isFullRegexMatch, isValidRegex } from '../src/regex'
 
 describe('regex', () => {
   describe('isValidRegex', () => {
@@ -23,6 +23,16 @@ describe('regex', () => {
 
     it('should return true for a valid regex', () => {
       expect(isValidRegex('validRegex')).toBeTruthy()
+    })
+  })
+
+  describe('isFullRegexMatch', () => {
+    it('should return false if not full match', () => {
+      expect(isFullRegexMatch('ab', 'b.*')).toBeFalsy()
+    })
+
+    it('should return true if full match', () => {
+      expect(isFullRegexMatch('ab', 'ab.*')).toBeTruthy()
     })
   })
 })

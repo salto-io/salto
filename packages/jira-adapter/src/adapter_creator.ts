@@ -75,7 +75,8 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
 
 export const adapter: Adapter = {
   operations: context => {
-    const updatedConfig = configUtils.migrations.migrateDeprecatedIncludeList(
+    // This can be removed once all the workspaces configs were migrated
+    const updatedConfig = configUtils.configMigrations.migrateDeprecatedIncludeList(
       // Creating new instance is required because the type is not resolved in context.config
       new InstanceElement(
         ElemID.CONFIG_NAME,

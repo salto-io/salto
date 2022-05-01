@@ -32,7 +32,7 @@ import { findDataField, FindNestedFieldFunc } from '../field_finder'
 import { computeGetArgs as defaultComputeGetArgs, ComputeGetArgsFunc } from '../request_parameters'
 import { getElementsWithContext } from '../element_getter'
 import { TimeoutError } from '../../client/http_client'
-import { ElementsQuery } from '../query'
+import { ElementQuery } from '../query'
 
 const { makeArray } = collections.array
 const { toArrayAsync, awu } = collections.asynciterable
@@ -461,7 +461,7 @@ export const getAllInstances = async ({
 }: {
   paginator: Paginator
   apiConfig: Pick<AdapterSwaggerApiConfig, 'types' | 'typeDefaults'>
-  fetchQuery: ElementsQuery
+  fetchQuery: ElementQuery
   supportedTypes: Record<string, string[]>
   objectTypes: Record<string, ObjectType>
   nestedFieldFinder?: FindNestedFieldFunc

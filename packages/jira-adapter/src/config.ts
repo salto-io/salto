@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
 import { AUTOMATION_TYPE, BOARD_COLUMN_CONFIG_TYPE, BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME } from './constants'
 import { FIELD_TYPE_NAME } from './filters/fields/constants'
 
@@ -1839,12 +1839,7 @@ export const DEFAULT_CONFIG: JiraConfig = {
     usePrivateAPI: true,
     boardColumnRetry: 5,
   },
-  fetch: {
-    include: [{
-      type: '.*',
-    }],
-    exclude: [],
-  },
+  fetch: elements.query.INCLUDE_ALL_CONFIG,
   deploy: {
     forceDelete: false,
   },

@@ -97,7 +97,7 @@ export default class WorkatoAdapter implements AdapterOperations {
       adapterName: WORKATO,
       types: this.userConfig.apiDefinitions.types,
       supportedTypes: this.userConfig.apiDefinitions.supportedTypes,
-      fetchQuery: elementUtils.query.createElementsQuery(this.userConfig[FETCH_CONFIG]),
+      fetchQuery: elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG]),
       paginator: this.paginator,
       nestedFieldFinder: returnFullEntry,
       computeGetArgs: simpleGetArgs,

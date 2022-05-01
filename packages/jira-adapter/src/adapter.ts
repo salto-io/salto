@@ -186,7 +186,7 @@ export default class JiraAdapter implements AdapterOperations {
   private userConfig: JiraConfig
   private paginator: clientUtils.Paginator
   private getElemIdFunc?: ElemIdGetter
-  private fetchQuery: elementUtils.query.ElementsQuery
+  private fetchQuery: elementUtils.query.ElementQuery
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -204,7 +204,7 @@ export default class JiraAdapter implements AdapterOperations {
       customEntryExtractor: removeScopedObjects,
     })
 
-    this.fetchQuery = elementUtils.query.createElementsQuery(this.userConfig.fetch)
+    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig.fetch)
 
     this.paginator = paginator
     this.createFiltersRunner = () => (

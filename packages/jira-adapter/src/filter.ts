@@ -28,5 +28,5 @@ export type Filter = filterUtils.Filter<FilterResult>
 
 export type FilterCreator = filterUtils.FilterCreator<JiraClient, JiraConfig, FilterResult, {
   elementsSource: ReadOnlyElementsSource
-  fetchQuery: elementUtils.query.ElementsQuery
+  fetchQuery: elementUtils.query.ElementQuery
 }>

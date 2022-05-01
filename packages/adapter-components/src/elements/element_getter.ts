@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { Element } from '@salto-io/adapter-api'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { TypeConfig } from '../config'
-import { ElementsQuery } from './query'
+import { ElementQuery } from './query'
 
 const { isDefined } = lowerdashValues
 
@@ -46,7 +46,7 @@ export const getElementsWithContext = async <E extends Element>({
   types,
   typeElementGetter,
 }: {
-  fetchQuery: ElementsQuery
+  fetchQuery: ElementQuery
   supportedTypes: Record<string, string[]>
   types: Record<string, TypeConfig>
   typeElementGetter: (args: {

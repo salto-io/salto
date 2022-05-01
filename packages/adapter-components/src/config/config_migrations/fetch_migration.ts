@@ -23,19 +23,42 @@ type UpdatedConfig = {
 const MIGRATION_MESSAGE = 'The configuration option "fetch.includeTypes" is deprecated.'
 + ' To skip items in fetch, please use the "fetch.include" and "fetch.exclude" options.'
 
+/**
+ * Migrating the old include type fetch structure, i.e.:
+ * fetch = {
+ *   includeTypes = [
+ *     ...
+ *   ]
+ * }
+ * to the current fetch structure, i.e.:
+ * fetch = {
+ *   include = [
+ *     {
+ *       type = "type.*"
+ *     }
+ *     ...
+ *   ]
+ *   exclude = [
+ *    ...
+ *   ]
+ * }
+ */
 export const migrateDeprecatedIncludeList = (
   config: InstanceElement | undefined,
   defaultConfig: UpdatedConfig,
   typesToIgnore: string[] = []
 ): { config: [InstanceElement]; message: string } | undefined => {
   if (config === undefined
-     || (!Array.isArray(config.value.apiDefinitions?.supportedTypes)
-      && config.value.fetch?.includeTypes === undefined)) {
+     || (
+       !Array.isArray(config.value.apiDefinitions?.supportedTypes)
+         && config.value.fetch?.includeTypes === undefined
+     )) {
     return undefined
   }
 
   const updatedConfig = config.clone()
   if (Array.isArray(updatedConfig.value.apiDefinitions?.supportedTypes)) {
+    // It's ok to just delete in this case because when deleted the default will be used
     delete updatedConfig.value.apiDefinitions?.supportedTypes
   }
 

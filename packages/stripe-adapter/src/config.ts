@@ -16,7 +16,7 @@
 import { ElemID, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 
-import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { STRIPE } from './constants'
 
@@ -129,12 +129,7 @@ export const DEFAULT_API_DEFINITIONS: StripeApiConfig = {
 }
 
 export const DEFAULT_CONFIG: StripeConfig = {
-  [FETCH_CONFIG]: {
-    include: [{
-      type: '.*',
-    }],
-    exclude: [],
-  },
+  [FETCH_CONFIG]: elements.query.INCLUDE_ALL_CONFIG,
   [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
 }
 

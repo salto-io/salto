@@ -30,7 +30,7 @@ import { extractStandaloneFields } from './standalone_field_extractor'
 import { fixFieldTypes } from '../type_elements'
 import { shouldRecurseIntoEntry } from '../instance_elements'
 import { addRemainingTypes } from './add_remaining_types'
-import { ElementsQuery } from '../query'
+import { ElementQuery } from '../query'
 
 const { makeArray } = collections.array
 const { toArrayAsync, awu } = collections.asynciterable
@@ -279,7 +279,7 @@ export const getAllElements = async ({
   isErrorTurnToConfigSuggestion,
 }: {
   adapterName: string
-  fetchQuery: ElementsQuery
+  fetchQuery: ElementQuery
   supportedTypes: Record<string, string[]>
   types: Record<string, TypeConfig>
   paginator: Paginator

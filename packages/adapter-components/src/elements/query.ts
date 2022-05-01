@@ -16,16 +16,23 @@
 import { MockInterface } from '@salto-io/test-utils'
 import { UserFetchConfig } from '../config'
 
-export type ElementsQuery = {
+export const INCLUDE_ALL_CONFIG = {
+  include: [{
+    type: '.*',
+  }],
+  exclude: [],
+}
+
+export type ElementQuery = {
   isTypeMatch: (typeName: string) => boolean
 }
 
 const isTypeMatch = (typeName: string, typeRegex: string): boolean =>
   new RegExp(`^${typeRegex}$`).test(typeName)
 
-export const createElementsQuery = (
+export const createElementQuery = (
   fetchConfig: UserFetchConfig
-): ElementsQuery => ({
+): ElementQuery => ({
   isTypeMatch: (typeName: string) => {
     const { include, exclude } = fetchConfig
     const isIncluded = include.some(({ type: typeRegex }) =>
@@ -38,6 +45,6 @@ export const createElementsQuery = (
   },
 })
 
-export const createMockQuery = (): MockInterface<ElementsQuery> => ({
+export const createMockQuery = (): MockInterface<ElementQuery> => ({
   isTypeMatch: jest.fn().mockReturnValue(true),
 })

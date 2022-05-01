@@ -13,13 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { createElementsQuery, ElementsQuery } from '../../src/elements/query'
+import { createElementQuery, ElementQuery } from '../../src/elements/query'
 
 describe('query', () => {
   describe('createElementsQuery', () => {
-    let query: ElementsQuery
+    let query: ElementQuery
     beforeEach(() => {
-      query = createElementsQuery({
+      query = createElementQuery({
         include: [
           {
             type: 'type1.*',

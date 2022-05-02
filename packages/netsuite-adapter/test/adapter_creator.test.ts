@@ -35,6 +35,7 @@ import {
   DEPLOY_REFERENCED_ELEMENTS,
   WARN_STALE_DATA,
   INSTALLED_SUITEAPPS,
+  ADDITIONAL_DEPS,
 } from '../src/constants'
 import { mockGetElemIdFunc } from './utils'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
@@ -425,6 +426,67 @@ describe('NetsuiteAdapter creator', () => {
           {
             [DEPLOY]: {
               [WARN_STALE_DATA]: 'should be a boolean',
+            },
+          }
+        )
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: invalidConfig,
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).toThrow()
+      })
+      it('should throw an error when additionalDependencies is invalid', () => {
+        const invalidConfig = new InstanceElement(
+          ElemID.CONFIG_NAME,
+          adapter.configType as ObjectType,
+          {
+            [DEPLOY]: {
+              [ADDITIONAL_DEPS]: 'should be an object',
+            },
+          }
+        )
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: invalidConfig,
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).toThrow()
+      })
+      it('should throw an error when additionalDependencies.include is invalid', () => {
+        const invalidConfig = new InstanceElement(
+          ElemID.CONFIG_NAME,
+          adapter.configType as ObjectType,
+          {
+            [DEPLOY]: {
+              [ADDITIONAL_DEPS]: {
+                include: { features: ['should be list of strings', 1] },
+              },
+            },
+          }
+        )
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: invalidConfig,
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).toThrow()
+      })
+      it('should throw an error when additionalDependencies.exclude is invalid', () => {
+        const invalidConfig = new InstanceElement(
+          ElemID.CONFIG_NAME,
+          adapter.configType as ObjectType,
+          {
+            [DEPLOY]: {
+              [ADDITIONAL_DEPS]: {
+                exclude: { objects: ['should be list of strings', 1] },
+              },
             },
           }
         )

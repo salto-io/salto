@@ -31,6 +31,7 @@ import {
   triggerOrderInstanceContainsAllTheInstancesValidator,
   brandCreationValidator,
   webhookAuthDataValidator,
+  phoneNumbersValidator,
 } from './change_validators'
 
 const {
@@ -68,6 +69,7 @@ export default ({
     triggerOrderInstanceContainsAllTheInstancesValidator,
     brandCreationValidator,
     webhookAuthDataValidator,
+    phoneNumbersValidator,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

@@ -25,7 +25,7 @@ import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } fro
 import { featuresType } from '../../src/types/configuration_types'
 import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
 import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
-import { AdditionalSdfDeployDependencies } from '../../src/client/types'
+import { AdditionalDependencies } from '../../src/client/types'
 
 describe('NetsuiteClient', () => {
   describe('with SDF client', () => {
@@ -38,11 +38,11 @@ describe('NetsuiteClient', () => {
       const mockElementsSourceIndex = jest.fn() as unknown as LazyElementsSourceIndexes
       const client = new NetsuiteClient(sdfClient)
 
-      const deployParams: [boolean, AdditionalSdfDeployDependencies, LazyElementsSourceIndexes] = [
+      const deployParams: [boolean, AdditionalDependencies, LazyElementsSourceIndexes] = [
         false,
         {
-          features: {},
-          objects: {},
+          include: { features: [], objects: [] },
+          exclude: { features: [], objects: [] },
         },
         mockElementsSourceIndex,
       ]
@@ -227,11 +227,11 @@ describe('NetsuiteClient', () => {
 
     const mockElementsSourceIndex = jest.fn() as unknown as LazyElementsSourceIndexes
 
-    const deployParams: [boolean, AdditionalSdfDeployDependencies, LazyElementsSourceIndexes] = [
+    const deployParams: [boolean, AdditionalDependencies, LazyElementsSourceIndexes] = [
       false,
       {
-        features: {},
-        objects: {},
+        include: { features: [], objects: [] },
+        exclude: { features: [], objects: [] },
       },
       mockElementsSourceIndex,
     ]

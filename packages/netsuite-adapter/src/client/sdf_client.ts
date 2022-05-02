@@ -44,10 +44,9 @@ import { NetsuiteQuery, NetsuiteQueryParameters, ObjectID } from '../query'
 import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError } from '../errors'
 import { SdfCredentials } from './credentials'
 import {
-  AdditionalSdfDeployDependencies,
   CustomizationInfo, CustomTypeInfo, FailedImport, FailedTypes, FileCustomizationInfo,
   FolderCustomizationInfo, GetCustomObjectsResult, ImportFileCabinetResult, ImportObjectsResult,
-  TemplateCustomTypeInfo,
+  TemplateCustomTypeInfo, AdditionalDependencies,
 } from './types'
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME, fileCabinetTopLevelFolders } from './constants'
 import {
@@ -865,7 +864,7 @@ export default class SdfClient {
   async deploy(
     customizationInfos: CustomizationInfo[],
     suiteAppId: string | undefined,
-    additionalDependencies: AdditionalSdfDeployDependencies,
+    additionalDependencies: AdditionalDependencies,
   ): Promise<void> {
     const project = await this.initProject(suiteAppId)
     const objectsDirPath = SdfClient.getObjectsDirPath(project.projectName)
@@ -892,7 +891,7 @@ export default class SdfClient {
   private static async fixManifest(
     projectPath: string,
     customizationInfos: CustomizationInfo[],
-    additionalDependencies: AdditionalSdfDeployDependencies
+    additionalDependencies: AdditionalDependencies
   ): Promise<void> {
     const manifestPath = osPath.join(projectPath, 'src', 'manifest.xml')
     const manifestContent = (await readFile(manifestPath)).toString()
@@ -940,7 +939,7 @@ export default class SdfClient {
   private async runDeployCommands(
     { executor, projectPath, type }: Project,
     customizationInfos: CustomizationInfo[],
-    additionalDependencies: AdditionalSdfDeployDependencies
+    additionalDependencies: AdditionalDependencies
   ): Promise<void> {
     await this.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {}, executor)
     await SdfClient.fixManifest(projectPath, customizationInfos, additionalDependencies)

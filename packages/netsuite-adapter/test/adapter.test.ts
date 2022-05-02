@@ -591,7 +591,16 @@ describe('Adapter', () => {
           .toHaveBeenCalledWith(
             [await toCustomizationInfo(expectedResolvedInstance)],
             undefined,
-            { objects: {}, features: {} }
+            {
+              include: {
+                features: [],
+                objects: [],
+              },
+              exclude: {
+                features: [],
+                objects: [],
+              },
+            }
           )
         expect(post.isEqual(instance)).toBe(true)
       })
@@ -604,7 +613,16 @@ describe('Adapter', () => {
         expect(client.deploy).toHaveBeenCalledWith(
           [await toCustomizationInfo(fileInstance)],
           undefined,
-          { objects: {}, features: {} }
+          {
+            include: {
+              features: [],
+              objects: [],
+            },
+            exclude: {
+              features: [],
+              objects: [],
+            },
+          }
         )
         expect(post.isEqual(fileInstance)).toBe(true)
       })
@@ -617,7 +635,16 @@ describe('Adapter', () => {
         expect(client.deploy).toHaveBeenCalledWith(
           [await toCustomizationInfo(folderInstance)],
           undefined,
-          { objects: {}, features: {} }
+          {
+            include: {
+              features: [],
+              objects: [],
+            },
+            exclude: {
+              features: [],
+              objects: [],
+            },
+          }
         )
         expect(post.isEqual(folderInstance)).toBe(true)
       })
@@ -634,7 +661,16 @@ describe('Adapter', () => {
         })
         expect(client.deploy).toHaveBeenCalledWith(expect.arrayContaining(
           [await toCustomizationInfo(folderInstance), await toCustomizationInfo(fileInstance)]
-        ), undefined, { objects: {}, features: {} })
+        ), undefined, {
+          include: {
+            features: [],
+            objects: [],
+          },
+          exclude: {
+            features: [],
+            objects: [],
+          },
+        })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(2)
       })
@@ -653,7 +689,16 @@ describe('Adapter', () => {
         })
         expect(client.deploy).toHaveBeenCalledWith(expect.arrayContaining(
           [await toCustomizationInfo(folderInstance), await toCustomizationInfo(fileInstance)]
-        ), undefined, { objects: {}, features: {} })
+        ), undefined, {
+          include: {
+            features: [],
+            objects: [],
+          },
+          exclude: {
+            features: [],
+            objects: [],
+          },
+        })
         expect(result.errors).toHaveLength(1)
         expect(result.errors).toEqual([clientError])
         expect(result.appliedChanges).toHaveLength(0)
@@ -682,7 +727,16 @@ describe('Adapter', () => {
           .toHaveBeenCalledWith(
             [await toCustomizationInfo(expectedResolvedInstance)],
             undefined,
-            { objects: {}, features: {} },
+            {
+              include: {
+                features: [],
+                objects: [],
+              },
+              exclude: {
+                features: [],
+                objects: [],
+              },
+            },
           )
         expect(post).toEqual(instance)
       })
@@ -695,7 +749,16 @@ describe('Adapter', () => {
         expect(client.deploy).toHaveBeenCalledWith(
           [await toCustomizationInfo(fileInstance)],
           undefined,
-          { objects: {}, features: {} }
+          {
+            include: {
+              features: [],
+              objects: [],
+            },
+            exclude: {
+              features: [],
+              objects: [],
+            },
+          }
         )
         expect(post).toEqual(fileInstance)
       })
@@ -708,7 +771,16 @@ describe('Adapter', () => {
         expect(client.deploy).toHaveBeenCalledWith(
           [await toCustomizationInfo(folderInstance)],
           undefined,
-          { objects: {}, features: {} }
+          {
+            include: {
+              features: [],
+              objects: [],
+            },
+            exclude: {
+              features: [],
+              objects: [],
+            },
+          }
         )
         expect(post).toEqual(folderInstance)
       })
@@ -730,7 +802,16 @@ describe('Adapter', () => {
           .toHaveBeenCalledWith(
             [await toCustomizationInfo(expectedResolvedAfter)],
             undefined,
-            { objects: {}, features: {} }
+            {
+              include: {
+                features: [],
+                objects: [],
+              },
+              exclude: {
+                features: [],
+                objects: [],
+              },
+            }
           )
         expect(post).toEqual(after)
       })
@@ -781,11 +862,9 @@ describe('Adapter', () => {
           [FETCH_ALL_TYPES_AT_ONCE]: true,
           [DEPLOY]: {
             [ADDITIONAL_DEPS]: {
-              features: {
-                include: ['addedFeature'],
-              },
-              objects: {
-                include: ['addedObject'],
+              include: {
+                objects: ['addedObject'],
+                features: ['addedFeature'],
               },
             },
           },
@@ -808,7 +887,16 @@ describe('Adapter', () => {
         expect(client.deploy).toHaveBeenCalledWith(
           [custInfo],
           undefined,
-          { objects: { include: ['addedObject'] }, features: { include: ['addedFeature'] } }
+          {
+            include: {
+              objects: ['addedObject'],
+              features: ['addedFeature'],
+            },
+            exclude: {
+              objects: [],
+              features: [],
+            },
+          }
         )
       })
 
@@ -817,7 +905,16 @@ describe('Adapter', () => {
         expect(client.deploy).toHaveBeenCalledWith(
           [custInfo],
           undefined,
-          { objects: {}, features: {} }
+          {
+            include: {
+              features: [],
+              objects: [],
+            },
+            exclude: {
+              features: [],
+              objects: [],
+            },
+          }
         )
       })
     })

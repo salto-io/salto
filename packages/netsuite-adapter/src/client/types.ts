@@ -78,14 +78,14 @@ export type ImportObjectsResult = {
   failedImports: FailedImport[]
 }
 
-export type IncludeAndExcludeStrings = {
-  include?: string[]
-  exclude?: string[]
+export type AdditionalSdfDeployDependencies = {
+  features: string[]
+  objects: string[]
 }
 
-export type AdditionalSdfDeployDependencies = {
-  features: IncludeAndExcludeStrings
-  objects: IncludeAndExcludeStrings
+export type AdditionalDependencies = {
+  include: AdditionalSdfDeployDependencies
+  exclude: AdditionalSdfDeployDependencies
 }
 
 export class InvalidSuiteAppCredentialsError extends Error {

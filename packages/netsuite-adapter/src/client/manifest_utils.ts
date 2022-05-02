@@ -20,7 +20,7 @@ import xmlParser from 'fast-xml-parser'
 import _ from 'lodash'
 import { SCRIPT_ID, WORKFLOW } from '../constants'
 import { captureServiceIdInfo } from '../service_id_info'
-import { AdditionalSdfDeployDependencies, CustomizationInfo } from './types'
+import { AdditionalDependencies, CustomizationInfo } from './types'
 import { ATTRIBUTE_PREFIX } from './constants'
 
 const { makeArray } = collections.array
@@ -121,13 +121,13 @@ const fixDependenciesObject = (dependencies: Value): void => {
 const addRequiredDependencies = (
   dependencies: Value,
   customizationInfos: CustomizationInfo[],
-  additionalDependencies: AdditionalSdfDeployDependencies
+  additionalDependencies: AdditionalDependencies
 ): void => {
-  const requiredFeatures = _(additionalDependencies.features.include ?? [])
+  const requiredFeatures = _(additionalDependencies.include.features)
     .union(getRequiredFeatures(customizationInfos))
     .map(feature => ({ [REQUIRED_ATTRIBUTE]: 'true', [TEXT_ATTRIBUTE]: feature }))
     .value()
-  const requiredObjects = _(additionalDependencies.objects.include ?? [])
+  const requiredObjects = _(additionalDependencies.include.objects)
     .union(getRequiredObjects(customizationInfos))
     .value()
   if (requiredFeatures.length === 0 && requiredObjects.length === 0) {
@@ -136,16 +136,16 @@ const addRequiredDependencies = (
 
   const { features, objects } = dependencies
   features.feature = _(makeArray(features.feature))
-    // remove required features that are set to "required=false"
+    // remove all required features
     .differenceBy(requiredFeatures, item => item[TEXT_ATTRIBUTE])
+    // re-add all required features with "required=true"
     .unionBy(requiredFeatures, item => item[TEXT_ATTRIBUTE])
-    .differenceBy(additionalDependencies.features.exclude ?? [],
-      item => item[TEXT_ATTRIBUTE] ?? item)
+    .filter(item => !additionalDependencies.exclude.features.includes(item[TEXT_ATTRIBUTE]))
     .value()
 
   objects.object = _(makeArray(objects.object))
     .union(requiredObjects)
-    .difference(additionalDependencies.objects.exclude ?? [])
+    .difference(additionalDependencies.exclude.objects)
     .value()
 }
 
@@ -159,7 +159,7 @@ const cleanInvalidDependencies = (dependencies: Value): void => {
 export const fixManifest = (
   manifestContent: string,
   customizationInfos: CustomizationInfo[],
-  additionalDependencies: AdditionalSdfDeployDependencies
+  additionalDependencies: AdditionalDependencies
 ): string => {
   const manifestXml = xmlParser.parse(manifestContent, { ignoreAttributes: false })
 

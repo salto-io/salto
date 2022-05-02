@@ -30,14 +30,14 @@ import SdfClient, {
   FOLDER_ATTRIBUTES_FILE_SUFFIX,
   MINUTE_IN_MILLISECONDS,
 } from '../../src/client/sdf_client'
-import { AdditionalSdfDeployDependencies, CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from '../../src/client/types'
+import { AdditionalDependencies, CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from '../../src/client/types'
 import { fileCabinetTopLevelFolders } from '../../src/client/constants'
 import { DEFAULT_COMMAND_TIMEOUT_IN_MINUTES } from '../../src/config'
 import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
 
-const DEFAULT_DEPLOY_PARAMS: [undefined, AdditionalSdfDeployDependencies] = [
+const DEFAULT_DEPLOY_PARAMS: [undefined, AdditionalDependencies] = [
   undefined,
-  { objects: {}, features: {} },
+  { include: { features: [], objects: [] }, exclude: { features: [], objects: [] } },
 ]
 
 const MOCK_TEMPLATE_CONTENT = Buffer.from('Template Inner Content')

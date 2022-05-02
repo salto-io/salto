@@ -383,8 +383,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
       changeGroup.groupID,
       this.deployReferencedElements ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
       {
-        features: this.userConfig.deploy?.additionalDependencies?.features ?? {},
-        objects: this.userConfig.deploy?.additionalDependencies?.objects ?? {},
+        include: {
+          features: this.userConfig.deploy?.additionalDependencies?.include?.features ?? [],
+          objects: this.userConfig.deploy?.additionalDependencies?.include?.objects ?? [],
+        },
+        exclude: {
+          features: this.userConfig.deploy?.additionalDependencies?.exclude?.features ?? [],
+          objects: this.userConfig.deploy?.additionalDependencies?.exclude?.objects ?? [],
+        },
       },
       this.elementsSourceIndex
     )

@@ -30,7 +30,7 @@ import {
 } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from './data_elements/types'
-import { AdditionalSdfDeployDependencies, FailedFiles, FailedTypes, IncludeAndExcludeStrings } from './client/types'
+import { AdditionalSdfDeployDependencies, FailedFiles, FailedTypes } from './client/types'
 
 const { makeArray } = collections.array
 
@@ -210,26 +210,29 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
 export type DeployParams = {
   [WARN_STALE_DATA]?: boolean
   [DEPLOY_REFERENCED_ELEMENTS]?: boolean
-  [ADDITIONAL_DEPS]?: Partial<AdditionalSdfDeployDependencies>
+  [ADDITIONAL_DEPS]?: {
+    [INCLUDE]?: Partial<AdditionalSdfDeployDependencies>
+    [EXCLUDE]?: Partial<AdditionalSdfDeployDependencies>
+  }
 }
 
-const includeAndExcludeStringsType = createMatchingObjectType<
-Partial<IncludeAndExcludeStrings>
+const additionalDependenciesInnerType = createMatchingObjectType<
+Partial<AdditionalSdfDeployDependencies>
 >({
-  elemID: new ElemID(NETSUITE, 'includeAndExcludeStrings'),
+  elemID: new ElemID(NETSUITE, `${ADDITIONAL_DEPS}Inner`),
   fields: {
-    include: { refType: new ListType(BuiltinTypes.STRING) },
-    exclude: { refType: new ListType(BuiltinTypes.STRING) },
+    features: { refType: new ListType(BuiltinTypes.STRING) },
+    objects: { refType: new ListType(BuiltinTypes.STRING) },
   },
 })
 
 const additionalDependenciesType = createMatchingObjectType<
-Partial<AdditionalSdfDeployDependencies>
+DeployParams['additionalDependencies']
 >({
   elemID: new ElemID(NETSUITE, ADDITIONAL_DEPS),
   fields: {
-    features: { refType: includeAndExcludeStringsType },
-    objects: { refType: includeAndExcludeStringsType },
+    include: { refType: additionalDependenciesInnerType },
+    exclude: { refType: additionalDependenciesInnerType },
   },
 })
 
@@ -248,13 +251,13 @@ const validateAdditionalDependencies = (
   if (!_.isObject(additionalDependencies)) {
     throw new Error(`Expected "additionalDependencies" to be an object or to be undefined, but received:\n ${additionalDependencies}`)
   }
-  const { features, objects } = additionalDependencies
-  Object.entries({ features, objects }).forEach(([configName, configValue]) => {
+  const { include, exclude } = additionalDependencies
+  Object.entries({ include, exclude }).forEach(([configName, configValue]) => {
     if (configValue === undefined) {
       return
     }
-    const { include, exclude } = configValue
-    Object.entries({ include, exclude }).forEach(([fieldName, fieldValue]) => {
+    const { features, objects } = configValue
+    Object.entries({ features, objects }).forEach(([fieldName, fieldValue]) => {
       if (fieldValue !== undefined && (
         !_.isArray(fieldValue) || fieldValue.some(item => typeof item !== 'string')
       )) {

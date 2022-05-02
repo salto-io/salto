@@ -457,14 +457,14 @@ describe('NetsuiteAdapter creator', () => {
           })
         ).toThrow()
       })
-      it('should throw an error when additionalDependencies.features is invalid', () => {
+      it('should throw an error when additionalDependencies.include is invalid', () => {
         const invalidConfig = new InstanceElement(
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
             [DEPLOY]: {
               [ADDITIONAL_DEPS]: {
-                features: { include: ['should be list of strings', 1] },
+                include: { features: ['should be list of strings', 1] },
               },
             },
           }
@@ -478,14 +478,14 @@ describe('NetsuiteAdapter creator', () => {
           })
         ).toThrow()
       })
-      it('should throw an error when additionalDependencies.objects is invalid', () => {
+      it('should throw an error when additionalDependencies.exclude is invalid', () => {
         const invalidConfig = new InstanceElement(
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
             [DEPLOY]: {
               [ADDITIONAL_DEPS]: {
-                objects: { include: ['should be list of strings', 1] },
+                exclude: { objects: ['should be list of strings', 1] },
               },
             },
           }

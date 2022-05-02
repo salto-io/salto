@@ -26,7 +26,7 @@ import SdfClient from './sdf_client'
 import SuiteAppClient from './suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from '../suiteapp_file_cabinet'
 import { ConfigRecord, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
-import { AdditionalSdfDeployDependencies, GetCustomObjectsResult, ImportFileCabinetResult } from './types'
+import { AdditionalDependencies, GetCustomObjectsResult, ImportFileCabinetResult } from './types'
 import { getReferencedInstances } from '../reference_dependencies'
 import { getLookUpName, toCustomizationInfo } from '../transformer'
 import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../group_changes'
@@ -164,7 +164,7 @@ export default class NetsuiteClient {
   private async sdfDeploy(
     changes: ReadonlyArray<Change<InstanceElement>>,
     deployReferencedElements: boolean,
-    additionalDependencies: AdditionalSdfDeployDependencies
+    additionalDependencies: AdditionalDependencies
   ): Promise<DeployResult> {
     const changesToDeploy = Array.from(changes)
     const suiteAppId = getChangeData(changes[0]).value[APPLICATION_ID]
@@ -232,7 +232,7 @@ export default class NetsuiteClient {
     changes: Change[],
     groupID: string,
     deployReferencedElements: boolean,
-    additionalSdfDependencies: AdditionalSdfDeployDependencies,
+    additionalSdfDependencies: AdditionalDependencies,
     elementsSourceIndex: LazyElementsSourceIndexes
   ):
     Promise<DeployResult> {

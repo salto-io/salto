@@ -464,7 +464,7 @@ describe('NetsuiteAdapter creator', () => {
           {
             [DEPLOY]: {
               [ADDITIONAL_DEPS]: {
-                features: ['should be list of strings', 1],
+                features: { include: ['should be list of strings', 1] },
               },
             },
           }
@@ -485,7 +485,7 @@ describe('NetsuiteAdapter creator', () => {
           {
             [DEPLOY]: {
               [ADDITIONAL_DEPS]: {
-                objects: ['should be list of strings', 1],
+                objects: { include: ['should be list of strings', 1] },
               },
             },
           }

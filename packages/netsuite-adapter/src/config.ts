@@ -30,7 +30,7 @@ import {
 } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from './data_elements/types'
-import { AdditionalSdfDeployDependencies, FailedFiles, FailedTypes } from './client/types'
+import { AdditionalSdfDeployDependencies, FailedFiles, FailedTypes, IncludeAndExcludeStrings } from './client/types'
 
 const { makeArray } = collections.array
 
@@ -213,13 +213,23 @@ export type DeployParams = {
   [ADDITIONAL_DEPS]?: Partial<AdditionalSdfDeployDependencies>
 }
 
+const includeAndExcludeStringsType = createMatchingObjectType<
+Partial<IncludeAndExcludeStrings>
+>({
+  elemID: new ElemID(NETSUITE, 'includeAndExcludeStrings'),
+  fields: {
+    include: { refType: new ListType(BuiltinTypes.STRING) },
+    exclude: { refType: new ListType(BuiltinTypes.STRING) },
+  },
+})
+
 const additionalDependenciesType = createMatchingObjectType<
 Partial<AdditionalSdfDeployDependencies>
 >({
   elemID: new ElemID(NETSUITE, ADDITIONAL_DEPS),
   fields: {
-    features: { refType: new ListType(BuiltinTypes.STRING) },
-    objects: { refType: new ListType(BuiltinTypes.STRING) },
+    features: { refType: includeAndExcludeStringsType },
+    objects: { refType: includeAndExcludeStringsType },
   },
 })
 
@@ -231,6 +241,28 @@ const deployConfigType = createMatchingObjectType<DeployParams>({
     [ADDITIONAL_DEPS]: { refType: additionalDependenciesType },
   },
 })
+
+const validateAdditionalDependencies = (
+  additionalDependencies: DeployParams['additionalDependencies']
+): void => {
+  if (!_.isObject(additionalDependencies)) {
+    throw new Error(`Expected "additionalDependencies" to be an object or to be undefined, but received:\n ${additionalDependencies}`)
+  }
+  const { features, objects } = additionalDependencies
+  Object.entries({ features, objects }).forEach(([configName, configValue]) => {
+    if (configValue === undefined) {
+      return
+    }
+    const { include, exclude } = configValue
+    Object.entries({ include, exclude }).forEach(([fieldName, fieldValue]) => {
+      if (fieldValue !== undefined && (
+        !_.isArray(fieldValue) || fieldValue.some(item => typeof item !== 'string')
+      )) {
+        throw new Error(`Expected "${configName}.${fieldName}" to be a list of strings or to be undefined, but received:\n ${fieldValue}`)
+      }
+    })
+  })
+}
 
 export const validateDeployParams = (
   {
@@ -248,20 +280,7 @@ export const validateDeployParams = (
     throw new Error(`Expected "warnOnStaleWorkspaceData" to be a boolean or to be undefined, but received:\n ${warnOnStaleWorkspaceData}`)
   }
   if (additionalDependencies !== undefined) {
-    if (!_.isObject(additionalDependencies)) {
-      throw new Error(`Expected "additionalDependencies" to be an object or to be undefined, but received:\n ${additionalDependencies}`)
-    }
-    const { features, objects } = additionalDependencies
-    if (features !== undefined && (
-      !_.isArray(features) || features.some(feature => typeof feature !== 'string')
-    )) {
-      throw new Error(`Expected "features" to be a list of strings or to be undefined, but received:\n ${features}`)
-    }
-    if (objects !== undefined && (
-      !_.isArray(objects) || objects.some(obj => typeof obj !== 'string')
-    )) {
-      throw new Error(`Expected "objects" to be a list of strings or to be undefined, but received:\n ${objects}`)
-    }
+    validateAdditionalDependencies(additionalDependencies)
   }
 }
 

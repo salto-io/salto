@@ -17,7 +17,7 @@ import { WORKFLOW } from '../../src/constants'
 import { fixManifest } from '../../src/client/manifest_utils'
 import { CustomizationInfo } from '../../src/client/types'
 
-const DEFAULT_ADDITIONAL_DEPS = { features: [], objects: [] }
+const DEFAULT_ADDITIONAL_DEPS = { features: {}, objects: {} }
 
 describe('manifest.xml utils', () => {
   const custInfos: CustomizationInfo[] = [
@@ -242,11 +242,9 @@ describe('manifest.xml utils', () => {
     <feature required="true">ACCOUNTING</feature>
     <feature required="true">ADDRESSCUSTOMIZATION</feature>
     <feature required="true">SUBSIDIARIES</feature>
-    <feature required="true">RECEIVABLES</feature>
     <feature required="true">addedFeature</feature>
   </features>
   <objects>
-    <object>custentity2edited</object>
     <object>custentity13</object>
     <object>custentity_14</object>
     <object>custentity10</object>
@@ -260,7 +258,16 @@ describe('manifest.xml utils', () => {
   </files>
 </dependencies>
 </manifest>`
-    expect(fixManifest(manifest, [], { objects: ['addedObject'], features: ['addedFeature'] }))
+    expect(fixManifest(manifest, [], {
+      objects: {
+        include: ['addedObject'],
+        exclude: ['custentity2edited'],
+      },
+      features: {
+        include: ['addedFeature'],
+        exclude: ['RECEIVABLES'],
+      },
+    }))
       .toEqual(fixedManifest)
   })
 })

@@ -41,8 +41,8 @@ describe('NetsuiteClient', () => {
       const deployParams: [boolean, AdditionalSdfDeployDependencies, LazyElementsSourceIndexes] = [
         false,
         {
-          features: [],
-          objects: [],
+          features: {},
+          objects: {},
         },
         mockElementsSourceIndex,
       ]
@@ -230,8 +230,8 @@ describe('NetsuiteClient', () => {
     const deployParams: [boolean, AdditionalSdfDeployDependencies, LazyElementsSourceIndexes] = [
       false,
       {
-        features: [],
-        objects: [],
+        features: {},
+        objects: {},
       },
       mockElementsSourceIndex,
     ]

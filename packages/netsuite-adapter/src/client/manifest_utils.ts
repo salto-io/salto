@@ -123,11 +123,11 @@ const addRequiredDependencies = (
   customizationInfos: CustomizationInfo[],
   additionalDependencies: AdditionalSdfDeployDependencies
 ): void => {
-  const requiredFeatures = _(additionalDependencies.features)
+  const requiredFeatures = _(additionalDependencies.features.include ?? [])
     .union(getRequiredFeatures(customizationInfos))
     .map(feature => ({ [REQUIRED_ATTRIBUTE]: 'true', [TEXT_ATTRIBUTE]: feature }))
     .value()
-  const requiredObjects = _(additionalDependencies.objects)
+  const requiredObjects = _(additionalDependencies.objects.include ?? [])
     .union(getRequiredObjects(customizationInfos))
     .value()
   if (requiredFeatures.length === 0 && requiredObjects.length === 0) {
@@ -135,16 +135,18 @@ const addRequiredDependencies = (
   }
 
   const { features, objects } = dependencies
-  features.feature = [
+  features.feature = _(makeArray(features.feature))
     // remove required features that are set to "required=false"
-    ..._.differenceBy(
-      makeArray(features.feature),
-      requiredFeatures,
-      item => item[TEXT_ATTRIBUTE]
-    ),
-    ...requiredFeatures,
-  ]
-  objects.object = _.union(objects.object, requiredObjects)
+    .differenceBy(requiredFeatures, item => item[TEXT_ATTRIBUTE])
+    .unionBy(requiredFeatures, item => item[TEXT_ATTRIBUTE])
+    .differenceBy((additionalDependencies.features.exclude ?? [])
+      .map(feature => ({ [TEXT_ATTRIBUTE]: feature })), item => item[TEXT_ATTRIBUTE])
+    .value()
+
+  objects.object = _(makeArray(objects.object))
+    .union(requiredObjects)
+    .difference(additionalDependencies.objects.exclude ?? [])
+    .value()
 }
 
 const cleanInvalidDependencies = (dependencies: Value): void => {

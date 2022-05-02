@@ -37,7 +37,7 @@ import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError } from '..
 
 const DEFAULT_DEPLOY_PARAMS: [undefined, AdditionalSdfDeployDependencies] = [
   undefined,
-  { objects: [], features: [] },
+  { objects: {}, features: {} },
 ]
 
 const MOCK_TEMPLATE_CONTENT = Buffer.from('Template Inner Content')

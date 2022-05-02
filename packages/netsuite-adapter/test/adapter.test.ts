@@ -591,7 +591,7 @@ describe('Adapter', () => {
           .toHaveBeenCalledWith(
             [await toCustomizationInfo(expectedResolvedInstance)],
             undefined,
-            { objects: [], features: [] }
+            { objects: {}, features: {} }
           )
         expect(post.isEqual(instance)).toBe(true)
       })
@@ -604,7 +604,7 @@ describe('Adapter', () => {
         expect(client.deploy).toHaveBeenCalledWith(
           [await toCustomizationInfo(fileInstance)],
           undefined,
-          { objects: [], features: [] }
+          { objects: {}, features: {} }
         )
         expect(post.isEqual(fileInstance)).toBe(true)
       })
@@ -617,7 +617,7 @@ describe('Adapter', () => {
         expect(client.deploy).toHaveBeenCalledWith(
           [await toCustomizationInfo(folderInstance)],
           undefined,
-          { objects: [], features: [] }
+          { objects: {}, features: {} }
         )
         expect(post.isEqual(folderInstance)).toBe(true)
       })
@@ -634,7 +634,7 @@ describe('Adapter', () => {
         })
         expect(client.deploy).toHaveBeenCalledWith(expect.arrayContaining(
           [await toCustomizationInfo(folderInstance), await toCustomizationInfo(fileInstance)]
-        ), undefined, { objects: [], features: [] })
+        ), undefined, { objects: {}, features: {} })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(2)
       })
@@ -653,7 +653,7 @@ describe('Adapter', () => {
         })
         expect(client.deploy).toHaveBeenCalledWith(expect.arrayContaining(
           [await toCustomizationInfo(folderInstance), await toCustomizationInfo(fileInstance)]
-        ), undefined, { objects: [], features: [] })
+        ), undefined, { objects: {}, features: {} })
         expect(result.errors).toHaveLength(1)
         expect(result.errors).toEqual([clientError])
         expect(result.appliedChanges).toHaveLength(0)
@@ -682,7 +682,7 @@ describe('Adapter', () => {
           .toHaveBeenCalledWith(
             [await toCustomizationInfo(expectedResolvedInstance)],
             undefined,
-            { objects: [], features: [] },
+            { objects: {}, features: {} },
           )
         expect(post).toEqual(instance)
       })
@@ -695,7 +695,7 @@ describe('Adapter', () => {
         expect(client.deploy).toHaveBeenCalledWith(
           [await toCustomizationInfo(fileInstance)],
           undefined,
-          { objects: [], features: [] }
+          { objects: {}, features: {} }
         )
         expect(post).toEqual(fileInstance)
       })
@@ -708,7 +708,7 @@ describe('Adapter', () => {
         expect(client.deploy).toHaveBeenCalledWith(
           [await toCustomizationInfo(folderInstance)],
           undefined,
-          { objects: [], features: [] }
+          { objects: {}, features: {} }
         )
         expect(post).toEqual(folderInstance)
       })
@@ -730,7 +730,7 @@ describe('Adapter', () => {
           .toHaveBeenCalledWith(
             [await toCustomizationInfo(expectedResolvedAfter)],
             undefined,
-            { objects: [], features: [] }
+            { objects: {}, features: {} }
           )
         expect(post).toEqual(after)
       })
@@ -781,8 +781,12 @@ describe('Adapter', () => {
           [FETCH_ALL_TYPES_AT_ONCE]: true,
           [DEPLOY]: {
             [ADDITIONAL_DEPS]: {
-              features: ['addedFeature'],
-              objects: ['addedObject'],
+              features: {
+                include: ['addedFeature'],
+              },
+              objects: {
+                include: ['addedObject'],
+              },
             },
           },
         }
@@ -804,7 +808,7 @@ describe('Adapter', () => {
         expect(client.deploy).toHaveBeenCalledWith(
           [custInfo],
           undefined,
-          { objects: ['addedObject'], features: ['addedFeature'] }
+          { objects: { include: ['addedObject'] }, features: { include: ['addedFeature'] } }
         )
       })
 
@@ -813,7 +817,7 @@ describe('Adapter', () => {
         expect(client.deploy).toHaveBeenCalledWith(
           [custInfo],
           undefined,
-          { objects: [], features: [] }
+          { objects: {}, features: {} }
         )
       })
     })

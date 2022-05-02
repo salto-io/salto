@@ -107,12 +107,12 @@ export const getConfigFromConfigChanges = (
     .filter(isDataManagementConfigSuggestions)
     .map(config => config.value)
 
-  const maxItemsInRetrieveRequest = configChanges
+  const retrieveSize = configChanges
     .filter(isRetrieveSizeConfigSuggstion)
     .map(config => config.value)
     .sort()
 
-  if ([newMetadataExclude, dataObjectsToExclude, maxItemsInRetrieveRequest]
+  if ([newMetadataExclude, dataObjectsToExclude, retrieveSize]
     .every(_.isEmpty)) {
     return undefined
   }
@@ -138,6 +138,11 @@ export const getConfigFromConfigChanges = (
     ...dataManagementOverrides,
   }, isDefined) as DataManagementConfig | undefined
 
+  const maxItemsInRetrieveRequest = Math.max(
+    retrieveSize[0] ?? currentConfig.maxItemsInRetrieveRequest,
+    constants.MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST
+  )
+
   return {
     config: [new InstanceElement(
       ElemID.CONFIG_NAME,
@@ -157,8 +162,7 @@ export const getConfigFromConfigChanges = (
             saltoIDSettings: _.pickBy(data.saltoIDSettings, isDefined),
           },
         }, isDefined),
-        maxItemsInRetrieveRequest: maxItemsInRetrieveRequest[0]
-          ?? currentConfig.maxItemsInRetrieveRequest,
+        maxItemsInRetrieveRequest,
         useOldProfiles: currentConfig.useOldProfiles,
         client: currentConfig.client,
       }, isDefined)

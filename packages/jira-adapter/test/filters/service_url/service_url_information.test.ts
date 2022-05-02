@@ -52,7 +52,7 @@ describe('service url information filter', () => {
           .toEqual(['jira.Board.instance.Board'])
         const [instance] = elements
         expect(instance.annotations).toEqual({
-          [CORE_ANNOTATIONS.SERVICE_URL]: 'https://ori-salto-test.atlassian.net/jira/software/projects/wow/boards/11',
+          [CORE_ANNOTATIONS.SERVICE_URL]: 'https://ori-salto-test.atlassian.net/jira/software/c/projects/wow/boards/11',
         })
       })
     })
@@ -173,7 +173,7 @@ describe('service url information filter', () => {
           .toEqual(['jira.Board.instance.Board'])
         const [instance] = elements
         expect(instance.annotations).toEqual({
-          [CORE_ANNOTATIONS.SERVICE_URL]: 'https://ori-salto-test.atlassian.net/jira/software/projects/wow/boards/11',
+          [CORE_ANNOTATIONS.SERVICE_URL]: 'https://ori-salto-test.atlassian.net/jira/software/c/projects/wow/boards/11',
         })
       })
     })

@@ -29,7 +29,7 @@ const getParentId = (instance: InstanceElement): string =>
   getParents(instance)[0].resValue.value.id
 
 const createBoardServiceUrl = (instance: InstanceElement): string =>
-  `/jira/software/projects/${instance.value.name.replace(' board', '')}/boards/${instance.value.id}`
+  `/jira/software/c/projects/${instance.value.name.replace(' board', '')}/boards/${instance.value.id}`
 
 const createProjectComponentServiceUrl = (instance: InstanceElement): string => {
   const parentKey = getParents(instance)[0].resValue.value.key

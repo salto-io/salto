@@ -21,7 +21,7 @@ import { values as lowerDashValues, collections, multiIndex } from '@salto-io/lo
 import {
   ReferenceSerializationStrategy, ExtendedReferenceTargetDefinition, ReferenceResolverFinder,
   FieldReferenceResolver, generateReferenceResolverFinder, FieldReferenceDefinition,
-  CreateMissingRefFunc, CheckMissingRefFunc,
+  CreateMissingRefFunc,
 } from './reference_mapping'
 import { ContextFunc } from './context'
 
@@ -36,6 +36,10 @@ const emptyContextStrategyLookup: Record<string, ContextFunc> = {}
 
 type ValueIsEqualFunc = (lhs?: string | number, rhs?: string | number) => boolean
 const defaultIsEqualFunc: ValueIsEqualFunc = (lhs, rhs) => lhs === rhs
+
+export const MISSING_ANNOTATION = 'salto_missing_ref'
+export const checkMissingRef = (element: Element): boolean =>
+  element.annotations[MISSING_ANNOTATION] === true
 
 export const replaceReferenceValues = async <
   T extends string
@@ -102,9 +106,9 @@ export const replaceReferenceValues = async <
       instance, elemByElemID, field, fieldPath: path,
     })
     return findElem(target.lookup(val, elemParent), elemType)
-    ?? createMissingReference?.({
-      value: val.toString(), typeName: elemType, adapter: field.elemID.adapter,
-    })
+      ?? createMissingReference?.({
+        value: val.toString(), typeName: elemType, adapter: field.elemID.adapter,
+      })
   }
 
   const replacePrimitive = async (
@@ -113,27 +117,31 @@ export const replaceReferenceValues = async <
     const toValidatedReference = async (
       serializer: ReferenceSerializationStrategy,
       elem: Element | undefined,
-      checkMissingRef?: CheckMissingRefFunc,
     ): Promise<ReferenceExpression | undefined> => {
-      if (elem === undefined) {
-        return undefined
-      }
-      let res: ReferenceExpression | undefined
-      if (checkMissingRef && checkMissingRef(elem)) {
-        res = new ReferenceExpression(elem.elemID)
-      } else {
-        res = (
+      const getReferenceExpression = async (element: Element):
+        Promise<ReferenceExpression | undefined> => {
+        if (checkMissingRef(element)) {
+          return new ReferenceExpression(element.elemID)
+        }
+        return (
           isEqualValue(
-            await serializer.serialize({ ref: new ReferenceExpression(elem.elemID, elem), field }),
+            await serializer.serialize({
+              ref: new ReferenceExpression(element.elemID, elem),
+              field,
+            }),
             val,
-          ) ? new ReferenceExpression(elem.elemID, elem)
+          ) ? new ReferenceExpression(element.elemID, elem)
             : undefined
         )
       }
-      if (res !== undefined) {
+      if (elem === undefined) {
+        return undefined
+      }
+      const refExpr = await getReferenceExpression(elem)
+      if (refExpr !== undefined) {
         fieldsWithResolvedReferences.add(field.elemID.getFullName())
       }
-      return res
+      return refExpr
     }
 
     const reference = await awu(await resolverFinder(field))
@@ -148,7 +156,6 @@ export const replaceReferenceValues = async <
           lookupIndexName: refResolver.serializationStrategy.lookupIndexName,
           createMissingReference: refResolver.missingRefStrategy?.create,
         }),
-        refResolver.missingRefStrategy?.check,
       ))
       .filter(isDefined)
       .peek()
@@ -191,7 +198,6 @@ export const addReferences = async <
   contextStrategyLookup,
   isEqualValue,
   fieldReferenceResolverCreator,
-  enableMissingReferences = false,
 }: {
   elements: Element[]
   defs: GenericFieldReferenceDefinition[]
@@ -200,14 +206,9 @@ export const addReferences = async <
   isEqualValue?: ValueIsEqualFunc
   fieldReferenceResolverCreator?:
     (def: GenericFieldReferenceDefinition) => FieldReferenceResolver<T>
-  enableMissingReferences?: boolean
 }): Promise<void> => {
-  const fixedDefs = defs
-    .map(def => (
-      enableMissingReferences ? def : _.omit(def, 'missingRefStrategy')
-    )) as GenericFieldReferenceDefinition[]
   const resolverFinder = generateReferenceResolverFinder<T, GenericFieldReferenceDefinition>(
-    fixedDefs, fieldReferenceResolverCreator
+    defs, fieldReferenceResolverCreator
   )
   const instances = elements.filter(isInstanceElement)
 

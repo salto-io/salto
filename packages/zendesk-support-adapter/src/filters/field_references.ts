@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, isInstanceElement } from '@salto-io/adapter-api'
+import { Element, ElemID, InstanceElement, isInstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
-import { GetLookupNameFunc } from '@salto-io/adapter-utils'
+import { GetLookupNameFunc, naclCase } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { BRAND_NAME } from '../constants'
 import { FETCH_CONFIG } from '../config'
@@ -217,20 +217,44 @@ export const contextStrategyLookup: Record<
   parentValue: neighborContextFunc({ contextFieldName: 'value', levelsUp: 2, contextValueMapper: getValueLookupType }),
 }
 
+const MISSING_REF_PREFIX = 'missing_'
+export const ZendeskSupportMissingReferenceStrategyLookup: Record<
+referenceUtils.MissingReferenceStrategyName, referenceUtils.MissingReferenceStrategy
+> = {
+  typeAndValue: {
+    create: ({ value, adapter, typeName }) => {
+      if (!_.isString(typeName) || !value) {
+        return undefined
+      }
+      return new InstanceElement(
+        naclCase(`${MISSING_REF_PREFIX}${value}`),
+        new ObjectType({ elemID: new ElemID(adapter, typeName) }),
+        {},
+        undefined,
+        { [referenceUtils.MISSING_ANNOTATION]: true },
+      )
+    },
+  },
+}
+
 type ZendeskSupportFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<
   ReferenceContextStrategyName
 > & {
   zendeskSupportSerializationStrategy?: ZendeskSupportReferenceSerializationStrategyName
+  zendeskSupportMissingRefStrategy?: referenceUtils.MissingReferenceStrategyName
 }
 
 export class ZendeskSupportFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<
   ReferenceContextStrategyName
 > {
   constructor(def: ZendeskSupportFieldReferenceDefinition) {
-    super({ src: def.src, missingRefStrategy: def.missingRefStrategy })
+    super({ src: def.src })
     this.serializationStrategy = ZendeskSupportReferenceSerializationStrategyLookup[
       def.zendeskSupportSerializationStrategy ?? def.serializationStrategy ?? 'fullValue'
     ]
+    this.missingRefStrategy = def.zendeskSupportMissingRefStrategy
+      ? ZendeskSupportMissingReferenceStrategyLookup[def.zendeskSupportMissingRefStrategy]
+      : undefined
     this.target = def.target
       ? { ...def.target, lookup: this.serializationStrategy.lookup }
       : undefined
@@ -669,7 +693,7 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskSupportFieldReferenceDef
     },
     zendeskSupportSerializationStrategy: 'ticketFieldOption',
     target: { typeContext: 'neighborReferenceTicketField' },
-    missingRefStrategy: 'typeAndValue',
+    zendeskSupportMissingRefStrategy: 'typeAndValue',
   },
   {
     src: {
@@ -685,7 +709,7 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskSupportFieldReferenceDef
     },
     zendeskSupportSerializationStrategy: 'userFieldOption',
     target: { typeContext: 'neighborReferenceUserAndOrgField' },
-    missingRefStrategy: 'typeAndValue',
+    zendeskSupportMissingRefStrategy: 'typeAndValue',
   },
   {
     src: {
@@ -762,15 +786,18 @@ const filter: FilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]) => {
     const addReferences = async (refDefs: ZendeskSupportFieldReferenceDefinition[]):
     Promise<void> => {
+      const fixedDefs = refDefs
+        .map(def => (
+          config[FETCH_CONFIG].enableMissingReferences ? def : _.omit(def, 'zendeskSupportMissingRefStrategy')
+        ))
       await referenceUtils.addReferences({
         elements,
-        defs: refDefs,
+        defs: fixedDefs,
         fieldsToGroupBy: ['id', 'name', 'key', 'value'],
         contextStrategyLookup,
         // since ids and references to ids vary inconsistently between string/number, allow both
         isEqualValue: (lhs, rhs) => _.toString(lhs) === _.toString(rhs),
         fieldReferenceResolverCreator: defs => new ZendeskSupportFieldReferenceResolver(defs),
-        enableMissingReferences: config[FETCH_CONFIG].enableMissingReferences,
       })
     }
     await addReferences(

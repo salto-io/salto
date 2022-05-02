@@ -19,7 +19,7 @@ import { client as clientUtils, filterUtils } from '@salto-io/adapter-components
 import filterCreator from '../../src/filters/field_references'
 import ZendeskClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
-import { DEFAULT_CONFIG } from '../../src/config'
+import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { ZENDESK_SUPPORT } from '../../src/constants'
 
 describe('References by id filter', () => {
@@ -274,13 +274,28 @@ describe('References by id filter', () => {
         },
       },
     ),
+    new InstanceElement(
+      'trigger2',
+      triggerType,
+      {
+        id: 7002,
+        conditions: {
+          all: [
+            { field: 'custom_fields_6001', operator: 'is', value: 'v15' },
+            { field: 'requester.custom_fields.key_uf1', value: 9002 },
+          ],
+        },
+      },
+    ),
   ])
 
   describe('on fetch', () => {
+    let originalElements: Element[]
     let elements: Element[]
 
     beforeAll(async () => {
       elements = generateElements()
+      originalElements = elements.map(element => element.clone())
       await filter.onFetch(elements)
     })
 
@@ -352,6 +367,45 @@ describe('References by id filter', () => {
       expect(trigger.value.conditions.all[4].field.elemID.getFullName())
         .toEqual('zendesk_support.ticket_field.instance.customField2')
       expect(trigger.value.conditions.all[4].value).not.toBeInstanceOf(ReferenceExpression)
+    })
+    describe('missing references', () => {
+      it('should create missing references', () => {
+        const brokenTrigger = elements.filter(
+          e => isInstanceElement(e) && e.elemID.name === 'trigger2'
+        )[0] as InstanceElement
+        expect(brokenTrigger.value.conditions.all[0].value).toBeInstanceOf(ReferenceExpression)
+        expect(brokenTrigger.value.conditions.all[0].value.elemID.name)
+          .toEqual('missing_v15')
+        // missing references are not resolved references
+        expect(brokenTrigger.value.conditions.all[0].value.value).toEqual(undefined)
+        expect(brokenTrigger.value.conditions.all[1].value).toBeInstanceOf(ReferenceExpression)
+        expect(brokenTrigger.value.conditions.all[1].value.value).toBeInstanceOf(InstanceElement)
+      })
+      it('should not create missing references if enable missing references is false', async () => {
+        const newFilter = filterCreator({
+          client,
+          paginator: clientUtils.createPaginator({
+            client,
+            paginationFuncCreator: paginate,
+          }),
+          config: {
+            ...DEFAULT_CONFIG,
+            fetch: {
+              ...DEFAULT_CONFIG[FETCH_CONFIG],
+              enableMissingReferences: false,
+            },
+          },
+        }) as FilterType
+        const clonedElements = originalElements.map(element => element.clone())
+        await newFilter.onFetch(clonedElements)
+        const brokenTrigger = clonedElements.filter(
+          e => isInstanceElement(e) && e.elemID.name === 'trigger2'
+        )[0] as InstanceElement
+        expect(brokenTrigger.value.conditions.all[0].value).not.toBeInstanceOf(ReferenceExpression)
+        expect(brokenTrigger.value.conditions.all[0].value).toEqual('v15')
+        expect(brokenTrigger.value.conditions.all[1].value).toBeInstanceOf(ReferenceExpression)
+        expect(brokenTrigger.value.conditions.all[1].value.value).toBeInstanceOf(InstanceElement)
+      })
     })
   })
 })

@@ -378,47 +378,6 @@ describe('Field references', () => {
       expect(triggerWithMissingReference.value.ticket_field_id)
         .not.toBeInstanceOf(ReferenceExpression)
     })
-    describe('enable missing references is true', () => {
-      let clonedElements: Element[] = []
-      beforeEach(async () => {
-        clonedElements = generateElements()
-        await addReferences({
-          elements: clonedElements,
-          defs: fieldNameToTypeMappingDefs,
-          fieldsToGroupBy: ['id', 'name'],
-          contextStrategyLookup: {
-            parentSubject: neighborContextFunc({ contextFieldName: 'subject', levelsUp: 1, contextValueMapper: val => val.replace('_id', '') }),
-            parentValue: neighborContextFunc({ contextFieldName: 'value', levelsUp: 2, contextValueMapper: val => val.replace('_id', '') }),
-            neighborRef: neighborContextFunc({ contextFieldName: 'ref' }),
-            fail: neighborContextFunc({ contextFieldName: 'product', contextValueMapper: () => { throw new Error('fail') } }),
-          },
-          enableMissingReferences: true,
-        })
-      })
-      it('should create missing reference', async () => {
-        const triggerWithResolvedReference = clonedElements.filter(
-          e => isInstanceElement(e) && e.elemID.name === 'trigger1'
-        )[0] as InstanceElement
-        expect(triggerWithResolvedReference.value.ticket_field_id)
-          .toBeInstanceOf(ReferenceExpression)
-        expect(triggerWithResolvedReference.value.ticket_field_id.value)
-          .toBeInstanceOf(InstanceElement)
-        const triggerWithMissingReference = clonedElements.filter(
-          e => isInstanceElement(e) && e.elemID.name === 'trigger2'
-        )[0] as InstanceElement
-        expect(triggerWithMissingReference.value.ticket_field_id)
-          .toBeInstanceOf(ReferenceExpression)
-        // Should not be a resolved reference
-        expect(triggerWithMissingReference.value.ticket_field_id.value)
-          .toEqual(undefined)
-      })
-      it('should not create missing reference if the value is empty', () => {
-        const inst = clonedElements.filter(
-          e => isInstanceElement(e) && e.elemID.name === 'trigger3'
-        )[0] as InstanceElement
-        expect(inst.value.ticket_field_id).toEqual('')
-      })
-    })
   })
 
   describe('generateLookupNameFunc', () => {

@@ -48,6 +48,7 @@ export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 export type ZendeskClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
 
 export type ZendeskFetchConfig = configUtils.DuckTypeUserFetchConfig
+  & { enableMissingReferences?: boolean }
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
   configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean }
 >
@@ -1603,7 +1604,8 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
   },
   annotations: {
     [CORE_ANNOTATIONS.DEFAULT]: _.omit(
-      DEFAULT_CONFIG, API_DEFINITIONS_CONFIG,
+      DEFAULT_CONFIG,
+      API_DEFINITIONS_CONFIG,
       `${FETCH_CONFIG}.hideTypes`,
       `${FETCH_CONFIG}.enableMissingReferences`,
     ),

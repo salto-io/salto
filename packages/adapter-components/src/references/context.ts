@@ -93,8 +93,7 @@ export const neighborContextGetter = ({
     }
     const contextPath = parent.createNestedID(contextFieldName)
     const context = resolvePath(instance, contextPath)
-    const shouldResolve = isReferenceExpression(context)
-    const contextStr = shouldResolve
+    const contextStr = isReferenceExpression(context)
       ? await resolveReference(context, contextPath)
       : context
 

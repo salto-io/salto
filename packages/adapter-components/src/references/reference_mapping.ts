@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Field, Value, Element, isInstanceElement, InstanceElement, ObjectType, ElemID } from '@salto-io/adapter-api'
+import { Field, Value, Element, isInstanceElement } from '@salto-io/adapter-api'
 import { types } from '@salto-io/lowerdash'
-import { GetLookupNameFunc, naclCase } from '@salto-io/adapter-utils'
+import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 
 export type ApiNameFunc = (elem: Element) => string
 export type LookupFunc = (val: Value, context?: string) => string
@@ -24,9 +24,6 @@ export type CreateMissingRefFunc = (
   params: { value: string; adapter: string; typeName?: string }
 ) => Element | undefined
 export type CheckMissingRefFunc = (element: Element) => boolean
-
-const MISSING_REF_PREFIX = 'missing_'
-const MISSING_ANNOTATION = 'missing'
 
 export type ReferenceSerializationStrategy = {
   serialize: GetLookupNameFunc
@@ -56,29 +53,8 @@ export const ReferenceSerializationStrategyLookup: Record<
 
 export type MissingReferenceStrategy = {
   create: CreateMissingRefFunc
-  check: CheckMissingRefFunc
 }
-
 export type MissingReferenceStrategyName = 'typeAndValue'
-export const MissingReferenceStrategyLookup: Record<
-MissingReferenceStrategyName, MissingReferenceStrategy
-> = {
-  typeAndValue: {
-    create: ({ value, adapter, typeName }) => {
-      if (!_.isString(typeName) || !value) {
-        return undefined
-      }
-      return new InstanceElement(
-        naclCase(`${MISSING_REF_PREFIX}${value}`),
-        new ObjectType({ elemID: new ElemID(adapter, typeName) }),
-        {},
-        undefined,
-        { [MISSING_ANNOTATION]: true },
-      )
-    },
-    check: element => element.annotations[MISSING_ANNOTATION] === true,
-  },
-}
 
 type MetadataTypeArgs<T extends string> = {
   type: string
@@ -148,9 +124,6 @@ export class FieldReferenceResolver<T extends string> {
     ]
     this.target = def.target
       ? { ...def.target, lookup: this.serializationStrategy.lookup }
-      : undefined
-    this.missingRefStrategy = def.missingRefStrategy
-      ? MissingReferenceStrategyLookup[def.missingRefStrategy]
       : undefined
   }
 

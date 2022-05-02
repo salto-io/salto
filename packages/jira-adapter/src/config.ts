@@ -1585,6 +1585,8 @@ const SUPPORTED_TYPES = {
   WorkflowScheme: ['WorkflowSchemes'],
   ServerInformation: ['ServerInformation'],
   Board: ['Boards'],
+  Automation: [],
+  Webhook: [],
 }
 
 export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {

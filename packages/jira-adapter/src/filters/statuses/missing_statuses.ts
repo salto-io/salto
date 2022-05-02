@@ -72,8 +72,12 @@ const createStatusInstance = (
  * the statuses that are used in active workflows so we fetch
  * the missing statuses using private API
  */
-const filter: FilterCreator = ({ client, config }) => ({
+const filter: FilterCreator = ({ client, config, fetchQuery }) => ({
   onFetch: async (elements: Element[]) => {
+    if (!fetchQuery.isTypeMatch(STATUS_TYPE_NAME)) {
+      return
+    }
+
     if (!config.client.usePrivateAPI) {
       log.debug('Skipping missing statuses filter because private API is not enabled')
       return

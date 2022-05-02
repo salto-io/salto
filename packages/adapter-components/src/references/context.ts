@@ -29,8 +29,6 @@ export type ContextFunc = ({ instance, elemByElemID, field, fieldPath }: {
   fieldPath?: ElemID
 }) => Promise<string | undefined>
 
-const noop = (val: string): string => val
-
 /**
  * Use the value of a neighbor field as the context for finding the referenced element.
  *
@@ -42,7 +40,7 @@ const noop = (val: string): string => val
 export const neighborContextGetter = ({
   contextFieldName,
   levelsUp = 0,
-  contextValueMapper = noop,
+  contextValueMapper,
   getLookUpName,
 }: {
   contextFieldName: string
@@ -95,9 +93,9 @@ export const neighborContextGetter = ({
     }
     const contextPath = parent.createNestedID(contextFieldName)
     const context = resolvePath(instance, contextPath)
-    const contextStr = (isReferenceExpression(context)
+    const contextStr = isReferenceExpression(context)
       ? await resolveReference(context, contextPath)
-      : context)
+      : context
 
     if (!_.isString(contextStr)) {
       return undefined

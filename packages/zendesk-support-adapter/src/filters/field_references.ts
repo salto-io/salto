@@ -14,11 +14,12 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, isInstanceElement } from '@salto-io/adapter-api'
+import { Element, ElemID, InstanceElement, isInstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
-import { GetLookupNameFunc } from '@salto-io/adapter-utils'
+import { GetLookupNameFunc, naclCase } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { BRAND_NAME } from '../constants'
+import { FETCH_CONFIG } from '../config'
 
 const { neighborContextGetter } = referenceUtils
 
@@ -51,7 +52,7 @@ const SPECIAL_CONTEXT_NAMES: Record<string, string> = {
  * For strings with an id-related suffix (_id or _ids), remove the suffix.
  * e.g. `abc_id` => `abc`.
  */
-const getValueLookupType = (val: string): string | undefined => {
+const getValueLookupType: referenceUtils.ContextValueMapperFunc = val => {
   const specialTypeName = SPECIAL_CONTEXT_NAMES[val]
   if (specialTypeName !== undefined) {
     return specialTypeName
@@ -64,7 +65,7 @@ const getValueLookupType = (val: string): string | undefined => {
   return valParts.join('_')
 }
 
-const getLowerCaseSingularLookupType = (val: string): string | undefined => {
+const getLowerCaseSingularLookupType: referenceUtils.ContextValueMapperFunc = val => {
   const lowercaseVal = val.toLowerCase()
   // for now this simple conversion to singular form seems good enough, but
   // we may need to improve it later on
@@ -100,6 +101,9 @@ const neighborReferenceTicketFieldLookupFunc: GetLookupNameFunc = async ({ ref }
   return undefined
 }
 
+const neighborReferenceTicketFieldLookupType: referenceUtils.ContextValueMapperFunc = val =>
+  (val === TICKET_FIELD_OPTION_TYPE_NAME ? val : undefined)
+
 const neighborReferenceUserAndOrgFieldLookupFunc: GetLookupNameFunc = async ({ ref }) => {
   if (isInstanceElement(ref.value) && ref.value.value.type === 'dropdown') {
     if (ref.elemID.typeName === USER_FIELD_TYPE_NAME) {
@@ -111,6 +115,9 @@ const neighborReferenceUserAndOrgFieldLookupFunc: GetLookupNameFunc = async ({ r
   }
   return undefined
 }
+
+const neighborReferenceUserAndOrgFieldLookupType: referenceUtils.ContextValueMapperFunc = val =>
+  ([USER_FIELD_OPTION_TYPE_NAME, ORG_FIELD_OPTION_TYPE_NAME].includes(val) ? val : undefined)
 
 const getSerializationStrategyOfCustomFieldByContainingType = (
   prefix: string,
@@ -198,11 +205,11 @@ export const contextStrategyLookup: Record<
   ReferenceContextStrategyName, referenceUtils.ContextFunc
 > = {
   neighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: getValueLookupType }),
-  neighborReferenceTicketField: neighborContextFunc({ contextFieldName: 'field', getLookUpName: neighborReferenceTicketFieldLookupFunc }),
-  neighborReferenceTicketFormCondition: neighborContextFunc({ contextFieldName: 'parent_field_id', getLookUpName: neighborReferenceTicketFieldLookupFunc }),
-  neighborReferenceUserAndOrgField: neighborContextFunc({ contextFieldName: 'field', getLookUpName: neighborReferenceUserAndOrgFieldLookupFunc }),
-  neighborSubjectReferenceTicketField: neighborContextFunc({ contextFieldName: 'subject', getLookUpName: neighborReferenceTicketFieldLookupFunc }),
-  neighborSubjectReferenceUserAndOrgField: neighborContextFunc({ contextFieldName: 'subject', getLookUpName: neighborReferenceUserAndOrgFieldLookupFunc }),
+  neighborReferenceTicketField: neighborContextFunc({ contextFieldName: 'field', getLookUpName: neighborReferenceTicketFieldLookupFunc, contextValueMapper: neighborReferenceTicketFieldLookupType }),
+  neighborReferenceTicketFormCondition: neighborContextFunc({ contextFieldName: 'parent_field_id', getLookUpName: neighborReferenceTicketFieldLookupFunc, contextValueMapper: neighborReferenceTicketFieldLookupType }),
+  neighborReferenceUserAndOrgField: neighborContextFunc({ contextFieldName: 'field', getLookUpName: neighborReferenceUserAndOrgFieldLookupFunc, contextValueMapper: neighborReferenceUserAndOrgFieldLookupType }),
+  neighborSubjectReferenceTicketField: neighborContextFunc({ contextFieldName: 'subject', getLookUpName: neighborReferenceTicketFieldLookupFunc, contextValueMapper: neighborReferenceTicketFieldLookupType }),
+  neighborSubjectReferenceUserAndOrgField: neighborContextFunc({ contextFieldName: 'subject', getLookUpName: neighborReferenceUserAndOrgFieldLookupFunc, contextValueMapper: neighborReferenceUserAndOrgFieldLookupType }),
   neighborType: neighborContextFunc({ contextFieldName: 'type', contextValueMapper: getLowerCaseSingularLookupType }),
   parentSubject: neighborContextFunc({ contextFieldName: 'subject', levelsUp: 1, contextValueMapper: getValueLookupType }),
   neighborSubject: neighborContextFunc({ contextFieldName: 'subject', contextValueMapper: getValueLookupType }),
@@ -210,10 +217,31 @@ export const contextStrategyLookup: Record<
   parentValue: neighborContextFunc({ contextFieldName: 'value', levelsUp: 2, contextValueMapper: getValueLookupType }),
 }
 
+const MISSING_REF_PREFIX = 'missing_'
+export const ZendeskSupportMissingReferenceStrategyLookup: Record<
+referenceUtils.MissingReferenceStrategyName, referenceUtils.MissingReferenceStrategy
+> = {
+  typeAndValue: {
+    create: ({ value, adapter, typeName }) => {
+      if (!_.isString(typeName) || !value) {
+        return undefined
+      }
+      return new InstanceElement(
+        naclCase(`${MISSING_REF_PREFIX}${value}`),
+        new ObjectType({ elemID: new ElemID(adapter, typeName) }),
+        {},
+        undefined,
+        { [referenceUtils.MISSING_ANNOTATION]: true },
+      )
+    },
+  },
+}
+
 type ZendeskSupportFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<
   ReferenceContextStrategyName
 > & {
   zendeskSupportSerializationStrategy?: ZendeskSupportReferenceSerializationStrategyName
+  zendeskSupportMissingRefStrategy?: referenceUtils.MissingReferenceStrategyName
 }
 
 export class ZendeskSupportFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<
@@ -224,6 +252,9 @@ export class ZendeskSupportFieldReferenceResolver extends referenceUtils.FieldRe
     this.serializationStrategy = ZendeskSupportReferenceSerializationStrategyLookup[
       def.zendeskSupportSerializationStrategy ?? def.serializationStrategy ?? 'fullValue'
     ]
+    this.missingRefStrategy = def.zendeskSupportMissingRefStrategy
+      ? ZendeskSupportMissingReferenceStrategyLookup[def.zendeskSupportMissingRefStrategy]
+      : undefined
     this.target = def.target
       ? { ...def.target, lookup: this.serializationStrategy.lookup }
       : undefined
@@ -662,6 +693,7 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskSupportFieldReferenceDef
     },
     zendeskSupportSerializationStrategy: 'ticketFieldOption',
     target: { typeContext: 'neighborReferenceTicketField' },
+    zendeskSupportMissingRefStrategy: 'typeAndValue',
   },
   {
     src: {
@@ -677,6 +709,7 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskSupportFieldReferenceDef
     },
     zendeskSupportSerializationStrategy: 'userFieldOption',
     target: { typeContext: 'neighborReferenceUserAndOrgField' },
+    zendeskSupportMissingRefStrategy: 'typeAndValue',
   },
   {
     src: {
@@ -749,13 +782,17 @@ export const lookupFunc = referenceUtils.generateLookupFunc(
 /**
  * Convert field values into references, based on predefined rules.
  */
-const filter: FilterCreator = () => ({
+const filter: FilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]) => {
     const addReferences = async (refDefs: ZendeskSupportFieldReferenceDefinition[]):
     Promise<void> => {
+      const fixedDefs = refDefs
+        .map(def => (
+          config[FETCH_CONFIG].enableMissingReferences ? def : _.omit(def, 'zendeskSupportMissingRefStrategy')
+        ))
       await referenceUtils.addReferences({
         elements,
-        defs: refDefs,
+        defs: fixedDefs,
         fieldsToGroupBy: ['id', 'name', 'key', 'value'],
         contextStrategyLookup,
         // since ids and references to ids vary inconsistently between string/number, allow both

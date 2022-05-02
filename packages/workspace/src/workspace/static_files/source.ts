@@ -153,3 +153,35 @@ export const buildStaticFilesSource = (
   }
   return staticFilesSource
 }
+
+export const buildInMemStaticFilesSource = (
+  files: Map<string, StaticFile> = new Map()
+): StaticFilesSource => ({
+  getStaticFile: async filepath => (
+    files.get(filepath) ?? new MissingStaticFile(filepath)
+  ),
+  persistStaticFile: async file => {
+    files.set(file.filepath, file)
+  },
+  getContent: async filepath => {
+    const file = files.get(filepath)
+    const content = file?.content
+    if (content === undefined) {
+      throw new Error(`Missing content on static file: ${filepath}`)
+    }
+    return content
+  },
+  clear: async () => {
+    files.clear()
+  },
+  clone: () => (
+    buildInMemStaticFilesSource(new Map(files.entries()))
+  ),
+  delete: async file => {
+    files.delete(file.filepath)
+  },
+  flush: () => Promise.resolve(),
+  getTotalSize: async () => 0,
+  isPathIncluded: () => true,
+  rename: () => Promise.resolve(),
+})

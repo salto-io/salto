@@ -134,8 +134,12 @@ const updateWebhook = async (
   })
 }
 
-const filter: FilterCreator = ({ client, getElemIdFunc, config }) => ({
+const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuery }) => ({
   onFetch: async elements => {
+    if (!fetchQuery.isTypeMatch(WEBHOOK_TYPE)) {
+      return
+    }
+
     if (!config.client.usePrivateAPI) {
       log.debug('Skipping webhook fetch filter because private API is not enabled')
       return

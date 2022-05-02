@@ -110,6 +110,7 @@ export const getConfigFromConfigChanges = (
   const retrieveSize = configChanges
     .filter(isRetrieveSizeConfigSuggstion)
     .map(config => config.value)
+    .map(value => Math.max(value, constants.MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST))
     .sort()
 
   if ([newMetadataExclude, dataObjectsToExclude, retrieveSize]
@@ -138,10 +139,7 @@ export const getConfigFromConfigChanges = (
     ...dataManagementOverrides,
   }, isDefined) as DataManagementConfig | undefined
 
-  const maxItemsInRetrieveRequest = Math.max(
-    retrieveSize[0] ?? currentConfig.maxItemsInRetrieveRequest,
-    constants.MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST
-  )
+  const maxItemsInRetrieveRequest = retrieveSize[0] ?? currentConfig.maxItemsInRetrieveRequest
 
   return {
     config: [new InstanceElement(

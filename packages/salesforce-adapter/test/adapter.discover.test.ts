@@ -654,8 +654,7 @@ describe('SalesforceAdapter fetch', () => {
       expect(describeMock.mock.calls[0][0]).toBe('{http://soap.sforce.com/2006/04/metadata}Base')
     })
 
-    // eslint-disable-next-line
-    it.skip('should fetch metadata instances using retrieve in chunks', async () => {
+    it('should fetch metadata instances using retrieve in chunks', async () => {
       mockMetadataType(
         { xmlName: 'ApexClass', metaFile: true, suffix: 'cls', directoryName: 'classes' },
         {
@@ -831,6 +830,63 @@ public class MyClass${index} {
       expect(testInst.path).toEqual(
         [constants.SALESFORCE, constants.INSTALLED_PACKAGES_PATH, namespaceName,
           constants.RECORDS_PATH, 'Test', 'asd__Test']
+      )
+    })
+
+    it('should not fail the fetch on instances too large', async () => {
+      mockMetadataType(
+        { xmlName: 'ApexClass', metaFile: true, suffix: 'cls', directoryName: 'classes' },
+        {
+          valueTypeFields: [
+            { name: 'fullName', soapType: 'string', valueRequired: true },
+            { name: 'content', soapType: 'string', valueRequired: false },
+          ],
+        },
+        [
+          {
+            props: { fullName: 'LargeClass', fileName: 'classes/LargeClass.cls' },
+            values: { fullName: 'LargeClass' },
+            zipFiles: [
+              {
+                path: 'unpackaged/classes/LargeClass.cls-meta.xml',
+                content: `
+<?xml version="1.0" encoding="UTF-8"?>
+<ApexClass xmlns="http://soap.sforce.com/2006/04/metadata">
+  <apiVersion>50.0</apiVersion>
+  <status>Active</status>
+</ApexClass>
+`,
+              },
+              {
+                path: 'unpackaged/classes/LargeClass.cls',
+                content: `
+public class LargeClass {
+  public void printLog() {
+    System.debug('InstanceLargeClass');
+  }'
+}
+`,
+              },
+            ],
+          },
+        ]
+      )
+
+      connection.metadata.retrieve.mockReset()
+      connection.metadata.retrieve.mockReturnValue(mockRetrieveLocator({
+        errorStatusCode: constants.RETRIEVE_SIZE_LIMIT_ERROR,
+      }))
+
+      const { elements: result, updatedConfig: config } = await adapter.fetch(mockFetchOpts)
+      expect(connection.metadata.retrieve).toHaveBeenCalledTimes(1)
+      expect(findElements(result, 'ApexClass', 'LargeClass')).toBeEmpty()
+      expect(config?.config[0]?.value.fetch.metadata.exclude).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            metadataType: 'ApexClass',
+            name: 'LargeClass',
+          }),
+        ])
       )
     })
 

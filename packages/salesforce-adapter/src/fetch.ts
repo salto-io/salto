@@ -22,8 +22,7 @@ import { logger } from '@salto-io/logging'
 import { FetchElements, ConfigChangeSuggestion, MAX_ITEMS_IN_RETRIEVE_REQUEST } from './types'
 import {
   METADATA_CONTENT_FIELD, NAMESPACE_SEPARATOR, INTERNAL_ID_FIELD, DEFAULT_NAMESPACE,
-  RETRIEVE_SIZE_LIMIT_ERROR, MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST,
-  LAYOUT_TYPE_ID_METADATA_TYPE,
+  RETRIEVE_SIZE_LIMIT_ERROR, LAYOUT_TYPE_ID_METADATA_TYPE,
 } from './constants'
 import SalesforceClient, { ErrorFilter } from './client/client'
 import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, createSkippedListConfigChange } from './config_change'
@@ -264,17 +263,14 @@ export const retrieveMetadataInstances = async ({
     )
 
     if (result.errorStatusCode === RETRIEVE_SIZE_LIMIT_ERROR) {
-      if (fileProps.length <= MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST) {
+      if (fileProps.length <= 1) {
         configChanges.push(...fileProps.map(fileProp =>
           createSkippedListConfigChange(fileProp.type, fileProp.fullName)))
         log.warn(`retrieve request for ${typesToRetrieve} failed: ${result.errorStatusCode} ${result.errorMessage}, adding to skip list`)
         return []
       }
 
-      const chunkSize = Math.max(
-        Math.ceil(fileProps.length / 2),
-        MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST
-      )
+      const chunkSize = Math.ceil(fileProps.length / 2)
       log.debug('reducing retrieve item count %d -> %d', fileProps.length, chunkSize)
       configChanges.push({ type: MAX_ITEMS_IN_RETRIEVE_REQUEST, value: chunkSize })
       return (await Promise.all(_.chunk(fileProps, chunkSize).map(retrieveInstances))).flat()

@@ -139,8 +139,8 @@ const addRequiredDependencies = (
     // remove required features that are set to "required=false"
     .differenceBy(requiredFeatures, item => item[TEXT_ATTRIBUTE])
     .unionBy(requiredFeatures, item => item[TEXT_ATTRIBUTE])
-    .differenceBy((additionalDependencies.features.exclude ?? [])
-      .map(feature => ({ [TEXT_ATTRIBUTE]: feature })), item => item[TEXT_ATTRIBUTE])
+    .differenceBy(additionalDependencies.features.exclude ?? [],
+      item => item[TEXT_ATTRIBUTE] ?? item)
     .value()
 
   objects.object = _(makeArray(objects.object))

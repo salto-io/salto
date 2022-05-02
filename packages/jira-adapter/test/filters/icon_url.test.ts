@@ -15,6 +15,7 @@
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../utils'
 import iconUrlFilter from '../../src/filters/icon_url'
 import { Filter } from '../../src/filter'
@@ -32,6 +33,7 @@ describe('iconUrlFilter', () => {
       paginator,
       config: DEFAULT_CONFIG,
       elementsSource: buildElementsSourceFromElements([]),
+      fetchQuery: elementUtils.query.createMockQuery(),
     })
 
     type = new ObjectType({

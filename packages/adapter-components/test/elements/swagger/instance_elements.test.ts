@@ -21,6 +21,7 @@ import { getAllInstances } from '../../../src/elements/swagger'
 import { returnFullEntry } from '../../../src/elements/field_finder'
 import { Paginator } from '../../../src/client'
 import { simpleGetArgs } from '../../../src/elements/request_parameters'
+import { createElementQuery } from '../../../src/elements/query'
 
 const { toAsyncIterable } = collections.asynciterable
 
@@ -144,8 +145,16 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchConfig: {
-          includeTypes: ['Owner', 'Pet'],
+        fetchQuery: createElementQuery({
+          include: [
+            { type: 'Owner' },
+            { type: 'Pet' },
+          ],
+          exclude: [],
+        }),
+        supportedTypes: {
+          Owner: ['Owner'],
+          Pet: ['Pet'],
         },
         objectTypes,
         computeGetArgs: simpleGetArgs,
@@ -229,8 +238,16 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchConfig: {
-          includeTypes: ['Owner', 'Pet'],
+        fetchQuery: createElementQuery({
+          include: [
+            { type: 'Owner' },
+            { type: 'Pet' },
+          ],
+          exclude: [],
+        }),
+        supportedTypes: {
+          Owner: ['Owner'],
+          Pet: ['Pet'],
         },
         objectTypes,
         computeGetArgs: simpleGetArgs,
@@ -283,8 +300,16 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchConfig: {
-          includeTypes: ['Owner', 'Pet'],
+        fetchQuery: createElementQuery({
+          include: [
+            { type: 'Owner' },
+            { type: 'Pet' },
+          ],
+          exclude: [],
+        }),
+        supportedTypes: {
+          Owner: ['Owner'],
+          Pet: ['Pet'],
         },
         objectTypes,
         computeGetArgs: simpleGetArgs,
@@ -395,8 +420,16 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchConfig: {
-          includeTypes: ['Owner', 'Pet'],
+        fetchQuery: createElementQuery({
+          include: [
+            { type: 'Owner' },
+            { type: 'Pet' },
+          ],
+          exclude: [],
+        }),
+        supportedTypes: {
+          Owner: ['Owner'],
+          Pet: ['Pet'],
         },
         objectTypes,
         computeGetArgs: simpleGetArgs,
@@ -446,8 +479,16 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchConfig: {
-          includeTypes: ['Owner', 'Pet'],
+        fetchQuery: createElementQuery({
+          include: [
+            { type: 'Owner' },
+            { type: 'Pet' },
+          ],
+          exclude: [],
+        }),
+        supportedTypes: {
+          Owner: ['Owner'],
+          Pet: ['Pet'],
         },
         objectTypes,
         computeGetArgs: simpleGetArgs,
@@ -519,8 +560,16 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchConfig: {
-          includeTypes: ['Owner', 'Pet'],
+        fetchQuery: createElementQuery({
+          include: [
+            { type: 'Owner' },
+            { type: 'Pet' },
+          ],
+          exclude: [],
+        }),
+        supportedTypes: {
+          Owner: ['Owner'],
+          Pet: ['Pet'],
         },
         objectTypes,
         computeGetArgs: simpleGetArgs,
@@ -579,8 +628,14 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchConfig: {
-          includeTypes: ['Pet'],
+        fetchQuery: createElementQuery({
+          include: [
+            { type: 'Pet' },
+          ],
+          exclude: [],
+        }),
+        supportedTypes: {
+          Pet: ['Pet'],
         },
         objectTypes,
         nestedFieldFinder: async type => ({
@@ -663,8 +718,14 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchConfig: {
-          includeTypes: ['PetList'],
+        fetchQuery: createElementQuery({
+          include: [
+            { type: 'Pet' },
+          ],
+          exclude: [],
+        }),
+        supportedTypes: {
+          Pet: ['PetList'],
         },
         objectTypes: {
           ...objectTypes,
@@ -781,8 +842,14 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchConfig: {
-          includeTypes: ['AllCustomObjects'],
+        fetchQuery: createElementQuery({
+          include: [
+            { type: 'AllCustomObjects' },
+          ],
+          exclude: [],
+        }),
+        supportedTypes: {
+          AllCustomObjects: ['AllCustomObjects'],
         },
         objectTypes,
       })
@@ -844,8 +911,14 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchConfig: {
-          includeTypes: ['Pet'],
+        fetchQuery: createElementQuery({
+          include: [
+            { type: 'Pet' },
+          ],
+          exclude: [],
+        }),
+        supportedTypes: {
+          Pet: ['Pet'],
         },
         objectTypes,
         computeGetArgs: simpleGetArgs,
@@ -909,8 +982,14 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchConfig: {
-          includeTypes: ['Pet'],
+        fetchQuery: createElementQuery({
+          include: [
+            { type: 'Pet' },
+          ],
+          exclude: [],
+        }),
+        supportedTypes: {
+          Pet: ['Pet'],
         },
         objectTypes,
         computeGetArgs: simpleGetArgs,
@@ -1031,8 +1110,14 @@ describe('swagger_instance_elements', () => {
               },
             },
           },
-          fetchConfig: {
-            includeTypes: ['Pet'],
+          fetchQuery: createElementQuery({
+            include: [
+              { type: 'Pet' },
+            ],
+            exclude: [],
+          }),
+          supportedTypes: {
+            Pet: ['Pet'],
           },
           objectTypes: {
             ...objectTypes,
@@ -1172,8 +1257,14 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchConfig: {
-          includeTypes: ['Owner'],
+        fetchQuery: createElementQuery({
+          include: [
+            { type: 'Owner' },
+          ],
+          exclude: [],
+        }),
+        supportedTypes: {
+          Owner: ['Owner'],
         },
         objectTypes,
       })).rejects.toThrow(new Error('could not find type Owner'))
@@ -1193,8 +1284,14 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchConfig: {
-          includeTypes: ['Bla'],
+        fetchQuery: createElementQuery({
+          include: [
+            { type: 'Bla' },
+          ],
+          exclude: [],
+        }),
+        supportedTypes: {
+          Bla: ['Bla'],
         },
         objectTypes,
       })).rejects.toThrow(new Error('could not find type Bla'))
@@ -1214,8 +1311,14 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchConfig: {
-          includeTypes: ['Pet'],
+        fetchQuery: createElementQuery({
+          include: [
+            { type: 'Pet' },
+          ],
+          exclude: [],
+        }),
+        supportedTypes: {
+          Pet: ['Pet'],
         },
         objectTypes,
       })).rejects.toThrow(new Error('Invalid type config - type myAdapter.Pet has no request config'))
@@ -1300,8 +1403,14 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchConfig: {
-          includeTypes: ['Owner'],
+        fetchQuery: createElementQuery({
+          include: [
+            { type: 'Owner' },
+          ],
+          exclude: [],
+        }),
+        supportedTypes: {
+          Owner: ['Owner'],
         },
         objectTypes,
         computeGetArgs: simpleGetArgs,
@@ -1342,8 +1451,14 @@ describe('swagger_instance_elements', () => {
             },
           },
         },
-        fetchConfig: {
-          includeTypes: ['Pet'],
+        fetchQuery: createElementQuery({
+          include: [
+            { type: 'Pet' },
+          ],
+          exclude: [],
+        }),
+        supportedTypes: {
+          Pet: ['Pet'],
         },
         objectTypes,
         computeGetArgs: simpleGetArgs,

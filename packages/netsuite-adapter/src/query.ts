@@ -65,7 +65,7 @@ export type NetsuiteQuery = {
 }
 
 const checkTypeNameRegMatch = (type: FetchTypeQueryParams, str: string): boolean =>
-  new RegExp(`^${type.name}$`).test(str)
+  regex.isFullRegexMatch(str, type.name)
 
 export const validateFetchParameters = ({ types, fileCabinet }:
   Partial<QueryParams>): void => {

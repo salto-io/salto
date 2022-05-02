@@ -16,7 +16,7 @@
 import { ElemID, InstanceElement, ObjectType, CORE_ANNOTATIONS, BuiltinTypes, Values, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { buildElementsSourceFromElements, safeJsonStringify } from '@salto-io/adapter-utils'
-import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { mockClient } from '../../utils'
 import automationDeploymentFilter from '../../../src/filters/automation/automation_deployment'
@@ -46,6 +46,7 @@ describe('automationDeploymentFilter', () => {
       paginator,
       config,
       elementsSource: buildElementsSourceFromElements([]),
+      fetchQuery: elementUtils.query.createMockQuery(),
     }) as filterUtils.FilterWith<'onFetch' | 'deploy'>
 
     type = new ObjectType({

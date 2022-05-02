@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ElemID, ObjectType, CORE_ANNOTATIONS, BuiltinTypes, ListType, MapType } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
 import { WORKATO, PROPERTY_TYPE, ROLE_TYPE, API_COLLECTION_TYPE, FOLDER_TYPE, RECIPE_TYPE, CONNECTION_TYPE, API_ENDPOINT_TYPE, API_CLIENT_TYPE, API_ACCESS_PROFILE_TYPE, RECIPE_CODE_TYPE } from './constants'
 
 const { createClientConfigType } = clientUtils
@@ -205,9 +205,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
 
 export const DEFAULT_CONFIG: WorkatoConfig = {
   [FETCH_CONFIG]: {
-    includeTypes: [
-      ...Object.keys(_.pickBy(DEFAULT_TYPES, def => def.request !== undefined)),
-    ].sort(),
+    ...elements.query.INCLUDE_ALL_CONFIG,
     hideTypes: true,
   },
   [API_DEFINITIONS_CONFIG]: {

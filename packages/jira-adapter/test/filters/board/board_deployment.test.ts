@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { filterUtils, client as clientUtils, deployment } from '@salto-io/adapter-components'
+import { filterUtils, client as clientUtils, deployment, elements as elementUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
@@ -57,6 +57,7 @@ describe('boardDeploymentFilter', () => {
       paginator,
       config,
       elementsSource: buildElementsSourceFromElements([]),
+      fetchQuery: elementUtils.query.createMockQuery(),
     }) as typeof filter
 
     locationType = new ObjectType({

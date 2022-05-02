@@ -14,16 +14,12 @@ stripe {
     }
   }
   fetch = {
-    includeTypes = [
-        "v1__country_specs",
-        "v1__coupons",
-        "v1__plans",
-        "v1__prices",
-        "v1__products",
-        "v1__reporting__report_types",
-        "v1__tax_rates",
-        "v1__webhook_endpoints",
+    include = [
+      {
+        type = ".*"
+      },
     ]
+    exclude = []
   }
 }
 ```
@@ -60,15 +56,14 @@ stripe {
 
 ## Fetch configuration options
 
-| Name                                        | Default when undefined          | Description
-|---------------------------------------------|---------------------------------|------------
-| includeTypes                                | [                               | List of types to fetch
-|                                             |   "v1__country_specs",          |
-|                                             |   "v1__coupons",                |
-|                                             |   "v1__plans",                  |
-|                                             |   "v1__prices",                 |
-|                                             |   "v1__products",               |
-|                                             |   "v1__reporting__report_types",|
-|                                             |   "v1__tax_rates",              |
-|                                             |   "v1__webhook_endpoints",      |
-|                                             |  ]                              |
+| Name                                        | Default when undefined            | Description
+|---------------------------------------------|-----------------------------------|------------
+| [include](#fetch-entry-options)               | [{ type = ".*" }]                 | List of entries to determine what instances to include in the fetch
+| [exclude](#fetch-entry-options)               | []                                | List of entries to determine what instances to exclude in the fetch
+
+
+## Fetch entry options
+
+| Name                                        | Default when undefined            | Description
+|---------------------------------------------|-----------------------------------|------------
+| type                                        | ""                                | A regex of the Salto type name to include in the entry

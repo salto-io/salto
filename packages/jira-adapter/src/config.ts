@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
 import { AUTOMATION_TYPE, BOARD_COLUMN_CONFIG_TYPE, BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME } from './constants'
 import { FIELD_TYPE_NAME } from './filters/fields/constants'
 
@@ -1765,47 +1765,6 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
   supportedTypes: SUPPORTED_TYPES,
 }
 
-export const DEFAULT_INCLUDE_ENDPOINTS: string[] = [
-  // platform api
-  'ApplicationProperties',
-  'ApplicationRoles',
-  'AttachmentSettings',
-  'Configuration',
-  'TimeTrackingProviders',
-  'Dashboards',
-  'Fields',
-  'FieldConfigurations',
-  'FieldsConfigurationScheme',
-  'FieldsConfigurationIssueTypeItem',
-  'Filters',
-  ISSUE_TYPE_NAME,
-  'IssueLinkTypes',
-  'SecuritySchemes',
-  'IssueTypeSchemes',
-  'IssueTypeSchemeMappings',
-  'IssueTypeScreenSchemes',
-  'IssueTypeScreenSchemeItems',
-  'NotificationSchemes',
-  'Permissions',
-  'PermissionSchemes',
-  'Priorities',
-  'ProjectCategories',
-  'Projects',
-  'ProjectTypes',
-  'Resolutions',
-  'Roles',
-  'Screens',
-  'ScreenSchemes',
-  'Statuses',
-  'StatusCategories',
-  'Workflows',
-  'WorkflowSchemes',
-  'ServerInformation',
-
-  // jira api
-  'Boards',
-]
-
 type JiraDeployConfig = {
   forceDelete: boolean
 }
@@ -1880,9 +1839,7 @@ export const DEFAULT_CONFIG: JiraConfig = {
     usePrivateAPI: true,
     boardColumnRetry: 5,
   },
-  fetch: {
-    includeTypes: DEFAULT_INCLUDE_ENDPOINTS,
-  },
+  fetch: elements.query.INCLUDE_ALL_CONFIG,
   deploy: {
     forceDelete: false,
   },

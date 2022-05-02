@@ -231,13 +231,21 @@ describe('config_swagger', () => {
       expect(() => validateSwaggerFetchConfig(
         'FETCH_PATH',
         {
-          includeTypes: ['a', 'bla'],
+          include: [
+            { type: 'a' },
+            { type: 'bla' },
+          ],
+          exclude: [],
         },
         {
           swagger: {
             url: 'www.url.com',
           },
-          supportedTypes: { aa: ['a', 'bla', 'lala'] },
+          supportedTypes: {
+            a: ['a'],
+            bla: ['bla'],
+            lala: ['lala'],
+          },
           typeDefaults: {
             transformation: {
               idFields: ['id'],
@@ -263,13 +271,21 @@ describe('config_swagger', () => {
       expect(() => validateSwaggerFetchConfig(
         'FETCH_PATH',
         {
-          includeTypes: ['a', 'unknown'],
+          include: [
+            { type: 'a' },
+            { type: 'unknown' },
+          ],
+          exclude: [],
         },
         {
           swagger: {
             url: 'www.url.com',
           },
-          supportedTypes: { aa: ['a', 'bla', 'lala'] },
+          supportedTypes: {
+            a: ['a'],
+            bla: ['bla'],
+            lala: ['lala'],
+          },
           typeDefaults: {
             transformation: {
               idFields: ['id'],
@@ -288,7 +304,7 @@ describe('config_swagger', () => {
             },
           },
         },
-      )).toThrow(new Error('Invalid type names in FETCH_PATH.includeTypes: unknown are not supported.'))
+      )).toThrow(new Error('Invalid type names in FETCH_PATH: unknown does not match any of the supported types.'))
     })
   })
 })

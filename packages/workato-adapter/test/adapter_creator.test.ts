@@ -17,7 +17,6 @@ import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { ObjectType, InstanceElement } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import WorkatoAdapter from '../src/adapter'
 import { adapter } from '../src/adapter_creator'
 import { usernameTokenCredentialsType } from '../src/auth'
 import { configType } from '../src/config'
@@ -52,7 +51,8 @@ describe('adapter creator', () => {
         adapter.configType as ObjectType,
         {
           fetch: {
-            includeTypes: [],
+            include: [],
+            exclude: [],
           },
           apiDefinitions: {
             types: {},
@@ -60,7 +60,7 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
-    })).toBeInstanceOf(WorkatoAdapter)
+    })).toBeDefined()
   })
 
   it('should ignore unexpected configuration values', () => {
@@ -72,7 +72,8 @@ describe('adapter creator', () => {
         adapter.configType as ObjectType,
         {
           fetch: {
-            includeTypes: [],
+            include: [],
+            exclude: [],
           },
           apiDefinitions: {
             types: {},
@@ -81,7 +82,7 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
-    })).toBeInstanceOf(WorkatoAdapter)
+    })).toBeDefined()
   })
 
   it('should throw error on inconsistent configuration between fetch and apiDefinitions', () => {
@@ -93,10 +94,11 @@ describe('adapter creator', () => {
         adapter.configType as ObjectType,
         {
           fetch: {
-            includeTypes: [
-              'a',
-              'b',
+            include: [
+              { type: 'a' },
+              { type: 'b' },
             ],
+            exclude: [],
           },
           apiDefinitions: {
             types: {
@@ -114,7 +116,7 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
-    })).toThrow(new Error('Invalid type names in fetch: a,b'))
+    })).toThrow(new Error('Invalid type names in fetch: a,b does not match any of the supported types.'))
   })
 
   // Skipped until we decide how fetch is supposed to know which service connection is supported.
@@ -129,7 +131,8 @@ describe('adapter creator', () => {
         adapter.configType as ObjectType,
         {
           fetch: {
-            includeTypes: [],
+            include: [],
+            exclude: [],
             serviceConnectionNames: {
               salesforce: ['abc'],
               unsupportedName: ['def'],

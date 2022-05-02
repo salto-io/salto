@@ -13,15 +13,4 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
-export const isValidRegex = (str: string): boolean => {
-  try {
-    RegExp(str)
-    return true
-  } catch (e) {
-    return false
-  }
-}
-
-export const isFullRegexMatch = (str: string, regex: string): boolean =>
-  new RegExp(`^${regex}$`).test(str)
+export { migrateDeprecatedIncludeList } from './fetch_migration'

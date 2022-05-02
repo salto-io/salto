@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, ElemIdGetter, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { filterUtils } from '@salto-io/adapter-components'
+import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { mockFunction } from '@salto-io/test-utils'
 import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -41,6 +41,7 @@ describe('field_name_filter', () => {
       config,
       getElemIdFunc: elemIdGetter,
       elementsSource: buildElementsSourceFromElements([]),
+      fetchQuery: elementUtils.query.createMockQuery(),
     }) as typeof filter
 
     fieldType = new ObjectType({
@@ -131,6 +132,7 @@ describe('field_name_filter', () => {
       paginator,
       config,
       elementsSource: buildElementsSourceFromElements([]),
+      fetchQuery: elementUtils.query.createMockQuery(),
     }) as typeof filter
 
     const custom = new InstanceElement(

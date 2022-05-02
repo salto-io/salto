@@ -17,6 +17,7 @@ import _ from 'lodash'
 import { Element } from '@salto-io/adapter-api'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { TypeConfig } from '../config'
+import { ElementQuery } from './query'
 
 const { isDefined } = lowerdashValues
 
@@ -40,17 +41,26 @@ export const getDependencies = (
  * dependsOn field.
  */
 export const getElementsWithContext = async <E extends Element>({
-  includeTypes,
+  fetchQuery,
+  supportedTypes,
   types,
   typeElementGetter,
 }: {
-  includeTypes: string[]
+  fetchQuery: ElementQuery
+  supportedTypes: Record<string, string[]>
   types: Record<string, TypeConfig>
   typeElementGetter: (args: {
     typeName: string
     contextElements?: Record<string, E[]>
   }) => Promise<E[]>
 }): Promise<E[]> => {
+  const includeTypes = _(supportedTypes)
+    .entries()
+    .filter(([typeName]) => fetchQuery.isTypeMatch(typeName))
+    .map(([_typeName, wrapperTypes]) => wrapperTypes)
+    .flatten()
+    .value()
+
   // for now assuming flat dependencies for simplicity.
   // will replace with a DAG (with support for concurrency) when needed
   const [independentEndpoints, dependentEndpoints] = _.partition(

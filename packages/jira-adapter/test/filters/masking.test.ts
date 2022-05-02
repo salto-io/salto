@@ -16,6 +16,7 @@
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../utils'
 import maskingFilter, { MASK_VALUE } from '../../src/filters/masking'
 import { Filter } from '../../src/filter'
@@ -38,6 +39,7 @@ describe('maskingFilter', () => {
       paginator,
       config,
       elementsSource: buildElementsSourceFromElements([]),
+      fetchQuery: elementUtils.query.createMockQuery(),
     })
 
     type = new ObjectType({

@@ -16,7 +16,7 @@
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, isReferenceExpression, ListType, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { filterUtils } from '@salto-io/adapter-components'
+import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../utils'
 import securitySchemeFilter, { NO_DEFAULT_VALUE } from '../../src/filters/security_scheme/security_scheme'
 import { DEFAULT_CONFIG, JiraConfig } from '../../src/config'
@@ -49,6 +49,7 @@ describe('securitySchemeFilter', () => {
       paginator,
       config,
       elementsSource: buildElementsSourceFromElements([]),
+      fetchQuery: elementUtils.query.createMockQuery(),
     }) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
 
     securityMemberType = new ObjectType({

@@ -15,6 +15,7 @@
 */
 import { BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../utils'
 import userFilter from '../../src/filters/user'
 import { Filter } from '../../src/filter'
@@ -34,6 +35,7 @@ describe('userFilter', () => {
       paginator,
       config: DEFAULT_CONFIG,
       elementsSource: buildElementsSourceFromElements([]),
+      fetchQuery: elementUtils.query.createMockQuery(),
     })
 
     userType = new ObjectType({

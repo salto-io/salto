@@ -28,7 +28,7 @@ import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
 import { FilterCreator, Filter, filtersRunner, FilterResult } from './filter'
-import { API_DEFINITIONS_CONFIG, ZendeskConfig } from './config'
+import { API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZendeskConfig } from './config'
 import { ZENDESK_SUPPORT } from './constants'
 import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
@@ -187,7 +187,8 @@ export default class ZendeskAdapter implements AdapterOperations {
     return getAllElements({
       adapterName: ZENDESK_SUPPORT,
       types: this.userConfig.apiDefinitions.types,
-      includeTypes: this.userConfig.fetch.includeTypes,
+      supportedTypes: this.userConfig.apiDefinitions.supportedTypes,
+      fetchQuery: elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG]),
       paginator: this.paginator,
       nestedFieldFinder: findDataField,
       computeGetArgs,

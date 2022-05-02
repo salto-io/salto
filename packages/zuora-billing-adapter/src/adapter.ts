@@ -22,7 +22,7 @@ import { client as clientUtils, config as configUtils, elements as elementUtils 
 import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import ZuoraClient from './client/client'
-import { ZuoraConfig, API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZuoraApiConfig, getUpdatedConfig } from './config'
+import { ZuoraConfig, API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZuoraApiConfig, getUpdatedConfig, SETTING_TYPES, SUPPORTED_TYPES } from './config'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import fieldReferencesFilter from './filters/field_references'
 import objectDefsFilter from './filters/object_defs'
@@ -32,7 +32,7 @@ import objectReferencesFilter from './filters/object_references'
 import financeInformationReferencesFilter from './filters/finance_information_references'
 import unorderedListsFilter from './filters/unordered_lists'
 import changeValidator from './change_validator'
-import { ZUORA_BILLING, LIST_ALL_SETTINGS_TYPE, SETTINGS_TYPE_PREFIX, CUSTOM_OBJECT_DEFINITION_TYPE } from './constants'
+import { ZUORA_BILLING, LIST_ALL_SETTINGS_TYPE, CUSTOM_OBJECT_DEFINITION_TYPE } from './constants'
 import { generateBillingSettingsTypes } from './transformers/billing_settings'
 import { getStandardObjectElements, getStandardObjectTypeName } from './transformers/standard_objects'
 import { paginate } from './client/pagination'
@@ -72,6 +72,7 @@ export default class ZuoraAdapter implements AdapterOperations {
   private client: ZuoraClient
   private paginator: clientUtils.Paginator
   private userConfig: ZuoraConfig
+  private fetchQuery: elementUtils.query.ElementQuery
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -88,6 +89,7 @@ export default class ZuoraAdapter implements AdapterOperations {
     this.createFiltersRunner = () => (
       filtersRunner({ client, paginator, config }, filterCreators)
     )
+    this.fetchQuery = elementUtils.query.createElementQuery(config[FETCH_CONFIG])
   }
 
   private apiDefinitions(
@@ -108,9 +110,11 @@ export default class ZuoraAdapter implements AdapterOperations {
 
   @logDuration('generating types from swagger')
   private async getSwaggerTypes(): Promise<elementUtils.swagger.ParsedTypes> {
+    const config = _.cloneDeep(this.userConfig[API_DEFINITIONS_CONFIG])
+    config.supportedTypes[LIST_ALL_SETTINGS_TYPE] = [LIST_ALL_SETTINGS_TYPE]
     return generateTypes(
       ZUORA_BILLING,
-      this.userConfig[API_DEFINITIONS_CONFIG]
+      config,
     )
   }
 
@@ -118,7 +122,7 @@ export default class ZuoraAdapter implements AdapterOperations {
   private async getBillingSettingsTypes({
     parsedConfigs, allTypes,
   }: elementUtils.swagger.ParsedTypes): Promise<elementUtils.swagger.ParsedTypes> {
-    if (this.userConfig[FETCH_CONFIG].settingsIncludeTypes === undefined) {
+    if (!Object.keys(SETTING_TYPES).some(this.fetchQuery.isTypeMatch)) {
       return { allTypes: {}, parsedConfigs: {} }
     }
 
@@ -127,7 +131,8 @@ export default class ZuoraAdapter implements AdapterOperations {
       paginator: this.paginator,
       objectTypes: _.pickBy(allTypes, isObjectType),
       apiConfig: apiDefs,
-      fetchConfig: { includeTypes: [LIST_ALL_SETTINGS_TYPE] },
+      supportedTypes: { ...SUPPORTED_TYPES, [LIST_ALL_SETTINGS_TYPE]: [LIST_ALL_SETTINGS_TYPE] },
+      fetchQuery: { isTypeMatch: typeName => typeName === LIST_ALL_SETTINGS_TYPE },
     })
     if (_.isEmpty(settingsOpInfoInstances)) {
       throw new Error('could not find any settings definitions - remove settingsFetchTypes and fetch again')
@@ -143,7 +148,7 @@ export default class ZuoraAdapter implements AdapterOperations {
     const standardObjectTypeName = getStandardObjectTypeName(apiConfig)
     if (
       standardObjectTypeName === undefined
-      || !this.userConfig[FETCH_CONFIG].includeTypes.includes(standardObjectTypeName)
+      || !this.fetchQuery.isTypeMatch(standardObjectTypeName)
     ) {
       return []
     }
@@ -168,24 +173,18 @@ export default class ZuoraAdapter implements AdapterOperations {
   ): Promise<InstanceElement[]> {
     // standard objects are not included in the swagger and need special handling - done in a filter
     const standardObjectTypeName = getStandardObjectTypeName(this.apiDefinitions(parsedConfigs))
-    const swaggerIncludeTypes = this.userConfig[FETCH_CONFIG].includeTypes.filter(
-      t => t !== standardObjectTypeName
-    )
-    // settings include types can be fetched with the regular include types, since their types
-    // were already generated
-    const settingsIncludeTypes = (this.userConfig[FETCH_CONFIG].settingsIncludeTypes ?? []).map(
-      t => `${SETTINGS_TYPE_PREFIX}${t}`
-    )
-    const fetchConfig = {
-      ...this.userConfig[FETCH_CONFIG],
-      includeTypes: [...swaggerIncludeTypes, ...settingsIncludeTypes],
+
+    const fetchQuery: elementUtils.query.ElementQuery = {
+      isTypeMatch: typeName => typeName !== standardObjectTypeName
+        && this.fetchQuery.isTypeMatch(typeName),
     }
 
     return getAllInstances({
       paginator: this.paginator,
       objectTypes: _.pickBy(allTypes, isObjectType),
       apiConfig: this.apiDefinitions(parsedConfigs),
-      fetchConfig,
+      supportedTypes: this.userConfig[API_DEFINITIONS_CONFIG].supportedTypes,
+      fetchQuery,
     })
   }
 

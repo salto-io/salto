@@ -40,7 +40,8 @@ export const realAdapter = ({ adapterParams, credentials }: Opts, config?: Zuora
     config: config ?? {
       [FETCH_CONFIG]: {
         // TODO for now not connected to a real account - update when connecting
-        includeTypes: [],
+        include: [],
+        exclude: [],
       },
       [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
 

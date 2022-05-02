@@ -102,7 +102,8 @@ export default class StripeAdapter implements AdapterOperations {
       paginator: this.paginator,
       objectTypes: _.pickBy(allTypes, isObjectType),
       apiConfig: updatedApiDefinitionsConfig,
-      fetchConfig: this.userConfig[FETCH_CONFIG],
+      supportedTypes: this.userConfig[API_DEFINITIONS_CONFIG].supportedTypes,
+      fetchQuery: elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG]),
     })
   }
 

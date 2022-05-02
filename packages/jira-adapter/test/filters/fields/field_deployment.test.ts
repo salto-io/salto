@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ListType, MapType, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { deployment, filterUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { deployment, filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockClient } from '../../utils'
@@ -64,6 +64,7 @@ describe('fields_deployment', () => {
       paginator,
       config: DEFAULT_CONFIG,
       elementsSource: buildElementsSourceFromElements([]),
+      fetchQuery: elementUtils.query.createMockQuery(),
     }) as typeof filter
 
     contextType = new ObjectType({

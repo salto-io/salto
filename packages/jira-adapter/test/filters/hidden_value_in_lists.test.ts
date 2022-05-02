@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ListType, ObjectType } from '@salto-io/adapter-api'
-import { filterUtils } from '@salto-io/adapter-components'
+import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { JIRA } from '../../src/constants'
 import hiddenValueInListsFilter from '../../src/filters/hidden_value_in_lists'
@@ -30,6 +30,7 @@ describe('hiddenValueInListsFilter', () => {
       paginator,
       config: await getDefaultAdapterConfig(),
       elementsSource: buildElementsSourceFromElements([]),
+      fetchQuery: elementUtils.query.createMockQuery(),
     }) as typeof filter
 
     const type = new ObjectType({

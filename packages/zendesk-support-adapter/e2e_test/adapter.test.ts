@@ -75,7 +75,6 @@ describe('Zendesk support adapter E2E', () => {
     const testOptionValue = uuidv4().slice(0, 8)
     let elements: Element[] = []
     const createName = (type: string): string => `Test${type}${testSuffix}`
-    const additionalTypesToFetch = ['organizations']
 
     const automationInstance = createInstanceElement(
       'automation',
@@ -227,10 +226,10 @@ describe('Zendesk support adapter E2E', () => {
           ...DEFAULT_CONFIG,
           [FETCH_CONFIG]: {
             ...DEFAULT_CONFIG[FETCH_CONFIG],
-            includeTypes: [
-              ...DEFAULT_CONFIG[FETCH_CONFIG].includeTypes,
-              ...additionalTypesToFetch,
+            include: [
+              { type: '.*' },
             ],
+            exclude: [],
           },
         }
       )

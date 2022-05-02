@@ -70,7 +70,7 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
             type: 'FireIssueEventFunction',
             configuration: {
               event: {
-                id: '13',
+                id: createReference(new ElemID(JIRA, 'IssueEvent', 'instance', 'Issue_Assigned@s'), allElements),
               },
             },
           },
@@ -151,7 +151,7 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
             type: 'FireIssueEventFunction',
             configuration: {
               event: {
-                id: '1',
+                id: createReference(new ElemID(JIRA, 'IssueEvent', 'instance', 'Issue_Assigned@s'), allElements),
               },
             },
           },
@@ -248,7 +248,7 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
             type: 'FireIssueEventFunction',
             configuration: {
               event: {
-                id: '13',
+                id: createReference(new ElemID(JIRA, 'IssueEvent', 'instance', 'Issue_Assigned@s'), allElements),
               },
             },
           },

@@ -18,10 +18,9 @@ import MockAdapter from 'axios-mock-adapter'
 import { ObjectType, InstanceElement } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import StripeAdapter from '../src/adapter'
 import { adapter } from '../src/adapter_creator'
 import { accessTokenCredentialsType } from '../src/auth'
-import { configType, DEFAULT_API_DEFINITIONS } from '../src/config'
+import { configType, DEFAULT_API_DEFINITIONS, DEFAULT_CONFIG, FETCH_CONFIG } from '../src/config'
 import { STRIPE } from '../src/constants'
 import * as connection from '../src/client/connection'
 
@@ -57,8 +56,8 @@ describe('adapter creator', () => {
         adapter.configType as ObjectType,
         {
           fetch: {
-            includeTypes: [],
-            settingsIncludeTypes: [],
+            include: [],
+            exclude: [],
           },
           apiDefinitions: {
             endpoints: {},
@@ -66,7 +65,7 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
-    })).toBeInstanceOf(StripeAdapter)
+    })).toBeDefined()
   })
   it('should return the stripe adapter if configuration is missing', () => {
     expect(adapter.operations({
@@ -76,7 +75,7 @@ describe('adapter creator', () => {
         { token: 'aaa' },
       ),
       elementsSource: buildElementsSourceFromElements([]),
-    })).toBeInstanceOf(StripeAdapter)
+    })).toBeDefined()
     expect(adapter.operations({
       credentials: new InstanceElement(
         STRIPE,
@@ -85,7 +84,7 @@ describe('adapter creator', () => {
       ),
       config: new InstanceElement(STRIPE, adapter.configType as ObjectType),
       elementsSource: buildElementsSourceFromElements([]),
-    })).toBeInstanceOf(StripeAdapter)
+    })).toBeDefined()
   })
   it('should ignore unexpected configuration values', () => {
     expect(adapter.operations({
@@ -99,7 +98,8 @@ describe('adapter creator', () => {
         adapter.configType as ObjectType,
         {
           fetch: {
-            includeTypes: [],
+            include: [],
+            exclude: [],
           },
           apiDefinitions: {
             endpoints: {},
@@ -108,7 +108,7 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
-    })).toBeInstanceOf(StripeAdapter)
+    })).toBeDefined()
   })
 
   it('should throw error on invalid configuration', () => {
@@ -122,18 +122,7 @@ describe('adapter creator', () => {
         STRIPE,
         adapter.configType as ObjectType,
         {
-          fetch: {
-            includeTypes: [
-              'stripe.v1__country_specs',
-              'stripe.v1__coupons',
-              'stripe.v1__plans',
-              'stripe.v1__prices',
-              'stripe.v1__products',
-              'stripe.v1__reporting__report_types',
-              'stripe.v1__tax_rates',
-              'stripe.v1__webhook_endpoints',
-            ],
-          },
+          fetch: DEFAULT_CONFIG[FETCH_CONFIG],
           apiDefinitions: {
             swagger: {
               url: '/tmp/swagger.yaml',
@@ -166,18 +155,21 @@ describe('adapter creator', () => {
         adapter.configType as ObjectType,
         {
           fetch: {
-            includeTypes: [
-              'stripe.v1__country_specs',
+            include: [
+              {
+                type: 'country_spec2',
+              },
             ],
+            exclude: [],
           },
           apiDefinitions: {
             ...DEFAULT_API_DEFINITIONS,
-            supportedTypes: [],
+            supportedTypes: {},
           },
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
-    })).toThrow(new Error('Invalid type names in fetch.includeTypes: stripe.v1__country_specs are not supported.'))
+    })).toThrow(new Error('Invalid type names in fetch: country_spec2 does not match any of the supported types.'))
   })
 
   it('should validate credentials using createConnection', async () => {

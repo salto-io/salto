@@ -18,11 +18,11 @@ import { client as clientUtils, filterUtils } from '@salto-io/adapter-components
 import filterCreator from '../../src/filters/add_root_folder'
 import WorkatoClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
-import { DEFAULT_TYPES, DEFAULT_ID_FIELDS, SUPPORTED_TYPES } from '../../src/config'
+import { DEFAULT_CONFIG } from '../../src/config'
 import { WORKATO } from '../../src/constants'
 
 
-describe('Field references filter', () => {
+describe('Add root filter', () => {
   let client: WorkatoClient
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType
@@ -37,20 +37,7 @@ describe('Field references filter', () => {
         client,
         paginationFuncCreator: paginate,
       }),
-      config: {
-        fetch: {
-          includeTypes: ['connection', 'folder'],
-        },
-        apiDefinitions: {
-          typeDefaults: {
-            transformation: {
-              idFields: DEFAULT_ID_FIELDS,
-            },
-          },
-          types: DEFAULT_TYPES,
-          supportedTypes: SUPPORTED_TYPES,
-        },
-      },
+      config: DEFAULT_CONFIG,
     }) as FilterType
   })
 

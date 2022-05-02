@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ListType, ObjectType, toChange } from '@salto-io/adapter-api'
-import { filterUtils } from '@salto-io/adapter-components'
+import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import JiraClient from '../../../src/client/client'
 import { DEFAULT_CONFIG } from '../../../src/config'
@@ -43,6 +43,7 @@ describe('workflowPropertiesFilter', () => {
       paginator,
       config: DEFAULT_CONFIG,
       elementsSource: buildElementsSourceFromElements([]),
+      fetchQuery: elementUtils.query.createMockQuery(),
     }) as typeof filter
   })
 

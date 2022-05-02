@@ -37,6 +37,7 @@ jest.mock('@salto-io/adapter-components', () => {
       deployChange: jest.fn().mockImplementation(actual.elements.swagger.deployChange),
     },
     elements: {
+      ...actual.elements,
       swagger: {
         flattenAdditionalProperties: actual.elements.swagger.flattenAdditionalProperties,
         generateTypes: jest.fn().mockImplementation(() => { throw new Error('generateTypes called without a mock') }),

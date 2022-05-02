@@ -58,7 +58,10 @@ export const getStandardObjectElements = async ({
     // only need the top-level element
     objectTypes: { [standardObjecWrapperTypeName]: standardObjectWrapperType },
     apiConfig,
-    fetchConfig: { includeTypes: [standardObjecWrapperTypeName] },
+    supportedTypes: apiConfig.supportedTypes,
+    fetchQuery: {
+      isTypeMatch: typeName => typeName === standardObjecWrapperTypeName,
+    },
   })).map(inst => new InstanceElement(
     inst.elemID.name,
     standardObjectDefType,

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ReadOnlyElementsSource, SaltoError } from '@salto-io/adapter-api'
-import { filterUtils } from '@salto-io/adapter-components'
+import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import JiraClient from './client/client'
 import { JiraConfig } from './config'
 
@@ -28,4 +28,5 @@ export type Filter = filterUtils.Filter<FilterResult>
 
 export type FilterCreator = filterUtils.FilterCreator<JiraClient, JiraConfig, FilterResult, {
   elementsSource: ReadOnlyElementsSource
+  fetchQuery: elementUtils.query.ElementQuery
 }>

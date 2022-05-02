@@ -93,12 +93,10 @@ export const validateFetchConfig = (
   userFetchConfig: DuckTypeUserFetchConfig,
   adapterApiConfig: AdapterApiConfig,
 ): void => {
-  validateSupportedTypes(fetchConfigPath, userFetchConfig, adapterApiConfig)
-  const typeNames = new Set(Object.keys(adapterApiConfig.types))
-  const invalidIncludeTypes = userFetchConfig.includeTypes.filter(
-    name => !typeNames.has(name)
+  validateSupportedTypes(
+    fetchConfigPath,
+    userFetchConfig,
+    Object.keys(adapterApiConfig.supportedTypes)
   )
-  if (invalidIncludeTypes.length > 0) {
-    throw Error(`Invalid type names in ${fetchConfigPath}: ${invalidIncludeTypes}`)
-  }
+  validateSupportedTypes(fetchConfigPath, userFetchConfig, Object.keys(adapterApiConfig.types))
 }

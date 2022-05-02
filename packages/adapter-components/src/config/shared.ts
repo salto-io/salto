@@ -163,6 +163,6 @@ export const validateSupportedTypes = (
     ({ type: typeRegex }) => supportedTypesNames.every(type => !new RegExp(`^${typeRegex}$`).test(type)),
   ).map(({ type }) => type)
   if (invalidIncludedTypes.length > 0) {
-    throw Error(`Invalid type names in ${fetchConfigPath}: ${invalidIncludedTypes} does not match any of the supported types. Please fix the type names to match at least one supported type.`)
+    throw Error(`Invalid type names in ${fetchConfigPath}: ${invalidIncludedTypes} does not match any of the supported types.`)
   }
 }

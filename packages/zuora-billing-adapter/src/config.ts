@@ -620,6 +620,9 @@ const SETTINGS_SWAGGER_CONFIG: ZuoraApiConfig['settingsSwagger'] = {
   ],
 }
 
+// partial list - need to extend
+// Note: since these types are returned from an endpoint and have some overlaps with the
+// swagger-generated types, we prepend SETTINGS_TYPE_PREFIX to all type names to avoid conflicts.
 export const SETTING_TYPES = {
   [`${SETTINGS_TYPE_PREFIX}AccountingRules`]: [`${SETTINGS_TYPE_PREFIX}AccountingRules`],
   [`${SETTINGS_TYPE_PREFIX}Bucket`]: [`${SETTINGS_TYPE_PREFIX}AgingBucket`],

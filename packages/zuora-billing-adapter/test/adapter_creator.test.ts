@@ -180,7 +180,7 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
-    })).toThrow(new Error('Invalid type names in fetch: CatalogProduct2 does not match any of the supported types. Please fix the type names to match at least one supported type.'))
+    })).toThrow(new Error('Invalid type names in fetch: CatalogProduct2 does not match any of the supported types.'))
   })
 
   it('should throw error on invalid credentials', () => {

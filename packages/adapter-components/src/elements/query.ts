@@ -16,9 +16,11 @@
 import { MockInterface } from '@salto-io/test-utils'
 import { UserFetchConfig } from '../config'
 
+export const ALL_TYPES = '.*'
+
 export const INCLUDE_ALL_CONFIG = {
   include: [{
-    type: '.*',
+    type: ALL_TYPES,
   }],
   exclude: [],
 }

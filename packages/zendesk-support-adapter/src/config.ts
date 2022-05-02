@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { ElemID, CORE_ANNOTATIONS, BuiltinTypes } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
 import { BRAND_NAME, ZENDESK_SUPPORT } from './constants'
 
 const { createClientConfigType } = clientUtils
@@ -1556,7 +1556,7 @@ export const SUPPORTED_TYPES = {
 export const DEFAULT_CONFIG: ZendeskConfig = {
   [FETCH_CONFIG]: {
     include: [{
-      type: '.*',
+      type: elements.query.ALL_TYPES,
     }],
     exclude: [
       { type: 'organization' },

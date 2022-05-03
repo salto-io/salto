@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, BuiltinTypes, ObjectType, ElemID, isInstanceElement } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { createCustomObjectType, createMetadataTypeElement, defaultFilterContext } from '../utils'
@@ -40,7 +41,7 @@ describe('Test layout filter', () => {
         customObject?: boolean
 
       }): Promise<void> => {
-      targetFullName = namespacePrefix ? 'SBQQ__TestApiName-SBQQ__Test Layout' : `${apiName}-Test Layout`
+      targetFullName = namespacePrefix ? 'SBQQ__TestApiName__c-SBQQ__Test Layout' : `${apiName}-Test Layout`
       const { client } = mockClient()
       client.listMetadataObjects = jest.fn()
         .mockReturnValue({
@@ -104,7 +105,10 @@ describe('Test layout filter', () => {
         }
       )
 
-      testSobjPath = [...await getObjectDirectoryPath(testSObj), pathNaclCase(targetFullName)]
+      testSobjPath = [
+        ...await getObjectDirectoryPath(testSObj, namespacePrefix),
+        pathNaclCase(targetFullName),
+      ]
       testSObj.path = testSobjPath
       const testLayoutType = new ObjectType({
         elemID: new ElemID(constants.SALESFORCE,
@@ -149,24 +153,24 @@ describe('Test layout filter', () => {
       describe('if the API name already includes namespacePrefix', () => {
         describe('if layout name does not include prefix', () => {
           it('should give correct instance name and path', async () => {
-            await fetch({ apiName: 'SBQQ__TestApiName', namespacePrefix: 'SBQQ', layoutNameIncludesPrefix: false })
+            await fetch({ apiName: 'SBQQ__TestApiName__c', namespacePrefix: 'SBQQ', layoutNameIncludesPrefix: false })
           })
         })
         describe('if layout name already includes prefix', () => {
           it('should give correct instance name and path', async () => {
-            await fetch({ apiName: 'SBQQ__TestApiName', namespacePrefix: 'SBQQ', layoutNameIncludesPrefix: true })
+            await fetch({ apiName: 'SBQQ__TestApiName__c', namespacePrefix: 'SBQQ', layoutNameIncludesPrefix: true })
           })
         })
       })
       describe('if the API name does not include namespacePrefix', () => {
         describe('if layout name already includes namespacePrefix', () => {
           it('should not add prefix to the instance\'s name', async () => {
-            await fetch({ apiName: 'TestApiName', namespacePrefix: 'SBQQ', layoutNameIncludesPrefix: true })
+            await fetch({ apiName: 'TestApiName__c', namespacePrefix: 'SBQQ', layoutNameIncludesPrefix: true })
           })
         })
         describe('if layout  name does not include prefix', () => {
           it('should add prefix to the layout\'s name', async () => {
-            await fetch({ apiName: 'TestApiName', namespacePrefix: 'SBQQ', layoutNameIncludesPrefix: false })
+            await fetch({ apiName: 'TestApiName__c', namespacePrefix: 'SBQQ', layoutNameIncludesPrefix: false })
           })
         })
       })

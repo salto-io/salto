@@ -287,10 +287,10 @@ describe('dependencies', () => {
       it('should have an empty list of occurrences when no additional details are provided', () => {
         const type123Refs = findRefDeps(new ElemID('adapter', 'type123'))
         expect(type123Refs).toBeDefined()
-        expect(type123Refs.occurrences).toBeUndefined()
+        expect(type123Refs).not.toHaveProperty('occurrences')
         const aaaRefs = findRefDeps(new ElemID('adapter', 'aaa'))
         expect(aaaRefs).toBeDefined()
-        expect(aaaRefs.occurrences).toBeUndefined()
+        expect(aaaRefs).not.toHaveProperty('occurrences')
       })
       it('should keep the existing annotation value when no new details are addded', () => {
         const type789Refs = findRefDeps(new ElemID('adapter', 'type789'))

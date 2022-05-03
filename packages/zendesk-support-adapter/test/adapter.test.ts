@@ -373,8 +373,6 @@ describe('adapter', () => {
           'zendesk_support.trigger_category.instance.Custom_Events___edited@ssbs',
           'zendesk_support.trigger_category.instance.Notifications',
           'zendesk_support.trigger_definition',
-          // We should remove this instance from the expected list once we done with SALTO-2202
-          'zendesk_support.trigger_definition.instance',
           'zendesk_support.trigger_definition__actions',
           'zendesk_support.trigger_definition__actions__metadata',
           'zendesk_support.trigger_definition__actions__metadata__phone_numbers',

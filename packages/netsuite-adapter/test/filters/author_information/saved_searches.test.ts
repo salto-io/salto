@@ -21,7 +21,7 @@ import NetsuiteClient from '../../../src/client/client'
 import { FilterOpts } from '../../../src/filter'
 import SuiteAppClient from '../../../src/client/suiteapp_client/suiteapp_client'
 import mockSdfClient from '../../client/sdf_client'
-import { getDefaultAdapterConfig } from '../../utils'
+import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../../utils'
 
 describe('netsuite saved searches author information tests', () => {
   let filterOpts: FilterOpts
@@ -53,13 +53,9 @@ describe('netsuite saved searches author information tests', () => {
     elements = [savedSearch, missingSavedSearch]
     filterOpts = {
       client,
-      elementsSourceIndex: { getIndexes: () => Promise.resolve({
-        serviceIdsIndex: {},
-        serviceIdRecordsIndex: {},
-        internalIdsIndex: {},
-        customFieldsIndex: {},
-        pathToInternalIdsIndex: {},
-      }) },
+      elementsSourceIndex: {
+        getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+      },
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
       config: await getDefaultAdapterConfig(),
@@ -120,13 +116,9 @@ describe('netsuite saved searches author information tests', () => {
     beforeEach(async () => {
       filterOpts = {
         client: clientWithoutSuiteApp,
-        elementsSourceIndex: { getIndexes: () => Promise.resolve({
-          serviceIdsIndex: {},
-          serviceIdRecordsIndex: {},
-          internalIdsIndex: {},
-          customFieldsIndex: {},
-          pathToInternalIdsIndex: {},
-        }) },
+        elementsSourceIndex: {
+          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+        },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
         config: await getDefaultAdapterConfig(),
@@ -144,13 +136,9 @@ describe('netsuite saved searches author information tests', () => {
       const defaultConfig = await getDefaultAdapterConfig()
       filterOpts = {
         client,
-        elementsSourceIndex: { getIndexes: () => Promise.resolve({
-          serviceIdsIndex: {},
-          serviceIdRecordsIndex: {},
-          internalIdsIndex: {},
-          customFieldsIndex: {},
-          pathToInternalIdsIndex: {},
-        }) },
+        elementsSourceIndex: {
+          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+        },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
         config: {

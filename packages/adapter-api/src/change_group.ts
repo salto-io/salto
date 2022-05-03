@@ -23,5 +23,11 @@ export type ChangeGroup<ChangeType = Change<ChangeDataType>> = {
   changes: ReadonlyArray<ChangeType>
 }
 
-export type ChangeGroupIdFunction = (changes: Map<ChangeId, Change>) =>
-  Promise<Map<ChangeId, ChangeGroupId>>
+export type ChangeGroupIdFunctionReturn = {
+  changeGroupIdMap: Map<ChangeId, ChangeGroupId>
+  disjointGroups?: Set<ChangeGroupId>
+}
+
+export type ChangeGroupIdFunction = (
+  changes: Map<ChangeId, Change>
+) => Promise<ChangeGroupIdFunctionReturn>

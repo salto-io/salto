@@ -43,7 +43,7 @@ jest.mock('@salto-io/core', () => {
       }
       return {
         newAdapter: mocks.mockCredentialsType('newAdapter'),
-        hubspot: mocks.mockCredentialsType('hubspot'),
+        netsuite: mocks.mockCredentialsType('netsuite'),
         '': mocks.mockCredentialsType(''),
         oauthAdapter: mocks.mockOauthCredentialsType('oauthAdapter', { url: '',
           oauthRequiredFields: [''] }),
@@ -111,7 +111,7 @@ describe('service command group', () => {
   beforeEach(() => {
     cliArgs = mocks.mockCliArgs()
     output = cliArgs.output
-    workspace = mocks.mockWorkspace({ accounts: ['salesforce', 'hubspot', 'oauthAdapter'] })
+    workspace = mocks.mockWorkspace({ accounts: ['salesforce', 'netsuite', 'oauthAdapter'] })
   })
   describe('list command', () => {
     let cliCommandArgs: mocks.MockCommandArgs
@@ -138,7 +138,7 @@ describe('service command group', () => {
         })
         it('should print other services under additional services', () => {
           expect(output.stdout.content).toContain('Additional supported services are:')
-          expect(!['workato', 'netsuite'].some(serviceName => !output.stdout.content
+          expect(!['workato', 'newAdapter'].some(serviceName => !output.stdout.content
             .split('Additional supported services are:')[1]
             .includes(serviceName))).toBeTruthy()
         })
@@ -504,7 +504,7 @@ describe('service command group', () => {
               ...cliCommandArgs,
               input: {
                 login: true,
-                serviceType: 'hubspot',
+                serviceType: 'netsuite',
                 authType: 'basic',
               },
               workspace,
@@ -516,7 +516,7 @@ describe('service command group', () => {
               ...cliCommandArgs,
               input: {
                 login: true,
-                serviceType: 'hubspot',
+                serviceType: 'netsuite',
                 authType: 'basic',
                 env: mocks.withEnvironmentParam,
               },

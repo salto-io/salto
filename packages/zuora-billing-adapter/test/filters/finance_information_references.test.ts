@@ -91,7 +91,8 @@ describe('finance information references filter', () => {
       }),
       config: {
         fetch: {
-          includeTypes: [],
+          include: [],
+          exclude: [],
         },
         apiDefinitions: {
           swagger: { url: 'ignore' },

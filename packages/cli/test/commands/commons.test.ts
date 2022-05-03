@@ -52,14 +52,14 @@ describe('Commands commons tests', () => {
     beforeEach(() => {
       workspace = mocks.mockWorkspace({})
       workspace.accounts = jest.fn().mockImplementation(
-        (env?: string): string[] => (env ? ['workato'] : ['salesforce', 'hubspot'])
+        (env?: string): string[] => (env ? ['workato'] : ['salesforce', 'netsuite'])
       )
     })
     describe('when not providing specific accounts', () => {
       it('should return tags for all the current env accounts', () => {
         expect(
           getTagsForAccounts({ workspace })
-        ).toStrictEqual({ 'adapter-salesforce': true, 'adapter-hubspot': true })
+        ).toStrictEqual({ 'adapter-salesforce': true, 'adapter-netsuite': true })
       })
     })
     describe('when using a different env', () => {

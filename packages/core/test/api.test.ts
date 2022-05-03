@@ -353,7 +353,7 @@ describe('api.ts', () => {
           before: createElementSource(stateElements),
           after: createElementSource(wsElements),
           customGroupIdFunctions: {
-            salto: async changes => new Map([...changes.keys()].map(key => [key, 'group'])),
+            salto: async changes => ({ changeGroupIdMap: new Map([...changes.keys()].map(key => [key, 'group'])) }),
           },
         })
 

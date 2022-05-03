@@ -16,7 +16,7 @@
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { mockClient } from '../../utils'
 import dashboardLayoutFilter from '../../../src/filters/dashboard/dashboard_layout'
@@ -45,6 +45,7 @@ describe('dashboardLayoutFilter', () => {
       paginator,
       config,
       elementsSource: buildElementsSourceFromElements([]),
+      fetchQuery: elementUtils.query.createMockQuery(),
     }) as filterUtils.FilterWith<'onFetch'>
 
     dashboardType = new ObjectType({

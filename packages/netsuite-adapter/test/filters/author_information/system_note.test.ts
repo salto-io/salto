@@ -17,12 +17,13 @@ import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType } from '@salto-io
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator, { FILE_FIELD_IDENTIFIER, FOLDER_FIELD_IDENTIFIER } from '../../../src/filters/author_information/system_note'
 import { FILE, FOLDER, NETSUITE } from '../../../src/constants'
+import { createServerTimeElements } from '../../../src/server_time'
 import NetsuiteClient from '../../../src/client/client'
 import { FilterOpts } from '../../../src/filter'
 import SuiteAppClient from '../../../src/client/suiteapp_client/suiteapp_client'
 import mockSdfClient from '../../client/sdf_client'
 import { EMPLOYEE_NAME_QUERY } from '../../../src/filters/author_information/constants'
-import { getDefaultAdapterConfig } from '../../utils'
+import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../../utils'
 
 describe('netsuite system note author information', () => {
   let filterOpts: FilterOpts
@@ -72,14 +73,10 @@ describe('netsuite system note author information', () => {
     elements = [accountInstance, customTypeInstance, missingInstance, fileInstance, folderInstance]
     filterOpts = {
       client,
-      elementsSourceIndex: { getIndexes: () => Promise.resolve({
-        serviceIdsIndex: {},
-        serviceIdRecordsIndex: {},
-        internalIdsIndex: {},
-        customFieldsIndex: {},
-        pathToInternalIdsIndex: {},
-      }) },
-      elementsSource: buildElementsSourceFromElements([]),
+      elementsSourceIndex: {
+        getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+      },
+      elementsSource: buildElementsSourceFromElements(createServerTimeElements(new Date('2022-01-01'))),
       isPartial: false,
       config: await getDefaultAdapterConfig(),
     }
@@ -87,8 +84,8 @@ describe('netsuite system note author information', () => {
 
   it('should query information from api', async () => {
     await filterCreator(filterOpts).onFetch?.(elements)
-    const fieldSystemNotesQuery = "SELECT name, field, recordid from (SELECT name, field, recordid, MAX(date) AS date FROM (SELECT name, REGEXP_SUBSTR(field, '^(MEDIAITEMFOLDER.|MEDIAITEM.)') AS field, recordid, date FROM systemnote WHERE field LIKE 'MEDIAITEM.%' OR field LIKE 'MEDIAITEMFOLDER.%') GROUP BY name, field, recordid) ORDER BY date DESC"
-    const recordTypeSystemNotesQuery = "SELECT name, recordid, recordtypeid FROM (SELECT name, recordid, recordtypeid, MAX(date) as date FROM systemnote WHERE recordtypeid = '-112' OR recordtypeid = '-123' GROUP BY name, recordid, recordtypeid) ORDER BY date DESC"
+    const fieldSystemNotesQuery = "SELECT name, field, recordid from (SELECT name, field, recordid, MAX(date) AS date FROM (SELECT name, REGEXP_SUBSTR(field, '^(MEDIAITEMFOLDER.|MEDIAITEM.)') AS field, recordid, date FROM systemnote WHERE date >= TO_DATE('2022-01-01', 'YYYY-MM-DD') AND (field LIKE 'MEDIAITEM.%' OR field LIKE 'MEDIAITEMFOLDER.%')) GROUP BY name, field, recordid) ORDER BY date DESC"
+    const recordTypeSystemNotesQuery = "SELECT name, recordid, recordtypeid FROM (SELECT name, recordid, recordtypeid, MAX(date) as date FROM systemnote WHERE date >= TO_DATE('2022-01-01', 'YYYY-MM-DD') AND (recordtypeid = '-112' OR recordtypeid = '-123') GROUP BY name, recordid, recordtypeid) ORDER BY date DESC"
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, EMPLOYEE_NAME_QUERY)
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, fieldSystemNotesQuery)
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, recordTypeSystemNotesQuery)
@@ -99,7 +96,7 @@ describe('netsuite system note author information', () => {
     await filterCreator(filterOpts).onFetch?.(
       [accountInstance, customTypeInstance, missingInstance]
     )
-    const systemNotesQuery = "SELECT name, recordid, recordtypeid FROM (SELECT name, recordid, recordtypeid, MAX(date) as date FROM systemnote WHERE recordtypeid = '-112' OR recordtypeid = '-123' GROUP BY name, recordid, recordtypeid) ORDER BY date DESC"
+    const systemNotesQuery = "SELECT name, recordid, recordtypeid FROM (SELECT name, recordid, recordtypeid, MAX(date) as date FROM systemnote WHERE date >= TO_DATE('2022-01-01', 'YYYY-MM-DD') AND (recordtypeid = '-112' OR recordtypeid = '-123') GROUP BY name, recordid, recordtypeid) ORDER BY date DESC"
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, EMPLOYEE_NAME_QUERY)
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, systemNotesQuery)
     expect(runSuiteQLMock).toHaveBeenCalledTimes(2)
@@ -126,6 +123,25 @@ describe('netsuite system note author information', () => {
     expect(Object.values(customTypeInstance.annotations)).toHaveLength(0)
     expect(Object.values(fileInstance.annotations)).toHaveLength(0)
     expect(Object.values(folderInstance.annotations)).toHaveLength(0)
+  })
+  it('should use elemIdToChangeByIndex to get the author if there is no new author information', async () => {
+    runSuiteQLMock.mockReset()
+    const opts = {
+      client,
+      elementsSourceIndex: {
+        getIndexes: () => Promise.resolve({
+          ...createEmptyElementsSourceIndexes(),
+          elemIdToChangeByIndex: {
+            [missingInstance.elemID.getFullName()]: 'another user name',
+          },
+        }),
+      },
+      elementsSource: buildElementsSourceFromElements(createServerTimeElements(new Date('2022-01-01'))),
+      isPartial: false,
+      config: await getDefaultAdapterConfig(),
+    }
+    await filterCreator(opts).onFetch?.(elements)
+    expect(missingInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'another user name').toBeTruthy()
   })
   describe('failure', () => {
     it('bad employee schema', async () => {
@@ -182,13 +198,31 @@ describe('netsuite system note author information', () => {
     beforeEach(async () => {
       filterOpts = {
         client: clientWithoutSuiteApp,
-        elementsSourceIndex: { getIndexes: () => Promise.resolve({
-          serviceIdsIndex: {},
-          serviceIdRecordsIndex: {},
-          internalIdsIndex: {},
-          customFieldsIndex: {},
-          pathToInternalIdsIndex: {},
-        }) },
+        elementsSourceIndex: {
+          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+        },
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+        config: await getDefaultAdapterConfig(),
+      }
+    })
+    it('should not change any elements in fetch', async () => {
+      await filterCreator(filterOpts).onFetch?.(elements)
+      expect(runSuiteQLMock).not.toHaveBeenCalled()
+      expect(Object.values(accountInstance.annotations)).toHaveLength(0)
+      expect(Object.values(customTypeInstance.annotations)).toHaveLength(0)
+      expect(Object.values(fileInstance.annotations)).toHaveLength(0)
+      expect(Object.values(folderInstance.annotations)).toHaveLength(0)
+    })
+  })
+
+  describe('on first fetch', () => {
+    beforeEach(async () => {
+      filterOpts = {
+        client,
+        elementsSourceIndex: {
+          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+        },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
         config: await getDefaultAdapterConfig(),
@@ -209,13 +243,9 @@ describe('netsuite system note author information', () => {
       const defaultConfig = await getDefaultAdapterConfig()
       filterOpts = {
         client,
-        elementsSourceIndex: { getIndexes: () => Promise.resolve({
-          serviceIdsIndex: {},
-          serviceIdRecordsIndex: {},
-          internalIdsIndex: {},
-          customFieldsIndex: {},
-          pathToInternalIdsIndex: {},
-        }) },
+        elementsSourceIndex: {
+          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+        },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
         config: {

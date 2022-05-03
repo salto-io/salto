@@ -24,6 +24,7 @@ import {
   ListType,
   MapType,
   ObjectType,
+  Values,
 } from '@salto-io/adapter-api'
 import * as adapterComponents from '@salto-io/adapter-components'
 import { elements as elementUtils } from '@salto-io/adapter-components'
@@ -35,16 +36,17 @@ import {
   API_DEFINITIONS_CONFIG,
   configType,
   DEFAULT_API_DEFINITIONS,
-  DEFAULT_INCLUDE_TYPES,
-  DEFAULT_SETTINGS_INCLUDE_TYPES,
+  DEFAULT_CONFIG,
   FETCH_CONFIG,
   getUpdatedConfig,
+  SUPPORTED_TYPES,
 } from '../src/config'
 import mockReplies from './mock_replies.json'
 import {
   CUSTOM_OBJECT,
   CUSTOM_OBJECT_DEFINITION_TYPE,
   LIST_ALL_SETTINGS_TYPE,
+  SETTINGS_TYPE_PREFIX,
   STANDARD_OBJECT,
   ZUORA_BILLING,
 } from '../src/constants'
@@ -99,7 +101,7 @@ jest.mock('@salto-io/adapter-components', () => {
     }
     return {
       allTypes: {
-        ...Object.fromEntries(DEFAULT_INCLUDE_TYPES.map(
+        ...Object.fromEntries(Object.values(SUPPORTED_TYPES).flat().map(
           type => [naclCase(type), new ObjectType({ elemID: new ElemID(ZUORA_BILLING, type) })]
         )),
         ...getObjectDefTypes(),
@@ -254,13 +256,7 @@ describe('adapter', () => {
           config: new InstanceElement(
             'config',
             configType,
-            {
-              [FETCH_CONFIG]: {
-                includeTypes: DEFAULT_INCLUDE_TYPES,
-                settingsIncludeTypes: DEFAULT_SETTINGS_INCLUDE_TYPES,
-              },
-              [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
-            }
+            DEFAULT_CONFIG,
           ),
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
@@ -268,7 +264,13 @@ describe('adapter', () => {
         expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledTimes(2)
         expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledWith(
           ZUORA_BILLING,
-          DEFAULT_API_DEFINITIONS,
+          {
+            ...DEFAULT_API_DEFINITIONS,
+            supportedTypes: {
+              ...DEFAULT_API_DEFINITIONS.supportedTypes,
+              [LIST_ALL_SETTINGS_TYPE]: [LIST_ALL_SETTINGS_TYPE],
+            },
+          },
         )
         expect(
           [...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()
@@ -332,8 +334,8 @@ describe('adapter', () => {
           configType,
           {
             [FETCH_CONFIG]: {
-              includeTypes: [],
-              settingsIncludeTypes: [],
+              include: [],
+              exclude: [],
             },
             [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
           }
@@ -341,6 +343,38 @@ describe('adapter', () => {
         elementsSource: buildElementsSourceFromElements([]),
       }).fetch({ progressReporter: { reportProgress: () => null } })
       expect(updatedConfig).toBeUndefined()
+    })
+    it('should update the deprecated fetch config', async () => {
+      mockGetUpdatedConfig.mockReturnValueOnce(undefined)
+      const { updatedConfig } = await adapter.operations({
+        credentials: new InstanceElement(
+          'config',
+          oauthClientCredentialsType,
+          { clientId: 'client', clientSecret: 'secret', subdomain: 'sandbox.na', production: false },
+        ),
+        config: new InstanceElement(
+          'config',
+          configType,
+          {
+            [FETCH_CONFIG]: {
+              includeTypes: [
+                'AccountingCodes',
+              ],
+              settingsIncludeTypes: [
+                'AccountingRules',
+              ],
+            },
+            [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
+          }
+        ),
+        elementsSource: buildElementsSourceFromElements([]),
+      }).fetch({ progressReporter: { reportProgress: () => null } })
+      expect(updatedConfig).toBeDefined()
+      expect(updatedConfig?.config[0].value[FETCH_CONFIG].include).toEqual([{ type: '.*' }])
+      const excludedTypes = updatedConfig?.config[0].value[FETCH_CONFIG].exclude
+        .map(({ type }: Values) => type)
+      expect(excludedTypes.includes('AccountingCodes')).toBeFalsy()
+      expect(excludedTypes.includes('Settings_AccountingRules')).toBeFalsy()
     })
     it('should update the fetch config when needed', async () => {
       mockGetUpdatedConfig.mockReturnValueOnce({
@@ -358,8 +392,8 @@ describe('adapter', () => {
           configType,
           {
             [FETCH_CONFIG]: {
-              includeTypes: [],
-              settingsIncludeTypes: [],
+              include: [],
+              exclude: [],
             },
             [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
           }
@@ -381,7 +415,12 @@ describe('adapter', () => {
             configType,
             {
               [FETCH_CONFIG]: {
-                includeTypes: DEFAULT_INCLUDE_TYPES,
+                include: [
+                  { type: '.*' },
+                ],
+                exclude: [
+                  { type: `${SETTINGS_TYPE_PREFIX}.*` },
+                ],
               },
               [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
             }
@@ -392,7 +431,13 @@ describe('adapter', () => {
         expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledTimes(1)
         expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledWith(
           ZUORA_BILLING,
-          DEFAULT_API_DEFINITIONS,
+          {
+            ...DEFAULT_API_DEFINITIONS,
+            supportedTypes: {
+              ...DEFAULT_API_DEFINITIONS.supportedTypes,
+              [LIST_ALL_SETTINGS_TYPE]: [LIST_ALL_SETTINGS_TYPE],
+            },
+          },
         )
         expect(
           [...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()
@@ -425,7 +470,11 @@ describe('adapter', () => {
             configType,
             {
               [FETCH_CONFIG]: {
-                includeTypes: DEFAULT_INCLUDE_TYPES.filter(t => t !== 'StandardObject'),
+                include: [{ type: '.*' }],
+                exclude: [
+                  { type: 'StandardObject' },
+                  { type: `${SETTINGS_TYPE_PREFIX}.*` },
+                ],
               },
               [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
             }
@@ -436,7 +485,13 @@ describe('adapter', () => {
         expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledTimes(1)
         expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledWith(
           ZUORA_BILLING,
-          DEFAULT_API_DEFINITIONS,
+          {
+            ...DEFAULT_API_DEFINITIONS,
+            supportedTypes: {
+              ...DEFAULT_API_DEFINITIONS.supportedTypes,
+              [LIST_ALL_SETTINGS_TYPE]: [LIST_ALL_SETTINGS_TYPE],
+            },
+          },
         )
         expect(
           [...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()
@@ -466,13 +521,7 @@ describe('adapter', () => {
         config: new InstanceElement(
           'config',
           configType,
-          {
-            [FETCH_CONFIG]: {
-              includeTypes: DEFAULT_INCLUDE_TYPES,
-              settingsIncludeTypes: DEFAULT_SETTINGS_INCLUDE_TYPES,
-            },
-            [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
-          }
+          DEFAULT_CONFIG,
         ),
         elementsSource: buildElementsSourceFromElements([]),
       })

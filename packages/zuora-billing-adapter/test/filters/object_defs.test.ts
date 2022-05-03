@@ -311,7 +311,8 @@ describe('Object defs filter', () => {
       }),
       config: {
         fetch: {
-          includeTypes: [],
+          include: [],
+          exclude: [],
         },
         apiDefinitions: {
           swagger: { url: 'ignore' },

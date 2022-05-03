@@ -22,6 +22,7 @@ import Ajv from 'ajv'
 import { TYPES_TO_INTERNAL_ID as ORIGINAL_TYPES_TO_INTERNAL_ID } from '../../data_elements/types'
 import NetsuiteClient from '../../client/client'
 import { FilterCreator, FilterWith } from '../../filter'
+import { getLastServerTime } from '../../server_time'
 import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, SystemNoteResult, SYSTEM_NOTE_SCHEMA } from './constants'
 
 const { isDefined } = lowerDashValues
@@ -38,6 +39,8 @@ const TYPES_TO_INTERNAL_ID: Record<string, string> = _.mapKeys({
   file: FILE_TYPE,
   folder: FOLDER_TYPE,
 }, (_value, key) => key.toLowerCase())
+
+const toDateString = (date: Date): string => date.toISOString().slice(0, 10)
 
 const getRecordIdAndTypeStringKey = (recordId: string, recordTypeId: string): string =>
   `${recordId}${UNDERSCORE}${recordTypeId}`
@@ -56,6 +59,9 @@ Promise<EmployeeResult[]> => {
   return employeeResults
 }
 
+const toDateQuery = (lastFetchTime: Date): string =>
+  `date >= TO_DATE('${toDateString(lastFetchTime)}', 'YYYY-MM-DD')`
+
 const toRecordTypeWhereQuery = (recordType: string): string =>
   `recordtypeid = '${recordType}'`
 
@@ -67,54 +73,63 @@ const toFieldWhereQuery = (recordType: string): string => (
     : `field LIKE '${FOLDER_FIELD_IDENTIFIER}%'`
 )
 
-const buildRecordTypeSystemNotesQuery = (recordTypeIds: string[]): string => {
+const buildRecordTypeSystemNotesQuery = (
+  recordTypeIds: string[],
+  lastFetchTime: Date
+): string => {
   const whereQuery = recordTypeIds
     .map(toRecordTypeWhereQuery)
     .join(' OR ')
   return 'SELECT name, recordid, recordtypeid FROM (SELECT name, recordid, recordtypeid,'
-    + ` MAX(date) as date FROM systemnote WHERE ${whereQuery}`
+    + ` MAX(date) as date FROM systemnote WHERE ${toDateQuery(lastFetchTime)} AND (${whereQuery})`
     + ' GROUP BY name, recordid, recordtypeid) ORDER BY date DESC'
 }
 
-const buildFieldSystemNotesQuery = (fieldIds: string[]): string => {
+const buildFieldSystemNotesQuery = (
+  fieldIds: string[],
+  lastFetchTime: Date
+): string => {
   const whereQuery = fieldIds
     .map(toFieldWhereQuery)
     .join(' OR ')
   return 'SELECT name, field, recordid from (SELECT name, field, recordid, MAX(date) AS date'
     + ` FROM (SELECT name, REGEXP_SUBSTR(field, '^(${FOLDER_FIELD_IDENTIFIER}|${FILE_FIELD_IDENTIFIER})')`
-    + ` AS field, recordid, date FROM systemnote WHERE ${whereQuery}) GROUP BY name, field, recordid)`
-    + ' ORDER BY date DESC'
+    + ` AS field, recordid, date FROM systemnote WHERE ${toDateQuery(lastFetchTime)} AND (${whereQuery}))`
+    + ' GROUP BY name, field, recordid) ORDER BY date DESC'
 }
 
 const querySystemNotesByField = async (
   client: NetsuiteClient,
-  queryIds: string[]
+  queryIds: string[],
+  lastFetchTime: Date
 ): Promise<Record<string, unknown>[]> => (
   queryIds.length > 0
-    ? await client.runSuiteQL(buildFieldSystemNotesQuery(queryIds)) ?? []
+    ? await client.runSuiteQL(buildFieldSystemNotesQuery(queryIds, lastFetchTime)) ?? []
     : []
 )
 
 const querySystemNotesByRecordType = async (
   client: NetsuiteClient,
-  queryIds: string[]
+  queryIds: string[],
+  lastFetchTime: Date
 ): Promise<Record<string, unknown>[]> => (
   queryIds.length > 0
-    ? await client.runSuiteQL(buildRecordTypeSystemNotesQuery(queryIds)) ?? []
+    ? await client.runSuiteQL(buildRecordTypeSystemNotesQuery(queryIds, lastFetchTime)) ?? []
     : []
 )
 
 const querySystemNotes = async (
   client: NetsuiteClient,
-  queryIds: string[]
+  queryIds: string[],
+  lastFetchTime: Date
 ): Promise<SystemNoteResult[]> => {
   const [fieldQueryIds, recordTypeQueryIds] = _.partition(
     queryIds, id => [FILE_TYPE, FOLDER_TYPE].includes(id)
   )
 
   const systemNoteResults = (await Promise.all([
-    querySystemNotesByField(client, fieldQueryIds),
-    querySystemNotesByRecordType(client, recordTypeQueryIds),
+    querySystemNotesByField(client, fieldQueryIds, lastFetchTime),
+    querySystemNotesByRecordType(client, recordTypeQueryIds, lastFetchTime),
   ])).flat()
 
   const ajv = new Ajv({ allErrors: true, strict: false })
@@ -122,6 +137,11 @@ const querySystemNotes = async (
     log.error(`Got invalid results from system note table: ${ajv.errorsText()}`)
     return []
   }
+  log.debug(
+    'queried %d new system notes since last fetch (%s)',
+    systemNoteResults.length,
+    toDateString(lastFetchTime)
+  )
   return systemNoteResults
 }
 
@@ -152,10 +172,11 @@ const indexSystemNotes = (systemNotes: SystemNoteResult[]): Record<string, strin
 
 const fetchSystemNotes = async (
   client: NetsuiteClient,
-  queryIds: string[]
+  queryIds: string[],
+  lastFetchTime: Date
 ): Promise<Record<string, string>> => {
   const systemNotes = await log.time(
-    () => querySystemNotes(client, queryIds),
+    () => querySystemNotes(client, queryIds, lastFetchTime),
     'querySystemNotes'
   )
   if (_.isEmpty(systemNotes)) {
@@ -171,15 +192,21 @@ const getInstancesWithInternalIds = (elements: Element[]): InstanceElement[] =>
     .filter(instance => isDefined(instance.value.internalId))
     .filter(instance => instance.elemID.typeName.toLowerCase() in TYPES_TO_INTERNAL_ID)
 
-const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
+const filterCreator: FilterCreator = ({ client, config, elementsSource, elementsSourceIndex }): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
     // if undefined, we want to be treated as true so we check `=== false`
     if (config.fetch?.authorInformation?.enable === false) {
       log.debug('Author information fetching is disabled')
       return
     }
-
     if (!client.isSuiteAppConfigured()) {
+      return
+    }
+    const lastFetchTime = await getLastServerTime(elementsSource)
+    if (lastFetchTime === undefined) {
+      // in order to reduce the fetch duration we want to query author information
+      // only since last fetch, and not querying at all on the first fetch
+      log.debug('skipping author information fetching on first fetch')
       return
     }
     const instancesWithInternalId = getInstancesWithInternalIds(elements)
@@ -189,11 +216,11 @@ const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'>
       return
     }
     const employeeNames = await fetchEmployeeNames(client)
-    if (_.isEmpty(employeeNames)) {
-      return
-    }
-    const systemNotes = await fetchSystemNotes(client, queryIds)
-    if (_.isEmpty(systemNotes)) {
+    const systemNotes = !_.isEmpty(employeeNames)
+      ? await fetchSystemNotes(client, queryIds, lastFetchTime)
+      : {}
+    const { elemIdToChangeByIndex } = await elementsSourceIndex.getIndexes()
+    if (_.isEmpty(systemNotes) && _.isEmpty(elemIdToChangeByIndex)) {
       return
     }
     instancesWithInternalId.forEach(instance => {
@@ -204,6 +231,13 @@ const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'>
         instance.annotate(
           { [CORE_ANNOTATIONS.CHANGED_BY]: employeeNames[employeeId] }
         )
+      } else {
+        const changedBy = elemIdToChangeByIndex[instance.elemID.getFullName()]
+        if (isDefined(changedBy)) {
+          instance.annotate(
+            { [CORE_ANNOTATIONS.CHANGED_BY]: changedBy }
+          )
+        }
       }
     })
   },

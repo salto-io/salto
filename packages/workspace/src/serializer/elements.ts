@@ -14,14 +14,13 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { types, collections } from '@salto-io/lowerdash'
+import { types } from '@salto-io/lowerdash'
 import {
   PrimitiveType, ElemID, Field, Element, ListType, MapType,
   ObjectType, InstanceElement, isType, isElement, isContainerType,
   ReferenceExpression, TemplateExpression, VariableExpression,
   isReferenceExpression, Variable, StaticFile, isStaticFile,
-  isInstanceElement, isPrimitiveType,
-  FieldDefinition, isObjectType, Values, Value, TypeRefMap, TypeReference, isTypeReference,
+  isPrimitiveType, FieldDefinition, Value, TypeRefMap, TypeReference, isTypeReference,
 } from '@salto-io/adapter-api'
 import { DuplicateAnnotationError, MergeError, isMergeError } from '../merger/internal/common'
 import { DuplicateInstanceKeyError } from '../merger/internal/instances'
@@ -33,7 +32,6 @@ import { MultiplePrimitiveTypesError } from '../merger/internal/primitives'
 import { InvalidStaticFile } from '../workspace/static_files/common'
 import { ValidationError, InvalidValueValidationError, InvalidValueTypeValidationError, InvalidStaticFileError, CircularReferenceValidationError, IllegalReferenceValidationError, UnresolvedReferenceValidationError, MissingRequiredFieldValidationError, RegexMismatchValidationError, InvalidValueRangeValidationError, InvalidValueMaxLengthValidationError, isValidationError, InvalidTypeValidationError } from '../validator'
 
-const { awu } = collections.asynciterable
 // There are two issues with naive json stringification:
 //
 // 1) The class type information and methods are lost
@@ -199,229 +197,259 @@ export const serialize = <T = Element>(
 export type StaticFileReviver =
   (staticFile: StaticFile) => Promise<StaticFile | InvalidStaticFile>
 
-const generalDeserialize = async <T>(data: string):
-Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
-  const staticFiles: Record<string, StaticFile> = {}
+const generalDeserialize = async <T>(
+  data: string,
+  staticFileReviver?: StaticFileReviver
+): Promise<T[]> => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const reviveElemID = (v: {[key: string]: any}): ElemID => (
-    new ElemID(v.adapter, v.typeName, v.idType, ...v.nameParts)
-  )
-
-  const reviveReferenceExpression = (v: Value): ReferenceExpression => {
-    const elemID = v.elemID ?? v.elemId
-    return new ReferenceExpression(reviveElemID(elemID))
-  }
-
-  const reviveRefTypeOfElement = (v: Value): TypeReference => {
-    if (v.refType !== undefined) {
-      return new TypeReference(reviveElemID(v.refType.elemID))
-    }
-    return v.type
-  }
-
-  const reviveRefType = (v: Value): TypeReference =>
-    (new TypeReference(reviveElemID(v.elemID)))
-
-  const reviveAnnotationRefTypes = (v: Value): TypeRefMap => {
-    if (v.annotationRefTypes) {
-      return v.annotationRefTypes
-    }
-    return v.annotationTypes
-  }
-
-  const reviveRefInnerType = (v: Value): TypeReference => {
-    if (v.refInnerType) {
-      return new TypeReference(v.refInnerType.elemID)
-    }
-    return v.innerType
-  }
-
-  const revivers: ReviverMap = {
-    InstanceElement: v => new InstanceElement(
-      reviveElemID(v.elemID).name,
-      reviveRefTypeOfElement(v),
-      v.value,
-      undefined,
-      v.annotations,
-    ),
-    ObjectType: v => {
-      const r = new ObjectType({
-        elemID: reviveElemID(v.elemID),
-        fields: v.fields,
-        annotationRefsOrTypes: reviveAnnotationRefTypes(v),
-        annotations: v.annotations,
-        isSettings: v.isSettings,
-      })
-      return r
-    },
-    Variable: v => (
-      new Variable(reviveElemID(v.elemID), v.value)
-    ),
-    PrimitiveType: v => new PrimitiveType({
-      elemID: reviveElemID(v.elemID),
-      primitive: v.primitive,
-      annotationRefsOrTypes: reviveAnnotationRefTypes(v),
-      annotations: v.annotations,
-    }),
-    ListType: v => new ListType(reviveRefInnerType(v)),
-    MapType: v => new MapType(reviveRefInnerType(v)),
-    Field: v => ({
-      refType: reviveRefTypeOfElement(v),
-      annotations: v.annotations,
-    }),
-    TemplateExpression: v => (
-      new TemplateExpression({ parts: v.parts })
-    ),
-    ReferenceExpression: reviveReferenceExpression,
-    TypeReference: reviveRefType,
-    VariableExpression: v => (
-      new VariableExpression(reviveElemID(v.elemID ?? v.elemId))
-    ),
-    StaticFile: v => {
-      const staticFile = new StaticFile(
-        { filepath: v.filepath, hash: v.hash, encoding: v.encoding }
-      )
-      staticFiles[staticFile.filepath] = staticFile
-      return staticFile
-    },
-    DuplicateAnnotationError: v => (
-      new DuplicateAnnotationError({
-        elemID: reviveElemID(v.elemID),
-        key: v.key,
-        existingValue: v.existingValue,
-        newValue: v.newValue,
-      })
-    ),
-    DuplicateInstanceKeyError: v => (
-      new DuplicateInstanceKeyError({
-        elemID: reviveElemID(v.elemID),
-        key: v.key,
-        existingValue: v.existingValue,
-        newValue: v.newValue,
-      })
-    ),
-    DuplicateAnnotationFieldDefinitionError: v => (
-      new DuplicateAnnotationFieldDefinitionError({
-        elemID: reviveElemID(v.elemID),
-        annotationKey: v.annotationKey,
-      })
-    ),
-    ConflictingFieldTypesError: v => (
-      new ConflictingFieldTypesError({
-        elemID: reviveElemID(v.elemID),
-        definedTypes: v.definedTypes,
-      })
-    ),
-    ConflictingSettingError: v => (
-      new ConflictingSettingError({ elemID: reviveElemID(v.elemID) })
-    ),
-    DuplicateAnnotationTypeError: v => (
-      new DuplicateAnnotationTypeError({
-        elemID: reviveElemID(v.elemID),
-        key: v.key,
-      })
-    ),
-    DuplicateVariableNameError: v => (
-      new DuplicateVariableNameError({ elemID: reviveElemID(v.elemID) })
-    ),
-    MultiplePrimitiveTypesError: v => (
-      new MultiplePrimitiveTypesError({
-        elemID: reviveElemID(v.elemID),
-        duplicates: v.duplicates,
-      })
-    ),
-    InvalidValueValidationError: v => (
-      new InvalidValueValidationError({
-        elemID: reviveElemID(v.elemID),
-        value: v.value,
-        expectedValue: v.expectedValue,
-        fieldName: v.fieldName,
-      })
-    ),
-    InvalidValueTypeValidationError: v => new InvalidValueTypeValidationError({
-      elemID: reviveElemID(v.elemID),
-      value: v.error,
-      type: reviveElemID(v.type),
-    }),
-    InvalidStaticFileError: v => (
-      new InvalidStaticFileError({
-        elemID: reviveElemID(v.elemID),
-        value: { message: v.error },
-      })
-    ),
-    CircularReferenceValidationError: v => (
-      new CircularReferenceValidationError({
-        elemID: reviveElemID(v.elemID),
-        ref: v.ref,
-      })
-    ),
-    IllegalReferenceValidationError: v => (
-      new IllegalReferenceValidationError({
-        elemID: reviveElemID(v.elemID),
-        reason: v.reason,
-      })
-    ),
-    UnresolvedReferenceValidationError: v => (
-      new UnresolvedReferenceValidationError({
-        elemID: reviveElemID(v.elemID),
-        target: reviveElemID(v.target),
-      })
-    ),
-    MissingRequiredFieldValidationError: v => (
-      new MissingRequiredFieldValidationError({
-        elemID: reviveElemID(v.elemID),
-        fieldName: v.fieldName,
-      })
-    ),
-    RegexMismatchValidationError: v => (
-      new RegexMismatchValidationError({
-        elemID: reviveElemID(v.elemID),
-        fieldName: v.fieldName,
-        regex: v.regex,
-        value: v.value,
-      })
-    ),
-    InvalidValueRangeValidationError: v => (
-      new InvalidValueRangeValidationError({
-        elemID: reviveElemID(v.elemID),
-        fieldName: v.fieldName,
-        value: v.value,
-        maxValue: v.maxValue,
-        minValue: v.minValue,
-      })
-    ),
-    InvalidValueMaxLengthValidationError: v => (
-      new InvalidValueMaxLengthValidationError({
-        elemID: reviveElemID(v.elemID),
-        fieldName: v.fieldName,
-        value: v.value,
-        maxLength: v.maxLength,
-      })
-    ),
-    InvalidTypeValidationError: v => (
-      new InvalidTypeValidationError(
-        reviveElemID(v.elemID),
-      )
-    ),
-  }
+  const staticFiles: { obj: any; key: string | number }[] = []
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const elementReviver = (_k: string, v: any): any => {
-    if (isSerializedClass(v)) {
-      const reviver = revivers[v[SALTO_CLASS_FIELD]]
-      const e = reviver(v)
-      if (isType(e) || isInstanceElement(e)) {
-        e.path = v.path
+  const restoreClasses = (value: any): any => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const reviveElemID = (v: Record<string, any>): ElemID => (
+      new ElemID(v.adapter, v.typeName, v.idType, ...v.nameParts)
+    )
+
+    const reviveReferenceExpression = (v: Value): ReferenceExpression => {
+      const elemID = v.elemID ?? v.elemId
+      return new ReferenceExpression(reviveElemID(elemID))
+    }
+
+    const reviveRefTypeOfElement = (v: Value): TypeReference => {
+      if (v.refType !== undefined) {
+        return restoreClasses(v.refType)
       }
-      return e
+      return restoreClasses(v.type)
     }
-    return v
+
+    const reviveAnnotationRefTypes = (v: Value): TypeRefMap => {
+      if (v.annotationRefTypes) {
+        return restoreClasses(v.annotationRefTypes)
+      }
+      return restoreClasses(v.annotationTypes)
+    }
+
+    const reviveRefInnerType = (v: Value): TypeReference => {
+      if (v.refInnerType) {
+        return restoreClasses(v.refInnerType)
+      }
+      return restoreClasses(v.innerType)
+    }
+
+    const revivers: ReviverMap = {
+      InstanceElement: v => new InstanceElement(
+        v.elemID.nameParts[0],
+        reviveRefTypeOfElement(v),
+        restoreClasses(v.value),
+        v.path,
+        restoreClasses(v.annotations),
+      ),
+      ObjectType: v => {
+        const r = new ObjectType({
+          elemID: reviveElemID(v.elemID),
+          fields: restoreClasses(v.fields),
+          annotationRefsOrTypes: reviveAnnotationRefTypes(v),
+          annotations: restoreClasses(v.annotations),
+          isSettings: v.isSettings,
+          path: v.path,
+        })
+        return r
+      },
+      Variable: v => (
+        new Variable(reviveElemID(v.elemID), restoreClasses(v.value))
+      ),
+      PrimitiveType: v => new PrimitiveType({
+        elemID: reviveElemID(v.elemID),
+        primitive: v.primitive,
+        annotationRefsOrTypes: reviveAnnotationRefTypes(v),
+        annotations: restoreClasses(v.annotations),
+        path: v.path,
+      }),
+      ListType: v => new ListType(reviveRefInnerType(v)),
+      MapType: v => new MapType(reviveRefInnerType(v)),
+      Field: v => ({
+        refType: reviveRefTypeOfElement(v),
+        annotations: restoreClasses(v.annotations),
+      }),
+      TemplateExpression: v => (
+        new TemplateExpression({ parts: restoreClasses(v.parts) })
+      ),
+      ReferenceExpression: reviveReferenceExpression,
+      TypeReference: v => (
+        new TypeReference(reviveElemID(v.elemID))
+      ),
+      VariableExpression: v => (
+        new VariableExpression(reviveElemID(v.elemID ?? v.elemId))
+      ),
+      StaticFile: v => (
+        new StaticFile(
+          { filepath: v.filepath, hash: v.hash, encoding: v.encoding }
+        )
+      ),
+      DuplicateAnnotationError: v => (
+        new DuplicateAnnotationError({
+          elemID: reviveElemID(v.elemID),
+          key: v.key,
+          existingValue: restoreClasses(v.existingValue),
+          newValue: restoreClasses(v.newValue),
+        })
+      ),
+      DuplicateInstanceKeyError: v => (
+        new DuplicateInstanceKeyError({
+          elemID: reviveElemID(v.elemID),
+          key: v.key,
+          existingValue: restoreClasses(v.existingValue),
+          newValue: restoreClasses(v.newValue),
+        })
+      ),
+      DuplicateAnnotationFieldDefinitionError: v => (
+        new DuplicateAnnotationFieldDefinitionError({
+          elemID: reviveElemID(v.elemID),
+          annotationKey: v.annotationKey,
+        })
+      ),
+      ConflictingFieldTypesError: v => (
+        new ConflictingFieldTypesError({
+          elemID: reviveElemID(v.elemID),
+          definedTypes: v.definedTypes,
+        })
+      ),
+      ConflictingSettingError: v => (
+        new ConflictingSettingError({ elemID: reviveElemID(v.elemID) })
+      ),
+      DuplicateAnnotationTypeError: v => (
+        new DuplicateAnnotationTypeError({
+          elemID: reviveElemID(v.elemID),
+          key: v.key,
+        })
+      ),
+      DuplicateVariableNameError: v => (
+        new DuplicateVariableNameError({ elemID: reviveElemID(v.elemID) })
+      ),
+      MultiplePrimitiveTypesError: v => (
+        new MultiplePrimitiveTypesError({
+          elemID: reviveElemID(v.elemID),
+          duplicates: restoreClasses(v.duplicates),
+        })
+      ),
+      InvalidValueValidationError: v => (
+        new InvalidValueValidationError({
+          elemID: reviveElemID(v.elemID),
+          value: restoreClasses(v.value),
+          expectedValue: restoreClasses(v.expectedValue),
+          fieldName: v.fieldName,
+        })
+      ),
+      InvalidValueTypeValidationError: v => new InvalidValueTypeValidationError({
+        elemID: reviveElemID(v.elemID),
+        value: restoreClasses(v.error),
+        type: reviveElemID(v.type),
+      }),
+      InvalidStaticFileError: v => (
+        new InvalidStaticFileError({
+          elemID: reviveElemID(v.elemID),
+          value: { message: v.error },
+        })
+      ),
+      CircularReferenceValidationError: v => (
+        new CircularReferenceValidationError({
+          elemID: reviveElemID(v.elemID),
+          ref: v.ref,
+        })
+      ),
+      IllegalReferenceValidationError: v => (
+        new IllegalReferenceValidationError({
+          elemID: reviveElemID(v.elemID),
+          reason: v.reason,
+        })
+      ),
+      UnresolvedReferenceValidationError: v => (
+        new UnresolvedReferenceValidationError({
+          elemID: reviveElemID(v.elemID),
+          target: reviveElemID(v.target),
+        })
+      ),
+      MissingRequiredFieldValidationError: v => (
+        new MissingRequiredFieldValidationError({
+          elemID: reviveElemID(v.elemID),
+          fieldName: v.fieldName,
+        })
+      ),
+      RegexMismatchValidationError: v => (
+        new RegexMismatchValidationError({
+          elemID: reviveElemID(v.elemID),
+          fieldName: v.fieldName,
+          regex: v.regex,
+          value: v.value,
+        })
+      ),
+      InvalidValueRangeValidationError: v => (
+        new InvalidValueRangeValidationError({
+          elemID: reviveElemID(v.elemID),
+          fieldName: v.fieldName,
+          value: restoreClasses(v.value),
+          maxValue: v.maxValue,
+          minValue: v.minValue,
+        })
+      ),
+      InvalidValueMaxLengthValidationError: v => (
+        new InvalidValueMaxLengthValidationError({
+          elemID: reviveElemID(v.elemID),
+          fieldName: v.fieldName,
+          value: v.value,
+          maxLength: v.maxLength,
+        })
+      ),
+      InvalidTypeValidationError: v => (
+        new InvalidTypeValidationError(
+          reviveElemID(v.elemID),
+        )
+      ),
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const restoreClassesInner = (val: any, parentObj: any, keyInParent: string | number): void => {
+      if (isSerializedClass(val)) {
+        const reviver = revivers[val[SALTO_CLASS_FIELD]]
+        const revived = reviver(val)
+        if (staticFileReviver !== undefined && isStaticFile(revived)) {
+          staticFiles.push({ obj: parentObj, key: keyInParent })
+          parentObj[keyInParent] = staticFileReviver(revived)
+        } else {
+          parentObj[keyInParent] = revived
+        }
+      } else if (_.isPlainObject(val)) {
+        Object.entries(val).forEach(([k, v]) => restoreClassesInner(v, val, k))
+      } else if (Array.isArray(val)) {
+        val.forEach((v, idx) => restoreClassesInner(v, val, idx))
+      }
+    }
+    if (isSerializedClass(value)) {
+      const reviver = revivers[value[SALTO_CLASS_FIELD]]
+      return reviver(value)
+    }
+    // Restore classes in the given value (in-place)
+    restoreClassesInner(value, { value }, 'value')
+    return value
   }
-  const elements = JSON.parse(data, elementReviver)
-  return { elements, staticFiles }
+
+  const parsed = JSON.parse(data)
+  if (!Array.isArray(parsed)) {
+    throw new Error('got non-array JSON data')
+  }
+  const elements = parsed.map(restoreClasses)
+  if (staticFiles.length > 0) {
+    await Promise.all(staticFiles.map(
+      async ({ obj, key }) => {
+        obj[key] = await obj[key]
+      }
+    ))
+  }
+  return elements
 }
 
 export const deserializeMergeErrors = async (data: string): Promise<MergeError[]> => {
-  const { elements: errors } = (await generalDeserialize<MergeError>(data))
+  const errors = (await generalDeserialize<MergeError>(data))
   if (errors.some(error => !isMergeError(error))) {
     throw new Error('Deserialization failed. At least one element did not deserialize to a MergeError')
   }
@@ -429,7 +457,7 @@ export const deserializeMergeErrors = async (data: string): Promise<MergeError[]
 }
 
 export const deserializeValidationErrors = async (data: string): Promise<ValidationError[]> => {
-  const { elements: errors } = (await generalDeserialize<ValidationError>(data))
+  const errors = (await generalDeserialize<ValidationError>(data))
   if (errors.some(error => !isValidationError(error))) {
     throw new Error('Deserialization failed. At least one element did not deserialize to a ValidationError')
   }
@@ -440,33 +468,7 @@ export const deserialize = async (
   data: string,
   staticFileReviver?: StaticFileReviver,
 ): Promise<Element[]> => {
-  const res = await generalDeserialize<Element>(data)
-  const { elements } = res
-
-  if (staticFileReviver) {
-    const staticFiles = Object.fromEntries(
-      await awu(Object.entries(res.staticFiles))
-        .map(async ([key, val]) => ([key, await staticFileReviver(val)]))
-        .toArray()
-    )
-    const reviveStaticFiles = (values: Values): Values => _.cloneDeepWith(values, v => {
-      if (isStaticFile(v)) {
-        return staticFiles[v.filepath]
-      }
-      return undefined
-    })
-    elements.forEach(element => {
-      element.annotations = reviveStaticFiles(element.annotations)
-      if (isObjectType(element)) {
-        Object.values(element.fields).forEach(field => {
-          field.annotations = reviveStaticFiles(field.annotations)
-        })
-      }
-      if (isInstanceElement(element)) {
-        element.value = reviveStaticFiles(element.value)
-      }
-    })
-  }
+  const elements = await generalDeserialize<Element>(data, staticFileReviver)
 
   if (elements.some(elem => !isElement(elem))) {
     throw new Error('Deserialization failed. At least one element did not deserialize to an Element')
@@ -477,7 +479,7 @@ export const deserialize = async (
 export const deserializeSingleElement = async (
   data: string, staticFileReviver?: StaticFileReviver
 ): Promise<Element> => {
-  const elements = (await deserialize(data, staticFileReviver)) as Element[]
+  const elements = await deserialize(data, staticFileReviver)
   if (elements.length !== 1) {
     throw new Error('Deserialization failed. should receive single element')
   }

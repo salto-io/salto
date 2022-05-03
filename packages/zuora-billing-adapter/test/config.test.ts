@@ -14,25 +14,16 @@
 * limitations under the License.
 */
 
-import { getUpdatedConfig, FETCH_CONFIG, DEFAULT_INCLUDE_TYPES, DEFAULT_SETTINGS_INCLUDE_TYPES, API_DEFINITIONS_CONFIG, DEFAULT_API_DEFINITIONS, SUPPORTED_TYPES } from '../src/config'
+import { getUpdatedConfig, FETCH_CONFIG, API_DEFINITIONS_CONFIG, SUPPORTED_TYPES, DEFAULT_CONFIG } from '../src/config'
 
 describe('config', () => {
   describe('getUpdatedConfig', () => {
     it('should not update the config when Settings_Gateway config is correct', () => {
-      expect(getUpdatedConfig({
-        [FETCH_CONFIG]: {
-          includeTypes: DEFAULT_INCLUDE_TYPES,
-          settingsIncludeTypes: DEFAULT_SETTINGS_INCLUDE_TYPES,
-        },
-        [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
-      })).toBeUndefined()
+      expect(getUpdatedConfig(DEFAULT_CONFIG)).toBeUndefined()
     })
     it('should update the config when the ', () => {
       const initialConfig = {
-        [FETCH_CONFIG]: {
-          includeTypes: DEFAULT_INCLUDE_TYPES,
-          settingsIncludeTypes: DEFAULT_SETTINGS_INCLUDE_TYPES,
-        },
+        [FETCH_CONFIG]: DEFAULT_CONFIG[FETCH_CONFIG],
         [API_DEFINITIONS_CONFIG]: {
           swagger: {
             url: 'http://localhost:1234',

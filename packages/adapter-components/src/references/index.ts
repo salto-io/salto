@@ -14,11 +14,13 @@
 * limitations under the License.
 */
 export { neighborContextGetter, ContextFunc, ContextValueMapperFunc } from './context'
-export { addReferences, replaceReferenceValues, generateLookupFunc } from './field_references'
+export { addReferences, replaceReferenceValues, generateLookupFunc, MISSING_ANNOTATION } from './field_references'
 export {
   ReferenceSerializationStrategy,
   ReferenceSerializationStrategyName,
   ReferenceSerializationStrategyLookup,
+  MissingReferenceStrategy,
+  MissingReferenceStrategyName,
   FieldReferenceDefinition,
   FieldReferenceResolver,
   ReferenceResolverFinder,

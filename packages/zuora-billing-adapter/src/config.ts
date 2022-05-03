@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, CORE_ANNOTATIONS, ListType, BuiltinTypes, InstanceElement } from '@salto-io/adapter-api'
+import { ElemID, CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
 import { ZUORA_BILLING, CUSTOM_OBJECT_DEFINITION_TYPE, LIST_ALL_SETTINGS_TYPE, SETTINGS_TYPE_PREFIX, TASK_TYPE, WORKFLOW_DETAILED_TYPE, WORKFLOW_EXPORT_TYPE, PRODUCT_RATE_PLAN_TYPE, ACCOUNTING_CODE_ITEM_TYPE } from './constants'
 
 const { createClientConfigType } = clientUtils
@@ -28,9 +28,7 @@ export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
 export type ZuoraClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
 
-export type ZuoraFetchConfig = configUtils.UserFetchConfig & {
-  settingsIncludeTypes?: string[]
-}
+export type ZuoraFetchConfig = configUtils.UserFetchConfig
 export type ZuoraApiConfig = configUtils.AdapterSwaggerApiConfig & {
   settingsSwagger?: {
     typeNameOverrides?: configUtils.TypeNameOverrideConfig[]
@@ -616,14 +614,63 @@ const DEFAULT_SWAGGER_CONFIG: ZuoraApiConfig['swagger'] = {
 const SETTINGS_SWAGGER_CONFIG: ZuoraApiConfig['settingsSwagger'] = {
   typeNameOverrides: [
     { originalName: 'settings__tax_engines@uub', newName: `${SETTINGS_TYPE_PREFIX}TaxEngines` },
+    // map to old name for backward-compatibility reasons -
+    // can be updated once all workspaces are migrated to SALTO-1792
+    { originalName: `${SETTINGS_TYPE_PREFIX}RevenueRecognitionRuleObject`, newName: `${SETTINGS_TYPE_PREFIX}revenueRecognitionRuleDtos` },
   ],
+}
+
+// partial list - need to extend
+// Note: since these types are returned from an endpoint and have some overlaps with the
+// swagger-generated types, we prepend SETTINGS_TYPE_PREFIX to all type names to avoid conflicts.
+export const SETTING_TYPES = {
+  [`${SETTINGS_TYPE_PREFIX}AccountingRules`]: [`${SETTINGS_TYPE_PREFIX}AccountingRules`],
+  [`${SETTINGS_TYPE_PREFIX}Bucket`]: [`${SETTINGS_TYPE_PREFIX}AgingBucket`],
+  [`${SETTINGS_TYPE_PREFIX}Notification`]: [`${SETTINGS_TYPE_PREFIX}AllNotifications`],
+  [`${SETTINGS_TYPE_PREFIX}PaymentTerm`]: [`${SETTINGS_TYPE_PREFIX}AllPaymentTerms`],
+  [`${SETTINGS_TYPE_PREFIX}Codes`]: [`${SETTINGS_TYPE_PREFIX}AllRevenueRecognition`],
+  [`${SETTINGS_TYPE_PREFIX}TaxCode`]: [`${SETTINGS_TYPE_PREFIX}AllTaxCode`],
+  [`${SETTINGS_TYPE_PREFIX}ApplicationRules`]: [`${SETTINGS_TYPE_PREFIX}ApplicationRules`],
+  [`${SETTINGS_TYPE_PREFIX}SingleAlias`]: [`${SETTINGS_TYPE_PREFIX}BatchAlias`],
+  [`${SETTINGS_TYPE_PREFIX}BillingCycleType`]: [`${SETTINGS_TYPE_PREFIX}BillingCycleType`],
+  [`${SETTINGS_TYPE_PREFIX}BillingListPriceBase`]: [`${SETTINGS_TYPE_PREFIX}BillingListPriceBase`],
+  [`${SETTINGS_TYPE_PREFIX}BillingPeriod`]: [`${SETTINGS_TYPE_PREFIX}BillingPeriod`],
+  [`${SETTINGS_TYPE_PREFIX}BillingPeriodStart`]: [`${SETTINGS_TYPE_PREFIX}BillingPeriodStart`],
+  [`${SETTINGS_TYPE_PREFIX}BillingRules`]: [`${SETTINGS_TYPE_PREFIX}BillingRules`],
+  [`${SETTINGS_TYPE_PREFIX}ChargeModel`]: [`${SETTINGS_TYPE_PREFIX}ChargeModel`],
+  [`${SETTINGS_TYPE_PREFIX}ChargeType`]: [`${SETTINGS_TYPE_PREFIX}ChargeType`],
+  [`${SETTINGS_TYPE_PREFIX}CommunicationProfile`]: [`${SETTINGS_TYPE_PREFIX}CommunicationProfiles`],
+  [`${SETTINGS_TYPE_PREFIX}Currency`]: [`${SETTINGS_TYPE_PREFIX}Currencies`],
+  [`${SETTINGS_TYPE_PREFIX}DiscountSetting`]: [`${SETTINGS_TYPE_PREFIX}DiscountSettings`],
+  [`${SETTINGS_TYPE_PREFIX}DocPrefix`]: [`${SETTINGS_TYPE_PREFIX}DocPrefix`],
+  [`${SETTINGS_TYPE_PREFIX}FxCurrency`]: [`${SETTINGS_TYPE_PREFIX}FxCurrency`],
+  [`${SETTINGS_TYPE_PREFIX}TaxCompany`]: [`${SETTINGS_TYPE_PREFIX}GetTaxCompanies`],
+  [`${SETTINGS_TYPE_PREFIX}Segment`]: [`${SETTINGS_TYPE_PREFIX}GlSegments`],
+  [`${SETTINGS_TYPE_PREFIX}HostedPaymentPage`]: [`${SETTINGS_TYPE_PREFIX}HostedPaymentPages`],
+  [`${SETTINGS_TYPE_PREFIX}NumberAndSku`]: [`${SETTINGS_TYPE_PREFIX}NumberAndSku`],
+  [`${SETTINGS_TYPE_PREFIX}Gateway`]: [`${SETTINGS_TYPE_PREFIX}PaymentGateways`],
+  [`${SETTINGS_TYPE_PREFIX}PaymentMethods`]: [`${SETTINGS_TYPE_PREFIX}PaymentMethods`],
+  [`${SETTINGS_TYPE_PREFIX}PaymentRetryRules`]: [`${SETTINGS_TYPE_PREFIX}PaymentRetryRules`],
+  [`${SETTINGS_TYPE_PREFIX}PaymentRules`]: [`${SETTINGS_TYPE_PREFIX}PaymentRules`],
+  [`${SETTINGS_TYPE_PREFIX}ReasonCode`]: [`${SETTINGS_TYPE_PREFIX}ReasonCodes`],
+  [`${SETTINGS_TYPE_PREFIX}RevenueEventType`]: [`${SETTINGS_TYPE_PREFIX}RevenueEventTypes`],
+  [`${SETTINGS_TYPE_PREFIX}RevenueRecognitionModels`]: [`${SETTINGS_TYPE_PREFIX}RevenueRecognitionModels`],
+  [`${SETTINGS_TYPE_PREFIX}RevenueRecognitionRule`]: [`${SETTINGS_TYPE_PREFIX}revenueRecognitionRuleDtos`],
+  [`${SETTINGS_TYPE_PREFIX}RevenueRecognitionStatus`]: [`${SETTINGS_TYPE_PREFIX}RevenueRecognitionStatus`],
+  [`${SETTINGS_TYPE_PREFIX}RevenueStartDate`]: [`${SETTINGS_TYPE_PREFIX}RevenueStartDate`],
+  [`${SETTINGS_TYPE_PREFIX}Role`]: [`${SETTINGS_TYPE_PREFIX}RolesPage`],
+  [`${SETTINGS_TYPE_PREFIX}RuleDetail`]: [`${SETTINGS_TYPE_PREFIX}SegmentationRules`],
+  [`${SETTINGS_TYPE_PREFIX}SubscriptionSetting`]: [`${SETTINGS_TYPE_PREFIX}SubscriptionSetting`],
+  [`${SETTINGS_TYPE_PREFIX}UnitOfMeasure`]: [`${SETTINGS_TYPE_PREFIX}UnitsOfMeasureList`],
+  [`${SETTINGS_TYPE_PREFIX}TaxEngine`]: [`${SETTINGS_TYPE_PREFIX}TaxEngines`],
 }
 
 export const SUPPORTED_TYPES = {
   AccountingCodeItem: ['AccountingCodes'],
   AccountingPeriod: ['AccountingPeriods'],
   ProductType: ['CatalogProduct'],
-  Objects: ['CustomObject', 'StandardObject'],
+  CustomObject: ['CustomObject'],
+  StandardObject: ['StandardObject'],
   EventTrigger: ['EventTriggers'],
   HostedPage: ['HostedPages'],
   NotificationDefinitions: ['NotificationDefinitions'],
@@ -631,49 +678,7 @@ export const SUPPORTED_TYPES = {
   PaymentGatewayResponse: ['PaymentGateways'],
   SequenceSet: ['SequenceSets'],
   [WORKFLOW_EXPORT_TYPE]: [WORKFLOW_EXPORT_TYPE],
-  // Setting types
-  ...Object.fromEntries([
-    `${SETTINGS_TYPE_PREFIX}AccountingRules`,
-    `${SETTINGS_TYPE_PREFIX}AgingBucket`,
-    `${SETTINGS_TYPE_PREFIX}AllNotifications`,
-    `${SETTINGS_TYPE_PREFIX}AllPaymentTerms`,
-    `${SETTINGS_TYPE_PREFIX}AllRevenueRecognition`,
-    `${SETTINGS_TYPE_PREFIX}AllTaxCode`,
-    `${SETTINGS_TYPE_PREFIX}ApplicationRules`,
-    `${SETTINGS_TYPE_PREFIX}BatchAlias`,
-    `${SETTINGS_TYPE_PREFIX}BillingCycleType`,
-    `${SETTINGS_TYPE_PREFIX}BillingListPriceBase`,
-    `${SETTINGS_TYPE_PREFIX}BillingPeriod`,
-    `${SETTINGS_TYPE_PREFIX}BillingPeriodStart`,
-    `${SETTINGS_TYPE_PREFIX}BillingRules`,
-    `${SETTINGS_TYPE_PREFIX}ChargeModel`,
-    `${SETTINGS_TYPE_PREFIX}ChargeType`,
-    `${SETTINGS_TYPE_PREFIX}CommunicationProfiles`,
-    `${SETTINGS_TYPE_PREFIX}Currencies`,
-    `${SETTINGS_TYPE_PREFIX}DiscountSettings`,
-    `${SETTINGS_TYPE_PREFIX}DocPrefix`,
-    `${SETTINGS_TYPE_PREFIX}FxCurrency`,
-    `${SETTINGS_TYPE_PREFIX}GetTaxCompanies`,
-    `${SETTINGS_TYPE_PREFIX}GlSegments`,
-    `${SETTINGS_TYPE_PREFIX}HostedPaymentPages`,
-    `${SETTINGS_TYPE_PREFIX}NumberAndSku`,
-    `${SETTINGS_TYPE_PREFIX}PaymentGateways`,
-    `${SETTINGS_TYPE_PREFIX}PaymentMethods`,
-    `${SETTINGS_TYPE_PREFIX}PaymentRetryRules`,
-    `${SETTINGS_TYPE_PREFIX}PaymentRules`,
-    `${SETTINGS_TYPE_PREFIX}ReasonCodes`,
-    `${SETTINGS_TYPE_PREFIX}RevenueEventTypes`,
-    `${SETTINGS_TYPE_PREFIX}RevenueRecognitionModels`,
-    `${SETTINGS_TYPE_PREFIX}revenueRecognitionRuleDtos`,
-    `${SETTINGS_TYPE_PREFIX}RevenueRecognitionStatus`,
-    `${SETTINGS_TYPE_PREFIX}RevenueStartDate`,
-    `${SETTINGS_TYPE_PREFIX}RolesPage`,
-    `${SETTINGS_TYPE_PREFIX}SegmentationRules`,
-    `${SETTINGS_TYPE_PREFIX}SubscriptionSetting`,
-    `${SETTINGS_TYPE_PREFIX}UnitsOfMeasureList`,
-    `${SETTINGS_TYPE_PREFIX}TaxEngines`,
-    LIST_ALL_SETTINGS_TYPE,
-  ].map(typeName => [typeName, typeName])),
+  ...SETTING_TYPES,
 }
 
 export const DEFAULT_API_DEFINITIONS: ZuoraApiConfig = {
@@ -689,71 +694,8 @@ export const DEFAULT_API_DEFINITIONS: ZuoraApiConfig = {
   supportedTypes: SUPPORTED_TYPES,
 }
 
-// partial list - need to extend
-// Note: since these types are returned from an endpoint and have some overlaps with the
-// swagger-generated types, we prepend SETTINGS_TYPE_PREFIX to all type names to avoid conflicts.
-export const DEFAULT_SETTINGS_INCLUDE_TYPES = [
-  'AccountingRules',
-  'AgingBucket',
-  'AllNotifications',
-  'AllPaymentTerms',
-  'AllRevenueRecognition',
-  'AllTaxCode',
-  'ApplicationRules',
-  'BatchAlias',
-  'BillingCycleType',
-  'BillingListPriceBase',
-  'BillingPeriod',
-  'BillingPeriodStart',
-  'BillingRules',
-  'ChargeModel',
-  'ChargeType',
-  'CommunicationProfiles',
-  'Currencies',
-  'DiscountSettings',
-  'DocPrefix',
-  'FxCurrency',
-  'GetTaxCompanies',
-  'GlSegments',
-  'HostedPaymentPages',
-  'NumberAndSku',
-  'PaymentGateways',
-  'PaymentMethods',
-  'PaymentRetryRules',
-  'PaymentRules',
-  'ReasonCodes',
-  'RevenueEventTypes',
-  'RevenueRecognitionModels',
-  'revenueRecognitionRuleDtos',
-  'RevenueRecognitionStatus',
-  'RevenueStartDate',
-  'RolesPage',
-  'SegmentationRules',
-  'SubscriptionSetting',
-  'UnitsOfMeasureList',
-  'TaxEngines',
-]
-
-export const DEFAULT_INCLUDE_TYPES = [
-  'AccountingCodes',
-  'AccountingPeriods',
-  'CatalogProduct',
-  'CustomObject',
-  'EventTriggers',
-  'HostedPages',
-  'NotificationDefinitions',
-  'NotificationEmailTemplates',
-  'PaymentGateways',
-  'SequenceSets',
-  'StandardObject',
-  WORKFLOW_EXPORT_TYPE,
-]
-
 export const DEFAULT_CONFIG: ZuoraConfig = {
-  [FETCH_CONFIG]: {
-    includeTypes: DEFAULT_INCLUDE_TYPES,
-    settingsIncludeTypes: DEFAULT_SETTINGS_INCLUDE_TYPES,
-  },
+  [FETCH_CONFIG]: elements.query.INCLUDE_ALL_CONFIG,
   [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
 }
 
@@ -766,7 +708,6 @@ export const configType = createMatchingObjectType<Partial<ZuoraConfig>>({
     [FETCH_CONFIG]: {
       refType: createUserFetchConfigType(
         ZUORA_BILLING,
-        { settingsIncludeTypes: { refType: new ListType(BuiltinTypes.STRING) } },
       ),
     },
     [API_DEFINITIONS_CONFIG]: {

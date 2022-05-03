@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, toChange, ReferenceExpression, ReadOnlyElementsSource, CORE_ANNOTATIONS, ListType, Field, BuiltinTypes } from '@salto-io/adapter-api'
-import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { deployWorkflow } from '../../../src/filters/workflow/workflow_deploy_filter'
@@ -101,6 +101,7 @@ describe('workflowModificationFilter', () => {
       paginator,
       config,
       elementsSource,
+      fetchQuery: elementUtils.query.createMockQuery(),
     }) as typeof filter
   })
 

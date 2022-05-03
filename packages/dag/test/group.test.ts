@@ -68,6 +68,55 @@ describe('buildGroupGraph', () => {
       { key: 'group1_n2', data: 'n2_data' }, { key: 'group1_n1', data: 'n1_data' }])
   })
 
+  describe('disjoint groups', () => {
+    it('should split the group if there are dependencies', () => {
+      origin.addNode('group1_n1', ['group1_n3'], 'n1_data')
+      origin.addNode('group1_n2', ['group1_n3'], 'n2_data')
+      origin.addNode('group1_n3', [], 'n3_data')
+      subject = buildAcyclicGroupedGraph(origin, groupKey, new Set(['group1']))
+
+      const groupGraph = getGroupNodes()
+      expect(groupGraph).toHaveLength(2)
+      compareGroup(groupGraph[0], 'group1', [{ key: 'group1_n3', data: 'n3_data' }])
+      compareGroup(groupGraph[1], 'group1',
+        [{ key: 'group1_n1', data: 'n1_data' }, { key: 'group1_n2', data: 'n2_data' }])
+    })
+    it('should not split the group if there are no dependencies', () => {
+      origin.addNode('group1_n1', [], 'n1_data')
+      origin.addNode('group1_n2', [], 'n2_data')
+      origin.addNode('group1_n3', [], 'n3_data')
+      subject = buildAcyclicGroupedGraph(origin, groupKey, new Set(['group1']))
+
+      const groupGraph = getGroupNodes()
+      expect(groupGraph).toHaveLength(1)
+      compareGroup(groupGraph[0], 'group1', [
+        { key: 'group1_n1', data: 'n1_data' },
+        { key: 'group1_n2', data: 'n2_data' },
+        { key: 'group1_n3', data: 'n3_data' },
+      ])
+    })
+    it('should split more than one group', () => {
+      origin.addNode('group1_n1', [], 'n1_data')
+      origin.addNode('group1_n2', ['group1_n1'], 'n2_data')
+      origin.addNode('group2_n3', [], 'n3_data')
+      origin.addNode('group2_n4', ['group2_n3'], 'n4_data')
+      subject = buildAcyclicGroupedGraph(origin, groupKey, new Set(['group1', 'group2']))
+
+      const groupGraph = getGroupNodes()
+      expect(groupGraph).toHaveLength(4)
+      compareGroup(groupGraph[0], 'group1', [{ key: 'group1_n1', data: 'n1_data' }])
+      compareGroup(groupGraph[1], 'group2', [{ key: 'group2_n3', data: 'n3_data' }])
+      compareGroup(groupGraph[2], 'group1', [{ key: 'group1_n2', data: 'n2_data' }])
+      compareGroup(groupGraph[3], 'group2', [{ key: 'group2_n4', data: 'n4_data' }])
+    })
+    it('should fail if there is a cycle', () => {
+      origin.addNode('group1_n1', [], 'n1_data')
+      origin.addNode('group1_n2', ['group1_n3'], 'n2_data')
+      origin.addNode('group1_n3', ['group1_n2'], 'n3_data')
+      expect(() => buildAcyclicGroupedGraph(origin, groupKey, new Set(['group1']))).toThrow()
+    })
+  })
+
   describe('dependencies handling', () => {
     const buildSrcGraphAndGroupKeyFunc = (
       nodes: Record<string, string[]>,

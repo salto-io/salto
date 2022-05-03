@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, getChangeData, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { deployment, filterUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { deployment, filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 import JiraClient from '../../../src/client/client'
@@ -52,6 +52,7 @@ describe('workflowDeployFilter', () => {
       paginator,
       config: DEFAULT_CONFIG,
       elementsSource: buildElementsSourceFromElements([]),
+      fetchQuery: elementUtils.query.createMockQuery(),
     }) as typeof filter
   })
 

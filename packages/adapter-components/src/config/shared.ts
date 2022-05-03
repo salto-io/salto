@@ -44,8 +44,13 @@ export type AdapterApiConfig<
   supportedTypes: Record<string, string[]>
 }
 
+type FetchEntry = {
+  type: string
+}
+
 export type UserFetchConfig = {
-  includeTypes: string[]
+  include: FetchEntry[]
+  exclude: FetchEntry[]
 }
 
 export const createAdapterApiConfigType = ({
@@ -114,15 +119,23 @@ export const createAdapterApiConfigType = ({
 export const createUserFetchConfigType = (
   adapter: string,
   additionalFields?: Record<string, FieldDefinition>,
-): ObjectType => (
-  new ObjectType({
+): ObjectType => {
+  const fetchEntryType = new ObjectType({
+    elemID: new ElemID(adapter, 'FetchEntry'),
+    fields: {
+      type: { refType: BuiltinTypes.STRING },
+    },
+  })
+
+  return new ObjectType({
     elemID: new ElemID(adapter, 'userFetchConfig'),
     fields: {
-      includeTypes: { refType: new ListType(BuiltinTypes.STRING) },
+      include: { refType: new ListType(fetchEntryType) },
+      exclude: { refType: new ListType(fetchEntryType) },
       ...additionalFields,
     },
   })
-)
+}
 
 export const getConfigWithDefault = <
   T extends TransformationConfig | FetchRequestConfig | undefined,
@@ -144,13 +157,12 @@ export const getConfigWithDefault = <
 export const validateSupportedTypes = (
   fetchConfigPath: string,
   userFetchConfig: UserFetchConfig,
-  adapterApiConfig: AdapterApiConfig,
+  supportedTypesNames: string[],
 ): void => {
-  const supportedTypesNames = new Set(Object.values(adapterApiConfig.supportedTypes).flat())
-  const invalidIncludedTypes = userFetchConfig.includeTypes.filter(
-    name => !supportedTypesNames.has(name)
-  )
+  const invalidIncludedTypes = [...userFetchConfig.include, ...userFetchConfig.exclude].filter(
+    ({ type: typeRegex }) => supportedTypesNames.every(type => !new RegExp(`^${typeRegex}$`).test(type)),
+  ).map(({ type }) => type)
   if (invalidIncludedTypes.length > 0) {
-    throw Error(`Invalid type names in ${fetchConfigPath}.includeTypes: ${invalidIncludedTypes} are not supported.`)
+    throw Error(`Invalid type names in ${fetchConfigPath}: ${invalidIncludedTypes} does not match any of the supported types.`)
   }
 }

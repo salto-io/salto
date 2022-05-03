@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { filterUtils, client as clientUtils, deployment } from '@salto-io/adapter-components'
+import { filterUtils, client as clientUtils, deployment, elements as elementUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { DEFAULT_CONFIG } from '../../src/config'
@@ -54,6 +54,7 @@ describe('projectFilter', () => {
       paginator,
       config: DEFAULT_CONFIG,
       elementsSource: buildElementsSourceFromElements([]),
+      fetchQuery: elementUtils.query.createMockQuery(),
     }) as typeof filter
 
     type = new ObjectType({
@@ -160,7 +161,7 @@ describe('projectFilter', () => {
     })
   })
 
-  describe('When deploying a change', () => {
+  describe('When deploying a modification change', () => {
     let change: Change
 
     beforeEach(async () => {
@@ -190,6 +191,60 @@ describe('projectFilter', () => {
           workflowSchemeId: 1,
           projectId: 2,
         },
+        undefined,
+      )
+    })
+  })
+
+  describe('When deploying an addition change', () => {
+    let change: Change
+
+    beforeEach(async () => {
+      instance.value.id = 3
+      change = toChange({ after: instance })
+
+      connection.get.mockResolvedValue({
+        status: 200,
+        data: {
+          components: [
+            {
+              id: '1',
+            },
+            {
+              id: '2',
+            },
+          ],
+        },
+      })
+
+      await filter.deploy([change])
+    })
+    it('should call deployChange and ignore only components', () => {
+      expect(deployChangeMock).toHaveBeenCalledWith(
+        change,
+        client,
+        DEFAULT_CONFIG.apiDefinitions.types.Project.deployRequests,
+        ['components'],
+        undefined,
+        undefined,
+      )
+    })
+
+    it('should call the endpoint to get the components', () => {
+      expect(connection.get).toHaveBeenCalledWith(
+        '/rest/api/3/project/3',
+        undefined,
+      )
+    })
+
+    it('should call the endpoint to remove the components', () => {
+      expect(connection.delete).toHaveBeenCalledWith(
+        '/rest/api/3/component/1',
+        undefined,
+      )
+
+      expect(connection.delete).toHaveBeenCalledWith(
+        '/rest/api/3/component/2',
         undefined,
       )
     })

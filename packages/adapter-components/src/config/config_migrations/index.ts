@@ -13,13 +13,4 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element } from '@salto-io/adapter-api'
-import HubspotClient from './client/client'
-
-// Filter interface, filters will be activated upon adapter fetch
-// operations. The filter will be responsible for specific business logic.
-export type OnFetchFilter = {
-  onFetch(elements: Element[]): Promise<void>
-}
-
-export type FilterCreator = (opts: { client: HubspotClient }) => OnFetchFilter
+export { migrateDeprecatedIncludeList } from './fetch_migration'

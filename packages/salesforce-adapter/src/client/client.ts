@@ -97,8 +97,12 @@ const isAlreadyDeletedError = (error: SfError): boolean => (
 export type ErrorFilter = (error: Error) => boolean
 
 const NON_TRANSIENT_ERROR_TYPES = [
-  'sf:UNKNOWN_EXCEPTION',
+  'sf:DUPLICATE_VALUE',
+  'sf:INVALID_CROSS_REFERENCE_KEY',
+  'sf:INVALID_ID_FIELD',
+  'sf:INVALID_FIELD',
   'sf:INVALID_TYPE',
+  'sf:UNKNOWN_EXCEPTION',
 ]
 const isSFDCUnhandledException = (error: Error): boolean => (
   !NON_TRANSIENT_ERROR_TYPES.includes(error.name)

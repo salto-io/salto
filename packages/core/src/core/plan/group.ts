@@ -16,36 +16,56 @@
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
 import { DataNodeMap, NodeId, buildAcyclicGroupedGraph, GroupDAG } from '@salto-io/dag'
-import { Change, getChangeData, isField, ChangeGroupId, ChangeId, ChangeGroupIdFunction } from '@salto-io/adapter-api'
+import { Change, getChangeData, isField, ChangeGroupIdFunction, ChangeId, ChangeGroupId, ChangeGroupIdFunctionReturn } from '@salto-io/adapter-api'
 
 const { awu } = collections.asynciterable
+
+export const mergeChangeGroupInfo = (
+  changeGroupInfoPerAdapter: ChangeGroupIdFunctionReturn[]
+): ChangeGroupIdFunctionReturn => {
+  const mergedChangeGroupIdMap = new Map<ChangeId, ChangeGroupId>(
+    wu(changeGroupInfoPerAdapter)
+      .map(({ changeGroupIdMap }) => changeGroupIdMap.entries())
+      .flatten(true)
+  )
+
+  const mergedDisjointGroups = new Set<ChangeGroupId>(
+    wu(changeGroupInfoPerAdapter)
+      .map(({ disjointGroups }) => disjointGroups?.values() ?? [])
+      .flatten(true)
+  )
+
+  return {
+    changeGroupIdMap: mergedChangeGroupIdMap,
+    disjointGroups: mergedDisjointGroups,
+  }
+}
 
 export const getCustomGroupIds = async (
   changes: DataNodeMap<Change>,
   customGroupIdFunctions: Record<string, ChangeGroupIdFunction>,
-): Promise<Map<ChangeId, ChangeGroupId>> => {
+): Promise<ChangeGroupIdFunctionReturn> => {
   if (Object.keys(customGroupIdFunctions).length === 0) {
-    return new Map()
+    return { changeGroupIdMap: new Map() }
   }
   const changesPerAdapter = collections.iterable.groupBy(
     wu(changes.keys()).map(id => ({ id, change: changes.getData(id) })),
     ({ change }) => getChangeData(change).elemID.adapter,
   )
-  const changeGroupIds = awu(changesPerAdapter.entries())
+  const changeGroupInfoPerAdapter = await awu(changesPerAdapter.entries())
     .filter(([adapterName]) => adapterName in customGroupIdFunctions)
     .map(([name, adapterChanges]) => (
       customGroupIdFunctions[name](new Map(adapterChanges.map(({ id, change }) => [id, change])))
-    ))
-  return new Map(
-    await awu(changeGroupIds)
-      .flatMap(changeIdsMap => [...changeIdsMap.entries()])
-      .toArray()
-  )
+    )).toArray()
+
+  return mergeChangeGroupInfo(changeGroupInfoPerAdapter)
 }
 
 
 export const buildGroupedGraphFromDiffGraph = (
-  diffGraph: DataNodeMap<Change>, customGroupKeys?: Map<ChangeId, ChangeGroupId>
+  diffGraph: DataNodeMap<Change>,
+  customGroupKeys?: Map<ChangeId, ChangeGroupId>,
+  disjointGroups?: Set<ChangeGroupId>,
 ): GroupDAG<Change> => {
   const groupKey = (nodeId: NodeId): string => {
     const customKey = customGroupKeys?.get(nodeId)
@@ -58,5 +78,5 @@ export const buildGroupedGraphFromDiffGraph = (
     return groupElement.elemID.getFullName()
   }
 
-  return buildAcyclicGroupedGraph(diffGraph, groupKey)
+  return buildAcyclicGroupedGraph(diffGraph, groupKey, disjointGroups)
 }

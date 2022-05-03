@@ -618,7 +618,7 @@ remoteMap.RemoteMapCreator => {
       mainDBConnections[location] = connectionPromise
       persistentDB = await connectionPromise
     }
-
+    log.debug('creating remote map for loc: %s, namespace: %s', location, namespace)
     await createDBConnections()
     return {
       get: getImpl,

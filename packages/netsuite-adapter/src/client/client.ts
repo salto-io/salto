@@ -26,7 +26,7 @@ import SdfClient from './sdf_client'
 import SuiteAppClient from './suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from '../suiteapp_file_cabinet'
 import { ConfigRecord, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
-import { GetCustomObjectsResult, ImportFileCabinetResult } from './types'
+import { AdditionalDependencies, GetCustomObjectsResult, ImportFileCabinetResult } from './types'
 import { getReferencedInstances } from '../reference_dependencies'
 import { getLookUpName, toCustomizationInfo } from '../transformer'
 import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../group_changes'
@@ -163,7 +163,8 @@ export default class NetsuiteClient {
 
   private async sdfDeploy(
     changes: ReadonlyArray<Change<InstanceElement>>,
-    deployReferencedElements: boolean
+    deployReferencedElements: boolean,
+    additionalDependencies: AdditionalDependencies
   ): Promise<DeployResult> {
     const changesToDeploy = Array.from(changes)
     const suiteAppId = getChangeData(changes[0]).value[APPLICATION_ID]
@@ -184,7 +185,7 @@ export default class NetsuiteClient {
         log.debug('deploying %d changes', changesToDeploy.length)
         // eslint-disable-next-line no-await-in-loop
         await log.time(
-          () => this.sdfClient.deploy(customizationInfos, suiteAppId),
+          () => this.sdfClient.deploy(customizationInfos, suiteAppId, additionalDependencies),
           'sdfDeploy'
         )
         return { errors, appliedChanges: changesToDeploy }
@@ -200,14 +201,19 @@ export default class NetsuiteClient {
           const failedElemIDs = NetsuiteClient.getFailedSdfDeployChangesElemIDs(
             error, changesToDeploy
           )
-          log.debug('sdf failed to deploy: %o', Array.from(failedElemIDs))
+          log.debug('objects deploy error: sdf failed to deploy: %o', Array.from(failedElemIDs))
           _.remove(
             changesToDeploy,
             change => failedElemIDs.has(getChangeData(change).elemID.getFullName())
           )
         } else if (error instanceof SettingsDeployError) {
           const { failedConfigTypes } = error
-          log.debug('sdf failed to deploy: %o', Array.from(failedConfigTypes))
+          if (!changesToDeploy.some(change =>
+            failedConfigTypes.has(getChangeData(change).elemID.typeName))) {
+            log.debug('settings deploy error: no changes matched the failedConfigType list: %o', Array.from(failedConfigTypes))
+            return { errors, appliedChanges: [] }
+          }
+          log.debug('settings deploy error: sdf failed to deploy: %o', Array.from(failedConfigTypes))
           _.remove(
             changesToDeploy,
             change => failedConfigTypes.has(getChangeData(change).elemID.typeName)
@@ -226,13 +232,14 @@ export default class NetsuiteClient {
     changes: Change[],
     groupID: string,
     deployReferencedElements: boolean,
+    additionalSdfDependencies: AdditionalDependencies,
     elementsSourceIndex: LazyElementsSourceIndexes
   ):
     Promise<DeployResult> {
     const instancesChanges = changes.filter(isInstanceChange)
 
     if (groupID.startsWith(SDF_CHANGE_GROUP_ID)) {
-      return this.sdfDeploy(instancesChanges, deployReferencedElements)
+      return this.sdfDeploy(instancesChanges, deployReferencedElements, additionalSdfDependencies)
     }
 
     if (SUITEAPP_FILE_CABINET_GROUPS.includes(groupID)) {

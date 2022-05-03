@@ -56,7 +56,7 @@ import systemNoteAuthorInformation from './filters/author_information/system_not
 import savedSearchesAuthorInformation from './filters/author_information/saved_searches'
 import suiteAppConfigElementsFilter from './filters/suiteapp_config_elements'
 import configFeaturesFilter from './filters/config_features'
-import { Filter, FilterCreator } from './filter'
+import { createFilterCreatorsWithLogs, Filter, FilterCreator } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_USE_CHANGES_DETECTION } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams } from './query'
 import { createServerTimeElements, getLastServerTime } from './server_time'
@@ -117,7 +117,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   public constructor({
     client,
     elementsSource,
-    filtersCreators = [
+    filtersCreators = createFilterCreatorsWithLogs({
       dataInstancesIdentifiers,
       dataInstancesDiff,
       // addParentFolder must run before replaceInstanceReferencesFilter
@@ -136,7 +136,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
       replaceRecordRef,
       dataTypesCustomFields,
       dataInstancesCustomFields,
-      dataInstancesCustomFields,
       dataInstancesNullFields,
       removeUnsupportedTypes,
       dataInstancesReferences,
@@ -151,7 +150,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       configFeaturesFilter,
       // serviceUrls must run after suiteAppInternalIds filter
       serviceUrls,
-    ],
+    }),
     typesToSkip = [
       INTEGRATION, // The imported xml has no values, especially no SCRIPT_ID, for standard
       // integrations and contains only SCRIPT_ID attribute for custom ones.
@@ -226,6 +225,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       elements: fileCabinetContent,
       failedPaths: failedFilePaths,
     } = await importFileCabinetResult
+    log.debug('importFileCabinetContent: fetched %d fileCabinet elements', fileCabinetContent.length)
 
     progressReporter.reportProgress({ message: 'Fetching instances' })
     const {
@@ -382,6 +382,16 @@ export default class NetsuiteAdapter implements AdapterOperations {
       changesToDeploy,
       changeGroup.groupID,
       this.deployReferencedElements ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
+      {
+        include: {
+          features: this.userConfig.deploy?.additionalDependencies?.include?.features ?? [],
+          objects: this.userConfig.deploy?.additionalDependencies?.include?.objects ?? [],
+        },
+        exclude: {
+          features: this.userConfig.deploy?.additionalDependencies?.exclude?.features ?? [],
+          objects: this.userConfig.deploy?.additionalDependencies?.exclude?.objects ?? [],
+        },
+      },
       this.elementsSourceIndex
     )
 

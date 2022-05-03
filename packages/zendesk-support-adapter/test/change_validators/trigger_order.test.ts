@@ -125,9 +125,9 @@ describe('triggerOrderInstanceContainsAllTheInstancesValidator', () => {
     const orderTypeName = createOrderTypeName(trigger3.elemID.typeName)
     expect(errors).toEqual([{
       elemID: trigger3.elemID,
-      severity: 'Error',
+      severity: 'Warning',
       message: `Instance order not specified in ${orderTypeName}`,
-      detailedMessage: `Order not specified for instance ${trigger3.elemID.name} of type ${trigger3.elemID.typeName} in ${orderTypeName}. Please make sure to place it under the ${category1.elemID.name} category in the inactive list`,
+      detailedMessage: `Instance ${trigger3.elemID.name} of type ${trigger3.elemID.typeName} not listed in ${trigger3.elemID.typeName} sort order under the ${category1.elemID.name} category, and will be added at the end by default. If order is important, please include it under the ${category1.elemID.name} category in the inactive list`,
     }])
   })
   it('should return an error if the instance does exist in the wrong activity list in the same category', async () => {

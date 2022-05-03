@@ -17,7 +17,7 @@
 import { Element } from '@salto-io/adapter-api'
 import NetsuiteClient from '../client/client'
 
-export type ServiceUrlSetter = (elements: Element[], client: NetsuiteClient) => Promise<void>
+export type ServiceUrlSetter = (elements: Element[], client: NetsuiteClient) => void | Promise<void>
 
 export type QueryResult = {
   id: string

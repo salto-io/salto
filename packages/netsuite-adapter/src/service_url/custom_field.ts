@@ -43,13 +43,14 @@ const generateUrl = (id: number, element: InstanceElement):
   return url
 }
 
-const setServiceUrl: ServiceUrlSetter = async (elements, client) =>
-  setInstancesUrls({
+const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
+  await setInstancesUrls({
     elements,
     client,
     filter: element => FIELD_TYPES.includes(element.refType.elemID.name),
     query: 'SELECT internalid AS id, scriptid FROM customfield ORDER BY internalid ASC',
     generateUrl,
   })
+}
 
 export default setServiceUrl

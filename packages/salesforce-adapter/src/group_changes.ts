@@ -13,39 +13,45 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { values, collections } from '@salto-io/lowerdash'
-import { Change, ChangeGroupIdFunction, getChangeData, ChangeGroupId, ChangeId, InstanceElement } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
+import { Change, ChangeGroupIdFunction, getChangeData, InstanceElement, isAdditionChange, ChangeGroupId, ChangeId } from '@salto-io/adapter-api'
 import { apiName } from './transformers/transformer'
 import { isInstanceOfCustomObjectChange } from './custom_object_instances_deploy'
 
 const { awu } = collections.asynciterable
 
-type ChangeIdFunction = (change: Change) => Promise<string | undefined> | string | undefined
+type ChangeGroupDescription = {
+  groupId: string
+  disjoint?: boolean
+}
 
-const instanceOfCustomObjectChangeToGroupId: ChangeIdFunction = async change => (
-  await isInstanceOfCustomObjectChange(change)
-    ? `${change.action}_${await apiName(await (getChangeData(change) as InstanceElement).getType())}_instances`
-    : undefined
-)
+type ChangeIdFunction = (change: Change) => Promise<ChangeGroupDescription> | ChangeGroupDescription
+
+const instanceOfCustomObjectChangeToGroupId: ChangeIdFunction = async change => ({
+  groupId: `${change.action}_${await apiName(await (getChangeData(change) as InstanceElement).getType())}_instances`,
+  // CustomObjects instances might have references to instances of the same type (via Lookup
+  // fields), and if we deploy them together the reference gets removed.
+  disjoint: isAdditionChange(change),
+})
 
 // Everything that is not a custom object instance goes into the deploy api
-const deployableMetadataChangeGroupId: ChangeIdFunction = () => 'salesforce_metadata'
+const deployableMetadataChangeGroupId: ChangeIdFunction = () => ({ groupId: 'salesforce_metadata' })
 
-const changeIdProviders: ChangeIdFunction[] = [
-  instanceOfCustomObjectChangeToGroupId,
-  deployableMetadataChangeGroupId,
-]
+export const getChangeGroupIds: ChangeGroupIdFunction = async changes => {
+  const changeGroupIdMap = new Map<ChangeId, ChangeGroupId>()
+  const disjointGroups = new Set<ChangeGroupId>()
 
-export const getChangeGroupIds: ChangeGroupIdFunction = async changes => (
-  new Map(
-    await awu(changes.entries())
-      .map(async ([id, change]) => {
-        const groupId = await awu(changeIdProviders)
-          .map(provider => provider(change))
-          .find(values.isDefined)
-        return groupId === undefined ? undefined : [id, groupId] as [ChangeId, ChangeGroupId]
-      })
-      .filter(values.isDefined)
-      .toArray()
-  )
-)
+  await awu(changes.entries()).forEach(async ([changeId, change]) => {
+    const groupIdFunc = await isInstanceOfCustomObjectChange(change)
+      ? instanceOfCustomObjectChangeToGroupId
+      : deployableMetadataChangeGroupId
+    const { groupId, disjoint } = await groupIdFunc(change)
+
+    changeGroupIdMap.set(changeId, groupId)
+    if (disjoint) {
+      disjointGroups.add(groupId)
+    }
+  })
+
+  return { changeGroupIdMap, disjointGroups }
+}

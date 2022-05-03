@@ -14,12 +14,15 @@ jira {
     }
   }
   fetch = {
-    includeTypes = [
-      "PageBeanDashboard",
-      "PageBeanField",
-      "PageBeanFieldConfiguration",
-      "PageBeanFieldConfigurationScheme",
-      "PageBeanFieldConfigurationIssueTypeItem",
+    include = [
+      {
+        type = ".*"
+      },
+    ]
+    exclude = [
+      {
+        type = "Webhook"
+      }
     ]
   }
 }
@@ -31,6 +34,7 @@ jira {
 | ---------------------------------------------------------| ------------------------------| -----------
 | [client](#client-configuration-options)                  | `{}` (no overrides)             | Configuration relating to the client used to interact with JIRA
 | [fetch](#fetch-configuration-options)                    | `{}` (no overrides)             | Configuration relating to the endpoints that will be queried during fetch
+| [masking](#masking-configuration-options)                | `{}` (mask nothing)           | Configuration to mask sensitive data from the NaCls
 
 ### Client configuration options
 
@@ -59,5 +63,17 @@ jira {
 
 | Name                                        | Default when undefined            | Description
 |---------------------------------------------|-----------------------------------|------------
-| includeTypes                                | []                                | List of types to fetch
+| [include](#fetch-entry-options)               | [{ type = ".*" }]                 | List of entries to determine what instances to include in the fetch
+| [exclude](#fetch-entry-options)               | []                                | List of entries to determine what instances to exclude in the fetch
 | fallbackToInternalId                        | false                             | Whether to add the internal ids to the instance name when the name is not unique among the instances of that type
+
+## Masking configuration options
+| Name                                        | Default when undefined            | Description
+|---------------------------------------------|-----------------------------------|------------
+| automationHeaders                                     | []                                | List of regexes of header keys in Automations to mask their values
+
+## Fetch entry options
+
+| Name                                        | Default when undefined            | Description
+|---------------------------------------------|-----------------------------------|------------
+| type                                        | ""                                | A regex of the Salto type name to include in the entry

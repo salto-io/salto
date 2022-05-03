@@ -40,7 +40,7 @@ describe('Group Changes without Salto suiteApp', () => {
   let changeGroupIds: Map<ChangeId, ChangeGroupId>
 
   beforeAll(async () => {
-    changeGroupIds = await getChangeGroupIdsFunc(false)(new Map<string, Change>([
+    changeGroupIds = (await getChangeGroupIdsFunc(false)(new Map<string, Change>([
       [fileInstance.elemID.getFullName(), toChange({ after: fileInstance })],
       [customFieldInstance.elemID.getFullName(), toChange({ after: customFieldInstance })],
       [
@@ -49,7 +49,7 @@ describe('Group Changes without Salto suiteApp', () => {
       ],
       [nonSdfInstance.elemID.getFullName(), toChange({ after: nonSdfInstance })],
       [dummyType.elemID.getFullName(), toChange({ after: dummyType })],
-    ]))
+    ]))).changeGroupIdMap
   })
 
   it('should set correct group id for custom types instances', () => {
@@ -201,7 +201,7 @@ describe('Group Changes with Salto suiteApp', () => {
 
 
   beforeAll(async () => {
-    changeGroupIds = await getChangeGroupIdsFunc(true)(new Map<string, Change>([
+    changeGroupIds = (await getChangeGroupIdsFunc(true)(new Map<string, Change>([
       [customFieldInstance.elemID.getFullName(), toChange({ after: customFieldInstance })],
       [
         customFieldFromSuiteAppInstance.elemID.getFullName(),
@@ -231,7 +231,7 @@ describe('Group Changes with Salto suiteApp', () => {
       })],
       [deletedDataInstance.elemID.getFullName(), toChange({ before: deletedDataInstance })],
       [configInstance.elemID.getFullName(), toChange({ after: configInstance })],
-    ]))
+    ]))).changeGroupIdMap
   })
 
   it('should set correct group id for custom types instances', () => {

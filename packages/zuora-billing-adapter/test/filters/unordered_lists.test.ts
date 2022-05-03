@@ -98,7 +98,8 @@ describe('Unordered lists filter', () => {
       }),
       config: {
         fetch: {
-          includeTypes: [],
+          include: [],
+          exclude: [],
         },
         apiDefinitions: {
           swagger: { url: 'ignore' },

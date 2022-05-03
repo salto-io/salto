@@ -75,7 +75,6 @@ describe('Zendesk support adapter E2E', () => {
     const testOptionValue = uuidv4().slice(0, 8)
     let elements: Element[] = []
     const createName = (type: string): string => `Test${type}${testSuffix}`
-    const additionalTypesToFetch = ['organizations']
 
     const automationInstance = createInstanceElement(
       'automation',
@@ -227,10 +226,10 @@ describe('Zendesk support adapter E2E', () => {
           ...DEFAULT_CONFIG,
           [FETCH_CONFIG]: {
             ...DEFAULT_CONFIG[FETCH_CONFIG],
-            includeTypes: [
-              ...DEFAULT_CONFIG[FETCH_CONFIG].includeTypes,
-              ...additionalTypesToFetch,
+            include: [
+              { type: '.*' },
             ],
+            exclude: [],
           },
         }
       )
@@ -253,7 +252,7 @@ describe('Zendesk support adapter E2E', () => {
         .map(inst => [inst.elemID.getFullName(), toChange({ after: inst })])))
       groupIdToInstances = _.groupBy(
         instancesToAdd,
-        inst => changeGroups.get(inst.elemID.getFullName())
+        inst => changeGroups.changeGroupIdMap.get(inst.elemID.getFullName())
       )
       const changes = _.mapValues(
         groupIdToInstances,

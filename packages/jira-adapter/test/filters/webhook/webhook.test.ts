@@ -16,7 +16,7 @@
 import { Element, InstanceElement, CORE_ANNOTATIONS, ElemID, ObjectType, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { mockClient } from '../../utils'
 import webhookFilter from '../../../src/filters/webhook/webhook'
@@ -33,6 +33,7 @@ describe('webhookFilter', () => {
   let connection: MockInterface<clientUtils.APIConnection>
   let type: ObjectType
   let instance: InstanceElement
+  let fetchQuery: MockInterface<elementUtils.query.ElementQuery>
 
   beforeEach(async () => {
     const { client: cli, paginator, connection: conn } = mockClient()
@@ -51,12 +52,15 @@ describe('webhookFilter', () => {
       }
     )
 
+    fetchQuery = elementUtils.query.createMockQuery()
+
     config = _.cloneDeep(DEFAULT_CONFIG)
     filter = webhookFilter({
       client,
       paginator,
       config,
       elementsSource: buildElementsSourceFromElements([]),
+      fetchQuery,
     }) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
 
     connection.get.mockResolvedValue({
@@ -127,6 +131,15 @@ describe('webhookFilter', () => {
       )
     })
 
+    it('should not fetch webhooks if webhooks were excluded', async () => {
+      fetchQuery.isTypeMatch.mockReturnValue(false)
+
+      const elements: Element[] = []
+      await filter.onFetch(elements)
+
+      expect(elements).toEqual([])
+    })
+
     it('should use elemIdGetter', async () => {
       const { paginator } = mockClient()
       filter = webhookFilter({
@@ -135,6 +148,7 @@ describe('webhookFilter', () => {
         config,
         elementsSource: buildElementsSourceFromElements([]),
         getElemIdFunc: () => new ElemID(JIRA, 'someName2'),
+        fetchQuery: elementUtils.query.createMockQuery(),
       }) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
       const elements: Element[] = []
       await filter.onFetch(elements)

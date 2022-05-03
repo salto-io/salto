@@ -30,6 +30,7 @@ import { extractStandaloneFields } from './standalone_field_extractor'
 import { fixFieldTypes } from '../type_elements'
 import { shouldRecurseIntoEntry } from '../instance_elements'
 import { addRemainingTypes } from './add_remaining_types'
+import { ElementQuery } from '../query'
 
 const { makeArray } = collections.array
 const { toArrayAsync, awu } = collections.asynciterable
@@ -267,7 +268,8 @@ export const getTypeAndInstances = async ({
  */
 export const getAllElements = async ({
   adapterName,
-  includeTypes,
+  fetchQuery,
+  supportedTypes,
   types,
   paginator,
   nestedFieldFinder,
@@ -277,7 +279,8 @@ export const getAllElements = async ({
   isErrorTurnToConfigSuggestion,
 }: {
   adapterName: string
-  includeTypes: string[]
+  fetchQuery: ElementQuery
+  supportedTypes: Record<string, string[]>
   types: Record<string, TypeConfig>
   paginator: Paginator
   nestedFieldFinder: FindNestedFieldFunc
@@ -286,10 +289,6 @@ export const getAllElements = async ({
   getElemIdFunc?: ElemIdGetter
   isErrorTurnToConfigSuggestion?: (error: Error) => boolean
 }): Promise<FetchElements<Element[]>> => {
-  const allTypesWithRequestEndpoints = includeTypes.filter(
-    typeName => types[typeName].request?.url !== undefined
-  )
-
   const elementGenerationParams = {
     adapterName,
     paginator,
@@ -300,9 +299,15 @@ export const getAllElements = async ({
     getElemIdFunc,
   }
 
+  const supportedTypesWithEndpoints = _.mapValues(
+    supportedTypes,
+    typeNames => typeNames.filter(typeName => types[typeName].request?.url !== undefined)
+  )
+
   const configSuggestions: ConfigChangeSuggestion[] = []
   const elements = await getElementsWithContext({
-    includeTypes: allTypesWithRequestEndpoints,
+    fetchQuery,
+    supportedTypes: supportedTypesWithEndpoints,
     types,
     typeElementGetter: async args => {
       try {
@@ -342,7 +347,7 @@ export const getAllElements = async ({
     adapterName,
     elements: instancesAndTypes,
     typesConfig: types,
-    includeTypes,
+    supportedTypes,
     typeDefaultConfig: typeDefaults,
   })
   return {

@@ -52,7 +52,7 @@ jest.mock('@salto-io/file', () => ({
       return Promise.resolve('[{"elemID":{"adapter":"salesforce","nameParts":["_config"]},"refType":{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"salesforce","nameParts":[]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"value":{"token":"token","sandbox":false,"username":"test@test","password":"pass"},"_salto_class":"InstanceElement"},{"annotationRefTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"salesforce","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"salesforce","nameParts":["test"]},"name":"name","refType":{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"salesforce","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationRefTypes":{},"annotations":{"metadataType":"Settings"},"elemID":{"adapter":"salesforce","nameParts":["settings"]},"fields":{},"isSettings":true,"_salto_class":"ObjectType"}]')
     }
     if (filename === 'mutiple_adapters') {
-      return Promise.resolve('[{"annotationRefTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"salesforce","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"salesforce","nameParts":["test"]},"name":"name","refType":{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"salesforce","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"hubspot","nameParts":["foo"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"}]\n{ "salto" :"2020-04-21T09:44:20.824Z", "hubspot":"2020-04-21T09:44:20.824Z"}')
+      return Promise.resolve('[{"annotationRefTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"salesforce","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"salesforce","nameParts":["test"]},"name":"name","refType":{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"salesforce","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"netsuite","nameParts":["foo"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"}]\n{ "salto" :"2020-04-21T09:44:20.824Z", "netsuite":"2020-04-21T09:44:20.824Z"}')
     }
     if (filename === 'on-delete') {
       return '[]\n[{ "salto" :"2020-04-21T09:44:20.824Z"}]'
@@ -70,7 +70,7 @@ jest.mock('@salto-io/file', () => ({
       return Promise.resolve('[{"elemID":{"adapter":"netsuite","nameParts":["_config"]},"refType":{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"netsuite","nameParts":[]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"value":{"token":"token","sandbox":false,"username":"test@test","password":"pass"},"_salto_class":"InstanceElement"},{"annotationRefTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"netsuite","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"netsuite","nameParts":["test"]},"name":"name","refType":{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"netsuite","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationRefTypes":{},"annotations":{"metadataType":"Settings"},"elemID":{"adapter":"netsuite","nameParts":["settings"]},"fields":{},"isSettings":true,"_salto_class":"ObjectType"}]\n{ "netsuite" :"2020-04-21T09:44:20.824Z"}')
     }
     if (filename === 'mutiple_adapters.jsonl.zip') {
-      return Promise.resolve('[{"annotationRefTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"salesforce","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"salesforce","nameParts":["test"]},"name":"name","refType":{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"salesforce","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"hubspot","nameParts":["foo"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"}]\n{ "salto" :"2020-04-21T09:44:20.824Z", "hubspot":"2020-04-21T09:44:20.824Z"}')
+      return Promise.resolve('[{"annotationRefTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"salesforce","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"salesforce","nameParts":["test"]},"name":"name","refType":{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"salesforce","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"netsuite","nameParts":["foo"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"}]\n{ "salto" :"2020-04-21T09:44:20.824Z", "netsuite":"2020-04-21T09:44:20.824Z"}')
     }
     if (filename === 'on-delete.jsonl.zip') {
       return '[]\n{ "salto" :"2020-04-21T09:44:20.824Z"}'
@@ -306,10 +306,10 @@ describe('local state', () => {
   describe('getUpdateDate', () => {
     const mockExists = exists as jest.Mock
     const saltoModificationDate = new Date(2010, 10, 10)
-    const hubspotModificationDate = new Date(2011, 10, 10)
+    const netsuiteModificationDate = new Date(2011, 10, 10)
     const mockStateStr = [
       safeJsonStringify([]),
-      safeJsonStringify({ salto: saltoModificationDate, hubspot: hubspotModificationDate }),
+      safeJsonStringify({ salto: saltoModificationDate, netsuite: netsuiteModificationDate }),
       safeJsonStringify([]),
     ].join(EOL)
 
@@ -331,7 +331,7 @@ describe('local state', () => {
       const state = localState('filename', '', remoteMapCreator)
       const date = await state.getAccountsUpdateDates()
       expect(date.salto).toEqual(saltoModificationDate)
-      expect(date.hubspot).toEqual(hubspotModificationDate)
+      expect(date.netsuite).toEqual(netsuiteModificationDate)
     })
     it('should update modification date on override', async () => {
       mockExists.mockResolvedValueOnce(true)
@@ -342,11 +342,11 @@ describe('local state', () => {
 
       const beforeOverrideDate = await state.getAccountsUpdateDates()
       expect(beforeOverrideDate.salto).toEqual(saltoModificationDate)
-      expect(beforeOverrideDate.hubspot).toEqual(hubspotModificationDate)
+      expect(beforeOverrideDate.netsuite).toEqual(netsuiteModificationDate)
       await state.override(awu([mockElement]))
       const overrideDate = await state.getAccountsUpdateDates()
       expect(overrideDate.salto.getTime()).toBe(now)
-      expect(beforeOverrideDate.hubspot).toEqual(hubspotModificationDate)
+      expect(beforeOverrideDate.netsuite).toEqual(netsuiteModificationDate)
     })
     it('should not update modification date on set/remove', async () => {
       mockExists.mockResolvedValueOnce(true)
@@ -356,10 +356,10 @@ describe('local state', () => {
       await state.set(mockElement)
       const overrideDate = await state.getAccountsUpdateDates()
       expect(overrideDate.salto).toEqual(saltoModificationDate)
-      expect(overrideDate.hubspot).toEqual(hubspotModificationDate)
+      expect(overrideDate.netsuite).toEqual(netsuiteModificationDate)
       await state.remove(mockElement.elemID)
       expect(overrideDate.salto).toEqual(saltoModificationDate)
-      expect(overrideDate.hubspot).toEqual(hubspotModificationDate)
+      expect(overrideDate.netsuite).toEqual(netsuiteModificationDate)
     })
     it('should ignore built in types in set ops', async () => {
       mockExists.mockResolvedValueOnce(true)
@@ -379,7 +379,7 @@ describe('local state', () => {
     it('should return all adapters in a full state', async () => {
       const state = localState('mutiple_adapters', '', remoteMapCreator)
       const adapters = await state.existingAccounts()
-      expect(adapters).toEqual(['hubspot', 'salto'])
+      expect(adapters).toEqual(['netsuite', 'salto'])
     })
   })
 

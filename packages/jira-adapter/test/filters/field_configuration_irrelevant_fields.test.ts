@@ -14,26 +14,29 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
-import { filterUtils } from '@salto-io/adapter-components'
+import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { FIELD_TYPE_NAME } from '../../src/filters/fields/constants'
 import { DEFAULT_CONFIG } from '../../src/config'
 import { JIRA } from '../../src/constants'
-import fieldConfigurationTrashedFieldsFilter from '../../src/filters/field_configuration_trashed_fields'
+import fieldConfigurationIrrelevantFields from '../../src/filters/field_configuration_irrelevant_fields'
 import { mockClient } from '../utils'
 
 
-describe('fieldConfigurationTrashedFieldsFilter', () => {
+describe('fieldConfigurationIrrelevantFields', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
   let fieldConfigurationType: ObjectType
+  let fieldInstance: InstanceElement
 
   beforeEach(async () => {
     const { client, paginator } = mockClient()
 
-    filter = fieldConfigurationTrashedFieldsFilter({
+    filter = fieldConfigurationIrrelevantFields({
       client,
       paginator,
       config: DEFAULT_CONFIG,
       elementsSource: buildElementsSourceFromElements([]),
+      fetchQuery: elementUtils.query.createMockQuery(),
     }) as typeof filter
 
 
@@ -41,6 +44,12 @@ describe('fieldConfigurationTrashedFieldsFilter', () => {
       elemID: new ElemID(JIRA, 'FieldConfiguration'),
       fields: {},
     })
+
+    fieldInstance = new InstanceElement(
+      'instance',
+      new ObjectType({ elemID: new ElemID(JIRA, FIELD_TYPE_NAME) }),
+      {},
+    )
   })
 
   describe('onFetch', () => {
@@ -51,7 +60,7 @@ describe('fieldConfigurationTrashedFieldsFilter', () => {
         {
           fields: [
             {
-              id: new ReferenceExpression(new ElemID(JIRA, 'Field', 'instance', 'field1')),
+              id: new ReferenceExpression(fieldInstance.elemID, fieldInstance),
             },
             {
               id: '2',
@@ -63,24 +72,43 @@ describe('fieldConfigurationTrashedFieldsFilter', () => {
       expect(instance.value).toEqual({
         fields: [
           {
-            id: new ReferenceExpression(new ElemID(JIRA, 'Field', 'instance', 'field1')),
+            id: new ReferenceExpression(fieldInstance.elemID, fieldInstance),
           },
         ],
       })
     })
 
+    it('should remove locked fields', async () => {
+      fieldInstance.value.isLocked = true
+
+      const instance = new InstanceElement(
+        'instance',
+        fieldConfigurationType,
+        {
+          fields: [
+            {
+              id: new ReferenceExpression(fieldInstance.elemID, fieldInstance),
+            },
+          ],
+        }
+      )
+      await filter.onFetch([instance])
+      expect(instance.value).toEqual({
+        fields: [],
+      })
+    })
+
     it('should do nothing of fields are not fetched', async () => {
       const { client, paginator } = mockClient()
-      filter = fieldConfigurationTrashedFieldsFilter({
+      const query = elementUtils.query.createMockQuery()
+      query.isTypeMatch.mockImplementation(typeName => typeName !== FIELD_TYPE_NAME)
+
+      filter = fieldConfigurationIrrelevantFields({
         client,
         paginator,
-        config: {
-          ...DEFAULT_CONFIG,
-          fetch: {
-            includeTypes: DEFAULT_CONFIG.fetch.includeTypes.filter(type => type !== 'Fields'),
-          },
-        },
+        config: DEFAULT_CONFIG,
         elementsSource: buildElementsSourceFromElements([]),
+        fetchQuery: query,
       }) as typeof filter
 
       const instance = new InstanceElement(

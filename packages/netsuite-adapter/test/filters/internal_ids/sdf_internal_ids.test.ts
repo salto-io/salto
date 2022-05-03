@@ -21,7 +21,7 @@ import NetsuiteClient from '../../../src/client/client'
 import { FilterOpts } from '../../../src/filter'
 import SuiteAppClient from '../../../src/client/suiteapp_client/suiteapp_client'
 import mockSdfClient from '../../client/sdf_client'
-import { getDefaultAdapterConfig } from '../../utils'
+import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../../utils'
 
 describe('sdf internal ids tests', () => {
   let filterOpts: FilterOpts
@@ -63,13 +63,9 @@ describe('sdf internal ids tests', () => {
     elements = [...instances, customTypeObject]
     filterOpts = {
       client,
-      elementsSourceIndex: { getIndexes: () => Promise.resolve({
-        serviceIdsIndex: {},
-        serviceIdRecordsIndex: {},
-        internalIdsIndex: {},
-        customFieldsIndex: {},
-        pathToInternalIdsIndex: {},
-      }) },
+      elementsSourceIndex: {
+        getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+      },
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
       config: await getDefaultAdapterConfig(),
@@ -90,13 +86,9 @@ describe('sdf internal ids tests', () => {
       const clientWithoutSuiteApp = new NetsuiteClient(SDFClient)
       filterOpts = {
         client: clientWithoutSuiteApp,
-        elementsSourceIndex: { getIndexes: () => Promise.resolve({
-          serviceIdsIndex: {},
-          serviceIdRecordsIndex: {},
-          internalIdsIndex: {},
-          customFieldsIndex: {},
-          pathToInternalIdsIndex: {},
-        }) },
+        elementsSourceIndex: {
+          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+        },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
         config: await getDefaultAdapterConfig(),
@@ -114,13 +106,9 @@ describe('sdf internal ids tests', () => {
       const clientWithoutSuiteApp = new NetsuiteClient(SDFClient)
       filterOpts = {
         client: clientWithoutSuiteApp,
-        elementsSourceIndex: { getIndexes: () => Promise.resolve({
-          serviceIdsIndex: {},
-          serviceIdRecordsIndex: {},
-          internalIdsIndex: {},
-          customFieldsIndex: {},
-          pathToInternalIdsIndex: {},
-        }) },
+        elementsSourceIndex: {
+          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+        },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
         config: await getDefaultAdapterConfig(),
@@ -136,13 +124,9 @@ describe('sdf internal ids tests', () => {
       const clientWithoutSuiteApp = new NetsuiteClient(SDFClient)
       filterOpts = {
         client: clientWithoutSuiteApp,
-        elementsSourceIndex: { getIndexes: () => Promise.resolve({
-          serviceIdsIndex: {},
-          serviceIdRecordsIndex: {},
-          internalIdsIndex: {},
-          customFieldsIndex: {},
-          pathToInternalIdsIndex: {},
-        }) },
+        elementsSourceIndex: {
+          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+        },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
         config: await getDefaultAdapterConfig(),

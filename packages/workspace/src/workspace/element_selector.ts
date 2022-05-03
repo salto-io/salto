@@ -277,6 +277,9 @@ export const selectElementIdsByTraversal = async ({
   }
 
   const topLevelIDs = await getTopLevelIDs()
+  if (subElementSelectors.length === 0) {
+    return awu(topLevelIDs)
+  }
   const currentIds = new Set(topLevelIDs.map(id => id.getFullName()))
 
   const possibleParentSelectors = subElementSelectors.map(createTopLevelSelector)

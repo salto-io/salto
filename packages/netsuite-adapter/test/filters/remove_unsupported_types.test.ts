@@ -20,7 +20,7 @@ import { NETSUITE } from '../../src/constants'
 import NetsuiteClient from '../../src/client/client'
 import { FilterOpts } from '../../src/filter'
 import { customrecordtypeType } from '../../src/autogen/types/custom_types/customrecordtype'
-import { getDefaultAdapterConfig } from '../utils'
+import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../utils'
 
 describe('remove_unsupported_types', () => {
   let filterOpts: FilterOpts
@@ -37,13 +37,9 @@ describe('remove_unsupported_types', () => {
     isSuiteAppConfiguredMock.mockReturnValue(true)
     filterOpts = {
       client: { isSuiteAppConfigured: isSuiteAppConfiguredMock } as unknown as NetsuiteClient,
-      elementsSourceIndex: { getIndexes: () => Promise.resolve({
-        serviceIdsIndex: {},
-        serviceIdRecordsIndex: {},
-        internalIdsIndex: {},
-        customFieldsIndex: {},
-        pathToInternalIdsIndex: {},
-      }) },
+      elementsSourceIndex: {
+        getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+      },
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
       config: await getDefaultAdapterConfig(),

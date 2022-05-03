@@ -32,10 +32,11 @@ import mockReplies from './mock_replies.json'
 import { adapter } from '../src/adapter_creator'
 import { accessTokenCredentialsType } from '../src/auth'
 import {
+  ALL_SUPPORTED_TYPES,
   API_DEFINITIONS_CONFIG,
   configType,
   DEFAULT_API_DEFINITIONS,
-  DEFAULT_INCLUDE_TYPES,
+  DEFAULT_CONFIG,
   FETCH_CONFIG,
 } from '../src/config'
 import { STRIPE } from '../src/constants'
@@ -60,9 +61,6 @@ jest.mock('@salto-io/adapter-components', () => {
 const mockedAdapterComponents = jest.mocked(adapterComponents, true)
 
 describe('stripe swagger adapter', () => {
-  const SINGULAR_TYPES = ['country_spec', 'coupon', 'product', 'reporting_report_type', 'tax_rate', 'webhook_endpoint']
-  const pluralToSingularTypes = _.zipObject(DEFAULT_INCLUDE_TYPES, SINGULAR_TYPES)
-
   type MockReply = {
     url: string
     params: Record<string, string>
@@ -75,18 +73,13 @@ describe('stripe swagger adapter', () => {
     { token: 'testToken' }
   )
 
-  const DEFAULT_CONFIG = new InstanceElement(
+  const DEFAULT_CONFIG_INSTANCE = new InstanceElement(
     'config',
     configType,
-    {
-      [FETCH_CONFIG]: {
-        includeTypes: DEFAULT_INCLUDE_TYPES,
-      },
-      [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
-    }
+    DEFAULT_CONFIG
   )
 
-  const fetchInstances = async (config = DEFAULT_CONFIG): Promise<InstanceElement[]> => {
+  const fetchInstances = async (config = DEFAULT_CONFIG_INSTANCE): Promise<InstanceElement[]> => {
     const { elements } = await adapter.operations({
       credentials: CREDENTIALS,
       config,
@@ -106,23 +99,24 @@ describe('stripe swagger adapter', () => {
         refType: new ListType(priceType),
       } },
     })
-    const singularObjectTypesByName = Object.fromEntries(SINGULAR_TYPES.map(type => [
-      type,
-      new ObjectType({
-        elemID: new ElemID(STRIPE, type),
-        fields: { id: { refType: BuiltinTypes.STRING } },
-      })]))
+    const singularObjectTypesByName = Object.fromEntries(Object.keys(ALL_SUPPORTED_TYPES)
+      .map(type => [
+        type,
+        new ObjectType({
+          elemID: new ElemID(STRIPE, type),
+          fields: { id: { refType: BuiltinTypes.STRING } },
+        })]))
     const mockTypes = {
       allTypes: {
         ...singularObjectTypesByName,
         price: priceType,
         prices: pricesType,
-        ...Object.fromEntries(DEFAULT_INCLUDE_TYPES.map(
-          pluralType => [naclCase(pluralType), new ObjectType({
-            elemID: new ElemID(STRIPE, pluralType),
+        ...Object.fromEntries(Object.entries(ALL_SUPPORTED_TYPES).map(
+          ([singleType, pluralTypes]) => [naclCase(pluralTypes[0]), new ObjectType({
+            elemID: new ElemID(STRIPE, pluralTypes[0]),
             fields: {
               data: {
-                refType: new ListType(singularObjectTypesByName[pluralToSingularTypes[pluralType]]),
+                refType: new ListType(singularObjectTypesByName[singleType]),
               },
             },
           })]
@@ -208,7 +202,7 @@ describe('stripe swagger adapter', () => {
         fetchedInstancesTypes = new Set(fetchedInstances.map(instance => instance.elemID.typeName))
       })
 
-      it.each(SINGULAR_TYPES)(
+      it.each(Object.keys(ALL_SUPPORTED_TYPES))(
         '%s',
         typeName => {
           expect(fetchedInstancesTypes).toContain(typeName)
@@ -233,8 +227,7 @@ describe('stripe swagger adapter', () => {
 
     describe('custom config', () => {
       describe('fetches included types', () => {
-        const INCLUDE_TYPES = ['coupons', 'tax_rates']
-        const SINGULAR_INCLUDE_TYPES = INCLUDE_TYPES.map(t => pluralToSingularTypes[t])
+        const SINGULAR_INCLUDE_TYPES = ['coupon', 'tax_rate']
 
         let fetchedInstancesTypes: Set<string>
 
@@ -244,7 +237,8 @@ describe('stripe swagger adapter', () => {
             configType,
             {
               [FETCH_CONFIG]: {
-                includeTypes: INCLUDE_TYPES,
+                include: SINGULAR_INCLUDE_TYPES.map(type => ({ type })),
+                exclude: [],
               },
               [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
             }
@@ -268,14 +262,48 @@ describe('stripe swagger adapter', () => {
         })
       })
 
+      describe('fetches with deprecated config', () => {
+        const SINGULAR_INCLUDE_TYPES = ['coupon', 'tax_rate']
+
+        let fetchedInstancesTypes: Set<string>
+
+        beforeAll(async () => {
+          const config = new InstanceElement(
+            'config',
+            configType,
+            {
+              [FETCH_CONFIG]: {
+                includeTypes: ['coupons', 'tax_rates'],
+              },
+              [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
+            }
+          )
+          const instances = await fetchInstances(config)
+          fetchedInstancesTypes = new Set(instances.map(e => e.elemID.typeName))
+        })
+
+        it.each(SINGULAR_INCLUDE_TYPES)(
+          '%s',
+          includedType => {
+            expect(fetchedInstancesTypes).toContain(includedType)
+          }
+        )
+
+        it('doesn\'t fetch additional types', () => {
+          const notIncluded = (typeName: string): boolean =>
+            !SINGULAR_INCLUDE_TYPES.includes(typeName)
+          const additionalTypes: string[] = Array.from(fetchedInstancesTypes).filter(notIncluded)
+          expect(additionalTypes).toBeEmpty()
+        })
+      })
+
+
       it('fetches instances of modified type: "product"', async () => {
         const config = new InstanceElement(
           'config',
           configType,
           {
-            [FETCH_CONFIG]: {
-              includeTypes: DEFAULT_INCLUDE_TYPES,
-            },
+            [FETCH_CONFIG]: DEFAULT_CONFIG[FETCH_CONFIG],
             [API_DEFINITIONS_CONFIG]: {
               ...DEFAULT_API_DEFINITIONS,
               types: {
@@ -298,7 +326,7 @@ describe('stripe swagger adapter', () => {
     it('throws Error on deploy', async () => {
       const adapterOperations = adapter.operations({
         credentials: CREDENTIALS,
-        config: DEFAULT_CONFIG,
+        config: DEFAULT_CONFIG_INSTANCE,
         elementsSource: buildElementsSourceFromElements([]),
       })
       const deployOptions = { changeGroup: { groupID: '', changes: [] } }

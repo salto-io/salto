@@ -76,7 +76,6 @@ export type ChangeValidatorName = (
   | 'picklistPromote'
   | 'validateOnlyFlag'
   | 'cpqValidator'
-  | 'refToInstanceSameType'
   | 'sbaaApprovalRulesCustomCondition'
 )
 export type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -474,7 +473,6 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     picklistPromote: { refType: BuiltinTypes.BOOLEAN },
     validateOnlyFlag: { refType: BuiltinTypes.BOOLEAN },
     cpqValidator: { refType: BuiltinTypes.BOOLEAN },
-    refToInstanceSameType: { refType: BuiltinTypes.BOOLEAN },
     sbaaApprovalRulesCustomCondition: { refType: BuiltinTypes.BOOLEAN },
   },
 })
@@ -511,12 +509,17 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
               { metadataType: 'ReportFolder' },
               { metadataType: 'Dashboard' },
               { metadataType: 'DashboardFolder' },
+              { metadataType: 'Document' },
+              { metadataType: 'DocumentFolder' },
               { metadataType: 'Profile' },
               { metadataType: 'PermissionSet' },
               { metadataType: 'SiteDotCom' },
               { metadataType: 'EmailTemplate' },
               { metadataType: 'ContentAsset' },
               { metadataType: 'CustomObjectTranslation' },
+              { metadataType: 'AnalyticSnapshot' },
+              { metadataType: 'WaveDashboard' },
+              { metadataType: 'WaveDataflow' },
               {
                 metadataType: 'StandardValueSet',
                 name: '^(AddressCountryCode)|(AddressStateCode)$',

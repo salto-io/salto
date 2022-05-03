@@ -17,13 +17,14 @@ import { isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
+import { FIELD_TYPE_NAME } from './fields/constants'
 
 const log = logger(module)
 
-const filter: FilterCreator = ({ config }) => ({
+const filter: FilterCreator = ({ fetchQuery }) => ({
   onFetch: async elements => {
-    if (!config.fetch.includeTypes.includes('Fields')) {
-      log.warn('Fields is not included in the fetch list so we cannot know what fields is in trash. Skipping the field_configuration_trashed_fields')
+    if (!fetchQuery.isTypeMatch(FIELD_TYPE_NAME)) {
+      log.warn('Field type is not included in the fetch list so we cannot know what fields is in trash. Skipping the field_configuration_trashed_fields')
       return
     }
 
@@ -34,11 +35,12 @@ const filter: FilterCreator = ({ config }) => ({
       .forEach(instance => {
         const [fields, trashedFields] = _.partition(
           instance.value.fields,
-          field => isReferenceExpression(field.id),
+          field => isReferenceExpression(field.id)
+            && !field.id.value.value.isLocked
         )
         instance.value.fields = fields
         if (trashedFields.length !== 0) {
-          log.debug(`Removed from ${instance.elemID.getFullName()} fields with ids: ${trashedFields.map(field => field.id).join(', ')}, because they are not references and thus assumed to be in trash`)
+          log.debug(`Removed from ${instance.elemID.getFullName()} fields with ids: ${trashedFields.map(field => field.id).join(', ')}`)
         }
       })
   },

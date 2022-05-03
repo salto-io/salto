@@ -66,8 +66,10 @@ describe('adapter', () => {
             configType,
             {
               [FETCH_CONFIG]: {
-                includeTypes: [...Object.keys(DEFAULT_TYPES)].sort()
-                  .filter(type => type !== RECIPE_CODE_TYPE),
+                include: [...Object.keys(DEFAULT_TYPES)].sort()
+                  .filter(type => type !== RECIPE_CODE_TYPE)
+                  .map(type => ({ type })),
+                exclude: [],
               },
             }
           ),
@@ -259,7 +261,8 @@ describe('adapter', () => {
             configType,
             {
               [FETCH_CONFIG]: {
-                includeTypes: ['connection'],
+                include: [{ type: 'connection' }],
+                exclude: [],
               },
               [API_DEFINITIONS_CONFIG]: {
                 types: {
@@ -306,7 +309,8 @@ describe('adapter', () => {
             configType,
             {
               [FETCH_CONFIG]: {
-                includeTypes: ['connection'],
+                include: [{ type: 'connection' }],
+                exclude: [],
               },
               [API_DEFINITIONS_CONFIG]: {
                 types: {
@@ -387,8 +391,10 @@ describe('adapter', () => {
             configType,
             {
               [FETCH_CONFIG]: {
-                includeTypes: [...Object.keys(DEFAULT_TYPES)].sort()
-                  .filter(type => type !== RECIPE_CODE_TYPE),
+                include: [...Object.keys(DEFAULT_TYPES)].sort()
+                  .filter(type => type !== RECIPE_CODE_TYPE)
+                  .map(type => ({ type })),
+                exclude: [],
                 serviceConnectionNames: {
                   salesforce: ['sfdev1'],
                   salesforce2: ['dev2 sfdc account'],
@@ -440,10 +446,10 @@ describe('adapter', () => {
           'config',
           configType,
           {
-            [FETCH_CONFIG]: {
-              includeTypes: [...Object.keys(DEFAULT_TYPES)].sort()
-                .filter(type => type !== RECIPE_CODE_TYPE),
-            },
+            include: [...Object.keys(DEFAULT_TYPES)].sort()
+              .filter(type => type !== RECIPE_CODE_TYPE)
+              .map(type => ({ type })),
+            exclude: [],
           }
         ),
         elementsSource: buildElementsSourceFromElements([]),

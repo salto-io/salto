@@ -34,7 +34,7 @@ export const cleanWorkspace = async (
       const service = workspace.getServiceFromAccountName(account)
       const defaultConfig = await getDefaultAdapterConfig(service, account)
       if (defaultConfig === undefined) {
-        // some services, like hubspot, don't have configs to restore
+        // some services might not have configs to restore
         log.info('Cannot restore config for account %s', account)
         return
       }

@@ -75,7 +75,7 @@ const parseNaclFileFromCacheSources = async (
   elements: () => cacheSources.elements.get(filename),
   data: {
     errors: async () => (await cacheSources.errors.get(filename) ?? []),
-    referenced: () => cacheSources.referenced.get(filename),
+    referenced: async () => (await cacheSources.referenced.get(filename) ?? []),
   },
   sourceMap: () => cacheSources.sourceMap.get(filename),
 })
@@ -183,7 +183,7 @@ export const createParseResultCache = (
           await errors.delete(value.filename)
         }
       }
-      await referenced.set(value.filename, (await value.data.referenced()) ?? [])
+      await referenced.set(value.filename, await value.data.referenced())
       const sourceMapValue = await value.sourceMap?.()
       if (sourceMapValue !== undefined) {
         await sourceMap.set(value.filename, sourceMapValue)
@@ -214,7 +214,7 @@ export const createParseResultCache = (
       await errors.setAll(errorEntriesToAdd)
       await errors.deleteAll(errorEntriesToDelete)
       await referenced.setAll(awu(Object.keys(files))
-        .map(async file => ({ key: file, value: await files[file].data.referenced() ?? [] })))
+        .map(async file => ({ key: file, value: await files[file].data.referenced() })))
       await sourceMap.setAll(awu(Object.keys(files))
         .map(async file => {
           const fileSourceMap = await files[file].sourceMap?.()

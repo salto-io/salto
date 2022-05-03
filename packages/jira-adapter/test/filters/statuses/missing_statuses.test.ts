@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -30,17 +30,22 @@ describe('missingStatusesFilter', () => {
   let type: ObjectType
   let mockConnection: MockInterface<clientUtils.APIConnection>
   let config: JiraConfig
+  let fetchQuery: MockInterface<elementUtils.query.ElementQuery>
 
   beforeEach(async () => {
     const { client, paginator, connection } = mockClient()
     mockConnection = connection
 
     config = _.cloneDeep(DEFAULT_CONFIG)
+
+    fetchQuery = elementUtils.query.createMockQuery()
+
     filter = missingStatusesFilter({
       client,
       paginator,
       config,
       elementsSource: buildElementsSourceFromElements([]),
+      fetchQuery,
     })
 
     type = new ObjectType({
@@ -56,6 +61,12 @@ describe('missingStatusesFilter', () => {
 
     it('should do nothing if usePrivateAPI is false', async () => {
       config.client.usePrivateAPI = false
+      await filter.onFetch?.([type])
+      expect(mockConnection.get).not.toHaveBeenCalled()
+    })
+
+    it('should do nothing if statuses were excluded', async () => {
+      fetchQuery.isTypeMatch.mockReturnValue(false)
       await filter.onFetch?.([type])
       expect(mockConnection.get).not.toHaveBeenCalled()
     })

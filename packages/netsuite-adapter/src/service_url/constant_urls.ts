@@ -81,7 +81,7 @@ const TYPE_TO_URL: Record<CustomType | 'file' | 'folder', string| undefined> = {
   workbook: undefined,
 }
 
-const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
+const setServiceUrl: ServiceUrlSetter = (elements, client) => {
   elements
     .filter(isObjectType)
     .forEach(element => {

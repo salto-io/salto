@@ -20,7 +20,7 @@ import xmlParser from 'fast-xml-parser'
 import _ from 'lodash'
 import { SCRIPT_ID, WORKFLOW } from '../constants'
 import { captureServiceIdInfo } from '../service_id_info'
-import { CustomizationInfo } from './types'
+import { AdditionalDependencies, CustomizationInfo } from './types'
 import { ATTRIBUTE_PREFIX } from './constants'
 
 const { makeArray } = collections.array
@@ -120,26 +120,33 @@ const fixDependenciesObject = (dependencies: Value): void => {
 
 const addRequiredDependencies = (
   dependencies: Value,
-  customizationInfos: CustomizationInfo[]
+  customizationInfos: CustomizationInfo[],
+  additionalDependencies: AdditionalDependencies
 ): void => {
-  const requiredFeatures = getRequiredFeatures(customizationInfos)
+  const requiredFeatures = _(additionalDependencies.include.features)
+    .union(getRequiredFeatures(customizationInfos))
     .map(feature => ({ [REQUIRED_ATTRIBUTE]: 'true', [TEXT_ATTRIBUTE]: feature }))
-  const requiredObjects = getRequiredObjects(customizationInfos)
+    .value()
+  const requiredObjects = _(additionalDependencies.include.objects)
+    .union(getRequiredObjects(customizationInfos))
+    .value()
   if (requiredFeatures.length === 0 && requiredObjects.length === 0) {
     return
   }
 
   const { features, objects } = dependencies
-  features.feature = [
-    // remove required features that are set to "required=false"
-    ..._.differenceBy(
-      makeArray(features.feature),
-      requiredFeatures,
-      item => item[TEXT_ATTRIBUTE]
-    ),
-    ...requiredFeatures,
-  ]
-  objects.object = _.union(objects.object, requiredObjects)
+  features.feature = _(makeArray(features.feature))
+    // remove all required features
+    .differenceBy(requiredFeatures, item => item[TEXT_ATTRIBUTE])
+    // re-add all required features with "required=true"
+    .unionBy(requiredFeatures, item => item[TEXT_ATTRIBUTE])
+    .filter(item => !additionalDependencies.exclude.features.includes(item[TEXT_ATTRIBUTE]))
+    .value()
+
+  objects.object = _(makeArray(objects.object))
+    .union(requiredObjects)
+    .difference(additionalDependencies.exclude.objects)
+    .value()
 }
 
 const cleanInvalidDependencies = (dependencies: Value): void => {
@@ -151,7 +158,8 @@ const cleanInvalidDependencies = (dependencies: Value): void => {
 
 export const fixManifest = (
   manifestContent: string,
-  customizationInfos: CustomizationInfo[]
+  customizationInfos: CustomizationInfo[],
+  additionalDependencies: AdditionalDependencies
 ): string => {
   const manifestXml = xmlParser.parse(manifestContent, { ignoreAttributes: false })
 
@@ -163,7 +171,7 @@ export const fixManifest = (
   const { dependencies } = manifestXml.manifest
   fixDependenciesObject(dependencies)
   cleanInvalidDependencies(dependencies)
-  addRequiredDependencies(dependencies, customizationInfos)
+  addRequiredDependencies(dependencies, customizationInfos, additionalDependencies)
 
   // eslint-disable-next-line new-cap
   const fixedDependencies = new xmlParser.j2xParser({

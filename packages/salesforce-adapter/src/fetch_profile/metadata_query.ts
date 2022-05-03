@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { regex } from '@salto-io/lowerdash'
 import { DEFAULT_NAMESPACE, SETTINGS_METADATA_TYPE, TOPICS_FOR_OBJECTS_METADATA_TYPE, CUSTOM_OBJECT } from '../constants'
 import { validateRegularExpressions } from '../config_validation'
 import { MetadataInstance, MetadataParams, MetadataQueryParams } from '../types'
@@ -52,9 +53,9 @@ export const buildMetadataQuery = (
     }: MetadataQueryParams
   ): boolean => {
     const realNamespace = namespace === '' ? DEFAULT_NAMESPACE : namespace
-    return new RegExp(`^${metadataType}$`).test(instance.metadataType)
-    && new RegExp(`^${realNamespace}$`).test(instance.namespace)
-    && new RegExp(`^${name}$`).test(instance.name)
+    return regex.isFullRegexMatch(instance.metadataType, metadataType)
+    && regex.isFullRegexMatch(instance.namespace, realNamespace)
+    && regex.isFullRegexMatch(instance.name, name)
   }
 
   const isIncludedInPartialFetch = (type: string): boolean => {
@@ -94,11 +95,11 @@ export const buildMetadataQuery = (
 const validateMetadataQueryParams = (params: MetadataQueryParams[], fieldPath: string[]): void => {
   params.forEach(
     queryParams => Object.entries(queryParams)
-      .forEach(([queryField, regex]) => {
-        if (regex === undefined) {
+      .forEach(([queryField, pattern]) => {
+        if (pattern === undefined) {
           return
         }
-        validateRegularExpressions([regex], [...fieldPath, queryField])
+        validateRegularExpressions([pattern], [...fieldPath, queryField])
       })
   )
 }

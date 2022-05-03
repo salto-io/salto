@@ -18,7 +18,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { fileType } from '../../src/types/file_cabinet_types'
 import NetsuiteClient from '../../src/client/client'
 import serviceUrls from '../../src/filters/service_urls'
-import { getDefaultAdapterConfig } from '../utils'
+import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../utils'
 
 describe('serviceUrls', () => {
   const getPathInternalIdMock = jest.fn()
@@ -43,13 +43,9 @@ describe('serviceUrls', () => {
   it('should set the right url', async () => {
     await serviceUrls({
       client,
-      elementsSourceIndex: { getIndexes: () => Promise.resolve({
-        serviceIdsIndex: {},
-        serviceIdRecordsIndex: {},
-        internalIdsIndex: {},
-        customFieldsIndex: {},
-        pathToInternalIdsIndex: {},
-      }) },
+      elementsSourceIndex: {
+        getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+      },
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
       config: await getDefaultAdapterConfig(),
@@ -60,13 +56,9 @@ describe('serviceUrls', () => {
     isSuiteAppConfiguredMock.mockReturnValue(false)
     await serviceUrls({
       client,
-      elementsSourceIndex: { getIndexes: () => Promise.resolve({
-        serviceIdsIndex: {},
-        serviceIdRecordsIndex: {},
-        internalIdsIndex: {},
-        customFieldsIndex: {},
-        pathToInternalIdsIndex: {},
-      }) },
+      elementsSourceIndex: {
+        getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+      },
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
       config: await getDefaultAdapterConfig(),

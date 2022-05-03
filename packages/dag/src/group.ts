@@ -16,8 +16,11 @@
 import wu from 'wu'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { values } from '@salto-io/lowerdash'
+import { values, collections } from '@salto-io/lowerdash'
 import { NodeId, DataNodeMap, Edge, CircularDependencyError, DAG } from './nodemap'
+
+const { intersection } = collections.set
+const { DefaultMap } = collections.map
 
 const log = logger(module)
 
@@ -143,6 +146,54 @@ const buildPossiblyCyclicGroupGraph = <T>(
   return graph
 }
 
+const breakToDisjointGroup = <T>(
+  groupId: string,
+  groupNodeIds: Set<NodeId>,
+  source: DataNodeMap<T>,
+  groupKey: GroupKeyFunc,
+): GroupKeyFunc => {
+  const nodeIdToNewGroup = new Map<NodeId, string>()
+  const groupGraph = wu(groupNodeIds)
+    .reduce((acc, nodeId) => {
+      acc.addNode(nodeId, intersection(source.get(nodeId), groupNodeIds), nodeId)
+      return acc
+    }, new DAG())
+
+  wu(groupGraph.evaluationOrderGroups(true))
+    .forEach(nodeIds => {
+      const newGroupId = _.uniqueId(`${groupId}-`)
+      wu(nodeIds).forEach(nodeId => { nodeIdToNewGroup.set(nodeId, newGroupId) })
+    })
+
+  if (new Set(nodeIdToNewGroup.values()).size === 1) {
+    return groupKey
+  }
+
+  return (id: NodeId) => nodeIdToNewGroup.get(id) || groupKey(id)
+}
+
+const breakToDisjointGroups = <T>(
+  source: DataNodeMap<T>,
+  groupKey: GroupKeyFunc,
+  disjointGroups?: Set<NodeId>
+): GroupKeyFunc => {
+  if (disjointGroups === undefined || _.isEmpty(disjointGroups)) {
+    return groupKey
+  }
+
+  const groups = wu(source.keys())
+    .reduce((acc, nodeId) => {
+      acc.get(groupKey(nodeId)).add(nodeId)
+      return acc
+    }, new DefaultMap<string, Set<NodeId>>(() => new Set<NodeId>()))
+
+  return wu(groups.keys())
+    .filter(groupId => disjointGroups.has(groupId))
+    .reduce((updatedGroupKey, groupId) => breakToDisjointGroup(
+      groupId, groups.get(groupId), source, updatedGroupKey
+    ), groupKey)
+}
+
 const buildAcyclicGroupedGraphImpl = <T>(
   source: DataNodeMap<T>,
   groupKey: GroupKeyFunc,
@@ -166,8 +217,12 @@ const buildAcyclicGroupedGraphImpl = <T>(
 export const buildAcyclicGroupedGraph = <T>(
   source: DataNodeMap<T>,
   groupKey: GroupKeyFunc,
+  disjointGroups?: Set<NodeId>,
 ): GroupDAG<T> => log.time(
-    () => buildAcyclicGroupedGraphImpl(source, groupKey, groupKey),
+    () => {
+      const updatedGroupKey = breakToDisjointGroups(source, groupKey, disjointGroups)
+      return buildAcyclicGroupedGraphImpl(source, updatedGroupKey, groupKey)
+    },
     'build grouped graph for %o nodes',
     source.size
   )

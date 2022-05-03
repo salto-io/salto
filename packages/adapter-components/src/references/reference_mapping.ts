@@ -20,6 +20,10 @@ import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 
 export type ApiNameFunc = (elem: Element) => string
 export type LookupFunc = (val: Value, context?: string) => string
+export type CreateMissingRefFunc = (
+  params: { value: string; adapter: string; typeName?: string }
+) => Element | undefined
+export type CheckMissingRefFunc = (element: Element) => boolean
 
 export type ReferenceSerializationStrategy = {
   serialize: GetLookupNameFunc
@@ -46,6 +50,11 @@ export const ReferenceSerializationStrategyLookup: Record<
     lookupIndexName: 'name',
   },
 }
+
+export type MissingReferenceStrategy = {
+  create: CreateMissingRefFunc
+}
+export type MissingReferenceStrategyName = 'typeAndValue'
 
 type MetadataTypeArgs<T extends string> = {
   type: string
@@ -89,6 +98,8 @@ export type FieldReferenceDefinition<
   serializationStrategy?: ReferenceSerializationStrategyName
   // If target is missing, the definition is used for resolving
   target?: ReferenceTargetDefinition<T>
+  // If missingRefStrategy is missing, we won't replace broken values with missing references
+  missingRefStrategy?: MissingReferenceStrategyName
 }
 
 // We can extract the api name from the elem id as long as we don't support renaming
@@ -97,12 +108,14 @@ const elemLookupName: ApiNameFunc = elem => elem.elemID.name
 type FieldReferenceResolverDetails<T extends string> = {
   serializationStrategy: ReferenceSerializationStrategy
   target?: ExtendedReferenceTargetDefinition<T>
+  missingRefStrategy?: MissingReferenceStrategy
 }
 
 export class FieldReferenceResolver<T extends string> {
   src: SourceDef
   serializationStrategy: ReferenceSerializationStrategy
   target?: ExtendedReferenceTargetDefinition<T>
+  missingRefStrategy?: MissingReferenceStrategy
 
   constructor(def: FieldReferenceDefinition<T>) {
     this.src = def.src

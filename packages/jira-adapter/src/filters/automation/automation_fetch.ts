@@ -114,8 +114,12 @@ const createInstance = (
  * We first use `/resources` endpoint to get the cloud id of the account.
  * Using the cloud id, we create the url to query the automations with
  */
-const filter: FilterCreator = ({ client, getElemIdFunc, config }) => ({
+const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuery }) => ({
   onFetch: async elements => {
+    if (!fetchQuery.isTypeMatch(AUTOMATION_TYPE)) {
+      return
+    }
+
     if (!config.client.usePrivateAPI) {
       log.debug('Skipping automation fetch filter because private API is not enabled')
       return

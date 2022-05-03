@@ -145,7 +145,11 @@ describe('config_ducktype', () => {
       expect(() => validateDuckTypeFetchConfig(
         'PATH',
         {
-          includeTypes: ['a', 'bla'],
+          include: [
+            { type: 'a' },
+            { type: 'bla' },
+          ],
+          exclude: [],
         },
         {
           typeDefaults: {
@@ -165,15 +169,22 @@ describe('config_ducktype', () => {
               },
             },
           },
-          supportedTypes: { aa: ['a', 'bla'] },
+          supportedTypes: {
+            a: ['a'],
+            bla: ['bla'],
+          },
         },
       )).not.toThrow()
     })
-    it('should throw when there are invalid includeTypes', () => {
+    it('should throw when there are invalid include types', () => {
       expect(() => validateDuckTypeFetchConfig(
         'PATH',
         {
-          includeTypes: ['a', 'unknown'],
+          include: [
+            { type: 'a' },
+            { type: 'unknown' },
+          ],
+          exclude: [],
         },
         {
           typeDefaults: {
@@ -193,16 +204,22 @@ describe('config_ducktype', () => {
               },
             },
           },
-          supportedTypes: { a: ['a', 'unknown'] },
+          supportedTypes: {
+            a: ['a'],
+            unknown: ['unknown'],
+          },
         },
-      )).toThrow(new Error('Invalid type names in PATH: unknown'))
+      )).toThrow(new Error('Invalid type names in PATH: unknown does not match any of the supported types.'))
     })
 
     it('should throw when type in includeTypes is not in supportedTypes', () => {
       expect(() => validateDuckTypeFetchConfig(
         'PATH',
         {
-          includeTypes: ['a'],
+          include: [
+            { type: 'a' },
+          ],
+          exclude: [],
         },
         {
           typeDefaults: {
@@ -224,7 +241,7 @@ describe('config_ducktype', () => {
           },
           supportedTypes: {},
         },
-      )).toThrow(new Error('Invalid type names in PATH.includeTypes: a are not supported.'))
+      )).toThrow(new Error('Invalid type names in PATH: a does not match any of the supported types.'))
     })
   })
 })

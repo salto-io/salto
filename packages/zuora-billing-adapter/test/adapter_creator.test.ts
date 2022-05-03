@@ -18,10 +18,9 @@ import MockAdapter from 'axios-mock-adapter'
 import { ObjectType, InstanceElement } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import ZuoraAdapter from '../src/adapter'
 import { adapter } from '../src/adapter_creator'
 import { oauthClientCredentialsType } from '../src/auth'
-import { configType } from '../src/config'
+import { configType, DEFAULT_CONFIG, FETCH_CONFIG } from '../src/config'
 import { ZUORA_BILLING } from '../src/constants'
 import * as connection from '../src/client/connection'
 
@@ -57,8 +56,8 @@ describe('adapter creator', () => {
         adapter.configType as ObjectType,
         {
           fetch: {
-            includeTypes: [],
-            settingsIncludeTypes: [],
+            include: [],
+            exclude: [],
           },
           apiDefinitions: {
             endpoints: {},
@@ -66,7 +65,7 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
-    })).toBeInstanceOf(ZuoraAdapter)
+    })).toBeDefined()
   })
   it('should return the zuora_billing adapter if configuration is missing', () => {
     expect(adapter.operations({
@@ -76,7 +75,7 @@ describe('adapter creator', () => {
         { clientId: 'id', clientSecret: 'secret', subdomain: 'sandbox.na', production: false },
       ),
       elementsSource: buildElementsSourceFromElements([]),
-    })).toBeInstanceOf(ZuoraAdapter)
+    })).toBeDefined()
     expect(adapter.operations({
       credentials: new InstanceElement(
         ZUORA_BILLING,
@@ -85,7 +84,7 @@ describe('adapter creator', () => {
       ),
       config: new InstanceElement(ZUORA_BILLING, adapter.configType as ObjectType),
       elementsSource: buildElementsSourceFromElements([]),
-    })).toBeInstanceOf(ZuoraAdapter)
+    })).toBeDefined()
   })
   it('should ignore unexpected configuration values', () => {
     expect(adapter.operations({
@@ -99,7 +98,8 @@ describe('adapter creator', () => {
         adapter.configType as ObjectType,
         {
           fetch: {
-            includeTypes: [],
+            include: [],
+            exclude: [],
           },
           apiDefinitions: {
             endpoints: {},
@@ -108,7 +108,7 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
-    })).toBeInstanceOf(ZuoraAdapter)
+    })).toBeDefined()
   })
 
   it('should throw error on invalid configuration', () => {
@@ -122,21 +122,7 @@ describe('adapter creator', () => {
         ZUORA_BILLING,
         adapter.configType as ObjectType,
         {
-          fetch: {
-            includeTypes: [
-              'CatalogProduct',
-              'CustomObject',
-              'StandardObject',
-              'AccountingCodes',
-              'AccountingPeriods',
-              'HostedPages',
-              'NotificationDefinitions',
-              'NotificationEmailTemplates',
-              'PaymentGateways',
-              'SequenceSets',
-              'WorkflowExport',
-            ],
-          },
+          fetch: DEFAULT_CONFIG[FETCH_CONFIG],
           apiDefinitions: {
             swagger: {
               url: '/tmp/swagger.yaml',
@@ -170,8 +156,8 @@ describe('adapter creator', () => {
         adapter.configType as ObjectType,
         {
           fetch: {
-            includeTypes: [
-              'CatalogProduct2',
+            include: [
+              { type: 'CatalogProduct2' },
             ],
           },
           apiDefinitions: {
@@ -194,7 +180,7 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
-    })).toThrow(new Error('Invalid type names in fetch.includeTypes: CatalogProduct2 are not supported.'))
+    })).toThrow(new Error('Invalid type names in fetch: CatalogProduct2 does not match any of the supported types.'))
   })
 
   it('should throw error on invalid credentials', () => {
@@ -209,7 +195,8 @@ describe('adapter creator', () => {
         adapter.configType as ObjectType,
         {
           fetch: {
-            includeTypes: [],
+            include: [],
+            exclude: [],
           },
           apiDefinitions: {
             swagger: {
@@ -232,7 +219,8 @@ describe('adapter creator', () => {
         adapter.configType as ObjectType,
         {
           fetch: {
-            includeTypes: [],
+            include: [],
+            exclude: [],
           },
           apiDefinitions: {
             swagger: {

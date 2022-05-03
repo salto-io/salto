@@ -44,7 +44,7 @@ import mapListsFilter from './filters/map_lists'
 import missingStatusesFilter from './filters/statuses/missing_statuses'
 import issueTypeScreenSchemeFilter from './filters/issue_type_screen_scheme'
 import fieldConfigurationFilter from './filters/field_configuration'
-import fieldConfigurationTrashedFieldsFilter from './filters/field_configuration_trashed_fields'
+import fieldConfigurationIrrelevantFields from './filters/field_configuration_irrelevant_fields'
 import fieldConfigurationSchemeFilter from './filters/field_configurations_scheme'
 import dashboardFilter from './filters/dashboard/dashboard_deployment'
 import dashboardLayoutFilter from './filters/dashboard/dashboard_layout'
@@ -76,6 +76,7 @@ import securitySchemeFilter from './filters/security_scheme/security_scheme'
 import notificationSchemeDeploymentFilter from './filters/notification_scheme/notification_scheme_deployment'
 import notificationSchemeStructureFilter from './filters/notification_scheme/notification_scheme_structure'
 import forbiddenPermissionSchemeFilter from './filters/forbidden_permission_schemes'
+import maskingFilter from './filters/masking'
 import avatarsFilter from './filters/avatars'
 import iconUrlFilter from './filters/icon_url'
 import jqlReferencesFilter from './filters/jql/jql_references'
@@ -91,6 +92,7 @@ const {
   loadSwagger,
   addDeploymentAnnotations,
 } = elementUtils.swagger
+
 const { createPaginator, getWithOffsetAndLimit } = clientUtils
 const log = logger(module)
 
@@ -149,12 +151,13 @@ export const DEFAULT_FILTERS = [
   userFilter,
   forbiddenPermissionSchemeFilter,
   jqlReferencesFilter,
+  maskingFilter,
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,
   fieldReferencesFilter,
   // Must run after fieldReferencesFilter
-  fieldConfigurationTrashedFieldsFilter,
+  fieldConfigurationIrrelevantFields,
   // Must run after fieldReferencesFilter
   sortListsFilter,
   // Must run after fieldReferencesFilter
@@ -183,6 +186,7 @@ export default class JiraAdapter implements AdapterOperations {
   private userConfig: JiraConfig
   private paginator: clientUtils.Paginator
   private getElemIdFunc?: ElemIdGetter
+  private fetchQuery: elementUtils.query.ElementQuery
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -199,6 +203,9 @@ export default class JiraAdapter implements AdapterOperations {
       paginationFuncCreator: getWithOffsetAndLimit,
       customEntryExtractor: removeScopedObjects,
     })
+
+    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig.fetch)
+
     this.paginator = paginator
     this.createFiltersRunner = () => (
       filtersRunner(
@@ -208,6 +215,7 @@ export default class JiraAdapter implements AdapterOperations {
           config,
           getElemIdFunc,
           elementsSource,
+          fetchQuery: this.fetchQuery,
         },
         filterCreators,
         objects.concatObjects
@@ -265,7 +273,8 @@ export default class JiraAdapter implements AdapterOperations {
       paginator: this.paginator,
       objectTypes: _.pickBy(allTypes, isObjectType),
       apiConfig: updatedApiDefinitionsConfig,
-      fetchConfig: this.userConfig.fetch,
+      fetchQuery: this.fetchQuery,
+      supportedTypes: this.userConfig.apiDefinitions.supportedTypes,
       getElemIdFunc: this.getElemIdFunc,
     })
   }
@@ -295,6 +304,7 @@ export default class JiraAdapter implements AdapterOperations {
       Object.values(swaggers),
       this.userConfig.apiDefinitions,
     )
+
     return filterResult.errors !== undefined
       ? { elements, errors: filterResult.errors }
       : { elements }

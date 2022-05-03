@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import os from 'os'
 import { collections } from '@salto-io/lowerdash'
 import { InstanceElement, ElemID } from '@salto-io/adapter-api'
@@ -31,13 +30,9 @@ export const getConfigFromConfigChanges = (
   configChanges: elementsUtils.ducktype.ConfigChangeSuggestion[],
   currentConfig: InstanceElement,
 ): { config: InstanceElement[]; message: string } | undefined => {
-  const currentIncludeTypes = makeArray(currentConfig.value.fetch?.includeTypes)
-
   const typesToRemove = makeArray(configChanges).map(e => e.typeToExclude)
-  const newIncludeTypes = currentIncludeTypes
-    .filter(e => !typesToRemove.includes(e))
 
-  if (_.isEqual(newIncludeTypes, currentIncludeTypes)) {
+  if (typesToRemove.length === 0) {
     return undefined
   }
 
@@ -49,7 +44,10 @@ export const getConfigFromConfigChanges = (
         ...currentConfig.value,
         fetch: {
           ...currentConfig.value[FETCH_CONFIG],
-          includeTypes: newIncludeTypes,
+          exclude: [
+            ...currentConfig.value[FETCH_CONFIG].exclude,
+            ...typesToRemove.map(type => ({ type })),
+          ],
         },
       },
     )],

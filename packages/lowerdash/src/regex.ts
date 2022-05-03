@@ -22,3 +22,6 @@ export const isValidRegex = (str: string): boolean => {
     return false
   }
 }
+
+export const isFullRegexMatch = (str: string, regex: string): boolean =>
+  new RegExp(`^${regex}$`).test(str)

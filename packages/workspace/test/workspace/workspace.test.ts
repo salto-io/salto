@@ -87,8 +87,8 @@ const mockWorkspaceConfigSource = (conf?: Values,
         accounts: services,
         accountToServiceName: Object.fromEntries(services.map(service => [service, service])) },
       ...(secondaryEnv ? [{ name: 'inactive',
-        accounts: [...services, 'hubspot'],
-        accountToServiceName: { hubspot: 'hubspot',
+        accounts: [...services, 'netsuite'],
+        accountToServiceName: { netsuite: 'netsuite',
           ...Object.fromEntries(services.map(service => [service, service])) } }] : []),
     ],
     uid: '',
@@ -2190,7 +2190,7 @@ describe('workspace', () => {
 
     it('should change workspace state', async () => {
       await workspace.setCurrentEnv('inactive')
-      expect(workspace.accounts().sort()).toEqual([...services, 'hubspot'].sort())
+      expect(workspace.accounts().sort()).toEqual([...services, 'netsuite'].sort())
     })
 
     it('should persist', async () => {

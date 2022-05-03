@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
 import { AUTOMATION_TYPE, BOARD_COLUMN_CONFIG_TYPE, BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME } from './constants'
 import { FIELD_TYPE_NAME } from './filters/fields/constants'
 
@@ -1585,6 +1585,8 @@ const SUPPORTED_TYPES = {
   WorkflowScheme: ['WorkflowSchemes'],
   ServerInformation: ['ServerInformation'],
   Board: ['Boards'],
+  Automation: [],
+  Webhook: [],
 }
 
 export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
@@ -1765,47 +1767,6 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
   supportedTypes: SUPPORTED_TYPES,
 }
 
-export const DEFAULT_INCLUDE_ENDPOINTS: string[] = [
-  // platform api
-  'ApplicationProperties',
-  'ApplicationRoles',
-  'AttachmentSettings',
-  'Configuration',
-  'TimeTrackingProviders',
-  'Dashboards',
-  'Fields',
-  'FieldConfigurations',
-  'FieldsConfigurationScheme',
-  'FieldsConfigurationIssueTypeItem',
-  'Filters',
-  ISSUE_TYPE_NAME,
-  'IssueLinkTypes',
-  'SecuritySchemes',
-  'IssueTypeSchemes',
-  'IssueTypeSchemeMappings',
-  'IssueTypeScreenSchemes',
-  'IssueTypeScreenSchemeItems',
-  'NotificationSchemes',
-  'Permissions',
-  'PermissionSchemes',
-  'Priorities',
-  'ProjectCategories',
-  'Projects',
-  'ProjectTypes',
-  'Resolutions',
-  'Roles',
-  'Screens',
-  'ScreenSchemes',
-  'Statuses',
-  'StatusCategories',
-  'Workflows',
-  'WorkflowSchemes',
-  'ServerInformation',
-
-  // jira api
-  'Boards',
-]
-
 type JiraDeployConfig = {
   forceDelete: boolean
 }
@@ -1814,11 +1775,16 @@ type JiraFetchConfig = configUtils.UserFetchConfig & {
   fallbackToInternalId?: boolean
 }
 
+type MaskingConfig = {
+  automationHeaders: string[]
+}
+
 export type JiraConfig = {
   client: JiraClientConfig
   fetch: JiraFetchConfig
   deploy: JiraDeployConfig
   apiDefinitions: JiraApiConfig
+  masking: MaskingConfig
 }
 
 const jspUrlsType = createMatchingObjectType<Partial<JspUrls>>({
@@ -1875,13 +1841,14 @@ export const DEFAULT_CONFIG: JiraConfig = {
     usePrivateAPI: true,
     boardColumnRetry: 5,
   },
-  fetch: {
-    includeTypes: DEFAULT_INCLUDE_ENDPOINTS,
-  },
+  fetch: elements.query.INCLUDE_ALL_CONFIG,
   deploy: {
     forceDelete: false,
   },
   apiDefinitions: DEFAULT_API_DEFINITIONS,
+  masking: {
+    automationHeaders: [],
+  },
 }
 
 const createClientConfigType = (): ObjectType => {
@@ -1909,6 +1876,15 @@ const jiraDeployConfigType = new ObjectType({
 const fetchConfigType = createUserFetchConfigType(JIRA)
 fetchConfigType.fields.fallbackToInternalId = new Field(fetchConfigType, 'fallbackToInternalId', BuiltinTypes.BOOLEAN)
 
+const maskingConfigType = createMatchingObjectType<Partial<MaskingConfig>>({
+  elemID: new ElemID(JIRA),
+  fields: {
+    automationHeaders: {
+      refType: new ListType(BuiltinTypes.STRING),
+    },
+  },
+})
+
 export const configType = createMatchingObjectType<Partial<JiraConfig>>({
   elemID: new ElemID(JIRA),
   fields: {
@@ -1916,9 +1892,10 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
     deploy: { refType: jiraDeployConfigType },
     fetch: { refType: fetchConfigType },
     apiDefinitions: { refType: apiDefinitionsType },
+    masking: { refType: maskingConfigType },
   },
   annotations: {
-    [CORE_ANNOTATIONS.DEFAULT]: _.omit(DEFAULT_CONFIG, ['apiDefinitions', 'client']),
+    [CORE_ANNOTATIONS.DEFAULT]: _.omit(DEFAULT_CONFIG, ['apiDefinitions', 'client', 'masking']),
   },
 })
 

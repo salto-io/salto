@@ -53,6 +53,6 @@ export const phoneNumbersValidator: ChangeValidator = async changes =>
     .map(instance => ({
       elemID: instance.elemID,
       severity: 'Error',
-      message: `Can not deploy instance: ${instance.elemID.getFullName()}, because the following IDs can not be added ${getPhoneIds(instance).join(', ')}`,
-      detailedMessage: `Can not change ${instance.elemID.getFullName()} because action of type: ${getActions(instance).find(isPhoneIdAction)?.field ?? undefined} can not be changed`,
+      message: 'Adding / modifying phone number ids is not supported.',
+      detailedMessage: `Element ${instance.elemID.getFullName()} includes additions / modifications of phone number ids and therefore cannot be deployed from Salto. Please make any phone number changes via the Zendesk UI and fetch.`,
     }))

@@ -93,8 +93,8 @@ describe('phone numbers changes validation', () => {
       expect(errors).toEqual([{
         elemID: triggerWithPhone.elemID,
         severity: 'Error',
-        message: `Can not deploy instance: ${triggerWithPhone.elemID.getFullName()}`,
-        detailedMessage: `Can not change ${triggerWithPhone.elemID.getFullName()} because action of type: notification_sms_user can not be changed`,
+        message: 'Adding / modifying phone number ids is not supported.',
+        detailedMessage: `Element ${triggerWithPhone.elemID.getFullName()} includes additions / modifications of phone number ids and therefore cannot be deployed from Salto. Please make any phone number changes via the Zendesk UI and fetch.`,
       }])
     })
     it('should return no error if a phone was not added', async () => {
@@ -130,14 +130,14 @@ describe('phone numbers changes validation', () => {
         {
           elemID: triggerWithPhone.elemID,
           severity: 'Error',
-          message: `Can not deploy instance: ${triggerWithPhone.elemID.getFullName()}`,
-          detailedMessage: `Can not change ${triggerWithPhone.elemID.getFullName()} because action of type: notification_sms_user can not be changed`,
+          message: 'Adding / modifying phone number ids is not supported.',
+          detailedMessage: `Element ${triggerWithPhone.elemID.getFullName()} includes additions / modifications of phone number ids and therefore cannot be deployed from Salto. Please make any phone number changes via the Zendesk UI and fetch.`,
         },
         {
           elemID: automationInstance.elemID,
           severity: 'Error',
-          message: `Can not deploy instance: ${automationInstance.elemID.getFullName()}`,
-          detailedMessage: `Can not change ${automationInstance.elemID.getFullName()} because action of type: notification_sms_user can not be changed`,
+          message: 'Adding / modifying phone number ids is not supported.',
+          detailedMessage: `Element ${automationInstance.elemID.getFullName()} includes additions / modifications of phone number ids and therefore cannot be deployed from Salto. Please make any phone number changes via the Zendesk UI and fetch.`,
         },
       ])
     })
@@ -168,7 +168,7 @@ describe('phone numbers changes validation', () => {
       ])
       expect(errors).toEqual([])
     })
-    it('should return no error if a phone number was remobed', async () => {
+    it('should return no error if a phone number was removed', async () => {
       const errors = await phoneNumbersValidator([
         toChange({ before: triggerWithPhone, after: triggerWithNoPhone }),
       ])

@@ -90,7 +90,7 @@ describe('Test layout filter', () => {
         })
 
       testSObj = createCustomObjectType(
-        apiName,
+        namespacePrefix ? 'SBQQ__TestApiName__c' : apiName,
         {
           fields: {
             foo: {

@@ -115,7 +115,6 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       return {}
     }
 
-    // TODOH: add layouts to elements before this line! then make sure to keep working on their references and not on copies
     const referenceElements = buildElementsSourceForFetch(elements, config)
     const apiNameToCustomObject = await multiIndex.keyByAsync({
       iter: await referenceElements.getAll(),
@@ -139,7 +138,6 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       addElementParentReference(layout, layoutObj)
       await fixLayoutPath(layout, layoutObj, layoutName)
     })
-
     elements.push(...layouts)
 
     return {

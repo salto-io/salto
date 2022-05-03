@@ -33,10 +33,10 @@ If you would like to install the Salto SuiteApp in your netsuite account, please
 Salto CLI allows the user to fetch only specific netsuite configuration elements and/or file cabinet items by appending the ```netsuite.fetchTarget.filePaths``` and ```netsuite.fetchTarget.types.[type_name]``` parameters following the ```-C``` CLI option.
 When none of the ```fetchTarget``` parameters is specified, Salto will fetch all configuration elements.
 
-| Name                           |  Description
-| -------------------------------| ------------------------| -----------
-| netsuite.fetchTarget.filePaths | A list of regular expressions of cabinet file paths. Only files with matching paths will be fetched.
-| netsuite.fetchTarget.types.[type_name]  | A list of script id regular expressions. Only records of type ```type_name``` with matching script ids will be fetched. 
+| Name | Description |
+| ---  | --- |
+| ***netsuite.fetchTarget.filePaths*** | A list of regular expressions of cabinet file paths. Only files with matching paths will be fetched|
+| ***netsuite.fetchTarget.types.[type_name]***  | A list of script id regular expressions. Only records of type ```type_name``` with matching script ids will be fetched|
 
 
 ### Examples
@@ -70,9 +70,9 @@ salto fetch -C 'netsuite.fetchTarget.types.emailtemplate=[".*"]' -C 'netsuite.fe
 ## Changes Detection
 When using `fetchTarget`, given the Salto SuiteApp credentials, Salto will attempt to detect the elements that were changed in the service and fetch only them.
 
-| Name                           |  Description
-| -------------------------------| ------------------------| -----------
-| netsuite.useChangesDetection | Whether to fetch only changed elements when using `fetchTarget`
+| Name |  Description |
+| --- | --- |
+| ***netsuite.useChangesDetection*** | Whether to fetch only changed elements when using `fetchTarget`
 
 ### Examples
 Disable changes detection

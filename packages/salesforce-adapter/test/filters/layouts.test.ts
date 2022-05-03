@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, BuiltinTypes, ObjectType, ElemID, isInstanceElement } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { createCustomObjectType, createMetadataTypeElement, defaultFilterContext } from '../utils'

@@ -53,9 +53,6 @@ const fixLayoutPath = async (
   customObject: ObjectType,
   layoutName: string,
 ): Promise<void> => {
-  if (layoutName.includes('Yariv Layout')) {
-    console.log('Yariv Layout name: %s \nnaclCase(layoutName): %s \npathNaclCase(naclCase(layoutName)): %s', layoutName, naclCase(layoutName), pathNaclCase(naclCase(layoutName)))
-  }
   layout.path = [
     ...await getObjectDirectoryPath(customObject),
     layout.elemID.typeName,
@@ -84,10 +81,8 @@ const createLayoutMetadataInstances = async (
   const { elements: fileProps, configChanges } = await listMetadataObjects(
     client, LAYOUT_TYPE_ID_METADATA_TYPE, [],
   )
-  console.log('fileProps[0]: %o', fileProps[0])
 
   const correctedFileProps = await Promise.all(fileProps.map(transformPrefixedLayoutFileProp))
-  console.log('correctedFileProps[0]: %o', correctedFileProps[0])
 
   const instances = await fetchMetadataInstances({
     client,
@@ -117,9 +112,10 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const { elements: layouts,
       configChanges } = await createLayoutMetadataInstances(config, client, elements)
     if (layouts.length === 0) {
-      console.log('created 0 layouts')
       return {}
     }
+
+    // TODOH: add layouts to elements before this line! then make sure to keep working on their references and not on copies
     const referenceElements = buildElementsSourceForFetch(elements, config)
     const apiNameToCustomObject = await multiIndex.keyByAsync({
       iter: await referenceElements.getAll(),
@@ -131,14 +127,11 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
 
     await awu(layouts).forEach(async layout => {
       const [layoutObjName, layoutName] = await layoutObjAndName(await apiName(layout))
-      console.log('[layoutObjName, layoutName]: %o', [layoutObjName, layoutName])
-      console.log('apiName: %s', await apiName(layout))
       const layoutObjId = apiNameToCustomObject.get(layoutObjName)
       const layoutObj = layoutObjId !== undefined
         ? await referenceElements.get(layoutObjId)
         : undefined
       if (layoutObj === undefined || !(await isCustomObject(layoutObj))) {
-        console.log('Could not find object %s for layout %s', layoutObjName, layoutName)
         log.debug('Could not find object %s for layout %s', layoutObjName, layoutName)
         return
       }
@@ -147,9 +140,6 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       await fixLayoutPath(layout, layoutObj, layoutName)
     })
 
-    console.log('created instances with names: %o', layouts.filter(inst => inst.elemID.name.includes('Yariv')).map(inst => inst.elemID.name)[0])
-    console.log('created instances with fullname parts: %o', layouts.map(inst => inst.elemID.getFullNameParts())[0])
-    console.log('created instances with instance?.path: %o', layouts.filter(inst => !inst.elemID.name.startsWith('SBQQ') && !inst.elemID.name.startsWith('sbaa')).map(inst => inst.path))
     elements.push(...layouts)
 
     return {

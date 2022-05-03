@@ -1775,7 +1775,11 @@ type JiraDeployConfig = {
   forceDelete: boolean
 }
 
-type JiraFetchConfig = configUtils.UserFetchConfig & {
+type JiraFetchFilters = {
+  name?: string
+}
+
+type JiraFetchConfig = configUtils.UserFetchConfig<JiraFetchFilters> & {
   fallbackToInternalId?: boolean
 }
 
@@ -1877,8 +1881,20 @@ const jiraDeployConfigType = new ObjectType({
   },
 })
 
-const fetchConfigType = createUserFetchConfigType(JIRA)
-fetchConfigType.fields.fallbackToInternalId = new Field(fetchConfigType, 'fallbackToInternalId', BuiltinTypes.BOOLEAN)
+const fetchFiltersType = createMatchingObjectType<JiraFetchFilters>({
+  elemID: new ElemID(JIRA, 'FetchFilters'),
+  fields: {
+    name: { refType: BuiltinTypes.STRING },
+  },
+})
+
+const fetchConfigType = createUserFetchConfigType(
+  JIRA,
+  {
+    fallbackToInternalId: { refType: BuiltinTypes.BOOLEAN },
+  },
+  fetchFiltersType,
+)
 
 const maskingConfigType = createMatchingObjectType<Partial<MaskingConfig>>({
   elemID: new ElemID(JIRA),

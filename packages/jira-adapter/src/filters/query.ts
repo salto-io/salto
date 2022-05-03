@@ -13,7 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { serviceUrlFilterCreator } from './service_url'
-export { referencedInstanceNamesFilterCreator } from './referenced_instance_names'
-export { queryFilterCreator } from './query'
-export * as ducktype from './ducktype'
+import { filters } from '@salto-io/adapter-components'
+import { JiraConfig } from '../config'
+import JiraClient from '../client/client'
+import { FilterAdditionParams, FilterCreator, FilterResult } from '../filter'
+
+const filter: FilterCreator = params =>
+  filters.queryFilterCreator<JiraClient, JiraConfig, FilterResult, FilterAdditionParams>(
+  )(params)
+
+export default filter

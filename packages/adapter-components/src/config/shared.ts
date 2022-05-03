@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  ElemID, ObjectType, BuiltinTypes, FieldDefinition, ListType, MapType,
+  ElemID, ObjectType, BuiltinTypes, FieldDefinition, ListType, MapType, Field,
 } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import type { TransformationConfig, TransformationDefaultConfig } from './transformation'
@@ -44,13 +44,14 @@ export type AdapterApiConfig<
   supportedTypes: Record<string, string[]>
 }
 
-type FetchEntry = {
+type FetchEntry<T extends Record<string, unknown> | undefined> = {
   type: string
+  filters?: T
 }
 
-export type UserFetchConfig = {
-  include: FetchEntry[]
-  exclude: FetchEntry[]
+export type UserFetchConfig<T extends Record<string, unknown> | undefined = undefined> = {
+  include: FetchEntry<T>[]
+  exclude: FetchEntry<T>[]
 }
 
 export const createAdapterApiConfigType = ({
@@ -119,6 +120,7 @@ export const createAdapterApiConfigType = ({
 export const createUserFetchConfigType = (
   adapter: string,
   additionalFields?: Record<string, FieldDefinition>,
+  fetchFiltersType?: ObjectType,
 ): ObjectType => {
   const fetchEntryType = new ObjectType({
     elemID: new ElemID(adapter, 'FetchEntry'),
@@ -126,6 +128,10 @@ export const createUserFetchConfigType = (
       type: { refType: BuiltinTypes.STRING },
     },
   })
+
+  if (fetchFiltersType !== undefined) {
+    fetchEntryType.fields.filters = new Field(fetchEntryType, 'filters', fetchFiltersType)
+  }
 
   return new ObjectType({
     elemID: new ElemID(adapter, 'userFetchConfig'),

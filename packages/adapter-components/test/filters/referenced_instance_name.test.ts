@@ -19,6 +19,7 @@ import { references } from '@salto-io/adapter-utils'
 import { addReferencesToInstanceNames, updateAllReferences, referencedInstanceNamesFilterCreator } from '../../src/filters/referenced_instance_names'
 import { FilterWith } from '../../src/filter_utils'
 import { Paginator } from '../../src/client'
+import { createMockQuery } from '../../src/elements/query'
 
 const { getReferences } = references
 const ADAPTER_NAME = 'myAdapter'
@@ -134,6 +135,7 @@ describe('referenced instances', () => {
         client: {} as unknown,
         paginator: undefined as unknown as Paginator,
         config,
+        fetchQuery: createMockQuery(),
       }) as FilterType
     })
     it('should rename the elements correctly when the filter is called', async () => {

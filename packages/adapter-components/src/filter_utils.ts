@@ -16,6 +16,7 @@
 import { ElemIdGetter } from '@salto-io/adapter-api'
 import { filter } from '@salto-io/adapter-utils'
 import { Paginator } from './client'
+import { ElementQuery } from './elements/query'
 
 export type Filter<TResult extends void | filter.FilterResult = void> = filter.Filter<TResult>
 
@@ -28,6 +29,7 @@ export type FilterOpts<TClient, TContext, TAdditional={}> = {
   paginator: Paginator
   config: TContext
   getElemIdFunc?: ElemIdGetter
+  fetchQuery: ElementQuery
 } & TAdditional
 
 export type FilterCreator<

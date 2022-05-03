@@ -63,6 +63,7 @@ export default class WorkatoAdapter implements AdapterOperations {
   private paginator: clientUtils.Paginator
   private userConfig: WorkatoConfig
   private getElemIdFunc?: ElemIdGetter
+  private fetchQuery: elementUtils.query.ElementQuery
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -78,6 +79,7 @@ export default class WorkatoAdapter implements AdapterOperations {
       paginationFuncCreator: paginate,
     })
     this.paginator = paginator
+    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG])
     this.createFiltersRunner = () => filtersRunner(
       {
         client,
@@ -86,6 +88,7 @@ export default class WorkatoAdapter implements AdapterOperations {
           fetch: config.fetch,
           apiDefinitions: config.apiDefinitions,
         },
+        fetchQuery: this.fetchQuery,
       },
       filterCreators,
     )
@@ -97,7 +100,7 @@ export default class WorkatoAdapter implements AdapterOperations {
       adapterName: WORKATO,
       types: this.userConfig.apiDefinitions.types,
       supportedTypes: this.userConfig.apiDefinitions.supportedTypes,
-      fetchQuery: elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG]),
+      fetchQuery: this.fetchQuery,
       paginator: this.paginator,
       nestedFieldFinder: returnFullEntry,
       computeGetArgs: simpleGetArgs,

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, isInstanceElement } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../src/filters/field_references'
 import StripeClient from '../../src/client/client'
 import { STRIPE } from '../../src/constants'
@@ -36,6 +36,7 @@ describe('Field references filter', () => {
         paginationFuncCreator: () => clientUtils.getWithCursorPagination(),
       }),
       config: DEFAULT_CONFIG,
+      fetchQuery: elementUtils.query.createMockQuery(),
     }) as FilterType
   })
 

@@ -61,7 +61,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
     try {
       return await super.getSinglePage(args)
     } catch (e) {
-      if (e.response.status === 404) {
+      if (e.response?.status === 404) {
         log.warn('Suppressing 404 error %o', e)
         return {
           data: [],

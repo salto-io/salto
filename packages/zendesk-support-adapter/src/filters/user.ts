@@ -33,6 +33,8 @@ type User = {
   email: string
 }
 
+const TYPES_WITH_SUBJECT_CONDITIONS = ['routing_attribute_value']
+
 const EXPECTED_USER_SCHEMA = Joi.array().items(Joi.object({
   id: Joi.number().required(),
   email: Joi.string().required(),
@@ -59,7 +61,13 @@ const replaceConditionsAndActionsCreator = (
   params.forEach(replacerParams => {
     const conditions = _.get(instance.value, replacerParams.fieldName)
     // Coditions can be undefined - in that case, we don't want to log a warning
-    if (conditions === undefined || !areConditions(conditions, instance.elemID.getFullName())) {
+    if (
+      conditions === undefined
+      || !areConditions(
+        conditions,
+        instance.elemID.getFullName(),
+        TYPES_WITH_SUBJECT_CONDITIONS.includes(instance.elemID.typeName)
+      )) {
       return
     }
     conditions

@@ -77,10 +77,18 @@ const EXPECTED_CONDITION_SCHEMA = Joi.array().items(Joi.object({
   value: Joi.optional(),
 }).unknown(true)).required()
 
-// Checks that values is from the form of conditions - must have field
+const EXPECTED_CONDITION_SUBJECT_SCHEMA = Joi.array().items(Joi.object({
+  subject: Joi.string().required(),
+  value: Joi.optional(),
+}).unknown(true)).required()
+
+// Checks that values is from the form of conditions - must have field (or subject)
 //  attribute and might have value attribute
-export const areConditions = (values: unknown, fullName: string): values is Condition[] => {
-  const { error } = EXPECTED_CONDITION_SCHEMA.validate(values)
+export const areConditions = (values: unknown, fullName: string, subjectConditions = false):
+values is Condition[] => {
+  const { error } = (
+    subjectConditions ? EXPECTED_CONDITION_SUBJECT_SCHEMA : EXPECTED_CONDITION_SCHEMA
+  ).validate(values)
   if (error !== undefined) {
     log.warn(`Received invalid values for conditions on ${fullName}: ${safeJsonStringify(values)}`)
     return false

@@ -105,15 +105,15 @@ export const DEFAULT_FILTERS = [
   restrictionFilter,
   organizationFieldFilter,
   hardcodedChannelFilter,
-  // fieldReferencesFilter should be after usersFilter and macroAttachmentsFilter
+  // fieldReferencesFilter should be after usersFilter, macroAttachmentsFilter and tagsFilter
   usersFilter,
+  tagsFilter,
   macroAttachmentsFilter,
   fieldReferencesFilter,
   appsFilter,
   slaPolicyFilter,
   routingAttributeFilter,
   addFieldOptionsFilter,
-  tagsFilter,
   webhookFilter,
   // removeDefinitionInstancesFilter should be after hardcodedChannelFilter
   removeDefinitionInstancesFilter,

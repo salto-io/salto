@@ -292,6 +292,8 @@ export const DEFAULT_MAX_CONCURRENT_API_REQUESTS = {
   deploy: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
 }
 export const DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST = 2500
+export const MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST = 500
+export const MAXIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST = 10000
 export const DEFAULT_USE_OLD_PROFILES = false
 export const MAX_QUERY_LENGTH = 2000
 export const DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS = {
@@ -343,6 +345,7 @@ export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'
 
 // Retrieve constants
 export const RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX = /Load of metadata from db failed for metadata of type:(?<type>\w+) and file name:(?<instance>\w+).$/
+export const RETRIEVE_SIZE_LIMIT_ERROR = 'LIMIT_EXCEEDED'
 
 // According to Salesforce spec the keyPrefix length is 3
 // If this changes in the future we need to change this and add further logic where it's used

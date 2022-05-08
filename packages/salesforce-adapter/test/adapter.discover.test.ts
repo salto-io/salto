@@ -904,13 +904,13 @@ public class LargeClass} {
             { name: 'content', soapType: 'string', valueRequired: false },
           ],
         },
-        [
-          {
-            props: { fullName: 'LargeClass', fileName: 'classes/LargeClass.cls' },
+        _.times(2).map(
+          index => ({
+            props: { fullName: `LargeClass${index}`, fileName: `classes/LargeClass${index}.cls` },
             values: { fullName: 'LargeClass' },
             zipFiles: [
               {
-                path: 'unpackaged/classes/LargeClass.cls-meta.xml',
+                path: `unpackaged/classes/LargeClass${index}.cls-meta.xml`,
                 content: `
 <?xml version="1.0" encoding="UTF-8"?>
 <ApexClass xmlns="http://soap.sforce.com/2006/04/metadata">
@@ -920,44 +920,18 @@ public class LargeClass} {
 `,
               },
               {
-                path: 'unpackaged/classes/LargeClass.cls',
+                path: `unpackaged/classes/LargeClass${index}.cls`,
                 content: `
-public class LargeClass {
+public class LargeClass${index} {
   public void printLog() {
-    System.debug('LargeClass');
+    System.debug('LargeClass${index}');
   }'
 }
 `,
               },
             ],
-          },
-          {
-            props: { fullName: 'LargeClass2', fileName: 'classes/LargeClass2.cls' },
-            values: { fullName: 'LargeClass2' },
-            zipFiles: [
-              {
-                path: 'unpackaged/classes/LargeClass2.cls-meta.xml',
-                content: `
-<?xml version="1.0" encoding="UTF-8"?>
-<ApexClass xmlns="http://soap.sforce.com/2006/04/metadata">
-  <apiVersion>50.0</apiVersion>
-  <status>Active</status>
-</ApexClass>
-`,
-              },
-              {
-                path: 'unpackaged/classes/LargeClass2.cls',
-                content: `
-public class LargeClass2 {
-  public void printLog() {
-    System.debug('LargeClass2');
-  }'
-}
-`,
-              },
-            ],
-          },
-        ],
+          })
+        ),
         1
       )
 
@@ -967,10 +941,10 @@ public class LargeClass2 {
 
       const { elements: result, updatedConfig: config } = await adapter.fetch(mockFetchOpts)
       expect(connection.metadata.retrieve).toHaveBeenCalledTimes(3)
-      const [first] = findElements(result, 'ApexClass', 'LargeClass') as InstanceElement[]
-      const [second] = findElements(result, 'ApexClass', 'LargeClass2') as InstanceElement[]
-      expect(first.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('LargeClass')
-      expect(second.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('LargeClass2')
+      const [first] = findElements(result, 'ApexClass', 'LargeClass0') as InstanceElement[]
+      const [second] = findElements(result, 'ApexClass', 'LargeClass1') as InstanceElement[]
+      expect(first.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('LargeClass0')
+      expect(second.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('LargeClass1')
       expect(config?.config[0]?.value.fetch.metadata.exclude).not.toEqual(
         expect.arrayContaining([
           expect.objectContaining({

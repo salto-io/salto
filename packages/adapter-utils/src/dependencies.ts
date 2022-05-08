@@ -117,9 +117,11 @@ export const extendGeneratedDependencies = (
     },
   )
 
-  const filteredUniqueDeps = Object.values(allDeps).map(dep => ({
-    ...dep, occurrences: preferSpecific(dep.occurrences),
-  }))
+  const filteredUniqueDeps = Object.values(allDeps)
+    .map(dep => ({
+      ...dep, occurrences: preferSpecific(dep.occurrences),
+    }))
+    .map(dep => ((dep.occurrences === undefined) ? _.omit(dep, 'occurrences') : dep))
 
   elem.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] = _.sortBy(
     filteredUniqueDeps,

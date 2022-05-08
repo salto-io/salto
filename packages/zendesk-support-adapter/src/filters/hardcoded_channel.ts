@@ -65,7 +65,8 @@ const filterCreator: FilterCreator = () => ({
       return
     }
     const channels = (triggerDefinitionInstance.value.conditions_all ?? [])
-      .find((condition: Values) => condition?.title === 'Channel')?.values
+      // Both via_id and current_via_id should includes the same channels and both should appear
+      .find((condition: Values) => ['via_id', 'current_via_id'].includes(condition?.subject))?.values
     if (!isChannels(channels)) {
       return
     }

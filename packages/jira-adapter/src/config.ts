@@ -660,6 +660,10 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'id', fieldType: 'string' },
         { fieldName: 'notificationType', fieldType: 'string' },
       ],
+      fieldsToOmit: [
+        { fieldName: 'value' },
+        { fieldName: 'expand' },
+      ],
     },
   },
 

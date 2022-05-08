@@ -111,7 +111,7 @@ export const getConfigFromConfigChanges = (
     .filter(isRetrieveSizeConfigSuggstion)
     .map(config => config.value)
     .map(value => Math.max(value, constants.MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST))
-    .sort()
+    .sort((a, b) => a - b)
 
   if ([newMetadataExclude, dataObjectsToExclude, retrieveSize]
     .every(_.isEmpty)) {

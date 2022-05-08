@@ -24,7 +24,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { ZENDESK_SUPPORT } from '../constants'
 import { FilterCreator } from '../filter'
-import { areConditions } from './utils'
+import { isConditions } from './utils'
 
 const log = logger(module)
 
@@ -52,9 +52,7 @@ const replaceTagsWithReferences = (instance: InstanceElement): string[] => {
   (TYPE_NAME_TO_RELEVANT_FIELD_NAMES[instance.elemID.typeName] ?? [])
     .forEach(fieldName => {
       const conditions = _.get(instance.value, fieldName)
-      const fullName = instance.elemID
-        .createNestedID(...fieldName.split(ElemID.NAMESPACE_SEPARATOR)).getFullName()
-      if (conditions === undefined || !areConditions(conditions, fullName)) {
+      if (conditions === undefined || !isConditions(conditions)) {
         return
       }
       conditions.forEach(condition => {
@@ -75,10 +73,7 @@ const serializeReferencesToTags = (instance: InstanceElement): void => {
   (TYPE_NAME_TO_RELEVANT_FIELD_NAMES[instance.elemID.typeName] ?? [])
     .forEach(fieldName => {
       const conditions = _.get(instance.value, fieldName)
-      const fullName = instance.elemID
-        .createNestedID(...fieldName.split(ElemID.NAMESPACE_SEPARATOR))
-        .getFullName()
-      if (conditions === undefined || !areConditions(conditions, fullName)) {
+      if (conditions === undefined || !isConditions(conditions)) {
         return
       }
       conditions.forEach(condition => {

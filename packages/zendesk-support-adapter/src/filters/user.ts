@@ -21,7 +21,7 @@ import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { Change, getChangeData, InstanceElement, isInstanceElement, Values } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import { areConditions } from './utils'
+import { conditionFieldValue, isCorrectConditions } from './utils'
 
 const log = logger(module)
 const { toArrayAsync, awu } = collections.asynciterable
@@ -32,8 +32,6 @@ type User = {
   id: number
   email: string
 }
-
-const TYPES_WITH_SUBJECT_CONDITIONS = ['routing_attribute_value']
 
 const EXPECTED_USER_SCHEMA = Joi.array().items(Joi.object({
   id: Joi.number().required(),
@@ -60,22 +58,19 @@ const replaceConditionsAndActionsCreator = (
 ): UserReplacer => (instance, mapping) => {
   params.forEach(replacerParams => {
     const conditions = _.get(instance.value, replacerParams.fieldName)
+    const { typeName } = instance.elemID
     // Coditions can be undefined - in that case, we don't want to log a warning
-    if (
-      conditions === undefined
-      || !areConditions(
-        conditions,
-        instance.elemID.getFullName(),
-        TYPES_WITH_SUBJECT_CONDITIONS.includes(instance.elemID.typeName)
-      )) {
+    if (conditions === undefined
+      || !isCorrectConditions(conditions, typeName)) {
       return
     }
     conditions
       .filter(condition => replacerParams.fieldsToReplace
-        .map(f => f.name).includes(condition.field))
+        .map(f => f.name)
+        .includes(conditionFieldValue(condition, typeName)))
       .forEach(condition => {
         const valuePath = replacerParams.fieldsToReplace
-          .find(f => f.name === condition.field)?.valuePath ?? 'value'
+          .find(f => f.name === conditionFieldValue(condition, typeName))?.valuePath ?? 'value'
         const value = _.get(condition, valuePath)?.toString()
         const newValue = ((value !== undefined)
           && Object.prototype.hasOwnProperty.call(mapping, value))

@@ -18,7 +18,7 @@ import Joi from 'joi'
 import { Change, ChangeDataType, getChangeData, InstanceElement,
   isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isReferenceExpression,
   ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData, getParents, resolveChangeElement, safeJsonStringify } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, createSchemeGuard, getParents, resolveChangeElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { lookupFunc } from './field_references'
@@ -30,6 +30,12 @@ export type Condition = {
   field: string
   value?: unknown
 }
+export type SubjectCondition = {
+  subject: string
+  value?: unknown
+}
+
+const TYPES_WITH_SUBJECT_CONDITIONS = ['routing_attribute_value']
 
 export const applyforInstanceChangesOfType = async (
   changes: Change<ChangeDataType>[],
@@ -72,18 +78,28 @@ export const createAdditionalParentChanges = async (
     : changes
 }
 
-const EXPECTED_CONDITION_SCHEMA = Joi.array().items(Joi.object({
+const CONDITION_SCHEMA = Joi.array().items(Joi.object({
   field: Joi.string().required(),
   value: Joi.optional(),
 }).unknown(true)).required()
 
-// Checks that values is from the form of conditions - must have field
-//  attribute and might have value attribute
-export const areConditions = (values: unknown, fullName: string): values is Condition[] => {
-  const { error } = EXPECTED_CONDITION_SCHEMA.validate(values)
-  if (error !== undefined) {
-    log.warn(`Received invalid values for conditions on ${fullName}: ${safeJsonStringify(values)}`)
-    return false
-  }
-  return true
-}
+const CONDITION_SUBJECT_SCHEMA = Joi.array().items(Joi.object({
+  subject: Joi.string().required(),
+  value: Joi.optional(),
+}).unknown(true)).required()
+
+export const isConditions = createSchemeGuard<Condition[]>(CONDITION_SCHEMA, 'Found invalid values for conditions')
+export const isSubjectConditions = createSchemeGuard<SubjectCondition[]>(CONDITION_SUBJECT_SCHEMA, 'Found invalid values for subject conditions')
+export const conditionFieldValue = (
+  condition: Condition | SubjectCondition, typeName: string
+): string => (
+  TYPES_WITH_SUBJECT_CONDITIONS.includes(typeName)
+    ? (condition as SubjectCondition).subject
+    : (condition as Condition).field
+)
+export const isCorrectConditions = (value: unknown, typeName: string):
+value is (Condition | SubjectCondition)[] => (
+  TYPES_WITH_SUBJECT_CONDITIONS.includes(typeName)
+    ? isSubjectConditions(value)
+    : isConditions(value)
+)

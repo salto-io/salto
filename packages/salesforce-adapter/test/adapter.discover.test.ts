@@ -935,10 +935,6 @@ public class LargeClass${index} {
         1
       )
 
-      connection.metadata.retrieve.mockReturnValueOnce(mockRetrieveLocator({
-        errorStatusCode: constants.RETRIEVE_SIZE_LIMIT_ERROR,
-      }))
-
       const { elements: result, updatedConfig: config } = await adapter.fetch(mockFetchOpts)
       expect(connection.metadata.retrieve).toHaveBeenCalledTimes(3)
       const [first] = findElements(result, 'ApexClass', 'LargeClass0') as InstanceElement[]

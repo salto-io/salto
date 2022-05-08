@@ -36,6 +36,7 @@ describe('hardcoded channel filter', () => {
       conditions_all: [
         {
           title: 'Channel',
+          subject: 'via_id',
           operators: [
             { value: 'is', title: 'Is', terminal: false },
             { value: 'is_not', title: 'Is not', terminal: false },
@@ -130,6 +131,7 @@ describe('hardcoded channel filter', () => {
           conditions_all: [
             {
               title: 'Channel',
+              subject: 'via_id',
               values: [
                 { value: '0', enabled: true },
                 { value: '4', title: 'Email', enabled: true },
@@ -159,6 +161,7 @@ describe('hardcoded channel filter', () => {
           conditions_all: [
             {
               title: 'Channel',
+              subject: 'via_id',
               values: [
                 { value: '4', title: 'Email', enabled: true },
                 { value: '4', title: 'Test', enabled: true },
@@ -187,7 +190,8 @@ describe('hardcoded channel filter', () => {
         {
           conditions_all: [
             {
-              title: 'Status',
+              title: 'Test',
+              subject: 'another_test',
               values: [
                 { value: '4', title: 'Email', enabled: true },
                 { value: '4', title: 'Test', enabled: true },

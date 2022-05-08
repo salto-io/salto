@@ -24,10 +24,6 @@ import { IDFilter, getPlan } from './plan/plan'
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-const createAllElemIdParents = (elemId: ElemID): ElemID[] => (
-  elemId.isTopLevel() ? [elemId] : [elemId, ...createAllElemIdParents(elemId.createParentID())]
-)
-
 const getFilteredIds = (
   selectors: ElementSelector[],
   source: elementSource.ElementsSource,
@@ -85,17 +81,17 @@ const createMatchers = async (
 
   // this set will be used to check if a change is equal/parent of a selector-matched elemID
   const beforeAllParentsMatchingElemIDsSet = new Set(beforeMatchingElemIDs
-    .flatMap(createAllElemIdParents)
+    .flatMap(elemId => elemId.createAllElemIdParents())
     .map(elemId => elemId.getFullName()))
   const afterAllParentsMatchingElemIDsSet = new Set(afterMatchingElemIDs
-    .flatMap(createAllElemIdParents)
+    .flatMap(elemId => elemId.createAllElemIdParents())
     .map(elemId => elemId.getFullName()))
 
   const isChangeIdChildOfMatchingElemId = (change: DetailedChange): boolean => {
     const matchingElemIDsSet = isRemovalChange(change)
       ? beforeMatchingElemIDsSet
       : afterMatchingElemIDsSet
-    return createAllElemIdParents(change.id.createParentID())
+    return change.id.createParentID().createAllElemIdParents()
       .some(elemId => matchingElemIDsSet.has(elemId.getFullName()))
   }
 

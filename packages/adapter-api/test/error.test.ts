@@ -14,9 +14,13 @@
 * limitations under the License.
 */
 
-export type ErrorFilter = (error: Error) => boolean
+import { CredentialError, isCredentialError } from '../src/error'
 
-export class CredentialError extends Error {}
-
-export const isCredentialError = (error: unknown): error is CredentialError =>
-  error instanceof CredentialError
+describe('is credential error', () => {
+  it('should return false', () => {
+    expect(isCredentialError(new Error('test'))).toBeFalsy()
+  })
+  it('should return true', () => {
+    expect(isCredentialError(new CredentialError('test'))).toBeTruthy()
+  })
+})

@@ -16,9 +16,15 @@
 import { isInstanceElement } from '@salto-io/adapter-api'
 import { filter } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter_utils'
 import { ElementQuery } from '../elements/query'
 
+const log = logger(module)
+
+/**
+ * A filter to filter out instances by the fetchQuery of the adapter
+ */
 export const queryFilterCreator: <
   TClient,
   TContext,
@@ -26,9 +32,13 @@ export const queryFilterCreator: <
   TAdditional extends { fetchQuery: ElementQuery }
 >() => FilterCreator<TClient, TContext, TResult, TAdditional> = () => ({ fetchQuery }) => ({
   onFetch: async elements => {
-    _.remove(
+    const removedInstances = _.remove(
       elements,
       element => isInstanceElement(element) && !fetchQuery.isInstanceMatch(element)
     )
+
+    if (removedInstances.length > 0) {
+      log.debug(`Omitted ${removedInstances.length} instances that did not match the fetch filters. The first 100 ids that were removed are: ${removedInstances.slice(0, 100).map(e => e.elemID.getFullName()).join(', ')}`)
+    }
   },
 })

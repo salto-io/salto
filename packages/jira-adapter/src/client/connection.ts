@@ -13,9 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AccountId } from '@salto-io/adapter-api'
+import { AccountId, CredentialError } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { CredentialError } from '@salto-io/adapter-utils'
 import { Credentials } from '../auth'
 
 const isAuthorized = async (connection: clientUtils.APIConnection): Promise<boolean> => {

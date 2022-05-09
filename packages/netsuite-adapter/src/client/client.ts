@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 
-import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
+import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
-import { CredentialError, resolveValues } from '@salto-io/adapter-utils'
+import { resolveValues } from '@salto-io/adapter-utils'
 import { WSDL } from 'soap'
 import _ from 'lodash'
 import { NetsuiteQuery } from '../query'

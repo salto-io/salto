@@ -25,10 +25,10 @@ import {
   BatchResultInfo, BulkLoadOperation,
 } from 'jsforce'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { CredentialError, flatValues } from '@salto-io/adapter-utils'
+import { flatValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
-import { AccountId, Value } from '@salto-io/adapter-api'
+import { AccountId, Value, CredentialError } from '@salto-io/adapter-api'
 import { CUSTOM_OBJECT_ID_FIELD, DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS, DEFAULT_MAX_CONCURRENT_API_REQUESTS, SALESFORCE } from '../constants'
 import { CompleteSaveResult, SfError, SalesforceRecord } from './types'
 import { UsernamePasswordCredentials, OauthAccessTokenCredentials, Credentials,

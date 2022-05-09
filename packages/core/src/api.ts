@@ -17,7 +17,7 @@ import {
   Adapter, InstanceElement, ObjectType, ElemID, AccountId, getChangeData, isField,
   Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
   isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
-  SaltoError, Element, DetailedChange,
+  SaltoError, Element, DetailedChange, isCredentialError,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -25,7 +25,6 @@ import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
 import { Workspace, ElementSelector, elementSource } from '@salto-io/workspace'
 import { EOL } from 'os'
-import { isCredentialError } from '@salto-io/adapter-utils'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
   adapterCreators, getAdaptersCredentialsTypes, getAdapters, getAdapterDependencyChangers,
@@ -299,9 +298,7 @@ export const fetch: FetchFunc = async (
         fetchErrors: [{ message: error.message, severity: 'Error' }],
         mergeErrors: [],
         success: false,
-        undefined,
         updatedConfig: {},
-        accountNameToConfigMessage: undefined,
       }
     }
     throw error

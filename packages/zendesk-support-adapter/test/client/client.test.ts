@@ -37,5 +37,12 @@ describe('client', () => {
       expect(res.data).toEqual([])
       expect(res.status).toEqual(404)
     })
+    it('should throw if there is no status in the error', async () => {
+      // The first replyOnce with 200 is for the client authentication
+      mockAxios.onGet().replyOnce(200).onGet().replyOnce(() => { throw new Error('Err') })
+      await expect(
+        client.getSinglePage({ url: 'http://myBrand.zendesk.com/api/v2/routing/attributes' })
+      ).rejects.toThrow()
+    })
   })
 })

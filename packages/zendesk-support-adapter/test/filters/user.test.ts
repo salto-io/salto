@@ -29,6 +29,7 @@ describe('user filter', () => {
   const slaPolicyType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'sla_policy') })
   const triggerType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'trigger') })
   const workspaceType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'workspace') })
+  const routingAttributeValueType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'routing_attribute_value') })
 
   const triggerInstance = new InstanceElement(
     'test',
@@ -96,6 +97,39 @@ describe('user filter', () => {
           },
           {
             field: 'SOLVED',
+            operator: 'greater_than',
+            value: '96',
+          },
+        ],
+      },
+    },
+  )
+  const routingAttributeValueInstance = new InstanceElement(
+    'test',
+    routingAttributeValueType,
+    {
+      title: 'test',
+      conditions: {
+        all: [
+          {
+            subject: 'status',
+            operator: 'is',
+            value: 'solved',
+          },
+          {
+            subject: 'requester_id',
+            operator: 'is',
+            value: '2',
+          },
+        ],
+        any: [
+          {
+            subject: 'requester_id',
+            operator: 'is',
+            value: '1',
+          },
+          {
+            subject: 'SOLVED',
             operator: 'greater_than',
             value: '96',
           },
@@ -217,14 +251,17 @@ describe('user filter', () => {
   describe('onFetch', () => {
     it('should change the user ids to emails', async () => {
       const elements = [
-        macroType, slaPolicyType, triggerType, workspaceType,
+        macroType, slaPolicyType, triggerType, workspaceType, routingAttributeValueType,
         macroInstance, slaPolicyInstance, triggerInstance, workspaceInstance,
+        routingAttributeValueInstance,
       ].map(e => e.clone())
       await filter.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName()).sort())
         .toEqual([
           'zendesk_support.macro',
           'zendesk_support.macro.instance.test',
+          'zendesk_support.routing_attribute_value',
+          'zendesk_support.routing_attribute_value.instance.test',
           'zendesk_support.sla_policy',
           'zendesk_support.sla_policy.instance.test',
           'zendesk_support.trigger',
@@ -303,6 +340,20 @@ describe('user filter', () => {
             },
           },
         ],
+      })
+      const routingAttributeValue = instances.find(e => e.elemID.typeName === 'routing_attribute_value')
+      expect(routingAttributeValue?.value).toEqual({
+        title: 'test',
+        conditions: {
+          all: [
+            { subject: 'status', operator: 'is', value: 'solved' },
+            { subject: 'requester_id', operator: 'is', value: 'b@b.com' },
+          ],
+          any: [
+            { subject: 'requester_id', operator: 'is', value: 'a@a.com' },
+            { subject: 'SOLVED', operator: 'greater_than', value: '96' },
+          ],
+        },
       })
     })
     it('should not replace anything if the field is not exist', async () => {

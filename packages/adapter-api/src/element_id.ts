@@ -255,6 +255,12 @@ export class ElemID {
     return new ElemID(this.adapter, this.typeName)
   }
 
+  createAllElemIdParents(): ElemID[] {
+    return this.isTopLevel()
+      ? [this]
+      : [this, ...this.createParentID().createAllElemIdParents()]
+  }
+
   createTopLevelParentID(): { parent: ElemID; path: ReadonlyArray<string> } {
     if (this.isTopLevel()) {
       // This is already the top level ID

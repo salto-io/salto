@@ -669,12 +669,12 @@ describe('ducktype_transformer', () => {
           exclude: [],
         }),
         supportedTypes: {
-          folder: ['folder'],
+          folder: ['folders'],
         },
         computeGetArgs: simpleGetArgs,
         nestedFieldFinder: returnFullEntry,
         types: {
-          folder: {
+          folders: {
             request: {
               url: '/folders',
             },

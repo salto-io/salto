@@ -61,12 +61,12 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
     try {
       return await super.getSinglePage(args)
     } catch (e) {
-      if (e.response?.status === 404) {
-        log.warn('Suppressing 404 error %o', e)
-        return {
-          data: [],
-          status: 404,
-        }
+      const status = e.response?.status
+      // Zendesk returns 404 when it doesn't have permissions for objects (not enabled features)
+      // Specifically for workspaces, it returns 403
+      if (status === 404 || (status === 403 && args.url === '/workspaces')) {
+        log.warn('Suppressing %d error %o', status, e)
+        return { data: [], status }
       }
       throw e
     }

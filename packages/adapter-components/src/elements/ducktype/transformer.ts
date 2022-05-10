@@ -303,6 +303,11 @@ export const getAllElements = async ({
     supportedTypes,
     typeNames => typeNames.filter(typeName => types[typeName].request?.url !== undefined)
   )
+  const supportedTypesReversedMapping = Object.fromEntries(
+    Object.entries(supportedTypesWithEndpoints)
+      .flatMap(([typeName, values]) =>
+        values.map(value => [value, typeName] as [string, string]))
+  )
 
   const configSuggestions: ConfigChangeSuggestion[] = []
   const elements = await getElementsWithContext({
@@ -316,9 +321,10 @@ export const getAllElements = async ({
           ...args,
         })
       } catch (e) {
-        if (isErrorTurnToConfigSuggestion?.(e)) {
+        if (isErrorTurnToConfigSuggestion?.(e)
+          && (supportedTypesReversedMapping[args.typeName] !== undefined)) {
           configSuggestions.push({
-            typeToExclude: args.typeName,
+            typeToExclude: supportedTypesReversedMapping[args.typeName],
           })
           return []
         }

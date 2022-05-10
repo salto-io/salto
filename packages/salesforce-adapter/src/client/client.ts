@@ -316,15 +316,19 @@ const createConnectionFromCredentials = (
   options: RequestRetryOptions,
 ): Connection => {
   if (creds instanceof OauthAccessTokenCredentials) {
-    return oauthConnection({
-      instanceUrl: creds.instanceUrl,
-      accessToken: creds.accessToken,
-      refreshToken: creds.refreshToken,
-      retryOptions: options,
-      clientId: creds.clientId,
-      clientSecret: creds.clientSecret,
-      isSandbox: creds.isSandbox,
-    })
+    try {
+      return oauthConnection({
+        instanceUrl: creds.instanceUrl,
+        accessToken: creds.accessToken,
+        refreshToken: creds.refreshToken,
+        retryOptions: options,
+        clientId: creds.clientId,
+        clientSecret: creds.clientSecret,
+        isSandbox: creds.isSandbox,
+      })
+    } catch (error) {
+      throw new CredentialError(error.message)
+    }
   }
   return realConnection(creds.isSandbox, options)
 }

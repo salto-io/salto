@@ -226,25 +226,13 @@ export type MetadataConfigSuggestion = {
   reason?: string
 }
 
-export type RetrieveSizeConfigSuggstion = {
-  type: typeof MAX_ITEMS_IN_RETRIEVE_REQUEST
-  value: number
-  reason?: string
-}
-
-export type ConfigChangeSuggestion =
-    DataManagementConfigSuggestions
-  | MetadataConfigSuggestion
-  | RetrieveSizeConfigSuggstion
+export type ConfigChangeSuggestion = DataManagementConfigSuggestions | MetadataConfigSuggestion
 
 export const isDataManagementConfigSuggestions = (suggestion: ConfigChangeSuggestion):
   suggestion is DataManagementConfigSuggestions => suggestion.type === 'dataObjectsExclude'
 
 export const isMetadataConfigSuggestions = (suggestion: ConfigChangeSuggestion):
   suggestion is MetadataConfigSuggestion => suggestion.type === 'metadataExclude'
-
-export const isRetrieveSizeConfigSuggstion = (suggestion: ConfigChangeSuggestion):
-  suggestion is RetrieveSizeConfigSuggstion => suggestion.type === MAX_ITEMS_IN_RETRIEVE_REQUEST
 
 export type FetchElements<T> = {
   configChanges: ConfigChangeSuggestion[]
@@ -551,10 +539,7 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
       refType: BuiltinTypes.NUMBER,
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-          min: constants.MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST,
-          max: constants.MAXIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST,
-        }),
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ min: 1000, max: 10000 }),
       },
     },
     [USE_OLD_PROFILES]: {

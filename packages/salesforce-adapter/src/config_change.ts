@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ListMetadataQuery, RetrieveResult } from 'jsforce-types'
 import { collections, values } from '@salto-io/lowerdash'
 import { Values, InstanceElement, ElemID } from '@salto-io/adapter-api'
-import { ConfigChangeSuggestion, configType, isDataManagementConfigSuggestions, isMetadataConfigSuggestions, SalesforceConfig, DataManagementConfig, isRetrieveSizeConfigSuggstion } from './types'
+import { ConfigChangeSuggestion, configType, isDataManagementConfigSuggestions, isMetadataConfigSuggestions, SalesforceConfig, DataManagementConfig } from './types'
 import * as constants from './constants'
 
 const { isDefined } = values
@@ -107,13 +107,8 @@ export const getConfigFromConfigChanges = (
     .filter(isDataManagementConfigSuggestions)
     .map(config => config.value)
 
-  const retrieveSize = configChanges
-    .filter(isRetrieveSizeConfigSuggstion)
-    .map(config => config.value)
-    .map(value => Math.max(value, constants.MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST))
-    .sort((a, b) => a - b)[0]
-
-  if ([newMetadataExclude, dataObjectsToExclude].every(_.isEmpty) && retrieveSize === undefined) {
+  if ([newMetadataExclude, dataObjectsToExclude]
+    .every(_.isEmpty)) {
     return undefined
   }
 
@@ -138,8 +133,6 @@ export const getConfigFromConfigChanges = (
     ...dataManagementOverrides,
   }, isDefined) as DataManagementConfig | undefined
 
-  const maxItemsInRetrieveRequest = retrieveSize ?? currentConfig.maxItemsInRetrieveRequest
-
   return {
     config: [new InstanceElement(
       ElemID.CONFIG_NAME,
@@ -159,7 +152,7 @@ export const getConfigFromConfigChanges = (
             saltoIDSettings: _.pickBy(data.saltoIDSettings, isDefined),
           },
         }, isDefined),
-        maxItemsInRetrieveRequest,
+        maxItemsInRetrieveRequest: currentConfig.maxItemsInRetrieveRequest,
         useOldProfiles: currentConfig.useOldProfiles,
         client: currentConfig.client,
       }, isDefined)

@@ -15,9 +15,8 @@
 */
 import { InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { ConfigChangeSuggestion, SalesforceConfig, MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
+import { ConfigChangeSuggestion, SalesforceConfig } from '../src/types'
 import { getConfigFromConfigChanges, getConfigChangeMessage, ConfigChange } from '../src/config_change'
-import { MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/constants'
 
 describe('Config Changes', () => {
   const includedObjectName = '.*Object.*'
@@ -149,26 +148,6 @@ In order to complete the fetch operation, Salto needs to stop managing these ite
 
       it('should not change the currentConfig', () => {
         expect(cloneOfCurrentConfig).toEqual(currentConfig)
-      })
-    })
-    describe('maxItemInRetrieveRequest suggestions', () => {
-      it('should use the smallest suggested value', () => {
-        const suggestions = [
-          { type: MAX_ITEMS_IN_RETRIEVE_REQUEST, value: 3000 },
-          { type: MAX_ITEMS_IN_RETRIEVE_REQUEST, value: 2400 },
-          { type: MAX_ITEMS_IN_RETRIEVE_REQUEST, value: 5000 },
-        ] as ConfigChangeSuggestion[]
-        const newConfig = getConfigFromConfigChanges(suggestions, currentConfig)?.config
-        expect(newConfig?.[0].value.maxItemsInRetrieveRequest).toEqual(2400)
-      })
-
-      it('should suggest no less than the minimum', () => {
-        const suggestions = [
-          { type: MAX_ITEMS_IN_RETRIEVE_REQUEST, value: 50 },
-        ] as ConfigChangeSuggestion[]
-        const newConfig = getConfigFromConfigChanges(suggestions, currentConfig)?.config
-        expect(newConfig?.[0].value.maxItemsInRetrieveRequest)
-          .toEqual(MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST)
       })
     })
   })

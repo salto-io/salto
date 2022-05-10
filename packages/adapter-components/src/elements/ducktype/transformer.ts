@@ -321,9 +321,10 @@ export const getAllElements = async ({
           ...args,
         })
       } catch (e) {
-        if (isErrorTurnToConfigSuggestion?.(e)) {
+        if (isErrorTurnToConfigSuggestion?.(e)
+          && (supportedTypesReversedMapping[args.typeName] !== undefined)) {
           configSuggestions.push({
-            typeToExclude: supportedTypesReversedMapping[args.typeName] ?? args.typeName,
+            typeToExclude: supportedTypesReversedMapping[args.typeName],
           })
           return []
         }

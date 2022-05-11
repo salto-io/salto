@@ -31,7 +31,7 @@ const getActions = (instance: InstanceElement): Values[] =>
 const getPhoneIds = (instance: InstanceElement): string[] =>
   getActions(instance).filter(isPhoneIdAction)
   // value[1] is the phone id
-    .map(v => v.value[1] ?? undefined)
+    .map(v => v.value[1])
     .filter(values.isDefined)
 
 const isChangeOfPhoneId = (

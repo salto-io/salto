@@ -34,7 +34,7 @@ import {
   restoreChangeElement, RestoreValuesFunc, getAllReferencedIds, applyFunctionToChangeData,
   transformElement, toObjectType, getParents, resolveTypeShallow,
   referenceExpressionStringifyReplacer,
-  createSchemeGuard,
+  createSchemeGuard, orderByElement,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 
@@ -2253,6 +2253,24 @@ describe('Test utils.ts', () => {
       const schemeGuard = createSchemeGuard<{a: string}>(scheme, 'message')
       expect(schemeGuard({ a: 'string' })).toBeTruthy()
       expect(schemeGuard({ a: 2 })).toBeFalsy()
+    })
+  })
+
+  describe('order by element', () => {
+    it('return target if values are not of the same type', () => {
+      expect(orderByElement(mockInstance, mockType)).toBe(mockInstance)
+    })
+    it('return new instance', () => {
+      expect(orderByElement(mockInstance, mockInstance)).toEqual(mockInstance)
+      expect(orderByElement(mockInstance, mockInstance)).not.toBe(mockInstance)
+    })
+    it('return new type', () => {
+      expect(orderByElement(mockType, mockType) instanceof ObjectType).toBeTruthy()
+      expect(orderByElement(mockType, mockType)).not.toBe(mockType)
+    })
+    it('return new field', () => {
+      expect(orderByElement(mockPrim, mockPrim)).toEqual(mockPrim)
+      expect(orderByElement(mockPrim, mockPrim)).not.toBe(mockPrim)
     })
   })
 })

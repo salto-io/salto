@@ -20,7 +20,7 @@ import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FetchElements, ConfigChangeSuggestion } from './types'
-import { METADATA_CONTENT_FIELD, NAMESPACE_SEPARATOR, INTERNAL_ID_FIELD, DEFAULT_NAMESPACE } from './constants'
+import { METADATA_CONTENT_FIELD, NAMESPACE_SEPARATOR, INTERNAL_ID_FIELD, DEFAULT_NAMESPACE, LAYOUT_TYPE_ID_METADATA_TYPE } from './constants'
 import SalesforceClient, { ErrorFilter } from './client/client'
 import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, createSkippedListConfigChange } from './config_change'
 import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements, getAuthorAnnotations } from './transformers/transformer'
@@ -97,7 +97,18 @@ const getFullName = (obj: FileProperties): string => {
   // Ensure fullName starts with the namespace prefix if there is one
   // needed due to a SF quirk where sometimes metadata instances return without a namespace
   // in the fullName even when they should have it
-  return obj.fullName.startsWith(namePrefix) ? obj.fullName : `${namePrefix}${obj.fullName}`
+  const fullNameWithCorrectedObjectName = obj.fullName.startsWith(namePrefix) ? obj.fullName : `${namePrefix}${obj.fullName}`
+  if (obj.type === LAYOUT_TYPE_ID_METADATA_TYPE && obj.namespacePrefix) {
+  // Ensure layout name starts with the namespace prefix if there is one.
+  // needed due to a SF quirk where sometimes layout metadata instances fullNames return as
+  // <namespace>__<objectName>-<layoutName> where it should be
+  // <namespace>__<objectName>-<namespace>__<layoutName>
+    const [objectName, ...layoutName] = fullNameWithCorrectedObjectName.split('-')
+    if (layoutName.length !== 0 && !layoutName[0].startsWith(obj.namespacePrefix)) {
+      return `${objectName}-${namePrefix}${layoutName.join('-')}`
+    }
+  }
+  return fullNameWithCorrectedObjectName
 }
 
 const getNamespace = (obj: FileProperties): string => (

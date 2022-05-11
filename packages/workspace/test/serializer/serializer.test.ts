@@ -268,20 +268,14 @@ describe('State/cache serialization', () => {
       e => e.elemID.getFullName() === innerRefsInstance.elemID.getFullName()
     ) as InstanceElement
     expect(refInst.value.name).toEqual('I am a var')
-    expect(refInst.value.num).toEqual(7)
+    expect(refInst.value.num).toBeInstanceOf(ReferenceExpression)
     expect(refInst2.value.name).toBeInstanceOf(ReferenceExpression)
     expect(refInst2.value.name.elemID.getFullName()).toEqual(instance.elemID.getFullName())
     expect(refInst3.value.name).toBeInstanceOf(ReferenceExpression)
-    expect(refInst3.value.name.elemID.getFullName()).toEqual(instance.elemID.getFullName())
-    expect(innerRefsInst.value).toEqual({
-      a: {
-        b: 2,
-      },
-      b: {
-        b: 2,
-      },
-      c: 2,
-    })
+    expect(refInst3.value.name.elemID.getFullName()).toEqual(refInstance2.elemID.createNestedID('name').getFullName())
+    expect(innerRefsInst.value.a).toBeInstanceOf(ReferenceExpression)
+    expect(innerRefsInst.value.b.b).toBeInstanceOf(ReferenceExpression)
+    expect(innerRefsInst.value.c).toBe(2)
   })
 
   it('should create the same result for the same input regardless of elements order', () => {

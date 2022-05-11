@@ -666,7 +666,7 @@ export const loadWorkspace = async (
       const after = await getElementHiddenParts(
         clonedBefore,
         state(),
-        before
+        await (await elements()).get(before.elemID),
       )
       return [toChange({ before, after })]
     }).toArray()

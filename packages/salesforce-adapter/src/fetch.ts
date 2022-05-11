@@ -104,7 +104,7 @@ const getFullName = (obj: FileProperties): string => {
   // <namespace>__<objectName>-<layoutName> where it should be
   // <namespace>__<objectName>-<namespace>__<layoutName>
     const [objectName, ...layoutName] = fullNameWithCorrectedObjectName.split('-')
-    if (!layoutName[0].startsWith(obj.namespacePrefix)) {
+    if (layoutName.length !== 0 && !layoutName[0].startsWith(obj.namespacePrefix)) {
       return `${objectName}-${namePrefix}${layoutName.join('-')}`
     }
   }

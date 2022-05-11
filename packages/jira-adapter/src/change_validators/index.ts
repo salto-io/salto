@@ -31,6 +31,7 @@ import { dashboardGadgetsValidator } from './dashboard_gadgets'
 import { dashboardLayoutValidator } from './dashboard_layout'
 import { maskingValidator } from './masking'
 import { automationsValidator } from './automations'
+import { lockedFieldsValidator } from './locked_fields'
 
 const {
   deployTypesNotSupportedValidator,
@@ -55,6 +56,7 @@ export default (
     dashboardLayoutValidator,
     automationsValidator,
     maskingValidator(client),
+    lockedFieldsValidator,
   ]
 
   return createChangeValidator(validators)

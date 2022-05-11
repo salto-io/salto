@@ -21,6 +21,7 @@ import {
   ReferenceExpression, TemplateExpression, VariableExpression,
   isReferenceExpression, Variable, StaticFile, isStaticFile,
   isPrimitiveType, FieldDefinition, Value, TypeRefMap, TypeReference, isTypeReference,
+  isVariableExpression,
 } from '@salto-io/adapter-api'
 import { DuplicateAnnotationError, MergeError, isMergeError } from '../merger/internal/common'
 import { DuplicateInstanceKeyError } from '../merger/internal/instances'
@@ -135,7 +136,7 @@ export const serialize = <T = Element>(
   )
   const referenceExpressionReplacer = (e: ReferenceExpression):
     ReferenceExpression & SerializedClass => {
-    if (e.value === undefined || referenceSerializerMode === 'keepRef') {
+    if (e.value === undefined || referenceSerializerMode === 'keepRef' || !isVariableExpression(e)) {
       return saltoClassReplacer(e.createWithValue(undefined))
     }
     // Replace ref with value in order to keep the result from changing between

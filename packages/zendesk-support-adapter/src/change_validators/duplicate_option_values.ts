@@ -29,7 +29,7 @@ export const RELEVANT_PARENT_AND_CHILD_TYPES: ParentAndChildTypePair[] = [
   { parent: 'organization_field', child: 'organization_field__custom_field_options' },
 ]
 
-const CHECKBOX_TYPE_NAME = 'checkbox'
+export const CHECKBOX_TYPE_NAME = 'checkbox'
 
 export const isRelevantChange = (change: Change<InstanceElement>): boolean => {
   const instance = getChangeData(change)

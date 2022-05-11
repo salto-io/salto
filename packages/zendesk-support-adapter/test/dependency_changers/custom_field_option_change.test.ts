@@ -83,22 +83,4 @@ describe('customFieldsOptionsDependencyChanger', () => {
     expect(dependencyChanges[0].dependency.source).toEqual(1)
     expect(dependencyChanges[0].dependency.target).toEqual(0)
   })
-
-  it('should filter out changes that causes circular dependency', async () => {
-    const ticketFieldOption1After = ticketFieldOption1.clone()
-    ticketFieldOption1After.value.value = 'v2'
-    const ticketFieldOption2After = ticketFieldOption2.clone()
-    ticketFieldOption2After.value.value = 'v1'
-    const inputChanges = new Map([
-      [0, toChange({ before: ticketFieldOption1, after: ticketFieldOption1After })],
-      [1, toChange({ before: ticketFieldOption2, after: ticketFieldOption2After })],
-    ])
-    const inputDeps = new Map<collections.set.SetId, Set<collections.set.SetId>>([
-      [0, new Set()],
-      [1, new Set()],
-    ])
-
-    const dependencyChanges = [...await customFieldOptionDependencyChanger(inputChanges, inputDeps)]
-    expect(dependencyChanges).toHaveLength(0)
-  })
 })

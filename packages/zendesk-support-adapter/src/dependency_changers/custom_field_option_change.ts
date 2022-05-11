@@ -17,43 +17,37 @@ import { Change, dependencyChange, DependencyChanger, getChangeData, InstanceEle
   isInstanceChange, isAdditionOrModificationChange, isRemovalOrModificationChange,
   DependencyChange } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
-import { isRelevantChange, RELEVANT_PARENT_AND_CHILD_TYPES } from '../change_validators/duplicate_option_values'
+import { isRelevantChange, RELEVANT_PARENT_AND_CHILD_TYPES, CHECKBOX_TYPE_NAME } from '../change_validators/duplicate_option_values'
+
+const getRelevantValue = (instance: InstanceElement) : string => {
+  const instanceType = instance.elemID.typeName
+  if (RELEVANT_PARENT_AND_CHILD_TYPES.some(types => types.parent === instanceType)
+  && instance.value.type === CHECKBOX_TYPE_NAME) {
+    return instance.value.tag
+  }
+  return instance.value.value
+}
+
+const getDependencies = (
+  customFieldOptionChanges: {key: collections.set.SetId; change: Change<InstanceElement>}[],
+)
+: DependencyChange[] => customFieldOptionChanges.map(({ change, key }) => {
+  if (isRemovalOrModificationChange(change)) {
+    const beforeValue = getRelevantValue(change.data.before)
+    const instanceWithSameValue = customFieldOptionChanges
+      .find(otherChange => isAdditionOrModificationChange(otherChange.change)
+      && getRelevantValue(getChangeData(otherChange.change)) === beforeValue)
+    return instanceWithSameValue !== undefined ? dependencyChange(
+      'add',
+      instanceWithSameValue.key,
+      key,
+    )
+      : undefined
+  }
+  return undefined
+}).filter(values.isDefined)
 
 export const customFieldOptionDependencyChanger: DependencyChanger = async changes => {
-  const getRelevantValue = (instance: InstanceElement) : string => {
-    const instanceType = instance.elemID.typeName
-    if (RELEVANT_PARENT_AND_CHILD_TYPES.some(types => types.parent === instanceType)) {
-      return instance.value.tag
-    }
-    return instance.value.value
-  }
-
-  const getDependencies = (
-    customFieldOptionChanges: {key: collections.set.SetId; change: Change<InstanceElement>}[],
-  )
-  : DependencyChange[] => customFieldOptionChanges.map(({ change, key }) => {
-    if (isRemovalOrModificationChange(change)) {
-      const beforeValue = getRelevantValue(change.data.before)
-      const instanceWithSameValue = customFieldOptionChanges
-        .find(otherChange => isAdditionOrModificationChange(otherChange.change)
-        && getRelevantValue(getChangeData(otherChange.change)) === beforeValue)
-      return instanceWithSameValue !== undefined ? dependencyChange(
-        'add',
-        instanceWithSameValue.key,
-        key,
-      )
-        : undefined
-    }
-    return undefined
-  }).filter(values.isDefined)
-
-  // We don't support the case the change in value A was x->y and the change value B was y->x,
-  // therfore we remove the dependency to avoid a circular dependency
-  const removeCyclicDependencies = (dependencies: DependencyChange[])
-   : DependencyChange[] => dependencies.filter(dependency =>
-    !dependencies.some(d => d.dependency.source === dependency.dependency.target
-        && d.dependency.target === dependency.dependency.source))
-
   const relevantChanges = Array.from(changes.entries())
     .map(([key, change]) => ({ key, change }))
     .filter(
@@ -61,6 +55,5 @@ export const customFieldOptionDependencyChanger: DependencyChanger = async chang
         isInstanceChange(change.change)
     ).filter(({ change }) => isRelevantChange(change))
 
-  const dependencies = getDependencies(relevantChanges)
-  return removeCyclicDependencies(dependencies)
+  return getDependencies(relevantChanges)
 }

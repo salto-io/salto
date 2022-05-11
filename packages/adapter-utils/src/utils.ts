@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import wu from 'wu'
-import _ from 'lodash'
+import _, { isPlainObject, mapValues, sortBy } from 'lodash'
 import safeStringify from 'fast-safe-stringify'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerDashValues, promises } from '@salto-io/lowerdash'
@@ -96,6 +96,74 @@ const fieldMapperGenerator = (
       ? new Field(objType, name, type[name], type[name].annotations)
       : undefined
   )
+}
+
+export const orderByElement = (
+  target: Element | undefined,
+  ref: Element | undefined
+): Element | undefined => {
+  const orderMapBy = (
+    targetMap: Record<string, Value | Element | Field>,
+    refMap: Record<string, Value | Element | Field>,
+  ): Record<string, Value | Element | Field> => {
+    const isRefKey = (key:string): boolean =>
+      refMap
+      && refMap[key]
+    const isInRefList = (key:string, index: number): boolean =>
+      isRefKey(key)
+      && Array.isArray(refMap[key])
+      && refMap[key].length > index
+    const refKeys = Object.keys(refMap)
+    return Object.fromEntries(
+      sortBy(Object.entries(targetMap), ([key, _v]) => refKeys.indexOf(key))
+        .map(([key, val]) => {
+          if (Array.isArray(val)) {
+            return [key, val.map((v, i) =>
+              (isPlainObject(v) && isInRefList(key, i) ? orderMapBy(v, refMap[key][i]) : v)),
+            ]
+          }
+          return [key, (isPlainObject(val) && isRefKey(key) ? orderMapBy(val, refMap[key]) : val)]
+        })
+    )
+  }
+
+  if (isObjectType(target) && isObjectType(ref)) {
+    return new ObjectType({
+      elemID: target.elemID,
+      fields: orderMapBy(
+        mapValues(target.fields, (field, name) => orderByElement(field, ref.fields[name])),
+        ref.fields
+      ),
+      annotationRefsOrTypes: orderMapBy(target.annotationRefTypes, ref.annotationRefTypes),
+      annotations: orderMapBy(target.annotations, ref.annotations),
+    })
+  }
+
+  if (isInstanceElement(target) && isInstanceElement(ref)) {
+    const res = target.clone()
+    res.value = orderMapBy(target.value, ref.value)
+    return res
+  }
+
+  if (isPrimitiveType(target) && isPrimitiveType(ref)) {
+    return new PrimitiveType({
+      elemID: target.elemID,
+      primitive: target.primitive,
+      annotationRefsOrTypes: orderMapBy(target.annotationRefTypes, ref.annotationRefTypes),
+      annotations: orderMapBy(target.annotations, ref.annotations),
+    })
+  }
+
+  if (isField(target) && isField(ref)) {
+    return new Field(
+      target.parent,
+      target.name,
+      target.refType,
+      orderMapBy(target.annotations, ref.annotations),
+    )
+  }
+
+  return target
 }
 
 export type TransformFuncArgs = {

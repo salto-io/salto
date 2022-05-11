@@ -31,10 +31,10 @@ export type ElementQuery = {
   isInstanceMatch: (instance: InstanceElement) => boolean
 }
 
-export type QueryPredicate = (
+export type QueryCriterion = (
   args: {
     instance: InstanceElement
-    filterValue: Value
+    value: Value
   }
 ) => boolean
 
@@ -43,15 +43,15 @@ const isTypeMatch = (typeName: string, typeRegex: string): boolean =>
 
 const isPredicatesMatch = (
   instance: InstanceElement,
-  predicates: Record<string, QueryPredicate>,
-  filters: Record<string, unknown>,
-): boolean => Object.entries(filters)
-  .filter(([key]) => key in predicates)
-  .every(([key, value]) => predicates[key]({ instance, filterValue: value }))
+  criteria: Record<string, QueryCriterion>,
+  criteriaValues: Record<string, unknown>,
+): boolean => Object.entries(criteriaValues)
+  .filter(([key]) => key in criteria)
+  .every(([key, value]) => criteria[key]({ instance, value }))
 
 export const createElementQuery = <T extends Record<string, unknown>>(
   fetchConfig: UserFetchConfig<T | undefined>,
-  predicates: Record<string, QueryPredicate> = {},
+  allCriteria: Record<string, QueryCriterion> = {},
 ): ElementQuery => ({
     isTypeMatch: (typeName: string) => {
       const { include, exclude } = fetchConfig
@@ -59,7 +59,7 @@ export const createElementQuery = <T extends Record<string, unknown>>(
         isTypeMatch(typeName, typeRegex))
 
       const isExcluded = exclude
-        .filter(({ filters }) => filters === undefined)
+        .filter(({ criteria }) => criteria === undefined)
         .some(({ type: excludedType }) =>
           isTypeMatch(typeName, excludedType))
 
@@ -68,13 +68,13 @@ export const createElementQuery = <T extends Record<string, unknown>>(
 
     isInstanceMatch: (instance: InstanceElement) => {
       const { include, exclude } = fetchConfig
-      const isIncluded = include.some(({ type, filters }) =>
+      const isIncluded = include.some(({ type, criteria }) =>
         isTypeMatch(instance.elemID.typeName, type)
-      && (filters === undefined || isPredicatesMatch(instance, predicates, filters)))
+      && (criteria === undefined || isPredicatesMatch(instance, allCriteria, criteria)))
 
-      const isExcluded = exclude.some(({ type, filters }) =>
+      const isExcluded = exclude.some(({ type, criteria }) =>
         isTypeMatch(instance.elemID.typeName, type)
-      && (filters === undefined || isPredicatesMatch(instance, predicates, filters)))
+      && (criteria === undefined || isPredicatesMatch(instance, allCriteria, criteria)))
 
       return isIncluded && !isExcluded
     },

@@ -62,7 +62,7 @@ describe('query', () => {
           include: [
             {
               type: 'type1.*',
-              filters: {
+              criteria: {
                 name: 'name1',
               },
             },
@@ -74,7 +74,7 @@ describe('query', () => {
           ],
         },
         {
-          name: ({ instance, filterValue }) => instance.value.name === filterValue,
+          name: ({ instance, value }) => instance.value.name === value,
         }
       )
       expect(query.isTypeMatch('type11')).toBeTruthy()
@@ -91,14 +91,14 @@ describe('query', () => {
           exclude: [
             {
               type: 'type12.*',
-              filters: {
+              criteria: {
                 name: 'name1',
               },
             },
           ],
         },
         {
-          name: ({ instance, filterValue }) => instance.value.name === filterValue,
+          name: ({ instance, value }) => instance.value.name === value,
         }
       )
       expect(query.isTypeMatch('type12')).toBeTruthy()
@@ -114,7 +114,7 @@ describe('query', () => {
           include: [
             {
               type: 'type1.*',
-              filters: {
+              criteria: {
                 name: 'name1',
               },
             },
@@ -122,7 +122,7 @@ describe('query', () => {
           exclude: [],
         },
         {
-          name: ({ instance, filterValue }) => instance.value.name === filterValue,
+          name: ({ instance, value }) => instance.value.name === value,
         }
       )
       expect(query.isInstanceMatch(inst)).toBeFalsy()
@@ -141,14 +141,14 @@ describe('query', () => {
           exclude: [
             {
               type: 'type1.*',
-              filters: {
+              criteria: {
                 name: 'name1',
               },
             },
           ],
         },
         {
-          name: ({ instance, filterValue }) => instance.value.name === filterValue,
+          name: ({ instance, value }) => instance.value.name === value,
         }
       )
       expect(query.isInstanceMatch(inst)).toBeTruthy()

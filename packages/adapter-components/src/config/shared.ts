@@ -46,7 +46,7 @@ export type AdapterApiConfig<
 
 type FetchEntry<T extends Record<string, unknown> | undefined> = {
   type: string
-  filters?: T
+  criteria?: T
 }
 
 export type UserFetchConfig<T extends Record<string, unknown> | undefined = undefined> = {
@@ -120,7 +120,7 @@ export const createAdapterApiConfigType = ({
 export const createUserFetchConfigType = (
   adapter: string,
   additionalFields?: Record<string, FieldDefinition>,
-  fetchFiltersType?: ObjectType,
+  fetchCriteriaType?: ObjectType,
 ): ObjectType => {
   const fetchEntryType = new ObjectType({
     elemID: new ElemID(adapter, 'FetchEntry'),
@@ -129,8 +129,8 @@ export const createUserFetchConfigType = (
     },
   })
 
-  if (fetchFiltersType !== undefined) {
-    fetchEntryType.fields.filters = new Field(fetchEntryType, 'filters', fetchFiltersType)
+  if (fetchCriteriaType !== undefined) {
+    fetchEntryType.fields.criteria = new Field(fetchEntryType, 'criteria', fetchCriteriaType)
   }
 
   return new ObjectType({

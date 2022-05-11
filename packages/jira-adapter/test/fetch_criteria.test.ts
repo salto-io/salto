@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import fetchPredicates from '../src/fetch_predicates'
+import fetchCriteria from '../src/fetch_criteria'
 
-describe('fetch_predicates', () => {
+describe('fetch_criteria', () => {
   describe('name', () => {
     it('should match element name', () => {
       const instance = new InstanceElement(
@@ -27,8 +27,8 @@ describe('fetch_predicates', () => {
         }
       )
 
-      expect(fetchPredicates.name({ instance, filterValue: '.ame' })).toBeTruthy()
-      expect(fetchPredicates.name({ instance, filterValue: 'ame' })).toBeFalsy()
+      expect(fetchCriteria.name({ instance, value: '.ame' })).toBeTruthy()
+      expect(fetchCriteria.name({ instance, value: 'ame' })).toBeFalsy()
     })
   })
 })

@@ -22,7 +22,7 @@ jira {
     exclude = [
       {
         type = "Webhook"
-        filters = {
+        criteria = {
           name = "name.*"
         }
       }
@@ -80,9 +80,9 @@ jira {
 | Name                                        | Default when undefined            | Description
 |---------------------------------------------|-----------------------------------|------------
 | type                                        | ""                                | A regex of the Salto type name to include in the entry
-| [filters](#fetch-entry-filters)             |                                   | A List of filters to filter specific instance of certain types
+| [criteria](#fetch-entry-criteria)             |                                   | A List of criteria to filter specific instance of certain types
 
-## Fetch entry filters
+## Fetch entry criteria
 
 | Name                                        | Default when undefined            | Description
 |---------------------------------------------|-----------------------------------|------------

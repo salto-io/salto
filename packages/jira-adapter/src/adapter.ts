@@ -86,7 +86,7 @@ import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
 import { getChangeGroupIds } from './group_change'
-import fetchPredicates from './fetch_predicates'
+import fetchCriteria from './fetch_criteria'
 
 const {
   generateTypes,
@@ -209,7 +209,7 @@ export default class JiraAdapter implements AdapterOperations {
 
     this.fetchQuery = elementUtils.query.createElementQuery(
       this.userConfig.fetch,
-      fetchPredicates,
+      fetchCriteria,
     )
 
     this.paginator = paginator

@@ -38,7 +38,7 @@ export const queryFilterCreator: <
     )
 
     if (removedInstances.length > 0) {
-      log.debug(`Omitted ${removedInstances.length} instances that did not match the fetch filters. The first 100 ids that were removed are: ${removedInstances.slice(0, 100).map(e => e.elemID.getFullName()).join(', ')}`)
+      log.debug(`Omitted ${removedInstances.length} instances that did not match the fetch criteria. The first 100 ids that were removed are: ${removedInstances.slice(0, 100).map(e => e.elemID.getFullName()).join(', ')}`)
     }
   },
 })

@@ -16,11 +16,11 @@
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { regex } from '@salto-io/lowerdash'
 
-const namePredicate: elementUtils.query.QueryPredicate = ({
+const nameCriterion: elementUtils.query.QueryCriterion = ({
   instance,
-  filterValue,
-}): boolean => regex.isFullRegexMatch(instance.value.name, filterValue)
+  value,
+}): boolean => regex.isFullRegexMatch(instance.value.name, value)
 
 export default {
-  name: namePredicate,
+  name: nameCriterion,
 }

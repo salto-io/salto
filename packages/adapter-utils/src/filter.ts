@@ -13,11 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { logger } from '@salto-io/logging'
 import { Element, Change, PostFetchOptions, DeployResult } from '@salto-io/adapter-api'
 import { types, promises, values, collections, objects } from '@salto-io/lowerdash'
 
 const { awu } = collections.asynciterable
 const { concatObjects } = objects
+const log = logger(module)
 
 const { isDefined } = values
 
@@ -29,6 +31,7 @@ const { isDefined } = values
 export type FilterResult = Record<string, unknown[] | undefined>
 
 export type Filter<T extends FilterResult | void, DeployInfo=void> = Partial<{
+  name: string
   onFetch(elements: Element[]): Promise<T | void>
   preDeploy(changes: Change[]): Promise<void>
   deploy(changes: Change[]): Promise<{
@@ -38,6 +41,7 @@ export type Filter<T extends FilterResult | void, DeployInfo=void> = Partial<{
   onDeploy(changes: Change[], deployInfo: DeployInfo): Promise<void>
   onPostFetch(args: PostFetchOptions): Promise<void>
 }>
+export type FilterRunner<T extends FilterResult | void, DeployInfo=void> = Omit<Required<Filter<T, DeployInfo>>, 'name'>
 
 export type FilterWith<
   T extends FilterResult | void,
@@ -60,7 +64,7 @@ export const filtersRunner = <
     opts: T,
     filterCreators: ReadonlyArray<FilterCreator<R, T, DeployInfo>>,
     onFetchAggregator: (results: R[]) => R | void = () => undefined,
-  ): Required<Filter<R, DeployInfo>> => {
+  ): FilterRunner<R, DeployInfo> => {
   // Create all filters in advance to allow them to hold context between calls
   const allFilters = filterCreators.map(f => f(opts))
 
@@ -72,7 +76,7 @@ export const filtersRunner = <
   return {
     onFetch: async elements => {
       const filterResults = (await promises.array.series(
-        filtersWith('onFetch').map(filter => () => filter.onFetch(elements))
+        filtersWith('onFetch').map(filter => () => log.time(() => filter.onFetch(elements), filter.name ?? 'unnamed filter'))
       )).filter(isDefined)
       return onFetchAggregator(filterResults)
     },

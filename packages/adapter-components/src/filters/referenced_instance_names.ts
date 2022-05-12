@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import _ from 'lodash'
 import { Element, isInstanceElement, isReferenceExpression, InstanceElement, ElemID, ElemIdGetter } from '@salto-io/adapter-api'
 import { filter, setPath, references, getParents, transformElement } from '@salto-io/adapter-utils'
@@ -263,6 +264,7 @@ export const referencedInstanceNamesFilterCreator: <
   TContext extends { apiDefinitions: AdapterApiConfig },
   TResult extends void | filter.FilterResult = void
 >() => FilterCreator<TClient, TContext, TResult> = () => ({ config, getElemIdFunc }) => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]) => {
     const transformationDefault = config.apiDefinitions.typeDefaults.transformation
     const configByType = config.apiDefinitions.types

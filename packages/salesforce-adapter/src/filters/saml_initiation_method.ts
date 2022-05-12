@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import wu from 'wu'
 import {
   Element, ElemID, getRestriction,
@@ -36,6 +37,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
    *
    * @param elements the already discovered elements
    */
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]) => {
     const canvasType = findObjectType(elements, CANVAS_METADATA_TYPE_ID)
     const initMethods = canvasType ? canvasType.fields[SAML_INIT_METHOD_FIELD_NAME] : undefined

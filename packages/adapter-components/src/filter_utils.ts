@@ -39,10 +39,15 @@ export type FilterCreator<
   FilterOpts<TClient, TContext, TAdditional>
 >
 
+export type FilterRunner<
+  TResult extends void | filter.FilterResult,
+  DeployInfo=void
+> = filter.FilterRunner<TResult, DeployInfo>
+
 export const filtersRunner = <
   TClient, TContext, TResult extends void | filter.FilterResult = void, TAdditional={}
 >(
     opts: FilterOpts<TClient, TContext, TAdditional>,
     filterCreators: ReadonlyArray<FilterCreator<TClient, TContext, TResult, TAdditional>>,
     onFetchAggregator: (results: TResult[]) => TResult | void = () => undefined,
-  ): Required<Filter<TResult>> => filter.filtersRunner(opts, filterCreators, onFetchAggregator)
+  ): filter.FilterRunner<TResult> => filter.filtersRunner(opts, filterCreators, onFetchAggregator)

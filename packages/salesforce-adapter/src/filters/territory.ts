@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import { Element, isInstanceElement, InstanceElement, getChangeData, Change, isInstanceChange, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
@@ -71,6 +72,7 @@ const setTerritoryDeployPkgStructure = async (element: InstanceElement): Promise
 }
 
 const filterCreator: FilterCreator = () => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async elements => {
     // Territory2 and Territory2Model support custom fields - these are returned
     // in a CustomObject with the appropriate name and also in each instance of these types

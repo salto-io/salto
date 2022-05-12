@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import { Element, isInstanceElement, isReferenceExpression, isField, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { getParents } from '@salto-io/adapter-utils'
@@ -132,6 +133,7 @@ export const addReferences = async (
  *
  */
 const filter: FilterCreator = ({ config }) => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async elements => {
     await addReferences(
       elements,

@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import _ from 'lodash'
 import {
   ElemID, Element, isObjectType, Field, Values, Value, ObjectType, isInstanceElement,
@@ -204,6 +205,7 @@ export const makeFilter = (
    *
    * @param elements the already fetched elements
    */
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]) => {
     const instances = await awu(elements)
       .filter(isInstanceElement)

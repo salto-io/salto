@@ -27,7 +27,7 @@ import { logDuration, resolveChangeElement, resolveValues, restoreChangeElement,
 import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
-import { FilterCreator, Filter, filtersRunner, FilterResult } from './filter'
+import { FilterCreator, FilterRunner, filtersRunner, FilterResult } from './filter'
 import { API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZendeskConfig } from './config'
 import { ZENDESK_SUPPORT } from './constants'
 import createChangeValidator from './change_validator'
@@ -143,7 +143,7 @@ export interface ZendeskAdapterParams {
 }
 
 export default class ZendeskAdapter implements AdapterOperations {
-  private createFiltersRunner: () => Promise<Required<Filter>>
+  private createFiltersRunner: () => FilterRunner
   private client: ZendeskClient
   private paginator: clientUtils.Paginator
   private userConfig: ZendeskConfig
@@ -169,7 +169,7 @@ export default class ZendeskAdapter implements AdapterOperations {
 
     this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG])
 
-    this.createFiltersRunner = async () => (
+    this.createFiltersRunner = () => (
       filtersRunner(
         {
           client: this.client,
@@ -214,7 +214,7 @@ export default class ZendeskAdapter implements AdapterOperations {
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
-    const result = await (await this.createFiltersRunner()).onFetch(elements) as FilterResult
+    const result = await this.createFiltersRunner().onFetch(elements) as FilterResult
     const updatedConfig = this.configInstance
       ? getConfigFromConfigChanges(configChanges, this.configInstance)
       : undefined
@@ -240,7 +240,7 @@ export default class ZendeskAdapter implements AdapterOperations {
             config: this.userConfig[API_DEFINITIONS_CONFIG],
           })),
       })) as Change<InstanceElement>[]
-    const runner = await this.createFiltersRunner()
+    const runner = this.createFiltersRunner()
     const resolvedChanges = await awu(changesToDeploy)
       .map(async change =>
         (SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)

@@ -38,6 +38,7 @@ const { makeArray } = collections.array
 export const createCustomFieldOptionsFilterCreator = (
   { parentTypeName, childTypeName }: CustomFieldOptionsFilterCreatorParams
 ): FilterCreator => ({ config, client }) => ({
+  name: `${parentTypeName}-customFieldOptions`,
   onFetch: async (elements: Element[]): Promise<void> => {
     const parentType = elements
       .filter(isObjectType)

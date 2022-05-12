@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import { CORE_ANNOTATIONS, Element, InstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { isInstanceOfCustomObject } from '../../transformers/transformer'
@@ -58,6 +59,7 @@ export const WARNING_MESSAGE = 'Encountered an error while trying to populate au
  * add author information to data instance elements.
  */
 const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

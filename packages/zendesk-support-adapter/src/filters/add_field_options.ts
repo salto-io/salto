@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import { InstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
@@ -25,6 +26,7 @@ const { makeArray } = collections.array
 const RELEVANT_TYPE_NAMES = [ORG_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME]
 
 const filterCreator: FilterCreator = () => ({
+  name: path.parse(path.basename(__filename)).name,
   preDeploy: async changes => {
     await applyforInstanceChangesOfType(
       changes,

@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import _ from 'lodash'
 import {
   Change, getChangeData, InstanceElement, isAdditionChange, isModificationChange, isRemovalChange,
@@ -30,6 +31,7 @@ export const DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME = 'dynamic_content_item__var
 const { makeArray } = collections.array
 
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  name: path.parse(path.basename(__filename)).name,
   preDeploy: async (changes: Change<InstanceElement>[]) => {
     const localeIdToVariant = Object.fromEntries(changes
       .filter(

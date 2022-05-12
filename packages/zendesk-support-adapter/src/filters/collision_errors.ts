@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import { isInstanceElement, Element } from '@salto-io/adapter-api'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { getAndLogCollisionWarnings, getInstancesWithCollidingElemID } from '@salto-io/adapter-utils'
@@ -24,6 +25,7 @@ import { API_DEFINITIONS_CONFIG } from '../config'
  * Adds collision warnings
  */
 const filterCreator: FilterCreator = ({ config }) => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]) => {
     const collistionWarnings = await getAndLogCollisionWarnings({
       adapterName: ZENDESK_SUPPORT,

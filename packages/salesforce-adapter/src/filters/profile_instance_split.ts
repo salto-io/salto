@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import _ from 'lodash'
 import { strings, collections, promises } from '@salto-io/lowerdash'
 import { Element, ObjectType, isMapType, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
@@ -71,6 +72,7 @@ const isProfileInstance = async (elem: Element): Promise<boolean> => (
  * to Attributes.nacl.
  */
 const filterCreator: FilterCreator = ({ config }) => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]) => {
     if (config.useOldProfiles) {
       return

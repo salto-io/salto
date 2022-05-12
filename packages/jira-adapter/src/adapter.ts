@@ -22,7 +22,7 @@ import { objects } from '@salto-io/lowerdash'
 import JiraClient from './client/client'
 import changeValidator from './change_validators'
 import { JiraConfig, getApiDefinitions } from './config'
-import { FilterCreator, Filter, filtersRunner } from './filter'
+import { FilterCreator, filtersRunner, FilterRunner } from './filter'
 import fieldReferencesFilter from './filters/field_references'
 import referenceBySelfLinkFilter from './filters/references_by_self_link'
 import removeSelfFilter from './filters/remove_self'
@@ -188,7 +188,7 @@ type AdapterSwaggers = {
 }
 
 export default class JiraAdapter implements AdapterOperations {
-  private createFiltersRunner: () => Required<Filter>
+  private createFiltersRunner: () => FilterRunner
   private client: JiraClient
   private userConfig: JiraConfig
   private paginator: clientUtils.Paginator

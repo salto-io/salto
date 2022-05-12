@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import {
   ElemID, Element, Field, ReferenceExpression, ObjectType, isObjectType,
 } from '@salto-io/adapter-api'
@@ -70,6 +71,7 @@ const convertAnnotationsToReferences = async (
  * Convert referenceTo and foreignKeyDomain annotations into reference expressions.
  */
 const filter: FilterCreator = ({ config }) => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]) => {
     const referenceElements = buildElementsSourceForFetch(elements, config)
     const typeToElemID = await multiIndex.keyByAsync({

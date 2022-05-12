@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import _ from 'lodash'
 import {
   Element, isObjectType, ReferenceExpression, ElemID, ReadOnlyElementsSource,
@@ -189,6 +190,7 @@ export const WARNING_MESSAGE = 'Encountered an error while trying to query your 
  * Add references using the tooling API.
  */
 const creator: FilterCreator = ({ client, config }) => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

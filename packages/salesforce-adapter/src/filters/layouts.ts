@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import { logger } from '@salto-io/logging'
 import {
   Element, InstanceElement, ObjectType, ElemID, isInstanceElement,
@@ -66,6 +67,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
    *
    * @param elements the already fetched elements
    */
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]): Promise<void> => {
     const layouts = await awu(elements)
       .filter(isInstanceElement)

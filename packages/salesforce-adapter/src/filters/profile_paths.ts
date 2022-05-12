@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import { Element, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { pathNaclCase, naclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -61,6 +62,7 @@ export const WARNING_MESSAGE = 'Failed to update the NaCl file names for some of
  * replace paths for profile instances upon fetch
  */
 const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

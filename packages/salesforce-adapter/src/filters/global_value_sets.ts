@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import { Element, ObjectType, Field, ReferenceExpression, ElemID, isObjectType } from '@salto-io/adapter-api'
 import { multiIndex } from '@salto-io/lowerdash'
 import { FilterWith, FilterCreator } from '../filter'
@@ -51,6 +52,7 @@ const filterCreator: FilterCreator = ({ config }): FilterWith<'onFetch'> => ({
   /**
    * @param elements the already fetched elements
    */
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]): Promise<void> => {
     const referenceElements = buildElementsSourceForFetch(elements, config)
     const valueSetNameToRef = await multiIndex.keyByAsync({

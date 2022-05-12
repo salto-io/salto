@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import {
   isObjectType, Element, isInstanceElement,
 } from '@salto-io/adapter-api'
@@ -77,6 +78,7 @@ const removeValuesFromInstances = async (
 export const makeFilter = (
   typeNameToFieldRemovals: Map<string, string[]>,
 ): FilterCreator => () => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]) => {
     await removeValuesFromInstances(elements, typeNameToFieldRemovals)
     await removeFieldsFromTypes(elements, typeNameToFieldRemovals)

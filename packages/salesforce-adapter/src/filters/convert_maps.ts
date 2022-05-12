@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
+import path from 'path'
 import _ from 'lodash'
 import {
   Element, ObjectType, isContainerType, MapType, ListType, InstanceElement, CORE_ANNOTATIONS,
@@ -340,6 +340,7 @@ export const findInstancesToConvert = (
  * could be referenced, and can be split across multiple files.
  */
 const filter: FilterCreator = ({ config }) => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]) => {
     await awu(Object.keys(metadataTypeToFieldToMapDef)).forEach(async targetMetadataType => {
       if (targetMetadataType === PROFILE_METADATA_TYPE && config.useOldProfiles) {

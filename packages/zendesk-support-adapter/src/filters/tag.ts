@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import {
   BuiltinTypes, Change, Element, ElemID, getChangeData, InstanceElement,
   isInstanceElement, ObjectType, ReferenceExpression,
@@ -92,6 +93,7 @@ const serializeReferencesToTags = (instance: InstanceElement): void => {
  * Extract tags references from business rules that refers to them
  */
 const filterCreator: FilterCreator = () => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]): Promise<void> => {
     const instances = elements
       .filter(isInstanceElement)

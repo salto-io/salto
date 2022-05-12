@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import _ from 'lodash'
 import {
   Element, InstanceElement, isInstanceElement, isReferenceExpression,
@@ -57,6 +58,7 @@ const orderTriggerDefinitions = (instances: InstanceElement[]): void => {
  * Sort lists whose order changes between fetches, to avoid unneeded noise.
  */
 const filterCreator: FilterCreator = () => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]): Promise<void> => {
     const instances = elements.filter(isInstanceElement)
     orderDynamicContentItems(instances)

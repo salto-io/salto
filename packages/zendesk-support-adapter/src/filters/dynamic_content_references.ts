@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import pathModule from 'path'
 import {
   Element, InstanceElement, isInstanceElement, ReferenceExpression,
 } from '@salto-io/adapter-api'
@@ -59,6 +60,7 @@ const getDynamicContentDependencies = (
  * the _generated_ dependencies annotation
  */
 const filterCreator: FilterCreator = () => ({
+  name: pathModule.parse(pathModule.basename(__filename)).name,
   onFetch: async (elements: Element[]): Promise<void> => {
     const instances = elements.filter(isInstanceElement)
 

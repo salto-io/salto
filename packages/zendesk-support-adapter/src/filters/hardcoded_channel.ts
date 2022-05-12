@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import Joi from 'joi'
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, isInstanceElement, ObjectType, Values,
@@ -55,6 +56,7 @@ const isChannels = (values: unknown): values is Channel[] => {
  * Adds the hardcoded channel instances in order to add references to them
  */
 const filterCreator: FilterCreator = () => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async elements => {
     // We are ok with picking the first instance because triggerDefinition is a singleton
     const triggerDefinitionInstance = elements

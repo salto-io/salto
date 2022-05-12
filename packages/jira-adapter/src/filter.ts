@@ -26,6 +26,8 @@ export type FilterResult = {
 
 export type Filter = filterUtils.Filter<FilterResult>
 
+export type FilterRunner = filterUtils.FilterRunner<FilterResult>
+
 export type FilterAdditionParams = {
   elementsSource: ReadOnlyElementsSource
   fetchQuery: elementUtils.query.ElementQuery

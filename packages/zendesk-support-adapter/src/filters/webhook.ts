@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import _ from 'lodash'
 import {
   Change, getChangeData, InstanceElement, isAdditionOrModificationChange, isModificationChange,
@@ -31,6 +32,7 @@ export const AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA: Record<string, unknown> = {
  * Removes the authentication data from webhook if it wasn't changed
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  name: path.parse(path.basename(__filename)).name,
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [webhookModificationChanges, leftoverChanges] = _.partition(
       changes,

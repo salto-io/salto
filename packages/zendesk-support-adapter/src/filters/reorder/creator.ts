@@ -57,6 +57,7 @@ export const createReorderFilterCreator = (
     activeFieldName,
   }: ReorderFilterCreatorParams
 ): FilterCreator => ({ config, client }) => ({
+  name: `${typeName}-reorder`,
   onFetch: async (elements: Element[]): Promise<void> => {
     const orderTypeName = createOrderTypeName(typeName)
     const objType = elements

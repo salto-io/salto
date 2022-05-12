@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import _ from 'lodash'
 import Joi from 'joi'
 import { logger } from '@salto-io/logging'
@@ -191,6 +192,7 @@ const deployModificationFunc = async (
 const filterCreator: FilterCreator = ({ paginator }) => {
   let userIdToEmail: Record<string, string> = {}
   return {
+    name: path.parse(path.basename(__filename)).name,
     onFetch: async elements => {
       const users = await getUsers(paginator)
       if (_.isEmpty(users)) {

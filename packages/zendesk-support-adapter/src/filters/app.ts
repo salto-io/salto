@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import _ from 'lodash'
 import Joi from 'joi'
 import {
@@ -83,6 +84,7 @@ Promise<void> => {
  * Deploys app installation
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  name: path.parse(path.basename(__filename)).name,
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,

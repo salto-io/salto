@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import _ from 'lodash'
 import {
   Change, getChangeData, InstanceElement, isRemovalChange, Values,
@@ -28,6 +29,7 @@ const WORKSPACE_TYPE_NAME = 'workspace'
  * Deploys workspaces
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  name: path.parse(path.basename(__filename)).name,
   preDeploy: async changes => {
     await applyforInstanceChangesOfType(
       changes,

@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import { Element, Field, ObjectType } from '@salto-io/adapter-api'
 import { FileProperties } from 'jsforce-types'
 import { logger } from '@salto-io/logging'
@@ -103,6 +104,7 @@ export const WARNING_MESSAGE = 'Encountered an error while trying to populate au
  * add author information to object types and fields.
  */
 const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

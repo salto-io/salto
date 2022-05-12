@@ -26,4 +26,6 @@ export type FilterResult = {
 
 export type Filter = filterUtils.Filter<FilterResult>
 
+export type FilterRunner = filterUtils.FilterRunner<FilterResult>
+
 export type FilterCreator = filterUtils.FilterCreator<ZendeskClient, FilterContext, FilterResult>

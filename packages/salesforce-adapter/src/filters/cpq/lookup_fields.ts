@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import _ from 'lodash'
 import { Element, ObjectType, ReferenceExpression, Value, Change, ChangeDataType, isAdditionOrModificationChange, getChangeData, isObjectTypeChange, Field, isAdditionChange, isFieldChange } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
@@ -254,6 +255,7 @@ const applyFuncOnCustomObjectWithMappingLookupChange = async (
 }
 
 const filter: FilterCreator = () => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]) => {
     log.debug('Started replacing lookupObject values with references')
     await replaceLookupObjectValueSetValuesWithReferences(

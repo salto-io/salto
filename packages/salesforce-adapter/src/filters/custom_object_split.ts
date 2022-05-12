@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import _ from 'lodash'
 import { Element, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import { pathNaclCase } from '@salto-io/adapter-utils'
@@ -59,6 +60,7 @@ const customObjectToSplitElements = async (customObject: ObjectType): Promise<Ob
 }
 
 const filterCreator = (): FilterWith<'onFetch'> => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]) => {
     const customObjects = await awu(elements).filter(isCustomObject).toArray() as ObjectType[]
     const newSplitCustomObjects = await awu(customObjects)

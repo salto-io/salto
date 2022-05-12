@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import { Element, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -66,6 +67,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
    *
    * @param elements
    */
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
     // Fetch list of all settings types
     const {

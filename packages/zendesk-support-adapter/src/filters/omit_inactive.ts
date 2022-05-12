@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import _ from 'lodash'
 import { isInstanceElement, Element } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
@@ -31,6 +32,7 @@ const CAN_NOT_OMIT_INACTIVE_TYPE_NAMES = [
  * Omit inactive instances
  */
 const filterCreator: FilterCreator = ({ config }) => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]) => {
     const shouldRemoveElement = (element: Element): boolean =>
       (isInstanceElement(element)

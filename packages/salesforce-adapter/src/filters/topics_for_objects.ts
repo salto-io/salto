@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import {
   ObjectType, Element, Values, getAnnotationValue, isObjectTypeChange, InstanceElement,
   isAdditionOrModificationChange, getChangeData, isAdditionChange, isModificationChange,
@@ -59,6 +60,7 @@ const createTopicsForObjectsInstance = (values: TopicsForObjectsInfo): InstanceE
 )
 
 const filterCreator: FilterCreator = (): FilterWith<'onFetch' | 'onDeploy'> => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]): Promise<void> => {
     const customObjectTypes = await awu(elements).filter(isCustomObject).toArray() as ObjectType[]
     if (_.isEmpty(customObjectTypes)) {

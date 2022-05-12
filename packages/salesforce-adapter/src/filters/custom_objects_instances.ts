@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import _ from 'lodash'
 import { collections, values, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -411,6 +412,7 @@ export const getCustomObjectsFetchSettings = async (
 }
 
 const filterCreator: FilterCreator = ({ client, config }) => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
     const { dataManagement } = config.fetchProfile
     if (dataManagement === undefined) {

@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import {
   Element, isInstanceElement,
 } from '@salto-io/adapter-api'
@@ -34,6 +35,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
   /**
    * Upon fetch remove the XML_ATTRIBUTE_PREFIX from the instance.value keys so it'll match the type
    */
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]): Promise<void> => {
     await awu(elements)
       .filter(isInstanceElement)

@@ -41,6 +41,8 @@ export type FilterCreator = filter.FilterCreator<
   DeployResult
 >
 
+export type FilterRunner = filter.FilterRunner<void, DeployResult>
+
 const wrapFilterWithLog = (filterName: string, filterCreator: FilterCreator): FilterCreator => {
   const wrap: FilterCreator = opts => {
     const {

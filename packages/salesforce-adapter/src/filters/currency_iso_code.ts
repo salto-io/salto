@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import { Element, isObjectType, ObjectType, ElemID, ListType, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { FilterWith } from '../filter'
@@ -95,6 +96,7 @@ const createCurrencyCodesInstance = (supportedCurrencies: ValueSet): InstanceEle
  * with ValueSetName which points to it
  */
 const filterCreator = (): FilterWith<'onFetch'> => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]) => {
     const affectedElements = elements.filter(isObjectType).filter(isTypeWithCurrencyIsoCode)
     if (affectedElements.length === 0) {

@@ -39,6 +39,8 @@ export type FilterResult = {
 
 export type Filter = filter.Filter<FilterResult>
 
+export type FilterRunner = filter.FilterRunner<FilterResult>
+
 export type FilterWith<M extends keyof Filter> = filter.FilterWith<FilterResult, M>
 
 export type FilterCreator = filter.FilterCreator<FilterResult, FilterOpts>

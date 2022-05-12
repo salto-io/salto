@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import _ from 'lodash'
 import { isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
@@ -32,6 +33,7 @@ const DEFINITION_TYPE_NAMES = [
  * Removes the definition instances
  */
 const filterCreator: FilterCreator = () => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async elements => {
     _.remove(elements,
       element =>

@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import { Element, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -38,6 +39,7 @@ const logInvalidCustomSettings = async (
 )
 
 const filterCreator: FilterCreator = ({ client, config }) => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
     if (!config.fetchProfile.shouldFetchAllCustomSettings()) {
       return {}

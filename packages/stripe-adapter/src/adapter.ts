@@ -23,7 +23,7 @@ import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import StripeClient from './client/client'
 import { StripeConfig, API_DEFINITIONS_CONFIG, FETCH_CONFIG } from './config'
-import { FilterCreator, Filter, filtersRunner } from './filter'
+import { FilterCreator, FilterRunner, filtersRunner } from './filter'
 import { STRIPE } from './constants'
 import changeValidator from './change_validator'
 import fieldReferencesFilter from './filters/field_references'
@@ -45,7 +45,7 @@ export interface StripeAdapterParams {
 }
 
 export default class StripeAdapter implements AdapterOperations {
-  private filtersRunner: Required<Filter>
+  private filtersRunner: FilterRunner
   private client: StripeClient
   private paginator: clientUtils.Paginator
   private userConfig: StripeConfig

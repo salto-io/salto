@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import { logger } from '@salto-io/logging'
 import { CORE_ANNOTATIONS, Element } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
@@ -31,6 +32,7 @@ const getRelevantElements = (elements: Element[]): AsyncIterable<Element> =>
 export const WARNING_MESSAGE = 'Encountered an error while trying to populate URLs for some of your salesforce configuration elements. This might affect the availability of the ‘go to service’ functionality in your workspace.'
 
 const filterCreator: FilterCreator = ({ client, config }) => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

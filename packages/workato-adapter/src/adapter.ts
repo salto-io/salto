@@ -21,7 +21,7 @@ import { client as clientUtils, elements as elementUtils } from '@salto-io/adapt
 import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import WorkatoClient from './client/client'
-import { FilterCreator, Filter, filtersRunner } from './filter'
+import { FilterCreator, FilterRunner, filtersRunner } from './filter'
 import { FETCH_CONFIG, WorkatoConfig } from './config'
 import addRootFolderFilter from './filters/add_root_folder'
 import fieldReferencesFilter from './filters/field_references'
@@ -58,7 +58,7 @@ export interface WorkatoAdapterParams {
 }
 
 export default class WorkatoAdapter implements AdapterOperations {
-  private createFiltersRunner: () => Required<Filter>
+  private createFiltersRunner: () => FilterRunner
   private client: WorkatoClient
   private paginator: clientUtils.Paginator
   private userConfig: WorkatoConfig

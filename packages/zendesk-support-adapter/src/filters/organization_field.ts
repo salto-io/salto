@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import _ from 'lodash'
 import { Change, getChangeData, InstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
@@ -25,6 +26,7 @@ export const ORG_FIELD_TYPE_NAME = 'organization_field'
 export const ORG_FIELD_OPTION_TYPE_NAME = 'organization_field__custom_field_options'
 
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  name: path.parse(path.basename(__filename)).name,
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,

@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import { toChange, Change, FetchOptions } from '@salto-io/adapter-api'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import SalesforceAdapter from '../../src/adapter'
@@ -34,6 +35,7 @@ describe('SalesforceAdapter filters', () => {
 
     beforeEach(() => {
       filter = {
+        name: path.parse(path.basename(__filename)).name,
         onFetch: mockFunction<(typeof filter)['onFetch']>().mockResolvedValue(),
         preDeploy: mockFunction<(typeof filter)['preDeploy']>().mockResolvedValue(),
         deploy: mockFunction<(typeof filter)['deploy']>(),

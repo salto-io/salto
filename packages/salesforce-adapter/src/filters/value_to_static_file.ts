@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import {
   Element, InstanceElement, Field, isInstanceElement, Value, StaticFile,
 } from '@salto-io/adapter-api'
@@ -89,6 +90,7 @@ const extractToStaticFile = async (instance: InstanceElement): Promise<void> => 
  * Extract field value to static-resources for chosen intstances.
  */
 const filter: FilterCreator = () => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]) => {
     await awu(elements)
       .filter(isInstanceElement)

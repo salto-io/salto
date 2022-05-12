@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import _ from 'lodash'
 import { Element, ElemID, InstanceElement, isInstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
@@ -783,6 +784,7 @@ export const lookupFunc = referenceUtils.generateLookupFunc(
  * Convert field values into references, based on predefined rules.
  */
 const filter: FilterCreator = ({ config }) => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]) => {
     const addReferences = async (refDefs: ZendeskSupportFieldReferenceDefinition[]):
     Promise<void> => {

@@ -23,7 +23,7 @@ import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import ZuoraClient from './client/client'
 import { ZuoraConfig, API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZuoraApiConfig, getUpdatedConfig, SETTING_TYPES, SUPPORTED_TYPES } from './config'
-import { FilterCreator, Filter, filtersRunner } from './filter'
+import { FilterCreator, FilterRunner, filtersRunner } from './filter'
 import fieldReferencesFilter from './filters/field_references'
 import objectDefsFilter from './filters/object_defs'
 import objectDefSplitFilter from './filters/object_def_split'
@@ -68,7 +68,7 @@ export interface ZuoraAdapterParams {
 }
 
 export default class ZuoraAdapter implements AdapterOperations {
-  private createFiltersRunner: () => Required<Filter>
+  private createFiltersRunner: () => FilterRunner
   private client: ZuoraClient
   private paginator: clientUtils.Paginator
   private userConfig: ZuoraConfig

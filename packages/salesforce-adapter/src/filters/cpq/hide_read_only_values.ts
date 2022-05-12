@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import { Element, CORE_ANNOTATIONS, isObjectType } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
@@ -22,6 +23,7 @@ import { FIELD_ANNOTATIONS } from '../../constants'
 const { awu } = collections.asynciterable
 
 const filter: FilterCreator = ({ config }) => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]) => {
     if (config.fetchProfile.dataManagement?.showReadOnlyValues === true) {
       // eslint-disable-next-line no-useless-return

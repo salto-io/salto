@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import {
   Element, ElemID, InstanceElement, isStaticFile, StaticFile,
 } from '@salto-io/adapter-api'
@@ -60,6 +61,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
    * Upon fetch modify the extension of the StaticResource's static file CONTENT field
    * from '.resource' to the correct extension based on the CONTENT_TYPE field
    */
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]): Promise<void> => {
     const staticResourceInstances = findInstances(elements, STATIC_RESOURCE_METADATA_TYPE_ID)
     wu(staticResourceInstances).forEach(modifyFileExtension)

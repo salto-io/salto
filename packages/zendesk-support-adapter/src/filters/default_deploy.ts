@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import { Change, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
@@ -21,6 +22,7 @@ import { deployChange, deployChanges } from '../deployment'
  * Deploys all the changes that were not deployed by the previous filters
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  name: path.parse(path.basename(__filename)).name,
   deploy: async (changes: Change<InstanceElement>[]) => {
     const deployResult = await deployChanges(
       changes.filter(isInstanceChange),

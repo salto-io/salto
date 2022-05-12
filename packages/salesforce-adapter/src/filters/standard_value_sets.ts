@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import _ from 'lodash'
 import { FileProperties } from 'jsforce-types'
 import {
@@ -203,6 +204,7 @@ export const makeFilter = (
    *
    * @param elements the already fetched elements
    */
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
     const svsMetadataType: ObjectType | undefined = await findStandardValueSetType(elements)
     let configChanges: ConfigChangeSuggestion[] = []

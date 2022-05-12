@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import {
   Element, isObjectType, isInstanceElement, isField,
 } from '@salto-io/adapter-api'
@@ -74,6 +75,7 @@ export const WARNING_MESSAGE = 'Encountered an error while trying populate inter
  * Add missing env-specific ids using listMetadataObjects.
  */
 const filter: FilterCreator = ({ client, config }) => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

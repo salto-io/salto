@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import {
   Element, InstanceElement, isInstanceElement, isObjectType,
   ObjectType, getChangeData, Change, BuiltinTypes, ElemID,
@@ -172,6 +173,7 @@ const filterCreator: FilterCreator = () => {
      * Upon fetch, modify the full_names of the inner types of the workflow to contain
      * the workflow full_name (e.g. MyWorkflowAlert -> Lead.MyWorkflowAlert)
      */
+    name: path.parse(path.basename(__filename)).name,
     onFetch: async (elements: Element[]) => {
       const splitWorkflow = async (
         workflowInst: InstanceElement

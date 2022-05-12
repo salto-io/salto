@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import { isObjectType, Element, ObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
@@ -40,6 +41,7 @@ const FIELDS_TO_REMOVE_RESTRICTION_FROM_BY_TYPE: Record<string, string[]> = {
 export const makeFilter = (
   typeNameToFieldMapping: Record<string, string[]>,
 ): FilterCreator => () => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]) => {
     const removeRestrictionsFromTypeFields = async (type: ObjectType): Promise<void> => {
       const relevantFields = typeNameToFieldMapping[await metadataType(type)]

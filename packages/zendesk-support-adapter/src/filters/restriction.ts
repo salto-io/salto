@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import _ from 'lodash'
 import { isInstanceElement, Element, Values } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
@@ -29,6 +30,7 @@ const removeIdField = (instanceValue: Values): void => {
  * Fix the restriction object on multiple types
  */
 const filterCreator: FilterCreator = () => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]) => {
     const instances = elements.filter(isInstanceElement)
     instances

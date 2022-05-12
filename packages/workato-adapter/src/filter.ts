@@ -21,4 +21,6 @@ export const { filtersRunner } = filterUtils
 
 export type Filter = filterUtils.Filter
 
+export type FilterRunner = filterUtils.FilterRunner<void>
+
 export type FilterCreator = filterUtils.FilterCreator<WorkatoClient, FilterContext>

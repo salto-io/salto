@@ -22,7 +22,7 @@ describe('filter', () => {
   const mockDeploy = jest.fn()
   const mockOnDeploy = jest.fn()
   const mockOnPostFetch = jest.fn()
-  const filterWithAllMethods: Required<Filter> = {
+  const filterWithAllMethods: Filter = {
     onFetch: mockOnFetch,
     preDeploy: mockPreDeploy,
     deploy: mockDeploy,

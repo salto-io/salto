@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import _ from 'lodash'
 import { Element, ObjectType, ListType, InstanceElement, isAdditionOrModificationChange, getChangeData, Change, ChangeDataType, isListType, Field, isPrimitiveType, isObjectTypeChange, StaticFile, isFieldChange, isAdditionChange, isInstanceElement, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
@@ -155,6 +156,7 @@ const applyFuncOnCustomScriptFieldChange = async (
 }
 
 const filter: FilterCreator = () => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]) => {
     const customObjects = await awu(elements).filter(isCustomObject).toArray() as ObjectType[]
     const cpqCustomScriptObject = await awu(customObjects)

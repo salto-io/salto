@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import pathModule from 'path'
 import { logger } from '@salto-io/logging'
 import { collections, strings, multiIndex, promises, values as lowerdashValues } from '@salto-io/lowerdash'
 import {
@@ -850,6 +851,7 @@ const isSideEffectRemoval = (
 const filterCreator: FilterCreator = ({ client, config }) => {
   let originalChanges: Record<string, Change[]> = {}
   return {
+    name: pathModule.parse(pathModule.basename(__filename)).name,
     onFetch: async (elements: Element[]): Promise<void> => {
       const customObjectInstances = await keyByAsync(
         await awu(elements).filter(isInstanceOfType(CUSTOM_OBJECT)).toArray(),

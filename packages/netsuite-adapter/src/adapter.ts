@@ -56,7 +56,7 @@ import systemNoteAuthorInformation from './filters/author_information/system_not
 import savedSearchesAuthorInformation from './filters/author_information/saved_searches'
 import suiteAppConfigElementsFilter from './filters/suiteapp_config_elements'
 import configFeaturesFilter from './filters/config_features'
-import { createFilterCreatorsWithLogs, Filter, FilterCreator } from './filter'
+import { createFilterCreatorsWithLogs, FilterRunner, FilterCreator } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_USE_CHANGES_DETECTION } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams } from './query'
 import { createServerTimeElements, getLastServerTime } from './server_time'
@@ -110,7 +110,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly fetchTarget?: NetsuiteQueryParameters
   private readonly skipList?: NetsuiteQueryParameters // old version
   private readonly useChangesDetection: boolean
-  private createFiltersRunner: (isPartial: boolean) => Required<Filter>
+  private createFiltersRunner: (isPartial: boolean) => FilterRunner
   private elementsSourceIndex: LazyElementsSourceIndexes
 
 

@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import wu from 'wu'
 import {
   Element, ElemID, ObjectType, InstanceElement, getRestriction,
@@ -39,6 +40,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
    *
    * @param elements the already fetched elements
    */
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]) => {
     const transformShortValues = (animationRule: InstanceElement, fieldName: string,
       fieldFullValueNames: ReadonlyArray<string>): void => {

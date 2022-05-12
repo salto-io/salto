@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import _ from 'lodash'
 import Joi from 'joi'
 import FormData from 'form-data'
@@ -202,6 +203,7 @@ const getMacroAttachments = async ({
  * Adds the macro attachments instances
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async elements => {
     const macrosWithAttachments = elements
       .filter(isInstanceElement)

@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import { Element, isObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { filter } from '@salto-io/adapter-utils'
 import { DuckTypeUserFetchConfig } from '../../config/ducktype'
@@ -26,6 +27,7 @@ export const hideTypesFilterCreator: <
  TContext extends { fetch: DuckTypeUserFetchConfig },
  TResult extends void | filter.FilterResult = void,
  > () => FilterCreator<TClient, TContext, TResult> = () => ({ config }) => ({
+   name: path.parse(path.basename(__filename)).name,
    onFetch: async (elements: Element[]) => {
      if (config.fetch.hideTypes) {
        elements

@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import { Change, CORE_ANNOTATIONS, Element, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { filter } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter_utils'
@@ -36,6 +37,7 @@ export const serviceUrlFilterCreator: <
   TContext extends { apiDefinitions: AdapterApiConfig },
   TResult extends void | filter.FilterResult = void
 >(baseUrl: string) => FilterCreator<TClient, TContext, TResult> = baseUrl => ({ config }) => ({
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)

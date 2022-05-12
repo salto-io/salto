@@ -13,12 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  Element, ElemID, getRestriction,
-} from '@salto-io/adapter-api'
-import {
-  findObjectType,
-} from '@salto-io/adapter-utils'
+import path from 'path'
+import { Element, ElemID, getRestriction } from '@salto-io/adapter-api'
+import { findObjectType } from '@salto-io/adapter-utils'
 import { FilterWith } from '../filter'
 import { SALESFORCE } from '../constants'
 
@@ -33,6 +30,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
    *
    * @param elements the already fetched elements
    */
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]): Promise<void> => {
     // fix flowMetadataValue - mark restriction values as not enforced, see: SALTO-93
     const flowMetadataValue = findObjectType(elements, FLOW_METADATA_TYPE_ID)

@@ -72,7 +72,7 @@ import customMetadataRecordsFilter from './filters/custom_metadata'
 import currencyIsoCodeFilter from './filters/currency_iso_code'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
-import { FilterCreator, Filter, FilterResult } from './filter'
+import { FilterCreator, FilterRunner, FilterResult } from './filter'
 import { addDefaults } from './filters/utils'
 import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, listMetadataObjects } from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
@@ -245,7 +245,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private metadataToRetrieve: string[]
   private metadataTypesOfInstancesFetchedInFilters: string[]
   private nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>
-  private createFiltersRunner: () => Required<Filter>
+  private createFiltersRunner: () => FilterRunner
   private client: SalesforceClient
   private userConfig: SalesforceConfig
   private fetchProfile: FetchProfile

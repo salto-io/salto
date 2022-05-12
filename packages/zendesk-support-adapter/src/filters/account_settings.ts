@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import _ from 'lodash'
 import {
   Change, getChangeData, InstanceElement,
@@ -26,6 +27,7 @@ export const ACCOUNT_SETTING_TYPE_NAME = 'account_setting'
  * Deploys account settings
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  name: path.parse(path.basename(__filename)).name,
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [accountSettingChanges, leftoverChanges] = _.partition(
       changes,

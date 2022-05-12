@@ -13,9 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  Element, isInstanceElement,
-} from '@salto-io/adapter-api'
+import path from 'path'
+import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import {
   MapKeyFunc, mapKeysRecursive,
 } from '@salto-io/adapter-utils'
@@ -42,6 +41,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
    * Remove the leading and trailing whitespaces and new line chars from the
    * LightningComponentBundle keys to fix potential parsing error
    */
+  name: path.parse(path.basename(__filename)).name,
   onFetch: async (elements: Element[]): Promise<void> => {
     await awu(elements)
       .filter(isInstanceElement)

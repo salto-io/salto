@@ -15,8 +15,15 @@
 */
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import {
-  ElemID, ObjectType, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, ListType, createRestriction,
-  FieldDefinition, MapType,
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  createRestriction,
+  ElemID,
+  FieldDefinition,
+  InstanceElement,
+  ListType,
+  MapType,
+  ObjectType,
 } from '@salto-io/adapter-api'
 import * as constants from './constants'
 
@@ -184,6 +191,7 @@ export type ClientRetryConfig = Partial<{
   maxAttempts: number
   retryDelay: number
   retryStrategy: RetryStrategy
+  timeout: number
 }>
 
 export type CustomObjectsDeployRetryConfig = {

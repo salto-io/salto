@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, Element, BuiltinTypes, CORE_ANNOTATIONS, ReferenceExpression, isInstanceElement } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { getParents } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/fix_multienv_ids'
 import WorkatoClient from '../../src/client/client'
@@ -65,6 +65,7 @@ describe('Fix multienv ids filter', () => {
           supportedTypes: SUPPORTED_TYPES,
         },
       },
+      fetchQuery: elementUtils.query.createMockQuery(),
     }) as FilterType
   })
 
@@ -205,6 +206,7 @@ describe('Fix multienv ids filter', () => {
             supportedTypes: SUPPORTED_TYPES,
           },
         },
+        fetchQuery: elementUtils.query.createMockQuery(),
       }) as FilterType
       const elements = generateElements()
       const lengthBefore = elements.length

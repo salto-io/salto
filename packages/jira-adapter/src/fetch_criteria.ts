@@ -13,7 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { serviceUrlFilterCreator } from './service_url'
-export { referencedInstanceNamesFilterCreator } from './referenced_instance_names'
-export { queryFilterCreator } from './query'
-export * as ducktype from './ducktype'
+import { elements as elementUtils } from '@salto-io/adapter-components'
+import { regex } from '@salto-io/lowerdash'
+
+const nameCriterion: elementUtils.query.QueryCriterion = ({
+  instance,
+  value,
+}): boolean => regex.isFullRegexMatch(instance.value.name, value)
+
+export default {
+  name: nameCriterion,
+}

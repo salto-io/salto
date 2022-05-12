@@ -13,7 +13,22 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { serviceUrlFilterCreator } from './service_url'
-export { referencedInstanceNamesFilterCreator } from './referenced_instance_names'
-export { queryFilterCreator } from './query'
-export * as ducktype from './ducktype'
+import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import fetchCriteria from '../src/fetch_criteria'
+
+describe('fetch_criteria', () => {
+  describe('name', () => {
+    it('should match element name', () => {
+      const instance = new InstanceElement(
+        'instance',
+        new ObjectType({ elemID: new ElemID('adapter', 'type') }),
+        {
+          name: 'name',
+        }
+      )
+
+      expect(fetchCriteria.name({ instance, value: '.ame' })).toBeTruthy()
+      expect(fetchCriteria.name({ instance, value: 'ame' })).toBeFalsy()
+    })
+  })
+})

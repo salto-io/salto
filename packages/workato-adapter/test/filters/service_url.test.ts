@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../src/filters/service_url'
 import WorkatoClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
@@ -93,6 +93,7 @@ describe('service_url', () => {
         paginationFuncCreator: paginate,
       }),
       config: DEFAULT_CONFIG,
+      fetchQuery: elementUtils.query.createMockQuery(),
     }) as FilterType
 
     await filter.onFetch([

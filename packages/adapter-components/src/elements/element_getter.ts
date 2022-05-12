@@ -46,7 +46,7 @@ export const getElementsWithContext = async <E extends Element>({
   types,
   typeElementGetter,
 }: {
-  fetchQuery: ElementQuery
+  fetchQuery: Pick<ElementQuery, 'isTypeMatch'>
   supportedTypes: Record<string, string[]>
   types: Record<string, TypeConfig>
   typeElementGetter: (args: {

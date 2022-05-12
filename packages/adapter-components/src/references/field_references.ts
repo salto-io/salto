@@ -39,7 +39,7 @@ const defaultIsEqualFunc: ValueIsEqualFunc = (lhs, rhs) => lhs === rhs
 
 export const MISSING_ANNOTATION = 'salto_missing_ref'
 export const checkMissingRef = (element: Element): boolean =>
-  element.annotations[MISSING_ANNOTATION] === true
+  element.annotations?.[MISSING_ANNOTATION] === true
 
 export const replaceReferenceValues = async <
   T extends string

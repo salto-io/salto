@@ -352,6 +352,7 @@ export class PrimitiveType<Primitive extends PrimitiveTypes = PrimitiveTypes> ex
       primitive: this.primitive,
       annotationRefsOrTypes: this.cloneAnnotationTypes(),
       annotations: this.cloneAnnotations(),
+      path: this.path !== undefined ? [...this.path] : undefined,
     })
     res.annotate(additionalAnnotations)
     return res

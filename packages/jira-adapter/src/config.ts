@@ -1324,6 +1324,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       ],
       fieldsToOmit: [
         { fieldName: 'subtask' },
+        { fieldName: 'avatarId' },
+        { fieldName: 'iconUrl' },
       ],
       fieldsToHide: [
         {

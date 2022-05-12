@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../utils'
@@ -42,24 +42,7 @@ describe('avatarsFilter', () => {
   })
 
   describe('onFetch', () => {
-    it('should add the avatarId field if there is iconUrl field', async () => {
-      type.fields.iconUrl = new Field(type, 'iconUrl', BuiltinTypes.STRING)
-      await filter.onFetch?.([type])
-      expect(type.fields.avatarId).toBeDefined()
-    })
-
-    it('should add the avatarId field if there is avatarUrls field', async () => {
-      type.fields.avatarUrls = new Field(type, 'avatarUrls', BuiltinTypes.STRING)
-      await filter.onFetch?.([type])
-      expect(type.fields.avatarId).toBeDefined()
-    })
-
-    it('should do nothing if there are not avatar fields', async () => {
-      await filter.onFetch?.([type])
-      expect(type.fields.avatarId).toBeUndefined()
-    })
-
-    it('should extract id from url', async () => {
+    it('should remove avatar value if contains id', async () => {
       const iconInstance = new InstanceElement(
         'instance',
         type,
@@ -83,13 +66,9 @@ describe('avatarsFilter', () => {
 
       await filter.onFetch?.([iconInstance, avatarsInstance])
 
-      expect(iconInstance.value).toEqual({
-        avatarId: 10303,
-      })
+      expect(iconInstance.value).toEqual({})
 
-      expect(avatarsInstance.value).toEqual({
-        avatarId: 10303,
-      })
+      expect(avatarsInstance.value).toEqual({})
     })
 
     it('if url does not contain an id should remove the domain prefix', async () => {
@@ -165,41 +144,6 @@ describe('avatarsFilter', () => {
           '16x16': 'https://other/images/icons/priorities/low.svg?size=xsmall',
           '32x32': 'https://other/images/icons/priorities/low.svg?size=medium',
         },
-      })
-    })
-
-    it('if instance already have avatarId should not replace it', async () => {
-      const iconInstance = new InstanceElement(
-        'instance',
-        type,
-        {
-          iconUrl: 'https://ori-salto-test.atlassian.net/images/icons/priorities/low.svg?size=medium',
-          avatarId: 1,
-        }
-      )
-
-      const avatarsInstance = new InstanceElement(
-        'instance',
-        type,
-        {
-          avatarUrls: {
-            '48x48': 'https://ori-salto-test.atlassian.net/images/icons/priorities/low.svg',
-            '24x24': 'https://ori-salto-test.atlassian.net/images/icons/priorities/low.svg?size=small',
-            '16x16': 'https://ori-salto-test.atlassian.net/images/icons/priorities/low.svg?size=xsmall',
-            '32x32': 'https://ori-salto-test.atlassian.net/images/icons/priorities/low.svg?size=medium',
-          },
-          avatarId: 1,
-        }
-      )
-
-      await filter.onFetch?.([iconInstance, avatarsInstance])
-
-      expect(iconInstance.value).toEqual({
-        avatarId: 1,
-      })
-
-      expect(avatarsInstance.value).toEqual({
-        avatarId: 1,
       })
     })
   })

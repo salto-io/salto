@@ -13,15 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Field, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
+import { isInstanceElement } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 
 const AVATAR_URLS_FIELD = 'avatarUrls'
 const ICON_URL_FIELD = 'iconUrl'
-
-const AVATAR_ID_FIELD = 'avatarId'
 
 const AVATAR_ID_PATTERN = new RegExp('/rest/api/\\d+/universal_avatar/view/type/\\w+/avatar/(\\d+)')
 
@@ -36,14 +34,6 @@ const filter: FilterCreator = ({ client }) => ({
   // pre deploy because they are not deployable
   // (and we already have a change validator for undeployable changes)
   onFetch: async elements => {
-    elements
-      .filter(isObjectType)
-      .forEach(type => {
-        if ([AVATAR_URLS_FIELD, ICON_URL_FIELD].some(name => type.fields[name] !== undefined)) {
-          type.fields[AVATAR_ID_FIELD] = new Field(type, AVATAR_ID_FIELD, BuiltinTypes.NUMBER)
-        }
-      })
-
     elements
       .filter(isInstanceElement)
       .forEach(element => {
@@ -73,16 +63,12 @@ const filter: FilterCreator = ({ client }) => ({
               [url] = Object.values(objValues[AVATAR_URLS_FIELD])
             }
 
-            if (url !== undefined && objValues[AVATAR_ID_FIELD] === undefined) {
+            if (url !== undefined) {
               const match = AVATAR_ID_PATTERN.exec(url)
               if (match !== null) {
-                objValues[AVATAR_ID_FIELD] = parseInt(match[1], 10)
+                delete objValues[AVATAR_URLS_FIELD]
+                delete objValues[ICON_URL_FIELD]
               }
-            }
-
-            if (objValues[AVATAR_ID_FIELD] !== undefined) {
-              delete objValues[AVATAR_URLS_FIELD]
-              delete objValues[ICON_URL_FIELD]
             }
 
             return WALK_NEXT_STEP.RECURSE

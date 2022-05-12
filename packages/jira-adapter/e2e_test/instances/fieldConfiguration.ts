@@ -19,16 +19,16 @@ import { JIRA } from '../../src/constants'
 
 export const createFieldConfigurationValues = (
   name: string,
-  allElements: Element[],
 ): Values => ({
   name,
   description: name,
-  fields: {
-    Assignee: {
-      id: createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee'), allElements),
-      description: 'For example operating system, software platform and/or hardware specifications (include as appropriate for the issue).',
-      isHidden: false,
-      isRequired: false,
-    },
-  },
+})
+
+export const createFieldConfigurationItemValues = (
+  allElements: Element[],
+): Values => ({
+  id: createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee'), allElements),
+  description: 'For example operating system, software platform and/or hardware specifications (include as appropriate for the issue).',
+  isHidden: false,
+  isRequired: false,
 })

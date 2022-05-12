@@ -34,24 +34,24 @@ const toChangeErrors = (
   return items.map(([key, item]) => {
     const keyElemID = path.createNestedID(key)
     if (item[INDEX] === undefined) {
-      return { elemID: keyElemID, errorMessage: `${key} has no 'index' attribute` }
+      return { elemID: keyElemID, errorMessage: `${key} has no 'index' attribute. It is going to be located at the end of the list (index = ${items.length}).` }
     }
     if (!_.isInteger(item[INDEX])) {
-      return { elemID: keyElemID, errorMessage: 'index is not an integer' }
+      return { elemID: keyElemID, errorMessage: 'Index is not an integer. It will be override by an integer value in the next fetch.' }
     }
     if (item[INDEX] < 0 || item[INDEX] >= items.length) {
-      return { elemID: keyElemID, errorMessage: 'index is out of range' }
+      return { elemID: keyElemID, errorMessage: 'Index is out of range. It will be override by an in-range value in the next fetch.' }
     }
     if (!indexes.has(item[INDEX])) {
-      return { elemID: path, errorMessage: `some items has the same index value (index = ${item[INDEX]})` }
+      return { elemID: path, errorMessage: `Some items has the same index value (index = ${item[INDEX]}). They will be sorted by their key name (${key}).` }
     }
     indexes.delete(item[INDEX])
     return undefined
   }).filter(isDefined)
     .map(({ elemID, errorMessage }) => ({
       elemID,
-      severity: 'Error',
-      message: 'invalid index attribute in a mapped list',
+      severity: 'Warning',
+      message: 'Invalid index attribute in a mapped list',
       detailedMessage: errorMessage,
     }))
 }

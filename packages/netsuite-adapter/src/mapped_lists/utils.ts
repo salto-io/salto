@@ -214,8 +214,10 @@ const convertToList: TransformFunc = async ({ value, field }) => {
     field.refType = createRefToElmWithValue(new ListType(await fieldType.getInnerType()))
   }
 
-  const objectAsList = _.sortBy(Object.values(value), INDEX)
-    .filter(_.isObject)
+  const objectAsList = _.sortBy(
+    Object.values(value),
+    [INDEX, field.annotations[LIST_MAPPED_BY_FIELD]]
+  ).filter(_.isObject)
     .map(item => _.omit(item, INDEX))
 
   return objectAsList

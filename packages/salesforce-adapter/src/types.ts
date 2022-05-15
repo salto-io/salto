@@ -414,6 +414,7 @@ const clientRetryConfigType = new ObjectType({
         }),
       },
     },
+    timeout: { refType: BuiltinTypes.NUMBER },
   } as Record<keyof ClientRetryConfig, FieldDefinition>,
 })
 

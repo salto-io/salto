@@ -25,6 +25,7 @@ import JiraClient from '../../client/client'
 import { FilterCreator } from '../../filter'
 import { createAutomationTypes } from './types'
 import { getCloudId } from './cloud_id'
+import { JiraConfig } from '../../config'
 
 const DEFAULT_PAGE_SIZE = 100
 
@@ -109,6 +110,16 @@ const createInstance = (
   )
 }
 
+export const getAutomations = async (
+  client: JiraClient,
+  config: JiraConfig,
+  cloudId: string,
+): Promise<Values[]> => postPaginated(
+  `/gateway/api/automation/internal-api/jira/${cloudId}/pro/rest/GLOBAL/rules`,
+  client,
+    config.client.pageSize?.get ?? DEFAULT_PAGE_SIZE
+)
+
 /**
  * Fetching automations from Jira using internal API endpoint.
  * We first use `/resources` endpoint to get the cloud id of the account.
@@ -133,11 +144,7 @@ const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuery }) =>
       .keyBy(instance => instance.value.id)
       .value()
 
-    const automations = await postPaginated(
-      `/gateway/api/automation/internal-api/jira/${cloudId}/pro/rest/GLOBAL/rules`,
-      client,
-      config.client.pageSize?.get ?? DEFAULT_PAGE_SIZE
-    )
+    const automations = await getAutomations(client, config, cloudId)
 
     const { automationType, subTypes } = createAutomationTypes()
 

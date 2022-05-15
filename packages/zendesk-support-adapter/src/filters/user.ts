@@ -191,7 +191,7 @@ const deployModificationFunc = async (
 const filterCreator: FilterCreator = ({ paginator }) => {
   let userIdToEmail: Record<string, string> = {}
   return {
-    onFetch: async elements => {
+    onFetch: async elements => log.time(async () => {
       const users = await getUsers(paginator)
       if (_.isEmpty(users)) {
         return
@@ -203,7 +203,7 @@ const filterCreator: FilterCreator = ({ paginator }) => {
       instances.forEach(instance => {
         TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance, mapping)
       })
-    },
+    }, 'Users filter'),
     preDeploy: async (changes: Change<InstanceElement>[]) => {
       const relevantChanges = changes.filter(isRelevantChange)
       if (_.isEmpty(relevantChanges)) {

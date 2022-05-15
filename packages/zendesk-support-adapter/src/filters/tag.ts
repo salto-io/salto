@@ -92,7 +92,7 @@ const serializeReferencesToTags = (instance: InstanceElement): void => {
  * Extract tags references from business rules that refers to them
  */
 const filterCreator: FilterCreator = () => ({
-  onFetch: async (elements: Element[]): Promise<void> => {
+  onFetch: async (elements: Element[]): Promise<void> => log.time(async () => {
     const instances = elements
       .filter(isInstanceElement)
       .filter(instance => Object.keys(TYPE_NAME_TO_RELEVANT_FIELD_NAMES)
@@ -117,7 +117,7 @@ const filterCreator: FilterCreator = () => ({
       .value();
     // We do this trick to avoid calling push with the spread notation
     [tagObjectType, tagInstances].flat().forEach(element => { elements.push(element) })
-  },
+  }, 'Tags filter'),
   // Tag is not an object in Zendesk, and there is no meaning to "deploy" tag
   // Therefore, we created an empty deploy function that always "succeed"
   // We basically don't deploy anything

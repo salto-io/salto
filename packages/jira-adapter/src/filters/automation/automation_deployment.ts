@@ -26,6 +26,8 @@ import { deployChanges } from '../../deployment/standard_deployment'
 import JiraClient from '../../client/client'
 import { getLookUpName } from '../../reference_mapping'
 import { getCloudId } from './cloud_id'
+import { getAutomations } from './automation_fetch'
+import { JiraConfig } from '../../config'
 
 
 const log = logger(module)
@@ -36,7 +38,7 @@ const PROJECT_TYPE_TO_RESOURCE_TYPE: Record<string, string> = {
   business: 'jira-core',
 }
 
-type ImportResponse = {
+type AutomationResponse = {
   id: number
   name: string
   created: number
@@ -58,7 +60,7 @@ const IMPORT_RESPONSE_SCHEME = Joi.array().items(
   }).unknown(true),
 )
 
-const isImportResponse = createSchemeGuard<ImportResponse>(IMPORT_RESPONSE_SCHEME, 'Received an invalid automation import response')
+const isAutomationsResponse = createSchemeGuard<AutomationResponse>(IMPORT_RESPONSE_SCHEME, 'Received an invalid automation import response')
 
 const generateRuleScopes = (instance: InstanceElement, cloudId: string): string[] => {
   if ((instance.value.projects ?? []).length === 0) {
@@ -103,13 +105,13 @@ const getAutomationIdentifier = (values: Values): string =>
 
 const setInstanceId = async (
   instance: InstanceElement,
-  response: clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>
+  automations: Values[]
 ): Promise<void> => {
-  if (!isImportResponse(response.data)) {
+  if (!isAutomationsResponse(automations)) {
     throw new Error(`Received an invalid automation response when attempting to create automation: ${instance.elemID.getFullName()}`)
   }
 
-  const automationById = _.groupBy(response.data, automation => getAutomationIdentifier(automation))
+  const automationById = _.groupBy(automations, automation => getAutomationIdentifier(automation))
 
   const instanceIdentifier = getAutomationIdentifier(
     (await resolveValues(instance, getLookUpName)).value
@@ -165,9 +167,11 @@ const createAutomation = async (
   instance: InstanceElement,
   client: JiraClient,
   cloudId: string,
+  config: JiraConfig,
 ): Promise<void> => {
-  const response = await importAutomation(instance, client, cloudId)
-  await setInstanceId(instance, response)
+  await importAutomation(instance, client, cloudId)
+  const automations = await getAutomations(client, config, cloudId)
+  await setInstanceId(instance, automations)
   if (instance.value.state === 'ENABLED') {
     // Import automation ignore the state and always create the automation as disabled
     await updateAutomation(instance, client, cloudId)
@@ -204,7 +208,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       async change => {
         const cloudId = await getCloudId(client)
         if (isAdditionChange(change)) {
-          await createAutomation(getChangeData(change), client, cloudId)
+          await createAutomation(getChangeData(change), client, cloudId, config)
         } else if (isModificationChange(change)) {
           await updateAutomation(getChangeData(change), client, cloudId)
         } else {

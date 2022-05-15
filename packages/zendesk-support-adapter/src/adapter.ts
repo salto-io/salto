@@ -64,7 +64,8 @@ import serviceUrlFilter from './filters/service_url'
 import slaPolicyFilter from './filters/sla_policy'
 import macroAttachmentsFilter from './filters/macro_attachments'
 import omitInactiveFilter from './filters/omit_inactive'
-import tagsFilter from './filters/tag'
+// tagsFilter is disabled due to SALTO-2305
+// import tagsFilter from './filters/tag'
 import webhookFilter from './filters/webhook'
 import defaultDeployFilter from './filters/default_deploy'
 import ducktypeCommonFilters from './filters/ducktype_common'
@@ -107,7 +108,8 @@ export const DEFAULT_FILTERS = [
   hardcodedChannelFilter,
   // fieldReferencesFilter should be after usersFilter, macroAttachmentsFilter and tagsFilter
   usersFilter,
-  tagsFilter,
+  // tagsFilter is disabled due to SALTO-2305
+  // tagsFilter,
   macroAttachmentsFilter,
   fieldReferencesFilter,
   appsFilter,

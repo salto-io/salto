@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { isInstanceElement } from '@salto-io/adapter-api'
+import { cloneDeepWithoutRefs, isInstanceElement } from '@salto-io/adapter-api'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 
@@ -36,6 +37,19 @@ const DEFINITION_TYPE_NAMES = [
  */
 const filterCreator: FilterCreator = () => ({
   onFetch: async elements => log.time(async () => {
+    // ---- Start debugging SALTO-2305 ----
+    const triggerDefs = elements
+      .filter(isInstanceElement)
+      .find(inst => inst.elemID.typeName === 'trigger_definition')
+    if (triggerDefs) {
+      const triggerDefsVal = safeJsonStringify(cloneDeepWithoutRefs(triggerDefs?.value))
+      const chunks = _.chunk(triggerDefsVal, 200 * 1024).map(chunk => chunk.join(''))
+      chunks.forEach((chunk, i) => {
+        log.debug(`DEBUGGING2305:${i}:${chunk}`)
+      })
+    }
+    // ---- End debugging SALTO-2305 ----
+
     _.remove(elements,
       element =>
         isInstanceElement(element) && DEFINITION_TYPE_NAMES.includes(element.elemID.typeName))

@@ -13,14 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ElemID, ObjectType, InstanceElement, BuiltinTypes, Field } from '@salto-io/adapter-api'
-import { FilterResult, FilterWith } from '../../src/filter'
+import { BuiltinTypes, Element, ElemID, Field, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
-import filterCreator, { WARNING_MESSAGE } from '../../src/filters/add_missing_ids'
+import filterCreator from '../../src/filters/add_missing_ids'
 import mockClient from '../client'
 import {
-  SALESFORCE, API_NAME, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD, INTERNAL_ID_ANNOTATION,
+  API_NAME,
+  INSTANCE_FULL_NAME_FIELD,
+  INTERNAL_ID_ANNOTATION,
   INTERNAL_ID_FIELD,
+  METADATA_TYPE,
+  SALESFORCE,
 } from '../../src/constants'
 import { defaultFilterContext } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
@@ -195,26 +199,8 @@ describe('Internal IDs filter', () => {
     })
   })
 
-  describe('when feature is throwing an error', () => {
-    const mockListMetadataObjects: jest.Mock = jest.fn()
-    SalesforceClient.prototype.listMetadataObjects = mockListMetadataObjects
-
-    it('should return a warning', async () => {
-      const { connection } = mockClient()
-      connection.query.mockImplementation(() => { throw new Error() })
-      const res = await filter.onFetch(elements) as FilterResult
-      const err = res.errors ?? []
-      expect(res.errors).toHaveLength(1)
-      expect(err[0]).toEqual({
-        severity: 'Warning',
-        message: WARNING_MESSAGE,
-      })
-    })
-  })
-
   describe('when feature is disabled', () => {
-    const mockListMetadataObjects: jest.Mock = jest.fn()
-    SalesforceClient.prototype.listMetadataObjects = mockListMetadataObjects
+    SalesforceClient.prototype.listMetadataObjects = jest.fn()
     elements = generateElements()
 
     it('should not run any query', async () => {

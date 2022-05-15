@@ -4,7 +4,7 @@
         "declarationMap": true,
         "module": "commonjs",
         "esModuleInterop": true,
-        "target": "es2019",
+        "target": "es2020",
         "noImplicitAny": true,
         "moduleResolution": "node",
         "noUnusedLocals": true,

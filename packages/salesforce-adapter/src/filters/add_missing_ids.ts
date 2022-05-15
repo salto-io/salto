@@ -13,15 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  Element, isObjectType, isInstanceElement, isField,
-} from '@salto-io/adapter-api'
+import { Element, isField, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { apiName, metadataType } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
-import { getFullName, getInternalId, setInternalId, ensureSafeFilterFetch } from './utils'
+import { getFullName, getInternalId, setInternalId } from './utils'
 
 const log = logger(module)
 const { awu, groupByAsync } = collections.asynciterable
@@ -42,9 +40,6 @@ export const getIdsForType = async (
 
 /**
  * Try to add internal ids for the remaining types using listMetadataObjects.
- *
- * @param client          The salesforce client to use for the query
- * @param elementsByType  Elements missing internal ids, grouped by type
  */
 const addMissingIds = async (
   client: SalesforceClient,
@@ -74,22 +69,23 @@ export const WARNING_MESSAGE = 'Encountered an error while trying populate inter
  * Add missing env-specific ids using listMetadataObjects.
  */
 const filter: FilterCreator = ({ client, config }) => ({
-  onFetch: ensureSafeFilterFetch({
-    warningMessage: WARNING_MESSAGE,
-    config,
-    filterName: 'addMissingIds',
-    fetchFilterFunc: async (elements: Element[]) => {
-      const groupedElements = await groupByAsync(
-        await elementsWithMissingIds(elements),
-        metadataType,
-      )
-      log.debug(`Getting missing ids for the following types: ${Object.keys(groupedElements)}`)
-      await Promise.all(
-        Object.entries(groupedElements)
-          .map(([typeName, typeElements]) => addMissingIds(client, typeName, typeElements))
-      )
-    },
-  }),
+  onFetch: async (elements: Element[]) => {
+    config.fetchProfile.isFeatureEnabled('addMissingIds')
+    const groupedElements = await groupByAsync(
+      await elementsWithMissingIds(elements),
+      metadataType,
+    )
+    log.debug(`Getting missing ids for the following types: ${Object.keys(groupedElements)}`)
+    const results = await Promise.allSettled(
+      Object.entries(groupedElements)
+        .map(([typeName, typeElements]) => addMissingIds(client, typeName, typeElements))
+    )
+    if (results.every(res => res.status === 'fulfilled')) {
+      return
+    }
+    log.warn(WARNING_MESSAGE)
+  },
 })
+
 
 export default filter

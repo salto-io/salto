@@ -92,7 +92,7 @@ const DEFAULT_RETRY_OPTS: Required<ClientRetryConfig> = {
   maxAttempts: 5, // try 5 times
   retryDelay: 5000, // wait for 5s before trying again
   retryStrategy: 'NetworkError', // retry on network errors
-  timeout: 15 * 1000 * 60, // timeout per request retry in milliseconds
+  timeout: 60 * 1000 * 15, // timeout per request retry in milliseconds
 }
 
 const DEFAULT_READ_METADATA_CHUNK_SIZE: Required<ReadMetadataChunkSizeConfig> = {
@@ -330,6 +330,7 @@ const retry400ErrorWrapper = (strategy: RetryStrategy): RetryStrategy =>
 const createRetryOptions = (retryOptions: Required<ClientRetryConfig>): RequestRetryOptions => ({
   maxAttempts: retryOptions.maxAttempts,
   retryStrategy: retry400ErrorWrapper(RetryStrategies[retryOptions.retryStrategy]),
+  timeout: retryOptions.timeout,
   delayStrategy: (err, _response, _body) => {
     log.error('failed to run SFDC call for reason: %s. Retrying in %ss.',
       err?.message ?? '', (retryOptions.retryDelay / 1000))

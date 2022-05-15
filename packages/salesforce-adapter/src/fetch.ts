@@ -19,8 +19,11 @@ import { FileProperties, MetadataInfo, MetadataObject } from 'jsforce-types'
 import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { FetchElements, ConfigChangeSuggestion } from './types'
-import { METADATA_CONTENT_FIELD, NAMESPACE_SEPARATOR, INTERNAL_ID_FIELD, DEFAULT_NAMESPACE, LAYOUT_TYPE_ID_METADATA_TYPE } from './constants'
+import { FetchElements, ConfigChangeSuggestion, MAX_ITEMS_IN_RETRIEVE_REQUEST } from './types'
+import {
+  METADATA_CONTENT_FIELD, NAMESPACE_SEPARATOR, INTERNAL_ID_FIELD, DEFAULT_NAMESPACE,
+  RETRIEVE_SIZE_LIMIT_ERROR, LAYOUT_TYPE_ID_METADATA_TYPE,
+} from './constants'
 import SalesforceClient, { ErrorFilter } from './client/client'
 import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, createSkippedListConfigChange } from './config_change'
 import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements, getAuthorAnnotations } from './transformers/transformer'
@@ -253,10 +256,26 @@ export const retrieveMetadataInstances = async ({
     log.debug('retrieving types %s', typesToRetrieve)
     const request = toRetrieveRequest(filesToRetrieve)
     const result = await client.retrieve(request)
+
     log.debug(
       'retrieve result for types %s: %o',
       typesToRetrieve, _.omit(result, ['zipFile', 'fileProperties']),
     )
+
+    if (result.errorStatusCode === RETRIEVE_SIZE_LIMIT_ERROR) {
+      if (fileProps.length <= 1) {
+        configChanges.push(...fileProps.map(fileProp =>
+          createSkippedListConfigChange(fileProp.type, fileProp.fullName)))
+        log.warn(`retrieve request for ${typesToRetrieve} failed: ${result.errorStatusCode} ${result.errorMessage}, adding to skip list`)
+        return []
+      }
+
+      const chunkSize = Math.ceil(fileProps.length / 2)
+      log.debug('reducing retrieve item count %d -> %d', fileProps.length, chunkSize)
+      configChanges.push({ type: MAX_ITEMS_IN_RETRIEVE_REQUEST, value: chunkSize })
+      return (await Promise.all(_.chunk(fileProps, chunkSize).map(retrieveInstances))).flat()
+    }
+
     configChanges.push(...createRetrieveConfigChange(result))
     // Unclear when / why this can happen, but it seems like sometimes zipFile is not a string
     // TODO: investigate further why this happens and find a better solution than just failing
@@ -283,9 +302,12 @@ export const retrieveMetadataInstances = async ({
     .filter(notInSkipList)
 
   log.info('going to retrieve %d files', filesToRetrieve.length)
-  const instances = await Promise.all(_.chunk(filesToRetrieve, maxItemsInRetrieveRequest)
-    .filter(filesChunk => filesChunk.length > 0)
-    .map(filesChunk => retrieveInstances(filesChunk)))
+
+  const instances = await Promise.all(
+    _.chunk(filesToRetrieve, maxItemsInRetrieveRequest)
+      .filter(filesChunk => filesChunk.length > 0)
+      .map(filesChunk => retrieveInstances(filesChunk))
+  )
 
   return {
     elements: _.flatten(instances),

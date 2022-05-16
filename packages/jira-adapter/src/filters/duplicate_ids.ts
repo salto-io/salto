@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
-import { naclCase } from '@salto-io/adapter-utils'
+import { naclCase, referenceExpressionStringifyReplacer } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
@@ -44,6 +44,7 @@ const filter: FilterCreator = ({ config }) => ({
       return {}
     }
 
+
     log.warn(`Found ${duplicateIds.size} duplicate instance names: ${Array.from(duplicateIds).join(', ')}`)
 
     const duplicateInstances = _.remove(
@@ -52,6 +53,12 @@ const filter: FilterCreator = ({ config }) => ({
         && isInstanceElement(element)
         && element.value.id !== undefined
     )
+
+    duplicateInstances
+      .filter(isInstanceElement)
+      .forEach(instance => {
+        log.debug(`Found a duplicate instance ${instance.elemID.getFullName()} with values: ${JSON.stringify(instance.value, referenceExpressionStringifyReplacer, 2)}`)
+      })
 
     if (!config.fetch.fallbackToInternalId) {
       return {

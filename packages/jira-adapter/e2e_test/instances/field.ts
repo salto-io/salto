@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, Values, Element, ReferenceExpression } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { createReference } from '../utils'
 import { ISSUE_TYPE_NAME, JIRA } from '../../src/constants'
 
@@ -42,7 +43,11 @@ export const createFieldValues = (name: string): Values => ({
   type: 'com.atlassian.jira.plugin.system.customfieldtypes:cascadingselect',
 })
 
-export const createContextValues = (name: string, allElements: Element[]): Values => ({
+export const createContextValues = (
+  name: string,
+  instanceName: string,
+  allElements: Element[]
+): Values => ({
   name,
   options: {
     p1: p1Option,
@@ -72,12 +77,12 @@ export const createContextValues = (name: string, allElements: Element[]): Value
   defaultValue: {
     type: 'option.cascading',
     optionId: new ReferenceExpression(
-      new ElemID(JIRA, 'Field', 'instance', name, 'contexts', 'CustomConfigurationScheme_for_CustomSelectList@s', 'options', 'p1'),
-      p1Option
+      new ElemID(JIRA, 'CustomFieldContext', 'instance', instanceName, 'options', 'p1'),
+      _.cloneDeep(p1Option)
     ),
     cascadingOptionId: new ReferenceExpression(
-      new ElemID(JIRA, 'Field', 'instance', name, 'contexts', 'CustomConfigurationScheme_for_CustomSelectList@s', 'options', 'p1', 'cascadingOptions', 'c11'),
-      p1Option.cascadingOptions.c11
+      new ElemID(JIRA, 'CustomFieldContext', 'instance', instanceName, 'options', 'p1', 'cascadingOptions', 'c11'),
+      _.cloneDeep(p1Option.cascadingOptions.c11)
     ),
   },
   issueTypeIds: [

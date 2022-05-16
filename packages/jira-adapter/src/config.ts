@@ -1824,6 +1824,7 @@ type JiraFetchConfig = configUtils.UserFetchConfig<JiraFetchFilters> & {
 
 type MaskingConfig = {
   automationHeaders: string[]
+  secretMatchers: string[]
 }
 
 export type JiraConfig = {
@@ -1895,6 +1896,7 @@ export const DEFAULT_CONFIG: JiraConfig = {
   apiDefinitions: DEFAULT_API_DEFINITIONS,
   masking: {
     automationHeaders: [],
+    secretMatchers: [],
   },
 }
 
@@ -1939,6 +1941,9 @@ const maskingConfigType = createMatchingObjectType<Partial<MaskingConfig>>({
   elemID: new ElemID(JIRA),
   fields: {
     automationHeaders: {
+      refType: new ListType(BuiltinTypes.STRING),
+    },
+    secretMatchers: {
       refType: new ListType(BuiltinTypes.STRING),
     },
   },

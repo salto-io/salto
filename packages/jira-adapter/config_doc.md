@@ -73,7 +73,8 @@ jira {
 ## Masking configuration options
 | Name                                        | Default when undefined            | Description
 |---------------------------------------------|-----------------------------------|------------
-| automationHeaders                                     | []                                | List of regexes of header keys in Automations to mask their values
+| automationHeaders                           | []                                | List of regexes of header keys in Automations to mask their values
+| secretMatchers                              | []                                | List of regexes of strings to mask all across the workspace
 
 ## Fetch entry options
 

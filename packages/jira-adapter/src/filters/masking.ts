@@ -13,12 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, isInstanceElement } from '@salto-io/adapter-api'
-import { createSchemeGuard, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { ElemID, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { createSchemeGuard, transformValues, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { collections, regex as lowerdashRegex } from '@salto-io/lowerdash'
 import Joi, { string } from 'joi'
-import { AUTOMATION_TYPE } from '../constants'
+import _ from 'lodash'
 import { FilterCreator } from '../filter'
+
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -52,30 +55,51 @@ const maskHeaders = (
     })
 }
 
+const maskByMatchers = async (
+  instance: InstanceElement,
+  matchers: string[],
+): Promise<void> => {
+  instance.value = await transformValues({
+    values: instance.value,
+    type: await instance.getType(),
+    pathID: instance.elemID,
+    strict: false,
+    allowEmpty: true,
+    transformFunc: ({ value, path }) => {
+      if (_.isString(value)
+      && matchers.some(matcher => lowerdashRegex.isFullRegexMatch(value, matcher))) {
+        log.debug(`Masked value ${path?.getFullName()}`)
+        return MASK_VALUE
+      }
+      return value
+    },
+  }) ?? {}
+}
+
 /**
  * Replace sensitive data in the NaCls with some placeholder
- * currently only relevant for Automations' headers
  */
 const filter: FilterCreator = ({ config }) => ({
   onFetch: async elements => {
-    if (config.masking.automationHeaders.length === 0) {
-      return
-    }
-
-    elements
+    await awu(elements)
       .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
-      .forEach(instance => {
-        walkOnElement({
-          element: instance,
-          func: ({ path, value }) => {
-            if (path.name === 'headers' && isHeaders(value)) {
-              maskHeaders(value, config.masking.automationHeaders, instance.elemID)
-            }
+      .forEach(async instance => {
+        if (config.masking.secretMatchers.length > 0) {
+          await maskByMatchers(instance, config.masking.secretMatchers)
+        }
 
-            return WALK_NEXT_STEP.RECURSE
-          },
-        })
+        if (config.masking.automationHeaders.length > 0) {
+          walkOnElement({
+            element: instance,
+            func: ({ path, value }) => {
+              if (path.name === 'headers' && isHeaders(value)) {
+                maskHeaders(value, config.masking.automationHeaders, instance.elemID)
+              }
+
+              return WALK_NEXT_STEP.RECURSE
+            },
+          })
+        }
       })
   },
 })

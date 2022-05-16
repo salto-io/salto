@@ -69,28 +69,57 @@ describe('maskingFilter', () => {
   })
 
   describe('onFetch', () => {
-    it('should mask the sensitive headers', async () => {
-      config.masking.automationHeaders = [
-        'name.*',
-      ]
+    describe('automationHeaders', () => {
+      it('should mask the sensitive headers', async () => {
+        config.masking.automationHeaders = [
+          'name.*',
+        ]
 
-      await filter.onFetch?.([instance])
+        await filter.onFetch?.([instance])
 
-      expect(instance.value).toEqual({
-        headers: [
-          {
-            name: 'name1',
-            value: MASK_VALUE,
-          },
-          {
-            name: 'name2',
-            value: MASK_VALUE,
-          },
-          {
-            name: 'aname3',
-            value: 'avalue3',
-          },
-        ],
+        expect(instance.value).toEqual({
+          headers: [
+            {
+              name: 'name1',
+              value: MASK_VALUE,
+            },
+            {
+              name: 'name2',
+              value: MASK_VALUE,
+            },
+            {
+              name: 'aname3',
+              value: 'avalue3',
+            },
+          ],
+        })
+      })
+    })
+
+    describe('secretMatchers', () => {
+      it('should mask the sensitive strings', async () => {
+        config.masking.secretMatchers = [
+          'name.*',
+        ]
+
+        await filter.onFetch?.([instance])
+
+        expect(instance.value).toEqual({
+          headers: [
+            {
+              name: MASK_VALUE,
+              value: 'value1',
+            },
+            {
+              name: MASK_VALUE,
+              value: 'value2',
+            },
+            {
+              name: 'aname3',
+              value: 'avalue3',
+            },
+          ],
+        })
       })
     })
   })

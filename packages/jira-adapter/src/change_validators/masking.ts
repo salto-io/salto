@@ -13,37 +13,40 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeError, ChangeValidator, getChangeData,
+import { Change, ChangeError, ChangeValidator, CORE_ANNOTATIONS, getChangeData,
   InstanceElement,
   isAdditionOrModificationChange, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import JiraClient from '../client/client'
-import { AUTOMATION_TYPE } from '../constants'
 import { MASK_VALUE } from '../filters/masking'
 
 export const createChangeError = (
   change: Change<InstanceElement>,
   client: JiraClient,
-): ChangeError => ({
-  elemID: getChangeData(change).elemID,
-  severity: isModificationChange(change) ? 'Warning' : 'Info',
-  message: 'Masked data will be deployed to the service',
-  detailedMessage: isModificationChange(change)
-    ? `${getChangeData(change).elemID.getFullName()} contains masked values which will override the real values in the service when deploying and may prevent this automation from operating correctly`
-    : '',
-  deployActions: {
-    postAction: {
-      title: 'Update deployed masked data',
-      description: `Please update the masked values that were deployed to Jira in the ${getChangeData(change).elemID.getFullName()} automation`,
-      subActions: [
-        `Go to ${new URL('/jira/settings/automation#/rule-list', client.baseUrl).href}, and open the ${getChangeData(change).elemID.getFullName()} automation`,
-        'Go over the headers with masked values (headers with <SECRET_TOKEN> value) and set the real values',
-        'Click "Save"',
-        'Click "Publish changes"',
-      ],
+): ChangeError => {
+  const serviceUrl = getChangeData(change).annotations[CORE_ANNOTATIONS.SERVICE_URL]
+  return {
+    elemID: getChangeData(change).elemID,
+    severity: isModificationChange(change) ? 'Warning' : 'Info',
+    message: 'Masked data will be deployed to the service',
+    detailedMessage: isModificationChange(change)
+      ? `${getChangeData(change).elemID.getFullName()} contains masked values which will override the real values in the service when deploying and may prevent this instance from operating correctly`
+      : '',
+    deployActions: {
+      postAction: {
+        title: 'Update deployed masked data',
+        description: `Please update the masked values that were deployed to Jira in ${getChangeData(change).elemID.getFullName()}`,
+        subActions: [
+          serviceUrl !== undefined
+            ? `Go to ${serviceUrl}`
+            : `Go to ${client.baseUrl} and open the relevant page for ${getChangeData(change).elemID.getFullName()}`,
+          'Go over the values with masked values (values with <SECRET_TOKEN> value) and set the real values',
+          'Save the page',
+        ],
+      },
     },
-  },
-})
+  }
+}
 
 const doesHaveMaskedValues = (instance: InstanceElement): boolean => {
   let maskedValueFound = false
@@ -66,7 +69,6 @@ export const maskingValidator: (client: JiraClient) =>
     changes
       .filter(isAdditionOrModificationChange)
       .filter(isInstanceChange)
-      .filter(change => getChangeData(change).elemID.typeName === AUTOMATION_TYPE)
       .filter(change => doesHaveMaskedValues(getChangeData(change)))
       .map(change => createChangeError(change, client))
   )

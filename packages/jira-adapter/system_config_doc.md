@@ -1019,6 +1019,7 @@ jira {
       Projects = {
         request = {
           url = "/rest/api/3/project/search"
+          paginationField = "startAt"
           queryParams = {
             expand = "description,lead,url,projectKeys,permissions"
           }

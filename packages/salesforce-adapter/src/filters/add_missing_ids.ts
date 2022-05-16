@@ -19,7 +19,7 @@ import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { apiName, metadataType } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
-import { getFullName, getInternalId, setInternalId } from './utils'
+import { ensureSafeFilterFetch, getFullName, getInternalId, setInternalId } from './utils'
 
 const log = logger(module)
 const { awu, groupByAsync } = collections.asynciterable
@@ -69,23 +69,22 @@ export const WARNING_MESSAGE = 'Encountered an error while trying populate inter
  * Add missing env-specific ids using listMetadataObjects.
  */
 const filter: FilterCreator = ({ client, config }) => ({
-  onFetch: async (elements: Element[]) => {
-    config.fetchProfile.isFeatureEnabled('addMissingIds')
-    const groupedElements = await groupByAsync(
-      await elementsWithMissingIds(elements),
-      metadataType,
-    )
-    log.debug(`Getting missing ids for the following types: ${Object.keys(groupedElements)}`)
-    const results = await Promise.allSettled(
-      Object.entries(groupedElements)
-        .map(([typeName, typeElements]) => addMissingIds(client, typeName, typeElements))
-    )
-    if (results.every(res => res.status === 'fulfilled')) {
-      return
-    }
-    log.warn(WARNING_MESSAGE)
-  },
+  onFetch: ensureSafeFilterFetch({
+    warningMessage: WARNING_MESSAGE,
+    config,
+    filterName: 'addMissingIds',
+    fetchFilterFunc: async (elements: Element[]) => {
+      const groupedElements = await groupByAsync(
+        await elementsWithMissingIds(elements),
+        metadataType,
+      )
+      log.debug(`Getting missing ids for the following types: ${Object.keys(groupedElements)}`)
+      await Promise.allSettled(
+        Object.entries(groupedElements)
+          .map(([typeName, typeElements]) => addMissingIds(client, typeName, typeElements))
+      )
+    },
+  }),
 })
-
 
 export default filter

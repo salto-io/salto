@@ -120,7 +120,7 @@ const isFieldConfigurationSchemeResponse = createSchemeGuard<{
   values: Joi.array().items(Joi.object({
     fieldConfigurationScheme: Joi.object({
       id: Joi.string().required(),
-    }).unknown(true),
+    }).unknown(true).required(),
   }).unknown(true)),
 }).unknown(true).required(), 'Received an invalid field configuration scheme response')
 
@@ -138,6 +138,7 @@ const deleteFieldConfigurationScheme = async (
   }
 
   if (response.data.values.length === 0) {
+    log.warn(`Expected to find a field configuration scheme for project ${instance.elemID.getFullName()}`)
     return
   }
 

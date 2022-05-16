@@ -40,7 +40,9 @@ describe('referenced id fields filter', () => {
     })
   })
 
-  it('should resolve ids in instances names if & exist in the config', async () => {
+  // Will be unskipped after SALTO-2312
+  // eslint-disable-next-line jest/no-disabled-tests
+  it.skip('should resolve ids in instances names if & exist in the config', async () => {
     const elements = [dynamicContentItemVarIns].map(e => e.clone())
     filter = filterCreator({
       client,

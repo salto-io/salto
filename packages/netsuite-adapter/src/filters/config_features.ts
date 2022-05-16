@@ -31,7 +31,12 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'> => ({
     const featuresInstance = elements.filter(isInstanceElement)
       .find(instance => instance.elemID.typeName === CONFIG_FEATURES)
 
-    if (!featuresInstance) return
+    if (!featuresInstance) {
+      // removing the features type from elements because otherwise the current type
+      // (in case of partial fetch) will be override without the real fields.
+      _.remove(elements, element => element.elemID.typeName === CONFIG_FEATURES)
+      return
+    }
 
     const type = await featuresInstance.getType()
     const features = _.keyBy(featuresInstance.value.feature, feature => feature.id)

@@ -1,4 +1,4 @@
-FROM circleci/node:12.16
+FROM circleci/node:14.15
 # install open jdk 11 as it's a requirement of netsuite-adapter
 RUN echo 'deb http://deb.debian.org/debian stretch-backports main' | sudo tee -a /etc/apt/sources.list.d/stretch-backports.list; \
         sudo apt-get update && sudo apt-get install -y openjdk-11-jdk; \

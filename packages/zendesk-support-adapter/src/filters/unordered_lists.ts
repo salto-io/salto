@@ -17,7 +17,10 @@ import _ from 'lodash'
 import {
   Element, InstanceElement, isInstanceElement, isReferenceExpression,
 } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
+
+const log = logger(module)
 
 const orderDynamicContentItems = (instances: InstanceElement[]): void => {
   const dynamicContentItemInstances = instances
@@ -57,11 +60,11 @@ const orderTriggerDefinitions = (instances: InstanceElement[]): void => {
  * Sort lists whose order changes between fetches, to avoid unneeded noise.
  */
 const filterCreator: FilterCreator = () => ({
-  onFetch: async (elements: Element[]): Promise<void> => {
+  onFetch: async (elements: Element[]): Promise<void> => log.time(async () => {
     const instances = elements.filter(isInstanceElement)
     orderDynamicContentItems(instances)
     orderTriggerDefinitions(instances)
-  },
+  }, 'Unordered list filter'),
 })
 
 export default filterCreator

@@ -15,8 +15,11 @@
 */
 import { Element, isObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { filter } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { DuckTypeUserFetchConfig } from '../../config/ducktype'
 import { FilterCreator } from '../../filter_utils'
+
+const log = logger(module)
 
 /**
  * Hide types if needed
@@ -26,7 +29,7 @@ export const hideTypesFilterCreator: <
  TContext extends { fetch: DuckTypeUserFetchConfig },
  TResult extends void | filter.FilterResult = void,
  > () => FilterCreator<TClient, TContext, TResult> = () => ({ config }) => ({
-   onFetch: async (elements: Element[]) => {
+   onFetch: async (elements: Element[]) => log.time(async () => {
      if (config.fetch.hideTypes) {
        elements
          .filter(isObjectType)
@@ -34,5 +37,5 @@ export const hideTypesFilterCreator: <
            objType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
          })
      }
-   },
+   }, 'Hide types filter'),
  })

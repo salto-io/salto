@@ -15,9 +15,12 @@
 */
 import { Change, CORE_ANNOTATIONS, Element, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { filter } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter_utils'
 import { createUrl } from '../elements'
 import { AdapterApiConfig } from '../config'
+
+const log = logger(module)
 
 const addUrlToInstance = <TContext extends { apiDefinitions: AdapterApiConfig }>(
   instance: InstanceElement, baseUrl: string, config: TContext
@@ -36,11 +39,11 @@ export const serviceUrlFilterCreator: <
   TContext extends { apiDefinitions: AdapterApiConfig },
   TResult extends void | filter.FilterResult = void
 >(baseUrl: string) => FilterCreator<TClient, TContext, TResult> = baseUrl => ({ config }) => ({
-  onFetch: async (elements: Element[]) => {
+  onFetch: async (elements: Element[]) => log.time(async () => {
     elements
       .filter(isInstanceElement)
       .forEach(instance => addUrlToInstance(instance, baseUrl, config))
-  },
+  }, 'Service URL filter'),
   onDeploy: async (changes: Change<InstanceElement>[]) => {
     const relevantChanges = changes.filter(isInstanceChange).filter(isAdditionChange)
     relevantChanges

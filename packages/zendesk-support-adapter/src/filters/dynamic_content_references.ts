@@ -18,11 +18,13 @@ import {
 } from '@salto-io/adapter-api'
 import { extendGeneratedDependencies, FlatDetailedDependency, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { strings, values } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from './dynamic_content'
 
 const PLACEHOLDER_REGEX = /{{.+?}}/g
+const log = logger(module)
 
 const extractPlaceholders = (value: string): string[] =>
   _.uniq(Array.from(strings.matchAll(value, PLACEHOLDER_REGEX)).map(match => match[0]))
@@ -59,7 +61,7 @@ const getDynamicContentDependencies = (
  * the _generated_ dependencies annotation
  */
 const filterCreator: FilterCreator = () => ({
-  onFetch: async (elements: Element[]): Promise<void> => {
+  onFetch: async (elements: Element[]): Promise<void> => log.time(async () => {
     const instances = elements.filter(isInstanceElement)
 
     const placeholderToItem = _(instances)
@@ -71,7 +73,7 @@ const filterCreator: FilterCreator = () => ({
       const dependencies = getDynamicContentDependencies(instance, placeholderToItem)
       extendGeneratedDependencies(instance, dependencies)
     })
-  },
+  }, 'Dynamic content references filter'),
 })
 
 export default filterCreator

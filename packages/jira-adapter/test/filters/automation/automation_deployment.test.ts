@@ -25,7 +25,6 @@ import { AUTOMATION_TYPE, JIRA } from '../../../src/constants'
 import JiraClient, { PRIVATE_API_HEADERS } from '../../../src/client/client'
 import { CLOUD_RESOURCE_FIELD } from '../../../src/filters/automation/cloud_id'
 
-
 describe('automationDeploymentFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'deploy'>
   let type: ObjectType
@@ -133,19 +132,29 @@ describe('automationDeploymentFilter', () => {
         if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/import') {
           return {
             status: 200,
-            data: [
-              existingAutomationValues,
-              {
-                name: 'someName',
-                id: 3,
-                created: 1,
-                projects: [
-                  {
-                    projectId: '1',
-                  },
-                ],
-              },
-            ],
+            data: null,
+          }
+        }
+
+        if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules') {
+          return {
+            status: 200,
+            data: {
+              total: 2,
+              values: [
+                existingAutomationValues,
+                {
+                  name: 'someName',
+                  id: 3,
+                  created: 1,
+                  projects: [
+                    {
+                      projectId: '1',
+                    },
+                  ],
+                },
+              ],
+            },
           }
         }
         throw new Error(`Unexpected url ${url}`)

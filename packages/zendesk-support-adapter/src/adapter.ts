@@ -105,6 +105,8 @@ export const DEFAULT_FILTERS = [
   restrictionFilter,
   organizationFieldFilter,
   hardcodedChannelFilter,
+  // removeDefinitionInstancesFilter should be after hardcodedChannelFilter
+  removeDefinitionInstancesFilter,
   // fieldReferencesFilter should be after usersFilter, macroAttachmentsFilter and tagsFilter
   usersFilter,
   tagsFilter,
@@ -115,8 +117,6 @@ export const DEFAULT_FILTERS = [
   routingAttributeFilter,
   addFieldOptionsFilter,
   webhookFilter,
-  // removeDefinitionInstancesFilter should be after hardcodedChannelFilter
-  removeDefinitionInstancesFilter,
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,
   dynamicContentReferencesFilter,

@@ -41,12 +41,12 @@ import {
   DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, SdfClientConfig,
 } from '../config'
 import { NetsuiteQuery, NetsuiteQueryParameters, ObjectID } from '../query'
-import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError } from '../errors'
+import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, ObjectsValidationError, SettingsDeployError } from '../errors'
 import { SdfCredentials } from './credentials'
 import {
   CustomizationInfo, CustomTypeInfo, FailedImport, FailedTypes, FileCustomizationInfo,
   FolderCustomizationInfo, GetCustomObjectsResult, ImportFileCabinetResult, ImportObjectsResult,
-  TemplateCustomTypeInfo, AdditionalDependencies,
+  TemplateCustomTypeInfo, AdditionalDependencies, SdfDeployParams,
 } from './types'
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME, fileCabinetTopLevelFolders } from './constants'
 import {
@@ -82,6 +82,7 @@ export const COMMANDS = {
   LIST_FILES: 'file:list',
   IMPORT_FILES: 'file:import',
   DEPLOY_PROJECT: 'project:deploy',
+  VALIDATE_PROJECT: 'project:validate',
   ADD_PROJECT_DEPENDENCIES: 'project:adddependencies',
   IMPORT_CONFIGURATION: 'configuration:import',
 }
@@ -110,6 +111,9 @@ const settingsValidationErrorRegex = RegExp('^Validation of account settings fai
 const objectValidationErrorRegex = RegExp(`^An error occurred during custom object validation. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm')
 const deployedObjectRegex = RegExp(`^(Create|Update) object -- (?<${OBJECT_ID}>[a-z0-9_]+)`, 'gm')
 const errorObjectRegex = RegExp(`^An unexpected error has occurred. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'm')
+
+const ERROR_MESSAGE = 'errorMessage'
+const errorMessageRegex = RegExp(`Error Message: (?<${ERROR_MESSAGE}>.*)`)
 
 export const MINUTE_IN_MILLISECONDS = 1000 * 60
 const SINGLE_OBJECT_RETRIES = 3
@@ -392,7 +396,7 @@ export default class SdfClient {
 
   private async initProject(suiteAppId?: string): Promise<Project> {
     const authId = uuidv4()
-    const projectName = `TempSdfProject-${authId}`
+    const projectName = `sdf-${authId}`
     await this.createProject(projectName, suiteAppId)
     const projectPath = SdfClient.getProjectPath(projectName)
     const executor = SdfClient
@@ -864,7 +868,7 @@ export default class SdfClient {
   async deploy(
     customizationInfos: CustomizationInfo[],
     suiteAppId: string | undefined,
-    additionalDependencies: AdditionalDependencies,
+    { additionalDependencies, validateOnly = false }: SdfDeployParams
   ): Promise<void> {
     const project = await this.initProject(suiteAppId)
     const objectsDirPath = SdfClient.getObjectsDirPath(project.projectName)
@@ -884,16 +888,16 @@ export default class SdfClient {
       }
       throw new Error(`Failed to deploy invalid customizationInfo: ${customizationInfo}`)
     }))
-    await this.runDeployCommands(project, customizationInfos, additionalDependencies)
+    await this.runDeployCommands(project, customizationInfos, additionalDependencies, validateOnly)
     await this.projectCleanup(project.projectName, project.authId)
   }
 
   private static async fixManifest(
-    projectPath: string,
+    projectName: string,
     customizationInfos: CustomizationInfo[],
     additionalDependencies: AdditionalDependencies
   ): Promise<void> {
-    const manifestPath = osPath.join(projectPath, 'src', 'manifest.xml')
+    const manifestPath = SdfClient.getManifestFilePath(projectName)
     const manifestContent = (await readFile(manifestPath)).toString()
     await writeFile(
       manifestPath,
@@ -936,25 +940,74 @@ export default class SdfClient {
     )
   }
 
+  private static getValidationErrorMessage(
+    errorMessageLines: string[],
+    filePath: string
+  ): string | undefined {
+    const invalidObjectErrorMessage = `Errors for file ${filePath}.`
+    const custInfoErrorIndexes = errorMessageLines
+      .reduce<number[]>((indexes, errorLine, lineIndex) => (
+        errorLine === invalidObjectErrorMessage ? indexes.concat(lineIndex) : indexes), [])
+    return custInfoErrorIndexes.length > 0
+      ? custInfoErrorIndexes.map(errorIndex => {
+        const errorMessageLine = errorMessageLines[errorIndex + 1]
+        return errorMessageLine?.match(errorMessageRegex)?.groups?.[ERROR_MESSAGE]
+          ?? errorMessageLines[errorIndex]
+      }).join(os.EOL)
+      : undefined
+  }
+
+  private static customizeValidationError(
+    error: Error,
+    projectName: string,
+    customizationInfos: CustomizationInfo[]
+  ): Error {
+    const errorMessageLines = error.message.split(os.EOL)
+    const manifestErrorMessage = SdfClient.getValidationErrorMessage(
+      errorMessageLines,
+      SdfClient.getManifestFilePath(projectName)
+    )
+    if (manifestErrorMessage) {
+      return new ManifestValidationError(manifestErrorMessage)
+    }
+    const objectsDirPath = SdfClient.getObjectsDirPath(projectName)
+    const failedObjects = customizationInfos
+      .filter(isCustomTypeInfo)
+      .map((custInfo): [string, string] | undefined => {
+        const errorMessage = SdfClient.getValidationErrorMessage(
+          errorMessageLines,
+          `${osPath.join(objectsDirPath, custInfo.scriptId)}.xml`
+        )
+        return errorMessage ? [custInfo.scriptId, errorMessage] : undefined
+      })
+      .filter(isDefined)
+    return failedObjects.length > 0
+      ? new ObjectsValidationError(error.message, new Map(failedObjects))
+      : error
+  }
+
   private async runDeployCommands(
-    { executor, projectPath, type }: Project,
+    { executor, projectName, type }: Project,
     customizationInfos: CustomizationInfo[],
-    additionalDependencies: AdditionalDependencies
+    additionalDependencies: AdditionalDependencies,
+    validateOnly: boolean
   ): Promise<void> {
     await this.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {}, executor)
-    await SdfClient.fixManifest(projectPath, customizationInfos, additionalDependencies)
+    await SdfClient.fixManifest(projectName, customizationInfos, additionalDependencies)
     try {
       await this.executeProjectAction(
-        COMMANDS.DEPLOY_PROJECT,
+        validateOnly ? COMMANDS.VALIDATE_PROJECT : COMMANDS.DEPLOY_PROJECT,
         // SuiteApp project type can't contain account specific values
         // and thus the flag is not supported
         type === 'AccountCustomization' ? { accountspecificvalues: 'WARNING' } : {},
         executor
       )
-    } catch (error) {
-      throw SdfClient.customizeDeployError(
-        error instanceof Error ? error : new Error(String(error))
-      )
+    } catch (e) {
+      const error = e instanceof Error ? e : new Error(String(e))
+      if (validateOnly) {
+        throw SdfClient.customizeValidationError(error, projectName, customizationInfos)
+      }
+      throw SdfClient.customizeDeployError(error)
     }
   }
 
@@ -1019,6 +1072,10 @@ export default class SdfClient {
 
   private static getFileCabinetDirPath(projectName: string): string {
     return osPath.resolve(SdfClient.getProjectPath(projectName), SRC_DIR, FILE_CABINET_DIR)
+  }
+
+  private static getManifestFilePath(projectName: string): string {
+    return osPath.resolve(SdfClient.getProjectPath(projectName), SRC_DIR, 'manifest.xml')
   }
 
   private static getFeaturesXmlPath(projectName: string): string {

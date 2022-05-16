@@ -20,7 +20,7 @@ import {
   ChangeValidator, Change, ChangeError, DependencyChanger, ChangeGroupIdFunction, getChangeData,
   isAdditionOrRemovalChange, isFieldChange, ReadOnlyElementsSource, ElemID, isVariable,
   Value, isReferenceExpression, compareSpecialValues, BuiltinTypesByFullName, isAdditionChange,
-  isModificationChange, isRemovalChange, ReferenceExpression,
+  isModificationChange, isRemovalChange, ReferenceExpression, changeId,
 } from '@salto-io/adapter-api'
 import { DataNodeMap, DiffNode, DiffGraph, Group, GroupDAG, DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
@@ -30,7 +30,7 @@ import { PlanItem, addPlanItemAccessors, PlanItemId } from './plan_item'
 import { buildGroupedGraphFromDiffGraph, getCustomGroupIds } from './group'
 import { filterInvalidChanges } from './filter'
 import { addNodeDependencies, addFieldToObjectDependency, addTypeDependency, addAfterRemoveDependency, addReferencesDependency, addInstanceToFieldsDependency } from './dependency'
-import { PlanTransformer, changeId } from './common'
+import { PlanTransformer } from './common'
 
 const { awu, iterateTogether } = collections.asynciterable
 type BeforeAfter<T> = collections.asynciterable.BeforeAfter<T>
@@ -310,8 +310,7 @@ const addDifferentElements = (
     afterElem?: ChangeDataType
   ): void => {
     const change = toChange(beforeElem, afterElem)
-    const elem = getChangeData(change)
-    outputGraph.addNode(changeId(elem, change.action), [], change)
+    outputGraph.addNode(changeId(change), [], change)
   }
 
   const addNodeIfDifferent = async (

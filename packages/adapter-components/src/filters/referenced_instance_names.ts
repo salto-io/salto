@@ -263,7 +263,7 @@ export const referencedInstanceNamesFilterCreator: <
   TContext extends { apiDefinitions: AdapterApiConfig },
   TResult extends void | filter.FilterResult = void
 >() => FilterCreator<TClient, TContext, TResult> = () => ({ config, getElemIdFunc }) => ({
-  onFetch: async (elements: Element[]) => {
+  onFetch: async (elements: Element[]) => log.time(async () => {
     const transformationDefault = config.apiDefinitions.typeDefaults.transformation
     const configByType = config.apiDefinitions.types
     const transformationByType = getTransformationConfigByType(configByType)
@@ -273,5 +273,5 @@ export const referencedInstanceNamesFilterCreator: <
       transformationDefault,
       getElemIdFunc
     )
-  },
+  }, 'Referenced instance names filter'),
 })

@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Field, Element, isInstanceElement, Value, Values, ReferenceExpression, InstanceElement, ElemID } from '@salto-io/adapter-api'
-import { GetLookupNameFunc, GetLookupNameFuncArgs, TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import { Field, Element, isInstanceElement, Value, Values, ReferenceExpression, InstanceElement, ElemID, cloneDeepWithoutRefs } from '@salto-io/adapter-api'
+import { GetLookupNameFunc, GetLookupNameFuncArgs, TransformFunc, transformValues, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerDashValues, collections, multiIndex } from '@salto-io/lowerdash'
 import {
@@ -38,8 +38,8 @@ type ValueIsEqualFunc = (lhs?: string | number, rhs?: string | number) => boolea
 const defaultIsEqualFunc: ValueIsEqualFunc = (lhs, rhs) => lhs === rhs
 
 export const MISSING_ANNOTATION = 'salto_missing_ref'
-export const checkMissingRef = (element: Element): boolean =>
-  element.annotations[MISSING_ANNOTATION] === true
+const checkMissingRef = (element: Element): boolean =>
+  element.annotations?.[MISSING_ANNOTATION] === true
 
 export const replaceReferenceValues = async <
   T extends string
@@ -120,6 +120,16 @@ export const replaceReferenceValues = async <
     ): Promise<ReferenceExpression | undefined> => {
       const getReferenceExpression = async (element: Element):
         Promise<ReferenceExpression | undefined> => {
+        if (element.annotations === undefined) {
+          // Should never happen, but we saw it happen once, so adding a log
+          log.warn(
+            'getReferenceExpression got element with no annotations. val=%s, field=%s, path=%s, elem=%s',
+            val,
+            field?.elemID?.getFullName(),
+            path?.getFullName(),
+            safeJsonStringify(cloneDeepWithoutRefs(element)),
+          )
+        }
         if (checkMissingRef(element)) {
           return new ReferenceExpression(element.elemID)
         }

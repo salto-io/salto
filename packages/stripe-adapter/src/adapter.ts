@@ -49,6 +49,7 @@ export default class StripeAdapter implements AdapterOperations {
   private client: StripeClient
   private paginator: clientUtils.Paginator
   private userConfig: StripeConfig
+  private fetchQuery: elementUtils.query.ElementQuery
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -61,11 +62,13 @@ export default class StripeAdapter implements AdapterOperations {
       client: this.client,
       paginationFuncCreator: () => getWithCursorPagination(),
     })
+    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG])
     this.filtersRunner = filtersRunner(
       {
         client: this.client,
         paginator: this.paginator,
         config,
+        fetchQuery: this.fetchQuery,
       },
       filterCreators,
     )
@@ -103,7 +106,7 @@ export default class StripeAdapter implements AdapterOperations {
       objectTypes: _.pickBy(allTypes, isObjectType),
       apiConfig: updatedApiDefinitionsConfig,
       supportedTypes: this.userConfig[API_DEFINITIONS_CONFIG].supportedTypes,
-      fetchQuery: elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG]),
+      fetchQuery: this.fetchQuery,
     })
   }
 

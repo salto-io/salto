@@ -86,10 +86,10 @@ export default class ZuoraAdapter implements AdapterOperations {
       paginationFuncCreator: paginate,
     })
     this.paginator = paginator
-    this.createFiltersRunner = () => (
-      filtersRunner({ client, paginator, config }, filterCreators)
-    )
     this.fetchQuery = elementUtils.query.createElementQuery(config[FETCH_CONFIG])
+    this.createFiltersRunner = () => (
+      filtersRunner({ client, paginator, config, fetchQuery: this.fetchQuery }, filterCreators)
+    )
   }
 
   private apiDefinitions(
@@ -174,17 +174,15 @@ export default class ZuoraAdapter implements AdapterOperations {
     // standard objects are not included in the swagger and need special handling - done in a filter
     const standardObjectTypeName = getStandardObjectTypeName(this.apiDefinitions(parsedConfigs))
 
-    const fetchQuery: elementUtils.query.ElementQuery = {
-      isTypeMatch: typeName => typeName !== standardObjectTypeName
-        && this.fetchQuery.isTypeMatch(typeName),
-    }
-
     return getAllInstances({
       paginator: this.paginator,
       objectTypes: _.pickBy(allTypes, isObjectType),
       apiConfig: this.apiDefinitions(parsedConfigs),
       supportedTypes: this.userConfig[API_DEFINITIONS_CONFIG].supportedTypes,
-      fetchQuery,
+      fetchQuery: {
+        isTypeMatch: typeName => typeName !== standardObjectTypeName
+          && this.fetchQuery.isTypeMatch(typeName),
+      },
     })
   }
 

@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { InstanceElement, Value } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { UserFetchConfig } from '../config'
 
@@ -27,26 +28,59 @@ export const INCLUDE_ALL_CONFIG = {
 
 export type ElementQuery = {
   isTypeMatch: (typeName: string) => boolean
+  isInstanceMatch: (instance: InstanceElement) => boolean
 }
+
+export type QueryCriterion = (
+  args: {
+    instance: InstanceElement
+    value: Value
+  }
+) => boolean
 
 const isTypeMatch = (typeName: string, typeRegex: string): boolean =>
   new RegExp(`^${typeRegex}$`).test(typeName)
 
-export const createElementQuery = (
-  fetchConfig: UserFetchConfig
+const isPredicatesMatch = (
+  instance: InstanceElement,
+  criteria: Record<string, QueryCriterion>,
+  criteriaValues: Record<string, unknown>,
+): boolean => Object.entries(criteriaValues)
+  .filter(([key]) => key in criteria)
+  .every(([key, value]) => criteria[key]({ instance, value }))
+
+export const createElementQuery = <T extends Record<string, unknown>>(
+  fetchConfig: UserFetchConfig<T | undefined>,
+  allCriteria: Record<string, QueryCriterion> = {},
 ): ElementQuery => ({
-  isTypeMatch: (typeName: string) => {
-    const { include, exclude } = fetchConfig
-    const isIncluded = include.some(({ type: typeRegex }) =>
-      isTypeMatch(typeName, typeRegex))
+    isTypeMatch: (typeName: string) => {
+      const { include, exclude } = fetchConfig
+      const isIncluded = include.some(({ type: typeRegex }) =>
+        isTypeMatch(typeName, typeRegex))
 
-    const isExcluded = exclude.some(({ type: excludedType }) =>
-      isTypeMatch(typeName, excludedType))
+      const isExcluded = exclude
+        .filter(({ criteria }) => criteria === undefined)
+        .some(({ type: excludedType }) =>
+          isTypeMatch(typeName, excludedType))
 
-    return isIncluded && !isExcluded
-  },
-})
+      return isIncluded && !isExcluded
+    },
+
+    isInstanceMatch: (instance: InstanceElement) => {
+      const { include, exclude } = fetchConfig
+      const isIncluded = include.some(({ type, criteria }) =>
+        isTypeMatch(instance.elemID.typeName, type)
+      && (criteria === undefined || isPredicatesMatch(instance, allCriteria, criteria)))
+
+      const isExcluded = exclude.some(({ type, criteria }) =>
+        isTypeMatch(instance.elemID.typeName, type)
+      && (criteria === undefined || isPredicatesMatch(instance, allCriteria, criteria)))
+
+      return isIncluded && !isExcluded
+    },
+  })
 
 export const createMockQuery = (): MockInterface<ElementQuery> => ({
   isTypeMatch: jest.fn().mockReturnValue(true),
+  isInstanceMatch: jest.fn().mockReturnValue(true),
 })

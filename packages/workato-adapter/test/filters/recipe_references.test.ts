@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, ListType, CORE_ANNOTATIONS, isReferenceExpression } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { DetailedDependency } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/cross_service/recipe_references'
 import WorkatoClient from '../../src/client/client'
@@ -67,6 +67,7 @@ describe('Recipe references filter', () => {
           supportedTypes: SUPPORTED_TYPES,
         },
       },
+      fetchQuery: elementUtils.query.createMockQuery(),
     }) as FilterType
   })
 
@@ -987,6 +988,7 @@ describe('Recipe references filter', () => {
             supportedTypes: SUPPORTED_TYPES,
           },
         },
+        fetchQuery: elementUtils.query.createMockQuery(),
       }) as FilterType
 
       currentAdapterElements = generateCurrentAdapterElements()
@@ -1304,6 +1306,7 @@ describe('Recipe references filter', () => {
             supportedTypes: SUPPORTED_TYPES,
           },
         },
+        fetchQuery: elementUtils.query.createMockQuery(),
       }) as FilterType
 
       expect(await otherFilter.onPostFetch({
@@ -1351,6 +1354,7 @@ describe('Recipe references filter', () => {
             supportedTypes: SUPPORTED_TYPES,
           },
         },
+        fetchQuery: elementUtils.query.createMockQuery(),
       }) as FilterType
 
       // should still resolve the netsuite references
@@ -1421,6 +1425,7 @@ describe('Recipe references filter', () => {
             supportedTypes: SUPPORTED_TYPES,
           },
         },
+        fetchQuery: elementUtils.query.createMockQuery(),
       }) as FilterType
 
       currentAdapterElements = generateCurrentAdapterElements()

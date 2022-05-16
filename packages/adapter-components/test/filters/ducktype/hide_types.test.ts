@@ -17,6 +17,7 @@ import { ObjectType, ElemID, isObjectType, CORE_ANNOTATIONS } from '@salto-io/ad
 import { FilterWith } from '../../../src/filter_utils'
 import { Paginator } from '../../../src/client'
 import { hideTypesFilterCreator } from '../../../src/filters/ducktype/hide_types'
+import { createMockQuery } from '../../../src/elements/query'
 
 describe('hide types filter', () => {
   type FilterType = FilterWith<'onFetch'>
@@ -31,6 +32,7 @@ describe('hide types filter', () => {
   hideTypesFilterCreator()({
     client: {} as unknown,
     paginator: undefined as unknown as Paginator,
+    fetchQuery: createMockQuery(),
     config: {
       fetch: {
         hideTypes,

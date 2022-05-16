@@ -461,7 +461,7 @@ export const getAllInstances = async ({
 }: {
   paginator: Paginator
   apiConfig: Pick<AdapterSwaggerApiConfig, 'types' | 'typeDefaults'>
-  fetchQuery: ElementQuery
+  fetchQuery: Pick<ElementQuery, 'isTypeMatch'>
   supportedTypes: Record<string, string[]>
   objectTypes: Record<string, ObjectType>
   nestedFieldFinder?: FindNestedFieldFunc

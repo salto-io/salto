@@ -67,6 +67,17 @@ describe('Test elements.ts', () => {
     expect(primNum.primitive).toBe(PrimitiveTypes.NUMBER)
   })
 
+  it('should clone path when a primitive type is cloned', () => {
+    const primToClone = new PrimitiveType({
+      elemID: primID,
+      primitive: PrimitiveTypes.STRING,
+      annotationRefsOrTypes: {},
+      annotations: {},
+      path: ['testPath'],
+    })
+    expect(primToClone.clone().path).toEqual(['testPath'])
+  })
+
   it('should create a basic object type with all params passed to the constructor', async () => {
     expect(ot.elemID).toEqual(otID)
     expect(await ot.fields.num_field.getType()).toBeInstanceOf(PrimitiveType)

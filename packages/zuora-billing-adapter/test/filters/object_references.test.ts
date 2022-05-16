@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, InstanceElement, Element, ReferenceExpression, BuiltinTypes } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { SUPPORTED_TYPES } from '../../src/config'
 import ZuoraClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
@@ -147,6 +147,7 @@ describe('object references filter', () => {
           supportedTypes: SUPPORTED_TYPES,
         },
       },
+      fetchQuery: elementUtils.query.createMockQuery(),
     }) as FilterType
   })
 

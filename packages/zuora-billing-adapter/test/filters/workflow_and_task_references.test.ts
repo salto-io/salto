@@ -18,7 +18,7 @@ import {
   ObjectType, ElemID, InstanceElement, Element, ReferenceExpression, BuiltinTypes,
   isInstanceElement, isReferenceExpression, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { DetailedDependency } from '@salto-io/adapter-utils'
 import ZuoraClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
@@ -364,6 +364,7 @@ describe('Workflow and task references filter', () => {
           supportedTypes: SUPPORTED_TYPES,
         },
       },
+      fetchQuery: elementUtils.query.createMockQuery(),
     }) as FilterType
   })
   describe('fail when there are no types or instances', () => {

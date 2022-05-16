@@ -19,21 +19,46 @@ import requestretry, { RequestRetryOptions, RetryStrategies, RetryStrategy } fro
 import Bottleneck from 'bottleneck'
 import { collections, decorators, hash } from '@salto-io/lowerdash'
 import {
-  Connection as RealConnection, MetadataObject, DescribeGlobalSObjectResult, FileProperties,
-  MetadataInfo, SaveResult, DescribeSObjectResult, DeployResult, RetrieveRequest, RetrieveResult,
-  ListMetadataQuery, UpsertResult, QueryResult, DescribeValueTypeResult,
-  BatchResultInfo, BulkLoadOperation,
+  BatchResultInfo,
+  BulkLoadOperation,
+  Connection as RealConnection,
+  DeployResult,
+  DescribeGlobalSObjectResult,
+  DescribeSObjectResult,
+  DescribeValueTypeResult,
+  FileProperties,
+  ListMetadataQuery,
+  MetadataInfo,
+  MetadataObject,
+  QueryResult,
+  RetrieveRequest,
+  RetrieveResult,
+  SaveResult,
+  UpsertResult,
 } from 'jsforce'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { flatValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
-import { AccountId, Value, CredentialError } from '@salto-io/adapter-api'
-import { CUSTOM_OBJECT_ID_FIELD, DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS, DEFAULT_MAX_CONCURRENT_API_REQUESTS, SALESFORCE } from '../constants'
-import { CompleteSaveResult, SfError, SalesforceRecord } from './types'
-import { UsernamePasswordCredentials, OauthAccessTokenCredentials, Credentials,
-  SalesforceClientConfig, ClientRateLimitConfig, ClientRetryConfig, ClientPollingConfig,
-  CustomObjectsDeployRetryConfig, ReadMetadataChunkSizeConfig } from '../types'
+import { AccountId, CredentialError, Value } from '@salto-io/adapter-api'
+import {
+  CUSTOM_OBJECT_ID_FIELD,
+  DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS,
+  DEFAULT_MAX_CONCURRENT_API_REQUESTS,
+  SALESFORCE,
+} from '../constants'
+import { CompleteSaveResult, SalesforceRecord, SfError } from './types'
+import {
+  ClientPollingConfig,
+  ClientRateLimitConfig,
+  ClientRetryConfig,
+  Credentials,
+  CustomObjectsDeployRetryConfig,
+  OauthAccessTokenCredentials,
+  ReadMetadataChunkSizeConfig,
+  SalesforceClientConfig,
+  UsernamePasswordCredentials,
+} from '../types'
 import Connection from './jsforce'
 
 const { makeArray } = collections.array
@@ -67,6 +92,7 @@ const DEFAULT_RETRY_OPTS: Required<ClientRetryConfig> = {
   maxAttempts: 5, // try 5 times
   retryDelay: 5000, // wait for 5s before trying again
   retryStrategy: 'NetworkError', // retry on network errors
+  timeout: 60 * 1000 * 15, // timeout per request retry in milliseconds
 }
 
 const DEFAULT_READ_METADATA_CHUNK_SIZE: Required<ReadMetadataChunkSizeConfig> = {
@@ -304,6 +330,7 @@ const retry400ErrorWrapper = (strategy: RetryStrategy): RetryStrategy =>
 const createRetryOptions = (retryOptions: Required<ClientRetryConfig>): RequestRetryOptions => ({
   maxAttempts: retryOptions.maxAttempts,
   retryStrategy: retry400ErrorWrapper(RetryStrategies[retryOptions.retryStrategy]),
+  timeout: retryOptions.timeout,
   delayStrategy: (err, _response, _body) => {
     log.error('failed to run SFDC call for reason: %s. Retrying in %ss.',
       err?.message ?? '', (retryOptions.retryDelay / 1000))

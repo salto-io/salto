@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { DEFAULT_CONFIG, FETCH_CONFIG, SUPPORTED_TYPES } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
 import { ZENDESK_SUPPORT } from '../../src/constants'
@@ -49,6 +49,7 @@ describe('referenced id fields filter', () => {
         paginationFuncCreator: paginate,
       }),
       config: DEFAULT_CONFIG,
+      fetchQuery: elementUtils.query.createMockQuery(),
     }) as FilterType
     await filter.onFetch(elements)
     expect(elements.map(e => e.elemID.getFullName()).sort())
@@ -80,6 +81,7 @@ describe('referenced id fields filter', () => {
           supportedTypes: SUPPORTED_TYPES,
         },
       },
+      fetchQuery: elementUtils.query.createMockQuery(),
     }) as FilterType
     await filter.onFetch(elements)
     expect(elements.map(e => e.elemID.getFullName()).sort())

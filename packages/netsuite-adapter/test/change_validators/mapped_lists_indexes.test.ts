@@ -102,27 +102,27 @@ describe('mapped lists indexes validator', () => {
     expect(changeErrors).toHaveLength(4)
     expect(changeErrors[0]).toEqual({
       elemID: after.elemID.createNestedID('workflowcustomfields', 'workflowcustomfield', 'custworkflow1'),
-      severity: 'Error',
-      message: 'invalid index attribute in a mapped list',
-      detailedMessage: 'custworkflow1 has no \'index\' attribute',
+      severity: 'Warning',
+      message: 'Invalid index attribute in a mapped list',
+      detailedMessage: 'custworkflow1 has no \'index\' attribute. It is going to be located at the end of the list (index = 5).',
     })
     expect(changeErrors[1]).toEqual({
       elemID: after.elemID.createNestedID('workflowcustomfields', 'workflowcustomfield', 'custworkflow2'),
-      severity: 'Error',
-      message: 'invalid index attribute in a mapped list',
-      detailedMessage: 'index is not an integer',
+      severity: 'Warning',
+      message: 'Invalid index attribute in a mapped list',
+      detailedMessage: 'Index is not an integer. It will be override by an integer value in the next fetch.',
     })
     expect(changeErrors[2]).toEqual({
       elemID: after.elemID.createNestedID('workflowcustomfields', 'workflowcustomfield', 'custworkflow3'),
-      severity: 'Error',
-      message: 'invalid index attribute in a mapped list',
-      detailedMessage: 'index is out of range',
+      severity: 'Warning',
+      message: 'Invalid index attribute in a mapped list',
+      detailedMessage: 'Index is out of range. It will be override by an in-range value in the next fetch.',
     })
     expect(changeErrors[3]).toEqual({
       elemID: after.elemID.createNestedID('workflowcustomfields', 'workflowcustomfield'),
-      severity: 'Error',
-      message: 'invalid index attribute in a mapped list',
-      detailedMessage: 'some items has the same index value (index = 2)',
+      severity: 'Warning',
+      message: 'Invalid index attribute in a mapped list',
+      detailedMessage: 'Some items has the same index value (index = 2). They will be sorted by their key name (custworkflow5).',
     })
   })
 })

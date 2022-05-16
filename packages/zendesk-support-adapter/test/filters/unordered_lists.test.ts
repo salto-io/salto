@@ -16,7 +16,7 @@
 import {
   ObjectType, ElemID, InstanceElement, Element, isInstanceElement, ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { DEFAULT_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
@@ -133,6 +133,7 @@ describe('Unordered lists filter', () => {
         paginationFuncCreator: paginate,
       }),
       config: DEFAULT_CONFIG,
+      fetchQuery: elementUtils.query.createMockQuery(),
     }) as FilterType
 
     elements = generateElements()

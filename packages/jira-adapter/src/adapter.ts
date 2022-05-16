@@ -69,6 +69,9 @@ import fieldDeploymentFilter from './filters/fields/field_deployment_filter'
 import contextDeploymentFilter from './filters/fields/context_deployment_filter'
 import fieldTypeReferencesFilter from './filters/fields/field_type_references_filter'
 import contextReferencesFilter from './filters/fields/context_references_filter'
+import queryFilter from './filters/query'
+import serviceUrlInformationFilter from './filters/service_url/service_url_information'
+import serviceUrlFilter from './filters/service_url/service_url'
 import resolutionFilter from './filters/resolution'
 import priorityFilter from './filters/priority'
 import statusDeploymentFilter from './filters/statuses/status_deployment'
@@ -85,6 +88,7 @@ import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
 import { getChangeGroupIds } from './group_change'
+import fetchCriteria from './fetch_criteria'
 
 const {
   generateTypes,
@@ -162,7 +166,10 @@ export const DEFAULT_FILTERS = [
   sortListsFilter,
   // Must run after fieldReferencesFilter
   mapListsFilter,
+  serviceUrlInformationFilter,
+  serviceUrlFilter,
   hiddenValuesInListsFilter,
+  queryFilter,
   // Must be last
   defaultInstancesDeployFilter,
 ]
@@ -204,7 +211,10 @@ export default class JiraAdapter implements AdapterOperations {
       customEntryExtractor: removeScopedObjects,
     })
 
-    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig.fetch)
+    this.fetchQuery = elementUtils.query.createElementQuery(
+      this.userConfig.fetch,
+      fetchCriteria,
+    )
 
     this.paginator = paginator
     this.createFiltersRunner = () => (

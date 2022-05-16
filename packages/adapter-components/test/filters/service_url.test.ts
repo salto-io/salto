@@ -17,6 +17,7 @@ import { ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS, toChange, getCha
 import { FilterWith } from '../../src/filter_utils'
 import { Paginator } from '../../src/client'
 import { serviceUrlFilterCreator } from '../../src/filters/service_url'
+import { createMockQuery } from '../../src/elements/query'
 
 describe('service url filter', () => {
   type FilterType = FilterWith<'onFetch' | 'onDeploy'>
@@ -32,6 +33,7 @@ describe('service url filter', () => {
     filter = serviceUrlFilterCreator(baseUrl)({
       client: {} as unknown,
       paginator: undefined as unknown as Paginator,
+      fetchQuery: createMockQuery(),
       config: {
         apiDefinitions: {
           types: {

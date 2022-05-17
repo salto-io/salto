@@ -708,4 +708,38 @@ describe('handleHiddenChanges', () => {
       })
     })
   })
+
+  describe('field annotation change when the field is not in the state', () => {
+    let result: { visible: DetailedChange[]; hidden: DetailedChange[]}
+    let change: DetailedChange
+    beforeAll(async () => {
+      const stateObject = new ObjectType({ elemID: new ElemID('test', 'type') })
+      const fullObject = new ObjectType({
+        elemID: stateObject.elemID,
+        fields: {
+          field: {
+            refType: BuiltinTypes.STRING,
+          },
+        },
+      })
+      change = {
+        id: fullObject.fields.field.elemID.createNestedID(CORE_ANNOTATIONS.SERVICE_URL),
+        action: 'add',
+        data: { after: 'someUrl' },
+      }
+      result = await handleHiddenChanges(
+        [change],
+        mockState([stateObject]),
+        createInMemoryElementSource(),
+      )
+    })
+
+    it('should make the change visible', () => {
+      expect(result.visible).toHaveLength(1)
+      expect(result.visible[0]).toMatchObject(change)
+    })
+    it('should not have a hidden change', () => {
+      expect(result.hidden).toHaveLength(0)
+    })
+  })
 })

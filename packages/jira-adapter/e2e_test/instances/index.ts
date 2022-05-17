@@ -52,10 +52,11 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
     createFieldValues(randomString),
   )
 
+  const fieldContextName = naclCase(`${randomString}${CUSTOM_FIELDS_SUFFIX}_${randomString}`)
   const fieldContext = new InstanceElement(
-    naclCase(`${randomString}${CUSTOM_FIELDS_SUFFIX}_${randomString}`),
+    fieldContextName,
     findType('CustomFieldContext', fetchedElements),
-    createContextValues(randomString, fetchedElements),
+    createContextValues(randomString, fieldContextName, fetchedElements),
     undefined,
     { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(field.elemID, field)] }
   )

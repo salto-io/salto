@@ -777,9 +777,12 @@ export const filterOutHiddenChanges = async (
         }
 
         // idType === 'field'
+        const field = baseElem.fields[path[0]]
         return {
           // changeType will be undefined if the path is too short
-          changeType: (await elementAnnotationTypes(baseElem.fields[path[0]], state))[path[1]],
+          changeType: field === undefined
+            ? undefined
+            : (await elementAnnotationTypes(field, state))[path[1]],
           changePath: path.slice(2),
         }
       }

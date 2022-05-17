@@ -21,6 +21,7 @@ salesforce {
       maxAttempts = 5
       retryDelay = 5000
       retryStrategy = "NetworkError"
+      timeout = 900000
     }
     maxConcurrentApiRequests = {
       total = 100
@@ -208,11 +209,12 @@ For more details see the DeployOptions section in the [salesforce documentation 
 
 #### Client retry options
 
-| Name           | Default when undefined | Description
-|----------------|------------------------|------------
-| maxAttempts    | `5`                    | The number of attempts to make for each request
-| retryDelay     | `5000` (5 seconds)     | The time (milliseconds) to wait between attempts
-| retryStrategy  | `NetworkError`         | In which cases to retry. Supported choices: `NetworkError` (retry on network errors), `HttpError` (retry on HTTP 5xx errors), or `HTTPOrNetworkError` (both)
+| Name          | Default when undefined  | Description
+|---------------|-------------------------|------------
+| maxAttempts   | `5`                     | The number of attempts to make for each request
+| retryDelay    | `5000` (5 seconds)      | The time (milliseconds) to wait between attempts
+| retryStrategy | `NetworkError`          | In which cases to retry. Supported choices: `NetworkError` (retry on network errors), `HttpError` (retry on HTTP 5xx errors), or `HTTPOrNetworkError` (both)
+| timeout       | `900000` (15 minutes)   | The timeout (milliseconds) on each request retry
 
 ### Rate limit configuration options
 

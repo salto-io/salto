@@ -19,8 +19,11 @@ import { extendGeneratedDependencies, getParents } from '@salto-io/adapter-utils
 import { FilterCreator } from '../../filter'
 import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, PROJECT_TYPE } from '../../constants'
 
-const getProjectUsedFields = (instance: InstanceElement): InstanceElement[] =>
-  instance.value.issueTypeScreenScheme?.value.value.issueTypeMappings
+const getProjectUsedFields = (instance: InstanceElement): InstanceElement[] => {
+  if (!isReferenceExpression(instance.value.issueTypeScreenScheme)) {
+    return []
+  }
+  return instance.value.issueTypeScreenScheme.value.value.issueTypeMappings
     ?.map((item: Values) => item.screenSchemeId)
     .filter(isReferenceExpression)
     .flatMap((screenSchemeRef: ReferenceExpression) => Object.values(
@@ -31,6 +34,7 @@ const getProjectUsedFields = (instance: InstanceElement): InstanceElement[] =>
     .flatMap((tab: Values) => tab.fields)
     .filter(isReferenceExpression)
     .map((fieldRef: ReferenceExpression) => fieldRef.value) ?? []
+}
 
 const getProjectFieldConfigurations = (instance: InstanceElement): InstanceElement[] =>
   instance.value.fieldConfigurationScheme?.value.value.items

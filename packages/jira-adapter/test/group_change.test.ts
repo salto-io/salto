@@ -33,8 +33,8 @@ describe('group change', () => {
   let fieldConfigurationItemInstance1: InstanceElement
   let fieldConfigurationItemInstance2: InstanceElement
   let fieldConfigurationItemInstance3: InstanceElement
-  let fieldConfigurationId1: ElemID
-  let fieldConfigurationId2: ElemID
+  let fieldConfiguration1: InstanceElement
+  let fieldConfiguration2: InstanceElement
 
   beforeEach(() => {
     workflowType = new ObjectType({ elemID: new ElemID(JIRA, WORKFLOW_TYPE_NAME) })
@@ -65,8 +65,14 @@ describe('group change', () => {
       elemID: new ElemID(JIRA, FIELD_CONFIGURATION_ITEM_TYPE_NAME),
     })
 
-    fieldConfigurationId1 = fieldConfigurationType.elemID.createNestedID('instance', 'parent1')
-    fieldConfigurationId2 = fieldConfigurationType.elemID.createNestedID('instance', 'parent2')
+    fieldConfiguration1 = new InstanceElement(
+      'parent1',
+      fieldConfigurationType,
+    )
+    fieldConfiguration2 = new InstanceElement(
+      'parent2',
+      fieldConfigurationType,
+    )
 
     fieldConfigurationItemInstance1 = new InstanceElement(
       'fieldConfigurationItemInstance1',
@@ -75,7 +81,7 @@ describe('group change', () => {
       undefined,
       {
         [CORE_ANNOTATIONS.PARENT]: [
-          new ReferenceExpression(fieldConfigurationId1),
+          new ReferenceExpression(fieldConfiguration1.elemID, fieldConfiguration1),
         ],
       }
     )
@@ -87,7 +93,7 @@ describe('group change', () => {
       undefined,
       {
         [CORE_ANNOTATIONS.PARENT]: [
-          new ReferenceExpression(fieldConfigurationId1),
+          new ReferenceExpression(fieldConfiguration1.elemID, fieldConfiguration1),
         ],
       }
     )
@@ -99,7 +105,7 @@ describe('group change', () => {
       undefined,
       {
         [CORE_ANNOTATIONS.PARENT]: [
-          new ReferenceExpression(fieldConfigurationId2),
+          new ReferenceExpression(fieldConfiguration2.elemID, fieldConfiguration2),
         ],
       }
     )
@@ -168,13 +174,13 @@ describe('group change', () => {
     ]))).changeGroupIdMap
 
     expect(changeGroupIds.get(fieldConfigurationItemInstance1.elemID.getFullName()))
-      .toBe(`${fieldConfigurationId1.getFullName()} items`)
+      .toBe(`${fieldConfiguration1.elemID.getFullName()} items`)
 
     expect(changeGroupIds.get(fieldConfigurationItemInstance2.elemID.getFullName()))
-      .toBe(`${fieldConfigurationId1.getFullName()} items`)
+      .toBe(`${fieldConfiguration1.elemID.getFullName()} items`)
 
     expect(changeGroupIds.get(fieldConfigurationItemInstance3.elemID.getFullName()))
-      .toBe(`${fieldConfigurationId2.getFullName()} items`)
+      .toBe(`${fieldConfiguration2.elemID.getFullName()} items`)
   })
 
   it('should throw if field configuration does not have parent', async () => {

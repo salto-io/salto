@@ -51,6 +51,10 @@ describe('fieldConfigurationItemsFilter', () => {
     beforeEach(async () => {
       mockConnection.put.mockClear()
 
+      const fieldConfigurationType = new ObjectType({
+        elemID: new ElemID(JIRA, FIELD_CONFIGURATION_TYPE_NAME),
+      })
+
       changes = _.range(0, 150).map(i => toChange({
         after: new InstanceElement(
           `instance${i}`,
@@ -63,11 +67,13 @@ describe('fieldConfigurationItemsFilter', () => {
             [CORE_ANNOTATIONS.PARENT]: [
               new ReferenceExpression(
                 new ElemID(JIRA, FIELD_CONFIGURATION_TYPE_NAME, 'instance', 'inst'),
-                {
-                  value: {
+                new InstanceElement(
+                  'instance',
+                  fieldConfigurationType,
+                  {
                     id: '1',
                   },
-                }
+                ),
               ),
             ],
           }

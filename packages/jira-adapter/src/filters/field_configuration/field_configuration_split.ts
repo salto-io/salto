@@ -61,7 +61,7 @@ const filter: FilterCreator = () => ({
         return item
       }))
 
-    elements.push(...fieldItems)
+    fieldItems.forEach(item => elements.push(item))
   },
 })
 

@@ -15,7 +15,7 @@
 */
 import { collections, values } from '@salto-io/lowerdash'
 import { ChangeGroupIdFunction, getChangeData, ChangeGroupId, ChangeId, isModificationChange, Change, isAdditionChange, isReferenceExpression } from '@salto-io/adapter-api'
-import { getParents } from '@salto-io/adapter-utils'
+import { getParent, getParents } from '@salto-io/adapter-utils'
 import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, SECURITY_LEVEL_TYPE, WORKFLOW_TYPE_NAME } from './constants'
 
 const { awu } = collections.asynciterable
@@ -52,12 +52,9 @@ const getFieldConfigItemGroup: ChangeIdFunction = async change => {
     return undefined
   }
 
-  const parents = getParents(instance)
-  if (parents.length !== 1 || !isReferenceExpression(parents[0])) {
-    throw new Error(`${instance.elemID.getFullName()} must have exactly one reference expression parent`)
-  }
+  const parent = getParent(instance)
 
-  return `${parents[0].elemID.getFullName()} items`
+  return `${parent.elemID.getFullName()} items`
 }
 
 const changeIdProviders: ChangeIdFunction[] = [

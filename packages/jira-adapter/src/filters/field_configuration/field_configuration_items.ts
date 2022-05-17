@@ -16,7 +16,7 @@
 import { AdditionChange, DeployResult, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, ModificationChange } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { getParents, resolveValues } from '@salto-io/adapter-utils'
+import { getParent, resolveValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
 import { JiraConfig } from '../../config'
@@ -40,7 +40,7 @@ const deployFieldConfigurationItems = async (
     return
   }
 
-  const parentId = getParents(getChangeData(changes[0]))[0].value.value.id
+  const parentId = getParent(getChangeData(changes[0])).value.id
 
   await Promise.all(
     _.chunk(fields, config.client.fieldConfigurationItemsDeploymentLimit).map(async fieldsChunk =>

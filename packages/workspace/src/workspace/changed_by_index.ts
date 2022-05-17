@@ -47,8 +47,8 @@ const updateAdditionChange = async (
   index: RemoteMap<ElemID[]>,
 ): Promise<void> => {
   const author = getChangeAuthor(change, envName)
-  const elementIds = await index.get(author)
-  if (elementIds && !elementIds.some(elemId => elemId.isEqual(change.data.after.elemID))) {
+  const elementIds = await index.get(author) ?? []
+  if (!elementIds.some(elemId => elemId.isEqual(change.data.after.elemID))) {
     elementIds.push(change.data.after.elemID)
     await index.set(author, elementIds)
   }
@@ -121,5 +121,5 @@ export const updateChangedByIndex = async (
       mapVersions.set(CHANGED_BY_INDEX_KEY, CHANGED_BY_INDEX_VERSION),
     ])
   }
-  awu(relevantChanges.map(async change => updateChange(change, envName, changedByIndex)))
+  await awu(relevantChanges).forEach(async change => updateChange(change, envName, changedByIndex))
 }, 'updating changed by index')

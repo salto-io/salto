@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  FetchResult, AdapterOperations, DeployResult, FetchOptions, DeployOptions,
+  FetchResult, AdapterOperations, DeployResult, FetchOptions, DeployOptions, DeployModifiers,
 } from '@salto-io/adapter-api'
 import { generateElements, GeneratorParams } from './generator'
 
@@ -38,6 +38,12 @@ export default class DummyAdapter implements AdapterOperations {
     return {
       appliedChanges: changeGroup.changes,
       errors: [],
+    }
+  }
+
+  public get deployModifiers(): DeployModifiers {
+    return {
+      changeValidator: async () => this.genParams.changeErrors,
     }
   }
 }

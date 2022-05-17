@@ -20,6 +20,7 @@ import {
   CORE_ANNOTATIONS, StaticFile, calculateStaticFileHash, ReferenceExpression,
   getDeepInnerType, isContainerType, MapType, isMapType, ProgressReporter,
   createRefToElmWithValue,
+  ChangeError,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { uniqueNamesGenerator, adjectives, colors, names } from 'unique-names-generator'
@@ -66,6 +67,7 @@ export type GeneratorParams = {
     listLengthMean: number
     listLengthStd: number
     useOldProfiles: boolean
+    changeErrors: ChangeError[]
     extraNaclPath?: string
     generateEnvName? : string
 }
@@ -102,6 +104,7 @@ export const defaultParams: Omit<GeneratorParams, 'extraNaclPath'> = {
   listLengthMean: 8.7,
   listLengthStd: 3.6,
   useOldProfiles: false,
+  changeErrors: [],
 }
 
 const MOCK_NACL_SUFFIX = 'nacl.mock'

@@ -20,7 +20,7 @@ import { AUTOMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA, NOTIFIC
 import { createReference, findType } from '../utils'
 import { createKanbanBoardValues, createScrumBoardValues } from './board'
 import { createContextValues, createFieldValues } from './field'
-import { createFieldConfigurationValues } from './fieldConfiguration'
+import { createFieldConfigurationItemValues, createFieldConfigurationValues } from './fieldConfiguration'
 import { createFieldConfigurationSchemeValues } from './fieldConfigurationScheme'
 import { createIssueTypeSchemeValues } from './issueTypeScheme'
 import { createIssueTypeScreenSchemeValues } from './issueTypeScreenScheme'
@@ -174,7 +174,19 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
   const fieldConfiguration = new InstanceElement(
     randomString,
     findType('FieldConfiguration', fetchedElements),
-    createFieldConfigurationValues(randomString, fetchedElements),
+    createFieldConfigurationValues(randomString),
+  )
+
+  const fieldConfigurationItem = new InstanceElement(
+    `${randomString}_Assignee`,
+    findType('FieldConfigurationItem', fetchedElements),
+    createFieldConfigurationItemValues(fetchedElements),
+    undefined,
+    {
+      [CORE_ANNOTATIONS.PARENT]: [
+        new ReferenceExpression(fieldConfiguration.elemID, fieldConfiguration),
+      ],
+    }
   )
 
   const securityLevel = new InstanceElement(
@@ -230,6 +242,7 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
     [issueTypeScheme],
     [projectRole],
     [fieldConfiguration],
+    [fieldConfigurationItem],
     [securityScheme, securityLevel],
     [notificationScheme],
     [automation],

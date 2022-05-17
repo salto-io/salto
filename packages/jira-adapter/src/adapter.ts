@@ -40,11 +40,13 @@ import boardDeploymentFilter from './filters/board/board_deployment'
 import automationDeploymentFilter from './filters/automation/automation_deployment'
 import webhookFilter from './filters/webhook/webhook'
 import screenFilter from './filters/screen/screen'
-import mapListsFilter from './filters/map_lists'
 import missingStatusesFilter from './filters/statuses/missing_statuses'
 import issueTypeScreenSchemeFilter from './filters/issue_type_screen_scheme'
-import fieldConfigurationFilter from './filters/field_configuration'
-import fieldConfigurationIrrelevantFields from './filters/field_configuration_irrelevant_fields'
+import fieldConfigurationFilter from './filters/field_configuration/field_configuration'
+import fieldConfigurationIrrelevantFields from './filters/field_configuration/field_configuration_irrelevant_fields'
+import fieldConfigurationSplitFilter from './filters/field_configuration/field_configuration_split'
+import fieldConfigurationItemsFilter from './filters/field_configuration/field_configuration_items'
+import fieldConfigurationDependenciesFilter from './filters/field_configuration/field_configuration_dependencies'
 import fieldConfigurationSchemeFilter from './filters/field_configurations_scheme'
 import dashboardFilter from './filters/dashboard/dashboard_deployment'
 import dashboardLayoutFilter from './filters/dashboard/dashboard_layout'
@@ -151,6 +153,7 @@ export const DEFAULT_FILTERS = [
   notificationSchemeDeploymentFilter,
   issueTypeScreenSchemeFilter,
   fieldConfigurationFilter,
+  fieldConfigurationItemsFilter,
   fieldConfigurationSchemeFilter,
   userFilter,
   forbiddenPermissionSchemeFilter,
@@ -162,10 +165,12 @@ export const DEFAULT_FILTERS = [
   fieldReferencesFilter,
   // Must run after fieldReferencesFilter
   fieldConfigurationIrrelevantFields,
+  // Must run after fieldConfigurationIrrelevantFields
+  fieldConfigurationSplitFilter,
+  // Must run after fieldConfigurationSplitFilter
+  fieldConfigurationDependenciesFilter,
   // Must run after fieldReferencesFilter
   sortListsFilter,
-  // Must run after fieldReferencesFilter
-  mapListsFilter,
   serviceUrlInformationFilter,
   serviceUrlFilter,
   hiddenValuesInListsFilter,

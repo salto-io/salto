@@ -25,6 +25,7 @@ import {
   CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
   ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType, isTypeReference,
   ReadOnlyElementsSource, ReferenceMap, TypeReference, createRefToElmWithValue, isElement,
+  compareSpecialValues,
 } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from './walk_element'
@@ -476,6 +477,28 @@ export type RestoreValuesFunc = <T extends Element>(
   allowEmpty?: boolean
 ) => Promise<T>
 
+// The following function handles comparing values that may contain elements
+// this can happen after "resolveValues" if the getLookupName function returns elements
+// we still treat these elements as if they are references, meaning we only care if
+// the element ID is the same
+const isEqualResolvedValues = (
+  first: Value,
+  second: Value,
+): boolean => _.isEqualWith(
+  first,
+  second,
+  (firstVal, secondVal) => {
+    if (isElement(first) || isElement(second)) {
+      if (isElement(first) && isElement(second)) {
+        return first.elemID.isEqual(second.elemID)
+      }
+      // If only one side is an element, they are not equal
+      return false
+    }
+    return compareSpecialValues(firstVal, secondVal)
+  }
+)
+
 export const restoreValues: RestoreValuesFunc = async (
   source, targetElement, getLookUpName, allowEmpty = false
 ) => {
@@ -499,13 +522,21 @@ export const restoreValues: RestoreValuesFunc = async (
       return value
     }
 
-    const ref = allReferencesPaths.get(path.getFullName())
-    if (ref !== undefined
-      && _.isEqual(await getLookUpName({ ref, field, path }), value)) {
-      return ref
+    if (isReferenceExpression(value) || isStaticFile(value)) {
+      // The value is already "restored", nothing to do
+      return value
     }
+
+    const ref = allReferencesPaths.get(path.getFullName())
+    if (ref !== undefined) {
+      const refValue = await getLookUpName({ ref, field, path })
+      if (isEqualResolvedValues(refValue, value)) {
+        return ref
+      }
+    }
+
     const file = allStaticFilesPaths.get(path.getFullName())
-    if (!_.isUndefined(file)) {
+    if (file !== undefined) {
       const content = file.encoding === 'binary'
         ? value : Buffer.from(value, file.encoding)
       return new StaticFile({ filepath: file.filepath, content, encoding: file.encoding })

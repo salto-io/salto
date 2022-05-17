@@ -192,6 +192,32 @@ const getGroupItemFromRegex = (str: string, regex: RegExp, item: string): string
     .filter(isDefined)
     .map(groups => groups[item])
 
+type ErrorMatcher = { getValidationErrorMessage: (filePath: string) => string }
+const createErrorMatcher = (lines: string[]): ErrorMatcher => {
+  const indexesMap = new Map<string, number[]>()
+  lines.forEach((line, index) => {
+    if (!indexesMap.has(line)) {
+      indexesMap.set(line, [])
+    }
+    indexesMap.get(line)?.push(index)
+  })
+
+  return {
+    getValidationErrorMessage: filePath => {
+      const invalidObjectErrorMessage = `Errors for file ${filePath}.`
+      const custInfoErrorIndexes = indexesMap.get(invalidObjectErrorMessage)
+      return _(custInfoErrorIndexes)
+        .map(errorIndex => {
+          const errorMessageLine = lines[errorIndex + 1]
+          return errorMessageLine?.match(errorMessageRegex)?.groups?.[ERROR_MESSAGE]
+            ?? lines[errorIndex]
+        })
+        .uniq()
+        .join(os.EOL)
+    },
+  }
+}
+
 type Project = {
   projectName: string
   projectPath: string
@@ -940,33 +966,14 @@ export default class SdfClient {
     )
   }
 
-  private static getValidationErrorMessage(
-    errorMessageLines: string[],
-    filePath: string
-  ): string | undefined {
-    const invalidObjectErrorMessage = `Errors for file ${filePath}.`
-    const custInfoErrorIndexes = errorMessageLines
-      .reduce<number[]>((indexes, errorLine, lineIndex) => (
-        errorLine === invalidObjectErrorMessage ? indexes.concat(lineIndex) : indexes), [])
-    return custInfoErrorIndexes.length > 0
-      ? custInfoErrorIndexes.map(errorIndex => {
-        const errorMessageLine = errorMessageLines[errorIndex + 1]
-        return errorMessageLine?.match(errorMessageRegex)?.groups?.[ERROR_MESSAGE]
-          ?? errorMessageLines[errorIndex]
-      }).join(os.EOL)
-      : undefined
-  }
-
   private static customizeValidationError(
     error: Error,
     projectName: string,
     customizationInfos: CustomizationInfo[]
   ): Error {
-    const errorMessageLines = error.message.split(os.EOL)
-    const manifestErrorMessage = SdfClient.getValidationErrorMessage(
-      errorMessageLines,
-      SdfClient.getManifestFilePath(projectName)
-    )
+    const errorMatcher = createErrorMatcher(error.message.split(os.EOL))
+    const manifestErrorMessage = errorMatcher
+      .getValidationErrorMessage(SdfClient.getManifestFilePath(projectName))
     if (manifestErrorMessage) {
       return new ManifestValidationError(manifestErrorMessage)
     }
@@ -974,10 +981,8 @@ export default class SdfClient {
     const failedObjects = customizationInfos
       .filter(isCustomTypeInfo)
       .map((custInfo): [string, string] | undefined => {
-        const errorMessage = SdfClient.getValidationErrorMessage(
-          errorMessageLines,
-          `${osPath.join(objectsDirPath, custInfo.scriptId)}.xml`
-        )
+        const errorMessage = errorMatcher
+          .getValidationErrorMessage(`${osPath.join(objectsDirPath, custInfo.scriptId)}.xml`)
         return errorMessage ? [custInfo.scriptId, errorMessage] : undefined
       })
       .filter(isDefined)

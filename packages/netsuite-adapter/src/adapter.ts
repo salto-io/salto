@@ -103,7 +103,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly filePathRegexSkipList: string[]
   private readonly deployReferencedElements?: boolean
   private readonly warnStaleData?: boolean
-  private readonly validateBeforeDeploy?: boolean
+  private readonly validateBeforeDeploy: boolean
   private readonly additionalDependencies: AdditionalDependencies
   private readonly userConfig: NetsuiteConfig
   private getElemIdFunc?: ElemIdGetter
@@ -180,7 +180,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     this.deployReferencedElements = config[DEPLOY]?.[DEPLOY_REFERENCED_ELEMENTS]
      ?? config[DEPLOY_REFERENCED_ELEMENTS]
     this.warnStaleData = config[DEPLOY]?.[WARN_STALE_DATA]
-    this.validateBeforeDeploy = config[DEPLOY]?.[VALIDATE]
+    this.validateBeforeDeploy = config[DEPLOY]?.[VALIDATE] ?? DEFAULT_VALIDATE
     this.additionalDependencies = {
       include: {
         features: config[DEPLOY]?.[ADDITIONAL_DEPS]?.[INCLUDE]?.features ?? [],
@@ -428,7 +428,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         fetchByQuery: this.fetchByQuery,
         deployReferencedElements: this.deployReferencedElements
           ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
-        validate: this.validateBeforeDeploy ?? DEFAULT_VALIDATE,
+        validate: this.validateBeforeDeploy,
         additionalDependencies: this.additionalDependencies,
       }),
       getChangeGroupIds: getChangeGroupIdsFunc(this.client.isSuiteAppConfigured()),

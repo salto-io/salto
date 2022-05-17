@@ -109,8 +109,12 @@ const DEFAULT_READ_METADATA_CHUNK_SIZE: Required<ReadMetadataChunkSizeConfig> = 
 const errorMessagesToRetry = [
   'Cannot read property \'result\' of null',
   'Too many properties to enumerate',
-  'retry your request', // We saw "unknown_error: retry your request" error message,
-  //  but in case there is another error that says "retry your request", probably we should retry it
+  /**
+   * We saw "unknown_error: retry your request" error message,
+   * but in case there is another error that says "retry your request", probably we should retry it
+   */
+  'retry your request',
+  'Polling time out',
 ]
 
 type RateLimitBucketName = keyof ClientRateLimitConfig

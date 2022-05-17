@@ -932,6 +932,19 @@ export const getParents = (instance: Element): Array<Value> => (
   collections.array.makeArray(instance.annotations[CORE_ANNOTATIONS.PARENT])
 )
 
+export const getParent = (instance: Element): InstanceElement => {
+  const parents = getParents(instance)
+  if (parents.length !== 1) {
+    throw new Error(`Expected ${instance.elemID.getFullName()} to have exactly one parent, found ${parents.length}`)
+  }
+
+  if (!isInstanceElement(parents[0].value)) {
+    throw new Error(`Expected ${instance.elemID.getFullName()} parent to be an instance`)
+  }
+
+  return parents[0].value
+}
+
 // In the current use-cases for resolveTypeShallow it makes sense
 // to use the value on the ref over the elementsSource, unlike the
 // current Reference.getResolvedValue implementation

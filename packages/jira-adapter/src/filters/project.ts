@@ -17,6 +17,7 @@ import { Change, Element, getChangeData, InstanceElement, isAdditionChange, isAd
 import { createSchemeGuard, resolveValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import Joi from 'joi'
+import { logger } from '@salto-io/logging'
 import JiraClient from '../client/client'
 import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
 import { getLookUpName } from '../reference_mapping'
@@ -30,6 +31,8 @@ const COMPONENTS_FIELD = 'components'
 const ISSUE_TYPE_SCREEN_SCHEME_FIELD = 'issueTypeScreenScheme'
 const FIELD_CONFIG_SCHEME_FIELD = 'fieldConfigurationScheme'
 const ISSUE_TYPE_SCHEME = 'issueTypeScheme'
+
+const log = logger(module)
 
 const deployScheme = async (
   instance: InstanceElement,
@@ -49,14 +52,11 @@ const deployScheme = async (
 }
 
 const deployProjectSchemes = async (
-  projectChange: Change<InstanceElement>,
+  instance: InstanceElement,
   client: JiraClient,
 ): Promise<void> => {
-  const instance = await resolveValues(getChangeData(projectChange), getLookUpName)
-
   await deployScheme(instance, client, WORKFLOW_SCHEME_FIELD, 'workflowSchemeId')
   await deployScheme(instance, client, ISSUE_TYPE_SCREEN_SCHEME_FIELD, 'issueTypeScreenSchemeId')
-  await deployScheme(instance, client, FIELD_CONFIG_SCHEME_FIELD, 'fieldConfigurationSchemeId')
   await deployScheme(instance, client, ISSUE_TYPE_SCHEME, 'issueTypeSchemeId')
 }
 
@@ -92,6 +92,62 @@ const removeComponents = async (projectId: number, client: JiraClient): Promise<
   await Promise.all(componentIds.map(id => client.delete({
     url: `/rest/api/3/component/${id}`,
   })))
+}
+
+const isIdResponse = createSchemeGuard<{ id: string }>(Joi.object({
+  id: Joi.string().required(),
+}).unknown(true).required(), 'Received an invalid project id response')
+
+const getProjectId = async (projectKey: string, client: JiraClient): Promise<string> => {
+  const response = await client.getSinglePage({
+    url: `/rest/api/3/project/${projectKey}`,
+  })
+
+  if (!isIdResponse(response.data)) {
+    throw new Error('Received an invalid project id response')
+  }
+
+  return response.data.id
+}
+
+const isFieldConfigurationSchemeResponse = createSchemeGuard<{
+  values: {
+    fieldConfigurationScheme: {
+      id: string
+    }
+  }[]
+}>(Joi.object({
+  values: Joi.array().items(Joi.object({
+    fieldConfigurationScheme: Joi.object({
+      id: Joi.string().required(),
+    }).unknown(true).required(),
+  }).unknown(true)),
+}).unknown(true).required(), 'Received an invalid field configuration scheme response')
+
+const deleteFieldConfigurationScheme = async (
+  change: Change<InstanceElement>,
+  client: JiraClient,
+): Promise<void> => {
+  const instance = await resolveValues(getChangeData(change), getLookUpName)
+  const response = await client.getSinglePage({
+    url: `/rest/api/3/fieldconfigurationscheme/project?projectId=${instance.value.id}`,
+  })
+
+  if (!isFieldConfigurationSchemeResponse(response.data)) {
+    throw new Error('Received an invalid field configuration scheme response')
+  }
+
+  if (response.data.values.length === 0) {
+    log.warn(`Expected to find a field configuration scheme for project ${instance.elemID.getFullName()}`)
+    return
+  }
+
+  await deployScheme(instance, client, FIELD_CONFIG_SCHEME_FIELD, 'fieldConfigurationSchemeId')
+
+  const schemeId = response.data.values[0].fieldConfigurationScheme.id
+  await client.delete({
+    url: `/rest/api/3/fieldconfigurationscheme/${schemeId}`,
+  })
 }
 
 /**
@@ -142,21 +198,45 @@ const filter: FilterCreator = ({ config, client }) => ({
     const deployResult = await deployChanges(
       relevantChanges as Change<InstanceElement>[],
       async change => {
-        await defaultDeployChange({
-          change,
-          client,
-          apiDefinitions: config.apiDefinitions,
-          fieldsToIgnore: isModificationChange(change)
-            ? [COMPONENTS_FIELD,
-              WORKFLOW_SCHEME_FIELD,
-              ISSUE_TYPE_SCREEN_SCHEME_FIELD,
-              FIELD_CONFIG_SCHEME_FIELD,
-              ISSUE_TYPE_SCHEME]
-            : [COMPONENTS_FIELD],
-        })
-        if (isModificationChange(change)) {
-          await deployProjectSchemes(change, client)
+        try {
+          await defaultDeployChange({
+            change,
+            client,
+            apiDefinitions: config.apiDefinitions,
+            fieldsToIgnore: isModificationChange(change)
+              ? [COMPONENTS_FIELD,
+                WORKFLOW_SCHEME_FIELD,
+                ISSUE_TYPE_SCREEN_SCHEME_FIELD,
+                FIELD_CONFIG_SCHEME_FIELD,
+                ISSUE_TYPE_SCHEME]
+              : [
+                COMPONENTS_FIELD,
+                FIELD_CONFIG_SCHEME_FIELD,
+              ],
+          })
+        } catch (error) {
+          // When a JSM project is created, a fieldConfigurationScheme is created
+          // automatically with the name "Jira Service Management Field Configuration Scheme
+          // for Project <project key>"". There seems to be a bug in Jira that if a
+          // fieldConfigurationScheme with that name already exists, the request
+          // fails with 500 although the project is created and another fieldConfigurationScheme
+          // with the same name is created (although in the UI you can’t create two
+          // fieldConfigurationScheme with the same name). To overcome this, we delete the
+          // fieldConfigurationScheme that was automatically created and set the right one
+          if (isAdditionChange(change) && error.response?.status === 500) {
+            log.debug('Received 500 when creating a project, checking if the project was created and fixing its field configuration scheme')
+            change.data.after.value.id = await getProjectId(change.data.after.value.key, client)
+            await deleteFieldConfigurationScheme(change, client)
+          } else {
+            throw error
+          }
         }
+
+        const instance = await resolveValues(getChangeData(change), getLookUpName)
+        if (isModificationChange(change)) {
+          await deployProjectSchemes(instance, client)
+        }
+        await deployScheme(instance, client, FIELD_CONFIG_SCHEME_FIELD, 'fieldConfigurationSchemeId')
 
         if (isAdditionChange(change)) {
           // In some projects, some components are created as a side effect

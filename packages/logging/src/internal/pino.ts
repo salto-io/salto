@@ -96,7 +96,7 @@ const formatExcessArgs = (excessArgs?: FormatterBaseInput['excessArgs']): LogTag
 const textPrettifier = (
   { colorize }: { colorize: boolean }
 ): Formatter => input => {
-  const { level: levelNumber, name, message, time: timeJson } = input
+  const { level: levelNumber, name, message, time } = input
   const level = pino.levels.labels[levelNumber] as LogLevel
   const inputWithExcessArgs = { ...input,
     ...formatExcessArgs(
@@ -107,7 +107,7 @@ const textPrettifier = (
     [...formatterBaseKeys, ...excessDefaultPinoKeys]
   )
   return [
-    JSON.parse(timeJson),
+    time,
     colorize ? chalk.hex(levelToHexColor(level))(level) : level,
     colorize ? chalk.hex(namespaceToHexColor(name))(name) : name,
     colorize ? chalk.hex(LOG_TAGS_COLOR)(formattedLogTags) : formattedLogTags,

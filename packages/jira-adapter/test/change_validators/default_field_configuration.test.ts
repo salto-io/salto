@@ -28,31 +28,11 @@ describe('defaultFieldConfigurationValidator', () => {
       type,
       {
         isDefault: true,
-        fields: {},
       }
     )
   })
 
-  it('should return an error if description is changed', async () => {
-    const afterInstance = instance.clone()
-    afterInstance.value.description = 'new description'
-
-    expect(await defaultFieldConfigurationValidator([
-      toChange({
-        before: instance,
-        after: afterInstance,
-      }),
-    ])).toEqual([
-      {
-        elemID: instance.elemID,
-        severity: 'Warning',
-        message: 'Deploying the "description" value in a default field configuration is not supported',
-        detailedMessage: `Deploying the "description" value in the default field configuration ${instance.elemID.getFullName()} is not supported and will be omitted from the deployment`,
-      },
-    ])
-  })
-
-  it('should return an error if name is changed', async () => {
+  it('should return an error if changed', async () => {
     const afterInstance = instance.clone()
     afterInstance.value.name = 'new name'
 
@@ -64,9 +44,9 @@ describe('defaultFieldConfigurationValidator', () => {
     ])).toEqual([
       {
         elemID: instance.elemID,
-        severity: 'Warning',
-        message: 'Deploying the "name" value in a default field configuration is not supported',
-        detailedMessage: `Deploying the "name" value in the default field configuration ${instance.elemID.getFullName()} is not supported and will be omitted from the deployment`,
+        severity: 'Error',
+        message: 'Modifying the default field configuration is not supported',
+        detailedMessage: 'Modifying the default field configuration jira.FieldConfiguration.instance.instance is not supported',
       },
     ])
   })
@@ -75,18 +55,6 @@ describe('defaultFieldConfigurationValidator', () => {
     delete instance.value.isDefault
     const afterInstance = instance.clone()
     afterInstance.value.name = 'new name'
-
-    expect(await defaultFieldConfigurationValidator([
-      toChange({
-        before: instance,
-        after: afterInstance,
-      }),
-    ])).toEqual([])
-  })
-
-  it('should not return an error if another value changed', async () => {
-    const afterInstance = instance.clone()
-    afterInstance.value.other = 'other'
 
     expect(await defaultFieldConfigurationValidator([
       toChange({

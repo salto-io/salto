@@ -35,6 +35,7 @@ import {
   transformElement, toObjectType, getParents, resolveTypeShallow,
   referenceExpressionStringifyReplacer,
   createSchemeGuard,
+  getParent,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 
@@ -2156,6 +2157,48 @@ describe('Test utils.ts', () => {
       it('should return an empty array', () => {
         expect(result).toEqual([])
       })
+    })
+  })
+
+  describe('getParent', () => {
+    let parent: InstanceElement
+    let child: InstanceElement
+
+    beforeEach(() => {
+      const obj = new ObjectType({ elemID: new ElemID('test', 'test') })
+      parent = new InstanceElement(
+        'parent',
+        obj,
+        {},
+      )
+      child = new InstanceElement(
+        'child',
+        obj,
+        {},
+        [],
+        {
+          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)],
+        },
+      )
+    })
+
+    it('should return the parent when there is a single instance parent', () => {
+      expect(getParent(child)).toBe(parent)
+    })
+
+    it('should throw when having more than one parent', () => {
+      child.annotations[CORE_ANNOTATIONS.PARENT] = [
+        new ReferenceExpression(parent.elemID, parent),
+        new ReferenceExpression(parent.elemID, parent),
+      ]
+      expect(() => getParent(child)).toThrow()
+    })
+
+    it('should throw when having a non instance parent', () => {
+      child.annotations[CORE_ANNOTATIONS.PARENT] = [
+        new ReferenceExpression(parent.elemID, 'a'),
+      ]
+      expect(() => getParent(child)).toThrow()
     })
   })
 

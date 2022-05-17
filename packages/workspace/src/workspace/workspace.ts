@@ -42,6 +42,7 @@ import { ReadOnlyRemoteMap, RemoteMap, RemoteMapCreator } from './remote_map'
 import { serialize, deserializeMergeErrors, deserializeSingleElement, deserializeValidationErrors } from '../serializer/elements'
 import { AdaptersConfigSource } from './adapters_config_source'
 import { updateReferenceIndexes } from './reference_indexes'
+import { updateChangedByIndex } from './changed_by_index'
 
 const log = logger(module)
 
@@ -580,6 +581,14 @@ export const loadWorkspace = async (
         await stateToBuild.states[envName].validationErrors.clear()
       }
       const { changes } = changeResult
+      await updateChangedByIndex(
+        changes,
+        stateToBuild.states[envName].changedBy,
+        stateToBuild.states[envName].mapVersions,
+        stateToBuild.states[envName].merged,
+        changeResult.cacheValid,
+        envName,
+      )
 
       await updateReferenceIndexes(
         changes,

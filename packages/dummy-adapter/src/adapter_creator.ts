@@ -13,10 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Adapter, ElemID, CORE_ANNOTATIONS, BuiltinTypes, ObjectType } from '@salto-io/adapter-api'
+import { Adapter, ElemID, CORE_ANNOTATIONS, BuiltinTypes, ObjectType, ListType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import DummyAdapter from './adapter'
 import { GeneratorParams, DUMMY_ADAPTER, defaultParams } from './generator'
+import { changeErrorRefType } from './types'
 
 export const configType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER),
@@ -28,6 +29,7 @@ export const configType = new ObjectType({
       [CORE_ANNOTATIONS.DEFAULT]: defValue,
     },
   })),
+  changeErrors: { refType: new ListType(changeErrorRefType) },
   extraNaclPath: { refType: BuiltinTypes.STRING },
   generateEnvName: { refType: BuiltinTypes.STRING } },
 })

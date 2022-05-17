@@ -14,11 +14,26 @@
 * limitations under the License.
 */
 import {
-  FetchResult, AdapterOperations, DeployResult, FetchOptions, DeployOptions, DeployModifiers,
+  FetchResult, AdapterOperations, DeployResult, FetchOptions,
+  DeployOptions, DeployModifiers, ChangeError, ElemID, SeverityLevel,
 } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { generateElements, GeneratorParams } from './generator'
 
 
+const stringToSeverityLevel = (value: string): SeverityLevel => {
+  switch (value) {
+    case 'Warning': {
+      return 'Warning'
+    }
+    case 'Error': {
+      return 'Error'
+    }
+    default: {
+      return 'Info'
+    }
+  }
+}
 export default class DummyAdapter implements AdapterOperations {
   public constructor(private genParams: GeneratorParams) {
   }
@@ -41,9 +56,15 @@ export default class DummyAdapter implements AdapterOperations {
     }
   }
 
+
   public get deployModifiers(): DeployModifiers {
+    const changeErrors: ChangeError[] = (this.genParams.changeErrors ?? []).map(ce => ({
+      elemID: ElemID.fromFullName(ce.elemID),
+      severity: stringToSeverityLevel(ce.severity),
+      ..._.omit(ce, ['elemID', 'severity']),
+    }))
     return {
-      changeValidator: async () => this.genParams.changeErrors,
+      changeValidator: async () => changeErrors,
     }
   }
 }

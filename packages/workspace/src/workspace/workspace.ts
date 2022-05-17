@@ -242,6 +242,7 @@ type SingleState = {
   merged: ElementsSource
   errors: RemoteMap<MergeError[]>
   validationErrors: RemoteMap<ValidationError[]>
+  changedBy: RemoteMap<ElemID[]>
   referenceSources: RemoteMap<ElemID[]>
   referenceTargets: RemoteMap<ElemID[]>
   mapVersions: RemoteMap<number>
@@ -350,6 +351,12 @@ export const loadWorkspace = async (
             namespace: getRemoteMapNamespace('validationErrors', envName),
             serialize: validationErrors => serialize(validationErrors, 'keepRef'),
             deserialize: async data => deserializeValidationErrors(data),
+            persistent,
+          }),
+          changedBy: await remoteMapCreator<ElemID[]>({
+            namespace: getRemoteMapNamespace('changedBy', envName),
+            serialize: val => safeJsonStringify(val.map(id => id.getFullName())),
+            deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
             persistent,
           }),
           referenceSources: await remoteMapCreator<ElemID[]>({

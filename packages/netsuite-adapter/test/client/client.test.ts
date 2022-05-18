@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, toChange, Change } from '@salto-io/adapter-api'
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 import SdfClient from '../../src/client/sdf_client'
 import * as suiteAppFileCabinet from '../../src/suiteapp_file_cabinet'
@@ -29,24 +29,23 @@ import { AdditionalDependencies } from '../../src/client/types'
 
 describe('NetsuiteClient', () => {
   describe('with SDF client', () => {
+    const mockSdfDeploy = jest.fn()
+    const sdfClient = {
+      getCredentials: () => ({ accountId: 'someId' }),
+      deploy: mockSdfDeploy,
+    } as unknown as SdfClient
+    const mockElementsSourceIndex = jest.fn() as unknown as LazyElementsSourceIndexes
+    const client = new NetsuiteClient(sdfClient)
+
+    const deployParams: [boolean, AdditionalDependencies, LazyElementsSourceIndexes] = [
+      false,
+      {
+        include: { features: [], objects: [] },
+        exclude: { features: [], objects: [] },
+      },
+      mockElementsSourceIndex,
+    ]
     describe('deploy', () => {
-      const mockSdfDeploy = jest.fn()
-      const sdfClient = {
-        getCredentials: () => ({ accountId: 'someId' }),
-        deploy: mockSdfDeploy,
-      } as unknown as SdfClient
-      const mockElementsSourceIndex = jest.fn() as unknown as LazyElementsSourceIndexes
-      const client = new NetsuiteClient(sdfClient)
-
-      const deployParams: [boolean, AdditionalDependencies, LazyElementsSourceIndexes] = [
-        false,
-        {
-          include: { features: [], objects: [] },
-          exclude: { features: [], objects: [] },
-        },
-        mockElementsSourceIndex,
-      ]
-
       beforeEach(() => {
         jest.resetAllMocks()
       })
@@ -198,6 +197,34 @@ describe('NetsuiteClient', () => {
             appliedChanges: [change],
           })
         })
+      })
+    })
+    describe('validate', () => {
+      let type: ObjectType
+      let change: Change<InstanceElement>
+      const validateParams: [boolean, AdditionalDependencies] = [deployParams[0], deployParams[1]]
+      beforeEach(() => {
+        jest.resetAllMocks()
+        type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
+        change = toChange({
+          after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
+        })
+      })
+      it('should call sdfValidate', async () => {
+        await client.validate([change], SDF_CHANGE_GROUP_ID, ...validateParams)
+        expect(mockSdfDeploy).toHaveBeenCalledWith(
+          [{
+            scriptId: 'someObject',
+            typeName: 'type',
+            values: {},
+          }],
+          undefined,
+          { additionalDependencies: validateParams[1], validateOnly: true }
+        )
+      })
+      it('should skip validation', async () => {
+        await client.validate([change], SUITEAPP_UPDATING_CONFIG_GROUP_ID, ...validateParams)
+        expect(mockSdfDeploy).not.toHaveBeenCalled()
       })
     })
   })

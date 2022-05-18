@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { dependencyChange, DependencyChanger, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isRemovalChange, RemovalChange } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, dependencyChange, DependencyChanger, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isRemovalChange, RemovalChange } from '@salto-io/adapter-api'
 import { references } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -37,6 +37,7 @@ export const removalsDependencyChanger: DependencyChanger = async changes => {
       }
 
       const referencedKeys = references.getReferences(change.data.before)
+        .filter(({ path }) => !path.getFullNameParts().includes(CORE_ANNOTATIONS.PARENT))
         .map(({ value }) => value.elemID.createTopLevelParentID().parent.getFullName())
         .filter(id => id in removalsChanges)
         .map(id => removalsChanges[id])

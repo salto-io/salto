@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { setDefaultValueTypeDeploymentAnnotations, updateDefaultValues } from '../../../src/filters/fields/default_values'
@@ -43,9 +43,17 @@ describe('default values', () => {
         {
           name: 'a',
           id: 3,
+          options: {
+            p1: {
+              id: 1,
+            },
+            p2: {
+              id: 2,
+            },
+          },
           defaultValue: {
             type: 'float',
-            number: 9,
+            optionId: new ReferenceExpression(type.elemID.createNestedID('instance', 'instance', 'options', 'p1')),
           },
         }
       )
@@ -56,9 +64,17 @@ describe('default values', () => {
         {
           name: 'a',
           id: 3,
+          options: {
+            p1: {
+              id: 1,
+            },
+            p2: {
+              id: 2,
+            },
+          },
           defaultValue: {
             type: 'float',
-            number: 10,
+            optionId: new ReferenceExpression(type.elemID.createNestedID('instance', 'instance', 'options', 'p2')),
           },
         },
         undefined,
@@ -79,7 +95,7 @@ describe('default values', () => {
             {
               contextId: 3,
               type: 'float',
-              number: 10,
+              optionId: 2,
             },
           ],
         },

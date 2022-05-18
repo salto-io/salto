@@ -28,7 +28,7 @@ import {
 } from './transformer'
 import { getMetadataTypes, getTopLevelCustomTypes, metadataTypesToList } from './types'
 import { TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST,
-  INTEGRATION, FETCH_TARGET, SKIP_LIST, LAST_FETCH_TIME, USE_CHANGES_DETECTION, FETCH, INCLUDE, EXCLUDE, DEPLOY, DEPLOY_REFERENCED_ELEMENTS, WARN_STALE_DATA, APPLICATION_ID, LOCKED_ELEMENTS_TO_EXCLUDE } from './constants'
+  INTEGRATION, FETCH_TARGET, SKIP_LIST, LAST_FETCH_TIME, USE_CHANGES_DETECTION, FETCH, INCLUDE, EXCLUDE, DEPLOY, DEPLOY_REFERENCED_ELEMENTS, WARN_STALE_DATA, APPLICATION_ID, LOCKED_ELEMENTS_TO_EXCLUDE, VALIDATE, ADDITIONAL_DEPS } from './constants'
 import convertListsToMaps from './filters/convert_lists_to_maps'
 import replaceInstanceReferencesFilter from './filters/instance_references'
 import parseSavedSearch from './filters/parse_saved_searchs'
@@ -57,7 +57,7 @@ import savedSearchesAuthorInformation from './filters/author_information/saved_s
 import suiteAppConfigElementsFilter from './filters/suiteapp_config_elements'
 import configFeaturesFilter from './filters/config_features'
 import { createFilterCreatorsWithLogs, Filter, FilterCreator } from './filter'
-import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_USE_CHANGES_DETECTION } from './config'
+import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_USE_CHANGES_DETECTION, DEFAULT_VALIDATE } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams } from './query'
 import { createServerTimeElements, getLastServerTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
@@ -71,6 +71,7 @@ import { getChangeGroupIdsFunc } from './group_changes'
 import { getDataElements } from './data_elements/data_elements'
 import { getCustomTypesNames, isCustomTypeName } from './autogen/types'
 import { getConfigTypes, toConfigElements } from './suiteapp_config_elements'
+import { AdditionalDependencies } from './client/types'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -102,6 +103,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly filePathRegexSkipList: string[]
   private readonly deployReferencedElements?: boolean
   private readonly warnStaleData?: boolean
+  private readonly validateBeforeDeploy: boolean
+  private readonly additionalDependencies: AdditionalDependencies
   private readonly userConfig: NetsuiteConfig
   private getElemIdFunc?: ElemIdGetter
   private readonly fetchInclude?: QueryParams
@@ -177,6 +180,17 @@ export default class NetsuiteAdapter implements AdapterOperations {
     this.deployReferencedElements = config[DEPLOY]?.[DEPLOY_REFERENCED_ELEMENTS]
      ?? config[DEPLOY_REFERENCED_ELEMENTS]
     this.warnStaleData = config[DEPLOY]?.[WARN_STALE_DATA]
+    this.validateBeforeDeploy = config[DEPLOY]?.[VALIDATE] ?? DEFAULT_VALIDATE
+    this.additionalDependencies = {
+      include: {
+        features: config[DEPLOY]?.[ADDITIONAL_DEPS]?.[INCLUDE]?.features ?? [],
+        objects: config[DEPLOY]?.[ADDITIONAL_DEPS]?.[INCLUDE]?.objects ?? [],
+      },
+      exclude: {
+        features: config[DEPLOY]?.[ADDITIONAL_DEPS]?.[EXCLUDE]?.features ?? [],
+        objects: config[DEPLOY]?.[ADDITIONAL_DEPS]?.[EXCLUDE]?.objects ?? [],
+      },
+    }
     this.elementsSourceIndex = createElementsSourceIndex(this.elementsSource)
     this.createFiltersRunner = isPartial => filter.filtersRunner(
       {
@@ -382,16 +396,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       changesToDeploy,
       changeGroup.groupID,
       this.deployReferencedElements ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
-      {
-        include: {
-          features: this.userConfig.deploy?.additionalDependencies?.include?.features ?? [],
-          objects: this.userConfig.deploy?.additionalDependencies?.include?.objects ?? [],
-        },
-        exclude: {
-          features: this.userConfig.deploy?.additionalDependencies?.exclude?.features ?? [],
-          objects: this.userConfig.deploy?.additionalDependencies?.exclude?.objects ?? [],
-        },
-      },
+      this.additionalDependencies,
       this.elementsSourceIndex
     )
 
@@ -417,11 +422,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
   public get deployModifiers(): DeployModifiers {
     return {
       changeValidator: getChangeValidator({
+        client: this.client,
         withSuiteApp: this.client.isSuiteAppConfigured(),
         warnStaleData: this.warnStaleData ?? DEFAULT_WARN_STALE_DATA,
         fetchByQuery: this.fetchByQuery,
         deployReferencedElements: this.deployReferencedElements
           ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
+        validate: this.validateBeforeDeploy,
+        additionalDependencies: this.additionalDependencies,
       }),
       getChangeGroupIds: getChangeGroupIdsFunc(this.client.isSuiteAppConfigured()),
     }

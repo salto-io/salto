@@ -17,7 +17,7 @@ import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { InstanceElement, isInstanceElement, ReferenceExpression, isRemovalChange,
-  AdapterOperations, toChange, ObjectType, ElemID, getChangeData, BuiltinTypes } from '@salto-io/adapter-api'
+  AdapterOperations, toChange, ObjectType, ElemID, getChangeData, BuiltinTypes, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import mockReplies from './mock_replies.json'
@@ -824,8 +824,20 @@ describe('adapter', () => {
       })
 
       expect(deployRes.appliedChanges).toEqual([
-        toChange({ after: new InstanceElement('inst', groupType, { id: 1 }) }),
-        toChange({ after: new InstanceElement('inst3', brandType, { key: 2, ref: expect.any(ReferenceExpression) }) }),
+        toChange({ after: new InstanceElement(
+          'inst',
+          groupType,
+          { id: 1 },
+          undefined,
+          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://abc.zendesk.com/admin/people/team/groups' },
+        ) }),
+        toChange({ after: new InstanceElement(
+          'inst3',
+          brandType,
+          { key: 2, ref: expect.any(ReferenceExpression) },
+          undefined,
+          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://abc.zendesk.com/admin/account/brand_management/brands' },
+        ) }),
         toChange({ after: new InstanceElement('inst4', anotherType, { key: 2 }) }),
         modificationChange,
       ])
@@ -860,7 +872,13 @@ describe('adapter', () => {
         },
       })
       expect(deployRes.appliedChanges).toEqual([
-        toChange({ after: new InstanceElement('inst', groupType) }),
+        toChange({ after: new InstanceElement(
+          'inst',
+          groupType,
+          undefined,
+          undefined,
+          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://abc.zendesk.com/admin/people/team/groups' },
+        ) }),
       ])
     })
     it('should not update id if the response is primitive', async () => {
@@ -874,7 +892,13 @@ describe('adapter', () => {
         },
       })
       expect(deployRes.appliedChanges).toEqual([
-        toChange({ after: new InstanceElement('inst', groupType) }),
+        toChange({ after: new InstanceElement(
+          'inst',
+          groupType,
+          undefined,
+          undefined,
+          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://abc.zendesk.com/admin/people/team/groups' },
+        ) }),
       ])
     })
     it('should not update id field if it does not exist in the response', async () => {
@@ -888,7 +912,13 @@ describe('adapter', () => {
         },
       })
       expect(deployRes.appliedChanges).toEqual([
-        toChange({ after: new InstanceElement('inst', groupType) }),
+        toChange({ after: new InstanceElement(
+          'inst',
+          groupType,
+          undefined,
+          undefined,
+          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://abc.zendesk.com/admin/people/team/groups' },
+        ) }),
       ])
     })
     it('should call deploy with the fixed type', async () => {
@@ -912,6 +942,8 @@ describe('adapter', () => {
               path: [ZENDESK_SUPPORT, elementsUtils.TYPES_PATH, 'group'],
             }),
             { ...instance.value, id: 1 },
+            undefined,
+            { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://abc.zendesk.com/admin/people/team/groups' },
           ),
         }),
         expect.anything(),

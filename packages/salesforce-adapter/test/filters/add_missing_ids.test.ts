@@ -13,22 +13,25 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Element, ElemID, Field, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { Element, ElemID, ObjectType, InstanceElement, BuiltinTypes, Field } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
-import filterCreator from '../../src/filters/add_missing_ids'
+import filterCreator, { WARNING_MESSAGE } from '../../src/filters/add_missing_ids'
 import mockClient from '../client'
 import {
-  API_NAME,
-  INSTANCE_FULL_NAME_FIELD,
-  INTERNAL_ID_ANNOTATION,
+  SALESFORCE, API_NAME, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD, INTERNAL_ID_ANNOTATION,
   INTERNAL_ID_FIELD,
-  METADATA_TYPE,
-  SALESFORCE,
 } from '../../src/constants'
 import { defaultFilterContext } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
+const mockLoggerWarn = jest.fn()
+jest.mock('@salto-io/logging', () => ({
+  logger: (...loggerArgs: unknown[]) => ({
+    ...jest.requireActual('@salto-io/logging').logger(...loggerArgs),
+    warn: jest.fn((...args) => mockLoggerWarn(...args)),
+  }),
+}))
 
 describe('Internal IDs filter', () => {
   let client: SalesforceClient
@@ -196,6 +199,17 @@ describe('Internal IDs filter', () => {
       expect(elements[1].annotations?.[INTERNAL_ID_ANNOTATION]).toBeUndefined()
       expect(elements[2].annotations?.[INTERNAL_ID_ANNOTATION]).toBeUndefined()
       expect(elements[3].annotations?.[INTERNAL_ID_ANNOTATION]).toBeUndefined()
+    })
+  })
+
+  describe('when fails to add missing ids for a specific type', () => {
+    SalesforceClient.prototype.listMetadataObjects = jest.fn()
+
+    it('should log warning message', async () => {
+      const { connection } = mockClient()
+      connection.query.mockImplementation(() => { throw new Error() })
+      await filter.onFetch(elements)
+      expect(mockLoggerWarn).toHaveBeenCalledWith(WARNING_MESSAGE)
     })
   })
 

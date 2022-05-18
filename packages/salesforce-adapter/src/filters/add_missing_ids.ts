@@ -79,10 +79,13 @@ const filter: FilterCreator = ({ client, config }) => ({
         metadataType,
       )
       log.debug(`Getting missing ids for the following types: ${Object.keys(groupedElements)}`)
-      await Promise.allSettled(
+      const results = await Promise.allSettled(
         Object.entries(groupedElements)
           .map(([typeName, typeElements]) => addMissingIds(client, typeName, typeElements))
       )
+      if (results.some(r => r.status === 'rejected')) {
+        log.warn(WARNING_MESSAGE)
+      }
     },
   }),
 })

@@ -16,8 +16,7 @@
 import { Adapter, ElemID, CORE_ANNOTATIONS, BuiltinTypes, ObjectType, ListType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import DummyAdapter from './adapter'
-import { GeneratorParams, DUMMY_ADAPTER, defaultParams } from './generator'
-import { changeErrorRefType } from './types'
+import { GeneratorParams, DUMMY_ADAPTER, defaultParams, changeErrorType } from './generator'
 
 export const configType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER),
@@ -29,7 +28,7 @@ export const configType = new ObjectType({
       [CORE_ANNOTATIONS.DEFAULT]: defValue,
     },
   })),
-  changeErrors: { refType: new ListType(changeErrorRefType) },
+  changeErrors: { refType: new ListType(changeErrorType) },
   extraNaclPath: { refType: BuiltinTypes.STRING },
   generateEnvName: { refType: BuiltinTypes.STRING } },
 })

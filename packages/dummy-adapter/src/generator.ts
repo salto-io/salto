@@ -20,6 +20,9 @@ import {
   CORE_ANNOTATIONS, StaticFile, calculateStaticFileHash, ReferenceExpression,
   getDeepInnerType, isContainerType, MapType, isMapType, ProgressReporter,
   createRefToElmWithValue,
+  DeployActions,
+  DeployAction,
+  createRestriction,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { uniqueNamesGenerator, adjectives, colors, names } from 'unique-names-generator'
@@ -29,11 +32,98 @@ import path from 'path'
 import seedrandom from 'seedrandom'
 import readdirp from 'readdirp'
 import { parser, merger, expressions, elementSource } from '@salto-io/workspace'
-import { ChangeErrorFromConfigFile } from './types'
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
 
 const { mapValuesAsync } = promises.object
 const { arrayOf } = collections.array
 const { awu } = collections.asynciterable
+
+export const DUMMY_ADAPTER = 'dummy'
+
+type ChangeErrorFromConfigFile = {
+  detailedMessage: string
+  elemID: string
+  message: string
+  severity: string
+  deployActions?: DeployActions
+}
+
+const deployActionType = createMatchingObjectType<DeployAction>({
+  elemID: new ElemID(DUMMY_ADAPTER, 'deployAction'),
+  fields: {
+    title: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        _required: true,
+      },
+    },
+    description: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        _required: false,
+      },
+    },
+    subActions: {
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        _required: true,
+      },
+    },
+    documentationURL: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        _required: false,
+      },
+    },
+  },
+})
+
+const deployActionsType = createMatchingObjectType<DeployActions>({
+  elemID: new ElemID(DUMMY_ADAPTER, 'deployActions'),
+  fields: {
+    preAction: { refType: deployActionType },
+    postAction: { refType: deployActionType },
+  },
+})
+
+
+export const changeErrorType = createMatchingObjectType<ChangeErrorFromConfigFile>({
+  elemID: new ElemID(DUMMY_ADAPTER, 'changeError'),
+  fields: {
+    detailedMessage: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        _required: true,
+      },
+    },
+    elemID: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        _required: true,
+      },
+    },
+    message: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        _required: true,
+      },
+    },
+    severity: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        _required: true,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          values: ['Info', 'Warning', 'Error'],
+          enforce_value: true,
+        }),
+      },
+    },
+    deployActions: {
+      refType: deployActionsType,
+    },
+  },
+})
+
 
 export type GeneratorParams = {
     seed: number
@@ -107,7 +197,6 @@ export const defaultParams: Omit<GeneratorParams, 'extraNaclPath'> = {
 }
 
 const MOCK_NACL_SUFFIX = 'nacl.mock'
-export const DUMMY_ADAPTER = 'dummy'
 
 const getDataPath = (): string => process.env.SALTO_DUMMY_ADAPTER_DATA_PATH
 || path.join(

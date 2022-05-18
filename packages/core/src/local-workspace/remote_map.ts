@@ -279,24 +279,26 @@ export const closeAllRemoteMaps = async (): Promise<void> => {
   })
 }
 
+const cleanDatabase = async (loc: string): Promise<void> => {
+  const tmpDir = getDBTmpDir(loc)
+  await awu(await fileUtils.readDir(tmpDir)).forEach(async tmpLoc => {
+    try {
+      await deleteLocation(path.join(tmpDir, tmpLoc))
+    } catch (e) {
+      if (isDBLockErr(e)) {
+        throw new DBLockError()
+      }
+      throw e
+    }
+  })
+  delete tmpDBConnections[loc]
+  await deleteLocation(loc)
+}
+
 export const cleanDatabases = async (): Promise<void> => {
   const persistentDBs = Object.entries(persistentDBConnections)
   await closeAllRemoteMaps()
-  await awu(persistentDBs).forEach(async ([loc]) => {
-    const tmpDir = getDBTmpDir(loc)
-    await awu(await fileUtils.readDir(tmpDir)).forEach(async tmpLoc => {
-      try {
-        await deleteLocation(path.join(tmpDir, tmpLoc))
-      } catch (e) {
-        if (isDBLockErr(e)) {
-          throw new DBLockError()
-        }
-        throw e
-      }
-    })
-    delete tmpDBConnections[loc]
-    await deleteLocation(loc)
-  })
+  await awu(persistentDBs).forEach(async ([loc]) => cleanDatabase(loc))
 }
 
 export const replicateDB = async (
@@ -568,6 +570,9 @@ remoteMap.RemoteMapCreator => {
     const createDBIfNotExist = async (loc: string): Promise<void> => {
       const newDb: rocksdb = getRemoteDbImpl()(loc)
       const readOnly = !persistent
+      if (persistent) {
+        await cleanDatabase(loc)
+      }
       try {
         await promisify(newDb.open.bind(newDb, { readOnly }))()
         await promisify(newDb.close.bind(newDb))()

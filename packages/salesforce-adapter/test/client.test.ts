@@ -668,16 +668,14 @@ describe('salesforce client', () => {
             isSandbox: false,
           }),
           connection: testConnection,
-          config: { polling: { interval: 100, timeout: 1000 } },
+          config: { polling: { interval: 100 } },
         })
       })
-      it('should set polling and timeout on the metadata connection', () => {
+      it('should set polling interval on the metadata connection', () => {
         expect(testConnection.metadata.pollInterval).toEqual(100)
-        expect(testConnection.metadata.pollTimeout).toEqual(1000)
       })
-      it('should set polling and timeout on the bulk connection', () => {
+      it('should set polling interval on the bulk connection', () => {
         expect(testConnection.bulk.pollInterval).toEqual(100)
-        expect(testConnection.bulk.pollTimeout).toEqual(1000)
       })
     })
 

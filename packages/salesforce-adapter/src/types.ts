@@ -168,7 +168,8 @@ export type ClientRateLimitConfig = Partial<{
 
 export type ClientPollingConfig = Partial<{
   interval: number
-  timeout: number
+  deployTimeout: number
+  fetchTimeout: number
 }>
 
 type ClientDeployConfig = Partial<{
@@ -375,7 +376,8 @@ const clientPollingConfigType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'clientPollingConfig'),
   fields: {
     interval: { refType: BuiltinTypes.NUMBER },
-    timeout: { refType: BuiltinTypes.NUMBER },
+    deployTimeout: { refType: BuiltinTypes.NUMBER },
+    fetchTimeout: { refType: BuiltinTypes.NUMBER },
   } as Record<keyof ClientPollingConfig, FieldDefinition>,
 })
 

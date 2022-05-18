@@ -339,6 +339,7 @@ export default class SalesforceAdapter implements AdapterOperations {
    */
   @logDuration('fetching account configuration')
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
+    this.client.setFetchPollingTimeout()
     log.debug('going to fetch salesforce account configuration..')
     const fieldTypes = Types.getAllFieldTypes()
     const hardCodedTypes = [
@@ -384,6 +385,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   }
 
   async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
+    this.client.setDeployPollingTimeout()
     const resolvedChanges = await awu(changeGroup.changes)
       .map(change => resolveChangeElement(change, getLookUpName))
       .toArray()

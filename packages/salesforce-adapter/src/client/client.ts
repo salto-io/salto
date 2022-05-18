@@ -176,20 +176,18 @@ export type SalesforceClientOpts = {
 
 const DEFAULT_POLLING_CONFIG = {
   interval: 3000,
-  timeout: 5400000,
+  deployTimeout: 1000 * 60 * 90, // 90 minutes
+  fetchTimeout: 1000 * 60 * 30, // 30 minutes
 }
 
 export const setPollIntervalForConnection = (
   connection: Connection,
   pollingConfig: Required<ClientPollingConfig>,
 ): void => {
-  // Set poll interval and timeout for deploy
+  // Set poll interval for metadata operations
   connection.metadata.pollInterval = pollingConfig.interval
-  connection.metadata.pollTimeout = pollingConfig.timeout
-
-  // Set poll interval and timeout for bulk ops, (e.g, CSV deletes)
+  // Set poll interval for bulk ops, (e.g, CSV deletes)
   connection.bulk.pollInterval = pollingConfig.interval
-  connection.bulk.pollTimeout = pollingConfig.timeout
 }
 
 export const createRequestModuleFunction = (retryOptions: RequestRetryOptions) =>
@@ -410,6 +408,7 @@ export default class SalesforceClient {
   private isLoggedIn = false
   private readonly credentials: Credentials
   private readonly config?: SalesforceClientConfig
+  private readonly pollingConfig: Required<ClientPollingConfig>
   readonly rateLimiters: Record<RateLimitBucketName, Bottleneck>
   readonly dataRetry: CustomObjectsDeployRetryConfig
   readonly clientName: string
@@ -420,12 +419,13 @@ export default class SalesforceClient {
   ) {
     this.credentials = credentials
     this.config = config
+    this.pollingConfig = _.defaults({}, config?.polling, DEFAULT_POLLING_CONFIG)
     this.retryOptions = createRetryOptions(_.defaults({}, config?.retry, DEFAULT_RETRY_OPTS))
     this.conn = connection ?? createConnectionFromCredentials(
       credentials,
       this.retryOptions,
     )
-    setPollIntervalForConnection(this.conn, _.defaults({}, config?.polling, DEFAULT_POLLING_CONFIG))
+    setPollIntervalForConnection(this.conn, this.pollingConfig)
     this.rateLimiters = createRateLimitersFromConfig(
       _.defaults({}, config?.maxConcurrentApiRequests, DEFAULT_MAX_CONCURRENT_API_REQUESTS),
       SALESFORCE
@@ -635,6 +635,16 @@ export default class SalesforceClient {
     return flatValues(
       await this.retryOnBadResponse(() => this.conn.metadata.retrieve(retrieveRequest).complete())
     )
+  }
+
+  public setFetchPollingTimeout(): void {
+    this.conn.metadata.pollTimeout = this.pollingConfig.fetchTimeout
+    this.conn.bulk.pollTimeout = this.pollingConfig.fetchTimeout
+  }
+
+  public setDeployPollingTimeout(): void {
+    this.conn.metadata.pollTimeout = this.pollingConfig.deployTimeout
+    this.conn.bulk.pollTimeout = this.pollingConfig.deployTimeout
   }
 
   /**

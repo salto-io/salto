@@ -28,6 +28,23 @@ export const CHANGED_BY_INDEX_KEY = 'changed_by_index'
 export const UNKNOWN_USER_NAME = 'Unknown'
 const CHANGED_BY_KEY_DELIMITER = '@@'
 
+export type Author = {
+  user: string
+  account: string
+}
+
+export const authorKeyToAuthor = (authorKey: string): Author => {
+  const AuthorParts = authorKey.split('@@')
+  return {
+    user: AuthorParts[1],
+    account: AuthorParts[0],
+  }
+}
+
+export const authorToAuthorKey = (author: Author): string => {
+  return `${author.account}@@${author.user}`
+}
+
 const getAllElementsChanges = async (
   currentChanges: Change<Element>[],
   elementsSource: ElementsSource,

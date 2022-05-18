@@ -105,6 +105,7 @@
   "salesforce.LeadConvertSettings.field.objectMapping",
   "salesforce.LightningPage.field.flexiPageRegions",
   "salesforce.LightningPageRegion.field.componentInstances",
+  "salesforce.LightningComponentBundle.field.lwcResources.lwcResource",
   "salesforce.ListView.field.columns",
   "salesforce.ListView.field.filters",
   "salesforce.LookupFilter.field.filterItems",

@@ -88,6 +88,11 @@ export type AdditionalDependencies = {
   exclude: AdditionalSdfDeployDependencies
 }
 
+export type SdfDeployParams = {
+  additionalDependencies: AdditionalDependencies
+  validateOnly?: boolean
+}
+
 export class InvalidSuiteAppCredentialsError extends Error {
   constructor() {
     super('Invalid SuiteApp credentials')

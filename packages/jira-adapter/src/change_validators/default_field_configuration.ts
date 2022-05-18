@@ -21,14 +21,10 @@ export const defaultFieldConfigurationValidator: ChangeValidator = async changes
     .filter(isModificationChange)
     .filter(change => getChangeData(change).elemID.typeName === 'FieldConfiguration')
     .filter(change => getChangeData(change).value.isDefault)
-    .flatMap(change => ['name', 'description']
-      .filter(fieldName => (
-        change.data.before.value[fieldName] !== change.data.after.value[fieldName]
-      ))
-      .map(fieldName => ({
-        elemID: getChangeData(change).elemID,
-        severity: 'Warning' as SeverityLevel,
-        message: `Deploying the "${fieldName}" value in a default field configuration is not supported`,
-        detailedMessage: `Deploying the "${fieldName}" value in the default field configuration ${getChangeData(change).elemID.getFullName()} is not supported and will be omitted from the deployment`,
-      })))
+    .map(change => ({
+      elemID: getChangeData(change).elemID,
+      severity: 'Error' as SeverityLevel,
+      message: 'Modifying the default field configuration is not supported',
+      detailedMessage: `Modifying the default field configuration ${getChangeData(change).elemID.getFullName()} is not supported`,
+    }))
 )

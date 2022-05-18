@@ -1562,6 +1562,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     }],
     exclude: [
       { type: 'organization' },
+      { type: 'oauth_global_client' },
     ],
     hideTypes: true,
     enableMissingReferences: true,

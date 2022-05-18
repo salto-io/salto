@@ -35,18 +35,17 @@ const getAllElementsChanges = async (
   .concat(currentChanges)
   .toArray()
 
-const getChangeAuthor = (change: Change<Element>, envName: string): string => {
+const getChangeAuthor = (change: Change<Element>): string => {
   const element = getChangeData(change)
   const author = element.annotations[CORE_ANNOTATIONS.CHANGED_BY] ?? UNKNOWN_USER_NAME
-  return `${envName}@@${author}`
+  return `${element.elemID.adapter}@@${author}`
 }
 
 const updateAdditionChange = async (
   change: AdditionChange<Element>,
-  envName: string,
   index: RemoteMap<ElemID[]>,
 ): Promise<void> => {
-  const author = getChangeAuthor(change, envName)
+  const author = getChangeAuthor(change)
   const elementIds = await index.get(author) ?? []
   if (!elementIds.some(elemId => elemId.isEqual(change.data.after.elemID))) {
     elementIds.push(change.data.after.elemID)
@@ -56,10 +55,9 @@ const updateAdditionChange = async (
 
 const updateRemovalChange = async (
   change: RemovalChange<Element>,
-  envName: string,
   index: RemoteMap<ElemID[]>,
 ): Promise<void> => {
-  const author = getChangeAuthor(change, envName)
+  const author = getChangeAuthor(change)
   const elementIds = await index.get(author)
   if (elementIds) {
     _.remove(elementIds, elemId => elemId.isEqual(change.data.before.elemID))
@@ -69,32 +67,28 @@ const updateRemovalChange = async (
 
 const updateModificationChange = async (
   change: ModificationChange<Element>,
-  envName: string,
   index: RemoteMap<ElemID[]>,
 ): Promise<void> => {
   await updateAdditionChange(
     toChange({ after: change.data.after }) as AdditionChange<Element>,
-    envName,
     index,
   )
   await updateRemovalChange(
     toChange({ before: change.data.before }) as RemovalChange<Element>,
-    envName,
     index,
   )
 }
 
 const updateChange = async (
   change: Change<Element>,
-  envName: string,
   index: RemoteMap<ElemID[]>,
 ): Promise<void> => {
   if (isAdditionChange(change)) {
-    await updateAdditionChange(change, envName, index)
+    await updateAdditionChange(change, index)
   } else if (isRemovalChange(change)) {
-    await updateRemovalChange(change, envName, index)
+    await updateRemovalChange(change, index)
   } else if (isModificationChange(change)) {
-    await updateModificationChange(change, envName, index)
+    await updateModificationChange(change, index)
   }
 }
 
@@ -104,7 +98,6 @@ export const updateChangedByIndex = async (
   mapVersions: RemoteMap<number>,
   elementsSource: ElementsSource,
   isCacheValid: boolean,
-  envName: string,
 ): Promise<void> => log.time(async () => {
   let relevantChanges = changes
   const isVersionMatch = await mapVersions.get(CHANGED_BY_INDEX_KEY) === CHANGED_BY_INDEX_VERSION
@@ -121,5 +114,5 @@ export const updateChangedByIndex = async (
       mapVersions.set(CHANGED_BY_INDEX_KEY, CHANGED_BY_INDEX_VERSION),
     ])
   }
-  await awu(relevantChanges).forEach(async change => updateChange(change, envName, changedByIndex))
+  await awu(relevantChanges).forEach(async change => updateChange(change, changedByIndex))
 }, 'updating changed by index')

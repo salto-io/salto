@@ -587,7 +587,6 @@ export const loadWorkspace = async (
         stateToBuild.states[envName].mapVersions,
         stateToBuild.states[envName].merged,
         changeResult.cacheValid,
-        envName,
       )
 
       await updateReferenceIndexes(

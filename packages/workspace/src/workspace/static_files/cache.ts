@@ -25,5 +25,4 @@ export type StaticFilesCache = {
   flush(): Promise<void>
   clear(): Promise<void>
   rename(name: string): Promise<void>
-  clone(): StaticFilesCache
 }

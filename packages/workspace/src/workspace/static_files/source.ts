@@ -139,12 +139,11 @@ export const buildStaticFilesSource = (
     },
     rename: async (name: string) => {
       await staticFilesDirStore.rename(name)
-      await staticFilesCache.rename(name)
     },
     getTotalSize: staticFilesDirStore.getTotalSize,
     clone: (): StaticFilesSource => buildStaticFilesSource(
       staticFilesDirStore.clone() as SyncDirectoryStore<Buffer>,
-      staticFilesCache.clone(),
+      staticFilesCache,
     ),
     delete: async (staticFile: StaticFile): Promise<void> => (
       staticFilesDirStore.delete(staticFile.filepath)

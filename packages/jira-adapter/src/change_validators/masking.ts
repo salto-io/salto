@@ -17,8 +17,11 @@ import { Change, ChangeError, ChangeValidator, CORE_ANNOTATIONS, getChangeData,
   InstanceElement,
   isAdditionOrModificationChange, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import JiraClient from '../client/client'
 import { MASK_VALUE } from '../filters/masking'
+
+const log = logger(module)
 
 export const createChangeError = (
   change: Change<InstanceElement>,
@@ -65,10 +68,10 @@ const doesHaveMaskedValues = (instance: InstanceElement): boolean => {
 }
 
 export const maskingValidator: (client: JiraClient) =>
-  ChangeValidator = client => async changes => (
+  ChangeValidator = client => async changes => log.time(() => (
     changes
       .filter(isAdditionOrModificationChange)
       .filter(isInstanceChange)
       .filter(change => doesHaveMaskedValues(getChangeData(change)))
       .map(change => createChangeError(change, client))
-  )
+  ), 'masking change validator')

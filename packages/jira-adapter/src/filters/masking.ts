@@ -80,7 +80,7 @@ const maskByMatchers = async (
  * Replace sensitive data in the NaCls with some placeholder
  */
 const filter: FilterCreator = ({ config }) => ({
-  onFetch: async elements => {
+  onFetch: async elements => log.time(async () => {
     await awu(elements)
       .filter(isInstanceElement)
       .forEach(async instance => {
@@ -101,7 +101,7 @@ const filter: FilterCreator = ({ config }) => ({
           })
         }
       })
-  },
+  }, 'masking filter'),
 })
 
 export default filter

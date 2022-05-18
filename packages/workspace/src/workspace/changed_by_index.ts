@@ -41,9 +41,8 @@ export const authorKeyToAuthor = (authorKey: string): Author => {
   }
 }
 
-export const authorToAuthorKey = (author: Author): string => {
-  return `${author.account}@@${author.user}`
-}
+export const authorToAuthorKey = (author: Author): string =>
+  `${author.account}@@${author.user}`
 
 const getAllElementsChanges = async (
   currentChanges: Change<Element>[],

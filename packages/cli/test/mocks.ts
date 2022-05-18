@@ -403,6 +403,8 @@ export const mockWorkspace = ({
         date: undefined,
       })
     ),
+    getAllChangedByUsers: mockFunction<Workspace['getAllChangedByUsers']>(),
+    getChangedElementsByUser: mockFunction<Workspace['getChangedElementsByUser']>(),
     promote: mockFunction<Workspace['promote']>(),
     demote: mockFunction<Workspace['demote']>(),
     demoteAll: mockFunction<Workspace['demoteAll']>(),

@@ -27,7 +27,7 @@ import {
   StaticFile,
   isElement,
 } from '@salto-io/adapter-api'
-import { applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements, safeJsonStringify, walkOnElement, WalkOnFunc, WALK_NEXT_STEP, setPath } from '@salto-io/adapter-utils'
+import { applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements, safeJsonStringify, walkOnElement, WalkOnFunc, WALK_NEXT_STEP, setPath, walkOnValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { merger, elementSource, expressions, Workspace, pathIndex, updateElementsWithAlternativeAccount, createAdapterReplacedID, remoteMap } from '@salto-io/workspace'
 import { collections, promises, types, values } from '@salto-io/lowerdash'
@@ -776,17 +776,19 @@ const getPathsToStaticFiles = async (
   valPath: readonly string[],
 ): Promise<Map<string, StaticFile>> => {
   const pathToStaticFiles: Map<string, StaticFile> = new Map<string, StaticFile>()
-  if (isElement(value)) {
-    const func: WalkOnFunc = ({ path, value: val }) => {
-      if (isStaticFile(val)) {
-        pathToStaticFiles.set(path.getFullName(), val)
-        return WALK_NEXT_STEP.SKIP
-      }
-      return WALK_NEXT_STEP.RECURSE
+  const func: WalkOnFunc = ({ path, value: val }) => {
+    if (isStaticFile(val)) {
+      pathToStaticFiles.set(path.getFullName(), val)
+      return WALK_NEXT_STEP.SKIP
     }
-    walkOnElement({ element: value, func })
-    return pathToStaticFiles
+    return WALK_NEXT_STEP.RECURSE
   }
+  if (isElement(value)) {
+    walkOnElement({ element: value, func })
+  } else {
+    walkOnValue({ elemId: new ElemID('ahi', 'sim po from the detail change'), value, func })
+  }
+  return pathToStaticFiles
   if (_.isArray(value)) {
     await awu(value)
       .flatMap((v, index) => getPathsToStaticFiles(v, [...valPath, index.toString()]))
@@ -927,6 +929,7 @@ export const fetchChangesFromWorkspace = async (
               staticFile.encoding,
               env
             )
+            // if the hashes are different we need to remove the change and add an error
             if (!actualStaticFile) {
               // Add an error
               console.log('no static file')

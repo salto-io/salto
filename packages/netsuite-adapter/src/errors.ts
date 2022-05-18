@@ -39,3 +39,19 @@ export class SettingsDeployError extends Error {
     this.name = 'SettingsDeployError'
   }
 }
+
+export class ObjectsValidationError extends Error {
+  invalidObjects: Map<string, string>
+  constructor(message: string, invalidObjects: Map<string, string>) {
+    super(message)
+    this.invalidObjects = invalidObjects
+    this.name = 'ObjectsValidationError'
+  }
+}
+
+export class ManifestValidationError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'ManifestValidationError'
+  }
+}

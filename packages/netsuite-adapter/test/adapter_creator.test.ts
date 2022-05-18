@@ -36,6 +36,7 @@ import {
   WARN_STALE_DATA,
   INSTALLED_SUITEAPPS,
   ADDITIONAL_DEPS,
+  VALIDATE,
 } from '../src/constants'
 import { mockGetElemIdFunc } from './utils'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
@@ -426,6 +427,25 @@ describe('NetsuiteAdapter creator', () => {
           {
             [DEPLOY]: {
               [WARN_STALE_DATA]: 'should be a boolean',
+            },
+          }
+        )
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: invalidConfig,
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).toThrow()
+      })
+      it('should throw an error when \'validate\' is invalid', () => {
+        const invalidConfig = new InstanceElement(
+          ElemID.CONFIG_NAME,
+          adapter.configType as ObjectType,
+          {
+            [DEPLOY]: {
+              [VALIDATE]: 'should be a boolean',
             },
           }
         )

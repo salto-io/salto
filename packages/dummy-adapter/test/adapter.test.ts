@@ -13,9 +13,26 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { ElemID, ObjectType, toChange, InstanceElement } from '@salto-io/adapter-api'
 import DummyAdapter from '../src/adapter'
 import * as generator from '../src/generator'
 import testParams from './test_params'
+import { ChangeErrorFromConfigFile } from '../src/generator'
+
+const mockChangeError: ChangeErrorFromConfigFile = {
+  elemID: 'dummy.Full.instance.myIns2',
+  severity: 'Error',
+  message: 'mock message',
+  detailedMessage: 'mock detailedMessage',
+}
+
+const objType = new ObjectType({
+  elemID: ElemID.fromFullName('dummy.Full'),
+})
+
+const myInst1Change = toChange({ before: new InstanceElement('myIns1', objType) })
+const myInst2Change = toChange({ before: new InstanceElement('myIns2', objType) })
+
 
 describe('dummy adapter', () => {
   const adapter = new DummyAdapter(testParams)
@@ -47,6 +64,23 @@ describe('dummy adapter', () => {
       expect(progressReportMock.reportProgress).toHaveBeenLastCalledWith({
         message: 'Generation done',
       })
+    })
+  })
+
+  describe('deployModifier', () => {
+    const adapterWithDeployModifiers = new DummyAdapter(
+      { ...testParams, changeErrors: [mockChangeError] }
+    )
+    it('should be defined', () => {
+      expect(adapterWithDeployModifiers.deployModifiers).toBeDefined()
+    })
+    it('should return changeError when same element exists in changes list', async () => {
+      expect(await adapterWithDeployModifiers.deployModifiers.changeValidator?.([myInst2Change]))
+        .toHaveLength(1)
+    })
+    it('should NOT return changeError when element is not exist in changes list', async () => {
+      expect(await adapterWithDeployModifiers.deployModifiers.changeValidator?.([myInst1Change]))
+        .toHaveLength(0)
     })
   })
 })

@@ -41,7 +41,7 @@ const { awu } = collections.asynciterable
 
 export const DUMMY_ADAPTER = 'dummy'
 
-type ChangeErrorFromConfigFile = {
+export type ChangeErrorFromConfigFile = {
   detailedMessage: string
   elemID: string
   message: string

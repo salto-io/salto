@@ -15,25 +15,22 @@
 */
 import path from 'path'
 import { readTextFile, exists, rm } from '@salto-io/file'
-import { collections } from '@salto-io/lowerdash'
 import { staticFiles, remoteMap } from '@salto-io/workspace'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 
-const { awu } = collections.asynciterable
-
 const log = logger(module)
 
-export type StaticFilesCacheState = Record<string, staticFiles.StaticFilesCacheResult>
+type StaticFilesCacheState = remoteMap.RemoteMap<staticFiles.StaticFilesCacheResult>
 
 export const buildLocalStaticFilesCache = (
   baseDir: string,
   name: string,
   remoteMapCreator: remoteMap.RemoteMapCreator,
 ): staticFiles.StaticFilesCache => {
-  const createRemoteCache = async (
+  const createRemoteMap = async (
     cacheName: string
-  ): Promise<remoteMap.RemoteMap<staticFiles.StaticFilesCacheResult>> =>
+  ): Promise<StaticFilesCacheState> =>
     remoteMapCreator<staticFiles.StaticFilesCacheResult>({
       namespace: `staticFilesCache-${cacheName}`,
       serialize: staticFile => safeJsonStringify(staticFile),
@@ -41,23 +38,22 @@ export const buildLocalStaticFilesCache = (
       persistent: true,
     })
 
-  let remoteCache = createRemoteCache(name)
-
-  const syncRemote = async (sourceCache: StaticFilesCacheState): Promise<void> => {
-    await (await remoteCache).setAll(
-      Object.values(sourceCache).map(item => ({ value: item, key: item.filepath }))
-    )
-    await (await remoteCache).flush()
-  }
-
-  const migrateLegacyStaticFilesCache = async (): Promise<void> => {
+  const migrateLegacyStaticFilesCache = async (
+    remoteCache: StaticFilesCacheState
+  ): Promise<void> => {
     const CACHE_FILENAME = 'static-file-cache'
     const currentCacheFile = path.join(baseDir, name, CACHE_FILENAME)
 
     if (await exists(currentCacheFile)) {
-      if ((await remoteCache).isEmpty()) {
+      if (remoteCache.isEmpty()) {
         log.debug('migrating legacy static files cache from file: %s', currentCacheFile)
-        await syncRemote(await JSON.parse(await readTextFile(currentCacheFile)))
+        const oldCache: Record<string, staticFiles.StaticFilesCacheResult> = JSON.parse(
+          await readTextFile(currentCacheFile)
+        )
+        await remoteCache.setAll(
+          Object.values(oldCache).map(item => ({ value: item, key: item.filepath }))
+        )
+        await remoteCache.flush()
       } else {
         log.debug('found legacy static files cache, but static files cache is not empty')
       }
@@ -67,37 +63,35 @@ export const buildLocalStaticFilesCache = (
   }
 
   const initCache = async (): Promise<StaticFilesCacheState> => {
-    await migrateLegacyStaticFilesCache()
-    return Object.fromEntries(
-      await awu((await remoteCache).entries())
-        .map(e => [e.key, e.value] as [string, staticFiles.StaticFilesCacheResult])
-        .toArray()
-    )
+    const remoteCache = createRemoteMap(name)
+    await migrateLegacyStaticFilesCache(await remoteCache)
+    return remoteCache
   }
 
-  let cache: Promise<StaticFilesCacheState> = initCache()
+  let cache = initCache()
 
   return {
-    get: async (filepath: string): Promise<staticFiles.StaticFilesCacheResult> => (
-      (await cache)[filepath]
+    get: async (filepath: string): Promise<staticFiles.StaticFilesCacheResult | undefined> => (
+      (await cache).get(filepath)
     ),
     put: async (item: staticFiles.StaticFilesCacheResult): Promise<void> => {
-      (await cache)[item.filepath] = item
+      await (await cache).set(item.filepath, item)
     },
     flush: async () => {
-      await (await remoteCache).clear()
-      await syncRemote(await cache)
+      await (await cache).flush()
     },
     clear: async () => {
-      await (await remoteCache).clear()
-      cache = Promise.resolve({})
+      await (await cache).clear()
     },
     rename: async (newName: string) => {
-      const oldRemoteCache = await remoteCache
-      remoteCache = createRemoteCache(newName)
-      await (await remoteCache).clear()
-      await syncRemote(await cache)
-      await oldRemoteCache.clear()
+      const currentCache = await cache
+      const newCache = await createRemoteMap(newName)
+      await newCache.setAll(currentCache.entries())
+      cache = Promise.resolve(newCache)
+      await currentCache.clear()
     },
+    clone: () => (
+      buildLocalStaticFilesCache(baseDir, name, remoteMapCreator)
+    ),
   }
 }

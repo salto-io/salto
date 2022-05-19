@@ -149,6 +149,7 @@ Promise<Workspace> => {
     flush: mockFunction<staticFiles.StaticFilesCache['flush']>(),
     clear: mockFunction<staticFiles.StaticFilesCache['clear']>(),
     rename: mockFunction<staticFiles.StaticFilesCache['rename']>(),
+    clone: mockFunction<staticFiles.StaticFilesCache['clone']>(),
   }
 
   const mockedDirStore = mockDirStore(files)

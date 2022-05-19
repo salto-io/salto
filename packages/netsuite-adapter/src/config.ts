@@ -26,7 +26,7 @@ import {
   CLIENT_CONFIG, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FETCH_TARGET, SKIP_LIST,
   SUITEAPP_CONCURRENCY_LIMIT, SUITEAPP_CLIENT_CONFIG, USE_CHANGES_DETECTION,
   CONCURRENCY_LIMIT, FETCH, INCLUDE, EXCLUDE, DEPLOY, DATASET, WORKBOOK, WARN_STALE_DATA,
-  INSTALLED_SUITEAPPS, LOCKED_ELEMENTS_TO_EXCLUDE, AUTHOR_INFO_CONFIG, ADDITIONAL_DEPS,
+  INSTALLED_SUITEAPPS, LOCKED_ELEMENTS_TO_EXCLUDE, AUTHOR_INFO_CONFIG, ADDITIONAL_DEPS, VALIDATE,
 } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from './data_elements/types'
@@ -41,6 +41,7 @@ export const DEFAULT_COMMAND_TIMEOUT_IN_MINUTES = 4
 export const DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST = 40
 export const DEFAULT_DEPLOY_REFERENCED_ELEMENTS = false
 export const DEFAULT_WARN_STALE_DATA = false
+export const DEFAULT_VALIDATE = true
 export const DEFAULT_USE_CHANGES_DETECTION = true
 
 const clientConfigType = new ObjectType({
@@ -209,6 +210,7 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
 
 export type DeployParams = {
   [WARN_STALE_DATA]?: boolean
+  [VALIDATE]?: boolean
   [DEPLOY_REFERENCED_ELEMENTS]?: boolean
   [ADDITIONAL_DEPS]?: {
     [INCLUDE]?: Partial<AdditionalSdfDeployDependencies>
@@ -240,6 +242,7 @@ const deployConfigType = createMatchingObjectType<DeployParams>({
   elemID: new ElemID(NETSUITE, 'deployConfig'),
   fields: {
     [WARN_STALE_DATA]: { refType: BuiltinTypes.BOOLEAN },
+    [VALIDATE]: { refType: BuiltinTypes.BOOLEAN },
     [DEPLOY_REFERENCED_ELEMENTS]: { refType: BuiltinTypes.BOOLEAN },
     [ADDITIONAL_DEPS]: { refType: additionalDependenciesType },
   },
@@ -271,6 +274,7 @@ export const validateDeployParams = (
   {
     deployReferencedElements,
     warnOnStaleWorkspaceData,
+    validate,
     additionalDependencies,
   }: Partial<DeployParams>
 ): void => {
@@ -281,6 +285,10 @@ export const validateDeployParams = (
   if (warnOnStaleWorkspaceData !== undefined
     && typeof warnOnStaleWorkspaceData !== 'boolean') {
     throw new Error(`Expected "warnOnStaleWorkspaceData" to be a boolean or to be undefined, but received:\n ${warnOnStaleWorkspaceData}`)
+  }
+  if (validate !== undefined
+    && typeof validate !== 'boolean') {
+    throw new Error(`Expected "validate" to be a boolean or to be undefined, but received:\n ${validate}`)
   }
   if (additionalDependencies !== undefined) {
     validateAdditionalDependencies(additionalDependencies)

@@ -18,6 +18,9 @@ import { Change, ChangeDataType, getChangeData } from './change'
 import { Field, InstanceElement, ObjectType, isField, isInstanceElement, isObjectType } from './elements'
 
 export type ChangeId = NodeId
+export const changeId = (change: Change): ChangeId =>
+  `${getChangeData(change).elemID.getFullName()}/${change.action}`
+
 type Dependency = {
   source: ChangeId
   target: ChangeId

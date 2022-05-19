@@ -15,24 +15,11 @@
 */
 import {
   FetchResult, AdapterOperations, DeployResult, FetchOptions,
-  DeployOptions, DeployModifiers, ElemID, SeverityLevel,
+  DeployOptions, DeployModifiers, ElemID, Change, getChangeData,
 } from '@salto-io/adapter-api'
+import { values } from '@salto-io/lowerdash'
 import { generateElements, GeneratorParams } from './generator'
 
-
-const stringToSeverityLevel = (value: string): SeverityLevel => {
-  switch (value) {
-    case 'Warning': {
-      return 'Warning'
-    }
-    case 'Error': {
-      return 'Error'
-    }
-    default: {
-      return 'Info'
-    }
-  }
-}
 export default class DummyAdapter implements AdapterOperations {
   public constructor(private genParams: GeneratorParams) {
   }
@@ -56,10 +43,16 @@ export default class DummyAdapter implements AdapterOperations {
   }
 
 
-  public deployModifiers: DeployModifiers = { changeValidator: async () =>
-    (this.genParams.changeErrors ?? []).map(ce => ({
-      ...ce,
-      elemID: ElemID.fromFullName(ce.elemID),
-      severity: stringToSeverityLevel(ce.severity),
-    })) }
+  public deployModifiers: DeployModifiers =
+  {
+    changeValidator: async (changes: ReadonlyArray<Change>) => {
+      const changeErrorsFromConfig = this.genParams.changeErrors ?? []
+      const changeErrors = changeErrorsFromConfig.map(ce => {
+        const elemIdFromConfig = ElemID.fromFullName(ce.elemID)
+        return changes.some(change => getChangeData(change).elemID.isEqual(elemIdFromConfig))
+          ? { ...ce, elemID: elemIdFromConfig } : undefined
+      })
+      return changeErrors.filter(values.isDefined)
+    },
+  }
 }

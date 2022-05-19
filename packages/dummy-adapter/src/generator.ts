@@ -23,6 +23,7 @@ import {
   DeployActions,
   DeployAction,
   createRestriction,
+  SeverityLevel,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { uniqueNamesGenerator, adjectives, colors, names } from 'unique-names-generator'
@@ -44,7 +45,7 @@ type ChangeErrorFromConfigFile = {
   detailedMessage: string
   elemID: string
   message: string
-  severity: string
+  severity: SeverityLevel
   deployActions?: DeployActions
 }
 

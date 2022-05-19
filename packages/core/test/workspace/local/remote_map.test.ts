@@ -21,7 +21,7 @@ import { promisify } from 'util'
 import { serialization, remoteMap as rm, merger } from '@salto-io/workspace'
 import rocksdb from '@salto-io/rocksdb'
 import path from 'path'
-import { readdirSync } from 'fs-extra'
+import { readdirSync, mkdirpSync } from 'fs-extra'
 import {
   createRemoteMapCreator,
   createReadOnlyRemoteMapCreator,
@@ -506,6 +506,7 @@ describe('tmp db deletion', () => {
   const EXISTING_LOCATION = path.join(TMP_DIR, 'existing')
   it('should delete existing tmp dbs on startup', async () => {
     // Ensure no leftovers from previous tests.
+    mkdirpSync(TMP_DIR)
     expect(readdirSync(TMP_DIR)).toHaveLength(0)
 
     // We open and close a rocksdb connection to create a DB that simulates an existing tmp db

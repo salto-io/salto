@@ -51,8 +51,9 @@ describe('connection creation', () => {
       const mockCalls = mockOpen.mock.calls
       const writeCalls = mockCalls.filter(args => args[0].readOnly === false)
       const readOnlyCalls = mockCalls.filter(args => args[0].readOnly === true)
-      // 1 for the creation, 2 tmp connections and 1 (persistent) db connection
-      expect(writeCalls).toHaveLength(4)
+      // 1 for the creation, 2 tmp connections and 1 (persistent) db connection,
+      // 2 load time destroys attempts
+      expect(writeCalls).toHaveLength(6)
       expect(readOnlyCalls).toHaveLength(0)
     })
     it('should try to open with read only mode if remote map is not persistent', async () => {

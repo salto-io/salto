@@ -24,6 +24,7 @@ import { remoteMap } from '@salto-io/workspace'
 import { collections, promises, values } from '@salto-io/lowerdash'
 import type rocksdb from '@salto-io/rocksdb'
 import { logger } from '@salto-io/logging'
+import _ from 'lodash'
 
 const { asynciterable } = collections
 const { awu } = asynciterable
@@ -58,6 +59,7 @@ const getRemoteDbImpl = (): any => {
 
 const isDBLockErr = (error: Error): boolean => (
   error.message.includes('LOCK: Resource temporarily unavailable')
+  || error.message.includes('lock hold by current process')
 )
 
 const isDBNotExistErr = (error: Error): boolean => (
@@ -279,26 +281,35 @@ export const closeAllRemoteMaps = async (): Promise<void> => {
   })
 }
 
-const cleanDatabase = async (loc: string): Promise<void> => {
+const cleanTmpDatabases = async (loc: string, ignoreUsed = false): Promise<void> => {
   const tmpDir = getDBTmpDir(loc)
   await awu(await fileUtils.readDir(tmpDir)).forEach(async tmpLoc => {
     try {
       await deleteLocation(path.join(tmpDir, tmpLoc))
+      log.debug('cleaning tmp db %s', tmpLoc)
     } catch (e) {
       if (isDBLockErr(e)) {
-        throw new DBLockError()
+        if (ignoreUsed) {
+          log.debug('will not clean tmp db %s as it is being used', tmpLoc)
+        } else {
+          throw new DBLockError()
+        }
+      } else {
+        throw e
       }
-      throw e
     }
   })
-  delete tmpDBConnections[loc]
-  await deleteLocation(loc)
+  if (_.isEmpty(tmpDBConnections[loc])) {
+    delete tmpDBConnections[loc]
+  }
 }
-
 export const cleanDatabases = async (): Promise<void> => {
   const persistentDBs = Object.entries(persistentDBConnections)
   await closeAllRemoteMaps()
-  await awu(persistentDBs).forEach(async ([loc]) => cleanDatabase(loc))
+  await awu(persistentDBs).forEach(async ([loc]) => {
+    await cleanTmpDatabases(loc)
+    return deleteLocation(loc)
+  })
 }
 
 export const replicateDB = async (
@@ -570,9 +581,6 @@ remoteMap.RemoteMapCreator => {
     const createDBIfNotExist = async (loc: string): Promise<void> => {
       const newDb: rocksdb = getRemoteDbImpl()(loc)
       const readOnly = !persistent
-      if (persistent) {
-        await cleanDatabase(loc)
-      }
       try {
         await promisify(newDb.open.bind(newDb, { readOnly }))()
         await promisify(newDb.close.bind(newDb))()
@@ -603,6 +611,9 @@ remoteMap.RemoteMapCreator => {
       if (location in mainDBConnections) {
         persistentDB = await mainDBConnections[location]
         return
+      }
+      if (persistent) {
+        await cleanTmpDatabases(location, true)
       }
       if (currentConnectionsCount > MAX_CONNECTIONS) {
         throw new Error('Failed to open rocksdb connection - too much open connections already')

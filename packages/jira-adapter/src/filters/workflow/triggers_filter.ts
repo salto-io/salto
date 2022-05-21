@@ -57,38 +57,45 @@ const filter: FilterCreator = ({ client, config }) => ({
       )
     }
 
+    const failedWorkflowsIds = new Set<string>()
     await Promise.all(elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
       .filter(isWorkflowInstance)
       .filter(workflow => workflow.value.name !== undefined)
       .map(async instance => {
-        const transitionIds = instance.value.transitionIds ?? {}
+        try {
+          const transitionIds = instance.value.transitionIds ?? {}
+          await Promise.all(
+            (instance.value.transitions ?? []).map(async transition => {
+              const transitionId = transitionIds[getTransitionKey(transition)]
+              if (transitionId === undefined) {
+                log.warn(`Did not find transition id of transition ${safeJsonStringify(transition)}`)
+                return
+              }
 
-        await Promise.all(
-          (instance.value.transitions ?? []).map(async transition => {
-            const transitionId = transitionIds[getTransitionKey(transition)]
-            if (transitionId === undefined) {
-              log.warn(`Did not find transition id of transition ${safeJsonStringify(transition)}`)
-              return
-            }
+              const response = await client.getPrivate({
+                url: '/rest/triggers/1.0/workflow/config',
+                queryParams: {
+                  workflowName: instance.value.name as string,
+                  actionId: transitionId,
+                },
+              })
 
-            const response = await client.getPrivate({
-              url: '/rest/triggers/1.0/workflow/config',
-              queryParams: {
-                workflowName: instance.value.name as string,
-                actionId: transitionId,
-              },
+              if (!isValidResponse(response.data)) {
+                return
+              }
+
+              _.set(transition, ['rules', 'triggers'], response.data.map(trigger => _.omit(trigger, 'id')))
             })
-
-            if (!isValidResponse(response.data)) {
-              return
-            }
-
-            _.set(transition, ['rules', 'triggers'], response.data.map(trigger => _.omit(trigger, 'id')))
-          })
-        )
+          )
+        } catch (err) {
+          log.warn(`Failed to add triggers to workflow, removing ${instance.elemID.getFullName()}`)
+          failedWorkflowsIds.add(instance.elemID.getFullName())
+        }
       }))
+
+    _.remove(elements, element => failedWorkflowsIds.has(element.elemID.getFullName()))
   },
 })
 

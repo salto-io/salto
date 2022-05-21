@@ -205,7 +205,7 @@ export abstract class AdapterHTTPClient<
         status,
       }
     } catch (e) {
-      log.warn(`failed to ${method} ${url} ${queryParams}: ${e}, stack: ${e.stack}, data: ${safeJsonStringify(e?.response?.data)}`)
+      log.warn(`failed to ${method} ${url} ${safeJsonStringify(queryParams)}: ${e}, stack: ${e.stack}, data: ${safeJsonStringify(e?.response?.data)}`)
       if (e.code === 'ETIMEDOUT') {
         throw new TimeoutError(`Failed to ${method} ${url} with error: ${e}`)
       }

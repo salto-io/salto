@@ -34,6 +34,7 @@ describe('Static Files', () => {
     let mockCacheStore: StaticFilesCache
     beforeEach(() => {
       mockCacheStore = {
+        list: jest.fn().mockResolvedValue([]),
         get: jest.fn().mockResolvedValue(undefined),
         getByFile: jest.fn().mockResolvedValue(undefined),
         put: jest.fn().mockResolvedValue(Promise.resolve()),

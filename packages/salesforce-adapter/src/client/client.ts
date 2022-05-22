@@ -70,6 +70,9 @@ const { logDecorator, throttle, requiresLogin, createRateLimitersFromConfig } = 
 export const API_VERSION = '50.0'
 export const METADATA_NAMESPACE = 'http://soap.sforce.com/2006/04/metadata'
 
+export const REQUEST_LIMIT_EXCEEDED_ERROR_CODE = 'REQUEST_LIMIT_EXCEEDED'
+export const REQUEST_LIMIT_EXCEEDED_RATE_LIMIT = 10
+
 // Salesforce limitation of maximum number of items per create/update/delete call
 //  https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_createMetadata.htm
 //  https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_updateMetadata.htm
@@ -92,7 +95,7 @@ const DEFAULT_RETRY_OPTS: Required<ClientRetryConfig> = {
   maxAttempts: 5, // try 5 times
   retryDelay: 5000, // wait for 5s before trying again
   retryStrategy: 'NetworkError', // retry on network errors
-  timeout: 60 * 1000 * 15, // timeout per request retry in milliseconds
+  timeout: 1000, // timeout per request retry in milliseconds
 }
 
 const DEFAULT_READ_METADATA_CHUNK_SIZE: Required<ReadMetadataChunkSizeConfig> = {
@@ -448,7 +451,16 @@ export default class SalesforceClient {
       try {
         res = await request()
       } catch (e) {
-        if (attempts > 1 && errorMessagesToRetry.some(message => e.message.includes(message))) {
+        if (attempts === 1) {
+          throw e
+        }
+        if (e.code === REQUEST_LIMIT_EXCEEDED_ERROR_CODE) {
+          log.warn('Received %s error from Salesforce. Limiting maximum total concurrent request to %d', REQUEST_LIMIT_EXCEEDED_ERROR_CODE, REQUEST_LIMIT_EXCEEDED_RATE_LIMIT)
+          this.rateLimiters.total?.updateSettings({
+            maxConcurrent: REQUEST_LIMIT_EXCEEDED_RATE_LIMIT,
+          })
+          return requestWithRetry(attempts - 1)
+        } if (errorMessagesToRetry.some(message => e.message.includes(message))) {
           log.warn('Encountered invalid result from salesforce, error message: %s, will retry %d more times', e.message, attempts - 1)
           return requestWithRetry(attempts - 1)
         }

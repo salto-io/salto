@@ -21,8 +21,14 @@ import { Values } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import SalesforceClient, { ApiLimitsTooLowError,
-  getConnectionDetails, validateCredentials, API_VERSION } from '../src/client/client'
+import SalesforceClient, {
+  ApiLimitsTooLowError,
+  getConnectionDetails,
+  validateCredentials,
+  API_VERSION,
+  REQUEST_LIMIT_EXCEEDED_ERROR_CODE,
+  REQUEST_LIMIT_EXCEEDED_RATE_LIMIT,
+} from '../src/client/client'
 import mockClient from './client'
 import { UsernamePasswordCredentials, OauthAccessTokenCredentials } from '../src/types'
 import Connection from '../src/client/jsforce'
@@ -894,6 +900,24 @@ describe('salesforce client', () => {
         afterAll(async () => {
           retrieves.forEach(delayedPromise => delayedPromise.resolve())
           await Promise.all(retrieveReqs)
+        })
+      })
+    })
+    describe('when user reaches the max concurrent request limit of Salesforce', () => {
+      let bottleneckUpdateSpy: jest.SpyInstance
+      beforeEach(() => {
+        const clientAndConnection = mockClient()
+        testConnection = clientAndConnection.connection
+        testClient = clientAndConnection.client
+        testConnection.metadata.describe.mockImplementationOnce(() => {
+          throw Object.assign(new Error('Test error'), { code: REQUEST_LIMIT_EXCEEDED_ERROR_CODE })
+        })
+        bottleneckUpdateSpy = jest.spyOn(testClient.rateLimiters.total, 'updateSettings')
+      })
+      it('should lower the total max concurrent request limit', async () => {
+        await testClient.listMetadataTypes()
+        expect(bottleneckUpdateSpy).toHaveBeenCalledWith({
+          maxConcurrent: REQUEST_LIMIT_EXCEEDED_RATE_LIMIT,
         })
       })
     })

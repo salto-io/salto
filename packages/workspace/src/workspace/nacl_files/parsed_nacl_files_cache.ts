@@ -149,7 +149,7 @@ const getCacheSources = async (
     serialize: (val: string[]) => safeJsonStringify(val ?? []),
     deserialize: data => (JSON.parse(data)),
     persistent,
-  }))
+  })),
 })
 
 const copyAllSourcesToNewName = async (
@@ -225,7 +225,7 @@ export const createParseResultCache = (
       await referenced.setAll(awu(Object.keys(files))
         .map(async file => ({ key: file, value: await files[file].data.referenced() })))
       await staticFiles.setAll(awu(Object.keys(files))
-      .map(async file => ({ key: file, value: await files[file].data.staticFiles() })))
+        .map(async file => ({ key: file, value: await files[file].data.staticFiles() })))
       await sourceMap.setAll(awu(Object.keys(files))
         .map(async file => {
           const fileSourceMap = await files[file].sourceMap?.()

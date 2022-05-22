@@ -166,20 +166,20 @@ export const getElementReferenced = async (element: Element): Promise<{
   }
   return {
     referenced,
-    staticFiles
+    staticFiles,
   }
 }
 
 const getElementsReferencedAndStaticFiles = (elements: ThenableIterable<Element>): Promise<{
-  referenced: string[],
+  referenced: string[]
   staticFiles: string[]
 }> => awu(elements)
   .reduce(async (acc, element) => {
     const elementRefs = await getElementReferenced(element)
-    acc.referenced.push(... elementRefs.referenced.keys())
-    acc.staticFiles.push(... elementRefs.staticFiles.keys())
+    acc.referenced.push(...elementRefs.referenced.keys())
+    acc.staticFiles.push(...elementRefs.staticFiles.keys())
     return acc
-  }, {referenced: [] as string[], staticFiles: [] as string[]})
+  }, { referenced: [] as string[], staticFiles: [] as string[] })
 
 export const toParsedNaclFile = async (
   naclFile: NaclFile,
@@ -208,7 +208,7 @@ export const toParsedNaclFile = async (
       staticFiles: async () => {
         await loadRefs()
         return staticFiles
-      }
+      },
     },
     buffer: naclFile.buffer,
     sourceMap: () => Promise.resolve(parseResult.sourceMap),
@@ -293,7 +293,7 @@ const createNaclFilesState = async (
     deserialize: async data => data !== '0',
     persistent,
   }),
-  staticFilesIndex : await remoteMapCreator<string[]>({
+  staticFilesIndex: await remoteMapCreator<string[]>({
     namespace: getRemoteMapNamespace('static_files_index', sourceName),
     serialize: val => safeJsonStringify(val),
     deserialize: data => JSON.parse(data),
@@ -589,6 +589,7 @@ const buildNaclFilesSource = (
     if (!ignoreFileChanges) {
       const preChangeHash = await currentState.parsedNaclFiles.getHash()
       const cacheFilenames = await currentState.parsedNaclFiles.list()
+      const filesWithModifiedStaticFiles = await staticFilesSource.load()
       const naclFilenames = new Set(await naclFilesStore.list())
       const fileNames = new Set()
       await withLimitedConcurrency(
@@ -606,6 +607,15 @@ const buildNaclFilesSource = (
       )
       await withLimitedConcurrency(
         wu(naclFilenames).map(filename => async () => {
+          if (!fileNames.has(filename)) {
+            modifiedNaclFiles.push(await naclFilesStore.get(filename) ?? { filename, buffer: '' })
+          }
+          fileNames.add(filename)
+        }),
+        CACHE_READ_CONCURRENCY,
+      )
+      await withLimitedConcurrency(
+        filesWithModifiedStaticFiles.map(filename => async () => {
           if (!fileNames.has(filename)) {
             modifiedNaclFiles.push(await naclFilesStore.get(filename) ?? { filename, buffer: '' })
           }
@@ -741,7 +751,7 @@ const buildNaclFilesSource = (
         staticFiles: async () => {
           await loadRefs()
           return staticFiles
-        }
+        },
       },
       buffer: fileData,
     }
@@ -891,6 +901,7 @@ const buildNaclFilesSource = (
       await currentState.referencedIndex.flush()
       await currentState.parsedNaclFiles.flush()
       await currentState.searchableNamesIndex.flush()
+      await currentState.staticFilesIndex.flush()
       await currentState.metadata.flush()
     },
 

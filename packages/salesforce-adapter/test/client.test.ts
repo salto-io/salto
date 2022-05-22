@@ -903,22 +903,24 @@ describe('salesforce client', () => {
         })
       })
     })
-    describe('when user reaches the max concurrent request limit of Salesforce', () => {
-      let bottleneckUpdateSpy: jest.SpyInstance
-      beforeEach(() => {
-        const clientAndConnection = mockClient()
-        testConnection = clientAndConnection.connection
-        testClient = clientAndConnection.client
-        testConnection.metadata.describe.mockImplementationOnce(() => {
-          throw Object.assign(new Error('Test error'), { code: REQUEST_LIMIT_EXCEEDED_ERROR_CODE })
-        })
-        bottleneckUpdateSpy = jest.spyOn(testClient.rateLimiters.total, 'updateSettings')
+  })
+  describe('when user reaches the max concurrent request limit of Salesforce', () => {
+    let testConnection: MockInterface<Connection>
+    let testClient: SalesforceClient
+    let bottleneckUpdateSpy: jest.SpyInstance
+    beforeEach(() => {
+      const clientAndConnection = mockClient()
+      testConnection = clientAndConnection.connection
+      testClient = clientAndConnection.client
+      testConnection.metadata.describe.mockImplementationOnce(() => {
+        throw Object.assign(new Error('Test error'), { code: REQUEST_LIMIT_EXCEEDED_ERROR_CODE })
       })
-      it('should lower the total max concurrent request limit', async () => {
-        await testClient.listMetadataTypes()
-        expect(bottleneckUpdateSpy).toHaveBeenCalledWith({
-          maxConcurrent: REQUEST_LIMIT_EXCEEDED_CONCURRENT_LIMIT,
-        })
+      bottleneckUpdateSpy = jest.spyOn(testClient.rateLimiters.total, 'updateSettings')
+    })
+    it('should lower the total max concurrent request limit', async () => {
+      await testClient.listMetadataTypes()
+      expect(bottleneckUpdateSpy).toHaveBeenCalledWith({
+        maxConcurrent: REQUEST_LIMIT_EXCEEDED_CONCURRENT_LIMIT,
       })
     })
   })

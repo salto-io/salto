@@ -27,7 +27,7 @@ import SalesforceClient, {
   validateCredentials,
   API_VERSION,
   REQUEST_LIMIT_EXCEEDED_ERROR_CODE,
-  REQUEST_LIMIT_EXCEEDED_RATE_LIMIT,
+  REQUEST_LIMIT_EXCEEDED_CONCURRENT_LIMIT,
 } from '../src/client/client'
 import mockClient from './client'
 import { UsernamePasswordCredentials, OauthAccessTokenCredentials } from '../src/types'
@@ -917,7 +917,7 @@ describe('salesforce client', () => {
       it('should lower the total max concurrent request limit', async () => {
         await testClient.listMetadataTypes()
         expect(bottleneckUpdateSpy).toHaveBeenCalledWith({
-          maxConcurrent: REQUEST_LIMIT_EXCEEDED_RATE_LIMIT,
+          maxConcurrent: REQUEST_LIMIT_EXCEEDED_CONCURRENT_LIMIT,
         })
       })
     })

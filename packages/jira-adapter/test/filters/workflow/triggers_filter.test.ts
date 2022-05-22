@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, isInstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
@@ -99,6 +99,25 @@ describe('triggersFilter', () => {
           configuration: {},
         },
       ])
+    })
+
+    it('should remove workflow if failed to get triggers', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        workflowType,
+        {
+          name: 'name',
+          transitionIds: { '4-5-transition1': '1' },
+          transitions: [
+            { id: '1', name: 'transition1', from: ['4', '5'] },
+          ],
+        },
+      )
+
+      mockConnection.get.mockRejectedValue(new Error())
+      const elements = [instance]
+      await filter.onFetch(elements)
+      expect(elements.filter(isInstanceElement)).toHaveLength(0)
     })
 
     it('do nothing if transition id not found', async () => {

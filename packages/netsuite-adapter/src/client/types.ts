@@ -94,7 +94,7 @@ export type SdfDeployParams = {
 }
 
 export class InvalidSuiteAppCredentialsError extends Error {
-  constructor() {
-    super('Invalid SuiteApp credentials')
+  constructor(message?: string) {
+    super(message || 'Invalid SuiteApp credentials')
   }
 }

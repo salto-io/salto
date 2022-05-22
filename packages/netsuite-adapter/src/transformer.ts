@@ -237,6 +237,10 @@ export const toCustomizationInfo = async (
 
   const values = await restoreAttributes(sortedValues, instanceType, instance.elemID)
 
+  if (isSDFConfigType(instance.refType)) {
+    return { typeName, values }
+  }
+
   const fileContentField = await awu(Object.values(instanceType.fields))
     .find(async f => {
       const fType = await f.getType()

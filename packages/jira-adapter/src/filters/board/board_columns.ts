@@ -89,12 +89,13 @@ export const deployColumns = async (
 
   const updatedColumns = response.data.mappedColumns.map(({ name }) => name)
   if (instance.value.type === KANBAN_TYPE) {
+    log.debug(`Columns of ${getChangeData(change).elemID.getFullName()} are ${updatedColumns.join(', ')}, and the columnsToUpdate are ${columnsToUpdate.join(', ')}`)
     // In Kanban boards, the first column is always backlog, which is non-editable.
     updatedColumns.shift()
   }
 
   if (!_.isEqual(columnsToUpdate, updatedColumns)) {
-    log.warn(`Failed to update columns of ${instance.elemID.getFullName()} - ${updatedColumns.join(', ')}`)
+    log.warn(`Failed to update columns of ${instance.elemID.getFullName()} - ${updatedColumns.join(', ')}, retries left - ${retriesLeft}`)
     if (retriesLeft > 0) {
       await deployColumns(change, client, retriesLeft - 1)
     } else {
@@ -119,6 +120,7 @@ const filter: FilterCreator = ({ config }) => ({
         })
 
         if (instance.value.type === KANBAN_TYPE) {
+          log.debug(`Removing first column from ${instance.elemID.getFullName()} with ${instance.value[COLUMNS_CONFIG_FIELD].columns.map((col: Values) => col.name).join(', ')}`)
           // In Kanban boards, the first column is always backlog, which is non-editable.
           // Not removing it will make us create another backlog column.
           instance.value[COLUMNS_CONFIG_FIELD].columns = instance.value[COLUMNS_CONFIG_FIELD]

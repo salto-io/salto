@@ -78,6 +78,7 @@ export const MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST = 'maxItemsInImportObjectsReque
 export const DEPLOY_REFERENCED_ELEMENTS = 'deployReferencedElements'
 export const ADDITIONAL_DEPS = 'additionalDependencies'
 export const WARN_STALE_DATA = 'warnOnStaleWorkspaceData'
+export const VALIDATE = 'validate'
 export const SDF_CONCURRENCY_LIMIT = 'sdfConcurrencyLimit'
 export const SUITEAPP_CONCURRENCY_LIMIT = 'suiteAppConcurrencyLimit'
 export const CLIENT_CONFIG = 'client'

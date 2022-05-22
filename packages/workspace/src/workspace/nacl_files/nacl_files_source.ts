@@ -104,6 +104,7 @@ type NaclFilesState = {
   mergeErrors: RemoteMap<MergeError[]>
   referencedIndex: RemoteMap<string[]>
   searchableNamesIndex: RemoteMap<boolean>
+  staticFilesIndex: RemoteMap<string[]>
   metadata: RemoteMap<string>
 }
 
@@ -117,8 +118,12 @@ export const toPathHint = (filename: string): string[] => {
   return [...dirPathSplitted, osPath.basename(filename, osPath.extname(filename))]
 }
 
-export const getElementReferenced = async (element: Element): Promise<Set<string>> => {
+export const getElementReferenced = async (element: Element): Promise<{
+  referenced: Set<string>
+  staticFiles: Set<string>
+}> => {
   const referenced = new Set<string>()
+  const staticFiles = new Set<string>()
   const transformFunc = ({ value, field, path }: TransformFuncArgs): Value => {
     if (field && path && !isIndexPathPart(path.name)) {
       referenced.add(
@@ -133,6 +138,9 @@ export const getElementReferenced = async (element: Element): Promise<Set<string
       ))
       referenced.add(parent.getFullName())
       nestedIds.forEach(id => referenced.add(id.getFullName()))
+    }
+    if (isStaticFile(value)) {
+      staticFiles.add(value.filepath)
     }
     return value
   }
@@ -156,28 +164,51 @@ export const getElementReferenced = async (element: Element): Promise<Set<string
       elementsSource: placeholderReadonlyElementsSource,
     })
   }
-  return referenced
+  return {
+    referenced,
+    staticFiles
+  }
 }
+
+const getElementsReferencedAndStaticFiles = (elements: ThenableIterable<Element>): Promise<{
+  referenced: string[],
+  staticFiles: string[]
+}> => awu(elements)
+  .reduce(async (acc, element) => {
+    const elementRefs = await getElementReferenced(element)
+    acc.referenced.push(... elementRefs.referenced.keys())
+    acc.staticFiles.push(... elementRefs.staticFiles.keys())
+    return acc
+  }, {referenced: [] as string[], staticFiles: [] as string[]})
 
 export const toParsedNaclFile = async (
   naclFile: NaclFile,
   parseResult: ParseResult
 ): Promise<ParsedNaclFile> => {
   let referenced: string[]
+  let staticFiles: string[]
+  const loadRefs = async (): Promise<void> => {
+    if (referenced === undefined || staticFiles === undefined) {
+      const referencedAndStaticFiles = await getElementsReferencedAndStaticFiles(
+        parseResult.elements
+      )
+      referenced = referencedAndStaticFiles.referenced
+      staticFiles = referencedAndStaticFiles.staticFiles
+    }
+  }
   return {
     filename: naclFile.filename,
     elements: () => awu(parseResult.elements).toArray(),
     data: {
       errors: () => Promise.resolve(parseResult.errors),
       referenced: async () => {
-        if (referenced === undefined) {
-          referenced = await awu(parseResult.elements)
-            .flatMap(getElementReferenced)
-            .uniquify(s => s)
-            .toArray()
-        }
+        await loadRefs()
         return referenced
       },
+      staticFiles: async () => {
+        await loadRefs()
+        return staticFiles
+      }
     },
     buffer: naclFile.buffer,
     sourceMap: () => Promise.resolve(parseResult.sourceMap),
@@ -262,6 +293,12 @@ const createNaclFilesState = async (
     deserialize: async data => data !== '0',
     persistent,
   }),
+  staticFilesIndex : await remoteMapCreator<string[]>({
+    namespace: getRemoteMapNamespace('static_files_index', sourceName),
+    serialize: val => safeJsonStringify(val),
+    deserialize: data => JSON.parse(data),
+    persistent,
+  }),
   metadata: await remoteMapCreator<string>({
     namespace: getRemoteMapNamespace('metadata', sourceName),
     serialize: val => val,
@@ -282,8 +319,10 @@ const buildNaclFilesState = async ({
   const newParsed = _.keyBy(newNaclFiles, parsed => parsed.filename)
   const elementsIndexAdditions: Record<string, Set<string>> = {}
   const referencedIndexAdditions: Record<string, Set<string>> = {}
+  const staticFilesIndexAdditions: Record<string, Set<string>> = {}
   const elementsIndexDeletions: Record<string, Set<string>> = {}
   const referencedIndexDeletions: Record<string, Set<string>> = {}
+  const staticFilesIndexDeletions: Record<string, Set<string>> = {}
   // We need to iterate over this twice - so no point in making this iterable :/
   const relevantElementIDs: ElemID[] = []
   const newElementsToMerge: AsyncIterable<Element>[] = []
@@ -385,6 +424,14 @@ const buildNaclFilesState = async ({
         await naclFile.data.referenced(),
       )
 
+      updateIndexOfFile(
+        staticFilesIndexAdditions,
+        staticFilesIndexDeletions,
+        naclFile.filename,
+        await parsedFile?.data.staticFiles(),
+        await naclFile.data.staticFiles(),
+      )
+
       const currentNaclFileElements = (await naclFile.elements()) ?? []
       const oldNaclFileElements = await parsedFile?.elements() ?? []
       updateIndexOfFile(
@@ -472,6 +519,11 @@ const buildNaclFilesState = async ({
       currentState.referencedIndex,
       referencedIndexAdditions,
       referencedIndexDeletions
+    ),
+    updateIndex(
+      currentState.staticFilesIndex,
+      staticFilesIndexAdditions,
+      staticFilesIndexDeletions
     ),
     updateSearchableNamesIndex(changes),
   ])
@@ -669,20 +721,27 @@ const buildNaclFilesSource = (
   ): Promise<ParsedNaclFile> => {
     const elements = [change.data.after]
     let referenced: string[]
+    let staticFiles: string[]
+    const loadRefs = async (): Promise<void> => {
+      if (referenced === undefined || staticFiles === undefined) {
+        const referencedAndStaticFiles = await getElementsReferencedAndStaticFiles(elements)
+        referenced = referencedAndStaticFiles.referenced
+        staticFiles = referencedAndStaticFiles.staticFiles
+      }
+    }
     return {
       filename,
       elements: () => Promise.resolve(elements),
       data: {
         errors: () => Promise.resolve([]),
         referenced: async () => {
-          if (referenced === undefined) {
-            referenced = await awu(elements)
-              .flatMap(getElementReferenced)
-              .uniquify(s => s)
-              .toArray()
-          }
+          await loadRefs()
           return referenced
         },
+        staticFiles: async () => {
+          await loadRefs()
+          return staticFiles
+        }
       },
       buffer: fileData,
     }

@@ -1822,7 +1822,7 @@ type JiraFetchConfig = configUtils.UserFetchConfig<JiraFetchFilters> & {
   fallbackToInternalId?: boolean
 }
 
-type MaskingConfig = {
+export type MaskingConfig = {
   automationHeaders: string[]
   secretMatchers: string[]
 }

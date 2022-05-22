@@ -14,11 +14,12 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
-import { createSchemeGuard, transformValues, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { createSchemeGuard, transformValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, regex as lowerdashRegex } from '@salto-io/lowerdash'
 import Joi, { string } from 'joi'
 import _ from 'lodash'
+import { MaskingConfig } from '../config'
 import { FilterCreator } from '../filter'
 
 const { awu } = collections.asynciterable
@@ -55,9 +56,9 @@ const maskHeaders = (
     })
 }
 
-const maskByMatchers = async (
+const maskValues = async (
   instance: InstanceElement,
-  matchers: string[],
+  masking: MaskingConfig,
 ): Promise<void> => {
   instance.value = await transformValues({
     values: instance.value,
@@ -66,8 +67,12 @@ const maskByMatchers = async (
     strict: false,
     allowEmpty: true,
     transformFunc: ({ value, path }) => {
+      if (path?.name === 'headers' && isHeaders(value)) {
+        maskHeaders(value, masking.automationHeaders, instance.elemID)
+      }
+
       if (_.isString(value)
-      && matchers.some(matcher => lowerdashRegex.isFullRegexMatch(value, matcher))) {
+      && masking.secretMatchers.some(matcher => lowerdashRegex.isFullRegexMatch(value, matcher))) {
         log.debug(`Masked value ${path?.getFullName()}`)
         return MASK_VALUE
       }
@@ -81,25 +86,15 @@ const maskByMatchers = async (
  */
 const filter: FilterCreator = ({ config }) => ({
   onFetch: async elements => log.time(async () => {
+    if (config.masking.automationHeaders.length === 0
+      && config.masking.secretMatchers.length === 0) {
+      return
+    }
+
     await awu(elements)
       .filter(isInstanceElement)
       .forEach(async instance => {
-        if (config.masking.secretMatchers.length > 0) {
-          await maskByMatchers(instance, config.masking.secretMatchers)
-        }
-
-        if (config.masking.automationHeaders.length > 0) {
-          walkOnElement({
-            element: instance,
-            func: ({ path, value }) => {
-              if (path.name === 'headers' && isHeaders(value)) {
-                maskHeaders(value, config.masking.automationHeaders, instance.elemID)
-              }
-
-              return WALK_NEXT_STEP.RECURSE
-            },
-          })
-        }
+        await maskValues(instance, config.masking)
       })
   }, 'masking filter'),
 })

@@ -67,50 +67,55 @@ export const buildStaticFilesSource = (
   staticFilesDirStore: SyncDirectoryStore<Buffer>,
   staticFilesCache: StaticFilesCache,
 ): StaticFilesSource => {
-  const staticFilesSource: StaticFilesSource = {
-    getStaticFile: async (
-      filepath: string,
-      encoding: BufferEncoding,
-    ): Promise<StaticFile | InvalidStaticFile> => {
-      const cachedResult = await staticFilesCache.get(filepath)
-      let modified: number | undefined
-      try {
-        modified = await staticFilesDirStore.mtimestamp(filepath)
-      } catch (err) {
-        return new AccessDeniedStaticFile(filepath)
-      }
-      if (modified === undefined) {
+
+  const getStaticFile = async (
+    filepath: string,
+    encoding: BufferEncoding,
+  ): Promise<StaticFile | InvalidStaticFile> => {
+    const cachedResult = await staticFilesCache.get(filepath)
+    let modified: number | undefined
+    try {
+      modified = await staticFilesDirStore.mtimestamp(filepath)
+    } catch (err) {
+      return new AccessDeniedStaticFile(filepath)
+    }
+    if (modified === undefined) {
+      return new MissingStaticFile(filepath)
+    }
+
+    const hashModified = cachedResult ? cachedResult.modified : undefined
+
+    if (hashModified === undefined
+      || modified > hashModified
+      || cachedResult === undefined) {
+      const file = await staticFilesDirStore.get(filepath)
+      if (file === undefined) {
         return new MissingStaticFile(filepath)
       }
-
-      const hashModified = cachedResult ? cachedResult.modified : undefined
-
-      if (hashModified === undefined
-        || modified > hashModified
-        || cachedResult === undefined) {
-        const file = await staticFilesDirStore.get(filepath)
-        if (file === undefined) {
-          return new MissingStaticFile(filepath)
-        }
-        const staticFileBuffer = file.buffer
-        const staticFileWithHashAndContent = new AbsoluteStaticFile({ filepath,
-          content: staticFileBuffer,
-          encoding },
-        staticFilesDirStore)
-        await staticFilesCache.put({
-          hash: staticFileWithHashAndContent.hash,
-          modified,
-          filepath,
-        })
-        return staticFileWithHashAndContent
-      }
-      return new LazyStaticFile(
+      const staticFileBuffer = file.buffer
+      const staticFileWithHashAndContent = new AbsoluteStaticFile({ filepath,
+        content: staticFileBuffer,
+        encoding },
+      staticFilesDirStore)
+      await staticFilesCache.put({
+        hash: staticFileWithHashAndContent.hash,
+        modified,
         filepath,
-        cachedResult.hash,
-        staticFilesDirStore,
-        encoding,
-      )
+      })
+      return staticFileWithHashAndContent
+    }
+    return new LazyStaticFile(
+      filepath,
+      cachedResult.hash,
+      staticFilesDirStore,
+      encoding,
+    )
+  }
+  const staticFilesSource: StaticFilesSource = {
+    load: async (): Promise<string[]> => {
+      const existingFiles = await staticFilesDirStore.list()
     },
+    getStaticFile,
     getContent: async (
       filepath: string
     ): Promise<Buffer> => {

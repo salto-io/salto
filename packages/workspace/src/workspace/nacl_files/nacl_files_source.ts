@@ -524,6 +524,10 @@ const buildNaclFilesSource = (
     return state
   }
 
+  const getChangedStaticFiles = async (): Promise<string[]> => {
+    
+  }
+
   const buildInitState = async (
     ignoreFileChanges = false,
   ): Promise<buildNaclFilesStateResult> => {

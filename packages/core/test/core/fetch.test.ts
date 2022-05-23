@@ -1879,7 +1879,8 @@ describe('fetch from workspace', () => {
             .toEqual(fileThree.content)
           const modifyStaticVals = changes
             .filter(change =>
-              change.change.id.createTopLevelParentID().parent.isEqual(editStateExistingInstance.elemID))
+              change.change.id.createTopLevelParentID().parent
+                .isEqual(editStateExistingInstance.elemID))
             .map(change => getChangeData(change.change))
           expect(modifyStaticVals).toHaveLength(3)
           const staticFileModifies = modifyStaticVals.filter(val => isStaticFile(val))

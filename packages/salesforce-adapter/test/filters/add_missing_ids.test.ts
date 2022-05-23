@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Element, ElemID, ObjectType, InstanceElement, BuiltinTypes, Field } from '@salto-io/adapter-api'
-import { FilterWith } from '../../src/filter'
+import { FilterResult, FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import filterCreator, { WARNING_MESSAGE } from '../../src/filters/add_missing_ids'
 import mockClient from '../client'
@@ -25,13 +25,6 @@ import {
 import { defaultFilterContext } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
-const mockLoggerWarn = jest.fn()
-jest.mock('@salto-io/logging', () => ({
-  logger: (...loggerArgs: unknown[]) => ({
-    ...jest.requireActual('@salto-io/logging').logger(...loggerArgs),
-    warn: jest.fn((...args) => mockLoggerWarn(...args)),
-  }),
-}))
 
 describe('Internal IDs filter', () => {
   let client: SalesforceClient
@@ -202,19 +195,26 @@ describe('Internal IDs filter', () => {
     })
   })
 
-  describe('when fails to add missing ids for a specific type', () => {
-    SalesforceClient.prototype.listMetadataObjects = jest.fn()
+  describe('when feature is throwing an error', () => {
+    const mockListMetadataObjects: jest.Mock = jest.fn()
+    SalesforceClient.prototype.listMetadataObjects = mockListMetadataObjects
 
-    it('should log warning message', async () => {
+    it('should return a warning', async () => {
       const { connection } = mockClient()
       connection.query.mockImplementation(() => { throw new Error() })
-      await filter.onFetch(elements)
-      expect(mockLoggerWarn).toHaveBeenCalledWith(WARNING_MESSAGE)
+      const res = await filter.onFetch(elements) as FilterResult
+      const err = res.errors ?? []
+      expect(res.errors).toHaveLength(1)
+      expect(err[0]).toEqual({
+        severity: 'Warning',
+        message: WARNING_MESSAGE,
+      })
     })
   })
 
   describe('when feature is disabled', () => {
-    SalesforceClient.prototype.listMetadataObjects = jest.fn()
+    const mockListMetadataObjects: jest.Mock = jest.fn()
+    SalesforceClient.prototype.listMetadataObjects = mockListMetadataObjects
     elements = generateElements()
 
     it('should not run any query', async () => {

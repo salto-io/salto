@@ -84,7 +84,7 @@ const filter: FilterCreator = ({ client, config }) => ({
           .map(([typeName, typeElements]) => addMissingIds(client, typeName, typeElements))
       )
       if (results.some(r => r.status === 'rejected')) {
-        log.warn(WARNING_MESSAGE)
+        throw new Error('Failed to add missing ids')
       }
     },
   }),

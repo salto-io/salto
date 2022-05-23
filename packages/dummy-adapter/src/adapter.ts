@@ -14,10 +14,11 @@
 * limitations under the License.
 */
 import {
-  FetchResult, AdapterOperations, DeployResult, FetchOptions, DeployOptions,
+  FetchResult, AdapterOperations, DeployResult, FetchOptions,
+  DeployOptions, DeployModifiers,
 } from '@salto-io/adapter-api'
 import { generateElements, GeneratorParams } from './generator'
-
+import { changeValidator } from './change_validator'
 
 export default class DummyAdapter implements AdapterOperations {
   public constructor(private genParams: GeneratorParams) {
@@ -39,5 +40,11 @@ export default class DummyAdapter implements AdapterOperations {
       appliedChanges: changeGroup.changes,
       errors: [],
     }
+  }
+
+
+  public deployModifiers: DeployModifiers =
+  {
+    changeValidator: changeValidator(this.genParams),
   }
 }

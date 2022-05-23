@@ -42,9 +42,10 @@ const migrateLegacyStaticFilesCache = async (
       )
       await remoteCache.flush()
     } else {
-      log.debug('static files already populated, deleting legacy static files cache file: %s', currentCacheFile)
-      await rm(currentCacheFile)
+      log.debug('static files cache already populated, ignoring legacy static files cache file: %s', currentCacheFile)
     }
+    log.debug('deleting legeacy static files cache file: %s', currentCacheFile)
+    await rm(currentCacheFile)
   }
 }
 

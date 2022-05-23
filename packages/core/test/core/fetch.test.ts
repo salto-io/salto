@@ -1583,6 +1583,20 @@ describe('fetch from workspace', () => {
         },
       }
     )
+    const newWithMismatch = new InstanceElement(
+      'newMismatch',
+      existingElement,
+      {
+        staticFileField: new StaticFile({ filepath: 'file1', encoding: 'utf-8', hash: fileOne.hash }),
+        complexField: {
+          staticFileField: new StaticFile({ filepath: 'file2', encoding: 'utf-8', hash: fileTwo.hash }),
+          staticFilesArr: [
+            new StaticFile({ filepath: 'file3', encoding: 'utf-8', hash: fileThree.hash }),
+          ],
+        },
+        hashMismatchField: new StaticFile({ filepath: 'file4', encoding: 'utf-8', hash: 'miss!' }),
+      }
+    )
     const newNaclStaticInstance = new InstanceElement(
       'new',
       existingElement,
@@ -1652,14 +1666,15 @@ describe('fetch from workspace', () => {
     })
     const mergedElements = [
       objFull, existingElement, otherAdapterElem, editNaclElem, newNaclStaticInstance,
-      noPathElementFull, movedElem, editNaclExistingInstance, existingSubType,
+      noPathElementFull, movedElem, editNaclExistingInstance, existingSubType, newWithMismatch,
     ]
     const stateElements = [
-      objFull, existingElement, otherAdapterElem, editStateElem, newStateStaticInstance,
+      objFull, existingElement, otherAdapterElem, editStateElem,
       noPathElementFull, movedElem, editStateExistingInstance, existingSubType,
+      newWithMismatch, newStateStaticInstance,
     ]
     const unmergedElements = [
-      objFragStdFields, objFragCustomFields, editStateElem,
+      objFragStdFields, objFragCustomFields, editStateElem, newWithMismatch,
       objFragAnnotations, existingElement, otherAdapterElem, newStateStaticInstance,
       noPathElementFull, movedElem, editStateExistingInstance, existingSubType,
     ]
@@ -1667,6 +1682,7 @@ describe('fetch from workspace', () => {
       editNaclElem,
       editNaclExistingInstance,
       newNaclStaticInstance,
+      newWithMismatch,
     ]
     const editsIDs = edits.map(edit => edit.elemID.getFullName())
     const unmergedElementsWithEditNaclElem = [
@@ -1888,14 +1904,19 @@ describe('fetch from workspace', () => {
           staticFileModifies.forEach(modify => validFileContents.includes(modify.content))
         })
 
-        it('should not have a change on the val and a error if there is a hashes mismatch', () => {
+        it('should not have a change on the val and a error if there is a hashes mismatch (for both inner modify and a whole addition)', () => {
           const changes = [...fetchRes.changes]
           const mismatchValFullName = `${editStateExistingInstance.elemID.getFullName()}.hashMismatchField`
-          const hasMismatchFieldChange = changes
+          const mismatchFieldValChange = changes
             .find(c => c.change.id.getFullName() === mismatchValFullName)
-          expect(hasMismatchFieldChange).toBeUndefined()
-          expect(fetchRes.errors).toHaveLength(1)
-          expect(fetchRes.errors[0].message).toContain(mismatchValFullName)
+          expect(mismatchFieldValChange).toBeUndefined()
+          const newInstanceWithMismatchChange = changes
+            .find(c => c.change.id.isEqual(newWithMismatch.elemID))
+          expect(newInstanceWithMismatchChange).toBeUndefined()
+          expect(fetchRes.errors).toHaveLength(2)
+          const errorsMessages = fetchRes.errors.map(err => err.message)
+          expect(errorsMessages[0]).toContain(mismatchValFullName)
+          expect(errorsMessages[1]).toContain(newWithMismatch.elemID.getFullName())
         })
       })
 
@@ -1923,11 +1944,11 @@ describe('fetch from workspace', () => {
           resElements = [...fetchRes.elements]
         })
 
-        it('Should return with changes and a single expected error', () => {
+        it('Should return with changes and only the 2 static files related expected error', () => {
           expect([...fetchRes.changes]).not.toHaveLength(0)
           expect(fetchRes.elements).not.toHaveLength(0)
           expect(fetchRes.unmergedElements).not.toHaveLength(0)
-          expect(fetchRes.errors).toHaveLength(1)
+          expect(fetchRes.errors).toHaveLength(2)
         })
       })
     })

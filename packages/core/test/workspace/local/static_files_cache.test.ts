@@ -43,15 +43,15 @@ describe('Static Files Cache', () => {
     jest.clearAllMocks()
   })
   describe('new cache', () => {
-    // We keep a cache to simulate the fact that remote maps
-    // with the same namespace point to the same entries.
-    const remoteMaps = new DefaultMap(() => new remoteMap.InMemoryRemoteMap())
-    const remoteMapCreator = mockFunction<remoteMap.RemoteMapCreator>().mockImplementation(
-      async opts => remoteMaps.get(opts.namespace)
-    )
+    let remoteMapCreator: jest.MockedFunction<remoteMap.RemoteMapCreator>
 
     beforeEach(() => {
-      remoteMaps.clear()
+      // We keep a cache to simulate the fact that remote maps
+      // with the same namespace point to the same entries.
+      const remoteMaps = new DefaultMap(() => new remoteMap.InMemoryRemoteMap())
+      remoteMapCreator = mockFunction<remoteMap.RemoteMapCreator>().mockImplementation(
+        async opts => remoteMaps.get(opts.namespace)
+      )
       staticFilesCache = buildLocalStaticFilesCache('path', 'test-env', remoteMapCreator)
     })
     it('should handle unknown file paths', async () => {

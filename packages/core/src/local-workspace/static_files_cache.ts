@@ -46,7 +46,7 @@ export const buildLocalStaticFilesCache = (
 
     if (await exists(currentCacheFile)) {
       if (remoteCache.isEmpty()) {
-        log.debug('migrating legacy static files cache from file: %s', currentCacheFile)
+        log.debug('importing legacy static files cache from file: %s', currentCacheFile)
         const oldCache: Record<string, staticFiles.StaticFilesCacheResult> = JSON.parse(
           await readTextFile(currentCacheFile)
         )
@@ -55,10 +55,9 @@ export const buildLocalStaticFilesCache = (
         )
         await remoteCache.flush()
       } else {
-        log.debug('found legacy static files cache, but static files cache is not empty')
+        log.debug('static files already populated, deleting legacy static files cache file: %s', currentCacheFile)
+        await rm(currentCacheFile)
       }
-      log.debug('deleting legacy static files cache file: %s', currentCacheFile)
-      await rm(currentCacheFile)
     }
   }
 

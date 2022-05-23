@@ -668,14 +668,16 @@ describe('salesforce client', () => {
             isSandbox: false,
           }),
           connection: testConnection,
-          config: { polling: { interval: 100 } },
+          config: { polling: { interval: 100, fetchTimeout: 1000, deployTimeout: 2000 } },
         })
       })
-      it('should set polling interval on the metadata connection', () => {
+      it('should set polling and timeout on the metadata connection', () => {
         expect(testConnection.metadata.pollInterval).toEqual(100)
+        expect(testConnection.metadata.pollTimeout).toEqual(1000)
       })
-      it('should set polling interval on the bulk connection', () => {
+      it('should set polling and timeout on the bulk connection', () => {
         expect(testConnection.bulk.pollInterval).toEqual(100)
+        expect(testConnection.bulk.pollTimeout).toEqual(1000)
       })
     })
 
@@ -689,7 +691,10 @@ describe('salesforce client', () => {
             isSandbox: false,
           }),
           connection: testConnection,
-          config: { deploy: { rollbackOnError: false, testLevel: 'NoTestRun' } },
+          config: {
+            deploy: { rollbackOnError: false, testLevel: 'NoTestRun' },
+            polling: { interval: 100, fetchTimeout: 1000, deployTimeout: 2000 },
+          },
         })
         await testClient.deploy(Buffer.from(''))
       })
@@ -703,6 +708,10 @@ describe('salesforce client', () => {
             ignoreWarnings: true,
           }),
         )
+      })
+      it('should set deploy polling timeout', () => {
+        expect(testConnection.bulk.pollTimeout).toEqual(2000)
+        expect(testConnection.metadata.pollTimeout).toEqual(2000)
       })
     })
 

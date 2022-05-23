@@ -184,10 +184,13 @@ export const setPollIntervalForConnection = (
   connection: Connection,
   pollingConfig: Required<ClientPollingConfig>,
 ): void => {
-  // Set poll interval for metadata operations
+  // Set poll interval and timeout for fetch
   connection.metadata.pollInterval = pollingConfig.interval
-  // Set poll interval for bulk ops, (e.g, CSV deletes)
+  connection.metadata.pollTimeout = pollingConfig.fetchTimeout
+
+  // Set poll interval and timeout for bulk ops, (e.g, CSV deletes)
   connection.bulk.pollInterval = pollingConfig.interval
+  connection.bulk.pollTimeout = pollingConfig.fetchTimeout
 }
 
 export const createRequestModuleFunction = (retryOptions: RequestRetryOptions) =>
@@ -439,11 +442,6 @@ export default class SalesforceClient {
     )
   }
 
-  private setFetchPollingTimeout(): void {
-    this.conn.metadata.pollTimeout = this.pollingConfig.fetchTimeout
-    this.conn.bulk.pollTimeout = this.pollingConfig.fetchTimeout
-  }
-
   private setDeployPollingTimeout(): void {
     this.conn.metadata.pollTimeout = this.pollingConfig.deployTimeout
     this.conn.bulk.pollTimeout = this.pollingConfig.deployTimeout
@@ -451,7 +449,6 @@ export default class SalesforceClient {
 
 
   async ensureLoggedIn(): Promise<void> {
-    this.setFetchPollingTimeout()
     if (!this.isLoggedIn) {
       await loginFromCredentialsAndReturnOrgId(this.conn, this.credentials)
       this.isLoggedIn = true
@@ -497,7 +494,6 @@ export default class SalesforceClient {
   @logDecorator()
   @requiresLogin()
   public async listMetadataTypes(): Promise<MetadataObject[]> {
-    this.setFetchPollingTimeout()
     const describeResult = this.retryOnBadResponse(() => this.conn.metadata.describe())
     return flatValues((await describeResult).metadataObjects)
   }
@@ -510,7 +506,6 @@ export default class SalesforceClient {
   @logDecorator()
   @requiresLogin()
   public async describeMetadataType(type: string): Promise<DescribeValueTypeResult> {
-    this.setFetchPollingTimeout()
     const fullName = `{${METADATA_NAMESPACE}}${type}`
     const describeResult = await this.retryOnBadResponse(
       () => this.conn.metadata.describeValueType(fullName)
@@ -525,7 +520,6 @@ export default class SalesforceClient {
     listMetadataQuery: ListMetadataQuery | ListMetadataQuery[],
     isUnhandledError: ErrorFilter = isSFDCUnhandledException,
   ): Promise<SendChunkedResult<ListMetadataQuery, FileProperties>> {
-    this.setFetchPollingTimeout()
     return sendChunked({
       operationInfo: 'listMetadataObjects',
       input: listMetadataQuery,
@@ -562,7 +556,6 @@ export default class SalesforceClient {
     name: string | string[],
     isUnhandledError: ErrorFilter = isSFDCUnhandledException,
   ): Promise<SendChunkedResult<string, MetadataInfo>> {
-    this.setFetchPollingTimeout()
     return sendChunked({
       operationInfo: `readMetadata (${type})`,
       input: name,
@@ -588,7 +581,6 @@ export default class SalesforceClient {
   @logDecorator()
   @requiresLogin()
   public async listSObjects(): Promise<DescribeGlobalSObjectResult[]> {
-    this.setFetchPollingTimeout()
     return flatValues((await this.retryOnBadResponse(() => this.conn.describeGlobal())).sobjects)
   }
 
@@ -597,7 +589,6 @@ export default class SalesforceClient {
   @requiresLogin()
   public async describeSObjects(objectNames: string[]):
   Promise<DescribeSObjectResult[]> {
-    this.setFetchPollingTimeout()
     return (await sendChunked({
       operationInfo: 'describeSObjects',
       input: objectNames,
@@ -652,7 +643,6 @@ export default class SalesforceClient {
   @logDecorator()
   @requiresLogin()
   public async retrieve(retrieveRequest: RetrieveRequest): Promise<RetrieveResult> {
-    this.setFetchPollingTimeout()
     return flatValues(
       await this.retryOnBadResponse(() => this.conn.metadata.retrieve(retrieveRequest).complete())
     )
@@ -683,7 +673,6 @@ export default class SalesforceClient {
   @logDecorator()
   @requiresLogin()
   private query<T>(queryString: string, useToolingApi: boolean): Promise<QueryResult<T>> {
-    this.setFetchPollingTimeout()
     const conn = useToolingApi ? this.conn.tooling : this.conn
     return this.retryOnBadResponse(() => conn.query(queryString))
   }
@@ -692,7 +681,6 @@ export default class SalesforceClient {
   @logDecorator()
   @requiresLogin()
   private queryMore<T>(queryString: string, useToolingApi: boolean): Promise<QueryResult<T>> {
-    this.setFetchPollingTimeout()
     const conn = useToolingApi ? this.conn.tooling : this.conn
     return this.retryOnBadResponse(() => conn.queryMore(queryString))
   }
@@ -708,7 +696,6 @@ export default class SalesforceClient {
     queryString: string,
     useToolingApi = false,
   ): AsyncIterable<SalesforceRecord[]> {
-    this.setFetchPollingTimeout()
     const hadMore = (results: QueryResult<Value>): boolean =>
       !_.isUndefined(results.nextRecordsUrl)
 
@@ -742,7 +729,6 @@ export default class SalesforceClient {
     queryString: string,
     useToolingApi = false,
   ): Promise<AsyncIterable<SalesforceRecord[]>> {
-    this.setFetchPollingTimeout()
     return this.getQueryAllIterable(queryString, useToolingApi)
   }
 

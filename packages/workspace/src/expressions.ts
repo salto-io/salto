@@ -17,11 +17,12 @@ import wu from 'wu'
 import { logger } from '@salto-io/logging'
 import { ElemID, Element, ReferenceExpression, TemplateExpression, isReferenceExpression, isElement, ReadOnlyElementsSource, isVariable, isInstanceElement, isObjectType, isContainerType, BuiltinTypes, CoreAnnotationTypes, TypeReference, isType, PlaceholderObjectType, Expression, isTemplateExpression, isExpression, isField } from '@salto-io/adapter-api'
 import { resolvePath, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
-import { values } from '@salto-io/lowerdash'
+import { values, collections } from '@salto-io/lowerdash'
 import { DataNodeMap } from '@salto-io/dag'
 import { buildContainerType } from './workspace/elements_source'
 
 const log = logger(module)
+const { awu } = collections.asynciterable
 
 export class UnresolvedReference {
   constructor(public target: ElemID) {
@@ -324,10 +325,14 @@ export const resolve = (
     // Note - this fills pendingAsyncResolves and pendingAsyncOperations as a side effect
     elementGroup.forEach(resolveSingleElement)
 
-    const nextLevelToResolve = (await Promise.all(pendingAsyncResolves.values()))
+    // Note, not using Promise.all here because this might be a very long list and go over the
+    // allowed limits of V8
+    const nextLevelToResolve = (await awu(pendingAsyncResolves.values())
+      .map(promise => promise)
+      .toArray())
       .filter(values.isDefined)
-    // Wait for all pending operations, not just the resolved
-    await Promise.all(pendingAsyncOperations)
+    // Wait for all pending operations, not just the resolves
+    await awu(pendingAsyncOperations).forEach(promise => promise)
 
     if (nextLevelToResolve.length > 0) {
       nextLevelToResolve.forEach(elem => resolvedElements.set(elem.elemID.getFullName(), elem))

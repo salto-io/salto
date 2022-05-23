@@ -13,13 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { ChangeValidator } from '@salto-io/adapter-api'
+import { createChangeValidator } from '@salto-io/adapter-utils'
+import { GeneratorParams } from './generator'
+import fromAdapterConfig from './change_validators/from_adapter_config'
 
-const { getWithCursorPagination } = clientUtils
 
-const pathChecker: clientUtils.PathCheckerFunc = (current, next) => (
-  next === `/api/v2${current}.json` || next === `/api/v2${current}`
-)
-export const paginate: clientUtils.PaginationFuncCreator = () => (
-  getWithCursorPagination(pathChecker)
-)
+export const changeValidator = (
+  config: GeneratorParams,
+): ChangeValidator => {
+  const validators: ChangeValidator[] = [
+    fromAdapterConfig(config),
+  ]
+
+  return createChangeValidator(validators)
+}

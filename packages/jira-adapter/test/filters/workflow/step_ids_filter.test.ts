@@ -111,6 +111,27 @@ describe('stepIdsFilter', () => {
       )
     })
 
+    it('should remove element if failed to get step ids', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        workflowType,
+        {
+          name: 'workflowName',
+          statuses: [
+            { id: '1' },
+            { id: '2' },
+            { id: '3' },
+          ],
+        },
+      )
+
+      mockConnection.get.mockRejectedValue(new Error())
+
+      const elements = [instance]
+      await filter.onFetch(elements)
+      expect(elements).toHaveLength(0)
+    })
+
     it('should do nothing if usePrivateAPI is false', async () => {
       const instance = new InstanceElement(
         'instance',

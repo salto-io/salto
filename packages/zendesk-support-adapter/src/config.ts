@@ -65,6 +65,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       sourceTypeName: 'groups__groups',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      serviceUrl: '/admin/people/team/groups',
     },
     deployRequests: {
       add: {
@@ -242,6 +243,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       sourceTypeName: 'trigger_categories__trigger_categories',
       fileNameFields: ['name'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id' }),
+      serviceUrl: '/admin/objects-rules/rules/triggers',
     },
     deployRequests: {
       add: {
@@ -327,6 +329,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['title'],
       fileNameFields: ['title'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      serviceUrl: '/admin/objects-rules/rules/slas',
     },
     deployRequests: {
       add: {
@@ -372,6 +375,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       sourceTypeName: 'targets__targets',
       idFields: ['title', 'type'], // looks like title is unique so not adding id
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      serviceUrl: '/admin/apps-integrations/targets/targets',
     },
     deployRequests: {
       add: {
@@ -464,6 +468,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'help_center_state', fieldType: 'string', restrictions: { enforce_value: true, values: ['enabled', 'disabled', 'restricted'] } },
       ],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      serviceUrl: '/admin/account/brand_management/brands',
     },
     deployRequests: {
       add: {
@@ -517,6 +522,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       standaloneFields: [{ fieldName: 'holidays' }],
       sourceTypeName: 'business_hours_schedules__schedules',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      serviceUrl: '/admin/objects-rules/rules/schedules',
     },
     deployRequests: {
       add: {
@@ -847,6 +853,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       standaloneFields: [{ fieldName: 'values' }],
       sourceTypeName: 'routing_attributes__attributes',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'string' }),
+      serviceUrl: '/admin/objects-rules/rules/routing',
     },
     deployRequests: {
       add: {
@@ -886,6 +893,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['title'],
       fileNameFields: ['title'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      serviceUrl: '/admin/workspaces/agent-workspace/contextual-workspaces',
     },
     deployRequests: {
       add: {
@@ -945,6 +953,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'updated', fieldType: 'string' }),
       idFields: ['settings.name', 'app_id'],
       fileNameFields: ['settings.name', 'app_id'],
+      serviceUrl: '/admin/apps-integrations/apps/support-apps',
     },
     deployRequests: {
       add: {
@@ -988,6 +997,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'secret', fieldType: 'string' },
         { fieldName: 'user_id', fieldType: 'number' },
       ]),
+      serviceUrl: '/admin/apps-integrations/apis/zendesk-api/oauth_clients',
     },
     deployRequests: {
       add: {
@@ -1202,6 +1212,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: '.',
       standaloneFields: [{ fieldName: 'variants' }],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      serviceUrl: '/admin/workspaces/agent-workspace/dynamic_content',
     },
     deployRequests: {
       add: {
@@ -1399,6 +1410,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       sourceTypeName: 'routing_attribute__values',
       dataField: 'attribute_values',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'string' }),
+      serviceUrl: '/admin/objects-rules/rules/routing',
     },
   },
   // eslint-disable-next-line camelcase

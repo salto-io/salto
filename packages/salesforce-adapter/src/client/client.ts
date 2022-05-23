@@ -95,7 +95,7 @@ const DEFAULT_RETRY_OPTS: Required<ClientRetryConfig> = {
   maxAttempts: 5, // try 5 times
   retryDelay: 5000, // wait for 5s before trying again
   retryStrategy: 'NetworkError', // retry on network errors
-  timeout: 1000, // timeout per request retry in milliseconds
+  timeout: 60 * 1000 * 15, // timeout per request retry in milliseconds
 }
 
 const DEFAULT_READ_METADATA_CHUNK_SIZE: Required<ReadMetadataChunkSizeConfig> = {

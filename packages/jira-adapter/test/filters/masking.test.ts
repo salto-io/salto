@@ -96,9 +96,9 @@ describe('maskingFilter', () => {
       })
     })
 
-    describe('secretMatchers', () => {
+    describe('secretRegexps', () => {
       it('should mask the sensitive strings', async () => {
-        config.masking.secretMatchers = [
+        config.masking.secretRegexps = [
           'name.*',
         ]
 

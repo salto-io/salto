@@ -63,7 +63,7 @@ describe('maskingValidator', () => {
             description: 'Please update the masked values that were deployed to Jira in jira.Automation.instance.instance',
             subActions: [
               'Go to https://ori-salto-test.atlassian.net/ and open the relevant page for jira.Automation.instance.instance',
-              'Go over the values with masked values (values with <SECRET_TOKEN> value) and set the real values',
+              'Search for masked values (which contain <SECRET_TOKEN>) and set them to the correct value',
               'Save the page',
             ],
           },
@@ -91,7 +91,7 @@ describe('maskingValidator', () => {
             description: 'Please update the masked values that were deployed to Jira in jira.Automation.instance.instance',
             subActions: [
               'Go to http://url',
-              'Go over the values with masked values (values with <SECRET_TOKEN> value) and set the real values',
+              'Search for masked values (which contain <SECRET_TOKEN>) and set them to the correct value',
               'Save the page',
             ],
           },
@@ -111,14 +111,14 @@ describe('maskingValidator', () => {
         elemID: instance.elemID,
         severity: 'Warning',
         message: 'Masked data will be deployed to the service',
-        detailedMessage: 'jira.Automation.instance.instance contains masked values which will override the real values in the service when deploying and may prevent this instance from operating correctly',
+        detailedMessage: 'jira.Automation.instance.instance contains masked values which will override the real values in the service when deploying and may prevent it from operating correctly',
         deployActions: {
           postAction: {
             title: 'Update deployed masked data',
             description: 'Please update the masked values that were deployed to Jira in jira.Automation.instance.instance',
             subActions: [
               'Go to https://ori-salto-test.atlassian.net/ and open the relevant page for jira.Automation.instance.instance',
-              'Go over the values with masked values (values with <SECRET_TOKEN> value) and set the real values',
+              'Search for masked values (which contain <SECRET_TOKEN>) and set them to the correct value',
               'Save the page',
             ],
           },

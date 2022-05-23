@@ -72,7 +72,7 @@ const maskValues = async (
       }
 
       if (_.isString(value)
-      && masking.secretMatchers.some(matcher => lowerdashRegex.isFullRegexMatch(value, matcher))) {
+      && masking.secretRegexps.some(matcher => lowerdashRegex.isFullRegexMatch(value, matcher))) {
         log.debug(`Masked value ${path?.getFullName()}`)
         return MASK_VALUE
       }
@@ -87,7 +87,7 @@ const maskValues = async (
 const filter: FilterCreator = ({ config }) => ({
   onFetch: async elements => log.time(async () => {
     if (config.masking.automationHeaders.length === 0
-      && config.masking.secretMatchers.length === 0) {
+      && config.masking.secretRegexps.length === 0) {
       return
     }
 

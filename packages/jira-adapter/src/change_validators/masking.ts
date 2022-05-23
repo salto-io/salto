@@ -33,7 +33,7 @@ export const createChangeError = (
     severity: isModificationChange(change) ? 'Warning' : 'Info',
     message: 'Masked data will be deployed to the service',
     detailedMessage: isModificationChange(change)
-      ? `${getChangeData(change).elemID.getFullName()} contains masked values which will override the real values in the service when deploying and may prevent this instance from operating correctly`
+      ? `${getChangeData(change).elemID.getFullName()} contains masked values which will override the real values in the service when deploying and may prevent it from operating correctly`
       : '',
     deployActions: {
       postAction: {
@@ -43,7 +43,7 @@ export const createChangeError = (
           serviceUrl !== undefined
             ? `Go to ${serviceUrl}`
             : `Go to ${client.baseUrl} and open the relevant page for ${getChangeData(change).elemID.getFullName()}`,
-          'Go over the values with masked values (values with <SECRET_TOKEN> value) and set the real values',
+          'Search for masked values (which contain <SECRET_TOKEN>) and set them to the correct value',
           'Save the page',
         ],
       },

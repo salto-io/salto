@@ -22,12 +22,14 @@ import {
   ReadOnlyElementsSource,
   createRefToElmWithValue,
   TypeReference,
+  StaticFile,
+  isStaticFile,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { elementSource, pathIndex, remoteMap, createAdapterReplacedID } from '@salto-io/workspace'
 import { mockFunction } from '@salto-io/test-utils'
-import { mockWorkspace } from '../common/workspace'
+import { mockWorkspace, mockStaticFilesSource } from '../common/workspace'
 import {
   fetchChanges, FetchChange, generateServiceIdToStateElemId,
   FetchChangesResult, FetchProgressEvents, getAdaptersFirstFetchPartial,
@@ -1477,7 +1479,6 @@ describe('fetch from workspace', () => {
       },
       path: ['salto', 'obj', 'annotations'],
     })
-
     const objFull = new ObjectType({
       elemID: objElemId,
       fields: {
@@ -1505,10 +1506,96 @@ describe('fetch from workspace', () => {
       elemID: new ElemID('other', 'obj'),
       path: ['other', 'obj', 'all'],
     })
+    const existingSubType = new ObjectType({
+      elemID: new ElemID('salto', 'existingSubType'),
+      fields: {
+        staticFileField: { refType: BuiltinTypes.STRING },
+        staticFilesArr: { refType: new ListType(BuiltinTypes.STRING) },
+      },
+      path: ['salto', 'existing', 'subtype'],
+    })
     const existingElement = new ObjectType({
       elemID: new ElemID('salto', 'existing'),
+      fields: {
+        staticFileField: { refType: BuiltinTypes.STRING },
+        hashMismatchField: { refType: BuiltinTypes.STRING },
+        complexField: { refType: existingSubType },
+      },
       path: ['salto', 'existing', 'all'],
     })
+    const fileOne = new StaticFile({ filepath: 'file1', encoding: 'utf-8', content: Buffer.from('1') })
+    const fileTwo = new StaticFile({ filepath: 'file2', encoding: 'utf-8', content: Buffer.from('2') })
+    const fileThree = new StaticFile({ filepath: 'file3', encoding: 'utf-8', content: Buffer.from('3') })
+    const fileFour = new StaticFile({ filepath: 'file4', encoding: 'utf-8', content: Buffer.from('4') })
+    const validFileContents = [fileOne, fileTwo, fileThree].map(f => f.content)
+    const existingInstance = new InstanceElement(
+      'existing',
+      existingElement,
+      {
+        staticFileField: new StaticFile({ filepath: 'file1', encoding: 'utf-8', hash: 'hash1' }),
+        complexField: {
+          staticFileField: new StaticFile({ filepath: 'file2', encoding: 'utf-8', hash: 'hash2' }),
+          staticFilesArr: [
+            new StaticFile({ filepath: 'file3', encoding: 'utf-8', hash: 'hash3' }),
+          ],
+        },
+        hashMismatchField: new StaticFile({ filepath: 'file4', encoding: 'utf-8', hash: 'hash4' }),
+      },
+    )
+    const editStateExistingInstance = new InstanceElement(
+      'existing',
+      existingElement,
+      {
+        staticFileField: new StaticFile({ filepath: 'file1', encoding: 'utf-8', hash: fileOne.hash }),
+        complexField: {
+          staticFileField: new StaticFile({ filepath: 'file2', encoding: 'utf-8', hash: fileTwo.hash }),
+          staticFilesArr: [
+            new StaticFile({ filepath: 'file3', encoding: 'utf-8', hash: fileThree.hash }),
+          ],
+        },
+        hashMismatchField: new StaticFile({ filepath: 'file4', encoding: 'utf-8', hash: 'miss!' }),
+      },
+    )
+    const editNaclExistingInstance = new InstanceElement(
+      'existing',
+      existingElement,
+      {
+        staticFileField: fileOne,
+        complexField: {
+          staticFileField: fileTwo,
+          staticFilesArr: [
+            fileThree,
+          ],
+        },
+        hashMismatchField: new StaticFile({ filepath: 'file4', encoding: 'utf-8', hash: 'hash4' }),
+      },
+    )
+    const newStateStaticInstance = new InstanceElement(
+      'new',
+      existingElement,
+      {
+        staticFileField: new StaticFile({ filepath: 'file1', encoding: 'utf-8', hash: fileOne.hash }),
+        complexField: {
+          staticFileField: new StaticFile({ filepath: 'file2', encoding: 'utf-8', hash: fileTwo.hash }),
+          staticFilesArr: [
+            new StaticFile({ filepath: 'file3', encoding: 'utf-8', hash: fileThree.hash }),
+          ],
+        },
+      }
+    )
+    const newNaclStaticInstance = new InstanceElement(
+      'new',
+      existingElement,
+      {
+        staticFileField: fileOne,
+        complexField: {
+          staticFileField: fileTwo,
+          staticFilesArr: [
+            fileThree,
+          ],
+        },
+      }
+    )
     const editElemID = new ElemID('salto', 'edit')
     const editStateElem = new ObjectType({
       elemID: editElemID,
@@ -1540,7 +1627,6 @@ describe('fetch from workspace', () => {
       },
       path: ['salto', 'here'],
     })
-
     const noPathElemID = ElemID.fromFullName('salto.partially')
     const noPathElementFull = new ObjectType({
       elemID: noPathElemID,
@@ -1557,7 +1643,6 @@ describe('fetch from workspace', () => {
       },
       path: ['salto', 'nopath'],
     })
-
     const movedElem = new ObjectType({
       elemID: ElemID.fromFullName('salto.moved'),
       annotations: {
@@ -1565,18 +1650,29 @@ describe('fetch from workspace', () => {
       },
       path: ['salto', 'origLocation'],
     })
-    const mergedElements = [objFull, existingElement, otherAdapterElem, editNaclElem,
-      noPathElementFull, movedElem]
-    const stateElements = [objFull, existingElement, otherAdapterElem, editStateElem,
-      noPathElementFull, movedElem]
+    const mergedElements = [
+      objFull, existingElement, otherAdapterElem, editNaclElem, newNaclStaticInstance,
+      noPathElementFull, movedElem, editNaclExistingInstance, existingSubType,
+    ]
+    const stateElements = [
+      objFull, existingElement, otherAdapterElem, editStateElem, newStateStaticInstance,
+      noPathElementFull, movedElem, editStateExistingInstance, existingSubType,
+    ]
     const unmergedElements = [
       objFragStdFields, objFragCustomFields, editStateElem,
-      objFragAnnotations, existingElement, otherAdapterElem,
-      noPathElementFull, movedElem,
+      objFragAnnotations, existingElement, otherAdapterElem, newStateStaticInstance,
+      noPathElementFull, movedElem, editStateExistingInstance, existingSubType,
     ]
-    const unmergedElementsWithEditNaclElem = [
-      ...(unmergedElements.filter(e => !e.elemID.isEqual(editElemID))),
+    const edits = [
       editNaclElem,
+      editNaclExistingInstance,
+      newNaclStaticInstance,
+    ]
+    const editsIDs = edits.map(edit => edit.elemID.getFullName())
+    const unmergedElementsWithEditNaclElem = [
+      ...(unmergedElements.filter(e =>
+        !editsIDs.includes(e.elemID.getFullName()))),
+      ...edits,
     ]
     const configs = [
       new InstanceElement('_config', new TypeReference(new ElemID('salto'))),
@@ -1594,6 +1690,10 @@ describe('fetch from workspace', () => {
       }
       return 0
     }
+
+    const otherWorkspaceStaticFilesSource = mockStaticFilesSource(
+      [fileOne, fileTwo, fileThree, fileFour],
+    )
 
     beforeEach(async () => {
       await pathIndex.overridePathIndex(pi, unmergedElements.filter(
@@ -1614,10 +1714,11 @@ describe('fetch from workspace', () => {
                 'salto/nopath.nacl': [noPathElementNACL],
                 'salto/moved.nacl': [movedElem],
               },
+              staticFilesSource: otherWorkspaceStaticFilesSource,
             }),
             ['salto'],
-            createInMemoryElementSource([existingElement]),
-            createInMemoryElementSource([existingElement]),
+            createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
+            createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
             configs,
             'default',
             false,
@@ -1659,6 +1760,28 @@ describe('fetch from workspace', () => {
         })
       })
 
+      it('should return changes with static files content from the elements', () => {
+        const changes = [...fetchRes.changes]
+        const newStaticInst = changes
+          .filter(change => change.change.id.isEqual(newNaclStaticInstance.elemID))
+          .map(change => getChangeData(change.change))
+        expect(newStaticInst).toHaveLength(1)
+        expect(newStaticInst[0].value.staticFileField.content).toEqual(fileOne.content)
+        expect(newStaticInst[0].value.complexField.staticFileField.content)
+          .toEqual(fileTwo.content)
+        expect(newStaticInst[0].value.complexField.staticFilesArr[0].content)
+          .toEqual(fileThree.content)
+        const modifyStaticVals = changes
+          .filter(change =>
+            change.change.id.createTopLevelParentID().parent
+              .isEqual(editNaclExistingInstance.elemID))
+          .map(change => getChangeData(change.change))
+        expect(modifyStaticVals).toHaveLength(3)
+        const staticFileModifies = modifyStaticVals.filter(val => isStaticFile(val))
+        expect(staticFileModifies).toHaveLength(3)
+        staticFileModifies.forEach(modify => validFileContents.includes(modify.content))
+      })
+
       describe('With warnings', () => {
         beforeEach(async () => {
           fetchRes = await fetchChangesFromWorkspace(
@@ -1668,10 +1791,11 @@ describe('fetch from workspace', () => {
               accountConfigs: { salto: configs[0] },
               stateElements,
               errors: [{ message: 'A warnings', severity: 'Warning' }],
+              staticFilesSource: otherWorkspaceStaticFilesSource,
             }),
             ['salto'],
-            createInMemoryElementSource([existingElement]),
-            createInMemoryElementSource([existingElement]),
+            createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
+            createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
             configs,
             'default',
             false,
@@ -1697,10 +1821,11 @@ describe('fetch from workspace', () => {
               index: await awu(pi.entries()).toArray(),
               accountConfigs: { salto: configs[0] },
               stateElements,
+              staticFilesSource: otherWorkspaceStaticFilesSource,
             }),
             ['salto'],
-            createInMemoryElementSource([existingElement]),
-            createInMemoryElementSource([existingElement]),
+            createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
+            createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
             configs,
             'default',
             true,
@@ -1740,6 +1865,37 @@ describe('fetch from workspace', () => {
             .forEach(frag => expect(changesElements.filter(e => e.isEqual(frag)))
               .toHaveLength(1))
         })
+
+        it('should return changes with static files content from otherWorkspace when hashes match', () => {
+          const changes = [...fetchRes.changes]
+          const newStaticInst = changes
+            .filter(change => change.change.id.isEqual(newStateStaticInstance.elemID))
+            .map(change => getChangeData(change.change))
+          expect(newStaticInst).toHaveLength(1)
+          expect(newStaticInst[0].value.staticFileField.content).toEqual(fileOne.content)
+          expect(newStaticInst[0].value.complexField.staticFileField.content)
+            .toEqual(fileTwo.content)
+          expect(newStaticInst[0].value.complexField.staticFilesArr[0].content)
+            .toEqual(fileThree.content)
+          const modifyStaticVals = changes
+            .filter(change =>
+              change.change.id.createTopLevelParentID().parent.isEqual(editStateExistingInstance.elemID))
+            .map(change => getChangeData(change.change))
+          expect(modifyStaticVals).toHaveLength(3)
+          const staticFileModifies = modifyStaticVals.filter(val => isStaticFile(val))
+          expect(staticFileModifies).toHaveLength(3)
+          staticFileModifies.forEach(modify => validFileContents.includes(modify.content))
+        })
+
+        it('should not have a change on the val and a error if there is a hashes mismatch', () => {
+          const changes = [...fetchRes.changes]
+          const mismatchValFullName = `${editStateExistingInstance.elemID.getFullName()}.hashMismatchField`
+          const hasMismatchFieldChange = changes
+            .find(c => c.change.id.getFullName() === mismatchValFullName)
+          expect(hasMismatchFieldChange).toBeUndefined()
+          expect(fetchRes.errors).toHaveLength(1)
+          expect(fetchRes.errors[0].message).toContain(mismatchValFullName)
+        })
       })
 
       describe('With errors and warnings', () => {
@@ -1754,10 +1910,11 @@ describe('fetch from workspace', () => {
                 { message: 'what is this madness', severity: 'Error' },
                 { message: 'A warnings', severity: 'Warning' },
               ],
+              staticFilesSource: otherWorkspaceStaticFilesSource,
             }),
             ['salto'],
-            createInMemoryElementSource([existingElement]),
-            createInMemoryElementSource([existingElement]),
+            createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
+            createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
             configs,
             'default',
             true,
@@ -1765,11 +1922,11 @@ describe('fetch from workspace', () => {
           resElements = [...fetchRes.elements]
         })
 
-        it('Should return with changes and no errors', () => {
+        it('Should return with changes and a single expected error', () => {
           expect([...fetchRes.changes]).not.toHaveLength(0)
           expect(fetchRes.elements).not.toHaveLength(0)
           expect(fetchRes.unmergedElements).not.toHaveLength(0)
-          expect(fetchRes.errors).toHaveLength(0)
+          expect(fetchRes.errors).toHaveLength(1)
         })
       })
     })

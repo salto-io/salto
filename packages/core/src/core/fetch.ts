@@ -812,28 +812,19 @@ const fixStaticFilesForFromStateChanges = async (
             staticFile.encoding,
             env
           )
-          console.log('path')
-          console.log(staticFileChangeFullName)
           if (!actualStaticFile || actualStaticFile.hash !== staticFile.hash) {
-            console.log('The hashes are different!')
-            console.log(actualStaticFile?.hash)
-            console.log(staticFile.hash)
             invalidChangeIDs.add(change.id.getFullName())
             return
           }
           const staticFileValElemID = ElemID.fromFullName(staticFileChangeFullName)
-          console.log(staticFileValElemID.getFullName())
           if (isElement(change.data.after)) {
-            console.log('got here a')
             setPath(change.data.after, staticFileValElemID, actualStaticFile)
             return
           }
           if (isStaticFile(change.data.after)) {
-            console.log('got here b')
             change.data.after = actualStaticFile
             return
           }
-          console.log('not element nor static')
           const changeFullNameParts = change.id.getFullNameParts()
           const relativePath = _.dropWhile(
             staticFileChangeFullName.split('.'),

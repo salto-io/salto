@@ -14,9 +14,13 @@
 * limitations under the License.
 */
 import * as file from '@salto-io/file'
+import { collections } from '@salto-io/lowerdash'
+import { mockFunction } from '@salto-io/test-utils'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { staticFiles, remoteMap } from '@salto-io/workspace'
 import { buildLocalStaticFilesCache } from '../../../src/local-workspace/static_files_cache'
+
+const { DefaultMap } = collections.map
 
 jest.mock('@salto-io/file')
 describe('Static Files Cache', () => {
@@ -35,26 +39,20 @@ describe('Static Files Cache', () => {
     modified: 123,
   }
 
-  // We keep a cache to simulate the face that remote maps
-  // with the same namespace point to the same entries.
-  const remoteMaps = new Map()
-  const remoteMapCreator = jest.fn(
-    async <T, K extends string = string>(
-      opts: remoteMap.CreateRemoteMapParams<T>
-    ): Promise<remoteMap.RemoteMap<T, K>> => {
-      if (!remoteMaps.has(opts.namespace)) {
-        remoteMaps.set(opts.namespace, new remoteMap.InMemoryRemoteMap<T, K>())
-      }
-      return remoteMaps.get(opts.namespace)
-    }
-  )
   beforeEach(() => {
     jest.clearAllMocks()
-    remoteMaps.clear()
   })
   describe('new cache', () => {
+    // We keep a cache to simulate the fact that remote maps
+    // with the same namespace point to the same entries.
+    const remoteMaps = new DefaultMap(() => new remoteMap.InMemoryRemoteMap())
+    const remoteMapCreator = mockFunction<remoteMap.RemoteMapCreator>().mockImplementation(
+      async opts => remoteMaps.get(opts.namespace)
+    )
+
     beforeEach(() => {
-      staticFilesCache = buildLocalStaticFilesCache('path', 'test-env', remoteMapCreator as remoteMap.RemoteMapCreator)
+      remoteMaps.clear()
+      staticFilesCache = buildLocalStaticFilesCache('path', 'test-env', remoteMapCreator)
     })
     it('should handle unknown file paths', async () => {
       expect((await staticFilesCache.get(baseMetaData.filepath))).toBeUndefined()
@@ -87,18 +85,22 @@ describe('Static Files Cache', () => {
     const expectedCacheContent = safeJsonStringify({
       [expectedCacheKey]: expectedResult,
     })
+    const remoteMapCreator = mockFunction<remoteMap.RemoteMapCreator>().mockImplementation(
+      async () => new remoteMap.InMemoryRemoteMap()
+    )
+
     it('migrates old cache file if exists', async () => {
       mockFileExists.mockResolvedValueOnce(true)
       mockReadFile.mockResolvedValueOnce(expectedCacheContent)
-      staticFilesCache = buildLocalStaticFilesCache('path', 'test-env', remoteMapCreator as remoteMap.RemoteMapCreator)
+      staticFilesCache = buildLocalStaticFilesCache('path', 'test-env', remoteMapCreator)
       return expect(staticFilesCache.get(baseMetaData.filepath)).resolves.toEqual(expectedResult)
     })
     it('does not import old cache file if cache already populated', async () => {
-      const oldCache = buildLocalStaticFilesCache('path', 'test-env', remoteMapCreator as remoteMap.RemoteMapCreator)
+      const oldCache = buildLocalStaticFilesCache('path', 'test-env', remoteMapCreator)
       await oldCache.put({ filepath: 'something.txt', hash: 'bla', modified: 123 })
       mockFileExists.mockResolvedValueOnce(true)
       mockReadFile.mockResolvedValueOnce(expectedCacheContent)
-      staticFilesCache = buildLocalStaticFilesCache('path', 'test-env', remoteMapCreator as remoteMap.RemoteMapCreator)
+      staticFilesCache = buildLocalStaticFilesCache('path', 'test-env', remoteMapCreator)
       return expect(staticFilesCache.get(baseMetaData.filepath)).resolves.toEqual(expectedResult)
     })
   })

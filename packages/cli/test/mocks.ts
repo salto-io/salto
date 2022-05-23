@@ -414,6 +414,7 @@ export const mockWorkspace = ({
     listUnresolvedReferences: mockFunction<Workspace['listUnresolvedReferences']>(),
     getElementSourceOfPath: mockFunction<Workspace['getElementSourceOfPath']>(),
     getFileEnvs: mockFunction<Workspace['getFileEnvs']>(),
+    getStaticFile: mockFunction<Workspace['getStaticFile']>(),
   }
 }
 

@@ -773,10 +773,10 @@ const createEmptyFetchChangeDueToError = (errMsg: string): FetchChangesResult =>
 
 const getPathsToStaticFiles = async (
   value: Value,
-  valPath: readonly string[],
+  elemId: ElemID,
 ): Promise<Map<string, StaticFile>> => {
   const pathToStaticFiles: Map<string, StaticFile> = new Map<string, StaticFile>()
-  const func: WalkOnFunc = ({ path, value: val }) => {
+  const findStaticFilesFn: WalkOnFunc = ({ path, value: val }) => {
     if (isStaticFile(val)) {
       pathToStaticFiles.set(path.getFullName(), val)
       return WALK_NEXT_STEP.SKIP
@@ -784,28 +784,76 @@ const getPathsToStaticFiles = async (
     return WALK_NEXT_STEP.RECURSE
   }
   if (isElement(value)) {
-    walkOnElement({ element: value, func })
+    walkOnElement({ element: value, func: findStaticFilesFn })
   } else {
-    walkOnValue({ elemId: new ElemID('ahi', 'sim po from the detail change'), value, func })
+    walkOnValue({ elemId, value, func: findStaticFilesFn })
   }
   return pathToStaticFiles
-  if (_.isArray(value)) {
-    await awu(value)
-      .flatMap((v, index) => getPathsToStaticFiles(v, [...valPath, index.toString()]))
-      .forEach(([path, val]) =>
-        pathToStaticFiles.set(path, val))
+}
+
+const fixStaticFilesForFromStateChanges = async (
+  fetchChangesResult: FetchChangesResult,
+  otherWorkspace: Workspace,
+  env: string,
+): Promise<FetchChangesResult> => {
+  const invalidChangeIDs: Set<string> = new Set()
+  await awu(fetchChangesResult.changes)
+    .map(fetchChange => fetchChange.change)
+    .filter(isAdditionOrModificationChange)
+    .forEach(async change => {
+      if (isAdditionOrModificationChange(change)) {
+        const pathsToStaticFiles = await getPathsToStaticFiles(
+          change.data.after,
+          change.id,
+        )
+        await awu(pathsToStaticFiles).forEach(async ([staticFileChangeFullName, staticFile]) => {
+          const actualStaticFile = await otherWorkspace.getStaticFile(
+            staticFile.filepath,
+            staticFile.encoding,
+            env
+          )
+          console.log('path')
+          console.log(staticFileChangeFullName)
+          if (!actualStaticFile || actualStaticFile.hash !== staticFile.hash) {
+            console.log('The hashes are different!')
+            console.log(actualStaticFile?.hash)
+            console.log(staticFile.hash)
+            invalidChangeIDs.add(change.id.getFullName())
+            return
+          }
+          const staticFileValElemID = ElemID.fromFullName(staticFileChangeFullName)
+          console.log(staticFileValElemID.getFullName())
+          if (isElement(change.data.after)) {
+            console.log('got here a')
+            setPath(change.data.after, staticFileValElemID, actualStaticFile)
+            return
+          }
+          if (isStaticFile(change.data.after)) {
+            console.log('got here b')
+            change.data.after = actualStaticFile
+            return
+          }
+          console.log('not element nor static')
+          const changeFullNameParts = change.id.getFullNameParts()
+          const relativePath = _.dropWhile(
+            staticFileChangeFullName.split('.'),
+            (namePart, index) => namePart === changeFullNameParts[index],
+          )
+          _.set(change.data.after, relativePath, actualStaticFile)
+        })
+      }
+    })
+  return {
+    ...fetchChangesResult,
+    changes: wu(fetchChangesResult.changes)
+      .filter(change => !invalidChangeIDs.has(change.change.id.getFullName())),
+    errors: fetchChangesResult.errors.concat(
+      Array.from(invalidChangeIDs).map(invalidChangeElemID => ({
+        message: `Dropping changes in element: ${invalidChangeElemID} due to static files hashes mismatch`,
+        severity: 'Error',
+      }))
+    ),
   }
-  if (_.isPlainObject(value)) {
-    await awu(Object.entries(value))
-      .flatMap(([key, val]) =>
-        getPathsToStaticFiles(val, [...valPath, key]))
-      .forEach(([path, val]) =>
-        pathToStaticFiles.set(path, val))
-  }
-  if (isStaticFile(value)) {
-    return pathToStaticFiles.set(valPath.join('.'), value)
-  }
-  return pathToStaticFiles
 }
 
 export const fetchChangesFromWorkspace = async (
@@ -877,10 +925,6 @@ export const fetchChangesFromWorkspace = async (
   const fullElements = await awu(await (otherElementsSource).getAll())
     .filter(elem => fetchAccounts.includes(elem.elemID.adapter))
     .toArray()
-  // const apexClasses = fullElements.filter(fe => fe.elemID.typeName === 'ApexClass')
-  // .filter(fe => fe.elemID.idType === 'instance')
-  // log.debug('%s', apexClasses.map(e => safeJsonStringify(e)).join('\n'))
-  // console.log('%s', apexClasses.map(e => safeJsonStringify(e)).join('\n'))
 
   const otherPathIndex = await otherWorkspace.state(env).getPathIndex()
   const inMemoryOtherPathIndex = new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>(
@@ -901,7 +945,7 @@ export const fetchChangesFromWorkspace = async (
     )
     ).flat(),
   ]
-  const changes = await createFetchChanges({
+  const fetchChangesResult = await createFetchChanges({
     adapterNames: fetchAccounts,
     currentConfigs,
     getChangesEmitter,
@@ -913,107 +957,11 @@ export const fetchChangesFromWorkspace = async (
     workspaceElements,
     unmergedElements,
   })
-  if (fromState) {
-    await awu(changes.changes)
-      .map(c => c.change)
-      .filter(isAdditionOrModificationChange)
-      .forEach(async c => {
-        if (isAdditionOrModificationChange(c)) {
-          const pathsToStaticFiles = await getPathsToStaticFiles(
-            c.data.after,
-            c.path ?? ([] as readonly string[]),
-          )
-          pathsToStaticFiles.forEach(async (staticFile, path) => {
-            const actualStaticFile = await otherWorkspace.getStaticFile(
-              staticFile.filepath,
-              staticFile.encoding,
-              env
-            )
-            // if the hashes are different we need to remove the change and add an error
-            if (!actualStaticFile) {
-              // Add an error
-              console.log('no static file')
-              return
-            }
-            console.log('path')
-            console.log(path)
-            console.log('%o', c.data.after)
-            if (isElement(c.data.after)) {
-              setPath(c.data.after, ElemID.fromFullName(path), actualStaticFile)
-            }
-            _.set(c.data.after, path.split('.'), actualStaticFile)
-            console.log('%o', c.data.after)
-          })
-        }
-      })
-    // await awu(changes.changes)
-    //   .map(c => c.change)
-    //   .filter(c => (isAdditionOrModificationChange(c)))
-    //   .forEach(async c => {
-    //     if (isAdditionOrModificationChange(c)) {
-    //       const otherWorkspaceStaticFile = await otherWorkspace.getStaticFile(
-    //         c.data.after.filepath, c.data.after.encoding, env,
-    //       )
-    //       if (!otherWorkspaceStaticFile) {
-    //         // add error and remove the change
-    //         console.log('lala')
-    //       }
-    //       c.data.after = otherWorkspaceStaticFile
-    //     }
-    //   })
-    // await awu(changes.changes)
-    //   .filter(c =>
-    //     c.change.id.getFullName().includes('ApexClass'))
-    //   .forEach(c => {
-    //     console.log(c.change.id.getFullName())
-    //     console.log(c.change.action)
-    //   })
-
-    // const lala2 = awu(lala).filter(async l => {
-    //   if (isAdditionOrModificationChange(l) && isStaticFile(l.data.after)) {
-    //     const otherWorkspaceStaticFile = await otherWorkspace.getStaticFile(
-    //       element.filepath, element.encoding, env,
-    //     )
-    //     if (!otherWorkspaceStaticFile) {
-    //       // add error and remove the change
-    //       console.log('lala')
-    //     }
-    //   }
-    // })
-    // lala.forEach(l =>
-    //   applyFunctionToChangeData(
-    //     l,
-    //     async (element: Element) => {
-    //       if (isStaticFile(element)) {
-    // const otherWorkspaceStaticFile = await otherWorkspace.getStaticFile(
-    //   element.filepath, element.encoding, env,
-    // )
-    // if (!otherWorkspaceStaticFile) {
-    //   // add error and remove the change
-    //   console.log('lala')
-    // }
-    //         element.content = await otherWorkspaceStaticFile?.getContent()
-    //       }
-    //     }
-    //   ))
-    // applyFunctionToChangeData(
-    //   changes.changes,
-    //   (element: Element) =>
-    // )
-  }
-  return changes
-  // return createFetchChanges({
-  //   adapterNames: fetchAccounts,
-  //   currentConfigs,
-  //   getChangesEmitter,
-  //   processErrorsResult: {
-  //     keptElements: fullElements,
-  //     errorsWithDroppedElements: [],
-  //   },
-  //   stateElements,
-  //   workspaceElements,
-  //   unmergedElements,
-  // })
+  // fromState case is currently needed to add proper Static Files values to the changes
+  // This will be redundant once the Static Files re-design will be implemented
+  return fromState
+    ? fixStaticFilesForFromStateChanges(fetchChangesResult, otherWorkspace, env)
+    : fetchChangesResult
 }
 
 const id = (elemID: ElemID): string => elemID.getFullName()

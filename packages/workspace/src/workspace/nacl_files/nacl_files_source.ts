@@ -968,6 +968,7 @@ const buildNaclFilesSource = (
         await currentState.parsedNaclFiles.clear()
         await currentState.searchableNamesIndex.clear()
         await currentState.metadata.clear()
+        await currentState.staticFilesIndex.clear()
       }
       initChanges = undefined
       state = undefined

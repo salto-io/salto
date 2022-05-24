@@ -62,12 +62,21 @@ export class NotAWorkspaceError extends Error {
   }
 }
 
-export const getNaclFilesSourceParams = (
-  sourceBaseDir: string,
-  cacheDir: string,
-  name: string,
-  excludeDirs: string[] = []
-): {
+type GetNaclFilesSourceParamsArgs = {
+  sourceBaseDir: string
+  cacheDir: string
+  name: string
+  remoteMapCreator: remoteMap.RemoteMapCreator
+  excludeDirs?: string[]
+}
+
+export const getNaclFilesSourceParamsImpl = ({
+  sourceBaseDir,
+  cacheDir,
+  name,
+  remoteMapCreator,
+  excludeDirs = [],
+}: GetNaclFilesSourceParamsArgs): {
   naclFilesStore: dirStore.DirectoryStore<string>
   staticFileSource: staticFiles.StaticFilesSource
 } => {
@@ -92,12 +101,27 @@ export const getNaclFilesSourceParams = (
   const cacheName = name === COMMON_ENV_PREFIX ? 'common' : name
   const staticFileSource = buildStaticFilesSource(
     naclStaticFilesStore,
-    buildLocalStaticFilesCache(cacheDir, cacheName),
+    buildLocalStaticFilesCache(cacheDir, cacheName, remoteMapCreator),
   )
   return {
     naclFilesStore,
     staticFileSource,
   }
+}
+
+export const getNaclFilesSourceParams = (
+  sourceBaseDir: string,
+  cacheDir: string,
+  name: string,
+  excludeDirs: string[] = [],
+): {
+  naclFilesStore: dirStore.DirectoryStore<string>
+  staticFileSource: staticFiles.StaticFilesSource
+} => {
+  const remoteMapCreator = createRemoteMapCreator(cacheDir)
+  return getNaclFilesSourceParamsImpl(
+    { sourceBaseDir, cacheDir, name, excludeDirs, remoteMapCreator }
+  )
 }
 
 const loadNaclFileSource = async (
@@ -108,9 +132,13 @@ const loadNaclFileSource = async (
   remoteMapCreator: remoteMap.RemoteMapCreator,
   excludeDirs: string[] = []
 ): Promise<nacl.NaclFilesSource> => {
-  const { naclFilesStore, staticFileSource } = getNaclFilesSourceParams(
-    sourceBaseDir, cacheBaseDir, sourceName, excludeDirs
-  )
+  const { naclFilesStore, staticFileSource } = getNaclFilesSourceParamsImpl({
+    sourceBaseDir,
+    cacheDir: cacheBaseDir,
+    name: sourceName,
+    remoteMapCreator,
+    excludeDirs,
+  })
   return naclFilesSource(
     sourceName,
     naclFilesStore,

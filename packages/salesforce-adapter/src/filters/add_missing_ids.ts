@@ -83,8 +83,9 @@ const filter: FilterCreator = ({ client, config }) => ({
         Object.entries(groupedElements)
           .map(([typeName, typeElements]) => addMissingIds(client, typeName, typeElements))
       )
-      if (results.some(r => r.status === 'rejected')) {
-        throw new Error('Failed to add missing ids')
+      const rejected = results.find(r => r.status === 'rejected') as PromiseRejectedResult | undefined
+      if (rejected !== undefined) {
+        throw new Error(rejected.reason)
       }
     },
   }),

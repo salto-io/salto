@@ -68,7 +68,7 @@ import webhookFilter from './filters/webhook'
 import defaultDeployFilter from './filters/default_deploy'
 import ducktypeCommonFilters from './filters/ducktype_common'
 // referencedIdFieldsFilter will be used again after SALTO-2312
-// import referencedIdFieldsFilter from './filters/referenced_id_fields'
+import referencedIdFieldsFilter from './filters/referenced_id_fields'
 import { getConfigFromConfigChanges } from './config_change'
 import { dependencyChanger } from './dependency_changers'
 
@@ -122,7 +122,7 @@ export const DEFAULT_FILTERS = [
   unorderedListsFilter,
   dynamicContentReferencesFilter,
   // referencedIdFieldsFilter will be used again after SALTO-2312
-  // referencedIdFieldsFilter,
+  referencedIdFieldsFilter,
   serviceUrlFilter,
   ...ducktypeCommonFilters,
   // defaultDeployFilter should be last!

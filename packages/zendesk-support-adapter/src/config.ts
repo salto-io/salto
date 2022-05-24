@@ -1241,7 +1241,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   dynamic_content_item__variants: {
     transformation: {
       // Will be changed after SALTO-2312
-      idFields: ['locale_id'],
+      idFields: ['&locale_id'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
     deployRequests: {

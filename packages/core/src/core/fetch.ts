@@ -768,14 +768,16 @@ const createEmptyFetchChangeDueToError = (errMsg: string): FetchChangesResult =>
   }
 }
 
-const getPathsToStaticFiles = async (
-  value: Value,
+type StaticFileAndElemID = { elemID: ElemID; staticFile: StaticFile }
+
+const getPathsToStaticFiles = (
+  value: Element | Value,
   elemId: ElemID,
-): Promise<Map<string, StaticFile>> => {
-  const pathToStaticFiles: Map<string, StaticFile> = new Map<string, StaticFile>()
+): StaticFileAndElemID[] => {
+  const staticFilesAndElemIDs: StaticFileAndElemID[] = []
   const findStaticFilesFn: WalkOnFunc = ({ path, value: val }) => {
     if (isStaticFile(val)) {
-      pathToStaticFiles.set(path.getFullName(), val)
+      staticFilesAndElemIDs.push({ elemID: path, staticFile: val })
       return WALK_NEXT_STEP.SKIP
     }
     return WALK_NEXT_STEP.RECURSE
@@ -785,7 +787,7 @@ const getPathsToStaticFiles = async (
   } else {
     walkOnValue({ elemId, value, func: findStaticFilesFn })
   }
-  return pathToStaticFiles
+  return staticFilesAndElemIDs
 }
 
 const fixStaticFilesForFromStateChanges = async (
@@ -794,42 +796,44 @@ const fixStaticFilesForFromStateChanges = async (
   env: string,
 ): Promise<FetchChangesResult> => {
   const invalidChangeIDs: Set<string> = new Set()
-  await awu(fetchChangesResult.changes)
+  const filteredChanges = wu(fetchChangesResult.changes)
     .map(fetchChange => fetchChange.change)
     .filter(isAdditionOrModificationChange)
+  await awu(filteredChanges)
     .forEach(async change => {
-      if (isAdditionOrModificationChange(change)) {
-        const pathsToStaticFiles = await getPathsToStaticFiles(
-          change.data.after,
-          change.id,
-        )
-        await awu(pathsToStaticFiles).forEach(async ([staticFileChangeFullName, staticFile]) => {
-          const actualStaticFile = await otherWorkspace.getStaticFile(
-            staticFile.filepath,
-            staticFile.encoding,
-            env
-          )
-          if (!actualStaticFile || actualStaticFile.hash !== staticFile.hash) {
-            invalidChangeIDs.add(change.id.getFullName())
-            return
-          }
-          const staticFileValElemID = ElemID.fromFullName(staticFileChangeFullName)
-          if (isElement(change.data.after)) {
-            setPath(change.data.after, staticFileValElemID, actualStaticFile)
-            return
-          }
-          if (isStaticFile(change.data.after)) {
-            change.data.after = actualStaticFile
-            return
-          }
-          const changeFullNameParts = change.id.getFullNameParts()
-          const relativePath = _.dropWhile(
-            staticFileChangeFullName.split('.'),
-            (namePart, index) => namePart === changeFullNameParts[index],
-          )
-          _.set(change.data.after, relativePath, actualStaticFile)
+      const staticFiles = getPathsToStaticFiles(
+        change.data.after,
+        change.id,
+      )
+      const changePath = change.id.createTopLevelParentID().path
+      await awu(staticFiles).forEach(async ({ elemID: staticFileValElemID, staticFile }) => {
+        const actualStaticFile = await otherWorkspace.getStaticFile({
+          filepath: staticFile.filepath,
+          encoding: staticFile.encoding,
+          env,
         })
-      }
+        if (!actualStaticFile?.isEqual(staticFile)) {
+          invalidChangeIDs.add(change.id.getFullName())
+          log.warn(
+            'Static files mismatch in fetch from state for change in elemID %s. (stateHash=%s naclHash=%s)',
+            change.id.getFullName(),
+            staticFile.hash,
+            actualStaticFile?.hash,
+          )
+          return
+        }
+        if (isElement(change.data.after)) {
+          setPath(change.data.after, staticFileValElemID, actualStaticFile)
+          return
+        }
+        if (isStaticFile(change.data.after)) {
+          change.data.after = actualStaticFile
+          return
+        }
+        const staticFilePath = staticFileValElemID.createTopLevelParentID().path
+        const relativePath = staticFilePath.slice(changePath.length - 1)
+        _.set(change.data.after, relativePath, actualStaticFile)
+      })
     })
   return {
     ...fetchChangesResult,
@@ -945,8 +949,10 @@ export const fetchChangesFromWorkspace = async (
     workspaceElements,
     unmergedElements,
   })
-  // fromState case is currently needed to add proper Static Files values to the changes
-  // This will be redundant once the Static Files re-design will be implemented
+  // We currently cannot access the content of static files from the state so when fetching
+  // from the state we use the content from the NaCls, if there is a mis-match there we have
+  // to drop the change
+  // This will not be needed anymore once we have access to the state static file content
   return fromState
     ? fixStaticFilesForFromStateChanges(fetchChangesResult, otherWorkspace, env)
     : fetchChangesResult

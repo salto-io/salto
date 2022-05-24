@@ -236,11 +236,11 @@ export type Workspace = {
   listUnresolvedReferences(completeFromEnv?: string): Promise<UnresolvedElemIDs>
   getElementSourceOfPath(filePath: string, includeHidden?: boolean): Promise<ReadOnlyElementsSource>
   getFileEnvs(filePath: string): {envName: string; isStatic?: boolean}[]
-  getStaticFile(
-    filePath: string,
-    encoding: BufferEncoding,
-    env: string,
-  ): Promise<StaticFile | undefined>
+  getStaticFile(params: {
+    filepath: string
+    encoding: BufferEncoding
+    env?: string
+  }): Promise<StaticFile | undefined>
 }
 
 type SingleState = {
@@ -1262,8 +1262,8 @@ export const loadWorkspace = async (
         : elementsImpl(includeHidden)
     ),
     getFileEnvs: filePath => naclFilesSource.getFileEnvs(filePath),
-    getStaticFile: async (filePath, encoding, env) =>
-      (naclFilesSource.getStaticFile(filePath, encoding, env)),
+    getStaticFile: async ({ filepath, encoding, env }) =>
+      (naclFilesSource.getStaticFile(filepath, encoding, env ?? currentEnv())),
   }
 }
 

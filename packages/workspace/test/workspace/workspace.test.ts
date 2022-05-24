@@ -3313,18 +3313,18 @@ describe('workspace', () => {
 
     describe('getStaticFile', () => {
       it('should get staticFile by env', async () => {
-        const defaultStaticFileRes = (await workspace.getStaticFile('salto/static.txt', 'utf-8', 'default'))
+        const defaultStaticFileRes = (await workspace.getStaticFile({ filepath: 'salto/static.txt', encoding: 'utf-8' }))
         expect(defaultStaticFileRes).toBeDefined()
         expect(defaultStaticFileRes?.isEqual(defaultStaticFile)).toBeTruthy()
-        const inactiveStaticFileRes = (await workspace.getStaticFile('salto/static.txt', 'utf-8', 'inactive'))
+        const inactiveStaticFileRes = (await workspace.getStaticFile({ filepath: 'salto/static.txt', encoding: 'utf-8', env: 'inactive' }))
         expect(inactiveStaticFileRes).toBeDefined()
         expect(inactiveStaticFileRes?.isEqual(inactiveStaticFile)).toBeTruthy()
       })
 
       it('should return missing staticFile if it does not exist', async () => {
-        const defaultMissing = (await workspace.getStaticFile('no', 'utf-8', 'default'))
+        const defaultMissing = (await workspace.getStaticFile({ filepath: 'no', encoding: 'utf-8' }))
         expect(defaultMissing).toBeInstanceOf(MissingStaticFile)
-        const inactiveMissing = (await workspace.getStaticFile('no', 'utf-8', 'default'))
+        const inactiveMissing = (await workspace.getStaticFile({ filepath: 'no', encoding: 'utf-8', env: 'inactive' }))
         expect(inactiveMissing).toBeInstanceOf(MissingStaticFile)
       })
     })

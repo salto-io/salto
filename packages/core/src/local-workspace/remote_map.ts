@@ -601,10 +601,10 @@ remoteMap.RemoteMapCreator => {
       }
     }
     const createDBConnections = async (): Promise<void> => {
+      tmpDBConnections[location] = tmpDBConnections[location] ?? {}
       if (tmpDB === undefined) {
         const tmpConnection = getOpenDBConnection(tmpLocation, false)
         tmpDB = await tmpConnection
-        tmpDBConnections[location] = tmpDBConnections[location] ?? {}
         tmpDBConnections[location][tmpLocation] = tmpConnection
       }
       const mainDBConnections = persistent ? persistentDBConnections : readonlyDBConnections

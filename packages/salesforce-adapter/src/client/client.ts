@@ -184,13 +184,9 @@ export const setPollIntervalForConnection = (
   connection: Connection,
   pollingConfig: Required<ClientPollingConfig>,
 ): void => {
-  // Set poll interval and timeout for fetch
+  // Set poll interval for fetch & bulk ops (e.g. CSV deletes)
   connection.metadata.pollInterval = pollingConfig.interval
-  connection.metadata.pollTimeout = pollingConfig.fetchTimeout
-
-  // Set poll interval and timeout for bulk ops, (e.g, CSV deletes)
   connection.bulk.pollInterval = pollingConfig.interval
-  connection.bulk.pollTimeout = pollingConfig.fetchTimeout
 }
 
 export const createRequestModuleFunction = (retryOptions: RequestRetryOptions) =>
@@ -411,7 +407,8 @@ export default class SalesforceClient {
   private isLoggedIn = false
   private readonly credentials: Credentials
   private readonly config?: SalesforceClientConfig
-  private readonly pollingConfig: Required<ClientPollingConfig>
+  private readonly setFetchPollingTimeout: () => void
+  private readonly setDeployPollingTimeout: () => void
   readonly rateLimiters: Record<RateLimitBucketName, Bottleneck>
   readonly dataRetry: CustomObjectsDeployRetryConfig
   readonly clientName: string
@@ -422,13 +419,23 @@ export default class SalesforceClient {
   ) {
     this.credentials = credentials
     this.config = config
-    this.pollingConfig = _.defaults({}, config?.polling, DEFAULT_POLLING_CONFIG)
     this.retryOptions = createRetryOptions(_.defaults({}, config?.retry, DEFAULT_RETRY_OPTS))
     this.conn = connection ?? createConnectionFromCredentials(
       credentials,
       this.retryOptions,
     )
-    setPollIntervalForConnection(this.conn, this.pollingConfig)
+    const pollingConfig = _.defaults({}, config?.polling, DEFAULT_POLLING_CONFIG)
+    this.setFetchPollingTimeout = () => {
+      this.conn.metadata.pollTimeout = pollingConfig.fetchTimeout
+      this.conn.bulk.pollTimeout = pollingConfig.fetchTimeout
+    }
+    this.setDeployPollingTimeout = () => {
+      this.conn.metadata.pollTimeout = pollingConfig.deployTimeout
+      this.conn.bulk.pollTimeout = pollingConfig.deployTimeout
+    }
+
+    setPollIntervalForConnection(this.conn, pollingConfig)
+    this.setFetchPollingTimeout()
     this.rateLimiters = createRateLimitersFromConfig(
       _.defaults({}, config?.maxConcurrentApiRequests, DEFAULT_MAX_CONCURRENT_API_REQUESTS),
       SALESFORCE
@@ -440,11 +447,6 @@ export default class SalesforceClient {
       DEFAULT_READ_METADATA_CHUNK_SIZE,
       config?.readMetadataChunkSize,
     )
-  }
-
-  private setDeployPollingTimeout(): void {
-    this.conn.metadata.pollTimeout = this.pollingConfig.deployTimeout
-    this.conn.bulk.pollTimeout = this.pollingConfig.deployTimeout
   }
 
 
@@ -608,7 +610,6 @@ export default class SalesforceClient {
   @requiresLogin()
   public async upsert(type: string, metadata: MetadataInfo | MetadataInfo[]):
     Promise<UpsertResult[]> {
-    this.setDeployPollingTimeout()
     const result = await sendChunked({
       operationInfo: `upsert (${type})`,
       input: metadata,
@@ -629,7 +630,6 @@ export default class SalesforceClient {
   @validateDeleteResult
   @requiresLogin()
   public async delete(type: string, fullNames: string | string[]): Promise<SaveResult[]> {
-    this.setDeployPollingTimeout()
     const result = await sendChunked({
       operationInfo: `delete (${type})`,
       input: fullNames,
@@ -661,12 +661,14 @@ export default class SalesforceClient {
     const defaultDeployOptions = { rollbackOnError: true, ignoreWarnings: true }
     const optionsToSend = ['rollbackOnError', 'ignoreWarnings', 'purgeOnDelete',
       'checkOnly', 'testLevel', 'runTests']
-    return flatValues(
+    const deployResult = flatValues(
       await this.conn.metadata.deploy(
         zip,
         _.merge(defaultDeployOptions, _.pick(this.config?.deploy, optionsToSend)),
       ).complete(true)
     )
+    this.setFetchPollingTimeout()
+    return deployResult
   }
 
   @throttle<ClientRateLimitConfig>({ bucketName: 'query' })
@@ -741,7 +743,6 @@ export default class SalesforceClient {
     records: SalesforceRecord[]
   ):
   Promise<BatchResultInfo[]> {
-    this.setDeployPollingTimeout()
     const batch = this.conn.bulk.load(
       type,
       operation,

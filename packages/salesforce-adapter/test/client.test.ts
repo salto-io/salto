@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import nock from 'nock'
-import { FileProperties, Metadata, RetrieveResult } from 'jsforce-types'
+import { Bulk, FileProperties, Metadata, RetrieveResult } from 'jsforce-types'
 import { logger } from '@salto-io/logging'
 import { Values } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
@@ -682,6 +682,12 @@ describe('salesforce client', () => {
     })
 
     describe('deploy configuration', () => {
+      const FETCH_TIMEOUT = 1000
+      const DEPLOY_TIMEOUT = 2000
+
+      let metadataPollTimeoutHistory: Array<number>
+      let bulkPollTimeoutHistory: Array<number>
+
       beforeEach(async () => {
         testConnection = mockClient().connection
         testClient = new SalesforceClient({
@@ -693,9 +699,31 @@ describe('salesforce client', () => {
           connection: testConnection,
           config: {
             deploy: { rollbackOnError: false, testLevel: 'NoTestRun' },
-            polling: { interval: 100, fetchTimeout: 1000, deployTimeout: 2000 },
+            polling: { interval: 100, fetchTimeout: FETCH_TIMEOUT, deployTimeout: DEPLOY_TIMEOUT },
           },
         })
+
+        metadataPollTimeoutHistory = []
+        bulkPollTimeoutHistory = []
+        const connectionMetadataProxy = new Proxy(testConnection.metadata, {
+          set(target: Metadata, p: PropertyKey, value: unknown, receiver: unknown): boolean {
+            if (p === 'pollTimeout' && _.isNumber(value)) {
+              metadataPollTimeoutHistory.push(value)
+            }
+            return Reflect.set(target, p, value, receiver)
+          },
+        })
+        const connectionBulkProxy = new Proxy(testConnection.bulk, {
+          set(target: Bulk, p: PropertyKey, value: unknown, receiver: unknown): boolean {
+            if (p === 'pollTimeout' && _.isNumber(value)) {
+              bulkPollTimeoutHistory.push(value)
+            }
+            return Reflect.set(target, p, value, receiver)
+          },
+        })
+        testConnection.metadata = connectionMetadataProxy
+        testConnection.bulk = connectionBulkProxy
+
         await testClient.deploy(Buffer.from(''))
       })
 
@@ -709,9 +737,9 @@ describe('salesforce client', () => {
           }),
         )
       })
-      it('should set deploy polling timeout', () => {
-        expect(testConnection.bulk.pollTimeout).toEqual(2000)
-        expect(testConnection.metadata.pollTimeout).toEqual(2000)
+      it('should set deploy polling timeout at the beginning and revert to fetch timeout at the end', async () => {
+        expect(metadataPollTimeoutHistory).toEqual([DEPLOY_TIMEOUT, FETCH_TIMEOUT])
+        expect(bulkPollTimeoutHistory).toEqual([DEPLOY_TIMEOUT, FETCH_TIMEOUT])
       })
     })
 

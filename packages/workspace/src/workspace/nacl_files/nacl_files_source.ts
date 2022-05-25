@@ -965,9 +965,10 @@ const buildNaclFilesSource = (
       const { elementsIndex } = await getState()
       const elementsIndexEntries = await awu(elementsIndex.entries()).groupBy(entry => entry.key)
       return new Map(Object.entries(
-        _(elementsIndexEntries)
-          .mapValues(entries => entries.flatMap(entry => entry.value))
-          .value()
+        _.mapValues(
+          elementsIndexEntries,
+          entries => entries.flatMap(entry => entry.value)
+        )
       ))
     },
     isEmpty: () => naclFilesStore.isEmpty(),

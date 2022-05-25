@@ -90,8 +90,10 @@ const filter: FilterCreator = ({ client, config }) => ({
           .map(([typeName, typeElements]) => addMissingIds(client, typeName, typeElements))
       )
       const rejected = results.find(isRejected)
-      if (rejected !== undefined && _.isError(rejected.reason)) {
-        throw rejected.reason
+      if (rejected !== undefined) {
+        throw _.isError(rejected.reason)
+          ? rejected.reason
+          : new Error('Failed to add missing ids')
       }
     },
   }),

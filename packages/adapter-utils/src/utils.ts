@@ -742,8 +742,13 @@ export const filterByID = async <T extends Element | Values>(
     filterByID(id, annotations, filterFunc)
   )
 
-  const filterAnnotations = async (annotations: Value): Promise<Value> => (
-    filterByID(id.createNestedID('attr'), annotations, filterFunc)
+  const filterAnnotations = async (annotations: Values): Promise<Value> => (
+    _.pickBy(
+      await mapValuesAsync(annotations, async (anno, annoName) => (
+        filterByID(id.createNestedID('attr').createNestedID(annoName), anno, filterFunc)
+      )),
+      isDefined,
+    )
   )
 
   const filterAnnotationType = async (annoRefTypes: ReferenceMap): Promise<ReferenceMap> =>

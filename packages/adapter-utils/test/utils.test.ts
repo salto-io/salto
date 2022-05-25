@@ -1805,6 +1805,17 @@ describe('Test utils.ts', () => {
       )
       expect(withoutMap?.value).toEqual({ obj: inst.value.obj, list: inst.value.list })
     })
+
+    it('should not call filter function with invalid attr ID', async () => {
+      const filterFunc = jest.fn().mockResolvedValue(true)
+      await filterByID(
+        obj.elemID,
+        obj,
+        filterFunc
+      )
+
+      expect(filterFunc).not.toHaveBeenCalledWith(obj.elemID.createNestedID('attr'))
+    })
   })
   describe('Flat Values', () => {
     it('should not transform static files', () => {

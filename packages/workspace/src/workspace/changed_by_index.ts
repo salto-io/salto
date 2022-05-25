@@ -70,12 +70,12 @@ const updateModificationChange = async (
   change: ModificationChange<Element>,
   index: RemoteMap<ElemID[]>,
 ): Promise<void> => {
-  await updateAdditionChange(
-    toChange({ after: change.data.after }) as AdditionChange<Element>,
-    index,
-  )
   await updateRemovalChange(
     toChange({ before: change.data.before }) as RemovalChange<Element>,
+    index,
+  )
+  await updateAdditionChange(
+    toChange({ after: change.data.after }) as AdditionChange<Element>,
     index,
   )
 }

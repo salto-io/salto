@@ -193,7 +193,7 @@ export const createElementSelectors = (selectors: string[], caseInSensitive = fa
 const isTopLevelSelector = (selector: ElementSelector): boolean =>
   ElemID.fromFullName(selector.origin).isTopLevel()
 
-const createTopLevelSelector = (selector: ElementSelector): ElementSelector => {
+export const createTopLevelSelector = (selector: ElementSelector): ElementSelector => {
   if (ElemID.TOP_LEVEL_ID_TYPES_WITH_NAME.includes(selector.idTypeSelector)) {
     return {
       adapterSelector: selector.adapterSelector,

@@ -65,6 +65,11 @@ const elementsWithMissingIds = async (elements: Element[]): Promise<Element[]> =
 
 export const WARNING_MESSAGE = 'Encountered an error while trying populate internal IDs for some of your salesforce configuration elements. This might result in some missing configuration dependencies in your workspace and/or affect the availability of the ‘go to service’ functionality.'
 
+const isRejected = (promiseSettledResult: PromiseSettledResult<unknown>)
+    : promiseSettledResult is PromiseRejectedResult => (
+  promiseSettledResult.status === 'rejected'
+)
+
 /**
  * Add missing env-specific ids using listMetadataObjects.
  */
@@ -83,7 +88,7 @@ const filter: FilterCreator = ({ client, config }) => ({
         Object.entries(groupedElements)
           .map(([typeName, typeElements]) => addMissingIds(client, typeName, typeElements))
       )
-      const rejected = results.find(r => r.status === 'rejected') as PromiseRejectedResult | undefined
+      const rejected = results.find(isRejected)
       if (rejected !== undefined) {
         throw new Error(rejected.reason)
       }

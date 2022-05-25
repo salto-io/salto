@@ -3525,6 +3525,95 @@ describe('getElementNaclFiles', () => {
   })
 })
 
+describe('getElementFileNames', () => {
+  let workspace: Workspace
+  const firstFile = `
+    type salesforce.text is string {}
+    type salesforce.lead {
+      salesforce.text singleDef {
+
+      }
+      salesforce.text multiDef {
+
+      }
+    }
+  `
+  const secondFile = `
+    type salesforce.lead {
+      salesforce.text multiDef {
+
+      }
+    }
+  `
+
+  const redHeringFile = `
+    type salesforce.hearing {
+      salesforce.text multiDef {
+
+      }
+    }
+  `
+  const naclFileStore = mockDirStore(undefined, undefined, {
+    'firstFile.nacl': firstFile,
+    'secondFile.nacl': secondFile,
+    'redHeringFile.nacl': redHeringFile,
+  })
+  const naclFileStoreOfInactive = mockDirStore(undefined, undefined, {
+    'thirdFile.nacl': 'type salesforce.test is string {}',
+  })
+
+  beforeAll(async () => {
+    workspace = await createWorkspace(
+      naclFileStore,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      {
+        '': {
+          naclFiles: createMockNaclFileSource([]),
+        },
+        default: {
+          naclFiles: await naclFilesSource(
+            'default',
+            naclFileStore,
+            mockStaticFilesSource(),
+            persistentMockCreateRemoteMap(),
+            true
+          ),
+          state: createState([]),
+        },
+        inactive: {
+          naclFiles: await naclFilesSource(
+            'inactive',
+            naclFileStoreOfInactive,
+            mockStaticFilesSource(),
+            persistentMockCreateRemoteMap(),
+            true
+          ),
+          state: createState([]),
+        },
+      },
+    )
+  })
+  it('should return the correct elements to file names mapping', async () => {
+    const res = await workspace.getElementFileNames()
+    expect(Array.from(res.entries())).toEqual([
+      ['salesforce.text', ['envs/default/firstFile.nacl']],
+      ['salesforce.lead', ['envs/default/firstFile.nacl', 'envs/default/secondFile.nacl']],
+      ['salesforce.hearing', ['envs/default/redHeringFile.nacl']],
+    ])
+  })
+
+  it('should return the correct elements to file names mapping of inactive env', async () => {
+    const res = await workspace.getElementFileNames('inactive')
+    expect(Array.from(res.entries())).toEqual([
+      ['salesforce.test', ['envs/inactive/thirdFile.nacl']],
+    ])
+  })
+})
+
 describe('non persistent workspace', () => {
   it('should not allow flush when the ws is non-persistent', async () => {
     const nonPWorkspace = await createWorkspace(undefined, undefined, undefined, undefined,

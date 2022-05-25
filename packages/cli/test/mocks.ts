@@ -415,6 +415,7 @@ export const mockWorkspace = ({
     getElementSourceOfPath: mockFunction<Workspace['getElementSourceOfPath']>(),
     getFileEnvs: mockFunction<Workspace['getFileEnvs']>(),
     getStaticFile: mockFunction<Workspace['getStaticFile']>(),
+    getElementFileNames: mockFunction<Workspace['getElementFileNames']>(),
   }
 }
 

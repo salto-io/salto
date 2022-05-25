@@ -20,7 +20,7 @@ import { createInMemoryElementSource, ElementsSource } from '../../src/workspace
 import { RemoteMap } from '../../src/workspace/remote_map'
 import { createMockRemoteMap } from '../utils'
 
-describe('updateReferenceIndexes', () => {
+describe('changed by index', () => {
   let changedByIndex: MockInterface<RemoteMap<ElemID[]>>
   let mapVersions: MockInterface<RemoteMap<number>>
   let elementsSource: ElementsSource

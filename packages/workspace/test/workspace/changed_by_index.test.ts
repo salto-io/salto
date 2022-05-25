@@ -94,29 +94,6 @@ describe('updateReferenceIndexes', () => {
         expect(changedByIndex.set).toHaveBeenNthCalledWith(1, 'test@@Unknown', [unKnownUserInstance.elemID])
       })
     })
-    describe.skip('with pre existing values', () => {
-      beforeEach(async () => {
-        const changes = [
-          toChange({ after: knownUserInstance }),
-          toChange({ before: knownUserInstance, after: unKnownUserInstance }),
-        ]
-        await updateChangedByIndex(
-          changes,
-          changedByIndex,
-          mapVersions,
-          elementsSource,
-          true
-        )
-      })
-      it('should remove old values and place new values', () => {
-        expect(changedByIndex.get).toHaveBeenNthCalledWith(1, 'test@@user one')
-        expect(changedByIndex.set).toHaveBeenNthCalledWith(1, 'test@@user one', [knownUserInstance.elemID])
-        // setup finished
-        expect(changedByIndex.get).toHaveBeenNthCalledWith(2, 'test@@user one')
-        expect(changedByIndex.set).toHaveBeenNthCalledWith(2, 'test@@user one', [])
-        expect(changedByIndex.set).toHaveBeenNthCalledWith(3, 'test@@Unknown', [unKnownUserInstance.elemID])
-      })
-    })
   })
   describe('when elements were deleted', () => {
     describe('without pre existing values', () => {
@@ -133,27 +110,6 @@ describe('updateReferenceIndexes', () => {
       it('should try to remove old values', () => {
         expect(changedByIndex.get).toHaveBeenNthCalledWith(1, 'test@@user one')
         expect(changedByIndex.set).not.toHaveBeenCalled()
-      })
-    })
-    describe.skip('with pre existing values', () => {
-      beforeEach(async () => {
-        const changes = [
-          toChange({ after: knownUserInstance }),
-          toChange({ before: knownUserInstance }),
-        ]
-        await updateChangedByIndex(
-          changes,
-          changedByIndex,
-          mapVersions,
-          elementsSource,
-          true
-        )
-      })
-      it('should remove old values', () => {
-        expect(changedByIndex.get).toHaveBeenNthCalledWith(1, 'test@@user one')
-        expect(changedByIndex.set).toHaveBeenNthCalledWith(1, 'test@@user one', [knownUserInstance.elemID])
-        expect(changedByIndex.get).toHaveBeenNthCalledWith(2, 'test@@user one')
-        expect(changedByIndex.set).toHaveBeenNthCalledWith(2, 'test@@user one', [])
       })
     })
   })

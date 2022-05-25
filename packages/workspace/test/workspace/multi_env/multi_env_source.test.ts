@@ -1259,9 +1259,9 @@ describe('multi env source', () => {
       expect(src.getFileEnvs('envs/active/not_a_file.nacl')).toEqual([])
     })
   })
-  describe('getElementsFileNames', () => {
+  describe('getElementFileNames', () => {
     it('should return the merged result from both nacl files', async () => {
-      const res = await source.getElementsFileNames(activePrefix)
+      const res = await source.getElementFileNames(activePrefix)
       expect(Array.from(res.entries())).toEqual([
         ['salto.common', ['common.nacl', 'partial.nacl']],
         ['salto.env', ['envs/active/env.nacl', 'envs/active/partial.nacl']],
@@ -1297,7 +1297,7 @@ describe('multi env source', () => {
         () => Promise.resolve(new InMemoryRemoteMap()),
         true
       )
-      const res = await src.getElementsFileNames(activePrefix)
+      const res = await src.getElementFileNames(activePrefix)
       expect(Array.from(res.entries())).toEqual([
         ['salto.common', ['common.nacl', 'partial.nacl']],
         ['salto.env', ['commonEnv.nacl', 'envs/active/env.nacl', 'envs/active/partial.nacl']],

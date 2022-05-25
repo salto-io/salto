@@ -183,7 +183,7 @@ export type Workspace = {
     },
     compact?: boolean,
   ) => Promise<AsyncIterable<ElemID>>
-  getElementsFileNames: (env?: string) => Promise<Map<string, string[]>>
+  getElementFileNames: (env?: string) => Promise<Map<string, string[]>>
   getParsedNaclFile: (filename: string) => Promise<ParsedNaclFile | undefined>
   flush: () => Promise<void>
   clone: () => Promise<Workspace>
@@ -969,8 +969,8 @@ export const loadWorkspace = async (
     getElementNaclFiles: async id => (
       (await getLoadedNaclFilesSource()).getElementNaclFiles(currentEnv(), id)
     ),
-    getElementsFileNames: async (env?: string): Promise<Map<string, string[]>> =>
-      (await getLoadedNaclFilesSource()).getElementsFileNames(env ?? currentEnv()),
+    getElementFileNames: async (env?: string): Promise<Map<string, string[]>> =>
+      (await getLoadedNaclFilesSource()).getElementFileNames(env ?? currentEnv()),
     getTotalSize: async () => (
       (await getLoadedNaclFilesSource()).getTotalSize()
     ),

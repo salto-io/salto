@@ -32,6 +32,7 @@ import * as merger from './src/merger'
 import * as expressions from './src/expressions'
 import * as serialization from './src/serializer/elements'
 import * as pathIndex from './src/workspace/path_index'
+import * as changedByIndex from './src/workspace/changed_by_index'
 import { createElementSelector, ElementSelector, validateSelectorsMatches,
   selectElementsBySelectors, selectElementIdsByTraversal, createElementSelectors, ElementIDToValue } from './src/workspace/element_selector'
 import * as validator from './src/validator'
@@ -56,6 +57,7 @@ export {
   expressions,
   nacl,
   pathIndex,
+  changedByIndex,
   elementSource,
   remoteMap,
   WorkspaceConfig,

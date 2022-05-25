@@ -222,6 +222,14 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
     createWebhookValues(randomString),
   )
 
+  const group = new InstanceElement(
+    randomString,
+    findType('Group', fetchedElements),
+    {
+      name: randomString,
+    },
+  )
+
   return [
     [issueType],
     [field],
@@ -247,5 +255,6 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
     [notificationScheme],
     [automation],
     [webhook],
+    [group],
   ]
 }

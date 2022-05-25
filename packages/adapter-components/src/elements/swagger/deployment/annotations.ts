@@ -46,7 +46,8 @@ const getFields = (
 
 const getSwaggerEndpoint = (url: string, baseUrls: string[]): string => {
   const matchingBase = baseUrls.find(baseUrl => url.startsWith(baseUrl))
-  return matchingBase === undefined ? url : url.slice(matchingBase.length)
+  const urlWithoutBase = matchingBase === undefined ? url : url.slice(matchingBase.length)
+  return urlWithoutBase.split('?')[0]
 }
 
 const getInnerSchemaAndType = async (

@@ -1393,6 +1393,25 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
   },
 
+  Group: {
+    transformation: {
+      fieldsToHide: [
+        { fieldName: 'groupId' },
+      ],
+      serviceIdField: 'groupId',
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/group',
+        method: 'post',
+      },
+      remove: {
+        url: '/rest/api/3/group?groupId={groupId}',
+        method: 'delete',
+      },
+    },
+  },
+
   Board: {
     transformation: {
       fieldTypeOverrides: [
@@ -1526,6 +1545,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldsToOmit: [
         { fieldName: 'userCount' },
         { fieldName: 'remainingSeats' },
+        { fieldName: 'groupDetails' },
+        { fieldName: 'defaultGroupsDetails' },
       ],
     },
   },
@@ -1628,6 +1649,7 @@ const SUPPORTED_TYPES = {
   WorkflowScheme: ['WorkflowSchemes'],
   ServerInformation: ['ServerInformation'],
   Board: ['Boards'],
+  Group: ['Groups'],
   Automation: [],
   Webhook: [],
 }
@@ -1767,6 +1789,14 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
       {
         originalName: 'Webhook',
         newName: 'AppWebhook',
+      },
+      {
+        originalName: 'PageBeanGroupDetails',
+        newName: 'Groups',
+      },
+      {
+        originalName: 'GroupDetails',
+        newName: 'Group',
       },
     ],
     additionalTypes: [

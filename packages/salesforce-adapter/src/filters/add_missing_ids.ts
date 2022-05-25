@@ -16,6 +16,7 @@
 import { Element, isField, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
+import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { apiName, metadataType } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
@@ -89,8 +90,8 @@ const filter: FilterCreator = ({ client, config }) => ({
           .map(([typeName, typeElements]) => addMissingIds(client, typeName, typeElements))
       )
       const rejected = results.find(isRejected)
-      if (rejected !== undefined) {
-        throw new Error(rejected.reason)
+      if (rejected !== undefined && _.isError(rejected.reason)) {
+        throw rejected.reason
       }
     },
   }),

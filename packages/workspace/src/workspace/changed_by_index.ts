@@ -26,6 +26,7 @@ const log = logger(module)
 export const CHANGED_BY_INDEX_VERSION = 1
 export const CHANGED_BY_INDEX_KEY = 'changed_by_index'
 export const UNKNOWN_USER_NAME = 'Unknown'
+const CHANGED_BY_KEY_DELIMITER = '@@'
 
 const getAllElementsChanges = async (
   currentChanges: Change<Element>[],
@@ -38,7 +39,7 @@ const getAllElementsChanges = async (
 const getChangeAuthor = (change: Change<Element>): string => {
   const element = getChangeData(change)
   const author = element.annotations[CORE_ANNOTATIONS.CHANGED_BY] ?? UNKNOWN_USER_NAME
-  return `${element.elemID.adapter}@@${author}`
+  return `${element.elemID.adapter}${CHANGED_BY_KEY_DELIMITER}${author}`
 }
 
 const updateAdditionChange = async (

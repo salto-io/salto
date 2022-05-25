@@ -34,7 +34,7 @@ export type Author = {
 }
 
 export const authorKeyToAuthor = (authorKey: string): Author => {
-  const AuthorParts = authorKey.split('@@')
+  const AuthorParts = authorKey.split(CHANGED_BY_KEY_DELIMITER)
   return {
     user: AuthorParts[1],
     account: AuthorParts[0],
@@ -42,7 +42,7 @@ export const authorKeyToAuthor = (authorKey: string): Author => {
 }
 
 export const authorToAuthorKey = (author: Author): string =>
-  `${author.account}@@${author.user}`
+  `${author.account}${CHANGED_BY_KEY_DELIMITER}${author.user}`
 
 const getAllElementsChanges = async (
   currentChanges: Change<Element>[],

@@ -69,6 +69,7 @@ export const mockErrors = (errors: SaltoError[]): wsErrors.Errors => new wsError
 export const mockStaticFilesSource = (
   files: StaticFile[] = [],
 ): staticFiles.StaticFilesSource => ({
+  load: jest.fn(),
   getStaticFile: jest.fn().mockImplementation((filepath: string, _encoding: BufferEncoding) => (
     files.find(sf => sf.filepath === filepath) ?? undefined
   )),

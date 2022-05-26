@@ -111,19 +111,4 @@ describe('Static Files Cache', () => {
     return expect(staticFilesCacheClone.get(baseMetaData.filepath))
       .resolves.toEqual(expectedResult)
   })
-  it('list', async () => {
-    const file1 = {
-      filepath: 'file1.txt',
-      hash: 'HASH',
-      modified: 123,
-    }
-    const file2 = {
-      filepath: 'file2.txt',
-      hash: 'HASH',
-      modified: 123,
-    }
-    await staticFilesCache.put(file1)
-    await staticFilesCache.put(file2)
-    expect(await staticFilesCache.list()).toEqual([file1.filepath, file2.filepath])
-  })
 })

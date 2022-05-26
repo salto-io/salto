@@ -20,7 +20,7 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 
 export const CACHE_FILENAME = 'static-file-cache'
 
-export type StaticFilesCacheState = Record<string, staticFiles.StaticFilesData>
+export type StaticFilesCacheState = Record<string, staticFiles.StaticFilesCacheResult>
 
 export const buildLocalStaticFilesCache = (
   baseDir: string,
@@ -37,10 +37,10 @@ export const buildLocalStaticFilesCache = (
   let cache: Promise<StaticFilesCacheState> = initCacheState || initCache()
 
   return {
-    get: async (filepath: string): Promise<staticFiles.StaticFilesData> => (
+    get: async (filepath: string): Promise<staticFiles.StaticFilesCacheResult> => (
       (await cache)[filepath]
     ),
-    put: async (item: staticFiles.StaticFilesData): Promise<void> => {
+    put: async (item: staticFiles.StaticFilesCacheResult): Promise<void> => {
       (await cache)[item.filepath] = item
     },
     flush: async () => {
@@ -65,8 +65,5 @@ export const buildLocalStaticFilesCache = (
       cacheDir = newCacheDir
     },
     clone: () => buildLocalStaticFilesCache(cacheDir, currentName, cache),
-    list: async () => (
-      Object.keys((await cache))
-    ),
   }
 }

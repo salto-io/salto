@@ -239,15 +239,34 @@ export const updateNaclFileData = async (
     return { newData, start: change.location.start.byte, end: change.location.end.byte }
   }
 
-  const replaceBufferPart = (data: string, change: BufferChange): string => (
-    data.slice(0, change.start) + change.newData + data.slice(change.end)
-  )
   const bufferChanges = await awu(changes).map(toBufferChange).toArray()
 
-  // We want to replace buffers from last to first, that way we won't have to re-calculate
-  // the source locations after every change
-  const sortedChanges = _.sortBy(bufferChanges, change => change.start).reverse()
-  const ret = sortedChanges.reduce(replaceBufferPart, currentData)
+  const sortedChanges = _.sortBy(bufferChanges, change => change.start)
+  const allBufferParts = sortedChanges
+    // Add empty change at the end of the file to make sure we keep the current content
+    // that appears after the last change
+    .concat([{ start: Infinity, end: Infinity, newData: '' }])
+    .reduce(
+      (parts, change) => {
+        const lastPartEnd = parts.slice(-1)[0].end
+        const nextChangeStart = change.start
+        if (lastPartEnd !== nextChangeStart) {
+          // Add slice from the current data to fill the gap between the last part and the next
+          parts.push({
+            start: lastPartEnd,
+            end: nextChangeStart,
+            newData: currentData.slice(lastPartEnd, nextChangeStart),
+          })
+        }
+        parts.push(change)
+        return parts
+      },
+      // Add empty change at the beginning of the file to make sure we keep the current content
+      // that appears before the first change
+      [{ start: 0, end: 0, newData: '' }],
+    )
+
+  const ret = allBufferParts.map(part => part.newData).join('')
   return ret
 }
 

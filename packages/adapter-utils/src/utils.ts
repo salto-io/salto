@@ -557,7 +557,6 @@ export const restoreValues: RestoreValuesFunc = async (
 export const restoreChangeElement = async (
   change: Change,
   sourceChanges: Record<string, Change>,
-  // sourceElements: Record<string, ChangeDataType>,
   getLookUpName: GetLookupNameFunc,
   restoreValuesFunc = restoreValues,
 ): Promise<Change> => {

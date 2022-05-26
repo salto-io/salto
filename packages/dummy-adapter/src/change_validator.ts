@@ -13,6 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { StaticFilesCache, StaticFilesData } from './cache'
-export { buildStaticFilesSource, LazyStaticFile, AbsoluteStaticFile } from './source'
-export { StaticFilesSource, MissingStaticFile, AccessDeniedStaticFile } from './common'
+import { ChangeValidator } from '@salto-io/adapter-api'
+import { createChangeValidator } from '@salto-io/adapter-utils'
+import { GeneratorParams } from './generator'
+import fromAdapterConfig from './change_validators/from_adapter_config'
+
+
+export const changeValidator = (
+  config: GeneratorParams,
+): ChangeValidator => {
+  const validators: ChangeValidator[] = [
+    fromAdapterConfig(config),
+  ]
+
+  return createChangeValidator(validators)
+}

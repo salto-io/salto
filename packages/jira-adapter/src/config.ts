@@ -1820,10 +1820,12 @@ type JiraFetchFilters = {
 
 type JiraFetchConfig = configUtils.UserFetchConfig<JiraFetchFilters> & {
   fallbackToInternalId?: boolean
+  addTypeToFieldName?: boolean
 }
 
-type MaskingConfig = {
+export type MaskingConfig = {
   automationHeaders: string[]
+  secretRegexps: string[]
 }
 
 export type JiraConfig = {
@@ -1895,6 +1897,7 @@ export const DEFAULT_CONFIG: JiraConfig = {
   apiDefinitions: DEFAULT_API_DEFINITIONS,
   masking: {
     automationHeaders: [],
+    secretRegexps: [],
   },
 }
 
@@ -1931,6 +1934,7 @@ const fetchConfigType = createUserFetchConfigType(
   JIRA,
   {
     fallbackToInternalId: { refType: BuiltinTypes.BOOLEAN },
+    addTypeToFieldName: { refType: BuiltinTypes.BOOLEAN },
   },
   fetchFiltersType,
 )
@@ -1939,6 +1943,9 @@ const maskingConfigType = createMatchingObjectType<Partial<MaskingConfig>>({
   elemID: new ElemID(JIRA),
   fields: {
     automationHeaders: {
+      refType: new ListType(BuiltinTypes.STRING),
+    },
+    secretRegexps: {
       refType: new ListType(BuiltinTypes.STRING),
     },
   },

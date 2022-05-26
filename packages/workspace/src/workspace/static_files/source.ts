@@ -13,14 +13,30 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { StaticFile, StaticFileParameters } from '@salto-io/adapter-api'
+import { StaticFile, StaticFileParameters, calculateStaticFileHash } from '@salto-io/adapter-api'
 
+import wu from 'wu'
+import { values, promises } from '@salto-io/lowerdash'
 import { SyncDirectoryStore } from '../dir_store'
-import { StaticFilesCache } from './cache'
+import { StaticFilesCache, StaticFilesData } from './cache'
 
 import {
   InvalidStaticFile, StaticFilesSource, MissingStaticFile, AccessDeniedStaticFile,
 } from './common'
+
+const { withLimitedConcurrency } = promises.array
+
+class StaticFileAccessDeniedError extends Error {
+  constructor(filepath: string) {
+    super(`access denied for ${filepath}`)
+  }
+}
+
+class MissingStaticFileError extends Error {
+  constructor(filepath: string) {
+    super(`missing static file ${filepath}`)
+  }
+}
 
 export class AbsoluteStaticFile extends StaticFile {
   protected dirStore: SyncDirectoryStore<Buffer>
@@ -67,50 +83,106 @@ export const buildStaticFilesSource = (
   staticFilesDirStore: SyncDirectoryStore<Buffer>,
   staticFilesCache: StaticFilesCache,
 ): StaticFilesSource => {
-  const staticFilesSource: StaticFilesSource = {
-    getStaticFile: async (
-      filepath: string,
-      encoding: BufferEncoding,
-    ): Promise<StaticFile | InvalidStaticFile> => {
-      const cachedResult = await staticFilesCache.get(filepath)
-      let modified: number | undefined
-      try {
-        modified = await staticFilesDirStore.mtimestamp(filepath)
-      } catch (err) {
-        return new AccessDeniedStaticFile(filepath)
-      }
-      if (modified === undefined) {
-        return new MissingStaticFile(filepath)
-      }
+  const getStaticFileData = async (filepath: string): Promise<
+    ({ hasChanged: false } | { hasChanged: true; buffer: Buffer}) & StaticFilesData
+  > => {
+    const cachedResult = await staticFilesCache.get(filepath)
+    let modified: number | undefined
+    try {
+      modified = await staticFilesDirStore.mtimestamp(filepath)
+    } catch (err) {
+      throw new StaticFileAccessDeniedError(filepath)
+    }
+    if (modified === undefined) {
+      throw new MissingStaticFileError(filepath)
+    }
 
-      const hashModified = cachedResult ? cachedResult.modified : undefined
+    const cacheModified = cachedResult ? cachedResult.modified : undefined
 
-      if (hashModified === undefined
-        || modified > hashModified
-        || cachedResult === undefined) {
-        const file = await staticFilesDirStore.get(filepath)
-        if (file === undefined) {
-          return new MissingStaticFile(filepath)
-        }
-        const staticFileBuffer = file.buffer
+    if (cachedResult === undefined
+        || cacheModified === undefined
+        || modified > cacheModified) {
+      const file = await staticFilesDirStore.get(filepath)
+      if (file === undefined) {
+        throw new MissingStaticFileError(filepath)
+      }
+      const staticFileBuffer = file.buffer
+      const hash = calculateStaticFileHash(staticFileBuffer)
+      await staticFilesCache.put({
+        hash,
+        modified,
+        filepath,
+      })
+      return {
+        filepath,
+        hash,
+        modified,
+        buffer: staticFileBuffer,
+        hasChanged: true,
+      }
+    }
+    return {
+      ...cachedResult,
+      hasChanged: false,
+    }
+  }
+
+  const getStaticFile = async (
+    filepath: string,
+    encoding: BufferEncoding,
+  ): Promise<StaticFile | InvalidStaticFile> => {
+    try {
+      const staticFileData = await getStaticFileData(filepath)
+
+      if (staticFileData.hasChanged) {
         const staticFileWithHashAndContent = new AbsoluteStaticFile({ filepath,
-          content: staticFileBuffer,
+          content: staticFileData.buffer,
           encoding },
         staticFilesDirStore)
-        await staticFilesCache.put({
-          hash: staticFileWithHashAndContent.hash,
-          modified,
-          filepath,
-        })
         return staticFileWithHashAndContent
       }
       return new LazyStaticFile(
         filepath,
-        cachedResult.hash,
+        staticFileData.hash,
         staticFilesDirStore,
         encoding,
       )
+    } catch (e) {
+      if (e instanceof MissingStaticFileError) {
+        return new MissingStaticFile(filepath)
+      }
+      if (e instanceof StaticFileAccessDeniedError) {
+        return new AccessDeniedStaticFile(filepath)
+      }
+      throw e
+    }
+  }
+
+  const staticFilesSource: StaticFilesSource = {
+    load: async (): Promise<string[]> => {
+      const existingFiles = new Set(await staticFilesDirStore.list())
+      const cachedFileNames = new Set(await staticFilesCache.list())
+      const newFiles = wu(existingFiles.keys())
+        .filter(name => !cachedFileNames.has(name))
+        .toArray()
+      const deletedFiles = wu(cachedFileNames.keys())
+        .filter(name => !existingFiles.has(name))
+        .toArray()
+
+      const modifiedFilesSet = new Set((await withLimitedConcurrency(
+        wu(existingFiles.keys())
+          .filter(name => cachedFileNames.has(name))
+          .map(name => async () => ((await getStaticFileData(name)).hasChanged ? name : undefined)),
+        500
+      )).filter(values.isDefined))
+
+      return [
+        ...newFiles,
+        ...deletedFiles,
+        ...modifiedFilesSet.keys(),
+      ]
     },
+    getStaticFile,
     getContent: async (
       filepath: string
     ): Promise<Buffer> => {

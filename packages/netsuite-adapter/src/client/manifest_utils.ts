@@ -163,9 +163,15 @@ export const fixManifest = (
 ): string => {
   const manifestXml = xmlParser.parse(manifestContent, { ignoreAttributes: false })
 
-  if (!_.isPlainObject(manifestXml.manifest?.dependencies)) {
-    log.warn('manifest.xml is missing dependencies tag')
+  if (!_.isPlainObject(manifestXml.manifest)) {
+    log.warn('manifest.xml is missing manifest tag')
     return manifestContent
+  }
+  if (_.isInteger(manifestXml.manifest.frameworkversion)) {
+    manifestXml.manifest.frameworkversion = manifestXml.manifest.frameworkversion.toFixed(1)
+  }
+  if (manifestXml.manifest.dependencies === undefined) {
+    manifestXml.manifest.dependencies = {}
   }
 
   const { dependencies } = manifestXml.manifest
@@ -174,11 +180,8 @@ export const fixManifest = (
   addRequiredDependencies(dependencies, customizationInfos, additionalDependencies)
 
   // eslint-disable-next-line new-cap
-  const fixedDependencies = new xmlParser.j2xParser({
+  return new xmlParser.j2xParser({
     ignoreAttributes: false,
     format: true,
-  }).parse({ dependencies })
-  return manifestContent.replace(
-    new RegExp('<dependencies>.*</dependencies>\\n?', 'gs'), fixedDependencies
-  )
+  }).parse(manifestXml)
 }

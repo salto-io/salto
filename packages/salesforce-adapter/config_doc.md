@@ -6,7 +6,8 @@ salesforce {
   client = {
     polling = {
       interval = 10000
-      timeout = 3600000
+      deployTimeout = 3600000
+      fetchTimeout = 1800000
     }
     deploy = {
       rollbackOnError = true
@@ -188,10 +189,11 @@ salesforce {
 
 #### Client polling options
 
-| Name      | Default when undefined | Description
-|-----------|------------------------|------------
-| interval  | `3000` (3 seconds)       | The interval (milliseconds) at which the client checks wether the operation completed
-| timeout   | `5400000` (1.5 hours)    | The timeout (milliseconds) for giving up on a long running operation
+| Name          | Default when undefined | Description
+|---------------|------------------------|------------
+| interval      | `3000` (3 seconds)     | The interval (milliseconds) at which the client checks wether the operation completed
+| deployTimeout | `5400000` (1.5 hours)  | The timeout (milliseconds) on deploy operations
+| fetchTimeout  | `1800000` (30 minutes) | The timeout (milliseconds) on fetch operations
 
 #### Client deploy options
 

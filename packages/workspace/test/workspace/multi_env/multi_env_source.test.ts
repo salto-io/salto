@@ -1259,4 +1259,49 @@ describe('multi env source', () => {
       expect(src.getFileEnvs('envs/active/not_a_file.nacl')).toEqual([])
     })
   })
+  describe('getElementFileNames', () => {
+    it('should return the merged result from both nacl files', async () => {
+      const res = await source.getElementFileNames(activePrefix)
+      expect(Array.from(res.entries())).toEqual([
+        ['salto.common', ['common.nacl', 'partial.nacl']],
+        ['salto.env', ['envs/active/env.nacl', 'envs/active/partial.nacl']],
+      ])
+    })
+    it('should return the merged result from both nacl files - element includes in both envs', async () => {
+      const commonEnvFragment = new ObjectType({
+        elemID: envElemID,
+        fields: {
+          commonEnvField: {
+            refType: BuiltinTypes.STRING,
+          },
+        },
+      })
+      const testCommonSource = createMockNaclFileSource(
+        [commonObject, commonEnvFragment, commonFragment],
+        {
+          'common.nacl': [commonObject],
+          'partial.nacl': [commonObject],
+          'commonEnv.nacl': [commonEnvFragment],
+        },
+        commonErrors,
+        [commonSourceRange],
+        { changes: [], cacheValid: true },
+        commonSrcStaticFileSource
+      )
+      const src = multiEnvSource(
+        {
+          [commonPrefix]: testCommonSource,
+          [activePrefix]: envSource,
+        },
+        commonPrefix,
+        () => Promise.resolve(new InMemoryRemoteMap()),
+        true
+      )
+      const res = await src.getElementFileNames(activePrefix)
+      expect(Array.from(res.entries())).toEqual([
+        ['salto.common', ['common.nacl', 'partial.nacl']],
+        ['salto.env', ['commonEnv.nacl', 'envs/active/env.nacl', 'envs/active/partial.nacl']],
+      ])
+    })
+  })
 })

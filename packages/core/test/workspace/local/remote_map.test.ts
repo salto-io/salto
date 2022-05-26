@@ -21,7 +21,7 @@ import { promisify } from 'util'
 import { serialization, remoteMap as rm, merger } from '@salto-io/workspace'
 import rocksdb from '@salto-io/rocksdb'
 import path from 'path'
-import { readdirSync } from 'fs-extra'
+import { readdirSync, mkdirpSync } from 'fs-extra'
 import {
   createRemoteMapCreator,
   createReadOnlyRemoteMapCreator,
@@ -30,6 +30,9 @@ import {
   closeRemoteMapsOfLocation,
   cleanDatabases,
 } from '../../../src/local-workspace/remote_map'
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const rocksdbImpl = require('../../../src/local-workspace/rocksdb').default
 
 const { serialize, deserialize } = serialization
 const { awu } = collections.asynciterable
@@ -494,6 +497,32 @@ describe('test operations on remote db', () => {
   })
   it('should throw exception if the namespace is invalid', async () => {
     await expect(createMap('inval:d')).rejects.toThrow()
+  })
+})
+
+describe('tmp db deletion', () => {
+  const DB_LOCATION_TMP = path.join(DB_LOCATION, 'tmp')
+  const TMP_DIR = path.join(DB_LOCATION_TMP, TMP_DB_DIR)
+  const EXISTING_LOCATION = path.join(TMP_DIR, 'existing')
+  it('should delete existing tmp dbs on startup', async () => {
+    // Ensure no leftovers from previous tests.
+    mkdirpSync(TMP_DIR)
+    expect(readdirSync(TMP_DIR)).toHaveLength(0)
+
+    // We open and close a rocksdb connection to create a DB that simulates an existing tmp db
+    // which was not closed in the previous run (For example, Ctrl-C)
+    const newDb = rocksdbImpl(EXISTING_LOCATION)
+    await promisify(newDb.open.bind(newDb, { readOnly: false }))()
+    await promisify(newDb.close.bind(newDb))()
+    expect(readdirSync(TMP_DIR)).toHaveLength(1)
+
+    // Creating a new map should delete the old tmp db, and create a new one
+    await createMap('new_map', true, DB_LOCATION_TMP)
+    expect(readdirSync(TMP_DIR)).toHaveLength(1)
+
+    // Closing the map should remove the newly created tmp db
+    await closeRemoteMapsOfLocation(DB_LOCATION_TMP)
+    expect(readdirSync(TMP_DIR)).toHaveLength(0)
   })
 })
 

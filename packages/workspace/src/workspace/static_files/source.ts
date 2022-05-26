@@ -107,9 +107,15 @@ export const buildStaticFilesSource = (
         throw new MissingStaticFileError(filepath)
       }
       const staticFileBuffer = file.buffer
+      const hash = calculateStaticFileHash(staticFileBuffer)
+      await staticFilesCache.put({
+        hash,
+        modified,
+        filepath,
+      })
       return {
         filepath,
-        hash: calculateStaticFileHash(staticFileBuffer),
+        hash,
         modified,
         buffer: staticFileBuffer,
         hasChanged: true,
@@ -133,11 +139,6 @@ export const buildStaticFilesSource = (
           content: staticFileData.buffer,
           encoding },
         staticFilesDirStore)
-        await staticFilesCache.put({
-          hash: staticFileData.hash,
-          modified: staticFileData.modified,
-          filepath,
-        })
         return staticFileWithHashAndContent
       }
       return new LazyStaticFile(

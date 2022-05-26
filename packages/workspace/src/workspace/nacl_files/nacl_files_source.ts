@@ -589,7 +589,7 @@ const buildNaclFilesSource = (
     if (!ignoreFileChanges) {
       const preChangeHash = await currentState.parsedNaclFiles.getHash()
       const cacheFilenames = await currentState.parsedNaclFiles.list()
-      const filesWithModifiedStaticFiles = await staticFilesSource.load()
+      const modifiedStaticFiles = await staticFilesSource.load()
       const naclFilenames = new Set(await naclFilesStore.list())
       const fileNames = new Set()
       await withLimitedConcurrency(
@@ -615,7 +615,7 @@ const buildNaclFilesSource = (
         CACHE_READ_CONCURRENCY,
       )
       await withLimitedConcurrency(
-        filesWithModifiedStaticFiles.map(staticFileName => async () => {
+        modifiedStaticFiles.map(staticFileName => async () => {
           const filenames = (await currentState.staticFilesIndex.get(staticFileName) ?? [])
             .filter(filename => !fileNames.has(filename))
           await Promise.all(filenames.map(async filename => {

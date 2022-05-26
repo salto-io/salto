@@ -84,8 +84,7 @@ export const buildStaticFilesSource = (
   staticFilesCache: StaticFilesCache,
 ): StaticFilesSource => {
   const getStaticFileData = async (filepath: string): Promise<
-    StaticFilesData & { hasChanged: false }
-  | StaticFilesData & { hasChanged: true; buffer: Buffer}
+    ({ hasChanged: false } | { hasChanged: true; buffer: Buffer}) & StaticFilesData
   > => {
     const cachedResult = await staticFilesCache.get(filepath)
     let modified: number | undefined
@@ -98,11 +97,11 @@ export const buildStaticFilesSource = (
       throw new MissingStaticFileError(filepath)
     }
 
-    const hashModified = cachedResult ? cachedResult.modified : undefined
+    const cacheModified = cachedResult ? cachedResult.modified : undefined
 
     if (cachedResult === undefined
-        || hashModified === undefined
-        || modified > hashModified) {
+        || cacheModified === undefined
+        || modified > cacheModified) {
       const file = await staticFilesDirStore.get(filepath)
       if (file === undefined) {
         throw new MissingStaticFileError(filepath)
@@ -176,11 +175,10 @@ export const buildStaticFilesSource = (
         500
       )).filter(values.isDefined))
 
-      const modifiedFiles = wu(existingFiles.keys()).filter(name => modifiedFilesSet.has(name))
       return [
         ...newFiles,
         ...deletedFiles,
-        ...modifiedFiles,
+        ...modifiedFilesSet.keys(),
       ]
     },
     getStaticFile,

@@ -615,11 +615,13 @@ const buildNaclFilesSource = (
         CACHE_READ_CONCURRENCY,
       )
       await withLimitedConcurrency(
-        filesWithModifiedStaticFiles.map(filename => async () => {
-          if (!fileNames.has(filename)) {
+        filesWithModifiedStaticFiles.map(staticFileName => async () => {
+          const filenames = (await currentState.staticFilesIndex.get(staticFileName) ?? [])
+            .filter(filename => !fileNames.has(filename))
+          await Promise.all(filenames.map(async filename => {
             modifiedNaclFiles.push(await naclFilesStore.get(filename) ?? { filename, buffer: '' })
-          }
-          fileNames.add(filename)
+            fileNames.add(filename)
+          }))
         }),
         CACHE_READ_CONCURRENCY,
       )

@@ -63,7 +63,6 @@ export const registerTestFunction = (
 )
 
 export const mockStaticFilesSource = (staticFiles: StaticFile[] = []): StaticFilesSource => ({
-  load: jest.fn().mockResolvedValue([]),
   getStaticFile: jest.fn().mockImplementation((filepath: string, _encoding: BufferEncoding) => (
     staticFiles.find(sf => sf.filepath === filepath) ?? new MissingStaticFile(filepath)
   )),

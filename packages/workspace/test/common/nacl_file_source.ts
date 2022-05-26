@@ -112,7 +112,6 @@ export const createMockNaclFileSource = (
         data: {
           errors: () => Promise.resolve([]),
           referenced: () => Promise.resolve([]),
-          staticFiles: () => Promise.resolve([]),
         },
         elements: () => Promise.resolve(naclFiles[filename] || []),
         buffer: '',

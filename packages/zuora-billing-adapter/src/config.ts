@@ -170,6 +170,10 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
     },
   },
   CatalogProduct: {
+    request: {
+      url: '/v1/catalog/products',
+      paginationField: 'nextPage',
+    },
     transformation: {
       dataField: 'products',
     },

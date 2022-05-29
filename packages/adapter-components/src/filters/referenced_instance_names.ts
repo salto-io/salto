@@ -284,7 +284,7 @@ export const addReferencesToInstanceNames = async (
   const nameToInstance = _.keyBy(instances, i => i.elemID.getFullName())
 
   const elemIdsToRename = wu(graph.keys())
-    .map(name => nameToInstanceIdFields[name].instance.elemID)
+    .map(name => nameToInstance[name].elemID)
     .toArray()
   const referenceIndex = createReferenceIndex(instances, elemIdsToRename)
 

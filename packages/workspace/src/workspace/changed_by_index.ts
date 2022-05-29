@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ElemID, getChangeData, Element, isModificationChange, toChange, CORE_ANNOTATIONS, AdditionChange, RemovalChange, ModificationChange, isAdditionChange, isRemovalChange } from '@salto-io/adapter-api'
+import { Change, ElemID, getChangeData, Element, toChange, CORE_ANNOTATIONS, AdditionChange, RemovalChange, ModificationChange, isAdditionChange, isRemovalChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -62,7 +62,11 @@ const updateRemovalChange = async (
   const elementIds = await index.get(author)
   if (elementIds) {
     _.remove(elementIds, elemId => elemId.isEqual(change.data.before.elemID))
-    await index.set(author, elementIds)
+    if (_.isEmpty(elementIds)) {
+      await index.delete(author)
+    } else {
+      await index.set(author, elementIds)
+    }
   }
 }
 
@@ -88,7 +92,7 @@ const updateChange = async (
     await updateAdditionChange(change, index)
   } else if (isRemovalChange(change)) {
     await updateRemovalChange(change, index)
-  } else if (isModificationChange(change)) {
+  } else {
     await updateModificationChange(change, index)
   }
 }

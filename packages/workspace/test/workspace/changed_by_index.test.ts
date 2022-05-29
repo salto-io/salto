@@ -29,6 +29,7 @@ describe('changed by index', () => {
   let unKnownUserInstance: InstanceElement
 
   beforeEach(() => {
+    jest.resetAllMocks()
     changedByIndex = createMockRemoteMap<ElemID[]>()
     mapVersions = createMockRemoteMap<number>()
     mapVersions.get.mockResolvedValue(CHANGED_BY_INDEX_VERSION)
@@ -77,22 +78,20 @@ describe('changed by index', () => {
     })
   })
   describe('when elements were modified', () => {
-    describe('without pre existing values', () => {
-      beforeEach(async () => {
-        const changes = [toChange({ before: knownUserInstance, after: unKnownUserInstance })]
-        await updateChangedByIndex(
-          changes,
-          changedByIndex,
-          mapVersions,
-          elementsSource,
-          true
-        )
-      })
-      it('should try to remove old values and place new values', () => {
-        expect(changedByIndex.get).toHaveBeenNthCalledWith(1, 'test@@user one')
-        expect(changedByIndex.get).toHaveBeenNthCalledWith(2, 'test@@Unknown')
-        expect(changedByIndex.set).toHaveBeenNthCalledWith(1, 'test@@Unknown', [unKnownUserInstance.elemID])
-      })
+    beforeEach(async () => {
+      const changes = [toChange({ before: knownUserInstance, after: unKnownUserInstance })]
+      await updateChangedByIndex(
+        changes,
+        changedByIndex,
+        mapVersions,
+        elementsSource,
+        true
+      )
+    })
+    it('should try to remove old values and place new values', () => {
+      expect(changedByIndex.get).toHaveBeenNthCalledWith(1, 'test@@user one')
+      expect(changedByIndex.get).toHaveBeenNthCalledWith(2, 'test@@Unknown')
+      expect(changedByIndex.set).toHaveBeenNthCalledWith(1, 'test@@Unknown', [unKnownUserInstance.elemID])
     })
   })
   describe('when elements were deleted', () => {
@@ -110,6 +109,42 @@ describe('changed by index', () => {
       it('should try to remove old values', () => {
         expect(changedByIndex.get).toHaveBeenNthCalledWith(1, 'test@@user one')
         expect(changedByIndex.set).not.toHaveBeenCalled()
+      })
+    })
+    describe('with pre existing values', () => {
+      describe('delete key', () => {
+        beforeEach(async () => {
+          changedByIndex.get.mockResolvedValue([knownUserInstance.elemID])
+          const changes = [toChange({ before: knownUserInstance })]
+          await updateChangedByIndex(
+            changes,
+            changedByIndex,
+            mapVersions,
+            elementsSource,
+            true
+          )
+        })
+        it('should try to remove old values', () => {
+          expect(changedByIndex.get).toHaveBeenNthCalledWith(1, 'test@@user one')
+          expect(changedByIndex.delete).toHaveBeenCalled()
+        })
+      })
+      describe('set key', () => {
+        beforeEach(async () => {
+          changedByIndex.get.mockResolvedValue([unKnownUserInstance.elemID])
+          const changes = [toChange({ before: knownUserInstance })]
+          await updateChangedByIndex(
+            changes,
+            changedByIndex,
+            mapVersions,
+            elementsSource,
+            true
+          )
+        })
+        it('should try to remove old values', () => {
+          expect(changedByIndex.get).toHaveBeenNthCalledWith(1, 'test@@user one')
+          expect(changedByIndex.set).toHaveBeenCalled()
+        })
       })
     })
   })

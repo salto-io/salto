@@ -92,6 +92,10 @@ export const createConditionConfigurationTypes = (): {
         refType: new ListType(conditionStatusType),
         annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
       },
+      group: {
+        refType: BuiltinTypes.STRING,
+        annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
+      },
       groups: {
         refType: new ListType(BuiltinTypes.STRING),
         annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },

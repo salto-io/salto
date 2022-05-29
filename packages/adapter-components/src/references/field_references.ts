@@ -268,7 +268,9 @@ export const generateLookupFunc = <
       log.debug('could not determine field for path %s', args.path?.getFullName())
       return undefined
     }
+
     const strategies = (await resolverFinder(args.field))
+      .filter(def => def.target?.type === undefined || args.ref.elemID.typeName === def.target.type)
       .map(def => def.serializationStrategy)
 
     if (strategies.length === 0) {

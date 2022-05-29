@@ -1847,7 +1847,7 @@ describe('workspace', () => {
     it('should add different cased elements to the same file', () => {
       expect(dirStore.set).toHaveBeenCalledWith(expect.objectContaining({
         filename: 'Records/Queue/QueueInstance.nacl',
-        buffer: expect.stringMatching(/.*salesforce.Queue QueueInstance.*salesforce.Queue queueInstance.*/s),
+        buffer: expect.stringMatching(/.*salesforce.Queue queueInstance.*salesforce.Queue QueueInstance.*/s),
       }))
     })
 

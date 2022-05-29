@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { StaticFile } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import { SyncDirectoryStore } from '../../../src/workspace/dir_store'
 import { buildStaticFilesSource, StaticFilesCache, LazyStaticFile } from '../../../src/workspace/static_files'
 
@@ -35,7 +34,6 @@ describe('Static Files', () => {
     let mockCacheStore: StaticFilesCache
     beforeEach(() => {
       mockCacheStore = {
-        list: jest.fn().mockResolvedValue([]),
         get: jest.fn().mockResolvedValue(undefined),
         getByFile: jest.fn().mockResolvedValue(undefined),
         put: jest.fn().mockResolvedValue(Promise.resolve()),
@@ -252,62 +250,6 @@ describe('Static Files', () => {
       it('should invoke the dir store delete method with the static file file path attribute', async () => {
         await staticFilesSource.delete(exampleStaticFileWithContent)
         expect(mockDirStore.delete).toHaveBeenCalledWith(exampleStaticFileWithContent.filepath)
-      })
-    })
-    describe('load', () => {
-      let changedFiles: string[]
-      const newFile = {
-        filename: 'new.txt',
-        modified: 12345,
-        hash: '9cd599a3523898e6a12e13ec787da50a',
-        buffer: 'new',
-      }
-      const modifiedFileBefore = {
-        filename: 'modified.txt',
-        modified: 12345,
-        hash: 'ab8d71b3fdce92efd8bdf29cffd36116',
-        buffer: 'before',
-      }
-      const modifiedFileAfter = {
-        filename: 'modified.txt',
-        modified: 12346,
-        hash: '99fd6b62bc270c9bc820dc111f370acd',
-        buffer: 'after',
-      }
-      const regFile = {
-        filename: 'reg.txt',
-        modified: 12345,
-        hash: '4200f0916f146d2ac5448e91a3afe1b3',
-        buffer: 'reg',
-      }
-      const deletedFile = {
-        filename: 'deleted.txt',
-        modified: 12345,
-        hash: '12e7bce94552f7a4288921f908df9b8c',
-        buffer: 'del',
-      }
-      const dirStoreFiles = _.keyBy([newFile, modifiedFileAfter, regFile], 'filename')
-      const cacheFiles = _.keyBy([deletedFile, modifiedFileBefore, regFile], 'filename')
-      beforeEach(async () => {
-        mockDirStore.list = jest.fn().mockResolvedValueOnce(Object.keys(dirStoreFiles))
-        mockCacheStore.list = jest.fn().mockResolvedValueOnce(Object.keys(cacheFiles))
-        mockDirStore.get = jest.fn().mockImplementation(async name => dirStoreFiles[name])
-        mockDirStore.mtimestamp = jest.fn()
-          .mockImplementation(async name => dirStoreFiles[name].modified)
-        mockCacheStore.get = jest.fn().mockImplementation(async name => cacheFiles[name])
-        changedFiles = await staticFilesSource.load()
-      })
-      it('should detect addition of new files', () => {
-        expect(changedFiles).toContain(newFile.filename)
-      })
-      it('should detect deletions of existing files', () => {
-        expect(changedFiles).toContain(deletedFile.filename)
-      })
-      it('should detect changes in modified files', () => {
-        expect(changedFiles).toContain(modifiedFileAfter.filename)
-      })
-      it('should not return files that were not changed', () => {
-        expect(changedFiles).not.toContain(regFile.filename)
       })
     })
   })

@@ -61,7 +61,6 @@ jest.mock('../../../src/local-workspace/dir_store')
 jest.mock('../../../src/local-workspace/static_files_cache', () => ({
   buildLocalStaticFilesCache: () => ({
     rename: jest.fn(),
-    list: jest.fn().mockResolvedValue([]),
   }),
 }))
 jest.mock('../../../src/local-workspace/remote_map', () => ({

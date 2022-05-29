@@ -312,7 +312,7 @@ describe('adapter', () => {
           'Settings_UnitOfMeasure',
           'WorkflowExport',
         ])
-        expect(elements.filter(isInstanceElement)).toHaveLength(144)
+        expect(elements.filter(isInstanceElement)).toHaveLength(145)
         expect(await awu(elements).filter(isObjectDef).toArray()).toHaveLength(2)
         expect([...new Set(
           await awu(elements).filter(isObjectDef).map(e => e.elemID.name).toArray()
@@ -450,7 +450,7 @@ describe('adapter', () => {
           'SequenceSets',
           'WorkflowExport',
         ])
-        expect(elements.filter(isInstanceElement)).toHaveLength(12)
+        expect(elements.filter(isInstanceElement)).toHaveLength(13)
         expect(await awu(elements).filter(isObjectDef).toArray()).toHaveLength(2)
         expect([...new Set(
           await awu(elements).filter(isObjectDef).map(e => e.elemID.name).toArray()
@@ -504,7 +504,7 @@ describe('adapter', () => {
           'SequenceSets',
           'WorkflowExport',
         ])
-        expect(elements.filter(isInstanceElement)).toHaveLength(12)
+        expect(elements.filter(isInstanceElement)).toHaveLength(13)
         expect(await awu(elements).filter(isObjectDef).toArray()).toHaveLength(0)
       })
     })

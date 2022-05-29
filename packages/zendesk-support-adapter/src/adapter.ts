@@ -67,7 +67,6 @@ import tagsFilter from './filters/tag'
 import webhookFilter from './filters/webhook'
 import defaultDeployFilter from './filters/default_deploy'
 import ducktypeCommonFilters from './filters/ducktype_common'
-// referencedIdFieldsFilter will be used again after SALTO-2312
 import referencedIdFieldsFilter from './filters/referenced_id_fields'
 import { getConfigFromConfigChanges } from './config_change'
 import { dependencyChanger } from './dependency_changers'
@@ -121,7 +120,6 @@ export const DEFAULT_FILTERS = [
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,
   dynamicContentReferencesFilter,
-  // referencedIdFieldsFilter will be used again after SALTO-2312
   referencedIdFieldsFilter,
   serviceUrlFilter,
   ...ducktypeCommonFilters,

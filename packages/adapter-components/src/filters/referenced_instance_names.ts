@@ -147,12 +147,12 @@ const isReferenceOfSomeElem = (
 
 const getReferencesToElemIds = (
   element: Element,
-  instancesToRename: ElemID[],
+  instancesNamesToRename: Set<string>,
 ): { path: ElemID; value: ReferenceExpression }[] => {
   const refs: { path: ElemID; value: ReferenceExpression }[] = []
-  const instanceNamesToFind = new Set(instancesToRename.map(i => i.getFullName()))
   const func: WalkOnFunc = ({ path, value }) => {
-    if (isReferenceExpression(value) && isReferenceOfSomeElem(value, instanceNamesToFind)) {
+    if (isReferenceExpression(value)
+    && isReferenceOfSomeElem(value, instancesNamesToRename)) {
       refs.push({ path, value })
       return WALK_NEXT_STEP.SKIP
     }
@@ -163,24 +163,30 @@ const getReferencesToElemIds = (
 }
 
 /* Update all references for all the renamed instances with the new elemIds */
-const updateAllReferences = (
-  referenceIndex: Record<string, { path: ElemID; value: ReferenceExpression }[]>,
-  instanceOriginalName: string,
-  allElements: Element[],
-  newElemId: ElemID,
-): void => {
+const updateAllReferences = ({
+  referenceIndex,
+  instanceOriginalName,
+  nameToInstance,
+  newElemId,
+}:{
+  referenceIndex: Record<string, { path: ElemID; value: ReferenceExpression }[]>
+  instanceOriginalName: string
+  nameToInstance: Record<string, Element>
+  newElemId: ElemID
+}): void => {
   const referencesToChange = referenceIndex[instanceOriginalName]
   if (referencesToChange === undefined) {
     return
   }
+  // all values are the same so we can use the first one
+  const updatedReference = getUpdatedReference(referencesToChange[0].value, newElemId)
   referencesToChange
     .forEach(ref => {
-      const rootElemId = ref.path.createTopLevelParentID().parent
-      const rootInstance = allElements
-        .find(e => isInstanceElement(e) && e.elemID.isEqual(rootElemId))
-      const updatedReference = getUpdatedReference(ref.value, newElemId)
-      if (rootInstance !== undefined) {
-        setPath(rootInstance, ref.path, updatedReference)
+      const topLevelInstance = nameToInstance[
+        ref.path.createTopLevelParentID().parent.getFullName()
+      ]
+      if (topLevelInstance !== undefined) {
+        setPath(topLevelInstance, ref.path, updatedReference)
       }
     })
   referenceIndex[newElemId.getFullName()] = referenceIndex[instanceOriginalName]
@@ -232,8 +238,9 @@ export const createReferenceIndex = (
   allInstances: InstanceElement[],
   instancesToRename: ElemID[],
 ) : Record<string, { path: ElemID; value: ReferenceExpression }[]> => {
+  const instancesNamesToRename = new Set(instancesToRename.map(i => i.getFullName()))
   const allReferences = allInstances
-    .flatMap(instance => getReferencesToElemIds(instance, instancesToRename))
+    .flatMap(instance => getReferencesToElemIds(instance, instancesNamesToRename))
   const referenceIndex = _(allReferences)
     .groupBy(({ value }) => value.elemID.createTopLevelParentID().parent.getFullName())
     .value()
@@ -274,6 +281,7 @@ export const addReferencesToInstanceNames = async (
     instancesToIdFields,
     obj => obj.instance.elemID.getFullName()
   )
+  const nameToInstance = _.keyBy(instances, i => i.elemID.getFullName())
 
   const elemIdsToRename = wu(graph.keys())
     .map(name => nameToInstanceIdFields[name].instance.elemID)
@@ -294,12 +302,12 @@ export const addReferencesToInstanceNames = async (
         )
         const newInstance = await createNewInstance(instance, newNaclName, filePath)
 
-        updateAllReferences(
+        updateAllReferences({
           referenceIndex,
-          originalFullName,
-          elements,
-          newInstance.elemID
-        )
+          instanceOriginalName: originalFullName,
+          nameToInstance,
+          newElemId: newInstance.elemID,
+        })
 
         const originalInstanceIdx = elements
           .findIndex(e => (e.elemID.getFullName()) === originalFullName)

@@ -72,9 +72,9 @@ describe('changed by index', () => {
     })
     it('should add the new instances changed by values to index', () => {
       expect(changedByIndex.get).toHaveBeenNthCalledWith(1, 'test@@user one')
-      expect(changedByIndex.get).toHaveBeenNthCalledWith(2, 'test@@Unknown')
+      expect(changedByIndex.get).toHaveBeenNthCalledWith(2, 'Unknown')
       expect(changedByIndex.set).toHaveBeenNthCalledWith(1, 'test@@user one', [knownUserInstance.elemID])
-      expect(changedByIndex.set).toHaveBeenNthCalledWith(2, 'test@@Unknown', [unKnownUserInstance.elemID])
+      expect(changedByIndex.set).toHaveBeenNthCalledWith(2, 'Unknown', [unKnownUserInstance.elemID])
     })
   })
   describe('when elements were modified', () => {
@@ -90,8 +90,8 @@ describe('changed by index', () => {
     })
     it('should try to remove old values and place new values', () => {
       expect(changedByIndex.get).toHaveBeenNthCalledWith(1, 'test@@user one')
-      expect(changedByIndex.get).toHaveBeenNthCalledWith(2, 'test@@Unknown')
-      expect(changedByIndex.set).toHaveBeenNthCalledWith(1, 'test@@Unknown', [unKnownUserInstance.elemID])
+      expect(changedByIndex.get).toHaveBeenNthCalledWith(2, 'Unknown')
+      expect(changedByIndex.set).toHaveBeenNthCalledWith(1, 'Unknown', [unKnownUserInstance.elemID])
     })
   })
   describe('when elements were deleted', () => {
@@ -164,9 +164,9 @@ describe('changed by index', () => {
       it('should update changed by index with all additions', () => {
         expect(changedByIndex.clear).toHaveBeenCalled()
         expect(changedByIndex.get).toHaveBeenNthCalledWith(1, 'test@@user one')
-        expect(changedByIndex.get).toHaveBeenNthCalledWith(2, 'test@@Unknown')
+        expect(changedByIndex.get).toHaveBeenNthCalledWith(2, 'Unknown')
         expect(changedByIndex.set).toHaveBeenNthCalledWith(1, 'test@@user one', [knownUserInstance.elemID])
-        expect(changedByIndex.set).toHaveBeenNthCalledWith(2, 'test@@Unknown', [unKnownUserInstance.elemID])
+        expect(changedByIndex.set).toHaveBeenNthCalledWith(2, 'Unknown', [unKnownUserInstance.elemID])
       })
     })
 
@@ -186,7 +186,7 @@ describe('changed by index', () => {
       it('should update changed by index using the element source', () => {
         expect(changedByIndex.clear).toHaveBeenCalled()
         expect(changedByIndex.set).toHaveBeenNthCalledWith(1, 'test@@user one', [knownUserInstance.elemID])
-        expect(changedByIndex.set).toHaveBeenNthCalledWith(2, 'test@@Unknown', [unKnownUserInstance.elemID])
+        expect(changedByIndex.set).toHaveBeenNthCalledWith(2, 'Unknown', [unKnownUserInstance.elemID])
       })
     })
   })

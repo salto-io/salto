@@ -38,8 +38,10 @@ const getAllElementsChanges = async (
 
 const getChangeAuthor = (change: Change<Element>): string => {
   const element = getChangeData(change)
-  const author = element.annotations[CORE_ANNOTATIONS.CHANGED_BY] ?? UNKNOWN_USER_NAME
-  return `${element.elemID.adapter}${CHANGED_BY_KEY_DELIMITER}${author}`
+  if (element.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
+    return `${element.elemID.adapter}${CHANGED_BY_KEY_DELIMITER}${element.annotations[CORE_ANNOTATIONS.CHANGED_BY]}`
+  }
+  return UNKNOWN_USER_NAME
 }
 
 const updateAdditionChange = async (

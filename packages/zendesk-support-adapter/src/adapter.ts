@@ -259,15 +259,15 @@ export default class ZendeskAdapter implements AdapterOperations {
     const appliedChangesBeforeRestore = [...deployResult.appliedChanges]
     await runner.onDeploy(appliedChangesBeforeRestore)
 
-    const sourceElements = _.keyBy(
-      changesToDeploy.map(getChangeData),
-      elem => elem.elemID.getFullName(),
+    const sourceChanges = _.keyBy(
+      changesToDeploy,
+      change => getChangeData(change).elemID.getFullName(),
     )
 
     const appliedChanges = await awu(appliedChangesBeforeRestore)
       .map(change => restoreChangeElement(
         change,
-        sourceElements,
+        sourceChanges,
         lookupFunc,
         async (source, targetElement, getLookUpName) =>
           restoreValues(source, targetElement, getLookUpName, true),

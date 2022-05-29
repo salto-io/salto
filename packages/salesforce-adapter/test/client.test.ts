@@ -15,19 +15,23 @@
 */
 import _ from 'lodash'
 import nock from 'nock'
-import { RetrieveResult, FileProperties, Metadata } from 'jsforce-types'
+import { Bulk, FileProperties, Metadata, RetrieveResult } from 'jsforce-types'
 import { logger } from '@salto-io/logging'
 import { Values } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import SalesforceClient, { ApiLimitsTooLowError,
-  getConnectionDetails, validateCredentials, API_VERSION } from '../src/client/client'
+import SalesforceClient, {
+  API_VERSION,
+  ApiLimitsTooLowError,
+  getConnectionDetails,
+  validateCredentials,
+} from '../src/client/client'
 import mockClient from './client'
-import { UsernamePasswordCredentials, OauthAccessTokenCredentials } from '../src/types'
+import { OauthAccessTokenCredentials, UsernamePasswordCredentials } from '../src/types'
 import Connection from '../src/client/jsforce'
 import { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
-import { mockRetrieveResult, mockRetrieveLocator, mockFileProperties } from './connection'
+import { mockFileProperties, mockRetrieveLocator, mockRetrieveResult } from './connection'
 
 const { array, asynciterable } = collections
 const { makeArray } = array
@@ -310,6 +314,7 @@ describe('salesforce client', () => {
     let nullFailingImplementation: Metadata['list']
     let rangeErrorFailingImplementation: Metadata['list']
     let unknownErrorToRetryImplementation: Metadata['list']
+    let pollingTimeOutImplementation: Metadata['list']
 
     beforeEach(() => {
       const mockClientAndConnection = mockClient()
@@ -325,6 +330,9 @@ describe('salesforce client', () => {
       unknownErrorToRetryImplementation = async () => {
         throw new Error('unknown_error: retry your request')
       }
+      pollingTimeOutImplementation = async () => {
+        throw new Error('Polling time out. Process Id: 666')
+      }
     })
     describe('when the error is recoverable', () => {
       let result: ReturnType<typeof testClient.listMetadataObjects>
@@ -333,9 +341,9 @@ describe('salesforce client', () => {
         expectedProperties = mockFileProperties({ type: 'CustomObject', fullName: 'A__c' })
         testConnection.metadata.list
           .mockImplementationOnce(nullFailingImplementation)
-          .mockImplementationOnce(nullFailingImplementation)
           .mockImplementationOnce(rangeErrorFailingImplementation)
           .mockImplementationOnce(unknownErrorToRetryImplementation)
+          .mockImplementationOnce(pollingTimeOutImplementation)
           .mockResolvedValueOnce([expectedProperties])
 
         result = testClient.listMetadataObjects({ type: 'CustomObject' })
@@ -660,7 +668,7 @@ describe('salesforce client', () => {
             isSandbox: false,
           }),
           connection: testConnection,
-          config: { polling: { interval: 100, timeout: 1000 } },
+          config: { polling: { interval: 100, fetchTimeout: 1000, deployTimeout: 2000 } },
         })
       })
       it('should set polling and timeout on the metadata connection', () => {
@@ -674,6 +682,12 @@ describe('salesforce client', () => {
     })
 
     describe('deploy configuration', () => {
+      const FETCH_TIMEOUT = 1000
+      const DEPLOY_TIMEOUT = 2000
+
+      let metadataPollTimeoutHistory: Array<number>
+      let bulkPollTimeoutHistory: Array<number>
+
       beforeEach(async () => {
         testConnection = mockClient().connection
         testClient = new SalesforceClient({
@@ -683,8 +697,33 @@ describe('salesforce client', () => {
             isSandbox: false,
           }),
           connection: testConnection,
-          config: { deploy: { rollbackOnError: false, testLevel: 'NoTestRun' } },
+          config: {
+            deploy: { rollbackOnError: false, testLevel: 'NoTestRun' },
+            polling: { interval: 100, fetchTimeout: FETCH_TIMEOUT, deployTimeout: DEPLOY_TIMEOUT },
+          },
         })
+
+        metadataPollTimeoutHistory = []
+        bulkPollTimeoutHistory = []
+        const connectionMetadataProxy = new Proxy(testConnection.metadata, {
+          set(target: Metadata, p: PropertyKey, value: unknown, receiver: unknown): boolean {
+            if (p === 'pollTimeout' && _.isNumber(value)) {
+              metadataPollTimeoutHistory.push(value)
+            }
+            return Reflect.set(target, p, value, receiver)
+          },
+        })
+        const connectionBulkProxy = new Proxy(testConnection.bulk, {
+          set(target: Bulk, p: PropertyKey, value: unknown, receiver: unknown): boolean {
+            if (p === 'pollTimeout' && _.isNumber(value)) {
+              bulkPollTimeoutHistory.push(value)
+            }
+            return Reflect.set(target, p, value, receiver)
+          },
+        })
+        testConnection.metadata = connectionMetadataProxy
+        testConnection.bulk = connectionBulkProxy
+
         await testClient.deploy(Buffer.from(''))
       })
 
@@ -697,6 +736,10 @@ describe('salesforce client', () => {
             ignoreWarnings: true,
           }),
         )
+      })
+      it('should set deploy polling timeout at the beginning and revert to fetch timeout at the end', async () => {
+        expect(metadataPollTimeoutHistory).toEqual([DEPLOY_TIMEOUT, FETCH_TIMEOUT])
+        expect(bulkPollTimeoutHistory).toEqual([DEPLOY_TIMEOUT, FETCH_TIMEOUT])
       })
     })
 
@@ -752,11 +795,11 @@ describe('salesforce client', () => {
             },
           })
           mockRead = testConnection.metadata.read as jest.MockedFunction<
-            typeof testConnection.metadata.read>
+              typeof testConnection.metadata.read>
           mockRetrieve = testConnection.metadata.retrieve as jest.MockedFunction<
-            typeof testConnection.metadata.retrieve>
+              typeof testConnection.metadata.retrieve>
           mockList = testConnection.metadata.list as jest.MockedFunction<
-            typeof testConnection.metadata.list>
+              typeof testConnection.metadata.list>
 
           reads = _.times(2, () => makeResolvablePromise([]))
           _.times(reads.length, i => mockRead.mockResolvedValueOnce(reads[i].promise))
@@ -819,9 +862,9 @@ describe('salesforce client', () => {
             },
           })
           mockRead = testConnection.metadata.read as jest.MockedFunction<
-            typeof testConnection.metadata.read>
+              typeof testConnection.metadata.read>
           mockRetrieve = testConnection.metadata.retrieve as jest.MockedFunction<
-            typeof testConnection.metadata.retrieve>
+              typeof testConnection.metadata.retrieve>
 
           reads = _.times(2, () => makeResolvablePromise([]))
           _.times(reads.length, i => mockRead.mockResolvedValueOnce(reads[i].promise))
@@ -870,7 +913,7 @@ describe('salesforce client', () => {
             connection: testConnection,
           })
           mockRetrieve = testConnection.metadata.retrieve as jest.MockedFunction<
-            typeof testConnection.metadata.retrieve>
+              typeof testConnection.metadata.retrieve>
 
           retrieves = _.times(6, () => makeResolvablePromise(emptyRetrieveResult))
           _.times(

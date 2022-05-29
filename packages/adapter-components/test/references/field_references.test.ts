@@ -398,6 +398,11 @@ describe('Field references', () => {
         serializationStrategy: 'id',
         target: { type: 'api_collection' },
       },
+      {
+        src: { field: 'api_collection_ids', parentTypes: ['api_access_profile'] },
+        serializationStrategy: 'id',
+        target: { type: 'api_client' },
+      },
     ]
 
     beforeAll(async () => {
@@ -428,6 +433,19 @@ describe('Field references', () => {
       })
 
       expect(res).toEqual('name')
+    })
+
+    it('should resolve using the reference type', async () => {
+      const res = await lookupNameFunc({
+        ref: new ReferenceExpression(
+          new ElemID('adapter', 'api_client', 'instance', 'instance'),
+          new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'api_collection') }), { id: 2, name: 'name' }),
+        ),
+        field: new Field(new ObjectType({ elemID: new ElemID('adapter', 'api_access_profile') }), 'api_collection_ids', BuiltinTypes.NUMBER),
+        path: new ElemID('adapter', 'somePath'),
+      })
+
+      expect(res).toEqual(2)
     })
 
     it('should resolve using full value strategy when no rule is matched', async () => {
@@ -488,8 +506,8 @@ describe('Field references', () => {
       )
       const res = await customLookupNameFunc({
         ref: new ReferenceExpression(
-          new ElemID('adapter', 'obj', 'instance', 'instance'),
-          new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'obj') }), { realId: 2 }),
+          new ElemID('adapter', 'typeWithDifferentIdField', 'instance', 'instance'),
+          new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'typeWithDifferentIdField') }), { realId: 2 }),
         ),
         field: new Field(new ObjectType({ elemID: new ElemID('adapter', 'obj2') }), 'refValue', BuiltinTypes.NUMBER),
         path: new ElemID('adapter', 'somePath'),

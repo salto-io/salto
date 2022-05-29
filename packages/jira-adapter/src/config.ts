@@ -1393,6 +1393,25 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
   },
 
+  Group: {
+    transformation: {
+      fieldsToHide: [
+        { fieldName: 'groupId' },
+      ],
+      serviceIdField: 'groupId',
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/group',
+        method: 'post',
+      },
+      remove: {
+        url: '/rest/api/3/group?groupId={groupId}',
+        method: 'delete',
+      },
+    },
+  },
+
   Board: {
     transformation: {
       fieldTypeOverrides: [
@@ -1526,6 +1545,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldsToOmit: [
         { fieldName: 'userCount' },
         { fieldName: 'remainingSeats' },
+        { fieldName: 'groupDetails' },
+        { fieldName: 'defaultGroupsDetails' },
       ],
     },
   },
@@ -1628,6 +1649,7 @@ const SUPPORTED_TYPES = {
   WorkflowScheme: ['WorkflowSchemes'],
   ServerInformation: ['ServerInformation'],
   Board: ['Boards'],
+  Group: ['Groups'],
   Automation: [],
   Webhook: [],
 }
@@ -1768,6 +1790,14 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
         originalName: 'Webhook',
         newName: 'AppWebhook',
       },
+      {
+        originalName: 'PageBeanGroupDetails',
+        newName: 'Groups',
+      },
+      {
+        originalName: 'GroupDetails',
+        newName: 'Group',
+      },
     ],
     additionalTypes: [
       // Needed to create a different transformation configuration for security scheme
@@ -1820,10 +1850,12 @@ type JiraFetchFilters = {
 
 type JiraFetchConfig = configUtils.UserFetchConfig<JiraFetchFilters> & {
   fallbackToInternalId?: boolean
+  addTypeToFieldName?: boolean
 }
 
-type MaskingConfig = {
+export type MaskingConfig = {
   automationHeaders: string[]
+  secretRegexps: string[]
 }
 
 export type JiraConfig = {
@@ -1895,6 +1927,7 @@ export const DEFAULT_CONFIG: JiraConfig = {
   apiDefinitions: DEFAULT_API_DEFINITIONS,
   masking: {
     automationHeaders: [],
+    secretRegexps: [],
   },
 }
 
@@ -1931,6 +1964,7 @@ const fetchConfigType = createUserFetchConfigType(
   JIRA,
   {
     fallbackToInternalId: { refType: BuiltinTypes.BOOLEAN },
+    addTypeToFieldName: { refType: BuiltinTypes.BOOLEAN },
   },
   fetchFiltersType,
 )
@@ -1939,6 +1973,9 @@ const maskingConfigType = createMatchingObjectType<Partial<MaskingConfig>>({
   elemID: new ElemID(JIRA),
   fields: {
     automationHeaders: {
+      refType: new ListType(BuiltinTypes.STRING),
+    },
+    secretRegexps: {
       refType: new ListType(BuiltinTypes.STRING),
     },
   },

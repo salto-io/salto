@@ -26,6 +26,7 @@ import {
   ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType, isTypeReference,
   ReadOnlyElementsSource, ReferenceMap, TypeReference, createRefToElmWithValue, isElement,
   compareSpecialValues,
+  getChangeData,
 } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from './walk_element'
@@ -555,15 +556,48 @@ export const restoreValues: RestoreValuesFunc = async (
 
 export const restoreChangeElement = async (
   change: Change,
-  sourceElements: Record<string, ChangeDataType>,
+  sourceChanges: Record<string, Change>,
   getLookUpName: GetLookupNameFunc,
   restoreValuesFunc = restoreValues,
-): Promise<Change> => applyFunctionToChangeData(
-  change,
-  changeData => restoreValuesFunc(
-    sourceElements[changeData.elemID.getFullName()], changeData, getLookUpName,
+): Promise<Change> => {
+  // We only need to restore the "after" part. "before" could not have changed so we can just use
+  // the "before" from the source change
+  const sourceChange = sourceChanges[getChangeData(change).elemID.getFullName()]
+  if (isRemovalChange(change) && isRemovalChange(sourceChange)) {
+    return sourceChange
+  }
+  const restoredAfter = await restoreValuesFunc(
+    getChangeData(sourceChange),
+    getChangeData(change),
+    getLookUpName,
   )
-)
+  if (isModificationChange(change) && isModificationChange(sourceChange)) {
+    return {
+      ...change,
+      data: {
+        before: sourceChange.data.before,
+        after: restoredAfter,
+      },
+    }
+  }
+  if (isAdditionChange(change) && isAdditionChange(sourceChange)) {
+    return {
+      ...change,
+      data: {
+        after: restoredAfter,
+      },
+    }
+  }
+  // We should never get here, but if there is a mis-match between the source change and the change
+  // we got, we warn and return the change we got without restoring
+  log.warn(
+    'Could not find matching source change for %s, change type %s, source type %s',
+    getChangeData(change).elemID.getFullName(),
+    change.action,
+    sourceChange.action,
+  )
+  return change
+}
 
 export const resolveChangeElement = <T extends Change<ChangeDataType> = Change<ChangeDataType>>(
   change: T,
@@ -742,8 +776,13 @@ export const filterByID = async <T extends Element | Values>(
     filterByID(id, annotations, filterFunc)
   )
 
-  const filterAnnotations = async (annotations: Value): Promise<Value> => (
-    filterByID(id.createNestedID('attr'), annotations, filterFunc)
+  const filterAnnotations = async (annotations: Values): Promise<Value> => (
+    _.pickBy(
+      await mapValuesAsync(annotations, async (anno, annoName) => (
+        filterByID(id.createNestedID('attr').createNestedID(annoName), anno, filterFunc)
+      )),
+      isDefined,
+    )
   )
 
   const filterAnnotationType = async (annoRefTypes: ReferenceMap): Promise<ReferenceMap> =>

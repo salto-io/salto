@@ -59,7 +59,7 @@ export const createSecurityLevelValues = (name: string, allElements: Element[]):
     {
       holder: {
         type: 'group',
-        parameter: 'atlassian-addons-admin',
+        parameter: createReference(new ElemID(JIRA, 'Group', 'instance', 'atlassian_addons_admin@b'), allElements),
       },
     },
   ],

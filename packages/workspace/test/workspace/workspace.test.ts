@@ -41,7 +41,7 @@ import { Workspace, initWorkspace, loadWorkspace, EnvironmentSource,
   COMMON_ENV_PREFIX, UnresolvedElemIDs, UpdateNaclFilesResult, isValidEnvName } from '../../src/workspace/workspace'
 import { DeleteCurrentEnvError, UnknownEnvError, EnvDuplicationError,
   AccountDuplicationError, InvalidEnvNameError, Errors, MAX_ENV_NAME_LEN, UnknownAccountError, InvalidAccountNameError } from '../../src/workspace/errors'
-import { StaticFilesSource } from '../../src/workspace/static_files'
+import { StaticFilesSource, MissingStaticFile } from '../../src/workspace/static_files'
 import * as dump from '../../src/parser/dump'
 import { mockDirStore } from '../common/nacl_file_store'
 import { EnvConfig } from '../../src/workspace/config/workspace_config_types'
@@ -1847,7 +1847,7 @@ describe('workspace', () => {
     it('should add different cased elements to the same file', () => {
       expect(dirStore.set).toHaveBeenCalledWith(expect.objectContaining({
         filename: 'Records/Queue/QueueInstance.nacl',
-        buffer: expect.stringMatching(/.*salesforce.Queue QueueInstance.*salesforce.Queue queueInstance.*/s),
+        buffer: expect.stringMatching(/.*salesforce.Queue queueInstance.*salesforce.Queue QueueInstance.*/s),
       }))
     })
 
@@ -3222,7 +3222,7 @@ describe('workspace', () => {
   })
 
 
-  describe('static files deserialization', () => {
+  describe('static files', () => {
     let workspace: Workspace
     const elemID = ElemID.fromFullName('salto.withStatic')
     const defaultStaticFile = new StaticFile({
@@ -3295,18 +3295,38 @@ describe('workspace', () => {
         }
       )
     })
-    it('should deserialize static files from the active env', async () => {
-      const elem = await (await workspace.elements()).get(elemID) as Element
-      expect(isStaticFile(elem.annotations.static)).toBeTruthy()
-      const elemStaticFile = elem.annotations.static as StaticFile
-      expect(elemStaticFile.content).toEqual(defaultStaticFile.content)
+    describe('deserialization', () => {
+      it('should deserialize static files from the active env', async () => {
+        const elem = await (await workspace.elements()).get(elemID) as Element
+        expect(isStaticFile(elem.annotations.static)).toBeTruthy()
+        const elemStaticFile = elem.annotations.static as StaticFile
+        expect(elemStaticFile.content).toEqual(defaultStaticFile.content)
+      })
+
+      it('should deserialize static files from the non-active env', async () => {
+        const elem = await (await workspace.elements(true, 'inactive')).get(elemID) as Element
+        expect(isStaticFile(elem.annotations.static)).toBeTruthy()
+        const elemStaticFile = elem.annotations.static as StaticFile
+        expect(elemStaticFile.content).toEqual(inactiveStaticFile.content)
+      })
     })
 
-    it('should deserialize static files from the non-active env', async () => {
-      const elem = await (await workspace.elements(true, 'inactive')).get(elemID) as Element
-      expect(isStaticFile(elem.annotations.static)).toBeTruthy()
-      const elemStaticFile = elem.annotations.static as StaticFile
-      expect(elemStaticFile.content).toEqual(inactiveStaticFile.content)
+    describe('getStaticFile', () => {
+      it('should get staticFile by env', async () => {
+        const defaultStaticFileRes = (await workspace.getStaticFile({ filepath: 'salto/static.txt', encoding: 'utf-8' }))
+        expect(defaultStaticFileRes).toBeDefined()
+        expect(defaultStaticFileRes?.isEqual(defaultStaticFile)).toBeTruthy()
+        const inactiveStaticFileRes = (await workspace.getStaticFile({ filepath: 'salto/static.txt', encoding: 'utf-8', env: 'inactive' }))
+        expect(inactiveStaticFileRes).toBeDefined()
+        expect(inactiveStaticFileRes?.isEqual(inactiveStaticFile)).toBeTruthy()
+      })
+
+      it('should return missing staticFile if it does not exist', async () => {
+        const defaultMissing = (await workspace.getStaticFile({ filepath: 'no', encoding: 'utf-8' }))
+        expect(defaultMissing).toBeInstanceOf(MissingStaticFile)
+        const inactiveMissing = (await workspace.getStaticFile({ filepath: 'no', encoding: 'utf-8', env: 'inactive' }))
+        expect(inactiveMissing).toBeInstanceOf(MissingStaticFile)
+      })
     })
   })
 
@@ -3502,6 +3522,95 @@ describe('getElementNaclFiles', () => {
     const res = await workspace.getElementNaclFiles(id)
     expect(res).toContain('firstFile.nacl')
     expect(res).not.toContain('secondFile.nacl')
+  })
+})
+
+describe('getElementFileNames', () => {
+  let workspace: Workspace
+  const firstFile = `
+    type salesforce.text is string {}
+    type salesforce.lead {
+      salesforce.text singleDef {
+
+      }
+      salesforce.text multiDef {
+
+      }
+    }
+  `
+  const secondFile = `
+    type salesforce.lead {
+      salesforce.text multiDef {
+
+      }
+    }
+  `
+
+  const redHeringFile = `
+    type salesforce.hearing {
+      salesforce.text multiDef {
+
+      }
+    }
+  `
+  const naclFileStore = mockDirStore(undefined, undefined, {
+    'firstFile.nacl': firstFile,
+    'secondFile.nacl': secondFile,
+    'redHeringFile.nacl': redHeringFile,
+  })
+  const naclFileStoreOfInactive = mockDirStore(undefined, undefined, {
+    'thirdFile.nacl': 'type salesforce.test is string {}',
+  })
+
+  beforeAll(async () => {
+    workspace = await createWorkspace(
+      naclFileStore,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      {
+        '': {
+          naclFiles: createMockNaclFileSource([]),
+        },
+        default: {
+          naclFiles: await naclFilesSource(
+            'default',
+            naclFileStore,
+            mockStaticFilesSource(),
+            persistentMockCreateRemoteMap(),
+            true
+          ),
+          state: createState([]),
+        },
+        inactive: {
+          naclFiles: await naclFilesSource(
+            'inactive',
+            naclFileStoreOfInactive,
+            mockStaticFilesSource(),
+            persistentMockCreateRemoteMap(),
+            true
+          ),
+          state: createState([]),
+        },
+      },
+    )
+  })
+  it('should return the correct elements to file names mapping', async () => {
+    const res = await workspace.getElementFileNames()
+    expect(Array.from(res.entries())).toEqual([
+      ['salesforce.text', ['envs/default/firstFile.nacl']],
+      ['salesforce.lead', ['envs/default/firstFile.nacl', 'envs/default/secondFile.nacl']],
+      ['salesforce.hearing', ['envs/default/redHeringFile.nacl']],
+    ])
+  })
+
+  it('should return the correct elements to file names mapping of inactive env', async () => {
+    const res = await workspace.getElementFileNames('inactive')
+    expect(Array.from(res.entries())).toEqual([
+      ['salesforce.test', ['envs/inactive/thirdFile.nacl']],
+    ])
   })
 })
 

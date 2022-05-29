@@ -47,12 +47,12 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
   )
 
   const field = new InstanceElement(
-    `${randomString}${CUSTOM_FIELDS_SUFFIX}`,
+    `${randomString}__${CUSTOM_FIELDS_SUFFIX}`,
     findType('Field', fetchedElements),
     createFieldValues(randomString),
   )
 
-  const fieldContextName = naclCase(`${randomString}${CUSTOM_FIELDS_SUFFIX}_${randomString}`)
+  const fieldContextName = naclCase(`${randomString}__${CUSTOM_FIELDS_SUFFIX}_${randomString}`)
   const fieldContext = new InstanceElement(
     fieldContextName,
     findType('CustomFieldContext', fetchedElements),
@@ -222,6 +222,14 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
     createWebhookValues(randomString),
   )
 
+  const group = new InstanceElement(
+    randomString,
+    findType('Group', fetchedElements),
+    {
+      name: randomString,
+    },
+  )
+
   return [
     [issueType],
     [field],
@@ -247,5 +255,6 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
     [notificationScheme],
     [automation],
     [webhook],
+    [group],
   ]
 }

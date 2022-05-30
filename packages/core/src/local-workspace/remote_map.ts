@@ -331,8 +331,10 @@ const getOpenDBConnection = async (
   isReadOnly: boolean
 ): Promise<rocksdb> => {
   const newDb = getRemoteDbImpl()(loc)
-  log.debug('opening connection to %s, read-only=%s', loc, isReadOnly)
-  await promisify(newDb.open.bind(newDb, { readOnly: isReadOnly }))()
+  await withCreatorLock(async () => {
+    log.debug('opening connection to %s, read-only=%s', loc, isReadOnly)
+    await promisify(newDb.open.bind(newDb, { readOnly: isReadOnly }))()
+  })
   return newDb
 }
 
@@ -581,12 +583,12 @@ remoteMap.RemoteMapCreator => {
     const createDBIfNotExist = async (loc: string): Promise<void> => {
       const newDb: rocksdb = getRemoteDbImpl()(loc)
       const readOnly = !persistent
-      try {
-        await promisify(newDb.open.bind(newDb, { readOnly }))()
-        await promisify(newDb.close.bind(newDb))()
-      } catch (e) {
-        if (newDb.status === 'new' && readOnly) {
-          await withCreatorLock(async () => {
+      await withCreatorLock(async () => {
+        try {
+          await promisify(newDb.open.bind(newDb, { readOnly }))()
+          await promisify(newDb.close.bind(newDb))()
+        } catch (e) {
+          if (newDb.status === 'new' && readOnly) {
             log.info('DB does not exist. Creating on %s', loc)
             try {
               await promisify(newDb.open.bind(newDb))()
@@ -594,11 +596,11 @@ remoteMap.RemoteMapCreator => {
             } catch (err) {
               throw new Error(`Failed to open DB in write mode - ${loc}. Error: ${err}`)
             }
-          })
-        } else {
-          throw e
+          } else {
+            throw e
+          }
         }
-      }
+      })
     }
     const createDBConnections = async (): Promise<void> => {
       if (tmpDB === undefined) {
@@ -621,8 +623,10 @@ remoteMap.RemoteMapCreator => {
       const connectionPromise = (async () => {
         try {
           currentConnectionsCount += 2
-          await createDBIfNotExist(location)
           const readOnly = !persistent
+          if (readOnly) {
+            await createDBIfNotExist(location)
+          }
           return await getOpenDBConnection(location, readOnly)
         } catch (e) {
           if (isDBLockErr(e)) {

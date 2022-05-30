@@ -138,27 +138,26 @@ const createNewInstance = async (
   )
 }
 
-const isReferenceOfSomeElem = (
+const isReferenceOfSomeElement = (
   reference: ReferenceExpression,
   instancesFullName: Set<string>
 ): boolean =>
-  (instancesFullName.has(reference.elemID.getFullName())
-  || instancesFullName.has(reference.elemID.createTopLevelParentID().parent.getFullName()))
+  instancesFullName.has(reference.elemID.createTopLevelParentID().parent.getFullName())
 
 const getReferencesToElemIds = (
   element: Element,
   instancesNamesToRename: Set<string>,
 ): { path: ElemID; value: ReferenceExpression }[] => {
   const refs: { path: ElemID; value: ReferenceExpression }[] = []
-  const func: WalkOnFunc = ({ path, value }) => {
+  const findReferences: WalkOnFunc = ({ path, value }) => {
     if (isReferenceExpression(value)
-    && isReferenceOfSomeElem(value, instancesNamesToRename)) {
+      && isReferenceOfSomeElement(value, instancesNamesToRename)) {
       refs.push({ path, value })
       return WALK_NEXT_STEP.SKIP
     }
     return WALK_NEXT_STEP.RECURSE
   }
-  walkOnElement({ element, func })
+  walkOnElement({ element, func: findReferences })
   return refs
 }
 
@@ -175,13 +174,20 @@ const updateAllReferences = ({
   newElemId: ElemID
 }): void => {
   const referencesToChange = referenceIndex[instanceOriginalName]
-  if (referencesToChange === undefined) {
+  if (referencesToChange === undefined || referencesToChange.length === 0) {
     return
   }
-  // all values are the same so we can use the first one
-  const updatedReference = getUpdatedReference(referencesToChange[0].value, newElemId)
+  const updatedReferenceMap = new Map<string, ReferenceExpression>()
   referencesToChange
     .forEach(ref => {
+      const referenceValueFullName = ref.value.elemID.getFullName()
+      if (!updatedReferenceMap.has(referenceValueFullName)) {
+        updatedReferenceMap.set(
+          referenceValueFullName,
+          getUpdatedReference(ref.value, newElemId)
+        )
+      }
+      const updatedReference = updatedReferenceMap.get(referenceValueFullName)
       const topLevelInstance = nameToInstance[
         ref.path.createTopLevelParentID().parent.getFullName()
       ]
@@ -189,7 +195,7 @@ const updateAllReferences = ({
         setPath(topLevelInstance, ref.path, updatedReference)
       }
     })
-  referenceIndex[newElemId.getFullName()] = referenceIndex[instanceOriginalName]
+  // We changed all the references to the original instance, so this entry can be removed
   delete referenceIndex[instanceOriginalName]
 }
 
@@ -236,9 +242,8 @@ const createGraph = (
 
 export const createReferenceIndex = (
   allInstances: InstanceElement[],
-  instancesToRename: ElemID[],
+  instancesNamesToRename: Set<string>,
 ) : Record<string, { path: ElemID; value: ReferenceExpression }[]> => {
-  const instancesNamesToRename = new Set(instancesToRename.map(i => i.getFullName()))
   const allReferences = allInstances
     .flatMap(instance => getReferencesToElemIds(instance, instancesNamesToRename))
   const referenceIndex = _(allReferences)
@@ -283,9 +288,8 @@ export const addReferencesToInstanceNames = async (
   )
   const nameToInstance = _.keyBy(instances, i => i.elemID.getFullName())
 
-  const elemIdsToRename = wu(graph.keys())
-    .map(name => nameToInstance[name].elemID)
-    .toArray()
+  const elemIdsToRename = new Set(wu(graph.nodeData.keys())
+    .map(instanceName => instanceName.toString()))
   const referenceIndex = createReferenceIndex(instances, elemIdsToRename)
 
   await awu(graph.evaluationOrder()).forEach(
@@ -323,7 +327,7 @@ export const referencedInstanceNamesFilterCreator: <
   TContext extends { apiDefinitions: AdapterApiConfig },
   TResult extends void | filter.FilterResult = void
 >() => FilterCreator<TClient, TContext, TResult> = () => ({ config, getElemIdFunc }) => ({
-  onFetch: async (elements: Element[]) => {
+  onFetch: async (elements: Element[]) => log.time(async () => {
     const transformationDefault = config.apiDefinitions.typeDefaults.transformation
     const configByType = config.apiDefinitions.types
     const transformationByType = getTransformationConfigByType(configByType)
@@ -333,5 +337,5 @@ export const referencedInstanceNamesFilterCreator: <
       transformationDefault,
       getElemIdFunc
     )
-  },
+  }, 'referencedInstanceNamesFilter'),
 })

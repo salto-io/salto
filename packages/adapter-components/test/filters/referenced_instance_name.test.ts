@@ -238,9 +238,9 @@ describe('referenced instances', () => {
       elements = generateElements()
       const bookOrRecipeIns = elements.filter(isInstanceElement)
         .filter(e => e.elemID.typeName === 'book' || e.elemID.typeName === 'recipe')
-        .map(i => i.elemID)
+        .map(i => i.elemID.getFullName())
       const allIns = elements.filter(isInstanceElement)
-      const res = createReferenceIndex(allIns, bookOrRecipeIns)
+      const res = createReferenceIndex(allIns, new Set(bookOrRecipeIns))
       expect(Object.keys(res)).toEqual([
         'myAdapter.book.instance.rootBook',
         'myAdapter.book.instance.book',

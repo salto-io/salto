@@ -331,10 +331,8 @@ const getOpenDBConnection = async (
   isReadOnly: boolean
 ): Promise<rocksdb> => {
   const newDb = getRemoteDbImpl()(loc)
-  await withCreatorLock(async () => {
-    log.debug('opening connection to %s, read-only=%s', loc, isReadOnly)
-    await promisify(newDb.open.bind(newDb, { readOnly: isReadOnly }))()
-  })
+  log.debug('opening connection to %s, read-only=%s', loc, isReadOnly)
+  await promisify(newDb.open.bind(newDb, { readOnly: isReadOnly }))()
   return newDb
 }
 
@@ -583,11 +581,11 @@ remoteMap.RemoteMapCreator => {
     const createDBIfNotExist = async (loc: string): Promise<void> => {
       const newDb: rocksdb = getRemoteDbImpl()(loc)
       const readOnly = !persistent
-      await withCreatorLock(async () => {
-        try {
-          await promisify(newDb.open.bind(newDb, { readOnly }))()
-          await promisify(newDb.close.bind(newDb))()
-        } catch (e) {
+      try {
+        await promisify(newDb.open.bind(newDb, { readOnly }))()
+        await promisify(newDb.close.bind(newDb))()
+      } catch (e) {
+        await withCreatorLock(async () => {
           if (newDb.status === 'new' && readOnly) {
             log.info('DB does not exist. Creating on %s', loc)
             try {
@@ -599,8 +597,8 @@ remoteMap.RemoteMapCreator => {
           } else {
             throw e
           }
-        }
-      })
+        })
+      }
     }
     const createDBConnections = async (): Promise<void> => {
       if (tmpDB === undefined) {
@@ -614,13 +612,13 @@ remoteMap.RemoteMapCreator => {
         persistentDB = await mainDBConnections[location]
         return
       }
-      if (persistent) {
-        await cleanTmpDatabases(location, true)
-      }
       if (currentConnectionsCount > MAX_CONNECTIONS) {
         throw new Error('Failed to open rocksdb connection - too much open connections already')
       }
       const connectionPromise = (async () => {
+        if (persistent) {
+          await cleanTmpDatabases(location, true)
+        }
         try {
           currentConnectionsCount += 2
           const readOnly = !persistent

@@ -585,8 +585,8 @@ remoteMap.RemoteMapCreator => {
         await promisify(newDb.open.bind(newDb, { readOnly }))()
         await promisify(newDb.close.bind(newDb))()
       } catch (e) {
-        await withCreatorLock(async () => {
-          if (newDb.status === 'new' && readOnly) {
+        if (newDb.status === 'new' && readOnly) {
+          await withCreatorLock(async () => {
             log.info('DB does not exist. Creating on %s', loc)
             try {
               await promisify(newDb.open.bind(newDb))()
@@ -594,10 +594,10 @@ remoteMap.RemoteMapCreator => {
             } catch (err) {
               throw new Error(`Failed to open DB in write mode - ${loc}. Error: ${err}`)
             }
-          } else {
-            throw e
-          }
-        })
+          })
+        } else {
+          throw e
+        }
       }
     }
     const createDBConnections = async (): Promise<void> => {

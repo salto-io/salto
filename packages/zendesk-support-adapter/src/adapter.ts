@@ -21,7 +21,6 @@ import {
 import {
   client as clientUtils,
   elements as elementUtils,
-  deployment as deploymentUtils,
 } from '@salto-io/adapter-components'
 import { logDuration, resolveChangeElement, resolveValues, restoreChangeElement, restoreValues } from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'
@@ -71,6 +70,7 @@ import ducktypeCommonFilters from './filters/ducktype_common'
 // referencedIdFieldsFilter will be used again after SALTO-2312
 // import referencedIdFieldsFilter from './filters/referenced_id_fields'
 import { getConfigFromConfigChanges } from './config_change'
+import { dependencyChanger } from './dependency_changers'
 
 const log = logger(module)
 const { createPaginator } = clientUtils
@@ -288,7 +288,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment'],
         typesWithNoDeploy: ['tag'],
       }),
-      dependencyChanger: deploymentUtils.dependency.removeStandaloneFieldDependency,
+      dependencyChanger,
       getChangeGroupIds,
     }
   }

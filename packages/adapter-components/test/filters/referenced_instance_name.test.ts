@@ -103,6 +103,10 @@ describe('referenced instances', () => {
         name: 'lastRecipe',
         book_id: new ReferenceExpression(anotherBook.elemID, anotherBook),
       },
+      undefined,
+      {
+        _parent: [new ReferenceExpression(recipes[0].elemID, recipes[0])],
+      }
     )
     const groups = [
       new InstanceElement(
@@ -179,6 +183,7 @@ describe('referenced instances', () => {
           'myAdapter.group.instance.group2',
           'myAdapter.recipe.instance.lastRecipe_456_123_ROOT',
           'myAdapter.recipe.instance.recipe123_123_ROOT',
+          'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
           'myAdapter.recipe.instance.recipe456_456_123_ROOT',
           'myAdapter.recipe.instance.sameRecipe',
           'myAdapter.recipe.instance.sameRecipe',
@@ -222,14 +227,19 @@ describe('referenced instances', () => {
         transformationConfigByType,
         transformationDefaultConfig
       )
-      expect(result.length).toEqual(7)
+      expect(result.length).toEqual(12)
       expect(result
         .map(e => e.elemID.getFullName()).sort())
         .toEqual(['myAdapter.book',
           'myAdapter.book.instance.123_ROOT',
           'myAdapter.book.instance.456_123_ROOT',
+          'myAdapter.folder',
+          'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Desktop',
+          'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
           'myAdapter.recipe',
-          'myAdapter.recipe.instance.lastRecipe_456_123_ROOT',
+          'myAdapter.recipe.instance.recipe123_123_ROOT',
+          'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
+          'myAdapter.recipe.instance.recipe456_456_123_ROOT',
           'myAdapter.recipe.instance.sameRecipe',
           'myAdapter.recipe.instance.sameRecipe',
         ])

@@ -104,6 +104,7 @@ export default class SoapClient {
     this.ajv = new Ajv({ allErrors: true, strict: false })
   }
 
+  @retryOnBadResponse
   private async getClient(): Promise<soap.Client> {
     if (this.client === undefined) {
       this.client = await soap.createClientAsync(

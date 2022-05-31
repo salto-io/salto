@@ -333,6 +333,7 @@ const getOpenDBConnection = async (
   const newDb = getRemoteDbImpl()(loc)
   log.debug('opening connection to %s, read-only=%s', loc, isReadOnly)
   await promisify(newDb.open.bind(newDb, { readOnly: isReadOnly }))()
+  currentConnectionsCount += 1
   return newDb
 }
 
@@ -586,15 +587,13 @@ remoteMap.RemoteMapCreator => {
         await promisify(newDb.close.bind(newDb))()
       } catch (e) {
         if (newDb.status === 'new' && readOnly) {
-          await withCreatorLock(async () => {
-            log.info('DB does not exist. Creating on %s', loc)
-            try {
-              await promisify(newDb.open.bind(newDb))()
-              await promisify(newDb.close.bind(newDb))()
-            } catch (err) {
-              throw new Error(`Failed to open DB in write mode - ${loc}. Error: ${err}`)
-            }
-          })
+          log.info('DB does not exist. Creating on %s', loc)
+          try {
+            await promisify(newDb.open.bind(newDb))()
+            await promisify(newDb.close.bind(newDb))()
+          } catch (err) {
+            throw new Error(`Failed to open DB in write mode - ${loc}. Error: ${err}`)
+          }
         } else {
           throw e
         }
@@ -608,16 +607,10 @@ remoteMap.RemoteMapCreator => {
         tmpDBConnections[location][tmpLocation] = tmpConnection
       }
       const mainDBConnections = persistent ? persistentDBConnections : readonlyDBConnections
-      // To keep this function re-entrant, there should be no async calls before
-      // setting mainDBConnections[location]
       if (location in mainDBConnections) {
         persistentDB = await mainDBConnections[location]
         return
       }
-      if (currentConnectionsCount > MAX_CONNECTIONS) {
-        throw new Error('Failed to open rocksdb connection - too much open connections already')
-      }
-      currentConnectionsCount += 2
       const connectionPromise = (async () => {
         try {
           if (persistent) {
@@ -635,11 +628,14 @@ remoteMap.RemoteMapCreator => {
           throw e
         }
       })()
+      if (currentConnectionsCount > MAX_CONNECTIONS) {
+        throw new Error('Failed to open rocksdb connection - too much open connections already')
+      }
       mainDBConnections[location] = connectionPromise
       persistentDB = await connectionPromise
     }
     log.debug('creating remote map for loc: %s, namespace: %s', location, namespace)
-    await createDBConnections()
+    await withCreatorLock(createDBConnections)
     return {
       get: getImpl,
       getMany: async (keys: string[]): Promise<(T | undefined)[]> =>

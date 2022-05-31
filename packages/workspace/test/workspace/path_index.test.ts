@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, TypeReference, createRefToElmWithValue } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, TypeReference, createRefToElmWithValue, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { updatePathIndex, getElementsPathHints, PathIndex, getFromPathIndex, Path,
   overridePathIndex, splitElementByPath } from '../../src/workspace/path_index'
 import { InMemoryRemoteMap } from '../../src/workspace/remote_map'
@@ -105,7 +105,23 @@ const multiPathInstanceB = new InstanceElement(
   {
     b: 'B',
   },
-  ['salto', 'inst', 'B']
+  ['salto', 'inst', 'B'],
+  {
+    [CORE_ANNOTATIONS.CHANGED_BY]: 'Me',
+  },
+)
+
+const multiPathInstanceFull = new InstanceElement(
+  'inst',
+  new TypeReference(multiPathInstanceTypeID),
+  {
+    a: 'A',
+    b: 'B',
+  },
+  undefined,
+  {
+    [CORE_ANNOTATIONS.CHANGED_BY]: 'Me',
+  },
 )
 
 describe('updatePathIndex', () => {
@@ -147,6 +163,12 @@ describe('updatePathIndex', () => {
       .toEqual([
         ['salto', 'inst', 'B'],
       ])
+    expect(
+      await index.get(multiPathInstanceA.elemID
+        .createNestedID(CORE_ANNOTATIONS.CHANGED_BY).getFullName()),
+    ).toEqual([
+      ['salto', 'inst', 'B'],
+    ])
   })
 
   it('should maintatin old elements', async () => {
@@ -301,8 +323,11 @@ describe('split element by path', () => {
 
   })
 
-  const fullObjFrags = [objFragStdFields, objFragCustomFields, objFragAnnotations]
-  const unmergedElements = [...fullObjFrags, singlePathObj, noPathObj,
+  const fullObjFrags = [
+    objFragStdFields, objFragCustomFields, objFragAnnotations,
+  ]
+  const unmergedElements = [
+    ...fullObjFrags, singlePathObj, noPathObj, multiPathInstanceA, multiPathInstanceB,
   ]
   const pi = new InMemoryRemoteMap<Path[]>()
 
@@ -315,6 +340,14 @@ describe('split element by path', () => {
     fullObjFrags.forEach(
       frag => expect(splitedElements.filter(elem => elem.isEqual(frag))).toHaveLength(1)
     )
+  })
+
+  it('should have instance annotations in a single fragment', async () => {
+    const splittedInstance = await splitElementByPath(multiPathInstanceFull, pi)
+    expect(splittedInstance).toHaveLength(2)
+    const fragmentsWithAnnoVal = splittedInstance.filter(instFrag =>
+      instFrag.annotations[CORE_ANNOTATIONS.CHANGED_BY])
+    expect(fragmentsWithAnnoVal).toHaveLength(1)
   })
 
   it('should return a single object for an element with one path', async () => {

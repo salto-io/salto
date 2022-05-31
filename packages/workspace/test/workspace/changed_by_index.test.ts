@@ -27,6 +27,7 @@ describe('changed by index', () => {
   let object: ObjectType
   let knownUserInstance: InstanceElement
   let unKnownUserInstance: InstanceElement
+  let knownUserSecondInstance: InstanceElement
 
   beforeEach(() => {
     jest.resetAllMocks()
@@ -47,6 +48,13 @@ describe('changed by index', () => {
       undefined,
       { [CORE_ANNOTATIONS.CHANGED_BY]: 'user one' },
     )
+    knownUserSecondInstance = new InstanceElement(
+      'instance3',
+      object,
+      {},
+      undefined,
+      { [CORE_ANNOTATIONS.CHANGED_BY]: 'user one' },
+    )
     unKnownUserInstance = new InstanceElement(
       'instance2',
       object,
@@ -60,6 +68,7 @@ describe('changed by index', () => {
     beforeEach(async () => {
       const changes = [
         toChange({ after: knownUserInstance }),
+        toChange({ after: knownUserSecondInstance }),
         toChange({ after: unKnownUserInstance }),
       ]
       await updateChangedByIndex(
@@ -73,7 +82,7 @@ describe('changed by index', () => {
     it('should add the new instances changed by values to index', () => {
       expect(changedByIndex.get).toHaveBeenNthCalledWith(1, 'test@@user one')
       expect(changedByIndex.get).toHaveBeenNthCalledWith(2, 'Unknown')
-      expect(changedByIndex.set).toHaveBeenNthCalledWith(1, 'test@@user one', [knownUserInstance.elemID])
+      expect(changedByIndex.set).toHaveBeenNthCalledWith(1, 'test@@user one', [knownUserInstance.elemID, knownUserSecondInstance.elemID])
       expect(changedByIndex.set).toHaveBeenNthCalledWith(2, 'Unknown', [unKnownUserInstance.elemID])
     })
   })

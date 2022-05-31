@@ -26,6 +26,7 @@ import {
   CoreAnnotationTypes,
   isType,
   isField,
+  isTemplateExpression,
 } from '@salto-io/adapter-api'
 import { toObjectType } from '@salto-io/adapter-utils'
 import { InvalidStaticFile } from './workspace/static_files/common'
@@ -450,6 +451,16 @@ const validateValue = (
 
   if (isReferenceExpression(value)) {
     return isElement(value.value) ? [] : validateValue(elemID, value.value, type)
+  }
+
+  if (isTemplateExpression(value)) {
+    const templatedReferenceValidationErrors = value.parts.map(part => (
+      isReferenceExpression(part) ? createReferenceValidationErrors(part.elemID, part.value) : []
+    )).flat()
+    return [
+      ...templatedReferenceValidationErrors,
+      ...(await validateValue(elemID, value.value, type, elementsSource)),
+    ]
   }
 
   const referenceValidationErrors = createReferenceValidationErrors(elemID, value)

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 /* eslint-disable camelcase */
-import { ObjectType, ElemID, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, PrimitiveType, PrimitiveTypes, MapType, ListType, getRestriction, createRestriction, VariableExpression, Variable, StaticFile, createRefToElmWithValue, TypeReference } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, PrimitiveType, PrimitiveTypes, MapType, ListType, getRestriction, createRestriction, VariableExpression, Variable, StaticFile, createRefToElmWithValue, TypeReference, TemplateExpression } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import {
   validateElements, InvalidValueValidationError, CircularReferenceValidationError,
@@ -303,6 +303,21 @@ describe('Elements validation', () => {
       )
       expect(errors).toHaveLength(1)
       expect(errors[0].elemID).toEqual(clonedType.fields.nested.elemID.createNestedID('annostr'))
+    })
+
+    it('should not return error on template string', async () => {
+      clonedType.fields.nested.annotations.annostr = new TemplateExpression({
+        parts: ['1', new ReferenceExpression(new ElemID('a', 'b'), 'hello world')],
+      })
+      const errors = await validateElements(
+        [clonedType],
+        createInMemoryElementSource([
+          new ObjectType({ elemID: new ElemID('a', 'b')}),
+          clonedType,
+          ...await getFieldsAndAnnoTypes(clonedType),
+        ])
+      )
+      expect(errors).toHaveLength(0)
     })
 
     it('should return error on bad num primitive type', async () => {

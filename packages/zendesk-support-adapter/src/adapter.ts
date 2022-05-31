@@ -21,7 +21,6 @@ import {
 import {
   client as clientUtils,
   elements as elementUtils,
-  deployment as deploymentUtils,
 } from '@salto-io/adapter-components'
 import { logDuration, resolveChangeElement, resolveValues, restoreChangeElement, restoreValues } from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'
@@ -68,9 +67,9 @@ import tagsFilter from './filters/tag'
 import webhookFilter from './filters/webhook'
 import defaultDeployFilter from './filters/default_deploy'
 import ducktypeCommonFilters from './filters/ducktype_common'
-// referencedIdFieldsFilter will be used again after SALTO-2312
-// import referencedIdFieldsFilter from './filters/referenced_id_fields'
+import referencedIdFieldsFilter from './filters/referenced_id_fields'
 import { getConfigFromConfigChanges } from './config_change'
+import { dependencyChanger } from './dependency_changers'
 
 const log = logger(module)
 const { createPaginator } = clientUtils
@@ -121,8 +120,7 @@ export const DEFAULT_FILTERS = [
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,
   dynamicContentReferencesFilter,
-  // referencedIdFieldsFilter will be used again after SALTO-2312
-  // referencedIdFieldsFilter,
+  referencedIdFieldsFilter,
   serviceUrlFilter,
   ...ducktypeCommonFilters,
   // defaultDeployFilter should be last!
@@ -259,15 +257,15 @@ export default class ZendeskAdapter implements AdapterOperations {
     const appliedChangesBeforeRestore = [...deployResult.appliedChanges]
     await runner.onDeploy(appliedChangesBeforeRestore)
 
-    const sourceElements = _.keyBy(
-      changesToDeploy.map(getChangeData),
-      elem => elem.elemID.getFullName(),
+    const sourceChanges = _.keyBy(
+      changesToDeploy,
+      change => getChangeData(change).elemID.getFullName(),
     )
 
     const appliedChanges = await awu(appliedChangesBeforeRestore)
       .map(change => restoreChangeElement(
         change,
-        sourceElements,
+        sourceChanges,
         lookupFunc,
         async (source, targetElement, getLookUpName) =>
           restoreValues(source, targetElement, getLookUpName, true),
@@ -288,7 +286,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment'],
         typesWithNoDeploy: ['tag'],
       }),
-      dependencyChanger: deploymentUtils.dependency.removeStandaloneFieldDependency,
+      dependencyChanger,
       getChangeGroupIds,
     }
   }

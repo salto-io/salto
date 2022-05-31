@@ -45,7 +45,7 @@ Salto is available under the Apache License, version 2.0.
 ## Does Salto collect any telemetry data?
 
 While you can easily opt-out of sending any data, Salto does collect by default some telemetry data.
-Please see [Telemetry](telemetry.md) for more information, as well as the project's [privacy policy](https://salto.io/oss_privacy_policy.html).
+Please see [Telemetry](telemetry.md) for more information, as well as the project's [privacy policy](https://www.salto.io/open-source-privacy-policy).
 
 ## I'm missing feature X, how can I tell you about it?
 

@@ -73,6 +73,7 @@ export type NaclFilesSource<Changes=ChangeSet<Change>> = Omit<ElementsSource, 'c
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
+  getElementFileNames: () => Promise<Map<string, string[]>>
   // TODO: this should be for single?
   setNaclFiles: (naclFiles: NaclFile[]) => Promise<Changes>
   removeNaclFiles: (names: string[]) => Promise<Changes>
@@ -960,6 +961,16 @@ const buildNaclFilesSource = (
     getSourceMap,
     getElementNaclFiles,
     getElementReferencedFiles,
+    getElementFileNames: async () => {
+      const { elementsIndex } = await getState()
+      const elementsIndexEntries = await awu(elementsIndex.entries()).groupBy(entry => entry.key)
+      return new Map(Object.entries(
+        _.mapValues(
+          elementsIndexEntries,
+          entries => entries.flatMap(entry => entry.value)
+        )
+      ))
+    },
     isEmpty: () => naclFilesStore.isEmpty(),
     getElementsSource: async () => (await getState()).mergedElements,
     load: async ({ ignoreFileChanges = false }: SourceLoadParams) => {

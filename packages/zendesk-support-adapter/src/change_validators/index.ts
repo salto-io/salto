@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 export { accountSettingsValidator } from './account_settings'
-export { duplicateCustomFieldOptionValuesValidator } from './duplicate_option_values'
+export { duplicateCustomFieldOptionValuesValidator, isRelevantChange,
+  RELEVANT_PARENT_AND_CHILD_TYPES, CHECKBOX_TYPE_NAME } from './duplicate_option_values'
 export { emptyCustomFieldOptionsValidator } from './empty_custom_field_options'
 export { emptyVariantsValidator } from './empty_variants'
 export { noDuplicateLocaleIdInDynamicContentItemValidator } from './unique_locale_per_variant'

@@ -39,8 +39,10 @@ describe('changed by index', () => {
   let object: ObjectType
   let knownUserInstance: InstanceElement
   let unKnownUserInstance: InstanceElement
+  let knownUserSecondInstance: InstanceElement
 
   beforeEach(() => {
+    jest.resetAllMocks()
     changedByIndex = createMockRemoteMap<ElemID[]>()
     mapVersions = createMockRemoteMap<number>()
     mapVersions.get.mockResolvedValue(CHANGED_BY_INDEX_VERSION)
@@ -53,6 +55,13 @@ describe('changed by index', () => {
     })
     knownUserInstance = new InstanceElement(
       'instance1',
+      object,
+      {},
+      undefined,
+      { [CORE_ANNOTATIONS.CHANGED_BY]: 'user one' },
+    )
+    knownUserSecondInstance = new InstanceElement(
+      'instance3',
       object,
       {},
       undefined,
@@ -71,6 +80,7 @@ describe('changed by index', () => {
     beforeEach(async () => {
       const changes = [
         toChange({ after: knownUserInstance }),
+        toChange({ after: knownUserSecondInstance }),
         toChange({ after: unKnownUserInstance }),
       ]
       await updateChangedByIndex(
@@ -83,28 +93,26 @@ describe('changed by index', () => {
     })
     it('should add the new instances changed by values to index', () => {
       expect(changedByIndex.get).toHaveBeenNthCalledWith(1, 'test@@user one')
-      expect(changedByIndex.get).toHaveBeenNthCalledWith(2, 'test@@Unknown')
-      expect(changedByIndex.set).toHaveBeenNthCalledWith(1, 'test@@user one', [knownUserInstance.elemID])
-      expect(changedByIndex.set).toHaveBeenNthCalledWith(2, 'test@@Unknown', [unKnownUserInstance.elemID])
+      expect(changedByIndex.get).toHaveBeenNthCalledWith(2, 'Unknown')
+      expect(changedByIndex.set).toHaveBeenNthCalledWith(1, 'test@@user one', [knownUserInstance.elemID, knownUserSecondInstance.elemID])
+      expect(changedByIndex.set).toHaveBeenNthCalledWith(2, 'Unknown', [unKnownUserInstance.elemID])
     })
   })
   describe('when elements were modified', () => {
-    describe('without pre existing values', () => {
-      beforeEach(async () => {
-        const changes = [toChange({ before: knownUserInstance, after: unKnownUserInstance })]
-        await updateChangedByIndex(
-          changes,
-          changedByIndex,
-          mapVersions,
-          elementsSource,
-          true
-        )
-      })
-      it('should try to remove old values and place new values', () => {
-        expect(changedByIndex.get).toHaveBeenNthCalledWith(1, 'test@@user one')
-        expect(changedByIndex.get).toHaveBeenNthCalledWith(2, 'test@@Unknown')
-        expect(changedByIndex.set).toHaveBeenNthCalledWith(1, 'test@@Unknown', [unKnownUserInstance.elemID])
-      })
+    beforeEach(async () => {
+      const changes = [toChange({ before: knownUserInstance, after: unKnownUserInstance })]
+      await updateChangedByIndex(
+        changes,
+        changedByIndex,
+        mapVersions,
+        elementsSource,
+        true
+      )
+    })
+    it('should try to remove old values and place new values', () => {
+      expect(changedByIndex.get).toHaveBeenNthCalledWith(1, 'test@@user one')
+      expect(changedByIndex.get).toHaveBeenNthCalledWith(2, 'Unknown')
+      expect(changedByIndex.set).toHaveBeenNthCalledWith(1, 'Unknown', [unKnownUserInstance.elemID])
     })
   })
   describe('when elements were deleted', () => {
@@ -124,6 +132,42 @@ describe('changed by index', () => {
         expect(changedByIndex.set).not.toHaveBeenCalled()
       })
     })
+    describe('with pre existing values', () => {
+      describe('delete key', () => {
+        beforeEach(async () => {
+          changedByIndex.get.mockResolvedValue([knownUserInstance.elemID])
+          const changes = [toChange({ before: knownUserInstance })]
+          await updateChangedByIndex(
+            changes,
+            changedByIndex,
+            mapVersions,
+            elementsSource,
+            true
+          )
+        })
+        it('should try to remove old values', () => {
+          expect(changedByIndex.get).toHaveBeenNthCalledWith(1, 'test@@user one')
+          expect(changedByIndex.delete).toHaveBeenCalled()
+        })
+      })
+      describe('set key', () => {
+        beforeEach(async () => {
+          changedByIndex.get.mockResolvedValue([unKnownUserInstance.elemID])
+          const changes = [toChange({ before: knownUserInstance })]
+          await updateChangedByIndex(
+            changes,
+            changedByIndex,
+            mapVersions,
+            elementsSource,
+            true
+          )
+        })
+        it('should try to remove old values', () => {
+          expect(changedByIndex.get).toHaveBeenNthCalledWith(1, 'test@@user one')
+          expect(changedByIndex.set).toHaveBeenCalled()
+        })
+      })
+    })
   })
 
   describe('invalid indexes', () => {
@@ -141,9 +185,9 @@ describe('changed by index', () => {
       it('should update changed by index with all additions', () => {
         expect(changedByIndex.clear).toHaveBeenCalled()
         expect(changedByIndex.get).toHaveBeenNthCalledWith(1, 'test@@user one')
-        expect(changedByIndex.get).toHaveBeenNthCalledWith(2, 'test@@Unknown')
+        expect(changedByIndex.get).toHaveBeenNthCalledWith(2, 'Unknown')
         expect(changedByIndex.set).toHaveBeenNthCalledWith(1, 'test@@user one', [knownUserInstance.elemID])
-        expect(changedByIndex.set).toHaveBeenNthCalledWith(2, 'test@@Unknown', [unKnownUserInstance.elemID])
+        expect(changedByIndex.set).toHaveBeenNthCalledWith(2, 'Unknown', [unKnownUserInstance.elemID])
       })
     })
 
@@ -163,7 +207,7 @@ describe('changed by index', () => {
       it('should update changed by index using the element source', () => {
         expect(changedByIndex.clear).toHaveBeenCalled()
         expect(changedByIndex.set).toHaveBeenNthCalledWith(1, 'test@@user one', [knownUserInstance.elemID])
-        expect(changedByIndex.set).toHaveBeenNthCalledWith(2, 'test@@Unknown', [unKnownUserInstance.elemID])
+        expect(changedByIndex.set).toHaveBeenNthCalledWith(2, 'Unknown', [unKnownUserInstance.elemID])
       })
     })
   })

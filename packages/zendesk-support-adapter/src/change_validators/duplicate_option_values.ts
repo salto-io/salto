@@ -23,15 +23,15 @@ import {
 const { awu } = collections.asynciterable
 
 type ParentAndChildTypePair = { parent: string; child: string }
-const RELEVANT_PARENT_AND_CHILD_TYPES: ParentAndChildTypePair[] = [
+export const RELEVANT_PARENT_AND_CHILD_TYPES: ParentAndChildTypePair[] = [
   { parent: 'ticket_field', child: 'ticket_field__custom_field_options' },
   { parent: 'user_field', child: 'user_field__custom_field_options' },
   { parent: 'organization_field', child: 'organization_field__custom_field_options' },
 ]
 
-const CHECKBOX_TYPE_NAME = 'checkbox'
+export const CHECKBOX_TYPE_NAME = 'checkbox'
 
-const isRelevantChange = (change: Change<InstanceElement>): boolean => {
+export const isRelevantChange = (change: Change<InstanceElement>): boolean => {
   const instance = getChangeData(change)
   const changeTypeName = instance.elemID.typeName
   if (RELEVANT_PARENT_AND_CHILD_TYPES.some(pair => pair.parent === changeTypeName)) {

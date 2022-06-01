@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AccountId } from '@salto-io/adapter-api'
+import { AccountId, CredentialError } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { Credentials } from '../auth'
 
@@ -40,7 +40,7 @@ export const validateCredentials = async (
   if (await isAuthorized(connection)) {
     return getBaseUrl(connection)
   }
-  throw new Error('Invalid Credentials')
+  throw new CredentialError('Invalid Credentials')
 }
 
 export const createConnection: clientUtils.ConnectionCreator<Credentials> = retryOptions => (

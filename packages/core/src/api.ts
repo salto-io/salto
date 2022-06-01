@@ -17,7 +17,7 @@ import {
   Adapter, InstanceElement, ObjectType, ElemID, AccountId, getChangeData, isField,
   Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
   isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
-  SaltoError, Element, DetailedChange,
+  SaltoError, Element, DetailedChange, isCredentialError,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -57,12 +57,31 @@ const { mapValuesAsync } = promises.object
 const getAdapterFromLoginConfig = (loginConfig: Readonly<InstanceElement>): Adapter =>
   adapterCreators[loginConfig.elemID.adapter]
 
+type VerifyCredentialsResult = {
+    success: true
+    accountId: AccountId
+} | {
+  success: false
+  error: Error
+}
+
 export const verifyCredentials = async (
   loginConfig: Readonly<InstanceElement>,
-): Promise<AccountId> => {
+): Promise<VerifyCredentialsResult> => {
   const adapterCreator = getAdapterFromLoginConfig(loginConfig)
   if (adapterCreator) {
-    return adapterCreator.validateCredentials(loginConfig)
+    try {
+      const accountId = await adapterCreator.validateCredentials(loginConfig)
+      return { success: true, accountId }
+    } catch (error) {
+      if (isCredentialError(error)) {
+        return {
+          success: false,
+          error,
+        }
+      }
+      throw error
+    }
   }
   throw new Error(`unknown adapter: ${loginConfig.elemID.adapter}`)
 }
@@ -72,7 +91,6 @@ export const updateCredentials = async (
   newConfig: Readonly<InstanceElement>,
   account?: string
 ): Promise<void> => {
-  await verifyCredentials(newConfig)
   await workspace.updateAccountCredentials(account ?? newConfig.elemID.adapter, newConfig)
   log.debug(`persisted new configs for adapter: ${newConfig.elemID.adapter}`)
 }
@@ -250,27 +268,40 @@ export const fetch: FetchFunc = async (
   if (progressEmitter) {
     progressEmitter.emit('adaptersDidInitialize')
   }
-  const {
-    changes, elements, mergeErrors, errors, updatedConfig,
-    configChanges, accountNameToConfigMessage, unmergedElements,
-  } = await fetchChanges(
-    accountToAdapter,
-    await workspace.elements(),
-    workspace.state(),
-    accountToServiceNameMap,
-    currentConfigs,
-    progressEmitter,
-  )
-  log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
-  await updateStateWithFetchResults(workspace, elements, unmergedElements, fetchAccounts)
-  return {
-    changes,
-    fetchErrors: errors,
-    mergeErrors,
-    success: true,
-    configChanges,
-    updatedConfig,
-    accountNameToConfigMessage,
+  try {
+    const {
+      changes, elements, mergeErrors, errors, updatedConfig,
+      configChanges, accountNameToConfigMessage, unmergedElements,
+    } = await fetchChanges(
+      accountToAdapter,
+      await workspace.elements(),
+      workspace.state(),
+      accountToServiceNameMap,
+      currentConfigs,
+      progressEmitter,
+    )
+    log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
+    await updateStateWithFetchResults(workspace, elements, unmergedElements, fetchAccounts)
+    return {
+      changes,
+      fetchErrors: errors,
+      mergeErrors,
+      success: true,
+      configChanges,
+      updatedConfig,
+      accountNameToConfigMessage,
+    }
+  } catch (error) {
+    if (isCredentialError(error)) {
+      return {
+        changes: [],
+        fetchErrors: [{ message: error.message, severity: 'Error' }],
+        mergeErrors: [],
+        success: false,
+        updatedConfig: {},
+      }
+    }
+    throw error
   }
 }
 

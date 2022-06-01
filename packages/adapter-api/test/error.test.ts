@@ -13,26 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID } from './element_id'
 
-export type SeverityLevel = 'Error' | 'Warning' | 'Info'
+import { CredentialError, isCredentialError } from '../src/error'
 
-export type SaltoErrorSource = 'config'
-
-export type SaltoError = {
-    message: string
-    severity: SeverityLevel
-    source?: SaltoErrorSource
-}
-
-export type SaltoElementError = SaltoError & {
-    elemID: ElemID
-}
-
-export const isSaltoElementError = (error: SaltoError | SaltoElementError):
-    error is SaltoElementError => 'elemID' in error
-
-export class CredentialError extends Error {}
-
-export const isCredentialError = (error: unknown): error is CredentialError =>
-  error instanceof CredentialError
+describe('is credential error', () => {
+  it('should return false', () => {
+    expect(isCredentialError(new Error('test'))).toBeFalsy()
+  })
+  it('should return true', () => {
+    expect(isCredentialError(new CredentialError('test'))).toBeTruthy()
+  })
+})

@@ -40,7 +40,7 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { flatValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
-import { AccountId, Value } from '@salto-io/adapter-api'
+import { AccountId, CredentialError, Value } from '@salto-io/adapter-api'
 import {
   CUSTOM_OBJECT_ID_FIELD,
   DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS,
@@ -344,15 +344,19 @@ const createConnectionFromCredentials = (
   options: RequestRetryOptions,
 ): Connection => {
   if (creds instanceof OauthAccessTokenCredentials) {
-    return oauthConnection({
-      instanceUrl: creds.instanceUrl,
-      accessToken: creds.accessToken,
-      refreshToken: creds.refreshToken,
-      retryOptions: options,
-      clientId: creds.clientId,
-      clientSecret: creds.clientSecret,
-      isSandbox: creds.isSandbox,
-    })
+    try {
+      return oauthConnection({
+        instanceUrl: creds.instanceUrl,
+        accessToken: creds.accessToken,
+        refreshToken: creds.refreshToken,
+        retryOptions: options,
+        clientId: creds.clientId,
+        clientSecret: creds.clientSecret,
+        isSandbox: creds.isSandbox,
+      })
+    } catch (error) {
+      throw new CredentialError(error.message)
+    }
   }
   return realConnection(creds.isSandbox, options)
 }
@@ -360,7 +364,11 @@ const createConnectionFromCredentials = (
 export const loginFromCredentialsAndReturnOrgId = async (
   connection: Connection, creds: Credentials): Promise<string> => {
   if (creds instanceof UsernamePasswordCredentials) {
-    return (await connection.login(creds.username, creds.password + (creds.apiToken ?? ''))).organizationId
+    try {
+      return (await connection.login(creds.username, creds.password + (creds.apiToken ?? ''))).organizationId
+    } catch (error) {
+      throw new CredentialError(error.message)
+    }
   }
   // Oauth connection doesn't require further login
   const identityInfo = await connection.identity()
@@ -400,7 +408,6 @@ export const validateCredentials = async (
   }
   return orgId
 }
-
 export default class SalesforceClient {
   private readonly retryOptions: RequestRetryOptions
   private readonly conn: Connection

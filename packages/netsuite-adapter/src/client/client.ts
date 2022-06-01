@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
+import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
@@ -72,7 +72,7 @@ export default class NetsuiteClient {
         await SuiteAppClient.validateCredentials(credentials)
       } catch (e) {
         e.message = `Salto SuiteApp Authentication failed. ${e.message}`
-        throw e
+        throw new CredentialError(e.message)
       }
     } else {
       log.debug('SuiteApp is not configured - skipping SuiteApp credentials validation')
@@ -82,7 +82,7 @@ export default class NetsuiteClient {
       return await SdfClient.validateCredentials(credentials)
     } catch (e) {
       e.message = `SDF Authentication failed. ${e.message}`
-      throw e
+      throw new CredentialError(e)
     }
   }
 

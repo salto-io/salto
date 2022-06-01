@@ -92,16 +92,20 @@ const updateModificationChange = async (
 ): Promise<void> => {
   if (change.data.after.annotations[CORE_ANNOTATIONS.CHANGED_BY]
     === change.data.before.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
-    return
+    await updateAdditionChange(
+        toChange({ after: change.data.after }) as AdditionChange<Element>,
+        authorMap,
+    )
+  } else {
+    await updateRemovalChange(
+      toChange({ before: change.data.before }) as RemovalChange<Element>,
+      authorMap,
+    )
+    await updateAdditionChange(
+      toChange({ after: change.data.after }) as AdditionChange<Element>,
+      authorMap,
+    )
   }
-  await updateRemovalChange(
-    toChange({ before: change.data.before }) as RemovalChange<Element>,
-    authorMap,
-  )
-  await updateAdditionChange(
-    toChange({ after: change.data.after }) as AdditionChange<Element>,
-    authorMap,
-  )
 }
 
 const updateChange = async (

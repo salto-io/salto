@@ -67,13 +67,13 @@ export const rules: Record<string, moo.Rules> = {
     [TOKEN_TYPES.INVALID]: { match: /[^ \n]+/, error: true },
   },
   string: {
-    [TOKEN_TYPES.REFERENCE]: { match: /\$\{[ \t]*[\d\w.]+[ \t]*\}/, value: s => s.slice(2, -1).trim() },
+    [TOKEN_TYPES.REFERENCE]: { match: /\$\{[ \t]*[\d\w.@]+[ \t]*\}/, value: s => s.slice(2, -1).trim() },
     [TOKEN_TYPES.DOUBLE_QUOTES]: { match: '"', pop: 1 },
     [TOKEN_TYPES.CONTENT]: { match: /(?:[^"\\\r\n]|\\.)+?(?="|\r|\n|\$\{)/, lineBreaks: false },
     [TOKEN_TYPES.NEWLINE]: { match: /[\r\n]+/, lineBreaks: true, pop: 1 },
   },
   multilineString: {
-    [TOKEN_TYPES.REFERENCE]: { match: /\$\{[ \t]*[\d\w.]+[ \t]*\}/, value: s => s.slice(2, -1).trim() },
+    [TOKEN_TYPES.REFERENCE]: { match: /\$\{[ \t]*[\d\w.@]+[ \t]*\}/, value: s => s.slice(2, -1).trim() },
     [TOKEN_TYPES.MULTILINE_END]: { match: /^[ \t]*'''/, pop: 1 },
     [TOKEN_TYPES.CONTENT]: { match: /.*\\\$\{.*[(\r\n)(\n)]|.*?(?=\$\{)|.*[(\r\n)(\n)]/, lineBreaks: true },
   },

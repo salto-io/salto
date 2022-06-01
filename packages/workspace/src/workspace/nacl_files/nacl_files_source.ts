@@ -54,7 +54,7 @@ export const HASH_KEY = 'hash'
 
 const PARSE_CONCURRENCY = 100
 const DUMP_CONCURRENCY = 100
-// TODO: this should moved into cache implemenation
+// TODO: this should moved into cache implementation
 const CACHE_READ_CONCURRENCY = 100
 const UPDATE_INDEX_CONCURRENCY = 100
 
@@ -590,7 +590,7 @@ const buildNaclFilesSource = (
     if (!ignoreFileChanges) {
       const preChangeHash = await currentState.parsedNaclFiles.getHash()
       const cacheFilenames = await currentState.parsedNaclFiles.list()
-      const modifiedStaticFiles = await staticFilesSource.load()
+      const modifiedStaticFiles = await staticFilesSource.load?.() ?? []
       const naclFilenames = new Set(await naclFilesStore.list())
       const fileNames = new Set()
       await withLimitedConcurrency(

@@ -26,6 +26,9 @@ import {
 
 const { withLimitedConcurrency } = promises.array
 
+// TODO: this should moved into cache implementation
+const CACHE_READ_CONCURRENCY = 100
+
 class StaticFileAccessDeniedError extends Error {
   constructor(filepath: string) {
     super(`access denied for ${filepath}`)
@@ -82,7 +85,7 @@ export class LazyStaticFile extends AbsoluteStaticFile {
 export const buildStaticFilesSource = (
   staticFilesDirStore: SyncDirectoryStore<Buffer>,
   staticFilesCache: StaticFilesCache,
-): StaticFilesSource => {
+): Required<StaticFilesSource> => {
   const getStaticFileData = async (filepath: string): Promise<
     ({ hasChanged: false } | { hasChanged: true; buffer: Buffer}) & StaticFilesData
   > => {
@@ -158,8 +161,8 @@ export const buildStaticFilesSource = (
     }
   }
 
-  const staticFilesSource: StaticFilesSource = {
-    load: async (): Promise<string[]> => {
+  const staticFilesSource: Required<StaticFilesSource> = {
+    load: async () => {
       const existingFiles = new Set(await staticFilesDirStore.list())
       const cachedFileNames = new Set(await staticFilesCache.list())
       const newFiles = wu(existingFiles.keys())
@@ -173,7 +176,7 @@ export const buildStaticFilesSource = (
         wu(existingFiles.keys())
           .filter(name => cachedFileNames.has(name))
           .map(name => async () => ((await getStaticFileData(name)).hasChanged ? name : undefined)),
-        500
+        CACHE_READ_CONCURRENCY
       )).filter(values.isDefined))
 
       return [
@@ -229,6 +232,7 @@ export const buildStaticFilesSource = (
 export const buildInMemStaticFilesSource = (
   files: Map<string, StaticFile> = new Map()
 ): StaticFilesSource => ({
+  load: async () => [],
   getStaticFile: async filepath => (
     files.get(filepath) ?? new MissingStaticFile(filepath)
   ),

@@ -30,7 +30,7 @@ import {
 
 describe('Static Files', () => {
   describe('Static Files Source', () => {
-    let staticFilesSource: StaticFilesSource
+    let staticFilesSource: Required<StaticFilesSource>
     let mockDirStore: SyncDirectoryStore<Buffer>
     let mockCacheStore: StaticFilesCache
     beforeEach(() => {

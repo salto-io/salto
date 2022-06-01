@@ -21,12 +21,19 @@ import {
   toChange,
   CORE_ANNOTATIONS,
   ModificationChange,
+  AdditionChange,
+  RemovalChange,
+  isAdditionChange,
+  isRemovalChange,
+  isModificationChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
-import _ from 'lodash'
+import { collections, values } from '@salto-io/lowerdash'
+import _, { isEmpty } from 'lodash'
 import { ElementsSource } from './elements_source'
 import { RemoteMap } from './remote_map'
+
+const { isDefined } = values
 
 const { awu } = collections.asynciterable
 
@@ -54,83 +61,178 @@ const getChangeAuthor = (change: Change<Element>): string => {
   }
   return UNKNOWN_USER_NAME
 }
-const getAuthorMap = (changes: Change<Element>[]): Record<string, ElemID[]> => {
-  const authorMap: Record<string, ElemID[]> = {}
-  changes.forEach(change => {
-    const author = getChangeAuthor(change)
-    if (!authorMap[author]) {
-      authorMap[author] = []
+// const getAuthorMap = (changes: Change<Element>[]): Record<string, ElemID[]> => {
+//   const authorMap: Record<string, ElemID[]> = {}
+//   changes.forEach(change => {
+//     const author = getChangeAuthor(change)
+//     if (!authorMap[author]) {
+//       authorMap[author] = []
+//     }
+//     authorMap[author].push(getChangeData(change).elemID)
+//   })
+//   return authorMap
+// }
+
+// const addToIndex = async (
+//   index: RemoteMap<ElemID[]>,
+//   key: string,
+//   value: ElemID[]
+// ): Promise<void> => {
+//   const existingValue = await index.get(key)
+//   if (existingValue) {
+//     await index.set(key, Array.from(new Set(existingValue.concat(value))))
+//   } else {
+//     await index.set(key, value)
+//   }
+// }
+
+// const removeFromIndex = async (
+//   index: RemoteMap<ElemID[]>,
+//   key: string,
+//   value: ElemID[]
+// ): Promise<void> => {
+//   const existingValue = await index.get(key)
+//   if (existingValue) {
+//     _.remove(existingValue, elemId => value.includes(elemId))
+//     if (_.isEmpty(existingValue)) {
+//       await index.delete(key)
+//     } else {
+//       await index.set(key, existingValue)
+//     }
+//   }
+// }
+
+// const updateAdditionChanges = async (
+//   changes: Change<Element>[],
+//   index: RemoteMap<ElemID[]>
+// ): Promise<void> => {
+//   const authorMap = getAuthorMap(changes)
+//   await awu(Object.entries(authorMap)).forEach(async ([key, value]) =>
+//     addToIndex(index, key, value))
+// }
+
+// const updateDeletionChanges = async (
+//   changes: Change<Element>[],
+//   index: RemoteMap<ElemID[]>
+// ): Promise<void> => {
+//   const authorMap = getAuthorMap(changes)
+//   await awu(Object.entries(authorMap)).forEach(async ([key, value]) =>
+//     removeFromIndex(index, key, value))
+// }
+const updateAdditionChange = async (
+  change: AdditionChange<Element>,
+  index: Record<string, ElemID[]>,
+): Promise<void> => {
+  const author = getChangeAuthor(change)
+  const elementIds = index[author] ?? []
+  if (!elementIds.some(elemId => elemId.isEqual(change.data.after.elemID))) {
+    elementIds.push(change.data.after.elemID)
+    index[author] = elementIds
+  }
+}
+
+const updateRemovalChange = async (
+  change: RemovalChange<Element>,
+  index: Record<string, ElemID[]>,
+): Promise<void> => {
+  const author = getChangeAuthor(change)
+  const elementIds = index[author]
+  if (elementIds) {
+    _.remove(elementIds, elemId => elemId.isEqual(change.data.before.elemID))
+    index[author] = elementIds
+    // if (_.isEmpty(elementIds)) {
+    //   delete index.author
+    // } else {
+    //   index[author] = elementIds
+    // }
+  }
+}
+
+const updateModificationChange = async (
+  change: ModificationChange<Element>,
+  index: Record<string, ElemID[]>,
+): Promise<void> => {
+  if (change.data.after.annotations[CORE_ANNOTATIONS.CHANGED_BY]
+    === change.data.before.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
+    return
+  }
+  await updateRemovalChange(
+    toChange({ before: change.data.before }) as RemovalChange<Element>,
+    index,
+  )
+  await updateAdditionChange(
+    toChange({ after: change.data.after }) as AdditionChange<Element>,
+    index,
+  )
+}
+
+const updateChange = async (
+  change: Change<Element>,
+  index: Record<string, ElemID[]>,
+): Promise<void> => {
+  if (isAdditionChange(change)) {
+    await updateAdditionChange(change, index)
+  } else if (isRemovalChange(change)) {
+    await updateRemovalChange(change, index)
+  } else {
+    await updateModificationChange(change, index)
+  }
+}
+
+const getAuthorList = (changes: Change<Element>[]): string[] => {
+  const authorMap: string[] = []
+  const addAuthor = (author: string): void => {
+    if (!authorMap.includes(author)) {
+      authorMap.push(author)
     }
-    authorMap[author].push(getChangeData(change).elemID)
+  }
+  changes.forEach(change => {
+    if (isModificationChange(change)) {
+      addAuthor(getChangeAuthor(toChange({ before: change.data.before })))
+      addAuthor(getChangeAuthor(toChange({ after: change.data.after })))
+    } else {
+      addAuthor(getChangeAuthor(change))
+    }
   })
   return authorMap
 }
 
-const addToIndex = async (
-  index: RemoteMap<ElemID[]>,
-  key: string,
-  value: ElemID[]
-): Promise<void> => {
-  const existingValue = await index.get(key)
-  if (existingValue) {
-    await index.set(key, Array.from(new Set(existingValue.concat(value))))
-  } else {
-    await index.set(key, value)
-  }
-}
-
-const removeFromIndex = async (
-  index: RemoteMap<ElemID[]>,
-  key: string,
-  value: ElemID[]
-): Promise<void> => {
-  const existingValue = await index.get(key)
-  if (existingValue) {
-    _.remove(existingValue, elemId => value.includes(elemId))
-    if (_.isEmpty(existingValue)) {
-      await index.delete(key)
-    } else {
-      await index.set(key, existingValue)
-    }
-  }
-}
-
-const updateAdditionChanges = async (
+const getCompleteAuthorMap = async (
   changes: Change<Element>[],
-  index: RemoteMap<ElemID[]>
-): Promise<void> => {
-  const authorMap = getAuthorMap(changes)
-  await awu(Object.entries(authorMap)).forEach(async ([key, value]) =>
-    addToIndex(index, key, value))
-}
-
-const updateDeletionChanges = async (
-  changes: Change<Element>[],
-  index: RemoteMap<ElemID[]>
-): Promise<void> => {
-  const authorMap = getAuthorMap(changes)
-  await awu(Object.entries(authorMap)).forEach(async ([key, value]) =>
-    removeFromIndex(index, key, value))
+  index: RemoteMap<ElemID[]>,
+): Promise<Record<string, ElemID[]>> => {
+  const authorList = getAuthorList(changes)
+  const indexValues = await index.getMany(authorList)
+  const authorMap: Record<string, ElemID[]> = _.pickBy(_.zipObject(authorList, indexValues), isDefined)
+  changes.forEach(change => updateChange(change, authorMap))
+  return authorMap
 }
 
 const updateChanges = async (
   changes: Change<Element>[],
   index: RemoteMap<ElemID[]>
 ): Promise<void> => {
-  const changesByAction = _.groupBy(changes, change => change.action)
-  const additions = changesByAction.add ?? []
-  const removals = changesByAction.remove ?? []
-  const modifications = (changesByAction.modify as ModificationChange<Element>[]) ?? []
-  await updateAdditionChanges(additions, index)
-  await updateDeletionChanges(removals, index)
-  await updateDeletionChanges(
-    modifications.map(change => toChange({ before: change.data.before })),
-    index
-  )
-  await updateAdditionChanges(
-    modifications.map(change => toChange({ after: change.data.after })),
-    index
-  )
+  const completeAuthorMap = await getCompleteAuthorMap(changes, index)
+  const toBeRemoved = Object.keys(completeAuthorMap).filter(key => isEmpty(completeAuthorMap[key]))
+  await index.setAll(Object.entries(completeAuthorMap).map(([key, value]) => ({ key, value })))
+  await index.deleteAll(toBeRemoved)
+  // Object.entries(completeAuthorMap).forEach(async ([author, elementIds]) => {
+
+  // })
+  // const changesByAction = _.groupBy(changes, change => change.action)
+  // const additions = changesByAction.add ?? []
+  // const removals = changesByAction.remove ?? []
+  // const modifications = (changesByAction.modify as ModificationChange<Element>[]) ?? []
+  // await updateAdditionChanges(additions, index)
+  // await updateDeletionChanges(removals, index)
+  // await updateDeletionChanges(
+  //   modifications.map(change => toChange({ before: change.data.before })),
+  //   index
+  // )
+  // await updateAdditionChanges(
+  //   modifications.map(change => toChange({ after: change.data.after })),
+  //   index
+  // )
 }
 
 export const updateChangedByIndex = async (

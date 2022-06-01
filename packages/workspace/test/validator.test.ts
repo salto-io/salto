@@ -312,7 +312,7 @@ describe('Elements validation', () => {
       const errors = await validateElements(
         [clonedType],
         createInMemoryElementSource([
-          new ObjectType({ elemID: new ElemID('a', 'b')}),
+          new ObjectType({ elemID: new ElemID('a', 'b') }),
           clonedType,
           ...await getFieldsAndAnnoTypes(clonedType),
         ])

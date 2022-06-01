@@ -74,7 +74,7 @@ describe('soap_client', () => {
 
   describe('retries', () => {
     it('when succeeds within the permitted retries should return the results', async () => {
-      getAsyncMock.mockRejectedValueOnce(new Error('ECONNRESET'))
+      getAsyncMock.mockRejectedValueOnce({ message: '', code: 'ECONNRESET' })
       getAsyncMock.mockResolvedValueOnce([{
         readResponse: {
           record: {

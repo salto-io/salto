@@ -67,8 +67,8 @@ const retryOnBadResponseWithDelay = (
           // eslint-disable-next-line @typescript-eslint/return-await
           return await call.call()
         } catch (e) {
-          if (retryableMessages.some(message => e.message.toUpperCase().includes(message))
-            && retriesLeft > 0) {
+          if (retryableMessages.some(message => e.message.toUpperCase().includes(message)
+            || e.code?.toUpperCase?.()?.includes(message)) && retriesLeft > 0) {
             log.warn('Retrying soap request with error: %s. Retries left: %d', e.message, retriesLeft)
             if (retryDelay) {
               await new Promise(f => setTimeout(f, retryDelay))

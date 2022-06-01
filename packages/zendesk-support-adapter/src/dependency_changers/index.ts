@@ -13,6 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { StaticFilesCache, StaticFilesCacheResult } from './cache'
-export { buildStaticFilesSource, buildInMemStaticFilesSource, LazyStaticFile, AbsoluteStaticFile } from './source'
-export { StaticFilesSource, MissingStaticFile, AccessDeniedStaticFile } from './common'
+import { DependencyChanger } from '@salto-io/adapter-api'
+import { deployment } from '@salto-io/adapter-components'
+import { collections } from '@salto-io/lowerdash'
+import { customFieldOptionDependencyChanger } from './custom_field_option_change'
+
+const { awu } = collections.asynciterable
+
+const DEPENDENCY_CHANGERS: DependencyChanger[] = [
+  deployment.dependency.removeStandaloneFieldDependency,
+  customFieldOptionDependencyChanger,
+]
+
+export const dependencyChanger: DependencyChanger = async (
+  changes, deps
+) => awu(DEPENDENCY_CHANGERS).flatMap(changer => changer(changes, deps)).toArray()

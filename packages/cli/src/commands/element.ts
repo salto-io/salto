@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import open from 'open'
 import { ElemID, isElement, CORE_ANNOTATIONS, isModificationChange } from '@salto-io/adapter-api'
-import { Workspace, ElementSelector, createElementSelectors, FromSource } from '@salto-io/workspace'
+import { Workspace, ElementSelector, createElementSelectors, FromSource, selectElementIdsByTraversal, parser, nacl, staticFiles } from '@salto-io/workspace'
 import { getEnvsDeletionsDiff, RenameElementIdError, rename } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -682,6 +682,82 @@ const renameElementsDef = createWorkspaceCommand({
   action: renameAction,
 })
 
+type PrintElementArgs = {
+  selectors: string[]
+  source: 'nacl' | 'state'
+  onlyValue: boolean
+} & EnvArg
+export const printElementAction: WorkspaceCommandAction<PrintElementArgs> = async ({
+  workspace,
+  input,
+  output,
+}) => {
+  const { validSelectors, invalidSelectors } = createElementSelectors(input.selectors)
+  if (!_.isEmpty(invalidSelectors)) {
+    errorOutputLine(formatInvalidFilters(invalidSelectors), output)
+    return CliExitCode.UserInputError
+  }
+
+  await validateAndSetEnv(workspace, input, output)
+  const elementSource = input.source === 'nacl'
+    ? await workspace.elements()
+    : workspace.state()
+
+  const relevantIds = await selectElementIdsByTraversal({
+    selectors: validSelectors,
+    source: elementSource,
+    referenceSourcesIndex: await workspace.getReferenceSourcesIndex(),
+  })
+
+  await awu(relevantIds).forEach(async id => {
+    const value = await elementSource.get(id)
+    // We build a new static files source each time to avoid having to keep
+    // all the static files loaded in memory
+    const functions = nacl.getFunctions(staticFiles.buildInMemStaticFilesSource())
+    const dumpedValue = isElement(value)
+      ? await parser.dumpElements([value], functions)
+      : await parser.dumpValues(value, functions)
+    const outputStr = input.onlyValue
+      ? dumpedValue
+      : `${id.getFullName()}: ${dumpedValue}`
+    outputLine(outputStr, output)
+  })
+  return CliExitCode.Success
+}
+
+const printElementDef = createWorkspaceCommand({
+  properties: {
+    name: 'print',
+    description: 'Print the value of element / part of an element',
+    keyedOptions: [
+      {
+        name: 'source',
+        alias: 's',
+        type: 'string',
+        choices: ['nacl', 'state'],
+        default: 'nacl',
+        description: 'Print element as it is in the nacl or the state',
+      },
+      {
+        name: 'onlyValue',
+        alias: 'o',
+        type: 'boolean',
+        default: false,
+        description: 'Print only matching values without their ID',
+      },
+      ENVIRONMENT_OPTION,
+    ],
+    positionalOptions: [
+      {
+        name: 'selectors',
+        type: 'stringsList',
+        required: true,
+      },
+    ],
+  },
+  action: printElementAction,
+})
+
 const elementGroupDef = createCommandGroupDef({
   properties: {
     name: 'element',
@@ -695,6 +771,7 @@ const elementGroupDef = createCommandGroupDef({
     elementOpenDef,
     listElementsDef,
     renameElementsDef,
+    printElementDef,
   ],
 })
 

@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import open from 'open'
-import { Element, ElemID, ObjectType, CORE_ANNOTATIONS, isInstanceElement, InstanceElement } from '@salto-io/adapter-api'
+import { Element, ElemID, ObjectType, CORE_ANNOTATIONS, isInstanceElement, InstanceElement, isObjectType } from '@salto-io/adapter-api'
 import { errors, UnresolvedElemIDs, createElementSelector } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { CliExitCode } from '../../src/types'
-import { cloneAction, moveToEnvsAction, moveToCommonAction, listUnresolvedAction, openAction, listAction, renameAction } from '../../src/commands/element'
+import { cloneAction, moveToEnvsAction, moveToCommonAction, listUnresolvedAction, openAction, listAction, renameAction, printElementAction } from '../../src/commands/element'
 import * as mocks from '../mocks'
 import * as callbacks from '../../src/callbacks'
 import Prompts from '../../src/prompts'
@@ -1416,6 +1416,112 @@ Moving the specified elements to common.
       })
       it('should return no errors', () => {
         expect(output.stderr.content).toEqual('')
+      })
+    })
+  })
+
+  describe('print command', () => {
+    const commandName = 'print'
+    describe('with invalid selectors', () => {
+      let result: CliExitCode
+      beforeAll(async () => {
+        const cliArgs = mocks.mockCliArgs()
+        const workspace = mocks.mockWorkspace({})
+        result = await printElementAction({
+          ...mocks.mockCliCommandArgs(commandName, cliArgs),
+          input: {
+            selectors: ['a.b.c.d'],
+            source: 'nacl',
+            onlyValue: false,
+          },
+          workspace,
+        })
+      })
+
+      it('should return failure code', () => {
+        expect(result).toBe(CliExitCode.UserInputError)
+      })
+    })
+    describe('with source nacl', () => {
+      let result: CliExitCode
+      let output: mocks.MockCliOutput
+      beforeEach(async () => {
+        const cliArgs = mocks.mockCliArgs()
+        output = cliArgs.output
+        const workspace = mocks.mockWorkspace({})
+        const elements = await workspace.elements()
+        await elements.set(new ObjectType({ elemID: new ElemID('test', 'type') }))
+        result = await printElementAction({
+          ...mocks.mockCliCommandArgs(commandName, cliArgs),
+          input: {
+            selectors: ['test.type'],
+            source: 'nacl',
+            onlyValue: false,
+          },
+          workspace,
+        })
+      })
+      it('should return success exit code', () => {
+        expect(result).toEqual(CliExitCode.Success)
+      })
+      it('should print the element with the ID as a prefix', () => {
+        expect(output.stdout.content).toMatch(/^test.type:.*type test.type {.*/)
+      })
+    })
+    describe('with source state', () => {
+      let result: CliExitCode
+      let output: mocks.MockCliOutput
+      beforeEach(async () => {
+        const cliArgs = mocks.mockCliArgs()
+        output = cliArgs.output
+        const workspace = mocks.mockWorkspace({})
+        await workspace.state().set(new ObjectType({ elemID: new ElemID('test', 'type') }))
+        result = await printElementAction({
+          ...mocks.mockCliCommandArgs(commandName, cliArgs),
+          input: {
+            selectors: ['test.*'],
+            source: 'state',
+            onlyValue: true,
+          },
+          workspace,
+        })
+      })
+      it('should return success exit code', () => {
+        expect(result).toEqual(CliExitCode.Success)
+      })
+      it('should print the element without the ID as a prefix', () => {
+        expect(output.stdout.content).toMatch(/^type test.type {.*/)
+      })
+    })
+    describe('with nested selector matching multiple entries', () => {
+      let result: CliExitCode
+      let output: mocks.MockCliOutput
+      beforeEach(async () => {
+        const cliArgs = mocks.mockCliArgs()
+        output = cliArgs.output
+        const workspace = mocks.mockWorkspace({})
+        result = await printElementAction({
+          ...mocks.mockCliCommandArgs(commandName, cliArgs),
+          input: {
+            selectors: ['salto.*.field.*.label'],
+            source: 'state',
+            onlyValue: false,
+          },
+          workspace,
+        })
+      })
+      it('should return success exit code', () => {
+        expect(result).toEqual(CliExitCode.Success)
+      })
+      it('should print the element without the ID as a prefix', () => {
+        const fieldsWithLabel = mocks.elements()
+          .filter(isObjectType)
+          .flatMap(objType => Object.values(objType.fields))
+          .filter(field => field.annotations.label !== undefined)
+        fieldsWithLabel.forEach(field => {
+          expect(output.stdout.content).toContain(field.elemID.createNestedID('label').getFullName())
+          expect(output.stdout.content).toContain(field.annotations.label)
+        })
       })
     })
   })

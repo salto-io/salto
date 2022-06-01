@@ -15,7 +15,7 @@
 */
 import { StaticFile } from '@salto-io/adapter-api'
 import { SyncDirectoryStore } from '../../../src/workspace/dir_store'
-import { buildStaticFilesSource, StaticFilesCache, LazyStaticFile } from '../../../src/workspace/static_files'
+import { buildStaticFilesSource, StaticFilesCache, LazyStaticFile, buildInMemStaticFilesSource } from '../../../src/workspace/static_files'
 
 import {
   InvalidStaticFile, StaticFilesSource, MissingStaticFile, AccessDeniedStaticFile,
@@ -264,6 +264,70 @@ describe('Static Files', () => {
         expect(await lazyStaticFile.getContent()).toEqual(buffer)
         expect(await lazyStaticFile.getContent()).toEqual(buffer)
         expect(mockDirStoreGet).toHaveBeenCalledTimes(1)
+      })
+    })
+  })
+  describe('buildInMemStaticFilesSource', () => {
+    describe('with no initial files', () => {
+      let source: StaticFilesSource
+      beforeEach(() => {
+        source = buildInMemStaticFilesSource()
+      })
+      it('should allow persisting and reading back a file', async () => {
+        const file = new StaticFile({ filepath: 'asd', hash: 'aaa' })
+        await source.persistStaticFile(file)
+        expect(await source.getStaticFile(file.filepath, file.encoding)).toEqual(file)
+      })
+      it('should return missing file for files that are not in the map', async () => {
+        expect(await source.getStaticFile('asd', 'utf-8')).toBeInstanceOf(MissingStaticFile)
+      })
+      it('should get file content if there is a content', async () => {
+        const file = new StaticFile({ filepath: 'asd', content: Buffer.from('bla') })
+        await source.persistStaticFile(file)
+        await expect(source.getContent(file.filepath)).resolves.toEqual(file.content)
+      })
+      it('should throw if file has no content', async () => {
+        const file = new StaticFile({ filepath: 'asd', hash: 'a' })
+        await source.persistStaticFile(file)
+        await expect(() => source.getContent(file.filepath)).rejects.toThrow()
+        await expect(() => source.getContent('non-existing-path')).rejects.toThrow()
+      })
+      it('rename and flush should do nothing', async () => {
+        await expect(source.flush()).resolves.not.toThrow()
+        await expect(source.rename('new_name')).resolves.not.toThrow()
+      })
+      it('getTotalSize should return 0', async () => {
+        expect(await source.getTotalSize()).toEqual(0)
+      })
+      it('isPathIncluded should return true for all paths', async () => {
+        expect(source.isPathIncluded('any_path')).toBeTruthy()
+      })
+    })
+    describe('with initial files map', () => {
+      let file: StaticFile
+      let source: StaticFilesSource
+      beforeEach(() => {
+        file = new StaticFile({ filepath: 'asd', hash: 'a' })
+        source = buildInMemStaticFilesSource(new Map([[file.filepath, file]]))
+      })
+      it('should not return a file after it is deleted', async () => {
+        await source.delete(file)
+        expect(
+          await source.getStaticFile(file.filepath, file.encoding)
+        ).toBeInstanceOf(MissingStaticFile)
+      })
+      it('should not return a file after it is cleared', async () => {
+        await source.clear()
+        expect(
+          await source.getStaticFile(file.filepath, file.encoding)
+        ).toBeInstanceOf(MissingStaticFile)
+      })
+      it('should clone to a new source with the same files', async () => {
+        const cloned = source.clone()
+        // Make sure the cloned source is decoupled by deleting the file in the original source
+        // and checking it is not deleted from the clone
+        await source.delete(file)
+        expect(await cloned.getStaticFile(file.filepath, file.encoding)).toEqual(file)
       })
     })
   })

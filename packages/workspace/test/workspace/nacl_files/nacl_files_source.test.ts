@@ -409,6 +409,7 @@ describe('Nacl Files Source', () => {
           data: {
             errors: () => Promise.resolve([]),
             referenced: () => Promise.resolve([]),
+            staticFiles: () => Promise.resolve([]),
           },
         },
       ]

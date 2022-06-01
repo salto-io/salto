@@ -232,7 +232,7 @@ value
 
     describe('parse result', () => {
       it('should have all types', () => {
-        expect(elements.length).toBe(22)
+        expect(elements.length).toBe(24)
         expect(genericTypes.length).toBe(2)
       })
     })

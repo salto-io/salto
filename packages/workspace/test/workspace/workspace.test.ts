@@ -3300,14 +3300,14 @@ describe('workspace', () => {
         const elem = await (await workspace.elements()).get(elemID) as Element
         expect(isStaticFile(elem.annotations.static)).toBeTruthy()
         const elemStaticFile = elem.annotations.static as StaticFile
-        expect(elemStaticFile.content).toEqual(defaultStaticFile.content)
+        expect(await elemStaticFile.getContent()).toEqual(await defaultStaticFile.getContent())
       })
 
       it('should deserialize static files from the non-active env', async () => {
         const elem = await (await workspace.elements(true, 'inactive')).get(elemID) as Element
         expect(isStaticFile(elem.annotations.static)).toBeTruthy()
         const elemStaticFile = elem.annotations.static as StaticFile
-        expect(elemStaticFile.content).toEqual(inactiveStaticFile.content)
+        expect(await elemStaticFile.getContent()).toEqual(await inactiveStaticFile.getContent())
       })
     })
 

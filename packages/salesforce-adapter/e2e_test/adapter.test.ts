@@ -364,19 +364,19 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(flow.value.processType).toEqual('Workflow')
     })
 
-    it('should retrieve AuraDefinitionBundle instance', () => {
+    it('should retrieve AuraDefinitionBundle instance', async () => {
       const aura = findElements(result, 'AuraDefinitionBundle',
         'TestAuraDefinitionBundle')[0] as InstanceElement
       expect(aura.value[constants.INSTANCE_FULL_NAME_FIELD])
         .toEqual('TestAuraDefinitionBundle')
       expect(isStaticFile(aura.value.styleContent)).toBe(true)
       const styleContentStaticFile = aura.value.styleContent as StaticFile
-      expect(styleContentStaticFile.content).toEqual(Buffer.from('.THIS{\n}'))
+      expect(await styleContentStaticFile.getContent()).toEqual(Buffer.from('.THIS{\n}'))
       expect(styleContentStaticFile.filepath)
         .toEqual('salesforce/Records/AuraDefinitionBundle/TestAuraDefinitionBundle/TestAuraDefinitionBundle.css')
     })
 
-    it('should retrieve LightningComponentBundle instance', () => {
+    it('should retrieve LightningComponentBundle instance', async () => {
       const lwc = findElements(result, constants.LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
         'testLightningComponentBundle')[0] as InstanceElement
       expect(lwc.value[constants.INSTANCE_FULL_NAME_FIELD])
@@ -386,12 +386,12 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(lwcResource).toBeDefined()
       expect(isStaticFile(lwcResource.source)).toBe(true)
       const lwcResourceStaticFile = lwcResource.source as StaticFile
-      expect(lwcResourceStaticFile.content).toEqual(Buffer.from(lwcJsResourceContent))
+      expect(await lwcResourceStaticFile.getContent()).toEqual(Buffer.from(lwcJsResourceContent))
       expect(lwcResourceStaticFile.filepath)
         .toEqual('salesforce/Records/LightningComponentBundle/testLightningComponentBundle/testLightningComponentBundle.js')
     })
 
-    it('should retrieve StaticResource instance', () => {
+    it('should retrieve StaticResource instance', async () => {
       const staticResource = findElements(result, 'StaticResource',
         'TestStaticResource')[0] as InstanceElement
       expect(staticResource.value[constants.INSTANCE_FULL_NAME_FIELD])
@@ -399,7 +399,7 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(staticResource.value.contentType).toBe('text/xml')
       expect(isStaticFile(staticResource.value.content)).toBe(true)
       const contentStaticFile = staticResource.value.content as StaticFile
-      expect(contentStaticFile.content).toEqual(Buffer.from('<xml/>'))
+      expect(await contentStaticFile.getContent()).toEqual(Buffer.from('<xml/>'))
       expect(contentStaticFile.filepath)
         .toEqual('salesforce/Records/StaticResource/TestStaticResource.xml')
     })
@@ -2644,20 +2644,22 @@ describe('Salesforce adapter E2E with real account', () => {
           }
         }
 
-        const getContentFromStaticFileOrString = (content: string | StaticFile): string => (
-          isStaticFile(content) ? (content.content as Buffer).toString() : content)
+        const getContentFromStaticFileOrString = async (content: string | StaticFile)
+          : Promise<string> => (
+          isStaticFile(content) ? (await content.getContent() as Buffer).toString() : content
+        )
 
         const verifyCreateInstance = async (instance: MetadataInstanceElement): Promise<void> => {
           await createElement(adapter, instance)
           const instanceInfo = await findInstance(instance)
           expect(instanceInfo).toBeDefined()
-          const content = getContentFromStaticFileOrString(_.get(instanceInfo, 'content'))
+          const content = await getContentFromStaticFileOrString(_.get(instanceInfo, 'content'))
           expect(content.includes('Created')).toBeTruthy()
         }
 
         const verifyUpdateInstance = async (instance: MetadataInstanceElement): Promise<void> => {
           const after = instance.clone()
-          const contentString = getContentFromStaticFileOrString(after.value.content).replace('Created', 'Updated')
+          const contentString = (await getContentFromStaticFileOrString(after.value.content)).replace('Created', 'Updated')
           after.value.content = isStaticFile(after.value.content)
             ? new StaticFile({
               filepath: after.value.content.filepath,
@@ -2672,7 +2674,7 @@ describe('Salesforce adapter E2E with real account', () => {
           })
           const instanceInfo = await findInstance(instance)
           expect(instanceInfo).toBeDefined()
-          expect(getContentFromStaticFileOrString(_.get(instanceInfo, 'content')).includes('Updated')).toBeTruthy()
+          expect((await getContentFromStaticFileOrString(_.get(instanceInfo, 'content'))).includes('Updated')).toBeTruthy()
         }
 
         const verifyRemoveInstance = async (instance: MetadataInstanceElement): Promise<void> => {

@@ -15,7 +15,7 @@
 */
 import { StaticFile } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { SyncDirectoryStore } from '../../../src/workspace/dir_store'
+import { DirectoryStore } from '../../../src/workspace/dir_store'
 import { buildStaticFilesSource, StaticFilesCache, LazyStaticFile, buildInMemStaticFilesSource } from '../../../src/workspace/static_files'
 
 import {
@@ -31,7 +31,7 @@ import {
 describe('Static Files', () => {
   describe('Static Files Source', () => {
     let staticFilesSource: Required<StaticFilesSource>
-    let mockDirStore: SyncDirectoryStore<Buffer>
+    let mockDirStore: DirectoryStore<Buffer>
     let mockCacheStore: StaticFilesCache
     beforeEach(() => {
       mockCacheStore = {
@@ -58,7 +58,6 @@ describe('Static Files', () => {
         mtimestamp: jest.fn().mockImplementation(() => Promise.resolve(undefined)),
         getTotalSize: () => Promise.resolve(0),
         clone: () => mockDirStore,
-        getSync: jest.fn(),
         getFullPath: filename => filename,
         isPathIncluded: jest.fn().mockResolvedValue(true),
       }
@@ -105,8 +104,7 @@ describe('Static Files', () => {
       describe('hashing', () => {
         it('should not hash if in cache and file not modified', async () => {
           const filepathFromCache = 'filepathfromcache'
-          mockDirStore.get = jest.fn().mockResolvedValue(undefined)
-          mockDirStore.getSync = jest.fn().mockReturnValue(defaultFile)
+          mockDirStore.get = jest.fn().mockResolvedValue(defaultFile)
           mockDirStore.mtimestamp = jest.fn(
             (filepath: string): Promise<number | undefined> =>
               Promise.resolve(
@@ -123,10 +121,10 @@ describe('Static Files', () => {
           const result = await staticFilesSource.getStaticFile('bb', 'binary')
           expect(mockDirStore.get).toHaveBeenCalledTimes(0)
           expect(result).toHaveProperty('hash', 'aaa')
-          expect(mockDirStore.getSync).not.toHaveBeenCalled()
+          expect(mockDirStore.get).not.toHaveBeenCalled()
           const staticFileRes = result as StaticFile
-          expect(staticFileRes.content).toEqual(defaultBuffer)
-          expect(mockDirStore.getSync).toHaveBeenCalled()
+          expect(await staticFileRes.getContent()).toEqual(defaultBuffer)
+          expect(mockDirStore.get).toHaveBeenCalled()
         })
         it('should hash if in cache and file modified is newer', async () => {
           const filepathFromCache = 'filepathfromcache'
@@ -316,7 +314,7 @@ describe('Static Files', () => {
       it('should not call directory store get method twice', async () => {
         const buffer = 'test'
         const mockDirStoreGet = jest.fn().mockResolvedValue({ buffer })
-        const mockSyncDirStore = { get: mockDirStoreGet } as unknown as SyncDirectoryStore<Buffer>
+        const mockSyncDirStore = { get: mockDirStoreGet } as unknown as DirectoryStore<Buffer>
         const lazyStaticFile = new LazyStaticFile('test', 'abcdefgh', mockSyncDirStore)
         // Twice on purpose
         expect(await lazyStaticFile.getContent()).toEqual(buffer)
@@ -342,7 +340,7 @@ describe('Static Files', () => {
       it('should get file content if there is a content', async () => {
         const file = new StaticFile({ filepath: 'asd', content: Buffer.from('bla') })
         await source.persistStaticFile(file)
-        await expect(source.getContent(file.filepath)).resolves.toEqual(file.content)
+        await expect(source.getContent(file.filepath)).resolves.toEqual(await file.getContent())
       })
       it('should throw if file has no content', async () => {
         const file = new StaticFile({ filepath: 'asd', hash: 'a' })

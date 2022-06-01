@@ -72,8 +72,8 @@ export const mockStaticFilesSource = (
   getStaticFile: jest.fn().mockImplementation((filepath: string, _encoding: BufferEncoding) => (
     files.find(sf => sf.filepath === filepath) ?? undefined
   )),
-  getContent: jest.fn().mockImplementation((filepath: string) => (
-    files.find(sf => sf.filepath === filepath)?.content ?? undefined
+  getContent: jest.fn().mockImplementation(async (filepath: string) => (
+    await files.find(sf => sf.filepath === filepath)?.getContent() ?? undefined
   )),
   persistStaticFile: jest.fn().mockReturnValue([]),
   flush: jest.fn(),

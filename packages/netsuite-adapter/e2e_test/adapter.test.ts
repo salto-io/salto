@@ -585,8 +585,8 @@ describe('Netsuite adapter E2E with real account', () => {
         const { content } = fetchedEmailTemplate.value
         expect(isStaticFile(content)).toBeTruthy()
         const contentStaticFile = content as StaticFile
-        expect(contentStaticFile.content).toBeDefined()
-        expect((contentStaticFile.content as Buffer).toString())
+        expect(await contentStaticFile.getContent()).toBeDefined()
+        expect((await contentStaticFile.getContent() as Buffer).toString())
           .toEqual(emailTemplateToCreate.value.content)
       })
 
@@ -599,8 +599,8 @@ describe('Netsuite adapter E2E with real account', () => {
         const { content } = fetchedFile.value
         expect(isStaticFile(content)).toBeTruthy()
         const contentStaticFile = content as StaticFile
-        expect(contentStaticFile.content).toBeDefined()
-        expect((contentStaticFile.content as Buffer).toString())
+        expect(await contentStaticFile.getContent()).toBeDefined()
+        expect((await contentStaticFile.getContent() as Buffer).toString())
           .toEqual(fileToCreate.value.content)
       })
 

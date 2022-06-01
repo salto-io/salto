@@ -76,11 +76,12 @@ describe('cpq custom script filter', () => {
     fromServiceCustomScriptValues,
     mockCustomScripInstancePath,
   )
+  const cpqCodeContent = Buffer.from('if (this === "code") return true')
   const afterOnFetchCustomScriptValues = {
     [CPQ_CONSUMPTION_RATE_FIELDS]: ['lala', 'zaza', 'baba'],
     [CPQ_GROUP_FIELDS]: null,
     [CPQ_CODE_FIELD]: new StaticFile({
-      content: Buffer.from('if (this === "code") return true'),
+      content: cpqCodeContent,
       filepath: `${mockCustomScripInstancePath.join('/')}.js`,
       encoding: 'utf-8',
     }),
@@ -252,7 +253,7 @@ describe('cpq custom script filter', () => {
       .clone()
     // Simulating resolve on the static-file
     mockAfterResolveCustomScriptInstance
-      .value[CPQ_CODE_FIELD] = mockAfterResolveCustomScriptInstance.value[CPQ_CODE_FIELD].content.toString('utf-8')
+      .value[CPQ_CODE_FIELD] = cpqCodeContent.toString('utf-8')
     describe('Modification changes', () => {
       beforeAll(async () => {
         const beforeType = mockAfterOnFetchCustomScriptObject.clone()

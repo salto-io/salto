@@ -456,8 +456,9 @@ export const resolveValues: ResolveValuesFunc = async (
       })
     }
     if (isStaticFile(value)) {
+      const content = await value.getContent()
       return value.encoding === 'binary'
-        ? value.content : value.content?.toString(value.encoding)
+        ? content : content?.toString(value.encoding)
     }
     return value
   }

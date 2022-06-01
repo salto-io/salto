@@ -38,7 +38,3 @@ export type DirectoryStore<T extends ContentType> = {
   getFullPath(filename: string): string
   isPathIncluded(filePath: string): boolean
 }
-
-export type SyncDirectoryStore<T extends ContentType> = DirectoryStore<T> & {
-  getSync(filename: string): File<T> | undefined
-}

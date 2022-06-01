@@ -144,6 +144,7 @@ const buildMockWorkspace = async (
 ):
 Promise<Workspace> => {
   const mockStaticFilesCache: staticFiles.StaticFilesCache = {
+    list: mockFunction<staticFiles.StaticFilesCache['list']>(),
     get: mockFunction<staticFiles.StaticFilesCache['get']>(),
     put: mockFunction<staticFiles.StaticFilesCache['put']>(),
     flush: mockFunction<staticFiles.StaticFilesCache['flush']>(),

@@ -33,11 +33,12 @@ export const CUSTOM_OBJECTS_DEPLOY_RETRY_OPTIONS = 'customObjectsDeployRetryOpti
 export const USE_OLD_PROFILES = 'useOldProfiles'
 export const FETCH_CONFIG = 'fetch'
 export const METADATA_CONFIG = 'metadata'
-const METADATA_INCLUDE_LIST = 'include'
-const METADATA_EXCLUDE_LIST = 'exclude'
+export const METADATA_INCLUDE_LIST = 'include'
+export const METADATA_EXCLUDE_LIST = 'exclude'
 const METADATA_TYPE = 'metadataType'
 const METADATA_NAME = 'name'
 const METADATA_NAMESPACE = 'namespace'
+export const METADATA_SEPARATE_FIELD_LIST = 'separateFieldToFiles'
 export const DATA_CONFIGURATION = 'data'
 export const METADATA_TYPES_SKIPPED_LIST = 'metadataTypesSkippedList'
 export const DATA_MANAGEMENT = 'dataManagement'
@@ -61,6 +62,7 @@ export type MetadataQueryParams = Partial<MetadataInstance>
 export type MetadataParams = {
   include?: MetadataQueryParams[]
   exclude?: MetadataQueryParams[]
+  separateFieldToFiles?: string[]
 }
 
 export type OptionalFeatures = {
@@ -468,6 +470,14 @@ const metadataConfigType = createMatchingObjectType<MetadataParams>({
   fields: {
     [METADATA_INCLUDE_LIST]: { refType: new ListType(metadataQueryType) },
     [METADATA_EXCLUDE_LIST]: { refType: new ListType(metadataQueryType) },
+    [METADATA_SEPARATE_FIELD_LIST]: {
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          max_length: constants.MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD,
+        }),
+      },
+    },
   },
 })
 

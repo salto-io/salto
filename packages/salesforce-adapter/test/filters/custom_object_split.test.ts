@@ -28,11 +28,17 @@ import {
   OBJECTS_PATH,
   SALESFORCE,
 } from '../../src/constants'
+import mockClient from '../client'
+import { defaultFilterContext } from '../utils'
 
 
 describe('Custom Object Split filter', () => {
   type FilterType = FilterWith<'onFetch'>
-  const filter = (): FilterType => filterCreator() as FilterType
+  const filter = (): FilterType => filterCreator({
+    client: mockClient().client,
+    config: defaultFilterContext,
+  }) as FilterType
+
   const runFilter = async (...customObjects: ObjectType[]): Promise<Element[]> => {
     const elements = [...customObjects]
     await filter().onFetch(elements)

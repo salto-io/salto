@@ -324,6 +324,7 @@ export default class SalesforceAdapter implements AdapterOperations {
           useOldProfiles: config.useOldProfiles ?? useOldProfiles,
           fetchProfile,
           elementsSource,
+          separateFieldToFiles: config.fetch?.metadata?.separateFieldToFiles,
         },
       },
       filterCreators,

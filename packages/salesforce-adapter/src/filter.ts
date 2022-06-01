@@ -25,6 +25,7 @@ export type FilterContext = {
   useOldProfiles?: boolean
   fetchProfile: FetchProfile
   elementsSource: ReadOnlyElementsSource
+  separateFieldToFiles?: string[]
 }
 
 export type FilterOpts = {

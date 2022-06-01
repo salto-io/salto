@@ -304,6 +304,7 @@ export const DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS = {
     'UNABLE_TO_LOCK_ROW',
   ],
 }
+export const MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD = 20
 
 // Metadata types
 export const TOPICS_FOR_OBJECTS_METADATA_TYPE = 'TopicsForObjects'

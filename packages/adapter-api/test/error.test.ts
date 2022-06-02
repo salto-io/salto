@@ -13,6 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { StaticFilesCache, StaticFilesData } from './cache'
-export { buildStaticFilesSource, buildInMemStaticFilesSource, LazyStaticFile, AbsoluteStaticFile } from './source'
-export { StaticFilesSource, MissingStaticFile, AccessDeniedStaticFile } from './common'
+
+import { CredentialError, isCredentialError } from '../src/error'
+
+describe('is credential error', () => {
+  it('should return false', () => {
+    expect(isCredentialError(new Error('test'))).toBeFalsy()
+  })
+  it('should return true', () => {
+    expect(isCredentialError(new CredentialError('test'))).toBeTruthy()
+  })
+})

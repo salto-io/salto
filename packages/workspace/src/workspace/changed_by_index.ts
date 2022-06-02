@@ -78,10 +78,9 @@ const updateRemovalChange = async (
   authorMap: Record<string, Set<ElemID>>,
 ): Promise<void> => {
   const author = getChangeAuthor(change)
-  if (!authorMap[author]) {
-    authorMap[author] = new Set()
+  if (authorMap[author]) {
+    authorMap[author].delete(change.data.before.elemID)
   }
-  authorMap[author].delete(change.data.before.elemID)
 }
 
 const updateModificationChange = async (

@@ -219,6 +219,14 @@ describe('Elements validation', () => {
           }),
         },
       },
+      restrictedListLength: {
+        refType: new ListType(BuiltinTypes.NUMBER),
+        annotations: {
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+            max_length: 5,
+          }),
+        },
+      },
       restrictedAnnotation: {
         refType: restrictedAnnotation,
         annotations: {
@@ -498,6 +506,7 @@ describe('Elements validation', () => {
         listOfMaps: [{ key: 'value' }, { another: 'one' }],
         restrictStr: 'restriction1',
         restrictedStringMaxLengthType: '1',
+        restrictedListLength: [1, 2, 3],
       }
     )
 
@@ -1159,6 +1168,23 @@ describe('Elements validation', () => {
           expect(errors[0]).toBeInstanceOf(RegexMismatchValidationError)
           expect(errors[0].message).toMatch('Value "211" is not valid for field restrictNumberRegex. expected value to match "^1[0-9]*$" regular expression')
           expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('restrictNumberRegex'))
+        })
+
+        it('should return an error when list is longer than restriction', async () => {
+          extInst.value.restrictedListLength = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+          const errors = await validateElements(
+            [extInst],
+            createInMemoryElementSource([
+              extInst,
+              nestedType,
+              ...await getFieldsAndAnnoTypes(extType),
+            ])
+          )
+          expect(errors).toHaveLength(1)
+          expect(errors[0]).toBeInstanceOf(InvalidValueMaxLengthValidationError)
+          expect(errors[0].message).toMatch('Value "1,2,3,4,5,6,7,8,9,10" is too long for field')
+          expect(errors[0].message).toMatch('restrictedListLength maximum length is 5')
+          expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('restrictedListLength'))
         })
       })
     })

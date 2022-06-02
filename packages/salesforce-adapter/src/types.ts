@@ -38,7 +38,7 @@ export const METADATA_EXCLUDE_LIST = 'exclude'
 const METADATA_TYPE = 'metadataType'
 const METADATA_NAME = 'name'
 const METADATA_NAMESPACE = 'namespace'
-export const METADATA_SEPARATE_FIELD_LIST = 'separateFieldToFiles'
+export const METADATA_SEPARATE_FIELD_LIST = 'objectsToSeperateFieldsToFiles'
 export const DATA_CONFIGURATION = 'data'
 export const METADATA_TYPES_SKIPPED_LIST = 'metadataTypesSkippedList'
 export const DATA_MANAGEMENT = 'dataManagement'
@@ -62,7 +62,7 @@ export type MetadataQueryParams = Partial<MetadataInstance>
 export type MetadataParams = {
   include?: MetadataQueryParams[]
   exclude?: MetadataQueryParams[]
-  separateFieldToFiles?: string[]
+  objectsToSeperateFieldsToFiles?: string[]
 }
 
 export type OptionalFeatures = {

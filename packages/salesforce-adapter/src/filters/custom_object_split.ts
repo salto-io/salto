@@ -27,7 +27,7 @@ export const annotationsFileName = (objectName: string): string => `${pathNaclCa
 export const standardFieldsFileName = (objectName: string): string => `${pathNaclCase(objectName)}StandardFields`
 export const customFieldsFileName = (objectName: string): string => `${pathNaclCase(objectName)}CustomFields`
 
-const fieldFileName = (objectName: string, fieldName: string): string =>
+const perFieldFileName = (objectName: string, fieldName: string): string =>
   `${pathNaclCase(objectName)}Field${pathNaclCase(fieldName)}`
 
 const customObjectToSplitElements = async (
@@ -54,7 +54,7 @@ const customObjectToSplitElements = async (
           fields: { [fieldName]: field },
           path: [
             ...await getObjectDirectoryPath(customObject),
-            fieldFileName(customObject.elemID.name, fieldName),
+            perFieldFileName(customObject.elemID.name, fieldName),
           ],
         }
       ))

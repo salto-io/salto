@@ -111,11 +111,11 @@ export const validateMetadataParams = (
   validateMetadataQueryParams(params.include ?? [], [...fieldPath, METADATA_INCLUDE_LIST])
   validateMetadataQueryParams(params.exclude ?? [], [...fieldPath, METADATA_EXCLUDE_LIST])
 
-  if (params.separateFieldToFiles !== undefined
-    && params.separateFieldToFiles.length > MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD) {
+  if (params.objectsToSeperateFieldsToFiles !== undefined
+    && params.objectsToSeperateFieldsToFiles.length > MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD) {
     throw new ConfigValidationError(
       [...fieldPath, METADATA_SEPARATE_FIELD_LIST],
-      `${METADATA_SEPARATE_FIELD_LIST} should not be larger than ${MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD}. current length is ${params.separateFieldToFiles.length}`
+      `${METADATA_SEPARATE_FIELD_LIST} should not be larger than ${MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD}. current length is ${params.objectsToSeperateFieldsToFiles.length}`
     )
   }
 }

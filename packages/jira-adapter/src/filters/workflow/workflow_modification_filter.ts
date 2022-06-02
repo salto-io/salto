@@ -139,7 +139,7 @@ const deployWorkflowModification = async ({
     })
   } catch (err) {
     await cleanTempInstance()
-    if (err.response?.data?.errorMessages.some((message: string) => message.includes('is missing the mappings required for statuses with IDs'))) {
+    if (err.response?.data?.errorMessages?.some((message: string) => message.includes('is missing the mappings required for statuses with IDs'))) {
       throw new Error(`Modification to an active workflow ${getChangeData(change).elemID.getFullName()} is not backward compatible`)
     }
     throw err

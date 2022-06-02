@@ -79,6 +79,21 @@ describe('Static Files Cache', () => {
       expect(await cloned.get(baseMetaData.filepath)).toEqual(expectedResult)
       expect(cloned).not.toBe(staticFilesCache)
     })
+    it('list', async () => {
+      const file1 = {
+        filepath: 'file1.txt',
+        hash: 'HASH',
+        modified: 123,
+      }
+      const file2 = {
+        filepath: 'file2.txt',
+        hash: 'HASH',
+        modified: 123,
+      }
+      await staticFilesCache.put(file1)
+      await staticFilesCache.put(file2)
+      expect(await staticFilesCache.list()).toEqual([file1.filepath, file2.filepath])
+    })
   })
   describe('when migrating cache', () => {
     const expectedCacheKey = baseMetaData.filepath
@@ -103,20 +118,5 @@ describe('Static Files Cache', () => {
       staticFilesCache = buildLocalStaticFilesCache('path', 'test-env', remoteMapCreator)
       return expect(staticFilesCache.get(baseMetaData.filepath)).resolves.toEqual(expectedResult)
     })
-  })
-  it('list', async () => {
-    const file1 = {
-      filepath: 'file1.txt',
-      hash: 'HASH',
-      modified: 123,
-    }
-    const file2 = {
-      filepath: 'file2.txt',
-      hash: 'HASH',
-      modified: 123,
-    }
-    await staticFilesCache.put(file1)
-    await staticFilesCache.put(file2)
-    expect(await staticFilesCache.list()).toEqual([file1.filepath, file2.filepath])
   })
 })

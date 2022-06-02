@@ -655,8 +655,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   ticket_field: {
     transformation: {
       sourceTypeName: 'ticket_fields__ticket_fields',
-      idFields: ['type', 'title'],
-      fileNameFields: ['type', 'title'],
+      idFields: ['title', 'type'],
+      fileNameFields: ['title', 'type'],
       standaloneFields: [{ fieldName: 'custom_field_options' }],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'position', fieldType: 'number' }),

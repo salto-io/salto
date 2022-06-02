@@ -84,6 +84,18 @@ describe('workflowModificationFilter', () => {
       'workflowSchemeInstance',
       workflowSchemeType,
       {
+        id: '1',
+        defaultWorkflow: new ReferenceExpression(
+          workflowInstance.elemID,
+          workflowInstance,
+        ),
+      }
+    )
+
+    const newWorkflowSchemeInstance = new InstanceElement(
+      'newWorkflowSchemeInstance',
+      workflowSchemeType,
+      {
         defaultWorkflow: new ReferenceExpression(
           workflowInstance.elemID,
           workflowInstance,
@@ -93,6 +105,7 @@ describe('workflowModificationFilter', () => {
 
     elementsSource = buildElementsSourceFromElements([
       workflowSchemeInstance,
+      newWorkflowSchemeInstance,
       workflowInstance,
     ])
 
@@ -190,6 +203,8 @@ describe('workflowModificationFilter', () => {
         config,
         elementsSource,
       )
+
+      expect(deployWorkflowSchemeMock).toHaveBeenCalledTimes(2)
 
       expect(deployWorkflowMock).toHaveBeenNthCalledWith(
         4,

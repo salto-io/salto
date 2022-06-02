@@ -71,12 +71,6 @@ const updateAdditionChange = async (
     authorMap[author] = new Set()
   }
   authorMap[author].add(change.data.after.elemID)
-  // const elementIds = authorMap[author] ?? []
-  // authorMap[author] = elementIds.add(change.data.after.elemID)
-  // if (!elementIds.some(elemId => elemId.isEqual(change.data.after.elemID))) {
-  //   elementIds.push(change.data.after.elemID)
-  //   authorMap[author] = elementIds
-  // }
 }
 
 const updateRemovalChange = async (
@@ -88,11 +82,6 @@ const updateRemovalChange = async (
     authorMap[author] = new Set()
   }
   authorMap[author].delete(change.data.before.elemID)
-  // const elementIds = authorMap[author]
-  // if (elementIds) {
-  //   _.remove(elementIds, elemId => elemId.isEqual(change.data.before.elemID))
-  //   authorMap[author] = elementIds
-  // }
 }
 
 const updateModificationChange = async (
@@ -130,22 +119,20 @@ const updateChange = async (
   }
 }
 
-const getAuthorList = (changes: Change<Element>[]): string[] => {
-  const authorMap: string[] = []
-  const addAuthor = (author: string): void => {
-    if (!authorMap.includes(author)) {
-      authorMap.push(author)
-    }
-  }
+const getUniqueAuthors = (changes: Change<Element>[]): Set<string> => {
+  const authorSet = new Set<string>()
   changes.forEach(change => {
     if (isModificationChange(change)) {
-      addAuthor(getChangeAuthor(toChange({ before: change.data.before })))
-      addAuthor(getChangeAuthor(toChange({ after: change.data.after })))
+      if (!change.data.after.annotations[CORE_ANNOTATIONS.CHANGED_BY]
+          === change.data.before.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
+        authorSet.add(getChangeAuthor(toChange({ before: change.data.before })))
+        authorSet.add(getChangeAuthor(toChange({ after: change.data.after })))
+      }
     } else {
-      addAuthor(getChangeAuthor(change))
+      authorSet.add(getChangeAuthor(change))
     }
   })
-  return authorMap
+  return authorSet
 }
 
 const mergeAuthorMap = (
@@ -163,7 +150,7 @@ const getCompleteAuthorMap = async (
   changes: Change<Element>[],
   index: RemoteMap<ElemID[]>,
 ): Promise<Record<string, Set<ElemID>>> => {
-  const authorList = getAuthorList(changes)
+  const authorList = Array.from(getUniqueAuthors(changes))
   const indexValues = await index.getMany(authorList)
   const authorMap = mergeAuthorMap(authorList, indexValues)
   changes.forEach(change => updateChange(change, authorMap))

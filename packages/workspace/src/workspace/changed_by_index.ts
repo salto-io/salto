@@ -157,9 +157,11 @@ const updateChanges = async (
   index: RemoteMap<ElemID[]>
 ): Promise<void> => {
   const completeAuthorMap = await getCompleteAuthorMap(changes, index)
-  const toBeRemoved = Object.keys(completeAuthorMap).filter(key => isEmpty(completeAuthorMap[key]))
-  await index.setAll(Object.entries(completeAuthorMap)
-    .map(([key, value]) => ({ key, value: Array.from(value) })))
+  const [toBeRemoved, toBeSet] = _.partition(
+    Object.keys(completeAuthorMap),
+    key => isEmpty(completeAuthorMap[key]),
+  )
+  await index.setAll(toBeSet.map(key => ({ key, value: Array.from(completeAuthorMap[key]) })))
   await index.deleteAll(toBeRemoved)
 }
 

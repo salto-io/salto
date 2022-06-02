@@ -1095,12 +1095,12 @@ zendesk_support {
         transformation = {
           sourceTypeName = "ticket_fields__ticket_fields"
           idFields = [
-            "type",
             "title",
+            "type",
           ]
           fileNameFields = [
-            "type",
             "title",
+            "type",
           ]
           standaloneFields = [
             {

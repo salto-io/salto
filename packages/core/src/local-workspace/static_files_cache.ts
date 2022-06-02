@@ -18,6 +18,9 @@ import { readTextFile, exists, rm } from '@salto-io/file'
 import { staticFiles, remoteMap } from '@salto-io/workspace'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
+
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -97,7 +100,7 @@ export const buildLocalStaticFilesCache = (
       buildLocalStaticFilesCache(cacheDir, name, remoteMapCreator)
     ),
     list: async () => (
-      Object.keys((await cache))
+      awu((await cache).keys()).toArray()
     ),
   }
 }

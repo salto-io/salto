@@ -77,10 +77,10 @@ describe('changed by index', () => {
   })
   describe('mixed changes', () => {
     beforeEach(async () => {
-      changedByIndex.getMany.mockResolvedValue([[], []])
+      changedByIndex.getMany.mockResolvedValue([[knownUserSecondInstance.elemID], undefined])
       const changes = [
         toChange({ after: knownUserInstance }),
-        toChange({ before: unKnownUserInstance, after: knownUserSecondInstance }),
+        toChange({ before: knownUserSecondInstance, after: knownUserSecondInstance }),
         toChange({ before: unKnownUserInstance }),
       ]
       await updateChangedByIndex(
@@ -93,13 +93,13 @@ describe('changed by index', () => {
     })
     it('should add the new instances changed by values to index', () => {
       expect(changedByIndex.getMany).toHaveBeenCalledWith(['test@@user one', 'Unknown'])
-      expect(changedByIndex.setAll).toHaveBeenCalledWith([{ key: 'test@@user one', value: [knownUserInstance.elemID, knownUserSecondInstance.elemID] }, { key: 'Unknown', value: [] }])
+      expect(changedByIndex.setAll).toHaveBeenCalledWith([{ key: 'test@@user one', value: expect.arrayContaining([knownUserInstance.elemID, knownUserSecondInstance.elemID]) }])
     })
   })
 
   describe('when got new elements', () => {
     beforeEach(async () => {
-      changedByIndex.getMany.mockResolvedValue([[], []])
+      changedByIndex.getMany.mockResolvedValue([undefined, undefined])
       const changes = [
         toChange({ after: knownUserInstance }),
         toChange({ after: knownUserSecondInstance }),
@@ -119,28 +119,57 @@ describe('changed by index', () => {
     })
   })
   describe('when elements were modified', () => {
-    beforeEach(async () => {
-      changedByIndex.getMany.mockResolvedValue([[], []])
-      const changes = [toChange({ before: knownUserInstance, after: knownUserInstance }),
-        toChange({ before: unKnownUserInstance, after: unKnownUserInstance })]
-      await updateChangedByIndex(
-        changes,
-        changedByIndex,
-        mapVersions,
-        elementsSource,
-        true
-      )
+    describe('changed authors', () => {
+      beforeEach(async () => {
+        const modifiedInstance = new InstanceElement(
+          'instance1',
+          object,
+          {},
+          undefined,
+          { [CORE_ANNOTATIONS.CHANGED_BY]: 'user two' },
+        )
+        changedByIndex.getMany.mockResolvedValue([[knownUserInstance.elemID], undefined])
+        const changes = [toChange({ before: knownUserInstance, after: modifiedInstance })]
+        await updateChangedByIndex(
+          changes,
+          changedByIndex,
+          mapVersions,
+          elementsSource,
+          true
+        )
+      })
+      it('should add new author', () => {
+        expect(changedByIndex.getMany).toHaveBeenCalledWith(['test@@user one', 'test@@user two'])
+        expect(changedByIndex.setAll).toHaveBeenCalledWith([{ key: 'test@@user two', value: [knownUserInstance.elemID] }])
+        expect(changedByIndex.deleteAll).toHaveBeenCalledWith(['test@@user one'])
+      })
     })
-    it('should add new authors after change', () => {
-      expect(changedByIndex.getMany).toHaveBeenCalledWith(['test@@user one', 'Unknown'])
-      expect(changedByIndex.setAll).toHaveBeenCalledWith([{ key: 'test@@user one', value: [knownUserInstance.elemID] }, { key: 'Unknown', value: [unKnownUserInstance.elemID] }])
-      expect(changedByIndex.deleteAll).toHaveBeenCalledWith([])
+    describe('same author', () => {
+      beforeEach(async () => {
+        changedByIndex.getMany.mockResolvedValue(
+          [[knownUserInstance.elemID], [unKnownUserInstance.elemID]]
+        )
+        const changes = [toChange({ before: knownUserInstance, after: knownUserInstance }),
+          toChange({ before: unKnownUserInstance, after: unKnownUserInstance })]
+        await updateChangedByIndex(
+          changes,
+          changedByIndex,
+          mapVersions,
+          elementsSource,
+          true
+        )
+      })
+      it('should do nothing', () => {
+        expect(changedByIndex.getMany).toHaveBeenCalledWith([])
+        expect(changedByIndex.setAll).toHaveBeenCalledWith([])
+        expect(changedByIndex.deleteAll).toHaveBeenCalledWith([])
+      })
     })
   })
   describe('when elements were deleted', () => {
     describe('without pre existing values', () => {
       beforeEach(async () => {
-        changedByIndex.getMany.mockResolvedValue([[]])
+        changedByIndex.getMany.mockResolvedValue([undefined])
         const changes = [toChange({ before: knownUserInstance })]
         await updateChangedByIndex(
           changes,
@@ -150,10 +179,10 @@ describe('changed by index', () => {
           true
         )
       })
-      it('should try to remove old values', () => {
+      it('should do nothing', () => {
         expect(changedByIndex.getMany).toHaveBeenCalledWith(['test@@user one'])
-        expect(changedByIndex.setAll).toHaveBeenCalledWith([{ key: 'test@@user one', value: [] }])
-        expect(changedByIndex.deleteAll).toHaveBeenCalledWith(['test@@user one'])
+        expect(changedByIndex.setAll).toHaveBeenCalledWith([])
+        expect(changedByIndex.deleteAll).toHaveBeenCalledWith([])
       })
     })
     describe('with pre existing values', () => {
@@ -169,9 +198,9 @@ describe('changed by index', () => {
             true
           )
         })
-        it('should try to remove old values', () => {
+        it('should delete empty key', () => {
           expect(changedByIndex.getMany).toHaveBeenCalledWith(['test@@user one'])
-          expect(changedByIndex.setAll).toHaveBeenCalledWith([{ key: 'test@@user one', value: [] }])
+          expect(changedByIndex.setAll).toHaveBeenCalledWith([])
           expect(changedByIndex.deleteAll).toHaveBeenCalledWith(['test@@user one'])
         })
       })

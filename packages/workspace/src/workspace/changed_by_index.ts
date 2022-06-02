@@ -87,8 +87,8 @@ const updateModificationChange = async (
   change: ModificationChange<Element>,
   authorMap: Record<string, Set<ElemID>>,
 ): Promise<void> => {
-  if (!change.data.after.annotations[CORE_ANNOTATIONS.CHANGED_BY]
-    === change.data.before.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
+  if (change.data.after.annotations[CORE_ANNOTATIONS.CHANGED_BY]
+    !== change.data.before.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
     await updateRemovalChange(
       toChange({ before: change.data.before }) as RemovalChange<Element>,
       authorMap,
@@ -117,8 +117,8 @@ const getUniqueAuthors = (changes: Change<Element>[]): Set<string> => {
   const authorSet = new Set<string>()
   changes.forEach(change => {
     if (isModificationChange(change)) {
-      if (!change.data.after.annotations[CORE_ANNOTATIONS.CHANGED_BY]
-          === change.data.before.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
+      if (change.data.after.annotations[CORE_ANNOTATIONS.CHANGED_BY]
+          !== change.data.before.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
         authorSet.add(getChangeAuthor(toChange({ before: change.data.before })))
         authorSet.add(getChangeAuthor(toChange({ after: change.data.after })))
       }

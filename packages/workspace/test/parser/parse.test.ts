@@ -208,13 +208,13 @@ describe('Salto parser', () => {
       }
 
       type salesforce.templates {
-        tmpl = "hello {{$\{temp.late.instance.stuff@us}}}"
+        tmpl = "hello {{$\{temp.la@te.instance.stuff@us}}}"
       }
       
       type salesforce.multiline_templates {
         tmpl = '''
 multiline
-template {{$\{temp.late.instance.multiline_stuff@us}}}
+template {{$\{te@mp.late.instance.multiline_stuff@us}}}
 value
 '''
       }
@@ -719,14 +719,14 @@ value
       it('should parse references to template as TemplateExpression', () => {
         expect(refObj.annotations.tmpl).toBeInstanceOf(TemplateExpression)
         expect(refObj.annotations.tmpl.parts).toEqual(['hello {{', expect.objectContaining({
-          elemID: new ElemID('temp', 'late', 'instance', 'stuff@us'),
+          elemID: new ElemID('temp', 'la@te', 'instance', 'stuff@us'),
         }), '}}'])
       })
 
       it('should parse references to multiline template as TemplateExpression', () => {
         expect(multilineRefObj.annotations.tmpl).toBeInstanceOf(TemplateExpression)
         expect(multilineRefObj.annotations.tmpl.parts).toEqual(['multiline\n', 'template {{', expect.objectContaining({
-          elemID: new ElemID('temp', 'late', 'instance', 'multiline_stuff@us'),
+          elemID: new ElemID('te@mp', 'late', 'instance', 'multiline_stuff@us'),
         }), '}}\n', 'value'])
       })
     })

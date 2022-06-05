@@ -52,9 +52,9 @@ describe('handle templates filter', () => {
 
   const placeholder1 = new InstanceElement('placeholder1', testType, { id: 1452 })
   const placeholder2 = new InstanceElement('placeholder2', testType, { id: 1453 })
-  const macro1 = new InstanceElement('macro1', testType, { id: 1001, actions: { value: 'non template' } })
-  const macro2 = new InstanceElement('macro2', testType, { id: 1002, actions: { value: '{{exactly one template_1452}}' } })
-  const macro3 = new InstanceElement('macro3', testType, { id: 1003, actions: { value: 'multiple refs {{plus template_1452}} and {{template_1453}}' } })
+  const macro1 = new InstanceElement('macro1', testType, { id: 1001, actions: { value: 'non template', field: 'comment_value_html' } })
+  const macro2 = new InstanceElement('macro2', testType, { id: 1002, actions: { value: '{{exactly one template_1452}}', field: 'comment_value_html' } })
+  const macro3 = new InstanceElement('macro3', testType, { id: 1003, actions: { value: 'multiple refs {{plus template_1452}} and {{template_1453}}', field: 'comment_value_html' } })
 
   const generateElements = (
   ): Element[] => ([
@@ -79,21 +79,16 @@ describe('handle templates filter', () => {
     })
 
     it('should resolve one template correctly', () => {
-      expect(macro2.value.actions.value).toEqual(new TemplateExpression({ parts: ['{{exactly one template', '_',
+      expect(macro2.value.actions.value).toEqual(new TemplateExpression({ parts: ['{{exactly one template_',
         new ReferenceExpression(placeholder1.elemID), '}}'] }))
     })
 
     it('should resolve multiple templates correctly', () => {
       expect(macro3.value.actions.value).toEqual(new TemplateExpression({
         parts: [
-          'multiple refs ',
-          '{{plus template',
-          '_',
+          'multiple refs {{plus template_',
           new ReferenceExpression(placeholder1.elemID),
-          '}}',
-          ' and ',
-          '{{template',
-          '_',
+          '}} and {{template_',
           new ReferenceExpression(placeholder2.elemID),
           '}}',
         ],

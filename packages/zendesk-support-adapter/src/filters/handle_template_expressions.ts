@@ -15,7 +15,7 @@
 */
 import {
   Change, Element, getChangeData, InstanceElement, isInstanceElement, isReferenceExpression,
-  isTemplateExpression, ReferenceExpression, TemplateExpression, TemplatePart, Values,
+  isTemplateExpression, ReferenceExpression, TemplateExpression, Values,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -25,46 +25,80 @@ import { FilterCreator } from '../filter'
 const { awu } = collections.asynciterable
 const log = logger(module)
 
+type PotentialTemplateField = {
+  instanceType: string
+  pathToContainer: string[]
+  fieldName: string
+  containerValidator: (container: Values) => boolean
+}
+
+const potentialTemplates: PotentialTemplateField[] = [
+  {
+    instanceType: 'macro',
+    pathToContainer: ['actions'],
+    fieldName: 'value',
+    containerValidator: (container: Values): boolean =>
+      container.field === 'comment_value_html',
+  },
+]
+
 const formulaToTemplate = (formula: string,
   instances: InstanceElement[]): TemplateExpression | string => {
-  const templateParts = formula.split(/({{.+?_[\d]+?}})/).filter(e => e !== '')
+  // eslint-disable-next-line no-template-curly-in-string
+  const templateParts = formula.replace(/({{.+?_)([\d]+?)(}})/g, '$1$${$2}$3')
+    .split(/\$\{([\d]+?)\}/).filter(e => e !== '')
     .map(expression => {
-      if (!expression.startsWith('{{') || !expression.endsWith('}}')) {
-        return expression
-      }
-      const parts: TemplatePart[] = expression.substring(0, expression.length - 2).split('_')
-      const internalId = parts[parts.length - 1]
-      const ref = instances.find(e => `${e.value.id}` === internalId)
+      const ref = instances.find(instance => instance.value.id?.toString() === expression)
       if (ref) {
-        parts[parts.length - 1] = new ReferenceExpression(ref.elemID)
+        return new ReferenceExpression(ref.elemID)
       }
-      return [parts.slice(0, parts.length - 1).join('_'), '_', parts[parts.length - 1], '}}']
-    }).flat()
+      return expression
+    })
   if (templateParts.every(isString)) {
     return templateParts.join('')
   }
   return new TemplateExpression({ parts: templateParts })
 }
 
-const isMacro = async (i: InstanceElement): Promise<boolean> =>
-  (await i.getType()).elemID.typeName === 'macro'
+const getContainersByPath = (root: Values, path: string[]): Values[] => {
+  if (path.length === 0 || root[path[0]] === undefined) {
+    return []
+  }
+  if (path.length === 1) {
+    return [root[path[0]]].flat()
+  }
+  if (isArray(root[path[0]])) {
+    root[path[0]].map((obj: Values) =>
+      getContainersByPath(obj, path.slice(1, path.length))).flat()
+    return root[path[0]].map((obj: Values) =>
+      getContainersByPath(obj, path.slice(1, path.length))).flat()
+  }
+  return getContainersByPath(root[path[0]], path.slice(1, path.length))
+}
 
-const getActions = async (instances: InstanceElement[]): Promise<Values[]> =>
-  instances.filter(isMacro).map(macro => macro.value.actions ?? []).flat()
+const getContainers = async (instances: InstanceElement[]): Promise<
+{ values: Values[]; template: PotentialTemplateField }[]
+> =>
+  instances.map(instance =>
+    potentialTemplates.filter(
+      t => instance.elemID.typeName === t.instanceType
+    ).map(template => ({
+      template,
+      values: getContainersByPath(instance.value, template.pathToContainer).filter(
+        template.containerValidator
+      ),
+    }))).flat()
 
 const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promise<void> =>
-  (await getActions(instances)).forEach(action => {
-    if (isArray(action.value) && action.value.every(isString)) {
-      action.value = action.value.map((e: string) => formulaToTemplate(e, instances))
-    }
-    if (isString(action.value)) {
-      action.value = formulaToTemplate(action.value, instances)
-    }
+  (await getContainers(instances)).forEach(container => {
+    const { fieldName } = container.template
+    container.values.forEach(value => {
+      value[fieldName] = formulaToTemplate(value[fieldName], instances)
+    })
   })
 
 /**
  * Process values that can reference other objects and turn them into TemplateExpressions
- * the _generated_ dependencies annotation
  */
 const filterCreator: FilterCreator = () => {
   const deployTemplateMapping: Record<string, TemplateExpression> = {}
@@ -72,36 +106,37 @@ const filterCreator: FilterCreator = () => {
     onFetch: async (elements: Element[]): Promise<void> => log.time(async () =>
       replaceFormulasWithTemplates(elements.filter(isInstanceElement)), 'Create template creation filter'),
     preDeploy: (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () =>
-      (await getActions(await awu(changes).map(getChangeData).toArray())).forEach(async action => {
-        const { value } = action
-        const handleTemplateValue = (template: TemplateExpression): string => {
-          const templateUsingIdField = new TemplateExpression({
-            parts: template.parts.map(part => (isReferenceExpression(part)
-              ? new ReferenceExpression(part.elemID.createNestedID('id'), part.value.value.id)
-              : part)),
+      (await getContainers(await awu(changes).map(getChangeData).toArray())).forEach(
+        async container => {
+          const { fieldName } = container.template
+          const handleTemplateValue = (template: TemplateExpression): string => {
+            const templateUsingIdField = new TemplateExpression({
+              parts: template.parts.map(part => (isReferenceExpression(part)
+                ? new ReferenceExpression(part.elemID.createNestedID('id'), part.value.value.id)
+                : part)),
+            })
+            deployTemplateMapping[templateUsingIdField.value] = template
+            return templateUsingIdField.value
+          }
+          container.values.forEach(value => {
+            if (isTemplateExpression(value[fieldName])) {
+              value[fieldName] = handleTemplateValue(value[fieldName])
+            }
           })
-          deployTemplateMapping[templateUsingIdField.value] = template
-          return templateUsingIdField.value
         }
-        if (isTemplateExpression(value)) {
-          action.value = handleTemplateValue(value)
-        }
-        if (isArray(value)) {
-          action.value = value.map(v => handleTemplateValue(v))
-        }
-      }), 'Create template resolve filter'),
+      ), 'Create template resolve filter'),
     onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () => {
-      (await getActions(await awu(changes).map(getChangeData).toArray())).forEach(async action => {
-        const { value } = action
-        const restoreTemplate = (v: string): string | TemplateExpression =>
-          deployTemplateMapping[v] ?? v
-        if (isString(value)) {
-          action.value = restoreTemplate(value)
-        }
-        if (isArray(value)) {
-          action.value = value.map(v => restoreTemplate(v))
-        }
-      })
+      (await getContainers(await awu(changes).map(getChangeData).toArray()))
+        .forEach(async container => {
+          const { fieldName } = container.template
+          const restoreTemplate = (v: string): string | TemplateExpression =>
+            deployTemplateMapping[v] ?? v
+          container.values.forEach(value => {
+            if (isTemplateExpression(value[fieldName])) {
+              value[fieldName] = restoreTemplate(value[fieldName])
+            }
+          })
+        })
     }, 'Create templates restore filter'),
   })
 }

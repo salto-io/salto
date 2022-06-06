@@ -35,14 +35,14 @@ const RESOURCE_SUFFIX_LENGTH = 'resource'.length
 const modifyFileExtension = async (staticResourceInstance: InstanceElement): Promise<void> => {
   const staticFile = staticResourceInstance.value[METADATA_CONTENT_FIELD]
   if (!isStaticFile(staticFile)) {
-    log.debug(`Could not modify file extension for ${staticResourceInstance.elemID.getFullName()} due to invalid StaticFile`)
+    log.debug(`Could not modify file extension for ${staticResourceInstance.elemID.getFullName()} because it is not a StaticFile`)
     return
   }
 
   const content = await staticFile.getContent()
 
   if (content === undefined) {
-    log.debug(`Could not modify file extension for ${staticResourceInstance.elemID.getFullName()} due to invalid StaticFile`)
+    log.debug(`Could not modify file extension for ${staticResourceInstance.elemID.getFullName()} because its content is undefined`)
     return
   }
 

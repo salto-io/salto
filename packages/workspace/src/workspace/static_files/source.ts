@@ -17,8 +17,8 @@ import { StaticFile, StaticFileParameters, calculateStaticFileHash } from '@salt
 
 import wu from 'wu'
 import { values, promises } from '@salto-io/lowerdash'
-import { SyncDirectoryStore } from '../dir_store'
 import { StaticFilesCache, StaticFilesData } from './cache'
+import { DirectoryStore } from '../dir_store'
 
 import {
   InvalidStaticFile, StaticFilesSource, MissingStaticFile, AccessDeniedStaticFile,
@@ -42,11 +42,11 @@ class MissingStaticFileError extends Error {
 }
 
 export class AbsoluteStaticFile extends StaticFile {
-  protected dirStore: SyncDirectoryStore<Buffer>
+  protected dirStore: DirectoryStore<Buffer>
 
   constructor(
     params: StaticFileParameters,
-    dirStore: SyncDirectoryStore<Buffer>,
+    dirStore: DirectoryStore<Buffer>,
   ) {
     super(params)
     this.dirStore = dirStore
@@ -61,17 +61,10 @@ export class LazyStaticFile extends AbsoluteStaticFile {
   constructor(
     filepath: string,
     hash: string,
-    dirStore: SyncDirectoryStore<Buffer>,
+    dirStore: DirectoryStore<Buffer>,
     encoding?: BufferEncoding
   ) {
     super({ filepath, hash, encoding }, dirStore)
-  }
-
-  get content(): Buffer | undefined {
-    if (this.internalContent === undefined) {
-      this.internalContent = this.dirStore.getSync(this.filepath)?.buffer
-    }
-    return this.internalContent
   }
 
   async getContent(): Promise<Buffer | undefined> {
@@ -83,7 +76,7 @@ export class LazyStaticFile extends AbsoluteStaticFile {
 }
 
 export const buildStaticFilesSource = (
-  staticFilesDirStore: SyncDirectoryStore<Buffer>,
+  staticFilesDirStore: DirectoryStore<Buffer>,
   staticFilesCache: StaticFilesCache,
 ): Required<StaticFilesSource> => {
   const getStaticFileData = async (filepath: string): Promise<
@@ -218,7 +211,7 @@ export const buildStaticFilesSource = (
     },
     getTotalSize: staticFilesDirStore.getTotalSize,
     clone: (): StaticFilesSource => buildStaticFilesSource(
-      staticFilesDirStore.clone() as SyncDirectoryStore<Buffer>,
+      staticFilesDirStore.clone() as DirectoryStore<Buffer>,
       staticFilesCache.clone(),
     ),
     delete: async (staticFile: StaticFile): Promise<void> => (
@@ -241,7 +234,7 @@ export const buildInMemStaticFilesSource = (
   },
   getContent: async filepath => {
     const file = files.get(filepath)
-    const content = file?.content
+    const content = await file?.getContent()
     if (content === undefined) {
       throw new Error(`Missing content on static file: ${filepath}`)
     }

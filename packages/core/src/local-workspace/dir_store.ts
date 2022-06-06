@@ -47,7 +47,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   directoryFilter?: FilePathFilter,
   initUpdated?: FileMap<T>,
   initDeleted? : string[],
-): dirStore.SyncDirectoryStore<T> => {
+): dirStore.DirectoryStore<T> => {
   let currentBaseDir = path.join(..._.compact([baseDir, storeName, nameSuffix]))
   let updated: FileMap<T> = initUpdated || {}
   let deleted: string[] = initDeleted || []
@@ -94,17 +94,6 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
         filename,
         buffer: await fileUtils.readFile(absFileName, { encoding }) as T,
         timestamp: (await fileUtils.stat(absFileName)).mtimeMs,
-      }
-      : undefined
-  }
-
-  const readFileSync = (filename: string): dirStore.File<T> | undefined => {
-    const absFileName = getAbsFileName(filename)
-    return fileUtils.existsSync(absFileName)
-      ? {
-        filename,
-        buffer: fileUtils.readFileSync(absFileName, { encoding }) as T,
-        timestamp: fileUtils.statSync(absFileName).mtimeMs,
       }
       : undefined
   }
@@ -156,11 +145,6 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
     return (updated[relFilename] ? updated[relFilename] : readFile(relFilename))
   }
 
-  const getSync = (filename: string): dirStore.File<T> | undefined => {
-    const relFilename = getRelativeFileName(filename)
-    return (updated[relFilename] ? updated[relFilename] : readFileSync(relFilename))
-  }
-
   const list = async (): Promise<string[]> =>
     _(await listDirFiles())
       .concat(Object.keys(updated))
@@ -205,7 +189,6 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
     list,
     isEmpty,
     get,
-    getSync,
     set: async (file: dirStore.File<T>): Promise<void> => {
       let relFilename: string
       try {
@@ -284,7 +267,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
         (await fileUtils.stat(filePath)).size)))
     },
 
-    clone: (): dirStore.SyncDirectoryStore<T> => buildLocalDirectoryStore(
+    clone: (): dirStore.DirectoryStore<T> => buildLocalDirectoryStore(
       currentBaseDir,
       storeName,
       nameSuffix,
@@ -311,16 +294,16 @@ type LocalDirectoryStoreParams = {
 }
 
 export function localDirectoryStore(params: Omit<LocalDirectoryStoreParams, 'encoding'>):
-  dirStore.SyncDirectoryStore<Buffer>
+  dirStore.DirectoryStore<Buffer>
 
 export function localDirectoryStore(
   params: LocalDirectoryStoreParams & Required<Pick<LocalDirectoryStoreParams, 'encoding'>>
-): dirStore.SyncDirectoryStore<string>
+): dirStore.DirectoryStore<string>
 
 export function localDirectoryStore(
   { baseDir, name, nameSuffix, accessiblePath, encoding, fileFilter, directoryFilter }
   : LocalDirectoryStoreParams
-): dirStore.SyncDirectoryStore<dirStore.ContentType> {
+): dirStore.DirectoryStore<dirStore.ContentType> {
   return buildLocalDirectoryStore<dirStore.ContentType>(
     baseDir, name, nameSuffix, accessiblePath, encoding, fileFilter, directoryFilter,
   )

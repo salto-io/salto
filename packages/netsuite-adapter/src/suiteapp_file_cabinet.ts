@@ -16,7 +16,7 @@
 import { Change, DeployResult, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isStaticFile } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { chunks, promises, values } from '@salto-io/lowerdash'
+import { chunks, collections, promises, values } from '@salto-io/lowerdash'
 import Ajv from 'ajv'
 import _ from 'lodash'
 import path from 'path'
@@ -27,6 +27,8 @@ import { ImportFileCabinetResult } from './client/types'
 import { LazyElementsSourceIndexes } from './elements_source_index/types'
 import { NetsuiteQuery } from './query'
 import { isFileCabinetType, isFileInstance } from './types'
+
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -131,9 +133,9 @@ export type SuiteAppFileCabinetOperations = {
   ) => Promise<DeployResult>
 }
 
-const getContent = (content: unknown): Buffer => {
+const getContent = async (content: unknown): Promise<Buffer> => {
   if (isStaticFile(content)) {
-    return content.content ?? Buffer.from('')
+    return await content.getContent() ?? Buffer.from('')
   }
   if (typeof content === 'string') {
     return Buffer.from(content)
@@ -144,9 +146,9 @@ const getContent = (content: unknown): Buffer => {
   throw new Error(`Got invalid content value: ${safeJsonStringify(content, undefined, 2)}`)
 }
 
-export const isChangeDeployable = (
+export const isChangeDeployable = async (
   change: Change
-): boolean => {
+): Promise<boolean> => {
   if (!isInstanceChange(change)) {
     return false
   }
@@ -159,7 +161,7 @@ export const isChangeDeployable = (
   // SuiteApp can't modify files bigger than 10mb
   if (isAdditionOrModificationChange(change)
   && isFileInstance(changedElement)
-  && getContent(changedElement.value.content).toString('base64').length > MAX_DEPLOYABLE_FILE_SIZE) {
+  && (await getContent(changedElement.value.content)).toString('base64').length > MAX_DEPLOYABLE_FILE_SIZE) {
     return false
   }
 
@@ -404,10 +406,10 @@ SuiteAppFileCabinetOperations => {
     return pathToIdResults
   }
 
-  const convertToFileCabinetDetails = (
+  const convertToFileCabinetDetails = async (
     change: Change<InstanceElement>,
     pathToId: Record<string, number>
-  ): FileCabinetInstanceDetails | Error => {
+  ): Promise<FileCabinetInstanceDetails | Error> => {
     const instance = getChangeData(change)
     const dirname = path.dirname(instance.value.path)
     if (dirname !== '/' && !(dirname in pathToId)) {
@@ -425,7 +427,7 @@ SuiteAppFileCabinetOperations => {
         hideInBundle: instance.value.hideinbundle ?? false,
         description: instance.value.description ?? '',
         ...instance.value.link === undefined
-          ? { content: getContent(instance.value.content) }
+          ? { content: await getContent(instance.value.content) }
           : { url: instance.value.link },
       }
       : {
@@ -439,11 +441,11 @@ SuiteAppFileCabinetOperations => {
       }
   }
 
-  const convertToExistingFileCabinetDetails = (
+  const convertToExistingFileCabinetDetails = async (
     change: Change<InstanceElement>,
     pathToId: Record<string, number>
-  ): ExistingFileCabinetInstanceDetails | Error => {
-    const details = convertToFileCabinetDetails(change, pathToId)
+  ): Promise<ExistingFileCabinetInstanceDetails | Error> => {
+    const details = await convertToFileCabinetDetails(change, pathToId)
     if (details instanceof Error) {
       return details
     }
@@ -479,12 +481,12 @@ SuiteAppFileCabinetOperations => {
   ): Promise<DeployResult> => {
     log.debug(`Deploying chunk of ${chunk.length} file changes`)
 
-    const instancesDetails = chunk.map(
-      change => ({
-        details: type === 'add' ? convertToFileCabinetDetails(change, pathToId) : convertToExistingFileCabinetDetails(change, pathToId),
+    const instancesDetails = await awu(chunk).map(
+      async change => ({
+        details: type === 'add' ? await convertToFileCabinetDetails(change, pathToId) : await convertToExistingFileCabinetDetails(change, pathToId),
         change,
       })
-    )
+    ).toArray()
 
     const [errorsInstances, validInstances] = _.partition(
       instancesDetails,

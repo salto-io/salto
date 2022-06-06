@@ -29,7 +29,6 @@ import { TestFuncImpl } from '../utils'
 import { serialize, deserialize, SALTO_CLASS_FIELD, deserializeMergeErrors, deserializeValidationErrors } from '../../src/serializer/elements'
 import { resolve } from '../../src/expressions'
 import { LazyStaticFile } from '../../src/workspace/static_files/source'
-import { SyncDirectoryStore } from '../../src/workspace/dir_store'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
 import { MergeError, DuplicateAnnotationError } from '../../src/merger/internal/common'
 import {
@@ -42,6 +41,7 @@ import { DuplicateVariableNameError } from '../../src/merger/internal/variables'
 import { CircularReferenceValidationError, IllegalReferenceValidationError, MissingRequiredFieldValidationError, RegexMismatchValidationError, InvalidValueRangeValidationError, InvalidStaticFileError, InvalidTypeValidationError } from '../../src/validator'
 import { UnresolvedReferenceValidationError } from '../../src/errors'
 import { MissingStaticFile } from '../../src/workspace/static_files'
+import { DirectoryStore } from '../../src/workspace/dir_store'
 
 const { awu } = collections.asynciterable
 describe('State/cache serialization', () => {
@@ -375,7 +375,7 @@ describe('State/cache serialization', () => {
         typeWithLazyStaticFile,
         {
           file: new LazyStaticFile(
-            'some/path.ext', 'hash', {} as unknown as SyncDirectoryStore<Buffer>
+            'some/path.ext', 'hash', {} as unknown as DirectoryStore<Buffer>
           ),
         },
       )

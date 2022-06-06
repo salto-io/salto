@@ -16,6 +16,7 @@
 import { Change, InstanceElement, StaticFile, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { MockInterface } from '@salto-io/test-utils'
+import { collections } from '@salto-io/lowerdash'
 import { NetsuiteQuery } from '../src/query'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, isChangeDeployable } from '../src/suiteapp_file_cabinet'
@@ -24,6 +25,8 @@ import { customtransactiontypeType } from '../src/autogen/types/custom_types/cus
 import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from '../src/client/suiteapp_client/types'
 import { getFileCabinetTypes } from '../src/types/file_cabinet_types'
 import { ElementsSourceIndexes } from '../src/elements_source_index/types'
+
+const { awu } = collections.asynciterable
 
 describe('suiteapp_file_cabinet', () => {
   const filesQueryResponse = [{
@@ -442,7 +445,7 @@ describe('suiteapp_file_cabinet', () => {
   })
 
   describe('isChangeDeployable', () => {
-    it('not deployable should return false', () => {
+    it('not deployable should return false', async () => {
       const undeployableInstances = [
         new InstanceElement(
           'invalid1',
@@ -478,13 +481,13 @@ describe('suiteapp_file_cabinet', () => {
       ]
 
       expect(
-        undeployableInstances
+        await awu(undeployableInstances)
           .map(instance => toChange({ after: instance }))
           .some(isChangeDeployable)
       ).toBeFalsy()
     })
 
-    it('deployable should return true', () => {
+    it('deployable should return true', async () => {
       const deployableInstance = new InstanceElement(
         'valid1',
         file,
@@ -494,11 +497,11 @@ describe('suiteapp_file_cabinet', () => {
         }
       )
 
-      expect(isChangeDeployable(toChange({ after: deployableInstance }))).toBeTruthy()
-      expect(isChangeDeployable(toChange({ before: deployableInstance }))).toBeTruthy()
+      expect(await isChangeDeployable(toChange({ after: deployableInstance }))).toBeTruthy()
+      expect(await isChangeDeployable(toChange({ before: deployableInstance }))).toBeTruthy()
     })
 
-    it('should throw an error for invalid content', () => {
+    it('should throw an error for invalid content', async () => {
       const instance = new InstanceElement(
         'instance',
         file,
@@ -508,7 +511,7 @@ describe('suiteapp_file_cabinet', () => {
         }
       )
 
-      expect(() => isChangeDeployable(toChange({ after: instance }))).toThrow('Got invalid content value: {}')
+      await expect(isChangeDeployable(toChange({ after: instance }))).rejects.toThrow('Got invalid content value: {}')
     })
   })
 

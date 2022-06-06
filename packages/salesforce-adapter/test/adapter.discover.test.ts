@@ -699,8 +699,8 @@ public class MyClass${index} {
       const [second] = findElements(result, 'ApexClass', 'MyClass1') as InstanceElement[]
       expect(first.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('MyClass0')
       expect(second.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('MyClass1')
-      expect(first.value.content.content.toString().includes('Instance0')).toBeTruthy()
-      expect(second.value.content.content.toString().includes('Instance1')).toBeTruthy()
+      expect((await first.value.content.getContent()).toString().includes('Instance0')).toBeTruthy()
+      expect((await second.value.content.getContent()).toString().includes('Instance1')).toBeTruthy()
     })
 
     it('should fetch metadata instances folders using retrieve', async () => {

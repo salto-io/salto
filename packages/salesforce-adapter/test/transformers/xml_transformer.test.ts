@@ -357,7 +357,7 @@ describe('XML Transformer', () => {
         expect(metadataInfo.status).toEqual('Active')
         expect(isStaticFile(metadataInfo.content)).toEqual(true)
         const contentStaticFile = metadataInfo.content as StaticFile
-        expect(contentStaticFile.content)
+        expect(await contentStaticFile.getContent())
           .toEqual(Buffer.from('public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}'))
         expect(contentStaticFile.filepath)
           .toEqual('salesforce/Records/ApexClass/MyApexClass.cls')
@@ -464,13 +464,13 @@ describe('XML Transformer', () => {
         expect(emailFolder?.accessType).toEqual('Public')
       })
 
-      it('should transform EmailTemplate zip to MetadataInfo', () => {
+      it('should transform EmailTemplate zip to MetadataInfo', async () => {
         expect(emailTemplate).toBeDefined()
         expect(emailTemplate?.fullName).toEqual('MyFolder/MyEmailTemplate')
         expect(emailTemplate?.name).toEqual('My Email Template')
         expect(isStaticFile(emailTemplate?.content)).toEqual(true)
         const contentStaticFile = emailTemplate?.content as StaticFile
-        expect(contentStaticFile.content).toEqual(Buffer.from('Email Body'))
+        expect(await contentStaticFile.getContent()).toEqual(Buffer.from('Email Body'))
         expect(contentStaticFile.filepath).toEqual('salesforce/Records/EmailTemplate/MyFolder/MyEmailTemplate.email')
       })
 
@@ -513,11 +513,11 @@ describe('XML Transformer', () => {
           ]),
         })
 
-        const verifyMetadataValues = (
+        const verifyMetadataValues = async (
           values: { file: FileProperties; values: MetadataValues}[],
           fileProperties: FileProperties,
           staticFilesExpectedFolder: string
-        ): void => {
+        ): Promise<void> => {
           expect(values).toHaveLength(1)
           const [lwc] = values
           expect(lwc.file).toEqual(fileProperties)
@@ -528,14 +528,14 @@ describe('XML Transformer', () => {
           expect(jsResource).toBeDefined()
           expect(isStaticFile(jsResource.source)).toBe(true)
           const jsResourceStaticFile = jsResource.source as StaticFile
-          expect(jsResourceStaticFile.content).toEqual(Buffer.from('// some javascript content'))
+          expect(await jsResourceStaticFile.getContent()).toEqual(Buffer.from('// some javascript content'))
           expect(jsResourceStaticFile.filepath)
             .toEqual(`${staticFilesExpectedFolder}/myLightningComponentBundle.js`)
           const htmlResource = metadataInfo.lwcResources.lwcResource[1]
           expect(htmlResource).toBeDefined()
           expect(isStaticFile(htmlResource.source)).toBe(true)
           const htmlResourceStaticFile = htmlResource.source as StaticFile
-          expect(htmlResourceStaticFile.content).toEqual(Buffer.from('// some html content'))
+          expect(await htmlResourceStaticFile.getContent()).toEqual(Buffer.from('// some html content'))
           expect(htmlResourceStaticFile.filepath)
             .toEqual(`${staticFilesExpectedFolder}/myLightningComponentBundle.html`)
         }
@@ -545,7 +545,7 @@ describe('XML Transformer', () => {
           const values = await fromRetrieveResult(
             await createRetrieveResult([fileProperties]), [fileProperties], new Set(), new Set(),
           )
-          verifyMetadataValues(
+          await verifyMetadataValues(
             values,
             fileProperties,
             'salesforce/Records/LightningComponentBundle/myLightningComponentBundle'
@@ -557,7 +557,7 @@ describe('XML Transformer', () => {
           const values = await fromRetrieveResult(
             await createRetrieveResult([fileProperties]), [fileProperties], new Set(), new Set(),
           )
-          verifyMetadataValues(
+          await verifyMetadataValues(
             values,
             fileProperties,
             'salesforce/InstalledPackages/myNamespace/Records/LightningComponentBundle/myLightningComponentBundle'
@@ -623,11 +623,11 @@ describe('XML Transformer', () => {
             namespacePrefix,
           })
 
-        const verifyMetadataValues = (
+        const verifyMetadataValues = async (
           values: { file: FileProperties; values: MetadataValues}[],
           fileProperties: FileProperties,
           staticFilesExpectedFolder: string
-        ): void => {
+        ): Promise<void> => {
           expect(values).toHaveLength(1)
           const [auraInstance] = values
           expect(auraInstance.file).toEqual(fileProperties)
@@ -637,42 +637,42 @@ describe('XML Transformer', () => {
           expect(metadataInfo.type).toEqual('Component')
           expect(isStaticFile(metadataInfo.markup)).toBe(true)
           const markupStaticFile = metadataInfo.markup as StaticFile
-          expect(markupStaticFile.content).toEqual(Buffer.from('// some component content'))
+          expect(await markupStaticFile.getContent()).toEqual(Buffer.from('// some component content'))
           expect(markupStaticFile.filepath).toEqual(`${staticFilesExpectedFolder}/myAuraDefinitionBundle.cmp`)
           expect(isStaticFile(metadataInfo.controllerContent)).toBe(true)
           const controllerStaticFile = metadataInfo.controllerContent as StaticFile
-          expect(controllerStaticFile.content).toEqual(Buffer.from('// some controller content'))
+          expect(await controllerStaticFile.getContent()).toEqual(Buffer.from('// some controller content'))
           expect(controllerStaticFile.filepath)
             .toEqual(`${staticFilesExpectedFolder}/myAuraDefinitionBundleController.js`)
           expect(isStaticFile(metadataInfo.designContent)).toBe(true)
           const designStaticFile = metadataInfo.designContent as StaticFile
-          expect(designStaticFile.content).toEqual(Buffer.from('// some design content'))
+          expect(await designStaticFile.getContent()).toEqual(Buffer.from('// some design content'))
           expect(designStaticFile.filepath)
             .toEqual(`${staticFilesExpectedFolder}/myAuraDefinitionBundle.design`)
           expect(isStaticFile(metadataInfo.documentationContent)).toBe(true)
           const documentationStaticFile = metadataInfo.documentationContent as StaticFile
-          expect(documentationStaticFile.content)
+          expect(await documentationStaticFile.getContent())
             .toEqual(Buffer.from('// some documentation content'))
           expect(documentationStaticFile.filepath)
             .toEqual(`${staticFilesExpectedFolder}/myAuraDefinitionBundle.auradoc`)
           expect(isStaticFile(metadataInfo.helperContent)).toBe(true)
           const helperStaticFile = metadataInfo.helperContent as StaticFile
-          expect(helperStaticFile.content).toEqual(Buffer.from('// some helper content'))
+          expect(await helperStaticFile.getContent()).toEqual(Buffer.from('// some helper content'))
           expect(helperStaticFile.filepath)
             .toEqual(`${staticFilesExpectedFolder}/myAuraDefinitionBundleHelper.js`)
           expect(isStaticFile(metadataInfo.rendererContent)).toBe(true)
           const rendererStaticFile = metadataInfo.rendererContent as StaticFile
-          expect(rendererStaticFile.content).toEqual(Buffer.from('// some renderer content'))
+          expect(await rendererStaticFile.getContent()).toEqual(Buffer.from('// some renderer content'))
           expect(rendererStaticFile.filepath)
             .toEqual(`${staticFilesExpectedFolder}/myAuraDefinitionBundleRenderer.js`)
           expect(isStaticFile(metadataInfo.styleContent)).toBe(true)
           const styleStaticFile = metadataInfo.styleContent as StaticFile
-          expect(styleStaticFile.content).toEqual(Buffer.from('// some style content'))
+          expect(await styleStaticFile.getContent()).toEqual(Buffer.from('// some style content'))
           expect(styleStaticFile.filepath)
             .toEqual(`${staticFilesExpectedFolder}/myAuraDefinitionBundle.css`)
           expect(isStaticFile(metadataInfo.SVGContent)).toBe(true)
           const svgStaticFile = metadataInfo.SVGContent as StaticFile
-          expect(svgStaticFile.content).toEqual(Buffer.from('// some svg content'))
+          expect(await svgStaticFile.getContent()).toEqual(Buffer.from('// some svg content'))
           expect(svgStaticFile.filepath)
             .toEqual(`${staticFilesExpectedFolder}/myAuraDefinitionBundle.svg`)
         }
@@ -682,7 +682,7 @@ describe('XML Transformer', () => {
           const values = await fromRetrieveResult(
             await createRetrieveResult([fileProperties]), [fileProperties], new Set(), new Set(),
           )
-          verifyMetadataValues(
+          await verifyMetadataValues(
             values,
             fileProperties,
             'salesforce/Records/AuraDefinitionBundle/myAuraDefinitionBundle'
@@ -694,7 +694,7 @@ describe('XML Transformer', () => {
           const values = await fromRetrieveResult(
             await createRetrieveResult([fileProperties]), [fileProperties], new Set(), new Set(),
           )
-          verifyMetadataValues(
+          await verifyMetadataValues(
             values,
             fileProperties,
             'salesforce/InstalledPackages/myNamespace/Records/AuraDefinitionBundle/myAuraDefinitionBundle'

@@ -117,32 +117,32 @@ const getChangesChunks = async (
   return changesChunks
 }
 
-const isSuiteAppFileCabinetModification = (change: Change): boolean => {
+const isSuiteAppFileCabinetModification = async (change: Change): Promise<boolean> => {
   const changeData = getChangeData(change)
   return isFileCabinetInstance(changeData)
-  && suiteAppFileCabinet.isChangeDeployable(change)
+  && await suiteAppFileCabinet.isChangeDeployable(change)
   && isModificationChange(change)
 }
 
-const isSuiteAppFileCabinetAddition = (change: Change): boolean => {
+const isSuiteAppFileCabinetAddition = async (change: Change): Promise<boolean> => {
   const changeData = getChangeData(change)
   return isFileCabinetInstance(changeData)
-  && suiteAppFileCabinet.isChangeDeployable(change)
+  && await suiteAppFileCabinet.isChangeDeployable(change)
   && isAdditionChange(change)
 }
 
-const isSuiteAppFileCabinetDeletion = (change: Change): boolean => {
+const isSuiteAppFileCabinetDeletion = async (change: Change): Promise<boolean> => {
   const changeData = getChangeData(change)
   return isFileCabinetInstance(changeData)
-  && suiteAppFileCabinet.isChangeDeployable(change)
+  && await suiteAppFileCabinet.isChangeDeployable(change)
   && isRemovalChange(change)
 }
 
-const isSdfChange = (change: Change): boolean => {
+const isSdfChange = async (change: Change): Promise<boolean> => {
   const changeData = getChangeData(change)
   return isCustomTypeName(changeData.elemID.typeName)
     || (isFileCabinetInstance(changeData)
-      && !suiteAppFileCabinet.isChangeDeployable(change))
+      && !await suiteAppFileCabinet.isChangeDeployable(change))
     || isSDFConfigTypeName(changeData.elemID.typeName)
 }
 

@@ -1527,7 +1527,7 @@ describe('fetch from workspace', () => {
     const fileTwo = new StaticFile({ filepath: 'file2', encoding: 'utf-8', content: Buffer.from('2') })
     const fileThree = new StaticFile({ filepath: 'file3', encoding: 'utf-8', content: Buffer.from('3') })
     const fileFour = new StaticFile({ filepath: 'file4', encoding: 'utf-8', content: Buffer.from('4') })
-    const validFileContents = [fileOne, fileTwo, fileThree].map(f => f.content)
+
     const existingInstance = new InstanceElement(
       'existing',
       existingElement,
@@ -1776,17 +1776,18 @@ describe('fetch from workspace', () => {
         })
       })
 
-      it('should return changes with static files content from the elements', () => {
+      it('should return changes with static files content from the elements', async () => {
         const changes = [...fetchRes.changes]
         const newStaticInst = changes
           .filter(change => change.change.id.isEqual(newNaclStaticInstance.elemID))
           .map(change => getChangeData(change.change))
         expect(newStaticInst).toHaveLength(1)
-        expect(newStaticInst[0].value.staticFileField.content).toEqual(fileOne.content)
-        expect(newStaticInst[0].value.complexField.staticFileField.content)
-          .toEqual(fileTwo.content)
-        expect(newStaticInst[0].value.complexField.staticFilesArr[0].content)
-          .toEqual(fileThree.content)
+        expect(await newStaticInst[0].value.staticFileField.getContent())
+          .toEqual(await fileOne.getContent())
+        expect(await newStaticInst[0].value.complexField.staticFileField.getContent())
+          .toEqual(await fileTwo.getContent())
+        expect(await newStaticInst[0].value.complexField.staticFilesArr[0].getContent())
+          .toEqual(await fileThree.getContent())
         const modifyStaticVals = changes
           .filter(change =>
             change.change.id.createTopLevelParentID().parent
@@ -1795,7 +1796,6 @@ describe('fetch from workspace', () => {
         expect(modifyStaticVals).toHaveLength(3)
         const staticFileModifies = modifyStaticVals.filter(val => isStaticFile(val))
         expect(staticFileModifies).toHaveLength(3)
-        staticFileModifies.forEach(modify => validFileContents.includes(modify.content))
       })
 
       describe('With warnings', () => {
@@ -1882,17 +1882,18 @@ describe('fetch from workspace', () => {
               .toHaveLength(1))
         })
 
-        it('should return changes with static files content from otherWorkspace when hashes match', () => {
+        it('should return changes with static files content from otherWorkspace when hashes match', async () => {
           const changes = [...fetchRes.changes]
           const newStaticInst = changes
             .filter(change => change.change.id.isEqual(newStateStaticInstance.elemID))
             .map(change => getChangeData(change.change))
           expect(newStaticInst).toHaveLength(1)
-          expect(newStaticInst[0].value.staticFileField.content).toEqual(fileOne.content)
-          expect(newStaticInst[0].value.complexField.staticFileField.content)
-            .toEqual(fileTwo.content)
-          expect(newStaticInst[0].value.complexField.staticFilesArr[0].content)
-            .toEqual(fileThree.content)
+          expect(await newStaticInst[0].value.staticFileField.getContent())
+            .toEqual(await fileOne.getContent())
+          expect(await newStaticInst[0].value.complexField.staticFileField.getContent())
+            .toEqual(await fileTwo.getContent())
+          expect(await newStaticInst[0].value.complexField.staticFilesArr[0].getContent())
+            .toEqual(await fileThree.getContent())
           const modifyStaticVals = changes
             .filter(change =>
               change.change.id.createTopLevelParentID().parent
@@ -1901,7 +1902,6 @@ describe('fetch from workspace', () => {
           expect(modifyStaticVals).toHaveLength(3)
           const staticFileModifies = modifyStaticVals.filter(val => isStaticFile(val))
           expect(staticFileModifies).toHaveLength(3)
-          staticFileModifies.forEach(modify => validFileContents.includes(modify.content))
         })
 
         it('should not have a change on the val and a error if there is a hashes mismatch (for both inner modify and a whole addition)', () => {

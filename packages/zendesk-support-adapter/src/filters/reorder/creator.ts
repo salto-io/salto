@@ -26,7 +26,7 @@ import { deployChange } from '../../deployment'
 import { API_DEFINITIONS_CONFIG } from '../../config'
 import ZendeskClient from '../../client/client'
 
-const { TYPES_PATH, SUBTYPES_PATH, RECORDS_PATH } = elementsUtils
+const { TYPES_PATH, SUBTYPES_PATH, RECORDS_PATH, SETTINGS_NESTED_PATH } = elementsUtils
 
 export type DeployFuncType = (
   change: Change<InstanceElement>,
@@ -99,7 +99,7 @@ export const createReorderFilterCreator = (
           inactive: instancesReferences.filter(ref => !ref.value.value[activeFieldName]),
         }
         : { active: instancesReferences },
-      [ZENDESK_SUPPORT, RECORDS_PATH, typeName, typeNameNaclCase],
+      [ZENDESK_SUPPORT, RECORDS_PATH, SETTINGS_NESTED_PATH, typeNameNaclCase],
     )
     // Those types already exist since we added the empty version of them
     //  via the add remaining types mechanism. So we first need to remove the old versions

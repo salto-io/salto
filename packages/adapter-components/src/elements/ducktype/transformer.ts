@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { BuiltinTypes, Element, InstanceElement, isObjectType, PrimitiveType, Values, ObjectType, ElemIdGetter } from '@salto-io/adapter-api'
+import { Element, InstanceElement, isObjectType, Values, ObjectType, ElemIdGetter } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { Paginator, ResponseValue } from '../../client'
-import { generateType } from './type_elements'
+import { generateType, toPrimitiveType } from './type_elements'
 import { toInstance } from './instance_elements'
 import { TypeConfig, getConfigWithDefault, getTransformationConfigByType } from '../../config'
 import { FindNestedFieldFunc } from '../field_finder'
@@ -335,16 +335,11 @@ export const getAllElements = async ({
   const objectTypes = Object.fromEntries(
     elements.filter(isObjectType).map(e => [e.elemID.name, e])
   )
-  const duckTypeTypeMap: Record<string, PrimitiveType> = {
-    string: BuiltinTypes.STRING,
-    boolean: BuiltinTypes.BOOLEAN,
-    number: BuiltinTypes.NUMBER,
-  }
   fixFieldTypes(
     objectTypes,
     types,
     typeDefaults,
-    (val: string) => _.get(duckTypeTypeMap, val, BuiltinTypes.UNKNOWN),
+    toPrimitiveType,
   )
   const instancesAndTypes = [
     ...Object.values(objectTypes), ...elements.filter(e => !isObjectType(e)),

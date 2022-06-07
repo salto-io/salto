@@ -375,6 +375,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       sourceTypeName: 'targets__targets',
       idFields: ['title', 'type'], // looks like title is unique so not adding id
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'number' },
+      ],
       serviceUrl: '/admin/apps-integrations/targets/targets',
     },
     deployRequests: {

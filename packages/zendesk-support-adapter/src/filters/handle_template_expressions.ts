@@ -42,8 +42,16 @@ const potentialTemplates: PotentialTemplateField[] = [
   },
 ]
 
+// This function receives a formula that contains zendesk-style references and replaces
+// it with salto style templates.
 const formulaToTemplate = (formula: string,
   instances: InstanceElement[]): TemplateExpression | string => {
+  // Regex explanation:
+  // The first part of the regex identifies ids, with the pattern {some_id_field_1234}
+  // The replace flags the pattern with a reference-like string to avoid the later code from
+  // detecting ids in numbers that are not marked as ids.
+  // The second part is a split that separates the now-marked ids, so they could be replaced
+  // with ReferenceExpression in the loop code.
   // eslint-disable-next-line no-template-curly-in-string
   const templateParts = formula.replace(/({{.+?_)([\d]+?)(}})/g, '$1$${$2}$3')
     .split(/\$\{([\d]+?)\}/).filter(e => e !== '')

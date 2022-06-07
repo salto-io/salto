@@ -304,8 +304,13 @@ describe('Salesforce adapter E2E with real account', () => {
 
       expect(convertSettingsInstance).toBeDefined()
       expect(convertSettingsInstance.path)
-        .toEqual([constants.SALESFORCE, constants.OBJECTS_PATH, 'Lead',
-          constants.LEAD_CONVERT_SETTINGS_METADATA_TYPE])
+        .toEqual([
+          constants.SALESFORCE,
+          constants.OBJECTS_PATH,
+          'Lead',
+          constants.LEAD_CONVERT_SETTINGS_METADATA_TYPE,
+          convertSettingsInstance.elemID.name,
+        ])
     })
 
     it('should retrieve EmailTemplate instance', () => {

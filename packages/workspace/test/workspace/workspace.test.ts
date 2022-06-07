@@ -54,7 +54,6 @@ import * as multiEnvSrcLib from '../../src/workspace/nacl_files/multi_env/multi_
 import { AdaptersConfigSource } from '../../src/workspace/adapters_config_source'
 import { createElementSelector } from '../../src/workspace/element_selector'
 
-
 const { awu } = collections.asynciterable
 
 const changedNaclFile = {
@@ -134,6 +133,7 @@ const createState = (
   pathIndex: new InMemoryRemoteMap<Path[]>(),
   referenceSources: new InMemoryRemoteMap(),
   accountsUpdateDate: new InMemoryRemoteMap(),
+  changedBy: new InMemoryRemoteMap([{ key: 'name@@account', value: ['elemId'] }]),
   saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),
 }), persistent)
 const createWorkspace = async (
@@ -2278,7 +2278,68 @@ describe('workspace', () => {
       })
     })
   })
-
+  describe('changed by index', () => {
+    let workspace: Workspace
+    const firstFile = `
+      type salesforce.text is string {}
+      type salesforce.lead {
+        annotations {
+          string _changed_by {
+          }
+        }
+        _changed_by = "test user"
+        salesforce.text singleDef {
+  
+        }
+        salesforce.text multiDef {
+  
+        }
+      }
+    `
+    const naclFileStore = mockDirStore(undefined, undefined, {
+      'firstFile.nacl': firstFile,
+    })
+    beforeEach(async () => {
+      workspace = await createWorkspace(
+        naclFileStore,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        {
+          '': {
+            naclFiles: createMockNaclFileSource([]),
+          },
+          default: {
+            naclFiles: await naclFilesSource(
+              'default',
+              naclFileStore,
+              mockStaticFilesSource(),
+              persistentMockCreateRemoteMap(),
+              true
+            ),
+            state: createState([]),
+          },
+        },
+      )
+    })
+    describe('getAllChangedByUsers', () => {
+      it('get correct authors', async () => {
+        const result = await workspace.getAllChangedByUsers()
+        expect(result).toEqual(expect.arrayContaining([{ user: 'Unknown', account: '' }]))
+        expect(result).toEqual(expect.arrayContaining([{ user: 'test user', account: 'salesforce' }]))
+      })
+    })
+    describe('getChangedElementsByUser', () => {
+      it('get correct elements', async () => {
+        const unknownUser = await workspace.getChangedElementsByUser({ user: 'Unknown', account: '' })
+        expect(unknownUser[0].getFullName()).toEqual('salesforce.text')
+        const testUser = await workspace.getChangedElementsByUser({ user: 'test user', account: 'salesforce' })
+        expect(testUser[0].getFullName()).toEqual('salesforce.lead')
+      })
+    })
+  })
   describe('deleteEnvironment', () => {
     describe('should delete environment', () => {
       const envName = 'inactive'

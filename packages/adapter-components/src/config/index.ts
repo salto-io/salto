@@ -18,5 +18,5 @@ export { createRequestConfigs, validateRequestConfig, FetchRequestConfig, Deploy
 export { createAdapterApiConfigType, getConfigWithDefault, AdapterApiConfig, UserFetchConfig, TypeConfig, createUserFetchConfigType } from './shared'
 export { mergeWithDefaultConfig } from './merge'
 export { createSwaggerAdapterApiConfigType, AdapterSwaggerApiConfig, RequestableAdapterSwaggerApiConfig, TypeSwaggerConfig, RequestableTypeSwaggerConfig, TypeSwaggerDefaultConfig, TypeNameOverrideConfig, validateApiDefinitionConfig as validateSwaggerApiDefinitionConfig, validateFetchConfig as validateSwaggerFetchConfig } from './swagger'
-export { createTransformationConfigTypes, validateTransoformationConfig, TransformationDefaultConfig, TransformationConfig, StandaloneFieldConfigType, FieldToOmitType, FieldToHideType, getTransformationConfigByType, dereferenceFieldName, isReferencedIdField } from './transformation'
+export { createTransformationConfigTypes, validateTransoformationConfig, TransformationDefaultConfig, TransformationConfig, StandaloneFieldConfigType, FieldToOmitType, FieldToHideType, getTransformationConfigByType, dereferenceFieldName, isReferencedIdField, FieldTypeOverrideType } from './transformation'
 export * as configMigrations from './config_migrations'

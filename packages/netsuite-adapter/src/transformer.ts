@@ -72,7 +72,8 @@ export const createInstanceElement = async (customizationInfo: CustomizationInfo
     if (isFolderCustomizationInfo(customizationInfo)) {
       const origFolderPathParts = customizationInfo.path.map(removeDotPrefix)
       const folderName = origFolderPathParts[origFolderPathParts.length - 1]
-      // we want the folder's nacl to reside within the its folder in the File System.
+      // We want folder instances to sit inside their own folder,
+      // e.g. "/FileCabinet/SuiteScripts/MyFolder/MyFolder.nacl"
       return [NETSUITE, FILE_CABINET_PATH, ...origFolderPathParts, folderName]
     }
     if (isSDFConfigType(type)) {

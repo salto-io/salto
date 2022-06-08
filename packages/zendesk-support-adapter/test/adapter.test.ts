@@ -936,7 +936,13 @@ describe('adapter', () => {
             instance.elemID.name,
             new ObjectType({
               elemID: groupType.elemID,
-              fields: { name: { refType: BuiltinTypes.STRING } },
+              fields: {
+                id: {
+                  refType: BuiltinTypes.SERVICE_ID_NUMBER,
+                  annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+                },
+                name: { refType: BuiltinTypes.STRING },
+              },
               // generateType function creates path
               path: [ZENDESK_SUPPORT, elementsUtils.TYPES_PATH, 'group'],
             }),
@@ -967,6 +973,12 @@ describe('adapter', () => {
           'inst',
           new ObjectType({
             elemID: groupType.elemID,
+            fields: {
+              id: {
+                refType: BuiltinTypes.SERVICE_ID_NUMBER,
+                annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+              },
+            },
             // generateType function creates path
             path: [ZENDESK_SUPPORT, elementsUtils.TYPES_PATH, 'group'],
           }),

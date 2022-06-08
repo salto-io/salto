@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _, { flatMap } from 'lodash'
+import _ from 'lodash'
 import path from 'path'
 import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
   Value, toChange, isRemovalChange, getChangeData,
@@ -908,7 +908,7 @@ export const loadWorkspace = async (
     const workspace = await getWorkspaceState()
     const result = await workspace.states[env].changedBy.getMany(authors.map(authorToAuthorKey))
     ?? []
-    return flatMap(result.filter(values.isDefined))
+    return result.filter(values.isDefined).flat()
   }
   return {
     uid: workspaceConfig.uid,

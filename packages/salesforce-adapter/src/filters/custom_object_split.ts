@@ -28,7 +28,7 @@ export const annotationsFileName = (objectName: string): string => `${pathNaclCa
 export const standardFieldsFileName = (objectName: string): string => `${pathNaclCase(objectName)}StandardFields`
 export const customFieldsFileName = (objectName: string): string => `${pathNaclCase(objectName)}CustomFields`
 
-const perFieldFileName = (fieldName: string): string => `${pathNaclCase(fieldName)}`
+const perFieldFileName = (fieldName: string): string => pathNaclCase(fieldName)
 
 const splitFields = async (
   customObject: ObjectType,

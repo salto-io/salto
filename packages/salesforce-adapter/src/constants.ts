@@ -278,6 +278,7 @@ export const OBJECTS_PATH = 'Objects'
 export const TYPES_PATH = 'Types'
 export const SUBTYPES_PATH = 'Subtypes'
 export const INSTALLED_PACKAGES_PATH = 'InstalledPackages'
+export const OBJECT_FIELDS_PATH = 'Fields'
 
 // Limits
 export const MAX_METADATA_RESTRICTION_VALUES = 500

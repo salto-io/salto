@@ -27,6 +27,7 @@ import {
   METADATA_TYPE,
   OBJECTS_PATH,
   SALESFORCE,
+  OBJECT_FIELDS_PATH,
 } from '../../src/constants'
 import mockClient from '../client'
 import { defaultFilterContext, createCustomObjectType } from '../utils'
@@ -317,10 +318,10 @@ describe('Custom Object Split filter', () => {
       expect(elements).toBeArrayOfSize(4)
       expect(getElementPaths(elements)).toEqual(
         [
+          `${SALESFORCE}/${OBJECTS_PATH}/SpecialObject__c/Fields/Custom__c`,
+          `${SALESFORCE}/${OBJECTS_PATH}/SpecialObject__c/Fields/OtherCustom__c`,
+          `${SALESFORCE}/${OBJECTS_PATH}/SpecialObject__c/Fields/Standard`,
           `${SALESFORCE}/${OBJECTS_PATH}/SpecialObject__c/SpecialObject__cAnnotations`,
-          `${SALESFORCE}/${OBJECTS_PATH}/SpecialObject__c/SpecialObject__cFieldCustom__c`,
-          `${SALESFORCE}/${OBJECTS_PATH}/SpecialObject__c/SpecialObject__cFieldOtherCustom__c`,
-          `${SALESFORCE}/${OBJECTS_PATH}/SpecialObject__c/SpecialObject__cFieldStandard`,
         ]
       )
     })
@@ -339,7 +340,7 @@ describe('Custom Object Split filter', () => {
       const elements = elementsByElemId['salesforce.SpecialObject__c']
       const customField = elements.find(obj =>
         _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH,
-          'SpecialObject__c', 'SpecialObject__cFieldCustom__c'])) as ObjectType
+          'SpecialObject__c', OBJECT_FIELDS_PATH, 'Custom__c'])) as ObjectType
       expect(customField).toBeDefined()
       expect(Object.values(customField.fields).length).toEqual(1)
       expect(customField.fields.Custom__c).toBeDefined()

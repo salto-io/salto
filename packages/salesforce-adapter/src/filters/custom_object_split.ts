@@ -17,9 +17,10 @@ import _ from 'lodash'
 import { Element, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import { pathNaclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { isCustom, isCustomObject } from '../transformers/transformer'
+import { isCustom, isCustomObject, apiName } from '../transformers/transformer'
 import { FilterWith, FilterCreator } from '../filter'
 import { getObjectDirectoryPath } from './custom_objects'
+import { OBJECT_FIELDS_PATH } from '../constants'
 
 const { awu } = collections.asynciterable
 
@@ -27,62 +28,67 @@ export const annotationsFileName = (objectName: string): string => `${pathNaclCa
 export const standardFieldsFileName = (objectName: string): string => `${pathNaclCase(objectName)}StandardFields`
 export const customFieldsFileName = (objectName: string): string => `${pathNaclCase(objectName)}CustomFields`
 
-const perFieldFileName = (objectName: string, fieldName: string): string =>
-  `${pathNaclCase(objectName)}Field${pathNaclCase(fieldName)}`
+const perFieldFileName = (fieldName: string): string => `${pathNaclCase(fieldName)}`
+
+const splitFields = async (
+  customObject: ObjectType,
+  splitAllFields: string[]
+): Promise<ObjectType[]> => {
+  const pathPrefix = await getObjectDirectoryPath(customObject)
+
+  if (splitAllFields.includes(await apiName(customObject))) {
+    return Object.entries(customObject.fields).map(([fieldName, field]) => new ObjectType(
+      {
+        elemID: customObject.elemID,
+        fields: { [fieldName]: field },
+        path: [
+          ...pathPrefix,
+          OBJECT_FIELDS_PATH,
+          perFieldFileName(fieldName),
+        ],
+      }
+    ))
+  }
+
+  const standardFieldsObject = new ObjectType({
+    elemID: customObject.elemID,
+    fields: _.pickBy(customObject.fields, f => !isCustom(f.elemID.getFullName())),
+    path: [
+      ...pathPrefix,
+      standardFieldsFileName(customObject.elemID.name),
+    ],
+  })
+  const customFieldsObject = new ObjectType(
+    {
+      elemID: customObject.elemID,
+      fields: _.pickBy(customObject.fields, f => isCustom(f.elemID.getFullName())),
+      path: [
+        ...pathPrefix,
+        customFieldsFileName(customObject.elemID.name),
+      ],
+    }
+  )
+  return [standardFieldsObject, customFieldsObject]
+}
 
 const customObjectToSplitElements = async (
   customObject: ObjectType,
   splitAllFields: string[]
 ): Promise<ObjectType[]> => {
+  const pathPrefix = await getObjectDirectoryPath(customObject)
+
   const annotationsObject = new ObjectType({
     elemID: customObject.elemID,
     annotationRefsOrTypes: customObject.annotationRefTypes,
     annotations: customObject.annotations,
     path: [
-      ...await getObjectDirectoryPath(customObject),
+      ...pathPrefix,
       annotationsFileName(customObject.elemID.name),
     ],
   })
 
-  const elemenets = [annotationsObject]
-
-  if (splitAllFields.includes(customObject.elemID.name)) {
-    _.forEach(customObject.fields, async (field, fieldName) => {
-      elemenets.push(new ObjectType(
-        {
-          elemID: customObject.elemID,
-          fields: { [fieldName]: field },
-          path: [
-            ...await getObjectDirectoryPath(customObject),
-            perFieldFileName(customObject.elemID.name, fieldName),
-          ],
-        }
-      ))
-    })
-  } else {
-    const standardFieldsObject = new ObjectType({
-      elemID: customObject.elemID,
-      fields: _.pickBy(customObject.fields, f => !isCustom(f.elemID.getFullName())),
-      path: [
-        ...await getObjectDirectoryPath(customObject),
-        standardFieldsFileName(customObject.elemID.name),
-      ],
-    })
-    const customFieldsObject = new ObjectType(
-      {
-        elemID: customObject.elemID,
-        fields: _.pickBy(customObject.fields, f => isCustom(f.elemID.getFullName())),
-        path: [
-          ...await getObjectDirectoryPath(customObject),
-          customFieldsFileName(customObject.elemID.name),
-        ],
-      }
-    )
-
-    elemenets.push(standardFieldsObject, customFieldsObject)
-  }
-
-  return elemenets
+  const fieldObjects = await splitFields(customObject, splitAllFields)
+  return _.concat(fieldObjects, annotationsObject)
 }
 
 const filterCreator: FilterCreator = ({ config }): FilterWith<'onFetch'> => ({

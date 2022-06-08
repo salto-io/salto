@@ -132,9 +132,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       sourceTypeName: 'organizations__organizations',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }].concat(
+      fieldTypeOverrides: [
         { fieldName: 'organization_fields', fieldType: 'map<unknown>' },
-      ),
+        { fieldName: 'id', fieldType: 'number' },
+      ],
       serviceUrl: '/agent/organizations/{id}/tickets',
     },
     deployRequests: {

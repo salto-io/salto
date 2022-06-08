@@ -595,65 +595,6 @@ describe('ducktype_transformer', () => {
         contextElements: undefined,
       })
     })
-    it('should fix field types', async () => {
-      const typeToOverrideWith = 'test'
-      jest.spyOn(transformer, 'getTypeAndInstances').mockImplementation(async ({ adapterName, typeName }) =>
-        [
-          new ObjectType({ elemID: new ElemID(adapterName, typeToOverrideWith) }),
-          new ObjectType({
-            elemID: new ElemID(adapterName, typeName),
-            fields: {
-              test1: { refType: BuiltinTypes.STRING },
-              test2: { refType: BuiltinTypes.STRING },
-            },
-          }),
-        ])
-      const res = await getAllElements({
-        adapterName: 'something',
-        paginator: mockPaginator,
-        fetchQuery: createElementQuery({
-          include: [
-            { type: 'folder' },
-          ],
-          exclude: [],
-        }),
-        supportedTypes: {
-          folder: ['folder'],
-        },
-        computeGetArgs: simpleGetArgs,
-        nestedFieldFinder: returnFullEntry,
-        types: {
-          folder: {
-            request: {
-              url: '/folders',
-            },
-            transformation: {
-              idFields: ['name'],
-              fieldTypeOverrides: [
-                { fieldName: 'test1', fieldType: typeToOverrideWith },
-                {
-                  fieldName: 'test2',
-                  fieldType: BuiltinTypes.STRING.elemID.getFullName(),
-                  restrictions: { enforce_value: true, values: ['yes', 'no'] },
-                },
-              ],
-            },
-          },
-        },
-        typeDefaults: typeDefaultConfig,
-      })
-      const { elements } = res
-      expect(elements).toHaveLength(2)
-      const overridedType = elements[1] as ObjectType
-      const overridedFieldType = overridedType.fields.test1
-      const overridedFieldWithRestrictions = overridedType.fields.test2
-      expect(overridedFieldType.refType.elemID.getFullName())
-        .toEqual('something.test')
-      expect(overridedFieldWithRestrictions.annotations)
-        .toEqual({
-          [CORE_ANNOTATIONS.RESTRICTION]: { enforce_value: true, values: ['yes', 'no'] },
-        })
-    })
     it('should return config changes', async () => {
       const typeToOverrideWith = 'test'
       jest.spyOn(transformer, 'getTypeAndInstances').mockImplementation(() => {

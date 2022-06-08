@@ -2324,18 +2324,18 @@ describe('workspace', () => {
         },
       )
     })
-    describe('getAllChangedByUsers', () => {
+    describe('getAllChangedByAuthors', () => {
       it('get correct authors', async () => {
-        const result = await workspace.getAllChangedByUsers()
+        const result = await workspace.getAllChangedByAuthors()
         expect(result).toEqual(expect.arrayContaining([{ user: 'Unknown', account: '' }]))
         expect(result).toEqual(expect.arrayContaining([{ user: 'test user', account: 'salesforce' }]))
       })
     })
-    describe('getChangedElementsByUser', () => {
+    describe('getChangedElementsByAuthor', () => {
       it('get correct elements', async () => {
-        const unknownUser = await workspace.getChangedElementsByUser({ user: 'Unknown', account: '' })
+        const unknownUser = await workspace.getChangedElementsByAuthor({ user: 'Unknown', account: '' })
         expect(unknownUser[0].getFullName()).toEqual('salesforce.text')
-        const testUser = await workspace.getChangedElementsByUser({ user: 'test user', account: 'salesforce' })
+        const testUser = await workspace.getChangedElementsByAuthor({ user: 'test user', account: 'salesforce' })
         expect(testUser[0].getFullName()).toEqual('salesforce.lead')
       })
     })

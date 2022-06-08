@@ -176,8 +176,8 @@ export type Workspace = {
   getReferenceTargetsIndex: () =>Promise<ReadOnlyRemoteMap<ElemID[]>>
   getElementOutgoingReferences: (id: ElemID) => Promise<ElemID[]>
   getElementIncomingReferences: (id: ElemID) => Promise<ElemID[]>
-  getAllChangedByUsers: (envName?: string) => Promise<Author[]>
-  getChangedElementsByUser: (user: Author, envName?: string) => Promise<ElemID[]>
+  getAllChangedByAuthors: (envName?: string) => Promise<Author[]>
+  getChangedElementsByAuthor: (user: Author, envName?: string) => Promise<ElemID[]>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
   getElementIdsBySelectors: (
     selectors: ElementSelector[],
@@ -893,14 +893,17 @@ export const loadWorkspace = async (
     account?: string): Promise<void> => {
     await adaptersConfig.setAdapter(account ?? service, service, newConfig)
   }
-  const getAllChangedByUsers = async (envName?: string): Promise<Author[]> => {
+  const getAllChangedByAuthors = async (envName?: string): Promise<Author[]> => {
     const env = envName ?? currentEnv()
     const workspace = await getWorkspaceState()
     const keys = await awu(workspace.states[env].changedBy.keys()).toArray()
     return keys.map(authorKeyToAuthor)
   }
 
-  const getChangedElementsByUser = async (author: Author, envName?: string): Promise<ElemID[]> => {
+  const getChangedElementsByAuthor = async (
+    author: Author,
+    envName?: string,
+  ): Promise<ElemID[]> => {
     const env = envName ?? currentEnv()
     const workspace = await getWorkspaceState()
     const result = await workspace.states[env].changedBy.get(authorToAuthorKey(author)) ?? []
@@ -996,8 +999,8 @@ export const loadWorkspace = async (
       return await (await getWorkspaceState()).states[currentEnv()]
         .referenceSources.get(id.getFullName()) ?? []
     },
-    getAllChangedByUsers,
-    getChangedElementsByUser,
+    getAllChangedByAuthors,
+    getChangedElementsByAuthor,
     getElementNaclFiles: async id => (
       (await getLoadedNaclFilesSource()).getElementNaclFiles(currentEnv(), id)
     ),

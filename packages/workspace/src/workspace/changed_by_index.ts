@@ -38,10 +38,36 @@ const { isDefined } = values
 const { awu } = collections.asynciterable
 
 const log = logger(module)
-export const CHANGED_BY_INDEX_VERSION = 12
+export const CHANGED_BY_INDEX_VERSION = 1
 const CHANGED_BY_INDEX_KEY = 'changed_by_index'
 const UNKNOWN_USER_NAME = 'Unknown'
 const CHANGED_BY_KEY_DELIMITER = '@@'
+
+export type Author = {
+  user: string
+  account: string
+}
+
+export const authorKeyToAuthor = (authorKey: string): Author => {
+  if (authorKey === UNKNOWN_USER_NAME) {
+    return {
+      user: UNKNOWN_USER_NAME,
+      account: '',
+    }
+  }
+  const AuthorParts = authorKey.split(CHANGED_BY_KEY_DELIMITER)
+  return {
+    user: AuthorParts[1],
+    account: AuthorParts[0],
+  }
+}
+
+export const authorToAuthorKey = (author: Author): string => {
+  if (author.user === UNKNOWN_USER_NAME && author.account === '') {
+    return UNKNOWN_USER_NAME
+  }
+  return `${author.account}${CHANGED_BY_KEY_DELIMITER}${author.user}`
+}
 
 const getAllElementsChanges = async (
   currentChanges: Change<Element>[],

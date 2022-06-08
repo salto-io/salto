@@ -15,10 +15,22 @@
 */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
-import { updateChangedByIndex, CHANGED_BY_INDEX_VERSION } from '../../src/workspace/changed_by_index'
+import { updateChangedByIndex, CHANGED_BY_INDEX_VERSION, authorKeyToAuthor, authorToAuthorKey } from '../../src/workspace/changed_by_index'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
 import { RemoteMap } from '../../src/workspace/remote_map'
 import { createMockRemoteMap } from '../utils'
+
+describe('authorKeyToAuthor', () => {
+  it('should return the author from the author key', () => {
+    expect(authorKeyToAuthor('adapter@@user')).toEqual({ user: 'user', account: 'adapter' })
+  })
+})
+
+describe('authorToAuthorKey', () => {
+  it('should return the author from the author key', () => {
+    expect(authorToAuthorKey({ user: 'user', account: 'adapter' })).toEqual('adapter@@user')
+  })
+})
 
 describe('changed by index', () => {
   let changedByIndex: MockInterface<RemoteMap<ElemID[]>>

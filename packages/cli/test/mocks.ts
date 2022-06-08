@@ -404,7 +404,7 @@ export const mockWorkspace = ({
       })
     ),
     getAllChangedByAuthors: mockFunction<Workspace['getAllChangedByAuthors']>(),
-    getChangedElementsByAuthor: mockFunction<Workspace['getChangedElementsByAuthor']>(),
+    getChangedElementsByAuthors: mockFunction<Workspace['getChangedElementsByAuthors']>(),
     promote: mockFunction<Workspace['promote']>(),
     demote: mockFunction<Workspace['demote']>(),
     demoteAll: mockFunction<Workspace['demoteAll']>(),

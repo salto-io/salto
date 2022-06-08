@@ -2333,10 +2333,13 @@ describe('workspace', () => {
     })
     describe('getChangedElementsByAuthor', () => {
       it('get correct elements', async () => {
-        const unknownUser = await workspace.getChangedElementsByAuthor({ user: 'Unknown', account: '' })
+        const unknownUser = await workspace.getChangedElementsByAuthors([{ user: 'Unknown', account: '' }])
         expect(unknownUser[0].getFullName()).toEqual('salesforce.text')
-        const testUser = await workspace.getChangedElementsByAuthor({ user: 'test user', account: 'salesforce' })
+        const testUser = await workspace.getChangedElementsByAuthors([{ user: 'test user', account: 'salesforce' }])
         expect(testUser[0].getFullName()).toEqual('salesforce.lead')
+        const multipleUsers = await workspace.getChangedElementsByAuthors([{ user: 'test user', account: 'salesforce' }, { user: 'Unknown', account: '' }])
+        expect(multipleUsers).toEqual(expect.arrayContaining(unknownUser))
+        expect(multipleUsers).toEqual(expect.arrayContaining(testUser))
       })
     })
   })

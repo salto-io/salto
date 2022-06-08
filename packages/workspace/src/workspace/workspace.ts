@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
+import _, { flatMap } from 'lodash'
 import path from 'path'
 import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
   Value, toChange, isRemovalChange, getChangeData,
@@ -177,7 +177,7 @@ export type Workspace = {
   getElementOutgoingReferences: (id: ElemID) => Promise<ElemID[]>
   getElementIncomingReferences: (id: ElemID) => Promise<ElemID[]>
   getAllChangedByAuthors: (envName?: string) => Promise<Author[]>
-  getChangedElementsByAuthor: (user: Author, envName?: string) => Promise<ElemID[]>
+  getChangedElementsByAuthors: (authors: Author[], envName?: string) => Promise<ElemID[]>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
   getElementIdsBySelectors: (
     selectors: ElementSelector[],
@@ -900,14 +900,15 @@ export const loadWorkspace = async (
     return keys.map(authorKeyToAuthor)
   }
 
-  const getChangedElementsByAuthor = async (
-    author: Author,
+  const getChangedElementsByAuthors = async (
+    authors: Author[],
     envName?: string,
   ): Promise<ElemID[]> => {
     const env = envName ?? currentEnv()
     const workspace = await getWorkspaceState()
-    const result = await workspace.states[env].changedBy.get(authorToAuthorKey(author)) ?? []
-    return result
+    const result = await workspace.states[env].changedBy.getMany(authors.map(authorToAuthorKey))
+    ?? []
+    return flatMap(result.filter(values.isDefined))
   }
   return {
     uid: workspaceConfig.uid,
@@ -1000,7 +1001,7 @@ export const loadWorkspace = async (
         .referenceSources.get(id.getFullName()) ?? []
     },
     getAllChangedByAuthors,
-    getChangedElementsByAuthor,
+    getChangedElementsByAuthors,
     getElementNaclFiles: async id => (
       (await getLoadedNaclFilesSource()).getElementNaclFiles(currentEnv(), id)
     ),

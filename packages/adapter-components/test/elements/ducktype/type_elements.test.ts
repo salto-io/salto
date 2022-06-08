@@ -611,7 +611,7 @@ describe('ducktype_type_elements', () => {
       }))).toBeTruthy()
       expect(nestedTypes).toHaveLength(0)
     })
-    it('should create an empty type with the service id field if addServiceIdToType is true', () => {
+    it('should create an empty type with the service id field', () => {
       const { type, nestedTypes } = generateType({
         adapterName: ADAPTER_NAME,
         name: 'target',
@@ -626,7 +626,6 @@ describe('ducktype_type_elements', () => {
           },
         },
         transformationDefaultConfig: { idFields: [], serviceIdField: 'id' },
-        addServiceIdToType: true,
       })
       expect(type.isEqual(new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'target'),

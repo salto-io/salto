@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   ObjectType, ElemID, BuiltinTypes, Values, MapType, PrimitiveType, ListType, isObjectType,
-  FieldDefinition, Field,
+  FieldDefinition,
 } from '@salto-io/adapter-api'
 import { pathNaclCase, naclCase } from '@salto-io/adapter-utils'
 import { DuckTypeTransformationConfig, DuckTypeTransformationDefaultConfig, getConfigWithDefault } from '../../config'
@@ -177,7 +177,6 @@ export const generateType = ({
   typeNameOverrideConfig,
   isSubType = false,
   isUnknownEntry,
-  addServiceIdToType = false,
 }: {
   adapterName: string
   name: string
@@ -188,7 +187,6 @@ export const generateType = ({
   typeNameOverrideConfig?: Record<string, string>
   isSubType?: boolean
   isUnknownEntry?: (value: unknown) => boolean
-  addServiceIdToType?: boolean
 }): ObjectTypeWithNestedTypes => {
   const typeRenameConfig = typeNameOverrideConfig ?? generateTypeRenameConfig(
     transformationConfigByType
@@ -261,19 +259,12 @@ export const generateType = ({
     isSettings: isSingleton ?? false,
   })
 
-  if (
-    addServiceIdToType
-    && serviceIdField
-    && !Object.prototype.hasOwnProperty.call(fields, serviceIdField)
-  ) {
-    type.fields[serviceIdField] = new Field(type, serviceIdField, BuiltinTypes.UNKNOWN)
-    fixFieldTypes(
-      { [typeName]: type },
-      { [typeName]: { transformation } },
-      { transformation: transformationDefaultConfig },
-      toPrimitiveType,
-    )
-  }
+  fixFieldTypes(
+    { [typeName]: type },
+    { [typeName]: { transformation } },
+    { transformation: transformationDefaultConfig },
+    toPrimitiveType,
+  )
 
   // mark fields as hidden based on config
   if (Array.isArray(fieldsToHide)) {

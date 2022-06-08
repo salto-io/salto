@@ -69,7 +69,6 @@ export const addRemainingTypes = ({
       transformationConfigByType: getTransformationConfigByType(typesConfig),
       transformationDefaultConfig: typeDefaultConfig.transformation,
       isSubType: !Object.values(supportedTypes).flat().includes(sourceTypeNameToTypeName[typeName]),
-      addServiceIdToType: true,
     }).type)
   elements.push(...typesToAdd)
 }

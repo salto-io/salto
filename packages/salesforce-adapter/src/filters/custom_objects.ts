@@ -50,7 +50,7 @@ import {
 } from '../transformers/transformer'
 import {
   id, addApiName, addMetadataType, addLabel, getNamespace, boolValue,
-  buildAnnotationsObjectType, addElementParentReference, apiNameParts,
+  buildAnnotationsObjectType, addElementParentReference,
   parentApiName,
   getDataFromChanges,
   isInstanceOfTypeChange,
@@ -556,9 +556,6 @@ const dependentMetadataTypes = new Set([CUSTOM_TAB_METADATA_TYPE, DUPLICATE_RULE
 const hasCustomObjectParent = async (instance: InstanceElement): Promise<boolean> =>
   dependentMetadataTypes.has(await metadataType(instance))
 
-const shouldAddElemName = async (instance: InstanceElement): Promise<boolean> =>
-  (await apiNameParts(instance)).length > 1 || await metadataType(instance) === FLEXI_PAGE_TYPE
-
 const fixDependentInstancesPathAndSetParent = async (
   elements: Element[],
   referenceElements: ReadOnlyElementsSource,
@@ -577,8 +574,7 @@ const fixDependentInstancesPathAndSetParent = async (
             )
           )]
         : [pathNaclCase(instance.elemID.typeName)]),
-      ...(await shouldAddElemName(instance)
-        ? [pathNaclCase(instance.elemID.name)] : []),
+      pathNaclCase(instance.elemID.name),
     ]
   }
 

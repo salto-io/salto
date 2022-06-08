@@ -20,7 +20,7 @@ import {
 } from '@salto-io/adapter-api'
 import { pathNaclCase, naclCase, transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { RECORDS_PATH } from './constants'
+import { RECORDS_PATH, SETTINGS_NESTED_PATH } from './constants'
 import { TransformationConfig, TransformationDefaultConfig, getConfigWithDefault,
   RecurseIntoCondition, isRecurseIntoConditionByField, AdapterApiConfig, dereferenceFieldName } from '../config'
 
@@ -81,6 +81,7 @@ export const getInstanceFilePath = ({
     ? [
       adapterName,
       RECORDS_PATH,
+      SETTINGS_NESTED_PATH,
       pathNaclCase(typeName),
     ]
     : [

@@ -46,6 +46,8 @@ export const TOKEN_TYPES = {
   CONFLICT_CONTENT: 'mergeConflictContent',
 }
 
+const WORD_PART = '[a-zA-Z_][\\w.@]*'
+
 export const rules: Record<string, moo.Rules> = {
   main: {
     [TOKEN_TYPES.MERGE_CONFLICT]: { match: '<<<<<<<', push: 'mergeConflict' },
@@ -60,20 +62,20 @@ export const rules: Record<string, moo.Rules> = {
     [TOKEN_TYPES.CCURLY]: '}',
     [TOKEN_TYPES.OCURLY]: '{',
     [TOKEN_TYPES.EQUAL]: '=',
-    [TOKEN_TYPES.WORD]: /[a-zA-Z_][\w.@]*/s,
+    [TOKEN_TYPES.WORD]: new RegExp(WORD_PART, 's'),
     [TOKEN_TYPES.COMMENT]: /\/\//,
     [TOKEN_TYPES.WHITESPACE]: { match: /[ \t]+/ },
     [TOKEN_TYPES.NEWLINE]: { match: /[\r\n]+/, lineBreaks: true },
     [TOKEN_TYPES.INVALID]: { match: /[^ \n]+/, error: true },
   },
   string: {
-    [TOKEN_TYPES.REFERENCE]: { match: /\$\{[ \t]*[\d\w.]+[ \t]*\}/, value: s => s.slice(2, -1).trim() },
+    [TOKEN_TYPES.REFERENCE]: { match: new RegExp(`\\$\\{[ \\t]*${WORD_PART}[ \\t]*\\}`), value: s => s.slice(2, -1).trim() },
     [TOKEN_TYPES.DOUBLE_QUOTES]: { match: '"', pop: 1 },
     [TOKEN_TYPES.CONTENT]: { match: /(?:[^"\\\r\n]|\\.)+?(?="|\r|\n|\$\{)/, lineBreaks: false },
     [TOKEN_TYPES.NEWLINE]: { match: /[\r\n]+/, lineBreaks: true, pop: 1 },
   },
   multilineString: {
-    [TOKEN_TYPES.REFERENCE]: { match: /\$\{[ \t]*[\d\w.]+[ \t]*\}/, value: s => s.slice(2, -1).trim() },
+    [TOKEN_TYPES.REFERENCE]: { match: new RegExp(`\\$\\{[ \\t]*${WORD_PART}[ \\t]*\\}`), value: s => s.slice(2, -1).trim() },
     [TOKEN_TYPES.MULTILINE_END]: { match: /^[ \t]*'''/, pop: 1 },
     [TOKEN_TYPES.CONTENT]: { match: /.*\\\$\{.*[(\r\n)(\n)]|.*?(?=\$\{)|.*[(\r\n)(\n)]/, lineBreaks: true },
   },

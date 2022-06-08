@@ -47,6 +47,7 @@ import fieldConfigurationIrrelevantFields from './filters/field_configuration/fi
 import fieldConfigurationSplitFilter from './filters/field_configuration/field_configuration_split'
 import fieldConfigurationItemsFilter from './filters/field_configuration/field_configuration_items'
 import fieldConfigurationDependenciesFilter from './filters/field_configuration/field_configuration_dependencies'
+import missingDescriptionsFilter from './filters/missing_descriptions'
 import fieldConfigurationSchemeFilter from './filters/field_configurations_scheme'
 import dashboardFilter from './filters/dashboard/dashboard_deployment'
 import dashboardLayoutFilter from './filters/dashboard/dashboard_layout'
@@ -175,6 +176,7 @@ export const DEFAULT_FILTERS = [
   serviceUrlFilter,
   hiddenValuesInListsFilter,
   queryFilter,
+  missingDescriptionsFilter,
   // Must be last
   defaultInstancesDeployFilter,
 ]

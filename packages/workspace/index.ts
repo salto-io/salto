@@ -32,7 +32,7 @@ import * as merger from './src/merger'
 import * as expressions from './src/expressions'
 import * as serialization from './src/serializer/elements'
 import * as pathIndex from './src/workspace/path_index'
-import { Author } from './src/workspace/changed_by_index'
+import { Author, authorKeyToAuthor, authorToAuthorKey } from './src/workspace/changed_by_index'
 import { createElementSelector, ElementSelector, validateSelectorsMatches, createTopLevelSelector,
   selectElementsBySelectors, selectElementIdsByTraversal, createElementSelectors, ElementIDToValue } from './src/workspace/element_selector'
 import * as validator from './src/validator'
@@ -97,4 +97,6 @@ export {
   updateElementsWithAlternativeAccount,
   createAdapterReplacedID,
   Author,
+  authorKeyToAuthor,
+  authorToAuthorKey,
 }

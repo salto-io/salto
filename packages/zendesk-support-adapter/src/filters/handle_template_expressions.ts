@@ -19,7 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { isArray, isString } from 'lodash'
+import _, { isString } from 'lodash'
 import { FilterCreator } from '../filter'
 
 const { awu } = collections.asynciterable
@@ -31,6 +31,8 @@ type PotentialTemplateField = {
   fieldName: string
   containerValidator: (container: Values) => boolean
 }
+
+const potentialReferenceTypes = ['ticket.ticket_field', 'ticket.ticket_field_option_title']
 
 const potentialTemplates: PotentialTemplateField[] = [
   {
@@ -46,42 +48,42 @@ const potentialTemplates: PotentialTemplateField[] = [
 // it with salto style templates.
 const formulaToTemplate = (formula: string,
   instances: InstanceElement[]): TemplateExpression | string => {
-  // Regex explanation:
+  let formulaWithDetectedParts = formula
   // The first part of the regex identifies ids, with the pattern {some_id_field_1234}
   // The replace flags the pattern with a reference-like string to avoid the later code from
   // detecting ids in numbers that are not marked as ids.
+  potentialReferenceTypes.forEach(type => {
+    formulaWithDetectedParts = formulaWithDetectedParts
+      // eslint-disable-next-line no-template-curly-in-string
+      .replace(new RegExp(`({{)(${type}_[\\d]+?)(}})`, 'g'), '$1$${$2}$3')
+  })
   // The second part is a split that separates the now-marked ids, so they could be replaced
   // with ReferenceExpression in the loop code.
-  // eslint-disable-next-line no-template-curly-in-string
-  const templateParts = formula.replace(/({{.+?_)([\d]+?)(}})/g, '$1$${$2}$3')
-    .split(/\$\{([\d]+?)\}/).filter(e => e !== '')
+  const templateParts = formulaWithDetectedParts
+    .split(/(\$\{.+?_[\d]+?\})/).filter(e => e !== '')
     .map(expression => {
-      const ref = instances.find(instance => instance.value.id?.toString() === expression)
-      if (ref) {
-        return new ReferenceExpression(ref.elemID)
+      const zendeskReference = expression.match(/\$\{(.+?_)([\d]+?)\}/)
+      if (zendeskReference) {
+        // last group in the stack contains the id of reference.
+        // Both these variables can't be empty but we check for typescript
+        const innerId = zendeskReference.pop() ?? ''
+        // group that entered before it contains type.
+        const type = zendeskReference.pop() ?? ''
+        const ref = instances
+          .find(instance => instance.value.id?.toString() === innerId)
+        if (ref) {
+          return [type, new ReferenceExpression(ref.elemID, ref)]
+        }
+        // if no id was detected we return these parts that will later be joined to
+        // create the original string.
+        return [type, innerId]
       }
       return expression
-    })
+    }).flat()
   if (templateParts.every(isString)) {
     return templateParts.join('')
   }
   return new TemplateExpression({ parts: templateParts })
-}
-
-const getContainersByPath = (root: Values, path: string[]): Values[] => {
-  if (path.length === 0 || root[path[0]] === undefined) {
-    return []
-  }
-  if (path.length === 1) {
-    return [root[path[0]]].flat()
-  }
-  if (isArray(root[path[0]])) {
-    root[path[0]].map((obj: Values) =>
-      getContainersByPath(obj, path.slice(1, path.length))).flat()
-    return root[path[0]].map((obj: Values) =>
-      getContainersByPath(obj, path.slice(1, path.length))).flat()
-  }
-  return getContainersByPath(root[path[0]], path.slice(1, path.length))
 }
 
 const getContainers = async (instances: InstanceElement[]): Promise<
@@ -92,9 +94,8 @@ const getContainers = async (instances: InstanceElement[]): Promise<
       t => instance.elemID.typeName === t.instanceType
     ).map(template => ({
       template,
-      values: getContainersByPath(instance.value, template.pathToContainer).filter(
-        template.containerValidator
-      ),
+      values: _.get(instance.value, template.pathToContainer, [])
+        .filter(template.containerValidator),
     }))).flat()
 
 const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promise<void> =>
@@ -140,9 +141,7 @@ const filterCreator: FilterCreator = () => {
           const restoreTemplate = (v: string): string | TemplateExpression =>
             deployTemplateMapping[v] ?? v
           container.values.forEach(value => {
-            if (isTemplateExpression(value[fieldName])) {
-              value[fieldName] = restoreTemplate(value[fieldName])
-            }
+            value[fieldName] = restoreTemplate(value[fieldName])
           })
         })
     }, 'Create templates restore filter'),

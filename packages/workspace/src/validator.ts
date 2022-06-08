@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { types, collections, values } from '@salto-io/lowerdash'
 import {
   Element, isObjectType, isInstanceElement, TypeElement, InstanceElement, Field, PrimitiveTypes,
@@ -22,13 +23,16 @@ import {
   isReferenceExpression, StaticFile, isContainerType, isMapType, ObjectType,
   InstanceAnnotationTypes, GLOBAL_ADAPTER, SaltoError, ReadOnlyElementsSource, BuiltinTypes,
   isPlaceholderObjectType,
+  CoreAnnotationTypes,
+  isType,
+  isField,
 } from '@salto-io/adapter-api'
-import { toObjectType, elementAnnotationTypes } from '@salto-io/adapter-utils'
+import { toObjectType } from '@salto-io/adapter-utils'
 import { InvalidStaticFile } from './workspace/static_files/common'
-import { UnresolvedReference, resolve, CircularReference } from './expressions'
+import { UnresolvedReference, CircularReference, resolve } from './expressions'
 import { IllegalReference } from './parser/parse'
 
-const { awu } = collections.asynciterable
+const log = logger(module)
 const { makeArray } = collections.array
 
 export abstract class ValidationError extends types.Bean<{
@@ -62,24 +66,21 @@ const primitiveValidators = {
  * @param value
  * @param type
  */
-const validateAnnotations = async (
+const validateAnnotations = (
   elemID: ElemID,
   value: Value,
   type: TypeElement,
-  elementsSource: ReadOnlyElementsSource
-):
-Promise<ValidationError[]> => {
+): ValidationError[] => {
   if ((isObjectType(type) || isMapType(type)) && !isReferenceExpression(value)) {
     const objType = toObjectType(type, value)
-    return awu(Object.keys(objType.fields)).flatMap(
+    return Object.entries(objType.fields).flatMap(
       // eslint-disable-next-line no-use-before-define
-      async k => validateFieldAnnotations(
-        elemID.createNestedID(k),
-        value[k],
-        objType.fields[k],
-        elementsSource,
+      ([key, field]) => validateFieldAnnotations(
+        elemID.createNestedID(key),
+        value[key],
+        field,
       )
-    ).toArray()
+    )
   }
 
   return []
@@ -95,7 +96,7 @@ export class InvalidValueValidationError extends ValidationError {
       { elemID: ElemID; value: Value; fieldName: string; expectedValue: unknown }
   ) {
     const expectedValueStr = _.isArray(expectedValue)
-      ? `one of: ${(expectedValue as []).map(v => `"${v}"`).join(', ')}`
+      ? `one of: ${(expectedValue).map(v => `"${v}"`).join(', ')}`
       : `"${expectedValue}"`
 
     super({
@@ -248,13 +249,12 @@ export class InvalidStaticFileError extends ValidationError {
   }
 }
 
-const validateAnnotationsValue = async (
+const validateAnnotationsValue = (
   elemID: ElemID,
   value: Value,
   annotations: Values,
   type: TypeElement,
-  elementsSource: ReadOnlyElementsSource
-): Promise<ValidationError[] | undefined> => {
+): ValidationError[] | undefined => {
   const restrictions = getRestriction({ annotations })
   const shouldEnforceValue = (): boolean =>
     restrictions.enforce_value !== false
@@ -335,7 +335,7 @@ const validateAnnotationsValue = async (
 
   // Checking restrictions
   if ((isPrimitiveType(type)
-    || (isContainerType(type) && isPrimitiveType(await type.getInnerType(elementsSource)))
+    || (isContainerType(type) && isPrimitiveType(type.refInnerType.type))
   ) && shouldEnforceValue()) {
     // TODO: This currently only checks one level of nesting for primitive types inside lists.
     // We should add support for List of list of primitives
@@ -361,30 +361,37 @@ const mapAsArrayWithIds = <T>(value: T | T[], elemID: ElemID): ItemWithNestedId<
  * @param value- the field value
  * @param field
  */
-const validateFieldAnnotations = async (
-  elemID: ElemID, value: Value, field: Field, elementsSource: ReadOnlyElementsSource
-): Promise<ValidationError[]> => {
-  const errors = await validateAnnotationsValue(
+const validateFieldAnnotations = (
+  elemID: ElemID, value: Value, field: Field
+): ValidationError[] => {
+  const fieldType = field.refType.type
+  const fieldInnerType = isListType(fieldType)
+    ? fieldType.refInnerType.type
+    : fieldType
+
+  if (!isType(fieldInnerType)) {
+    // Should never happen because we resolve the element before calling this
+    log.error(
+      'Found unresolved type at %s, fieldType=%s fieldInnerType=%o',
+      elemID.getFullName(), fieldType?.elemID.getFullName(), fieldInnerType,
+    )
+    return []
+  }
+  const errors = validateAnnotationsValue(
     elemID, value,
     field.annotations,
-    await field.getType(elementsSource),
-    elementsSource
+    fieldInnerType,
   )
   if (!_.isUndefined(errors)) {
     return errors
   }
 
-  return awu(mapAsArrayWithIds(value, elemID)).flatMap(async item => {
-    const fieldType = await field.getType(elementsSource)
-    return validateAnnotations(
+  return mapAsArrayWithIds(value, elemID)
+    .flatMap(item => validateAnnotations(
       item.nestedID,
       item.value,
-      isListType(fieldType)
-        ? await fieldType.getInnerType(elementsSource)
-        : await field.getType(elementsSource),
-      elementsSource
-    )
-  }).toArray()
+      fieldInnerType,
+    ))
 }
 
 export class InvalidValueTypeValidationError extends ValidationError {
@@ -414,28 +421,26 @@ const createReferenceValidationErrors = (elemID: ElemID, value: Value): Validati
   return []
 }
 
-const validateValue = async (
+const validateValue = (
   elemID: ElemID,
   value: Value,
   type: TypeElement,
-  elementsSource: ReadOnlyElementsSource
-): Promise<ValidationError[]> => {
+): ValidationError[] => {
   if (Array.isArray(value) && !isListType(type)) {
     if (value.length === 0) {
       // return an error if value is required
-      return (await validateAnnotationsValue(
+      return validateAnnotationsValue(
         elemID,
         undefined,
         type.annotations,
         type,
-        elementsSource
-      )) ?? []
+      ) ?? []
     }
-    return validateValue(elemID, value, new ListType(type), elementsSource)
+    return validateValue(elemID, value, new ListType(type))
   }
 
   if (isReferenceExpression(value)) {
-    return isElement(value.value) ? [] : validateValue(elemID, value.value, type, elementsSource)
+    return isElement(value.value) ? [] : validateValue(elemID, value.value, type)
   }
 
   const referenceValidationErrors = createReferenceValidationErrors(elemID, value)
@@ -471,105 +476,124 @@ const validateValue = async (
       return [new InvalidValueTypeValidationError({ elemID, value, type: type.elemID })]
     }
     const objType = toObjectType(type, value)
-    return awu(Object.keys(value)).flatMap(
+    return Object.keys(value).flatMap(
       // eslint-disable-next-line no-use-before-define
-      async k => validateFieldValue(elemID.createNestedID(k),
+      k => validateFieldValue(
+        elemID.createNestedID(k),
         value[k],
-        (await objType.fields[k]?.getType(elementsSource)) ?? BuiltinTypes.UNKNOWN,
+        objType.fields[k]?.refType.type ?? BuiltinTypes.UNKNOWN,
         objType.fields[k]?.annotations ?? {},
-        elementsSource)
-    ).toArray()
+      )
+    )
   }
 
   if (type === BuiltinTypes.UNKNOWN) {
     if (!_.isObjectLike(value)) {
       return []
     }
-    return awu(Object.keys(value)).flatMap(
+    return Object.keys(value).flatMap(
       // eslint-disable-next-line no-use-before-define
-      async k => validateFieldValue(elemID.createNestedID(k),
+      k => validateFieldValue(
+        elemID.createNestedID(k),
         value[k],
         BuiltinTypes.UNKNOWN,
         {},
-        elementsSource)
-    ).toArray()
+      )
+    )
   }
 
   if (isListType(type)) {
-    return awu(mapAsArrayWithIds(value, elemID)).flatMap(async item => validateValue(
+    const innerType = type.refInnerType.type
+    if (!isType(innerType)) {
+      // Should never happen because we resolve the element before calling this
+      log.error(
+        'Found unresolved type at %s, type=%s innerType=%o',
+        elemID.getFullName(), type.elemID.getFullName(), innerType,
+      )
+      return []
+    }
+    return mapAsArrayWithIds(value, elemID).flatMap(item => validateValue(
       item.nestedID,
       item.value,
-      await type.getInnerType(elementsSource),
-      elementsSource
-    )).toArray()
+      innerType,
+    ))
   }
 
-  return (
-    await validateAnnotationsValue(elemID, value, type.annotations, type, elementsSource)
-  ) || []
+  return validateAnnotationsValue(elemID, value, type.annotations, type) ?? []
 }
 
-const validateFieldValue = async (
+const validateFieldValue = (
   elemID: ElemID,
   value: Value,
   fieldType: TypeElement,
   annotations: Values,
-  elementsSource: ReadOnlyElementsSource,
-): Promise<ValidationError[]> => {
+): ValidationError[] => {
   if (!isListType(fieldType) && Array.isArray(value) && value.length === 0) {
     // return an error if value is required
-    return (
-      await validateAnnotationsValue(
-        elemID,
-        undefined,
-        annotations,
-        fieldType,
-        elementsSource
-      )
+    return validateAnnotationsValue(
+      elemID,
+      undefined,
+      annotations,
+      fieldType,
     ) ?? []
   }
-  return awu(mapAsArrayWithIds(value, elemID)).flatMap(async item => validateValue(
+  const innerType = isListType(fieldType) ? fieldType.refInnerType.type : fieldType
+  if (!isType(innerType)) {
+    // Should never happen because we resolve the element before calling this
+    log.error(
+      'Found unresolved type at %s, fieldType=%s innerType=%o',
+      elemID.getFullName(), fieldType.elemID.getFullName(), innerType,
+    )
+    return []
+  }
+  return mapAsArrayWithIds(value, elemID).flatMap(item => validateValue(
     item.nestedID,
     item.value,
-    isListType(fieldType) ? await fieldType.getInnerType(elementsSource) : fieldType,
-    elementsSource
-  )).toArray()
+    innerType,
+  ))
 }
 
-const validateField = async (
-  field: Field,
-  elementsSource: ReadOnlyElementsSource
-): Promise<ValidationError[]> => {
-  const annotationTypes = await elementAnnotationTypes(field, elementsSource)
-  return awu(Object.keys(field.annotations))
-    .filter(async k => annotationTypes[k] !== undefined)
-    .flatMap(async k => validateValue(
+const syncGetElementAnnotationTypes = (
+  element: TypeElement | Field
+): Record<string, TypeElement> => {
+  // We assume all elements are resolved, so if we access a field's refType, it will be there
+  const type = isField(element) ? element.refType.type : element
+  return {
+    ...CoreAnnotationTypes,
+    ...InstanceAnnotationTypes,
+    ..._.pickBy(
+      _.mapValues(type?.annotationRefTypes, ref => ref.type),
+      // We assume all elements are resolved and therefore we know the types are defined and this
+      // filter won't actually omit anything
+      values.isDefined,
+    ),
+  }
+}
+
+const validateField = (field: Field): ValidationError[] => {
+  const annotationTypes = syncGetElementAnnotationTypes(field)
+  return Object.keys(field.annotations)
+    .filter(k => annotationTypes[k] !== undefined)
+    .flatMap(k => validateValue(
       field.elemID.createNestedID(k),
       field.annotations[k],
       annotationTypes[k],
-      elementsSource
     ))
-    .toArray()
 }
 
-const validateType = async (
-  element: TypeElement,
-  elementsSource: ReadOnlyElementsSource
-): Promise<ValidationError[]> => {
-  const annotationTypes = await elementAnnotationTypes(element, elementsSource)
-  const errors = await awu(Object.keys(element.annotations))
+const validateType = (element: TypeElement): ValidationError[] => {
+  const annotationTypes = syncGetElementAnnotationTypes(element)
+  const errors = Object.keys(element.annotations)
     .filter(k => annotationTypes[k] !== undefined).flatMap(
-      async k => validateValue(
+      k => validateValue(
         element.elemID.createNestedID('attr', k),
         element.annotations[k],
         annotationTypes[k],
-        elementsSource
       )
-    ).toArray()
+    )
   if (isObjectType(element)) {
-    const fieldErrors = await awu(Object.values(element.fields))
-      .flatMap(elem => validateField(elem, elementsSource))
-      .toArray()
+    const fieldErrors = Object.values(element.fields)
+      .flatMap(elem => validateField(elem))
     return [...errors, ...fieldErrors]
   }
   return errors
@@ -582,43 +606,42 @@ const instanceAnnotationsType = new ObjectType({
       .map(([name, type]) => [name, { refType: type }])
   ),
 })
-const validateInstanceType = async (
-  elemID: ElemID,
-  type: ObjectType,
-): Promise<ValidationError[]> => {
+const validateInstanceType = (elemID: ElemID, type: ObjectType): ValidationError[] => {
   if (isPlaceholderObjectType(type)) {
     return [new InvalidTypeValidationError(elemID)]
   }
   return []
 }
 
-const validateInstanceElements = async (
-  element: InstanceElement,
-  elementsSource: ReadOnlyElementsSource
-): Promise<ValidationError[]> => {
-  const type = await element.getType(elementsSource)
+const validateInstanceElements = (element: InstanceElement): ValidationError[] => {
+  const instanceType = element.refType.type
+  if (!isObjectType(instanceType)) {
+    // Should never happen because we resolve the element before calling this
+    log.error(
+      'Found unresolved type at %s, instanceType=%o',
+      element.elemID.getFullName(), instanceType,
+    )
+    return []
+  }
   return [
-    ...await validateValue(
+    ...validateValue(
       element.elemID,
       element.value,
-      type,
-      elementsSource
+      instanceType,
     ),
-    ...await validateAnnotations(
+    ...validateAnnotations(
       element.elemID,
       element.value,
-      type,
-      elementsSource,
+      instanceType,
     ),
-    ...await validateValue(
+    ...validateValue(
       element.elemID,
       element.annotations,
       instanceAnnotationsType,
-      elementsSource,
     ),
-    ...await validateInstanceType(
+    ...validateInstanceType(
       element.elemID,
-      type,
+      instanceType,
     ),
   ]
 }
@@ -649,13 +672,26 @@ const validateVariable = (element: Variable): ValidationError[] => validateVaria
 
 export const validateElements = async (
   elements: Element[], elementsSource: ReadOnlyElementsSource,
-): Promise<ValidationError[]> => awu((await resolve(elements, elementsSource)))
-  .flatMap(async e => {
-    if (isInstanceElement(e)) {
-      return validateInstanceElements(e, elementsSource)
-    }
-    if (isVariable(e)) {
-      return validateVariable(e)
-    }
-    return validateType(e as TypeElement, elementsSource)
-  }).toArray()
+): Promise<ValidationError[]> => log.time(
+  async () => {
+    const resolved = await resolve(elements, elementsSource)
+    const errors = resolved
+      .flatMap(
+        e => {
+          if (isInstanceElement(e)) {
+            return validateInstanceElements(e)
+          }
+          if (isVariable(e)) {
+            return validateVariable(e)
+          }
+          if (isType(e)) {
+            return validateType(e)
+          }
+          return []
+        }
+      )
+
+    return errors
+  },
+  'validateElements with %d elements', elements.length,
+)

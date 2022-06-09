@@ -1412,6 +1412,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
   },
 
+  Groups: {
+    request: {
+      url: '/rest/api/3/group/bulk',
+      paginationField: 'startAt',
+    },
+  },
+
   Board: {
     transformation: {
       fieldTypeOverrides: [

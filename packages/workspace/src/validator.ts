@@ -333,6 +333,15 @@ const validateAnnotationsValue = async (
     return validateRequiredValue()
   }
 
+  if (isListType(type) && shouldEnforceValue()) {
+    const maxLength = restrictions.max_length
+    if ((values.isDefined(maxLength) && _.isArray(value) && value.length > maxLength)) {
+      return [new InvalidValueMaxLengthValidationError(
+        { elemID, value: value.toString(), fieldName: elemID.name, maxLength }
+      )]
+    }
+  }
+
   // Checking restrictions
   if ((isPrimitiveType(type)
     || (isContainerType(type) && isPrimitiveType(await type.getInnerType(elementsSource)))

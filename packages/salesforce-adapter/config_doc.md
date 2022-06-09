@@ -135,6 +135,7 @@ salesforce {
 | ------------------------------------------------------------| -------------------------------------------------| -----------
 | [include](#metadata-query)                                  | Include everything                               | Specified the metadata to fetch. Metadata that does not match any of the include criteria will not be fetched
 | [exclude](#metadata-query)                                  | [] (Exclude nothing)                             | Specified the metadata to not fetch. Metadata that matches any of the exclude criteria will not be fetched even if it also matches some of the include criteria
+| objectsToSeperateFieldsToFiles                              | [] (Don't split any objects)                     | Specified a list of objects which will be stored as one field per nacl file
 
 ## Metadata Query
 | Name                                                        | Default when undefined                           | Description

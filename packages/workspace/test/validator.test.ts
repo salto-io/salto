@@ -1119,7 +1119,7 @@ describe('Elements validation', () => {
             createInMemoryElementSource([
               extInst,
               nestedType,
-              ...await getFieldsAndAnnoTypes(extType),
+              ...await getFieldsAndAnnoTypes(nestedType),
             ])
           )
           expect(errors).toHaveLength(0)
@@ -1132,7 +1132,7 @@ describe('Elements validation', () => {
             createInMemoryElementSource([
               extInst,
               nestedType,
-              ...await getFieldsAndAnnoTypes(extType),
+              ...await getFieldsAndAnnoTypes(nestedType),
             ])
           )
           expect(errors).toHaveLength(1)
@@ -1148,7 +1148,7 @@ describe('Elements validation', () => {
             createInMemoryElementSource([
               extInst,
               nestedType,
-              ...await getFieldsAndAnnoTypes(extType),
+              ...await getFieldsAndAnnoTypes(nestedType),
             ])
           )
           expect(errors).toHaveLength(0)
@@ -1161,7 +1161,7 @@ describe('Elements validation', () => {
             createInMemoryElementSource([
               extInst,
               nestedType,
-              ...await getFieldsAndAnnoTypes(extType),
+              ...await getFieldsAndAnnoTypes(nestedType),
             ])
           )
           expect(errors).toHaveLength(1)
@@ -1227,7 +1227,11 @@ describe('Elements validation', () => {
 
         const errors = await validateElements(
           [instWithFile],
-          createInMemoryElementSource([instWithFile, objWithFile])
+          createInMemoryElementSource([
+            instWithFile,
+            objWithFile,
+            ...await getFieldsAndAnnoTypes(objWithFile),
+          ])
         )
         expect(errors).toHaveLength(0)
       })
@@ -1257,7 +1261,11 @@ describe('Elements validation', () => {
 
         const errors = await validateElements(
           [instWithFile],
-          createInMemoryElementSource([instWithFile, withFileObj])
+          createInMemoryElementSource([
+            instWithFile,
+            withFileObj,
+            ...await getFieldsAndAnnoTypes(withFileObj),
+          ])
         )
         expect(errors).toHaveLength(1)
       })
@@ -1514,7 +1522,11 @@ describe('Elements validation', () => {
         extInst.value = { nested: [] }
         const errors = await validateElements(
           [extInst],
-          createInMemoryElementSource([extInst, nestedRequiredType, simpleType])
+          createInMemoryElementSource([
+            extInst,
+            nestedRequiredType,
+            ...await getFieldsAndAnnoTypes(nestedRequiredType),
+          ]),
         )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested'))
@@ -1529,7 +1541,11 @@ describe('Elements validation', () => {
         extInst.value = []
         const errors = await validateElements(
           [extInst],
-          createInMemoryElementSource([extInst, requiredType, simpleType])
+          createInMemoryElementSource([
+            extInst,
+            requiredType,
+            ...await getFieldsAndAnnoTypes(requiredType),
+          ])
         )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID)
@@ -1816,7 +1832,13 @@ describe('Elements validation', () => {
       it('should validate throw error on reference that points to a bad type', async () => {
         const errors = await validateElements(
           [wrongRefInst, extInst],
-          createInMemoryElementSource([wrongRefInst, extInst, nestedType, simpleType]),
+          createInMemoryElementSource([
+            wrongRefInst,
+            extInst,
+            simpleType,
+            nestedType,
+            ...await getFieldsAndAnnoTypes(nestedType),
+          ]),
         )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(wrongRefInst.elemID.createNestedID('bool'))
@@ -1870,7 +1892,11 @@ describe('Elements validation', () => {
         )
         const errors = await validateElements(
           [varElementInst],
-          createInMemoryElementSource([varElementInst, noRestrictionsType]),
+          createInMemoryElementSource([
+            varElementInst,
+            noRestrictionsType,
+            ...await getFieldsAndAnnoTypes(noRestrictionsType),
+          ]),
         )
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
@@ -1894,7 +1920,12 @@ describe('Elements validation', () => {
         const objVar = new Variable(instVarElemId, new ReferenceExpression(extInst.elemID))
         const errors = await validateElements(
           [objVar, extInst],
-          createInMemoryElementSource([objVar, extInst, nestedType]),
+          createInMemoryElementSource([
+            objVar,
+            extInst,
+            nestedType,
+            ...await getFieldsAndAnnoTypes(nestedType),
+          ]),
         )
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
@@ -1908,7 +1939,12 @@ describe('Elements validation', () => {
           new ReferenceExpression(extInst.elemID.createNestedID('nested')))
         const errors = await validateElements(
           [objVar, extInst],
-          createInMemoryElementSource([objVar, extInst, nestedType]),
+          createInMemoryElementSource([
+            objVar,
+            extInst,
+            nestedType,
+            ...await getFieldsAndAnnoTypes(nestedType),
+          ]),
         )
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
@@ -1970,7 +2006,12 @@ describe('Elements validation', () => {
           new ReferenceExpression(extInst.elemID.createNestedID('flatnum')))
         const errors = await validateElements(
           [numVar, extInst],
-          createInMemoryElementSource([numVar, extInst, nestedType]),
+          createInMemoryElementSource([
+            numVar,
+            extInst,
+            nestedType,
+            ...await getFieldsAndAnnoTypes(nestedType),
+          ]),
         )
         expect(errors).toHaveLength(0)
       })

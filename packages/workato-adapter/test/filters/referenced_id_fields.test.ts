@@ -15,7 +15,7 @@
 */
 
 import { ElemID, InstanceElement, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, ReferenceExpression, isInstanceElement } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, filterUtils, elements as elemUtils } from '@salto-io/adapter-components'
 import { DEFAULT_CONFIG, FETCH_CONFIG, SUPPORTED_TYPES, DEFAULT_ID_FIELDS } from '../../src/config'
 import WorkatoClient from '../../src/client/client'
 import { WORKATO } from '../../src/constants'
@@ -139,6 +139,7 @@ describe('referenced id fields filter', () => {
           supportedTypes: SUPPORTED_TYPES,
         },
       },
+      fetchQuery: elemUtils.query.createMockQuery(),
     }) as FilterType
     await filter.onFetch(elements)
     expect(elements.length).toEqual(lengthBefore)
@@ -190,6 +191,7 @@ describe('referenced id fields filter', () => {
           supportedTypes: SUPPORTED_TYPES,
         },
       },
+      fetchQuery: elemUtils.query.createMockQuery(),
     }) as FilterType
     await filter.onFetch(elements)
     expect(elements.length).toEqual(lengthBefore)

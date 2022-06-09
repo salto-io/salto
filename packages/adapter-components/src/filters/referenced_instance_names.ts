@@ -49,19 +49,6 @@ const getFirstParentElemId = (instance: InstanceElement): ElemID | undefined => 
   return parentsElemIds.length > 0 ? parentsElemIds[0] : undefined
 }
 
-type TransformationIdConfig = {
-  idFields: string[]
-  extendsParentId?: boolean
-}
-
-const getFirstParentElemId = (instance: InstanceElement): ElemID | undefined => {
-  const parentsElemIds = getParents(instance)
-    .filter(parent => isReferenceExpression(parent) && isInstanceElement(parent.value))
-    .map(parent => parent.elemID)
-  // we are only using the first parent ElemId
-  return parentsElemIds.length > 0 ? parentsElemIds[0] : undefined
-}
-
 const createInstanceReferencedNameParts = (
   instance: InstanceElement,
   idFields: string[],
@@ -189,6 +176,14 @@ const getReferencesToElemIds = (
   return refs
 }
 
+const createUpdatedPath = (
+  oldPath: ElemID,
+  updatedInstance: InstanceElement
+): ElemID => {
+  const { path } = oldPath.createBaseID()
+  return updatedInstance.elemID.createNestedID(...path)
+}
+
 /* Update all references for all the renamed instances with the new elemIds */
 const updateAllReferences = ({
   referenceIndex,
@@ -220,7 +215,9 @@ const updateAllReferences = ({
         ref.path.createTopLevelParentID().parent.getFullName()
       ]
       if (topLevelInstance !== undefined) {
-        setPath(topLevelInstance, ref.path, updatedReference)
+        // update the path so it would match the new instance
+        const updatedPath = createUpdatedPath(ref.path, topLevelInstance as InstanceElement)
+        setPath(topLevelInstance, updatedPath, updatedReference)
       }
     })
   // We changed all the references to the original instance, so this entry can be removed
@@ -344,6 +341,10 @@ export const addReferencesToInstanceNames = async (
           nameToInstance,
           newElemId: newInstance.elemID,
         })
+
+        if (nameToInstance[originalFullName] !== undefined) {
+          nameToInstance[originalFullName] = newInstance
+        }
 
         const originalInstanceIdx = elements
           .findIndex(e => (e.elemID.getFullName()) === originalFullName)

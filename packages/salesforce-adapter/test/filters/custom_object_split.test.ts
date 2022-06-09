@@ -357,9 +357,5 @@ describe('Custom Object Split filter', () => {
         ]
       )
     })
-    it('should not split instances', () => {
-      const elements = elementsByElemId['salesforce.SpecialObject__c.instance.bla'] ?? []
-      expect(elements).toBeArrayOfSize(0)
-    })
   })
 })

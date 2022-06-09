@@ -378,7 +378,7 @@ const validateFieldAnnotations = (
     ? fieldType.refInnerType.type
     : fieldType
 
-  if (!isType(fieldInnerType)) {
+  if (!isType(fieldType) || !isType(fieldInnerType)) {
     // Should never happen because we resolve the element before calling this
     log.error(
       'Found unresolved type at %s, fieldType=%s fieldInnerType=%o',
@@ -389,7 +389,7 @@ const validateFieldAnnotations = (
   const errors = validateAnnotationsValue(
     elemID, value,
     field.annotations,
-    fieldInnerType,
+    fieldType,
   )
   if (!_.isUndefined(errors)) {
     return errors

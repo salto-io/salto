@@ -116,13 +116,17 @@ describe('SuiteAppClient', () => {
           jest.spyOn(global, 'setTimeout').mockImplementation((cb: TimerHandler) => (_.isFunction(cb) ? cb() : undefined))
           mockAxiosAdapter
             .onPost().replyOnce(429)
-            .onPost().replyOnce(200, {
+            .onPost().replyOnce(400, {
+              error: { code: 'SSS_REQUEST_LIMIT_EXCEEDED' },
+            })
+            .onPost()
+            .replyOnce(200, {
               hasMore: false,
               items: [{ links: [], a: 1 }, { links: [], a: 2 }],
             })
 
           expect(await client.runSuiteQL('query')).toEqual([{ a: 1 }, { a: 2 }])
-          expect(mockAxiosAdapter.history.post.length).toBe(2)
+          expect(mockAxiosAdapter.history.post.length).toBe(3)
         })
         it('with server error retry', async () => {
           jest.spyOn(global, 'setTimeout').mockImplementation((cb: TimerHandler) => (_.isFunction(cb) ? cb() : undefined))

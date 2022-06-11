@@ -459,7 +459,7 @@ const validateValue = (
     )).flat()
     return [
       ...templatedReferenceValidationErrors,
-      ...(await validateValue(elemID, value.value, type, elementsSource)),
+      ...(validateValue(elemID, value.value, type)),
     ]
   }
 

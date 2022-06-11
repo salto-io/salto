@@ -50,93 +50,97 @@ describe('handle templates filter', () => {
     },
   })
 
-  const placeholderType = new ObjectType({
+  const placeholder1Type = new ObjectType({
     elemID: new ElemID(ZENDESK_SUPPORT, 'ticket_field'),
   })
 
-  const placeholder1 = new InstanceElement('placeholder1', placeholderType, { id: 1452 })
-  const placeholder2 = new InstanceElement('placeholder2', placeholderType, { id: 1453 })
+  const placeholder2Type = new ObjectType({
+    elemID: new ElemID(ZENDESK_SUPPORT, 'ticket_field__custom_field_options'),
+  })
+
+  const placeholder1 = new InstanceElement('placeholder1', placeholder1Type, { id: 1452 })
+  const placeholder2 = new InstanceElement('placeholder2', placeholder2Type, { id: 1453 })
   const macro1 = new InstanceElement('macro1', testType, { id: 1001, actions: [{ value: 'non template', field: 'comment_value_html' }] })
   const macro2 = new InstanceElement('macro2', testType, { id: 1002, actions: [{ value: '{{ticket.ticket_field_1452}}', field: 'comment_value_html' }] })
   const macro3 = new InstanceElement('macro3', testType, { id: 1003, actions: [{ value: 'multiple refs {{ticket.ticket_field_1452}} and {{ticket.ticket_field_option_title_1453}}', field: 'comment_value_html' }] })
   const macroAlmostTemplate = new InstanceElement('macroAlmost', testType, { id: 1001, actions: [{ value: 'almost template {{ticket.not_an_actual_field_1452}} and {{ticket.ticket_field_1454}}', field: 'comment_value_html' }] })
 
-  const generateElements = (): (InstanceElement | ObjectType)[] => ([
-    testType,
-    placeholderType,
-    placeholder1.clone(),
-    placeholder2.clone(),
-    macro1.clone(),
-    macro2.clone(),
-    macro3.clone(),
-    macroAlmostTemplate.clone(),
-  ])
+  const generateElements = (): (InstanceElement | ObjectType)[] => ([testType, placeholder1Type,
+    placeholder2Type, placeholder1, placeholder2, macro1, macro2, macro3, macroAlmostTemplate])
+    .map(element => element.clone())
 
   describe('on fetch', () => {
-    let fetchedMacro1: InstanceElement | undefined
-    let fetchedMacro2: InstanceElement | undefined
-    let fetchedMacro3: InstanceElement | undefined
     let fetchedMacroAlmostTemplate: InstanceElement | undefined
+    let elements: (InstanceElement | ObjectType)[]
 
     beforeAll(async () => {
-      const elements = generateElements()
+      elements = generateElements()
       await filter.onFetch(elements)
-      fetchedMacro1 = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macro1')
-      fetchedMacro2 = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macro2')
-      fetchedMacro3 = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macro3')
-      fetchedMacroAlmostTemplate = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroAlmost')
     })
 
     it('should resolve non-template normally', () => {
+      const fetchedMacro1 = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macro1')
       expect(fetchedMacro1?.value.actions[0].value).toEqual('non template')
     })
 
     it('should resolve almost-template normally', () => {
+      fetchedMacroAlmostTemplate = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroAlmost')
       expect(fetchedMacroAlmostTemplate?.value.actions[0].value).toEqual('almost template {{ticket.not_an_actual_field_1452}} and {{ticket.ticket_field_1454}}')
     })
 
     it('should resolve one template correctly', () => {
+      const fetchedMacro2 = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macro2')
       expect(fetchedMacro2?.value.actions[0].value).toEqual(new TemplateExpression({ parts: [
         '{{',
-        'ticket.ticket_field_',
         new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] }))
     })
 
     it('should resolve multiple templates correctly', () => {
+      const fetchedMacro3 = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macro3')
       expect(fetchedMacro3?.value.actions[0].value).toEqual(new TemplateExpression({
         parts: [
           'multiple refs {{',
-          'ticket.ticket_field_',
           new ReferenceExpression(placeholder1.elemID, placeholder1),
           '}} and {{',
-          'ticket.ticket_field_option_title_',
           new ReferenceExpression(placeholder2.elemID, placeholder2),
           '}}',
         ],
       }))
     })
   })
-  describe('on deploy', () => {
+  describe('preDeploy', () => {
     let elementsBeforeFetch: (InstanceElement | ObjectType)[]
-    let elementsAfterFetch: (InstanceElement | ObjectType)[]
     let elementsAfterPreDeploy: (InstanceElement | ObjectType)[]
-    let elementsAfterOnDeploy: (InstanceElement | ObjectType)[]
 
     beforeAll(async () => {
       elementsBeforeFetch = generateElements()
-      elementsAfterFetch = elementsBeforeFetch.map(e => e.clone())
+      const elementsAfterFetch = elementsBeforeFetch.map(e => e.clone())
       await filter.onFetch(elementsAfterFetch)
       elementsAfterPreDeploy = elementsAfterFetch.map(e => e.clone())
       await filter.preDeploy(elementsAfterPreDeploy.map(e => toChange({ before: e, after: e })))
-      elementsAfterOnDeploy = elementsAfterPreDeploy.map(e => e.clone())
-      await filter.onDeploy(elementsAfterOnDeploy.map(e => toChange({ before: e, after: e })))
     })
 
     it('Returns elements to origin after predeploy', () => {
       expect(elementsAfterPreDeploy).toEqual(elementsBeforeFetch)
     })
+  })
 
-    it('Returns elements to after fetch state after onDeploy', () => {
+  describe('onDeploy', () => {
+    let elementsAfterFetch: (InstanceElement | ObjectType)[]
+    let elementsAfterOnDeploy: (InstanceElement | ObjectType)[]
+
+    beforeAll(async () => {
+      // we recreate feth and onDeploy to have the templates in place to be restored by onDeploy
+      const elementsBeforeFetch = generateElements()
+      elementsAfterFetch = elementsBeforeFetch.map(e => e.clone())
+      await filter.onFetch(elementsAfterFetch)
+      const elementsAfterPreDeploy = elementsAfterFetch.map(e => e.clone())
+      await filter.preDeploy(elementsAfterPreDeploy.map(e => toChange({ before: e, after: e })))
+      elementsAfterOnDeploy = elementsAfterPreDeploy.map(e => e.clone())
+      await filter.onDeploy(elementsAfterOnDeploy.map(e => toChange({ before: e, after: e })))
+    })
+
+    it('Returns elements to after fetch state (with templates) after onDeploy', () => {
       expect(elementsAfterOnDeploy).toEqual(elementsAfterFetch)
     })
   })

@@ -32,6 +32,16 @@ type PotentialTemplateField = {
   containerValidator: (container: Values) => boolean
 }
 
+const zendeskReferenceTypeToSaltoType: Record<string, string> = {
+  'ticket.ticket_field': 'ticket_field',
+  'ticket.ticket_field_option_title': 'ticket_field__custom_field_options',
+}
+
+const saltoTypeToZendeskReferenceType = Object.fromEntries(
+  Object.entries(zendeskReferenceTypeToSaltoType)
+    .map(entry => [entry[1], entry[0]])
+)
+
 const potentialReferenceTypes = ['ticket.ticket_field', 'ticket.ticket_field_option_title']
 
 const potentialTemplates: PotentialTemplateField[] = [
@@ -47,7 +57,7 @@ const potentialTemplates: PotentialTemplateField[] = [
 // This function receives a formula that contains zendesk-style references and replaces
 // it with salto style templates.
 const formulaToTemplate = (formula: string,
-  instances: InstanceElement[]): TemplateExpression | string => {
+  instancesByType: Record<string, InstanceElement[]>): TemplateExpression | string => {
   let formulaWithDetectedParts = formula
   // The first part of the regex identifies ids, with the pattern {some_id_field_1234}
   // The replace flags the pattern with a reference-like string to avoid the later code from
@@ -62,24 +72,24 @@ const formulaToTemplate = (formula: string,
   const templateParts = formulaWithDetectedParts
     .split(/(\$\{.+?_[\d]+?\})/).filter(e => e !== '')
     .map(expression => {
-      const zendeskReference = expression.match(/\$\{(.+?_)([\d]+?)\}/)
+      const zendeskReference = expression.match(/\$\{(.+?)_([\d]+?)\}/)
       if (zendeskReference) {
         // last group in the stack contains the id of reference.
         // Both these variables can't be empty but we check for typescript
         const innerId = zendeskReference.pop() ?? ''
         // group that entered before it contains type.
         const type = zendeskReference.pop() ?? ''
-        const ref = instances
+        const ref = (instancesByType[zendeskReferenceTypeToSaltoType[type] ?? ''] ?? [])
           .find(instance => instance.value.id?.toString() === innerId)
         if (ref) {
-          return [type, new ReferenceExpression(ref.elemID, ref)]
+          return new ReferenceExpression(ref.elemID, ref)
         }
         // if no id was detected we return these parts that will later be joined to
         // create the original string.
-        return [type, innerId]
+        return `${type}_${innerId}`
       }
       return expression
-    }).flat()
+    })
   if (templateParts.every(isString)) {
     return templateParts.join('')
   }
@@ -102,7 +112,8 @@ const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promi
   (await getContainers(instances)).forEach(container => {
     const { fieldName } = container.template
     container.values.forEach(value => {
-      value[fieldName] = formulaToTemplate(value[fieldName], instances)
+      value[fieldName] = formulaToTemplate(value[fieldName],
+        _.groupBy(instances, i => i.elemID.typeName))
     })
   })
 
@@ -121,8 +132,10 @@ const filterCreator: FilterCreator = () => {
           const handleTemplateValue = (template: TemplateExpression): string => {
             const templateUsingIdField = new TemplateExpression({
               parts: template.parts.map(part => (isReferenceExpression(part)
-                ? new ReferenceExpression(part.elemID.createNestedID('id'), part.value.value.id)
-                : part)),
+                ? [saltoTypeToZendeskReferenceType[part.elemID.typeName],
+                  '_',
+                  new ReferenceExpression(part.elemID.createNestedID('id'), part.value.value.id)]
+                : part)).flat(),
             })
             deployTemplateMapping[templateUsingIdField.value] = template
             return templateUsingIdField.value

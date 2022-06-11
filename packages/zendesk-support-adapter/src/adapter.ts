@@ -67,6 +67,7 @@ import tagsFilter from './filters/tag'
 import webhookFilter from './filters/webhook'
 import defaultDeployFilter from './filters/default_deploy'
 import ducktypeCommonFilters from './filters/ducktype_common'
+import handleTemplateExpressionFilter from './filters/handle_template_expressions'
 import referencedIdFieldsFilter from './filters/referenced_id_fields'
 import { getConfigFromConfigChanges } from './config_change'
 import { dependencyChanger } from './dependency_changers'
@@ -123,6 +124,7 @@ export const DEFAULT_FILTERS = [
   referencedIdFieldsFilter,
   serviceUrlFilter,
   ...ducktypeCommonFilters,
+  handleTemplateExpressionFilter,
   // defaultDeployFilter should be last!
   defaultDeployFilter,
 ]

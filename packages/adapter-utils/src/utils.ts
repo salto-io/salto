@@ -25,8 +25,7 @@ import {
   CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
   ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType, isTypeReference,
   ReadOnlyElementsSource, ReferenceMap, TypeReference, createRefToElmWithValue, isElement,
-  compareSpecialValues,
-  getChangeData,
+  compareSpecialValues, getChangeData, isTemplateExpression,
 } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from './walk_element'
@@ -991,6 +990,14 @@ export const getAllReferencedIds = (
     }
     if (isReferenceExpression(value)) {
       allReferencedIds.add(value.elemID.getFullName())
+      return WALK_NEXT_STEP.SKIP
+    }
+    if (isTemplateExpression(value)) {
+      value.parts.forEach(part => {
+        if (isReferenceExpression(part)) {
+          allReferencedIds.add(part.elemID.getFullName())
+        }
+      })
       return WALK_NEXT_STEP.SKIP
     }
     return WALK_NEXT_STEP.RECURSE

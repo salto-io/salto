@@ -108,6 +108,11 @@ describe('Test utils.ts', () => {
 
   const regValue = 'regValue'
   const valueRef = new ReferenceExpression(mockElem, regValue, mockType)
+  const templateElemID = new ElemID('template', 'test')
+  const templateElemID2 = new ElemID('template2', 'test2')
+  const templateRef = new TemplateExpression({ parts: ['this is:',
+    new ReferenceExpression(templateElemID), 'a template',
+    new ReferenceExpression(templateElemID2)] })
   const fileContent = 'bb'
   const valueFile = new StaticFile({ filepath: 'aa', content: Buffer.from(fileContent) })
 
@@ -116,6 +121,7 @@ describe('Test utils.ts', () => {
     mockType,
     {
       ref: valueRef,
+      templateRef,
       str: 'val',
       bool: 'true',
       num: '99',
@@ -2181,7 +2187,8 @@ describe('Test utils.ts', () => {
   describe('getAllReferencedIds', () => {
     it('should find referenced ids', () => {
       const res = getAllReferencedIds(mockInstance)
-      expect(res).toEqual(new Set(['mockAdapter.test', 'mockAdapter.test2.field.aaa']))
+      expect(res).toEqual(new Set(['mockAdapter.test', 'mockAdapter.test2.field.aaa',
+        templateElemID.getFullName(), templateElemID2.getFullName()]))
     })
     it('should find referenced ids only in annotations', () => {
       const res = getAllReferencedIds(mockInstance, true)

@@ -62,6 +62,7 @@ import transitionIdsFilter from './filters/workflow/transition_ids_filter'
 import stepIdsFilter from './filters/workflow/step_ids_filter'
 import workflowDeployFilter from './filters/workflow/workflow_deploy_filter'
 import workflowModificationFilter from './filters/workflow/workflow_modification_filter'
+import workflowGroupsFilter from './filters/workflow/groups_filter'
 import triggersFilter from './filters/workflow/triggers_filter'
 import workflowSchemeFilter from './filters/workflow_scheme'
 import duplicateIdsFilter from './filters/duplicate_ids'
@@ -131,6 +132,7 @@ export const DEFAULT_FILTERS = [
   workflowPropertiesFilter,
   workflowDeployFilter,
   workflowModificationFilter,
+  workflowGroupsFilter,
   workflowSchemeFilter,
   issueTypeSchemeReferences,
   issueTypeSchemeFilter,

@@ -275,6 +275,7 @@ const sendChunked = async <TIn, TOut>({
   const sendSingleChunk = async (chunkInput: TIn[]):
   Promise<SendChunkedResult<TIn, TOut>> => {
     try {
+      log.debug('Sending chunked %s on %o', operationInfo, chunkInput)
       const result = makeArray(await sendChunk(chunkInput)).map(flatValues)
       if (chunkSize === 1 && chunkInput.length > 0) {
         log.debug('Finished %s on %o', operationInfo, chunkInput[0])

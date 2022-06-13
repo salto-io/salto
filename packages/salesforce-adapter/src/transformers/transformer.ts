@@ -1385,9 +1385,10 @@ export const getAuthorAnnotations = (fileProperties: FileProperties): Record<str
     [CORE_ANNOTATIONS.CREATED_AT]: fileProperties?.createdDate,
   }
   if (fileProperties?.lastModifiedDate !== SALESFORCE_DATE_PLACEHOLDER) {
-    Object.assign(annotations,
-      { [CORE_ANNOTATIONS.CHANGED_BY]: fileProperties?.lastModifiedByName,
-        [CORE_ANNOTATIONS.CHANGED_AT]: fileProperties?.lastModifiedDate, })
+    Object.assign(annotations, {
+      [CORE_ANNOTATIONS.CHANGED_BY]: fileProperties?.lastModifiedByName,
+      [CORE_ANNOTATIONS.CHANGED_AT]: fileProperties?.lastModifiedDate,
+    })
   }
   return annotations
 }

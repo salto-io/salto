@@ -936,9 +936,9 @@ export const loadWorkspace = async (
     const workspace = await getWorkspaceState()
     const beforeTimestamp = before ? Date.parse(before) : Date.now()
     const afterTimestamp = Date.parse(after)
-    const relevantTimestamps = (await awu(workspace.states[env].changedBy.keys()).toArray())
+    const relevantTimestamps = (await awu(workspace.states[env].changedAt.keys()).toArray())
       .filter(t => Date.parse(t) <= beforeTimestamp && Date.parse(t) >= afterTimestamp)
-    const result = await workspace.states[env].changedBy.getMany(relevantTimestamps) ?? []
+    const result = await workspace.states[env].changedAt.getMany(relevantTimestamps) ?? []
     return result.filter(values.isDefined).flat()
   }
   return {

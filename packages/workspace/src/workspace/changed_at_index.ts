@@ -51,7 +51,7 @@ const getAllElementsChanges = async (
     .toArray()
 
 const getChangedAt = (change: Change<Element>): string | undefined =>
-  getChangeData(change).annotations[CORE_ANNOTATIONS.CHANGED_BY]
+  getChangeData(change).annotations[CORE_ANNOTATIONS.CHANGED_AT]
 
 const updateAdditionChange = async (
   change: AdditionChange<Element>,

@@ -43,6 +43,7 @@ import { serialize, deserializeMergeErrors, deserializeSingleElement, deserializ
 import { AdaptersConfigSource } from './adapters_config_source'
 import { updateReferenceIndexes } from './reference_indexes'
 import { updateChangedByIndex, Author, authorKeyToAuthor, authorToAuthorKey } from './changed_by_index'
+import { updateChangedAtIndex } from './changed_at_index'
 
 const log = logger(module)
 
@@ -252,6 +253,7 @@ type SingleState = {
   errors: RemoteMap<MergeError[]>
   validationErrors: RemoteMap<ValidationError[]>
   changedBy: RemoteMap<ElemID[]>
+  changedAt: RemoteMap<ElemID[]>
   referenceSources: RemoteMap<ElemID[]>
   referenceTargets: RemoteMap<ElemID[]>
   mapVersions: RemoteMap<number>
@@ -364,6 +366,12 @@ export const loadWorkspace = async (
           }),
           changedBy: await remoteMapCreator<ElemID[]>({
             namespace: getRemoteMapNamespace('changedBy', envName),
+            serialize: val => safeJsonStringify(val.map(id => id.getFullName())),
+            deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
+            persistent,
+          }),
+          changedAt: await remoteMapCreator<ElemID[]>({
+            namespace: getRemoteMapNamespace('changedAt', envName),
             serialize: val => safeJsonStringify(val.map(id => id.getFullName())),
             deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
             persistent,
@@ -592,6 +600,14 @@ export const loadWorkspace = async (
       await updateChangedByIndex(
         changes,
         stateToBuild.states[envName].changedBy,
+        stateToBuild.states[envName].mapVersions,
+        stateToBuild.states[envName].merged,
+        changeResult.cacheValid,
+      )
+
+      await updateChangedAtIndex(
+        changes,
+        stateToBuild.states[envName].changedAt,
         stateToBuild.states[envName].mapVersions,
         stateToBuild.states[envName].merged,
         changeResult.cacheValid,

@@ -952,7 +952,10 @@ describe('salesforce client', () => {
       testConnection = clientAndConnection.connection
       testClient = clientAndConnection.client
       testConnection.metadata.describe.mockImplementationOnce(() => {
-        throw Object.assign(new Error('Test error'), { code: REQUEST_LIMIT_EXCEEDED_ERROR_CODE })
+        throw Object.assign(
+          new Error('ConcurrentRequests (Concurrent API Requests) Limit exceeded.'),
+          { code: REQUEST_LIMIT_EXCEEDED_ERROR_CODE }
+        )
       })
       bottleneckUpdateSpy = jest.spyOn(testClient.rateLimiters.total, 'updateSettings')
     })

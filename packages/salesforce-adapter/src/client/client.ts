@@ -477,8 +477,8 @@ export default class SalesforceClient {
         if (attempts === 1) {
           throw e
         }
-        if (e.code === REQUEST_LIMIT_EXCEEDED_ERROR_CODE) {
-          log.warn('Received %s error from Salesforce. Limiting maximum total concurrent request to %d', REQUEST_LIMIT_EXCEEDED_ERROR_CODE, REQUEST_LIMIT_EXCEEDED_CONCURRENT_LIMIT)
+        if (e.code === REQUEST_LIMIT_EXCEEDED_ERROR_CODE && e.message.toLowerCase().includes('concurrent')) {
+          log.warn('Received %s for concurrent requests error from Salesforce. Limiting maximum total concurrent request to %d', REQUEST_LIMIT_EXCEEDED_ERROR_CODE, REQUEST_LIMIT_EXCEEDED_CONCURRENT_LIMIT)
           this.rateLimiters.total?.updateSettings({
             maxConcurrent: REQUEST_LIMIT_EXCEEDED_CONCURRENT_LIMIT,
           })

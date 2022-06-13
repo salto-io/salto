@@ -246,7 +246,7 @@ export type Workspace = {
     encoding: BufferEncoding
     env?: string
   }): Promise<StaticFile | undefined>
-  getChangedElementsBetween(before: string, after?: string, envName?: string): Promise<ElemID[]>
+  getChangedElementsBetween(after: string, before?: string, envName?: string): Promise<ElemID[]>
 }
 
 type SingleState = {
@@ -928,15 +928,16 @@ export const loadWorkspace = async (
     return result.filter(values.isDefined).flat()
   }
   const getChangedElementsBetween = async (
-    before: string,
-    after?: string,
+    after: string,
+    before?: string,
     envName?: string,
   ): Promise<ElemID[]> => {
     const env = envName ?? currentEnv()
     const workspace = await getWorkspaceState()
-    const beforeTimestamp = Date.parse(before)
-    const afterTimestamp = after ? Date.parse(after) : Date.now()
-    const relevantTimestamps = (await awu(workspace.states[env].changedBy.keys()).toArray()).filter(t => Date.parse(t) >= beforeTimestamp && Date.parse(t) <= afterTimestamp)
+    const beforeTimestamp = before ? Date.parse(before) : Date.now()
+    const afterTimestamp = Date.parse(after)
+    const relevantTimestamps = (await awu(workspace.states[env].changedBy.keys()).toArray())
+      .filter(t => Date.parse(t) <= beforeTimestamp && Date.parse(t) >= afterTimestamp)
     const result = await workspace.states[env].changedBy.getMany(relevantTimestamps) ?? []
     return result.filter(values.isDefined).flat()
   }

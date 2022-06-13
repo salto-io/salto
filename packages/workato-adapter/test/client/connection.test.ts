@@ -17,31 +17,46 @@ import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { mockFunction } from '@salto-io/test-utils'
+import { CredentialError } from '@salto-io/adapter-api'
 import { createConnection, validateCredentials } from '../../src/client/connection'
 
 describe('client connection', () => {
   describe('validateCredentials', () => {
+    const mockGet = jest.fn()
     const mockConnection: clientUtils.APIConnection = {
       get: mockFunction<clientUtils.APIConnection['get']>()
-        .mockImplementationOnce(url => Promise.resolve(
-          url === '/users/me'
-            // eslint-disable-next-line camelcase
-            ? ({ data: { id: 'id123', company_name: 'company123' }, status: 200, statusText: 'OK' })
-            : { data: {}, status: 200, statusText: 'OK' }
-        ))
-        .mockImplementationOnce(url => Promise.resolve(
-          url === '/users/me'
-            ? ({ data: { id: 'id456' }, status: 200, statusText: 'OK' })
-            : { data: {}, status: 200, statusText: 'OK' }
-        )),
+        .mockImplementation(url => mockGet(url)),
       post: mockFunction<clientUtils.APIConnection['post']>(),
       put: mockFunction<clientUtils.APIConnection['put']>(),
       delete: mockFunction<clientUtils.APIConnection['delete']>(),
       patch: mockFunction<clientUtils.APIConnection['patch']>(),
     }
     it('should always extract empty account id', async () => {
+      mockGet.mockImplementationOnce(url => Promise.resolve(
+        url === '/users/me'
+          // eslint-disable-next-line camelcase
+          ? ({ data: { id: 'id123', company_name: 'company123' }, status: 200, statusText: 'OK' })
+          : { data: {}, status: 200, statusText: 'OK' }
+      ))
+      mockGet.mockImplementationOnce(url => Promise.resolve(
+        url === '/users/me'
+          ? ({ data: { id: 'id456' }, status: 200, statusText: 'OK' })
+          : { data: {}, status: 200, statusText: 'OK' }
+      ))
       expect(await validateCredentials({ connection: mockConnection })).toEqual('')
       expect(await validateCredentials({ connection: mockConnection })).toEqual('')
+    })
+    it('should throw credential error when response is 401', async () => {
+      mockGet.mockRejectedValueOnce({ response: { status: 401 } })
+      await expect(validateCredentials({ connection: mockConnection }))
+        .rejects.toThrow(CredentialError)
+    })
+    it('should throw error when response is not 401', async () => {
+      const connectionError = new Error('connection error')
+      Object.assign(connectionError, { response: { status: 404 } })
+      mockGet.mockRejectedValueOnce(connectionError)
+      await expect(validateCredentials({ connection: mockConnection }))
+        .rejects.toThrow(connectionError)
     })
   })
 

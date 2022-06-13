@@ -78,7 +78,7 @@ describe('addDeploymentAnnotations', () => {
               method: 'post',
             },
             remove: {
-              url: '/rest/test/endpoint',
+              url: '/rest/test/endpoint?id={id}',
               method: 'delete',
             },
           },

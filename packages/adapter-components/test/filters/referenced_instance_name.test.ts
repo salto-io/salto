@@ -15,13 +15,12 @@
 */
 
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, isInstanceElement } from '@salto-io/adapter-api'
-import { references } from '@salto-io/adapter-utils'
-import { addReferencesToInstanceNames, updateAllReferences, referencedInstanceNamesFilterCreator } from '../../src/filters/referenced_instance_names'
+import { addReferencesToInstanceNames, referencedInstanceNamesFilterCreator,
+  createReferenceIndex } from '../../src/filters/referenced_instance_names'
 import { FilterWith } from '../../src/filter_utils'
 import { Paginator } from '../../src/client'
 import { createMockQuery } from '../../src/elements/query'
 
-const { getReferences } = references
 const ADAPTER_NAME = 'myAdapter'
 
 describe('referenced instances', () => {
@@ -38,6 +37,13 @@ describe('referenced instances', () => {
       fields: {
         id: { refType: BuiltinTypes.NUMBER },
         parent_book_id: { refType: BuiltinTypes.NUMBER },
+      },
+    })
+    const groupType = new ObjectType({
+      elemID: new ElemID(ADAPTER_NAME, 'group'),
+      fields: {
+        name: { refType: BuiltinTypes.STRING },
+        fav_recipe: { refType: BuiltinTypes.NUMBER },
       },
     })
     const rootBook = new InstanceElement(
@@ -98,8 +104,26 @@ describe('referenced instances', () => {
         book_id: new ReferenceExpression(anotherBook.elemID, anotherBook),
       },
     )
+    const groups = [
+      new InstanceElement(
+        'group1',
+        groupType,
+        {
+          name: 'groupOne',
+          fav_recipe: new ReferenceExpression(recipes[0].elemID, recipes[0]),
+        },
+      ),
+      new InstanceElement(
+        'group2',
+        groupType,
+        {
+          name: 'groupTwo',
+          fav_recipe: new ReferenceExpression(recipes[0].elemID, recipes[0]),
+        },
+      ),
+    ]
     return [recipeType, bookType, ...recipes, anotherBook, rootBook,
-      sameRecipeOne, sameRecipeTwo, lastRecipe]
+      sameRecipeOne, sameRecipeTwo, lastRecipe, groupType, ...groups]
   }
   const config = {
     apiDefinitions: {
@@ -112,6 +136,11 @@ describe('referenced instances', () => {
         recipe: {
           transformation: {
             idFields: ['name', '&book_id'],
+          },
+        },
+        group: {
+          transformation: {
+            idFields: ['name'],
           },
         },
       },
@@ -146,6 +175,8 @@ describe('referenced instances', () => {
         .map(e => e.elemID.getFullName()).sort())
         .toEqual(['myAdapter.book.instance.123_ROOT',
           'myAdapter.book.instance.456_123_ROOT',
+          'myAdapter.group.instance.group1',
+          'myAdapter.group.instance.group2',
           'myAdapter.recipe.instance.lastRecipe_456_123_ROOT',
           'myAdapter.recipe.instance.recipe123_123_ROOT',
           'myAdapter.recipe.instance.recipe456_456_123_ROOT',
@@ -160,29 +191,34 @@ describe('referenced instances', () => {
     const transformationConfigByType = {
       recipe: config.apiDefinitions.types.recipe.transformation,
       book: config.apiDefinitions.types.book.transformation,
+      group: config.apiDefinitions.types.group.transformation,
     }
-    beforeAll(() => {
-      elements = generateElements()
-    })
+
     it('should change name and references correctly', async () => {
+      elements = generateElements()
       const result = await addReferencesToInstanceNames(
-        elements.slice(0, 6),
+        elements.slice(0, 6).concat(elements.slice(8)),
         transformationConfigByType,
         transformationDefaultConfig
       )
-      expect(result.length).toEqual(6)
-      expect(result
+      const sortedResult = result
         .filter(isInstanceElement)
-        .map(i => i.elemID.getFullName()).sort())
+        .map(i => i.elemID.getFullName()).sort()
+      expect(result.length).toEqual(10)
+      expect(sortedResult)
         .toEqual(['myAdapter.book.instance.123_ROOT',
           'myAdapter.book.instance.456_123_ROOT',
+          'myAdapter.group.instance.group1',
+          'myAdapter.group.instance.group2',
+          'myAdapter.recipe.instance.lastRecipe_456_123_ROOT',
           'myAdapter.recipe.instance.recipe123_123_ROOT',
           'myAdapter.recipe.instance.recipe456_456_123_ROOT',
         ])
     })
     it('should not change name for duplicate elemIDs', async () => {
+      elements = generateElements()
       const result = await addReferencesToInstanceNames(
-        elements.slice(0, 2).concat(elements.slice(4)),
+        elements.slice(0, 2).concat(elements.slice(4, 9)),
         transformationConfigByType,
         transformationDefaultConfig
       )
@@ -198,20 +234,20 @@ describe('referenced instances', () => {
           'myAdapter.recipe.instance.sameRecipe',
         ])
     })
-  })
-
-  describe('updateAllReferences function', () => {
-    it('should change all references to from old ElemID to new ElemID', () => {
+    it('should create the correct reference map', () => {
       elements = generateElements()
-      const newElemID = new ElemID(ADAPTER_NAME, 'book', 'instance', 'newRootBook')
-      const instances = elements.filter(isInstanceElement)
-      updateAllReferences(instances, elements[5].elemID, newElemID)
-      const newReferences = instances.map(instance => getReferences(instance, newElemID)).flat()
-      expect(newReferences.length).toEqual(4)
-      expect(newReferences[0].path.getFullName()).toEqual('myAdapter.recipe.instance.recipe123.book_id')
-      expect(newReferences[1].path.getFullName()).toEqual('myAdapter.book.instance.book.parent_book_id')
-      expect(newReferences[2].path.getFullName()).toEqual('myAdapter.recipe.instance.sameRecipe.book_id')
-      expect(newReferences[3].path.getFullName()).toEqual('myAdapter.recipe.instance.sameRecipe.book_id')
+      const bookOrRecipeIns = elements.filter(isInstanceElement)
+        .filter(e => e.elemID.typeName === 'book' || e.elemID.typeName === 'recipe')
+        .map(i => i.elemID.getFullName())
+      const allIns = elements.filter(isInstanceElement)
+      const res = createReferenceIndex(allIns, new Set(bookOrRecipeIns))
+      expect(Object.keys(res)).toEqual([
+        'myAdapter.book.instance.rootBook',
+        'myAdapter.book.instance.book',
+        'myAdapter.recipe.instance.recipe123',
+      ])
+      expect(Object.values(res).map(n => n.length))
+        .toEqual([4, 2, 2])
     })
   })
 })

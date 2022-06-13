@@ -65,10 +65,6 @@ export class StaticFile {
     }
   }
 
-  get content(): Buffer | undefined {
-    return this.internalContent
-  }
-
   async getContent(): Promise<Buffer | undefined> {
     return this.internalContent
   }

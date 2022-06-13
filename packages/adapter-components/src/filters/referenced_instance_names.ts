@@ -14,8 +14,12 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, isInstanceElement, isReferenceExpression, InstanceElement, ElemID, ElemIdGetter } from '@salto-io/adapter-api'
-import { filter, setPath, references, getParents, transformElement } from '@salto-io/adapter-utils'
+import wu from 'wu'
+import { Element, isInstanceElement, isReferenceExpression, InstanceElement, ElemID,
+  ElemIdGetter,
+  ReferenceExpression } from '@salto-io/adapter-api'
+import { filter, references, getParents, transformElement, setPath,
+  walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
@@ -30,7 +34,7 @@ const { awu } = collections.asynciterable
 
 const log = logger(module)
 const { isDefined } = lowerDashValues
-const { getReferences, getUpdatedReference, createReferencesTransformFunc } = references
+const { getUpdatedReference, createReferencesTransformFunc } = references
 
 const createInstanceReferencedNameParts = (
   instance: InstanceElement,
@@ -134,25 +138,65 @@ const createNewInstance = async (
   )
 }
 
-/* Update all references for the renamed instance with the new elemId */
-export const updateAllReferences = (
-  allInstances: InstanceElement[],
-  oldElemId: ElemID,
-  newElemId: ElemID,
-): void => {
-  allInstances
-  // filtering out the renamed element,
-  // its references are taken care of in createNewInstance
-    .filter(instance => oldElemId.getFullName() !== instance.elemID.getFullName())
-    .forEach(instance => {
-      const refs = getReferences(instance, oldElemId)
-      if (refs.length > 0) {
-        refs.forEach(ref => {
-          const updatedReference = getUpdatedReference(ref.value, newElemId)
-          setPath(instance, ref.path, updatedReference)
-        })
+const isReferenceOfSomeElement = (
+  reference: ReferenceExpression,
+  instancesFullName: Set<string>
+): boolean =>
+  instancesFullName.has(reference.elemID.createTopLevelParentID().parent.getFullName())
+
+const getReferencesToElemIds = (
+  element: Element,
+  instancesNamesToRename: Set<string>,
+): { path: ElemID; value: ReferenceExpression }[] => {
+  const refs: { path: ElemID; value: ReferenceExpression }[] = []
+  const findReferences: WalkOnFunc = ({ path, value }) => {
+    if (isReferenceExpression(value)
+      && isReferenceOfSomeElement(value, instancesNamesToRename)) {
+      refs.push({ path, value })
+      return WALK_NEXT_STEP.SKIP
+    }
+    return WALK_NEXT_STEP.RECURSE
+  }
+  walkOnElement({ element, func: findReferences })
+  return refs
+}
+
+/* Update all references for all the renamed instances with the new elemIds */
+const updateAllReferences = ({
+  referenceIndex,
+  instanceOriginalName,
+  nameToInstance,
+  newElemId,
+}:{
+  referenceIndex: Record<string, { path: ElemID; value: ReferenceExpression }[]>
+  instanceOriginalName: string
+  nameToInstance: Record<string, Element>
+  newElemId: ElemID
+}): void => {
+  const referencesToChange = referenceIndex[instanceOriginalName]
+  if (referencesToChange === undefined || referencesToChange.length === 0) {
+    return
+  }
+  const updatedReferenceMap = new Map<string, ReferenceExpression>()
+  referencesToChange
+    .forEach(ref => {
+      const referenceValueFullName = ref.value.elemID.getFullName()
+      if (!updatedReferenceMap.has(referenceValueFullName)) {
+        updatedReferenceMap.set(
+          referenceValueFullName,
+          getUpdatedReference(ref.value, newElemId)
+        )
+      }
+      const updatedReference = updatedReferenceMap.get(referenceValueFullName)
+      const topLevelInstance = nameToInstance[
+        ref.path.createTopLevelParentID().parent.getFullName()
+      ]
+      if (topLevelInstance !== undefined) {
+        setPath(topLevelInstance, ref.path, updatedReference)
       }
     })
+  // We changed all the references to the original instance, so this entry can be removed
+  delete referenceIndex[instanceOriginalName]
 }
 
 /* Create a graph with instance names as nodes and instance name dependencies as edges */
@@ -196,6 +240,18 @@ const createGraph = (
   return graph
 }
 
+export const createReferenceIndex = (
+  allInstances: InstanceElement[],
+  instancesNamesToRename: Set<string>,
+) : Record<string, { path: ElemID; value: ReferenceExpression }[]> => {
+  const allReferences = allInstances
+    .flatMap(instance => getReferencesToElemIds(instance, instancesNamesToRename))
+  const referenceIndex = _(allReferences)
+    .groupBy(({ value }) => value.elemID.createTopLevelParentID().parent.getFullName())
+    .value()
+  return referenceIndex
+}
+
 /*
  * Utility function that finds instance elements whose id relies on the ids of other instances,
  * and replaces them with updated instances with the correct id and file path.
@@ -230,6 +286,11 @@ export const addReferencesToInstanceNames = async (
     instancesToIdFields,
     obj => obj.instance.elemID.getFullName()
   )
+  const nameToInstance = _.keyBy(instances, i => i.elemID.getFullName())
+
+  const elemIdsToRename = new Set(wu(graph.nodeData.keys())
+    .map(instanceName => instanceName.toString()))
+  const referenceIndex = createReferenceIndex(instances, elemIdsToRename)
 
   await awu(graph.evaluationOrder()).forEach(
     async graphNode => {
@@ -244,11 +305,14 @@ export const addReferencesToInstanceNames = async (
           getElemIdFunc,
         )
         const newInstance = await createNewInstance(instance, newNaclName, filePath)
-        updateAllReferences(
-          elements.filter(isInstanceElement),
-          instance.elemID,
-          newInstance.elemID
-        )
+
+        updateAllReferences({
+          referenceIndex,
+          instanceOriginalName: originalFullName,
+          nameToInstance,
+          newElemId: newInstance.elemID,
+        })
+
         const originalInstanceIdx = elements
           .findIndex(e => (e.elemID.getFullName()) === originalFullName)
         elements.splice(originalInstanceIdx, 1, newInstance)
@@ -273,5 +337,5 @@ export const referencedInstanceNamesFilterCreator: <
       transformationDefault,
       getElemIdFunc
     )
-  }, 'Referenced instance names filter'),
+  }, 'referencedInstanceNamesFilter'),
 })

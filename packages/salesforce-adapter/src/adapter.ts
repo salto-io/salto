@@ -324,6 +324,7 @@ export default class SalesforceAdapter implements AdapterOperations {
           useOldProfiles: config.useOldProfiles ?? useOldProfiles,
           fetchProfile,
           elementsSource,
+          separateFieldToFiles: config.fetch?.metadata?.objectsToSeperateFieldsToFiles,
         },
       },
       filterCreators,
@@ -405,13 +406,13 @@ export default class SalesforceAdapter implements AdapterOperations {
     const appliedChangesBeforeRestore = [...result.appliedChanges]
     await filtersRunner.onDeploy(appliedChangesBeforeRestore)
 
-    const sourceElements = _.keyBy(
-      changeGroup.changes.map(getChangeData),
-      elem => elem.elemID.getFullName(),
+    const sourceChanges = _.keyBy(
+      changeGroup.changes,
+      change => getChangeData(change).elemID.getFullName(),
     )
 
     const appliedChanges = await awu(appliedChangesBeforeRestore)
-      .map(change => restoreChangeElement(change, sourceElements, getLookUpName))
+      .map(change => restoreChangeElement(change, sourceChanges, getLookUpName))
       .toArray()
     return {
       appliedChanges,

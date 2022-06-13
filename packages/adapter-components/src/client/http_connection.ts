@@ -16,14 +16,14 @@
 import _ from 'lodash'
 import axios, { AxiosError, AxiosBasicCredentials, AxiosRequestConfig } from 'axios'
 import axiosRetry from 'axios-retry'
-import { AccountId } from '@salto-io/adapter-api'
+import { AccountId, CredentialError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { ClientRetryConfig } from './config'
 import { DEFAULT_RETRY_OPTS } from './constants'
 
 const log = logger(module)
 
-export class UnauthorizedError extends Error {}
+export class UnauthorizedError extends CredentialError {}
 
 export type ResponseValue = {
   [key: string]: unknown

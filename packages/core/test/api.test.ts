@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, DetailedChange, ReferenceExpression, Field } from '@salto-io/adapter-api'
+import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, DetailedChange, ReferenceExpression, Field, CredentialError } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
@@ -187,6 +187,21 @@ describe('api.ts', () => {
       })
       it('should not call flush', () => {
         expect(ws.flush).not.toHaveBeenCalled()
+      })
+    })
+    describe('fetch failed', () => {
+      let ws: workspace.Workspace
+      beforeAll(() => {
+        ws = mockWorkspace({ stateElements: [] })
+      })
+      it('to return credential error', async () => {
+        mockFetchChanges.mockRejectedValueOnce(new CredentialError('test'))
+        const result = await api.fetch(ws, undefined, [mockService])
+        expect(result).toEqual(expect.objectContaining({ fetchErrors: expect.arrayContaining([{ message: 'test', severity: 'Error' }]) }))
+      })
+      it('throw unexpected error', async () => {
+        mockFetchChanges.mockRejectedValueOnce(new Error('test'))
+        await expect(api.fetch(ws, undefined, [mockService])).rejects.toThrow()
       })
     })
   })
@@ -389,17 +404,9 @@ describe('api.ts', () => {
         await api.updateCredentials(ws, newConf)
         expect(ws.updateAccountCredentials).toHaveBeenCalledTimes(1)
       })
-      it('should call validateCredentials', async () => {
-        const newConf = mockConfigInstance.clone()
-        newConf.value.password = 'bla'
-
-        await api.updateCredentials(ws, newConf)
-
-        expect(mockAdapter.validateCredentials).toHaveBeenCalledTimes(1)
-      })
     })
 
-    describe('validateCredentials', () => {
+    describe('verifyCredentials', () => {
       it('should throw if passed unknown account name', () => {
         const newConfType = new ObjectType({
           elemID: new ElemID('unknownAccount'),
@@ -410,7 +417,7 @@ describe('api.ts', () => {
         return expect(api.verifyCredentials(newConf)).rejects
           .toThrow('unknown adapter: unknownAccount')
       })
-      it('should call validateConfig of adapterCreator', async () => {
+      it('should call validateCredentials of adapterCreator', async () => {
         const newConf = mockConfigInstance.clone()
         newConf.value.password = 'bla'
 

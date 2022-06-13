@@ -1382,7 +1382,7 @@ describe('Custom Objects filter', () => {
 
         it('should set assignmentRules instance path correctly', async () => {
           expect(assignmentRulesInstance.path)
-            .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', ASSIGNMENT_RULES_METADATA_TYPE])
+            .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', ASSIGNMENT_RULES_METADATA_TYPE, assignmentRulesInstance.elemID.name])
         })
 
         it('should add PARENT annotation to assignmentRules instance', async () => {
@@ -1406,7 +1406,7 @@ describe('Custom Objects filter', () => {
 
         it('should set leadConvertSettings instance path correctly', async () => {
           expect(leadConvertSettingsInstance.path)
-            .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', LEAD_CONVERT_SETTINGS_METADATA_TYPE])
+            .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', LEAD_CONVERT_SETTINGS_METADATA_TYPE, leadConvertSettingsInstance.elemID.name])
         })
 
         it('should add PARENT annotation to leadConvertSettings instance', async () => {
@@ -1508,7 +1508,7 @@ describe('Custom Objects filter', () => {
 
         it('should set customTab instance path correctly', async () => {
           expect(customTabInstance.path)
-            .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', CUSTOM_TAB_METADATA_TYPE])
+            .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', CUSTOM_TAB_METADATA_TYPE, customTabInstance.elemID.name])
         })
 
         it('should add PARENT annotation to customTab instance', async () => {
@@ -1559,7 +1559,7 @@ describe('Custom Objects filter', () => {
 
         it('should set instance path correctly', () => {
           expect(sharingRulesInstance.path)
-            .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', SHARING_RULES_TYPE])
+            .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', SHARING_RULES_TYPE, sharingRulesInstance.elemID.name])
         })
 
         it('should add PARENT annotation to instance', () => {
@@ -1583,7 +1583,7 @@ describe('Custom Objects filter', () => {
         })
         it('should set instance path', () => {
           expect(sharingRulesInstance.path).toEqual(
-            [SALESFORCE, OBJECTS_PATH, 'Lead', SHARING_RULES_TYPE]
+            [SALESFORCE, OBJECTS_PATH, 'Lead', SHARING_RULES_TYPE, sharingRulesInstance.elemID.name]
           )
         })
 

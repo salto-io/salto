@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, TemplateExpression, toChange } from '@salto-io/adapter-api'
 import { expressions } from '@salto-io/workspace'
 import { changeValidator as unresolvedReferencesValidator } from '../../../../src/core/plan/change_validators/unresolved_references'
 
@@ -92,6 +92,23 @@ describe('unresolved_references', () => {
     expect(errors).toHaveLength(1)
     expect(errors[0].elemID).toEqual(type.elemID)
     expect(errors[0].detailedMessage).toEqual(`Element ${type.elemID.getFullName()} contains unresolved references: ${unresolvedElemId.getFullName()}`)
+  })
+
+  it('should find unresolved references in templates', async () => {
+    const instance = new InstanceElement(
+      'instance',
+      new ObjectType({ elemID: new ElemID('adapter', 'type') }),
+      {
+        value: new TemplateExpression({ parts: ['unresolved', new ReferenceExpression(
+          unresolvedElemId,
+          new expressions.UnresolvedReference(unresolvedElemId)
+        ), 'template'] }),
+      }
+    )
+    const errors = await unresolvedReferencesValidator([toChange({ after: instance })])
+    expect(errors).toHaveLength(1)
+    expect(errors[0].elemID).toEqual(instance.elemID)
+    expect(errors[0].detailedMessage).toEqual(`Element ${instance.elemID.getFullName()} contains unresolved references: ${unresolvedElemId.getFullName()}`)
   })
 
   it('should not return errors if does not have unresolved references', async () => {

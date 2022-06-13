@@ -21,7 +21,7 @@ import {
 import { pathNaclCase, naclCase } from '@salto-io/adapter-utils'
 import { DuckTypeTransformationConfig, DuckTypeTransformationDefaultConfig, getConfigWithDefault } from '../../config'
 import { TYPES_PATH, SUBTYPES_PATH } from '../constants'
-import { hideFields, markServiceIdField } from '../type_elements'
+import { fixFieldTypes, hideFields, markServiceIdField } from '../type_elements'
 
 const ID_SEPARATOR = '__'
 
@@ -38,6 +38,15 @@ type NestedTypeWithNestedTypes = {
   type: ObjectType | ListType | PrimitiveType
   nestedTypes: ObjectType[]
 }
+
+const duckTypeTypeMap: Record<string, PrimitiveType> = {
+  string: BuiltinTypes.STRING,
+  boolean: BuiltinTypes.BOOLEAN,
+  number: BuiltinTypes.NUMBER,
+}
+
+export const toPrimitiveType = (val: string): PrimitiveType =>
+  _.get(duckTypeTypeMap, val, BuiltinTypes.UNKNOWN)
 
 const generateNestedType = ({
   adapterName,
@@ -237,26 +246,34 @@ export const generateType = ({
         ])
     )
 
-  // mark fields as hidden based on config
-  const { fieldsToHide, serviceIdField } = getConfigWithDefault(
+  const transformation = getConfigWithDefault(
     transformationConfigByType[naclName],
     transformationDefaultConfig,
   )
-
-  if (Array.isArray(fieldsToHide)) {
-    hideFields(fieldsToHide, fields, typeName)
-  }
-
-  if (serviceIdField) {
-    markServiceIdField(serviceIdField, fields, typeName)
-  }
+  const { fieldsToHide, serviceIdField, isSingleton } = transformation
 
   const type = new ObjectType({
     elemID: new ElemID(adapterName, naclName),
     fields,
     path,
-    isSettings: transformationConfigByType[naclName]?.isSingleton ?? false,
+    isSettings: isSingleton ?? false,
   })
+
+  fixFieldTypes(
+    { [typeName]: type },
+    { [typeName]: { transformation } },
+    { transformation: transformationDefaultConfig },
+    toPrimitiveType,
+  )
+
+  // mark fields as hidden based on config
+  if (Array.isArray(fieldsToHide)) {
+    hideFields(fieldsToHide, type.fields, typeName)
+  }
+
+  if (serviceIdField) {
+    markServiceIdField(serviceIdField, type.fields, typeName)
+  }
 
   return { type, nestedTypes }
 }

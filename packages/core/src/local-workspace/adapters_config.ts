@@ -40,7 +40,7 @@ const createNaclSource = async (
 
   const staticFileSource = staticFiles.buildStaticFilesSource(
     naclStaticFilesStore,
-    buildLocalStaticFilesCache(localStorage, 'config-cache'),
+    buildLocalStaticFilesCache(localStorage, 'config-cache', remoteMapCreator),
   )
 
   const source = await nacl.naclFilesSource(

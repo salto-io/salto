@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { AdapterAuthentication, ObjectType } from '@salto-io/adapter-api'
-import { addAdapter, installAdapter, LoginStatus, updateCredentials, loadLocalWorkspace } from '@salto-io/core'
+import { addAdapter, installAdapter, LoginStatus, verifyCredentials, updateCredentials, loadLocalWorkspace } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { getPrivateAdaptersNames } from '../../src/formatter'
 import { serviceAddDef, addAction, listAction, loginAction, accountLoginDef } from '../../src/commands/service'
@@ -58,6 +58,7 @@ jest.mock('@salto-io/core', () => {
       }
       return Promise.resolve(mocks.mockAdapterAuthentication(mocks.mockConfigType(adapterName)))
     }),
+    verifyCredentials: jest.fn().mockResolvedValue({ success: true, accountId: '1' }),
     updateCredentials: jest.fn().mockResolvedValue(true),
     getLoginStatuses: jest.fn().mockImplementation((
       _workspace: Workspace,
@@ -438,7 +439,7 @@ describe('service command group', () => {
 
         describe('when called with invalid credentials', () => {
           beforeEach(async () => {
-            (updateCredentials as jest.Mock).mockRejectedValue(new Error('Rejected!'))
+            (verifyCredentials as jest.Mock).mockRejectedValue(new Error('Rejected!'))
             await addAction({
               ...cliCommandArgs,
               input: {
@@ -450,7 +451,7 @@ describe('service command group', () => {
             })
           })
           afterEach(() => {
-            (updateCredentials as jest.Mock).mockResolvedValue(true)
+            (verifyCredentials as jest.Mock).mockResolvedValue({ success: true, accountId: '1' })
           })
 
           it('should print login error', () => {

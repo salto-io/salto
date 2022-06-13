@@ -47,6 +47,7 @@ import fieldConfigurationIrrelevantFields from './filters/field_configuration/fi
 import fieldConfigurationSplitFilter from './filters/field_configuration/field_configuration_split'
 import fieldConfigurationItemsFilter from './filters/field_configuration/field_configuration_items'
 import fieldConfigurationDependenciesFilter from './filters/field_configuration/field_configuration_dependencies'
+import missingDescriptionsFilter from './filters/missing_descriptions'
 import fieldConfigurationSchemeFilter from './filters/field_configurations_scheme'
 import dashboardFilter from './filters/dashboard/dashboard_deployment'
 import dashboardLayoutFilter from './filters/dashboard/dashboard_layout'
@@ -61,6 +62,7 @@ import transitionIdsFilter from './filters/workflow/transition_ids_filter'
 import stepIdsFilter from './filters/workflow/step_ids_filter'
 import workflowDeployFilter from './filters/workflow/workflow_deploy_filter'
 import workflowModificationFilter from './filters/workflow/workflow_modification_filter'
+import workflowGroupsFilter from './filters/workflow/groups_filter'
 import triggersFilter from './filters/workflow/triggers_filter'
 import workflowSchemeFilter from './filters/workflow_scheme'
 import duplicateIdsFilter from './filters/duplicate_ids'
@@ -130,6 +132,7 @@ export const DEFAULT_FILTERS = [
   workflowPropertiesFilter,
   workflowDeployFilter,
   workflowModificationFilter,
+  workflowGroupsFilter,
   workflowSchemeFilter,
   issueTypeSchemeReferences,
   issueTypeSchemeFilter,
@@ -175,6 +178,7 @@ export const DEFAULT_FILTERS = [
   serviceUrlFilter,
   hiddenValuesInListsFilter,
   queryFilter,
+  missingDescriptionsFilter,
   // Must be last
   defaultInstancesDeployFilter,
 ]

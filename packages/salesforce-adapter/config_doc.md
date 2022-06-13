@@ -6,7 +6,8 @@ salesforce {
   client = {
     polling = {
       interval = 10000
-      timeout = 3600000
+      deployTimeout = 3600000
+      fetchTimeout = 1800000
     }
     deploy = {
       rollbackOnError = true
@@ -134,6 +135,7 @@ salesforce {
 | ------------------------------------------------------------| -------------------------------------------------| -----------
 | [include](#metadata-query)                                  | Include everything                               | Specified the metadata to fetch. Metadata that does not match any of the include criteria will not be fetched
 | [exclude](#metadata-query)                                  | [] (Exclude nothing)                             | Specified the metadata to not fetch. Metadata that matches any of the exclude criteria will not be fetched even if it also matches some of the include criteria
+| objectsToSeperateFieldsToFiles                              | [] (Don't split any objects)                     | Specified a list of objects which will be stored as one field per nacl file
 
 ## Metadata Query
 | Name                                                        | Default when undefined                           | Description
@@ -188,10 +190,11 @@ salesforce {
 
 #### Client polling options
 
-| Name      | Default when undefined | Description
-|-----------|------------------------|------------
-| interval  | `3000` (3 seconds)       | The interval (milliseconds) at which the client checks wether the operation completed
-| timeout   | `5400000` (1.5 hours)    | The timeout (milliseconds) for giving up on a long running operation
+| Name          | Default when undefined | Description
+|---------------|------------------------|------------
+| interval      | `3000` (3 seconds)     | The interval (milliseconds) at which the client checks wether the operation completed
+| deployTimeout | `5400000` (1.5 hours)  | The timeout (milliseconds) on deploy operations
+| fetchTimeout  | `1800000` (30 minutes) | The timeout (milliseconds) on fetch operations
 
 #### Client deploy options
 

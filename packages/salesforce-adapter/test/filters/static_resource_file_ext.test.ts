@@ -49,7 +49,7 @@ describe('Static Resource File Extension Filter', () => {
 
     const updatedContent = staticResourceInstance.value[METADATA_CONTENT_FIELD]
     expect(isStaticFile(updatedContent)).toEqual(true)
-    expect((updatedContent as StaticFile).content).toEqual(content)
+    expect(await (updatedContent as StaticFile).getContent()).toEqual(content)
     expect((updatedContent as StaticFile).filepath)
       .toEqual('salesforce/staticresources/filename.png')
   })
@@ -62,7 +62,7 @@ describe('Static Resource File Extension Filter', () => {
 
     const updatedContent = staticResourceInstance.value[METADATA_CONTENT_FIELD]
     expect(isStaticFile(updatedContent)).toEqual(true)
-    expect((updatedContent as StaticFile).content).toEqual(content)
+    expect(await (updatedContent as StaticFile).getContent()).toEqual(content)
     expect((updatedContent as StaticFile).filepath).toEqual(filepath)
   })
 
@@ -74,7 +74,7 @@ describe('Static Resource File Extension Filter', () => {
 
     const updatedContent = staticResourceInstance.value[METADATA_CONTENT_FIELD]
     expect(isStaticFile(updatedContent)).toEqual(true)
-    expect((updatedContent as StaticFile).content).toEqual(content)
+    expect(await (updatedContent as StaticFile).getContent()).toEqual(content)
     expect((updatedContent as StaticFile).filepath).toEqual(filepath)
   })
 

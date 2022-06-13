@@ -70,6 +70,7 @@ const REQUEST_HEADERS = {
 
 const UNAUTHORIZED_STATUSES = [401, 403]
 const HTTP_SERVER_ERROR_INITIAL = '5'
+const RETRYABLE_ERROR_CODES = ['SSS_REQUEST_LIMIT_EXCEEDED']
 
 const ACTIVATION_KEY_APP_VERSION = '0.1.3'
 const CONFIG_TYPES_APP_VERSION = '0.1.4'
@@ -122,7 +123,9 @@ export default class SuiteAppClient {
       {
         ...retryOptions,
         retryCondition: err => retryOptions.retryCondition?.(err)
-          || String(err.response?.status).startsWith(HTTP_SERVER_ERROR_INITIAL),
+          || String(err.response?.status).startsWith(HTTP_SERVER_ERROR_INITIAL)
+          || RETRYABLE_ERROR_CODES.some(code =>
+            code === err.response?.data?.error?.code?.toUpperCase()),
       }
     )
 

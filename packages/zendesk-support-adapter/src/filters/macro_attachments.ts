@@ -93,7 +93,7 @@ const addAttachment = async (client: ZendeskClient, instance: InstanceElement):
 ReturnType<typeof client.post> => {
   const form = new FormData()
   const fileContent = isStaticFile(instance.value.content)
-    ? instance.value.content.content
+    ? await instance.value.content.getContent()
     : instance.value.content
   form.append('attachment', fileContent, instance.value.filename)
   form.append('filename', instance.value.filename)

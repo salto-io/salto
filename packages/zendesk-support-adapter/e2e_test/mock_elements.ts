@@ -69,7 +69,7 @@ export const mockDefaultValues: Record<string, Values> = {
       view_deleted_tickets: true,
       ticket_tag_editing: true,
       twitter_search_access: false,
-      forum_access_restricted_content: true,
+      forum_access_restricted_content: false,
       end_user_list_access: 'full',
       ticket_access: 'all',
       ticket_comment_access: 'public',

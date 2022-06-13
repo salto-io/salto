@@ -139,7 +139,7 @@ const deployWorkflowModification = async ({
     })
   } catch (err) {
     await cleanTempInstance()
-    if (err.response?.data?.errorMessages.some((message: string) => message.includes('is missing the mappings required for statuses with IDs'))) {
+    if (err.response?.data?.errorMessages?.some((message: string) => message.includes('is missing the mappings required for statuses with IDs'))) {
       throw new Error(`Modification to an active workflow ${getChangeData(change).elemID.getFullName()} is not backward compatible`)
     }
     throw err
@@ -184,7 +184,12 @@ const filter: FilterCreator = ({ client, config, elementsSource, paginator }) =>
 
     const workflowSchemes = await awu(await elementsSource.list())
       .filter(id => id.typeName === WORKFLOW_SCHEME_TYPE_NAME)
+      .filter(id => id.idType === 'instance')
       .map(id => elementsSource.get(id))
+      // instance.value.id is undefined when the workflow scheme
+      // is an addition change in the current deployment and was
+      // not deployed yet
+      .filter(instance => instance.value.id !== undefined)
       .toArray()
 
     const deployResult = await deployChanges(

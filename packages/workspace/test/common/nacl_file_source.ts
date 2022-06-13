@@ -52,6 +52,16 @@ export const createMockNaclFileSource = (
     Object.entries(naclFiles).filter(([_filename, fileElements]) => fileElements.find(
       element => resolvePath(element, elemID) !== undefined
     ) !== undefined).map(([filename, _elements]) => filename)
+  const getElementFileNames = (): Map<string, string[]> =>
+    new Map(_(naclFiles)
+      .entries()
+      .flatMap(([filename, elementsInFile]) => elementsInFile
+        .map(element => ({ filename, element: element.elemID.getFullName() })))
+      .groupBy('element')
+      .mapValues(pairs => pairs.map(pair => pair.filename))
+      .entries()
+      .value())
+
   return ({
     list: mockFunction<NaclFilesSource['list']>().mockImplementation(async () => awu(currentElements.map(e => e.elemID))),
     isEmpty: mockFunction<NaclFilesSource['isEmpty']>().mockImplementation(async () => currentElements.length === 0),
@@ -102,12 +112,14 @@ export const createMockNaclFileSource = (
         data: {
           errors: () => Promise.resolve([]),
           referenced: () => Promise.resolve([]),
+          staticFiles: () => Promise.resolve([]),
         },
         elements: () => Promise.resolve(naclFiles[filename] || []),
         buffer: '',
       })
     ),
     getElementNaclFiles: mockFunction<NaclFilesSource['getElementNaclFiles']>().mockImplementation(async elemID => getElementNaclFiles(elemID)),
+    getElementFileNames: mockFunction<NaclFilesSource['getElementFileNames']>().mockImplementation(async () => getElementFileNames()),
     clone: jest.fn().mockRejectedValue(new Error('not implemented in mock')),
     getElementReferencedFiles: mockFunction<NaclFilesSource['getElementReferencedFiles']>().mockResolvedValue([]),
     load: mockFunction<NaclFilesSource['load']>().mockImplementation(

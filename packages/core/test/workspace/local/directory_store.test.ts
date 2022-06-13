@@ -17,7 +17,7 @@ import * as path from 'path'
 import readdirp from 'readdirp'
 import {
   stat, exists, readFile, replaceContents, mkdirp, rm, isEmptyDir,
-  rename, existsSync, readFileSync, statSync, notFoundAsUndefined,
+  rename, notFoundAsUndefined,
 } from '@salto-io/file'
 import { localDirectoryStore, createExtensionFileFilter } from '../../../src/local-workspace/dir_store'
 
@@ -47,11 +47,8 @@ describe('localDirectoryStore', () => {
   })
 
   const mockStat = stat as unknown as jest.Mock
-  const mockStatSync = statSync as unknown as jest.Mock
   const mockFileExists = exists as jest.Mock
-  const mockFileSyncExists = existsSync as jest.Mock
   const mockReadFile = readFile as unknown as jest.Mock
-  const mockReadFileSync = readFileSync as unknown as jest.Mock
   const mockReaddirp = readdirp.promise as jest.Mock
   const mockReplaceContents = replaceContents as jest.Mock
   const mockMkdir = mkdirp as jest.Mock
@@ -149,47 +146,6 @@ describe('localDirectoryStore', () => {
       expect(mockFileExists.mock.calls[0][0]).toMatch(path.join(baseDir, bufferFileName))
       expect(mockReadFile.mock.calls[0][0]).toMatch(path.join(baseDir, bufferFileName))
       expect(mockReadFile.mock.calls[0][1]).toEqual({ encoding: undefined })
-    })
-  })
-
-  describe('sync get', () => {
-    it('does not return the file if it does not exist', () => {
-      const baseDir = 'not-exists'
-      const naclFileName = 'blabla/notexist.nacl'
-      mockFileSyncExists.mockReturnValue(false)
-      const naclFile = localDirectoryStore({ baseDir, name: '', encoding }).getSync(naclFileName)
-      expect(naclFile).toBeUndefined()
-      expect(mockFileSyncExists.mock.calls[0][0]).toMatch(path.join(baseDir, naclFileName))
-      expect(mockReadFileSync).not.toHaveBeenCalled()
-    })
-
-    it('returns the file if it exist for string dir store', () => {
-      const baseDir = 'exists'
-      const naclFileName = 'blabla/exist.nacl'
-      const content = 'content'
-      mockFileSyncExists.mockReturnValue(true)
-      mockReadFileSync.mockReturnValue(content)
-      mockStatSync.mockReturnValue({ mtimeMs: 7 })
-      const naclFile = localDirectoryStore({ baseDir, name: '', encoding }).getSync(naclFileName)
-      expect(naclFile?.buffer).toBe(content)
-      expect(mockFileSyncExists.mock.calls[0][0]).toMatch(path.join(baseDir, naclFileName))
-      expect(mockReadFileSync.mock.calls[0][0]).toMatch(path.join(baseDir, naclFileName))
-      expect(mockReadFileSync.mock.calls[0][1]).toEqual({ encoding })
-    })
-
-    it('returns the file if it exist for Buffer dir store', () => {
-      const baseDir = '/base'
-      const bufferStore = localDirectoryStore({ baseDir, name: '' })
-      const bufferFileName = 'someBufferFile.ext'
-      const content = Buffer.from('content')
-      mockFileSyncExists.mockReturnValue(true)
-      mockReadFileSync.mockReturnValue(content)
-      mockStatSync.mockReturnValue({ mtimeMs: 7 })
-      const bufferFile = bufferStore.getSync(bufferFileName)
-      expect(bufferFile?.buffer).toBe(content)
-      expect(mockFileSyncExists.mock.calls[0][0]).toMatch(path.join(baseDir, bufferFileName))
-      expect(mockReadFileSync.mock.calls[0][0]).toMatch(path.join(baseDir, bufferFileName))
-      expect(mockReadFileSync.mock.calls[0][1]).toEqual({ encoding: undefined })
     })
   })
 

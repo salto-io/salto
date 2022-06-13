@@ -23,6 +23,8 @@ export abstract class InvalidStaticFile {
 }
 
 export type StaticFilesSource = {
+  // Load is optional for backwards compatibility
+  load?(): Promise<string[]>
   getStaticFile: (filepath: string, encoding: BufferEncoding) =>
     Promise<StaticFile | InvalidStaticFile>
   getContent: (filepath: string) => Promise<Buffer>

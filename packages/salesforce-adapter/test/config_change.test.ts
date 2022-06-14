@@ -28,6 +28,7 @@ describe('Config Changes', () => {
         exclude: [
           { metadataType: 'Type1' },
         ],
+        objectsToSeperateFieldsToFiles: ['Type2'],
       },
       data: {
         includeObjects: [includedObjectName],
@@ -170,6 +171,27 @@ In order to complete the fetch operation, Salto needs to stop managing these ite
         expect(newConfig?.[0].value.maxItemsInRetrieveRequest)
           .toEqual(MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST)
       })
+    })
+  })
+
+  describe('metadata suggestions', () => {
+    let newConfig: InstanceElement | undefined
+
+    beforeEach(() => {
+      const suggestions: ConfigChangeSuggestion[] = [
+        {
+          type: 'metadataExclude',
+          value: { metadataType: 'ExcludedType' },
+        },
+      ]
+
+      newConfig = getConfigFromConfigChanges(suggestions, currentConfig)?.config[0]
+    })
+    it('should add new exlcuded type', () => {
+      expect(newConfig?.value?.fetch?.metadata?.exclude).toEqual([{ metadataType: 'Type1' }, { metadataType: 'ExcludedType' }])
+    })
+    it('should not overwrite other settings', () => {
+      expect(newConfig?.value?.fetch?.metadata?.objectsToSeperateFieldsToFiles).toEqual(['Type2'])
     })
   })
 })

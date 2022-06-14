@@ -20,7 +20,7 @@ import { AUTOMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA, NOTIFIC
 import { createReference, findType } from '../utils'
 import { createKanbanBoardValues, createScrumBoardValues } from './board'
 import { createContextValues, createFieldValues } from './field'
-import { createFieldConfigurationValues } from './fieldConfiguration'
+import { createFieldConfigurationItemValues, createFieldConfigurationValues } from './fieldConfiguration'
 import { createFieldConfigurationSchemeValues } from './fieldConfigurationScheme'
 import { createIssueTypeSchemeValues } from './issueTypeScheme'
 import { createIssueTypeScreenSchemeValues } from './issueTypeScreenScheme'
@@ -47,15 +47,16 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
   )
 
   const field = new InstanceElement(
-    `${randomString}${CUSTOM_FIELDS_SUFFIX}`,
+    `${randomString}__${CUSTOM_FIELDS_SUFFIX}`,
     findType('Field', fetchedElements),
     createFieldValues(randomString),
   )
 
+  const fieldContextName = naclCase(`${randomString}__${CUSTOM_FIELDS_SUFFIX}_${randomString}`)
   const fieldContext = new InstanceElement(
-    naclCase(`${randomString}${CUSTOM_FIELDS_SUFFIX}_${randomString}`),
+    fieldContextName,
     findType('CustomFieldContext', fetchedElements),
-    createContextValues(randomString, fetchedElements),
+    createContextValues(randomString, fieldContextName, fetchedElements),
     undefined,
     { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(field.elemID, field)] }
   )
@@ -173,7 +174,19 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
   const fieldConfiguration = new InstanceElement(
     randomString,
     findType('FieldConfiguration', fetchedElements),
-    createFieldConfigurationValues(randomString, fetchedElements),
+    createFieldConfigurationValues(randomString),
+  )
+
+  const fieldConfigurationItem = new InstanceElement(
+    `${randomString}_Assignee`,
+    findType('FieldConfigurationItem', fetchedElements),
+    createFieldConfigurationItemValues(fetchedElements),
+    undefined,
+    {
+      [CORE_ANNOTATIONS.PARENT]: [
+        new ReferenceExpression(fieldConfiguration.elemID, fieldConfiguration),
+      ],
+    }
   )
 
   const securityLevel = new InstanceElement(
@@ -209,6 +222,14 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
     createWebhookValues(randomString),
   )
 
+  const group = new InstanceElement(
+    randomString,
+    findType('Group', fetchedElements),
+    {
+      name: randomString,
+    },
+  )
+
   return [
     [issueType],
     [field],
@@ -229,9 +250,11 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
     [issueTypeScheme],
     [projectRole],
     [fieldConfiguration],
+    [fieldConfigurationItem],
     [securityScheme, securityLevel],
     [notificationScheme],
     [automation],
     [webhook],
+    [group],
   ]
 }

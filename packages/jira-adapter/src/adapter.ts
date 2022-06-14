@@ -40,11 +40,14 @@ import boardDeploymentFilter from './filters/board/board_deployment'
 import automationDeploymentFilter from './filters/automation/automation_deployment'
 import webhookFilter from './filters/webhook/webhook'
 import screenFilter from './filters/screen/screen'
-import mapListsFilter from './filters/map_lists'
 import missingStatusesFilter from './filters/statuses/missing_statuses'
 import issueTypeScreenSchemeFilter from './filters/issue_type_screen_scheme'
-import fieldConfigurationFilter from './filters/field_configuration'
-import fieldConfigurationIrrelevantFields from './filters/field_configuration_irrelevant_fields'
+import fieldConfigurationFilter from './filters/field_configuration/field_configuration'
+import fieldConfigurationIrrelevantFields from './filters/field_configuration/field_configuration_irrelevant_fields'
+import fieldConfigurationSplitFilter from './filters/field_configuration/field_configuration_split'
+import fieldConfigurationItemsFilter from './filters/field_configuration/field_configuration_items'
+import fieldConfigurationDependenciesFilter from './filters/field_configuration/field_configuration_dependencies'
+import missingDescriptionsFilter from './filters/missing_descriptions'
 import fieldConfigurationSchemeFilter from './filters/field_configurations_scheme'
 import dashboardFilter from './filters/dashboard/dashboard_deployment'
 import dashboardLayoutFilter from './filters/dashboard/dashboard_layout'
@@ -59,6 +62,7 @@ import transitionIdsFilter from './filters/workflow/transition_ids_filter'
 import stepIdsFilter from './filters/workflow/step_ids_filter'
 import workflowDeployFilter from './filters/workflow/workflow_deploy_filter'
 import workflowModificationFilter from './filters/workflow/workflow_modification_filter'
+import workflowGroupsFilter from './filters/workflow/groups_filter'
 import triggersFilter from './filters/workflow/triggers_filter'
 import workflowSchemeFilter from './filters/workflow_scheme'
 import duplicateIdsFilter from './filters/duplicate_ids'
@@ -128,6 +132,7 @@ export const DEFAULT_FILTERS = [
   workflowPropertiesFilter,
   workflowDeployFilter,
   workflowModificationFilter,
+  workflowGroupsFilter,
   workflowSchemeFilter,
   issueTypeSchemeReferences,
   issueTypeSchemeFilter,
@@ -151,6 +156,7 @@ export const DEFAULT_FILTERS = [
   notificationSchemeDeploymentFilter,
   issueTypeScreenSchemeFilter,
   fieldConfigurationFilter,
+  fieldConfigurationItemsFilter,
   fieldConfigurationSchemeFilter,
   userFilter,
   forbiddenPermissionSchemeFilter,
@@ -162,14 +168,17 @@ export const DEFAULT_FILTERS = [
   fieldReferencesFilter,
   // Must run after fieldReferencesFilter
   fieldConfigurationIrrelevantFields,
+  // Must run after fieldConfigurationIrrelevantFields
+  fieldConfigurationSplitFilter,
+  // Must run after fieldConfigurationSplitFilter
+  fieldConfigurationDependenciesFilter,
   // Must run after fieldReferencesFilter
   sortListsFilter,
-  // Must run after fieldReferencesFilter
-  mapListsFilter,
   serviceUrlInformationFilter,
   serviceUrlFilter,
   hiddenValuesInListsFilter,
   queryFilter,
+  missingDescriptionsFilter,
   // Must be last
   defaultInstancesDeployFilter,
 ]

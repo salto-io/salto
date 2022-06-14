@@ -48,6 +48,19 @@ import getChangeValidator from '../src/change_validator'
 import { FetchByQueryFunc } from '../src/change_validators/safe_deploy'
 import { getCustomTypesNames } from '../src/autogen/types'
 
+const DEFAULT_SDF_DEPLOY_PARAMS = {
+  additionalDependencies: {
+    include: {
+      features: [],
+      objects: [],
+    },
+    exclude: {
+      features: [],
+      objects: [],
+    },
+  },
+}
+
 jest.mock('../src/config', () => ({
   ...jest.requireActual<{}>('../src/config'),
   getConfigFromConfigChanges: jest.fn(),
@@ -591,16 +604,7 @@ describe('Adapter', () => {
           .toHaveBeenCalledWith(
             [await toCustomizationInfo(expectedResolvedInstance)],
             undefined,
-            {
-              include: {
-                features: [],
-                objects: [],
-              },
-              exclude: {
-                features: [],
-                objects: [],
-              },
-            }
+            DEFAULT_SDF_DEPLOY_PARAMS
           )
         expect(post.isEqual(instance)).toBe(true)
       })
@@ -613,16 +617,7 @@ describe('Adapter', () => {
         expect(client.deploy).toHaveBeenCalledWith(
           [await toCustomizationInfo(fileInstance)],
           undefined,
-          {
-            include: {
-              features: [],
-              objects: [],
-            },
-            exclude: {
-              features: [],
-              objects: [],
-            },
-          }
+          DEFAULT_SDF_DEPLOY_PARAMS
         )
         expect(post.isEqual(fileInstance)).toBe(true)
       })
@@ -635,16 +630,7 @@ describe('Adapter', () => {
         expect(client.deploy).toHaveBeenCalledWith(
           [await toCustomizationInfo(folderInstance)],
           undefined,
-          {
-            include: {
-              features: [],
-              objects: [],
-            },
-            exclude: {
-              features: [],
-              objects: [],
-            },
-          }
+          DEFAULT_SDF_DEPLOY_PARAMS
         )
         expect(post.isEqual(folderInstance)).toBe(true)
       })
@@ -659,18 +645,13 @@ describe('Adapter', () => {
             ],
           },
         })
-        expect(client.deploy).toHaveBeenCalledWith(expect.arrayContaining(
-          [await toCustomizationInfo(folderInstance), await toCustomizationInfo(fileInstance)]
-        ), undefined, {
-          include: {
-            features: [],
-            objects: [],
-          },
-          exclude: {
-            features: [],
-            objects: [],
-          },
-        })
+        expect(client.deploy).toHaveBeenCalledWith(
+          expect.arrayContaining(
+            [await toCustomizationInfo(folderInstance), await toCustomizationInfo(fileInstance)]
+          ),
+          undefined,
+          DEFAULT_SDF_DEPLOY_PARAMS
+        )
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(2)
       })
@@ -687,18 +668,13 @@ describe('Adapter', () => {
             ],
           },
         })
-        expect(client.deploy).toHaveBeenCalledWith(expect.arrayContaining(
-          [await toCustomizationInfo(folderInstance), await toCustomizationInfo(fileInstance)]
-        ), undefined, {
-          include: {
-            features: [],
-            objects: [],
-          },
-          exclude: {
-            features: [],
-            objects: [],
-          },
-        })
+        expect(client.deploy).toHaveBeenCalledWith(
+          expect.arrayContaining(
+            [await toCustomizationInfo(folderInstance), await toCustomizationInfo(fileInstance)]
+          ),
+          undefined,
+          DEFAULT_SDF_DEPLOY_PARAMS
+        )
         expect(result.errors).toHaveLength(1)
         expect(result.errors).toEqual([clientError])
         expect(result.appliedChanges).toHaveLength(0)
@@ -727,16 +703,7 @@ describe('Adapter', () => {
           .toHaveBeenCalledWith(
             [await toCustomizationInfo(expectedResolvedInstance)],
             undefined,
-            {
-              include: {
-                features: [],
-                objects: [],
-              },
-              exclude: {
-                features: [],
-                objects: [],
-              },
-            },
+            DEFAULT_SDF_DEPLOY_PARAMS
           )
         expect(post).toEqual(instance)
       })
@@ -749,16 +716,7 @@ describe('Adapter', () => {
         expect(client.deploy).toHaveBeenCalledWith(
           [await toCustomizationInfo(fileInstance)],
           undefined,
-          {
-            include: {
-              features: [],
-              objects: [],
-            },
-            exclude: {
-              features: [],
-              objects: [],
-            },
-          }
+          DEFAULT_SDF_DEPLOY_PARAMS
         )
         expect(post).toEqual(fileInstance)
       })
@@ -771,16 +729,7 @@ describe('Adapter', () => {
         expect(client.deploy).toHaveBeenCalledWith(
           [await toCustomizationInfo(folderInstance)],
           undefined,
-          {
-            include: {
-              features: [],
-              objects: [],
-            },
-            exclude: {
-              features: [],
-              objects: [],
-            },
-          }
+          DEFAULT_SDF_DEPLOY_PARAMS
         )
         expect(post).toEqual(folderInstance)
       })
@@ -802,16 +751,7 @@ describe('Adapter', () => {
           .toHaveBeenCalledWith(
             [await toCustomizationInfo(expectedResolvedAfter)],
             undefined,
-            {
-              include: {
-                features: [],
-                objects: [],
-              },
-              exclude: {
-                features: [],
-                objects: [],
-              },
-            }
+            DEFAULT_SDF_DEPLOY_PARAMS
           )
         expect(post).toEqual(after)
       })
@@ -888,13 +828,13 @@ describe('Adapter', () => {
           [custInfo],
           undefined,
           {
-            include: {
-              objects: ['addedObject'],
-              features: ['addedFeature'],
-            },
-            exclude: {
-              objects: [],
-              features: [],
+            ...DEFAULT_SDF_DEPLOY_PARAMS,
+            additionalDependencies: {
+              ...DEFAULT_SDF_DEPLOY_PARAMS.additionalDependencies,
+              include: {
+                objects: ['addedObject'],
+                features: ['addedFeature'],
+              },
             },
           }
         )
@@ -905,16 +845,7 @@ describe('Adapter', () => {
         expect(client.deploy).toHaveBeenCalledWith(
           [custInfo],
           undefined,
-          {
-            include: {
-              features: [],
-              objects: [],
-            },
-            exclude: {
-              features: [],
-              objects: [],
-            },
-          }
+          DEFAULT_SDF_DEPLOY_PARAMS
         )
       })
     })
@@ -939,10 +870,13 @@ describe('Adapter', () => {
         adapter.deployModifiers
 
         expect(getChangeValidatorMock).toHaveBeenCalledWith({
+          client: expect.anything(),
           withSuiteApp: expect.anything(),
           warnStaleData: false,
           fetchByQuery: expect.anything(),
           deployReferencedElements: expect.anything(),
+          validate: expect.anything(),
+          additionalDependencies: expect.anything(),
         })
       })
 
@@ -966,10 +900,13 @@ describe('Adapter', () => {
         adapter.deployModifiers
 
         expect(getChangeValidatorMock).toHaveBeenCalledWith({
+          client: expect.anything(),
           withSuiteApp: expect.anything(),
           warnStaleData: false,
           fetchByQuery: expect.anything(),
           deployReferencedElements: expect.anything(),
+          validate: expect.anything(),
+          additionalDependencies: expect.anything(),
         })
       })
 
@@ -993,10 +930,13 @@ describe('Adapter', () => {
         adapter.deployModifiers
 
         expect(getChangeValidatorMock).toHaveBeenCalledWith({
+          client: expect.anything(),
           withSuiteApp: expect.anything(),
           warnStaleData: true,
           fetchByQuery: expect.anything(),
           deployReferencedElements: expect.anything(),
+          validate: expect.anything(),
+          additionalDependencies: expect.anything(),
         })
       })
     })

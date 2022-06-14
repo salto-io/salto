@@ -41,24 +41,20 @@ const getChange = (): Change<InstanceElement> => {
 }
 
 describe('config features filter', () => {
-  // eslint-disable-next-line camelcase
-  const companyFeatures = featuresType()
   describe('onFetch', () => {
-    const origInstance = new InstanceElement(
-      '_config',
-      companyFeatures,
-      {
-        feature: [
-          { id: 'ABC', label: 'A Blue Cat', status: 'ENABLED' },
-          { id: 'DEF', label: 'Delightful Elephents Family', status: 'DISABLED' },
-          { id: 'NO', label: 'Not O', status: 'UNKNOWN' },
-        ],
-      }
-    )
-
     let instance: InstanceElement
     beforeEach(() => {
-      instance = origInstance.clone()
+      instance = new InstanceElement(
+        '_config',
+        featuresType(),
+        {
+          feature: [
+            { id: 'ABC', label: 'A Blue Cat', status: 'ENABLED' },
+            { id: 'DEF', label: 'Delightful Elephents Family', status: 'DISABLED' },
+            { id: 'NO', label: 'Not O', status: 'UNKNOWN' },
+          ],
+        }
+      )
     })
 
     it('should transform values', async () => {
@@ -69,6 +65,11 @@ describe('config features filter', () => {
       expect(type.fields.DEF.annotations).toEqual({ label: 'Delightful Elephents Family' })
       expect(type.fields.NO.annotations).toEqual({ label: 'Not O' })
       expect(instance.value).toEqual({ ABC: true, DEF: false, NO: 'UNKNOWN' })
+    })
+    it('should remove features type when there is no instance', async () => {
+      const elements = [featuresType()]
+      await filterCreator().onFetch(elements)
+      expect(elements.length).toEqual(0)
     })
   })
   describe('preDeploy', () => {

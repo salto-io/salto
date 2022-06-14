@@ -17,6 +17,7 @@ import { BuiltinTypes, CORE_ANNOTATIONS, Element, Field, isInstanceElement, MapT
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
+import _ from 'lodash'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { WORKFLOW_TYPE_NAME } from '../../constants'
@@ -99,11 +100,21 @@ const filter: FilterCreator = ({ client, config }) => ({
       )
     }
 
+    const failedWorkflowsIds = new Set<string>()
     await Promise.all(elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
       .filter(isWorkflowInstance)
-      .map(instance => addStepIds(instance, client, config)))
+      .map(async instance => {
+        try {
+          await addStepIds(instance, client, config)
+        } catch (err) {
+          log.warn(`Failed to add stepIds to workflow, removing ${instance.elemID.getFullName()}`)
+          failedWorkflowsIds.add(instance.elemID.getFullName())
+        }
+      }))
+
+    _.remove(elements, element => failedWorkflowsIds.has(element.elemID.getFullName()))
   },
 })
 

@@ -21,9 +21,10 @@ import {
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
   FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, SaltoError,
   isSaltoElementError, ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId,
-  CORE_ANNOTATIONS, AdapterOperationsContext, FetchResult, isAdditionChange,
+  CORE_ANNOTATIONS, AdapterOperationsContext, FetchResult, isAdditionChange, isStaticFile,
+  isAdditionOrModificationChange, Value, StaticFile, isElement,
 } from '@salto-io/adapter-api'
-import { applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements, safeJsonStringify } from '@salto-io/adapter-utils'
+import { applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements, safeJsonStringify, walkOnElement, WalkOnFunc, WALK_NEXT_STEP, setPath, walkOnValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { merger, elementSource, expressions, Workspace, pathIndex, updateElementsWithAlternativeAccount, createAdapterReplacedID, remoteMap } from '@salto-io/workspace'
 import { collections, promises, types, values } from '@salto-io/lowerdash'
@@ -767,6 +768,86 @@ const createEmptyFetchChangeDueToError = (errMsg: string): FetchChangesResult =>
   }
 }
 
+type StaticFileAndElemID = { elemID: ElemID; staticFile: StaticFile }
+
+const getPathsToStaticFiles = (
+  value: Element | Value,
+  elemId: ElemID,
+): StaticFileAndElemID[] => {
+  const staticFilesAndElemIDs: StaticFileAndElemID[] = []
+  const findStaticFilesFn: WalkOnFunc = ({ path, value: val }) => {
+    if (isStaticFile(val)) {
+      staticFilesAndElemIDs.push({ elemID: path, staticFile: val })
+      return WALK_NEXT_STEP.SKIP
+    }
+    return WALK_NEXT_STEP.RECURSE
+  }
+  if (isElement(value)) {
+    walkOnElement({ element: value, func: findStaticFilesFn })
+  } else {
+    walkOnValue({ elemId, value, func: findStaticFilesFn })
+  }
+  return staticFilesAndElemIDs
+}
+
+const fixStaticFilesForFromStateChanges = async (
+  fetchChangesResult: FetchChangesResult,
+  otherWorkspace: Workspace,
+  env: string,
+): Promise<FetchChangesResult> => {
+  const invalidChangeIDs: Set<string> = new Set()
+  const filteredChanges = wu(fetchChangesResult.changes)
+    .map(fetchChange => fetchChange.change)
+    .filter(isAdditionOrModificationChange)
+  await awu(filteredChanges)
+    .forEach(async change => {
+      const staticFiles = getPathsToStaticFiles(
+        change.data.after,
+        change.id,
+      )
+      const changePath = change.id.createTopLevelParentID().path
+      await awu(staticFiles).forEach(async ({ elemID: staticFileValElemID, staticFile }) => {
+        const actualStaticFile = await otherWorkspace.getStaticFile({
+          filepath: staticFile.filepath,
+          encoding: staticFile.encoding,
+          env,
+        })
+        if (!actualStaticFile?.isEqual(staticFile)) {
+          invalidChangeIDs.add(change.id.getFullName())
+          log.warn(
+            'Static files mismatch in fetch from state for change in elemID %s. (stateHash=%s naclHash=%s)',
+            change.id.getFullName(),
+            staticFile.hash,
+            actualStaticFile?.hash,
+          )
+          return
+        }
+        if (isElement(change.data.after)) {
+          setPath(change.data.after, staticFileValElemID, actualStaticFile)
+          return
+        }
+        if (isStaticFile(change.data.after)) {
+          change.data.after = actualStaticFile
+          return
+        }
+        const staticFilePath = staticFileValElemID.createTopLevelParentID().path
+        const relativePath = staticFilePath.slice(changePath.length - 1)
+        _.set(change.data.after, relativePath, actualStaticFile)
+      })
+    })
+  return {
+    ...fetchChangesResult,
+    changes: wu(fetchChangesResult.changes)
+      .filter(change => !invalidChangeIDs.has(change.change.id.getFullName())),
+    errors: fetchChangesResult.errors.concat(
+      Array.from(invalidChangeIDs).map(invalidChangeElemID => ({
+        message: `Dropping changes in element: ${invalidChangeElemID} due to static files hashes mismatch`,
+        severity: 'Error',
+      }))
+    ),
+  }
+}
+
 export const fetchChangesFromWorkspace = async (
   otherWorkspace: Workspace,
   fetchAccounts: string[],
@@ -856,7 +937,7 @@ export const fetchChangesFromWorkspace = async (
     )
     ).flat(),
   ]
-  return createFetchChanges({
+  const fetchChangesResult = await createFetchChanges({
     adapterNames: fetchAccounts,
     currentConfigs,
     getChangesEmitter,
@@ -868,6 +949,13 @@ export const fetchChangesFromWorkspace = async (
     workspaceElements,
     unmergedElements,
   })
+  // We currently cannot access the content of static files from the state so when fetching
+  // from the state we use the content from the NaCls, if there is a mis-match there we have
+  // to drop the change
+  // This will not be needed anymore once we have access to the state static file content
+  return fromState
+    ? fixStaticFilesForFromStateChanges(fetchChangesResult, otherWorkspace, env)
+    : fetchChangesResult
 }
 
 const id = (elemID: ElemID): string => elemID.getFullName()

@@ -31,7 +31,7 @@ export const TYPE_NAME = 'trigger'
 export const TRIGGER_CATEGORY_TYPE_NAME = 'trigger_category'
 const TRIGGER_ORDER_ENTRY_TYPE_NAME = 'trigger_order_entry'
 
-const { RECORDS_PATH, SUBTYPES_PATH, TYPES_PATH } = elementsUtils
+const { RECORDS_PATH, SUBTYPES_PATH, TYPES_PATH, SETTINGS_NESTED_PATH } = elementsUtils
 const log = logger(module)
 
 type TriggerOrderEntry = {
@@ -154,7 +154,7 @@ const filterCreator: FilterCreator = ({ config, client, paginator, fetchQuery })
       ElemID.CONFIG_NAME,
       type,
       { order },
-      [ZENDESK_SUPPORT, RECORDS_PATH, TYPE_NAME, typeNameNaclCase],
+      [ZENDESK_SUPPORT, RECORDS_PATH, SETTINGS_NESTED_PATH, typeNameNaclCase],
     )
     // Those types already exist since we added the empty version of them
     //  via the add remaining types mechanism. So we first need to remove the old versions

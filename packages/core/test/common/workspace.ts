@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Element, ElemID, InstanceElement, ObjectType, SaltoError, Value } from '@salto-io/adapter-api'
+import { BuiltinTypes, Element, ElemID, InstanceElement, ObjectType, SaltoError, Value, StaticFile } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import * as workspace from '@salto-io/workspace'
-import { elementSource, errors as wsErrors } from '@salto-io/workspace'
+import { elementSource, errors as wsErrors, staticFiles } from '@salto-io/workspace'
 import { mockState } from './state'
 
 const mockService = 'salto'
@@ -66,6 +66,27 @@ export const mockErrors = (errors: SaltoError[]): wsErrors.Errors => new wsError
   validation: errors.map(err => ({ elemID: new ElemID('test'), error: err.message, ...err })),
 })
 
+export const mockStaticFilesSource = (
+  files: StaticFile[] = [],
+): staticFiles.StaticFilesSource => ({
+  getStaticFile: jest.fn().mockImplementation((filepath: string, _encoding: BufferEncoding) => (
+    files.find(sf => sf.filepath === filepath) ?? undefined
+  )),
+  getContent: jest.fn().mockImplementation(async (filepath: string) => (
+    await files.find(sf => sf.filepath === filepath)?.getContent() ?? undefined
+  )),
+  persistStaticFile: jest.fn().mockReturnValue([]),
+  flush: jest.fn(),
+  clone: jest.fn(),
+  rename: jest.fn(),
+  getTotalSize: jest.fn(),
+  clear: jest.fn(),
+  delete: jest.fn(),
+  isPathIncluded: jest.fn().mockImplementation(
+    filePath => files.find(f => f.filepath === filePath) !== undefined
+  ),
+})
+
 export const mockWorkspace = ({
   elements = [],
   name = undefined,
@@ -76,6 +97,7 @@ export const mockWorkspace = ({
   accountConfigs = {},
   accountToServiceName = {},
   parsedNaclFiles = {},
+  staticFilesSource = undefined,
 }: {
   elements?: Element[]
   name?: string
@@ -87,6 +109,7 @@ export const mockWorkspace = ({
   getValue?: Promise<Value | undefined>
   accountToServiceName?: Record<string, string>
   parsedNaclFiles?: Record<string, Element[]>
+  staticFilesSource?: staticFiles.StaticFilesSource
 }): workspace.Workspace => {
   const elementIDtoFileMap = Object.entries(parsedNaclFiles).reduce(
     (acc, entry) => {
@@ -137,5 +160,9 @@ export const mockWorkspace = ({
     getParsedNaclFile: async (filename: string) => ({
       elements: async () => parsedNaclFiles[filename],
     }),
+    getStaticFile: ({ filepath, encoding }: { filepath: string; encoding: BufferEncoding }) =>
+      (staticFilesSource
+        ? staticFilesSource.getStaticFile(filepath, encoding)
+        : undefined),
   } as unknown as workspace.Workspace
 }

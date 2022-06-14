@@ -403,6 +403,8 @@ export const mockWorkspace = ({
         date: undefined,
       })
     ),
+    getAllChangedByAuthors: mockFunction<Workspace['getAllChangedByAuthors']>(),
+    getChangedElementsByAuthors: mockFunction<Workspace['getChangedElementsByAuthors']>(),
     promote: mockFunction<Workspace['promote']>(),
     demote: mockFunction<Workspace['demote']>(),
     demoteAll: mockFunction<Workspace['demoteAll']>(),
@@ -414,6 +416,8 @@ export const mockWorkspace = ({
     listUnresolvedReferences: mockFunction<Workspace['listUnresolvedReferences']>(),
     getElementSourceOfPath: mockFunction<Workspace['getElementSourceOfPath']>(),
     getFileEnvs: mockFunction<Workspace['getFileEnvs']>(),
+    getStaticFile: mockFunction<Workspace['getStaticFile']>(),
+    getElementFileNames: mockFunction<Workspace['getElementFileNames']>(),
   }
 }
 

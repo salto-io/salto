@@ -29,6 +29,7 @@ import { addTransitionIds } from './transition_ids_filter'
 import { deployTriggers } from './triggers_deployment'
 import { addStepIds } from './step_ids_filter'
 import { deploySteps } from './steps_deployment'
+import { fixGroupNames } from './groups_filter'
 
 const log = logger(module)
 
@@ -126,6 +127,8 @@ export const deployWorkflow = async (
   instance.value.transitions?.forEach(transition => {
     changeIdsToString(transition.rules?.conditions ?? {})
   })
+
+  fixGroupNames(instance)
 
   await defaultDeployChange({
     change: resolvedChange,

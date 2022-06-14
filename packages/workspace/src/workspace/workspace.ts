@@ -17,7 +17,7 @@ import _ from 'lodash'
 import path from 'path'
 import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
   Value, toChange, isRemovalChange, getChangeData,
-  ReadOnlyElementsSource, isAdditionOrModificationChange } from '@salto-io/adapter-api'
+  ReadOnlyElementsSource, isAdditionOrModificationChange, StaticFile } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { applyDetailedChanges, naclCase, resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
@@ -42,6 +42,7 @@ import { ReadOnlyRemoteMap, RemoteMap, RemoteMapCreator } from './remote_map'
 import { serialize, deserializeMergeErrors, deserializeSingleElement, deserializeValidationErrors } from '../serializer/elements'
 import { AdaptersConfigSource } from './adapters_config_source'
 import { updateReferenceIndexes } from './reference_indexes'
+import { updateChangedByIndex, Author, authorKeyToAuthor, authorToAuthorKey } from './changed_by_index'
 
 const log = logger(module)
 
@@ -175,6 +176,8 @@ export type Workspace = {
   getReferenceTargetsIndex: () =>Promise<ReadOnlyRemoteMap<ElemID[]>>
   getElementOutgoingReferences: (id: ElemID) => Promise<ElemID[]>
   getElementIncomingReferences: (id: ElemID) => Promise<ElemID[]>
+  getAllChangedByAuthors: (envName?: string) => Promise<Author[]>
+  getChangedElementsByAuthors: (authors: Author[], envName?: string) => Promise<ElemID[]>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
   getElementIdsBySelectors: (
     selectors: ElementSelector[],
@@ -183,6 +186,7 @@ export type Workspace = {
     },
     compact?: boolean,
   ) => Promise<AsyncIterable<ElemID>>
+  getElementFileNames: (env?: string) => Promise<Map<string, string[]>>
   getParsedNaclFile: (filename: string) => Promise<ParsedNaclFile | undefined>
   flush: () => Promise<void>
   clone: () => Promise<Workspace>
@@ -236,12 +240,18 @@ export type Workspace = {
   listUnresolvedReferences(completeFromEnv?: string): Promise<UnresolvedElemIDs>
   getElementSourceOfPath(filePath: string, includeHidden?: boolean): Promise<ReadOnlyElementsSource>
   getFileEnvs(filePath: string): {envName: string; isStatic?: boolean}[]
+  getStaticFile(params: {
+    filepath: string
+    encoding: BufferEncoding
+    env?: string
+  }): Promise<StaticFile | undefined>
 }
 
 type SingleState = {
   merged: ElementsSource
   errors: RemoteMap<MergeError[]>
   validationErrors: RemoteMap<ValidationError[]>
+  changedBy: RemoteMap<ElemID[]>
   referenceSources: RemoteMap<ElemID[]>
   referenceTargets: RemoteMap<ElemID[]>
   mapVersions: RemoteMap<number>
@@ -350,6 +360,12 @@ export const loadWorkspace = async (
             namespace: getRemoteMapNamespace('validationErrors', envName),
             serialize: validationErrors => serialize(validationErrors, 'keepRef'),
             deserialize: async data => deserializeValidationErrors(data),
+            persistent,
+          }),
+          changedBy: await remoteMapCreator<ElemID[]>({
+            namespace: getRemoteMapNamespace('changedBy', envName),
+            serialize: val => safeJsonStringify(val.map(id => id.getFullName())),
+            deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
             persistent,
           }),
           referenceSources: await remoteMapCreator<ElemID[]>({
@@ -573,6 +589,13 @@ export const loadWorkspace = async (
         await stateToBuild.states[envName].validationErrors.clear()
       }
       const { changes } = changeResult
+      await updateChangedByIndex(
+        changes,
+        stateToBuild.states[envName].changedBy,
+        stateToBuild.states[envName].mapVersions,
+        stateToBuild.states[envName].merged,
+        changeResult.cacheValid,
+      )
 
       await updateReferenceIndexes(
         changes,
@@ -870,6 +893,23 @@ export const loadWorkspace = async (
     account?: string): Promise<void> => {
     await adaptersConfig.setAdapter(account ?? service, service, newConfig)
   }
+  const getAllChangedByAuthors = async (envName?: string): Promise<Author[]> => {
+    const env = envName ?? currentEnv()
+    const workspace = await getWorkspaceState()
+    const keys = await awu(workspace.states[env].changedBy.keys()).toArray()
+    return keys.map(authorKeyToAuthor)
+  }
+
+  const getChangedElementsByAuthors = async (
+    authors: Author[],
+    envName?: string,
+  ): Promise<ElemID[]> => {
+    const env = envName ?? currentEnv()
+    const workspace = await getWorkspaceState()
+    const result = await workspace.states[env].changedBy.getMany(authors.map(authorToAuthorKey))
+    ?? []
+    return result.filter(values.isDefined).flat()
+  }
   return {
     uid: workspaceConfig.uid,
     name: workspaceConfig.name,
@@ -960,9 +1000,13 @@ export const loadWorkspace = async (
       return await (await getWorkspaceState()).states[currentEnv()]
         .referenceSources.get(id.getFullName()) ?? []
     },
+    getAllChangedByAuthors,
+    getChangedElementsByAuthors,
     getElementNaclFiles: async id => (
       (await getLoadedNaclFilesSource()).getElementNaclFiles(currentEnv(), id)
     ),
+    getElementFileNames: async (env?: string): Promise<Map<string, string[]>> =>
+      (await getLoadedNaclFilesSource()).getElementFileNames(env ?? currentEnv()),
     getTotalSize: async () => (
       (await getLoadedNaclFilesSource()).getTotalSize()
     ),
@@ -1257,6 +1301,8 @@ export const loadWorkspace = async (
         : elementsImpl(includeHidden)
     ),
     getFileEnvs: filePath => naclFilesSource.getFileEnvs(filePath),
+    getStaticFile: async ({ filepath, encoding, env }) =>
+      (naclFilesSource.getStaticFile(filepath, encoding, env ?? currentEnv())),
   }
 }
 

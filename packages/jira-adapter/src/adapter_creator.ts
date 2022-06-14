@@ -117,9 +117,9 @@ export const adapter: Adapter = {
   },
   validateCredentials: async config => {
     const connection = createConnection(createRetryOptions(DEFAULT_RETRY_OPTS))
-    return validateCredentials({
-      connection: await connection.login(credentialsFromConfig(config)),
-    })
+    return validateCredentials(
+      { connection: await connection.login(credentialsFromConfig(config)) }
+    )
   },
   authenticationMethods: {
     basic: {

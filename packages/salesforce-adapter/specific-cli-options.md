@@ -25,8 +25,13 @@ There is configuration for how the salesforce adapter deploys changes to salesfo
 Some of it can be configured in the adapter configuration file, and some parameters should be set for a specific deploy
 
 ### Examples
+#### Run All Local Tests:
 ```bash
 salto deploy -C 'salesforce.client.deploy.checkOnly=true' -C 'salesforce.client.deploy.testLevel=RunLocalTests'
 ```
 
+#### Run Specific Tests:
+```bash
+salto deploy -C 'salesforce.client.deploy.checkOnly=true' -C 'salesforce.client.deploy.testLevel=RunSpecifiedTests' -C 'salesforce.client.deploy.runTests=["TestName1", "TestName2"]'
+```
 

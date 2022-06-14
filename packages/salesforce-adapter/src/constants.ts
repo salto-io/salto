@@ -278,6 +278,7 @@ export const OBJECTS_PATH = 'Objects'
 export const TYPES_PATH = 'Types'
 export const SUBTYPES_PATH = 'Subtypes'
 export const INSTALLED_PACKAGES_PATH = 'InstalledPackages'
+export const OBJECT_FIELDS_PATH = 'Fields'
 
 // Limits
 export const MAX_METADATA_RESTRICTION_VALUES = 500
@@ -304,6 +305,7 @@ export const DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS = {
     'UNABLE_TO_LOCK_ROW',
   ],
 }
+export const MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD = 20
 
 // Metadata types
 export const TOPICS_FOR_OBJECTS_METADATA_TYPE = 'TopicsForObjects'

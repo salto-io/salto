@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 
-import { Change, compareSpecialValues, getChangeData, InstanceElement, isAdditionOrModificationChange, isObjectType, isRemovalChange, isRemovalOrModificationChange, ObjectType, Value } from '@salto-io/adapter-api'
+import { Change, compareSpecialValues, getChangeData, InstanceElement, isAdditionOrModificationChange, isObjectType, isReferenceExpression, isRemovalChange, isRemovalOrModificationChange, ObjectType, Value } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { getParents, resolveChangeElement } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, getParents, resolveChangeElement, resolvePath } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { getLookUpName } from '../../reference_mapping'
 import { setFieldDeploymentAnnotations } from '../../utils'
@@ -44,11 +44,38 @@ const EDITABLE_FIELD_NAMES = [
   'versionIds',
 ]
 
+const resolveDefaultOption = (
+  contextChange: Change<InstanceElement>,
+): Promise<Change<InstanceElement>> =>
+  applyFunctionToChangeData<Change<InstanceElement>>(
+    contextChange,
+    instance => {
+      const clonedInstance = instance.clone();
+
+      ['optionId', 'cascadingOptionId']
+        .filter(fieldName => isReferenceExpression(clonedInstance.value.defaultValue?.[fieldName]))
+        .forEach(fieldName => {
+          // We resolve this values like this and not with resolveChangeElement
+          // is because if we just created these options, the options under instance.value will
+          // include the new option ids while the copied options under the references
+          // resValues won't
+          clonedInstance.value.defaultValue[fieldName] = resolvePath(
+            clonedInstance,
+            clonedInstance.value.defaultValue[fieldName].elemID
+          ).id
+        })
+      return clonedInstance
+    }
+  )
+
 export const updateDefaultValues = async (
   contextChange: Change<InstanceElement>,
   client: clientUtils.HTTPWriteClientInterface,
 ): Promise<void> => {
-  const resolvedChange = await resolveChangeElement(contextChange, getLookUpName)
+  const resolvedChange = await resolveChangeElement(
+    await resolveDefaultOption(contextChange),
+    getLookUpName
+  )
 
   const beforeDefault = isRemovalOrModificationChange(resolvedChange)
     ? resolvedChange.data.before.value.defaultValue

@@ -19,10 +19,12 @@ import {
 import { findInstances } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import wu from 'wu'
 import mime from 'mime-types'
+import { collections } from '@salto-io/lowerdash'
 import { FilterWith } from '../filter'
 import { SALESFORCE, METADATA_CONTENT_FIELD } from '../constants'
+
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -30,10 +32,17 @@ export const STATIC_RESOURCE_METADATA_TYPE_ID = new ElemID(SALESFORCE, 'StaticRe
 export const CONTENT_TYPE = 'contentType'
 const RESOURCE_SUFFIX_LENGTH = 'resource'.length
 
-const modifyFileExtension = (staticResourceInstance: InstanceElement): void => {
+const modifyFileExtension = async (staticResourceInstance: InstanceElement): Promise<void> => {
   const staticFile = staticResourceInstance.value[METADATA_CONTENT_FIELD]
-  if (!isStaticFile(staticFile) || staticFile.content === undefined) {
-    log.debug(`Could not modify file extension for ${staticResourceInstance.elemID.getFullName()} due to invalid StaticFile`)
+  if (!isStaticFile(staticFile)) {
+    log.debug(`Could not modify file extension for ${staticResourceInstance.elemID.getFullName()} because it is not a StaticFile`)
+    return
+  }
+
+  const content = await staticFile.getContent()
+
+  if (content === undefined) {
+    log.debug(`Could not modify file extension for ${staticResourceInstance.elemID.getFullName()} because its content is undefined`)
     return
   }
 
@@ -51,7 +60,7 @@ const modifyFileExtension = (staticResourceInstance: InstanceElement): void => {
   const currentFilepath = staticFile.filepath
   staticResourceInstance.value[METADATA_CONTENT_FIELD] = new StaticFile({
     filepath: `${currentFilepath.slice(0, -RESOURCE_SUFFIX_LENGTH)}${newExtension}`,
-    content: staticFile.content,
+    content,
   })
 }
 
@@ -62,7 +71,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
    */
   onFetch: async (elements: Element[]): Promise<void> => {
     const staticResourceInstances = findInstances(elements, STATIC_RESOURCE_METADATA_TYPE_ID)
-    wu(staticResourceInstances).forEach(modifyFileExtension)
+    await awu(staticResourceInstances).forEach(modifyFileExtension)
   },
 })
 

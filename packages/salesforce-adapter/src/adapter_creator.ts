@@ -35,7 +35,6 @@ import { ConfigChange } from './config_change'
 
 const log = logger(module)
 
-
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
   if (isAccessTokenConfig(config)) {
     return new OauthAccessTokenCredentials({

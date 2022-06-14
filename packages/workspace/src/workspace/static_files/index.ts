@@ -13,6 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { StaticFilesCache, StaticFilesCacheResult } from './cache'
-export { buildStaticFilesSource, LazyStaticFile, AbsoluteStaticFile } from './source'
+export { StaticFilesCache, StaticFilesData } from './cache'
+export { buildStaticFilesSource, buildInMemStaticFilesSource, LazyStaticFile, AbsoluteStaticFile } from './source'
 export { StaticFilesSource, MissingStaticFile, AccessDeniedStaticFile } from './common'

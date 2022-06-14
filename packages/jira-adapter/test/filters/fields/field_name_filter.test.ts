@@ -68,8 +68,49 @@ describe('field_name_filter', () => {
     const elements = [custom, standard]
     await filter.onFetch(elements)
     expect(elements.map(e => e.elemID.name)).toEqual([
-      'standard',
       'custom__c',
+      'standard',
+    ])
+  })
+
+  it('should add field type if configured to', async () => {
+    config.fetch.addTypeToFieldName = true
+    const custom = new InstanceElement(
+      'custom',
+      fieldType,
+      {
+        name: 'custom',
+        schema: {
+          custom: 'prefix:someType',
+        },
+      }
+    )
+
+    const custom2 = new InstanceElement(
+      'custom2',
+      fieldType,
+      {
+        name: 'custom2',
+      }
+    )
+
+    const standard = new InstanceElement(
+      'standard',
+      fieldType,
+      {
+        name: 'standard',
+        schema: {
+          type: 'someType2',
+        },
+      }
+    )
+
+    const elements = [custom, custom2, standard]
+    await filter.onFetch(elements)
+    expect(elements.map(e => e.elemID.name)).toEqual([
+      'custom__someType__c',
+      'custom2',
+      'standard__someType2',
     ])
   })
 

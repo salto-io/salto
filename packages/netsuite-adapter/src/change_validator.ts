@@ -33,6 +33,9 @@ import suiteAppConfigElementsValidator from './change_validators/suiteapp_config
 import undeployableConfigFeaturesValidator from './change_validators/undeployable_config_features'
 import { validateDependsOnInvalidElement } from './change_validators/dependencies'
 import notYetSupportedValuesValidator from './change_validators/not_yet_supported_values'
+import netsuiteClientValidation from './change_validators/client_validation'
+import NetsuiteClient from './client/client'
+import { AdditionalDependencies } from './client/types'
 
 
 const changeValidators: ChangeValidator[] = [
@@ -63,14 +66,32 @@ const nonSuiteAppValidators: ChangeValidator[] = [
  */
 
 
-const getChangeValidator: ({ withSuiteApp, warnStaleData, fetchByQuery, deployReferencedElements }
-  : {
+const getChangeValidator: ({
+  client,
+  withSuiteApp,
+  warnStaleData,
+  validate,
+  fetchByQuery,
+  deployReferencedElements,
+  additionalDependencies,
+} : {
+  client: NetsuiteClient
   withSuiteApp: boolean
   warnStaleData: boolean
+  validate: boolean
   fetchByQuery: FetchByQueryFunc
   deployReferencedElements?: boolean
+  additionalDependencies: AdditionalDependencies
   }) => ChangeValidator = (
-    { withSuiteApp, warnStaleData, fetchByQuery, deployReferencedElements }
+    {
+      client,
+      withSuiteApp,
+      warnStaleData,
+      validate,
+      fetchByQuery,
+      deployReferencedElements,
+      additionalDependencies,
+    }
   ) =>
     async changes => {
       const validators = withSuiteApp
@@ -80,6 +101,12 @@ const getChangeValidator: ({ withSuiteApp, warnStaleData, fetchByQuery, deployRe
       const changeErrors: ChangeError[] = _.flatten(await Promise.all([
         ...validators.map(validator => validator(changes)),
         warnStaleData ? safeDeployValidator(changes, fetchByQuery, deployReferencedElements) : [],
+        validate ? netsuiteClientValidation(
+          changes,
+          client,
+          additionalDependencies,
+          deployReferencedElements
+        ) : [],
       ]))
 
       const invalidElementIds = changeErrors

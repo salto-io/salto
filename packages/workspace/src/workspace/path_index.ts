@@ -74,10 +74,13 @@ const getAnnotationTypesPathHints = (
 
 const getAnnotationPathHints = (
   fragments: Fragment<Element>[],
-): PathHint[] => getValuePathHints(
-  fragments.map(f => ({ value: f.value.annotations, path: f.path })),
-  fragments[0].value.elemID.createNestedID('attr')
-)
+): PathHint[] => {
+  const elem = fragments[0].value
+  return getValuePathHints(
+    fragments.map(f => ({ value: f.value.annotations, path: f.path })),
+    isInstanceElement(elem) ? elem.elemID : elem.elemID.createNestedID('attr'),
+  )
+}
 
 const getFieldPathHints = (
   fragments: Fragment<Field>[],
@@ -234,7 +237,6 @@ export const splitElementByPath = async (
     clonedElement.path = pathToSet
     return [clonedElement]
   }
-
   return (await Promise.all(pathHints.map(async hint => {
     const filterByPathHint = async (id: ElemID): Promise<boolean> => {
       const idHints = await getFromPathIndex(id, index)

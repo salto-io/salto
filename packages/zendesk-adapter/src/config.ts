@@ -486,7 +486,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       sourceTypeName: 'brands__brands',
       // We currently not supporting in attachements
-      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'logo' }, { fieldName: 'ticket_form_ids' }),
+      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'ticket_form_ids' }),
       fieldTypeOverrides: [
         { fieldName: 'help_center_state', fieldType: 'string', restrictions: { enforce_value: true, values: ['enabled', 'disabled', 'restricted'] } },
         { fieldName: 'id', fieldType: 'number' },

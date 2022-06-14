@@ -72,6 +72,8 @@ import ducktypeCommonFilters from './filters/ducktype_common'
 import handleTemplateExpressionFilter from './filters/handle_template_expressions'
 import handleAppInstallationsFilter from './filters/handle_app_installations'
 import referencedIdFieldsFilter from './filters/referenced_id_fields'
+import brandLogoFilter from './filters/brand_logo'
+import removeBrandLogoFieldFilter from './filters/remove_brand_logo_field'
 import { getConfigFromConfigChanges } from './config_change'
 import { dependencyChanger } from './dependency_changers'
 
@@ -115,6 +117,9 @@ export const DEFAULT_FILTERS = [
   usersFilter,
   tagsFilter,
   macroAttachmentsFilter,
+  removeBrandLogoFieldFilter,
+  // brandLogoFilter should be after removeBrandLogoFieldFilter
+  brandLogoFilter,
   fieldReferencesFilter,
   appsFilter,
   appOwnedConvertListToMapFilter,
@@ -139,6 +144,8 @@ const SKIP_RESOLVE_TYPE_NAMES = [
   'organization_field__custom_field_options',
   'macro',
   'macro_attachment',
+  // 'brand',
+  'brand_logo',
 ]
 
 export interface ZendeskAdapterParams {
@@ -292,7 +299,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       changeValidator: createChangeValidator({
         client: this.client,
         apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
-        typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment'],
+        typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment', 'brand_logo'],
         typesWithNoDeploy: ['tag'],
       }),
       dependencyChanger,

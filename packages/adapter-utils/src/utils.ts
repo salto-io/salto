@@ -25,6 +25,7 @@ import {
   CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
   ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType, isTypeReference,
   ReadOnlyElementsSource, ReferenceMap, TypeReference, createRefToElmWithValue, isElement,
+  compareSpecialValues, getChangeData, isTemplateExpression,
 } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from './walk_element'
@@ -454,8 +455,9 @@ export const resolveValues: ResolveValuesFunc = async (
       })
     }
     if (isStaticFile(value)) {
+      const content = await value.getContent()
       return value.encoding === 'binary'
-        ? value.content : value.content?.toString(value.encoding)
+        ? content : content?.toString(value.encoding)
     }
     return value
   }
@@ -475,6 +477,28 @@ export type RestoreValuesFunc = <T extends Element>(
   getLookUpName: GetLookupNameFunc,
   allowEmpty?: boolean
 ) => Promise<T>
+
+// The following function handles comparing values that may contain elements
+// this can happen after "resolveValues" if the getLookupName function returns elements
+// we still treat these elements as if they are references, meaning we only care if
+// the element ID is the same
+const isEqualResolvedValues = (
+  first: Value,
+  second: Value,
+): boolean => _.isEqualWith(
+  first,
+  second,
+  (firstVal, secondVal) => {
+    if (isElement(first) || isElement(second)) {
+      if (isElement(first) && isElement(second)) {
+        return first.elemID.isEqual(second.elemID)
+      }
+      // If only one side is an element, they are not equal
+      return false
+    }
+    return compareSpecialValues(firstVal, secondVal)
+  }
+)
 
 export const restoreValues: RestoreValuesFunc = async (
   source, targetElement, getLookUpName, allowEmpty = false
@@ -499,13 +523,21 @@ export const restoreValues: RestoreValuesFunc = async (
       return value
     }
 
-    const ref = allReferencesPaths.get(path.getFullName())
-    if (ref !== undefined
-      && _.isEqual(await getLookUpName({ ref, field, path }), value)) {
-      return ref
+    if (isReferenceExpression(value) || isStaticFile(value)) {
+      // The value is already "restored", nothing to do
+      return value
     }
+
+    const ref = allReferencesPaths.get(path.getFullName())
+    if (ref !== undefined) {
+      const refValue = await getLookUpName({ ref, field, path })
+      if (isEqualResolvedValues(refValue, value)) {
+        return ref
+      }
+    }
+
     const file = allStaticFilesPaths.get(path.getFullName())
-    if (!_.isUndefined(file)) {
+    if (file !== undefined) {
       const content = file.encoding === 'binary'
         ? value : Buffer.from(value, file.encoding)
       return new StaticFile({ filepath: file.filepath, content, encoding: file.encoding })
@@ -524,15 +556,48 @@ export const restoreValues: RestoreValuesFunc = async (
 
 export const restoreChangeElement = async (
   change: Change,
-  sourceElements: Record<string, ChangeDataType>,
+  sourceChanges: Record<string, Change>,
   getLookUpName: GetLookupNameFunc,
   restoreValuesFunc = restoreValues,
-): Promise<Change> => applyFunctionToChangeData(
-  change,
-  changeData => restoreValuesFunc(
-    sourceElements[changeData.elemID.getFullName()], changeData, getLookUpName,
+): Promise<Change> => {
+  // We only need to restore the "after" part. "before" could not have changed so we can just use
+  // the "before" from the source change
+  const sourceChange = sourceChanges[getChangeData(change).elemID.getFullName()]
+  if (isRemovalChange(change) && isRemovalChange(sourceChange)) {
+    return sourceChange
+  }
+  const restoredAfter = await restoreValuesFunc(
+    getChangeData(sourceChange),
+    getChangeData(change),
+    getLookUpName,
   )
-)
+  if (isModificationChange(change) && isModificationChange(sourceChange)) {
+    return {
+      ...change,
+      data: {
+        before: sourceChange.data.before,
+        after: restoredAfter,
+      },
+    }
+  }
+  if (isAdditionChange(change) && isAdditionChange(sourceChange)) {
+    return {
+      ...change,
+      data: {
+        after: restoredAfter,
+      },
+    }
+  }
+  // We should never get here, but if there is a mis-match between the source change and the change
+  // we got, we warn and return the change we got without restoring
+  log.warn(
+    'Could not find matching source change for %s, change type %s, source type %s',
+    getChangeData(change).elemID.getFullName(),
+    change.action,
+    sourceChange.action,
+  )
+  return change
+}
 
 export const resolveChangeElement = <T extends Change<ChangeDataType> = Change<ChangeDataType>>(
   change: T,
@@ -711,8 +776,13 @@ export const filterByID = async <T extends Element | Values>(
     filterByID(id, annotations, filterFunc)
   )
 
-  const filterAnnotations = async (annotations: Value): Promise<Value> => (
-    filterByID(id.createNestedID('attr'), annotations, filterFunc)
+  const filterAnnotations = async (annotations: Values): Promise<Value> => (
+    _.pickBy(
+      await mapValuesAsync(annotations, async (anno, annoName) => (
+        filterByID(id.createNestedID('attr').createNestedID(annoName), anno, filterFunc)
+      )),
+      isDefined,
+    )
   )
 
   const filterAnnotationType = async (annoRefTypes: ReferenceMap): Promise<ReferenceMap> =>
@@ -922,6 +992,14 @@ export const getAllReferencedIds = (
       allReferencedIds.add(value.elemID.getFullName())
       return WALK_NEXT_STEP.SKIP
     }
+    if (isTemplateExpression(value)) {
+      value.parts.forEach(part => {
+        if (isReferenceExpression(part)) {
+          allReferencedIds.add(part.elemID.getFullName())
+        }
+      })
+      return WALK_NEXT_STEP.SKIP
+    }
     return WALK_NEXT_STEP.RECURSE
   }
   walkOnElement({ element, func })
@@ -931,6 +1009,19 @@ export const getAllReferencedIds = (
 export const getParents = (instance: Element): Array<Value> => (
   collections.array.makeArray(instance.annotations[CORE_ANNOTATIONS.PARENT])
 )
+
+export const getParent = (instance: Element): InstanceElement => {
+  const parents = getParents(instance)
+  if (parents.length !== 1) {
+    throw new Error(`Expected ${instance.elemID.getFullName()} to have exactly one parent, found ${parents.length}`)
+  }
+
+  if (!isInstanceElement(parents[0].value)) {
+    throw new Error(`Expected ${instance.elemID.getFullName()} parent to be an instance`)
+  }
+
+  return parents[0].value
+}
 
 // In the current use-cases for resolveTypeShallow it makes sense
 // to use the value on the ref over the elementsSource, unlike the

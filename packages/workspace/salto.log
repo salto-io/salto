@@ -1,0 +1,93 @@
+2022-05-23T18:33:42.307Z debug workspace/src/expressions resolve 1 elements starting
+2022-05-23T18:33:42.331Z debug workspace/src/expressions resolve handled a total of 14 elements
+2022-05-23T18:33:42.332Z debug workspace/src/expressions resolve 1 elements took 26 ms
+2022-05-23T18:33:42.360Z debug workspace/src/expressions resolve 1 elements starting
+2022-05-23T18:33:42.361Z debug workspace/src/expressions resolve handled a total of 14 elements
+2022-05-23T18:33:42.361Z debug workspace/src/expressions resolve 1 elements took 1 ms
+2022-05-23T18:33:45.882Z debug workspace/src/workspace/nacl_files/nacl_files_source building elements indices for 0 NaCl files
+2022-05-23T18:33:45.890Z info workspace/src/workspace/nacl_files/elements_cache going to merge new elements to the existing elements
+2022-05-23T18:33:45.890Z debug workspace/src/merger/index merged 0 elements to 0 elements [errors=0]
+2022-05-23T18:33:45.896Z debug workspace/src/workspace/nacl_files/nacl_files_source going to update 1 NaCl files
+2022-05-23T18:33:45.897Z debug workspace/src/workspace/nacl_files/nacl_files_source building elements indices for 1 NaCl files
+2022-05-23T18:33:45.898Z info workspace/src/workspace/nacl_files/elements_cache going to merge new elements to the existing elements
+2022-05-23T18:33:45.898Z debug workspace/src/merger/index merged 0 elements to 0 elements [errors=0]
+2022-05-23T18:33:46.502Z debug workspace/src/workspace/workspace Loading workspace with id: 
+2022-05-23T18:33:46.510Z debug workspace/src/workspace/nacl_files/elements_cache Merging components: default, COMMON_
+2022-05-23T18:33:46.511Z debug workspace/src/workspace/nacl_files/elements_cache Setting hash multi_env-multi_env_mergeManagermerge_manager::default_COMMON__merged_hash to ead244bc1646d9915c741130a00108a868b329da9893e34099c7d8ad5cb9c940
+2022-05-23T18:33:46.513Z debug workspace/src/merger/index merged 1 elements to 1 elements [errors=0]
+2022-05-23T18:33:46.514Z debug workspace/src/workspace/nacl_files/elements_cache Setting default source hash in namespace multi_env-multi_env_mergeManagermerge_manager to ead244bc1646d9915c741130a00108a8
+2022-05-23T18:33:46.514Z debug workspace/src/workspace/nacl_files/elements_cache Setting COMMON_ source hash in namespace multi_env-multi_env_mergeManagermerge_manager to 68b329da9893e34099c7d8ad5cb9c940
+2022-05-23T18:33:46.515Z debug workspace/src/workspace/nacl_files/elements_cache Applying merged changes to cache.
+2022-05-23T18:33:46.517Z debug workspace/src/workspace/nacl_files/elements_cache Change type: add, on 1 elements. The first 1 ids are: salto.withStatic
+2022-05-23T18:33:46.517Z debug workspace/src/workspace/nacl_files/elements_cache Merging components: inactive, COMMON_
+2022-05-23T18:33:46.517Z debug workspace/src/workspace/nacl_files/elements_cache Setting hash multi_env-multi_env_mergeManagermerge_manager::inactive_COMMON__merged_hash to edf1b3655f0ca128d6bee028591ed5e968b329da9893e34099c7d8ad5cb9c940
+2022-05-23T18:33:46.517Z debug workspace/src/merger/index merged 1 elements to 1 elements [errors=0]
+2022-05-23T18:33:46.518Z debug workspace/src/workspace/nacl_files/elements_cache Setting inactive source hash in namespace multi_env-multi_env_mergeManagermerge_manager to edf1b3655f0ca128d6bee028591ed5e9
+2022-05-23T18:33:46.518Z debug workspace/src/workspace/nacl_files/elements_cache Setting COMMON_ source hash in namespace multi_env-multi_env_mergeManagermerge_manager to 68b329da9893e34099c7d8ad5cb9c940
+2022-05-23T18:33:46.518Z debug workspace/src/workspace/nacl_files/elements_cache Applying merged changes to cache.
+2022-05-23T18:33:46.519Z debug workspace/src/workspace/nacl_files/elements_cache Change type: add, on 1 elements. The first 1 ids are: salto.withStatic
+2022-05-23T18:33:46.524Z debug workspace/src/workspace/nacl_files/elements_cache Merging components: multi_env_element_sourcedefault, state_element_sourcedefault
+2022-05-23T18:33:46.524Z debug workspace/src/workspace/nacl_files/elements_cache Setting hash workspaceMergeManagermerge_manager::multi_env_element_sourcedefault_state_element_sourcedefault_merged_hash to ead244bc1646d9915c741130a00108a868b329da9893e34099c7d8ad5cb9c940
+2022-05-23T18:33:46.524Z debug workspace/src/merger/index merged 1 elements to 1 elements [errors=0]
+2022-05-23T18:33:46.525Z debug workspace/src/workspace/nacl_files/elements_cache Setting multi_env_element_sourcedefault source hash in namespace workspaceMergeManagermerge_manager to ead244bc1646d9915c741130a00108a868b329da9893e34099c7d8ad5cb9c940
+2022-05-23T18:33:46.525Z debug workspace/src/workspace/nacl_files/elements_cache Applying merged changes to cache.
+2022-05-23T18:33:46.526Z debug workspace/src/workspace/nacl_files/elements_cache Change type: add, on 1 elements. The first 1 ids are: salto.withStatic
+2022-05-23T18:33:46.526Z debug workspace/src/workspace/reference_indexes updating references indexes starting
+2022-05-23T18:33:46.528Z info workspace/src/workspace/reference_indexes references indexes maps are out of date, re-indexing
+2022-05-23T18:33:46.530Z debug workspace/src/workspace/reference_indexes updating references indexes took 4 ms
+2022-05-23T18:33:46.531Z debug workspace/src/expressions resolve 1 elements starting
+2022-05-23T18:33:46.533Z debug workspace/src/expressions resolve handled a total of 13 elements
+2022-05-23T18:33:46.534Z debug workspace/src/expressions resolve 1 elements took 3 ms
+2022-05-23T18:33:46.536Z debug workspace/src/workspace/nacl_files/elements_cache Merging components: multi_env_element_sourceinactive, state_element_sourceinactive
+2022-05-23T18:33:46.536Z debug workspace/src/workspace/nacl_files/elements_cache Setting hash workspaceMergeManagermerge_manager::multi_env_element_sourceinactive_state_element_sourceinactive_merged_hash to edf1b3655f0ca128d6bee028591ed5e968b329da9893e34099c7d8ad5cb9c940
+2022-05-23T18:33:46.536Z debug workspace/src/merger/index merged 1 elements to 1 elements [errors=0]
+2022-05-23T18:33:46.536Z debug workspace/src/workspace/nacl_files/elements_cache Setting multi_env_element_sourceinactive source hash in namespace workspaceMergeManagermerge_manager to edf1b3655f0ca128d6bee028591ed5e968b329da9893e34099c7d8ad5cb9c940
+2022-05-23T18:33:46.536Z debug workspace/src/workspace/nacl_files/elements_cache Applying merged changes to cache.
+2022-05-23T18:33:46.537Z debug workspace/src/workspace/nacl_files/elements_cache Change type: add, on 1 elements. The first 1 ids are: salto.withStatic
+2022-05-23T18:33:46.537Z debug workspace/src/workspace/reference_indexes updating references indexes starting
+2022-05-23T18:33:46.538Z info workspace/src/workspace/reference_indexes references indexes maps are out of date, re-indexing
+2022-05-23T18:33:46.538Z debug workspace/src/workspace/reference_indexes updating references indexes took 1 ms
+2022-05-23T18:33:46.538Z debug workspace/src/expressions resolve 1 elements starting
+2022-05-23T18:33:46.539Z debug workspace/src/expressions resolve handled a total of 13 elements
+2022-05-23T18:33:46.539Z debug workspace/src/expressions resolve 1 elements took 1 ms
+2022-05-23T18:33:46.546Z debug workspace/src/workspace/workspace Loading workspace with id: 
+2022-05-23T18:33:46.548Z debug workspace/src/workspace/nacl_files/elements_cache Merging components: default, COMMON_
+2022-05-23T18:33:46.548Z debug workspace/src/workspace/nacl_files/elements_cache Setting hash multi_env-multi_env_mergeManagermerge_manager::default_COMMON__merged_hash to ead244bc1646d9915c741130a00108a868b329da9893e34099c7d8ad5cb9c940
+2022-05-23T18:33:46.548Z debug workspace/src/merger/index merged 1 elements to 1 elements [errors=0]
+2022-05-23T18:33:46.549Z debug workspace/src/workspace/nacl_files/elements_cache Setting default source hash in namespace multi_env-multi_env_mergeManagermerge_manager to ead244bc1646d9915c741130a00108a8
+2022-05-23T18:33:46.549Z debug workspace/src/workspace/nacl_files/elements_cache Setting COMMON_ source hash in namespace multi_env-multi_env_mergeManagermerge_manager to 68b329da9893e34099c7d8ad5cb9c940
+2022-05-23T18:33:46.549Z debug workspace/src/workspace/nacl_files/elements_cache Applying merged changes to cache.
+2022-05-23T18:33:46.550Z debug workspace/src/workspace/nacl_files/elements_cache Change type: add, on 1 elements. The first 1 ids are: salto.withStatic
+2022-05-23T18:33:46.550Z debug workspace/src/workspace/nacl_files/elements_cache Merging components: inactive, COMMON_
+2022-05-23T18:33:46.550Z debug workspace/src/workspace/nacl_files/elements_cache Setting hash multi_env-multi_env_mergeManagermerge_manager::inactive_COMMON__merged_hash to edf1b3655f0ca128d6bee028591ed5e968b329da9893e34099c7d8ad5cb9c940
+2022-05-23T18:33:46.550Z debug workspace/src/merger/index merged 1 elements to 1 elements [errors=0]
+2022-05-23T18:33:46.550Z debug workspace/src/workspace/nacl_files/elements_cache Setting inactive source hash in namespace multi_env-multi_env_mergeManagermerge_manager to edf1b3655f0ca128d6bee028591ed5e9
+2022-05-23T18:33:46.550Z debug workspace/src/workspace/nacl_files/elements_cache Setting COMMON_ source hash in namespace multi_env-multi_env_mergeManagermerge_manager to 68b329da9893e34099c7d8ad5cb9c940
+2022-05-23T18:33:46.551Z debug workspace/src/workspace/nacl_files/elements_cache Applying merged changes to cache.
+2022-05-23T18:33:46.551Z debug workspace/src/workspace/nacl_files/elements_cache Change type: add, on 1 elements. The first 1 ids are: salto.withStatic
+2022-05-23T18:33:46.552Z debug workspace/src/workspace/nacl_files/elements_cache Merging components: multi_env_element_sourcedefault, state_element_sourcedefault
+2022-05-23T18:33:46.552Z debug workspace/src/workspace/nacl_files/elements_cache Setting hash workspaceMergeManagermerge_manager::multi_env_element_sourcedefault_state_element_sourcedefault_merged_hash to ead244bc1646d9915c741130a00108a868b329da9893e34099c7d8ad5cb9c940
+2022-05-23T18:33:46.552Z debug workspace/src/merger/index merged 1 elements to 1 elements [errors=0]
+2022-05-23T18:33:46.553Z debug workspace/src/workspace/nacl_files/elements_cache Setting multi_env_element_sourcedefault source hash in namespace workspaceMergeManagermerge_manager to ead244bc1646d9915c741130a00108a868b329da9893e34099c7d8ad5cb9c940
+2022-05-23T18:33:46.553Z debug workspace/src/workspace/nacl_files/elements_cache Applying merged changes to cache.
+2022-05-23T18:33:46.553Z debug workspace/src/workspace/nacl_files/elements_cache Change type: add, on 1 elements. The first 1 ids are: salto.withStatic
+2022-05-23T18:33:46.553Z debug workspace/src/workspace/reference_indexes updating references indexes starting
+2022-05-23T18:33:46.554Z info workspace/src/workspace/reference_indexes references indexes maps are out of date, re-indexing
+2022-05-23T18:33:46.554Z debug workspace/src/workspace/reference_indexes updating references indexes took 1 ms
+2022-05-23T18:33:46.554Z debug workspace/src/expressions resolve 1 elements starting
+2022-05-23T18:33:46.555Z debug workspace/src/expressions resolve handled a total of 13 elements
+2022-05-23T18:33:46.555Z debug workspace/src/expressions resolve 1 elements took 1 ms
+2022-05-23T18:33:46.556Z debug workspace/src/workspace/nacl_files/elements_cache Merging components: multi_env_element_sourceinactive, state_element_sourceinactive
+2022-05-23T18:33:46.556Z debug workspace/src/workspace/nacl_files/elements_cache Setting hash workspaceMergeManagermerge_manager::multi_env_element_sourceinactive_state_element_sourceinactive_merged_hash to edf1b3655f0ca128d6bee028591ed5e968b329da9893e34099c7d8ad5cb9c940
+2022-05-23T18:33:46.556Z debug workspace/src/merger/index merged 1 elements to 1 elements [errors=0]
+2022-05-23T18:33:46.556Z debug workspace/src/workspace/nacl_files/elements_cache Setting multi_env_element_sourceinactive source hash in namespace workspaceMergeManagermerge_manager to edf1b3655f0ca128d6bee028591ed5e968b329da9893e34099c7d8ad5cb9c940
+2022-05-23T18:33:46.557Z debug workspace/src/workspace/nacl_files/elements_cache Applying merged changes to cache.
+2022-05-23T18:33:46.557Z debug workspace/src/workspace/nacl_files/elements_cache Change type: add, on 1 elements. The first 1 ids are: salto.withStatic
+2022-05-23T18:33:46.557Z debug workspace/src/workspace/reference_indexes updating references indexes starting
+2022-05-23T18:33:46.558Z info workspace/src/workspace/reference_indexes references indexes maps are out of date, re-indexing
+2022-05-23T18:33:46.558Z debug workspace/src/workspace/reference_indexes updating references indexes took 1 ms
+2022-05-23T18:33:46.558Z debug workspace/src/expressions resolve 1 elements starting
+2022-05-23T18:33:46.559Z debug workspace/src/expressions resolve handled a total of 13 elements
+2022-05-23T18:33:46.559Z debug workspace/src/expressions resolve 1 elements took 1 ms
+2022-05-23T18:33:46.561Z debug workspace/src/workspace/workspace Loading workspace with id: 
+2022-05-23T18:33:46.563Z debug workspace/src/workspace/workspace Loading workspace with id: 

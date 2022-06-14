@@ -13,17 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export type StaticFilesCacheResult = {
+export type StaticFilesData = {
   modified: number
   hash: string
   filepath: string
 }
 
 export type StaticFilesCache = {
-  get(filepath: string): Promise<StaticFilesCacheResult | undefined>
-  put(item: StaticFilesCacheResult): Promise<void>
+  get(filepath: string): Promise<StaticFilesData | undefined>
+  put(item: StaticFilesData): Promise<void>
   flush(): Promise<void>
   clear(): Promise<void>
   rename(name: string): Promise<void>
   clone(): StaticFilesCache
+  list(): Promise<string[]>
 }

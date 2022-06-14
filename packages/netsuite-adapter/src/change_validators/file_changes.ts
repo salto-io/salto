@@ -14,32 +14,36 @@
 * limitations under the License.
 */
 import {
-  ChangeValidator, getChangeData, Change,
+  ChangeValidator, getChangeData, Change, ChangeError,
 } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { fileCabinetTopLevelFolders } from '../client/constants'
 import { isFileCabinetInstance } from '../types'
 import * as suiteAppFileCabinet from '../suiteapp_file_cabinet'
 
-const isChangeSupported = (change: Change): boolean => {
+const { awu } = collections.asynciterable
+
+const isChangeSupported = async (change: Change): Promise<boolean> => {
   const element = getChangeData(change)
   if (!isFileCabinetInstance(element)) {
     return true
   }
 
-  return suiteAppFileCabinet.isChangeDeployable(change) || fileCabinetTopLevelFolders.some(folder => element.value.path.startsWith(`${folder}/`))
+  return await suiteAppFileCabinet.isChangeDeployable(change) || fileCabinetTopLevelFolders.some(folder => element.value.path.startsWith(`${folder}/`))
 }
 
 
 const changeValidator: ChangeValidator = async changes => (
-  changes
-    .filter(change => !isChangeSupported(change))
+  awu(changes)
+    .filter(async change => !await isChangeSupported(change))
     .map(getChangeData)
-    .map(inst => ({
+    .map((inst): ChangeError => ({
       elemID: inst.elemID,
       severity: 'Error',
       message: 'File change is not supported',
       detailedMessage: `Salto does not support deploying changes to files above 10 MB and to the generateurltimestamp field for files outside the folders ${fileCabinetTopLevelFolders.join(', ')}.`,
     }))
+    .toArray()
 )
 
 export default changeValidator

@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import { regex } from '@salto-io/lowerdash'
-import { DEFAULT_NAMESPACE, SETTINGS_METADATA_TYPE, TOPICS_FOR_OBJECTS_METADATA_TYPE, CUSTOM_OBJECT } from '../constants'
-import { validateRegularExpressions } from '../config_validation'
-import { MetadataInstance, MetadataParams, MetadataQueryParams } from '../types'
+import { DEFAULT_NAMESPACE, SETTINGS_METADATA_TYPE, TOPICS_FOR_OBJECTS_METADATA_TYPE, CUSTOM_OBJECT, MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD } from '../constants'
+import { validateRegularExpressions, ConfigValidationError } from '../config_validation'
+import { MetadataInstance, MetadataParams, MetadataQueryParams, METADATA_INCLUDE_LIST, METADATA_EXCLUDE_LIST, METADATA_SEPARATE_FIELD_LIST } from '../types'
 
 export type MetadataQuery = {
   isTypeMatch: (type: string) => boolean
@@ -108,6 +108,14 @@ export const validateMetadataParams = (
   params: Partial<MetadataParams>,
   fieldPath: string[],
 ): void => {
-  validateMetadataQueryParams(params.include ?? [], [...fieldPath, 'include'])
-  validateMetadataQueryParams(params.exclude ?? [], [...fieldPath, 'include'])
+  validateMetadataQueryParams(params.include ?? [], [...fieldPath, METADATA_INCLUDE_LIST])
+  validateMetadataQueryParams(params.exclude ?? [], [...fieldPath, METADATA_EXCLUDE_LIST])
+
+  if (params.objectsToSeperateFieldsToFiles !== undefined
+    && params.objectsToSeperateFieldsToFiles.length > MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD) {
+    throw new ConfigValidationError(
+      [...fieldPath, METADATA_SEPARATE_FIELD_LIST],
+      `${METADATA_SEPARATE_FIELD_LIST} should not be larger than ${MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD}. current length is ${params.objectsToSeperateFieldsToFiles.length}`
+    )
+  }
 }

@@ -16,11 +16,12 @@
 import Bottleneck from 'bottleneck'
 import OAuth from 'oauth-1.0a'
 import crypto from 'crypto'
-import axios, { AxiosInstance, AxiosResponse } from 'axios'
+import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios'
 import axiosRetry from 'axios-retry'
 import Ajv from 'ajv'
 import AsyncLock from 'async-lock'
 import compareVersions from 'compare-versions'
+import os from 'os'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
@@ -69,6 +70,7 @@ const REQUEST_HEADERS = {
 
 const UNAUTHORIZED_STATUSES = [401, 403]
 const HTTP_SERVER_ERROR_INITIAL = '5'
+const RETRYABLE_ERROR_CODES = ['SSS_REQUEST_LIMIT_EXCEEDED']
 
 const ACTIVATION_KEY_APP_VERSION = '0.1.3'
 const CONFIG_TYPES_APP_VERSION = '0.1.4'
@@ -76,6 +78,15 @@ const CONFIG_TYPES_APP_VERSION = '0.1.4'
 type VersionFeatures = {
   activationKey: boolean
   configTypes: boolean
+}
+
+const getAxiosErrorDetailedMessage = (error: AxiosError): string | undefined => {
+  const errorDetails = error.response?.data?.['o:errorDetails']
+  if (!_.isArray(errorDetails)) {
+    return undefined
+  }
+  const detailedMessages = errorDetails.map(errorItem => errorItem?.detail).filter(_.isString)
+  return detailedMessages.length > 0 ? detailedMessages.join(os.EOL) : undefined
 }
 
 export default class SuiteAppClient {
@@ -112,7 +123,9 @@ export default class SuiteAppClient {
       {
         ...retryOptions,
         retryCondition: err => retryOptions.retryCondition?.(err)
-          || String(err.response?.status).startsWith(HTTP_SERVER_ERROR_INITIAL),
+          || String(err.response?.status).startsWith(HTTP_SERVER_ERROR_INITIAL)
+          || RETRYABLE_ERROR_CODES.some(code =>
+            code === err.response?.data?.error?.code?.toUpperCase()),
       }
     )
 
@@ -329,7 +342,7 @@ export default class SuiteAppClient {
         safeJsonStringify(e.response?.data ?? e.message, undefined, 2)
       )
       if (UNAUTHORIZED_STATUSES.includes(e.response?.status)) {
-        throw new InvalidSuiteAppCredentialsError()
+        throw new InvalidSuiteAppCredentialsError(getAxiosErrorDetailedMessage(e))
       }
       throw e
     }

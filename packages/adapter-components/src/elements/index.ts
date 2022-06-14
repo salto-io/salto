@@ -19,7 +19,7 @@ import * as soap from './soap'
 import * as subtypes from './subtypes'
 import * as query from './query'
 import { computeGetArgs, simpleGetArgs, createUrl, replaceUrlParams } from './request_parameters'
-import { RECORDS_PATH, TYPES_PATH, SUBTYPES_PATH } from './constants'
+import { RECORDS_PATH, TYPES_PATH, SUBTYPES_PATH, SETTINGS_NESTED_PATH } from './constants'
 import { findDataField, returnFullEntry, FindNestedFieldFunc } from './field_finder'
 import { filterTypes } from './type_elements'
 import { getInstanceName, generateInstanceNameFromConfig, createServiceIds, removeNullValues } from './instance_elements'
@@ -31,7 +31,7 @@ export {
   subtypes,
   computeGetArgs, simpleGetArgs,
   findDataField, returnFullEntry, FindNestedFieldFunc,
-  RECORDS_PATH, TYPES_PATH, SUBTYPES_PATH,
+  RECORDS_PATH, TYPES_PATH, SUBTYPES_PATH, SETTINGS_NESTED_PATH,
   filterTypes,
   getInstanceName,
   generateInstanceNameFromConfig,

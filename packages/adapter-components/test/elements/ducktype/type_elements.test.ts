@@ -38,6 +38,36 @@ describe('ducktype_type_elements', () => {
       expect(nestedTypes).toHaveLength(0)
       expect(type.path).toEqual([ADAPTER_NAME, TYPES_PATH, 'typeName'])
     })
+    it('should override field types for types with fieldTypeOverrides', () => {
+      const entries: Values[] = [{ name: 'test' }]
+      const { type, nestedTypes } = generateType({
+        adapterName: ADAPTER_NAME,
+        name: 'typeName',
+        entries,
+        hasDynamicFields: false,
+        isSubType: false,
+        transformationConfigByType: { typeName: { fieldTypeOverrides: [{ fieldName: 'name', fieldType: 'number' }] } },
+        transformationDefaultConfig: { idFields: [] },
+      })
+      expect(type.isEqual(new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'typeName'), fields: { name: { refType: BuiltinTypes.NUMBER } } }))).toBeTruthy()
+      expect(nestedTypes).toHaveLength(0)
+      expect(type.path).toEqual([ADAPTER_NAME, TYPES_PATH, 'typeName'])
+    })
+    it('should override field types for types with fieldTypeOverrides even if there are no entries', () => {
+      const entries: Values[] = []
+      const { type, nestedTypes } = generateType({
+        adapterName: ADAPTER_NAME,
+        name: 'typeName',
+        entries,
+        hasDynamicFields: false,
+        isSubType: false,
+        transformationConfigByType: { typeName: { fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }] } },
+        transformationDefaultConfig: { idFields: [] },
+      })
+      expect(type.isEqual(new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'typeName'), fields: { id: { refType: BuiltinTypes.NUMBER } } }))).toBeTruthy()
+      expect(nestedTypes).toHaveLength(0)
+      expect(type.path).toEqual([ADAPTER_NAME, TYPES_PATH, 'typeName'])
+    })
     it('should generate types recursively with correct fields when hasDynamicFields=false', () => {
       const entries = [
         {
@@ -608,6 +638,30 @@ describe('ducktype_type_elements', () => {
           updated_at: { refType: BuiltinTypes.STRING },
         },
         isSettings: true,
+      }))).toBeTruthy()
+      expect(nestedTypes).toHaveLength(0)
+    })
+    it('should create an empty type with the service id field', () => {
+      const { type, nestedTypes } = generateType({
+        adapterName: ADAPTER_NAME,
+        name: 'target',
+        entries: [],
+        hasDynamicFields: false,
+        isSubType: false,
+        transformationConfigByType: {
+          target: {
+            fieldTypeOverrides: [
+              { fieldName: 'id', fieldType: 'number' },
+            ],
+          },
+        },
+        transformationDefaultConfig: { idFields: [], serviceIdField: 'id' },
+      })
+      expect(type.isEqual(new ObjectType({
+        elemID: new ElemID(ADAPTER_NAME, 'target'),
+        fields: {
+          id: { refType: BuiltinTypes.SERVICE_ID_NUMBER },
+        },
       }))).toBeTruthy()
       expect(nestedTypes).toHaveLength(0)
     })

@@ -106,6 +106,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
       paginationField: 'next',
     },
   },
+  EventTrigger: {
+    transformation: {
+      idFields: ['baseObject', 'eventType.name'],
+    },
+  },
   NotificationDefinitions: {
     request: {
       url: '/notifications/notification-definitions',
@@ -170,6 +175,10 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
     },
   },
   CatalogProduct: {
+    request: {
+      url: '/v1/catalog/products',
+      paginationField: 'nextPage',
+    },
     transformation: {
       dataField: 'products',
     },
@@ -673,8 +682,8 @@ export const SUPPORTED_TYPES = {
   StandardObject: ['StandardObject'],
   EventTrigger: ['EventTriggers'],
   HostedPage: ['HostedPages'],
-  NotificationDefinitions: ['NotificationDefinitions'],
-  NotificationEmailTemplates: ['NotificationEmailTemplates'],
+  PublicNotificationDefinition: ['NotificationDefinitions'],
+  PublicEmailTemplate: ['NotificationEmailTemplates'],
   PaymentGatewayResponse: ['PaymentGateways'],
   SequenceSet: ['SequenceSets'],
   [WORKFLOW_EXPORT_TYPE]: [WORKFLOW_EXPORT_TYPE],

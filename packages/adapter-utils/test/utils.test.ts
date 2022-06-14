@@ -20,9 +20,8 @@ import {
   isListType, ListType, BuiltinTypes, StaticFile, isPrimitiveType,
   Element, isReferenceExpression, isPrimitiveValue, CORE_ANNOTATIONS, FieldMap, AdditionChange,
   RemovalChange, ModificationChange, isInstanceElement, isObjectType, MapType, isMapType,
-  ContainerType, TypeReference, createRefToElmWithValue, VariableExpression,
+  ContainerType, TypeReference, createRefToElmWithValue, VariableExpression, getChangeData,
 } from '@salto-io/adapter-api'
-import { AdditionDiff, RemovalDiff, ModificationDiff } from '@salto-io/dag'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
 import Joi from 'joi'
@@ -35,6 +34,7 @@ import {
   transformElement, toObjectType, getParents, resolveTypeShallow,
   referenceExpressionStringifyReplacer,
   createSchemeGuard,
+  getParent,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 
@@ -108,6 +108,11 @@ describe('Test utils.ts', () => {
 
   const regValue = 'regValue'
   const valueRef = new ReferenceExpression(mockElem, regValue, mockType)
+  const templateElemID = new ElemID('template', 'test')
+  const templateElemID2 = new ElemID('template2', 'test2')
+  const templateRef = new TemplateExpression({ parts: ['this is:',
+    new ReferenceExpression(templateElemID), 'a template',
+    new ReferenceExpression(templateElemID2)] })
   const fileContent = 'bb'
   const valueFile = new StaticFile({ filepath: 'aa', content: Buffer.from(fileContent) })
 
@@ -116,6 +121,7 @@ describe('Test utils.ts', () => {
     mockType,
     {
       ref: valueRef,
+      templateRef,
       str: 'val',
       bool: 'true',
       num: '99',
@@ -1270,38 +1276,90 @@ describe('Test utils.ts', () => {
   })
 
   describe('restore/ResolveChangeElement functions', () => {
-    const afterData = mockInstance.clone()
-    const beforeData = mockInstance.clone()
-    const additionChange = { action: 'add', data: { after: afterData } } as AdditionDiff<InstanceElement>
-    const removalChange = { action: 'remove', data: { before: beforeData } } as RemovalDiff<InstanceElement>
-    const modificationChange = { action: 'modify', data: { before: beforeData, after: afterData } } as ModificationDiff<InstanceElement>
+    let afterData: InstanceElement
+    let beforeData: InstanceElement
+    let additionChange: AdditionChange<InstanceElement>
+    let removalChange: RemovalChange<InstanceElement>
+    let modificationChange: ModificationChange<InstanceElement>
+    beforeEach(() => {
+      afterData = mockInstance.clone()
+      beforeData = mockInstance.clone()
+      additionChange = { action: 'add', data: { after: afterData } }
+      removalChange = { action: 'remove', data: { before: beforeData } }
+      modificationChange = { action: 'modify', data: { before: beforeData, after: afterData } }
+    })
 
     describe('restoreChangeElement func', () => {
       let mockRestore: RestoreValuesFunc
-      const sourceBeforeData = beforeData.clone()
-      const sourceAfterData = afterData.clone()
-      const sourceElements = _.keyBy(
-        [sourceBeforeData, sourceAfterData],
-        elem => elem.elemID.getFullName()
-      )
       beforeEach(() => {
         mockRestore = jest.fn().mockImplementation(
           <T extends Element>(_source: T, targetElement: T, _getLookUpName: GetLookupNameFunc) =>
             targetElement
         )
       })
-      it('should call restore func on after data when add change', async () => {
-        await restoreChangeElement(additionChange, sourceElements, getName, mockRestore)
-        expect(mockRestore).toHaveBeenCalledWith(sourceAfterData, afterData, getName)
+      describe('with addition change', () => {
+        let sourceChange: AdditionChange<InstanceElement>
+        beforeEach(async () => {
+          sourceChange = { action: 'add', data: { after: afterData.clone() } }
+          const sourceChanges = _.keyBy(
+            [sourceChange],
+            c => getChangeData(c).elemID.getFullName(),
+          )
+          await restoreChangeElement(additionChange, sourceChanges, getName, mockRestore)
+        })
+        it('should call restore func on the after data', () => {
+          expect(mockRestore).toHaveBeenCalledWith(sourceChange.data.after, afterData, getName)
+        })
       })
-      it('should call restore func for both before and after if modify change', async () => {
-        await restoreChangeElement(modificationChange, sourceElements, getName, mockRestore)
-        expect(mockRestore).toHaveBeenCalledWith(sourceAfterData, afterData, getName)
-        expect(mockRestore).toHaveBeenCalledWith(sourceBeforeData, beforeData, getName)
+      describe('with removal change', () => {
+        let sourceChange: RemovalChange<InstanceElement>
+        let restoredChange: RemovalChange<InstanceElement>
+        beforeEach(async () => {
+          sourceChange = { action: 'remove', data: { before: beforeData.clone() } }
+          const sourceChanges = _.keyBy(
+            [sourceChange],
+            c => getChangeData(c).elemID.getFullName(),
+          )
+          restoredChange = await restoreChangeElement(
+            removalChange,
+            sourceChanges,
+            getName,
+            mockRestore,
+          ) as RemovalChange<InstanceElement>
+        })
+        it('should not call restore func on the before data', () => {
+          expect(mockRestore).not.toHaveBeenCalled()
+        })
+        it('should return the before data from the source change', () => {
+          expect(restoredChange.data.before).toBe(sourceChange.data.before)
+        })
       })
-      it('should call restore func on before if removal change', async () => {
-        await restoreChangeElement(removalChange, sourceElements, getName, mockRestore)
-        expect(mockRestore).toHaveBeenCalledWith(sourceBeforeData, beforeData, getName)
+      describe('with modification change', () => {
+        let sourceChange: ModificationChange<InstanceElement>
+        let restoredChange: ModificationChange<InstanceElement>
+        beforeEach(async () => {
+          sourceChange = {
+            action: 'modify',
+            data: { before: beforeData.clone(), after: afterData.clone() },
+          }
+          const sourceChanges = _.keyBy(
+            [sourceChange],
+            c => getChangeData(c).elemID.getFullName(),
+          )
+          restoredChange = await restoreChangeElement(
+            modificationChange,
+            sourceChanges,
+            getName,
+            mockRestore,
+          ) as ModificationChange<InstanceElement>
+        })
+        it('should call the restore func only on the after data', () => {
+          expect(mockRestore).toHaveBeenCalledTimes(1)
+          expect(mockRestore).toHaveBeenCalledWith(sourceChange.data.after, afterData, getName)
+        })
+        it('should return the before data from the source change', () => {
+          expect(restoredChange.data.before).toBe(sourceChange.data.before)
+        })
       })
     })
 
@@ -1804,6 +1862,17 @@ describe('Test utils.ts', () => {
       )
       expect(withoutMap?.value).toEqual({ obj: inst.value.obj, list: inst.value.list })
     })
+
+    it('should not call filter function with invalid attr ID', async () => {
+      const filterFunc = jest.fn().mockResolvedValue(true)
+      await filterByID(
+        obj.elemID,
+        obj,
+        filterFunc
+      )
+
+      expect(filterFunc).not.toHaveBeenCalledWith(obj.elemID.createNestedID('attr'))
+    })
   })
   describe('Flat Values', () => {
     it('should not transform static files', () => {
@@ -2118,7 +2187,8 @@ describe('Test utils.ts', () => {
   describe('getAllReferencedIds', () => {
     it('should find referenced ids', () => {
       const res = getAllReferencedIds(mockInstance)
-      expect(res).toEqual(new Set(['mockAdapter.test', 'mockAdapter.test2.field.aaa']))
+      expect(res).toEqual(new Set(['mockAdapter.test', 'mockAdapter.test2.field.aaa',
+        templateElemID.getFullName(), templateElemID2.getFullName()]))
     })
     it('should find referenced ids only in annotations', () => {
       const res = getAllReferencedIds(mockInstance, true)
@@ -2156,6 +2226,48 @@ describe('Test utils.ts', () => {
       it('should return an empty array', () => {
         expect(result).toEqual([])
       })
+    })
+  })
+
+  describe('getParent', () => {
+    let parent: InstanceElement
+    let child: InstanceElement
+
+    beforeEach(() => {
+      const obj = new ObjectType({ elemID: new ElemID('test', 'test') })
+      parent = new InstanceElement(
+        'parent',
+        obj,
+        {},
+      )
+      child = new InstanceElement(
+        'child',
+        obj,
+        {},
+        [],
+        {
+          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)],
+        },
+      )
+    })
+
+    it('should return the parent when there is a single instance parent', () => {
+      expect(getParent(child)).toBe(parent)
+    })
+
+    it('should throw when having more than one parent', () => {
+      child.annotations[CORE_ANNOTATIONS.PARENT] = [
+        new ReferenceExpression(parent.elemID, parent),
+        new ReferenceExpression(parent.elemID, parent),
+      ]
+      expect(() => getParent(child)).toThrow()
+    })
+
+    it('should throw when having a non instance parent', () => {
+      child.annotations[CORE_ANNOTATIONS.PARENT] = [
+        new ReferenceExpression(parent.elemID, 'a'),
+      ]
+      expect(() => getParent(child)).toThrow()
     })
   })
 

@@ -65,6 +65,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       sourceTypeName: 'groups__groups',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      serviceUrl: '/admin/people/team/groups',
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
     },
     deployRequests: {
       add: {
@@ -99,6 +101,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'role_type', fieldType: 'number' },
         { fieldName: 'team_member_count', fieldType: 'number' },
       ]),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       serviceUrl: '/admin/people/team/roles/{id}',
     },
     deployRequests: {
@@ -131,6 +134,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldTypeOverrides: [
         { fieldName: 'organization_fields', fieldType: 'map<unknown>' },
+        { fieldName: 'id', fieldType: 'number' },
       ],
       serviceUrl: '/agent/organizations/{id}/tickets',
     },
@@ -164,6 +168,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['title'],
       fileNameFields: ['title'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       serviceUrl: '/admin/workspaces/agent-workspace/views/{id}',
     },
     deployRequests: {
@@ -211,6 +216,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['title'],
       fileNameFields: ['title'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       serviceUrl: '/admin/objects-rules/rules/triggers/{id}',
     },
     deployRequests: {
@@ -242,6 +248,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       sourceTypeName: 'trigger_categories__trigger_categories',
       fileNameFields: ['name'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id' }),
+      serviceUrl: '/admin/objects-rules/rules/triggers',
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'string' },
+      ],
     },
     deployRequests: {
       add: {
@@ -287,6 +297,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['title'],
       fileNameFields: ['title'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       serviceUrl: '/admin/objects-rules/rules/automations/{id}',
     },
     deployRequests: {
@@ -327,6 +338,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['title'],
       fileNameFields: ['title'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      serviceUrl: '/admin/objects-rules/rules/slas',
     },
     deployRequests: {
       add: {
@@ -372,6 +385,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       sourceTypeName: 'targets__targets',
       idFields: ['title', 'type'], // looks like title is unique so not adding id
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      serviceUrl: '/admin/apps-integrations/targets/targets',
     },
     deployRequests: {
       add: {
@@ -404,6 +419,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fileNameFields: ['title'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'position', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       serviceUrl: '/admin/workspaces/agent-workspace/macros/{id}',
     },
     deployRequests: {
@@ -434,6 +450,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       idFields: ['filename'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
     },
   },
   macro_action: {
@@ -462,8 +479,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'logo' }, { fieldName: 'ticket_form_ids' }),
       fieldTypeOverrides: [
         { fieldName: 'help_center_state', fieldType: 'string', restrictions: { enforce_value: true, values: ['enabled', 'disabled', 'restricted'] } },
+        { fieldName: 'id', fieldType: 'number' },
       ],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      serviceUrl: '/admin/account/brand_management/brands',
     },
     deployRequests: {
       add: {
@@ -495,6 +514,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['locale'],
       fileNameFields: ['locale'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
     },
   },
   business_hours_schedules: {
@@ -517,6 +537,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       standaloneFields: [{ fieldName: 'holidays' }],
       sourceTypeName: 'business_hours_schedules__schedules',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      serviceUrl: '/admin/objects-rules/rules/schedules',
     },
     deployRequests: {
       add: {
@@ -548,6 +570,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'status', fieldType: 'string', restrictions: { enforce_value: true, values: ['accepted', 'declined', 'pending', 'inactive'] } },
         { fieldName: 'type', fieldType: 'string', restrictions: { enforce_value: true, values: ['inbound', 'outbound'] } },
+        { fieldName: 'id', fieldType: 'number' },
       ],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
     },
@@ -584,6 +607,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'domain_verification_status', fieldType: 'string', restrictions: { enforce_value: true, values: ['unknown', 'verified', 'failed'] } },
         { fieldName: 'forwarding_status', fieldType: 'string', restrictions: { enforce_value: true, values: ['unknown', 'waiting', 'verified', 'failed'] } },
         { fieldName: 'spf_status', fieldType: 'string', restrictions: { enforce_value: true, values: ['unknown', 'verified', 'failed'] } },
+        { fieldName: 'id', fieldType: 'number' },
       ],
       fieldsToHide: FIELDS_TO_HIDE.concat([
         { fieldName: 'id', fieldType: 'number' },
@@ -620,6 +644,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToHide: FIELDS_TO_HIDE.concat([
         { fieldName: 'id', fieldType: 'number' },
       ]),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       serviceUrl: '/admin/objects-rules/tickets/ticket-forms/edit/{id}',
     },
     deployRequests: {
@@ -649,11 +674,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   ticket_field: {
     transformation: {
       sourceTypeName: 'ticket_fields__ticket_fields',
-      idFields: ['type', 'title'],
-      fileNameFields: ['type', 'title'],
+      idFields: ['title', 'type'],
+      fileNameFields: ['title', 'type'],
       standaloneFields: [{ fieldName: 'custom_field_options' }],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'position', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       serviceUrl: '/admin/objects-rules/tickets/ticket-fields/{id}',
     },
     deployRequests: {
@@ -710,6 +736,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       idFields: ['value'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
     },
   },
   user_field: {
@@ -719,6 +746,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       standaloneFields: [{ fieldName: 'custom_field_options' }],
       fieldTypeOverrides: [
         { fieldName: 'type', fieldType: 'string', restrictions: { enforce_value: true, values: ['checkbox', 'date', 'decimal', 'dropdown', 'integer', 'regexp', 'text', 'textarea'] } },
+        { fieldName: 'id', fieldType: 'number' },
       ],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       serviceUrl: '/agent/admin/user_fields/{id}',
@@ -780,6 +808,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'default', fieldType: 'boolean' },
       ),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
     },
   },
   user_field_order: {
@@ -797,6 +826,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       standaloneFields: [{ fieldName: 'custom_field_options' }],
       fieldTypeOverrides: [
         { fieldName: 'type', fieldType: 'string', restrictions: { enforce_value: true, values: ['checkbox', 'date', 'decimal', 'dropdown', 'integer', 'regexp', 'text', 'textarea'] } },
+        { fieldName: 'id', fieldType: 'number' },
       ],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       serviceUrl: '/agent/admin/organization_fields/{id}',
@@ -829,6 +859,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       idFields: ['value'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
     },
   },
   organization_field_order: {
@@ -847,6 +878,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       standaloneFields: [{ fieldName: 'values' }],
       sourceTypeName: 'routing_attributes__attributes',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'string' }),
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'string' },
+      ],
+      serviceUrl: '/admin/objects-rules/rules/routing',
     },
     deployRequests: {
       add: {
@@ -886,6 +921,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['title'],
       fileNameFields: ['title'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      serviceUrl: '/admin/workspaces/agent-workspace/contextual-workspaces',
     },
     deployRequests: {
       add: {
@@ -945,6 +982,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'updated', fieldType: 'string' }),
       idFields: ['settings.name', 'app_id'],
       fileNameFields: ['settings.name', 'app_id'],
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      serviceUrl: '/admin/apps-integrations/apps/support-apps',
     },
     deployRequests: {
       add: {
@@ -970,6 +1009,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   app_owned: {
     transformation: {
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       sourceTypeName: 'apps_owned__apps',
     },
   },
@@ -988,6 +1028,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'secret', fieldType: 'string' },
         { fieldName: 'user_id', fieldType: 'number' },
       ]),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      serviceUrl: '/admin/apps-integrations/apis/zendesk-api/oauth_clients',
     },
     deployRequests: {
       add: {
@@ -1017,6 +1059,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       sourceTypeName: 'oauth_global_clients__global_clients',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
     },
   },
   account_setting: {
@@ -1037,12 +1080,14 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       sourceTypeName: 'resource_collections__resource_collections',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
     },
   },
   monitored_twitter_handle: {
     transformation: {
       sourceTypeName: 'monitored_twitter_handles__monitored_twitter_handles',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
     },
   },
 
@@ -1202,6 +1247,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: '.',
       standaloneFields: [{ fieldName: 'variants' }],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      serviceUrl: '/admin/workspaces/agent-workspace/dynamic_content',
     },
     deployRequests: {
       add: {
@@ -1231,6 +1278,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       idFields: ['&locale_id'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
     },
     deployRequests: {
       add: {
@@ -1304,6 +1352,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       sourceTypeName: 'business_hours_schedule__holidays',
       dataField: 'holidays',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
     },
   },
   // eslint-disable-next-line camelcase
@@ -1398,6 +1447,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       sourceTypeName: 'routing_attribute__values',
       dataField: 'attribute_values',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'string' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'string' }],
+      serviceUrl: '/admin/objects-rules/rules/routing',
     },
   },
   // eslint-disable-next-line camelcase
@@ -1491,6 +1542,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'created_by', fieldType: 'string' },
         { fieldName: 'updated_by', fieldType: 'string' },
       ),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'string' }],
       serviceUrl: '/admin/apps-integrations/webhooks/webhooks/{id}/details',
     },
     deployRequests: {
@@ -1561,6 +1613,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     }],
     exclude: [
       { type: 'organization' },
+      { type: 'oauth_global_client' },
     ],
     hideTypes: true,
     enableMissingReferences: true,

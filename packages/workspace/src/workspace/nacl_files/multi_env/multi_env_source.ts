@@ -98,6 +98,7 @@ export type MultiEnvSource = {
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
   getElementNaclFiles: (env: string, id: ElemID) => Promise<string[]>
   getElementReferencedFiles: (env: string, id: ElemID) => Promise<string[]>
+  getElementFileNames: (env: string) => Promise<Map<string, string[]>>
   setNaclFiles: (naclFiles: NaclFile[]) => Promise<EnvsChanges>
   removeNaclFiles: (names: string[]) => Promise<EnvsChanges>
   getSourceMap: (filename: string) => Promise<SourceMap>
@@ -655,6 +656,24 @@ const buildMultiEnvSource = (
       _.flatten(await Promise.all(Object.entries(getActiveSources(env))
         .map(async ([prefix, source]) => (
           await source.getElementNaclFiles(id)).map(p => buildFullPath(prefix, p))))),
+    getElementFileNames: async (env: string): Promise<Map<string, string[]>> => {
+      const res = new Map<string, string[]>()
+      const elementFilenamesBySource = await mapValuesAsync(
+        getActiveSources(env),
+        source => source.getElementFileNames()
+      )
+      Object.entries(elementFilenamesBySource).forEach(([envName, elementsFileNames]) => {
+        elementsFileNames.forEach((fileNames, element) => {
+          const fullFileNames = fileNames.map(fileName => buildFullPath(envName, fileName))
+          const currentValue = res.get(element)
+          res.set(
+            element,
+            currentValue === undefined ? fullFileNames : currentValue.concat(fullFileNames)
+          )
+        })
+      })
+      return res
+    },
     getElementReferencedFiles: async (env: string, id: ElemID): Promise<string[]> =>
       _.flatten(await Promise.all(Object.entries(getActiveSources(env))
         .map(async ([prefix, source]) => (

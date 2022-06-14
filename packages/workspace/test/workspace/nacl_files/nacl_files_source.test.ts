@@ -409,6 +409,7 @@ describe('Nacl Files Source', () => {
           data: {
             errors: () => Promise.resolve([]),
             referenced: () => Promise.resolve([]),
+            staticFiles: () => Promise.resolve([]),
           },
         },
       ]
@@ -593,6 +594,23 @@ describe('Nacl Files Source', () => {
       expect(src.isPathIncluded('whateves.nacl')).toEqual({
         included: false,
       })
+    })
+  })
+  describe('getElementFileNames', () => {
+    it('should return correct result if there are files', async () => {
+      const src1 = await naclFilesSource(
+        '',
+        mockDirStore,
+        mockedStaticFilesSource,
+        () => Promise.resolve(new InMemoryRemoteMap()),
+        true
+      )
+      await src1.load({})
+      await src1.updateNaclFiles([createChange()])
+      const res = await src1.getElementFileNames()
+      expect(Array.from(res.entries())).toEqual([
+        ['salesforce.new_elem', ['file']],
+      ])
     })
   })
 })

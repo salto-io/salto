@@ -40,7 +40,7 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { flatValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
-import { AccountId, Value } from '@salto-io/adapter-api'
+import { AccountId, CredentialError, Value } from '@salto-io/adapter-api'
 import {
   CUSTOM_OBJECT_ID_FIELD,
   DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS,
@@ -109,8 +109,12 @@ const DEFAULT_READ_METADATA_CHUNK_SIZE: Required<ReadMetadataChunkSizeConfig> = 
 const errorMessagesToRetry = [
   'Cannot read property \'result\' of null',
   'Too many properties to enumerate',
-  'retry your request', // We saw "unknown_error: retry your request" error message,
-  //  but in case there is another error that says "retry your request", probably we should retry it
+  /**
+   * We saw "unknown_error: retry your request" error message,
+   * but in case there is another error that says "retry your request", probably we should retry it
+   */
+  'retry your request',
+  'Polling time out',
 ]
 
 type RateLimitBucketName = keyof ClientRateLimitConfig
@@ -172,20 +176,17 @@ export type SalesforceClientOpts = {
 
 const DEFAULT_POLLING_CONFIG = {
   interval: 3000,
-  timeout: 5400000,
+  deployTimeout: 1000 * 60 * 90, // 90 minutes
+  fetchTimeout: 1000 * 60 * 30, // 30 minutes
 }
 
 export const setPollIntervalForConnection = (
   connection: Connection,
   pollingConfig: Required<ClientPollingConfig>,
 ): void => {
-  // Set poll interval and timeout for deploy
+  // Set poll interval for fetch & bulk ops (e.g. CSV deletes)
   connection.metadata.pollInterval = pollingConfig.interval
-  connection.metadata.pollTimeout = pollingConfig.timeout
-
-  // Set poll interval and timeout for bulk ops, (e.g, CSV deletes)
   connection.bulk.pollInterval = pollingConfig.interval
-  connection.bulk.pollTimeout = pollingConfig.timeout
 }
 
 export const createRequestModuleFunction = (retryOptions: RequestRetryOptions) =>
@@ -274,6 +275,7 @@ const sendChunked = async <TIn, TOut>({
   const sendSingleChunk = async (chunkInput: TIn[]):
   Promise<SendChunkedResult<TIn, TOut>> => {
     try {
+      log.debug('Sending chunked %s on %o', operationInfo, chunkInput)
       const result = makeArray(await sendChunk(chunkInput)).map(flatValues)
       if (chunkSize === 1 && chunkInput.length > 0) {
         log.debug('Finished %s on %o', operationInfo, chunkInput[0])
@@ -343,15 +345,19 @@ const createConnectionFromCredentials = (
   options: RequestRetryOptions,
 ): Connection => {
   if (creds instanceof OauthAccessTokenCredentials) {
-    return oauthConnection({
-      instanceUrl: creds.instanceUrl,
-      accessToken: creds.accessToken,
-      refreshToken: creds.refreshToken,
-      retryOptions: options,
-      clientId: creds.clientId,
-      clientSecret: creds.clientSecret,
-      isSandbox: creds.isSandbox,
-    })
+    try {
+      return oauthConnection({
+        instanceUrl: creds.instanceUrl,
+        accessToken: creds.accessToken,
+        refreshToken: creds.refreshToken,
+        retryOptions: options,
+        clientId: creds.clientId,
+        clientSecret: creds.clientSecret,
+        isSandbox: creds.isSandbox,
+      })
+    } catch (error) {
+      throw new CredentialError(error.message)
+    }
   }
   return realConnection(creds.isSandbox, options)
 }
@@ -359,7 +365,11 @@ const createConnectionFromCredentials = (
 export const loginFromCredentialsAndReturnOrgId = async (
   connection: Connection, creds: Credentials): Promise<string> => {
   if (creds instanceof UsernamePasswordCredentials) {
-    return (await connection.login(creds.username, creds.password + (creds.apiToken ?? ''))).organizationId
+    try {
+      return (await connection.login(creds.username, creds.password + (creds.apiToken ?? ''))).organizationId
+    } catch (error) {
+      throw new CredentialError(error.message)
+    }
   }
   // Oauth connection doesn't require further login
   const identityInfo = await connection.identity()
@@ -399,13 +409,14 @@ export const validateCredentials = async (
   }
   return orgId
 }
-
 export default class SalesforceClient {
   private readonly retryOptions: RequestRetryOptions
   private readonly conn: Connection
   private isLoggedIn = false
   private readonly credentials: Credentials
   private readonly config?: SalesforceClientConfig
+  private readonly setFetchPollingTimeout: () => void
+  private readonly setDeployPollingTimeout: () => void
   readonly rateLimiters: Record<RateLimitBucketName, Bottleneck>
   readonly dataRetry: CustomObjectsDeployRetryConfig
   readonly clientName: string
@@ -421,7 +432,18 @@ export default class SalesforceClient {
       credentials,
       this.retryOptions,
     )
-    setPollIntervalForConnection(this.conn, _.defaults({}, config?.polling, DEFAULT_POLLING_CONFIG))
+    const pollingConfig = _.defaults({}, config?.polling, DEFAULT_POLLING_CONFIG)
+    this.setFetchPollingTimeout = () => {
+      this.conn.metadata.pollTimeout = pollingConfig.fetchTimeout
+      this.conn.bulk.pollTimeout = pollingConfig.fetchTimeout
+    }
+    this.setDeployPollingTimeout = () => {
+      this.conn.metadata.pollTimeout = pollingConfig.deployTimeout
+      this.conn.bulk.pollTimeout = pollingConfig.deployTimeout
+    }
+
+    setPollIntervalForConnection(this.conn, pollingConfig)
+    this.setFetchPollingTimeout()
     this.rateLimiters = createRateLimitersFromConfig(
       _.defaults({}, config?.maxConcurrentApiRequests, DEFAULT_MAX_CONCURRENT_API_REQUESTS),
       SALESFORCE
@@ -434,6 +456,7 @@ export default class SalesforceClient {
       config?.readMetadataChunkSize,
     )
   }
+
 
   async ensureLoggedIn(): Promise<void> {
     if (!this.isLoggedIn) {
@@ -642,15 +665,18 @@ export default class SalesforceClient {
   @logDecorator()
   @requiresLogin()
   public async deploy(zip: Buffer): Promise<DeployResult> {
+    this.setDeployPollingTimeout()
     const defaultDeployOptions = { rollbackOnError: true, ignoreWarnings: true }
     const optionsToSend = ['rollbackOnError', 'ignoreWarnings', 'purgeOnDelete',
       'checkOnly', 'testLevel', 'runTests']
-    return flatValues(
+    const deployResult = flatValues(
       await this.conn.metadata.deploy(
         zip,
         _.merge(defaultDeployOptions, _.pick(this.config?.deploy, optionsToSend)),
       ).complete(true)
     )
+    this.setFetchPollingTimeout()
+    return deployResult
   }
 
   @throttle<ClientRateLimitConfig>({ bucketName: 'query' })

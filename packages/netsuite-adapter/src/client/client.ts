@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
+import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
@@ -26,7 +26,7 @@ import SdfClient from './sdf_client'
 import SuiteAppClient from './suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from '../suiteapp_file_cabinet'
 import { ConfigRecord, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
-import { AdditionalDependencies, GetCustomObjectsResult, ImportFileCabinetResult } from './types'
+import { AdditionalDependencies, CustomizationInfo, GetCustomObjectsResult, ImportFileCabinetResult } from './types'
 import { getReferencedInstances } from '../reference_dependencies'
 import { getLookUpName, toCustomizationInfo } from '../transformer'
 import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../group_changes'
@@ -72,7 +72,7 @@ export default class NetsuiteClient {
         await SuiteAppClient.validateCredentials(credentials)
       } catch (e) {
         e.message = `Salto SuiteApp Authentication failed. ${e.message}`
-        throw e
+        throw new CredentialError(e.message)
       }
     } else {
       log.debug('SuiteApp is not configured - skipping SuiteApp credentials validation')
@@ -82,7 +82,7 @@ export default class NetsuiteClient {
       return await SdfClient.validateCredentials(credentials)
     } catch (e) {
       e.message = `SDF Authentication failed. ${e.message}`
-      throw e
+      throw new CredentialError(e)
     }
   }
 
@@ -161,6 +161,37 @@ export default class NetsuiteClient {
       : failedElemIDs
   }
 
+  private static async toCustomizationInfos(
+    instances: InstanceElement[],
+    deployReferencedElements: boolean
+  ): Promise<CustomizationInfo[]> {
+    return awu(await getReferencedInstances(instances, deployReferencedElements))
+      .map(instance => resolveValues(instance, getLookUpName))
+      .map(convertInstanceMapsToLists)
+      .map(toCustomizationInfo)
+      .toArray()
+  }
+
+  private async sdfValidate(
+    changes: ReadonlyArray<Change<InstanceElement>>,
+    deployReferencedElements: boolean,
+    additionalDependencies: AdditionalDependencies
+  ): Promise<void> {
+    const suiteAppId = getChangeData(changes[0]).value[APPLICATION_ID]
+    const customizationInfos = await NetsuiteClient.toCustomizationInfos(
+      changes.map(getChangeData),
+      deployReferencedElements
+    )
+    await log.time(
+      () => this.sdfClient.deploy(
+        customizationInfos,
+        suiteAppId,
+        { additionalDependencies, validateOnly: true }
+      ),
+      'sdfValidate'
+    )
+  }
+
   private async sdfDeploy(
     changes: ReadonlyArray<Change<InstanceElement>>,
     deployReferencedElements: boolean,
@@ -173,19 +204,15 @@ export default class NetsuiteClient {
     while (changesToDeploy.length > 0) {
       const changedInstances = changesToDeploy.map(getChangeData)
       // eslint-disable-next-line no-await-in-loop
-      const customizationInfos = await awu(await getReferencedInstances(
+      const customizationInfos = await NetsuiteClient.toCustomizationInfos(
         changedInstances,
         deployReferencedElements
-      )).map(instance => resolveValues(instance, getLookUpName))
-        .map(convertInstanceMapsToLists)
-        .map(toCustomizationInfo)
-        .toArray()
-
+      )
       try {
         log.debug('deploying %d changes', changesToDeploy.length)
         // eslint-disable-next-line no-await-in-loop
         await log.time(
-          () => this.sdfClient.deploy(customizationInfos, suiteAppId, additionalDependencies),
+          () => this.sdfClient.deploy(customizationInfos, suiteAppId, { additionalDependencies }),
           'sdfDeploy'
         )
         return { errors, appliedChanges: changesToDeploy }
@@ -225,6 +252,18 @@ export default class NetsuiteClient {
       }
     }
     return { errors, appliedChanges: [] }
+  }
+
+  @NetsuiteClient.logDecorator
+  public async validate(
+    changes: Change<InstanceElement>[],
+    groupID: string,
+    deployReferencedElements: boolean,
+    additionalSdfDependencies: AdditionalDependencies,
+  ): Promise<void> {
+    if (groupID.startsWith(SDF_CHANGE_GROUP_ID)) {
+      await this.sdfValidate(changes, deployReferencedElements, additionalSdfDependencies)
+    }
   }
 
   @NetsuiteClient.logDecorator

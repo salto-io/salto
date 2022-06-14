@@ -32,7 +32,8 @@ import * as merger from './src/merger'
 import * as expressions from './src/expressions'
 import * as serialization from './src/serializer/elements'
 import * as pathIndex from './src/workspace/path_index'
-import { createElementSelector, ElementSelector, validateSelectorsMatches,
+import { Author } from './src/workspace/changed_by_index'
+import { createElementSelector, ElementSelector, validateSelectorsMatches, createTopLevelSelector,
   selectElementsBySelectors, selectElementIdsByTraversal, createElementSelectors, ElementIDToValue } from './src/workspace/element_selector'
 import * as validator from './src/validator'
 import * as elementSource from './src/workspace/elements_source'
@@ -79,6 +80,7 @@ export {
   validateSelectorsMatches,
   selectElementsBySelectors,
   createElementSelectors,
+  createTopLevelSelector,
   selectElementIdsByTraversal,
   ElementIDToValue,
   RemoteElementSource,
@@ -94,4 +96,5 @@ export {
   getElementsPathHints,
   updateElementsWithAlternativeAccount,
   createAdapterReplacedID,
+  Author,
 }

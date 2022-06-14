@@ -30,14 +30,19 @@ import SdfClient, {
   FOLDER_ATTRIBUTES_FILE_SUFFIX,
   MINUTE_IN_MILLISECONDS,
 } from '../../src/client/sdf_client'
-import { AdditionalDependencies, CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from '../../src/client/types'
+import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, SdfDeployParams, TemplateCustomTypeInfo } from '../../src/client/types'
 import { fileCabinetTopLevelFolders } from '../../src/client/constants'
 import { DEFAULT_COMMAND_TIMEOUT_IN_MINUTES } from '../../src/config'
-import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
+import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, ObjectsValidationError, SettingsDeployError } from '../../src/errors'
 
-const DEFAULT_DEPLOY_PARAMS: [undefined, AdditionalDependencies] = [
+const DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams] = [
   undefined,
-  { include: { features: [], objects: [] }, exclude: { features: [], objects: [] } },
+  {
+    additionalDependencies: {
+      include: { features: [], objects: [] },
+      exclude: { features: [], objects: [] },
+    },
+  },
 ]
 
 const MOCK_TEMPLATE_CONTENT = Buffer.from('Template Inner Content')
@@ -77,31 +82,32 @@ const MOCK_MANIFEST_INVALID_DEPENDENCIES = `<manifest projecttype="ACCOUNTCUSTOM
 </manifest>`
 
 const MOCK_MANIFEST_VALID_DEPENDENCIES = `<manifest projecttype="ACCOUNTCUSTOMIZATION">
-<projectname>TempSdfProject-56067b34-18db-4372-a35b-e2ed2c3aaeb3</projectname>
-<frameworkversion>1.0</frameworkversion>
-<dependencies>
-  <features>
-    <feature required="true">SFA</feature>
-    <feature required="true">MULTICURRENCYVENDOR</feature>
-    <feature required="true">ACCOUNTING</feature>
-    <feature required="true">ADDRESSCUSTOMIZATION</feature>
-    <feature required="true">SUBSIDIARIES</feature>
-    <feature required="true">RECEIVABLES</feature>
-  </features>
-  <objects>
-    <object>custentity2edited</object>
-    <object>custentity13</object>
-    <object>custentity_14</object>
-    <object>custentity10</object>
-    <object>custentitycust_active</object>
-    <object>custentity11</object>
-    <object>custentity_slt_tax_reg</object>
-  </objects>
-  <files>
-    <file>/SuiteScripts/clientScript_2_0.js</file>
-  </files>
-</dependencies>
-</manifest>`
+  <projectname>TempSdfProject-56067b34-18db-4372-a35b-e2ed2c3aaeb3</projectname>
+  <frameworkversion>1.0</frameworkversion>
+  <dependencies>
+    <features>
+      <feature required="true">SFA</feature>
+      <feature required="true">MULTICURRENCYVENDOR</feature>
+      <feature required="true">ACCOUNTING</feature>
+      <feature required="true">ADDRESSCUSTOMIZATION</feature>
+      <feature required="true">SUBSIDIARIES</feature>
+      <feature required="true">RECEIVABLES</feature>
+    </features>
+    <objects>
+      <object>custentity2edited</object>
+      <object>custentity13</object>
+      <object>custentity_14</object>
+      <object>custentity10</object>
+      <object>custentitycust_active</object>
+      <object>custentity11</object>
+      <object>custentity_slt_tax_reg</object>
+    </objects>
+    <files>
+      <file>/SuiteScripts/clientScript_2_0.js</file>
+    </files>
+  </dependencies>
+</manifest>
+`
 
 const MOCK_FEATURES_XML = '<features><feature><id>SUITEAPPCONTROLCENTER</id><status>ENABLED</status></feature></features>'
 
@@ -209,6 +215,8 @@ describe('sdf client', () => {
     .objectContaining({ commandName: COMMANDS.ADD_PROJECT_DEPENDENCIES })
   const deployProjectCommandMatcher = expect
     .objectContaining({ commandName: COMMANDS.DEPLOY_PROJECT })
+  const validateProjectCommandMatcher = expect
+    .objectContaining({ commandName: COMMANDS.VALIDATE_PROJECT })
   const deleteAuthIdCommandMatcher = expect.objectContaining({
     commandName: COMMANDS.MANAGE_AUTH,
     arguments: expect.objectContaining({
@@ -1766,6 +1774,93 @@ File: ~/AccountConfiguration/features.xml`
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
+    })
+    describe('validate only', () => {
+      const failObject = 'failObject'
+      const deployParams: [CustomTypeInfo[], undefined, SdfDeployParams] = [
+        [
+          { typeName: 'typeName', values: { key: 'val' }, scriptId: failObject },
+          { typeName: 'typeName', values: { key: 'val' }, scriptId: 'successObject' },
+        ],
+        undefined,
+        { ...DEFAULT_DEPLOY_PARAMS[1], validateOnly: true },
+      ]
+      beforeEach(() => {
+        jest.clearAllMocks()
+      })
+      it('should validate without errors', async () => {
+        mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: [''] })
+        await client.deploy(...deployParams)
+        expect(mockExecuteAction).toHaveBeenCalledWith(validateProjectCommandMatcher)
+      })
+      it('should throw ObjectsValidationError', async () => {
+        let projectPath: string
+        let errorMessage: string
+        const objectErrorMessage = 'some validation error message.'
+        mockExecuteAction.mockImplementation(context => {
+          if (context.commandName === COMMANDS.CREATE_PROJECT) {
+            projectPath = context.arguments.parentdirectory
+            return Promise.resolve({ isSuccess: () => true })
+          }
+          if (context.commandName === COMMANDS.VALIDATE_PROJECT) {
+            errorMessage = `
+Errors for file ${projectPath}/src/Objects/${failObject}.xml.
+     Line 1 - Error Message: ${objectErrorMessage}
+Errors for file ${projectPath}/src/Objects/${failObject}.xml.`
+            throw new Error(errorMessage)
+          }
+          return Promise.resolve({ isSuccess: () => true })
+        })
+
+        try {
+          await client.deploy(...deployParams)
+          // should throw before this test
+          expect(false).toBeTruthy()
+        } catch (e) {
+          expect(e instanceof ObjectsValidationError).toBeTruthy()
+          expect(e.invalidObjects instanceof Map).toBeTruthy()
+          expect(e.invalidObjects.get(failObject)).toContain(objectErrorMessage)
+        }
+      })
+      it('should throw ManifestValidationError', async () => {
+        let projectPath: string
+        let errorMessage: string
+        const manifestErrorMessage = 'some manifest validation error message.'
+        mockExecuteAction.mockImplementation(context => {
+          if (context.commandName === COMMANDS.CREATE_PROJECT) {
+            projectPath = context.arguments.parentdirectory
+            return Promise.resolve({ isSuccess: () => true })
+          }
+          if (context.commandName === COMMANDS.VALIDATE_PROJECT) {
+            errorMessage = `
+Errors for file ${projectPath}/src/manifest.xml.
+     Line 1 - Error Message: ${manifestErrorMessage}
+`
+            throw new Error(errorMessage)
+          }
+          return Promise.resolve({ isSuccess: () => true })
+        })
+
+        try {
+          await client.deploy(...deployParams)
+          // should throw before this test
+          expect(false).toBeTruthy()
+        } catch (e) {
+          expect(e instanceof ManifestValidationError).toBeTruthy()
+          expect(e.message).toEqual(manifestErrorMessage)
+        }
+      })
+      it('should throw error', async () => {
+        const errorMessage = 'some error'
+        mockExecuteAction.mockImplementation(context => {
+          if (context.commandName === COMMANDS.VALIDATE_PROJECT) {
+            throw new Error(errorMessage)
+          }
+          return Promise.resolve({ isSuccess: () => true })
+        })
+        await expect(client.deploy(...deployParams)).rejects.toThrow(errorMessage)
+        expect(mockExecuteAction).toHaveBeenCalledWith(validateProjectCommandMatcher)
+      })
     })
   })
 })

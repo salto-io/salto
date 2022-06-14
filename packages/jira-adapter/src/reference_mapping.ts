@@ -297,6 +297,16 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     target: { type: 'Field' },
   },
   {
+    src: { field: 'groups', parentTypes: ['ConditionConfiguration'] },
+    serializationStrategy: 'name',
+    target: { type: 'Group' },
+  },
+  {
+    src: { field: 'group', parentTypes: ['ConditionConfiguration'] },
+    serializationStrategy: 'name',
+    target: { type: 'Group' },
+  },
+  {
     src: { field: 'id', parentTypes: ['ConditionStatus'] },
     serializationStrategy: 'id',
     target: { type: 'Status' },
@@ -305,6 +315,21 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     src: { field: 'id', parentTypes: ['ConditionProjectRole'] },
     serializationStrategy: 'id',
     target: { type: 'ProjectRole' },
+  },
+  {
+    src: { field: 'groups', parentTypes: ['ApplicationRole'] },
+    serializationStrategy: 'name',
+    target: { type: 'Group' },
+  },
+  {
+    src: { field: 'defaultGroups', parentTypes: ['ApplicationRole'] },
+    serializationStrategy: 'name',
+    target: { type: 'Group' },
+  },
+  {
+    src: { field: 'parameter', parentTypes: ['PermissionHolder'] },
+    serializationStrategy: 'name',
+    target: { type: 'Group' },
   },
 ]
 

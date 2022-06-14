@@ -16,8 +16,8 @@
 import { isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { FilterCreator } from '../filter'
-import { FIELD_TYPE_NAME } from './fields/constants'
+import { FilterCreator } from '../../filter'
+import { FIELD_TYPE_NAME } from '../fields/constants'
 
 const log = logger(module)
 
@@ -40,7 +40,7 @@ const filter: FilterCreator = ({ fetchQuery }) => ({
         )
         instance.value.fields = fields
         if (trashedFields.length !== 0) {
-          log.debug(`Removed from ${instance.elemID.getFullName()} fields with ids: ${trashedFields.map(field => field.id).join(', ')}`)
+          log.debug(`Removed from ${instance.elemID.getFullName()} fields with ids: ${trashedFields.map(field => (isReferenceExpression(field.id) ? field.id.elemID.getFullName() : field.id)).join(', ')}`)
         }
       })
   },

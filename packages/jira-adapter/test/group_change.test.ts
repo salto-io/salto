@@ -15,7 +15,7 @@
 */
 import { ElemID, InstanceElement, ObjectType, toChange, Change, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { getChangeGroupIds } from '../src/group_change'
-import { JIRA, SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, WORKFLOW_TYPE_NAME } from '../src/constants'
+import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, FIELD_CONFIGURATION_TYPE_NAME, JIRA, SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, WORKFLOW_TYPE_NAME } from '../src/constants'
 
 describe('group change', () => {
   let workflowType: ObjectType
@@ -27,6 +27,14 @@ describe('group change', () => {
   let securityLevelInstance: InstanceElement
   let securitySchemeType: ObjectType
   let securitySchemeInstance: InstanceElement
+
+  let fieldConfigurationType: ObjectType
+  let fieldConfigurationItemType: ObjectType
+  let fieldConfigurationItemInstance1: InstanceElement
+  let fieldConfigurationItemInstance2: InstanceElement
+  let fieldConfigurationItemInstance3: InstanceElement
+  let fieldConfiguration1: InstanceElement
+  let fieldConfiguration2: InstanceElement
 
   beforeEach(() => {
     workflowType = new ObjectType({ elemID: new ElemID(JIRA, WORKFLOW_TYPE_NAME) })
@@ -46,6 +54,58 @@ describe('group change', () => {
       {
         [CORE_ANNOTATIONS.PARENT]: [
           new ReferenceExpression(securitySchemeInstance.elemID, securitySchemeInstance),
+        ],
+      }
+    )
+
+    fieldConfigurationType = new ObjectType({
+      elemID: new ElemID(JIRA, FIELD_CONFIGURATION_TYPE_NAME),
+    })
+    fieldConfigurationItemType = new ObjectType({
+      elemID: new ElemID(JIRA, FIELD_CONFIGURATION_ITEM_TYPE_NAME),
+    })
+
+    fieldConfiguration1 = new InstanceElement(
+      'parent1',
+      fieldConfigurationType,
+    )
+    fieldConfiguration2 = new InstanceElement(
+      'parent2',
+      fieldConfigurationType,
+    )
+
+    fieldConfigurationItemInstance1 = new InstanceElement(
+      'fieldConfigurationItemInstance1',
+      fieldConfigurationItemType,
+      {},
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: [
+          new ReferenceExpression(fieldConfiguration1.elemID, fieldConfiguration1),
+        ],
+      }
+    )
+
+    fieldConfigurationItemInstance2 = new InstanceElement(
+      'fieldConfigurationItemInstance2',
+      fieldConfigurationItemType,
+      {},
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: [
+          new ReferenceExpression(fieldConfiguration1.elemID, fieldConfiguration1),
+        ],
+      }
+    )
+
+    fieldConfigurationItemInstance3 = new InstanceElement(
+      'fieldConfigurationItemInstance3',
+      fieldConfigurationItemType,
+      {},
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: [
+          new ReferenceExpression(fieldConfiguration2.elemID, fieldConfiguration2),
         ],
       }
     )
@@ -96,6 +156,38 @@ describe('group change', () => {
       })],
       [securitySchemeInstance.elemID.getFullName(), toChange({
         after: securitySchemeInstance,
+      })],
+    ]))).rejects.toThrow()
+  })
+
+  it('should group field configuration items', async () => {
+    const changeGroupIds = (await getChangeGroupIds(new Map<string, Change>([
+      [fieldConfigurationItemInstance1.elemID.getFullName(), toChange({
+        after: fieldConfigurationItemInstance1,
+      })],
+      [fieldConfigurationItemInstance2.elemID.getFullName(), toChange({
+        after: fieldConfigurationItemInstance2,
+      })],
+      [fieldConfigurationItemInstance3.elemID.getFullName(), toChange({
+        after: fieldConfigurationItemInstance3,
+      })],
+    ]))).changeGroupIdMap
+
+    expect(changeGroupIds.get(fieldConfigurationItemInstance1.elemID.getFullName()))
+      .toBe(`${fieldConfiguration1.elemID.getFullName()} items`)
+
+    expect(changeGroupIds.get(fieldConfigurationItemInstance2.elemID.getFullName()))
+      .toBe(`${fieldConfiguration1.elemID.getFullName()} items`)
+
+    expect(changeGroupIds.get(fieldConfigurationItemInstance3.elemID.getFullName()))
+      .toBe(`${fieldConfiguration2.elemID.getFullName()} items`)
+  })
+
+  it('should throw if field configuration does not have parent', async () => {
+    delete fieldConfigurationItemInstance1.annotations[CORE_ANNOTATIONS.PARENT]
+    await expect(getChangeGroupIds(new Map<string, Change>([
+      [fieldConfigurationItemInstance1.elemID.getFullName(), toChange({
+        after: fieldConfigurationItemInstance1,
       })],
     ]))).rejects.toThrow()
   })

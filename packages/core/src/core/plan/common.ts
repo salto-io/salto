@@ -14,9 +14,6 @@
 * limitations under the License.
 */
 import { DiffGraphTransformer } from '@salto-io/dag'
-import { ChangeDataType, ElemID, Change } from '@salto-io/adapter-api'
+import { ChangeDataType } from '@salto-io/adapter-api'
 
 export type PlanTransformer = DiffGraphTransformer<ChangeDataType>
-
-export const changeId = ({ elemID }: { elemID: ElemID }, action: Change['action']): string =>
-  `${elemID.getFullName()}/${action}`

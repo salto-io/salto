@@ -342,7 +342,7 @@ describe('Transformer', () => {
         )
         expect(result.path)
           .toEqual([NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates',
-            'Inner EmailTemplates Folder'])
+            'Inner EmailTemplates Folder', 'Inner EmailTemplates Folder'])
       })
 
       it('should create instance path correctly for folder instance when it has . prefix', async () => {
@@ -351,7 +351,8 @@ describe('Transformer', () => {
         const result = await createInstanceElement(folderCustomizationInfoWithDotPrefix,
           folder, mockGetElemIdFunc)
         expect(result.path)
-          .toEqual([NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates', '_hiddenFolder'])
+          .toEqual([NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates', '_hiddenFolder',
+            '_hiddenFolder'])
       })
 
       it('should transform path field correctly', async () => {

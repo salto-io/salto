@@ -16,7 +16,7 @@
 import {
   ObjectType, PrimitiveType, PrimitiveTypes, Element, ElemID, Variable, isMapType, isContainerType,
   isObjectType, InstanceElement, BuiltinTypes, isListType, isVariable,
-  isType, isPrimitiveType, ListType, ReferenceExpression, VariableExpression,
+  isType, isPrimitiveType, ListType, ReferenceExpression, VariableExpression, TemplateExpression,
 } from '@salto-io/adapter-api'
 
 // import each from 'jest-each'
@@ -206,7 +206,19 @@ describe('Salto parser', () => {
       type salesforce.escapedDashBeforeQuote {
         str = "you can't run away \\\\"
       }
+
+      type salesforce.templates {
+        tmpl = "hello {{$\{temp.la@te.instance.stuff@us}}}"
+      }
       
+      type salesforce.multiline_templates {
+        tmpl = '''
+multiline
+template {{$\{te@mp.late.instance.multiline_stuff@us}}}
+value
+'''
+      }
+
       `
     beforeAll(async () => {
       const parsed = await parse(Buffer.from(body), 'none', functions)
@@ -220,7 +232,7 @@ describe('Salto parser', () => {
 
     describe('parse result', () => {
       it('should have all types', () => {
-        expect(elements.length).toBe(22)
+        expect(elements.length).toBe(24)
         expect(genericTypes.length).toBe(2)
       })
     })
@@ -692,6 +704,30 @@ describe('Salto parser', () => {
 
       it('should parse references to variables as VariableExpressions', () => {
         expect(refObj.annotations.toVar).toBeInstanceOf(VariableExpression)
+      })
+    })
+
+    describe('templates', () => {
+      let refObj: ObjectType
+      let multilineRefObj: ObjectType
+
+      beforeAll(() => {
+        refObj = elements[22] as ObjectType
+        multilineRefObj = elements[23] as ObjectType
+      })
+
+      it('should parse references to template as TemplateExpression', () => {
+        expect(refObj.annotations.tmpl).toBeInstanceOf(TemplateExpression)
+        expect(refObj.annotations.tmpl.parts).toEqual(['hello {{', expect.objectContaining({
+          elemID: new ElemID('temp', 'la@te', 'instance', 'stuff@us'),
+        }), '}}'])
+      })
+
+      it('should parse references to multiline template as TemplateExpression', () => {
+        expect(multilineRefObj.annotations.tmpl).toBeInstanceOf(TemplateExpression)
+        expect(multilineRefObj.annotations.tmpl.parts).toEqual(['multiline\n', 'template {{', expect.objectContaining({
+          elemID: new ElemID('te@mp', 'late', 'instance', 'multiline_stuff@us'),
+        }), '}}\n', 'value'])
       })
     })
 

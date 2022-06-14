@@ -72,8 +72,8 @@ zendesk_support {
       ticket_field = {
         transformation = {
           idFields = [
-            "type",
             "title",
+            "type",
             "id",
           ]
         }

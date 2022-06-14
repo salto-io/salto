@@ -16,6 +16,7 @@
 import { Element, ElemIdGetter, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { elements as elementUtils, config as configUtils } from '@salto-io/adapter-components'
 import { naclCase } from '@salto-io/adapter-utils'
+import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { JiraConfig } from '../../config'
 import { JIRA } from '../../constants'
@@ -26,7 +27,13 @@ const { generateInstanceNameFromConfig } = elementUtils
 
 // Added to avoid conflicts with names
 // of custom fields and system fields
-export const CUSTOM_FIELDS_SUFFIX = '__c'
+export const CUSTOM_FIELDS_SUFFIX = 'c'
+
+const getFieldType = (instance: InstanceElement): string | undefined =>
+  instance.value.schema?.custom?.split(':').slice(-1)[0] ?? instance.value.schema?.type
+
+const isCustomField = (instance: InstanceElement): boolean =>
+  instance.value.schema?.custom !== undefined
 
 const getInstanceName = (
   instance: InstanceElement,
@@ -43,7 +50,13 @@ const getInstanceName = (
     return instance.elemID.name
   }
 
-  const defaultName = naclCase(`${baseName}${CUSTOM_FIELDS_SUFFIX}`)
+  const defaultName = naclCase(
+    [
+      baseName,
+      config.fetch.addTypeToFieldName ? getFieldType(instance) : undefined,
+      isCustomField(instance) ? CUSTOM_FIELDS_SUFFIX : undefined,
+    ].filter(values.isDefined).join('__')
+  )
 
   const { serviceIdField } = configUtils.getConfigWithDefault(
     config.apiDefinitions.types[instance.elemID.typeName].transformation,
@@ -63,17 +76,16 @@ const getInstanceName = (
   return getElemIdFunc(JIRA, serviceIds, defaultName).name
 }
 
-// Add __c suffix to custom fields to avoid conflicts between custom fields to system fields
+// Add __c suffix to custom fields and field type to their names to avoid conflicts between fields
 const filter: FilterCreator = ({ config, getElemIdFunc }) => ({
   onFetch: async (elements: Element[]) => {
-    const customFields = _.remove(
+    const fields = _.remove(
       elements,
       element => isInstanceElement(element)
         && element.elemID.typeName === FIELD_TYPE_NAME
-        && element.value.schema?.custom !== undefined
     )
 
-    const newCustomFields = customFields
+    const newFields = fields
       .filter(isInstanceElement)
       .map(instance => {
         const name = getInstanceName(instance, config, getElemIdFunc)
@@ -86,7 +98,7 @@ const filter: FilterCreator = ({ config, getElemIdFunc }) => ({
         )
       })
 
-    elements.push(...newCustomFields)
+    elements.push(...newFields)
   },
 })
 

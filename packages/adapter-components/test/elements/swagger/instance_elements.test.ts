@@ -1423,6 +1423,7 @@ describe('swagger_instance_elements', () => {
         [
           ADAPTER_NAME,
           'Records',
+          'Settings',
           'Owner',
         ],
       ])

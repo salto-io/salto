@@ -17,7 +17,7 @@ import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { InstanceElement, isInstanceElement, ReferenceExpression, isRemovalChange,
-  AdapterOperations, toChange, ObjectType, ElemID, getChangeData, BuiltinTypes } from '@salto-io/adapter-api'
+  AdapterOperations, toChange, ObjectType, ElemID, getChangeData, BuiltinTypes, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import mockReplies from './mock_replies.json'
@@ -316,27 +316,27 @@ describe('adapter', () => {
           'zendesk_support.target.instance.Slack_integration_Endpoint_url_target_v2@ssuuu',
           'zendesk_support.targets',
           'zendesk_support.ticket_field',
-          'zendesk_support.ticket_field.instance.assignee_Assignee',
-          'zendesk_support.ticket_field.instance.description_Description',
-          'zendesk_support.ticket_field.instance.group_Group',
-          'zendesk_support.ticket_field.instance.multiselect_Customer_Tier@us',
-          'zendesk_support.ticket_field.instance.multiselect_Product_components@us',
-          'zendesk_support.ticket_field.instance.multiselect_agent_dropdown_643_for_agent@ussss',
-          'zendesk_support.ticket_field.instance.partialcreditcard_credit_card_1@uss',
-          'zendesk_support.ticket_field.instance.priority_Priority',
-          'zendesk_support.ticket_field.instance.regexp_zip_code_with_validation@usss',
-          'zendesk_support.ticket_field.instance.status_Status',
-          'zendesk_support.ticket_field.instance.subject_Subject',
-          'zendesk_support.ticket_field.instance.text_agent_field_431@uss',
-          'zendesk_support.ticket_field.instance.tickettype_Type',
+          'zendesk_support.ticket_field.instance.Assignee_assignee',
+          'zendesk_support.ticket_field.instance.Customer_Tier_multiselect@su',
+          'zendesk_support.ticket_field.instance.Description_description',
+          'zendesk_support.ticket_field.instance.Group_group',
+          'zendesk_support.ticket_field.instance.Priority_priority',
+          'zendesk_support.ticket_field.instance.Product_components_multiselect@su',
+          'zendesk_support.ticket_field.instance.Status_status',
+          'zendesk_support.ticket_field.instance.Subject_subject',
+          'zendesk_support.ticket_field.instance.Type_tickettype',
+          'zendesk_support.ticket_field.instance.agent_dropdown_643_for_agent_multiselect@ssssu',
+          'zendesk_support.ticket_field.instance.agent_field_431_text@ssu',
+          'zendesk_support.ticket_field.instance.credit_card_1_partialcreditcard@ssu',
+          'zendesk_support.ticket_field.instance.zip_code_with_validation_regexp@sssu',
           'zendesk_support.ticket_field__custom_field_options',
-          'zendesk_support.ticket_field__custom_field_options.instance.multiselect_Customer_Tier_us__enterprise@uumuu',
-          'zendesk_support.ticket_field__custom_field_options.instance.multiselect_Customer_Tier_us__free@uumuu',
-          'zendesk_support.ticket_field__custom_field_options.instance.multiselect_Customer_Tier_us__paying@uumuu',
-          'zendesk_support.ticket_field__custom_field_options.instance.multiselect_Product_components_us__component_a@uumuuu',
-          'zendesk_support.ticket_field__custom_field_options.instance.multiselect_Product_components_us__component_b@uumuuu',
-          'zendesk_support.ticket_field__custom_field_options.instance.multiselect_agent_dropdown_643_for_agent_ussss__v1@uuuuumuu',
-          'zendesk_support.ticket_field__custom_field_options.instance.multiselect_agent_dropdown_643_for_agent_ussss__v2_modified@uuuuumuuu',
+          'zendesk_support.ticket_field__custom_field_options.instance.Customer_Tier_multiselect_su__enterprise@uumuu',
+          'zendesk_support.ticket_field__custom_field_options.instance.Customer_Tier_multiselect_su__free@uumuu',
+          'zendesk_support.ticket_field__custom_field_options.instance.Customer_Tier_multiselect_su__paying@uumuu',
+          'zendesk_support.ticket_field__custom_field_options.instance.Product_components_multiselect_su__component_a@uumuuu',
+          'zendesk_support.ticket_field__custom_field_options.instance.Product_components_multiselect_su__component_b@uumuuu',
+          'zendesk_support.ticket_field__custom_field_options.instance.agent_dropdown_643_for_agent_multiselect_ssssu__v1@uuuuumuu',
+          'zendesk_support.ticket_field__custom_field_options.instance.agent_dropdown_643_for_agent_multiselect_ssssu__v2_modified@uuuuumuuu',
           'zendesk_support.ticket_field__system_field_options',
           'zendesk_support.ticket_fields',
           'zendesk_support.ticket_form',
@@ -823,8 +823,20 @@ describe('adapter', () => {
       })
 
       expect(deployRes.appliedChanges).toEqual([
-        toChange({ after: new InstanceElement('inst', groupType, { id: 1 }) }),
-        toChange({ after: new InstanceElement('inst3', brandType, { key: 2, ref: expect.any(ReferenceExpression) }) }),
+        toChange({ after: new InstanceElement(
+          'inst',
+          groupType,
+          { id: 1 },
+          undefined,
+          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://abc.zendesk.com/admin/people/team/groups' },
+        ) }),
+        toChange({ after: new InstanceElement(
+          'inst3',
+          brandType,
+          { key: 2, ref: expect.any(ReferenceExpression) },
+          undefined,
+          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://abc.zendesk.com/admin/account/brand_management/brands' },
+        ) }),
         toChange({ after: new InstanceElement('inst4', anotherType, { key: 2 }) }),
         modificationChange,
       ])
@@ -859,7 +871,13 @@ describe('adapter', () => {
         },
       })
       expect(deployRes.appliedChanges).toEqual([
-        toChange({ after: new InstanceElement('inst', groupType) }),
+        toChange({ after: new InstanceElement(
+          'inst',
+          groupType,
+          undefined,
+          undefined,
+          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://abc.zendesk.com/admin/people/team/groups' },
+        ) }),
       ])
     })
     it('should not update id if the response is primitive', async () => {
@@ -873,7 +891,13 @@ describe('adapter', () => {
         },
       })
       expect(deployRes.appliedChanges).toEqual([
-        toChange({ after: new InstanceElement('inst', groupType) }),
+        toChange({ after: new InstanceElement(
+          'inst',
+          groupType,
+          undefined,
+          undefined,
+          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://abc.zendesk.com/admin/people/team/groups' },
+        ) }),
       ])
     })
     it('should not update id field if it does not exist in the response', async () => {
@@ -887,7 +911,13 @@ describe('adapter', () => {
         },
       })
       expect(deployRes.appliedChanges).toEqual([
-        toChange({ after: new InstanceElement('inst', groupType) }),
+        toChange({ after: new InstanceElement(
+          'inst',
+          groupType,
+          undefined,
+          undefined,
+          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://abc.zendesk.com/admin/people/team/groups' },
+        ) }),
       ])
     })
     it('should call deploy with the fixed type', async () => {
@@ -906,11 +936,19 @@ describe('adapter', () => {
             instance.elemID.name,
             new ObjectType({
               elemID: groupType.elemID,
-              fields: { name: { refType: BuiltinTypes.STRING } },
+              fields: {
+                id: {
+                  refType: BuiltinTypes.SERVICE_ID_NUMBER,
+                  annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+                },
+                name: { refType: BuiltinTypes.STRING },
+              },
               // generateType function creates path
               path: [ZENDESK_SUPPORT, elementsUtils.TYPES_PATH, 'group'],
             }),
             { ...instance.value, id: 1 },
+            undefined,
+            { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://abc.zendesk.com/admin/people/team/groups' },
           ),
         }),
         expect.anything(),
@@ -935,6 +973,12 @@ describe('adapter', () => {
           'inst',
           new ObjectType({
             elemID: groupType.elemID,
+            fields: {
+              id: {
+                refType: BuiltinTypes.SERVICE_ID_NUMBER,
+                annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+              },
+            },
             // generateType function creates path
             path: [ZENDESK_SUPPORT, elementsUtils.TYPES_PATH, 'group'],
           }),

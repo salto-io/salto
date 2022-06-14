@@ -50,7 +50,7 @@ describe('validateMetadataParams', () => {
         exclude: [
           { metadataType: '(' },
         ],
-      }, ['aaa'])).toThrow('Failed to load config due to an invalid aaa.include.metadataType value. The following regular expressions are invalid: (')
+      }, ['aaa'])).toThrow('Failed to load config due to an invalid aaa.exclude.metadataType value. The following regular expressions are invalid: (')
     })
 
     it('invalid namespace', () => {
@@ -58,7 +58,7 @@ describe('validateMetadataParams', () => {
         exclude: [
           { namespace: '(' },
         ],
-      }, ['aaa'])).toThrow('Failed to load config due to an invalid aaa.include.namespace value. The following regular expressions are invalid: (')
+      }, ['aaa'])).toThrow('Failed to load config due to an invalid aaa.exclude.namespace value. The following regular expressions are invalid: (')
     })
 
     it('invalid name', () => {
@@ -66,7 +66,7 @@ describe('validateMetadataParams', () => {
         exclude: [
           { name: '(' },
         ],
-      }, ['aaa'])).toThrow('Failed to load config due to an invalid aaa.include.name value. The following regular expressions are invalid: (')
+      }, ['aaa'])).toThrow('Failed to load config due to an invalid aaa.exclude.name value. The following regular expressions are invalid: (')
     })
   })
 

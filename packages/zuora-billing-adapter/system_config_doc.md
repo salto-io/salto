@@ -199,6 +199,16 @@ zuora_billing {
           ]
         }
       }
+      Linkage = {
+        transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "internal_group"
+              fieldType = "string"
+            },
+          ]
+        }
+      }
       Workflows = {
         request = {
           url = "/workflows"
@@ -222,6 +232,10 @@ zuora_billing {
               fieldName = "eventCategory"
               fieldType = "number"
             },
+            {
+              fieldName = "useAdditionalAddresses"
+              fieldType = "boolean"
+            },
           ]
           fieldsToHide = [
             {
@@ -235,6 +249,24 @@ zuora_billing {
         request = {
           url = "/events/event-triggers"
           paginationField = "next"
+        }
+      }
+      EventTrigger = {
+        transformation = {
+          idFields = [
+            "baseObject",
+            "eventType.name",
+          ]
+        }
+      }
+      EventType = {
+        transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "namespace"
+              fieldType = "string"
+            },
+          ]
         }
       }
       NotificationDefinitions = {
@@ -317,6 +349,10 @@ zuora_billing {
         }
       }
       CatalogProduct = {
+        request = {
+          url = "/v1/catalog/products"
+          paginationField = "nextPage"
+        }
         transformation = {
           dataField = "products"
         }
@@ -379,10 +415,75 @@ zuora_billing {
               fieldName = "fiscalYear"
               fieldType = "number"
             },
+            {
+              fieldName = "fiscalQuarter"
+              fieldType = "number"
+            },
           ]
           fieldsToHide = [
             {
               fieldName = "id"
+              fieldType = "string"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "createdBy"
+              fieldType = "string"
+            },
+            {
+              fieldName = "createdOn"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updatedBy"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updatedOn"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updatedById"
+              fieldType = "string"
+            },
+            {
+              fieldName = "CreatedDate"
+              fieldType = "string"
+            },
+            {
+              fieldName = "UpdatedDate"
+              fieldType = "string"
+            },
+            {
+              fieldName = "CreatedById"
+              fieldType = "string"
+            },
+            {
+              fieldName = "UpdatedById"
+              fieldType = "string"
+            },
+            {
+              fieldName = "nextPage"
+              fieldType = "string"
+            },
+            {
+              fieldName = "next"
+              fieldType = "string"
+            },
+            {
+              fieldName = "pagination"
+            },
+            {
+              fieldName = "runTrialBalanceEnd"
+              fieldType = "string"
+            },
+            {
+              fieldName = "runTrialBalanceStart"
+              fieldType = "string"
+            },
+            {
+              fieldName = "runTrialBalanceStatus"
               fieldType = "string"
             },
           ]
@@ -452,8 +553,88 @@ zuora_billing {
           ]
           fieldsToOmit = [
             {
+              fieldName = "createdBy"
+              fieldType = "string"
+            },
+            {
+              fieldName = "createdOn"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updatedBy"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updatedOn"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updatedById"
+              fieldType = "string"
+            },
+            {
+              fieldName = "CreatedDate"
+              fieldType = "string"
+            },
+            {
+              fieldName = "UpdatedDate"
+              fieldType = "string"
+            },
+            {
+              fieldName = "CreatedById"
+              fieldType = "string"
+            },
+            {
+              fieldName = "UpdatedById"
+              fieldType = "string"
+            },
+            {
+              fieldName = "nextPage"
+              fieldType = "string"
+            },
+            {
+              fieldName = "next"
+              fieldType = "string"
+            },
+            {
+              fieldName = "pagination"
+            },
+            {
               fieldName = "id"
               fieldType = "string"
+            },
+          ]
+        }
+      }
+      PublicNotificationDefinition_filterRule = {
+        transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "createdBy"
+              fieldType = "string"
+            },
+            {
+              fieldName = "createdOn"
+              fieldType = "string"
+            },
+            {
+              fieldName = "scheduled"
+              fieldType = "boolean"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+              fieldType = "string"
+            },
+            {
+              fieldName = "createdBy"
+            },
+            {
+              fieldName = "createdOn"
+            },
+            {
+              fieldName = "scheduled"
             },
           ]
         }
@@ -512,6 +693,12 @@ zuora_billing {
           idFields = [
             "type",
             "name",
+          ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "string"
+            },
           ]
           fieldsToHide = [
             {
@@ -583,6 +770,53 @@ zuora_billing {
           ]
           fieldsToOmit = [
             {
+              fieldName = "createdBy"
+              fieldType = "string"
+            },
+            {
+              fieldName = "createdOn"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updatedBy"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updatedOn"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updatedById"
+              fieldType = "string"
+            },
+            {
+              fieldName = "CreatedDate"
+              fieldType = "string"
+            },
+            {
+              fieldName = "UpdatedDate"
+              fieldType = "string"
+            },
+            {
+              fieldName = "CreatedById"
+              fieldType = "string"
+            },
+            {
+              fieldName = "UpdatedById"
+              fieldType = "string"
+            },
+            {
+              fieldName = "nextPage"
+              fieldType = "string"
+            },
+            {
+              fieldName = "next"
+              fieldType = "string"
+            },
+            {
+              fieldName = "pagination"
+            },
+            {
               fieldName = "segmentId"
             },
           ]
@@ -608,11 +842,35 @@ zuora_billing {
           ]
         }
       }
+      Settings_CreditMemoTransactionRule = {
+        transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "usedTheSameTransactionRuleAsCreditMemoItem"
+              fieldType = "boolean"
+            },
+          ]
+        }
+      }
       Settings_Role = {
         transformation = {
           idFields = [
             "category",
             "name",
+          ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "description"
+              fieldType = "string"
+            },
+            {
+              fieldName = "entityId"
+              fieldType = "string"
+            },
+            {
+              fieldName = "custom"
+              fieldType = "boolean"
+            },
           ]
           fieldsToHide = [
             {
@@ -625,6 +883,53 @@ zuora_billing {
       Settings_Attribute = {
         transformation = {
           fieldsToOmit = [
+            {
+              fieldName = "createdBy"
+              fieldType = "string"
+            },
+            {
+              fieldName = "createdOn"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updatedBy"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updatedOn"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updatedById"
+              fieldType = "string"
+            },
+            {
+              fieldName = "CreatedDate"
+              fieldType = "string"
+            },
+            {
+              fieldName = "UpdatedDate"
+              fieldType = "string"
+            },
+            {
+              fieldName = "CreatedById"
+              fieldType = "string"
+            },
+            {
+              fieldName = "UpdatedById"
+              fieldType = "string"
+            },
+            {
+              fieldName = "nextPage"
+              fieldType = "string"
+            },
+            {
+              fieldName = "next"
+              fieldType = "string"
+            },
+            {
+              fieldName = "pagination"
+            },
             {
               fieldName = "id"
               fieldType = "string"
@@ -688,6 +993,12 @@ zuora_billing {
       }
       Settings_TaxCompany = {
         transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "postalCode"
+              fieldType = "string"
+            },
+          ]
           fieldsToHide = [
             {
               fieldName = "id"
@@ -788,6 +1099,16 @@ zuora_billing {
             "eventName",
             "name",
             "profileId",
+          ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "calloutPreemptiveAuth"
+              fieldType = "boolean"
+            },
+            {
+              fieldName = "useCustomRequestBody"
+              fieldType = "boolean"
+            },
           ]
           fieldsToHide = [
             {
@@ -911,8 +1232,10 @@ zuora_billing {
       ProductType = [
         "CatalogProduct",
       ]
-      Objects = [
+      CustomObject = [
         "CustomObject",
+      ]
+      StandardObject = [
         "StandardObject",
       ]
       EventTrigger = [
@@ -921,10 +1244,10 @@ zuora_billing {
       HostedPage = [
         "HostedPages",
       ]
-      NotificationDefinitions = [
+      PublicNotificationDefinition = [
         "NotificationDefinitions",
       ]
-      NotificationEmailTemplates = [
+      PublicEmailTemplate = [
         "NotificationEmailTemplates",
       ]
       PaymentGatewayResponse = [
@@ -936,46 +1259,123 @@ zuora_billing {
       WorkflowExport = [
         "WorkflowExport",
       ]
-      Settings_AccountingRules = "Settings_AccountingRules"
-      Settings_AgingBucket = "Settings_AgingBucket"
-      Settings_AllNotifications = "Settings_AllNotifications"
-      Settings_AllPaymentTerms = "Settings_AllPaymentTerms"
-      Settings_AllRevenueRecognition = "Settings_AllRevenueRecognition"
-      Settings_AllTaxCode = "Settings_AllTaxCode"
-      Settings_ApplicationRules = "Settings_ApplicationRules"
-      Settings_BatchAlias = "Settings_BatchAlias"
-      Settings_BillingCycleType = "Settings_BillingCycleType"
-      Settings_BillingListPriceBase = "Settings_BillingListPriceBase"
-      Settings_BillingPeriod = "Settings_BillingPeriod"
-      Settings_BillingPeriodStart = "Settings_BillingPeriodStart"
-      Settings_BillingRules = "Settings_BillingRules"
-      Settings_ChargeModel = "Settings_ChargeModel"
-      Settings_ChargeType = "Settings_ChargeType"
-      Settings_CommunicationProfiles = "Settings_CommunicationProfiles"
-      Settings_Currencies = "Settings_Currencies"
-      Settings_DiscountSettings = "Settings_DiscountSettings"
-      Settings_DocPrefix = "Settings_DocPrefix"
-      Settings_FxCurrency = "Settings_FxCurrency"
-      Settings_GetTaxCompanies = "Settings_GetTaxCompanies"
-      Settings_GlSegments = "Settings_GlSegments"
-      Settings_HostedPaymentPages = "Settings_HostedPaymentPages"
-      Settings_NumberAndSku = "Settings_NumberAndSku"
-      Settings_PaymentGateways = "Settings_PaymentGateways"
-      Settings_PaymentMethods = "Settings_PaymentMethods"
-      Settings_PaymentRetryRules = "Settings_PaymentRetryRules"
-      Settings_PaymentRules = "Settings_PaymentRules"
-      Settings_ReasonCodes = "Settings_ReasonCodes"
-      Settings_RevenueEventTypes = "Settings_RevenueEventTypes"
-      Settings_RevenueRecognitionModels = "Settings_RevenueRecognitionModels"
-      Settings_revenueRecognitionRuleDtos = "Settings_revenueRecognitionRuleDtos"
-      Settings_RevenueRecognitionStatus = "Settings_RevenueRecognitionStatus"
-      Settings_RevenueStartDate = "Settings_RevenueStartDate"
-      Settings_RolesPage = "Settings_RolesPage"
-      Settings_SegmentationRules = "Settings_SegmentationRules"
-      Settings_SubscriptionSetting = "Settings_SubscriptionSetting"
-      Settings_UnitsOfMeasureList = "Settings_UnitsOfMeasureList"
-      Settings_TaxEngines = "Settings_TaxEngines"
-      ListAllSettings = "ListAllSettings"
+      Settings_AccountingRules = [
+        "Settings_AccountingRules",
+      ]
+      Settings_Bucket = [
+        "Settings_AgingBucket",
+      ]
+      Settings_Notification = [
+        "Settings_AllNotifications",
+      ]
+      Settings_PaymentTerm = [
+        "Settings_AllPaymentTerms",
+      ]
+      Settings_Codes = [
+        "Settings_AllRevenueRecognition",
+      ]
+      Settings_TaxCode = [
+        "Settings_AllTaxCode",
+      ]
+      Settings_ApplicationRules = [
+        "Settings_ApplicationRules",
+      ]
+      Settings_SingleAlias = [
+        "Settings_BatchAlias",
+      ]
+      Settings_BillingCycleType = [
+        "Settings_BillingCycleType",
+      ]
+      Settings_BillingListPriceBase = [
+        "Settings_BillingListPriceBase",
+      ]
+      Settings_BillingPeriod = [
+        "Settings_BillingPeriod",
+      ]
+      Settings_BillingPeriodStart = [
+        "Settings_BillingPeriodStart",
+      ]
+      Settings_BillingRules = [
+        "Settings_BillingRules",
+      ]
+      Settings_ChargeModel = [
+        "Settings_ChargeModel",
+      ]
+      Settings_ChargeType = [
+        "Settings_ChargeType",
+      ]
+      Settings_CommunicationProfile = [
+        "Settings_CommunicationProfiles",
+      ]
+      Settings_Currency = [
+        "Settings_Currencies",
+      ]
+      Settings_DiscountSetting = [
+        "Settings_DiscountSettings",
+      ]
+      Settings_DocPrefix = [
+        "Settings_DocPrefix",
+      ]
+      Settings_FxCurrency = [
+        "Settings_FxCurrency",
+      ]
+      Settings_TaxCompany = [
+        "Settings_GetTaxCompanies",
+      ]
+      Settings_Segment = [
+        "Settings_GlSegments",
+      ]
+      Settings_HostedPaymentPage = [
+        "Settings_HostedPaymentPages",
+      ]
+      Settings_NumberAndSku = [
+        "Settings_NumberAndSku",
+      ]
+      Settings_Gateway = [
+        "Settings_PaymentGateways",
+      ]
+      Settings_PaymentMethods = [
+        "Settings_PaymentMethods",
+      ]
+      Settings_PaymentRetryRules = [
+        "Settings_PaymentRetryRules",
+      ]
+      Settings_PaymentRules = [
+        "Settings_PaymentRules",
+      ]
+      Settings_ReasonCode = [
+        "Settings_ReasonCodes",
+      ]
+      Settings_RevenueEventType = [
+        "Settings_RevenueEventTypes",
+      ]
+      Settings_RevenueRecognitionModels = [
+        "Settings_RevenueRecognitionModels",
+      ]
+      Settings_RevenueRecognitionRule = [
+        "Settings_revenueRecognitionRuleDtos",
+      ]
+      Settings_RevenueRecognitionStatus = [
+        "Settings_RevenueRecognitionStatus",
+      ]
+      Settings_RevenueStartDate = [
+        "Settings_RevenueStartDate",
+      ]
+      Settings_Role = [
+        "Settings_RolesPage",
+      ]
+      Settings_RuleDetail = [
+        "Settings_SegmentationRules",
+      ]
+      Settings_SubscriptionSetting = [
+        "Settings_SubscriptionSetting",
+      ]
+      Settings_UnitOfMeasure = [
+        "Settings_UnitsOfMeasureList",
+      ]
+      Settings_TaxEngine = [
+        "Settings_TaxEngines",
+      ]
     }
   }
 }

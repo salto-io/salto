@@ -75,8 +75,9 @@ class DBLockError extends Error {
 
 const getDBTmpDir = (location: string): string => path.join(location, TMP_DB_DIR)
 
-const readIteratorNext = (iterator: rocksdb
-  .Iterator): Promise<remoteMap.RemoteMapEntry<string> | undefined> =>
+const readIteratorNext = (
+  iterator: rocksdb.Iterator,
+): Promise<remoteMap.RemoteMapEntry<string> | undefined> =>
   new Promise<remoteMap.RemoteMapEntry<string> | undefined>(resolve => {
     const callback = (_err: Error | undefined, key: RocksDBValue, value: RocksDBValue): void => {
       const keyAsString = key?.toString()
@@ -350,6 +351,40 @@ const getPrefixEndCondition = (prefix: string): string => prefix
   .substring(0, prefix.length - 1).concat((String
     .fromCharCode(prefix.charCodeAt(prefix.length - 1) + 1)))
 
+type MyIteratorThatAdamWillName = {
+  next: () => ReturnType<typeof readIteratorNext>
+  nextPage: () => ReturnType<typeof readIteratorPage>
+}
+const createMyIterator = (
+  iterator: rocksdb.Iterator,
+  filter: (x: string) => boolean,
+): MyIteratorThatAdamWillName => ({
+  next: async () => {
+    const getNext = async (): ReturnType<typeof readIteratorNext> => {
+      const next = await readIteratorNext(iterator)
+      if (next === undefined || filter(next.key)) {
+        return next
+      }
+      return getNext()
+    }
+    return getNext()
+  },
+  nextPage: async () => {
+    const getNext = async (): ReturnType<typeof readIteratorPage> => {
+      const next = await readIteratorPage(iterator)
+      if (next === undefined) {
+        return next
+      }
+      const filteredPage = next.filter(ent => filter(ent.key))
+      if (filteredPage.length > 0) {
+        return filteredPage
+      }
+      return getNext()
+    }
+    return getNext()
+  },
+})
+
 const createIterator = (prefix: string, opts: CreateIteratorOpts, connection: rocksdb):
 rocksdb.Iterator =>
   connection.iterator({
@@ -359,6 +394,8 @@ rocksdb.Iterator =>
     ...(opts.after !== undefined ? { gt: opts.after } : { gte: prefix }),
     ...(opts.first !== undefined ? { limit: opts.first } : {}),
   })
+  // FILTER HERE!!!!!!!! (Or where it's returned :))
+  // This means we won't be able to use nextPage - so remove it's usage
 
 export const createRemoteMapCreator = (location: string,
   persistentDefaultValue = false,

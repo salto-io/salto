@@ -77,6 +77,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
       ],
     },
   },
+  Linkage: {
+    transformation: {
+      // defining explicitly to avoid nesting under additionalProperties
+      fieldTypeOverrides: [
+        { fieldName: 'internal_group', fieldType: 'string' },
+      ],
+    },
+  },
   Workflows: {
     request: {
       url: '/workflows',
@@ -94,6 +102,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'eventCategory', fieldType: 'number' },
+        // defining explicitly to avoid nesting under additionalProperties
+        { fieldName: 'useAdditionalAddresses', fieldType: 'boolean' },
       ],
       fieldsToHide: [
         { fieldName: 'id', fieldType: 'string' },
@@ -109,6 +119,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
   EventTrigger: {
     transformation: {
       idFields: ['baseObject', 'eventType.name'],
+    },
+  },
+  EventType: {
+    transformation: {
+      fieldTypeOverrides: [
+        // defining explicitly to avoid nesting under additionalProperties
+        { fieldName: 'namespace', fieldType: 'string' },
+      ],
     },
   },
   NotificationDefinitions: {
@@ -217,9 +235,17 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'fiscalYear', fieldType: 'number' },
+        // defining explicitly to avoid nesting under additionalProperties
+        { fieldName: 'fiscalQuarter', fieldType: 'number' },
       ],
       fieldsToHide: [
         { fieldName: 'id', fieldType: 'string' },
+      ],
+      fieldsToOmit: [
+        ...FIELDS_TO_OMIT,
+        { fieldName: 'runTrialBalanceEnd', fieldType: 'string' },
+        { fieldName: 'runTrialBalanceStart', fieldType: 'string' },
+        { fieldName: 'runTrialBalanceStatus', fieldType: 'string' },
       ],
     },
   },
@@ -258,7 +284,24 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
       // omitting and not hiding because the type is used inside an array, and can cause
       // merge conflicts
       fieldsToOmit: [
+        ...FIELDS_TO_OMIT,
         { fieldName: 'id', fieldType: 'string' },
+      ],
+    },
+  },
+  PublicNotificationDefinition_filterRule: {
+    transformation: {
+      // explicitly define the fields so that we can hide them (missing in swagger)
+      fieldTypeOverrides: [
+        { fieldName: 'createdBy', fieldType: 'string' },
+        { fieldName: 'createdOn', fieldType: 'string' },
+        { fieldName: 'scheduled', fieldType: 'boolean' },
+      ],
+      fieldsToHide: [
+        { fieldName: 'id', fieldType: 'string' },
+        { fieldName: 'createdBy' },
+        { fieldName: 'createdOn' },
+        { fieldName: 'scheduled' },
       ],
     },
   },
@@ -299,6 +342,10 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
   [`${SETTINGS_TYPE_PREFIX}PaymentTerm`]: {
     transformation: {
       idFields: ['type', 'name'],
+      // explicitly define the field so that we can hide it (missing in swagger)
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'string' },
+      ],
       fieldsToHide: [
         { fieldName: 'id', fieldType: 'string' },
       ],
@@ -344,6 +391,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
       // omitting and not hiding because the type is used inside an array, and can cause
       // merge conflicts
       fieldsToOmit: [
+        ...FIELDS_TO_OMIT,
         { fieldName: 'segmentId' },
       ],
     },
@@ -363,9 +411,23 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
       ],
     },
   },
+  [`${SETTINGS_TYPE_PREFIX}CreditMemoTransactionRule`]: {
+    transformation: {
+      fieldTypeOverrides: [
+        // defining explicitly to avoid nesting under additionalProperties
+        { fieldName: 'usedTheSameTransactionRuleAsCreditMemoItem', fieldType: 'boolean' },
+      ],
+    },
+  },
   [`${SETTINGS_TYPE_PREFIX}Role`]: {
     transformation: {
       idFields: ['category', 'name'],
+      // defining explicitly to avoid nesting under additionalProperties
+      fieldTypeOverrides: [
+        { fieldName: 'description', fieldType: 'string' },
+        { fieldName: 'entityId', fieldType: 'string' },
+        { fieldName: 'custom', fieldType: 'boolean' },
+      ],
       fieldsToHide: [
         { fieldName: 'id', fieldType: 'string' },
       ],
@@ -374,6 +436,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
   [`${SETTINGS_TYPE_PREFIX}Attribute`]: {
     transformation: {
       fieldsToOmit: [
+        ...FIELDS_TO_OMIT,
         { fieldName: 'id', fieldType: 'string' },
       ],
     },
@@ -415,6 +478,10 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
   },
   [`${SETTINGS_TYPE_PREFIX}TaxCompany`]: {
     transformation: {
+      fieldTypeOverrides: [
+        // defining explicitly to avoid nesting under additionalProperties
+        { fieldName: 'postalCode', fieldType: 'string' },
+      ],
       fieldsToHide: [
         { fieldName: 'id', fieldType: 'string' },
       ],
@@ -488,6 +555,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
     transformation: {
       // TODO replace profileId with profile name to make this multienv-friendly
       idFields: ['eventName', 'name', 'profileId'],
+      // defining explicitly to avoid nesting under additionalProperties
+      fieldTypeOverrides: [
+        { fieldName: 'calloutPreemptiveAuth', fieldType: 'boolean' },
+        { fieldName: 'useCustomRequestBody', fieldType: 'boolean' },
+      ],
       fieldsToHide: [
         { fieldName: 'id', fieldType: 'string' },
         { fieldName: 'eventId', fieldType: 'string' },

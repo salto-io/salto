@@ -442,6 +442,30 @@ describe('Test elements.ts', () => {
         })
       })
     })
+    describe('getRelativePath', () => {
+      it('should return the correct relative path - top level and nested', () => {
+        const nested = ['a', 'b']
+        const elemID = new ElemID('adapter', 'typeName', 'instance', 'test')
+        const nestedID = elemID.createNestedID(...nested)
+        expect(elemID.getRelativePath(nestedID)).toEqual(nested)
+      })
+      it('should return the correct relative path - both nested', () => {
+        const nested = ['b', 'c']
+        const elemID = new ElemID('adapter', 'typeName', 'instance', 'test', 'a')
+        const nestedID = elemID.createNestedID(...nested)
+        expect(elemID.getRelativePath(nestedID)).toEqual(nested)
+      })
+      it('should return the empty result if they are the same elemIDs', () => {
+        const elemID = new ElemID('adapter', 'typeName', 'instance', 'test')
+        const nestedID = new ElemID('adapter', 'typeName', 'instance', 'test')
+        expect(elemID.getRelativePath(nestedID)).toEqual([])
+      })
+      it('should throw exception if the other elemID is not a child of the elemID', () => {
+        const elemID = new ElemID('adapter', 'typeName', 'instance', 'test')
+        const nestedID = new ElemID('adapter', 'typeName', 'instance', 'tes1')
+        expect(() => elemID.getRelativePath(nestedID)).toThrow()
+      })
+    })
 
     describe('nestingLevel', () => {
       describe('for config, types, instances and variables', () => {

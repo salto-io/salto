@@ -72,7 +72,7 @@ export default ({
     orderInstanceContainsAllTheInstancesValidator,
     triggerOrderInstanceContainsAllTheInstancesValidator,
     brandCreationValidator,
-    webhookAuthDataValidator,
+    webhookAuthDataValidator(client),
     targetAuthDataValidator(client, apiConfig),
     phoneNumbersValidator,
   ]

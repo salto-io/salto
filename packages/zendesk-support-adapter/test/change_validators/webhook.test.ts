@@ -17,8 +17,12 @@ import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter
 import { ZENDESK_SUPPORT } from '../../src/constants'
 import { createChangeError, webhookAuthDataValidator } from '../../src/change_validators/webhook'
 import { WEBHOOK_TYPE_NAME } from '../../src/filters/webhook'
+import ZendeskClient from '../../src/client/client'
 
 describe('webhookAuthDataValidator', () => {
+  const client = new ZendeskClient({ credentials: { username: 'a', password: 'b', subdomain: 'ignore' } })
+  const changeValidator = webhookAuthDataValidator(client)
+
   const webhookType = new ObjectType({
     elemID: new ElemID(ZENDESK_SUPPORT, WEBHOOK_TYPE_NAME),
   })
@@ -38,13 +42,16 @@ describe('webhookAuthDataValidator', () => {
     { name: 'test' },
   )
   it('should return an info message if a new webhook is created with auth', async () => {
-    const errors = await webhookAuthDataValidator(
+    const errors = await changeValidator(
       [toChange({ after: webhookInstanceWithBasicAuth })],
     )
-    expect(errors).toEqual([createChangeError(webhookInstanceWithBasicAuth.elemID)])
+    expect(errors).toEqual([createChangeError(
+      webhookInstanceWithBasicAuth.elemID,
+      client.getUrl().href,
+    )])
   })
   it('should not return an info message if a new webhook is created without auth', async () => {
-    const errors = await webhookAuthDataValidator(
+    const errors = await changeValidator(
       [toChange({ after: webhookInstanceWithoutAuth })],
     )
     expect(errors).toEqual([])
@@ -53,7 +60,7 @@ describe('webhookAuthDataValidator', () => {
     const clonedBefore = webhookInstanceWithToken.clone()
     const clonedAfter = webhookInstanceWithToken.clone()
     clonedAfter.value.name = 'test - updated'
-    const errors = await webhookAuthDataValidator(
+    const errors = await changeValidator(
       [toChange({ before: clonedBefore, after: clonedAfter })],
     )
     expect(errors).toEqual([])
@@ -62,13 +69,16 @@ describe('webhookAuthDataValidator', () => {
     const clonedBefore = webhookInstanceWithToken.clone()
     const clonedAfter = webhookInstanceWithToken.clone()
     clonedAfter.value.authentication.type = 'basic_auth'
-    const errors = await webhookAuthDataValidator(
+    const errors = await changeValidator(
       [toChange({ before: clonedBefore, after: clonedAfter })],
     )
-    expect(errors).toEqual([createChangeError(webhookInstanceWithToken.elemID)])
+    expect(errors).toEqual([createChangeError(
+      webhookInstanceWithToken.elemID,
+      client.getUrl().href,
+    )])
   })
   it('should not return an error if the webhook was removed', async () => {
-    const errors = await webhookAuthDataValidator(
+    const errors = await changeValidator(
       [toChange({ before: webhookInstanceWithToken })],
     )
     expect(errors).toHaveLength(0)

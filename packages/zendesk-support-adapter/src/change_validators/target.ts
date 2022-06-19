@@ -47,12 +47,13 @@ export const targetAuthDataValidator: ChangeValidator = async changes => (
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
     .filter(change => getChangeData(change).elemID.typeName === TARGET_TYPE_NAME)
+    .filter(change => change.data.after.value.username || change.data.after.value.password)
     .filter(change =>
       isAdditionChange(change)
       || (change.data.before.value.username
         !== change.data.after.value.username)
       || (change.data.before.value.password
-      !== change.data.after.value.password))
+        !== change.data.after.value.password))
     .map(getChangeData)
     .flatMap(instance => ([createChangeError(instance.elemID)]))
 )

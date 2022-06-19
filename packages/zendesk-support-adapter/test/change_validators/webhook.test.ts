@@ -67,7 +67,7 @@ describe('webhookAuthDataValidator', () => {
     )
     expect(errors).toEqual([createChangeError(webhookInstanceWithToken.elemID)])
   })
-  it('should not return an error if the brand was removed', async () => {
+  it('should not return an error if the webhook was removed', async () => {
     const errors = await webhookAuthDataValidator(
       [toChange({ before: webhookInstanceWithToken })],
     )

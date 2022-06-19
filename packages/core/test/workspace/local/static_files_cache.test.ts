@@ -132,7 +132,7 @@ describe('Static Files Cache', () => {
     it('should respect the persistent parameter', async () => {
       const cache = buildLocalStaticFilesCache('path', 'test-env', remoteMapCreator, false)
       await cache.get('bla')
-      expect(remoteMapCreator).toHaveBeenCalledOnce()
+      expect(remoteMapCreator).toHaveBeenCalledTimes(1)
       expect(remoteMapCreator).toHaveBeenCalledWith(expect.objectContaining({ persistent: true }))
     })
   })

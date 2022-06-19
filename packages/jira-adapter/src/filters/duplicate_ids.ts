@@ -80,7 +80,7 @@ If changing the names is not possible, you can add the fetch.fallbackToInternalI
         getInstanceName(instance),
         instance.refType,
         instance.value,
-        instance.path,
+        instance.pathIndex,
         instance.annotations,
       ))
 

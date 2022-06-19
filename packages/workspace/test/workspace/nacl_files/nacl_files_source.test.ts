@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ElemID, ObjectType, DetailedChange, StaticFile, SaltoError, Value, BuiltinTypes, createRefToElmWithValue, InstanceElement } from '@salto-io/adapter-api'
+import { Element, ElemID, ObjectType, DetailedChange, StaticFile, SaltoError, Value, BuiltinTypes, createRefToElmWithValue, InstanceElement, getTopLevelPath } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { MockInterface } from '@salto-io/test-utils'
@@ -80,7 +80,8 @@ const validateParsedNaclFile = async (
     const parsedElements = await awu((await parsed.elements()) ?? []).toArray()
     expect(parsedElements).toEqual(elements)
     parsedElements.forEach(
-      elem => expect(elem.path).toEqual(naclFileSourceModule.toPathHint(filename))
+      // TODO: fix me!!!
+      elem => expect(getTopLevelPath(elem)).toEqual(naclFileSourceModule.toPathHint(filename))
     )
     expect(await parsed.data.errors()).toEqual(errors)
     expect(parsed.filename).toEqual(filename)

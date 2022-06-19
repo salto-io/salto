@@ -15,7 +15,7 @@
 */
 import { logger } from '@salto-io/logging'
 import {
-  Element, InstanceElement, ObjectType, ElemID, isInstanceElement,
+  Element, InstanceElement, ObjectType, ElemID, isInstanceElement, createPathIndexFromPath,
 } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { multiIndex, collections } from '@salto-io/lowerdash'
@@ -48,11 +48,14 @@ const fixLayoutPath = async (
   customObject: ObjectType,
   layoutName: string,
 ): Promise<void> => {
-  layout.path = [
-    ...await getObjectDirectoryPath(customObject),
-    layout.elemID.typeName,
-    pathNaclCase(naclCase(layoutName)),
-  ]
+  layout.pathIndex = createPathIndexFromPath(
+    layout.elemID,
+    [
+      ...await getObjectDirectoryPath(customObject),
+      layout.elemID.typeName,
+      pathNaclCase(naclCase(layoutName)),
+    ]
+  )
 }
 
 /**

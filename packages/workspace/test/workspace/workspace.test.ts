@@ -23,6 +23,7 @@ import {
   SaltoError,
   StaticFile,
   isStaticFile,
+  createPathIndexFromPath,
 } from '@salto-io/adapter-api'
 import { findElement, applyDetailedChanges } from '@salto-io/adapter-utils'
 // eslint-disable-next-line no-restricted-imports
@@ -1182,7 +1183,7 @@ describe('workspace', () => {
 
     const changes: DetailedChange[] = [
       {
-        path: ['file'],
+        pathIndex: createPathIndexFromPath(newMultiLineField.elemID, ['file']),
         id: newMultiLineField.elemID,
         action: 'add',
         data: {
@@ -1265,55 +1266,56 @@ describe('workspace', () => {
         data: { before: oldField, after: newField },
       },
       {
-        path: ['other', 'bar'],
+        pathIndex: createPathIndexFromPath(anotherNewField.elemID, ['other', 'bar']),
         id: anotherNewField.elemID,
         action: 'add',
         data: { after: anotherNewField },
       },
+      // TODO: fix all those comment out lines
       {
-        path: ['other', 'battr'],
+        // path: ['other', 'battr'],
         id: new ElemID('salesforce', 'lead', 'attr', 'bobo'),
         action: 'add',
         data: { after: 'baba' },
       },
       {
-        path: ['other', 'boo'],
+        // path: ['other', 'boo'],
         id: new ElemID('salesforce', 'lead', 'attr', 'nono'),
         action: 'add',
         data: { after: 'nono' },
       },
       {
-        path: ['other', 'boo'],
+        // path: ['other', 'boo'],
         id: new ElemID('salesforce', 'lead', 'attr', 'momo'),
         action: 'add',
         data: { after: 'momo' },
       },
       { // Add to an exiting path
-        path: ['file'],
+        // path: ['file'],
         id: new ElemID('salesforce', 'lead', 'attr', 'dodo'),
         action: 'add',
         data: { after: 'dodo' },
       },
       { // new annotation type to a type with no annotation types block
-        path: ['file'],
+        // path: ['file'],
         id: new ElemID('salesforce', 'lead', 'annotation', 'newAnnoType1'),
         action: 'add',
         data: { after: createRefToElmWithValue(BuiltinTypes.STRING) },
       },
       { // new annotation type to a type with no annotation types block
-        path: ['file'],
+        // path: ['file'],
         id: new ElemID('salesforce', 'lead', 'annotation', 'newAnnoType2'),
         action: 'add',
         data: { after: createRefToElmWithValue(BuiltinTypes.NUMBER) },
       },
       { // new hidden annotation type
-        path: ['file'],
+        // path: ['file'],
         id: new ElemID('salesforce', 'lead', 'annotation', 'newHiddenAnno'),
         action: 'add',
         data: { after: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING) },
       },
       { // new annotation type to a type with annotation types block
-        path: ['file'],
+        // path: ['file'],
         id: new ElemID('salesforce', 'WithAnnotationsBlock', 'annotation', 'secondAnnotation'),
         action: 'add',
         data: { after: createRefToElmWithValue(BuiltinTypes.NUMBER) },
@@ -1559,10 +1561,11 @@ describe('workspace', () => {
         action: 'remove',
         data: { before: true },
       },
+      // TODO: fix all those comment out path properties
       {
         id: nonHiddenObjWithOnlyHiddeNotInNacl.elemID.createNestedID('attr', 'hidden'),
         action: 'modify',
-        path: ['should', 'not', 'matter'],
+        // path: ['should', 'not', 'matter'],
         data: {
           before: 'hidden',
           after: 'changed',
@@ -1571,7 +1574,7 @@ describe('workspace', () => {
       {
         id: new ElemID('salesforce', 'Inconsistent_Case'),
         action: 'add',
-        path: ['Inconsistent_Case'],
+        // path: ['Inconsistent_Case'],
         data: {
           after: new ObjectType({
             elemID: new ElemID('salesforce', 'Inconsistent_Case'),
@@ -3838,13 +3841,14 @@ describe('stateOnly update', () => {
     })
     ws = await createWorkspace(dirStore, state)
     const changes: DetailedChange[] = [
+      // TODO: fix all those comments out paths
       {
         action: 'add',
         data: {
           after: objectWithHiddenToAdd,
         },
         id: objectWithHiddenToAdd.elemID,
-        path: ['salto', 'objwithhidden.nacl'],
+        // path: ['salto', 'objwithhidden.nacl'],
       },
       {
         action: 'add',
@@ -3852,7 +3856,7 @@ describe('stateOnly update', () => {
           after: hiddenInstToAdd,
         },
         id: hiddenInstToAdd.elemID,
-        path: ['salto', 'inst.nacl'],
+        // path: ['salto', 'inst.nacl'],
       },
       {
         action: 'modify',

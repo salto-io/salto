@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { createPathIndexFromPath, Element, getTopLevelPath, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { pathNaclCase, naclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 
@@ -47,11 +47,14 @@ const replacePath = async (
     // Authenticated_Website2 nacls.
     ? 'Authenticated Website2'
     : profileInternalIdToName.get(getInternalId(profile))
-  if (name !== undefined && profile.path) {
-    profile.path = [
-      ...profile.path.slice(0, -1),
-      pathNaclCase(naclCase(name)),
-    ]
+  if (name !== undefined && profile.pathIndex) {
+    profile.pathIndex = createPathIndexFromPath(
+      profile.elemID,
+      [
+        ...getTopLevelPath(profile).slice(0, -1),
+        pathNaclCase(naclCase(name)),
+      ]
+    )
   }
 }
 

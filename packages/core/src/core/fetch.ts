@@ -22,7 +22,7 @@ import {
   FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, SaltoError,
   isSaltoElementError, ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId,
   CORE_ANNOTATIONS, AdapterOperationsContext, FetchResult, isAdditionChange, isStaticFile,
-  isAdditionOrModificationChange, Value, StaticFile, isElement,
+  isAdditionOrModificationChange, Value, StaticFile, isElement, getTopLevelPath,
 } from '@salto-io/adapter-api'
 import { applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements, safeJsonStringify, walkOnElement, WalkOnFunc, WALK_NEXT_STEP, setPath, walkOnValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -136,9 +136,12 @@ const getDetailedChangeTree = async (
 const findNestedElementPath = (
   changeElemID: ElemID,
   originalParentElements: Element[]
-): readonly string[] | undefined => (
-  originalParentElements.find(e => !_.isUndefined(resolvePath(e, changeElemID)))?.path
-)
+): readonly string[] | undefined => {
+  // TODO: fix me!!!
+  const parentElement = originalParentElements
+    .find(e => !_.isUndefined(resolvePath(e, changeElemID)))
+  return parentElement ? getTopLevelPath(parentElement) : undefined
+}
 
 type ChangeTransformFunction = (sourceChange: FetchChange) => Promise<FetchChange[]>
 const toChangesWithPath = (
@@ -927,7 +930,8 @@ export const fetchChangesFromWorkspace = async (
   ), MAX_SPLIT_CONCURRENCY)).flat()
   const [unmergedWithPath, unmergedWithoutPath] = _.partition(
     splitByPathIndex,
-    elem => values.isDefined(elem.path)
+    // TODO: fix me - delete me
+    elem => values.isDefined(elem.pathIndex)
   )
   const unmergedElements = [
     ...unmergedWithPath,

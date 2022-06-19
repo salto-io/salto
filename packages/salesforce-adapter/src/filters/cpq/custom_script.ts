@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, ObjectType, ListType, InstanceElement, isAdditionOrModificationChange, getChangeData, Change, ChangeDataType, isListType, Field, isPrimitiveType, isObjectTypeChange, StaticFile, isFieldChange, isAdditionChange, isInstanceElement, createRefToElmWithValue } from '@salto-io/adapter-api'
+import { Element, ObjectType, ListType, InstanceElement, isAdditionOrModificationChange, getChangeData, Change, ChangeDataType, isListType, Field, isPrimitiveType, isObjectTypeChange, StaticFile, isFieldChange, isAdditionChange, isInstanceElement, createRefToElmWithValue, getTopLevelPath } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -82,7 +82,7 @@ const codeValueToFile = (
 ): InstanceElement => {
   if (_.isString(cpqCustomScriptInstance.value[CPQ_CODE_FIELD])) {
     cpqCustomScriptInstance.value[CPQ_CODE_FIELD] = new StaticFile({
-      filepath: `${(cpqCustomScriptInstance.path ?? []).join('/')}.js`,
+      filepath: `${getTopLevelPath(cpqCustomScriptInstance).join('/')}.js`,
       content: Buffer.from(cpqCustomScriptInstance.value[CPQ_CODE_FIELD]),
       encoding: 'utf-8',
     })

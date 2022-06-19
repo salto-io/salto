@@ -108,14 +108,13 @@ describe('Test Settings Type', () => {
       )
       expect(testElements).toHaveLength(5)
       expect(isObjectType(testElements[3])).toBeTruthy()
-      const { path } = testElements[3]
-      expect(path).toBeDefined()
-      expect(path).toHaveLength(3)
-      if (path !== undefined) {
-        expect(path[0]).toEqual(constants.SALESFORCE)
-        expect(path[1]).toEqual(constants.TYPES_PATH)
-        expect(path[2]).toEqual('MacroSettings')
-      }
+      expect(Array.from(testElements[3].pathIndex?.entries() ?? []))
+        .toEqual([
+          [
+            testElements[3].elemID.getFullName(),
+            [constants.SALESFORCE, constants.TYPES_PATH, 'MacroSettings'],
+          ],
+        ])
       expect(isInstanceElement(testElements[4])).toBeTruthy()
       expect(await (testElements[4] as InstanceElement).getType()).toEqual(testElements[3])
     })

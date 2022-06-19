@@ -13,13 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { ObjectType, Element, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/profile_instance_split'
 import { FilterWith } from '../../src/filter'
 import { generateProfileType, defaultFilterContext } from '../utils'
 import mockClient from '../client'
-
+import { SALESFORCE, RECORDS_PATH } from '../../src/constants'
 
 describe('Profile Instance Split filter', () => {
   const { client } = mockClient()
@@ -102,37 +101,62 @@ describe('Profile Instance Split filter', () => {
       elements = [profileObj, ...profileInstances.map(e => e.clone())]
       await filter.onFetch(elements)
     })
-    it('should split each map field to its own path', () => {
+    it('should create a correct pathIndex', () => {
       const profElems = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'profile1')
-      expect(profElems).toHaveLength(4)
-
-      const fieldsByPath = _.sortBy(profElems.map(
-        e => [e.path?.join('/'), Object.keys(e.value).sort()]
-      ), item => item[0])
-      expect(fieldsByPath).toEqual([
-        ['salesforce/Records/Profile/profile1/ApplicationVisibilities', ['applicationVisibilities']],
-        ['salesforce/Records/Profile/profile1/Attributes', ['fullName', 'userLicense']],
-        ['salesforce/Records/Profile/profile1/FieldPermissions', ['fieldPermissions']],
-        ['salesforce/Records/Profile/profile1/LayoutAssignments', ['layoutAssignments']],
-      ])
+      expect(profElems).toHaveLength(1)
+      const [profile] = profElems
+      expect(Array.from(profile.pathIndex?.entries() ?? []))
+        .toEqual([
+          [
+            profile.elemID.getFullName(),
+            [SALESFORCE, RECORDS_PATH, 'Profile', profile.elemID.name, 'Attributes'],
+          ],
+          [
+            profile.elemID.createNestedID('applicationVisibilities').getFullName(),
+            [SALESFORCE, RECORDS_PATH, 'Profile', profile.elemID.name, 'ApplicationVisibilities'],
+          ],
+          [
+            profile.elemID.createNestedID('fieldPermissions').getFullName(),
+            [SALESFORCE, RECORDS_PATH, 'Profile', profile.elemID.name, 'FieldPermissions'],
+          ],
+          [
+            profile.elemID.createNestedID('layoutAssignments').getFullName(),
+            [SALESFORCE, RECORDS_PATH, 'Profile', profile.elemID.name, 'LayoutAssignments'],
+          ],
+          [
+            profile.elemID.createNestedID('fullName').getFullName(),
+            [SALESFORCE, RECORDS_PATH, 'Profile', profile.elemID.name, 'Attributes'],
+          ],
+          [
+            profile.elemID.createNestedID('userLicense').getFullName(),
+            [SALESFORCE, RECORDS_PATH, 'Profile', profile.elemID.name, 'Attributes'],
+          ],
+        ])
+      const origProfile = profileInstances.find(e => e.elemID.name === 'profile1')
+      expect(profile.isEqual(origProfile as InstanceElement)).toEqual(true)
     })
 
-    it('should only create elements for defined fields', () => {
+    it('should only create paths in the pathIndex for defined fields', () => {
       const profElems = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'profile2')
-      expect(profElems).toHaveLength(2)
-
-      const fieldsByPath = _.sortBy(profElems.map(
-        e => [e.path?.join('/'), Object.keys(e.value).sort()]
-      ), item => item[0])
-      expect(fieldsByPath).toEqual([
-        ['salesforce/Records/Profile/profile2/Attributes', ['fullName']],
-        ['salesforce/Records/Profile/profile2/FieldPermissions', ['fieldPermissions']],
-      ])
-    })
-
-    it('should have the default Attributes element first', () => {
-      const profElems = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'profile1')
-      expect(profElems[0].path?.slice(-1)[0]).toEqual('Attributes')
+      expect(profElems).toHaveLength(1)
+      const [profile] = profElems
+      expect(Array.from(profile.pathIndex?.entries() ?? []))
+        .toEqual([
+          [
+            profile.elemID.getFullName(),
+            [SALESFORCE, RECORDS_PATH, 'Profile', profile.elemID.name, 'Attributes'],
+          ],
+          [
+            profile.elemID.createNestedID('fieldPermissions').getFullName(),
+            [SALESFORCE, RECORDS_PATH, 'Profile', profile.elemID.name, 'FieldPermissions'],
+          ],
+          [
+            profile.elemID.createNestedID('fullName').getFullName(),
+            [SALESFORCE, RECORDS_PATH, 'Profile', profile.elemID.name, 'Attributes'],
+          ],
+        ])
+      const origProfile = profileInstances.find(e => e.elemID.name === 'profile2')
+      expect(profile.isEqual(origProfile as InstanceElement)).toEqual(true)
     })
   })
 
@@ -170,7 +194,14 @@ describe('Profile Instance Split filter', () => {
     it('should do nothing, and keep the profile as a single instance with the original path', () => {
       const profElems = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'profile1')
       expect(profElems).toHaveLength(1)
-      expect(profElems[0].path).toEqual(['salesforce', 'Records', 'Profile', 'profile1'])
+      const [profile] = profElems
+      expect(Array.from(profile.pathIndex?.entries() ?? []))
+        .toEqual([
+          [
+            profile.elemID.getFullName(),
+            [SALESFORCE, RECORDS_PATH, 'Profile', profile.elemID.name],
+          ],
+        ])
     })
   })
 })

@@ -18,8 +18,7 @@ import {
   ElemID, ObjectType, ServiceIds, BuiltinTypes, Element, InstanceElement, isObjectType,
   CORE_ANNOTATIONS, Value, isInstanceElement,
   ReferenceExpression, isListType, FieldDefinition, toChange, Change, ModificationChange,
-  getChangeData,
-  isServiceId,
+  getChangeData, isServiceId, getTopLevelPath,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -257,7 +256,7 @@ describe('Custom Objects filter', () => {
         expect(leadElements).toHaveLength(1)
         // Standard fields
         const leadObj = leadElements
-          .find(elem => elem.path?.slice(-1)[0] === 'Lead') as ObjectType
+          .find(elem => getTopLevelPath(elem)?.slice(-1)[0] === 'Lead') as ObjectType
         expect(leadObj).toBeDefined()
         expect(leadObj.fields.LastName.refType.elemID.name).toBe('Text')
         expect(leadObj.fields.LastName.annotations.label).toBe('Last Name')
@@ -703,8 +702,13 @@ describe('Custom Objects filter', () => {
         const testElements = findElements(elements, 'namespaceName__Test__c') as ObjectType[]
         expect(testElements).toHaveLength(1)
         const object = testElements.find(obj =>
-          _.isEqual(obj.path, [SALESFORCE, INSTALLED_PACKAGES_PATH, namespaceName, OBJECTS_PATH,
-            'namespaceName__Test__c', 'namespaceName__Test__c'])) as ObjectType
+          _.isEqual(
+            getTopLevelPath(obj),
+            [
+              SALESFORCE, INSTALLED_PACKAGES_PATH, namespaceName, OBJECTS_PATH,
+              'namespaceName__Test__c', 'namespaceName__Test__c',
+            ]
+          )) as ObjectType
         expect(object).toBeDefined()
         expect(object.annotations[API_NAME]).toBeDefined()
         expect(object.fields.dummy).toBeDefined()
@@ -730,7 +734,7 @@ describe('Custom Objects filter', () => {
         const leadElements = findElements(result, 'Lead') as ObjectType[]
         expect(leadElements).toHaveLength(1)
         const object = leadElements.find(obj =>
-          _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH, 'Lead', 'Lead'])) as ObjectType
+          _.isEqual(getTopLevelPath(obj), [SALESFORCE, OBJECTS_PATH, 'Lead', 'Lead'])) as ObjectType
         expect(object).toBeDefined()
         expect(object.annotations[API_NAME]).toBeDefined()
         expect(object.fields.CustomField__c).toBeDefined()
@@ -755,7 +759,7 @@ describe('Custom Objects filter', () => {
         const flow = findElements(result, 'flow').pop() as ObjectType
         expect(flow).toBeDefined() // We do expect to get the metadata type here
         expect(Object.keys(flow.fields)).toHaveLength(0)
-        expect(flow.path).toEqual([SALESFORCE, TYPES_PATH, 'flow'])
+        expect(getTopLevelPath(flow)).toEqual([SALESFORCE, TYPES_PATH, 'flow'])
       })
 
       describe('Merge elements', () => {
@@ -1051,7 +1055,7 @@ describe('Custom Objects filter', () => {
               const leadElements = result.filter(o => o.elemID.name === 'Lead')
               expect(leadElements).toHaveLength(1)
               const leadObj = leadElements.find(obj =>
-                _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH, 'Lead', 'Lead'])) as ObjectType
+                _.isEqual(getTopLevelPath(obj), [SALESFORCE, OBJECTS_PATH, 'Lead', 'Lead'])) as ObjectType
               expect(leadObj).toBeDefined()
               expect(leadObj.fields.MyAutoNumber__c
                 .annotations[FIELD_ANNOTATIONS.DISPLAY_FORMAT]).toBe('A-{0000}')
@@ -1064,7 +1068,7 @@ describe('Custom Objects filter', () => {
               const leadElements = result.filter(o => o.elemID.name === 'Lead')
               expect(leadElements).toHaveLength(1)
               const leadStandardFieldsObj = leadElements.find(obj =>
-                _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH, 'Lead', 'Lead'])) as ObjectType
+                _.isEqual(getTopLevelPath(obj), [SALESFORCE, OBJECTS_PATH, 'Lead', 'Lead'])) as ObjectType
               expect(leadStandardFieldsObj).toBeDefined()
               expect(leadStandardFieldsObj.fields.MyAutoNumber
                 .annotations[FIELD_ANNOTATIONS.DISPLAY_FORMAT]).toBe('A-{0000}')
@@ -1077,7 +1081,7 @@ describe('Custom Objects filter', () => {
               const leadElements = result.filter(o => o.elemID.name === 'Lead')
               expect(leadElements).toHaveLength(1)
               const leadStandardFieldsObj = leadElements.find(obj =>
-                _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH, 'Lead', 'Lead'])) as ObjectType
+                _.isEqual(getTopLevelPath(obj), [SALESFORCE, OBJECTS_PATH, 'Lead', 'Lead'])) as ObjectType
               expect(leadStandardFieldsObj).toBeDefined()
               expect(leadStandardFieldsObj.fields.UnsupportedField).toBeUndefined()
             })
@@ -1091,7 +1095,7 @@ describe('Custom Objects filter', () => {
               const leadElements = result.filter(o => o.elemID.name === 'myNamespace__Lead__c')
               expect(leadElements).toHaveLength(1)
               const leadObj = leadElements.find(obj =>
-                _.isEqual(obj.path, [SALESFORCE, INSTALLED_PACKAGES_PATH, 'myNamespace', OBJECTS_PATH,
+                _.isEqual(getTopLevelPath(obj), [SALESFORCE, INSTALLED_PACKAGES_PATH, 'myNamespace', OBJECTS_PATH,
                   'myNamespace__Lead__c', 'myNamespace__Lead__c'])) as ObjectType
               expect(leadObj).toBeDefined()
               expect(leadObj.fields.MyAutoNumber
@@ -1251,7 +1255,7 @@ describe('Custom Objects filter', () => {
             const [leadListView] = result.filter(o => o.elemID.name === 'Lead_PartialListViewFullName')
             expect(isInstanceElement(leadListView)).toBeTruthy()
             const leadListViewsInstance = leadListView as InstanceElement
-            expect(leadListViewsInstance.path)
+            expect(getTopLevelPath(leadListViewsInstance))
               .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', 'ListView', leadListViewsInstance.elemID.name])
             expect(leadListViewsInstance.value.columns).toEqual('ListViewName')
             expect(leadListViewsInstance.value[INSTANCE_FULL_NAME_FIELD]).toEqual('Lead.PartialListViewFullName')
@@ -1263,8 +1267,10 @@ describe('Custom Objects filter', () => {
             await filter.onFetch(result)
             const [leadWebLink] = result.filter(o => o.elemID.name === 'Lead_WebLinkFullName')
             const leadWebLinkInstance = (leadWebLink as InstanceElement)
-            expect(leadWebLinkInstance.path).toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', 'ButtonsLinksAndActions',
-              leadWebLinkInstance.elemID.name])
+            expect(getTopLevelPath(leadWebLinkInstance))
+              .toEqual([
+                SALESFORCE, OBJECTS_PATH, 'Lead', 'ButtonsLinksAndActions', leadWebLinkInstance.elemID.name,
+              ])
           })
 
           it('should create multiple instance elements for nested instances of custom object', async () => {
@@ -1282,7 +1288,7 @@ describe('Custom Objects filter', () => {
             result.push(instanceWithMultipleListViews)
             await filter.onFetch(result)
 
-            const listViews = result.filter(elem => elem.path?.slice(-2)[0]
+            const listViews = result.filter(elem => getTopLevelPath(elem)?.slice(-2)[0]
               === NESTED_INSTANCE_VALUE_TO_TYPE_NAME[NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS])
             expect(listViews).toHaveLength(2)
             listViews.forEach(listView => expect(isInstanceElement(listView)).toBeTruthy())
@@ -1348,7 +1354,7 @@ describe('Custom Objects filter', () => {
               const [leadListView] = result.filter(o => o.elemID.name === 'Lead_PartialListViewFullName')
               expect(isInstanceElement(leadListView)).toBeTruthy()
               const leadListViewsInstance = leadListView as InstanceElement
-              expect(leadListViewsInstance.path)
+              expect(getTopLevelPath(leadListViewsInstance))
                 .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', 'ListView', leadListViewsInstance.elemID.name])
               expect(leadListViewsInstance.value.columns).toEqual('ListViewName')
               expect(leadListViewsInstance.value[INSTANCE_FULL_NAME_FIELD]).toEqual('Lead.PartialListViewFullName')
@@ -1381,7 +1387,7 @@ describe('Custom Objects filter', () => {
         })
 
         it('should set assignmentRules instance path correctly', async () => {
-          expect(assignmentRulesInstance.path)
+          expect(getTopLevelPath(assignmentRulesInstance))
             .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', ASSIGNMENT_RULES_METADATA_TYPE, assignmentRulesInstance.elemID.name])
         })
 
@@ -1405,7 +1411,7 @@ describe('Custom Objects filter', () => {
         })
 
         it('should set leadConvertSettings instance path correctly', async () => {
-          expect(leadConvertSettingsInstance.path)
+          expect(getTopLevelPath(leadConvertSettingsInstance))
             .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', LEAD_CONVERT_SETTINGS_METADATA_TYPE, leadConvertSettingsInstance.elemID.name])
         })
 
@@ -1440,7 +1446,7 @@ describe('Custom Objects filter', () => {
           })
 
           it('should set quickAction instance path correctly', async () => {
-            expect(quickActionInstance.path)
+            expect(getTopLevelPath(quickActionInstance))
               .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', QUICK_ACTION_METADATA_TYPE, instanceName])
           })
 
@@ -1468,7 +1474,7 @@ describe('Custom Objects filter', () => {
           })
 
           it('should change the path of Lightning page instance with sobjectType', async () => {
-            expect(recordPageInstance.path)
+            expect(getTopLevelPath(recordPageInstance))
               .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', LIGHTNING_PAGE_TYPE, 'LightningPageTest'])
           })
         })
@@ -1484,7 +1490,7 @@ describe('Custom Objects filter', () => {
           })
 
           it('should not edit quickAction instance path', async () => {
-            expect(quickActionInstance.path)
+            expect(getTopLevelPath(quickActionInstance))
               .toEqual([SALESFORCE, RECORDS_PATH, QUICK_ACTION_METADATA_TYPE, instanceName])
           })
 
@@ -1507,7 +1513,7 @@ describe('Custom Objects filter', () => {
         })
 
         it('should set customTab instance path correctly', async () => {
-          expect(customTabInstance.path)
+          expect(getTopLevelPath(customTabInstance))
             .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', CUSTOM_TAB_METADATA_TYPE, customTabInstance.elemID.name])
         })
 
@@ -1532,7 +1538,7 @@ describe('Custom Objects filter', () => {
         })
 
         it('should set customObjectTranslation instance path correctly', async () => {
-          expect(customObjectTranslationInstance.path)
+          expect(getTopLevelPath(customObjectTranslationInstance))
             .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE,
               'Lead_en_US'])
         })
@@ -1558,7 +1564,7 @@ describe('Custom Objects filter', () => {
         })
 
         it('should set instance path correctly', () => {
-          expect(sharingRulesInstance.path)
+          expect(getTopLevelPath(sharingRulesInstance))
             .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', SHARING_RULES_TYPE, sharingRulesInstance.elemID.name])
         })
 
@@ -1582,7 +1588,7 @@ describe('Custom Objects filter', () => {
           await filter.onFetch([sharingRulesType, sharingRulesInstance])
         })
         it('should set instance path', () => {
-          expect(sharingRulesInstance.path).toEqual(
+          expect(getTopLevelPath(sharingRulesInstance)).toEqual(
             [SALESFORCE, OBJECTS_PATH, 'Lead', SHARING_RULES_TYPE, sharingRulesInstance.elemID.name]
           )
         })

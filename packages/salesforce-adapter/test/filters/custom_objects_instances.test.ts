@@ -14,7 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, ObjectType, Element, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, FieldDefinition, isInstanceElement, InstanceElement, ServiceIds, BuiltinTypes, createRefToElmWithValue } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, Element, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes,
+  FieldDefinition, isInstanceElement, InstanceElement, ServiceIds, BuiltinTypes,
+  createRefToElmWithValue, getTopLevelPath, createPathIndexFromPath } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { ConfigChangeSuggestion, isDataManagementConfigSuggestions } from '../../src/types'
 import { getNamespaceFromString } from '../../src/filters/utils'
@@ -84,7 +86,7 @@ const createCustomObject = (
   const path = namespace
     ? [SALESFORCE, INSTALLED_PACKAGES_PATH, namespace, OBJECTS_PATH, obj.elemID.name]
     : [SALESFORCE, OBJECTS_PATH, obj.elemID.name]
-  obj.path = path
+  obj.pathIndex = createPathIndexFromPath(obj.elemID, path)
   return obj
 }
 
@@ -422,7 +424,7 @@ describe('Custom Object Instances filter', () => {
         })
 
         it('should create the instances with record path acccording to object', () => {
-          expect(instances[0].path).toEqual(
+          expect(getTopLevelPath(instances[0])).toEqual(
             [SALESFORCE, INSTALLED_PACKAGES_PATH, testNamespace, OBJECTS_PATH,
               simpleName, RECORDS_PATH, expectedFirstInstanceName]
           )
@@ -478,7 +480,7 @@ describe('Custom Object Instances filter', () => {
         })
 
         it('should create the instances with record path acccording to object', () => {
-          expect(instances[0].path).toEqual(
+          expect(getTopLevelPath(instances[0])).toEqual(
             [SALESFORCE, INSTALLED_PACKAGES_PATH, testNamespace, OBJECTS_PATH,
               withNameName, RECORDS_PATH, expectedFirstInstanceName]
           )
@@ -523,10 +525,14 @@ describe('Custom Object Instances filter', () => {
         })
 
         it('should create the instances with record path acccording to object', () => {
-          expect(instances[0].path).toEqual(
-            [SALESFORCE, INSTALLED_PACKAGES_PATH, testNamespace, OBJECTS_PATH,
-              withAddressName, RECORDS_PATH, expectedFirstInstanceName]
-          )
+          expect(Array.from(instances[0].pathIndex?.entries() ?? []))
+            .toEqual([
+              [
+                instances[0].elemID.getFullName(),
+                [SALESFORCE, INSTALLED_PACKAGES_PATH, testNamespace, OBJECTS_PATH,
+                  withAddressName, RECORDS_PATH, expectedFirstInstanceName],
+              ],
+            ])
         })
 
         it('should create the instances with ElemID name according to the getElemID func', () => {

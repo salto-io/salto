@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, Values, ElemID, BuiltinTypes, MapType, ListType } from '@salto-io/adapter-api'
+import { ObjectType, Values, ElemID, BuiltinTypes, MapType, ListType,
+  createPathIndexFromPath } from '@salto-io/adapter-api'
 // eslint-disable-next-line
 import { generateType, toNestedTypeName } from '../../../src/elements/ducktype'
 import { TYPES_PATH, SUBTYPES_PATH } from '../../../src/elements'
@@ -36,7 +37,8 @@ describe('ducktype_type_elements', () => {
       })
       expect(type.isEqual(new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'typeName'), fields: {} }))).toBeTruthy()
       expect(nestedTypes).toHaveLength(0)
-      expect(type.path).toEqual([ADAPTER_NAME, TYPES_PATH, 'typeName'])
+      expect(type.pathIndex)
+        .toEqual(createPathIndexFromPath(type.elemID, [ADAPTER_NAME, TYPES_PATH, 'typeName']))
     })
     it('should override field types for types with fieldTypeOverrides', () => {
       const entries: Values[] = [{ name: 'test' }]
@@ -588,7 +590,8 @@ describe('ducktype_type_elements', () => {
         fields: {},
       }))).toBeTruthy()
       expect(nestedTypes).toHaveLength(0)
-      expect(type.path).toEqual([ADAPTER_NAME, TYPES_PATH, 'typeName_requiring_naclcase'])
+      expect(type.pathIndex)
+        .toEqual(createPathIndexFromPath(type.elemID, [ADAPTER_NAME, TYPES_PATH, 'typeName_requiring_naclcase']))
     })
     it('should use subtypes path for subtypes', () => {
       const entries: Values[] = []
@@ -606,7 +609,8 @@ describe('ducktype_type_elements', () => {
         fields: {},
       }))).toBeTruthy()
       expect(nestedTypes).toHaveLength(0)
-      expect(type.path).toEqual([ADAPTER_NAME, TYPES_PATH, SUBTYPES_PATH, 'parent_type', 'subtypeName'])
+      expect(type.pathIndex)
+        .toEqual(createPathIndexFromPath(type.elemID, [ADAPTER_NAME, TYPES_PATH, SUBTYPES_PATH, 'parent_type', 'subtypeName']))
     })
     it('should mark singleton types as isSettings=true', () => {
       const entries = [

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, BuiltinTypes } from '@salto-io/adapter-api'
+import { InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, BuiltinTypes, createPathIndexFromPath, getTopLevelPath } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { mockTypes } from '../mock_elements'
 import { createCustomObjectType, createMetadataTypeElement, defaultFilterContext } from '../utils'
@@ -42,7 +42,7 @@ describe('Test layout filter', () => {
         }
       )
       const testSobjPath = [...await getObjectDirectoryPath(testSObj), pathNaclCase(apiName)]
-      testSObj.path = testSobjPath
+      testSObj.pathIndex = createPathIndexFromPath(testSObj.elemID, testSobjPath)
 
       const shortName = 'Test Layout'
       const fullName = `${apiName}-${shortName}`
@@ -87,7 +87,7 @@ describe('Test layout filter', () => {
 
       const instance = elements[1] as InstanceElement
       expect(instance.elemID).toEqual(LAYOUT_TYPE_ID.createNestedID('instance', naclCase(shortName)))
-      expect(instance.path).toEqual([...testSobjPath.slice(0, -1), 'Layout', pathNaclCase(instance.elemID.name)])
+      expect(getTopLevelPath(instance)).toEqual([...testSobjPath.slice(0, -1), 'Layout', pathNaclCase(instance.elemID.name)])
 
       expect(instance.annotations[CORE_ANNOTATIONS.PARENT]).toContainEqual(
         new ReferenceExpression(testSObj.elemID)

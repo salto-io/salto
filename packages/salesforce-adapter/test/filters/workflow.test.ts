@@ -19,6 +19,7 @@ import {
   ElemID, InstanceElement, ObjectType, Element, isInstanceElement, Change,
   getChangeData, ModificationChange, isModificationChange, Value, isListType, ListType,
   createRefToElmWithValue,
+  getTopLevelPath,
 } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
 import filterCreator, {
@@ -163,9 +164,9 @@ describe('Workflow filter', () => {
     it('should set non workflow instances path correctly', async () => {
       const dummyInstance = generateWorkFlowInstance()
       dummyInstance.refType = dummyRefToObj
-      const beforeFilterPath = dummyInstance.path
+      const beforeFilterPath = getTopLevelPath(dummyInstance)
       await filter.onFetch([dummyInstance])
-      expect(dummyInstance.path).toEqual(beforeFilterPath)
+      expect(getTopLevelPath(dummyInstance)).toEqual(beforeFilterPath)
     })
   })
 

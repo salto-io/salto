@@ -21,6 +21,8 @@ import {
   ReferenceExpression, ListType, Change, getChangeData, isField, isObjectTypeChange,
   isAdditionOrRemovalChange, isFieldChange, isRemovalChange, isInstanceChange, toChange,
   createRefToElmWithValue,
+  getTopLevelPath,
+  createPathIndexFromPath,
 } from '@salto-io/adapter-api'
 import { findObjectType, transformValues, getParents, pathNaclCase } from '@salto-io/adapter-utils'
 import { SalesforceClient } from 'index'
@@ -370,9 +372,11 @@ const mergeCustomObjectWithInstance = async (
   await transformObjectAnnotations(customObject, annotationTypesFromInstance, instance)
 }
 
-const createNestedMetadataInstances = (instance: InstanceElement,
-  { elemID: objElemID, path: objPath }: ObjectType,
-  nestedMetadataTypes: Record<string, ObjectType>):
+const createNestedMetadataInstances = (
+  instance: InstanceElement,
+  objType: ObjectType,
+  nestedMetadataTypes: Record<string, ObjectType>,
+):
   Promise<InstanceElement[]> =>
   awu(Object.entries(nestedMetadataTypes))
     .flatMap(([name, type]) => {
@@ -401,12 +405,12 @@ const createNestedMetadataInstances = (instance: InstanceElement,
           )
           nestedInstanceValues[INSTANCE_FULL_NAME_FIELD] = fullName
           const path = [
-            ...(objPath as string[]).slice(0, -1),
+            ...getTopLevelPath(objType).slice(0, -1),
             typeFolderName,
             instanceFileName,
           ]
           return new InstanceElement(instanceName, type, nestedInstanceValues,
-            path, { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(objElemID)] })
+            path, { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(objType.elemID)] })
         })
     }).toArray()
 
@@ -432,7 +436,10 @@ const createObjectType = async ({
   addMetadataType(object)
   addLabel(object, label)
   addKeyPrefix(object, keyPrefix === null ? undefined : keyPrefix)
-  object.path = [...await getObjectDirectoryPath(object), pathNaclCase(object.elemID.name)]
+  object.pathIndex = createPathIndexFromPath(
+    object.elemID,
+    [...await getObjectDirectoryPath(object), pathNaclCase(object.elemID.name)],
+  )
   if (!_.isUndefined(fields)) {
     const getCompoundTypeName = (nestedFields: SObjField[], compoundName: string): string => {
       if (compoundName === COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME) {
@@ -564,18 +571,21 @@ const fixDependentInstancesPathAndSetParent = async (
     instance: InstanceElement,
     customObject: ObjectType,
   ): Promise<void> => {
-    instance.path = [
-      ...await getObjectDirectoryPath(customObject),
-      ...(workflowDependentMetadataTypes.has(instance.elemID.typeName)
-        ? [WORKFLOW_DIR_NAME,
-          pathNaclCase(
-            strings.capitalizeFirstLetter(
-              WORKFLOW_TYPE_TO_FIELD[instance.elemID.typeName] ?? instance.elemID.typeName
-            )
-          )]
-        : [pathNaclCase(instance.elemID.typeName)]),
-      pathNaclCase(instance.elemID.name),
-    ]
+    instance.pathIndex = createPathIndexFromPath(
+      instance.elemID,
+      [
+        ...await getObjectDirectoryPath(customObject),
+        ...(workflowDependentMetadataTypes.has(instance.elemID.typeName)
+          ? [WORKFLOW_DIR_NAME,
+            pathNaclCase(
+              strings.capitalizeFirstLetter(
+                WORKFLOW_TYPE_TO_FIELD[instance.elemID.typeName] ?? instance.elemID.typeName
+              )
+            )]
+          : [pathNaclCase(instance.elemID.typeName)]),
+        pathNaclCase(instance.elemID.name),
+      ]
+    )
   }
 
   const apiNameToCustomObject = await multiIndex.keyByAsync({

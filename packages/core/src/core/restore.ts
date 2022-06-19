@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, DetailedChange, isRemovalChange } from '@salto-io/adapter-api'
+import { ElemID, DetailedChange, isRemovalChange, createPathIndexFromPath } from '@salto-io/adapter-api'
 import { filterByID, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { pathIndex, ElementSelector, elementSource, remoteMap } from '@salto-io/workspace'
@@ -41,7 +41,8 @@ const splitChangeByPath = async (
     )
     return {
       ...filteredChange,
-      path: hint,
+      // TODO: (maybe) fix me!!! - I am not sure that this should be change.id
+      pathIndex: createPathIndexFromPath(change.id, hint as string[]),
     }
   }))
 }

@@ -95,7 +95,7 @@ describe('getChangeLocations', () => {
     })
     it('should use the default filename when no path is provided', () => {
       const noPath = mockType.clone()
-      noPath.path = undefined
+      noPath.pathIndex = undefined
       const change: DetailedChange = { ...toChange({ after: noPath }), id: noPath.elemID }
       result = getChangeLocations(change, new Map())
       expect(result).toHaveLength(1)

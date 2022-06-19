@@ -74,13 +74,16 @@ export const getChangeLocations = (
       const possibleLocations = sourceMap.get(parentID.getFullName()) || []
       if (possibleLocations.length > 0) {
         const foundInPath = possibleLocations.find(sr =>
-          sr.filename === createFileNameFromPath(change.path))
+          // TODO: fix me!!!
+          // sr.filename === createFileNameFromPath(change.path))
+          sr.filename === createFileNameFromPath())
         // TODO: figure out how to choose the correct location if there is more than one option
         return [lastNestedLocation(foundInPath || possibleLocations[0])]
       }
     }
     // Fallback to using the path from the element itself
-    const naclFilePath = change.path ?? getChangeData(change).path
+    // TODO: fix me!!!
+    const naclFilePath = change.pathIndex ?? getChangeData(change).pathIndex
     const endOfFileLocation = { col: 1, line: Infinity, byte: Infinity }
     return [{
       filename: createFileNameFromPath(naclFilePath),
@@ -316,14 +319,18 @@ const parentElementExistsInPath = (
 ): boolean => {
   const { parent } = dc.id.createTopLevelParentID()
   return _.some(sourceMap.get(parent.getFullName())?.map(
-    range => range.filename === createFileNameFromPath(dc.path)
+    // TODO: fix me!!!
+    // range => range.filename === createFileNameFromPath(dc.path)
+    range => range.filename === createFileNameFromPath()
   ))
 }
 export const getChangesToUpdate = (
   changes: DetailedChange[],
   sourceMap: SourceMap
 ): DetailedChange[] => {
-  const isNestedAddition = (dc: DetailedChange): boolean => (dc.path || false)
+  // TODO: fix me!!!
+  // const isNestedAddition = (dc: DetailedChange): boolean => (dc.path || false)
+  const isNestedAddition = (dc: DetailedChange): boolean => (dc.pathIndex || false)
     && dc.action === 'add'
     && dc.id.idType !== 'instance'
     && dc.id.nestingLevel === (dc.id.isAnnotationTypeID() ? 2 : 1)

@@ -16,16 +16,13 @@
 import _ from 'lodash'
 import {
   Element, ElemID, Values, ObjectType, Field, TypeElement, BuiltinTypes, ListType, MapType,
-  CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes,
+  CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, createPathIndexFromPath,
 } from '@salto-io/adapter-api'
 import {
   findElements as findElementsByID, buildElementsSourceFromElements,
 } from '@salto-io/adapter-utils'
 import JSZip from 'jszip'
 import * as constants from '../src/constants'
-import {
-  annotationsFileName, customFieldsFileName, standardFieldsFileName,
-} from '../src/filters/custom_object_split'
 import { getNamespaceFromString } from '../src/filters/utils'
 import { FilterContext } from '../src/filter'
 import { allSystemFields } from '../src/adapter'
@@ -104,24 +101,6 @@ export const createEncodedZipContent = async (files: ZipFile[],
   const zip = new JSZip()
   files.forEach(file => zip.file(file.path, file.content))
   return (await zip.generateAsync({ type: 'nodebuffer' })).toString(encoding)
-}
-
-export const findCustomFieldsObject = (elements: Element[], name: string): ObjectType => {
-  const customObjects = findElements(elements, name) as ObjectType[]
-  return customObjects
-    .find(obj => obj.path?.slice(-1)[0] === customFieldsFileName(name)) as ObjectType
-}
-
-export const findStandardFieldsObject = (elements: Element[], name: string): ObjectType => {
-  const customObjects = findElements(elements, name) as ObjectType[]
-  return customObjects
-    .find(obj => obj.path?.slice(-1)[0] === standardFieldsFileName(name)) as ObjectType
-}
-
-export const findAnnotationsObject = (elements: Element[], name: string): ObjectType => {
-  const customObjects = findElements(elements, name) as ObjectType[]
-  return customObjects
-    .find(obj => obj.path?.slice(-1)[0] === annotationsFileName(name)) as ObjectType
 }
 
 export const findFullCustomObject = (elements: Element[], name: string): ObjectType => {
@@ -279,7 +258,7 @@ export const createCustomSettingsObject = (
     ? [constants.SALESFORCE, constants.INSTALLED_PACKAGES_PATH, namespace,
       constants.OBJECTS_PATH, obj.elemID.name]
     : [constants.SALESFORCE, constants.OBJECTS_PATH, obj.elemID.name]
-  obj.path = path
+  obj.pathIndex = createPathIndexFromPath(obj.elemID, path)
   return obj
 }
 

@@ -15,7 +15,7 @@
 */
 
 import { collections } from '@salto-io/lowerdash'
-import { ObjectType, ElemID, BuiltinTypes, ListType, MapType, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, ListType, MapType, InstanceElement, ReferenceExpression, createPathIndexFromPath } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import { getAllInstances } from '../../../src/elements/swagger'
 import { returnFullEntry } from '../../../src/elements/field_finder'
@@ -1419,13 +1419,8 @@ describe('swagger_instance_elements', () => {
       expect(res.map(e => e.elemID.name)).toEqual([
         `${ElemID.CONFIG_NAME}`,
       ])
-      expect(res.map(e => e.path)).toEqual([
-        [
-          ADAPTER_NAME,
-          'Records',
-          'Settings',
-          'Owner',
-        ],
+      expect(res.map(e => e.pathIndex)).toEqual([
+        createPathIndexFromPath(res[0].elemID, [ADAPTER_NAME, 'Records', 'Settings', 'Owner']),
       ])
     })
     it('should fail if singleton type have more than one instance', async () => {

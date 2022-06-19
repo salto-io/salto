@@ -103,7 +103,7 @@ export const listUnresolvedReferences = async (
           rootElem.elemID.name,
           rootElem.refType,
           {},
-          rootElem.path,
+          rootElem.pathIndex,
         )
         setPath(newInstance, id, val)
         return newInstance

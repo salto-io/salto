@@ -300,7 +300,7 @@ const createMergeableChange = async (
   return {
     action: 'modify',
     id: mergeableID,
-    path: refChange.path,
+    pathIndex: refChange.pathIndex,
     data: {
       before: base,
       after: baseAfter,
@@ -416,18 +416,23 @@ export const routeDefault = async (
   return routeDefaultRemoveOrModify(change, primarySource, commonSource, secondarySources)
 }
 
-const getChangePathHint = async (
-  change: DetailedChange,
-  commonSource: NaclFilesSource
-): Promise<ReadonlyArray<string> | undefined> => {
-  if (change.path) return change.path
-  const refFilename = (await commonSource.getSourceRanges(change.id))
-    .map(sourceRange => sourceRange.filename)[0]
+// const getChangePathHint = async (
+//   change: DetailedChange,
+//   commonSource: NaclFilesSource
+// ): Promise<ReadonlyArray<string> | undefined> => {
+//   // TODO: fix me!!!
+//   // if (change.path) return change.path
+//   if (change.pathIndex) {
+//     return change.pathIndex.get(change.id.getFullName())
+//       ?? change.pathIndex.get(change.id.createTopLevelParentID().parent.getFullName())
+//   }
+//   const refFilename = (await commonSource.getSourceRanges(change.id))
+//     .map(sourceRange => sourceRange.filename)[0]
 
-  return refFilename
-    ? toPathHint(refFilename)
-    : undefined
-}
+//   return refFilename
+//     ? toPathHint(refFilename)
+//     : undefined
+// }
 
 export const routeIsolated = async (
   change: DetailedChange,
@@ -437,7 +442,7 @@ export const routeIsolated = async (
 ): Promise<RoutedChangesByRole> => {
   // This is an add change, which means the element is not in common.
   // so we will add it to the current action environment.
-  const pathHint = await getChangePathHint(change, commonSource)
+  // const pathHint = await getChangePathHint(change, commonSource)
 
   if (change.action === 'add') {
     return { primarySource: [change] }
@@ -475,7 +480,7 @@ export const routeIsolated = async (
   return {
     // No need to apply addToSource to primary env changes since it was handled by the original plan
     primarySource: [...currentEnvChanges, ...addCommonProjectionToCurrentChanges],
-    commonSource: [createRemoveChange(currentCommonElement, change.id, pathHint)],
+    commonSource: [createRemoveChange(currentCommonElement, change.id, change.pathIndex)],
     secondarySources: secondaryChanges,
   }
 }

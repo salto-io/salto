@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  Element, InstanceElement, Field, isInstanceElement, Value, StaticFile,
+  Element, InstanceElement, Field, isInstanceElement, Value, StaticFile, getTopLevelPath,
 } from '@salto-io/adapter-api'
 import { transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import _ from 'lodash'
@@ -53,12 +53,12 @@ const createStaticFile = async (
   instance: InstanceElement,
   value: string
 ): Promise<StaticFile | undefined> => {
-  if (instance.path === undefined) {
+  if (instance.pathIndex === undefined) {
     log.error(`could not extract value of instance ${await apiName(instance)} to static file, instance path is undefined`)
     return undefined
   }
   return new StaticFile({
-    filepath: `${instance.path.join('/')}.js`,
+    filepath: `${getTopLevelPath(instance).join('/')}.js`,
     content: Buffer.from(value),
     encoding: 'utf-8',
   })

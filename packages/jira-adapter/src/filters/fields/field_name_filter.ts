@@ -93,7 +93,7 @@ const filter: FilterCreator = ({ config, getElemIdFunc }) => ({
           name,
           instance.refType,
           instance.value,
-          instance.path,
+          instance.pathIndex,
           instance.annotations,
         )
       })

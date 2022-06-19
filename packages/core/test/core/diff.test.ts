@@ -196,7 +196,7 @@ describe('diff', () => {
         const removeChange = changes.find(c => c.action === 'remove')
         expect(removeChange).toBeDefined()
         expect(removeChange?.id).toEqual(singlePathObjMerged.elemID)
-        expect(removeChange?.path).toBeUndefined()
+        expect(removeChange?.pathIndex).toBeUndefined()
       })
       it('should create remove changes for elements which have different values in the fromElements and toElements', () => {
         const modifyChange = changes.find(c => c.action === 'modify')

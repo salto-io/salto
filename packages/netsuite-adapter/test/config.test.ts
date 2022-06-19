@@ -112,8 +112,13 @@ describe('config', () => {
         },
       }
     ))).toBe(true)
-
-    expect(configFromConfigChanges[1].path).toEqual(['lockedElements'])
+    expect(Array.from(configFromConfigChanges[1].pathIndex?.entries() ?? []))
+      .toEqual([
+        [
+          configFromConfigChanges[1].elemID.getFullName(),
+          ['lockedElements'],
+        ],
+      ])
   })
 
   it('should return updated currentConfig when having suggestions and the currentConfig has values', () => {

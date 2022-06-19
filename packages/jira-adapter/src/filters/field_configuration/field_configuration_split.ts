@@ -27,7 +27,7 @@ const createFieldItemInstance = (
   naclCase(`${instance.elemID.name}_${fieldItemValues.id.elemID.name}`),
   fieldItemType,
   fieldItemValues,
-  instance.path,
+  instance.pathIndex,
   {
     [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(instance.elemID, instance)],
   }

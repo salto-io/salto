@@ -24,6 +24,7 @@ import {
   TypeReference,
   StaticFile,
   isStaticFile,
+  createPathIndexFromPath,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -674,17 +675,18 @@ describe('fetch', () => {
       describe('when adapter returns splitted elements with added nested elements', () => {
         describe('when nested elements are fields', () => {
           beforeEach(async () => {
+            // TODO: fix me!!!
             const newTypeBaseWPath = newTypeBase.clone()
-            newTypeBaseWPath.path = ['a', 'b']
+            newTypeBaseWPath.pathIndex = createPathIndexFromPath(newTypeBaseWPath.elemID, ['a', 'b'])
             const newTypeExtWPath = newTypeExt.clone()
-            newTypeExtWPath.path = ['c', 'd']
+            newTypeExtWPath.pathIndex = createPathIndexFromPath(newTypeExtWPath.elemID, ['c', 'd'])
             mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
               Promise.resolve({ elements: [
                 newTypeBaseWPath,
                 newTypeExtWPath] })
             )
             const newTypeBaseWPathDifferentID = newTypeBaseDifferentAdapterID.clone()
-            newTypeBaseWPathDifferentID.path = ['a', 'b']
+            newTypeBaseWPathDifferentID.pathIndex = createPathIndexFromPath(newTypeBaseWPathDifferentID.elemID, ['a', 'b'])
             const result = await fetchChanges(
               mockAdapters,
               createElementSource([newTypeBaseWPathDifferentID]),
@@ -701,7 +703,7 @@ describe('fetch', () => {
           })
           it('should populate the change with the containing parent path', () => {
             expect(changes[0].change.id.getFullName()).toBe(`${newTypeDifferentAdapterID.adapter}.new.field.ext`)
-            expect(changes[0].change.path).toEqual(['c', 'd'])
+            expect(changes[0].change.pathIndex?.get(changes[0].change.id.getFullName())).toEqual(['c', 'd'])
           })
         })
         describe('when nested elements are annotations', () => {
@@ -743,7 +745,7 @@ describe('fetch', () => {
           })
           it('should populate the change with the containing parent path', () => {
             expect(changes[0].change.id.getFullName()).toBe(`${newTypeDifferentAdapterID.adapter}.new.attr.baba`)
-            expect(changes[0].change.path).toEqual(['c', 'd'])
+            expect(changes[0].change.pathIndex?.get(changes[0].change.id.getFullName())).toEqual(['c', 'd'])
           })
         })
       })

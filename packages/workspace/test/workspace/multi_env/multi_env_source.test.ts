@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import path from 'path'
-import { Element, ElemID, BuiltinTypes, ObjectType, DetailedChange, Change, getChangeData, StaticFile } from '@salto-io/adapter-api'
+import { Element, ElemID, BuiltinTypes, ObjectType, DetailedChange, Change, getChangeData, StaticFile, createPathIndexFromPath } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import * as utils from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
@@ -440,7 +440,7 @@ describe('multi env source', () => {
         await multiEnvSourceWithMockSources.getAll(primarySourceName)
       ).toArray()
       expect(currentElements).toHaveLength(2)
-      const detailedChange = { ...change, id: commonElemID, path: ['test'] } as DetailedChange
+      const detailedChange = { ...change, id: commonElemID, pathIndex: createPathIndexFromPath(commonElemID, ['test']) } as DetailedChange
       const elementChanges = (await multiEnvSourceWithMockSources
         .updateNaclFiles(primarySourceName, [detailedChange]))
       expect(elementChanges[primarySourceName].changes).toEqual([change])
@@ -537,19 +537,19 @@ describe('multi env source', () => {
         {
           action: 'remove',
           data: { before: envObject },
-          path: ['bla1'],
+          pathIndex: createPathIndexFromPath(envElemID, ['bla1']),
           id: envElemID,
         },
         {
           action: 'modify',
           data: { before: mergedSaltoObject, after: newEnvFragment },
-          path: ['bla'],
+          pathIndex: createPathIndexFromPath(objectElemID, ['bla']),
           id: objectElemID,
         },
         {
           action: 'add',
           data: { after: commonObject },
-          path: ['bla1'],
+          pathIndex: createPathIndexFromPath(commonElemID, ['bla1']),
           id: commonElemID,
         },
       ] as DetailedChange[]

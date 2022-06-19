@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, DetailedChange, isAdditionChange, isRemovalChange, isModificationChange } from '@salto-io/adapter-api'
+import { Element, ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, DetailedChange, isAdditionChange, isRemovalChange, isModificationChange, createPathIndexFromPath } from '@salto-io/adapter-api'
 import { merger, pathIndex, remoteMap } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { createRestoreChanges } from '../../src/core/restore'
@@ -190,7 +190,7 @@ describe('restore', () => {
           expect(change.id).toEqual(multiPathObjMerged.elemID)
           expect(change.data.after.elemID).toEqual(change.id)
         })
-        const changePaths = addChanges.map(change => change.path)
+        const changePaths = addChanges.map(change => change.pathIndex?.get(change.id.getFullName()))
         expect(changePaths).toContainEqual(['salto', 'obj', 'multi', 'anno'])
         expect(changePaths).toContainEqual(['salto', 'obj', 'multi', 'fields'])
       })
@@ -199,14 +199,15 @@ describe('restore', () => {
         expect(removeChange).toBeDefined()
         expect(removeChange?.id).toEqual(singlePathObjMerged.elemID)
         expect(removeChange?.data.before.elemID).toEqual(removeChange?.id)
-        expect(removeChange?.path).toBeUndefined()
+        expect(removeChange?.pathIndex).toBeUndefined()
       })
       it('should create modify changes for elements which have different values in the state and ws with proper path', () => {
         const modifyChange = changes.find(isModificationChange)
         expect(modifyChange).toBeDefined()
         expect(modifyChange?.id).toEqual(singlePathInstMergedAfter.elemID
           .createNestedID('nested').createNestedID('str'))
-        expect(modifyChange?.path).toEqual(['salto', 'inst', 'simple'])
+        expect(modifyChange?.pathIndex)
+          .toEqual(createPathIndexFromPath(modifyChange?.id as ElemID, ['salto', 'inst', 'simple']))
       })
     })
   })

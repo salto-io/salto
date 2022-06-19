@@ -173,6 +173,11 @@ export class TreeMap<T> implements Map<string, T[]> {
     }
     return this.iterEntry(prefixSubtree, path).map(([_key, values]) => values)
   }
+
+  clone(): TreeMap<T> {
+    // TODO: this isn't really cloning - we need to reimplement it
+    return new TreeMap(this.entries())
+  }
 }
 
 export class PartialTreeMap<T> extends TreeMap<T> {

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isObjectType, isInstanceElement, isPrimitiveType, isMapType, isListType } from '@salto-io/adapter-api'
+import { isObjectType, isInstanceElement, isPrimitiveType, isMapType, isListType, getTopLevelPath, createPathIndexFromPath, ElemID } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import path from 'path'
@@ -50,11 +50,11 @@ describe('elements generator', () => {
       const primitives = elements.filter(isPrimitiveType)
       const [types, objects] = _.partition(
         elements.filter(isObjectType),
-        e => e.path !== undefined && e.path[1] === 'Types'
+        e => e.pathIndex !== undefined && getTopLevelPath(e)[1] === 'Types'
       )
       const [profiles, records] = _.partition(
         elements.filter(isInstanceElement),
-        e => e.path !== undefined && e.path[2] === 'Profile'
+        e => e.pathIndex !== undefined && getTopLevelPath(e)[2] === 'Profile'
       )
       expect(primitives).toHaveLength(testParams.numOfPrimitiveTypes)
       expect(types).toHaveLength(testParams.numOfTypes)
@@ -91,7 +91,7 @@ describe('elements generator', () => {
         useOldProfiles: true,
       }, mockProgressReporter)
       const profiles = elements.filter(isInstanceElement).filter(
-        e => e.path !== undefined && e.path[2] === 'Profile'
+        e => e.pathIndex !== undefined && getTopLevelPath(e)[2] === 'Profile'
       )
       expect(profiles).toHaveLength(testParams.numOfProfiles)
     })
@@ -105,8 +105,11 @@ describe('elements generator', () => {
       const multiFilesObj = elements.filter(e => e.elemID.getFullName() === 'dummy.multiFilesObj')
       expect(singleFileObj).toBeDefined()
       expect(multiFilesObj).toHaveLength(2)
-      expect(singleFileObj?.path).toEqual(['dummy', 'extra', 'single'])
-      expect(multiFilesObj.map(e => e.path)).toEqual([
+      expect(singleFileObj?.pathIndex)
+        .toEqual(createPathIndexFromPath(
+          singleFileObj?.elemID as ElemID, ['dummy', 'extra', 'single']
+        ))
+      expect(multiFilesObj.map(e => e.pathIndex)).toEqual([
         ['dummy', 'extra', 'multi1'],
         ['dummy', 'extra', 'multi2'],
       ])

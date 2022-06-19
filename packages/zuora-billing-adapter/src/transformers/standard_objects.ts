@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ObjectType, InstanceElement, ElemID } from '@salto-io/adapter-api'
+import { Element, ObjectType, InstanceElement, ElemID, getTopLevelPath } from '@salto-io/adapter-api'
 import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { pathNaclCase } from '@salto-io/adapter-utils'
 import {
@@ -45,11 +45,12 @@ export const getStandardObjectElements = async ({
   apiConfig: ZuoraApiConfig
 }): Promise<Element[]> => {
   const standardObjecWrapperTypeName = standardObjectWrapperType.elemID.name
+  const path = getTopLevelPath(customObjectDefType)
   const standardObjectDefType = new ObjectType({
     ...customObjectDefType,
     elemID: new ElemID(ZUORA_BILLING, STANDARD_OBJECT_DEFINITION_TYPE),
-    path: customObjectDefType.path !== undefined
-      ? [...customObjectDefType.path.slice(0, -1), STANDARD_OBJECT_DEFINITION_TYPE]
+    path: path !== undefined
+      ? [...path.slice(0, -1), STANDARD_OBJECT_DEFINITION_TYPE]
       : undefined,
   })
 

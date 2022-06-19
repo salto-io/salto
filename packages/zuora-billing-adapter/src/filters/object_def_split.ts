@@ -13,10 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
-import { Element, ObjectType, Field } from '@salto-io/adapter-api'
+import { Element, ObjectType } from '@salto-io/adapter-api'
 import { pathNaclCase } from '@salto-io/adapter-utils'
-import { promises } from '@salto-io/lowerdash'
+import { collections, promises } from '@salto-io/lowerdash'
 import { isObjectDef, isCustomField } from '../element_utils'
 import { FilterCreator } from '../filter'
 import { ZUORA_BILLING, OBJECTS_PATH } from '../constants'
@@ -30,33 +29,34 @@ const getObjectDirectoryPath = (obj: ObjectType): string[] => (
   [ZUORA_BILLING, OBJECTS_PATH, pathNaclCase(obj.elemID.name)]
 )
 
-const objectDefToSplitElements = (customObject: ObjectType): ObjectType[] => {
-  const annotationsObject = new ObjectType({
-    elemID: customObject.elemID,
-    annotationRefsOrTypes: customObject.annotationRefTypes,
-    annotations: customObject.annotations,
-    path: [...getObjectDirectoryPath(customObject),
-      annotationsFileName(customObject.elemID.name)],
-  })
-  const standardFieldsObject = new ObjectType({
-    elemID: customObject.elemID,
-    fields: _.pickBy(customObject.fields, (f: Field) => !isCustomField(f)),
-    path: [...getObjectDirectoryPath(customObject),
-      standardFieldsFileName(customObject.elemID.name)],
-  })
-  const customFieldsObject = new ObjectType({
-    elemID: customObject.elemID,
-    fields: _.pickBy(customObject.fields, (f: Field) => isCustomField(f)),
-    path: [...getObjectDirectoryPath(customObject),
-      customFieldsFileName(customObject.elemID.name)],
-  })
-  return [annotationsObject, standardFieldsObject, customFieldsObject]
+const objectDefToSplitPaths = (customObject: ObjectType): ObjectType => {
+  const annotationsPath = [
+    ...getObjectDirectoryPath(customObject),
+    annotationsFileName(customObject.elemID.name),
+  ]
+  const standardFieldsPath = [
+    ...getObjectDirectoryPath(customObject),
+    standardFieldsFileName(customObject.elemID.name),
+  ]
+  const customFieldsPath = [
+    ...getObjectDirectoryPath(customObject),
+    customFieldsFileName(customObject.elemID.name),
+  ]
+  customObject.pathIndex = new collections.treeMap.TreeMap<string>([
+    [customObject.elemID.getFullName(), annotationsPath],
+    ...Object.values(customObject.fields)
+      .map(field => [
+        field.elemID.getFullName(),
+        (isCustomField(field) ? customFieldsPath : standardFieldsPath),
+      ] as [string, string[]]),
+  ])
+  return customObject
 }
 
 const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     const objectDefs = await removeAsync(elements, isObjectDef) as ObjectType[]
-    const newSplitObjectDefs = objectDefs.flatMap(objectDefToSplitElements)
+    const newSplitObjectDefs = objectDefs.map(objectDefToSplitPaths)
     elements.push(...newSplitObjectDefs)
   },
 })

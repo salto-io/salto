@@ -200,7 +200,7 @@ const getEntriesForType = async (
   })
   return {
     instances: instances.map(inst => new InstanceElement(
-      inst.elemID.name, newType, inst.value, inst.path, inst.annotations,
+      inst.elemID.name, newType, inst.value, inst.pathIndex, inst.annotations,
     )),
     type: newType,
     nestedTypes: newNestedTypes.concat(nestedFieldDetails ? type : []),

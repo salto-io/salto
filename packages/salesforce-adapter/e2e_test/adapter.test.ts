@@ -45,10 +45,7 @@ import {
   assertMetadataObjectType,
 } from '../src/transformers/transformer'
 import realAdapter from './adapter'
-import {
-  findElements, findStandardFieldsObject, findAnnotationsObject, findCustomFieldsObject,
-  findFullCustomObject,
-} from '../test/utils'
+import { findElements, findFullCustomObject } from '../test/utils'
 import SalesforceClient, { API_VERSION } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
 import { fromRetrieveResult, createDeployPackage } from '../src/transformers/xml_transformer'
@@ -129,7 +126,8 @@ describe('Salesforce adapter E2E with real account', () => {
     describe('should fetch sobject', () => {
       it('should fetch sobject fields', async () => {
         // Check few field types on lead object
-        const lead = findStandardFieldsObject(result, 'Lead')
+        const lead = findElement(result, new ElemID(constants.SALESFORCE, 'Lead')) as ObjectType
+        expect(lead).toBeDefined()
         // Test few possible types
         expect(lead.fields.Address.refType.elemID).toEqual(Types.compoundDataTypes.Address.elemID)
         expect(lead.fields.Description.refType.elemID).toEqual(
@@ -193,7 +191,8 @@ describe('Salesforce adapter E2E with real account', () => {
 
       describe('should fetch sobject annotations from the custom object instance', () => {
         it('should fetch relevant simple annotations for standard object', async () => {
-          const lead = findAnnotationsObject(result, 'Lead')
+          const lead = findElement(result, new ElemID(constants.SALESFORCE, 'Lead')) as ObjectType
+          expect(lead).toBeDefined()
           expect(await lead.getAnnotationTypes()).toHaveProperty('enableFeeds')
           expect(lead.annotations.enableFeeds).toBeDefined()
 
@@ -202,7 +201,8 @@ describe('Salesforce adapter E2E with real account', () => {
         })
 
         it('should fetch relevant simple annotations for custom object', async () => {
-          const customObj = findAnnotationsObject(result, 'TestFields__c')
+          const customObj = findElement(result, new ElemID(constants.SALESFORCE, 'TestFields__c')) as ObjectType
+          expect(customObj).toBeDefined()
           expect(await customObj.getAnnotationTypes()).toHaveProperty('enableFeeds')
           expect(customObj.annotations.enableFeeds).toBeDefined()
           expect(await customObj.getAnnotationTypes()).toHaveProperty('deploymentStatus')
@@ -303,13 +303,18 @@ describe('Salesforce adapter E2E with real account', () => {
         constants.LEAD_CONVERT_SETTINGS_METADATA_TYPE).pop() as InstanceElement
 
       expect(convertSettingsInstance).toBeDefined()
-      expect(convertSettingsInstance.path)
+      expect(Array.from(convertSettingsInstance.pathIndex?.entries() ?? []))
         .toEqual([
-          constants.SALESFORCE,
-          constants.OBJECTS_PATH,
-          'Lead',
-          constants.LEAD_CONVERT_SETTINGS_METADATA_TYPE,
-          convertSettingsInstance.elemID.name,
+          [
+            convertSettingsInstance.elemID.getFullName(),
+            [
+              constants.SALESFORCE,
+              constants.OBJECTS_PATH,
+              'Lead',
+              constants.LEAD_CONVERT_SETTINGS_METADATA_TYPE,
+              convertSettingsInstance.elemID.name,
+            ],
+          ],
         ])
     })
 
@@ -1214,10 +1219,12 @@ describe('Salesforce adapter E2E with real account', () => {
       }
 
       describe('fetch', () => {
-        let customFieldsObject: ObjectType
+        let customObject: ObjectType
 
         beforeAll(() => {
-          customFieldsObject = findCustomFieldsObject(result, customObjectWithFieldsName)
+          customObject = findElement(
+            result, new ElemID(constants.SALESFORCE, customObjectWithFieldsName)
+          ) as ObjectType
         })
 
         describe('fetch fields', () => {
@@ -1233,7 +1240,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
           let fields: Record<string, Field>
           beforeAll(() => {
-            fields = customFieldsObject.fields
+            fields = customObject.fields
           })
 
           it('currency', () => {
@@ -1412,7 +1419,9 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('rollup summary', () => {
-            const account = findCustomFieldsObject(result, 'Account')
+            const account = findElement(
+              result, new ElemID(constants.SALESFORCE, 'Account')
+            ) as ObjectType
             const field = account?.fields[CUSTOM_FIELD_NAMES.ROLLUP_SUMMARY]
             verifyFieldFetch(field, testSummary, Types.primitiveDataTypes.Summary)
           })
@@ -1432,15 +1441,17 @@ describe('Salesforce adapter E2E with real account', () => {
       describe('add', () => {
         const testAddFieldPrefix = 'TestAdd'
         const mockElemID = new ElemID(constants.SALESFORCE, 'test add object with field types')
-        let customFieldsObject: ObjectType
+        let customObject: ObjectType
         let post: ObjectType
         let objectInfo: CustomObject
 
         beforeAll(async () => {
-          customFieldsObject = findCustomFieldsObject(result, customObjectWithFieldsName)
+          customObject = findElement(
+            result, new ElemID(constants.SALESFORCE, customObjectWithFieldsName)
+          ) as ObjectType
           const newCustomObject = new ObjectType({
             elemID: mockElemID,
-            fields: _(customFieldsObject.fields)
+            fields: _(customObject.fields)
               .mapKeys((_field, name) => (
                 [CUSTOM_FIELD_NAMES.MASTER_DETAIL, CUSTOM_FIELD_NAMES.LOOKUP].includes(name)
                   ? `${testAddFieldPrefix}${name}`
@@ -1461,11 +1472,11 @@ describe('Salesforce adapter E2E with real account', () => {
               })
               .value(),
             annotations: {
-              ...customFieldsObject.annotations,
+              ...customObject.annotations,
               [constants.API_NAME]: customObjectAddFieldsName,
               [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
             },
-            annotationRefsOrTypes: { ...customFieldsObject.annotationRefTypes },
+            annotationRefsOrTypes: { ...customObject.annotationRefTypes },
           })
 
           // Resolve reference expression before deploy
@@ -1496,7 +1507,7 @@ describe('Salesforce adapter E2E with real account', () => {
               })
           })
 
-          await removeElementIfAlreadyExists(client, customFieldsObject)
+          await removeElementIfAlreadyExists(client, customObject)
           post = await createElement(adapter, newCustomObject)
           objectInfo = await getMetadata(client, constants.CUSTOM_OBJECT,
             customObjectAddFieldsName) as CustomObject

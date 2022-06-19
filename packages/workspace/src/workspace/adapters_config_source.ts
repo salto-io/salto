@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { DetailedChange, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, SaltoError } from '@salto-io/adapter-api'
+import { createPathIndexFromPath, DetailedChange, ElemID, getTopLevelPath, InstanceElement, ObjectType, ReadOnlyElementsSource, SaltoError } from '@salto-io/adapter-api'
 import { applyDetailedChanges, buildElementsSourceFromElements, detailedCompare, transformElement } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -154,7 +154,13 @@ export const buildAdaptersConfigSource = async ({
     const configsToUpdate = await Promise.all(configsArr.map(removeUndefined))
     await naclSource.updateNaclFiles(
       configsToUpdate.map(conf => ({
-        id: conf.elemID, action: 'add', data: { after: conf }, path: [...CONFIG_PATH, conf.elemID.adapter, ...conf.path ?? [conf.elemID.adapter]],
+        id: conf.elemID,
+        action: 'add',
+        data: { after: conf },
+        pathIndex: createPathIndexFromPath(
+          conf.elemID,
+          [...CONFIG_PATH, conf.elemID.adapter, ...getTopLevelPath(conf) ?? [conf.elemID.adapter]]
+        ),
       }))
     )
   }

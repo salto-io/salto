@@ -59,8 +59,13 @@ describe('profile paths filter', () => {
     instance.value[INSTANCE_FULL_NAME_FIELD] = 'Admin'
     instance.value[INTERNAL_ID_FIELD] = 'AdminInternalId'
     await filter.onFetch([instance])
-    expect(instance.path)
-      .toEqual([SALESFORCE, RECORDS_PATH, PROFILE_METADATA_TYPE, 'System_Administrator'])
+    expect(Array.from(instance.pathIndex?.entries() ?? []))
+      .toEqual([
+        [
+          instance.elemID.getFullName(),
+          [SALESFORCE, RECORDS_PATH, PROFILE_METADATA_TYPE, 'System_Administrator'],
+        ],
+      ])
   })
 
   it('should replace instance path for PlatformPortal Profile', async () => {
@@ -68,8 +73,13 @@ describe('profile paths filter', () => {
     instance.value[INSTANCE_FULL_NAME_FIELD] = 'PlatformPortal'
     instance.value[INTERNAL_ID_FIELD] = 'PlatformPortalInternalId'
     await filter.onFetch([instance])
-    expect(instance.path)
-      .toEqual([SALESFORCE, RECORDS_PATH, PROFILE_METADATA_TYPE, 'Authenticated_Website2'])
+    expect(Array.from(instance.pathIndex?.entries() ?? []))
+      .toEqual([
+        [
+          instance.elemID.getFullName(),
+          [SALESFORCE, RECORDS_PATH, PROFILE_METADATA_TYPE, 'Authenticated_Website2'],
+        ],
+      ])
   })
 
   it('should not replace instance path for other metadataTypes', async () => {
@@ -77,16 +87,16 @@ describe('profile paths filter', () => {
     instance.value[INSTANCE_FULL_NAME_FIELD] = 'Admin'
     instance.value[INTERNAL_ID_FIELD] = 'AdminInternalId'
     await filter.onFetch([instance])
-    expect(instance.path).toEqual(origInstance.path)
+    expect(instance.pathIndex).toEqual(origInstance.pathIndex)
   })
 
   it('should not replace instance path if it has no path', async () => {
     (await instance.getType()).annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
     instance.value[INSTANCE_FULL_NAME_FIELD] = 'Admin'
     instance.value[INTERNAL_ID_FIELD] = 'AdminInternalId'
-    instance.path = undefined
+    instance.pathIndex = undefined
     await filter.onFetch([instance])
-    expect(instance.path).toBeUndefined()
+    expect(instance.pathIndex).toBeUndefined()
   })
   describe('when feature is throwing an error', () => {
     it('should return a warning', async () => {
@@ -118,7 +128,13 @@ describe('profile paths filter', () => {
         },
       }) as FilterWith<'onFetch'>
       await filter.onFetch([instance])
-      expect(instance.path).toEqual([SALESFORCE, RECORDS_PATH, PROFILE_METADATA_TYPE, 'test'])
+      expect(Array.from(instance.pathIndex?.entries() ?? []))
+        .toEqual([
+          [
+            instance.elemID.getFullName(),
+            [SALESFORCE, RECORDS_PATH, PROFILE_METADATA_TYPE, 'test'],
+          ],
+        ])
       expect(connection.query).not.toHaveBeenCalled()
     })
   })

@@ -31,6 +31,8 @@ import {
   Element,
   ElemID,
   GLOBAL_ADAPTER,
+  createPathIndexFromPath,
+  getTopLevelPath,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import { UnresolvedReference } from './expressions'
@@ -113,9 +115,17 @@ const transformElemIDAdapter = (accountName: string): TransformFunc => async (
 export const updateElementsWithAlternativeAccount = async (elementsToUpdate: Element[],
   newAccount: string, oldAccount: string, source?: ReadOnlyElementsSource): Promise<void> =>
   awu(elementsToUpdate).forEach(async element => {
-    if (element.path !== undefined && (element.path[0] === oldAccount)) {
-      element.path = [newAccount, ...element.path.slice(1)]
+    // TODO: fix it - THIS IS WRONG RIGHT NOW
+    if (element.pathIndex !== undefined && (getTopLevelPath(element)[0] === oldAccount)) {
+      element.pathIndex = createPathIndexFromPath(
+        element.elemID, [newAccount, ...getTopLevelPath(element).slice(1)]
+      )
     }
+    // if (element.pathIndex !== undefined && (element.path[0] === oldAccount)) {
+    //   element.pathIndex = createPathIndexFromPath(
+    //     element.elemID, [newAccount, ...element.path.slice(1)]
+    //   )
+    // }
     if (element.elemID.adapter === oldAccount) {
       await transformElement({
         element,

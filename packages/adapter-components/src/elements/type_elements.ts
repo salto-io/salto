@@ -16,7 +16,10 @@
 */
 import _ from 'lodash'
 import { FieldDefinition, Field, CORE_ANNOTATIONS, TypeElement, isObjectType, isContainerType,
-  getDeepInnerType, ObjectType, BuiltinTypes, createRestriction, createRefToElmWithValue, PrimitiveType, LIST_ID_PREFIX, GENERIC_ID_PREFIX, GENERIC_ID_SUFFIX, MAP_ID_PREFIX, ListType, MapType, isEqualElements, isPrimitiveType, PrimitiveTypes, isTypeReference } from '@salto-io/adapter-api'
+  getDeepInnerType, ObjectType, BuiltinTypes, createRestriction, createRefToElmWithValue,
+  PrimitiveType, LIST_ID_PREFIX, GENERIC_ID_PREFIX, GENERIC_ID_SUFFIX, MAP_ID_PREFIX, ListType,
+  MapType, isEqualElements, isPrimitiveType, PrimitiveTypes, isTypeReference,
+  createPathIndexFromPath } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { values, collections } from '@salto-io/lowerdash'
 import { FieldToHideType, FieldTypeOverrideType, getTypeTransformationConfig } from '../config/transformation'
@@ -107,8 +110,10 @@ export const filterTypes = async (
   }).filter(values.isDefined)
 
   relevantTypes
-    .filter(t => t.path === undefined)
-    .forEach(t => { t.path = [adapterName, TYPES_PATH, t.elemID.name] })
+    .filter(t => t.pathIndex === undefined)
+    .forEach(t => {
+      t.pathIndex = createPathIndexFromPath(t.elemID, [adapterName, TYPES_PATH, t.elemID.name])
+    })
 
   const innerObjectTypes = await awu(relevantTypes)
     .filter(isContainerType)
@@ -118,8 +123,12 @@ export const filterTypes = async (
 
   const subtypes = await getSubtypes([...relevantTypes.filter(isObjectType), ...innerObjectTypes])
   subtypes
-    .filter(t => t.path === undefined)
-    .forEach(t => { t.path = [adapterName, TYPES_PATH, SUBTYPES_PATH, t.elemID.name] })
+    .filter(t => t.pathIndex === undefined)
+    .forEach(t => {
+      t.pathIndex = createPathIndexFromPath(
+        t.elemID, [adapterName, TYPES_PATH, SUBTYPES_PATH, t.elemID.name]
+      )
+    })
 
   return [...relevantTypes, ...subtypes]
 }

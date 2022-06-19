@@ -14,7 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, ElemID, Field, BuiltinTypes, TypeElement, Field as TypeField, Values, CORE_ANNOTATIONS, ReferenceExpression, InstanceElement, getRestriction, ListType, createRestriction, isServiceId, createRefToElmWithValue } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, Field, BuiltinTypes, TypeElement, Field as TypeField, Values,
+  CORE_ANNOTATIONS, ReferenceExpression, InstanceElement, getRestriction, ListType,
+  getTopLevelPath, createRestriction, isServiceId, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { Field as SalesforceField } from 'jsforce'
 import { restoreValues, resolveValues } from '@salto-io/adapter-utils'
@@ -1236,7 +1238,7 @@ describe('transformer', () => {
         childTypeNames: new Set(),
         client,
       })
-      expect(element.path).not.toContain(SUBTYPES_PATH)
+      expect(getTopLevelPath(element)).not.toContain(SUBTYPES_PATH)
     })
 
     it('should create a type which is not a base element as subtype', async () => {
@@ -1247,7 +1249,7 @@ describe('transformer', () => {
         childTypeNames: new Set(),
         client,
       })
-      expect(element.path).toContain(SUBTYPES_PATH)
+      expect(getTopLevelPath(element)).toContain(SUBTYPES_PATH)
     })
 
     it('should add internal id field for base types', async () => {
@@ -1299,7 +1301,7 @@ describe('transformer', () => {
       })
       expect(elements).toHaveLength(1)
       const [element] = elements
-      expect(element.path).not.toContain(SUBTYPES_PATH)
+      expect(getTopLevelPath(element)).not.toContain(SUBTYPES_PATH)
       expect(connection.metadata.describeValueType).toHaveBeenCalledTimes(0)
     })
 
@@ -1316,10 +1318,10 @@ describe('transformer', () => {
       })
       expect(elements).toHaveLength(3)
       const [element, fieldType, nestedFieldType] = elements
-      expect(element.path).not.toContain(SUBTYPES_PATH)
-      expect(fieldType.path).toContain(SUBTYPES_PATH)
+      expect(getTopLevelPath(element)).not.toContain(SUBTYPES_PATH)
+      expect(getTopLevelPath(fieldType)).toContain(SUBTYPES_PATH)
       expect(connection.metadata.describeValueType).toHaveBeenCalledTimes(1)
-      expect(nestedFieldType.path).toContain(SUBTYPES_PATH)
+      expect(getTopLevelPath(nestedFieldType)).toContain(SUBTYPES_PATH)
       expect(await nestedFieldType.fields.inner.getType()).toEqual(BuiltinTypes.STRING)
     })
 
@@ -1336,9 +1338,9 @@ describe('transformer', () => {
       })
       expect(elements).toHaveLength(3)
       const [element, fieldType, nestedFieldType] = elements
-      expect(element.path).not.toContain(SUBTYPES_PATH)
-      expect(fieldType.path).toContain(SUBTYPES_PATH)
-      expect(nestedFieldType.path).toContain(SUBTYPES_PATH)
+      expect(getTopLevelPath(element)).not.toContain(SUBTYPES_PATH)
+      expect(getTopLevelPath(fieldType)).toContain(SUBTYPES_PATH)
+      expect(getTopLevelPath(nestedFieldType)).toContain(SUBTYPES_PATH)
       expect(connection.metadata.describeValueType).toHaveBeenCalledTimes(1)
     })
 
@@ -1352,8 +1354,8 @@ describe('transformer', () => {
       })
       expect(elements).toHaveLength(2)
       const [element, fieldType] = elements
-      expect(element.path).not.toContain(SUBTYPES_PATH)
-      expect(fieldType.path).toContain(SUBTYPES_PATH)
+      expect(getTopLevelPath(element)).not.toContain(SUBTYPES_PATH)
+      expect(getTopLevelPath(fieldType)).toContain(SUBTYPES_PATH)
       expect(connection.metadata.describeValueType).toHaveBeenCalledTimes(1)
     })
 
@@ -1373,7 +1375,7 @@ describe('transformer', () => {
         client,
       })
       expect(elements).toHaveLength(1)
-      expect(elements[0].path).not.toContain(SUBTYPES_PATH)
+      expect(getTopLevelPath(elements[0])).not.toContain(SUBTYPES_PATH)
       expect(connection.metadata.describeValueType).toHaveBeenCalledTimes(0)
     })
 
@@ -1389,7 +1391,7 @@ describe('transformer', () => {
         client,
       })
       expect(elements).toHaveLength(1)
-      expect(elements[0].path).not.toContain(SUBTYPES_PATH)
+      expect(getTopLevelPath(elements[0])).not.toContain(SUBTYPES_PATH)
       expect(connection.metadata.describeValueType).toHaveBeenCalledTimes(0)
     })
 

@@ -16,7 +16,7 @@
 /* eslint-disable camelcase */
 import _ from 'lodash'
 import { ValueTypeField, MetadataInfo, DefaultValueWithType, PicklistEntry, Field as SalesforceField, FileProperties } from 'jsforce'
-import { TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter, ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, CORE_ANNOTATIONS, PrimitiveValue, Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value, isObjectType, isContainerType, TypeReference, createRefToElmWithValue } from '@salto-io/adapter-api'
+import { TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter, ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, CORE_ANNOTATIONS, PrimitiveValue, Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value, isObjectType, isContainerType, TypeReference, createRefToElmWithValue, createPathIndexFromPath } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues, promises } from '@salto-io/lowerdash'
 import { TransformFunc, transformElement, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 
@@ -803,7 +803,10 @@ export class Types {
       Object.values(Types.formulaDataTypes),
     ).map(type => {
       const fieldType = type.clone()
-      fieldType.path = [SALESFORCE, TYPES_PATH, 'fieldTypes']
+      fieldType.pathIndex = createPathIndexFromPath(
+        fieldType.elemID,
+        [SALESFORCE, TYPES_PATH, 'fieldTypes'],
+      )
       return fieldType
     })
   }
@@ -823,9 +826,11 @@ export class Types {
     ]
       .map(type => {
         const fieldType = type.clone()
-        fieldType.path = fieldType.elemID.isEqual(Types.filterItemElemID)
-          ? [SALESFORCE, TYPES_PATH, Types.filterItemElemID.name]
-          : [SALESFORCE, TYPES_PATH, 'annotationTypes']
+        fieldType.pathIndex = fieldType.elemID.isEqual(Types.filterItemElemID)
+          ? createPathIndexFromPath(
+            fieldType.elemID, [SALESFORCE, TYPES_PATH, Types.filterItemElemID.name]
+          )
+          : createPathIndexFromPath(fieldType.elemID, [SALESFORCE, TYPES_PATH, 'annotationTypes'])
         return fieldType
       })
   }
@@ -1439,7 +1444,10 @@ export const createMetadataTypeElements = async ({
     ..._.pickBy(annotations, isDefined),
     [METADATA_TYPE]: name,
   })
-  element.path = getTypePath(element.elemID.name, isTopLevelType)
+  element.pathIndex = createPathIndexFromPath(
+    element.elemID,
+    getTypePath(element.elemID.name, isTopLevelType)
+  )
 
   const shouldCreateIdField = (): boolean => (
     (isTopLevelType || childTypeNames.has(name))

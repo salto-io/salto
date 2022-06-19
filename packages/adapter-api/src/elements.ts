@@ -28,6 +28,18 @@ const { mapValuesAsync } = promises.object
 
 const log = logger(module)
 
+const isPathArrayOfStrings = (path: unknown): path is string[] => (
+  _.isArray(path) && path.every(_.isString)
+)
+
+export const getTopLevelPath = (element: Element): string[] => (
+  element.pathIndex?.get(element.elemID.getFullName()) ?? []
+)
+export const createPathIndexFromPath = (elemID: ElemID, path: string[]):
+collections.treeMap.TreeMap<string> => (
+  new collections.treeMap.TreeMap<string>([[elemID.getFullName(), path]])
+)
+
 export const BuiltinTypesRefByFullName: Record<string, TypeReference> = {}
 
 export const createRefToElmWithValue = (element: TypeElement): TypeReference => (
@@ -54,7 +66,7 @@ export abstract class Element {
   readonly elemID: ElemID
   annotations: Values
   annotationRefTypes: ReferenceMap
-  path?: ReadonlyArray<string>
+  pathIndex?: collections.treeMap.TreeMap<string>
   constructor({
     elemID,
     annotationRefsOrTypes,
@@ -64,7 +76,7 @@ export abstract class Element {
     elemID: ElemID
     annotationRefsOrTypes?: TypeRefMap
     annotations?: Values
-    path?: ReadonlyArray<string>
+    path?: string[] | collections.treeMap.TreeMap<string>
   }) {
     this.elemID = elemID
     this.annotations = annotations || {}
@@ -72,7 +84,9 @@ export abstract class Element {
       (annotationRefsOrTypes ?? {}),
       refOrType => getRefType(refOrType)
     )
-    this.path = path
+    this.pathIndex = isPathArrayOfStrings(path)
+      ? createPathIndexFromPath(elemID, path)
+      : path
   }
 
   protected cloneAnnotations(): Values {
@@ -331,7 +345,7 @@ export class PrimitiveType<Primitive extends PrimitiveTypes = PrimitiveTypes> ex
     primitive: Primitive
     annotationRefsOrTypes?: TypeRefMap
     annotations?: Values
-    path?: ReadonlyArray<string>
+    path?: string[] | collections.treeMap.TreeMap<string>
   }) {
     super({ elemID, annotationRefsOrTypes, annotations, path })
     this.primitive = primitive
@@ -352,7 +366,7 @@ export class PrimitiveType<Primitive extends PrimitiveTypes = PrimitiveTypes> ex
       primitive: this.primitive,
       annotationRefsOrTypes: this.cloneAnnotationTypes(),
       annotations: this.cloneAnnotations(),
-      path: this.path !== undefined ? [...this.path] : undefined,
+      path: this.pathIndex !== undefined ? this.pathIndex.clone() : undefined,
     })
     res.annotate(additionalAnnotations)
     return res
@@ -383,7 +397,7 @@ export class ObjectType extends Element {
     annotationRefsOrTypes?: TypeRefMap
     annotations?: Values
     isSettings?: boolean
-    path?: ReadonlyArray<string>
+    path?: string[] | collections.treeMap.TreeMap<string>
   }) {
     super({ elemID, annotationRefsOrTypes, annotations, path })
     this.fields = _.mapValues(
@@ -424,7 +438,7 @@ export class ObjectType extends Element {
       annotationRefsOrTypes: this.cloneAnnotationTypes(),
       annotations: this.cloneAnnotations(),
       isSettings,
-      path: this.path !== undefined ? [...this.path] : undefined,
+      path: this.pathIndex !== undefined ? this.pathIndex.clone() : undefined,
     })
 
     res.annotate(additionalAnnotations)
@@ -442,7 +456,7 @@ export class InstanceElement extends Element {
     name: string,
     typeOrRefType: ObjectType | TypeReference,
     public value: Values = {},
-    path?: ReadonlyArray<string>,
+    path?: string[] | collections.treeMap.TreeMap<string>,
     annotations?: Values,
   ) {
     super({
@@ -484,7 +498,7 @@ export class InstanceElement extends Element {
       this.elemID.name,
       this.refType.clone(),
       cloneDeepWithoutRefs(this.value),
-      this.path,
+      this.pathIndex,
       cloneDeepWithoutRefs(this.annotations),
     )
   }
@@ -493,7 +507,7 @@ export class InstanceElement extends Element {
 export class Variable extends Element {
   constructor(elemID: ElemID,
     public value: Value,
-    path?: ReadonlyArray<string>) {
+    path?: string[] | collections.treeMap.TreeMap<string>) {
     super({ elemID, path })
   }
 
@@ -502,7 +516,7 @@ export class Variable extends Element {
   }
 
   clone(): Variable {
-    return new Variable(this.elemID, cloneDeepWithoutRefs(this.value), this.path)
+    return new Variable(this.elemID, cloneDeepWithoutRefs(this.value), this.pathIndex)
   }
 }
 

@@ -30,7 +30,7 @@ const filterCreator: FilterCreator = ({ elementsSource }) => ({
     // We create another element not using element.clone because
     // we need the new element to have a parsed save search type.
       new InstanceElement(instance.elemID.name, savedsearch, instance.value,
-        instance.path, instance.annotations)
+        instance.pathIndex, instance.annotations)
 
     const assignSavedSearchValues = async (
       instance: InstanceElement,

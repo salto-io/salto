@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ElemID, ObjectType, InstanceElement, isInstanceElement, BuiltinTypes, StaticFile, FieldDefinition } from '@salto-io/adapter-api'
+import { Element, ElemID, ObjectType, InstanceElement, isInstanceElement, BuiltinTypes, StaticFile, FieldDefinition, getTopLevelPath } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import filterCreator from '../../src/filters/value_to_static_file'
@@ -93,7 +93,7 @@ describe('value to static file filter', () => {
       webLinkType, anotherType]
 
     codeAsFile = new StaticFile({
-      filepath: `${(webLinkInstanceCode.path ?? []).join('/')}.js`,
+      filepath: `${getTopLevelPath(webLinkInstanceCode).join('/')}.js`,
       content: Buffer.from(webLinkInstanceCode.value.url),
       encoding: 'utf-8',
     })
@@ -135,16 +135,16 @@ describe('value to static file filter', () => {
         let instanceUndefinedPath: InstanceElement | undefined
         beforeAll(async () => {
           instanceUndefinedPath = elements?.filter(isInstanceElement)
-            .find(e => e.path === undefined)
+            .find(e => e.pathIndex === undefined)
           if (instanceUndefinedPath !== undefined) {
-            instanceUndefinedPath.path = undefined
+            instanceUndefinedPath.pathIndex = undefined
           }
           await filter.onFetch(elements)
         })
 
         it('do not replace value for undefined path', () => {
           instanceUndefinedPath = elements?.filter(isInstanceElement)
-            .find(e => e.path === undefined)
+            .find(e => e.pathIndex === undefined)
           expect(instanceUndefinedPath?.value[URL]).toBe(codeAsString)
           expect(instanceUndefinedPath?.value[NOT_URL]).toBe(anotherFieldContent)
         })

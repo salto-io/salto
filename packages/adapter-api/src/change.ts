@@ -16,7 +16,7 @@
 import {
   AdditionDiff, ModificationDiff, RemovalDiff, ActionName,
 } from '@salto-io/dag'
-import { values as lowerDashValues } from '@salto-io/lowerdash'
+import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import {
   ObjectType, InstanceElement, Field, isInstanceElement, isObjectType, isField, TypeElement,
 } from './elements'
@@ -86,10 +86,12 @@ export const isFieldChange = <T extends Change<unknown>>(change: T):
     isField(getChangeData(change))
   )
 
+export type PathIndex = collections.treeMap.TreeMap<string>
+
 export type DetailedChange<T = ChangeDataType | Values | Value> =
   Change<T> & {
     id: ElemID
-    path?: ReadonlyArray<string>
+    pathIndex?: PathIndex
   }
 
 export type ChangeParams<T> = { before?: T; after?: T }

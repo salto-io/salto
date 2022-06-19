@@ -57,8 +57,13 @@ describe('config elements', () => {
       expect(configInstance.elemID.typeName)
         .toEqual(SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES[configType])
       expect(isInstanceElement(configInstance) && configInstance.value).toEqual({ configRecord })
-      expect(configInstance.path)
-        .toEqual([NETSUITE, SETTINGS_PATH, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES[configType]])
+      expect(Array.from(configInstance.pathIndex?.entries() ?? []))
+        .toEqual([
+          [
+            configInstance.elemID.getFullName(),
+            [NETSUITE, SETTINGS_PATH, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES[configType]],
+          ],
+        ])
     })
   })
   describe('deploy', () => {

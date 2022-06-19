@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, Element, ElemIdGetter, Field, InstanceElement, isInstanceElement, isObjectType, ListType, MapType, ObjectType, ReferenceExpression, ServiceIds, Values } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, createPathIndexFromPath, Element, ElemIdGetter, Field, getTopLevelPath, InstanceElement, isInstanceElement, isObjectType, ListType, MapType, ObjectType, ReferenceExpression, ServiceIds, Values } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
@@ -181,7 +181,7 @@ const createContextInstance = (
     instanceName,
     contextType,
     context,
-    parentField.path && [...parentField.path, 'contexts', pathNaclCase(instanceName)],
+    parentField.pathIndex && [...(parentField.pathIndex.get('') ?? []), 'contexts', pathNaclCase(instanceName)],
     {
       [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
     }
@@ -260,8 +260,13 @@ const filter: FilterCreator = ({ config, getElemIdFunc }) => ({
           ))
 
         delete instance.value.contexts
-        if (instance.path !== undefined) {
-          instance.path = [...instance.path, instance.path[instance.path.length - 1]]
+        if (instance.pathIndex !== undefined) {
+          // TODO: check if there is a chance here that the field instance will be splitted
+          const currentTopLevelPath = getTopLevelPath(instance)
+          instance.pathIndex = createPathIndexFromPath(
+            instance.elemID,
+            [...currentTopLevelPath, currentTopLevelPath[currentTopLevelPath.length - 1]]
+          )
         }
 
         elements.push(...contexts)

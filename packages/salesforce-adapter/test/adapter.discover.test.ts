@@ -162,7 +162,13 @@ describe('SalesforceAdapter fetch', () => {
       expect(flow.fields.enum.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe('yes')
       // Note the order here is important because we expect restriction values to be sorted
       expect(getRestriction(flow.fields.enum).values).toEqual(['no', 'yes'])
-      expect(flow.path).toEqual([constants.SALESFORCE, constants.TYPES_PATH, 'Flow'])
+      expect(Array.from(flow.pathIndex?.entries() ?? []))
+        .toEqual([
+          [
+            flow.elemID.getFullName(),
+            [constants.SALESFORCE, constants.TYPES_PATH, 'Flow'],
+          ],
+        ])
       expect(isServiceId(await flow.fields[constants.INSTANCE_FULL_NAME_FIELD].getType()))
         .toEqual(true)
       expect(isServiceId((await flow.getAnnotationTypes())[constants.METADATA_TYPE]))
@@ -742,8 +748,13 @@ public class MyClass${index} {
       const [testElem] = findElements(result, 'EmailFolder', 'MyFolder')
       const testInst = testElem as InstanceElement
       expect(testInst).toBeDefined()
-      expect(testInst.path)
-        .toEqual([constants.SALESFORCE, constants.RECORDS_PATH, 'EmailFolder', 'MyFolder'])
+      expect(Array.from(testInst.pathIndex?.entries() ?? []))
+        .toEqual([
+          [
+            testInst.elemID.getFullName(),
+            [constants.SALESFORCE, constants.RECORDS_PATH, 'EmailFolder', 'MyFolder'],
+          ],
+        ])
       expect(testInst.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('MyFolder')
       expect(testInst.value.name).toEqual('My folder')
     })
@@ -786,9 +797,14 @@ public class MyClass${index} {
       const { elements: result } = await adapter.fetch(mockFetchOpts)
       const [testInst] = findElements(result, 'ApexPage', 'th_con_app__ThHomepage')
       expect(testInst).toBeDefined()
-      expect(testInst.path)
-        .toEqual([constants.SALESFORCE, constants.INSTALLED_PACKAGES_PATH,
-          namespaceName, constants.RECORDS_PATH, 'ApexPage', 'th_con_app__ThHomepage'])
+      expect(Array.from(testInst.pathIndex?.entries() ?? []))
+        .toEqual([
+          [
+            testInst.elemID.getFullName(),
+            [constants.SALESFORCE, constants.INSTALLED_PACKAGES_PATH,
+              namespaceName, constants.RECORDS_PATH, 'ApexPage', 'th_con_app__ThHomepage'],
+          ],
+        ])
     })
 
     it('should fetch metadata instances with namespace', async () => {
@@ -807,9 +823,14 @@ public class MyClass${index} {
       const { elements: result } = await adapter.fetch(mockFetchOpts)
       const [testInst] = findElements(result, 'Test', 'asd__Test')
       expect(testInst).toBeDefined()
-      expect(testInst.path)
-        .toEqual([constants.SALESFORCE, constants.INSTALLED_PACKAGES_PATH,
-          namespaceName, constants.RECORDS_PATH, 'Test', 'asd__Test'])
+      expect(Array.from(testInst.pathIndex?.entries() ?? []))
+        .toEqual([
+          [
+            testInst.elemID.getFullName(),
+            [constants.SALESFORCE, constants.INSTALLED_PACKAGES_PATH,
+              namespaceName, constants.RECORDS_PATH, 'Test', 'asd__Test'],
+          ],
+        ])
     })
 
     it('should fetch metadata instances with namespace when fullname already includes the namespace', async () => {
@@ -828,10 +849,14 @@ public class MyClass${index} {
       const { elements: result } = await adapter.fetch(mockFetchOpts)
       const [testInst] = findElements(result, 'Test', 'asd__Test')
       expect(testInst).toBeDefined()
-      expect(testInst.path).toEqual(
-        [constants.SALESFORCE, constants.INSTALLED_PACKAGES_PATH, namespaceName,
-          constants.RECORDS_PATH, 'Test', 'asd__Test']
-      )
+      expect(Array.from(testInst.pathIndex?.entries() ?? []))
+        .toEqual([
+          [
+            testInst.elemID.getFullName(),
+            [constants.SALESFORCE, constants.INSTALLED_PACKAGES_PATH, namespaceName,
+              constants.RECORDS_PATH, 'Test', 'asd__Test'],
+          ],
+        ])
     })
 
     it('should not fail the fetch on instances too large', async () => {

@@ -27,77 +27,51 @@ const { awu } = collections.asynciterable
 export const annotationsFileName = (objectName: string): string => `${pathNaclCase(objectName)}Annotations`
 export const standardFieldsFileName = (objectName: string): string => `${pathNaclCase(objectName)}StandardFields`
 export const customFieldsFileName = (objectName: string): string => `${pathNaclCase(objectName)}CustomFields`
-
 const perFieldFileName = (fieldName: string): string => pathNaclCase(fieldName)
 
-const splitFields = async (
-  customObject: ObjectType,
-  splitAllFields: string[]
-): Promise<ObjectType[]> => {
+const customObjectToSplitPaths = async (customObject: ObjectType, splitAllFields: string[]):
+Promise<ObjectType> => {
   const pathPrefix = await getObjectDirectoryPath(customObject)
-
-  if (splitAllFields.includes(await apiName(customObject))) {
-    return Object.entries(customObject.fields).map(([fieldName, field]) => new ObjectType(
-      {
-        elemID: customObject.elemID,
-        fields: { [fieldName]: field },
-        path: [
-          ...pathPrefix,
-          OBJECT_FIELDS_PATH,
-          perFieldFileName(fieldName),
-        ],
-      }
-    ))
-  }
-
-  const standardFieldsObject = new ObjectType({
-    elemID: customObject.elemID,
-    fields: _.pickBy(customObject.fields, f => !isCustom(f.elemID.getFullName())),
-    path: [
-      ...pathPrefix,
-      standardFieldsFileName(customObject.elemID.name),
-    ],
-  })
-  const customFieldsObject = new ObjectType(
-    {
-      elemID: customObject.elemID,
-      fields: _.pickBy(customObject.fields, f => isCustom(f.elemID.getFullName())),
-      path: [
-        ...pathPrefix,
-        customFieldsFileName(customObject.elemID.name),
-      ],
-    }
-  )
-  return [standardFieldsObject, customFieldsObject]
-}
-
-const customObjectToSplitElements = async (
-  customObject: ObjectType,
-  splitAllFields: string[]
-): Promise<ObjectType[]> => {
-  const pathPrefix = await getObjectDirectoryPath(customObject)
-
-  const annotationsObject = new ObjectType({
-    elemID: customObject.elemID,
-    annotationRefsOrTypes: customObject.annotationRefTypes,
-    annotations: customObject.annotations,
-    path: [
-      ...pathPrefix,
-      annotationsFileName(customObject.elemID.name),
-    ],
-  })
-
-  const fieldObjects = await splitFields(customObject, splitAllFields)
-  return _.concat(fieldObjects, annotationsObject)
+  const annotationsPath = [
+    ...pathPrefix,
+    annotationsFileName(customObject.elemID.name),
+  ]
+  const standardFieldsPath = [
+    ...pathPrefix,
+    standardFieldsFileName(customObject.elemID.name),
+  ]
+  const customFieldsPath = [
+    ...pathPrefix,
+    customFieldsFileName(customObject.elemID.name),
+  ]
+  const shouldSplitFields = splitAllFields.includes(await apiName(customObject))
+  const createPerFieldPath = (fieldName: string): string[] => [
+    ...pathPrefix,
+    OBJECT_FIELDS_PATH,
+    perFieldFileName(fieldName),
+  ]
+  customObject.pathIndex = new collections.treeMap.TreeMap<string>([
+    [customObject.elemID.getFullName(), annotationsPath],
+    ...Object.entries(customObject.fields)
+      .map(([fieldName, field]) => {
+        const groupedFieldsPath = isCustom(field.elemID.getFullName())
+          ? customFieldsPath
+          : standardFieldsPath
+        return [
+          field.elemID.getFullName(),
+          shouldSplitFields ? createPerFieldPath(fieldName) : groupedFieldsPath,
+        ] as [string, string[]]
+      }),
+  ])
+  return customObject
 }
 
 const filterCreator: FilterCreator = ({ config }): FilterWith<'onFetch'> => ({
   onFetch: async (elements: Element[]) => {
     const customObjects = await awu(elements).filter(isCustomObject).toArray() as ObjectType[]
     const newSplitCustomObjects = await awu(customObjects)
-      .flatMap(customObject => customObjectToSplitElements(
-        customObject, config.separateFieldToFiles ?? []
-      ))
+      .map(customObject =>
+        customObjectToSplitPaths(customObject, config.separateFieldToFiles ?? []))
       .toArray()
     _.pullAllWith(
       elements,

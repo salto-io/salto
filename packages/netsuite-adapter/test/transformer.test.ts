@@ -144,7 +144,13 @@ describe('Transformer', () => {
 
     it('should create instance path correctly for custom type instance', async () => {
       const result = await transformCustomFieldRecord(XML_TEMPLATES.WITH_SCRIPT_ID)
-      expect(result.path).toEqual([NETSUITE, RECORDS_PATH, ENTITY_CUSTOM_FIELD, result.elemID.name])
+      expect(Array.from(result.pathIndex?.entries() ?? []))
+        .toEqual([
+          [
+            result.elemID.getFullName(),
+            [NETSUITE, RECORDS_PATH, ENTITY_CUSTOM_FIELD, result.elemID.name],
+          ],
+        ])
     })
 
     it('should transform attributes', async () => {
@@ -319,9 +325,15 @@ describe('Transformer', () => {
       it('should create instance path correctly for file instance', async () => {
         const result = await createInstanceElement(fileCustomizationInfo, file,
           mockGetElemIdFunc)
-        expect(result.path)
-          .toEqual([NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates',
-            'Inner EmailTemplates Folder', 'content.html'])
+        expect(Array.from(result.pathIndex?.entries() ?? []))
+          .toEqual([
+            [
+              result.elemID.getFullName(),
+              [
+                NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates', 'Inner EmailTemplates Folder', 'content.html',
+              ],
+            ],
+          ])
       })
 
       it('should create instance path correctly for file instance when it has . prefix', async () => {
@@ -329,9 +341,13 @@ describe('Transformer', () => {
         fileCustomizationInfoWithDotPrefix.path = ['Templates', 'E-mail Templates', '.hiddenFolder', '..hiddenFile.xml']
         const result = await createInstanceElement(fileCustomizationInfoWithDotPrefix,
           file, mockGetElemIdFunc)
-        expect(result.path).toEqual(
-          [NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates', '_hiddenFolder', '_hiddenFile.xml']
-        )
+        expect(Array.from(result.pathIndex?.entries() ?? []))
+          .toEqual([
+            [
+              result.elemID.getFullName(),
+              [NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates', '_hiddenFolder', '_hiddenFile.xml'],
+            ],
+          ])
       })
 
       it('should create instance path correctly for folder instance', async () => {
@@ -340,9 +356,13 @@ describe('Transformer', () => {
           folder,
           mockGetElemIdFunc
         )
-        expect(result.path)
-          .toEqual([NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates',
-            'Inner EmailTemplates Folder', 'Inner EmailTemplates Folder'])
+        expect(Array.from(result.pathIndex?.entries() ?? []))
+          .toEqual([
+            [
+              result.elemID.getFullName(),
+              [NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates', 'Inner EmailTemplates Folder', 'Inner EmailTemplates Folder'],
+            ],
+          ])
       })
 
       it('should create instance path correctly for folder instance when it has . prefix', async () => {
@@ -350,9 +370,13 @@ describe('Transformer', () => {
         folderCustomizationInfoWithDotPrefix.path = ['Templates', 'E-mail Templates', '.hiddenFolder']
         const result = await createInstanceElement(folderCustomizationInfoWithDotPrefix,
           folder, mockGetElemIdFunc)
-        expect(result.path)
-          .toEqual([NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates', '_hiddenFolder',
-            '_hiddenFolder'])
+        expect(Array.from(result.pathIndex?.entries() ?? []))
+          .toEqual([
+            [
+              result.elemID.getFullName(),
+              [NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates', '_hiddenFolder', '_hiddenFolder'],
+            ],
+          ])
       })
 
       it('should transform path field correctly', async () => {

@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, ElemID, InstanceElement, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, BuiltinTypes, ReferenceExpression,
+  createPathIndexFromPath } from '@salto-io/adapter-api'
 // eslint-disable-next-line
 import { toInstance } from '../../../src/elements/ducktype'
 import { RECORDS_PATH } from '../../../src/elements/constants'
@@ -69,7 +70,8 @@ describe('ducktype_instance_elements', () => {
         type,
         entry,
       ))).toBeTruthy()
-      expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'some_other_name'])
+      expect(inst?.pathIndex)
+        .toEqual(createPathIndexFromPath(inst?.elemID as ElemID, [ADAPTER_NAME, RECORDS_PATH, 'bla', 'some_other_name']))
     })
     it('should use fileNameFields for path when available', async () => {
       const inst = await toInstance({
@@ -92,7 +94,8 @@ describe('ducktype_instance_elements', () => {
         type,
         entry,
       ))).toBeTruthy()
-      expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', '54775_some_other_name'])
+      expect(inst?.pathIndex)
+        .toEqual(createPathIndexFromPath(inst?.elemID as ElemID, [ADAPTER_NAME, RECORDS_PATH, 'bla', '54775_some_other_name']))
     })
     it('should convert number id fields to string', async () => {
       const inst = await toInstance({
@@ -114,7 +117,8 @@ describe('ducktype_instance_elements', () => {
         type,
         entry,
       ))).toBeTruthy()
-      expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'some_other_name_54775'])
+      expect(inst?.pathIndex)
+        .toEqual(createPathIndexFromPath(inst?.elemID as ElemID, [ADAPTER_NAME, RECORDS_PATH, 'bla', 'some_other_name_54775']))
     })
     it('should escape id part when it only contains digits', async () => {
       const inst = await toInstance({
@@ -136,7 +140,8 @@ describe('ducktype_instance_elements', () => {
         type,
         entry,
       ))).toBeTruthy()
-      expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', '54775'])
+      expect(inst?.pathIndex)
+        .toEqual(createPathIndexFromPath(inst?.elemID as ElemID, [ADAPTER_NAME, RECORDS_PATH, 'bla', '54775']))
     })
     it('should include parent name when nestName is true', async () => {
       const parent = new InstanceElement('abc', type, {})
@@ -165,7 +170,8 @@ describe('ducktype_instance_elements', () => {
           _parent: [new ReferenceExpression(parent.elemID)],
         }
       ))).toBeTruthy()
-      expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'abc__some_other_name'])
+      expect(inst?.pathIndex)
+        .toEqual(createPathIndexFromPath(inst?.elemID as ElemID, [ADAPTER_NAME, RECORDS_PATH, 'bla', 'abc__some_other_name']))
     })
     it('should omit fields from the top level', async () => {
       const inst = await toInstance({
@@ -354,7 +360,8 @@ describe('ducktype_instance_elements', () => {
         type,
         entry,
       ))).toBeTruthy()
-      expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', instanceName])
+      expect(inst?.pathIndex)
+        .toEqual(createPathIndexFromPath(inst?.elemID as ElemID, [ADAPTER_NAME, RECORDS_PATH, 'bla', instanceName]))
     })
   })
 })

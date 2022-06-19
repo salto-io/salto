@@ -1246,7 +1246,7 @@ describe('Test utils.ts', () => {
 
         expect(resolvedPrim.primitive).toEqual(prim.primitive)
         expect(resolvedPrim.elemID).toEqual(prim.elemID)
-        expect(resolvedPrim.path).toEqual(prim.path)
+        expect(resolvedPrim.pathIndex).toEqual(prim.pathIndex)
         expect(resolvedPrim.annotationRefTypes).toEqual(prim.annotationRefTypes)
 
         expect(resolvedPrim.annotations).not.toEqual(prim.annotations)
@@ -1289,7 +1289,7 @@ describe('Test utils.ts', () => {
         expect(resolvedField.getType()).toEqual(field.getType())
         expect(resolvedField.name).toEqual(field.name)
         expect(resolvedField.elemID).toEqual(field.elemID)
-        expect(resolvedField.path).toEqual(field.path)
+        expect(resolvedField.pathIndex).toEqual(field.pathIndex)
         expect(resolvedField.parent).toBe(field.parent)
 
         expect(resolvedField.annotations).not.toEqual(field.annotations)

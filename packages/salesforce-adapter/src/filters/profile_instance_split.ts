@@ -15,13 +15,13 @@
 */
 import _ from 'lodash'
 import { strings, collections, promises } from '@salto-io/lowerdash'
-import { Element, ObjectType, isMapType, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { Element, ObjectType, isMapType, InstanceElement, isInstanceElement, getTopLevelPath } from '@salto-io/adapter-api'
 
 import { FilterCreator } from '../filter'
 import { metadataType } from '../transformers/transformer'
 import { PROFILE_METADATA_TYPE } from '../constants'
 
-const { groupByAsync, awu } = collections.asynciterable
+const { awu } = collections.asynciterable
 const { removeAsync } = promises.array
 const DEFAULT_NACL_FILENAME = 'Attributes'
 
@@ -31,34 +31,24 @@ const toNaclFilename = async (fieldName: string, objType: ObjectType): Promise<s
     : DEFAULT_NACL_FILENAME
 )
 
-const splitProfile = async (profile: InstanceElement): Promise<InstanceElement[]> => {
-  const toInstancePart = async (
-    naclFilename: string,
-    fieldNames: string[]
-  ): Promise<InstanceElement> => (
-    new InstanceElement(
-      profile.elemID.name,
-      await profile.getType(),
-      _.pick(profile.value, ...fieldNames),
-      profile.path === undefined ? undefined : [...profile.path, naclFilename],
-      naclFilename === DEFAULT_NACL_FILENAME ? profile.annotations : undefined,
-    )
+const splitProfileToPaths = async (profile: InstanceElement): Promise<InstanceElement> => {
+  const profileType = await profile.getType()
+  const profilePath = getTopLevelPath(profile)
+  const fieldsToPath = await Promise.all(
+    Object.keys(profile.value)
+      .map(async fieldName => [
+        profile.elemID.createNestedID(fieldName).getFullName(), // Need to validate if this is true,
+        [...profilePath, await toNaclFilename(fieldName, profileType)],
+      ] as [string, string[]])
   )
-
-  const targetFieldsByFile = await groupByAsync(
-    Object.keys(profile.value),
-    async fieldName => toNaclFilename(fieldName, await profile.getType()),
-  )
-
-  // keep the default filename first so that it comes up first when searching the path index
-  const profileInstances = await Promise.all(_.sortBy(
-    Object.entries(targetFieldsByFile),
-    ([fileName]) => fileName !== DEFAULT_NACL_FILENAME,
-  ).map(
-    async ([fileName, fields]) => toInstancePart(fileName, fields)
-  ))
-
-  return profileInstances
+  profile.pathIndex = new collections.treeMap.TreeMap<string>([
+    [profile.elemID.getFullName(), [...profilePath, DEFAULT_NACL_FILENAME]],
+    // TODO: check if I need that sort
+    // I am not sure if we need that sort - I am keeping it because of the following doc
+    // keep the default filename first so that it comes up first when searching the path index
+    ..._.sortBy(fieldsToPath, ([fileName]) => fileName !== DEFAULT_NACL_FILENAME),
+  ])
+  return profile
 }
 
 const isProfileInstance = async (elem: Element): Promise<boolean> => (
@@ -80,7 +70,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
     if (profileInstances.length === 0) {
       return
     }
-    const newProfileInstances = await awu(profileInstances).flatMap(splitProfile).toArray()
+    const newProfileInstances = await awu(profileInstances).map(splitProfileToPaths).toArray()
     elements.push(...newProfileInstances)
   },
 })

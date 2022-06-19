@@ -24,6 +24,7 @@ import {
   DeployAction,
   createRestriction,
   SeverityLevel,
+  createPathIndexFromPath,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { uniqueNamesGenerator, adjectives, colors, names } from 'unique-names-generator'
@@ -259,6 +260,7 @@ const profileType = new ObjectType({
   path: [DUMMY_ADAPTER, 'Default', 'Profile'],
 })
 
+// TODO: fix me!!! - currently returns splitted elements
 export const generateElements = async (
   params: GeneratorParams,
   progressReporter: ProgressReporter
@@ -700,7 +702,10 @@ export const generateElements = async (
       })
 
       await awu(parsedNaclFile.elements).forEach(elem => {
-        elem.path = [DUMMY_ADAPTER, 'extra', file.basename.replace(new RegExp(`.${MOCK_NACL_SUFFIX}$`), '')]
+        elem.pathIndex = createPathIndexFromPath(
+          elem.elemID,
+          [DUMMY_ADAPTER, 'extra', file.basename.replace(new RegExp(`.${MOCK_NACL_SUFFIX}$`), '')],
+        )
       })
       return parsedNaclFile.elements
     })).flat().toArray()

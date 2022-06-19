@@ -105,13 +105,23 @@ describe('Standard Value Sets filter', () => {
     expect(elements.length).toBe(3)
     const simpsonsSvs = elements[1]
     expect(simpsonsSvs.elemID).toEqual(mockSVSType.elemID.createNestedID('instance', 'Simpsons'))
-    expect(simpsonsSvs.path)
-      .toEqual([constants.SALESFORCE, constants.RECORDS_PATH, 'standard_value_set', 'Simpsons'])
+    expect(Array.from(simpsonsSvs.pathIndex?.entries() ?? []))
+      .toEqual([
+        [
+          simpsonsSvs.elemID.getFullName(),
+          [constants.SALESFORCE, constants.RECORDS_PATH, 'standard_value_set', 'Simpsons'],
+        ],
+      ])
     expect(extractFullNamesFromValueList((simpsonsSvs as InstanceElement).value[STANDARD_VALUE])).toEqual(['Bart', 'Homer', 'Lisa'])
     const numbersSvs = elements[2]
     expect(numbersSvs.elemID).toEqual(mockSVSType.elemID.createNestedID('instance', 'Numbers'))
-    expect(numbersSvs.path)
-      .toEqual([constants.SALESFORCE, constants.RECORDS_PATH, 'standard_value_set', 'Numbers'])
+    expect(Array.from(numbersSvs.pathIndex?.entries() ?? []))
+      .toEqual([
+        [
+          numbersSvs.elemID.getFullName(),
+          [constants.SALESFORCE, constants.RECORDS_PATH, 'standard_value_set', 'Numbers'],
+        ],
+      ])
     expect(extractFullNamesFromValueList((numbersSvs as InstanceElement).value[STANDARD_VALUE])).toEqual(['One', 'Two', 'Three'])
   })
   it('should replace value list with references for standard picklist fields', async () => {

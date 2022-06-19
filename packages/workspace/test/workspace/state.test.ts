@@ -18,9 +18,9 @@ import { collections } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { serialize } from '../../src/serializer'
 import { StateData, buildInMemState, buildStateData } from '../../src/workspace/state'
-import { PathIndex, getElementsPathHints } from '../../src/workspace/path_index'
+import { PathIndex, Path, getElementsPathHints } from '../../src/workspace/path_index'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
-import { InMemoryRemoteMap, RemoteMapCreator } from '../../src/workspace/remote_map'
+import { InMemoryRemoteMap, RemoteMapCreator, RemoteMapEntry } from '../../src/workspace/remote_map'
 import { StaticFilesSource } from '../../src/workspace/static_files/common'
 import { mockStaticFilesSource } from '../utils'
 
@@ -42,7 +42,7 @@ describe('state', () => {
   let newElem: ObjectType
 
   beforeAll(async () => {
-    pathIndex = new InMemoryRemoteMap(getElementsPathHints([elem]))
+    pathIndex = new InMemoryRemoteMap([] as RemoteMapEntry<Path[]>[])
   })
 
   beforeEach(() => {

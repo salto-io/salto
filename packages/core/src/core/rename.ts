@@ -110,7 +110,7 @@ const getRenameElementChanges = async (
         targetElemId.name,
         element.refType,
         element.value,
-        element.path,
+        element.pathIndex,
         element.annotations
       ),
     },

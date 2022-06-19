@@ -75,7 +75,7 @@ export const toObjectType = (type: MapType | ObjectType | ListType, value: Value
         ])),
       annotationRefsOrTypes: type.annotationRefTypes,
       annotations: type.annotations,
-      path: type.path,
+      path: type.pathIndex,
     })
 )
 
@@ -335,7 +335,7 @@ export const transformElement = async <T extends Element>(
       element.elemID.name,
       element.refType,
       transformedValues,
-      element.path,
+      element.pathIndex,
       transformedAnnotations
     )
     return newElement as T
@@ -370,7 +370,7 @@ export const transformElement = async <T extends Element>(
       fields: clonedFields,
       annotationRefsOrTypes: element.annotationRefTypes,
       annotations: transformedAnnotations,
-      path: element.path,
+      path: element.pathIndex,
       isSettings: element.isSettings,
     })
 
@@ -393,7 +393,7 @@ export const transformElement = async <T extends Element>(
       elemID: element.elemID,
       primitive: element.primitive,
       annotationRefsOrTypes: element.annotationRefTypes,
-      path: element.path,
+      path: element.pathIndex,
       annotations: transformedAnnotations,
     })
 
@@ -738,7 +738,9 @@ export const flattenElementStr = (element: Element): Element => {
     annotations: flatValues(obj.annotations),
     fields: _(obj.fields).mapKeys((_v, k) => flatStr(k)).mapValues(flattenField).value(),
     isSettings: obj.isSettings,
-    path: obj.path?.map(flatStr),
+    // TODO: we did flat str here but I am not sure if its necessary.
+    //  if it is, we can implement it
+    path: obj.pathIndex,
   })
 
   const flattenPrimitiveType = (prim: PrimitiveType): PrimitiveType => new PrimitiveType({
@@ -746,14 +748,16 @@ export const flattenElementStr = (element: Element): Element => {
     primitive: prim.primitive,
     annotationRefsOrTypes: _.mapKeys(prim.annotationRefTypes, (_v, k) => flatStr(k)),
     annotations: flatValues(prim.annotations),
-    path: prim.path?.map(flatStr),
+    // TODO: we did flat str here but I am not sure if its necessary.
+    //  if it is, we can implement it
+    path: prim.pathIndex,
   })
 
   const flattenInstance = (inst: InstanceElement): InstanceElement => new InstanceElement(
     flatStr(inst.elemID.name),
     inst.refType,
     flatValues(inst.value),
-    inst.path?.map(flatStr),
+    inst.pathIndex,
     flatValues(inst.annotations)
   )
 
@@ -815,7 +819,7 @@ export const filterByID = async <T extends Element | Values>(
       annotations: await filterAnnotations(value.annotations),
       annotationRefsOrTypes: await filterAnnotationType(value.annotationRefTypes),
       fields: _.keyBy(filteredFields.filter(isDefined), field => field.name),
-      path: value.path,
+      path: value.pathIndex,
       isSettings: value.isSettings,
     }) as Value as T
   }
@@ -825,7 +829,7 @@ export const filterByID = async <T extends Element | Values>(
       annotations: await filterAnnotations(value.annotations),
       annotationRefsOrTypes: await filterAnnotationType(value.annotationRefTypes),
       primitive: value.primitive,
-      path: value.path,
+      path: value.pathIndex,
     }) as Value as T
   }
   if (isField(value)) {
@@ -841,7 +845,7 @@ export const filterByID = async <T extends Element | Values>(
       value.elemID.name,
       value.refType,
       await filterByID(value.elemID, value.value, filterFunc),
-      value.path,
+      value.pathIndex,
       await filterInstanceAnnotations(value.annotations)
     ) as Value as T
   }

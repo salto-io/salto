@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { FieldDefinition, BuiltinTypes, ObjectType, ElemID, createRefToElmWithValue } from '@salto-io/adapter-api'
+import { FieldDefinition, BuiltinTypes, ObjectType, ElemID, createRefToElmWithValue,
+  createPathIndexFromPath } from '@salto-io/adapter-api'
 import { SUBTYPES_PATH, TYPES_PATH } from '../../src/elements/constants'
 import { filterTypes, hideFields, markServiceIdField } from '../../src/elements/type_elements'
 
@@ -101,11 +102,14 @@ describe('type_elements', () => {
       const filteredTypes = await filterTypes('adapterName', [typeA, typeC, typeD], ['C', 'E'])
 
       expect(filteredTypes[0].elemID.getFullNameParts()).toEqual(['adapterName', 'C'])
-      expect(filteredTypes[0].path).toEqual(['adapterName', TYPES_PATH, 'C'])
+      expect(filteredTypes[0].pathIndex)
+        .toEqual(createPathIndexFromPath(filteredTypes[0].elemID, ['adapterName', TYPES_PATH, 'C']))
       expect(filteredTypes[1].elemID.getFullNameParts()).toEqual(['adapterName', 'A'])
-      expect(filteredTypes[1].path).toEqual(['adapterName', TYPES_PATH, SUBTYPES_PATH, 'A'])
+      expect(filteredTypes[1].pathIndex)
+        .toEqual(createPathIndexFromPath(filteredTypes[1].elemID, ['adapterName', TYPES_PATH, SUBTYPES_PATH, 'A']))
       expect(filteredTypes[2].elemID.getFullNameParts()).toEqual(['adapterName', 'B'])
-      expect(filteredTypes[2].path).toEqual(['adapter', 'somePath'])
+      expect(filteredTypes[2].pathIndex)
+        .toEqual(createPathIndexFromPath(filteredTypes[2].elemID, ['adapter', 'somePath']))
     })
   })
 

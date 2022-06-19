@@ -25,7 +25,6 @@ import { mergeElements, MergeResult } from '../merger'
 import { State } from './state'
 import { createAddChange, createRemoveChange } from './nacl_files/multi_env/projections'
 import { ElementsSource } from './elements_source'
-import { splitElementByPath } from './path_index'
 
 const { pickAsync } = promises.object
 const { awu } = collections.asynciterable
@@ -289,7 +288,6 @@ const getInstanceTypeHiddenChanges = async (
     fromHiddenChanges.map(change => change.id.createTopLevelParentID().parent.getFullName())
   )
 
-  const pathIndex = await state.getPathIndex()
   const r = await awu(await state.getAll())
     .flatMap(async elem => {
       if (isInstanceElement(elem)) {
@@ -297,8 +295,7 @@ const getInstanceTypeHiddenChanges = async (
           return [createRemoveChange(elem, elem.elemID)]
         }
         if (fromHiddenElemIds.has(elem.refType.elemID.getFullName())) {
-          return (await splitElementByPath(elem, pathIndex))
-            .map(fragment => createAddChange(fragment, elem.elemID, fragment.path))
+          return [createAddChange(elem, elem.elemID, elem.pathIndex)]
         }
       }
       return []
@@ -673,7 +670,7 @@ const diffElements = <T extends Element>(visibleElem?: T, fullElem?: T): T | und
       annotationRefsOrTypes: diffAnnoTypes,
       annotations: diffAnno,
       fields: diffFields,
-      path: fullElem.path,
+      path: fullElem.pathIndex,
       isSettings: fullElem.isSettings,
     }) as unknown as T
   }
@@ -683,7 +680,7 @@ const diffElements = <T extends Element>(visibleElem?: T, fullElem?: T): T | und
       primitive: fullElem.primitive,
       annotationRefsOrTypes: diffAnnoTypes as ReferenceMap,
       annotations: diffAnno,
-      path: fullElem.path,
+      path: fullElem.pathIndex,
     }) as unknown as T
   }
   if (isInstanceElement(fullElem) && isInstanceElement(visibleElem)) {
@@ -695,7 +692,7 @@ const diffElements = <T extends Element>(visibleElem?: T, fullElem?: T): T | und
       fullElem.elemID.name,
       fullElem.refType,
       diffValue,
-      fullElem.path,
+      fullElem.pathIndex,
       diffAnno
     )
     return res as unknown as T

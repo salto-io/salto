@@ -17,6 +17,7 @@ import _ from 'lodash'
 import {
   Values, isObjectType, TypeElement, ObjectType, PrimitiveType, Field, InstanceElement,
   Element, isType, isField, isInstanceElement, getChangeData, Value, ElemID, DetailedChange,
+  PathIndex,
 } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { ElementsSource } from '../../elements_source'
@@ -79,7 +80,7 @@ const projectInstance = (
       src.elemID.name,
       src.refType,
       projectedValue,
-      src.path,
+      src.pathIndex,
       projectedAnnotations
     )
 }
@@ -103,23 +104,23 @@ export const projectElementOrValueToEnv = (
 export const createAddChange = (
   value: Element | Value,
   id: ElemID,
-  path?: ReadonlyArray<string>
+  pathIndex?: PathIndex
 ): DetailedChange => ({
   data: { after: value },
   action: 'add',
   id,
-  path,
+  pathIndex,
 })
 
 export const createRemoveChange = (
   value: Element | Value,
   id: ElemID,
-  path?: ReadonlyArray<string>
+  pathIndex?: PathIndex
 ): DetailedChange => ({
   data: { before: value },
   action: 'remove',
   id,
-  path,
+  pathIndex,
 })
 
 export const projectChange = async (

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { ElemID, Element, Value, Field, isObjectType, isInstanceElement,
-  ObjectType, InstanceElement } from '@salto-io/adapter-api'
+  ObjectType, InstanceElement, createPathIndexFromPath, getTopLevelPath } from '@salto-io/adapter-api'
 import { safeJsonStringify, filterByID } from '@salto-io/adapter-utils'
 import { RemoteMapEntry, RemoteMap } from './remote_map'
 
@@ -163,8 +163,8 @@ RemoteMapEntry<Path[]>[] => {
   return Object.values(elementsByID)
     .flatMap(elementFragments => getElementPathHints(
       elementFragments
-        .filter(element => values.isDefined(element.path))
-        .map(element => ({ value: element, path: element.path as Path }))
+        .filter(element => values.isDefined(element.pathIndex))
+        .map(element => ({ value: element, path: getTopLevelPath(element) }))
     ))
 }
 
@@ -226,7 +226,19 @@ export const getFromPathIndex = async (
   return []
 }
 
-export const splitElementByPath = async (
+// TODO: implement me!!!
+const splitElementByElementPathIndex = (
+  element: Element,
+): Element[] => {
+  // TODO: setPath and resolvePath
+  if (element.pathIndex === undefined) {
+    // We should never reach here
+    return []
+  }
+  return []
+}
+
+const splitElementByStatePathIndex = async (
   element: Element,
   index: PathIndex
 ): Promise<Element[]> => {
@@ -234,7 +246,7 @@ export const splitElementByPath = async (
   if (pathHints.length <= 1) {
     const clonedElement = element.clone()
     const [pathToSet] = pathHints
-    clonedElement.path = pathToSet
+    clonedElement.pathIndex = createPathIndexFromPath(clonedElement.elemID, pathToSet as string[])
     return [clonedElement]
   }
   return (await Promise.all(pathHints.map(async hint => {
@@ -249,9 +261,18 @@ export const splitElementByPath = async (
     )
 
     if (filteredElement) {
-      filteredElement.path = hint
+      filteredElement.pathIndex = createPathIndexFromPath(filteredElement.elemID, hint as string[])
       return filteredElement
     }
     return undefined
   }))).filter(values.isDefined)
 }
+
+export const splitElementByPath = async (
+  element: Element,
+  index: PathIndex
+): Promise<Element[]> => (
+  element.pathIndex
+    ? splitElementByElementPathIndex(element)
+    : splitElementByStatePathIndex(element, index)
+)

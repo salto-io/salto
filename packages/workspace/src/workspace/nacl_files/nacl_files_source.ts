@@ -19,7 +19,7 @@ import { logger } from '@salto-io/logging'
 import { Element, ElemID, Value, DetailedChange, isElement, getChangeData, isObjectType,
   isInstanceElement, isIndexPathPart, isReferenceExpression, isContainerType, isVariable, Change,
   placeholderReadonlyElementsSource, ObjectType, isModificationChange,
-  isObjectTypeChange, toChange, isAdditionChange, StaticFile, isStaticFile } from '@salto-io/adapter-api'
+  isObjectTypeChange, toChange, isAdditionChange, StaticFile, isStaticFile, createPathIndexFromPath } from '@salto-io/adapter-api'
 import { resolvePath, TransformFuncArgs, transformElement, safeJsonStringify } from '@salto-io/adapter-utils'
 import { promises, values, collections } from '@salto-io/lowerdash'
 import { AdditionDiff } from '@salto-io/dag'
@@ -656,7 +656,9 @@ const buildNaclFilesSource = (
       elements: async () => {
         const parsedElement = await parsed.elements()
         return parsedElement && parsedElement.map(elem => {
-          elem.path = toPathHint(filename)
+          // TODO: double check it - I think its wrong
+          // We need to do it and merge elements with path indexes
+          elem.pathIndex = createPathIndexFromPath(elem.elemID, toPathHint(filename))
           return elem
         })
       },
@@ -755,6 +757,7 @@ const buildNaclFilesSource = (
   }
 
   const updateNaclFiles = async (changes: DetailedChange[]): Promise<ChangeSet<Change>> => {
+    // TODO: return to fragments
     const preChangeHash = await (await state)?.parsedNaclFiles.getHash()
     const getNaclFileData = async (filename: string): Promise<string> => {
       const naclFile = await naclFilesStore.get(filename)

@@ -698,12 +698,13 @@ describe('handleHiddenChanges', () => {
       it('should create add changes with the instance value from the state', () => {
         const addChanges = changes
           .filter(c => c.id.getFullName() === hidden.elemID.getFullName() && isAdditionChange(c))
-        expect(addChanges).toHaveLength(2)
-        expect(addChanges.map(c => c.path)).toEqual(
-          [
-            ['this', 'is', 'path', 'to', 'hidden'],
-            ['this', 'is', 'path', 'to', 'hidden2'],
-          ]
+        expect(addChanges).toHaveLength(1)
+        // TODO: fix me!!!
+        expect(addChanges.map(c => c.pathIndex)).toEqual(
+          new collections.treeMap.TreeMap([
+            ['', ['this', 'is', 'path', 'to', 'hidden']],
+            ['', ['this', 'is', 'path', 'to', 'hidden2']],
+          ])
         )
       })
     })

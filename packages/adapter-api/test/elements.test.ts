@@ -18,7 +18,8 @@ import { BuiltinTypes, CORE_ANNOTATIONS } from '../src/builtins'
 import {
   Field, InstanceElement, ObjectType, PrimitiveType, isObjectType, isInstanceElement,
   PrimitiveTypes, ListType, isPrimitiveType, isType, isListType, isEqualElements, Variable,
-  isVariable, isMapType, MapType, isContainerType, createRefToElmWithValue, PlaceholderObjectType,
+  isVariable, isMapType, MapType, isContainerType, createRefToElmWithValue,
+  PlaceholderObjectType, createPathIndexFromPath,
 } from '../src/elements'
 import { ElemID, INSTANCE_ANNOTATIONS } from '../src/element_id'
 import { TypeReference } from '../src/values'
@@ -75,7 +76,8 @@ describe('Test elements.ts', () => {
       annotations: {},
       path: ['testPath'],
     })
-    expect(primToClone.clone().path).toEqual(['testPath'])
+    expect(primToClone.clone().pathIndex)
+      .toEqual(createPathIndexFromPath(primID, ['testPath']))
   })
 
   it('should create a basic object type with all params passed to the constructor', async () => {
@@ -130,7 +132,8 @@ describe('Test elements.ts', () => {
         path: ['a', 'b', 'c', 'd'],
       })
       const newObj = obj.clone()
-      expect(newObj.path).toEqual(['a', 'b', 'c', 'd'])
+      expect(newObj.pathIndex)
+        .toEqual(createPathIndexFromPath(otID, ['a', 'b', 'c', 'd']))
     })
 
     it('should identify equal fields', () => {

@@ -75,7 +75,7 @@ const getInstanceToCompare = (instance: InstanceElement): InstanceElement =>
     instance.elemID.name,
     instance.refType,
     _.omit(instance.value, LAST_FETCH_TIME),
-    instance.path,
+    instance.pathIndex,
     instance.annotations
   )
 

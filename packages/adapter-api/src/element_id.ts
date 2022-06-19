@@ -289,6 +289,14 @@ export class ElemID {
     return { parent, path }
   }
 
+  getRelativePath(other: ElemID): ReadonlyArray<string> {
+    if (!this.isEqual(other) && !this.isParentOf(other)) {
+      throw new Error(`Cannot get relative path of ${this.getFullName()} and ${other.getFullName()
+      } - ${this.getFullName()} is not parent of ${other.getFullName()}`)
+    }
+    return other.createTopLevelParentID().path.slice(this.nestingLevel)
+  }
+
   isAttrID(): boolean {
     return this.idType === 'attr'
       || (

@@ -133,7 +133,7 @@ describe('Static Files Cache', () => {
       const cache = buildLocalStaticFilesCache('path', 'test-env', remoteMapCreator, false)
       await cache.get('bla')
       expect(remoteMapCreator).toHaveBeenCalledTimes(1)
-      expect(remoteMapCreator).toHaveBeenCalledWith(expect.objectContaining({ persistent: true }))
+      expect(remoteMapCreator).toHaveBeenCalledWith(expect.objectContaining({ persistent: false }))
     })
   })
 })

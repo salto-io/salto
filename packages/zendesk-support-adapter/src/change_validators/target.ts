@@ -15,9 +15,13 @@
 */
 import { ChangeError, ChangeValidator, ElemID, getChangeData,
   isAdditionChange, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
+import { ZendeskApiConfig } from '../config'
+import ZendeskClient from '../client/client'
 import { TARGET_TYPE_NAME } from '../constants'
 
-export const createChangeError = (instanceElemId: ElemID): ChangeError => ({
+export const createChangeError = (
+  instanceElemId: ElemID, baseUrl: string, serviceUrl?: string
+): ChangeError => ({
   elemID: instanceElemId,
   severity: 'Info',
   message: 'Target authentication change detected',
@@ -32,7 +36,7 @@ export const createChangeError = (instanceElemId: ElemID): ChangeError => ({
       title: 'Change target authentication data',
       description: `Please change the authentication data for the target ${instanceElemId.name} in the service`,
       subActions: [
-        'In Zendesk, open the Admin Center. Navigate to Apps and integrations > targets',
+        `Go to zendesk Targets panel ${baseUrl}${serviceUrl?.slice(1)}`,
         'Click on the edit button of the modified target',
         'In the "Basic Authentication" enter the authentication data',
         'Choose "Update target" in the select box',
@@ -42,18 +46,24 @@ export const createChangeError = (instanceElemId: ElemID): ChangeError => ({
   },
 })
 
-export const targetAuthDataValidator: ChangeValidator = async changes => (
-  changes
-    .filter(isAdditionOrModificationChange)
-    .filter(isInstanceChange)
-    .filter(change => getChangeData(change).elemID.typeName === TARGET_TYPE_NAME)
-    .filter(change => change.data.after.value.username || change.data.after.value.password)
-    .filter(change =>
-      isAdditionChange(change)
-      || (change.data.before.value.username
-        !== change.data.after.value.username)
-      || (change.data.before.value.password
-        !== change.data.after.value.password))
-    .map(getChangeData)
-    .flatMap(instance => ([createChangeError(instance.elemID)]))
-)
+export const targetAuthDataValidator: (client: ZendeskClient, apiConfig: ZendeskApiConfig) =>
+  ChangeValidator = (client, apiConfig) => async changes => (
+    changes
+      .filter(isAdditionOrModificationChange)
+      .filter(isInstanceChange)
+      .filter(change => getChangeData(change).elemID.typeName === TARGET_TYPE_NAME)
+      .filter(change => change.data.after.value.username || change.data.after.value.password)
+      .filter(change =>
+        isAdditionChange(change)
+        || (change.data.before.value.username
+          !== change.data.after.value.username)
+        || (change.data.before.value.password
+          !== change.data.after.value.password))
+      .map(getChangeData)
+      .flatMap(instance => (
+        [createChangeError(
+          instance.elemID,
+          client.getUrl().href,
+          apiConfig.types.target.transformation?.serviceUrl,
+        )]))
+  )

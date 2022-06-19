@@ -42,6 +42,7 @@ describe('Static Files Cache', () => {
   beforeEach(() => {
     jest.clearAllMocks()
   })
+
   describe('new cache', () => {
     let remoteMapCreator: jest.MockedFunction<remoteMap.RemoteMapCreator>
 
@@ -52,7 +53,7 @@ describe('Static Files Cache', () => {
       remoteMapCreator = mockFunction<remoteMap.RemoteMapCreator>().mockImplementation(
         async opts => remoteMaps.get(opts.namespace)
       )
-      staticFilesCache = buildLocalStaticFilesCache('path', 'test-env', remoteMapCreator)
+      staticFilesCache = buildLocalStaticFilesCache('path', 'test-env', remoteMapCreator, true)
     })
     it('should handle unknown file paths', async () => {
       expect((await staticFilesCache.get(baseMetaData.filepath))).toBeUndefined()
@@ -107,16 +108,32 @@ describe('Static Files Cache', () => {
     it('migrates old cache file if exists', async () => {
       mockFileExists.mockResolvedValueOnce(true)
       mockReadFile.mockResolvedValueOnce(expectedCacheContent)
-      staticFilesCache = buildLocalStaticFilesCache('path', 'test-env', remoteMapCreator)
+      staticFilesCache = buildLocalStaticFilesCache('path', 'test-env', remoteMapCreator, true)
       return expect(staticFilesCache.get(baseMetaData.filepath)).resolves.toEqual(expectedResult)
     })
     it('does not import old cache file if cache already populated', async () => {
-      const oldCache = buildLocalStaticFilesCache('path', 'test-env', remoteMapCreator)
+      const oldCache = buildLocalStaticFilesCache('path', 'test-env', remoteMapCreator, true)
       await oldCache.put({ filepath: 'something.txt', hash: 'bla', modified: 123 })
       mockFileExists.mockResolvedValueOnce(true)
       mockReadFile.mockResolvedValueOnce(expectedCacheContent)
-      staticFilesCache = buildLocalStaticFilesCache('path', 'test-env', remoteMapCreator)
+      staticFilesCache = buildLocalStaticFilesCache('path', 'test-env', remoteMapCreator, true)
       return expect(staticFilesCache.get(baseMetaData.filepath)).resolves.toEqual(expectedResult)
+    })
+  })
+
+  describe('remote map options', () => {
+    let remoteMapCreator: jest.MockedFunction<remoteMap.RemoteMapCreator>
+    beforeEach(() => {
+      remoteMapCreator = mockFunction<remoteMap.RemoteMapCreator>().mockImplementation(
+        async () => new remoteMap.InMemoryRemoteMap()
+      )
+    })
+
+    it('should respect the persistent parameter', async () => {
+      const cache = buildLocalStaticFilesCache('path', 'test-env', remoteMapCreator, false)
+      await cache.get('bla')
+      expect(remoteMapCreator).toHaveBeenCalledOnce()
+      expect(remoteMapCreator).toHaveBeenCalledWith(expect.objectContaining({ persistent: true }))
     })
   })
 })

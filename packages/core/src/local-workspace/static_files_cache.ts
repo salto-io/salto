@@ -56,6 +56,7 @@ export const buildLocalStaticFilesCache = (
   cacheDir: string,
   name: string,
   remoteMapCreator: remoteMap.RemoteMapCreator,
+  persistent: boolean,
 ): staticFiles.StaticFilesCache => {
   const createRemoteMap = async (
     cacheName: string
@@ -64,9 +65,8 @@ export const buildLocalStaticFilesCache = (
       namespace: `staticFilesCache-${cacheName}`,
       serialize: cacheEntry => safeJsonStringify(cacheEntry),
       deserialize: async data => JSON.parse(data),
-      persistent: true,
+      persistent,
     })
-
 
   const initCache = async (): Promise<StaticFilesCacheState> => {
     const remoteCache = createRemoteMap(name)
@@ -97,7 +97,7 @@ export const buildLocalStaticFilesCache = (
       await currentCache.clear()
     },
     clone: () => (
-      buildLocalStaticFilesCache(cacheDir, name, remoteMapCreator)
+      buildLocalStaticFilesCache(cacheDir, name, remoteMapCreator, persistent)
     ),
     list: async () => (
       awu((await cache).keys()).toArray()

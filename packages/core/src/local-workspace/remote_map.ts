@@ -46,6 +46,11 @@ type CreateIteratorOpts = remoteMap.IterationOpts & {
 }
 type ConnectionPool = Record<string, Promise<rocksdb>>
 
+type readIterator = {
+  next: () => Promise<remoteMap.RemoteMapEntry<string> | undefined>
+  nextPage: () => Promise<remoteMap.RemoteMapEntry<string>[] | undefined>
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let rocksdbImpl: any
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -92,8 +97,9 @@ const readIteratorNext = (
     iterator.next(callback)
   })
 
-const readIteratorPage = (iterator: rocksdb
-    .Iterator): Promise<remoteMap.RemoteMapEntry<string>[] | undefined> =>
+const readIteratorPage = (
+  iterator: rocksdb.Iterator,
+): Promise<remoteMap.RemoteMapEntry<string>[] | undefined> =>
   new Promise<remoteMap.RemoteMapEntry<string>[] | undefined>(resolve => {
     const callback = (_err: Error | undefined, res: [RocksDBValue, RocksDBValue][]): void => {
       const result = res?.map(([key, value]) => {
@@ -113,13 +119,13 @@ const readIteratorPage = (iterator: rocksdb
     iterator.nextPage(callback)
   })
 
-export async function *aggregatedIterable(iterators: rocksdb.Iterator[]):
+export async function *aggregatedIterable(iterators: readIterator[]):
     AsyncIterable<remoteMap.RemoteMapEntry<string>> {
   const latestEntries: (remoteMap.RemoteMapEntry<string> | undefined)[] = Array.from(
     { length: iterators.length }
   )
   await Promise.all(iterators.map(async (iter, i) => {
-    latestEntries[i] = await readIteratorNext(iter)
+    latestEntries[i] = await iter.next()
   }))
   let done = false
   while (!done) {
@@ -141,7 +147,7 @@ export async function *aggregatedIterable(iterators: rocksdb.Iterator[]):
       await Promise.all(latestEntries.map(async (entry, i) => {
         // This skips all values with the same key because some keys can appear in two iterators
         if (entry !== undefined && entry.key === min) {
-          latestEntries[i] = await readIteratorNext(iterators[i])
+          latestEntries[i] = await iterators[i].next()
         }
       }))
       yield { key: minEntry.key, value: minEntry.value }
@@ -149,13 +155,13 @@ export async function *aggregatedIterable(iterators: rocksdb.Iterator[]):
   }
 }
 
-export async function *aggregatedIterablesWithPages(iterators: rocksdb.Iterator[], pageSize = 1000):
+export async function *aggregatedIterablesWithPages(iterators: readIterator[], pageSize = 1000):
 AsyncIterable<remoteMap.RemoteMapEntry<string>[]> {
   const latestEntries: (remoteMap.RemoteMapEntry<string>[] | undefined)[] = Array.from(
     { length: iterators.length }
   )
   await Promise.all(iterators.map(async (iter, i) => {
-    latestEntries[i] = await readIteratorPage(iter)
+    latestEntries[i] = await iter.nextPage()
   }))
   let done = false
   while (!done) {
@@ -184,7 +190,7 @@ AsyncIterable<remoteMap.RemoteMapEntry<string>[]> {
           }
           if (entries?.length === 0) {
             // eslint-disable-next-line no-await-in-loop
-            latestEntries[i] = await readIteratorPage(iterators[i])
+            latestEntries[i] = await iterators[i].nextPage()
           }
         }
         page.push({ key: minEntry.key, value: minEntry.value })
@@ -351,33 +357,22 @@ const getPrefixEndCondition = (prefix: string): string => prefix
   .substring(0, prefix.length - 1).concat((String
     .fromCharCode(prefix.charCodeAt(prefix.length - 1) + 1)))
 
-type MyIteratorThatAdamWillName = {
-  next: () => ReturnType<typeof readIteratorNext>
-  nextPage: () => ReturnType<typeof readIteratorPage>
-}
-const createMyIterator = (
+const createReadIterator = (
   iterator: rocksdb.Iterator,
-  filter: (x: string) => boolean,
-): MyIteratorThatAdamWillName => ({
+): readIterator => ({
   next: async () => {
-    const getNext = async (): ReturnType<typeof readIteratorNext> => {
-      const next = await readIteratorNext(iterator)
-      if (next === undefined || filter(next.key)) {
-        return next
-      }
-      return getNext()
-    }
+    const getNext = async (): Promise<remoteMap.RemoteMapEntry<string> | undefined> =>
+      (readIteratorNext(iterator))
     return getNext()
   },
   nextPage: async () => {
-    const getNext = async (): ReturnType<typeof readIteratorPage> => {
+    const getNext = async (): Promise<remoteMap.RemoteMapEntry<string>[] | undefined> => {
       const next = await readIteratorPage(iterator)
       if (next === undefined) {
         return next
       }
-      const filteredPage = next.filter(ent => filter(ent.key))
-      if (filteredPage.length > 0) {
-        return filteredPage
+      if (next.length > 0) {
+        return next
       }
       return getNext()
     }
@@ -385,17 +380,71 @@ const createMyIterator = (
   },
 })
 
+const createFilteredReadIterator = (
+  iterator: rocksdb.Iterator,
+  filter: (x: string) => boolean,
+  limit?: number,
+): readIterator => {
+  let iterated = 0
+  return {
+    next: async () => {
+      const getNext = async (): Promise<remoteMap.RemoteMapEntry<string> | undefined> => {
+        if (limit && iterated >= limit) {
+          return undefined
+        }
+        const next = await readIteratorNext(iterator)
+        if (next === undefined || filter(next.key)) {
+          iterated += 1
+          return next
+        }
+        return getNext()
+      }
+      return getNext()
+    },
+    nextPage: async () => {
+      const getNext = async (): Promise<remoteMap.RemoteMapEntry<string>[] | undefined> => {
+        const next = await readIteratorPage(iterator)
+        if (next === undefined || (limit && iterated >= limit)) {
+          return undefined
+        }
+        const filteredPage = next.filter(ent => filter(ent.key))
+        if (filteredPage.length === 0) {
+          return getNext()
+        }
+        const actualPage = (limit && ((iterated + filteredPage.length) > limit))
+          ? filteredPage.slice(0, limit - iterated)
+          : filteredPage
+        iterated += actualPage.length
+        return actualPage
+      }
+      return getNext()
+    },
+  }
+}
+
 const createIterator = (prefix: string, opts: CreateIteratorOpts, connection: rocksdb):
-rocksdb.Iterator =>
-  connection.iterator({
-    keys: opts.keys,
-    values: opts.values,
-    lte: getPrefixEndCondition(prefix),
-    ...(opts.after !== undefined ? { gt: opts.after } : { gte: prefix }),
-    ...(opts.first !== undefined ? { limit: opts.first } : {}),
-  })
-  // FILTER HERE!!!!!!!! (Or where it's returned :))
-  // This means we won't be able to use nextPage - so remove it's usage
+readIterator => (
+  opts.filter === undefined
+    ? createReadIterator(
+      connection.iterator({
+        keys: opts.keys,
+        values: opts.values,
+        lte: getPrefixEndCondition(prefix),
+        ...(opts.after !== undefined ? { gt: opts.after } : { gte: prefix }),
+        ...(opts.first !== undefined ? { limit: opts.first } : {}),
+      })
+    )
+    : createFilteredReadIterator(
+      connection.iterator({
+        keys: opts.keys,
+        values: opts.values,
+        lte: getPrefixEndCondition(prefix),
+        ...(opts.after !== undefined ? { gt: opts.after } : { gte: prefix }),
+      }),
+      opts.filter,
+      opts.first,
+    )
+)
 
 export const createRemoteMapCreator = (location: string,
   persistentDefaultValue = false,
@@ -452,7 +501,7 @@ remoteMap.RemoteMapCreator => {
     const getAppropriateKey = (key: string, temp = false): string =>
       (temp ? keyToTempDBKey(key) : keyToDBKey(key))
 
-    const createTempIterator = (opts: CreateIteratorOpts): rocksdb.Iterator => {
+    const createTempIterator = (opts: CreateIteratorOpts): readIterator => {
       const normalizedOpts = {
         ...opts,
         ...(opts.after ? { after: keyToTempDBKey(opts.after) } : {}),
@@ -464,7 +513,7 @@ remoteMap.RemoteMapCreator => {
       )
     }
 
-    const createPersistentIterator = (opts: CreateIteratorOpts): rocksdb.Iterator => {
+    const createPersistentIterator = (opts: CreateIteratorOpts): readIterator => {
       const normalizedOpts = {
         ...opts,
         ...(opts.after ? { after: keyToDBKey(opts.after) } : {}),
@@ -782,7 +831,7 @@ remoteMap.ReadOnlyRemoteMapCreator => {
     const uniqueId = uuidv4()
     const keyToDBKey = (key: string): string => getFullDBKey(namespace, key)
     const keyPrefix = getKeyPrefix(namespace)
-    const createDBIterator = (opts: CreateIteratorOpts): rocksdb.Iterator => {
+    const createDBIterator = (opts: CreateIteratorOpts): readIterator => {
       const normalizedOpts = {
         ...opts,
         ...(opts.after ? { after: keyToDBKey(opts.after) } : {}),

@@ -48,7 +48,6 @@ const createElements = async (): Promise<Element[]> => {
   })
   const merged = await merger.mergeElements(awu(generatedElements))
   const elements = await awu(merged.merged.values()).toArray()
-  // generatedElements.slice(0, generatedElements.length - 1)
   return elements
 }
 
@@ -88,11 +87,15 @@ AsyncGenerator<rm.RemoteMapEntry<Element, string>> {
 describe('test operations on remote db', () => {
   let elements: Element[]
   let sortedElements: string[]
+  let filteredSortedElements: string[]
+
+  const filterFn = (key: string): boolean => (key.includes('a'))
 
   beforeEach(async () => {
     elements = await createElements()
     sortedElements = _.sortBy(elements, e => e.elemID.getFullName())
       .map(e => e.elemID.getFullName())
+    filteredSortedElements = sortedElements.filter(filterFn)
     const namespace = 'namespace'
     remoteMap = await createMap(namespace)
     await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
@@ -288,52 +291,128 @@ describe('test operations on remote db', () => {
     })
   })
   describe('list', () => {
-    it('should list all keys', async () => {
-      await remoteMap.setAll(createAsyncIterable(elements))
-      const iter = remoteMap.keys()
-      const res: string[] = []
-      for await (const elemId of iter) {
-        res.push(elemId)
-      }
-      expect(res).toEqual(elements.map(elem => elem.elemID.getFullName()).sort())
-    })
-
-    it('should list all keys - paginated', async () => {
-      await remoteMap.setAll(createAsyncIterable(elements))
-      const firstPageRes: string[] = []
-      for await (const elemId of remoteMap.keys({ first: 5 })) {
-        firstPageRes.push(elemId)
-      }
-      expect(firstPageRes).toHaveLength(5)
-      expect(firstPageRes).toEqual(sortedElements.slice(0, 5))
-      const nextPageRes: string[] = []
-      const after = firstPageRes[firstPageRes.length - 1]
-      for await (const elemId of remoteMap.keys({ first: 5, after })) {
-        nextPageRes.push(elemId)
-      }
-      expect(nextPageRes).toHaveLength(5)
-      expect(nextPageRes).toEqual(sortedElements.slice(5, 10))
-    })
-
-    it('should return a paged iterator', async () => {
-      await remoteMap.setAll(createAsyncIterable(elements))
-      const pages = await awu(remoteMap.keys({ pageSize: 3 })).toArray()
-      expect(pages).toHaveLength(5)
-      expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
-    })
-
-    it('should return a paged iterator after flush', async () => {
-      await remoteMap.setAll(createAsyncIterable(elements))
-      await remoteMap.flush()
-      const pages = await awu(remoteMap.keys({ pageSize: 3 })).toArray()
-      expect(pages).toHaveLength(5)
-      expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
-      expect(_.flatten(pages)).toEqual(sortedElements)
-    })
-    describe('read only', () => {
+    describe('without filter', () => {
       it('should list all keys', async () => {
-        const res = await awu(readOnlyRemoteMap.keys()).toArray()
+        await remoteMap.setAll(createAsyncIterable(elements))
+        const iter = remoteMap.keys()
+        const res: string[] = []
+        for await (const elemId of iter) {
+          res.push(elemId)
+        }
         expect(res).toEqual(elements.map(elem => elem.elemID.getFullName()).sort())
+      })
+
+      it('should list all keys - paginated', async () => {
+        await remoteMap.setAll(createAsyncIterable(elements))
+        const firstPageRes: string[] = []
+        for await (const elemId of remoteMap.keys({ first: 5 })) {
+          firstPageRes.push(elemId)
+        }
+        expect(firstPageRes).toHaveLength(5)
+        expect(firstPageRes).toEqual(sortedElements.slice(0, 5))
+        const nextPageRes: string[] = []
+        const after = firstPageRes[firstPageRes.length - 1]
+        for await (const elemId of remoteMap.keys({ first: 5, after })) {
+          nextPageRes.push(elemId)
+        }
+        expect(nextPageRes).toHaveLength(5)
+        expect(nextPageRes).toEqual(sortedElements.slice(5, 10))
+      })
+
+      it('should return a paged iterator', async () => {
+        await remoteMap.setAll(createAsyncIterable(elements))
+        const pages = await awu(remoteMap.keys({ pageSize: 3 })).toArray()
+        expect(pages).toHaveLength(5)
+        expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
+      })
+
+      it('should return a paged iterator with a limit', async () => {
+        await remoteMap.setAll(createAsyncIterable(elements))
+        const pages = await awu(remoteMap.keys({
+          first: 8,
+          pageSize: 3,
+        })).toArray()
+        expect(pages).toHaveLength(Math.ceil(8 / 3))
+        expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
+      })
+
+      it('should return a paged iterator after flush', async () => {
+        await remoteMap.setAll(createAsyncIterable(elements))
+        await remoteMap.flush()
+        const pages = await awu(remoteMap.keys({ pageSize: 3 })).toArray()
+        expect(pages).toHaveLength(5)
+        expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
+        expect(_.flatten(pages)).toEqual(sortedElements)
+      })
+
+      describe('read only', () => {
+        it('should list all keys', async () => {
+          const res = await awu(readOnlyRemoteMap.keys()).toArray()
+          expect(res).toEqual(elements.map(elem => elem.elemID.getFullName()).sort())
+        })
+      })
+    })
+
+    describe('with a filter', () => {
+      it('should list the filtered keys', async () => {
+        await remoteMap.setAll(createAsyncIterable(elements))
+        const iter = remoteMap.keys({ filter: filterFn })
+        const res: string[] = []
+        for await (const elemId of iter) {
+          res.push(elemId)
+        }
+        expect(res).toEqual(filteredSortedElements)
+      })
+
+      it('should list all filtered keys - with limit & after logic', async () => {
+        await remoteMap.setAll(createAsyncIterable(elements))
+        const firstPageRes: string[] = []
+        for await (const elemId of remoteMap.keys({ first: 5, filter: filterFn })) {
+          firstPageRes.push(elemId)
+        }
+        expect(firstPageRes).toHaveLength(5)
+        expect(firstPageRes).toEqual(filteredSortedElements.slice(0, 5))
+        const nextPageRes: string[] = []
+        const after = firstPageRes[firstPageRes.length - 1]
+        for await (const elemId of remoteMap.keys({ first: 5, after, filter: filterFn })) {
+          nextPageRes.push(elemId)
+        }
+        expect(nextPageRes).toHaveLength(5)
+        expect(nextPageRes).toEqual(filteredSortedElements.slice(5, 10))
+      })
+
+      it('should return a paged iterator', async () => {
+        await remoteMap.setAll(createAsyncIterable(elements))
+        const pages = await awu(remoteMap.keys({ pageSize: 3, filter: filterFn })).toArray()
+        expect(pages).toHaveLength(Math.ceil(filteredSortedElements.length / 3))
+        expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
+      })
+
+      it('should return a paged iterator with a limit of filtered elements', async () => {
+        await remoteMap.setAll(createAsyncIterable(elements))
+        const pages = await awu(remoteMap.keys({
+          first: 8,
+          pageSize: 3,
+          filter: filterFn,
+        })).toArray()
+        expect(pages).toHaveLength(Math.ceil(8 / 3))
+        expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
+      })
+
+      it('should return a paged iterator after flush', async () => {
+        await remoteMap.setAll(createAsyncIterable(elements))
+        await remoteMap.flush()
+        const pages = await awu(remoteMap.keys({ pageSize: 3, filter: filterFn })).toArray()
+        expect(pages).toHaveLength(Math.ceil(filteredSortedElements.length / 3))
+        expect(pages.slice(0, -1).every(page => page.length <= 3)).toBeTruthy()
+        expect(_.flatten(pages)).toEqual(filteredSortedElements)
+      })
+
+      describe('read only', () => {
+        it('should list all filtered keys', async () => {
+          const res = await awu(readOnlyRemoteMap.keys({ filter: filterFn })).toArray()
+          expect(res).toEqual(filteredSortedElements)
+        })
       })
     })
   })

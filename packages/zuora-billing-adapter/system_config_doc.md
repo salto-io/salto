@@ -19,7 +19,7 @@ zuora_billing {
           newName = "NotificationDefinitions"
         },
         {
-          originalName = "workflows___workflow_id___export@uu_00123u_00125uu"
+          originalName = "ExportWorkflowVersionResponse"
           newName = "WorkflowExport"
         },
         {
@@ -215,7 +215,7 @@ zuora_billing {
           paginationField = "pagination.next_page"
         }
       }
-      DetailedWorkflow = {
+      Workflow = {
         transformation = {
           fieldTypeOverrides = [
             {

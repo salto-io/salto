@@ -72,7 +72,6 @@ describe('Zuora adapter E2E with real swagger and mock replies', () => {
           'zuora_billing.CustomObjectDefinition_schema_relationships_recordConstraints_create',
           'zuora_billing.CustomObjectDefinitions',
           'zuora_billing.DebitMemoEntityPrefix',
-          'zuora_billing.DetailedWorkflow',
           'zuora_billing.EventTrigger',
           'zuora_billing.EventTriggers',
           'zuora_billing.EventType',

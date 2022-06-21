@@ -37,12 +37,18 @@ const splitProfileToPaths = async (profile: InstanceElement): Promise<InstanceEl
   const fieldsToPath = await Promise.all(
     Object.keys(profile.value)
       .map(async fieldName => [
-        profile.elemID.createNestedID(fieldName).getFullName(), // Need to validate if this is true,
+        profile.elemID.createNestedID(fieldName).getFullName(),
         [...profilePath, await toNaclFilename(fieldName, profileType)],
       ] as [string, string[]])
   )
+  const annotationsToPath = Object.keys(profile.annotations)
+    .map(annotationName => [
+      profile.elemID.createNestedID(annotationName).getFullName(),
+      [...profilePath, DEFAULT_NACL_FILENAME],
+    ] as [string, string[]])
   profile.pathIndex = new collections.treeMap.TreeMap<string>([
     [profile.elemID.getFullName(), [...profilePath, DEFAULT_NACL_FILENAME]],
+    ...annotationsToPath,
     // TODO: check if I need that sort
     // I am not sure if we need that sort - I am keeping it because of the following doc
     // keep the default filename first so that it comes up first when searching the path index

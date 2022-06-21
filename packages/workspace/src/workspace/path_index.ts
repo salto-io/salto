@@ -16,8 +16,8 @@
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { ElemID, Element, Value, Field, isObjectType, isInstanceElement,
-  ObjectType, InstanceElement, createPathIndexFromPath, getTopLevelPath } from '@salto-io/adapter-api'
-import { safeJsonStringify, filterByID } from '@salto-io/adapter-utils'
+  ObjectType, InstanceElement, createPathIndexFromPath, getTopLevelPath, cloneDeepWithoutRefs, DetailedChange, isElement, getChangeData } from '@salto-io/adapter-api'
+import { safeJsonStringify, filterByID, setPath } from '@salto-io/adapter-utils'
 import { RemoteMapEntry, RemoteMap } from './remote_map'
 
 const { awu } = collections.asynciterable
@@ -226,16 +226,71 @@ export const getFromPathIndex = async (
   return []
 }
 
-// TODO: implement me!!!
+export const splitDetailedChange = (
+  change: DetailedChange,
+): DetailedChange[] => {
+  if (change.action !== 'add') {
+    return [change]
+  }
+  const allPaths = _.uniqWith(Array.from(change.pathIndex?.values() ?? []), _.isEqual)
+  const changedData = getChangeData(change)
+  const pathsToChanges = Object.fromEntries(allPaths.map(path => {
+    const clonedValue = isElement(changedData)
+      ? changedData.clone()
+      : cloneDeepWithoutRefs(changedData)
+    const detailedChange: DetailedChange = {
+      action: 'add',
+      id: change.id,
+      data: { after: clonedValue },
+      pathIndex: createPathIndexFromPath(change.id, path),
+    }
+    return [path.join('/'), detailedChange]
+  }))
+  change.pathIndex?.forEach((value, elemIdFullName) => {
+    const elemId = ElemID.fromFullName(elemIdFullName)
+    const path = value.join('/')
+    Object.entries(pathsToChanges).forEach(([changePath, detailedChange]) => {
+      if (changePath !== path) {
+        const data = getChangeData(detailedChange)
+        if (isElement(data)) {
+          setPath(data, elemId, undefined)
+        } else {
+          // TODO: this is wrong
+          // TODO: check for the following:
+          // * exception is thrown
+          // * empty list - its the top level
+          // * I think that we want to do it with the addition way
+          const relativePath = detailedChange.id.getRelativePath(elemId)
+          _.set(data, relativePath.join('.'), undefined)
+        }
+      }
+    })
+  })
+  return Object.values(pathsToChanges)
+}
+
 const splitElementByElementPathIndex = (
   element: Element,
 ): Element[] => {
-  // TODO: setPath and resolvePath
   if (element.pathIndex === undefined) {
-    // We should never reach here
-    return []
+    return [element]
   }
-  return []
+  const allPaths = _.uniqWith(Array.from(element.pathIndex.values()), _.isEqual)
+  const pathsToElements = Object.fromEntries(allPaths.map(path => {
+    const clonedElement = element.clone()
+    clonedElement.pathIndex = createPathIndexFromPath(clonedElement.elemID, path)
+    return [path.join('/'), clonedElement]
+  }))
+  element.pathIndex.forEach((value, elemIdFullName) => {
+    const elemId = ElemID.fromFullName(elemIdFullName)
+    const path = value.join('/')
+    Object.entries(pathsToElements).forEach(([fragmentPath, fragment]) => {
+      if (fragmentPath !== path) {
+        setPath(fragment, elemId, undefined)
+      }
+    })
+  })
+  return Object.values(pathsToElements)
 }
 
 const splitElementByStatePathIndex = async (
@@ -246,7 +301,9 @@ const splitElementByStatePathIndex = async (
   if (pathHints.length <= 1) {
     const clonedElement = element.clone()
     const [pathToSet] = pathHints
-    clonedElement.pathIndex = createPathIndexFromPath(clonedElement.elemID, pathToSet as string[])
+    clonedElement.pathIndex = pathToSet
+      ? createPathIndexFromPath(clonedElement.elemID, pathToSet as string[])
+      : undefined
     return [clonedElement]
   }
   return (await Promise.all(pathHints.map(async hint => {

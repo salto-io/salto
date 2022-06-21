@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import path from 'path'
-import { getChangeData, isElement, ObjectType, ElemID, Element, isType, isAdditionChange, DetailedChange, Value, StaticFile, isStaticFile, TypeReference, isTypeReference } from '@salto-io/adapter-api'
+import { getChangeData, isElement, ObjectType, ElemID, Element, isType, isAdditionChange, DetailedChange, Value, StaticFile, isStaticFile, TypeReference, isTypeReference, createPathIndexFromPath } from '@salto-io/adapter-api'
 import { AdditionDiff, ActionName } from '@salto-io/dag'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -74,16 +74,14 @@ export const getChangeLocations = (
       const possibleLocations = sourceMap.get(parentID.getFullName()) || []
       if (possibleLocations.length > 0) {
         const foundInPath = possibleLocations.find(sr =>
-          // TODO: fix me!!!
-          // sr.filename === createFileNameFromPath(change.path))
-          sr.filename === createFileNameFromPath())
+          sr.filename === createFileNameFromPath(change.pathIndex?.get(change.id.getFullName())))
         // TODO: figure out how to choose the correct location if there is more than one option
         return [lastNestedLocation(foundInPath || possibleLocations[0])]
       }
     }
     // Fallback to using the path from the element itself
-    // TODO: fix me!!!
-    const naclFilePath = change.pathIndex ?? getChangeData(change).pathIndex
+    const naclFilePath = change.pathIndex?.get(change.id.getFullName())
+      ?? getChangeData(change).pathIndex?.get(change.id.getFullName())
     const endOfFileLocation = { col: 1, line: Infinity, byte: Infinity }
     return [{
       filename: createFileNameFromPath(naclFilePath),
@@ -133,7 +131,7 @@ const fixEdgeIndentation = (
 
 type DetailedAddition = AdditionDiff<Element> & {
   id: ElemID
-  path: string[]
+  pathIndex: collections.treeMap.TreeMap<string>
 }
 
 export const groupAnnotationTypeChanges = (fileChanges: DetailedChange[],
@@ -303,10 +301,14 @@ const wrapAdditions = (nestedAdditions: DetailedAddition[]): DetailedAddition =>
       annotations: {},
     }))
   const wrapperObject = createObjectTypeFromNestedAdditions(nestedAdditions)
+  const pathIndex = createPathIndexFromPath(
+    wrapperObject.elemID,
+    nestedAdditions[0].pathIndex.get(nestedAdditions[0].id.getFullName()) ?? [],
+  )
   return {
     action: 'add',
     id: wrapperObject.elemID,
-    path: nestedAdditions[0].path,
+    pathIndex,
     data: {
       after: wrapperObject as Element,
     },
@@ -319,17 +321,14 @@ const parentElementExistsInPath = (
 ): boolean => {
   const { parent } = dc.id.createTopLevelParentID()
   return _.some(sourceMap.get(parent.getFullName())?.map(
-    // TODO: fix me!!!
-    // range => range.filename === createFileNameFromPath(dc.path)
-    range => range.filename === createFileNameFromPath()
+    range => range.filename === createFileNameFromPath(dc.pathIndex?.get(dc.id.getFullName()))
   ))
 }
 export const getChangesToUpdate = (
   changes: DetailedChange[],
   sourceMap: SourceMap
 ): DetailedChange[] => {
-  // TODO: fix me!!!
-  // const isNestedAddition = (dc: DetailedChange): boolean => (dc.path || false)
+  // TODO: fix me!!! - we need to test this flow with nested additions
   const isNestedAddition = (dc: DetailedChange): boolean => (dc.pathIndex || false)
     && dc.action === 'add'
     && dc.id.idType !== 'instance'
@@ -341,7 +340,10 @@ export const getChangesToUpdate = (
     isNestedAddition
   ) as [DetailedAddition[], DetailedChange[]]
   const wrappedNestedAdditions: DetailedAddition[] = _(nestedAdditionsWithPath)
-    .groupBy(addition => [addition.path, addition.id.createTopLevelParentID().parent])
+    .groupBy(addition => [
+      addition.pathIndex.get(addition.id.getFullName()),
+      addition.id.createTopLevelParentID().parent.getFullName(),
+    ])
     .values()
     .map(wrapAdditions)
     .value()

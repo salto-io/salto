@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ObjectType, BuiltinTypes, ElemID } from '@salto-io/adapter-api'
+import { Element, ObjectType, BuiltinTypes, ElemID, createPathIndexFromPath } from '@salto-io/adapter-api'
 import { findElements as findElementsByID } from '@salto-io/adapter-utils'
 import currencyIsoCodeFilter from '../../src/filters/currency_iso_code'
 import { FilterWith } from '../../src/filter'
@@ -84,7 +84,10 @@ describe('currencyIsoCode filter', () => {
       expect(currencyCodesType[0]).toMatchObject(expect.objectContaining({
         isSettings: true,
         fields: expect.objectContaining({ valueSet: expect.objectContaining({}) }),
-        path: [SALESFORCE, 'Types', 'CurrencyIsoCodes'],
+        pathIndex: createPathIndexFromPath(
+          currencyCodesType[0].elemID,
+          [SALESFORCE, 'Types', 'CurrencyIsoCodes'],
+        ),
       }))
     })
 
@@ -92,7 +95,10 @@ describe('currencyIsoCode filter', () => {
       const currencyCodeRecord = findElements(elements, CURRENCY_CODE_TYPE_NAME, ElemID.CONFIG_NAME)
       expect(currencyCodeRecord).toHaveLength(1)
       expect(currencyCodeRecord[0]).toMatchObject({
-        path: [SALESFORCE, 'Records', 'Settings', 'CurrencyIsoCodes'],
+        pathIndex: createPathIndexFromPath(
+          currencyCodeRecord[0].elemID,
+          [SALESFORCE, 'Records', 'Settings', 'CurrencyIsoCodes']
+        ),
         value: {
           valueSet: expect.arrayContaining([
             expect.objectContaining({ label: 'USD' }),

@@ -267,12 +267,16 @@ const generalDeserialize = async <T>(
       return restoreClasses(v.innerType)
     }
 
+    const reviveTreeMap = <S>(v: Value): collections.treeMap.TreeMap<S> => (
+      collections.treeMap.TreeMap.fromTreeMapEntry(v.data, v.separator)
+    )
+
     const revivers: ReviverMap = {
       InstanceElement: v => new InstanceElement(
         v.elemID.nameParts[0],
         reviveRefTypeOfElement(v),
         restoreClasses(v.value),
-        v.path,
+        v.pathIndex ? reviveTreeMap(v.pathIndex) : v.path,
         restoreClasses(v.annotations),
       ),
       ObjectType: v => {
@@ -282,19 +286,23 @@ const generalDeserialize = async <T>(
           annotationRefsOrTypes: reviveAnnotationRefTypes(v),
           annotations: restoreClasses(v.annotations),
           isSettings: v.isSettings,
-          path: v.path,
+          path: v.pathIndex ? reviveTreeMap(v.pathIndex) : v.path,
         })
         return r
       },
       Variable: v => (
-        new Variable(reviveElemID(v.elemID), restoreClasses(v.value))
+        new Variable(
+          reviveElemID(v.elemID),
+          restoreClasses(v.value),
+          v.pathIndex ? reviveTreeMap(v.pathIndex) : v.path
+        )
       ),
       PrimitiveType: v => new PrimitiveType({
         elemID: reviveElemID(v.elemID),
         primitive: v.primitive,
         annotationRefsOrTypes: reviveAnnotationRefTypes(v),
         annotations: restoreClasses(v.annotations),
-        path: v.path,
+        path: v.pathIndex ? reviveTreeMap(v.pathIndex) : v.path,
       }),
       ListType: v => new ListType(reviveRefInnerType(v)),
       MapType: v => new MapType(reviveRefInnerType(v)),

@@ -22,9 +22,9 @@ import {
   FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, SaltoError,
   isSaltoElementError, ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId,
   CORE_ANNOTATIONS, AdapterOperationsContext, FetchResult, isAdditionChange, isStaticFile,
-  isAdditionOrModificationChange, Value, StaticFile, isElement, getTopLevelPath,
+  isAdditionOrModificationChange, Value, StaticFile, isElement,
 } from '@salto-io/adapter-api'
-import { applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements, safeJsonStringify, walkOnElement, WalkOnFunc, WALK_NEXT_STEP, setPath, walkOnValue } from '@salto-io/adapter-utils'
+import { applyInstancesDefaults, flattenElementStr, buildElementsSourceFromElements, safeJsonStringify, walkOnElement, WalkOnFunc, WALK_NEXT_STEP, setPath, walkOnValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { merger, elementSource, expressions, Workspace, pathIndex, updateElementsWithAlternativeAccount, createAdapterReplacedID, remoteMap } from '@salto-io/workspace'
 import { collections, promises, types, values } from '@salto-io/lowerdash'
@@ -77,10 +77,37 @@ export const toAddFetchChange = (elem: Element): FetchChange => {
     id: elem.elemID,
     action: 'add',
     data: { after: elem },
+    pathIndex: elem.pathIndex,
   }
   return { change, serviceChanges: [change], metadata: getFetchChangeMetadata(elem) }
 }
 
+// TODO: fix me!!! - move me!!!
+const getPathOfId = (elemID: ElemID, elementPathIndex: collections.treeMap.TreeMap<string>):
+string[] => {
+  const idParts = elemID.getFullNameParts()
+  const topLevelKey = elemID.createTopLevelParentID().parent.getFullName()
+  let key: string
+  do {
+    key = idParts.join(ElemID.NAMESPACE_SEPARATOR)
+    const pathHint = elementPathIndex.get(key)
+    if (pathHint !== undefined) {
+      return pathHint
+    }
+    idParts.pop()
+  } while (idParts.length > 0 && key !== topLevelKey)
+  return []
+}
+
+const getPathIndexOfId = (elemID: ElemID, elementPathIndex: collections.treeMap.TreeMap<string>):
+collections.treeMap.TreeMap<string> => {
+  const rootPath = getPathOfId(elemID, elementPathIndex)
+  const pathIndexOfId = new collections.treeMap.TreeMap<string>(
+    elementPathIndex.entriesWithPrefix(elemID.getFullName())
+  )
+  pathIndexOfId.set(elemID.getFullName(), rootPath)
+  return pathIndexOfId
+}
 
 export class StepEmitter<T = void> extends EventEmitter<StepEvents<T>> {}
 
@@ -133,49 +160,46 @@ const getDetailedChangeTree = async (
   )
 )
 
-const findNestedElementPath = (
-  changeElemID: ElemID,
-  originalParentElements: Element[]
-): readonly string[] | undefined => {
-  // TODO: fix me!!!
-  const parentElement = originalParentElements
-    .find(e => !_.isUndefined(resolvePath(e, changeElemID)))
-  return parentElement ? getTopLevelPath(parentElement) : undefined
-}
+// const findNestedElementPath = (
+//   changeElemID: ElemID,
+//   originalParentElements: Element[]
+// ): readonly string[] | undefined => {
+//   // TODO: fix me!!!
+//   const parentElement = originalParentElements
+//     .find(e => !_.isUndefined(resolvePath(e, changeElemID)))
+//   return parentElement ? getTopLevelPath(parentElement) : undefined
+// }
 
-type ChangeTransformFunction = (sourceChange: FetchChange) => Promise<FetchChange[]>
+type ChangeTransformFunction = (sourceChange: FetchChange) => Promise<FetchChange>
 const toChangesWithPath = (
-  accountElementByFullName: (id: ElemID) => Promise<Element[]> | Element[]
+  accountElementByFullName: (id: ElemID) => Element[]
 ): ChangeTransformFunction => (
   async change => {
-    const changeID: ElemID = change.change.id
-    if (!changeID.isTopLevel() && change.change.action === 'add') {
-      const path = findNestedElementPath(
-        changeID,
-        await accountElementByFullName(changeID.createTopLevelParentID().parent)
-      )
-      log.debug(`addition change for nested ${changeID.idType} with id ${changeID.getFullName()}, path found ${path?.join('/')}`)
-      return path
-        ? [_.merge({}, change, { change: { path } })]
-        : [change]
-    }
-    const originalElements = await accountElementByFullName(changeID)
+    const changeID = change.change.id
+    const parentID = changeID.createTopLevelParentID().parent
+    const originalElements = accountElementByFullName(parentID)
     if (originalElements.length === 0) {
       log.debug(`no original elements found for change element id ${changeID.getFullName()}`)
-      return [change]
+      return change
     }
-    // Replace merged element with original elements that have a path hint
-    return originalElements.map(elem => _.merge({}, change, { change: { data: { after: elem } } }))
+    // We take the first element because there should be only one
+    const parentPathIndex = originalElements[0].pathIndex
+    if (parentPathIndex === undefined) {
+      log.debug(`no path index was found for the top level element id ${changeID.getFullName()}`)
+      return change
+    }
+    const changePathIndex = getPathIndexOfId(changeID, parentPathIndex)
+    return _.merge({}, change, { change: { pathIndex: changePathIndex } })
   })
 
 const addFetchChangeMetadata = (
   updatedElementSource: ReadOnlyElementsSource
-): ChangeTransformFunction => async change => ([{
+): ChangeTransformFunction => async change => ({
   ...change,
   metadata: getFetchChangeMetadata(
     await updatedElementSource.get(change.change.id.createBaseID().parent)
   ),
-}])
+})
 
 const getChangesNestedUnderID = (
   id: ElemID, changesTree: collections.treeMap.TreeMap<WorkspaceDetailedChange>
@@ -619,8 +643,8 @@ const calcFetchChanges = async (
   )
 
   return awu(fetchChanges)
-    .flatMap(toChangesWithPath(async name => serviceElementsMap[name.getFullName()] ?? []))
-    .flatMap(addFetchChangeMetadata(partialFetchElementSource))
+    .map(toChangesWithPath(name => serviceElementsMap[name.getFullName()] ?? []))
+    .map(addFetchChangeMetadata(partialFetchElementSource))
     .toArray()
 }
 
@@ -638,6 +662,7 @@ type CreateFetchChangesParams = {
   progressEmitter?: EventEmitter<FetchProgressEvents>
 }
 const createFetchChanges = async ({
+  // Change it to be merged elements
   adapterNames, workspaceElements, stateElements, unmergedElements,
   processErrorsResult, currentConfigs, getChangesEmitter, partiallyFetchedAccounts = new Set(),
   updatedConfigs = [], errors = [], progressEmitter,

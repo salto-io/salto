@@ -110,6 +110,14 @@ describe('Custom Object Split filter', () => {
               [SALESFORCE, OBJECTS_PATH, typeName, 'CustomObjectAnnotations'],
             ],
             [
+              customObject.elemID.createNestedID('attr', METADATA_TYPE).getFullName(),
+              [SALESFORCE, OBJECTS_PATH, typeName, 'CustomObjectAnnotations'],
+            ],
+            [
+              customObject.elemID.createNestedID('attr', API_NAME).getFullName(),
+              [SALESFORCE, OBJECTS_PATH, typeName, 'CustomObjectAnnotations'],
+            ],
+            [
               customObject.elemID.createNestedID('field', 'standard').getFullName(),
               [SALESFORCE, OBJECTS_PATH, typeName, 'CustomObjectStandardFields'],
             ],
@@ -144,6 +152,14 @@ describe('Custom Object Split filter', () => {
               [SALESFORCE, INSTALLED_PACKAGES_PATH, 'namespace', OBJECTS_PATH, typeName, 'CustomObjectAnnotations'],
             ],
             [
+              customObject.elemID.createNestedID('attr', METADATA_TYPE).getFullName(),
+              [SALESFORCE, INSTALLED_PACKAGES_PATH, 'namespace', OBJECTS_PATH, typeName, 'CustomObjectAnnotations'],
+            ],
+            [
+              customObject.elemID.createNestedID('attr', API_NAME).getFullName(),
+              [SALESFORCE, INSTALLED_PACKAGES_PATH, 'namespace', OBJECTS_PATH, typeName, 'CustomObjectAnnotations'],
+            ],
+            [
               customObject.elemID.createNestedID('field', 'standard').getFullName(),
               [SALESFORCE, INSTALLED_PACKAGES_PATH, 'namespace', OBJECTS_PATH, typeName, 'CustomObjectStandardFields'],
             ],
@@ -165,9 +181,6 @@ describe('Custom Object Split filter', () => {
           const objectWithNoStandardFields = new ObjectType({
             elemID: CUSTOM_OBJECT_TYPE_ID,
             fields: {
-              standard: {
-                refType: BuiltinTypes.STRING,
-              },
               custom__c: {
                 refType: BuiltinTypes.STRING,
               },
@@ -179,17 +192,25 @@ describe('Custom Object Split filter', () => {
               },
             },
             annotations: {
-              [METADATA_TYPE]: 'NonCustomObject',
+              [METADATA_TYPE]: CUSTOM_OBJECT,
               [API_NAME]: 'objectRandom__c',
             },
           })
-          const elements = await runFilter(objectWithNoStandardFields.clone())
-          expect(elements).toHaveLength(1)
-          const [customObject] = elements
+          const fragments = await runFilter(objectWithNoStandardFields.clone())
+          expect(fragments).toHaveLength(1)
+          const [customObject] = fragments
           expect(Array.from(customObject.pathIndex?.entries() ?? []))
             .toEqual([
               [
                 customObject.elemID.getFullName(),
+                [SALESFORCE, OBJECTS_PATH, typeName, 'CustomObjectAnnotations'],
+              ],
+              [
+                customObject.elemID.createNestedID('attr', METADATA_TYPE).getFullName(),
+                [SALESFORCE, OBJECTS_PATH, typeName, 'CustomObjectAnnotations'],
+              ],
+              [
+                customObject.elemID.createNestedID('attr', API_NAME).getFullName(),
                 [SALESFORCE, OBJECTS_PATH, typeName, 'CustomObjectAnnotations'],
               ],
               [
@@ -217,9 +238,9 @@ describe('Custom Object Split filter', () => {
               [API_NAME]: 'objectRandom__c',
             },
           })
-          const elements = await runFilter(objectWithNoCustomFields.clone())
-          expect(elements).toHaveLength(1)
-          const [customObject] = elements
+          const fragments = await runFilter(objectWithNoCustomFields.clone())
+          expect(fragments).toHaveLength(1)
+          const [customObject] = fragments
           expect(Array.from(customObject.pathIndex?.entries() ?? []))
             .toEqual([
               [
@@ -227,7 +248,15 @@ describe('Custom Object Split filter', () => {
                 [SALESFORCE, OBJECTS_PATH, typeName, 'CustomObjectAnnotations'],
               ],
               [
-                customObject.elemID.createNestedID('field', 'standard').getFullName(),
+                customObject.elemID.createNestedID('attr', METADATA_TYPE).getFullName(),
+                [SALESFORCE, OBJECTS_PATH, typeName, 'CustomObjectAnnotations'],
+              ],
+              [
+                customObject.elemID.createNestedID('attr', API_NAME).getFullName(),
+                [SALESFORCE, OBJECTS_PATH, typeName, 'CustomObjectAnnotations'],
+              ],
+              [
+                customObject.elemID.createNestedID('field', 'Standard').getFullName(),
                 [SALESFORCE, OBJECTS_PATH, typeName, 'CustomObjectStandardFields'],
               ],
             ])
@@ -322,7 +351,19 @@ describe('Custom Object Split filter', () => {
         .toEqual([
           [
             elemId.getFullName(),
-            [SALESFORCE, OBJECTS_PATH, typeName, OBJECT_FIELDS_PATH, `${typeName}Annotations`],
+            [SALESFORCE, OBJECTS_PATH, typeName, `${typeName}Annotations`],
+          ],
+          [
+            elemId.createNestedID('attr', METADATA_TYPE).getFullName(),
+            [SALESFORCE, OBJECTS_PATH, typeName, `${typeName}Annotations`],
+          ],
+          [
+            elemId.createNestedID('attr', API_NAME).getFullName(),
+            [SALESFORCE, OBJECTS_PATH, typeName, `${typeName}Annotations`],
+          ],
+          [
+            elemId.createNestedID('field', 'Standard').getFullName(),
+            [SALESFORCE, OBJECTS_PATH, typeName, OBJECT_FIELDS_PATH, 'Standard'],
           ],
           [
             elemId.createNestedID('field', 'Custom__c').getFullName(),
@@ -331,10 +372,6 @@ describe('Custom Object Split filter', () => {
           [
             elemId.createNestedID('field', 'OtherCustom__c').getFullName(),
             [SALESFORCE, OBJECTS_PATH, typeName, OBJECT_FIELDS_PATH, 'OtherCustom__c'],
-          ],
-          [
-            elemId.createNestedID('field', 'Standard').getFullName(),
-            [SALESFORCE, OBJECTS_PATH, typeName, OBJECT_FIELDS_PATH, 'Standard'],
           ],
         ])
     })
@@ -347,7 +384,19 @@ describe('Custom Object Split filter', () => {
         .toEqual([
           [
             elemId.getFullName(),
-            [SALESFORCE, OBJECTS_PATH, typeName, OBJECT_FIELDS_PATH, `${typeName}Annotations`],
+            [SALESFORCE, OBJECTS_PATH, typeName, `${typeName}Annotations`],
+          ],
+          [
+            elemId.createNestedID('attr', METADATA_TYPE).getFullName(),
+            [SALESFORCE, OBJECTS_PATH, typeName, `${typeName}Annotations`],
+          ],
+          [
+            elemId.createNestedID('attr', API_NAME).getFullName(),
+            [SALESFORCE, OBJECTS_PATH, typeName, `${typeName}Annotations`],
+          ],
+          [
+            elemId.createNestedID('field', 'Standard').getFullName(),
+            [SALESFORCE, OBJECTS_PATH, typeName, 'OtherType__cStandardFields'],
           ],
           [
             elemId.createNestedID('field', 'Custom__c').getFullName(),
@@ -356,10 +405,6 @@ describe('Custom Object Split filter', () => {
           [
             elemId.createNestedID('field', 'OtherCustom__c').getFullName(),
             [SALESFORCE, OBJECTS_PATH, typeName, 'OtherType__cCustomFields'],
-          ],
-          [
-            elemId.createNestedID('field', 'Standard').getFullName(),
-            [SALESFORCE, OBJECTS_PATH, typeName, 'OtherType__cStandardFields'],
           ],
         ])
     })

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, BuiltinTypes, createRefToElmWithValue, getTopLevelPath } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, createRefToElmWithValue, getTopLevelPath, InstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { PathIndex, getFromPathIndex, Path, splitElementByPath } from '../../src/workspace/path_index'
 import { InMemoryRemoteMap } from '../../src/workspace/remote_map'
@@ -54,139 +54,197 @@ describe('getFromPathIndex', () => {
 })
 
 describe('split element by path', () => {
-  const objElemId = new ElemID('salto', 'obj')
-  const objFragStdFields = new ObjectType({
-    elemID: objElemId,
-    fields: {
-      stdField: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-          test: 'test',
+  describe('ObjectType', () => {
+    const objElemId = new ElemID('salto', 'obj')
+    const objFragStdFields = new ObjectType({
+      elemID: objElemId,
+      fields: {
+        stdField: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          annotations: {
+            test: 'test',
+          },
         },
       },
-    },
-    path: ['salto', 'obj', 'standardFields'],
+      path: ['salto', 'obj', 'standardFields'],
+    })
+    const objFragCustomFields = new ObjectType({
+      elemID: objElemId,
+      fields: {
+        customField: {
+          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          annotations: {
+            test: 'test',
+          },
+        },
+      },
+      path: ['salto', 'obj', 'customFields'],
+    })
+    const objFragAnnotations = new ObjectType({
+      elemID: objElemId,
+      annotationRefsOrTypes: {
+        anno: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      annotations: {
+        anno: 'Hey',
+      },
+      path: ['salto', 'obj', 'annotations'],
+    })
+    const objFull = new ObjectType({
+      elemID: objElemId,
+      fields: {
+        stdField: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          annotations: {
+            test: 'test',
+          },
+        },
+        customField: {
+          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          annotations: {
+            test: 'test',
+          },
+        },
+      },
+      annotationRefsOrTypes: {
+        anno: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      annotations: {
+        anno: 'Hey',
+      },
+      path: new collections.treeMap.TreeMap<string>([
+        [objElemId.getFullName(), getTopLevelPath(objFragAnnotations)],
+        [objElemId.createNestedID('attr', 'anno').getFullName(), getTopLevelPath(objFragAnnotations)],
+        [objElemId.createNestedID('annotation', 'anno').getFullName(), getTopLevelPath(objFragAnnotations)],
+        [objElemId.createNestedID('field', 'stdField').getFullName(), getTopLevelPath(objFragStdFields)],
+        [objElemId.createNestedID('field', 'customField').getFullName(), getTopLevelPath(objFragCustomFields)],
+      ]),
+    })
+    const singlePathObj = new ObjectType({
+      elemID: new ElemID('salto', 'singlePath'),
+      fields: {
+        stdField: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          annotations: {
+            test: 'test',
+          },
+        },
+        customField: {
+          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          annotations: {
+            test: 'test',
+          },
+        },
+      },
+      annotationRefsOrTypes: {
+        anno: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      annotations: {
+        anno: 'Is it me',
+      },
+      path: ['salto', 'existing', 'all'],
+    })
+    const noPathObj = new ObjectType({
+      elemID: new ElemID('salto', 'noPath'),
+      fields: {
+        stdField: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          annotations: {
+            test: 'test',
+          },
+        },
+        customField: {
+          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          annotations: {
+            test: 'test',
+          },
+        },
+      },
+      annotationRefsOrTypes: {
+        anno: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      annotations: {
+        anno: 'You\'r looking for?',
+      },
+    })
+    const fullObjFrags = [objFragStdFields, objFragCustomFields, objFragAnnotations]
+    it('should split an element with multiple pathes', async () => {
+      const splitedElements = await splitElementByPath(objFull, new InMemoryRemoteMap<Path[]>())
+      fullObjFrags.forEach(
+        frag => expect(splitedElements.filter(elem => elem.isEqual(frag))).toHaveLength(1)
+      )
+    })
+    it('should return a single object for an element with one path', async () => {
+      const splitedElements = await splitElementByPath(
+        singlePathObj, new InMemoryRemoteMap<Path[]>()
+      )
+      expect(splitedElements).toHaveLength(1)
+      expect(splitedElements[0]).toEqual(singlePathObj)
+    })
+    it('should return the element for an element with no pathes', async () => {
+      const splitedElements = await splitElementByPath(noPathObj, new InMemoryRemoteMap<Path[]>())
+      expect(splitedElements).toHaveLength(1)
+      expect(splitedElements[0]).toEqual(noPathObj)
+    })
   })
-  const objFragCustomFields = new ObjectType({
-    elemID: objElemId,
-    fields: {
-      customField: {
-        refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
-        annotations: {
-          test: 'test',
-        },
+  describe('InstanceElement', () => {
+    const objType = new ObjectType({ elemID: new ElemID('salto', 'obj') })
+    const name = 'inst'
+    const instFragStdFields = new InstanceElement(
+      name,
+      objType,
+      {
+        val1: 123,
+        val3: 'anotherTest',
       },
-    },
-    path: ['salto', 'obj', 'customFields'],
-  })
-  const objFragAnnotations = new ObjectType({
-    elemID: objElemId,
-    annotationRefsOrTypes: {
-      anno: createRefToElmWithValue(BuiltinTypes.STRING),
-    },
-    annotations: {
-      anno: 'Hey',
-    },
-    path: ['salto', 'obj', 'annotations'],
-  })
-
-  const objFull = new ObjectType({
-    elemID: objElemId,
-    fields: {
-      stdField: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-          test: 'test',
-        },
-      },
-      customField: {
-        refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
-        annotations: {
-          test: 'test',
-        },
-      },
-    },
-    annotationRefsOrTypes: {
-      anno: createRefToElmWithValue(BuiltinTypes.STRING),
-    },
-    annotations: {
-      anno: 'Hey',
-    },
-    path: new collections.treeMap.TreeMap<string>([
-      [objElemId.getFullName(), getTopLevelPath(objFragAnnotations)],
-      [objElemId.createNestedID('field', 'stdField').getFullName(), getTopLevelPath(objFragStdFields)],
-      [objElemId.createNestedID('field', 'customField').getFullName(), getTopLevelPath(objFragCustomFields)],
-    ]),
-  })
-
-  const singlePathObj = new ObjectType({
-    elemID: new ElemID('salto', 'singlePath'),
-    fields: {
-      stdField: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-          test: 'test',
-        },
-      },
-      customField: {
-        refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
-        annotations: {
-          test: 'test',
-        },
-      },
-    },
-    annotationRefsOrTypes: {
-      anno: createRefToElmWithValue(BuiltinTypes.STRING),
-    },
-    annotations: {
-      anno: 'Is it me',
-    },
-    path: ['salto', 'existing', 'all'],
-  })
-
-  const noPathObj = new ObjectType({
-    elemID: new ElemID('salto', 'noPath'),
-    fields: {
-      stdField: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-          test: 'test',
-        },
-      },
-      customField: {
-        refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
-        annotations: {
-          test: 'test',
-        },
-      },
-    },
-    annotationRefsOrTypes: {
-      anno: createRefToElmWithValue(BuiltinTypes.STRING),
-    },
-    annotations: {
-      anno: 'You\'r looking for?',
-    },
-
-  })
-
-  const fullObjFrags = [objFragStdFields, objFragCustomFields, objFragAnnotations]
-
-  it('should split an element with multiple pathes', async () => {
-    const splitedElements = await splitElementByPath(objFull, new InMemoryRemoteMap<Path[]>())
-    fullObjFrags.forEach(
-      frag => expect(splitedElements.filter(elem => elem.isEqual(frag))).toHaveLength(1)
+      ['salto', 'obj', 'sFields'],
     )
-  })
-
-  it('should return a single object for an element with one path', async () => {
-    const splitedElements = await splitElementByPath(singlePathObj, new InMemoryRemoteMap<Path[]>())
-    expect(splitedElements).toHaveLength(1)
-    expect(splitedElements[0]).toEqual(singlePathObj)
-  })
-
-  it('should return the element for an element with no pathes', async () => {
-    const splitedElements = await splitElementByPath(noPathObj, new InMemoryRemoteMap<Path[]>())
-    expect(splitedElements).toHaveLength(1)
-    expect(splitedElements[0]).toEqual(noPathObj)
+    const instFragCustomFields = new InstanceElement(
+      name,
+      objType,
+      {
+        val2: 'test',
+      },
+      ['salto', 'obj', 'cFields'],
+    )
+    const instFragAnnotations = new InstanceElement(
+      name,
+      objType,
+      {},
+      ['salto', 'obj', 'anno'],
+      {
+        anno1: 'test',
+        anno2: 'yet another test',
+      },
+    )
+    const full = new InstanceElement(
+      name,
+      objType,
+      {
+        val1: 123,
+        val2: 'test',
+        val3: 'anotherTest',
+      },
+      undefined,
+      {
+        anno1: 'test',
+        anno2: 'yet another test',
+      },
+    )
+    full.pathIndex = new collections.treeMap.TreeMap<string>([
+      [full.elemID.getFullName(), getTopLevelPath(instFragAnnotations)],
+      [full.elemID.createNestedID('anno1').getFullName(), getTopLevelPath(instFragAnnotations)],
+      [full.elemID.createNestedID('anno2').getFullName(), getTopLevelPath(instFragAnnotations)],
+      [full.elemID.createNestedID('val1').getFullName(), getTopLevelPath(instFragStdFields)],
+      [full.elemID.createNestedID('val2').getFullName(), getTopLevelPath(instFragCustomFields)],
+      [full.elemID.createNestedID('val3').getFullName(), getTopLevelPath(instFragStdFields)],
+    ])
+    const fullInstFrags = [instFragStdFields, instFragCustomFields, instFragAnnotations]
+    it('should split an element with multiple pathes', async () => {
+      const splitedElements = await splitElementByPath(full, new InMemoryRemoteMap<Path[]>())
+      fullInstFrags.forEach(
+        frag => expect(splitedElements.filter(elem => elem.isEqual(frag))).toHaveLength(1)
+      )
+    })
   })
 })

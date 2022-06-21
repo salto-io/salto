@@ -366,7 +366,9 @@ export class PrimitiveType<Primitive extends PrimitiveTypes = PrimitiveTypes> ex
       primitive: this.primitive,
       annotationRefsOrTypes: this.cloneAnnotationTypes(),
       annotations: this.cloneAnnotations(),
-      path: this.pathIndex !== undefined ? this.pathIndex.clone() : undefined,
+      path: this.pathIndex !== undefined
+        ? new collections.treeMap.TreeMap<string>(this.pathIndex.entries())
+        : undefined,
     })
     res.annotate(additionalAnnotations)
     return res
@@ -438,7 +440,9 @@ export class ObjectType extends Element {
       annotationRefsOrTypes: this.cloneAnnotationTypes(),
       annotations: this.cloneAnnotations(),
       isSettings,
-      path: this.pathIndex !== undefined ? this.pathIndex.clone() : undefined,
+      path: this.pathIndex !== undefined
+        ? new collections.treeMap.TreeMap<string>(this.pathIndex.entries())
+        : undefined,
     })
 
     res.annotate(additionalAnnotations)
@@ -498,7 +502,9 @@ export class InstanceElement extends Element {
       this.elemID.name,
       this.refType.clone(),
       cloneDeepWithoutRefs(this.value),
-      this.pathIndex,
+      this.pathIndex !== undefined
+        ? new collections.treeMap.TreeMap<string>(this.pathIndex.entries())
+        : undefined,
       cloneDeepWithoutRefs(this.annotations),
     )
   }
@@ -516,7 +522,13 @@ export class Variable extends Element {
   }
 
   clone(): Variable {
-    return new Variable(this.elemID, cloneDeepWithoutRefs(this.value), this.pathIndex)
+    return new Variable(
+      this.elemID,
+      cloneDeepWithoutRefs(this.value),
+      this.pathIndex !== undefined
+        ? new collections.treeMap.TreeMap<string>(this.pathIndex.entries())
+        : undefined,
+    )
   }
 }
 

@@ -29,6 +29,13 @@ export class TreeMap<T> implements Map<string, T[]> {
     wu(entries).forEach(([key, value]) => this.push(key, ...value))
   }
 
+  static fromTreeMapEntry = <S>(
+    data: TreeMapEntry<S>,
+    separator = '.',
+  ): TreeMap<S> => (
+    new TreeMap(TreeMap.iterEntry(data, separator), separator)
+  )
+
   protected static getFromPath = <S>(
     data: TreeMapEntry<S>,
     path: string[],
@@ -76,16 +83,21 @@ export class TreeMap<T> implements Map<string, T[]> {
     target.value = value
   }
 
-  private iterEntry<S>(
-    entry: TreeMapEntry<S>,
-    prefix: string[] = []
-  ): WuIterable<[string, T[]]> {
+  private static iterEntry<S>(entry: TreeMapEntry<S>, separator: string, prefix: string[] = []):
+  WuIterable<[string, S[]]> {
     const childEntries = wu.entries(entry.children)
-      .map(([key, child]) => this.iterEntry(child, [...prefix, key]))
+      .map(([key, child]) => TreeMap.iterEntry(child, separator, [...prefix, key]))
       .flatten(true)
     return _.isEmpty(entry.value)
       ? childEntries
-      : wu.chain([[prefix.join(this.separator), entry.value]], childEntries)
+      : wu.chain([[prefix.join(separator), entry.value]], childEntries)
+  }
+
+  private iterEntry<S>(
+    entry: TreeMapEntry<S>,
+    prefix: string[] = []
+  ): WuIterable<[string, S[]]> {
+    return TreeMap.iterEntry(entry, this.separator, prefix)
   }
 
   [Symbol.iterator](): IterableIterator<[string, T[]]> {
@@ -172,6 +184,15 @@ export class TreeMap<T> implements Map<string, T[]> {
       return wu([])
     }
     return this.iterEntry(prefixSubtree, path).map(([_key, values]) => values)
+  }
+
+  entriesWithPrefix(prefix: string): IterableIterator<[string, T[]]> {
+    const path = prefix.split(this.separator)
+    const prefixSubtree = TreeMap.getFromPath(this.data, path)
+    if (prefixSubtree === undefined) {
+      return wu([])
+    }
+    return this.iterEntry(prefixSubtree, path)
   }
 
   clone(): TreeMap<T> {

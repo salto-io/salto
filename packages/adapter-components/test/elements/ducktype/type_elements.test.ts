@@ -53,7 +53,13 @@ describe('ducktype_type_elements', () => {
       })
       expect(type.isEqual(new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'typeName'), fields: { name: { refType: BuiltinTypes.NUMBER } } }))).toBeTruthy()
       expect(nestedTypes).toHaveLength(0)
-      expect(type.path).toEqual([ADAPTER_NAME, TYPES_PATH, 'typeName'])
+      expect(Array.from(type.pathIndex?.entries() ?? []))
+        .toEqual([
+          [
+            type.elemID.getFullName(),
+            [ADAPTER_NAME, TYPES_PATH, 'typeName'],
+          ],
+        ])
     })
     it('should override field types for types with nested fieldTypeOverrides', () => {
       const entries: Values[] = [{
@@ -89,7 +95,13 @@ describe('ducktype_type_elements', () => {
       })
       expect(type.isEqual(new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'typeName'), fields: { id: { refType: BuiltinTypes.NUMBER } } }))).toBeTruthy()
       expect(nestedTypes).toHaveLength(0)
-      expect(type.path).toEqual([ADAPTER_NAME, TYPES_PATH, 'typeName'])
+      expect(Array.from(type.pathIndex?.entries() ?? []))
+        .toEqual([
+          [
+            type.elemID.getFullName(),
+            [ADAPTER_NAME, TYPES_PATH, 'typeName'],
+          ],
+        ])
     })
     it('should generate types recursively with correct fields when hasDynamicFields=false', () => {
       const entries = [

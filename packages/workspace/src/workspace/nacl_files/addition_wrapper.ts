@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { AdditionDiff } from '@salto-io/dag'
+import { collections } from '@salto-io/lowerdash'
 import {
   Element, ElemID, ObjectType, InstanceElement, Value,
   isObjectType, isInstanceElement, PrimitiveType, isField, FieldDefinition, Field,
@@ -22,7 +23,7 @@ import _ from 'lodash'
 
 export type DetailedAddition = AdditionDiff<Value> & {
   id: ElemID
-  path: string[]
+  pathIndex: collections.treeMap.TreeMap<string>
 }
 
 type NestedValue = {
@@ -47,7 +48,7 @@ const addToField = (
 const createObjectTypeFromNestedAdditions = (
   nestedValues: NestedValue[],
   commonObjectType: ObjectType,
-  path?: string[]
+  pathIndex?: collections.treeMap.TreeMap<string>
 ): ObjectType =>
   new ObjectType(nestedValues.reduce((prev, nestedValue) => {
     switch (nestedValue.id.idType) {
@@ -97,14 +98,14 @@ const createObjectTypeFromNestedAdditions = (
     fields: {} as Record<string, FieldDefinition>,
     annotationRefsOrTypes: {},
     annotations: {},
-    path,
+    pathIndex,
     isSettings: commonObjectType.isSettings,
   }))
 
 const createInstanceElementFromNestedAdditions = (
   nestedValues: NestedValue[],
   commonInstance: InstanceElement,
-  path?: string[]
+  pathIndex?: collections.treeMap.TreeMap<string>
 ): InstanceElement => {
   // IDs inside instances can be of values or annotations, we need to keep them separate
   const value = {}
@@ -122,7 +123,7 @@ const createInstanceElementFromNestedAdditions = (
     commonInstance.elemID.name,
     commonInstance.refType,
     value,
-    path,
+    pathIndex,
     annotations,
   )
 }
@@ -130,7 +131,7 @@ const createInstanceElementFromNestedAdditions = (
 const createPrimitiveTypeFromNestedAdditions = (
   nestedValues: NestedValue[],
   commonPrimitiveType: PrimitiveType,
-  path?: string[]
+  pathIndex?: collections.treeMap.TreeMap<string>
 ): PrimitiveType => new PrimitiveType(nestedValues.reduce((prev, nestedValue) => {
   switch (nestedValue.id.idType) {
     case 'attr': return { ...prev,
@@ -150,32 +151,32 @@ const createPrimitiveTypeFromNestedAdditions = (
   primitive: commonPrimitiveType.primitive,
   annotationRefTypes: {},
   annotations: {},
-  path,
+  pathIndex,
 }))
 
 export const wrapNestedValues = (
   nestedValues: NestedValue[],
   commonElement: Element,
-  path?: string[]
+  pathIndex?: collections.treeMap.TreeMap<string>
 ): Element => {
   if (isObjectType(commonElement)) {
     return createObjectTypeFromNestedAdditions(
       nestedValues,
       commonElement,
-      path
+      pathIndex
     )
   }
   if (isInstanceElement(commonElement)) {
     return createInstanceElementFromNestedAdditions(
       nestedValues,
       commonElement,
-      path
+      pathIndex
     )
   }
   return createPrimitiveTypeFromNestedAdditions(
     nestedValues,
     commonElement as PrimitiveType,
-    path
+    pathIndex
   )
 }
 
@@ -184,7 +185,7 @@ export const wrapAdditions = (
   commonElement: Element,
 ): DetailedAddition => {
   const refAddition = nestedAdditions[0]
-  const refPath = nestedAdditions[0].path
+  const refPath = nestedAdditions[0].pathIndex
   const wrapperElement = wrapNestedValues(
     nestedAdditions.map(addition => ({ ...addition, value: addition.data.after })),
     commonElement,
@@ -193,7 +194,7 @@ export const wrapAdditions = (
   return {
     action: 'add',
     id: wrapperElement.elemID,
-    path: refAddition.path,
+    pathIndex: refAddition.pathIndex,
     data: {
       after: wrapperElement as Element,
     },

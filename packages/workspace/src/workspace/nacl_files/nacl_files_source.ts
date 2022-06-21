@@ -40,6 +40,7 @@ import { RemoteMap, RemoteMapCreator } from '../remote_map'
 import { ParsedNaclFile } from './parsed_nacl_file'
 import { ParsedNaclFileCache, createParseResultCache } from './parsed_nacl_files_cache'
 import { isInvalidStaticFile } from '../static_files/common'
+import { splitDetailedChange } from '../path_index'
 
 const { awu } = collections.asynciterable
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
@@ -756,8 +757,8 @@ const buildNaclFilesSource = (
     await awu(emptyNaclFiles).forEach(naclFile => naclFilesStore.delete(naclFile.filename))
   }
 
-  const updateNaclFiles = async (changes: DetailedChange[]): Promise<ChangeSet<Change>> => {
-    // TODO: return to fragments
+  const updateNaclFiles = async (mergedChanges: DetailedChange[]): Promise<ChangeSet<Change>> => {
+    const changes = mergedChanges.flatMap(splitDetailedChange)
     const preChangeHash = await (await state)?.parsedNaclFiles.getHash()
     const getNaclFileData = async (filename: string): Promise<string> => {
       const naclFile = await naclFilesStore.get(filename)

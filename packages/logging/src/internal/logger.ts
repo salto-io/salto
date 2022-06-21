@@ -15,7 +15,6 @@
 */
 import { format } from 'util'
 import { collections } from '@salto-io/lowerdash'
-import _ from 'lodash'
 import {
   Namespace,
   NamespaceOrModule,
@@ -26,10 +25,6 @@ import { LOG_LEVELS, LogLevel } from './level'
 import { Config, mergeConfigs, NamespaceFilter, stringToNamespaceFilter } from './config'
 import { LogTags } from './log-tags'
 import { LogTimeDecorator } from './log-time-decorator'
-
-// TODO - Make this value configurable
-const MAX_LOG_SIZE = 256 * 1000
-const LOG_SIZE_REGEX = new RegExp(`.{1,${MAX_LOG_SIZE}}`, 'g')
 
 export type LogMethod = (message: string | Error, ...args: unknown[]) => void
 
@@ -121,25 +116,14 @@ export const logger = (
         return
       }
 
-      const [stringOrError, ...additionalParams] = rest
-      // TODO - Add UUID log tag on the logs
-      if (_.isError(stringOrError)) {
-        stringOrError.message.match(LOG_SIZE_REGEX)?.forEach(messageChunk => {
-          const chunkedError = { ...stringOrError, message: messageChunk }
-          baseLog(level, chunkedError, additionalParams)
-        })
-      } else {
-        stringOrError.match(LOG_SIZE_REGEX)?.forEach(messageChunk => {
-          baseLog(level, messageChunk, additionalParams)
-        })
-      }
+      baseLog(level, ...rest)
     },
   }))
 }
 
 export type LoggerRepo = (
-  (namespace: NamespaceOrModule, ...namespaceFragments: NamespaceFragment[]) => Logger
-  ) & {
+    (namespace: NamespaceOrModule, ...namespaceFragments: NamespaceFragment[]) => Logger
+    ) & {
   setMinLevel(level: LogLevel): void
   readonly config: Readonly<Config>
   end(): Promise<void>

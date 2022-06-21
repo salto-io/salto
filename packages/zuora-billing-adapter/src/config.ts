@@ -662,7 +662,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
 }
 
 const DEFAULT_SWAGGER_CONFIG: ZuoraApiConfig['swagger'] = {
-  url: 'https://assets.zuora.com/zuora-documentation/swagger.yaml',
+  url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/main/zuora_billing/swagger.yaml',
   typeNameOverrides: [
     { originalName: 'events__event_triggers@uub', newName: 'EventTriggers' },
     { originalName: 'notifications__email_templates@uub', newName: 'NotificationEmailTemplates' },

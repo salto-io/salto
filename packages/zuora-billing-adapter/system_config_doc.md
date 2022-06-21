@@ -4,7 +4,7 @@
 zuora_billing {
   apiDefinitions = {
     swagger = {
-      url = "https://assets.zuora.com/zuora-documentation/swagger.yaml"
+      url = "https://raw.githubusercontent.com/salto-io/adapter-swaggers/main/zuora_billing/swagger.yaml"
       typeNameOverrides = [
         {
           originalName = "events__event_triggers@uub"

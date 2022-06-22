@@ -94,6 +94,12 @@ const restrictionType = new ObjectType({
         StandardBuiltinTypes.NUMBER,
       ),
     },
+    max_container_size: {
+      refType: new TypeReference(
+        StandardBuiltinTypes.NUMBER.elemID,
+        StandardBuiltinTypes.NUMBER
+      ),
+    },
   },
 })
 
@@ -124,6 +130,8 @@ export type RestrictionAnnotationType = Partial<{
   regex: string
   // eslint-disable-next-line camelcase
   max_length: number
+  // eslint-disable-next-line camelcase
+  max_container_size: number
 }>
 
 const StandardCoreAnnotationTypes: TypeMap = {

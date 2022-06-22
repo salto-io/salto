@@ -17,10 +17,17 @@
 import { ObjectType, ElemID, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, PrimitiveType, PrimitiveTypes, MapType, ListType, getRestriction, createRestriction, VariableExpression, Variable, StaticFile, createRefToElmWithValue, TypeReference, TemplateExpression } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import {
-  validateElements, InvalidValueValidationError, CircularReferenceValidationError,
-  InvalidValueRangeValidationError, IllegalReferenceValidationError,
-  UnresolvedReferenceValidationError, InvalidValueTypeValidationError,
-  InvalidStaticFileError, RegexMismatchValidationError, InvalidValueMaxLengthValidationError,
+  validateElements,
+  InvalidValueValidationError,
+  CircularReferenceValidationError,
+  InvalidValueRangeValidationError,
+  IllegalReferenceValidationError,
+  UnresolvedReferenceValidationError,
+  InvalidValueTypeValidationError,
+  InvalidStaticFileError,
+  RegexMismatchValidationError,
+  InvalidValueMaxLengthValidationError,
+  InvalidValueMaxContainerSizeValidationError,
 } from '../src/validator'
 import { MissingStaticFile, AccessDeniedStaticFile } from '../src/workspace/static_files/common'
 import { IllegalReference } from '../src/parser/parse'
@@ -220,10 +227,10 @@ describe('Elements validation', () => {
         },
       },
       restrictedListLength: {
-        refType: new ListType(BuiltinTypes.NUMBER),
+        refType: new ListType(BuiltinTypes.STRING),
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-            max_length: 5,
+            max_container_size: 6,
           }),
         },
       },
@@ -521,7 +528,7 @@ describe('Elements validation', () => {
         listOfMaps: [{ key: 'value' }, { another: 'one' }],
         restrictStr: 'restriction1',
         restrictedStringMaxLengthType: '1',
-        restrictedListLength: [1, 2, 3],
+        restrictedListLength: ['very long value, longer than the max size of the list', 'blah', 'oof'],
       }
     )
 
@@ -1186,7 +1193,18 @@ describe('Elements validation', () => {
         })
 
         it('should return an error when list is longer than restriction', async () => {
-          extInst.value.restrictedListLength = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+          extInst.value.restrictedListLength = [
+            'one',
+            'two',
+            'three',
+            'four',
+            'five',
+            'six',
+            'seven',
+            'eight',
+            'nine',
+            'ten',
+          ]
           const errors = await validateElements(
             [extInst],
             createInMemoryElementSource([
@@ -1196,9 +1214,9 @@ describe('Elements validation', () => {
             ])
           )
           expect(errors).toHaveLength(1)
-          expect(errors[0]).toBeInstanceOf(InvalidValueMaxLengthValidationError)
-          expect(errors[0].message).toMatch('Value "1,2,3,4,5,6,7,8,9,10" is too long for field')
-          expect(errors[0].message).toMatch('restrictedListLength maximum length is 5')
+          expect(errors[0]).toBeInstanceOf(InvalidValueMaxContainerSizeValidationError)
+          expect(errors[0].message).toMatch('Value "one,two,three,four,five,six,seven,eight,nine,ten" is too large for field')
+          expect(errors[0].message).toMatch('restrictedListLength maximum length is 6')
           expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('restrictedListLength'))
         })
       })

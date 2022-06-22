@@ -31,7 +31,22 @@ import { DuplicateVariableNameError } from '../merger/internal/variables'
 import { MultiplePrimitiveTypesError } from '../merger/internal/primitives'
 
 import { InvalidStaticFile } from '../workspace/static_files/common'
-import { ValidationError, InvalidValueValidationError, InvalidValueTypeValidationError, InvalidStaticFileError, CircularReferenceValidationError, IllegalReferenceValidationError, UnresolvedReferenceValidationError, MissingRequiredFieldValidationError, RegexMismatchValidationError, InvalidValueRangeValidationError, InvalidValueMaxLengthValidationError, isValidationError, InvalidTypeValidationError } from '../validator'
+import {
+  ValidationError,
+  InvalidValueValidationError,
+  InvalidValueTypeValidationError,
+  InvalidStaticFileError,
+  CircularReferenceValidationError,
+  IllegalReferenceValidationError,
+  UnresolvedReferenceValidationError,
+  MissingRequiredFieldValidationError,
+  RegexMismatchValidationError,
+  InvalidValueRangeValidationError,
+  InvalidValueMaxLengthValidationError,
+  isValidationError,
+  InvalidTypeValidationError,
+  InvalidValueMaxContainerSizeValidationError,
+} from '../validator'
 
 // There are two issues with naive json stringification:
 //
@@ -45,7 +60,7 @@ import { ValidationError, InvalidValueValidationError, InvalidValueTypeValidatio
 // To address this issue the serialization process:
 //
 // 1. Adds a '_salto_class' field with the class name to the object during the serialization.
-// 2. Replaces all of the pointers with "placeholder" objects
+// 2. Replaces all the pointers with "placeholder" objects
 //
 // The deserialization process recover the information by creating the classes based
 // on the _salto_class field, and then replacing the placeholders using the regular merge method.
@@ -84,6 +99,7 @@ const NameToType = {
   InvalidValueRangeValidationError: InvalidValueRangeValidationError,
   InvalidValueMaxLengthValidationError: InvalidValueMaxLengthValidationError,
   InvalidTypeValidationError: InvalidTypeValidationError,
+  InvalidValueMaxContainerSizeValidationError: InvalidValueMaxContainerSizeValidationError,
 }
 const nameToTypeEntries = Object.entries(NameToType)
 const possibleTypes = Object.values(NameToType)
@@ -399,6 +415,14 @@ const generalDeserialize = async <T>(
           fieldName: v.fieldName,
           value: v.value,
           maxLength: v.maxLength,
+        })
+      ),
+      InvalidValueMaxContainerSizeValidationError: v => (
+        new InvalidValueMaxContainerSizeValidationError({
+          elemID: reviveElemID(v.elemID),
+          fieldName: v.fieldName,
+          value: v.value,
+          maxContainerSize: v.maxContainerSize,
         })
       ),
       InvalidTypeValidationError: v => (

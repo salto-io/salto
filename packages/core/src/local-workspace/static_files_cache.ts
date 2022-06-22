@@ -35,7 +35,7 @@ const migrateLegacyStaticFilesCache = async (
   const currentCacheFile = path.join(cacheDir, name, CACHE_FILENAME)
 
   if (await exists(currentCacheFile)) {
-    if (remoteCache.isEmpty()) {
+    if (await remoteCache.isEmpty()) {
       log.debug('importing legacy static files cache from file: %s', currentCacheFile)
       const oldCache: Record<string, staticFiles.StaticFilesData> = JSON.parse(
         await readTextFile(currentCacheFile)
@@ -47,7 +47,7 @@ const migrateLegacyStaticFilesCache = async (
     } else {
       log.debug('static files cache already populated, ignoring legacy static files cache file: %s', currentCacheFile)
     }
-    log.debug('deleting legeacy static files cache file: %s', currentCacheFile)
+    log.debug('deleting legacy static files cache file: %s', currentCacheFile)
     await rm(currentCacheFile)
   }
 }

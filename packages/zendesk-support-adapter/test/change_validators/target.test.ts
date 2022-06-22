@@ -44,6 +44,7 @@ describe('targetAuthDataValidator', () => {
     )
     expect(errors).toEqual([createChangeError(
       targetInstanceWithAuth.elemID,
+      targetInstanceWithAuth.value.title,
       client.getUrl().href,
       config.types.target.transformation?.serviceUrl
     )])
@@ -72,6 +73,7 @@ describe('targetAuthDataValidator', () => {
     )
     expect(errors).toEqual([createChangeError(
       targetInstanceWithAuth.elemID,
+      targetInstanceWithAuth.value.title,
       client.getUrl().href,
       config.types.target.transformation?.serviceUrl
     )])
@@ -85,6 +87,7 @@ describe('targetAuthDataValidator', () => {
     )
     expect(errors).toEqual([createChangeError(
       targetInstanceWithAuth.elemID,
+      targetInstanceWithAuth.value.title,
       client.getUrl().href,
       config.types.target.transformation?.serviceUrl
     )])

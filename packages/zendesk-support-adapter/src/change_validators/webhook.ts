@@ -27,8 +27,8 @@ export const createChangeError = (instanceElemId: ElemID, baseUrl: string): Chan
   detailedMessage: '',
   deployActions: {
     preAction: {
-      title: 'Current authentication data for a webhook will be overrided',
-      description: `Current authentication data for the webhook ${instanceElemId.name} will be overrided`,
+      title: 'Current authentication data for a webhook will be overridden',
+      description: `Current authentication data for the webhook ${instanceElemId.name} will be overridden`,
       subActions: [],
     },
     postAction: {

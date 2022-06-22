@@ -20,7 +20,7 @@ import ZendeskClient from '../client/client'
 import { TARGET_TYPE_NAME } from '../constants'
 
 export const createChangeError = (
-  instanceElemId: ElemID, baseUrl: string, serviceUrl?: string
+  instanceElemId: ElemID, instanceTitle: string, baseUrl: string, serviceUrl?: string
 ): ChangeError => ({
   elemID: instanceElemId,
   severity: 'Info',
@@ -28,17 +28,18 @@ export const createChangeError = (
   detailedMessage: '',
   deployActions: {
     preAction: {
-      title: 'Current authentication data for a target will be overrided',
-      description: `Current authentication data for the target ${instanceElemId.name} will be overrided`,
+      title: 'Current authentication data for a target will be overridden',
+      description: `Current authentication data for the target ${instanceElemId.name} will be overridden.
+You will have to re-enter it after deployment;  please make sure you have the appropriate authentication data`,
       subActions: [],
     },
     postAction: {
       title: 'Change target authentication data',
       description: `Please change the authentication data for the target ${instanceElemId.name} in the service`,
       subActions: [
-        `Go to zendesk Targets panel ${baseUrl}${serviceUrl?.slice(1)}`,
-        'Click on the edit button of the modified target',
-        'In the "Basic Authentication" enter the authentication data',
+        `In Zendesk, open the Targets panel at ${baseUrl}${serviceUrl?.slice(1)}`,
+        `Click on the edit button of the modified target, ${instanceTitle}`,
+        'In the "Basic Authentication" dialog, enter the correct authentication data',
         'Choose "Update target" in the select box',
         'Click "Submit"',
       ],
@@ -63,6 +64,7 @@ export const targetAuthDataValidator: (client: ZendeskClient, apiConfig: Zendesk
       .flatMap(instance => (
         [createChangeError(
           instance.elemID,
+          instance.value.title,
           client.getUrl().href,
           apiConfig.types.target.transformation?.serviceUrl,
         )]))

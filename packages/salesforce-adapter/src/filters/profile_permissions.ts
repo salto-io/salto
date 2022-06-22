@@ -109,7 +109,7 @@ const addMissingPermissions = async (
 
 const isAdminProfileChange = async (change: Change): Promise<boolean> => {
   const changeElem = getChangeData(change)
-  return isInstanceOfType(PROFILE_METADATA_TYPE)(changeElem)
+  return await isInstanceOfType(PROFILE_METADATA_TYPE)(changeElem)
     && await apiName(changeElem) === ADMIN_PROFILE
 }
 

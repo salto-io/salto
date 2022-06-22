@@ -286,15 +286,15 @@ export const loggerRepo = (
         const pinoLogger = pinoLoggerWithoutTags.child(
           normalizeLogTags({ ...namespaceTags, ...global.globalLogTags })
         )
-        const [formatted, unconsumedArgs] = typeof message === 'string'
+        const [formattedOrError, unconsumedArgs] = typeof message === 'string'
           ? formatMessage(config, message, ...args)
           : [message, args]
 
-        if (_.isError(formatted)) {
-          logFull(pinoLogger, level, unconsumedArgs, formatted)
+        if (_.isError(formattedOrError)) {
+          logFull(pinoLogger, level, unconsumedArgs, formattedOrError)
           return
         }
-        const chunks = getLogMessageChunks(formatted, config.maxLogChunkSize)
+        const chunks = getLogMessageChunks(formattedOrError, config.maxLogChunkSize)
         logChunks(pinoLogger, level, unconsumedArgs, chunks)
       },
       assignGlobalTags(logTags?: LogTags): void {

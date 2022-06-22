@@ -16,6 +16,7 @@
 import * as fs from 'fs'
 import * as tmp from 'tmp-promise'
 import { EOL } from 'os'
+import _ from 'lodash'
 import { LogTags } from '../../src'
 import { mockConsoleStream, MockWritableStream } from '../console'
 import { LogLevel, LOG_LEVELS } from '../../src/internal/level'
@@ -352,21 +353,70 @@ describe('pino based logger', () => {
       const logTags = { number: 1, string: '1', bool: true }
 
       describe('text format', () => {
-        beforeEach(async () => {
+        const LOG_MESSAGE = 'Test log message'
+        const ESC_CHAR_RE = /\[\d+m/
+        const LOG_ID_RE = /logId="(.*)"/
+        const CHUNK_INDEX_RE = /chunkIndex=(\d+)/
+
+        const extractMessage = (l: string): string | undefined => (
+            l.split(ESC_CHAR_RE).pop()?.trimLeft()
+        )
+
+        beforeEach(() => {
           initialConfig.globalTags = logTags
           logger = createLogger()
-          await logLine({ level: 'warn' })
         })
         it('line should contain log tags', async () => {
+          await logLine({ level: 'warn' })
           expect(line).toContain('number=1')
           expect(line).toContain('string="1"')
           expect(line).toContain('bool=true')
         })
-        it('line should contain basic log data', () => {
+        it('line should contain basic log data', async () => {
+          await logLine({ level: 'warn' })
           expect(line).toMatch(TIMESTAMP_REGEX)
           expect(line).toContain(NAMESPACE)
           expect(line).toContain('warn')
           expect(line).toContain('hello { world: true }')
+        })
+        describe('when log is split into chunks', () => {
+          let lines: string[]
+
+          beforeEach(() => {
+            initialConfig.maxLogChunkSize = 5
+            logger = createLogger()
+            logger.assignTags(logTags)
+            logger.log('warn', LOG_MESSAGE)
+            lines = consoleStream.contents().split(EOL).filter(l => l !== '')
+          })
+
+          it('should log the full message in chunks', () => {
+            const reformedLog = lines.map(extractMessage).join('')
+            expect(reformedLog).toEqual(LOG_MESSAGE)
+          })
+          it('should add the same logId to each chunk', () => {
+            const logIds = lines.map(l => _.get(LOG_ID_RE.exec(l), '1'))
+            expect(new Set(logIds).size).toEqual(1)
+          })
+          it('should add correct index to each chunk', () => {
+            const chunkIndexes = lines
+              .map(l => _.get(CHUNK_INDEX_RE.exec(l), '1'))
+              .map(_.toNumber)
+            expect(chunkIndexes).toEqual(Array.from(Array(lines.length).keys()))
+          })
+        })
+        describe('when log is not split into chunks', () => {
+          beforeEach(() => {
+            logger = createLogger()
+            logger.log('warn', LOG_MESSAGE)
+          })
+
+          it('should log a single line with no chunk log tags', () => {
+            const nonChunkedLog = consoleStream.contents().split(EOL)[0]
+            expect(extractMessage(nonChunkedLog)).toEqual(LOG_MESSAGE)
+            expect(CHUNK_INDEX_RE.exec(nonChunkedLog)).toBeNull()
+            expect(LOG_ID_RE.exec(nonChunkedLog)).toBeNull()
+          })
         })
       })
       describe('json format', () => {

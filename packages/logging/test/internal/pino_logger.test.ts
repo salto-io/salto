@@ -907,7 +907,7 @@ describe('pino based logger', () => {
     })
 
     it('should return a Config instance', () => {
-      const expectedProperties = 'minLevel filename format namespaceFilter colorize globalTags maxJsonMessageSize'
+      const expectedProperties = 'minLevel filename format namespaceFilter colorize globalTags maxJsonMessageSize maxLogChunkSize'
         .split(' ')
         .sort()
 
@@ -1063,6 +1063,45 @@ describe('pino based logger', () => {
           expect(line).toContain('"secondExcess":{"complex":"data"}')
           expect(line).toContain('"arg1":"mixExcessArgs"')
           expect(line).toContain('"arg2":"moreExcess"')
+        })
+      })
+
+      describe('when log is split into chunks', () => {
+        const LOG_MESSAGE = 'Test log message'
+        let lines: string[]
+        beforeEach(() => {
+          initialConfig.maxLogChunkSize = 5
+          logger = createLogger()
+          logger.assignTags(logTags)
+          logger.log('warn', LOG_MESSAGE)
+          lines = consoleStream.contents().split(EOL).filter(l => l !== '')
+        })
+
+        it('should log the full message in chunks', () => {
+          const reformedLog = lines.map(l => JSON.parse(l).message).join('')
+          expect(reformedLog).toEqual(LOG_MESSAGE)
+        })
+        it('should add the same logId to each chunk', () => {
+          const logIds = lines.map(l => JSON.parse(l).logId)
+          expect(new Set(logIds).size).toEqual(1)
+        })
+        it('should add correct index to each chunk', () => {
+          const chunkIndexes = lines.map(l => JSON.parse(l).chunkIndex)
+          expect(chunkIndexes).toEqual(Array.from(Array(lines.length).keys()))
+        })
+      })
+      describe('when log is not split into chunks', () => {
+        const LOG_MESSAGE = 'Test log message'
+        beforeEach(() => {
+          logger = createLogger()
+          logger.log('warn', LOG_MESSAGE)
+        })
+
+        it('should log a single line with no chunk log tags', () => {
+          const nonChunkedLog = JSON.parse(consoleStream.contents())
+          expect(nonChunkedLog.message).toEqual(LOG_MESSAGE)
+          expect(nonChunkedLog.chunkIndex).toBeUndefined()
+          expect(nonChunkedLog.logId).toBeUndefined()
         })
       })
     })

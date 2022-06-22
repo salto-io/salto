@@ -26,6 +26,7 @@ import chalk from 'chalk'
 import safeStringify from 'fast-safe-stringify'
 import { streams, collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { v4 as uuidv4 } from 'uuid'
 import {
   toHexColor as namespaceToHexColor,
   Namespace,
@@ -201,10 +202,10 @@ export const loggerRepo = (
     } : false,
     formatters: {
       level: (level: string) => ({ level: level.toLowerCase() }),
-      log: (object: object) => {
+      log: (obj: object) => {
         // When config is text leave the formatting for prettifier.
-        if (config.format === 'json') return formatJsonLog(object as FormatterBaseInput)
-        return object
+        if (config.format === 'json') return formatJsonLog(obj as FormatterBaseInput)
+        return obj
       },
       bindings: (bindings: pino.Bindings) => _.omit(bindings, [...excessDefaultPinoKeys]),
     },
@@ -217,6 +218,61 @@ export const loggerRepo = (
   const childrenByNamespace = new collections.map.DefaultMap<string, pino.Logger>(
     (namespace: string) => rootPinoLogger.child({ name: namespace })
   )
+
+  const getLogMessageChunks = (message: string, chunkSize: number): string[] => {
+    // Handle empty string message
+    if (message.length === 0) {
+      return [message]
+    }
+    const numberOfChunks = Math.ceil(message.length / chunkSize)
+    const chunks = new Array(numberOfChunks)
+    for (let i = 0, j = 0; i < numberOfChunks; i += 1, j += chunkSize) {
+      chunks[i] = message.substr(j, chunkSize)
+    }
+    return chunks
+  }
+
+  const createLogArgs = (unconsumedArgs: unknown[], message: string | Error): unknown[] => (
+    unconsumedArgs.length
+      ? [
+        // mark excessArgs for optional formatting later
+        { excessArgs: unconsumedArgs },
+        message,
+      ]
+      : [message]
+  )
+
+  const logFull = (
+    pinoLogger: pino.Logger,
+    level: LogLevel,
+    unconsumedArgs: unknown[],
+    message: string | Error
+  ): void => (
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    pinoLogger[level](...createLogArgs(unconsumedArgs, message))
+  )
+
+  const logChunks = (
+    pinoLogger: pino.Logger,
+    level: LogLevel,
+    unconsumedArgs: unknown[],
+    chunks: string[]
+  ): void => {
+    if (chunks.length === 1) {
+      logFull(pinoLogger, level, unconsumedArgs, chunks[0])
+      return
+    }
+    const logUuid = uuidv4()
+    for (let i = 0; i < chunks.length; i += 1) {
+      const chunkTags = { chunkIndex: i, logId: logUuid }
+      const loggerWithChunkTags = pinoLogger.child(normalizeLogTags(chunkTags))
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      loggerWithChunkTags[level](...createLogArgs(unconsumedArgs, chunks[i]))
+    }
+  }
+
 
   const loggerMaker: BaseLoggerMaker = (namespace: Namespace) => {
     const pinoLoggerWithoutTags = childrenByNamespace.get(namespace)
@@ -234,17 +290,12 @@ export const loggerRepo = (
           ? formatMessage(config, message, ...args)
           : [message, args]
 
-        const logArgs = unconsumedArgs.length
-          ? [
-            // mark excessArgs for optional formatting later
-            { excessArgs: unconsumedArgs },
-            formatted,
-          ]
-          : [formatted]
-
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        pinoLogger[level](...logArgs)
+        if (_.isError(formatted)) {
+          logFull(pinoLogger, level, unconsumedArgs, formatted)
+          return
+        }
+        const chunks = getLogMessageChunks(formatted, config.maxLogChunkSize)
+        logChunks(pinoLogger, level, unconsumedArgs, chunks)
       },
       assignGlobalTags(logTags?: LogTags): void {
         if (!logTags) global.globalLogTags = {}

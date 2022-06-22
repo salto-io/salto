@@ -126,6 +126,12 @@ module.exports = {
         '@typescript-eslint/explicit-module-boundary-types': ['off'],
         '@typescript-eslint/return-await': ['error', 'in-try-catch'],
         '@typescript-eslint/no-floating-promises': ['error'],
+        '@typescript-eslint/no-misused-promises': [
+          'error', 
+          { 
+            'checksVoidReturn': false,
+          }
+        ],
         'jest/valid-describe': ['off'],
         'import/extensions': [ 'error', 'never', {
             'json': 'always',

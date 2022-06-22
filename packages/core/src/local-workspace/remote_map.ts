@@ -244,7 +244,7 @@ const closeTmpConnection = async (
 
 export const closeRemoteMapsOfLocation = async (location: string): Promise<void> => {
   const persistentConnection = persistentDBConnections[location]
-  if (persistentConnection) {
+  if (await persistentConnection) {
     await closeConnection(location, persistentConnection, persistentDBConnections)
   }
   const tmpConnections = tmpDBConnections[location]
@@ -255,7 +255,7 @@ export const closeRemoteMapsOfLocation = async (location: string): Promise<void>
     delete tmpDBConnections[location]
   }
   const readOnlyConnection = readonlyDBConnections[location]
-  if (readOnlyConnection) {
+  if (await readOnlyConnection) {
     await closeConnection(location, readOnlyConnection, readonlyDBConnections)
   }
   const roConnectionsPerMap = readonlyDBConnectionsPerRemoteMap[location]

@@ -19,7 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import _, { isString } from 'lodash'
+import _ from 'lodash'
 import { FilterCreator } from '../filter'
 
 const { awu } = collections.asynciterable
@@ -43,6 +43,8 @@ const saltoTypeToZendeskReferenceType = Object.fromEntries(
 )
 
 const potentialReferenceTypes = ['ticket.ticket_field', 'ticket.ticket_field_option_title']
+const potentialMacroFields = ['comment_value', 'comment_value_html']
+const potentialTriggerFields = ['notification_webhook', 'notification_user']
 const NoValidator = (): boolean => true
 const potentialTemplates: PotentialTemplateField[] = [
   {
@@ -50,7 +52,7 @@ const potentialTemplates: PotentialTemplateField[] = [
     pathToContainer: ['actions'],
     fieldName: 'value',
     containerValidator: (container: Values): boolean =>
-      container.field === 'comment_value' || container.field === 'comment_value_html',
+      potentialMacroFields.includes(container.field),
   },
   {
     instanceType: 'target',
@@ -67,7 +69,7 @@ const potentialTemplates: PotentialTemplateField[] = [
     pathToContainer: ['actions'],
     fieldName: 'value',
     containerValidator: (container: Values): boolean =>
-      container.field === 'notification_webhook' || container.field === 'notification_user',
+      potentialTriggerFields.includes(container.field),
   },
 ]
 
@@ -107,7 +109,7 @@ const formulaToTemplate = (formula: string,
       }
       return expression
     })
-  if (templateParts.every(isString)) {
+  if (templateParts.every(_.isString)) {
     return templateParts.join('')
   }
   return new TemplateExpression({ parts: templateParts })
@@ -135,7 +137,7 @@ const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promi
     container.values.forEach(value => {
       if (Array.isArray(value[fieldName])) {
         value[fieldName] = value[fieldName].map((innerValue: unknown) =>
-          (isString(innerValue) ? formulaToTemplate(innerValue, instancesByType) : innerValue))
+          (_.isString(innerValue) ? formulaToTemplate(innerValue, instancesByType) : innerValue))
       } else if (value[fieldName]) {
         value[fieldName] = formulaToTemplate(value[fieldName], instancesByType)
       }
@@ -165,18 +167,13 @@ const filterCreator: FilterCreator = () => {
             deployTemplateMapping[templateUsingIdField.value] = template
             return templateUsingIdField.value
           }
+          const replaceIfTemplate = (value: unknown): unknown =>
+            (isTemplateExpression(value) ? handleTemplateValue(value) : value)
           container.values.forEach(value => {
             if (Array.isArray(value[fieldName])) {
-              value[fieldName] = value[fieldName].map(
-                (innerValue: TemplateExpression | unknown) => {
-                  if (isTemplateExpression(innerValue)) {
-                    return handleTemplateValue(innerValue)
-                  }
-                  return innerValue
-                }
-              )
-            } else if (isTemplateExpression(value[fieldName])) {
-              value[fieldName] = handleTemplateValue(value[fieldName])
+              value[fieldName] = value[fieldName].map(replaceIfTemplate)
+            } else {
+              value[fieldName] = replaceIfTemplate(value[fieldName])
             }
           })
         }

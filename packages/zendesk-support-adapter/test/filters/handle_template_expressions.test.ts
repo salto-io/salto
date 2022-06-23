@@ -88,18 +88,17 @@ describe('handle templates filter', () => {
   const macro2 = new InstanceElement('macro2', testType, { id: 1002, actions: [{ value: '{{ticket.ticket_field_1452}}', field: 'comment_value' }] })
   const macro3 = new InstanceElement('macro3', testType, { id: 1003, actions: [{ value: 'multiple refs {{ticket.ticket_field_1452}} and {{ticket.ticket_field_option_title_1453}}', field: 'comment_value_html' }] })
   const macroAlmostTemplate = new InstanceElement('macroAlmost', testType, { id: 1001, actions: [{ value: 'almost template {{ticket.not_an_actual_field_1452}} and {{ticket.ticket_field_1454}}', field: 'comment_value_html' }] })
-
+  const macroAlmostTemplate2 = new InstanceElement('macroAlmost2', testType, { id: 1001, actions: [{ value: '{{ticket.ticket_field_1452}}', field: 'not_template_field' }] })
   const target = new InstanceElement('target', targetType, { id: 1004, target_url: 'url: {{ticket.ticket_field_1452}}' })
   const trigger = new InstanceElement('trigger', triggerType, { id: 1005, actions: [{ value: 'ticket: {{ticket.ticket_field_1452}}', field: 'notification_webhook' }] })
   const webhook = new InstanceElement('webhook', webhookType, { id: 1006, endpoint: 'endpoint: {{ticket.ticket_field_1452}}' })
 
   const generateElements = (): (InstanceElement | ObjectType)[] => ([testType, placeholder1Type,
     placeholder2Type, placeholder1, placeholder2, macro1, macro2, macro3, macroAlmostTemplate,
-    target, trigger, webhook, targetType, triggerType, webhookType])
+    macroAlmostTemplate2, target, trigger, webhook, targetType, triggerType, webhookType])
     .map(element => element.clone())
 
   describe('on fetch', () => {
-    let fetchedMacroAlmostTemplate: InstanceElement | undefined
     let elements: (InstanceElement | ObjectType)[]
 
     beforeAll(async () => {
@@ -113,8 +112,10 @@ describe('handle templates filter', () => {
     })
 
     it('should resolve almost-template normally', () => {
-      fetchedMacroAlmostTemplate = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroAlmost')
+      const fetchedMacroAlmostTemplate = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroAlmost')
       expect(fetchedMacroAlmostTemplate?.value.actions[0].value).toEqual('almost template {{ticket.not_an_actual_field_1452}} and {{ticket.ticket_field_1454}}')
+      const fetchedMacroAlmostTemplate2 = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroAlmost2')
+      expect(fetchedMacroAlmostTemplate2?.value.actions[0].value).toEqual('{{ticket.ticket_field_1452}}')
     })
 
     it('should resolve one template correctly', () => {

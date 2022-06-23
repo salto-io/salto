@@ -356,7 +356,7 @@ const validateAnnotationsValue = (
     const maxListLength = restrictions.max_list_length
     if ((values.isDefined(maxListLength) && value.length > maxListLength)) {
       return [new InvalidValueMaxListLengthValidationError(
-        { elemID, size: value.length, fieldName: elemID.name, maxListLength: maxListLength }
+        { elemID, size: value.length, fieldName: elemID.name, maxListLength }
       )]
     }
   }

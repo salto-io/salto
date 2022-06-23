@@ -45,7 +45,7 @@ import {
   InvalidValueMaxLengthValidationError,
   isValidationError,
   InvalidTypeValidationError,
-  InvalidValueMaxContainerSizeValidationError,
+  InvalidValueMaxListLengthValidationError,
 } from '../validator'
 
 // There are two issues with naive json stringification:
@@ -99,7 +99,7 @@ const NameToType = {
   InvalidValueRangeValidationError: InvalidValueRangeValidationError,
   InvalidValueMaxLengthValidationError: InvalidValueMaxLengthValidationError,
   InvalidTypeValidationError: InvalidTypeValidationError,
-  InvalidValueMaxContainerSizeValidationError: InvalidValueMaxContainerSizeValidationError,
+  InvalidValueMaxListLengthValidationError: InvalidValueMaxListLengthValidationError,
 }
 const nameToTypeEntries = Object.entries(NameToType)
 const possibleTypes = Object.values(NameToType)
@@ -417,12 +417,12 @@ const generalDeserialize = async <T>(
           maxLength: v.maxLength,
         })
       ),
-      InvalidValueMaxContainerSizeValidationError: v => (
-        new InvalidValueMaxContainerSizeValidationError({
+      InvalidValueMaxListLengthValidationError: v => (
+        new InvalidValueMaxListLengthValidationError({
           elemID: reviveElemID(v.elemID),
           fieldName: v.fieldName,
           size: v.size,
-          maxContainerSize: v.maxContainerSize,
+          maxListLength: v.maxContainerSize,
         })
       ),
       InvalidTypeValidationError: v => (

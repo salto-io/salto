@@ -27,7 +27,7 @@ import {
   InvalidStaticFileError,
   RegexMismatchValidationError,
   InvalidValueMaxLengthValidationError,
-  InvalidValueMaxContainerSizeValidationError,
+  InvalidValueMaxListLengthValidationError,
 } from '../src/validator'
 import { MissingStaticFile, AccessDeniedStaticFile } from '../src/workspace/static_files/common'
 import { IllegalReference } from '../src/parser/parse'
@@ -230,7 +230,7 @@ describe('Elements validation', () => {
         refType: new ListType(BuiltinTypes.STRING),
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-            max_container_size: 6,
+            max_list_length: 6,
           }),
         },
       },
@@ -1214,7 +1214,7 @@ describe('Elements validation', () => {
             ])
           )
           expect(errors).toHaveLength(1)
-          expect(errors[0]).toBeInstanceOf(InvalidValueMaxContainerSizeValidationError)
+          expect(errors[0]).toBeInstanceOf(InvalidValueMaxListLengthValidationError)
           expect(errors[0].message).toMatch('Value "one,two,three,four,five,six,seven,eight,nine,ten" is too large for field')
           expect(errors[0].message).toMatch('restrictedListLength maximum length is 6')
           expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('restrictedListLength'))

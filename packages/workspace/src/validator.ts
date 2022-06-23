@@ -186,22 +186,22 @@ export class InvalidValueMaxLengthValidationError extends ValidationError {
   }
 }
 
-export class InvalidValueMaxContainerSizeValidationError extends ValidationError {
+export class InvalidValueMaxListLengthValidationError extends ValidationError {
   readonly size: number
   readonly fieldName: string
-  readonly maxContainerSize: number
+  readonly maxListLength: number
 
-  constructor({ elemID, size, fieldName, maxContainerSize }:
-                { elemID: ElemID; size: number; fieldName: string; maxContainerSize: number }) {
+  constructor({ elemID, size, fieldName, maxListLength }:
+                { elemID: ElemID; size: number; fieldName: string; maxListLength: number }) {
     super({
       elemID,
       error: `List of size "${size}" is too large for field.`
-        + ` ${fieldName} maximum length is ${maxContainerSize}`,
+        + ` ${fieldName} maximum length is ${maxListLength}`,
       severity: 'Warning',
     })
     this.size = size
     this.fieldName = fieldName
-    this.maxContainerSize = maxContainerSize
+    this.maxListLength = maxListLength
   }
 }
 
@@ -353,10 +353,10 @@ const validateAnnotationsValue = (
   }
 
   if (isListType(type) && shouldEnforceValue() && _.isArray(value)) {
-    const maxContainerSize = restrictions.max_container_size
-    if ((values.isDefined(maxContainerSize) && value.length > maxContainerSize)) {
-      return [new InvalidValueMaxContainerSizeValidationError(
-        { elemID, size: value.length, fieldName: elemID.name, maxContainerSize }
+    const maxListLength = restrictions.max_list_length
+    if ((values.isDefined(maxListLength) && value.length > maxListLength)) {
+      return [new InvalidValueMaxListLengthValidationError(
+        { elemID, size: value.length, fieldName: elemID.name, maxListLength: maxListLength }
       )]
     }
   }

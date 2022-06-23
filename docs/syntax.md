@@ -323,7 +323,7 @@ Type:
 - max: `number`- relevant for number fields, specifies the maximum valid value (inclusive).
 - regex: `string` - relevant for string fields, specifies a pattern that values must match.
 - max_length: `number` - relevant for string fields, specifies the maximum valid length for the field.
-- max_container_size: `number` - relevant for list fields, specifies the maximum allowed values in the list.
+- max_list_length: `number` - relevant for list fields, specifies the maximum allowed values in the list.
 
 Default: `undefined`
 Applicable to: Fields

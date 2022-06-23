@@ -64,8 +64,6 @@ const primitiveValidators = {
 
 /**
  * Validate that all type fields values corresponding with core annotations (required, values)
- * @param value
- * @param type
  */
 const validateAnnotations = (
   elemID: ElemID,
@@ -189,19 +187,19 @@ export class InvalidValueMaxLengthValidationError extends ValidationError {
 }
 
 export class InvalidValueMaxContainerSizeValidationError extends ValidationError {
-  readonly value: Value
+  readonly size: number
   readonly fieldName: string
   readonly maxContainerSize: number
 
-  constructor({ elemID, value, fieldName, maxContainerSize }:
-                { elemID: ElemID; value: Value; fieldName: string; maxContainerSize: number }) {
+  constructor({ elemID, size, fieldName, maxContainerSize }:
+                { elemID: ElemID; size: number; fieldName: string; maxContainerSize: number }) {
     super({
       elemID,
-      error: `Value "${value}" is too large for field.`
+      error: `List of size "${size}" is too large for field.`
         + ` ${fieldName} maximum length is ${maxContainerSize}`,
       severity: 'Warning',
     })
-    this.value = value
+    this.size = size
     this.fieldName = fieldName
     this.maxContainerSize = maxContainerSize
   }
@@ -354,12 +352,11 @@ const validateAnnotationsValue = (
     return validateRequiredValue()
   }
 
-  if (isListType(type) && shouldEnforceValue()) {
+  if (isListType(type) && shouldEnforceValue() && _.isArray(value)) {
     const maxContainerSize = restrictions.max_container_size
-    if ((values.isDefined(maxContainerSize)
-      && _.isArray(value) && value.length > maxContainerSize)) {
+    if ((values.isDefined(maxContainerSize) && value.length > maxContainerSize)) {
       return [new InvalidValueMaxContainerSizeValidationError(
-        { elemID, value: value.toString(), fieldName: elemID.name, maxContainerSize }
+        { elemID, size: value.length, fieldName: elemID.name, maxContainerSize }
       )]
     }
   }
@@ -389,8 +386,6 @@ const mapAsArrayWithIds = <T>(value: T | T[], elemID: ElemID): ItemWithNestedId<
 
 /**
  * Validate that field values corresponding with core annotations (_required, _values, _restriction)
- * @param value- the field value
- * @param field
  */
 const validateFieldAnnotations = (
   elemID: ElemID, value: Value, field: Field
@@ -604,7 +599,7 @@ const syncGetElementAnnotationTypes = (
     ...InstanceAnnotationTypes,
     ..._.pickBy(
       _.mapValues(type?.annotationRefTypes, ref => ref.type),
-      // We assume all elements are resolved and therefore we know the types are defined and this
+      // We assume all elements are resolved, and therefore we know the types are defined and this
       // filter won't actually omit anything
       values.isDefined,
     ),

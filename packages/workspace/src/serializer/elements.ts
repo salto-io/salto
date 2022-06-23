@@ -421,7 +421,7 @@ const generalDeserialize = async <T>(
         new InvalidValueMaxContainerSizeValidationError({
           elemID: reviveElemID(v.elemID),
           fieldName: v.fieldName,
-          value: v.value,
+          size: v.size,
           maxContainerSize: v.maxContainerSize,
         })
       ),

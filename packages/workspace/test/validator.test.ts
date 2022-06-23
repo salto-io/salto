@@ -2192,12 +2192,12 @@ describe('Elements validation', () => {
     const elemID = new ElemID('adapter', 'bla')
     it('should have correct message for missing', () =>
       expect(
-        new InvalidStaticFileError({ elemID, value: new MissingStaticFile('path') })
+        new InvalidStaticFileError({ elemID, error: new MissingStaticFile('path').message })
           .message
       ).toEqual('Error validating "adapter.bla": Missing static file: path'))
     it('should have correct message for invalid', () =>
       expect(
-        new InvalidStaticFileError({ elemID, value: new AccessDeniedStaticFile('path') })
+        new InvalidStaticFileError({ elemID, error: new AccessDeniedStaticFile('path').message })
           .message
       ).toEqual('Error validating "adapter.bla": Unable to access static file: path'))
   })

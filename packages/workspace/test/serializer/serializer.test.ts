@@ -40,7 +40,7 @@ import { MultiplePrimitiveTypesError } from '../../src/merger/internal/primitive
 import { DuplicateVariableNameError } from '../../src/merger/internal/variables'
 import { CircularReferenceValidationError, IllegalReferenceValidationError, MissingRequiredFieldValidationError, RegexMismatchValidationError, InvalidValueRangeValidationError, InvalidStaticFileError, InvalidTypeValidationError } from '../../src/validator'
 import { UnresolvedReferenceValidationError } from '../../src/errors'
-import { MissingStaticFile } from '../../src/workspace/static_files'
+import { MissingStaticFile, AccessDeniedStaticFile } from '../../src/workspace/static_files'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 
 const { awu } = collections.asynciterable
@@ -170,6 +170,8 @@ describe('State/cache serialization', () => {
     {
       file: new StaticFile({ filepath: 'some/path.ext', hash: 'hash' }),
       fileWithEncoding: new StaticFile({ filepath: 'some/pathWithEncoding.ext', hash: 'hash', encoding: 'utf-8' }),
+      missingFile: new MissingStaticFile('some/missing/path.txt'),
+      noAccessFile: new AccessDeniedStaticFile('some/privileged/path.txt'),
       singleparam: new TestFuncImpl('funcadelic', ['aaa']),
       multipleparams: new TestFuncImpl('george', [false, 321]),
       withlist: new TestFuncImpl('washington', ['ZOMG', [3, 2, 1]]),
@@ -323,6 +325,16 @@ describe('State/cache serialization', () => {
       expect(funcElement.value).toHaveProperty('fileWithEncoding', { filepath: 'some/pathWithEncoding.ext', hash: 'hash', encoding: 'utf-8' })
       expect(funcElement.value.fileWithEncoding).toBeInstanceOf(StaticFile)
     })
+    it('missing file', () => {
+      expect(funcElement.value).toHaveProperty('missingFile')
+      expect(funcElement.value.missingFile).toBeInstanceOf(MissingStaticFile)
+      expect(funcElement.value.missingFile.filepath).toEqual('some/missing/path.txt')
+    })
+    it('access denied file', () => {
+      expect(funcElement.value).toHaveProperty('noAccessFile')
+      expect(funcElement.value.noAccessFile).toBeInstanceOf(AccessDeniedStaticFile)
+      expect(funcElement.value.noAccessFile.filepath).toEqual('some/privileged/path.txt')
+    })
     it('nested parameter', () => {
       expect(funcElement.value).toHaveProperty('nested', {
         WAT: {
@@ -456,7 +468,7 @@ describe('State/cache serialization', () => {
     const validationErrors = _.sortBy([
       new InvalidStaticFileError({
         elemID: new ElemID('salto', 'InvalidStaticFileError'),
-        value: new MissingStaticFile('invalid'),
+        error: new MissingStaticFile('invalid').message,
       }),
       new CircularReferenceValidationError({
         elemID: new ElemID('salto', 'CircularReferenceValidationError'),

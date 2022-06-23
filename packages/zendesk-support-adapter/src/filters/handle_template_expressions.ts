@@ -19,7 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import _, { isArray, isString } from 'lodash'
+import _, { isString } from 'lodash'
 import { FilterCreator } from '../filter'
 
 const { awu } = collections.asynciterable
@@ -43,7 +43,7 @@ const saltoTypeToZendeskReferenceType = Object.fromEntries(
 )
 
 const potentialReferenceTypes = ['ticket.ticket_field', 'ticket.ticket_field_option_title']
-
+const NoValidator = (): boolean => true
 const potentialTemplates: PotentialTemplateField[] = [
   {
     instanceType: 'macro',
@@ -55,12 +55,12 @@ const potentialTemplates: PotentialTemplateField[] = [
   {
     instanceType: 'target',
     fieldName: 'target_url',
-    containerValidator: (_container: Values): boolean => true,
+    containerValidator: NoValidator,
   },
   {
     instanceType: 'webhook',
     fieldName: 'endpoint',
-    containerValidator: (_container: Values): boolean => true,
+    containerValidator: NoValidator,
   },
   {
     instanceType: 'trigger',
@@ -131,9 +131,9 @@ const getContainers = async (instances: InstanceElement[]): Promise<
 const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promise<void> =>
   (await getContainers(instances)).forEach(container => {
     const { fieldName } = container.template
+    const instancesByType = _.groupBy(instances, i => i.elemID.typeName)
     container.values.forEach(value => {
-      const instancesByType = _.groupBy(instances, i => i.elemID.typeName)
-      if (isArray(value[fieldName])) {
+      if (Array.isArray(value[fieldName])) {
         value[fieldName] = value[fieldName].map((innerValue: unknown) =>
           (isString(innerValue) ? formulaToTemplate(innerValue, instancesByType) : innerValue))
       } else if (value[fieldName]) {
@@ -166,7 +166,7 @@ const filterCreator: FilterCreator = () => {
             return templateUsingIdField.value
           }
           container.values.forEach(value => {
-            if (isArray(value[fieldName])) {
+            if (Array.isArray(value[fieldName])) {
               value[fieldName] = value[fieldName].map(
                 (innerValue: TemplateExpression | unknown) => {
                   if (isTemplateExpression(innerValue)) {

@@ -195,7 +195,7 @@ export class InvalidValueMaxListLengthValidationError extends ValidationError {
                 { elemID: ElemID; size: number; fieldName: string; maxListLength: number }) {
     super({
       elemID,
-      error: `List of size "${size}" is too large for field.`
+      error: `List of size ${size} is too large for field.`
         + ` ${fieldName} maximum length is ${maxListLength}`,
       severity: 'Warning',
     })

@@ -1215,7 +1215,7 @@ describe('Elements validation', () => {
           )
           expect(errors).toHaveLength(1)
           expect(errors[0]).toBeInstanceOf(InvalidValueMaxListLengthValidationError)
-          expect(errors[0].message).toMatch('Value "one,two,three,four,five,six,seven,eight,nine,ten" is too large for field')
+          expect(errors[0].message).toMatch('List of size 10 is too large for field')
           expect(errors[0].message).toMatch('restrictedListLength maximum length is 6')
           expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('restrictedListLength'))
         })

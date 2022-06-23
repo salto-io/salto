@@ -19,7 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import _, { isString } from 'lodash'
+import _, { isArray, isString } from 'lodash'
 import { FilterCreator } from '../filter'
 
 const { awu } = collections.asynciterable
@@ -27,7 +27,7 @@ const log = logger(module)
 
 type PotentialTemplateField = {
   instanceType: string
-  pathToContainer: string[]
+  pathToContainer?: string[]
   fieldName: string
   containerValidator: (container: Values) => boolean
 }
@@ -50,7 +50,24 @@ const potentialTemplates: PotentialTemplateField[] = [
     pathToContainer: ['actions'],
     fieldName: 'value',
     containerValidator: (container: Values): boolean =>
-      container.field === 'comment_value_html',
+      container.field === 'comment_value' || container.field === 'comment_value_html',
+  },
+  {
+    instanceType: 'target',
+    fieldName: 'target_url',
+    containerValidator: (_container: Values): boolean => true,
+  },
+  {
+    instanceType: 'webhook',
+    fieldName: 'endpoint',
+    containerValidator: (_container: Values): boolean => true,
+  },
+  {
+    instanceType: 'trigger',
+    pathToContainer: ['actions'],
+    fieldName: 'value',
+    containerValidator: (container: Values): boolean =>
+      container.field === 'notification_webhook' || container.field === 'notification_user',
   },
 ]
 
@@ -104,16 +121,24 @@ const getContainers = async (instances: InstanceElement[]): Promise<
       t => instance.elemID.typeName === t.instanceType
     ).map(template => ({
       template,
-      values: _.get(instance.value, template.pathToContainer, [])
-        .filter(template.containerValidator),
+      values: [
+        template.pathToContainer
+          ? _.get(instance.value, template.pathToContainer, [])
+          : instance.value,
+      ].flat().filter(template.containerValidator),
     }))).flat()
 
 const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promise<void> =>
   (await getContainers(instances)).forEach(container => {
     const { fieldName } = container.template
     container.values.forEach(value => {
-      value[fieldName] = formulaToTemplate(value[fieldName],
-        _.groupBy(instances, i => i.elemID.typeName))
+      const instancesByType = _.groupBy(instances, i => i.elemID.typeName)
+      if (isArray(value[fieldName])) {
+        value[fieldName] = value[fieldName].map((innerValue: unknown) =>
+          (isString(innerValue) ? formulaToTemplate(innerValue, instancesByType) : innerValue))
+      } else if (value[fieldName]) {
+        value[fieldName] = formulaToTemplate(value[fieldName], instancesByType)
+      }
     })
   })
 
@@ -125,7 +150,7 @@ const filterCreator: FilterCreator = () => {
   return ({
     onFetch: async (elements: Element[]): Promise<void> => log.time(async () =>
       replaceFormulasWithTemplates(elements.filter(isInstanceElement)), 'Create template creation filter'),
-    preDeploy: (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () =>
+    preDeploy: (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () => {
       (await getContainers(await awu(changes).map(getChangeData).toArray())).forEach(
         async container => {
           const { fieldName } = container.template
@@ -141,13 +166,23 @@ const filterCreator: FilterCreator = () => {
             return templateUsingIdField.value
           }
           container.values.forEach(value => {
-            if (isTemplateExpression(value[fieldName])) {
+            if (isArray(value[fieldName])) {
+              value[fieldName] = value[fieldName].map(
+                (innerValue: TemplateExpression | unknown) => {
+                  if (isTemplateExpression(innerValue)) {
+                    return handleTemplateValue(innerValue)
+                  }
+                  return innerValue
+                }
+              )
+            } else if (isTemplateExpression(value[fieldName])) {
               value[fieldName] = handleTemplateValue(value[fieldName])
             }
           })
         }
-      ), 'Create template resolve filter'),
-    onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () => {
+      )
+    }, 'Create template resolve filter'),
+    onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () =>
       (await getContainers(await awu(changes).map(getChangeData).toArray()))
         .forEach(async container => {
           const { fieldName } = container.template
@@ -156,8 +191,7 @@ const filterCreator: FilterCreator = () => {
           container.values.forEach(value => {
             value[fieldName] = restoreTemplate(value[fieldName])
           })
-        })
-    }, 'Create templates restore filter'),
+        }), 'Create templates restore filter'),
   })
 }
 

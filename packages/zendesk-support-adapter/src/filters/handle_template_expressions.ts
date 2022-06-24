@@ -43,8 +43,11 @@ const saltoTypeToZendeskReferenceType = Object.fromEntries(
 )
 
 const potentialReferenceTypes = ['ticket.ticket_field', 'ticket.ticket_field_option_title']
-const potentialMacroFields = ['comment_value', 'comment_value_html']
-const potentialTriggerFields = ['notification_webhook', 'notification_user']
+const potentialMacroFields = ['comment_value', 'comment_value_html', 'side_conversation']
+// triggers and automations notify users, webhooks
+// groups or targets with text that can include templates.
+const notificationTypes = ['notification_webhook', 'notification_user', 'notification_group', 'notification_target']
+
 const NoValidator = (): boolean => true
 const potentialTemplates: PotentialTemplateField[] = [
   {
@@ -60,6 +63,11 @@ const potentialTemplates: PotentialTemplateField[] = [
     containerValidator: NoValidator,
   },
   {
+    instanceType: 'target',
+    fieldName: 'subject',
+    containerValidator: NoValidator,
+  },
+  {
     instanceType: 'webhook',
     fieldName: 'endpoint',
     containerValidator: NoValidator,
@@ -69,7 +77,19 @@ const potentialTemplates: PotentialTemplateField[] = [
     pathToContainer: ['actions'],
     fieldName: 'value',
     containerValidator: (container: Values): boolean =>
-      potentialTriggerFields.includes(container.field),
+      notificationTypes.includes(container.field),
+  },
+  {
+    instanceType: 'automation',
+    pathToContainer: ['actions'],
+    fieldName: 'value',
+    containerValidator: (container: Values): boolean =>
+      notificationTypes.includes(container.field),
+  },
+  {
+    instanceType: 'dynamic_content_item__variants',
+    fieldName: 'content',
+    containerValidator: NoValidator,
   },
 ]
 

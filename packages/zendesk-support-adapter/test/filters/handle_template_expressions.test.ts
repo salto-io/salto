@@ -66,6 +66,22 @@ describe('handle templates filter', () => {
     },
   })
 
+  const automationType = new ObjectType({
+    elemID: new ElemID(ZENDESK_SUPPORT, 'automation'),
+    fields: {
+      id: { refType: BuiltinTypes.NUMBER },
+      actions: { refType: new MapType(BuiltinTypes.STRING) },
+    },
+  })
+
+  const dynamicContentType = new ObjectType({
+    elemID: new ElemID(ZENDESK_SUPPORT, 'dynamic_content_item__variants'),
+    fields: {
+      id: { refType: BuiltinTypes.NUMBER },
+      actions: { refType: new MapType(BuiltinTypes.STRING) },
+    },
+  })
+
   const webhookType = new ObjectType({
     elemID: new ElemID(ZENDESK_SUPPORT, 'webhook'),
     fields: {
@@ -92,10 +108,14 @@ describe('handle templates filter', () => {
   const target = new InstanceElement('target', targetType, { id: 1004, target_url: 'url: {{ticket.ticket_field_1452}}' })
   const trigger = new InstanceElement('trigger', triggerType, { id: 1005, actions: [{ value: 'ticket: {{ticket.ticket_field_1452}}', field: 'notification_webhook' }] })
   const webhook = new InstanceElement('webhook', webhookType, { id: 1006, endpoint: 'endpoint: {{ticket.ticket_field_1452}}' })
+  const automation = new InstanceElement('automation', automationType, { id: 1007, actions: [{ value: 'ticket: {{ticket.ticket_field_1452}}', field: 'notification_webhook' }] })
+  const dynamicContent = new InstanceElement('dc', dynamicContentType, { id: 1008, content: 'content: {{ticket.ticket_field_1452}}' })
+
 
   const generateElements = (): (InstanceElement | ObjectType)[] => ([testType, placeholder1Type,
     placeholder2Type, placeholder1, placeholder2, macro1, macro2, macro3, macroAlmostTemplate,
-    macroAlmostTemplate2, target, trigger, webhook, targetType, triggerType, webhookType])
+    macroAlmostTemplate2, target, trigger, webhook, targetType, triggerType, webhookType,
+    automation, automationType, dynamicContent, dynamicContentType])
     .map(element => element.clone())
 
   describe('on fetch', () => {
@@ -118,7 +138,7 @@ describe('handle templates filter', () => {
       expect(fetchedMacroAlmostTemplate2?.value.actions[0].value).toEqual('{{ticket.ticket_field_1452}}')
     })
 
-    it('should resolve one template correctly', () => {
+    it('should resolve one template correctly, in any type', () => {
       const fetchedMacro2 = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macro2')
       expect(fetchedMacro2?.value.actions[0].value).toEqual(new TemplateExpression({ parts: [
         '{{',
@@ -134,6 +154,14 @@ describe('handle templates filter', () => {
       const fetchedTrigger = elements.filter(isInstanceElement).find(i => i.elemID.name === 'trigger')
       expect(fetchedTrigger?.value.actions[0].value).toEqual(new TemplateExpression({ parts: [
         'ticket: {{',
+        new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] }))
+      const fetchedAutomation = elements.filter(isInstanceElement).find(i => i.elemID.name === 'automation')
+      expect(fetchedAutomation?.value.actions[0].value).toEqual(new TemplateExpression({ parts: [
+        'ticket: {{',
+        new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] }))
+      const fetchedDynamicContent = elements.filter(isInstanceElement).find(i => i.elemID.name === 'dc')
+      expect(fetchedDynamicContent?.value.content).toEqual(new TemplateExpression({ parts: [
+        'content: {{',
         new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] }))
     })
 

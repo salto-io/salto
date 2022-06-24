@@ -91,6 +91,19 @@ const potentialTemplates: PotentialTemplateField[] = [
     fieldName: 'content',
     containerValidator: NoValidator,
   },
+  {
+    instanceType: 'app_installation',
+    pathToContainer: ['settings'],
+    fieldName: 'uri_templates',
+    containerValidator: NoValidator,
+  },
+  {
+    instanceType: 'app_installation',
+    pathToContainer: ['settings_objects'],
+    fieldName: 'value',
+    containerValidator: (container: Values): boolean =>
+      container.name === 'uri_templates',
+  },
 ]
 
 // This function receives a formula that contains zendesk-style references and replaces

@@ -90,6 +90,14 @@ describe('handle templates filter', () => {
     },
   })
 
+  const appInstallationType = new ObjectType({
+    elemID: new ElemID(ZENDESK_SUPPORT, 'app_installation'),
+    fields: {
+      id: { refType: BuiltinTypes.NUMBER },
+      actions: { refType: new MapType(BuiltinTypes.STRING) },
+    },
+  })
+
   const placeholder1Type = new ObjectType({
     elemID: new ElemID(ZENDESK_SUPPORT, 'ticket_field'),
   })
@@ -110,12 +118,18 @@ describe('handle templates filter', () => {
   const webhook = new InstanceElement('webhook', webhookType, { id: 1006, endpoint: 'endpoint: {{ticket.ticket_field_1452}}' })
   const automation = new InstanceElement('automation', automationType, { id: 1007, actions: [{ value: 'ticket: {{ticket.ticket_field_1452}}', field: 'notification_webhook' }] })
   const dynamicContent = new InstanceElement('dc', dynamicContentType, { id: 1008, content: 'content: {{ticket.ticket_field_1452}}' })
+  const appInstallation = new InstanceElement('appInstallation', appInstallationType, {
+    id: 1009,
+    settings: { uri_templates: 'template: {{ticket.ticket_field_1452}}' },
+    settings_objects: [{ name: 'uri_templates', value: 'object template: {{ticket.ticket_field_1452}}' }],
+  })
 
 
   const generateElements = (): (InstanceElement | ObjectType)[] => ([testType, placeholder1Type,
     placeholder2Type, placeholder1, placeholder2, macro1, macro2, macro3, macroAlmostTemplate,
     macroAlmostTemplate2, target, trigger, webhook, targetType, triggerType, webhookType,
-    automation, automationType, dynamicContent, dynamicContentType])
+    automation, automationType, dynamicContent, dynamicContentType, appInstallation,
+    appInstallationType])
     .map(element => element.clone())
 
   describe('on fetch', () => {
@@ -163,6 +177,17 @@ describe('handle templates filter', () => {
       expect(fetchedDynamicContent?.value.content).toEqual(new TemplateExpression({ parts: [
         'content: {{',
         new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] }))
+      const fetchedAppInstallation = elements.filter(isInstanceElement).find(i => i.elemID.name === 'appInstallation')
+      expect(fetchedAppInstallation?.value.settings.uri_templates).toEqual(
+        new TemplateExpression({ parts: [
+          'template: {{',
+          new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] })
+      )
+      expect(fetchedAppInstallation?.value.settings_objects[0].value).toEqual(
+        new TemplateExpression({ parts: [
+          'object template: {{',
+          new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] })
+      )
     })
 
     it('should resolve multiple templates correctly', () => {

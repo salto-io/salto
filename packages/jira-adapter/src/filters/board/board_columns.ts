@@ -131,13 +131,13 @@ const removeRedundantColumns = async (
   instance: InstanceElement,
   client: JiraClient,
 ): Promise<void> => {
-  // In Kanban boards, the first column is always backlog, which is non-editable.
-  // Not removing it will make us create another backlog column.
   if (instance.value.type !== KANBAN_TYPE) {
     return
   }
 
   log.info(`Removing first column from ${instance.elemID.getFullName()} with ${instance.value[COLUMNS_CONFIG_FIELD].columns.map((col: Values) => col.name).join(', ')}`)
+  // In Kanban boards, the first column is always backlog, which is non-editable.
+  // Not removing it will make us create another backlog column.
   instance.value[COLUMNS_CONFIG_FIELD].columns.shift()
 
   // In some rare cases, we get from the API two Backlog columns.

@@ -17,6 +17,7 @@ import { StaticFile, Value } from '@salto-io/adapter-api'
 
 export abstract class InvalidStaticFile {
   constructor(
+    public readonly filepath: string,
     public readonly message: string,
   ) {
   }
@@ -43,6 +44,7 @@ export class MissingStaticFile extends InvalidStaticFile {
     filepath: string,
   ) {
     super(
+      filepath,
       `Missing static file: ${filepath}`,
     )
   }
@@ -53,9 +55,14 @@ export class AccessDeniedStaticFile extends InvalidStaticFile {
     filepath: string,
   ) {
     super(
+      filepath,
       `Unable to access static file: ${filepath}`,
     )
   }
 }
 
-export const isInvalidStaticFile = (val: Value): boolean => val instanceof InvalidStaticFile
+export const isInvalidStaticFile = (
+  val: Value
+): val is InvalidStaticFile => (
+  val instanceof InvalidStaticFile
+)

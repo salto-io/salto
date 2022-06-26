@@ -30,7 +30,7 @@ import { DuplicateAnnotationFieldDefinitionError, ConflictingFieldTypesError,
 import { DuplicateVariableNameError } from '../merger/internal/variables'
 import { MultiplePrimitiveTypesError } from '../merger/internal/primitives'
 
-import { InvalidStaticFile } from '../workspace/static_files/common'
+import { InvalidStaticFile, MissingStaticFile, AccessDeniedStaticFile } from '../workspace/static_files/common'
 import {
   ValidationError,
   InvalidValueValidationError,
@@ -80,6 +80,8 @@ const NameToType = {
   TypeReference: TypeReference,
   VariableExpression: VariableExpression,
   StaticFile: StaticFile,
+  MissingStaticFile: MissingStaticFile,
+  AccessDeniedStaticFile: AccessDeniedStaticFile,
   DuplicateAnnotationError: DuplicateAnnotationError,
   DuplicateInstanceKeyError: DuplicateInstanceKeyError,
   DuplicateAnnotationFieldDefinitionError: DuplicateAnnotationFieldDefinitionError,
@@ -303,6 +305,8 @@ const generalDeserialize = async <T>(
           { filepath: v.filepath, hash: v.hash, encoding: v.encoding }
         )
       ),
+      MissingStaticFile: v => new MissingStaticFile(v.filepath),
+      AccessDeniedStaticFile: v => new AccessDeniedStaticFile(v.filepath),
       DuplicateAnnotationError: v => (
         new DuplicateAnnotationError({
           elemID: reviveElemID(v.elemID),
@@ -365,7 +369,7 @@ const generalDeserialize = async <T>(
       InvalidStaticFileError: v => (
         new InvalidStaticFileError({
           elemID: reviveElemID(v.elemID),
-          value: { message: v.error },
+          error: v.error,
         })
       ),
       CircularReferenceValidationError: v => (

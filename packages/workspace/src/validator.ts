@@ -259,10 +259,10 @@ export class CircularReferenceValidationError extends ValidationError {
 }
 
 export class InvalidStaticFileError extends ValidationError {
-  constructor({ elemID, value }: { elemID: ElemID; value: InvalidStaticFile }) {
+  constructor({ elemID, error }: { elemID: ElemID; error: string }) {
     super({
       elemID,
-      error: value.message,
+      error,
       severity: 'Error',
     })
   }
@@ -485,7 +485,7 @@ const validateValue = (
   }
 
   if (value instanceof InvalidStaticFile) {
-    return [new InvalidStaticFileError({ elemID, value })]
+    return [new InvalidStaticFileError({ elemID, error: value.message })]
   }
 
   if (value instanceof StaticFile) {

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import _ from 'lodash'
+import { MockInterface, mockFunction } from '@salto-io/test-utils'
 import { DirectoryStore, File } from '../../src/workspace/dir_store'
 import { ParsedNaclFileCache } from '../../src/workspace/nacl_files/parsed_nacl_files_cache'
 
@@ -282,28 +282,59 @@ export const mockDirStore = (
   exclude: string[] = ['error.nacl', 'dup.nacl', 'reference_error.nacl'],
   empty = false,
   files?: Record<string, string>,
-):
-  DirectoryStore<string> => {
-  const naclFiles: Record<string, File<string>> = empty ? {} : _.mapValues(files ?? workspaceFiles,
-    (buffer, filename) => ({ filename, buffer }))
+): MockInterface<DirectoryStore<string>> => {
+  const naclFiles: Map<string, File<string>> = empty
+    ? new Map()
+    : new Map(
+      Object.entries(files ?? workspaceFiles)
+        .map(([filename, buffer]) => [filename, { filename, buffer }])
+    )
   return {
-    list: jest.fn()
-      .mockImplementation(() => Object.keys(naclFiles).filter(name => !exclude.includes(name))),
-    isEmpty: jest.fn().mockResolvedValue(Object.keys(naclFiles).length === 0),
-    get: jest.fn().mockImplementation((filename: string) => Promise.resolve(naclFiles[filename])),
-    set: jest.fn().mockImplementation((file: File<string>) => { naclFiles[file.filename] = file }),
-    delete: jest.fn().mockImplementation((fileName: string) => { delete naclFiles[fileName] }),
-    clear: jest.fn().mockImplementation(() => Promise.resolve()),
-    rename: jest.fn().mockImplementation(() => Promise.resolve()),
-    renameFile: jest.fn().mockImplementation(() => Promise.resolve()),
-    flush: jest.fn().mockImplementation(() => Promise.resolve()),
-    mtimestamp: jest.fn(),
-    getFiles: jest.fn().mockImplementation((filenames: string[]) =>
-      Promise.resolve(filenames.map(f => naclFiles[f]))),
-    getTotalSize: jest.fn(),
-    clone: () => mockDirStore(exclude),
-    getFullPath: filename => filename,
-    isPathIncluded: jest.fn().mockResolvedValue(true),
+    list: mockFunction<DirectoryStore<string>['list']>().mockImplementation(
+      async () => Array.from(naclFiles.keys()).filter(name => !exclude.includes(name))
+    ),
+    isEmpty: mockFunction<DirectoryStore<string>['isEmpty']>().mockResolvedValue(
+      naclFiles.size === 0
+    ),
+    get: mockFunction<DirectoryStore<string>['get']>().mockImplementation(
+      async filename => naclFiles.get(filename)
+    ),
+    set: mockFunction<DirectoryStore<string>['set']>().mockImplementation(
+      async file => { naclFiles.set(file.filename, file) }
+    ),
+    delete: mockFunction<DirectoryStore<string>['delete']>().mockImplementation(
+      async fileName => { naclFiles.delete(fileName) }
+    ),
+    clear: mockFunction<DirectoryStore<string>['clear']>().mockImplementation(
+      async () => naclFiles.clear()
+    ),
+    rename: mockFunction<DirectoryStore<string>['rename']>().mockImplementation(() => Promise.resolve()),
+    renameFile: mockFunction<DirectoryStore<string>['renameFile']>().mockImplementation(
+      async (filename, newName) => {
+        const origFile = naclFiles.get(filename)
+        if (origFile !== undefined) {
+          naclFiles.set(newName, origFile)
+          naclFiles.delete(filename)
+        }
+      }
+    ),
+    flush: mockFunction<DirectoryStore<string>['flush']>().mockImplementation(() => Promise.resolve()),
+    mtimestamp: mockFunction<DirectoryStore<string>['mtimestamp']>().mockResolvedValue(0),
+    getFiles: mockFunction<DirectoryStore<string>['getFiles']>().mockImplementation(
+      async filenames => filenames.map(name => naclFiles.get(name))
+    ),
+    getTotalSize: mockFunction<DirectoryStore<string>['getTotalSize']>().mockResolvedValue(0),
+    clone: mockFunction<DirectoryStore<string>['clone']>().mockImplementation(
+      () => mockDirStore(
+        exclude,
+        empty,
+        Object.fromEntries(
+          Array.from(naclFiles.entries()).map(([name, file]) => [name, file.buffer])
+        ),
+      )
+    ),
+    getFullPath: mockFunction<DirectoryStore<string>['getFullPath']>().mockImplementation(filename => filename),
+    isPathIncluded: mockFunction<DirectoryStore<string>['isPathIncluded']>().mockReturnValue(true),
   }
 }
 

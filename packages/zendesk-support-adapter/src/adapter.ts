@@ -57,6 +57,7 @@ import removeDefinitionInstancesFilter from './filters/remove_definition_instanc
 import hardcodedChannelFilter from './filters/hardcoded_channel'
 import usersFilter from './filters/user'
 import addFieldOptionsFilter from './filters/add_field_options'
+import appOwnedParametersFilter from './filters/app_owned_parameters'
 import appsFilter from './filters/app'
 import routingAttributeFilter from './filters/routing_attribute'
 import serviceUrlFilter from './filters/service_url'
@@ -115,6 +116,7 @@ export const DEFAULT_FILTERS = [
   macroAttachmentsFilter,
   fieldReferencesFilter,
   appsFilter,
+  appOwnedParametersFilter,
   slaPolicyFilter,
   routingAttributeFilter,
   addFieldOptionsFilter,

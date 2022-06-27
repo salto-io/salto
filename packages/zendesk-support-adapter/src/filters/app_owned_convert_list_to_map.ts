@@ -14,6 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import Joi from 'joi'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { InstanceElement, isInstanceElement, Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
@@ -21,11 +23,50 @@ import { APP_OWNED_TYPE_NAME } from '../constants'
 
 const log = logger(module)
 
+type AppOwnedParameter = {
+  id: number
+  // eslint-disable-next-line camelcase
+  app_id: number
+  // eslint-disable-next-line camelcase
+  created_at: string
+  // eslint-disable-next-line camelcase
+  updated_at: string
+  name: string
+  kind: string
+  required: boolean
+  position: number
+  secure: boolean
+}
+
+const EXPECTED_PARAMETERS_SCHEMA = Joi.array().items(Joi.object({
+  id: Joi.number().required(),
+  // eslint-disable-next-line camelcase
+  app_id: Joi.number().required(),
+  // eslint-disable-next-line camelcase
+  created_at: Joi.date().timestamp(),
+  // eslint-disable-next-line camelcase
+  updated_at: Joi.date().timestamp(),
+  name: Joi.string().required(),
+  kind: Joi.string().required(),
+  required: Joi.boolean().required(),
+  position: Joi.number().required(),
+  secure: Joi.boolean().required(),
+})).required()
+
+const isParameters = (values: unknown): values is AppOwnedParameter[] => {
+  const { error } = EXPECTED_PARAMETERS_SCHEMA.validate(values)
+  if (error !== undefined) {
+    log.error(`Received an invalid response for the app_owned parameters values: ${error.message}, ${safeJsonStringify(values)}`)
+    return false
+  }
+  return true
+}
+
 const turnParametersFieldToMap = (
   element: InstanceElement,
   fieldsToHide: string[] = []
 ): void => {
-  if (!_.isArray(element.value.parameters)) {
+  if (isParameters(element.value.parameters)) {
     return
   }
   const paramsWithoutHiddenFields = (element.value.parameters as Value[])

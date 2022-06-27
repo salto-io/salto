@@ -53,6 +53,27 @@ describe('ducktype_type_elements', () => {
       expect(nestedTypes).toHaveLength(0)
       expect(type.path).toEqual([ADAPTER_NAME, TYPES_PATH, 'typeName'])
     })
+    it('should override field types for types with nested fieldTypeOverrides', () => {
+      const entries: Values[] = [{
+        nested: {
+          a: 'a',
+          b: 'b',
+        },
+        name: 'test',
+      }]
+      const { type, nestedTypes } = generateType({
+        adapterName: ADAPTER_NAME,
+        name: 'typeName',
+        entries,
+        hasDynamicFields: false,
+        isSubType: false,
+        transformationConfigByType: { typeName: { fieldTypeOverrides: [{ fieldName: 'name', fieldType: 'map<typeName__nested>' }] } },
+        transformationDefaultConfig: { idFields: [] },
+      })
+      expect(nestedTypes).toHaveLength(1)
+      expect(type.fields.name.refType.elemID.getFullName()).toEqual('Map<myAdapter.typeName__nested>')
+      expect(type.path).toEqual([ADAPTER_NAME, TYPES_PATH, 'typeName'])
+    })
     it('should override field types for types with fieldTypeOverrides even if there are no entries', () => {
       const entries: Values[] = []
       const { type, nestedTypes } = generateType({

@@ -163,6 +163,7 @@ export const localState = (
     const quickAccessHash = (await quickAccessStateData.saltoMetadata.get('hash'))
       ?? toMD5(safeJsonStringify([]))
     if (quickAccessHash !== stateFilesHash) {
+      log.debug('found different hash - slow loading state data (quickAccessHash=%s stateFilesHash=%s', quickAccessHash, stateFilesHash)
       await syncQuickAccessStateData({
         stateData: quickAccessStateData,
         filePaths,

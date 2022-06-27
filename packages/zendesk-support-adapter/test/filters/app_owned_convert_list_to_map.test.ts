@@ -19,9 +19,9 @@ import { DEFAULT_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
 import { APP_OWNED_TYPE_NAME, ZENDESK_SUPPORT } from '../../src/constants'
 import { paginate } from '../../src/client/pagination'
-import filterCreator from '../../src/filters/app_owned_parameters'
+import filterCreator from '../../src/filters/app_owned_convert_list_to_map'
 
-describe('app_owned parameters filter', () => {
+describe('appOwnedConvertListToMap filter', () => {
   let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType

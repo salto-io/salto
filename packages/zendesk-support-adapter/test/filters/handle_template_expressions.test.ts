@@ -50,6 +50,62 @@ describe('handle templates filter', () => {
     },
   })
 
+  const triggerType = new ObjectType({
+    elemID: new ElemID(ZENDESK_SUPPORT, 'trigger'),
+    fields: {
+      id: { refType: BuiltinTypes.NUMBER },
+      actions: { refType: new MapType(BuiltinTypes.STRING) },
+    },
+  })
+
+  const targetType = new ObjectType({
+    elemID: new ElemID(ZENDESK_SUPPORT, 'target'),
+    fields: {
+      id: { refType: BuiltinTypes.NUMBER },
+      actions: { refType: new MapType(BuiltinTypes.STRING) },
+    },
+  })
+
+  const automationType = new ObjectType({
+    elemID: new ElemID(ZENDESK_SUPPORT, 'automation'),
+    fields: {
+      id: { refType: BuiltinTypes.NUMBER },
+      actions: { refType: new MapType(BuiltinTypes.STRING) },
+    },
+  })
+
+  const dynamicContentType = new ObjectType({
+    elemID: new ElemID(ZENDESK_SUPPORT, 'dynamic_content_item'),
+  })
+
+  const dynamicContentItemType = new ObjectType({
+    elemID: new ElemID(ZENDESK_SUPPORT, 'dynamic_content_item__variants'),
+    fields: {
+      id: { refType: BuiltinTypes.NUMBER },
+      actions: { refType: new MapType(BuiltinTypes.STRING) },
+    },
+  })
+
+  const dynamicContentRecord = new InstanceElement('dynamic_content_test', dynamicContentType, {
+    placeholder: '{{dc.dynamic_content_test}}',
+  })
+
+  const webhookType = new ObjectType({
+    elemID: new ElemID(ZENDESK_SUPPORT, 'webhook'),
+    fields: {
+      id: { refType: BuiltinTypes.NUMBER },
+      actions: { refType: new MapType(BuiltinTypes.STRING) },
+    },
+  })
+
+  const appInstallationType = new ObjectType({
+    elemID: new ElemID(ZENDESK_SUPPORT, 'app_installation'),
+    fields: {
+      id: { refType: BuiltinTypes.NUMBER },
+      actions: { refType: new MapType(BuiltinTypes.STRING) },
+    },
+  })
+
   const placeholder1Type = new ObjectType({
     elemID: new ElemID(ZENDESK_SUPPORT, 'ticket_field'),
   })
@@ -61,16 +117,32 @@ describe('handle templates filter', () => {
   const placeholder1 = new InstanceElement('placeholder1', placeholder1Type, { id: 1452 })
   const placeholder2 = new InstanceElement('placeholder2', placeholder2Type, { id: 1453 })
   const macro1 = new InstanceElement('macro1', testType, { id: 1001, actions: [{ value: 'non template', field: 'comment_value_html' }] })
-  const macro2 = new InstanceElement('macro2', testType, { id: 1002, actions: [{ value: '{{ticket.ticket_field_1452}}', field: 'comment_value_html' }] })
+  const macro2 = new InstanceElement('macro2', testType, { id: 1002, actions: [{ value: '{{ticket.ticket_field_1452}}', field: 'comment_value' }] })
   const macro3 = new InstanceElement('macro3', testType, { id: 1003, actions: [{ value: 'multiple refs {{ticket.ticket_field_1452}} and {{ticket.ticket_field_option_title_1453}}', field: 'comment_value_html' }] })
+  const macroWithDC = new InstanceElement('macroDynamicContent', testType, { id: 1033, actions: [{ value: 'dynamic content ref {{dc.dynamic_content_test}} and {{ticket.ticket_field_option_title_1453}}', field: 'comment_value_html' }] })
+
   const macroAlmostTemplate = new InstanceElement('macroAlmost', testType, { id: 1001, actions: [{ value: 'almost template {{ticket.not_an_actual_field_1452}} and {{ticket.ticket_field_1454}}', field: 'comment_value_html' }] })
+  const macroAlmostTemplate2 = new InstanceElement('macroAlmost2', testType, { id: 1001, actions: [{ value: '{{ticket.ticket_field_1452}}', field: 'not_template_field' }] })
+  const target = new InstanceElement('target', targetType, { id: 1004, target_url: 'url: {{ticket.ticket_field_1452}}' })
+  const trigger = new InstanceElement('trigger', triggerType, { id: 1005, actions: [{ value: 'ticket: {{ticket.ticket_field_1452}}', field: 'notification_webhook' }] })
+  const webhook = new InstanceElement('webhook', webhookType, { id: 1006, endpoint: 'endpoint: {{ticket.ticket_field_1452}}' })
+  const automation = new InstanceElement('automation', automationType, { id: 1007, actions: [{ value: 'ticket: {{ticket.ticket_field_1452}}', field: 'notification_webhook' }] })
+  const dynamicContent = new InstanceElement('dc', dynamicContentItemType, { id: 1008, content: 'content: {{ticket.ticket_field_1452}}' })
+  const appInstallation = new InstanceElement('appInstallation', appInstallationType, {
+    id: 1009,
+    settings: { uri_templates: 'template: {{ticket.ticket_field_1452}}' },
+    settings_objects: [{ name: 'uri_templates', value: 'object template: {{ticket.ticket_field_1452}}' }],
+  })
+
 
   const generateElements = (): (InstanceElement | ObjectType)[] => ([testType, placeholder1Type,
-    placeholder2Type, placeholder1, placeholder2, macro1, macro2, macro3, macroAlmostTemplate])
+    placeholder2Type, placeholder1, placeholder2, macro1, macro2, macro3, macroAlmostTemplate,
+    macroAlmostTemplate2, target, trigger, webhook, targetType, triggerType, webhookType,
+    automation, automationType, dynamicContent, dynamicContentItemType, appInstallation,
+    appInstallationType, macroWithDC, dynamicContentRecord])
     .map(element => element.clone())
 
   describe('on fetch', () => {
-    let fetchedMacroAlmostTemplate: InstanceElement | undefined
     let elements: (InstanceElement | ObjectType)[]
 
     beforeAll(async () => {
@@ -84,15 +156,57 @@ describe('handle templates filter', () => {
     })
 
     it('should resolve almost-template normally', () => {
-      fetchedMacroAlmostTemplate = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroAlmost')
+      const fetchedMacroAlmostTemplate = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroAlmost')
       expect(fetchedMacroAlmostTemplate?.value.actions[0].value).toEqual('almost template {{ticket.not_an_actual_field_1452}} and {{ticket.ticket_field_1454}}')
+      const fetchedMacroAlmostTemplate2 = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroAlmost2')
+      expect(fetchedMacroAlmostTemplate2?.value.actions[0].value).toEqual('{{ticket.ticket_field_1452}}')
     })
 
-    it('should resolve one template correctly', () => {
+    it('should resolve one template correctly, in any type', () => {
       const fetchedMacro2 = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macro2')
       expect(fetchedMacro2?.value.actions[0].value).toEqual(new TemplateExpression({ parts: [
         '{{',
         new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] }))
+      const fetchedTarget = elements.filter(isInstanceElement).find(i => i.elemID.name === 'target')
+      expect(fetchedTarget?.value.target_url).toEqual(new TemplateExpression({ parts: [
+        'url: {{',
+        new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] }))
+      const fetchedWebhook = elements.filter(isInstanceElement).find(i => i.elemID.name === 'webhook')
+      expect(fetchedWebhook?.value.endpoint).toEqual(new TemplateExpression({ parts: [
+        'endpoint: {{',
+        new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] }))
+      const fetchedTrigger = elements.filter(isInstanceElement).find(i => i.elemID.name === 'trigger')
+      expect(fetchedTrigger?.value.actions[0].value).toEqual(new TemplateExpression({ parts: [
+        'ticket: {{',
+        new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] }))
+      const fetchedAutomation = elements.filter(isInstanceElement).find(i => i.elemID.name === 'automation')
+      expect(fetchedAutomation?.value.actions[0].value).toEqual(new TemplateExpression({ parts: [
+        'ticket: {{',
+        new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] }))
+      const fetchedDynamicContent = elements.filter(isInstanceElement).find(i => i.elemID.name === 'dc')
+      expect(fetchedDynamicContent?.value.content).toEqual(new TemplateExpression({ parts: [
+        'content: {{',
+        new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] }))
+      const fetchedAppInstallation = elements.filter(isInstanceElement).find(i => i.elemID.name === 'appInstallation')
+      expect(fetchedAppInstallation?.value.settings.uri_templates).toEqual(
+        new TemplateExpression({ parts: [
+          'template: {{',
+          new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] })
+      )
+      expect(fetchedAppInstallation?.value.settings_objects[0].value).toEqual(
+        new TemplateExpression({ parts: [
+          'object template: {{',
+          new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] })
+      )
+      const fetchedDCMacro = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroDynamicContent')
+      expect(fetchedDCMacro?.value.actions[0].value).toEqual(
+        new TemplateExpression({ parts: [
+          'dynamic content ref {{',
+          new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord),
+          '}} and {{',
+          new ReferenceExpression(placeholder2.elemID, placeholder2),
+          '}}'] })
+      )
     })
 
     it('should resolve multiple templates correctly', () => {

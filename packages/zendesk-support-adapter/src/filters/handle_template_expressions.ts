@@ -119,10 +119,14 @@ const formulaToTemplate = (formula: string,
       // eslint-disable-next-line no-template-curly-in-string
       .replace(new RegExp(`({{)(${type}_[\\d]+?)(}})`, 'g'), '$1$${$2}$3')
   })
+  // dynamic content references look different, but can still be part of template
+  formulaWithDetectedParts = formulaWithDetectedParts
+  // eslint-disable-next-line no-template-curly-in-string
+    .replace(new RegExp(/({{)(dc.[_\w]+)(}})/g), '$1$${$2}$3')
   // The second part is a split that separates the now-marked ids, so they could be replaced
   // with ReferenceExpression in the loop code.
   const templateParts = formulaWithDetectedParts
-    .split(/(\$\{.+?_[\d]+?\})/).filter(e => e !== '')
+    .split(/(\$\{.+?})/).filter(e => e !== '')
     .map(expression => {
       const zendeskReference = expression.match(/\$\{(.+?)_([\d]+?)\}/)
       if (zendeskReference) {
@@ -139,6 +143,15 @@ const formulaToTemplate = (formula: string,
         // if no id was detected we return these parts that will later be joined to
         // create the original string.
         return `${type}_${innerId}`
+      }
+      const dynamicContentReference = expression.match(/\$\{dc\.(.+?)\}/)
+      if (dynamicContentReference) {
+        const dcPlaceholder = dynamicContentReference.pop() ?? ''
+        const ref = instancesByType.dynamic_content_item.find(instance =>
+          instance.value.placeholder === `{{dc.${dcPlaceholder}}}`)
+        if (ref) {
+          return new ReferenceExpression(ref.elemID, ref)
+        }
       }
       return expression
     })
@@ -191,11 +204,19 @@ const filterCreator: FilterCreator = () => {
           const { fieldName } = container.template
           const handleTemplateValue = (template: TemplateExpression): string => {
             const templateUsingIdField = new TemplateExpression({
-              parts: template.parts.map(part => (isReferenceExpression(part)
-                ? [saltoTypeToZendeskReferenceType[part.elemID.typeName],
-                  '_',
-                  new ReferenceExpression(part.elemID.createNestedID('id'), part.value.value.id)]
-                : part)).flat(),
+              parts: template.parts.map(part => {
+                if (isReferenceExpression(part)) {
+                  if (saltoTypeToZendeskReferenceType[part.elemID.typeName]) {
+                    return [saltoTypeToZendeskReferenceType[part.elemID.typeName],
+                      '_',
+                      new ReferenceExpression(part.elemID.createNestedID('id'), part.value.value.id)]
+                  }
+                  if (part.elemID.typeName === 'dynamic_content_item') {
+                    return part.value.value.placeholder.match(/{{(.*)}}/).pop()
+                  }
+                }
+                return part
+              }).flat(),
             })
             deployTemplateMapping[templateUsingIdField.value] = template
             return templateUsingIdField.value

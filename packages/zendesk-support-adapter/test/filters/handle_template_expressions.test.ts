@@ -75,11 +75,19 @@ describe('handle templates filter', () => {
   })
 
   const dynamicContentType = new ObjectType({
+    elemID: new ElemID(ZENDESK_SUPPORT, 'dynamic_content_item'),
+  })
+
+  const dynamicContentItemType = new ObjectType({
     elemID: new ElemID(ZENDESK_SUPPORT, 'dynamic_content_item__variants'),
     fields: {
       id: { refType: BuiltinTypes.NUMBER },
       actions: { refType: new MapType(BuiltinTypes.STRING) },
     },
+  })
+
+  const dynamicContentRecord = new InstanceElement('dynamic_content_test', dynamicContentType, {
+    placeholder: '{{dc.dynamic_content_test}}',
   })
 
   const webhookType = new ObjectType({
@@ -111,13 +119,15 @@ describe('handle templates filter', () => {
   const macro1 = new InstanceElement('macro1', testType, { id: 1001, actions: [{ value: 'non template', field: 'comment_value_html' }] })
   const macro2 = new InstanceElement('macro2', testType, { id: 1002, actions: [{ value: '{{ticket.ticket_field_1452}}', field: 'comment_value' }] })
   const macro3 = new InstanceElement('macro3', testType, { id: 1003, actions: [{ value: 'multiple refs {{ticket.ticket_field_1452}} and {{ticket.ticket_field_option_title_1453}}', field: 'comment_value_html' }] })
+  const macroWithDC = new InstanceElement('macroDynamicContent', testType, { id: 1033, actions: [{ value: 'dynamic content ref {{dc.dynamic_content_test}} and {{ticket.ticket_field_option_title_1453}}', field: 'comment_value_html' }] })
+
   const macroAlmostTemplate = new InstanceElement('macroAlmost', testType, { id: 1001, actions: [{ value: 'almost template {{ticket.not_an_actual_field_1452}} and {{ticket.ticket_field_1454}}', field: 'comment_value_html' }] })
   const macroAlmostTemplate2 = new InstanceElement('macroAlmost2', testType, { id: 1001, actions: [{ value: '{{ticket.ticket_field_1452}}', field: 'not_template_field' }] })
   const target = new InstanceElement('target', targetType, { id: 1004, target_url: 'url: {{ticket.ticket_field_1452}}' })
   const trigger = new InstanceElement('trigger', triggerType, { id: 1005, actions: [{ value: 'ticket: {{ticket.ticket_field_1452}}', field: 'notification_webhook' }] })
   const webhook = new InstanceElement('webhook', webhookType, { id: 1006, endpoint: 'endpoint: {{ticket.ticket_field_1452}}' })
   const automation = new InstanceElement('automation', automationType, { id: 1007, actions: [{ value: 'ticket: {{ticket.ticket_field_1452}}', field: 'notification_webhook' }] })
-  const dynamicContent = new InstanceElement('dc', dynamicContentType, { id: 1008, content: 'content: {{ticket.ticket_field_1452}}' })
+  const dynamicContent = new InstanceElement('dc', dynamicContentItemType, { id: 1008, content: 'content: {{ticket.ticket_field_1452}}' })
   const appInstallation = new InstanceElement('appInstallation', appInstallationType, {
     id: 1009,
     settings: { uri_templates: 'template: {{ticket.ticket_field_1452}}' },
@@ -128,8 +138,8 @@ describe('handle templates filter', () => {
   const generateElements = (): (InstanceElement | ObjectType)[] => ([testType, placeholder1Type,
     placeholder2Type, placeholder1, placeholder2, macro1, macro2, macro3, macroAlmostTemplate,
     macroAlmostTemplate2, target, trigger, webhook, targetType, triggerType, webhookType,
-    automation, automationType, dynamicContent, dynamicContentType, appInstallation,
-    appInstallationType])
+    automation, automationType, dynamicContent, dynamicContentItemType, appInstallation,
+    appInstallationType, macroWithDC, dynamicContentRecord])
     .map(element => element.clone())
 
   describe('on fetch', () => {
@@ -187,6 +197,15 @@ describe('handle templates filter', () => {
         new TemplateExpression({ parts: [
           'object template: {{',
           new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] })
+      )
+      const fetchedDCMacro = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroDynamicContent')
+      expect(fetchedDCMacro?.value.actions[0].value).toEqual(
+        new TemplateExpression({ parts: [
+          'dynamic content ref {{',
+          new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord),
+          '}} and {{',
+          new ReferenceExpression(placeholder2.elemID, placeholder2),
+          '}}'] })
       )
     })
 

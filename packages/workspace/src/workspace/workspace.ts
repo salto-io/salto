@@ -21,7 +21,7 @@ import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, Detail
 import { logger } from '@salto-io/logging'
 import { applyDetailedChanges, naclCase, resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
-import { ValidationError, validateElements, isUnresolvedRefError, UnresolvedReferenceValidationError } from '../validator'
+import { ValidationError, validateElements, isUnresolvedRefError } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
 import { State } from './state'
@@ -1228,20 +1228,19 @@ export const loadWorkspace = async (
       (await getLoadedNaclFilesSource()).getSearchableNamesOfEnv(env ?? currentEnv()),
     listUnresolvedReferences: async (completeFromEnv?: string): Promise<UnresolvedElemIDs> => {
       const getUnresolvedElemIDsFromErrors = async (
-        unresolvedRefErrors: UnresolvedReferenceValidationError[]
+        validationErrors: readonly ValidationError[]
       ): Promise<ElemID[]> => {
-        const workspaceErrors = unresolvedRefErrors.map(e => e.target.createBaseID().parent)
+        const workspaceErrors = validationErrors
+          .filter(isUnresolvedRefError)
+          .map(e => e.target.createBaseID().parent)
         return _.uniqBy(workspaceErrors, elemID => elemID.getFullName())
       }
       const getUnresolvedElemIDs = async (
         elementsArray: Element[],
       ): Promise<ElemID[]> => getUnresolvedElemIDsFromErrors(
         (await validateElements(elementsArray, await elements()))
-          .filter(isUnresolvedRefError)
       )
-      const unresolvedElemIDs = await getUnresolvedElemIDsFromErrors(
-        (await errors()).validation.filter(isUnresolvedRefError)
-      )
+      const unresolvedElemIDs = await getUnresolvedElemIDsFromErrors((await errors()).validation)
       if (completeFromEnv === undefined) {
         return {
           found: [],

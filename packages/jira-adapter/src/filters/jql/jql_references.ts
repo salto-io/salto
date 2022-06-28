@@ -50,28 +50,50 @@ const getJqls = async (instance: InstanceElement): Promise<JqlDetails[]> =>
     }))
     .filter(({ jql }) => _.isString(jql))
 
-const requestJqlsStructure = async (jqls: string[], client: JiraClient): Promise<ParsedJql[]> => {
+const requestJqlsStructure = async (jqls: string[], client: JiraClient)
+: Promise<Required<ParsedJql>[]> => {
   log.debug(`About to request JQL structure for ${jqls.length} unique JQLs`)
 
-  const responses = await Promise.all(_.chunk(jqls, JQL_CHUNK_SIZE).map(async queries => {
-    const response = await client.post({
-      url: '/rest/api/3/jql/parse',
-      data: {
-        queries,
-      },
-      queryParams: {
-        validation: 'none',
-      },
+  const responses = (await Promise.all(_.chunk(jqls, JQL_CHUNK_SIZE).map(async queries => {
+    try {
+      const response = await client.post({
+        url: '/rest/api/3/jql/parse',
+        data: {
+          queries,
+        },
+        queryParams: {
+          validation: 'none',
+        },
+      })
+
+      if (!isJqlParseResponse(response.data)) {
+        // isJqlParseResponse already logs the error
+        return []
+      }
+
+      return response.data.queries
+    } catch (err) {
+      log.error(`Failed to request JQL structure ${err}`)
+      return []
+    }
+  }))).flat()
+
+  responses
+    .filter(response => (response.errors ?? []).length !== 0)
+    .forEach(response => {
+      log.error(`Failed to parse JQL '${response.query}': ${response.errors?.join(', ')}`)
     })
 
-    if (!isJqlParseResponse(response.data)) {
-      throw new Error('Received an invalid response from jqls request')
-    }
-
-    return response.data.queries
-  }))
-
-  return responses.flat()
+  return responses
+    .filter(
+      (response): response is ParsedJql
+        & { structure: Record<string, unknown> } => response.structure !== undefined
+    )
+    .map(response => ({
+      query: response.query,
+      structure: response.structure,
+      errors: response.errors ?? [],
+    }))
 }
 
 const filter: FilterCreator = ({ client }) => ({
@@ -94,15 +116,17 @@ const filter: FilterCreator = ({ client }) => ({
 
     const idToInstance = _.keyBy(instances, instance => instance.elemID.getFullName())
 
-    jqls.forEach(({ jql, path }) => {
-      const instance = idToInstance[path.createTopLevelParentID().parent.getFullName()]
-      const references = jqlToReferences[jql]
+    jqls
+      .filter(({ jql }) => jqlToReferences[jql] !== undefined)
+      .forEach(({ jql, path }) => {
+        const instance = idToInstance[path.createTopLevelParentID().parent.getFullName()]
+        const references = jqlToReferences[jql]
 
-      extendGeneratedDependencies(instance, references.map(reference => ({
-        reference,
-        location: new ReferenceExpression(path, jql),
-      })))
-    })
+        extendGeneratedDependencies(instance, references.map(reference => ({
+          reference,
+          location: new ReferenceExpression(path, jql),
+        })))
+      })
   },
 })
 

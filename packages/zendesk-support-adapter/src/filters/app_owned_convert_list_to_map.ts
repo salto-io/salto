@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import Joi from 'joi'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { InstanceElement, isInstanceElement, Value } from '@salto-io/adapter-api'
+import { InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { APP_OWNED_TYPE_NAME } from '../constants'
@@ -64,13 +64,11 @@ const isParameters = (values: unknown): values is AppOwnedParameter[] => {
 
 const turnParametersFieldToMap = (
   element: InstanceElement,
-  fieldsToHide: string[] = []
 ): void => {
   if (isParameters(element.value.parameters)) {
     return
   }
-  const paramsWithoutHiddenFields = (element.value.parameters as Value[])
-    .map(param => _.omit(param, fieldsToHide))
+  const paramsWithoutHiddenFields = (element.value.parameters)
   element.value.parameters = _.keyBy(paramsWithoutHiddenFields, 'name')
 }
 
@@ -79,7 +77,7 @@ const turnParametersFieldToMap = (
  * are a list, and therefore cannot contain hidden values.
  * There is no deploy support, because there is no suitable API for it.
  */
-const filterCreator: FilterCreator = ({ config }) => ({
+const filterCreator: FilterCreator = () => ({
   onFetch: async elements => log.time(async () => {
     elements
       .filter(isInstanceElement)
@@ -88,8 +86,6 @@ const filterCreator: FilterCreator = ({ config }) => ({
       .forEach(ele =>
         turnParametersFieldToMap(
           ele,
-          config.apiDefinitions.types.app_owned__parameters
-            .transformation?.fieldsToHide?.map(field => field.fieldName)
         ))
   }, 'appOwnedConvertListToMap filter'),
 })

@@ -46,7 +46,7 @@ type CreateIteratorOpts = remoteMap.IterationOpts & {
 }
 type ConnectionPool = Record<string, Promise<rocksdb>>
 
-type readIterator = {
+type ReadIterator = {
   next: () => Promise<remoteMap.RemoteMapEntry<string> | undefined>
   nextPage: () => Promise<remoteMap.RemoteMapEntry<string>[] | undefined>
 }
@@ -119,7 +119,7 @@ const readIteratorPage = (
     iterator.nextPage(callback)
   })
 
-export async function *aggregatedIterable(iterators: readIterator[]):
+export async function *aggregatedIterable(iterators: ReadIterator[]):
     AsyncIterable<remoteMap.RemoteMapEntry<string>> {
   const latestEntries: (remoteMap.RemoteMapEntry<string> | undefined)[] = Array.from(
     { length: iterators.length }
@@ -155,7 +155,7 @@ export async function *aggregatedIterable(iterators: readIterator[]):
   }
 }
 
-export async function *aggregatedIterablesWithPages(iterators: readIterator[], pageSize = 1000):
+export async function *aggregatedIterablesWithPages(iterators: ReadIterator[], pageSize = 1000):
 AsyncIterable<remoteMap.RemoteMapEntry<string>[]> {
   const latestEntries: (remoteMap.RemoteMapEntry<string>[] | undefined)[] = Array.from(
     { length: iterators.length }
@@ -359,37 +359,21 @@ const getPrefixEndCondition = (prefix: string): string => prefix
 
 const createReadIterator = (
   iterator: rocksdb.Iterator,
-): readIterator => ({
-  next: async () => {
-    const getNext = async (): Promise<remoteMap.RemoteMapEntry<string> | undefined> =>
-      (readIteratorNext(iterator))
-    return getNext()
-  },
-  nextPage: async () => {
-    const getNext = async (): Promise<remoteMap.RemoteMapEntry<string>[] | undefined> => {
-      const next = await readIteratorPage(iterator)
-      if (next === undefined) {
-        return next
-      }
-      if (next.length > 0) {
-        return next
-      }
-      return getNext()
-    }
-    return getNext()
-  },
+): ReadIterator => ({
+  next: async () => readIteratorNext(iterator),
+  nextPage: async () => readIteratorPage(iterator),
 })
 
 const createFilteredReadIterator = (
   iterator: rocksdb.Iterator,
   filter: (x: string) => boolean,
   limit?: number,
-): readIterator => {
+): ReadIterator => {
   let iterated = 0
   return {
     next: async () => {
       const getNext = async (): Promise<remoteMap.RemoteMapEntry<string> | undefined> => {
-        if (limit && iterated >= limit) {
+        if (limit !== undefined && iterated >= limit) {
           return undefined
         }
         const next = await readIteratorNext(iterator)
@@ -403,15 +387,18 @@ const createFilteredReadIterator = (
     },
     nextPage: async () => {
       const getNext = async (): Promise<remoteMap.RemoteMapEntry<string>[] | undefined> => {
+        if (limit && iterated >= limit) {
+          return undefined
+        }
         const next = await readIteratorPage(iterator)
-        if (next === undefined || (limit && iterated >= limit)) {
+        if (next === undefined) {
           return undefined
         }
         const filteredPage = next.filter(ent => filter(ent.key))
         if (filteredPage.length === 0) {
           return getNext()
         }
-        const actualPage = (limit && ((iterated + filteredPage.length) > limit))
+        const actualPage = limit !== undefined
           ? filteredPage.slice(0, limit - iterated)
           : filteredPage
         iterated += actualPage.length
@@ -423,7 +410,7 @@ const createFilteredReadIterator = (
 }
 
 const createIterator = (prefix: string, opts: CreateIteratorOpts, connection: rocksdb):
-readIterator => (
+ReadIterator => (
   opts.filter === undefined
     ? createReadIterator(
       connection.iterator({
@@ -501,7 +488,7 @@ remoteMap.RemoteMapCreator => {
     const getAppropriateKey = (key: string, temp = false): string =>
       (temp ? keyToTempDBKey(key) : keyToDBKey(key))
 
-    const createTempIterator = (opts: CreateIteratorOpts): readIterator => {
+    const createTempIterator = (opts: CreateIteratorOpts): ReadIterator => {
       const normalizedOpts = {
         ...opts,
         ...(opts.after ? { after: keyToTempDBKey(opts.after) } : {}),
@@ -513,7 +500,7 @@ remoteMap.RemoteMapCreator => {
       )
     }
 
-    const createPersistentIterator = (opts: CreateIteratorOpts): readIterator => {
+    const createPersistentIterator = (opts: CreateIteratorOpts): ReadIterator => {
       const normalizedOpts = {
         ...opts,
         ...(opts.after ? { after: keyToDBKey(opts.after) } : {}),
@@ -831,7 +818,7 @@ remoteMap.ReadOnlyRemoteMapCreator => {
     const uniqueId = uuidv4()
     const keyToDBKey = (key: string): string => getFullDBKey(namespace, key)
     const keyPrefix = getKeyPrefix(namespace)
-    const createDBIterator = (opts: CreateIteratorOpts): readIterator => {
+    const createDBIterator = (opts: CreateIteratorOpts): ReadIterator => {
       const normalizedOpts = {
         ...opts,
         ...(opts.after ? { after: keyToDBKey(opts.after) } : {}),

@@ -295,10 +295,7 @@ describe('test operations on remote db', () => {
       it('should list all keys', async () => {
         await remoteMap.setAll(createAsyncIterable(elements))
         const iter = remoteMap.keys()
-        const res: string[] = []
-        for await (const elemId of iter) {
-          res.push(elemId)
-        }
+        const res = await awu(iter).toArray()
         expect(res).toEqual(elements.map(elem => elem.elemID.getFullName()).sort())
       })
 
@@ -358,10 +355,7 @@ describe('test operations on remote db', () => {
       it('should list the filtered keys', async () => {
         await remoteMap.setAll(createAsyncIterable(elements))
         const iter = remoteMap.keys({ filter: filterFn })
-        const res: string[] = []
-        for await (const elemId of iter) {
-          res.push(elemId)
-        }
+        const res = await awu(iter).toArray()
         expect(res).toEqual(filteredSortedElements)
       })
 

@@ -1227,9 +1227,9 @@ export const loadWorkspace = async (
     getSearchableNamesOfEnv: async (env?: string): Promise<string[]> =>
       (await getLoadedNaclFilesSource()).getSearchableNamesOfEnv(env ?? currentEnv()),
     listUnresolvedReferences: async (completeFromEnv?: string): Promise<UnresolvedElemIDs> => {
-      const getUnresolvedElemIDsFromErrors = async (
+      const getUnresolvedElemIDsFromErrors = (
         validationErrors: readonly ValidationError[]
-      ): Promise<ElemID[]> => {
+      ): ElemID[] => {
         const workspaceErrors = validationErrors
           .filter(isUnresolvedRefError)
           .map(e => e.target.createBaseID().parent)
@@ -1240,7 +1240,7 @@ export const loadWorkspace = async (
       ): Promise<ElemID[]> => getUnresolvedElemIDsFromErrors(
         (await validateElements(elementsArray, await elements()))
       )
-      const unresolvedElemIDs = await getUnresolvedElemIDsFromErrors((await errors()).validation)
+      const unresolvedElemIDs = getUnresolvedElemIDsFromErrors((await errors()).validation)
       if (completeFromEnv === undefined) {
         return {
           found: [],

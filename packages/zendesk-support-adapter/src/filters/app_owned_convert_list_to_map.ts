@@ -23,53 +23,55 @@ import { APP_OWNED_TYPE_NAME } from '../constants'
 
 const log = logger(module)
 
-type AppOwnedParameter = {
+export type AppOwnedParameter = {
   id: number
   // eslint-disable-next-line camelcase
   app_id: number
   // eslint-disable-next-line camelcase
-  created_at: string
+  created_at?: string
   // eslint-disable-next-line camelcase
-  updated_at: string
+  updated_at?: string
   name: string
   kind: string
-  required: boolean
-  position: number
-  secure: boolean
+  required?: boolean
+  position?: number
+  secure?: boolean
 }
 
-const EXPECTED_PARAMETERS_SCHEMA = Joi.array().items(Joi.object({
+const EXPECTED_PARAMETERS_SCHEMA = Joi.object({
   id: Joi.number().required(),
   // eslint-disable-next-line camelcase
   app_id: Joi.number().required(),
-  // eslint-disable-next-line camelcase
-  created_at: Joi.date().timestamp(),
-  // eslint-disable-next-line camelcase
-  updated_at: Joi.date().timestamp(),
   name: Joi.string().required(),
   kind: Joi.string().required(),
-  required: Joi.boolean().required(),
-  position: Joi.number().required(),
-  secure: Joi.boolean().required(),
-})).required()
+  created_at: Joi.string(),
+  updated_at: Joi.string(),
+  required: Joi.boolean(),
+  position: Joi.number(),
+  secure: Joi.boolean(),
+}).required()
 
 const isParameters = (values: unknown): values is AppOwnedParameter[] => {
-  const { error } = EXPECTED_PARAMETERS_SCHEMA.validate(values)
-  if (error !== undefined) {
-    log.error(`Received an invalid response for the app_owned parameters values: ${error.message}, ${safeJsonStringify(values)}`)
+  if (!_.isArray(values)) {
     return false
   }
-  return true
+  return values.every(value => {
+    const { error } = EXPECTED_PARAMETERS_SCHEMA.validate(value)
+    if (error !== undefined) {
+      log.error(`Received an invalid response for the app_owned parameters value: ${error.message}, ${safeJsonStringify(value)}`)
+      return false
+    }
+    return true
+  })
 }
 
 const turnParametersFieldToMap = (
   element: InstanceElement,
 ): void => {
-  if (isParameters(element.value.parameters)) {
+  if (!isParameters(element.value.parameters)) {
     return
   }
-  const paramsWithoutHiddenFields = (element.value.parameters)
-  element.value.parameters = _.keyBy(paramsWithoutHiddenFields, 'name')
+  element.value.parameters = _.keyBy(element.value.parameters, 'name')
 }
 
 /**

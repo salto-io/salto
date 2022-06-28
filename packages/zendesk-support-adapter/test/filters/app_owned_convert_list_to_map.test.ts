@@ -13,20 +13,21 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { ObjectType, ElemID, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { DEFAULT_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
 import { APP_OWNED_TYPE_NAME, ZENDESK_SUPPORT } from '../../src/constants'
 import { paginate } from '../../src/client/pagination'
-import filterCreator from '../../src/filters/app_owned_convert_list_to_map'
+import filterCreator, { AppOwnedParameter } from '../../src/filters/app_owned_convert_list_to_map'
 
 describe('appOwnedConvertListToMap filter', () => {
   let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType
   const appOwnedType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, APP_OWNED_TYPE_NAME) })
-  const appOwnedParameter = {
+  const appOwnedParameter: AppOwnedParameter = {
     id: 1901818,
     app_id: 772455,
     name: 'name',
@@ -37,7 +38,7 @@ describe('appOwnedConvertListToMap filter', () => {
     updated_at: '2022-03-06T12:24:31Z',
     secure: false,
   }
-  const appOwnedOtherParameter = {
+  const appOwnedOtherParameter: AppOwnedParameter = {
     id: 1901819,
     app_id: 772456,
     name: 'name2',
@@ -121,8 +122,20 @@ describe('appOwnedConvertListToMap filter', () => {
       const appOwnedInstanceElementParameters = appOwnedInstanceElement.value.parameters
       expect(appOwnedInstanceElementParameters).toBeDefined()
       expect(Object.keys(appOwnedInstanceElementParameters)).toHaveLength(2)
-      expect(appOwnedInstanceElementParameters[appOwnedParameter.name]).toBeDefined()
-      expect(appOwnedInstanceElementParameters[appOwnedOtherParameter.name]).toBeDefined()
+
+      const elementParameter: AppOwnedParameter = appOwnedInstanceElementParameters[
+        appOwnedParameter.name]
+      expect(elementParameter).toBeDefined()
+
+      const elementOtherParameter: AppOwnedParameter = appOwnedInstanceElementParameters[
+        appOwnedOtherParameter.name]
+      expect(elementOtherParameter).toBeDefined()
+
+      expect(_.keys(elementParameter))
+        .toMatchObject(_.omitBy(_.keys(appOwnedParameter), ['id', 'app_id', 'created_at', 'updated_at']))
+
+      expect(_.keys(elementOtherParameter))
+        .toMatchObject(_.omitBy(_.keys(appOwnedOtherParameter), ['id', 'app_id', 'created_at', 'updated_at']))
     })
   })
 })

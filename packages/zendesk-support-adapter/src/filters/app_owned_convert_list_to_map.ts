@@ -83,9 +83,9 @@ const filterCreator: FilterCreator = () => ({
       .filter(isInstanceElement)
       .filter(e => e.elemID.typeName === APP_OWNED_TYPE_NAME)
       .filter(e => !_.isEmpty(e.value.parameters))
-      .forEach(ele =>
+      .forEach(elem =>
         turnParametersFieldToMap(
-          ele,
+          elem,
         ))
   }, 'appOwnedConvertListToMap filter'),
 })

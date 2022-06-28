@@ -1249,7 +1249,7 @@ export const getSObjectFieldElement = (
     delete annotations[CORE_ANNOTATIONS.REQUIRED]
   }
 
-  const fieldName = Types.getElemId(field.name, true, serviceIds).name
+  const fieldName = Types.getElemId(naclCase(field.name), true, serviceIds).name
   return new Field(parent, fieldName, naclFieldType, annotations)
 }
 

@@ -662,12 +662,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
 }
 
 const DEFAULT_SWAGGER_CONFIG: ZuoraApiConfig['swagger'] = {
-  url: 'https://assets.zuora.com/zuora-documentation/swagger.yaml',
+  url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/main/zuora_billing/swagger.yaml',
   typeNameOverrides: [
     { originalName: 'events__event_triggers@uub', newName: 'EventTriggers' },
     { originalName: 'notifications__email_templates@uub', newName: 'NotificationEmailTemplates' },
     { originalName: 'notifications__notification_definitions@uub', newName: 'NotificationDefinitions' },
-    { originalName: 'workflows___workflow_id___export@uu_00123u_00125uu', newName: WORKFLOW_EXPORT_TYPE },
+    { originalName: 'ExportWorkflowVersionResponse', newName: WORKFLOW_EXPORT_TYPE },
     { originalName: 'GETAccountingCodeItemWithoutSuccessType', newName: ACCOUNTING_CODE_ITEM_TYPE },
     { originalName: 'GETAccountingCodesType', newName: 'AccountingCodes' },
     { originalName: 'GETAccountingPeriodsType', newName: 'AccountingPeriods' },

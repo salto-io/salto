@@ -51,11 +51,13 @@ const createChangeErrors = ({ pickListField, gvsElemID }:
   return [picklistErr]
 }
 
-const referencedGvsElemID = (change: ModificationChange<Field>): ElemID | undefined => {
+const referencedGvsElemID = async (
+  change: ModificationChange<Field>
+): Promise<ElemID | undefined> => {
   const referencedGvs = getChangeData(change).annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
   if (isReferenceExpression(referencedGvs)) {
     const referencedValue = referencedGvs.value
-    if (isInstanceOfType(GLOBAL_VALUE_SET)(referencedValue)) {
+    if (await isInstanceOfType(GLOBAL_VALUE_SET)(referencedValue)) {
       return referencedValue.elemID
     }
   }
@@ -63,7 +65,7 @@ const referencedGvsElemID = (change: ModificationChange<Field>): ElemID | undefi
 }
 
 /**
- * Promoting picklist value-set to global is forbbiden
+ * Promoting picklist value-set to global is forbidden
  */
 const changeValidator: ChangeValidator = async changes => {
   const isGVSInstance = isInstanceOfType(GLOBAL_VALUE_SET)
@@ -76,7 +78,7 @@ const changeValidator: ChangeValidator = async changes => {
   return awu(changes.filter(isModificationChange).filter(isFieldChange))
     .filter(isGlobalPicklistChange)
     .map(async change => {
-      const gvsElemID = referencedGvsElemID(change)
+      const gvsElemID = await referencedGvsElemID(change)
       return {
         pickListField: getChangeData(change),
         gvsElemID: (gvsElemID && gvsIDs.has(gvsElemID.getFullName())) ? gvsElemID : undefined,

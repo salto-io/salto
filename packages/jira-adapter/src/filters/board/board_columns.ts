@@ -18,11 +18,14 @@ import { logger } from '@salto-io/logging'
 import { createSchemeGuard, resolveChangeElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import Joi from 'joi'
+import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
 import { BOARD_COLUMN_CONFIG_TYPE, BOARD_TYPE_NAME } from '../../constants'
 import { addAnnotationRecursively, findObject, setFieldDeploymentAnnotations } from '../../utils'
 import JiraClient from '../../client/client'
 import { getLookUpName } from '../../reference_mapping'
+
+const { awu } = collections.asynciterable
 
 const KANBAN_TYPE = 'kanban'
 export const COLUMNS_CONFIG_FIELD = 'columnConfig'
@@ -42,6 +45,25 @@ const UPDATE_COLUMNS_RESPONSE_SCHEME = Joi.object({
 }).unknown(true).required()
 
 const isUpdateColumnsResponse = createSchemeGuard<UpdateColumnsResponse>(UPDATE_COLUMNS_RESPONSE_SCHEME, 'Received an invalid columns update response')
+
+type BoardConfigResponse = {
+  columnsConfig: {
+    columns: {
+      name: string
+    }[]
+  }
+}
+
+const BOARD_CONFIG_RESPONSE_SCHEME = Joi.object({
+  columnsConfig: Joi.object({
+    columns: Joi.array().items(Joi.object({
+      name: Joi.string().required(),
+    }).unknown(true)),
+  }).unknown(true).required(),
+}).unknown(true).required()
+
+const isBoardConfigResponse = createSchemeGuard<BoardConfigResponse>(BOARD_CONFIG_RESPONSE_SCHEME, 'Received an invalid board config response')
+
 
 const convertColumn = (column: Values): Values => ({
   name: column.name,
@@ -104,12 +126,50 @@ export const deployColumns = async (
   }
 }
 
-const filter: FilterCreator = ({ config }) => ({
+
+const removeRedundantColumns = async (
+  instance: InstanceElement,
+  client: JiraClient,
+): Promise<void> => {
+  if (instance.value.type !== KANBAN_TYPE) {
+    return
+  }
+
+  log.info(`Removing first column from ${instance.elemID.getFullName()} with ${instance.value[COLUMNS_CONFIG_FIELD].columns.map((col: Values) => col.name).join(', ')}`)
+  // In Kanban boards, the first column is always backlog, which is non-editable.
+  // Not removing it will make us create another backlog column.
+  instance.value[COLUMNS_CONFIG_FIELD].columns.shift()
+
+  // In some rare cases, we get from the API two Backlog columns.
+  // So we need to check if it's a redundant columns or it was really
+  // added by the user.
+  if (instance.value[COLUMNS_CONFIG_FIELD].columns[0]?.name !== 'Backlog') {
+    return
+  }
+
+  log.debug(`${instance.elemID.getFullName()} has two backlog columns`)
+  const response = await client.getSinglePage({
+    url: `/rest/agile/1.0/board/${instance.value.id}/configuration`,
+  })
+
+  if (!isBoardConfigResponse(response.data)) {
+    return
+  }
+
+  if (response.data.columnsConfig.columns[1]?.name !== 'Backlog') {
+    log.debug(`${instance.elemID.getFullName()} removing second backlog column`)
+    instance.value[COLUMNS_CONFIG_FIELD].columns.shift()
+  } else {
+    log.debug(`${instance.elemID.getFullName()} leaving second backlog column`)
+  }
+}
+
+const filter: FilterCreator = ({ config, client }) => ({
   onFetch: async (elements: Element[]) => {
-    elements
+    await awu(elements)
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === BOARD_TYPE_NAME)
-      .forEach(instance => {
+      .forEach(async instance => {
         instance.value[COLUMNS_CONFIG_FIELD] = instance.value.config[COLUMNS_CONFIG_FIELD]
         delete instance.value.config[COLUMNS_CONFIG_FIELD]
 
@@ -119,13 +179,7 @@ const filter: FilterCreator = ({ config }) => ({
           }
         })
 
-        if (instance.value.type === KANBAN_TYPE) {
-          log.info(`Removing first column from ${instance.elemID.getFullName()} with ${instance.value[COLUMNS_CONFIG_FIELD].columns.map((col: Values) => col.name).join(', ')}`)
-          // In Kanban boards, the first column is always backlog, which is non-editable.
-          // Not removing it will make us create another backlog column.
-          instance.value[COLUMNS_CONFIG_FIELD].columns = instance.value[COLUMNS_CONFIG_FIELD]
-            .columns.slice(1)
-        }
+        await removeRedundantColumns(instance, client)
       })
 
     if (!config.client.usePrivateAPI) {

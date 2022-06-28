@@ -3921,6 +3921,37 @@ describe('listUnresolvedReferences', () => {
     return [type1, type2, inst1, inst2]
   }
 
+  const createNetsuiteEnvElements = (): Element[] => {
+    const nsType = new ObjectType({
+      elemID: new ElemID('netsuite', 'advancedpdftemplate'),
+      fields: {
+        scriptid: { refType: BuiltinTypes.STRING },
+      },
+    })
+    const nsInstance1 = new InstanceElement(
+      'custtmpl1',
+      nsType,
+      {
+        scriptid: new ReferenceExpression(new ElemID('netsuite', 'advancedpdftemplate', 'instance', 'custtmpl2', 'scriptid')),
+      }
+    )
+    const nsInstance2 = new InstanceElement(
+      'custtmpl2',
+      nsType,
+      {
+        scriptid: new ReferenceExpression(new ElemID('netsuite', 'advancedpdftemplate', 'instance', 'custtmpl3', 'scriptid')),
+      }
+    )
+    const nsInstance3 = new InstanceElement(
+      'custtmpl3',
+      nsType,
+      {
+        scriptid: 'This is a scriptid',
+      }
+    )
+    return [nsType, nsInstance1, nsInstance2, nsInstance3]
+  }
+
   describe('workspace with no references', () => {
     beforeAll(async () => {
       const elements = createEnvElements().slice(0, 1)
@@ -4217,6 +4248,48 @@ describe('listUnresolvedReferences', () => {
       expect(res.missing).toEqual([
         new ElemID('salesforce', 'someType', 'field', 'f3'),
       ])
+    })
+  })
+
+  describe('workspace with unresolved non-element reference which lead to unresolved non-element reference', () => {
+    beforeAll(async () => {
+      jest.resetAllMocks()
+      const defaultElements = createNetsuiteEnvElements().slice(0, 2)
+      const otherElements = createNetsuiteEnvElements()
+      workspace = await createWorkspace(
+        undefined, undefined, mockWorkspaceConfigSource(undefined, true), undefined, undefined,
+        undefined,
+        {
+          '': {
+            naclFiles: await naclFilesSource(
+              COMMON_ENV_PREFIX,
+              mockDirStore(),
+              mockStaticFilesSource(),
+              persistentMockCreateRemoteMap(),
+              true
+            ),
+          },
+          default: {
+            naclFiles: createMockNaclFileSource(defaultElements),
+            state: createState(defaultElements),
+          },
+          inactive: {
+            naclFiles: createMockNaclFileSource(otherElements),
+            state: createState(otherElements),
+          },
+        }
+      )
+      res = await workspace.listUnresolvedReferences('inactive')
+    })
+
+    it('should return the instance of the unresolved reference, although the reference is a value', () => {
+      expect(res.found).toEqual([
+        new ElemID('netsuite', 'advancedpdftemplate', 'instance', 'custtmpl2'),
+        new ElemID('netsuite', 'advancedpdftemplate', 'instance', 'custtmpl3'),
+      ])
+    })
+    it('should mark the missing unresolved reference in the redirected env', () => {
+      expect(res.missing).toHaveLength(0)
     })
   })
 })

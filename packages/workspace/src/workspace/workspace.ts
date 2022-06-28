@@ -21,7 +21,7 @@ import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, Detail
 import { logger } from '@salto-io/logging'
 import { applyDetailedChanges, naclCase, resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
-import { ValidationError, validateElements, isUnresolvedRefError } from '../validator'
+import { ValidationError, validateElements, isUnresolvedRefError, UnresolvedReferenceValidationError } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
 import { State } from './state'
@@ -1227,19 +1227,21 @@ export const loadWorkspace = async (
     getSearchableNamesOfEnv: async (env?: string): Promise<string[]> =>
       (await getLoadedNaclFilesSource()).getSearchableNamesOfEnv(env ?? currentEnv()),
     listUnresolvedReferences: async (completeFromEnv?: string): Promise<UnresolvedElemIDs> => {
-      const getUnresolvedElemIDsFromErrors = async (): Promise<ElemID[]> => {
-        const workspaceErrors = (await errors()).validation.filter(isUnresolvedRefError)
-          .map(e => e.target.createBaseID().parent)
+      const getUnresolvedElemIDsFromErrors = async (
+        unresolvedRefErrors: UnresolvedReferenceValidationError[]
+      ): Promise<ElemID[]> => {
+        const workspaceErrors = unresolvedRefErrors.map(e => e.target.createBaseID().parent)
         return _.uniqBy(workspaceErrors, elemID => elemID.getFullName())
       }
       const getUnresolvedElemIDs = async (
         elementsArray: Element[],
-      ): Promise<ElemID[]> => _.uniqBy(
+      ): Promise<ElemID[]> => getUnresolvedElemIDsFromErrors(
         (await validateElements(elementsArray, await elements()))
-          .filter(isUnresolvedRefError).map(e => e.target),
-        elemID => elemID.getFullName(),
+          .filter(isUnresolvedRefError)
       )
-      const unresolvedElemIDs = await getUnresolvedElemIDsFromErrors()
+      const unresolvedElemIDs = await getUnresolvedElemIDsFromErrors(
+        (await errors()).validation.filter(isUnresolvedRefError)
+      )
       if (completeFromEnv === undefined) {
         return {
           found: [],

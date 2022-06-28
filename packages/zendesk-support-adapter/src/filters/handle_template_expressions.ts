@@ -21,6 +21,7 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
+import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from './dynamic_content'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -147,7 +148,7 @@ const formulaToTemplate = (formula: string,
       const dynamicContentReference = expression.match(/\$\{dc\.(.+?)\}/)
       if (dynamicContentReference) {
         const dcPlaceholder = dynamicContentReference.pop() ?? ''
-        const ref = instancesByType.dynamic_content_item.find(instance =>
+        const ref = (instancesByType[DYNAMIC_CONTENT_ITEM_TYPE_NAME] ?? []).find(instance =>
           instance.value.placeholder === `{{dc.${dcPlaceholder}}}`)
         if (ref) {
           return new ReferenceExpression(ref.elemID, ref)
@@ -211,7 +212,7 @@ const filterCreator: FilterCreator = () => {
                       '_',
                       new ReferenceExpression(part.elemID.createNestedID('id'), part.value.value.id)]
                   }
-                  if (part.elemID.typeName === 'dynamic_content_item') {
+                  if (part.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME) {
                     return part.value.value.placeholder.match(/{{(.*)}}/).pop()
                   }
                 }

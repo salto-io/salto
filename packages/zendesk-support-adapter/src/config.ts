@@ -1009,14 +1009,17 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   app_owned: {
     transformation: {
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'parameters', fieldType: 'map<app_owned__parameters>' },
+      ],
       sourceTypeName: 'apps_owned__apps',
     },
   },
   app_owned__parameters: {
     transformation: {
-      fieldsToHide: [],
-      fieldsToOmit: [{ fieldName: 'id' }, { fieldName: 'app_id' }, { fieldName: 'created_at' }, { fieldName: 'updated_at' }],
+      fieldsToHide: FIELDS_TO_HIDE.concat([{ fieldName: 'id' }, { fieldName: 'app_id' }]),
+      fieldsToOmit: [],
     },
   },
   oauth_client: {

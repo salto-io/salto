@@ -360,8 +360,8 @@ const getPrefixEndCondition = (prefix: string): string => prefix
 const createReadIterator = (
   iterator: rocksdb.Iterator,
 ): ReadIterator => ({
-  next: async () => readIteratorNext(iterator),
-  nextPage: async () => readIteratorPage(iterator),
+  next: () => readIteratorNext(iterator),
+  nextPage: () => readIteratorPage(iterator),
 })
 
 const createFilteredReadIterator = (
@@ -371,7 +371,7 @@ const createFilteredReadIterator = (
 ): ReadIterator => {
   let iterated = 0
   return {
-    next: async () => {
+    next: () => {
       const getNext = async (): Promise<remoteMap.RemoteMapEntry<string> | undefined> => {
         if (limit !== undefined && iterated >= limit) {
           return undefined
@@ -385,7 +385,7 @@ const createFilteredReadIterator = (
       }
       return getNext()
     },
-    nextPage: async () => {
+    nextPage: () => {
       const getNext = async (): Promise<remoteMap.RemoteMapEntry<string>[] | undefined> => {
         if (limit && iterated >= limit) {
           return undefined

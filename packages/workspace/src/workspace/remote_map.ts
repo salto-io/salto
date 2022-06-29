@@ -24,7 +24,7 @@ export type IterationOpts = {
   first?: number
   after?: string
   pageSize?: number
-  filter?: (x: string) => boolean
+  filter?: (key: string) => boolean
 }
 
 export type PagedIterationOpts = IterationOpts & {

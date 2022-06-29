@@ -144,6 +144,64 @@ describe('jqlReferencesFilter', () => {
       )
     })
 
+    it('should work with empty jql', async () => {
+      instance.value.jql = ''
+
+      connection.post.mockResolvedValue({
+        status: 200,
+        data: {
+          queries: [
+            {
+              query: '',
+              structure: {
+                where: {
+                  field: {
+                    name: 'status',
+                  },
+                  operator: '=',
+                  operand: {
+                    value: 'Done',
+                  },
+                },
+              },
+            },
+          ],
+        },
+      })
+
+      await filter.onFetch?.([instance, fieldInstance, doneInstance, todoInstance])
+      expect(instance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual([
+        {
+          reference: new ReferenceExpression(fieldInstance.elemID, fieldInstance),
+          occurrences: [
+            {
+              location: new ReferenceExpression(instance.elemID.createNestedID('jql'), ''),
+            },
+          ],
+        },
+        {
+          reference: new ReferenceExpression(doneInstance.elemID, doneInstance),
+          occurrences: [
+            {
+              location: new ReferenceExpression(instance.elemID.createNestedID('jql'), ''),
+            },
+          ],
+        },
+      ])
+
+      expect(connection.post).toHaveBeenCalledWith(
+        '/rest/api/3/jql/parse',
+        {
+          queries: [''],
+        },
+        {
+          params: {
+            validation: 'none',
+          },
+        },
+      )
+    })
+
     it('should parse correctly jql with multiple values', async () => {
       const jql = 'status IN (Done, "To Do") AND otherfield = 2 AND issuetype = 3'
       connection.post.mockResolvedValue({

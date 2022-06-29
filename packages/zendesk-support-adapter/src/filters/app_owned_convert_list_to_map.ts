@@ -24,18 +24,7 @@ import { APP_OWNED_TYPE_NAME } from '../constants'
 const log = logger(module)
 
 export type AppOwnedParameter = {
-  id: number
-  // eslint-disable-next-line camelcase
-  app_id: number
-  // eslint-disable-next-line camelcase
-  created_at?: string
-  // eslint-disable-next-line camelcase
-  updated_at?: string
   name: string
-  kind: string
-  required?: boolean
-  position?: number
-  secure?: boolean
 }
 
 const EXPECTED_PARAMETERS_SCHEMA = Joi.array().items(Joi.object({

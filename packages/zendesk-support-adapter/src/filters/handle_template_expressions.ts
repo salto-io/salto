@@ -192,7 +192,7 @@ const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promi
       })
     })
   } catch (e) {
-    log.warn(`Error parsing templates in deployment: ${e.message}`)
+    log.error(`Error parsing templates in deployment: ${e.message}`)
   }
 }
 
@@ -247,7 +247,7 @@ const filterCreator: FilterCreator = () => {
           }
         )
       } catch (e) {
-        log.warn(`Error parsing templates in deployment: ${e.message}`)
+        log.error(`Error parsing templates in deployment: ${e.message}`)
       }
     }, 'Create template resolve filter'),
     onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () =>

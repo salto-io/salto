@@ -108,25 +108,17 @@ const updateChange = (
 }
 
 const getUniqueDates = (changes: Change<Element>[]): Set<string> => {
-  const DateSet = new Set<string>()
+  const dateSet = new Set<string | undefined>()
   changes.forEach(change => {
     if (isModificationChange(change)) {
-      const before = getChangedAt(toChange({ before: change.data.before }))
-      const after = getChangedAt(toChange({ after: change.data.after }))
-      if (before) {
-        DateSet.add(before)
-      }
-      if (after) {
-        DateSet.add(after)
-      }
+      dateSet.add(getChangedAt(toChange({ before: change.data.before })))
+      dateSet.add(getChangedAt(toChange({ after: change.data.after })))
     } else {
-      const date = getChangedAt(change)
-      if (date) {
-        DateSet.add(date)
-      }
+      dateSet.add(getChangedAt(change))
     }
   })
-  return DateSet
+  dateSet.delete(undefined)
+  return dateSet as Set<string>
 }
 
 const mergeDateMap = (

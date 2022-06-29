@@ -2278,6 +2278,67 @@ describe('workspace', () => {
       })
     })
   })
+  describe('changed at index', () => {
+    let workspace: Workspace
+    const firstFile = `
+      type salesforce.text is string {}
+      type salesforce.lead {
+        annotations {
+          string _changed_at {
+          }
+        }
+        _changed_at = "2000-01-01T00:00:00.000Z"
+        salesforce.text singleDef {
+  
+        }
+        salesforce.text multiDef {
+  
+        }
+      }
+    `
+    const naclFileStore = mockDirStore(undefined, undefined, {
+      'firstFile.nacl': firstFile,
+    })
+    beforeEach(async () => {
+      workspace = await createWorkspace(
+        naclFileStore,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        {
+          '': {
+            naclFiles: createMockNaclFileSource([]),
+          },
+          default: {
+            naclFiles: await naclFilesSource(
+              'default',
+              naclFileStore,
+              mockStaticFilesSource(),
+              persistentMockCreateRemoteMap(),
+              true
+            ),
+            state: createState([]),
+          },
+        },
+      )
+    })
+    describe('getChangedElementsBetween', () => {
+      it('get correct element ids until now', async () => {
+        const result = await workspace.getChangedElementsBetween('1999-01-01T00:00:00.000Z')
+        expect(result[0].getFullName()).toEqual('salesforce.lead')
+      })
+      it('get correct element ids until date failure', async () => {
+        const result = await workspace.getChangedElementsBetween('1999-01-01T00:00:00.000Z', '1999-02-01T00:00:00.000Z')
+        expect(result.length).toEqual(0)
+      })
+      it('get correct element ids until date success', async () => {
+        const result = await workspace.getChangedElementsBetween('1999-01-01T00:00:00.000Z', '2000-02-01T00:00:00.000Z')
+        expect(result[0].getFullName()).toEqual('salesforce.lead')
+      })
+    })
+  })
   describe('changed by index', () => {
     let workspace: Workspace
     const firstFile = `

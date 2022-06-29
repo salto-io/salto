@@ -31,8 +31,10 @@ import {
   triggerOrderInstanceContainsAllTheInstancesValidator,
   brandCreationValidator,
   webhookAuthDataValidator,
+  targetAuthDataValidator,
   phoneNumbersValidator,
 } from './change_validators'
+import ZendeskClient from './client/client'
 
 const {
   deployTypesNotSupportedValidator,
@@ -41,10 +43,12 @@ const {
 } = deployment.changeValidators
 
 export default ({
+  client,
   apiConfig,
   typesDeployedViaParent,
   typesWithNoDeploy,
 }: {
+  client: ZendeskClient
   apiConfig: configUtils.AdapterDuckTypeApiConfig
   typesDeployedViaParent: string[]
   typesWithNoDeploy: string[]
@@ -68,7 +72,8 @@ export default ({
     orderInstanceContainsAllTheInstancesValidator,
     triggerOrderInstanceContainsAllTheInstancesValidator,
     brandCreationValidator,
-    webhookAuthDataValidator,
+    webhookAuthDataValidator(client),
+    targetAuthDataValidator(client, apiConfig),
     phoneNumbersValidator,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)

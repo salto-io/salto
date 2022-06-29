@@ -20,6 +20,11 @@ When logging in with Salto, you will be asked to provide:
 - The OAuth client ID and secret
 - The subdomain for your account (can be copied from the URL in the browser - for example, for https://sandbox.na.zuora.com/ the subdomain is sandbox.na)
 
+## Zuora Swaggers
+
+The Zuora Billing adapter relies on the [Zuora Billing REST API](https://assets.zuora.com/zuora-documentation/swagger.yaml) swagger definitions.
+To make sure the adapter does not unexpectedly break due to a change in the swagger, we use the [Swaggers Repository](https://github.com/salto-io/adapter-swaggers), which contains the latest version that this adapter was tested on.
+
 ## E2E tests
 
 E2E tests need real Zuora credentials to run.

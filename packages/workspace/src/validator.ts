@@ -64,8 +64,6 @@ const primitiveValidators = {
 
 /**
  * Validate that all type fields values corresponding with core annotations (required, values)
- * @param value
- * @param type
  */
 const validateAnnotations = (
   elemID: ElemID,
@@ -187,6 +185,26 @@ export class InvalidValueMaxLengthValidationError extends ValidationError {
     this.maxLength = maxLength
   }
 }
+
+export class InvalidValueMaxListLengthValidationError extends ValidationError {
+  readonly size: number
+  readonly fieldName: string
+  readonly maxListLength: number
+
+  constructor({ elemID, size, fieldName, maxListLength }:
+                { elemID: ElemID; size: number; fieldName: string; maxListLength: number }) {
+    super({
+      elemID,
+      error: `List of size ${size} is too large for field.`
+        + ` ${fieldName} maximum length is ${maxListLength}`,
+      severity: 'Warning',
+    })
+    this.size = size
+    this.fieldName = fieldName
+    this.maxListLength = maxListLength
+  }
+}
+
 export class MissingRequiredFieldValidationError extends ValidationError {
   readonly fieldName: string
 
@@ -241,10 +259,10 @@ export class CircularReferenceValidationError extends ValidationError {
 }
 
 export class InvalidStaticFileError extends ValidationError {
-  constructor({ elemID, value }: { elemID: ElemID; value: InvalidStaticFile }) {
+  constructor({ elemID, error }: { elemID: ElemID; error: string }) {
     super({
       elemID,
-      error: value.message,
+      error,
       severity: 'Error',
     })
   }
@@ -334,11 +352,11 @@ const validateAnnotationsValue = (
     return validateRequiredValue()
   }
 
-  if (isListType(type) && shouldEnforceValue()) {
-    const maxLength = restrictions.max_length
-    if ((values.isDefined(maxLength) && _.isArray(value) && value.length > maxLength)) {
-      return [new InvalidValueMaxLengthValidationError(
-        { elemID, value: value.toString(), fieldName: elemID.name, maxLength }
+  if (isListType(type) && shouldEnforceValue() && _.isArray(value)) {
+    const maxListLength = restrictions.max_list_length
+    if ((values.isDefined(maxListLength) && value.length > maxListLength)) {
+      return [new InvalidValueMaxListLengthValidationError(
+        { elemID, size: value.length, fieldName: elemID.name, maxListLength }
       )]
     }
   }
@@ -368,8 +386,6 @@ const mapAsArrayWithIds = <T>(value: T | T[], elemID: ElemID): ItemWithNestedId<
 
 /**
  * Validate that field values corresponding with core annotations (_required, _values, _restriction)
- * @param value- the field value
- * @param field
  */
 const validateFieldAnnotations = (
   elemID: ElemID, value: Value, field: Field
@@ -469,7 +485,7 @@ const validateValue = (
   }
 
   if (value instanceof InvalidStaticFile) {
-    return [new InvalidStaticFileError({ elemID, value })]
+    return [new InvalidStaticFileError({ elemID, error: value.message })]
   }
 
   if (value instanceof StaticFile) {
@@ -583,7 +599,7 @@ const syncGetElementAnnotationTypes = (
     ...InstanceAnnotationTypes,
     ..._.pickBy(
       _.mapValues(type?.annotationRefTypes, ref => ref.type),
-      // We assume all elements are resolved and therefore we know the types are defined and this
+      // We assume all elements are resolved, and therefore we know the types are defined and this
       // filter won't actually omit anything
       values.isDefined,
     ),

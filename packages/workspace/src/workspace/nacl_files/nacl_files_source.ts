@@ -40,6 +40,7 @@ import { Functions } from '../../parser/functions'
 import { RemoteMap, RemoteMapCreator } from '../remote_map'
 import { ParsedNaclFile } from './parsed_nacl_file'
 import { ParsedNaclFileCache, createParseResultCache } from './parsed_nacl_files_cache'
+import { isInvalidStaticFile } from '../static_files/common'
 
 const { awu } = collections.asynciterable
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
@@ -140,7 +141,7 @@ export const getElementReferenced = async (element: Element): Promise<{
       referenced.add(parent.getFullName())
       nestedIds.forEach(id => referenced.add(id.getFullName()))
     }
-    if (isStaticFile(value)) {
+    if (isStaticFile(value) || isInvalidStaticFile(value)) {
       staticFiles.add(value.filepath)
     }
     return value
@@ -222,29 +223,19 @@ const parseNaclFile = async (
   (parse(Buffer.from(naclFile.buffer), naclFile.filename, functions))
 
 const parseNaclFiles = async (
-  naclFiles: NaclFile[], cache: ParsedNaclFileCache, functions: Functions
-): Promise<ParsedNaclFile[]> =>
-  withLimitedConcurrency(naclFiles.map(naclFile => async () => {
-    const hasValid = await cache.hasValid(naclFile)
-    const cachedResult = hasValid && await cache.get(naclFile.filename)
-    return (cachedResult && values.isDefined(cachedResult))
-      ? cachedResult : toParsedNaclFile(naclFile, await parseNaclFile(naclFile, functions))
-  }), PARSE_CONCURRENCY)
+  naclFiles: NaclFile[], functions: Functions
+): Promise<ParsedNaclFile[]> => (
+  withLimitedConcurrency(
+    naclFiles.map(
+      naclFile => async () => toParsedNaclFile(naclFile, await parseNaclFile(naclFile, functions))
+    ),
+    PARSE_CONCURRENCY,
+  )
+)
 
 export const getFunctions = (staticFilesSource: StaticFilesSource): Functions => ({
   ...getStaticFilesFunctions(staticFilesSource), // add future functions here
 })
-
-export const getParsedNaclFiles = async (
-  naclFilesStore: DirectoryStore<string>,
-  cache: ParsedNaclFileCache,
-  staticFilesSource: StaticFilesSource
-): Promise<ParsedNaclFile[]> => {
-  const naclFiles = (await naclFilesStore.getFiles(await naclFilesStore.list()))
-    .filter(values.isDefined)
-  const functions = getFunctions(staticFilesSource)
-  return parseNaclFiles(naclFiles, cache, functions)
-}
 
 type buildNaclFilesStateResult = { state: NaclFilesState; changes: ChangeSet<Change> }
 
@@ -586,19 +577,24 @@ const buildNaclFilesSource = (
       sourceName,
       persistent
     )
-    const modifiedNaclFiles: NaclFile[] = []
     if (!ignoreFileChanges) {
       const preChangeHash = await currentState.parsedNaclFiles.getHash()
       const cacheFilenames = await currentState.parsedNaclFiles.list()
       const modifiedStaticFiles = await staticFilesSource.load?.() ?? []
       const naclFilenames = new Set(await naclFilesStore.list())
       const fileNames = new Set()
+      const modifiedNaclFiles: NaclFile[] = []
+      const naclReferencingModifiedStaticFiles = new Set(
+        (await currentState.staticFilesIndex.getMany(modifiedStaticFiles))
+          .filter(values.isDefined)
+          .flat()
+      )
       await withLimitedConcurrency(
         cacheFilenames.map(filename => async () => {
           const naclFile = (naclFilenames.has(filename) && await naclFilesStore.get(filename))
             || { filename, buffer: '' }
           const validCache = await currentState.parsedNaclFiles.hasValid(naclFile)
-          if (!validCache) {
+          if (!validCache || naclReferencingModifiedStaticFiles.has(filename)) {
             modifiedNaclFiles.push(naclFile)
           }
           fileNames.add(filename)
@@ -615,21 +611,9 @@ const buildNaclFilesSource = (
         }),
         CACHE_READ_CONCURRENCY,
       )
-      await withLimitedConcurrency(
-        modifiedStaticFiles.map(staticFileName => async () => {
-          const filenames = (await currentState.staticFilesIndex.get(staticFileName) ?? [])
-            .filter(filename => !fileNames.has(filename))
-          await Promise.all(filenames.map(async filename => {
-            modifiedNaclFiles.push(await naclFilesStore.get(filename) ?? { filename, buffer: '' })
-            fileNames.add(filename)
-          }))
-        }),
-        CACHE_READ_CONCURRENCY,
-      )
       const parsedModifiedFiles = await parseNaclFiles(
         modifiedNaclFiles,
-        currentState.parsedNaclFiles,
-        functions
+        functions,
       )
       const result = await buildNaclFilesState({
         newNaclFiles: parsedModifiedFiles,
@@ -943,7 +927,7 @@ const buildNaclFilesSource = (
       const preChangeHash = await (await getState()).parsedNaclFiles.getHash()
       await awu(names).forEach(name => naclFilesStore.delete(name))
       const res = await buildNaclFilesStateInner(
-        await parseNaclFiles(names.map(filename => ({ filename, buffer: '' })), (await getState()).parsedNaclFiles, functions),
+        await parseNaclFiles(names.map(filename => ({ filename, buffer: '' })), functions),
       )
       state = Promise.resolve(res.state)
       res.changes.preChangeHash = preChangeHash
@@ -1026,7 +1010,7 @@ const buildNaclFilesSource = (
     setNaclFiles: async naclFiles => {
       await setNaclFiles(naclFiles)
       const res = await buildNaclFilesStateInner(
-        await parseNaclFiles(naclFiles, (await getState()).parsedNaclFiles, functions)
+        await parseNaclFiles(naclFiles, functions)
       )
       state = Promise.resolve(res.state)
       return res.changes

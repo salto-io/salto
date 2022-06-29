@@ -103,7 +103,6 @@ describe('jqlReferencesFilter', () => {
                 },
               },
             },
-            errors: [],
           },
         ],
       },
@@ -136,6 +135,64 @@ describe('jqlReferencesFilter', () => {
         '/rest/api/3/jql/parse',
         {
           queries: ['status = Done'],
+        },
+        {
+          params: {
+            validation: 'none',
+          },
+        },
+      )
+    })
+
+    it('should work with empty jql', async () => {
+      instance.value.jql = ''
+
+      connection.post.mockResolvedValue({
+        status: 200,
+        data: {
+          queries: [
+            {
+              query: '',
+              structure: {
+                where: {
+                  field: {
+                    name: 'status',
+                  },
+                  operator: '=',
+                  operand: {
+                    value: 'Done',
+                  },
+                },
+              },
+            },
+          ],
+        },
+      })
+
+      await filter.onFetch?.([instance, fieldInstance, doneInstance, todoInstance])
+      expect(instance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual([
+        {
+          reference: new ReferenceExpression(fieldInstance.elemID, fieldInstance),
+          occurrences: [
+            {
+              location: new ReferenceExpression(instance.elemID.createNestedID('jql'), ''),
+            },
+          ],
+        },
+        {
+          reference: new ReferenceExpression(doneInstance.elemID, doneInstance),
+          occurrences: [
+            {
+              location: new ReferenceExpression(instance.elemID.createNestedID('jql'), ''),
+            },
+          ],
+        },
+      ])
+
+      expect(connection.post).toHaveBeenCalledWith(
+        '/rest/api/3/jql/parse',
+        {
+          queries: [''],
         },
         {
           params: {
@@ -251,12 +308,35 @@ describe('jqlReferencesFilter', () => {
       ])
     })
 
-    it('should throw if jql pares response in invalid', async () => {
+    it('should do nothing if jql pares response in invalid', async () => {
       connection.post.mockResolvedValue({
         status: 200,
         data: {},
       })
-      await expect(filter.onFetch?.([instance, fieldInstance, doneInstance])).rejects.toThrow()
+      await filter.onFetch?.([instance, fieldInstance, doneInstance, todoInstance])
+      expect(instance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
+    })
+
+    it('should do nothing if failed to parse jql', async () => {
+      connection.post.mockResolvedValue({
+        status: 200,
+        data: {
+          queries: [
+            {
+              query: 'status = Done',
+              errors: ['error'],
+            },
+          ],
+        },
+      })
+      await filter.onFetch?.([instance, fieldInstance, doneInstance, todoInstance])
+      expect(instance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
+    })
+
+    it('should do nothing if request failed', async () => {
+      connection.post.mockRejectedValue(new Error('error'))
+      await filter.onFetch?.([instance, fieldInstance, doneInstance, todoInstance])
+      expect(instance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
     })
   })
 })

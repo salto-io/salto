@@ -18,7 +18,8 @@ import Joi from 'joi'
 
 export type ParsedJql = {
   query: string
-  structure: Record<string, unknown>
+  structure?: Record<string, unknown>
+  errors?: string[]
 }
 
 export type JqlParseResponse = {
@@ -28,8 +29,9 @@ export type JqlParseResponse = {
 const JQL_PARSE_RESPONSE_SCHEME = Joi.object({
   queries: Joi.array().items(
     Joi.object({
-      query: Joi.string().required(),
-      structure: Joi.object().required(),
+      query: Joi.string().required().allow(''),
+      structure: Joi.object().optional(),
+      errors: Joi.array().items(Joi.string()).optional(),
     }).unknown(true).required(),
   ).required(),
 })

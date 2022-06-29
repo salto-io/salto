@@ -14,8 +14,9 @@
 * limitations under the License.
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType } from '@salto-io/adapter-api'
-import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { filterUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
 import { DEFAULT_CONFIG, JiraConfig } from '../../../src/config'
 import { BOARD_COLUMN_CONFIG_TYPE, BOARD_TYPE_NAME, JIRA } from '../../../src/constants'
@@ -28,10 +29,12 @@ describe('boardColumnsFilter', () => {
   let type: ObjectType
   let columnConfigType: ObjectType
   let config: JiraConfig
+  let connection: MockInterface<clientUtils.APIConnection>
 
   beforeEach(async () => {
-    const { client, paginator } = mockClient()
+    const { client, paginator, connection: conn } = mockClient()
     config = _.cloneDeep(DEFAULT_CONFIG)
+    connection = conn
 
     filter = boardColumnsFilter({
       client,
@@ -52,7 +55,7 @@ describe('boardColumnsFilter', () => {
     type = new ObjectType({
       elemID: new ElemID(JIRA, BOARD_TYPE_NAME),
       fields: {
-        columnConfig: {
+        [COLUMNS_CONFIG_FIELD]: {
           refType: columnConfigType,
         },
       },
@@ -64,10 +67,10 @@ describe('boardColumnsFilter', () => {
       {
         type: 'kanban',
         config: {
-          columnConfig: {
+          [COLUMNS_CONFIG_FIELD]: {
             columns: [
               {
-                name: 'backlog',
+                name: 'Backlog',
               },
               {
                 name: 'someColumn',
@@ -111,7 +114,73 @@ describe('boardColumnsFilter', () => {
       expect(instance.value[COLUMNS_CONFIG_FIELD]).toEqual({
         columns: [
           {
-            name: 'backlog',
+            name: 'Backlog',
+          },
+          {
+            name: 'someColumn',
+            statuses: ['1'],
+          },
+        ],
+        constraintType: 'issueCount',
+      })
+    })
+
+    it('should remove second redundant backlog column', async () => {
+      instance.value.config[COLUMNS_CONFIG_FIELD].columns.splice(1, 0, { name: 'Backlog' })
+      connection.get.mockResolvedValue({
+        status: 200,
+        data: {
+          [COLUMNS_CONFIG_FIELD]: {
+            columns: [
+              {
+                name: 'Backlog',
+              },
+              {
+                name: 'someColumn',
+              },
+            ],
+          },
+        },
+      })
+
+      await filter.onFetch([instance])
+      expect(instance.value[COLUMNS_CONFIG_FIELD]).toEqual({
+        columns: [
+          {
+            name: 'someColumn',
+            statuses: ['1'],
+          },
+        ],
+        constraintType: 'issueCount',
+      })
+    })
+
+    it('should not remove second backlog column if it is returned from the config request', async () => {
+      instance.value.config[COLUMNS_CONFIG_FIELD].columns.splice(1, 0, { name: 'Backlog' })
+      connection.get.mockResolvedValue({
+        status: 200,
+        data: {
+          [COLUMNS_CONFIG_FIELD]: {
+            columns: [
+              {
+                name: 'Backlog',
+              },
+              {
+                name: 'Backlog',
+              },
+              {
+                name: 'someColumn',
+              },
+            ],
+          },
+        },
+      })
+
+      await filter.onFetch([instance])
+      expect(instance.value[COLUMNS_CONFIG_FIELD]).toEqual({
+        columns: [
+          {
+            name: 'Backlog',
           },
           {
             name: 'someColumn',

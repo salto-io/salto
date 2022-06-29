@@ -17,11 +17,14 @@ import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter
 import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../src/config'
 import createChangeValidator from '../src/change_validator'
 import { ZENDESK_SUPPORT } from '../src/constants'
+import ZendeskClient from '../src/client/client'
 
 describe('change validator creator', () => {
+  const client = new ZendeskClient({ credentials: { username: 'a', password: 'b', subdomain: 'ignore' } })
   describe('deployNotSupportedValidator', () => {
     it('should not fail if there are no deploy changes', async () => {
       expect(await createChangeValidator({
+        client,
         apiConfig: DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
         typesDeployedViaParent: [],
         typesWithNoDeploy: [],
@@ -31,6 +34,7 @@ describe('change validator creator', () => {
 
     it('should fail each change individually', async () => {
       expect(await createChangeValidator({
+        client,
         apiConfig: DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
         typesDeployedViaParent: [],
         typesWithNoDeploy: [],
@@ -57,6 +61,7 @@ describe('change validator creator', () => {
     it('should fail each change individually', async () => {
       const type = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'obj') })
       expect(await createChangeValidator({
+        client,
         apiConfig: DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
         typesDeployedViaParent: [],
         typesWithNoDeploy: [],

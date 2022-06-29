@@ -54,10 +54,6 @@ module.exports = {
       /node_modules\/yargs/, // Ignore warnings due to yarg's dynamic module loading
     ],
   },
-  externals: {
-    vertx: 'commonjs vertx',    // workaround for: https://github.com/stefanpenner/es6-promise/issues/305
-                                // caused by requestretry which depends on an old version of es6-promise
-  },
   plugins: [
     new webpack.EnvironmentPlugin({
       // SALTO_TELEMETRY_TOKEN should be defined in the build system, i.e. circleci

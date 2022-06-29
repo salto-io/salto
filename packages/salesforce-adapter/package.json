@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/salesforce-adapter",
-  "version": "0.3.16",
+  "version": "0.3.17",
   "license": "Apache-2.0",
   "description": "Salto Salesforce adapter",
   "repository": {
@@ -32,12 +32,12 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.3.16",
-    "@salto-io/adapter-components": "0.3.16",
-    "@salto-io/adapter-utils": "0.3.16",
-    "@salto-io/e2e-credentials-store": "0.3.16",
-    "@salto-io/logging": "0.3.16",
-    "@salto-io/lowerdash": "0.3.16",
+    "@salto-io/adapter-api": "0.3.17",
+    "@salto-io/adapter-components": "0.3.17",
+    "@salto-io/adapter-utils": "0.3.17",
+    "@salto-io/e2e-credentials-store": "0.3.17",
+    "@salto-io/logging": "0.3.17",
+    "@salto-io/lowerdash": "0.3.17",
     "bottleneck": "^2.19.5",
     "fast-xml-parser": "^3.15.0",
     "he": "^1.2.0",
@@ -46,17 +46,17 @@
     "jszip": "^3.2.2",
     "lodash": "^4.17.21",
     "mime-types": "^2.1.27",
-    "requestretry": "^4.0.2",
+    "requestretry": "^7.1.0",
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@salto-io/test-utils": "0.3.16",
+    "@salto-io/test-utils": "0.3.17",
     "@types/jest": "^27.4.0",
     "@types/jszip": "^3.1.6",
     "@types/lodash": "^4.14.168",
     "@types/mime-types": "^2.1.0",
     "@types/node": "^12.7.1",
-    "@types/requestretry": "^1.12.5",
+    "@types/requestretry": "^1.12.8",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",
     "eslint": "^6.2.2",

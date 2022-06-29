@@ -58,7 +58,7 @@ export const evaluateFunction = (
 export const getFunctionExpression = (
   val: Value,
   functions: Functions,
-): Promise<FunctionExpression | undefined> => {
+): Promise<FunctionExpression> | undefined => {
   const [funcPerhaps] = Object.values(functions)
     .filter(maybeRelevantFuncObj => maybeRelevantFuncObj.isSerializedAsFunction(val))
     .map(funcObj => funcObj.dump(val))

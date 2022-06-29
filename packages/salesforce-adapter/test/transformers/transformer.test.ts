@@ -572,6 +572,52 @@ describe('transformer', () => {
         expect(await fieldElement.getType()).toEqual(Types.primitiveDataTypes.Text)
       })
     })
+    describe('when field has invalid characters in its name', () => {
+      let field: Field
+      beforeEach(() => {
+        const fieldDefinition: SalesforceField = {
+          aggregatable: false,
+          cascadeDelete: false,
+          dependentPicklist: false,
+          externalId: false,
+          htmlFormatted: false,
+          autoNumber: false,
+          byteLength: 18,
+          calculated: true,
+          caseSensitive: false,
+          createable: true,
+          custom: false,
+          defaultedOnCreate: true,
+          deprecatedAndHidden: false,
+          digits: 0,
+          filterable: true,
+          groupable: true,
+          idLookup: false,
+          label: 'Invalid%5FName',
+          length: 18,
+          name: 'Invalid%5FName__c',
+          nameField: false,
+          namePointing: true,
+          nillable: false,
+          permissionable: false,
+          polymorphicForeignKey: true,
+          precision: 0,
+          queryByDistance: false,
+          restrictedPicklist: false,
+          scale: 0,
+          searchPrefilterable: false,
+          soapType: 'xsd:double',
+          sortable: true,
+          type: 'currency',
+          unique: false,
+          updateable: true,
+        }
+        field = getSObjectFieldElement(dummyElem, fieldDefinition, serviceIds)
+      })
+      it('should create a field with a valid name', () => {
+        expect(field.name).not.toInclude('%')
+      })
+    })
   })
 
   describe('toCustomField', () => {

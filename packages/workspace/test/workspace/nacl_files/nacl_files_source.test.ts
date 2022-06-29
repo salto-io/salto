@@ -13,13 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ElemID, ObjectType, DetailedChange, StaticFile, SaltoError, Value, BuiltinTypes, createRefToElmWithValue } from '@salto-io/adapter-api'
+import { Element, ElemID, ObjectType, DetailedChange, StaticFile, SaltoError, Value, BuiltinTypes, createRefToElmWithValue, InstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { MockInterface } from '@salto-io/test-utils'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
 import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
-import { StaticFilesSource } from '../../../src/workspace/static_files'
+import { StaticFilesSource, MissingStaticFile } from '../../../src/workspace/static_files'
 import { ParsedNaclFileCache, createParseResultCache } from '../../../src/workspace/nacl_files/parsed_nacl_files_cache'
 
 import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../../utils'
@@ -27,6 +28,7 @@ import * as parser from '../../../src/parser'
 import { InMemoryRemoteMap, RemoteMapCreator, RemoteMap, CreateRemoteMapParams } from '../../../src/workspace/remote_map'
 import { ParsedNaclFile } from '../../../src/workspace/nacl_files/parsed_nacl_file'
 import * as naclFileSourceModule from '../../../src/workspace/nacl_files/nacl_files_source'
+import { mockDirStore as createMockDirStore } from '../../common/nacl_file_store'
 
 const { awu } = collections.asynciterable
 
@@ -86,7 +88,7 @@ const validateParsedNaclFile = async (
 }
 
 describe('Nacl Files Source', () => {
-  let mockDirStore: DirectoryStore<string>
+  let mockDirStore: MockInterface<DirectoryStore<string>>
   let mockCache: ParsedNaclFileCache
   let mockedStaticFilesSource: StaticFilesSource
   const mockParse = parser.parse as jest.Mock
@@ -116,23 +118,7 @@ describe('Nacl Files Source', () => {
 
   beforeEach(async () => {
     createdMaps = {}
-    mockDirStore = {
-      list: () => Promise.resolve([]),
-      isEmpty: () => Promise.resolve(false),
-      get: jest.fn().mockResolvedValue(undefined),
-      getFiles: jest.fn().mockResolvedValue([undefined]),
-      set: () => Promise.resolve(),
-      delete: () => Promise.resolve(),
-      clear: () => Promise.resolve(),
-      rename: () => Promise.resolve(),
-      renameFile: () => Promise.resolve(),
-      flush: () => Promise.resolve(),
-      mtimestamp: jest.fn().mockImplementation(() => Promise.resolve(undefined)),
-      getTotalSize: () => Promise.resolve(0),
-      clone: () => mockDirStore,
-      getFullPath: filename => filename,
-      isPathIncluded: jest.fn(),
-    }
+    mockDirStore = createMockDirStore([], true)
     mockedStaticFilesSource = mockStaticFilesSource()
     mockCache = createParseResultCache(
       'test',
@@ -477,6 +463,27 @@ describe('Nacl Files Source', () => {
       mockGetElementReferenced.mockClear()
       await parsed?.data.referenced()
       expect(mockGetElementReferenced).not.toHaveBeenCalled()
+    })
+
+    it('should return static file references', async () => {
+      mockDirStore.get.mockResolvedValue(mockFileData)
+      const elements = [
+        new InstanceElement(
+          'inst',
+          new ObjectType({ elemID: new ElemID('dummy', 'type') }),
+          {
+            file: new StaticFile({ filepath: 'file', content: Buffer.from('asd') }),
+            missing: new MissingStaticFile('miss'),
+          }
+        ),
+      ]
+      mockParse.mockResolvedValueOnce({ elements, errors: [], filename: mockFileData.filename })
+      const parsed = await naclSource.getParsedNaclFile(mockFileData.filename)
+      expect(parsed).toBeDefined()
+      const staticFiles = await parsed?.data.staticFiles()
+      expect(staticFiles).toBeDefined()
+      expect(staticFiles).toHaveLength(2)
+      expect(staticFiles?.sort()).toEqual(['file', 'miss'])
     })
   })
 

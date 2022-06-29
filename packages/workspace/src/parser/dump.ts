@@ -64,7 +64,7 @@ const dumpAttributes = (
   valuePromiseWatchers: ValuePromiseWatcher[]
 ): Value => {
   const funcVal = getFunctionExpression(value, functions)
-  if (funcVal) {
+  if (funcVal !== undefined) {
     return funcVal
   }
 

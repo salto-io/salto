@@ -70,7 +70,7 @@ const { logDecorator, throttle, requiresLogin, createRateLimitersFromConfig } = 
 export const API_VERSION = '50.0'
 export const METADATA_NAMESPACE = 'http://soap.sforce.com/2006/04/metadata'
 
-export const REQUEST_LIMIT_EXCEEDED_ERROR_CODE = 'REQUEST_LIMIT_EXCEEDED'
+export const REQUEST_LIMIT_EXCEEDED_ERROR_CODE = 'sf:REQUEST_LIMIT_EXCEEDED'
 export const REQUEST_LIMIT_EXCEEDED_CONCURRENT_LIMIT = 10
 
 // Salesforce limitation of maximum number of items per create/update/delete call
@@ -477,7 +477,7 @@ export default class SalesforceClient {
         if (attempts === 1) {
           throw e
         }
-        if (e.code === REQUEST_LIMIT_EXCEEDED_ERROR_CODE && e.message.toLowerCase().includes('concurrent')) {
+        if (e.errorCode === REQUEST_LIMIT_EXCEEDED_ERROR_CODE && e.message.toLowerCase().includes('concurrent')) {
           log.warn('Received %s for concurrent requests error from Salesforce. Limiting maximum total concurrent request to %d', REQUEST_LIMIT_EXCEEDED_ERROR_CODE, REQUEST_LIMIT_EXCEEDED_CONCURRENT_LIMIT)
           this.rateLimiters.total?.updateSettings({
             maxConcurrent: REQUEST_LIMIT_EXCEEDED_CONCURRENT_LIMIT,

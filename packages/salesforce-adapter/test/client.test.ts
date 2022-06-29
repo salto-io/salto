@@ -26,7 +26,6 @@ import SalesforceClient, {
   ApiLimitsTooLowError,
   getConnectionDetails,
   validateCredentials,
-  REQUEST_LIMIT_EXCEEDED_ERROR_CODE,
   REQUEST_LIMIT_EXCEEDED_CONCURRENT_LIMIT,
 } from '../src/client/client'
 import mockClient from './client'
@@ -367,20 +366,24 @@ describe('salesforce client', () => {
 
     describe('when user reaches the max concurrent request limit of Salesforce', () => {
       let bottleneckUpdateSpy: jest.SpyInstance
+
       beforeEach(() => {
-        const clientAndConnection = mockClient()
-        testConnection = clientAndConnection.connection
-        testClient = clientAndConnection.client
-        testConnection.metadata.describe.mockImplementationOnce(() => {
-          throw Object.assign(
-            new Error('ConcurrentRequests (Concurrent API Requests) Limit exceeded.'),
-            { code: REQUEST_LIMIT_EXCEEDED_ERROR_CODE }
-          )
-        })
-        bottleneckUpdateSpy = jest.spyOn(testClient.rateLimiters.total, 'updateSettings')
+        bottleneckUpdateSpy = jest.spyOn(client.rateLimiters.total, 'updateSettings')
       })
       it('should lower the total max concurrent request limit', async () => {
-        await testClient.listMetadataTypes()
+        const dodoScope = nock(`http://dodo22/servies/Soap/m/${API_VERSION}`)
+          .post(/.*/)
+          .times(1) // Once for the chunk and once for item
+          .reply(
+            500,
+            '<?xml version="1.0" encoding="UTF-8"?><soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:sf="http://soap.sforce.com/2006/04/metadata"><soapenv:Body><soapenv:Fault><faultcode>sf:REQUEST_LIMIT_EXCEEDED</faultcode><faultstring>REQUEST_LIMIT_EXCEEDED: ConcurrentRequests (Concurrent API Requests) Limit exceeded.</faultstring></soapenv:Fault></soapenv:Body></soapenv:Envelope>',
+            { 'content-type': 'text/xml' },
+          )
+          .post(/.*/)
+          .times(1)
+          .reply(200, workingReadReplay)
+        await client.readMetadata('Layout', ['aaa', 'bbb'])
+        expect(dodoScope.isDone()).toBeTruthy()
         expect(bottleneckUpdateSpy).toHaveBeenCalledWith({
           maxConcurrent: REQUEST_LIMIT_EXCEEDED_CONCURRENT_LIMIT,
         })

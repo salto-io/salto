@@ -16,7 +16,6 @@
 import * as fs from 'fs'
 import * as tmp from 'tmp-promise'
 import { EOL } from 'os'
-import _ from 'lodash'
 import { LogTags } from '../../src'
 import { mockConsoleStream, MockWritableStream } from '../console'
 import { LogLevel, LOG_LEVELS } from '../../src/internal/level'
@@ -379,36 +378,17 @@ describe('pino based logger', () => {
           expect(line).toContain('warn')
           expect(line).toContain('hello { world: true }')
         })
-        describe('when log is split into chunks', () => {
-          let lines: string[]
-
+        describe('when log is longer than maxLogChunkSize', () => {
           beforeEach(() => {
             initialConfig.maxLogChunkSize = 5
             logger = createLogger()
             logger.assignTags(logTags)
-            logger.log('warn', LOG_MESSAGE)
-            lines = consoleStream.contents().split(EOL).filter(l => l !== '')
           })
 
-          it('should log the full message in chunks', () => {
-            const reformedLog = lines.map(extractMessage).join('')
-            expect(reformedLog).toEqual(LOG_MESSAGE)
-          })
-          it('should add the same logId to each chunk', () => {
-            const logIds = lines.map(l => _.get(LOG_ID_RE.exec(l), '1'))
-            expect(new Set(logIds).size).toEqual(1)
-          })
-          it('should add correct index to each chunk', () => {
-            const chunkIndexes = lines
-              .map(l => _.get(CHUNK_INDEX_RE.exec(l), '1'))
-              .map(_.toNumber)
-            expect(chunkIndexes).toEqual(Array.from(Array(lines.length).keys()))
-          })
-        })
-        describe('when log is not split into chunks', () => {
-          beforeEach(() => {
-            logger = createLogger()
+          it('should not split into chunks', () => {
             logger.log('warn', LOG_MESSAGE)
+            const lines = consoleStream.contents().split(EOL).filter(l => l !== '')
+            expect(lines).toHaveLength(1)
           })
 
           it('should log a single line with no chunk log tags', () => {

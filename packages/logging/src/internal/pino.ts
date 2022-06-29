@@ -288,7 +288,7 @@ export const loggerRepo = (
           ? formatMessage(config, message, ...args)
           : [message, args]
 
-        if (_.isError(formattedOrError)) {
+        if (_.isError(formattedOrError) || config.format === 'text') {
           logMessage(pinoLogger, level, unconsumedArgs, formattedOrError)
           return
         }

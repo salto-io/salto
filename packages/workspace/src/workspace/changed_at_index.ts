@@ -53,10 +53,10 @@ const getAllElementsChanges = async (
 const getChangedAt = (change: Change<Element>): string | undefined =>
   getChangeData(change).annotations[CORE_ANNOTATIONS.CHANGED_AT]
 
-const updateAdditionChange = async (
+const updateAdditionChange = (
   change: AdditionChange<Element>,
   datesMap: Record<string, Set<ElemID>>,
-): Promise<void> => {
+): void => {
   const modificationDate = getChangedAt(change)
   if (!modificationDate) {
     return
@@ -67,43 +67,43 @@ const updateAdditionChange = async (
   datesMap[modificationDate].add(change.data.after.elemID)
 }
 
-const updateRemovalChange = async (
+const updateRemovalChange = (
   change: RemovalChange<Element>,
   datesMap: Record<string, Set<ElemID>>,
-): Promise<void> => {
+): void => {
   const modificationDate = getChangedAt(change)
   if (modificationDate && datesMap[modificationDate]) {
     datesMap[modificationDate].delete(change.data.before.elemID)
   }
 }
 
-const updateModificationChange = async (
+const updateModificationChange = (
   change: ModificationChange<Element>,
   datesMap: Record<string, Set<ElemID>>,
-): Promise<void> => {
+): void => {
   if (change.data.after.annotations[CORE_ANNOTATIONS.CHANGED_BY]
     !== change.data.before.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
-    await updateRemovalChange(
+    updateRemovalChange(
       toChange({ before: change.data.before }) as RemovalChange<Element>,
       datesMap,
     )
-    await updateAdditionChange(
+    updateAdditionChange(
       toChange({ after: change.data.after }) as AdditionChange<Element>,
       datesMap,
     )
   }
 }
 
-const updateChange = async (
+const updateChange = (
   change: Change<Element>,
   datesMap: Record<string, Set<ElemID>>,
-): Promise<void> => {
+): void => {
   if (isAdditionChange(change)) {
-    await updateAdditionChange(change, datesMap)
+    updateAdditionChange(change, datesMap)
   } else if (isRemovalChange(change)) {
-    await updateRemovalChange(change, datesMap)
+    updateRemovalChange(change, datesMap)
   } else {
-    await updateModificationChange(change, datesMap)
+    updateModificationChange(change, datesMap)
   }
 }
 

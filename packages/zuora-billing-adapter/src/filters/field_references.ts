@@ -74,8 +74,18 @@ const fieldNameToTypeMappingDefs: ZuoraFieldReferenceDefinition[] = [
     target: { type: `${SETTINGS_TYPE_PREFIX}CommunicationProfile` },
   },
   {
+    src: { field: 'communicationProfileId', parentTypes: ['PublicNotificationDefinition'] },
+    serializationStrategy: 'id',
+    target: { type: `${SETTINGS_TYPE_PREFIX}CommunicationProfile` },
+  },
+  {
     src: { field: 'emailTemplateName', parentTypes: [`${SETTINGS_TYPE_PREFIX}Notification`] },
     serializationStrategy: 'name',
+    target: { type: 'PublicEmailTemplate' },
+  },
+  {
+    src: { field: 'emailTemplateId', parentTypes: ['PublicNotificationDefinition'] },
+    serializationStrategy: 'id',
     target: { type: 'PublicEmailTemplate' },
   },
   {

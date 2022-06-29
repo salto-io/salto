@@ -431,13 +431,13 @@ describe('Workflow and task references filter', () => {
         && e.occurrences?.every(oc => isReferenceExpression(oc.location))
       )).toBeTruthy()
       expect(task1Deps.map(e => e.reference.elemID.getFullName())).toEqual([
-        'zuora_billing.DetailedWorkflow.instance.wf1.additionalProperties.parameters.fields',
         'zuora_billing.Invoice.field.Id',
         // Invoice.Balance and InvoiceDate do not exist on the object so they are not referenced
         'zuora_billing.Invoice.field.InvoiceNumber',
         'zuora_billing.Refund.field.Id',
         'zuora_billing.Refund.field.ReasonCode',
         'zuora_billing.Refund.field.RefundDate',
+        'zuora_billing.Workflow.instance.wf1.additionalProperties.parameters.fields',
       ])
 
       // eslint-disable-next-line no-underscore-dangle

@@ -35,7 +35,7 @@ const migrateLegacyStaticFilesCache = async (
   const currentCacheFile = path.join(cacheDir, name, CACHE_FILENAME)
 
   if (await exists(currentCacheFile)) {
-    if (remoteCache.isEmpty()) {
+    if (await remoteCache.isEmpty()) {
       log.debug('importing legacy static files cache from file: %s', currentCacheFile)
       const oldCache: Record<string, staticFiles.StaticFilesData> = JSON.parse(
         await readTextFile(currentCacheFile)
@@ -47,7 +47,7 @@ const migrateLegacyStaticFilesCache = async (
     } else {
       log.debug('static files cache already populated, ignoring legacy static files cache file: %s', currentCacheFile)
     }
-    log.debug('deleting legeacy static files cache file: %s', currentCacheFile)
+    log.debug('deleting legacy static files cache file: %s', currentCacheFile)
     await rm(currentCacheFile)
   }
 }
@@ -56,6 +56,7 @@ export const buildLocalStaticFilesCache = (
   cacheDir: string,
   name: string,
   remoteMapCreator: remoteMap.RemoteMapCreator,
+  persistent: boolean,
 ): staticFiles.StaticFilesCache => {
   const createRemoteMap = async (
     cacheName: string
@@ -64,9 +65,8 @@ export const buildLocalStaticFilesCache = (
       namespace: `staticFilesCache-${cacheName}`,
       serialize: cacheEntry => safeJsonStringify(cacheEntry),
       deserialize: async data => JSON.parse(data),
-      persistent: true,
+      persistent,
     })
-
 
   const initCache = async (): Promise<StaticFilesCacheState> => {
     const remoteCache = createRemoteMap(name)
@@ -97,7 +97,7 @@ export const buildLocalStaticFilesCache = (
       await currentCache.clear()
     },
     clone: () => (
-      buildLocalStaticFilesCache(cacheDir, name, remoteMapCreator)
+      buildLocalStaticFilesCache(cacheDir, name, remoteMapCreator, persistent)
     ),
     list: async () => (
       awu((await cache).keys()).toArray()

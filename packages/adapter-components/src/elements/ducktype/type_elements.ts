@@ -260,7 +260,11 @@ export const generateType = ({
   })
 
   fixFieldTypes(
-    { [typeName]: type },
+    {
+      [typeName]: type,
+      // currently only nested types are supported - can be extended (SALTO-2434)
+      ..._.keyBy(nestedTypes, objType => objType.elemID.name),
+    },
     { [typeName]: { transformation } },
     { transformation: transformationDefaultConfig },
     toPrimitiveType,

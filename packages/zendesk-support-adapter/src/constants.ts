@@ -16,3 +16,4 @@
 const ZENDESK = 'zendesk'
 export const ZENDESK_SUPPORT = `${ZENDESK}_support`
 export const BRAND_NAME = 'brand'
+export const TARGET_TYPE_NAME = 'target'

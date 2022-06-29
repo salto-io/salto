@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, TemplateExpression, toChange } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { REFERENCE_INDEXES_VERSION, updateReferenceIndexes } from '../../src/workspace/reference_indexes'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
@@ -52,6 +52,14 @@ describe('updateReferenceIndexes', () => {
           refType: BuiltinTypes.STRING,
           annotations: { fieldRef: new ReferenceExpression(new ElemID('test', 'target2')) },
         },
+        someTemplateField: {
+          refType: BuiltinTypes.STRING,
+          annotations: { fieldRef: new ReferenceExpression(new ElemID('test', 'target2')) },
+        },
+        anotherTemplateField: {
+          refType: BuiltinTypes.STRING,
+          annotations: { fieldRef: new ReferenceExpression(new ElemID('test', 'target2')) },
+        },
         fieldWithRefToType: {
           refType: BuiltinTypes.STRING,
           annotations: { fieldRef: new ReferenceExpression(new ElemID('test', 'object')) },
@@ -62,7 +70,12 @@ describe('updateReferenceIndexes', () => {
     instance = new InstanceElement(
       'instance',
       object,
-      { someValue: new ReferenceExpression(new ElemID('test', 'target2', 'instance', 'someInstance')) },
+      {
+        someValue: new ReferenceExpression(new ElemID('test', 'target2', 'instance', 'someInstance')),
+        templateValue: new TemplateExpression({ parts: ['Template is:',
+          new ReferenceExpression(new ElemID('test', 'target2', 'field', 'someTemplateField', 'value')), 'here',
+          new ReferenceExpression(new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'))] }),
+      },
       undefined,
       { someAnnotation: new ReferenceExpression(new ElemID('test', 'target2', 'field', 'someField', 'value')) },
     )
@@ -86,12 +99,26 @@ describe('updateReferenceIndexes', () => {
         value: [
           new ElemID('test', 'target2', 'field', 'someField', 'value'),
           new ElemID('test', 'target2', 'instance', 'someInstance'),
+          new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'),
+          new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'),
         ],
       },
       {
         key: 'test.object.field.someField',
         value: [
           new ElemID('test', 'target2'),
+        ],
+      },
+      {
+        key: 'test.object.field.someTemplateField',
+        value: [
+          new ElemID('test', 'target2', 'type'),
+        ],
+      },
+      {
+        key: 'test.object.field.anotherTemplateField',
+        value: [
+          new ElemID('test', 'target2', 'type'),
         ],
       },
       {
@@ -126,6 +153,18 @@ describe('updateReferenceIndexes', () => {
           ],
         },
         {
+          key: 'test.target2.field.someTemplateField',
+          value: [
+            new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
+          ],
+        },
+        {
+          key: 'test.target2.field.anotherTemplateField',
+          value: [
+            new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
+          ],
+        },
+        {
           key: 'test.target1',
           value: [
             new ElemID('test', 'object', 'attr', 'typeRef'),
@@ -136,7 +175,10 @@ describe('updateReferenceIndexes', () => {
           key: 'test.target2',
           value: [
             new ElemID('test', 'object', 'field', 'someField', 'fieldRef'),
+            new ElemID('test', 'object', 'field', 'someTemplateField', 'fieldRef'),
+            new ElemID('test', 'object', 'field', 'anotherTemplateField', 'fieldRef'),
             new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation'),
+            new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
           ],
         },
         {
@@ -153,6 +195,8 @@ describe('updateReferenceIndexes', () => {
     beforeEach(async () => {
       const instanceAfter = instance.clone()
       delete instanceAfter.annotations.someAnnotation
+      delete instanceAfter.value.templateValue
+
       instanceAfter.annotations.someAnnotation2 = new ReferenceExpression(new ElemID('test', 'target2', 'instance', 'someInstance', 'value'))
       const changes = [toChange({ before: instance, after: instanceAfter })]
       referenceTargetsIndex.getMany.mockImplementation(async ids => ids.map(id => (
@@ -160,6 +204,8 @@ describe('updateReferenceIndexes', () => {
           ? [
             new ElemID('test', 'target2', 'instance', 'someInstance'),
             new ElemID('test', 'target2', 'field', 'someField', 'value'),
+            new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'),
+            new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'),
           ]
           : undefined
       )))
@@ -174,6 +220,16 @@ describe('updateReferenceIndexes', () => {
         if (id === 'test.target2.instance.someInstance') {
           return [
             new ElemID('test', 'object', 'instance', 'instance', 'someValue'),
+          ]
+        }
+        if (id === 'test.target2.field.someTemplateField') {
+          return [
+            new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
+          ]
+        }
+        if (id === 'test.target2.field.anotherTemplateField') {
+          return [
+            new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
           ]
         }
         return undefined
@@ -212,6 +268,8 @@ describe('updateReferenceIndexes', () => {
     it('should remove old references from referenceSources index', () => {
       expect(referenceSourcesIndex.deleteAll).toHaveBeenCalledWith([
         'test.target2.field.someField',
+        'test.target2.field.someTemplateField',
+        'test.target2.field.anotherTemplateField',
         'test.target2',
       ])
     })
@@ -221,6 +279,9 @@ describe('updateReferenceIndexes', () => {
     beforeEach(async () => {
       const objectAfter = object.clone()
       delete objectAfter.fields.someField
+      delete objectAfter.fields.someTemplateField
+      delete objectAfter.fields.anotherTemplateField
+
 
       const changes = [toChange({ before: object, after: objectAfter })]
 
@@ -247,6 +308,8 @@ describe('updateReferenceIndexes', () => {
     it('should remove the references from the referenceTargets index', () => {
       expect(referenceTargetsIndex.deleteAll).toHaveBeenCalledWith([
         'test.object.field.someField',
+        'test.object.field.someTemplateField',
+        'test.object.field.anotherTemplateField',
       ])
     })
 
@@ -304,6 +367,8 @@ describe('updateReferenceIndexes', () => {
       expect(referenceSourcesIndex.deleteAll).toHaveBeenCalledWith([
         'test.target2.field.someField',
         'test.target2.instance.someInstance',
+        'test.target2.field.someTemplateField',
+        'test.target2.field.anotherTemplateField',
         'test.target2',
       ])
     })
@@ -328,6 +393,8 @@ describe('updateReferenceIndexes', () => {
           value: [
             new ElemID('test', 'target2', 'field', 'someField', 'value'),
             new ElemID('test', 'target2', 'instance', 'someInstance'),
+            new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'),
+            new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'),
           ],
         }])
       })
@@ -346,9 +413,20 @@ describe('updateReferenceIndexes', () => {
               new ElemID('test', 'object', 'instance', 'instance', 'someValue'),
             ],
           }, {
+            key: 'test.target2.field.someTemplateField',
+            value: [
+              new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
+            ],
+          }, {
+            key: 'test.target2.field.anotherTemplateField',
+            value: [
+              new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
+            ],
+          }, {
             key: 'test.target2',
             value: [
               new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation'),
+              new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
             ],
           }])
       })
@@ -374,6 +452,8 @@ describe('updateReferenceIndexes', () => {
           value: [
             new ElemID('test', 'target2', 'field', 'someField', 'value'),
             new ElemID('test', 'target2', 'instance', 'someInstance'),
+            new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'),
+            new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'),
           ],
         }])
       })
@@ -391,9 +471,20 @@ describe('updateReferenceIndexes', () => {
             new ElemID('test', 'object', 'instance', 'instance', 'someValue'),
           ],
         }, {
+          key: 'test.target2.field.someTemplateField',
+          value: [
+            new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
+          ],
+        }, {
+          key: 'test.target2.field.anotherTemplateField',
+          value: [
+            new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
+          ],
+        }, {
           key: 'test.target2',
           value: [
             new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation'),
+            new ElemID('test', 'object', 'instance', 'instance', 'templateValue'),
           ],
         }])
       })

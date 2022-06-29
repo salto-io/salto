@@ -65,6 +65,7 @@ import macroAttachmentsFilter from './filters/macro_attachments'
 import omitInactiveFilter from './filters/omit_inactive'
 import tagsFilter from './filters/tag'
 import webhookFilter from './filters/webhook'
+import targetFilter from './filters/target'
 import defaultDeployFilter from './filters/default_deploy'
 import ducktypeCommonFilters from './filters/ducktype_common'
 import handleTemplateExpressionFilter from './filters/handle_template_expressions'
@@ -118,6 +119,7 @@ export const DEFAULT_FILTERS = [
   routingAttributeFilter,
   addFieldOptionsFilter,
   webhookFilter,
+  targetFilter,
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,
   dynamicContentReferencesFilter,
@@ -284,6 +286,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   public get deployModifiers(): DeployModifiers {
     return {
       changeValidator: createChangeValidator({
+        client: this.client,
         apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
         typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment'],
         typesWithNoDeploy: ['tag'],

@@ -21,7 +21,7 @@ export { getAdaptersCredentialsTypes, getDefaultAdapterConfig, getAdaptersConfig
 export { createDiffChanges, getEnvsDeletionsDiff } from './src/core/diff'
 export { RenameElementIdError } from './src/core/rename'
 export {
-  loadLocalWorkspace, initLocalWorkspace, loadLocalElementsSources, getNaclFilesSourceParams,
+  loadLocalWorkspace, initLocalWorkspace, loadLocalElementsSources,
   CACHE_DIR_NAME, STATES_DIR_NAME, locateWorkspaceRoot, createEnvironmentSource,
   getAdapterConfigsPerAccount,
 } from './src/local-workspace/workspace'

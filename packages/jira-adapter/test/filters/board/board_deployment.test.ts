@@ -88,7 +88,7 @@ describe('boardDeploymentFilter', () => {
           projectKeyOrId: '3',
           type: 'project',
         },
-        columnConfig: {
+        [COLUMNS_CONFIG_FIELD]: {
           columns: [
             {
               name: 'someColumn',

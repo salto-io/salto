@@ -67,14 +67,16 @@ type GetNaclFilesSourceParamsArgs = {
   cacheDir: string
   name: string
   remoteMapCreator: remoteMap.RemoteMapCreator
+  persistent: boolean
   excludeDirs?: string[]
 }
 
-export const getNaclFilesSourceParamsImpl = ({
+const getNaclFilesSourceParams = ({
   sourceBaseDir,
   cacheDir,
   name,
   remoteMapCreator,
+  persistent,
   excludeDirs = [],
 }: GetNaclFilesSourceParamsArgs): {
   naclFilesStore: dirStore.DirectoryStore<string>
@@ -101,27 +103,12 @@ export const getNaclFilesSourceParamsImpl = ({
   const cacheName = name === COMMON_ENV_PREFIX ? 'common' : name
   const staticFileSource = buildStaticFilesSource(
     naclStaticFilesStore,
-    buildLocalStaticFilesCache(cacheDir, cacheName, remoteMapCreator),
+    buildLocalStaticFilesCache(cacheDir, cacheName, remoteMapCreator, persistent),
   )
   return {
     naclFilesStore,
     staticFileSource,
   }
-}
-
-export const getNaclFilesSourceParams = (
-  sourceBaseDir: string,
-  cacheDir: string,
-  name: string,
-  excludeDirs: string[] = [],
-): {
-  naclFilesStore: dirStore.DirectoryStore<string>
-  staticFileSource: staticFiles.StaticFilesSource
-} => {
-  const remoteMapCreator = createRemoteMapCreator(cacheDir)
-  return getNaclFilesSourceParamsImpl(
-    { sourceBaseDir, cacheDir, name, excludeDirs, remoteMapCreator }
-  )
 }
 
 const loadNaclFileSource = async (
@@ -132,11 +119,12 @@ const loadNaclFileSource = async (
   remoteMapCreator: remoteMap.RemoteMapCreator,
   excludeDirs: string[] = []
 ): Promise<nacl.NaclFilesSource> => {
-  const { naclFilesStore, staticFileSource } = getNaclFilesSourceParamsImpl({
+  const { naclFilesStore, staticFileSource } = getNaclFilesSourceParams({
     sourceBaseDir,
     cacheDir: cacheBaseDir,
     name: sourceName,
     remoteMapCreator,
+    persistent,
     excludeDirs,
   })
   return naclFilesSource(

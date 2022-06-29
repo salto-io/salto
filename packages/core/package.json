@@ -50,7 +50,7 @@
     "@salto-io/zendesk-support-adapter": "0.3.17",
     "@salto-io/zuora-billing-adapter": "0.3.17",
     "async-lock": "^1.2.4",
-    "axios": "^0.21.3",
+    "axios": "^0.27.2",
     "fs-extra": "^9.1.0",
     "glob": "^7.1.6",
     "levelup": "^4.4.0",

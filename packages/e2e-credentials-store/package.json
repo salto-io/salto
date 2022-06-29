@@ -32,12 +32,11 @@
     "@salto-io/logging": "0.3.17",
     "@salto-io/lowerdash": "0.3.17",
     "@salto-io/persistent-pool": "0.3.17",
-    "easy-table": "^1.1.1",
+    "easy-table": "^1.2.0",
     "humanize-duration": "^3.22.0",
     "yargs": "^13.3.0"
   },
   "devDependencies": {
-    "@types/easy-table": "^0.0.32",
     "@types/humanize-duration": "^3.18.0",
     "@types/jest": "^27.4.0",
     "@types/yargs": "^13.0.4",

@@ -200,26 +200,15 @@ Default: {} - Doesn't add any tags to log messages.
 
 Environment variable:
 
-```bash
-SALTO_LOG_JSON_MAX_MESSAGE_SIZE=3072 # 3K
-```
-
-Configure the max message size of the 'message' element inside of output JSON.
-
-Default: 200 * 1024 - 200K
-
-Supported formatting: Receives only number which signifies the allowed bytes amount
-
-
-### `maxLogChunkSize: number | null`
+### `maxJsonLogChunkSize: number | null`
 
 Environment variable:
 
 ```bash
-SALTO_LOG_MAX_LOG_CHUNK_SIZE=3072 # 3K
+SALTO_LOG_MAX_JSON_LOG_CHUNK_SIZE=3072 # 3K
 ```
 
-Configure the max chunk size for the formatted log message.
+Configure the max chunk size for the formatted json log message.
 
 Default: 200 * 1024 - 200K
 

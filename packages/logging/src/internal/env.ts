@@ -49,7 +49,6 @@ export const config = (env: Env): Partial<Config> => {
     format: envKey('FORMAT', validateFormat),
     colorize: envKey('COLOR', toBoolean),
     globalTags: envKey('GLOBAL_TAGS', toTags),
-    maxJsonMessageSize: envKey('MAX_JSON_MESSAGE_SIZE', toNumber),
-    maxLogChunkSize: envKey('MAX_LOG_CHUNK_SIZE', toNumber),
+    maxJsonLogChunkSize: envKey('MAX_JSON_LOG_CHUNK_SIZE', toNumber),
   }
 }

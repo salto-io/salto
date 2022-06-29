@@ -118,13 +118,11 @@ const textPrettifier = (
 
 const numberOfSpecifiers = (s: string): number => s.match(/%[^%]/g)?.length ?? 0
 
-const formatMessage = (config: Config, s: string, ...args: unknown[]): [string, unknown[]] => {
+const formatMessage = (s: string, ...args: unknown[]): [string, unknown[]] => {
   const n = numberOfSpecifiers(s)
   const formattedMessage = format(s, ...args.slice(0, n))
   return [
-    config.format === 'json'
-      ? formattedMessage.slice(0, config.maxJsonMessageSize)
-      : formattedMessage,
+    formattedMessage,
     args.slice(n),
   ]
 }
@@ -271,6 +269,16 @@ export const loggerRepo = (
     }
   }
 
+  const logJson = (
+    pinoLogger: pino.Logger,
+    level: LogLevel,
+    unconsumedArgs: unknown[],
+    message: string
+  ): void => {
+    const chunks = getLogMessageChunks(message, config.maxJsonLogChunkSize)
+    logChunks(pinoLogger, level, unconsumedArgs, chunks)
+  }
+
 
   const loggerMaker: BaseLoggerMaker = (namespace: Namespace) => {
     const pinoLoggerWithoutTags = childrenByNamespace.get(namespace)
@@ -285,15 +293,14 @@ export const loggerRepo = (
           normalizeLogTags({ ...namespaceTags, ...global.globalLogTags })
         )
         const [formattedOrError, unconsumedArgs] = typeof message === 'string'
-          ? formatMessage(config, message, ...args)
+          ? formatMessage(message, ...args)
           : [message, args]
 
         if (_.isError(formattedOrError) || config.format === 'text') {
           logMessage(pinoLogger, level, unconsumedArgs, formattedOrError)
-          return
+        } else {
+          logJson(pinoLogger, level, unconsumedArgs, formattedOrError)
         }
-        const chunks = getLogMessageChunks(formattedOrError, config.maxLogChunkSize)
-        logChunks(pinoLogger, level, unconsumedArgs, chunks)
       },
       assignGlobalTags(logTags?: LogTags): void {
         if (!logTags) global.globalLogTags = {}

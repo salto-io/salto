@@ -80,7 +80,13 @@ describe('ducktype_type_elements', () => {
       })
       expect(nestedTypes).toHaveLength(1)
       expect(type.fields.name.refType.elemID.getFullName()).toEqual('Map<myAdapter.typeName__nested>')
-      expect(type.path).toEqual([ADAPTER_NAME, TYPES_PATH, 'typeName'])
+      expect(Array.from(type.pathIndex?.entries() ?? []))
+        .toEqual([
+          [
+            type.elemID.getFullName(),
+            [ADAPTER_NAME, TYPES_PATH, 'typeName'],
+          ],
+        ])
     })
     it('should override field types for types with fieldTypeOverrides even if there are no entries', () => {
       const entries: Values[] = []

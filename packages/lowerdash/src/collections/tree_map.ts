@@ -177,15 +177,6 @@ export class TreeMap<T> implements Map<string, T[]> {
     this.iterEntry(this.data).forEach(([key, value]) => callbackfn(value, key, this))
   }
 
-  valuesWithPrefix(prefix: string): IterableIterator<T[]> {
-    const path = prefix.split(this.separator)
-    const prefixSubtree = TreeMap.getFromPath(this.data, path)
-    if (prefixSubtree === undefined) {
-      return wu([])
-    }
-    return this.iterEntry(prefixSubtree, path).map(([_key, values]) => values)
-  }
-
   entriesWithPrefix(prefix: string): IterableIterator<[string, T[]]> {
     const path = prefix.split(this.separator)
     const prefixSubtree = TreeMap.getFromPath(this.data, path)
@@ -195,9 +186,14 @@ export class TreeMap<T> implements Map<string, T[]> {
     return this.iterEntry(prefixSubtree, path)
   }
 
-  clone(): TreeMap<T> {
-    // TODO: this isn't really cloning - we need to reimplement it
-    return new TreeMap(this.entries())
+  valuesWithPrefix(prefix: string): IterableIterator<T[]> {
+    return wu(this.entriesWithPrefix(prefix)).map(([_key, values]) => values)
+  }
+
+  clone(cloneEntry?: (entry: [string, T[]]) => [string, T[]]): TreeMap<T> {
+    return new TreeMap(
+      wu(this.entries()).map(entry => (cloneEntry ? cloneEntry(entry) : _.cloneDeep(entry)))
+    )
   }
 }
 

@@ -82,33 +82,6 @@ export const toAddFetchChange = (elem: Element): FetchChange => {
   return { change, serviceChanges: [change], metadata: getFetchChangeMetadata(elem) }
 }
 
-// TODO: fix me!!! - move me!!!
-const getPathOfId = (elemID: ElemID, elementPathIndex: collections.treeMap.TreeMap<string>):
-string[] => {
-  const idParts = elemID.getFullNameParts()
-  const topLevelKey = elemID.createTopLevelParentID().parent.getFullName()
-  let key: string
-  do {
-    key = idParts.join(ElemID.NAMESPACE_SEPARATOR)
-    const pathHint = elementPathIndex.get(key)
-    if (pathHint !== undefined) {
-      return pathHint
-    }
-    idParts.pop()
-  } while (idParts.length > 0 && key !== topLevelKey)
-  return []
-}
-
-const getPathIndexOfId = (elemID: ElemID, elementPathIndex: collections.treeMap.TreeMap<string>):
-collections.treeMap.TreeMap<string> => {
-  const rootPath = getPathOfId(elemID, elementPathIndex)
-  const pathIndexOfId = new collections.treeMap.TreeMap<string>(
-    elementPathIndex.entriesWithPrefix(elemID.getFullName())
-  )
-  pathIndexOfId.set(elemID.getFullName(), rootPath)
-  return pathIndexOfId
-}
-
 export class StepEmitter<T = void> extends EventEmitter<StepEvents<T>> {}
 
 export type FetchProgressEvents = {
@@ -160,16 +133,6 @@ const getDetailedChangeTree = async (
   )
 )
 
-// const findNestedElementPath = (
-//   changeElemID: ElemID,
-//   originalParentElements: Element[]
-// ): readonly string[] | undefined => {
-//   // TODO: fix me!!!
-//   const parentElement = originalParentElements
-//     .find(e => !_.isUndefined(resolvePath(e, changeElemID)))
-//   return parentElement ? getTopLevelPath(parentElement) : undefined
-// }
-
 type ChangeTransformFunction = (sourceChange: FetchChange) => Promise<FetchChange>
 const toChangesWithPath = (
   accountElementByFullName: (id: ElemID) => Element[]
@@ -188,7 +151,7 @@ const toChangesWithPath = (
       log.debug(`no path index was found for the top level element id ${changeID.getFullName()}`)
       return change
     }
-    const changePathIndex = getPathIndexOfId(changeID, parentPathIndex)
+    const changePathIndex = pathIndex.getPathIndexOfId(changeID, parentPathIndex)
     return _.merge({}, change, { change: { pathIndex: changePathIndex } })
   })
 
@@ -955,7 +918,6 @@ export const fetchChangesFromWorkspace = async (
   ), MAX_SPLIT_CONCURRENCY)).flat()
   const [unmergedWithPath, unmergedWithoutPath] = _.partition(
     splitByPathIndex,
-    // TODO: fix me - delete me
     elem => values.isDefined(elem.pathIndex)
   )
   const unmergedElements = [

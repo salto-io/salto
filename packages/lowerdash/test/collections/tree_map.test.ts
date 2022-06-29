@@ -259,4 +259,92 @@ describe('tree map', () => {
       })
     })
   })
+  describe('entriesWithPrefix', () => {
+    let tree: TreeMap<string>
+    beforeEach(() => {
+      tree = new TreeMap(baseEntries, separator)
+    })
+    describe('when iterating a prefix that exists', () => {
+      let iteratedEntries: [string, string[]][]
+      beforeEach(() => {
+        iteratedEntries = [...tree.entriesWithPrefix('salesforce|test')]
+      })
+      it('should iterate all values with the given prefix', () => {
+        expect(iteratedEntries).toEqual(
+          baseEntries
+            .filter(([key]) => key.startsWith('salesforce|test'))
+            .map(([key, value]) => [key, value])
+        )
+      })
+    })
+    describe('when iterating a prefix that does not exist', () => {
+      let iteratedEntries: [string, string[]][]
+      beforeEach(() => {
+        iteratedEntries = [...tree.entriesWithPrefix('salesforce|test|no|such|prefix')]
+      })
+      it('should return an empty iterator', () => {
+        expect(iteratedEntries).toHaveLength(0)
+      })
+    })
+  })
+  describe('fromTreeMapEntry', () => {
+    let tree: TreeMap<string>
+    beforeEach(() => {
+      tree = new TreeMap(baseEntries, separator)
+    })
+    it('should create TreeMap from TreeMapEntry', () => {
+      const newTree = TreeMap.fromTreeMapEntry(tree.root, '|')
+      expect(newTree).toBeInstanceOf(TreeMap)
+      expect(Array.from(newTree.entries())).toEqual(Array.from(tree.entries()))
+    })
+    it('should create empty TreeMap if the TreeMapEntry is empty', () => {
+      const newTree = TreeMap.fromTreeMapEntry({ children: {}, value: [] })
+      expect(newTree).toBeInstanceOf(TreeMap)
+      expect(Array.from(newTree.entries())).toEqual([])
+    })
+  })
+  describe('clone', () => {
+    let tree: TreeMap<string>
+    beforeEach(() => {
+      tree = new TreeMap(baseEntries, separator)
+    })
+    describe('using default clone function', () => {
+      let clonedTree: TreeMap<string>
+      beforeEach(() => {
+        clonedTree = tree.clone()
+      })
+      it('should clone the TreeMap correctly', () => {
+        expect(Array.from(clonedTree.entries())).toEqual(Array.from(tree.entries()))
+      })
+      it('should create a new instance', () => {
+        expect(clonedTree).not.toBe(tree)
+      })
+      it('should create a new instance of the entries', () => {
+        expect(clonedTree.get('salto')).not.toBe(tree.get('salto'))
+      })
+    })
+    describe('using custom clone function', () => {
+      let clonedTree: TreeMap<string>
+      beforeEach(() => {
+        clonedTree = tree.clone(entry => _.cloneDeep([entry[0], entry[1].concat('test')]))
+      })
+      it('should clone the TreeMap correctly', () => {
+        expect(Array.from(clonedTree.entries()))
+          .toEqual(Array.from(tree.entries()).map(entry => [entry[0], entry[1].concat('test')]))
+      })
+      it('should create a new instance', () => {
+        expect(clonedTree).not.toBe(tree)
+      })
+    })
+    it('should create TreeMap from TreeMapEntry', () => {
+      const newTree = TreeMap.fromTreeMapEntry(tree.root, '|')
+      expect(newTree).toBeInstanceOf(TreeMap)
+      expect(Array.from(newTree.entries())).toEqual(Array.from(tree.entries()))
+    })
+    it('should create empty TreeMap if the TreeMapEntry is empty', () => {
+      const newTree = TreeMap.fromTreeMapEntry({ children: {}, value: [] })
+      expect(newTree).toBeInstanceOf(TreeMap)
+      expect(Array.from(newTree.entries())).toEqual([])
+    })
+  })
 })

@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
 import {
   isInstanceElement,
@@ -31,7 +32,6 @@ import {
   Element,
   ElemID,
   GLOBAL_ADAPTER,
-  createPathIndexFromPath,
   getTopLevelPath,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
@@ -115,17 +115,15 @@ const transformElemIDAdapter = (accountName: string): TransformFunc => async (
 export const updateElementsWithAlternativeAccount = async (elementsToUpdate: Element[],
   newAccount: string, oldAccount: string, source?: ReadOnlyElementsSource): Promise<void> =>
   awu(elementsToUpdate).forEach(async element => {
-    // TODO: fix it - THIS IS WRONG RIGHT NOW
-    if (element.pathIndex !== undefined && (getTopLevelPath(element)[0] === oldAccount)) {
-      element.pathIndex = createPathIndexFromPath(
-        element.elemID, [newAccount, ...getTopLevelPath(element).slice(1)]
+    const elementAccountName = getTopLevelPath(element)[0]
+    if (element.pathIndex !== undefined) {
+      element.pathIndex = new collections.treeMap.TreeMap<string>(
+        wu(element.pathIndex.entries()).map(([elemId, paths]) => [
+          createAdapterReplacedID(ElemID.fromFullName(elemId), newAccount).getFullName(),
+          elementAccountName === oldAccount ? [newAccount, ...paths.slice(1)] : paths,
+        ])
       )
     }
-    // if (element.pathIndex !== undefined && (element.path[0] === oldAccount)) {
-    //   element.pathIndex = createPathIndexFromPath(
-    //     element.elemID, [newAccount, ...element.path.slice(1)]
-    //   )
-    // }
     if (element.elemID.adapter === oldAccount) {
       await transformElement({
         element,

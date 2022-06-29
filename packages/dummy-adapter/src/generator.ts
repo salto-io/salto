@@ -546,25 +546,26 @@ export const generateElements = async (
       const annotationRefsOrTypes = generateAnnotationTypes(
         normalRandom(defaultParams.objectAnnoMean, defaultParams.objectAnnoStd)
       )
+      const elemID = new ElemID(DUMMY_ADAPTER, name)
+      const annotationsPath = [DUMMY_ADAPTER, 'Objects', name, `${name}Annotations`]
+      const fieldsPath = [DUMMY_ADAPTER, 'Objects', name, `${name}Fields`]
+      const fields = await generateFields()
       const fullObjType = new ObjectType({
-        elemID: new ElemID(DUMMY_ADAPTER, name),
-        fields: await generateFields(),
+        elemID,
+        fields,
         annotationRefsOrTypes,
         annotations: await generateAnnotations(annotationRefsOrTypes),
-      })
-      const fieldsObjType = new ObjectType({
-        elemID: fullObjType.elemID,
-        fields: fullObjType.fields,
-        path: [DUMMY_ADAPTER, 'Objects', name, `${name}Fields`],
-      })
-      const annoTypesObjType = new ObjectType({
-        elemID: fullObjType.elemID,
-        annotationRefsOrTypes: await fullObjType.getAnnotationTypes(),
-        annotations: fullObjType.annotations,
-        path: [DUMMY_ADAPTER, 'Objects', name, `${name}Annotations`],
+        path: new collections.treeMap.TreeMap<string>([
+          [elemID.getFullName(), annotationsPath],
+          ...Object.keys(fields)
+            .map(fieldName => [
+              elemID.createNestedID('field', fieldName).getFullName(),
+              fieldsPath,
+            ] as [string, string[]]),
+        ]),
       })
       await updateElementRank(fullObjType)
-      return [fieldsObjType, annoTypesObjType]
+      return [fullObjType]
     }))).flat()
 
 

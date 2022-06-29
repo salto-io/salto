@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, BuiltinTypes, createRefToElmWithValue, getTopLevelPath, InstanceElement } from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { ObjectType, ElemID, BuiltinTypes, createRefToElmWithValue, getTopLevelPath, InstanceElement, DetailedChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { PathIndex, getFromPathIndex, Path, splitElementByPath } from '../../src/workspace/path_index'
+import { PathIndex, getFromPathIndex, Path, splitElementByPath, splitDetailedChange } from '../../src/workspace/path_index'
 import { InMemoryRemoteMap } from '../../src/workspace/remote_map'
 
 // TODO: go over all this file and add those missing tests that I removed
@@ -53,7 +54,7 @@ describe('getFromPathIndex', () => {
   })
 })
 
-describe('split element by path', () => {
+describe('splitElementByPath', () => {
   describe('ObjectType', () => {
     const objElemId = new ElemID('salto', 'obj')
     const objFragStdFields = new ObjectType({
@@ -88,6 +89,14 @@ describe('split element by path', () => {
       annotations: {
         anno: 'Hey',
       },
+      fields: {
+        stdField: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          annotations: {
+            anotherTest: 'test',
+          },
+        },
+      },
       path: ['salto', 'obj', 'annotations'],
     })
     const objFull = new ObjectType({
@@ -97,6 +106,7 @@ describe('split element by path', () => {
           refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: {
             test: 'test',
+            anotherTest: 'test',
           },
         },
         customField: {
@@ -114,10 +124,9 @@ describe('split element by path', () => {
       },
       path: new collections.treeMap.TreeMap<string>([
         [objElemId.getFullName(), getTopLevelPath(objFragAnnotations)],
-        [objElemId.createNestedID('attr', 'anno').getFullName(), getTopLevelPath(objFragAnnotations)],
-        [objElemId.createNestedID('annotation', 'anno').getFullName(), getTopLevelPath(objFragAnnotations)],
         [objElemId.createNestedID('field', 'stdField').getFullName(), getTopLevelPath(objFragStdFields)],
         [objElemId.createNestedID('field', 'customField').getFullName(), getTopLevelPath(objFragCustomFields)],
+        [objElemId.createNestedID('field', 'stdField', 'anotherTest').getFullName(), getTopLevelPath(objFragAnnotations)],
       ]),
     })
     const singlePathObj = new ObjectType({
@@ -127,6 +136,7 @@ describe('split element by path', () => {
           refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: {
             test: 'test',
+            anotherTest: 'test',
           },
         },
         customField: {
@@ -151,6 +161,7 @@ describe('split element by path', () => {
           refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: {
             test: 'test',
+            anotherTest: 'test',
           },
         },
         customField: {
@@ -196,6 +207,9 @@ describe('split element by path', () => {
       {
         val1: 123,
         val3: 'anotherTest',
+        val4: {
+          test1: 1,
+        },
       },
       ['salto', 'obj', 'sFields'],
     )
@@ -204,6 +218,9 @@ describe('split element by path', () => {
       objType,
       {
         val2: 'test',
+        val4: {
+          test2: 2,
+        },
       },
       ['salto', 'obj', 'cFields'],
     )
@@ -224,6 +241,10 @@ describe('split element by path', () => {
         val1: 123,
         val2: 'test',
         val3: 'anotherTest',
+        val4: {
+          test1: 1,
+          test2: 2,
+        },
       },
       undefined,
       {
@@ -233,17 +254,54 @@ describe('split element by path', () => {
     )
     full.pathIndex = new collections.treeMap.TreeMap<string>([
       [full.elemID.getFullName(), getTopLevelPath(instFragAnnotations)],
-      [full.elemID.createNestedID('anno1').getFullName(), getTopLevelPath(instFragAnnotations)],
-      [full.elemID.createNestedID('anno2').getFullName(), getTopLevelPath(instFragAnnotations)],
       [full.elemID.createNestedID('val1').getFullName(), getTopLevelPath(instFragStdFields)],
       [full.elemID.createNestedID('val2').getFullName(), getTopLevelPath(instFragCustomFields)],
       [full.elemID.createNestedID('val3').getFullName(), getTopLevelPath(instFragStdFields)],
+      [full.elemID.createNestedID('val4').getFullName(), getTopLevelPath(instFragStdFields)],
+      [full.elemID.createNestedID('val4', 'test2').getFullName(), getTopLevelPath(instFragCustomFields)],
     ])
     const fullInstFrags = [instFragStdFields, instFragCustomFields, instFragAnnotations]
     it('should split an element with multiple pathes', async () => {
       const splitedElements = await splitElementByPath(full, new InMemoryRemoteMap<Path[]>())
       fullInstFrags.forEach(
         frag => expect(splitedElements.filter(elem => elem.isEqual(frag))).toHaveLength(1)
+      )
+    })
+  })
+})
+
+describe('splitDetailedChange', () => {
+  describe('InstanceElement', () => {
+    const detailedChange: DetailedChange = {
+      action: 'add',
+      id: ElemID.fromFullName('salto.obj.instance.inst.myMap'),
+      data: { after: { a: 1, b: { c: 2, d: 3 } } },
+      pathIndex: new collections.treeMap.TreeMap<string>([
+        ['salto.obj.instance.inst.myMap', ['test']],
+        ['salto.obj.instance.inst.myMap.b.c', ['my', 'nested', 'test']],
+      ]),
+    }
+    const splittedDetailedChangeA = {
+      action: 'add',
+      id: ElemID.fromFullName('salto.obj.instance.inst.myMap'),
+      data: { after: { a: 1, b: { d: 3 } } },
+      pathIndex: new collections.treeMap.TreeMap<string>([
+        ['salto.obj.instance.inst.myMap', ['test']],
+      ]),
+    }
+    const splittedDetailedChangeB = {
+      action: 'add',
+      id: ElemID.fromFullName('salto.obj.instance.inst.myMap'),
+      data: { after: { b: { c: 2 } } },
+      pathIndex: new collections.treeMap.TreeMap<string>([
+        ['salto.obj.instance.inst.myMap', ['my', 'nested', 'test']],
+      ]),
+    }
+    const fullDCFrags = [splittedDetailedChangeA, splittedDetailedChangeB]
+    it('should split an element with multiple pathes', () => {
+      const splitedChanges = splitDetailedChange(detailedChange)
+      fullDCFrags.forEach(
+        frag => expect(splitedChanges.filter(elem => _.isEqual(elem, frag))).toHaveLength(1)
       )
     })
   })

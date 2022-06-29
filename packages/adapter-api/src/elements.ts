@@ -142,6 +142,13 @@ export abstract class Element {
    * @return {Type} the cloned instance
    */
   abstract clone(annotations?: Values): Element
+
+  /**
+   * Return a copy of this instance with only the ElemID - empty value.
+   * Needs to be implemented by each subclass as this is structure dependent.
+   * @return {Type} the cloned instance
+   */
+   abstract cloneEmpty(annotations?: Values): Element
 }
 export type ElementMap = Record<string, Element>
 
@@ -192,6 +199,10 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
   }
 
   clone(): ListType {
+    return new ListType(this.refInnerType.clone())
+  }
+
+  cloneEmpty(): ListType {
     return new ListType(this.refInnerType.clone())
   }
 
@@ -252,6 +263,10 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
   }
 
   clone(): MapType {
+    return new MapType(this.refInnerType.clone())
+  }
+
+  cloneEmpty(): MapType {
     return new MapType(this.refInnerType.clone())
   }
 
@@ -326,6 +341,14 @@ export class Field extends Element {
       annotations === undefined ? this.cloneAnnotations() : annotations,
     )
   }
+
+  cloneEmpty(): Field {
+    return new Field(
+      this.parent,
+      this.name,
+      this.refType.clone(),
+    )
+  }
 }
 export type FieldMap = Record<string, Field>
 
@@ -372,6 +395,13 @@ export class PrimitiveType<Primitive extends PrimitiveTypes = PrimitiveTypes> ex
     })
     res.annotate(additionalAnnotations)
     return res
+  }
+
+  cloneEmpty(): PrimitiveType {
+    return new PrimitiveType({
+      elemID: this.elemID,
+      primitive: this.primitive,
+    })
   }
 }
 
@@ -444,10 +474,16 @@ export class ObjectType extends Element {
         ? new collections.treeMap.TreeMap<string>(this.pathIndex.entries())
         : undefined,
     })
-
     res.annotate(additionalAnnotations)
-
     return res
+  }
+
+  cloneEmpty(): ObjectType {
+    const { isSettings } = this
+    return new ObjectType({
+      elemID: this.elemID,
+      isSettings,
+    })
   }
 }
 
@@ -508,6 +544,13 @@ export class InstanceElement extends Element {
       cloneDeepWithoutRefs(this.annotations),
     )
   }
+
+  cloneEmpty(): InstanceElement {
+    return new InstanceElement(
+      this.elemID.name,
+      this.refType.clone(),
+    )
+  }
 }
 
 export class Variable extends Element {
@@ -529,6 +572,10 @@ export class Variable extends Element {
         ? new collections.treeMap.TreeMap<string>(this.pathIndex.entries())
         : undefined,
     )
+  }
+
+  cloneEmpty(): Variable {
+    return new Variable(this.elemID, undefined)
   }
 }
 

@@ -41,8 +41,7 @@ const splitChangeByPath = async (
     )
     return {
       ...filteredChange,
-      // TODO: (maybe) fix me!!! - I am not sure that this should be change.id
-      pathIndex: createPathIndexFromPath(change.id, hint as string[]),
+      pathIndex: createPathIndexFromPath(filteredChange.id, hint as string[]),
     }
   }))
 }

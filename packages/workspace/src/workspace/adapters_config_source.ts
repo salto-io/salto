@@ -159,7 +159,13 @@ export const buildAdaptersConfigSource = async ({
         data: { after: conf },
         pathIndex: createPathIndexFromPath(
           conf.elemID,
-          [...CONFIG_PATH, conf.elemID.adapter, ...getTopLevelPath(conf) ?? [conf.elemID.adapter]]
+          [
+            ...CONFIG_PATH,
+            conf.elemID.adapter,
+            ...(_.isEmpty(getTopLevelPath(conf))
+              ? [conf.elemID.adapter]
+              : getTopLevelPath(conf)),
+          ]
         ),
       }))
     )

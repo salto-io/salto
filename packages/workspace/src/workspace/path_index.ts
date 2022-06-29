@@ -17,14 +17,13 @@ import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { ElemID, Element, Value, Field, isObjectType, isInstanceElement,
   ObjectType, InstanceElement, createPathIndexFromPath, getTopLevelPath, cloneDeepWithoutRefs, DetailedChange, isElement, getChangeData } from '@salto-io/adapter-api'
-import { safeJsonStringify, filterByID, setPath } from '@salto-io/adapter-utils'
+import { safeJsonStringify, filterByID, setPath, resolvePath } from '@salto-io/adapter-utils'
 import { RemoteMapEntry, RemoteMap } from './remote_map'
 
 const { awu } = collections.asynciterable
 
 export type Path = readonly string[]
-
-type Fragment<T> = {value: T; path: Path}
+type Fragment<T, K = Path> = {value: T; path: K}
 type PathHint = {key: string; value: Path[]}
 export type PathIndex = RemoteMap<Path[]>
 
@@ -226,69 +225,45 @@ export const getFromPathIndex = async (
   return []
 }
 
-export const splitDetailedChange = (
-  change: DetailedChange,
-): DetailedChange[] => {
-  if (change.action !== 'add') {
-    return [change]
-  }
-  const allPaths = _.uniqWith(Array.from(change.pathIndex?.values() ?? []), _.isEqual)
-  const changedData = getChangeData(change)
-  const pathsToChanges = Object.fromEntries(allPaths.map(path => {
-    const clonedValue = isElement(changedData)
-      ? changedData.clone()
-      : cloneDeepWithoutRefs(changedData)
-    const detailedChange: DetailedChange = {
-      action: 'add',
-      id: change.id,
-      data: { after: clonedValue },
-      pathIndex: createPathIndexFromPath(change.id, path),
-    }
-    return [path.join('/'), detailedChange]
-  }))
-  change.pathIndex?.forEach((value, elemIdFullName) => {
-    const elemId = ElemID.fromFullName(elemIdFullName)
-    const path = value.join('/')
-    Object.entries(pathsToChanges).forEach(([changePath, detailedChange]) => {
-      if (changePath !== path) {
-        const data = getChangeData(detailedChange)
-        if (isElement(data)) {
-          setPath(data, elemId, undefined)
-        } else {
-          // TODO: this is wrong
-          // TODO: check for the following:
-          // * exception is thrown
-          // * empty list - its the top level
-          // * I think that we want to do it with the addition way
-          const relativePath = detailedChange.id.getRelativePath(elemId)
-          _.set(data, relativePath.join('.'), undefined)
-        }
-      }
-    })
-  })
-  return Object.values(pathsToChanges)
-}
-
-const splitElementByElementPathIndex = (
+const splitElementByPathIndex = (
   element: Element,
+  pathIndex: collections.treeMap.TreeMap<string>
 ): Element[] => {
-  if (element.pathIndex === undefined) {
-    return [element]
-  }
-  const allPaths = _.uniqWith(Array.from(element.pathIndex.values()), _.isEqual)
+  const allPaths = _.uniqWith(Array.from(pathIndex.values()), _.isEqual)
+  const defaultPath = pathIndex.get(element.elemID.getFullName()) ?? []
   const pathsToElements = Object.fromEntries(allPaths.map(path => {
-    const clonedElement = element.clone()
+    const clonedElement = _.isEqual(path, defaultPath) ? element.clone() : element.cloneEmpty()
     clonedElement.pathIndex = createPathIndexFromPath(clonedElement.elemID, path)
-    return [path.join('/'), clonedElement]
+    return [path.join('/'), clonedElement] as [string, Element]
   }))
-  element.pathIndex.forEach((value, elemIdFullName) => {
+  pathIndex.forEach((value, elemIdFullName) => {
     const elemId = ElemID.fromFullName(elemIdFullName)
+    if (element.elemID.isEqual(elemId)) {
+      return
+    }
     const path = value.join('/')
-    Object.entries(pathsToElements).forEach(([fragmentPath, fragment]) => {
-      if (fragmentPath !== path) {
-        setPath(fragment, elemId, undefined)
-      }
-    })
+    Object.entries(pathsToElements)
+      .forEach(([fragmentPath, fragment]) => {
+        if (fragmentPath !== path) {
+          setPath(fragment, elemId, undefined)
+        } else {
+          // This is for the case where we want to add a value to a fragment
+          //  but its base element doesn't exist on the fragment
+          const baseId = elemId.createBaseID().parent
+          if (!elemId.isBaseID() && resolvePath(fragment, baseId) === undefined) {
+            const baseElement = resolvePath(element, baseId)
+            if (isElement(baseElement)) {
+              setPath(fragment, baseId, baseElement.cloneEmpty())
+            }
+          }
+          const resolvedValue = resolvePath(element, elemId)
+          setPath(
+            fragment,
+            elemId,
+            isElement(resolvedValue) ? resolvedValue.clone() : cloneDeepWithoutRefs(resolvedValue)
+          )
+        }
+      })
   })
   return Object.values(pathsToElements)
 }
@@ -330,6 +305,85 @@ export const splitElementByPath = async (
   index: PathIndex
 ): Promise<Element[]> => (
   element.pathIndex
-    ? splitElementByElementPathIndex(element)
+    ? splitElementByPathIndex(element, element.pathIndex)
     : splitElementByStatePathIndex(element, index)
 )
+
+const splitValueByPathIndex = (
+  value: Value, id: ElemID, pathIndex: collections.treeMap.TreeMap<string>
+): Fragment<Value, collections.treeMap.TreeMap<string>>[] => {
+  const allPaths = _.uniqWith(Array.from(pathIndex.values()), _.isEqual)
+  const defaultPath = pathIndex.get(id.getFullName()) ?? []
+  const pathsToFragments = Object.fromEntries(allPaths.map(path => {
+    const clonedValue = _.isEqual(path, defaultPath) ? cloneDeepWithoutRefs(value) : {}
+    return [path.join('/'), { value: clonedValue, path: createPathIndexFromPath(id, path) }]
+  }))
+  pathIndex?.forEach((path, elemIdFullName) => {
+    const elemId = ElemID.fromFullName(elemIdFullName)
+    if (id.isEqual(elemId)) {
+      return
+    }
+    const fullPath = path.join('/')
+    const relativePath = id.getRelativePath(elemId).join('.')
+    Object.entries(pathsToFragments).forEach(([fragmentPath, fragment]) => {
+      if (fragmentPath !== fullPath) {
+        _.unset(fragment.value, relativePath)
+      } else {
+        const resolvedValue = cloneDeepWithoutRefs(_.get(value, relativePath))
+        _.set(fragment.value, relativePath, resolvedValue)
+      }
+    })
+  })
+  return Object.values(pathsToFragments)
+}
+
+export const splitDetailedChange = (
+  change: DetailedChange,
+): DetailedChange[] => {
+  if (change.action !== 'add' || change.pathIndex === undefined) {
+    return [change]
+  }
+  const changedData = getChangeData(change)
+  if (isElement(changedData)) {
+    const splittedElements = splitElementByPathIndex(changedData, change.pathIndex)
+    return splittedElements.map(element => ({
+      action: 'add',
+      data: { after: element },
+      id: element.elemID,
+      pathIndex: element.pathIndex,
+    }))
+  }
+  const splittedFragments = splitValueByPathIndex(changedData, change.id, change.pathIndex)
+  return splittedFragments.map(fragment => ({
+    action: 'add',
+    data: { after: fragment.value },
+    pathIndex: fragment.path,
+    id: change.id,
+  }))
+}
+
+const getPathOfId = (elemID: ElemID, pathIndex: collections.treeMap.TreeMap<string>): string[] => {
+  const idParts = elemID.getFullNameParts()
+  const topLevelKey = elemID.createTopLevelParentID().parent.getFullName()
+  let key: string
+  do {
+    key = idParts.join(ElemID.NAMESPACE_SEPARATOR)
+    const pathHint = pathIndex.get(key)
+    if (pathHint !== undefined) {
+      return pathHint
+    }
+    idParts.pop()
+  } while (idParts.length > 0 && key !== topLevelKey)
+  return []
+}
+
+export const getPathIndexOfId = (
+  elemID: ElemID, pathIndex: collections.treeMap.TreeMap<string>
+): collections.treeMap.TreeMap<string> => {
+  const rootPath = getPathOfId(elemID, pathIndex)
+  const pathIndexOfId = new collections.treeMap.TreeMap<string>(
+    pathIndex.entriesWithPrefix(elemID.getFullName())
+  )
+  pathIndexOfId.set(elemID.getFullName(), rootPath)
+  return pathIndexOfId
+}

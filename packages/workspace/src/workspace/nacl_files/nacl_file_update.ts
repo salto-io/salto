@@ -328,7 +328,6 @@ export const getChangesToUpdate = (
   changes: DetailedChange[],
   sourceMap: SourceMap
 ): DetailedChange[] => {
-  // TODO: fix me!!! - we need to test this flow with nested additions
   const isNestedAddition = (dc: DetailedChange): boolean => (dc.pathIndex || false)
     && dc.action === 'add'
     && dc.id.idType !== 'instance'

@@ -22,6 +22,7 @@ import {
   AdapterAuthentication, OAuthRequestParameters, OauthAccessTokenResponse,
   createRefToElmWithValue,
   StaticFile,
+  createPathIndexFromPath,
 } from '@salto-io/adapter-api'
 import {
   Plan, PlanItem, EVENT_TYPES, DeployResult,
@@ -743,7 +744,10 @@ export const deploy = async (
 
 export const staticFileChange = (action: 'add' | 'modify' | 'remove', withContent = false): DetailedChange => {
   const id = new ElemID('salesforce')
-  const path = ['salesforce', 'Records', 'advancedpdftemplate', 'custtmpl_103_t2257860_156']
+  const path = createPathIndexFromPath(
+    id,
+    ['salesforce', 'Records', 'advancedpdftemplate', 'custtmpl_103_t2257860_156'],
+  )
   const beforeFile = new StaticFile({
     filepath: 'salesforce/advancedpdftemplate/custtmpl_103_t2257860_156.xml',
     encoding: 'binary',
@@ -759,12 +763,12 @@ export const staticFileChange = (action: 'add' | 'modify' | 'remove', withConten
 
   if (action === 'add') {
     const data = { after: afterFile }
-    return { id, action, data, path }
+    return { id, action, data, pathIndex: path }
   }
   if (action === 'modify') {
     const data = { before: beforeFile, after: afterFile }
-    return { id, action, data, path }
+    return { id, action, data, pathIndex: path }
   }
   const data = { before: beforeFile }
-  return { id, action, data, path }
+  return { id, action, data, pathIndex: path }
 }

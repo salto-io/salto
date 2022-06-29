@@ -97,12 +97,13 @@ describe('elements generator', () => {
     })
 
     it('should return elements in the extra nacl dir', async () => {
+      const multiFileElemID = new ElemID('dummy', 'multiFilesObj')
       const elements = await generateElements({
         ...testParams,
         extraNaclPath: EXTRA_NACL_PATH,
       }, mockProgressReporter)
       const singleFileObj = elements.find(e => e.elemID.getFullName() === 'dummy.singleFileObj')
-      const multiFilesObj = elements.filter(e => e.elemID.getFullName() === 'dummy.multiFilesObj')
+      const multiFilesObj = elements.filter(e => e.elemID.isEqual(multiFileElemID))
       expect(singleFileObj).toBeDefined()
       expect(multiFilesObj).toHaveLength(2)
       expect(singleFileObj?.pathIndex)
@@ -110,8 +111,8 @@ describe('elements generator', () => {
           singleFileObj?.elemID as ElemID, ['dummy', 'extra', 'single']
         ))
       expect(multiFilesObj.map(e => e.pathIndex)).toEqual([
-        ['dummy', 'extra', 'multi1'],
-        ['dummy', 'extra', 'multi2'],
+        createPathIndexFromPath(multiFileElemID, ['dummy', 'extra', 'multi1']),
+        createPathIndexFromPath(multiFileElemID, ['dummy', 'extra', 'multi2']),
       ])
     })
 

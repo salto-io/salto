@@ -110,14 +110,6 @@ describe('Custom Object Split filter', () => {
               [SALESFORCE, OBJECTS_PATH, typeName, 'CustomObjectAnnotations'],
             ],
             [
-              customObject.elemID.createNestedID('attr', METADATA_TYPE).getFullName(),
-              [SALESFORCE, OBJECTS_PATH, typeName, 'CustomObjectAnnotations'],
-            ],
-            [
-              customObject.elemID.createNestedID('attr', API_NAME).getFullName(),
-              [SALESFORCE, OBJECTS_PATH, typeName, 'CustomObjectAnnotations'],
-            ],
-            [
               customObject.elemID.createNestedID('field', 'standard').getFullName(),
               [SALESFORCE, OBJECTS_PATH, typeName, 'CustomObjectStandardFields'],
             ],
@@ -149,14 +141,6 @@ describe('Custom Object Split filter', () => {
           .toEqual([
             [
               customObject.elemID.getFullName(),
-              [SALESFORCE, INSTALLED_PACKAGES_PATH, 'namespace', OBJECTS_PATH, typeName, 'CustomObjectAnnotations'],
-            ],
-            [
-              customObject.elemID.createNestedID('attr', METADATA_TYPE).getFullName(),
-              [SALESFORCE, INSTALLED_PACKAGES_PATH, 'namespace', OBJECTS_PATH, typeName, 'CustomObjectAnnotations'],
-            ],
-            [
-              customObject.elemID.createNestedID('attr', API_NAME).getFullName(),
               [SALESFORCE, INSTALLED_PACKAGES_PATH, 'namespace', OBJECTS_PATH, typeName, 'CustomObjectAnnotations'],
             ],
             [
@@ -206,14 +190,6 @@ describe('Custom Object Split filter', () => {
                 [SALESFORCE, OBJECTS_PATH, typeName, 'CustomObjectAnnotations'],
               ],
               [
-                customObject.elemID.createNestedID('attr', METADATA_TYPE).getFullName(),
-                [SALESFORCE, OBJECTS_PATH, typeName, 'CustomObjectAnnotations'],
-              ],
-              [
-                customObject.elemID.createNestedID('attr', API_NAME).getFullName(),
-                [SALESFORCE, OBJECTS_PATH, typeName, 'CustomObjectAnnotations'],
-              ],
-              [
                 customObject.elemID.createNestedID('field', 'custom__c').getFullName(),
                 [SALESFORCE, OBJECTS_PATH, typeName, 'CustomObjectCustomFields'],
               ],
@@ -245,14 +221,6 @@ describe('Custom Object Split filter', () => {
             .toEqual([
               [
                 customObject.elemID.getFullName(),
-                [SALESFORCE, OBJECTS_PATH, typeName, 'CustomObjectAnnotations'],
-              ],
-              [
-                customObject.elemID.createNestedID('attr', METADATA_TYPE).getFullName(),
-                [SALESFORCE, OBJECTS_PATH, typeName, 'CustomObjectAnnotations'],
-              ],
-              [
-                customObject.elemID.createNestedID('attr', API_NAME).getFullName(),
                 [SALESFORCE, OBJECTS_PATH, typeName, 'CustomObjectAnnotations'],
               ],
               [
@@ -354,14 +322,6 @@ describe('Custom Object Split filter', () => {
             [SALESFORCE, OBJECTS_PATH, typeName, `${typeName}Annotations`],
           ],
           [
-            elemId.createNestedID('attr', METADATA_TYPE).getFullName(),
-            [SALESFORCE, OBJECTS_PATH, typeName, `${typeName}Annotations`],
-          ],
-          [
-            elemId.createNestedID('attr', API_NAME).getFullName(),
-            [SALESFORCE, OBJECTS_PATH, typeName, `${typeName}Annotations`],
-          ],
-          [
             elemId.createNestedID('field', 'Standard').getFullName(),
             [SALESFORCE, OBJECTS_PATH, typeName, OBJECT_FIELDS_PATH, 'Standard'],
           ],
@@ -384,14 +344,6 @@ describe('Custom Object Split filter', () => {
         .toEqual([
           [
             elemId.getFullName(),
-            [SALESFORCE, OBJECTS_PATH, typeName, `${typeName}Annotations`],
-          ],
-          [
-            elemId.createNestedID('attr', METADATA_TYPE).getFullName(),
-            [SALESFORCE, OBJECTS_PATH, typeName, `${typeName}Annotations`],
-          ],
-          [
-            elemId.createNestedID('attr', API_NAME).getFullName(),
             [SALESFORCE, OBJECTS_PATH, typeName, `${typeName}Annotations`],
           ],
           [

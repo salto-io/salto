@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ObjectType, ElemID, DetailedChange, getChangeData } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, ElemID, DetailedChange, getChangeData, createPathIndexFromPath } from '@salto-io/adapter-api'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
@@ -155,37 +155,61 @@ describe('adapters config', () => {
     expect(await configSource.getAdapter('salesforce')).toBeUndefined()
   })
   it('should set adapter in nacl files source with the default path', async () => {
-    await configSource.setAdapter('salesforce', 'salesforce', new InstanceElement(
+    const instance = new InstanceElement(
       ElemID.CONFIG_NAME,
       new ObjectType({
         elemID: new ElemID('salesforce', ElemID.CONFIG_NAME),
       })
-    ))
-    expect(mockNaclFilesSource.updateNaclFiles).toHaveBeenCalledWith([expect.objectContaining({ path: ['salto.config', 'adapters', 'salesforce', 'salesforce'] })])
+    )
+    await configSource.setAdapter('salesforce', 'salesforce', instance)
+    expect(mockNaclFilesSource.updateNaclFiles)
+      .toHaveBeenCalledWith([
+        expect.objectContaining({
+          pathIndex: createPathIndexFromPath(
+            instance.elemID,
+            ['salto.config', 'adapters', 'salesforce', 'salesforce']
+          ),
+        })])
     expect(mockNaclFilesSource.flush).toHaveBeenCalled()
   })
 
   it('should set adapter in nacl files source with the config path', async () => {
-    await configSource.setAdapter('salesforce', 'salesforce', new InstanceElement(
+    const instance = new InstanceElement(
       ElemID.CONFIG_NAME,
       new ObjectType({
         elemID: new ElemID('salesforce', ElemID.CONFIG_NAME),
       }),
       {},
       ['dir', 'file']
-    ))
-    expect(mockNaclFilesSource.updateNaclFiles).toHaveBeenCalledWith([expect.objectContaining({ path: ['salto.config', 'adapters', 'salesforce', 'dir', 'file'] })])
+    )
+    await configSource.setAdapter('salesforce', 'salesforce', instance)
+    expect(mockNaclFilesSource.updateNaclFiles)
+      .toHaveBeenCalledWith([
+        expect.objectContaining({
+          pathIndex: createPathIndexFromPath(
+            instance.elemID,
+            ['salto.config', 'adapters', 'salesforce', 'dir', 'file']
+          ),
+        })])
     expect(mockNaclFilesSource.flush).toHaveBeenCalled()
   })
 
   it('should set adapter in nacl files source with the config path, if account name isnt same as service', async () => {
-    await configSource.setAdapter('salesforce2', 'salesforce', new InstanceElement(
+    const instance = new InstanceElement(
       ElemID.CONFIG_NAME,
       new ObjectType({
         elemID: new ElemID('salesforce2', ElemID.CONFIG_NAME),
       }),
-    ))
-    expect(mockNaclFilesSource.updateNaclFiles).toHaveBeenCalledWith([expect.objectContaining({ path: ['salto.config', 'adapters', 'salesforce2', 'salesforce2'] })])
+    )
+    await configSource.setAdapter('salesforce2', 'salesforce', instance)
+    expect(mockNaclFilesSource.updateNaclFiles)
+      .toHaveBeenCalledWith([
+        expect.objectContaining({
+          pathIndex: createPathIndexFromPath(
+            instance.elemID,
+            ['salto.config', 'adapters', 'salesforce2', 'salesforce2']
+          ),
+        })])
     expect(mockNaclFilesSource.flush).toHaveBeenCalled()
   })
 

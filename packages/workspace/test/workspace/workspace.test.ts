@@ -1271,51 +1271,50 @@ describe('workspace', () => {
         action: 'add',
         data: { after: anotherNewField },
       },
-      // TODO: fix all those comment out lines
       {
-        // path: ['other', 'battr'],
         id: new ElemID('salesforce', 'lead', 'attr', 'bobo'),
         action: 'add',
         data: { after: 'baba' },
+        pathIndex: createPathIndexFromPath(new ElemID('salesforce', 'lead', 'attr', 'bobo'), ['other', 'battr']),
       },
       {
-        // path: ['other', 'boo'],
+        pathIndex: createPathIndexFromPath(new ElemID('salesforce', 'lead', 'attr', 'nono'), ['other', 'boo']),
         id: new ElemID('salesforce', 'lead', 'attr', 'nono'),
         action: 'add',
         data: { after: 'nono' },
       },
       {
-        // path: ['other', 'boo'],
+        pathIndex: createPathIndexFromPath(new ElemID('salesforce', 'lead', 'attr', 'momo'), ['other', 'boo']),
         id: new ElemID('salesforce', 'lead', 'attr', 'momo'),
         action: 'add',
         data: { after: 'momo' },
       },
       { // Add to an exiting path
-        // path: ['file'],
+        pathIndex: createPathIndexFromPath(new ElemID('salesforce', 'lead', 'attr', 'dodo'), ['file']),
         id: new ElemID('salesforce', 'lead', 'attr', 'dodo'),
         action: 'add',
         data: { after: 'dodo' },
       },
       { // new annotation type to a type with no annotation types block
-        // path: ['file'],
+        pathIndex: createPathIndexFromPath(new ElemID('salesforce', 'lead', 'annotation', 'newAnnoType1'), ['file']),
         id: new ElemID('salesforce', 'lead', 'annotation', 'newAnnoType1'),
         action: 'add',
         data: { after: createRefToElmWithValue(BuiltinTypes.STRING) },
       },
       { // new annotation type to a type with no annotation types block
-        // path: ['file'],
+        pathIndex: createPathIndexFromPath(new ElemID('salesforce', 'lead', 'annotation', 'newAnnoType2'), ['file']),
         id: new ElemID('salesforce', 'lead', 'annotation', 'newAnnoType2'),
         action: 'add',
         data: { after: createRefToElmWithValue(BuiltinTypes.NUMBER) },
       },
       { // new hidden annotation type
-        // path: ['file'],
+        pathIndex: createPathIndexFromPath(new ElemID('salesforce', 'lead', 'annotation', 'newHiddenAnno'), ['file']),
         id: new ElemID('salesforce', 'lead', 'annotation', 'newHiddenAnno'),
         action: 'add',
         data: { after: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING) },
       },
       { // new annotation type to a type with annotation types block
-        // path: ['file'],
+        pathIndex: createPathIndexFromPath(new ElemID('salesforce', 'WithAnnotationsBlock', 'annotation', 'secondAnnotation'), ['file']),
         id: new ElemID('salesforce', 'WithAnnotationsBlock', 'annotation', 'secondAnnotation'),
         action: 'add',
         data: { after: createRefToElmWithValue(BuiltinTypes.NUMBER) },
@@ -1561,11 +1560,13 @@ describe('workspace', () => {
         action: 'remove',
         data: { before: true },
       },
-      // TODO: fix all those comment out path properties
       {
         id: nonHiddenObjWithOnlyHiddeNotInNacl.elemID.createNestedID('attr', 'hidden'),
         action: 'modify',
-        // path: ['should', 'not', 'matter'],
+        pathIndex: createPathIndexFromPath(
+          nonHiddenObjWithOnlyHiddeNotInNacl.elemID.createNestedID('attr', 'hidden'),
+          ['should', 'not', 'matter'],
+        ),
         data: {
           before: 'hidden',
           after: 'changed',
@@ -1574,7 +1575,10 @@ describe('workspace', () => {
       {
         id: new ElemID('salesforce', 'Inconsistent_Case'),
         action: 'add',
-        // path: ['Inconsistent_Case'],
+        pathIndex: createPathIndexFromPath(
+          new ElemID('salesforce', 'Inconsistent_Case'),
+          ['Inconsistent_Case'],
+        ),
         data: {
           after: new ObjectType({
             elemID: new ElemID('salesforce', 'Inconsistent_Case'),
@@ -1892,7 +1896,7 @@ describe('workspace', () => {
     it('should update file correctly when elements are removed and added in the same file', () => {
       expect(elemMap).not.toHaveProperty(renamedTypes.before.elemID.getFullName())
       const addedElement = elemMap[renamedTypes.after.elemID.getFullName()]
-      expect(addedElement).toMatchObject(_.omit(renamedTypes.after, 'path'))
+      expect(addedElement).toMatchObject(_.omit(renamedTypes.after, 'pathIndex'))
       expect(dirStore.set).toHaveBeenCalledWith(expect.objectContaining({
         filename: 'renamed_type.nacl',
         buffer: expect.stringMatching(/^\s*type salesforce.RenamedType2 {\s*}\s*$/),
@@ -3841,14 +3845,13 @@ describe('stateOnly update', () => {
     })
     ws = await createWorkspace(dirStore, state)
     const changes: DetailedChange[] = [
-      // TODO: fix all those comments out paths
       {
         action: 'add',
         data: {
           after: objectWithHiddenToAdd,
         },
         id: objectWithHiddenToAdd.elemID,
-        // path: ['salto', 'objwithhidden.nacl'],
+        pathIndex: createPathIndexFromPath(objectWithHiddenToAdd.elemID, ['salto', 'objwithhidden.nacl']),
       },
       {
         action: 'add',
@@ -3856,7 +3859,7 @@ describe('stateOnly update', () => {
           after: hiddenInstToAdd,
         },
         id: hiddenInstToAdd.elemID,
-        // path: ['salto', 'inst.nacl'],
+        pathIndex: createPathIndexFromPath(hiddenInstToAdd.elemID, ['salto', 'inst.nacl']),
       },
       {
         action: 'modify',

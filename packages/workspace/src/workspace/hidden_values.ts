@@ -25,6 +25,7 @@ import { mergeElements, MergeResult } from '../merger'
 import { State } from './state'
 import { createAddChange, createRemoveChange } from './nacl_files/multi_env/projections'
 import { ElementsSource } from './elements_source'
+import { splitElementByPath } from './path_index'
 
 const { pickAsync } = promises.object
 const { awu } = collections.asynciterable
@@ -287,7 +288,7 @@ const getInstanceTypeHiddenChanges = async (
   const fromHiddenElemIds = new Set(
     fromHiddenChanges.map(change => change.id.createTopLevelParentID().parent.getFullName())
   )
-
+  const pathIndex = await state.getPathIndex()
   const r = await awu(await state.getAll())
     .flatMap(async elem => {
       if (isInstanceElement(elem)) {
@@ -295,7 +296,8 @@ const getInstanceTypeHiddenChanges = async (
           return [createRemoveChange(elem, elem.elemID)]
         }
         if (fromHiddenElemIds.has(elem.refType.elemID.getFullName())) {
-          return [createAddChange(elem, elem.elemID, elem.pathIndex)]
+          return (await splitElementByPath(elem, pathIndex))
+            .map(fragment => createAddChange(fragment, elem.elemID, fragment.pathIndex))
         }
       }
       return []

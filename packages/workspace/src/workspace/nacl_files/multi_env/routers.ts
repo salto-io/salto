@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeData, ElemID, Value, DetailedChange, ChangeDataType, Element, isObjectType, isPrimitiveType, isInstanceElement, isField, isAdditionChange } from '@salto-io/adapter-api'
+import { getChangeData, ElemID, Value, DetailedChange, ChangeDataType, Element, isObjectType, isPrimitiveType, isInstanceElement, isField, isAdditionChange, createPathIndexFromPath } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { promises, values, collections } from '@salto-io/lowerdash'
 import { resolvePath, filterByID, detailedCompare, applyFunctionToChangeData } from '@salto-io/adapter-utils'
@@ -123,7 +123,10 @@ const separateChangeByFiles = async (
         ) {
           return undefined
         }
-        return { ...filteredChange, path: toPathHint(filename) }
+        return {
+          ...filteredChange,
+          pathIndex: createPathIndexFromPath(filteredChange.id, toPathHint(filename)),
+        }
       })
   )).filter(values.isDefined)
 
@@ -232,10 +235,6 @@ const createUpdateChanges = async (
         && change.id.nestingLevel > 0
         && !(await targetSource.get(change.id.createParentID())))
   )
-  // const modifiedAdditions = await awu(Object.entries(_.groupBy(
-  //   nestedAdditions,
-  //   addition => addition.id.createTopLevelParentID().parent.getFullName()
-  // )))
   const [fullyNestedAdditions, partiallyNestedAdditions] = await promises.array.partition(
     nestedAdditions,
     async change => !(await targetSource.get(change.id.createTopLevelParentID().parent))
@@ -416,24 +415,6 @@ export const routeDefault = async (
   return routeDefaultRemoveOrModify(change, primarySource, commonSource, secondarySources)
 }
 
-// const getChangePathHint = async (
-//   change: DetailedChange,
-//   commonSource: NaclFilesSource
-// ): Promise<ReadonlyArray<string> | undefined> => {
-//   // TODO: fix me!!!
-//   // if (change.path) return change.path
-//   if (change.pathIndex) {
-//     return change.pathIndex.get(change.id.getFullName())
-//       ?? change.pathIndex.get(change.id.createTopLevelParentID().parent.getFullName())
-//   }
-//   const refFilename = (await commonSource.getSourceRanges(change.id))
-//     .map(sourceRange => sourceRange.filename)[0]
-
-//   return refFilename
-//     ? toPathHint(refFilename)
-//     : undefined
-// }
-
 export const routeIsolated = async (
   change: DetailedChange,
   primarySource: NaclFilesSource,
@@ -442,8 +423,6 @@ export const routeIsolated = async (
 ): Promise<RoutedChangesByRole> => {
   // This is an add change, which means the element is not in common.
   // so we will add it to the current action environment.
-  // const pathHint = await getChangePathHint(change, commonSource)
-
   if (change.action === 'add') {
     return { primarySource: [change] }
   }
@@ -480,7 +459,7 @@ export const routeIsolated = async (
   return {
     // No need to apply addToSource to primary env changes since it was handled by the original plan
     primarySource: [...currentEnvChanges, ...addCommonProjectionToCurrentChanges],
-    commonSource: [createRemoveChange(currentCommonElement, change.id, change.pathIndex)],
+    commonSource: [createRemoveChange(currentCommonElement, change.id)],
     secondarySources: secondaryChanges,
   }
 }

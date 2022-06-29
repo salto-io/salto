@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { detailedCompare } from '@salto-io/adapter-utils'
-import { ElemID, Field, BuiltinTypes, ObjectType, ListType, InstanceElement, DetailedChange, PrimitiveType, PrimitiveTypes, isField, getChangeData, Change, ReferenceExpression, INSTANCE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ElemID, Field, BuiltinTypes, ObjectType, ListType, InstanceElement, DetailedChange, PrimitiveType, PrimitiveTypes, isField, getChangeData, Change, ReferenceExpression, INSTANCE_ANNOTATIONS, createPathIndexFromPath } from '@salto-io/adapter-api'
 import { ModificationDiff, RemovalDiff, AdditionDiff } from '@salto-io/dag'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
 import { routeChanges, routePromote, routeDemote, routeCopyTo, getMergeableParentID, routeRemoveFrom } from '../../../src/workspace/nacl_files/multi_env/routers'
@@ -891,19 +891,18 @@ describe('isolated routing', () => {
       action: 'add',
       data: { after: specificChange.data.after },
       id: specificChange.id,
-      path: ['test', 'path'],
+      pathIndex: createPathIndexFromPath(specificChange.id, ['test', 'path']),
     })
     expect(routedChanges.commonSource?.[0]).toEqual({
       action: 'remove',
       data: { before: specificChange.data.before },
       id: specificChange.id,
-      path: ['test', 'path'],
     })
     expect(routedChanges.envSources?.[secSrcName][0]).toEqual({
       action: 'add',
       data: { after: specificChange.data.before },
       id: specificChange.id,
-      path: ['test', 'path'],
+      pathIndex: createPathIndexFromPath(specificChange.id, ['test', 'path']),
     })
   })
   it('should route a common removal diff to common and revert the change in secondary envs', async () => {
@@ -939,31 +938,31 @@ describe('isolated routing', () => {
       action: 'add',
       id: splitObjectID,
       data: { after: splitObjectAnnotations },
-      path: ['test', 'anno'],
+      pathIndex: createPathIndexFromPath(splitObjectID, ['test', 'anno']),
     })
     expect(secChanges && secChanges[1]).toEqual({
       action: 'add',
       id: splitObjectID,
       data: { after: splitObjectAnnotationTypes },
-      path: ['test', 'annoTypes'],
+      pathIndex: createPathIndexFromPath(splitObjectID, ['test', 'annoTypes']),
     })
     expect(secChanges && secChanges[2]).toEqual({
       action: 'add',
       id: splitObjectID,
       data: { after: splitObjectFields },
-      path: ['test', 'fields'],
+      pathIndex: createPathIndexFromPath(splitObjectID, ['test', 'fields']),
     })
     expect(secChanges && secChanges[3]).toEqual({
       action: 'add',
       id: splitInstanceJoined.elemID,
       data: { after: splitInstance1 },
-      path: ['test', 'inst1'],
+      pathIndex: createPathIndexFromPath(splitInstanceJoined.elemID, ['test', 'inst1']),
     })
     expect(secChanges && secChanges[4]).toEqual({
       action: 'add',
       id: splitInstanceJoined.elemID,
       data: { after: splitInstance2 },
-      path: ['test', 'inst2'],
+      pathIndex: createPathIndexFromPath(splitInstanceJoined.elemID, ['test', 'inst2']),
     })
   })
   it('should route a removal diff to common and env and revert the change in secondary envs', async () => {
@@ -991,10 +990,9 @@ describe('isolated routing', () => {
       action: 'remove',
       data: { before: commonObj },
       id: commonObj.elemID,
-      path: ['test', 'path'],
     })
     const expectedChanges = detailedCompare(envObj, sharedObject)
-      .map(expectedChange => ({ ...expectedChange, path: ['test', 'path'] }))
+      .map(expectedChange => ({ ...expectedChange, pathIndex: createPathIndexFromPath(expectedChange.id, ['test', 'path']) }))
     expectedChanges.forEach(
       expectedChange => expect(routedChanges.envSources?.[secSrcName])
         .toContainEqual(expectedChange)
@@ -1032,7 +1030,7 @@ describe('isolated routing', () => {
           }],
         }),
       },
-      path: ['test', 'path'],
+      pathIndex: createPathIndexFromPath(commonInstance.elemID, ['test', 'path']),
     })
     expect(routedChanges.commonSource).toHaveLength(1)
     const commonChange = routedChanges.commonSource && routedChanges.commonSource[0]
@@ -1042,7 +1040,6 @@ describe('isolated routing', () => {
       data: {
         before: [{ str1: 'STR_1' }],
       },
-      path: ['test', 'path'],
     })
     const secondaryChange = routedChanges.envSources?.[secSrcName]?.[0]
     expect(secondaryChange).toEqual({
@@ -1055,7 +1052,7 @@ describe('isolated routing', () => {
           }],
         }),
       },
-      path: ['test', 'path'],
+      pathIndex: createPathIndexFromPath(commonInstance.elemID, ['test', 'path']),
     })
   })
 
@@ -1398,11 +1395,11 @@ describe('track', () => {
     expect(changes.commonSource).toEqual([
       { action: 'add',
         id: multiFileInstace.elemID,
-        path: ['default'],
+        pathIndex: createPathIndexFromPath(multiFileInstace.elemID, ['default']),
         data: { after: multiFileInstaceDefault } },
       { action: 'add',
         id: multiFileInstace.elemID,
-        path: ['other'],
+        pathIndex: createPathIndexFromPath(multiFileInstace.elemID, ['other']),
         data: { after: multiFileInstaceOther } },
     ])
   })
@@ -1662,8 +1659,18 @@ describe('untrack', () => {
     expect(changes.envSources?.[secSrcName]).toHaveLength(2)
     expect(changes.envSources?.[primarySrcName]).toEqual(changes.envSources?.[secSrcName])
     expect(changes.envSources?.[primarySrcName]).toEqual([
-      { action: 'add', id: multiFileCommon.elemID, path: ['default'], data: { after: multiFileCommonDefault } },
-      { action: 'add', id: multiFileCommon.elemID, path: ['other'], data: { after: multiFileCommonOther } },
+      {
+        action: 'add',
+        id: multiFileCommon.elemID,
+        pathIndex: createPathIndexFromPath(multiFileCommon.elemID, ['default']),
+        data: { after: multiFileCommonDefault },
+      },
+      {
+        action: 'add',
+        id: multiFileCommon.elemID,
+        pathIndex: createPathIndexFromPath(multiFileCommon.elemID, ['other']),
+        data: { after: multiFileCommonOther },
+      },
     ])
   })
 })
@@ -1840,11 +1847,11 @@ describe('copyTo', () => {
     expect(changes.envSources?.[secSrcName]).toEqual([
       { action: 'add',
         id: multiFileInstace.elemID,
-        path: ['default'],
+        pathIndex: createPathIndexFromPath(multiFileInstace.elemID, ['default']),
         data: { after: multiFileInstaceDefault } },
       { action: 'add',
         id: multiFileInstace.elemID,
-        path: ['other'],
+        pathIndex: createPathIndexFromPath(multiFileInstace.elemID, ['other']),
         data: { after: multiFileInstaceOther } },
     ])
   })

@@ -24,7 +24,7 @@ import {
   TypeReference,
   StaticFile,
   isStaticFile,
-  createPathIndexFromPath,
+  getTopLevelPath,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -667,87 +667,11 @@ describe('fetch', () => {
         expect(changes).toHaveLength(2)
       })
       it('should have path hint for new elements', () => {
-        expect(changes.map(change => getChangeData(change.change).path).sort()).toEqual([
-          ['path', 'base'],
-          ['path', 'ext'],
-        ])
-      })
-      describe('when adapter returns splitted elements with added nested elements', () => {
-        describe('when nested elements are fields', () => {
-          beforeEach(async () => {
-            // TODO: fix me!!!
-            const newTypeBaseWPath = newTypeBase.clone()
-            newTypeBaseWPath.pathIndex = createPathIndexFromPath(newTypeBaseWPath.elemID, ['a', 'b'])
-            const newTypeExtWPath = newTypeExt.clone()
-            newTypeExtWPath.pathIndex = createPathIndexFromPath(newTypeExtWPath.elemID, ['c', 'd'])
-            mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
-              Promise.resolve({ elements: [
-                newTypeBaseWPath,
-                newTypeExtWPath] })
-            )
-            const newTypeBaseWPathDifferentID = newTypeBaseDifferentAdapterID.clone()
-            newTypeBaseWPathDifferentID.pathIndex = createPathIndexFromPath(newTypeBaseWPathDifferentID.elemID, ['a', 'b'])
-            const result = await fetchChanges(
-              mockAdapters,
-              createElementSource([newTypeBaseWPathDifferentID]),
-              createElementSource([newTypeBaseWPathDifferentID]),
-              { [newTypeDifferentAdapterID.adapter]: 'dummy' },
-              [],
-            )
-            changes = [...result.changes]
-          })
-
-
-          it('should create one field change', () => {
-            expect(changes.length).toEqual(1)
-          })
-          it('should populate the change with the containing parent path', () => {
-            expect(changes[0].change.id.getFullName()).toBe(`${newTypeDifferentAdapterID.adapter}.new.field.ext`)
-            expect(changes[0].change.pathIndex?.get(changes[0].change.id.getFullName())).toEqual(['c', 'd'])
-          })
-        })
-        describe('when nested elements are annotations', () => {
-          beforeEach(async () => {
-            const newTypeA = new ObjectType({
-              elemID: newTypeID,
-              path: ['a', 'b'],
-            })
-
-            const expectedNewTypeA = new ObjectType({
-              elemID: newTypeDifferentAdapterID,
-              path: ['a', 'b'],
-            })
-
-            const newTypeB = new ObjectType({
-              elemID: newTypeID,
-              annotations: { baba: 'bob' },
-              path: ['c', 'd'],
-            })
-
-            mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
-              Promise.resolve({ elements: [
-                newTypeA,
-                newTypeB] })
-            )
-            const result = await fetchChanges(
-              mockAdapters,
-              createElementSource([expectedNewTypeA]),
-              createElementSource([expectedNewTypeA]),
-              { [newTypeDifferentAdapterID.adapter]: 'dummy' },
-              [],
-            )
-            changes = [...result.changes]
-          })
-
-
-          it('should create one field change', () => {
-            expect(changes.length).toEqual(1)
-          })
-          it('should populate the change with the containing parent path', () => {
-            expect(changes[0].change.id.getFullName()).toBe(`${newTypeDifferentAdapterID.adapter}.new.attr.baba`)
-            expect(changes[0].change.pathIndex?.get(changes[0].change.id.getFullName())).toEqual(['c', 'd'])
-          })
-        })
+        expect(changes.map(change => getTopLevelPath(getChangeData(change.change))).sort())
+          .toEqual([
+            ['path', 'base'],
+            ['path', 'ext'],
+          ])
       })
       describe('when the working copy is already the same as the account', () => {
         beforeEach(async () => {
@@ -1693,6 +1617,11 @@ describe('fetch from workspace', () => {
         !editsIDs.includes(e.elemID.getFullName()))),
       ...edits,
     ]
+    const mergedElementsWithEditNaclElem = [
+      ...(mergedElements.filter(e =>
+        !editsIDs.includes(e.elemID.getFullName()))),
+      ...edits,
+    ]
     const configs = [
       new InstanceElement('_config', new TypeReference(new ElemID('salto'))),
     ]
@@ -1769,7 +1698,7 @@ describe('fetch from workspace', () => {
 
         it('should create changes based on the current elements', () => {
           const changes = [...fetchRes.changes]
-          const unmergedDiffElement = unmergedElementsWithEditNaclElem
+          const unmergedDiffElement = mergedElementsWithEditNaclElem
             .filter(elem => elem.elemID.getFullName() === 'salto.obj')
           const changesElements = changes
             .map(change => getChangeData(change.change))
@@ -1876,7 +1805,7 @@ describe('fetch from workspace', () => {
 
         it('should create changes based on the current elements', () => {
           const changes = [...fetchRes.changes]
-          const unmergedDiffElement = unmergedElements
+          const unmergedDiffElement = mergedElements
             .filter(elem => elem.elemID.getFullName() === 'salto.obj')
           const changesElements = changes
             .map(change => getChangeData(change.change))

@@ -44,16 +44,6 @@ Promise<ObjectType> => {
     ...pathPrefix,
     customFieldsFileName(customObject.elemID.name),
   ]
-  const annotationToPath = Object.keys(customObject.annotations)
-    .map(annotation => [
-      customObject.elemID.createNestedID('attr', annotation).getFullName(),
-      annotationsPath,
-    ] as [string, string[]])
-  const annotationTypeToPath = Object.keys(customObject.annotationRefTypes)
-    .map(annotationType => [
-      customObject.elemID.createNestedID('annotation', annotationType).getFullName(),
-      annotationsPath,
-    ] as [string, string[]])
   const shouldSplitFields = splitAllFields.includes(await apiName(customObject))
   const createPerFieldPath = (fieldName: string): string[] => [
     ...pathPrefix,
@@ -62,8 +52,6 @@ Promise<ObjectType> => {
   ]
   customObject.pathIndex = new collections.treeMap.TreeMap<string>([
     [customObject.elemID.getFullName(), annotationsPath],
-    ...annotationToPath,
-    ...annotationTypeToPath,
     ...Object.entries(customObject.fields)
       .map(([fieldName, field]) => {
         const groupedFieldsPath = isCustom(field.elemID.getFullName())

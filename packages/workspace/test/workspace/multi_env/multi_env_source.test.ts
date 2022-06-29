@@ -563,7 +563,7 @@ describe('multi env source', () => {
         _.sortBy(elementChanges[primarySourceName]
           .changes, c => getChangeData(c).elemID.getFullName())
       ).toEqual(_.sortBy(detailedChanges, c => getChangeData(c).elemID.getFullName())
-        .map(dc => _.omit(dc, ['path', 'id'])))
+        .map(dc => _.omit(dc, ['pathIndex', 'id'])))
       expect(sortElemArray(elements)).toEqual(sortElemArray([commonObject, newEnvFragment]))
     })
   })

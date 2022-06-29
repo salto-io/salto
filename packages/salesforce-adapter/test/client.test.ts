@@ -365,10 +365,10 @@ describe('salesforce client', () => {
     })
 
     describe('when user reaches the max concurrent request limit of Salesforce', () => {
-      let bottleneckUpdateSpy: jest.SpyInstance
+      let bottleneckStopSpy: jest.SpyInstance
 
       beforeEach(() => {
-        bottleneckUpdateSpy = jest.spyOn(client.rateLimiters.total, 'updateSettings')
+        bottleneckStopSpy = jest.spyOn(client.rateLimiters.total, 'stop').mockImplementation()
       })
       it('should lower the total max concurrent request limit', async () => {
         const dodoScope = nock(`http://dodo22/servies/Soap/m/${API_VERSION}`)
@@ -384,9 +384,10 @@ describe('salesforce client', () => {
           .reply(200, workingReadReplay)
         await client.readMetadata('Layout', ['aaa', 'bbb'])
         expect(dodoScope.isDone()).toBeTruthy()
-        expect(bottleneckUpdateSpy).toHaveBeenCalledWith({
-          maxConcurrent: REQUEST_LIMIT_EXCEEDED_CONCURRENT_LIMIT,
-        })
+        expect(bottleneckStopSpy).toHaveBeenCalled()
+        // eslint-disable-next-line no-underscore-dangle
+        expect(client.rateLimiters.total._store.storeOptions.maxConcurrent)
+          .toEqual(REQUEST_LIMIT_EXCEEDED_CONCURRENT_LIMIT)
       })
     })
   })

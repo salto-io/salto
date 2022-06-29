@@ -38,31 +38,20 @@ export type AppOwnedParameter = {
   secure?: boolean
 }
 
-const EXPECTED_PARAMETERS_SCHEMA = Joi.object({
-  id: Joi.number().required(),
-  // eslint-disable-next-line camelcase
-  app_id: Joi.number().required(),
+const EXPECTED_PARAMETERS_SCHEMA = Joi.array().items(Joi.object({
   name: Joi.string().required(),
-  kind: Joi.string().required(),
-  created_at: Joi.string(),
-  updated_at: Joi.string(),
-  required: Joi.boolean(),
-  position: Joi.number(),
-  secure: Joi.boolean(),
-}).required()
+}).unknown(true)).required()
 
 const isParameters = (values: unknown): values is AppOwnedParameter[] => {
   if (!_.isArray(values)) {
     return false
   }
-  return values.every(value => {
-    const { error } = EXPECTED_PARAMETERS_SCHEMA.validate(value)
-    if (error !== undefined) {
-      log.error(`Received an invalid response for the app_owned parameters value: ${error.message}, ${safeJsonStringify(value)}`)
-      return false
-    }
-    return true
-  })
+  const { error } = EXPECTED_PARAMETERS_SCHEMA.validate(values)
+  if (error !== undefined) {
+    log.error(`Received an invalid response for the app_owned parameters value: ${error.message}, ${safeJsonStringify(values)}`)
+    return false
+  }
+  return true
 }
 
 const turnParametersFieldToMap = (

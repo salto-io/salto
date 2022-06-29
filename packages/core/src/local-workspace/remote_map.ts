@@ -208,7 +208,7 @@ const deleteLocation = async (location: string): Promise<void> => {
   try {
     await promisify(getRemoteDbImpl().destroy.bind(getRemoteDbImpl(), location))()
   } catch (e) {
-    // If the DB does not exist, we don't want to throw error upon destory
+    // If the DB does not exist, we don't want to throw error upon destroy
     if (!isDBNotExistErr(e)) {
       throw e
     }
@@ -244,7 +244,7 @@ const closeTmpConnection = async (
 
 export const closeRemoteMapsOfLocation = async (location: string): Promise<void> => {
   const persistentConnection = persistentDBConnections[location]
-  if (persistentConnection) {
+  if (await persistentConnection) {
     await closeConnection(location, persistentConnection, persistentDBConnections)
   }
   const tmpConnections = tmpDBConnections[location]
@@ -255,7 +255,7 @@ export const closeRemoteMapsOfLocation = async (location: string): Promise<void>
     delete tmpDBConnections[location]
   }
   const readOnlyConnection = readonlyDBConnections[location]
-  if (readOnlyConnection) {
+  if (await readOnlyConnection) {
     await closeConnection(location, readOnlyConnection, readonlyDBConnections)
   }
   const roConnectionsPerMap = readonlyDBConnectionsPerRemoteMap[location]
@@ -330,11 +330,11 @@ const getOpenDBConnection = async (
   loc: string,
   isReadOnly: boolean
 ): Promise<rocksdb> => {
-  const newDb = getRemoteDbImpl()(loc)
   log.debug('opening connection to %s, read-only=%s', loc, isReadOnly)
   if (currentConnectionsCount >= MAX_CONNECTIONS) {
     throw new Error(`Failed to open rocksdb connection - too many open connections already (${currentConnectionsCount} connections)`)
   }
+  const newDb = getRemoteDbImpl()(loc)
   await promisify(newDb.open.bind(newDb, { readOnly: isReadOnly }))()
   currentConnectionsCount += 1
   return newDb

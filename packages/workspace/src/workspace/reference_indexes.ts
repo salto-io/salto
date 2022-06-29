@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ElemID, getChangeData, isReferenceExpression, Element, isModificationChange, toChange, isObjectTypeChange, isRemovalOrModificationChange, isAdditionOrModificationChange } from '@salto-io/adapter-api'
+import { Change, ElemID, getChangeData, isReferenceExpression, Element, isModificationChange, toChange, isObjectTypeChange, isRemovalOrModificationChange, isAdditionOrModificationChange, isTemplateExpression } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -24,7 +24,7 @@ import { RemoteMap, RemoteMapEntry } from './remote_map'
 const { awu } = collections.asynciterable
 
 const log = logger(module)
-export const REFERENCE_INDEXES_VERSION = 1
+export const REFERENCE_INDEXES_VERSION = 2
 export const REFERENCE_INDEXES_KEY = 'reference_indexes'
 
 type ReferenceDetails = {
@@ -44,6 +44,13 @@ const getReferences = (element: Element): ReferenceDetails[] => {
     func: ({ value, path: referenceSource }) => {
       if (isReferenceExpression(value)) {
         references.push({ referenceSource, referenceTarget: value.elemID })
+      }
+      if (isTemplateExpression(value)) {
+        value.parts.forEach(part => {
+          if (isReferenceExpression(part)) {
+            references.push({ referenceSource, referenceTarget: part.elemID })
+          }
+        })
       }
       return WALK_NEXT_STEP.RECURSE
     },

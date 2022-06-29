@@ -57,6 +57,7 @@ import removeDefinitionInstancesFilter from './filters/remove_definition_instanc
 import hardcodedChannelFilter from './filters/hardcoded_channel'
 import usersFilter from './filters/user'
 import addFieldOptionsFilter from './filters/add_field_options'
+import appOwnedConvertListToMapFilter from './filters/app_owned_convert_list_to_map'
 import appsFilter from './filters/app'
 import routingAttributeFilter from './filters/routing_attribute'
 import serviceUrlFilter from './filters/service_url'
@@ -65,6 +66,7 @@ import macroAttachmentsFilter from './filters/macro_attachments'
 import omitInactiveFilter from './filters/omit_inactive'
 import tagsFilter from './filters/tag'
 import webhookFilter from './filters/webhook'
+import targetFilter from './filters/target'
 import defaultDeployFilter from './filters/default_deploy'
 import ducktypeCommonFilters from './filters/ducktype_common'
 import handleTemplateExpressionFilter from './filters/handle_template_expressions'
@@ -114,10 +116,12 @@ export const DEFAULT_FILTERS = [
   macroAttachmentsFilter,
   fieldReferencesFilter,
   appsFilter,
+  appOwnedConvertListToMapFilter,
   slaPolicyFilter,
   routingAttributeFilter,
   addFieldOptionsFilter,
   webhookFilter,
+  targetFilter,
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,
   dynamicContentReferencesFilter,
@@ -284,6 +288,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   public get deployModifiers(): DeployModifiers {
     return {
       changeValidator: createChangeValidator({
+        client: this.client,
         apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
         typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment'],
         typesWithNoDeploy: ['tag'],

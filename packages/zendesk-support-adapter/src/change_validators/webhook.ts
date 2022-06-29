@@ -15,24 +15,27 @@
 */
 import { ChangeError, ChangeValidator, ElemID, getChangeData,
   isAdditionChange, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
+import ZendeskClient from '../client/client'
 import { WEBHOOK_TYPE_NAME } from '../filters/webhook'
 
-export const createChangeError = (instanceElemId: ElemID): ChangeError => ({
+const WEBHOOKS_SERVICE_URL = 'admin/apps-integrations/webhooks/webhooks'
+
+export const createChangeError = (instanceElemId: ElemID, baseUrl: string): ChangeError => ({
   elemID: instanceElemId,
   severity: 'Info',
   message: 'Webhook authentication change detected',
   detailedMessage: '',
   deployActions: {
     preAction: {
-      title: 'Current authentication data for a webhook will be overrided',
-      description: `Current authentication data for the webhook ${instanceElemId.name} will be overrided`,
+      title: 'Current authentication data for a webhook will be overridden',
+      description: `Current authentication data for the webhook ${instanceElemId.name} will be overridden`,
       subActions: [],
     },
     postAction: {
       title: 'Change webhook authentication data',
       description: `Please change the authentication data for the webhook ${instanceElemId.name} in the service`,
       subActions: [
-        'In Zendesk, open the Admin Center. Navigate to Apps and integrations > Webhooks',
+        `Go to zendesk Webhooks panel ${baseUrl}${WEBHOOKS_SERVICE_URL}`,
         'Click on the modified webhook',
         'Click on Actions > Edit',
         'Enter the authentication data',
@@ -42,16 +45,17 @@ export const createChangeError = (instanceElemId: ElemID): ChangeError => ({
   },
 })
 
-export const webhookAuthDataValidator: ChangeValidator = async changes => (
-  changes
-    .filter(isAdditionOrModificationChange)
-    .filter(isInstanceChange)
-    .filter(change => getChangeData(change).elemID.typeName === WEBHOOK_TYPE_NAME)
-    .filter(change => ['bearer_token', 'basic_auth'].includes(getChangeData(change).value.authentication?.type))
-    .filter(change =>
-      isAdditionChange(change)
-      || (change.data.before.value.authentication?.type
-        !== change.data.after.value.authentication?.type))
-    .map(getChangeData)
-    .flatMap(instance => ([createChangeError(instance.elemID)]))
-)
+export const webhookAuthDataValidator: (client: ZendeskClient) =>
+  ChangeValidator = client => async changes => (
+    changes
+      .filter(isAdditionOrModificationChange)
+      .filter(isInstanceChange)
+      .filter(change => getChangeData(change).elemID.typeName === WEBHOOK_TYPE_NAME)
+      .filter(change => ['bearer_token', 'basic_auth'].includes(getChangeData(change).value.authentication?.type))
+      .filter(change =>
+        isAdditionChange(change)
+        || (change.data.before.value.authentication?.type
+          !== change.data.after.value.authentication?.type))
+      .map(getChangeData)
+      .flatMap(instance => ([createChangeError(instance.elemID, client.getUrl().href)]))
+  )

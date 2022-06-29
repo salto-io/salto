@@ -28,26 +28,10 @@ describe('appOwnedConvertListToMap filter', () => {
   let filter: FilterType
   const appOwnedType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, APP_OWNED_TYPE_NAME) })
   const appOwnedParameter: AppOwnedParameter = {
-    id: 1901818,
-    app_id: 772455,
     name: 'name',
-    kind: 'text',
-    required: true,
-    position: 0,
-    created_at: '2022-03-06T12:24:31Z',
-    updated_at: '2022-03-06T12:24:31Z',
-    secure: false,
   }
   const appOwnedOtherParameter: AppOwnedParameter = {
-    id: 1901819,
-    app_id: 772456,
     name: 'name2',
-    kind: 'text2',
-    required: true,
-    position: 0,
-    created_at: '2022-06-24T12:24:31Z',
-    updated_at: '2022-06-24T12:24:31Z',
-    secure: false,
   }
   const appOwnedInstance = new InstanceElement(
     'app_owned_test_name',

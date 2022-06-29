@@ -55,7 +55,7 @@ describe('boardColumnsFilter', () => {
     type = new ObjectType({
       elemID: new ElemID(JIRA, BOARD_TYPE_NAME),
       fields: {
-        columnConfig: {
+        [COLUMNS_CONFIG_FIELD]: {
           refType: columnConfigType,
         },
       },
@@ -67,7 +67,7 @@ describe('boardColumnsFilter', () => {
       {
         type: 'kanban',
         config: {
-          columnConfig: {
+          [COLUMNS_CONFIG_FIELD]: {
             columns: [
               {
                 name: 'Backlog',
@@ -130,7 +130,7 @@ describe('boardColumnsFilter', () => {
       connection.get.mockResolvedValue({
         status: 200,
         data: {
-          columnsConfig: {
+          [COLUMNS_CONFIG_FIELD]: {
             columns: [
               {
                 name: 'Backlog',
@@ -160,7 +160,7 @@ describe('boardColumnsFilter', () => {
       connection.get.mockResolvedValue({
         status: 200,
         data: {
-          columnsConfig: {
+          [COLUMNS_CONFIG_FIELD]: {
             columns: [
               {
                 name: 'Backlog',

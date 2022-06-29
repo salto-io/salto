@@ -47,7 +47,7 @@ const UPDATE_COLUMNS_RESPONSE_SCHEME = Joi.object({
 const isUpdateColumnsResponse = createSchemeGuard<UpdateColumnsResponse>(UPDATE_COLUMNS_RESPONSE_SCHEME, 'Received an invalid columns update response')
 
 type BoardConfigResponse = {
-  columnsConfig: {
+  [COLUMNS_CONFIG_FIELD]: {
     columns: {
       name: string
     }[]
@@ -55,7 +55,7 @@ type BoardConfigResponse = {
 }
 
 const BOARD_CONFIG_RESPONSE_SCHEME = Joi.object({
-  columnsConfig: Joi.object({
+  [COLUMNS_CONFIG_FIELD]: Joi.object({
     columns: Joi.array().items(Joi.object({
       name: Joi.string().required(),
     }).unknown(true)),
@@ -156,7 +156,7 @@ const removeRedundantColumns = async (
     return
   }
 
-  if (response.data.columnsConfig.columns[1]?.name !== 'Backlog') {
+  if (response.data[COLUMNS_CONFIG_FIELD].columns[1]?.name !== 'Backlog') {
     log.debug(`${instance.elemID.getFullName()} removing second backlog column`)
     instance.value[COLUMNS_CONFIG_FIELD].columns.shift()
   } else {

@@ -19,15 +19,16 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import _, { isString } from 'lodash'
+import _ from 'lodash'
 import { FilterCreator } from '../filter'
+import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from './dynamic_content'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
 
 type PotentialTemplateField = {
   instanceType: string
-  pathToContainer: string[]
+  pathToContainer?: string[]
   fieldName: string
   containerValidator: (container: Values) => boolean
 }
@@ -43,14 +44,66 @@ const saltoTypeToZendeskReferenceType = Object.fromEntries(
 )
 
 const potentialReferenceTypes = ['ticket.ticket_field', 'ticket.ticket_field_option_title']
+const potentialMacroFields = ['comment_value', 'comment_value_html', 'side_conversation']
+// triggers and automations notify users, webhooks
+// groups or targets with text that can include templates.
+const notificationTypes = ['notification_webhook', 'notification_user', 'notification_group', 'notification_target']
 
+const NoValidator = (): boolean => true
 const potentialTemplates: PotentialTemplateField[] = [
   {
     instanceType: 'macro',
     pathToContainer: ['actions'],
     fieldName: 'value',
     containerValidator: (container: Values): boolean =>
-      container.field === 'comment_value_html',
+      potentialMacroFields.includes(container.field),
+  },
+  {
+    instanceType: 'target',
+    fieldName: 'target_url',
+    containerValidator: NoValidator,
+  },
+  {
+    instanceType: 'target',
+    fieldName: 'subject',
+    containerValidator: NoValidator,
+  },
+  {
+    instanceType: 'webhook',
+    fieldName: 'endpoint',
+    containerValidator: NoValidator,
+  },
+  {
+    instanceType: 'trigger',
+    pathToContainer: ['actions'],
+    fieldName: 'value',
+    containerValidator: (container: Values): boolean =>
+      notificationTypes.includes(container.field),
+  },
+  {
+    instanceType: 'automation',
+    pathToContainer: ['actions'],
+    fieldName: 'value',
+    containerValidator: (container: Values): boolean =>
+      notificationTypes.includes(container.field),
+  },
+  {
+    instanceType: 'dynamic_content_item__variants',
+    fieldName: 'content',
+    containerValidator: NoValidator,
+  },
+  {
+    instanceType: 'app_installation',
+    pathToContainer: ['settings'],
+    fieldName: 'uri_templates',
+    containerValidator: NoValidator,
+  },
+  {
+    instanceType: 'app_installation',
+    pathToContainer: ['settings_objects'],
+    fieldName: 'value',
+    containerValidator: (container: Values): boolean =>
+      container.name === 'uri_templates',
   },
 ]
 
@@ -67,10 +120,14 @@ const formulaToTemplate = (formula: string,
       // eslint-disable-next-line no-template-curly-in-string
       .replace(new RegExp(`({{)(${type}_[\\d]+?)(}})`, 'g'), '$1$${$2}$3')
   })
+  // dynamic content references look different, but can still be part of template
+  formulaWithDetectedParts = formulaWithDetectedParts
+  // eslint-disable-next-line no-template-curly-in-string
+    .replace(new RegExp(/({{)(dc.[_\w]+)(}})/g), '$1$${$2}$3')
   // The second part is a split that separates the now-marked ids, so they could be replaced
   // with ReferenceExpression in the loop code.
   const templateParts = formulaWithDetectedParts
-    .split(/(\$\{.+?_[\d]+?\})/).filter(e => e !== '')
+    .split(/(\$\{.+?})/).filter(e => e !== '')
     .map(expression => {
       const zendeskReference = expression.match(/\$\{(.+?)_([\d]+?)\}/)
       if (zendeskReference) {
@@ -88,9 +145,18 @@ const formulaToTemplate = (formula: string,
         // create the original string.
         return `${type}_${innerId}`
       }
+      const dynamicContentReference = expression.match(/\$\{dc\.(.+?)\}/)
+      if (dynamicContentReference) {
+        const dcPlaceholder = dynamicContentReference.pop() ?? ''
+        const ref = (instancesByType[DYNAMIC_CONTENT_ITEM_TYPE_NAME] ?? []).find(instance =>
+          instance.value.placeholder === `{{dc.${dcPlaceholder}}}`)
+        if (ref) {
+          return new ReferenceExpression(ref.elemID, ref)
+        }
+      }
       return expression
     })
-  if (templateParts.every(isString)) {
+  if (templateParts.every(_.isString)) {
     return templateParts.join('')
   }
   return new TemplateExpression({ parts: templateParts })
@@ -104,16 +170,24 @@ const getContainers = async (instances: InstanceElement[]): Promise<
       t => instance.elemID.typeName === t.instanceType
     ).map(template => ({
       template,
-      values: _.get(instance.value, template.pathToContainer, [])
-        .filter(template.containerValidator),
+      values: [
+        template.pathToContainer
+          ? _.get(instance.value, template.pathToContainer, [])
+          : instance.value,
+      ].flat().filter(template.containerValidator),
     }))).flat()
 
 const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promise<void> =>
   (await getContainers(instances)).forEach(container => {
     const { fieldName } = container.template
+    const instancesByType = _.groupBy(instances, i => i.elemID.typeName)
     container.values.forEach(value => {
-      value[fieldName] = formulaToTemplate(value[fieldName],
-        _.groupBy(instances, i => i.elemID.typeName))
+      if (Array.isArray(value[fieldName])) {
+        value[fieldName] = value[fieldName].map((innerValue: unknown) =>
+          (_.isString(innerValue) ? formulaToTemplate(innerValue, instancesByType) : innerValue))
+      } else if (value[fieldName]) {
+        value[fieldName] = formulaToTemplate(value[fieldName], instancesByType)
+      }
     })
   })
 
@@ -125,29 +199,42 @@ const filterCreator: FilterCreator = () => {
   return ({
     onFetch: async (elements: Element[]): Promise<void> => log.time(async () =>
       replaceFormulasWithTemplates(elements.filter(isInstanceElement)), 'Create template creation filter'),
-    preDeploy: (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () =>
+    preDeploy: (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () => {
       (await getContainers(await awu(changes).map(getChangeData).toArray())).forEach(
         async container => {
           const { fieldName } = container.template
           const handleTemplateValue = (template: TemplateExpression): string => {
             const templateUsingIdField = new TemplateExpression({
-              parts: template.parts.map(part => (isReferenceExpression(part)
-                ? [saltoTypeToZendeskReferenceType[part.elemID.typeName],
-                  '_',
-                  new ReferenceExpression(part.elemID.createNestedID('id'), part.value.value.id)]
-                : part)).flat(),
+              parts: template.parts.map(part => {
+                if (isReferenceExpression(part)) {
+                  if (saltoTypeToZendeskReferenceType[part.elemID.typeName]) {
+                    return [saltoTypeToZendeskReferenceType[part.elemID.typeName],
+                      '_',
+                      new ReferenceExpression(part.elemID.createNestedID('id'), part.value.value.id)]
+                  }
+                  if (part.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME) {
+                    return part.value.value.placeholder.match(/{{(.*)}}/).pop()
+                  }
+                }
+                return part
+              }).flat(),
             })
             deployTemplateMapping[templateUsingIdField.value] = template
             return templateUsingIdField.value
           }
+          const replaceIfTemplate = (value: unknown): unknown =>
+            (isTemplateExpression(value) ? handleTemplateValue(value) : value)
           container.values.forEach(value => {
-            if (isTemplateExpression(value[fieldName])) {
-              value[fieldName] = handleTemplateValue(value[fieldName])
+            if (Array.isArray(value[fieldName])) {
+              value[fieldName] = value[fieldName].map(replaceIfTemplate)
+            } else {
+              value[fieldName] = replaceIfTemplate(value[fieldName])
             }
           })
         }
-      ), 'Create template resolve filter'),
-    onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () => {
+      )
+    }, 'Create template resolve filter'),
+    onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () =>
       (await getContainers(await awu(changes).map(getChangeData).toArray()))
         .forEach(async container => {
           const { fieldName } = container.template
@@ -156,8 +243,7 @@ const filterCreator: FilterCreator = () => {
           container.values.forEach(value => {
             value[fieldName] = restoreTemplate(value[fieldName])
           })
-        })
-    }, 'Create templates restore filter'),
+        }), 'Create templates restore filter'),
   })
 }
 

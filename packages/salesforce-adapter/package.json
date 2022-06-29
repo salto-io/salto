@@ -46,7 +46,7 @@
     "jszip": "^3.2.2",
     "lodash": "^4.17.21",
     "mime-types": "^2.1.27",
-    "requestretry": "^4.0.2",
+    "requestretry": "^7.1.0",
     "wu": "^2.1.0"
   },
   "devDependencies": {
@@ -56,7 +56,7 @@
     "@types/lodash": "^4.14.168",
     "@types/mime-types": "^2.1.0",
     "@types/node": "^12.7.1",
-    "@types/requestretry": "^1.12.5",
+    "@types/requestretry": "^1.12.8",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",
     "eslint": "^6.2.2",

@@ -410,35 +410,28 @@ const createFilteredReadIterator = (
 }
 
 const createIterator = (prefix: string, opts: CreateIteratorOpts, connection: rocksdb):
-ReadIterator => (
-  opts.filter === undefined
-    ? createReadIterator(
-      connection.iterator({
-        keys: opts.keys,
-        values: opts.values,
-        lte: getPrefixEndCondition(prefix),
-        ...(opts.after !== undefined ? { gt: opts.after } : { gte: prefix }),
-        ...(opts.first !== undefined ? { limit: opts.first } : {}),
-      })
-    )
-    : createFilteredReadIterator(
-      connection.iterator({
-        keys: opts.keys,
-        values: opts.values,
-        lte: getPrefixEndCondition(prefix),
-        ...(opts.after !== undefined ? { gt: opts.after } : { gte: prefix }),
-      }),
-      opts.filter,
-      opts.first,
-    )
-)
+ReadIterator => {
+  // Cannot use inner limit when filtering because if we filter anything out we will need
+  // to get additional results from the inner iterator
+  const limit = opts.filter === undefined ? opts.first : undefined
+  const connectionIterator = connection.iterator({
+    keys: opts.keys,
+    values: opts.values,
+    lte: getPrefixEndCondition(prefix),
+    ...(opts.after !== undefined ? { gt: opts.after } : { gte: prefix }),
+    ...(limit !== undefined ? { limit } : {}),
+  })
+  return opts.filter === undefined
+    ? createReadIterator(connectionIterator)
+    : createFilteredReadIterator(connectionIterator, opts.filter, opts.first)
+}
 
 export const createRemoteMapCreator = (location: string,
   persistentDefaultValue = false,
   cacheSize = 5000):
 remoteMap.RemoteMapCreator => {
   // Note: once we set a non-zero cache size,
-  //   we won't change the cache size even if we give different value
+  // we won't change the cache size even if we give different value
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   let locationCache: LRU<string, any>
   if (locationCaches.has(location)) {

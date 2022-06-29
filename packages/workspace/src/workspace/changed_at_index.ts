@@ -81,8 +81,8 @@ const updateModificationChange = (
   change: ModificationChange<Element>,
   datesMap: Record<string, Set<ElemID>>,
 ): void => {
-  if (change.data.after.annotations[CORE_ANNOTATIONS.CHANGED_BY]
-    !== change.data.before.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
+  if (change.data.after.annotations[CORE_ANNOTATIONS.CHANGED_AT]
+    !== change.data.before.annotations[CORE_ANNOTATIONS.CHANGED_AT]) {
     updateRemovalChange(
       toChange({ before: change.data.before }) as RemovalChange<Element>,
       datesMap,
@@ -146,9 +146,9 @@ const getCompleteDateMap = async (
 ): Promise<Record<string, Set<ElemID>>> => {
   const datesList = Array.from(getUniqueDates(changes))
   const indexValues = await index.getMany(datesList)
-  const authorMap = mergeDateMap(datesList, indexValues)
-  changes.forEach(change => updateChange(change, authorMap))
-  return authorMap
+  const dateMap = mergeDateMap(datesList, indexValues)
+  changes.forEach(change => updateChange(change, dateMap))
+  return dateMap
 }
 
 const updateChanges = async (

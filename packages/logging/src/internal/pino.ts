@@ -242,7 +242,7 @@ export const loggerRepo = (
       : [message]
   )
 
-  const logFull = (
+  const logMessage = (
     pinoLogger: pino.Logger,
     level: LogLevel,
     unconsumedArgs: unknown[],
@@ -260,16 +260,14 @@ export const loggerRepo = (
     chunks: string[]
   ): void => {
     if (chunks.length === 1) {
-      logFull(pinoLogger, level, unconsumedArgs, chunks[0])
+      logMessage(pinoLogger, level, unconsumedArgs, chunks[0])
       return
     }
     const logUuid = uuidv4()
     for (let i = 0; i < chunks.length; i += 1) {
       const chunkTags = { chunkIndex: i, logId: logUuid }
       const loggerWithChunkTags = pinoLogger.child(normalizeLogTags(chunkTags))
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      loggerWithChunkTags[level](...createLogArgs(unconsumedArgs, chunks[i]))
+      logMessage(loggerWithChunkTags, level, unconsumedArgs, chunks[i])
     }
   }
 
@@ -291,7 +289,7 @@ export const loggerRepo = (
           : [message, args]
 
         if (_.isError(formattedOrError)) {
-          logFull(pinoLogger, level, unconsumedArgs, formattedOrError)
+          logMessage(pinoLogger, level, unconsumedArgs, formattedOrError)
           return
         }
         const chunks = getLogMessageChunks(formattedOrError, config.maxLogChunkSize)

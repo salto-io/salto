@@ -147,7 +147,7 @@ const removeRedundantColumns = async (
     return
   }
 
-  log.debug(`${instance.elemID.getFullName()} has two backlog columns`)
+  log.info(`${instance.elemID.getFullName()} has two backlog columns`)
   const response = await client.getSinglePage({
     url: `/rest/agile/1.0/board/${instance.value.id}/configuration`,
   })
@@ -157,10 +157,10 @@ const removeRedundantColumns = async (
   }
 
   if (response.data[COLUMNS_CONFIG_FIELD].columns[1]?.name !== 'Backlog') {
-    log.debug(`${instance.elemID.getFullName()} removing second backlog column`)
+    log.info(`${instance.elemID.getFullName()} removing second backlog column`)
     instance.value[COLUMNS_CONFIG_FIELD].columns.shift()
   } else {
-    log.debug(`${instance.elemID.getFullName()} leaving second backlog column`)
+    log.info(`${instance.elemID.getFullName()} leaving second backlog column`)
   }
 }
 

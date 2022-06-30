@@ -88,54 +88,54 @@ const getChangeAuthor = (change: Change<Element>): string => {
   return UNKNOWN_USER_NAME
 }
 
-const updateAdditionChange = async (
+const updateAdditionChange = (
   change: AdditionChange<Element>,
-  authorMap: Record<string, Set<ElemID>>,
-): Promise<void> => {
+  authorMap: Record<string, Set<string>>,
+): void => {
   const author = getChangeAuthor(change)
   if (!authorMap[author]) {
     authorMap[author] = new Set()
   }
-  authorMap[author].add(change.data.after.elemID)
+  authorMap[author].add(change.data.after.elemID.getFullName())
 }
 
-const updateRemovalChange = async (
+const updateRemovalChange = (
   change: RemovalChange<Element>,
-  authorMap: Record<string, Set<ElemID>>,
-): Promise<void> => {
+  authorMap: Record<string, Set<string>>,
+): void => {
   const author = getChangeAuthor(change)
   if (authorMap[author]) {
-    authorMap[author].delete(change.data.before.elemID)
+    authorMap[author].delete(change.data.before.elemID.getFullName())
   }
 }
 
-const updateModificationChange = async (
+const updateModificationChange = (
   change: ModificationChange<Element>,
-  authorMap: Record<string, Set<ElemID>>,
-): Promise<void> => {
+  authorMap: Record<string, Set<string>>,
+): void => {
   if (change.data.after.annotations[CORE_ANNOTATIONS.CHANGED_BY]
     !== change.data.before.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
-    await updateRemovalChange(
+    updateRemovalChange(
       toChange({ before: change.data.before }) as RemovalChange<Element>,
       authorMap,
     )
-    await updateAdditionChange(
+    updateAdditionChange(
       toChange({ after: change.data.after }) as AdditionChange<Element>,
       authorMap,
     )
   }
 }
 
-const updateChange = async (
+const updateChange = (
   change: Change<Element>,
-  authorMap: Record<string, Set<ElemID>>,
-): Promise<void> => {
+  authorMap: Record<string, Set<string>>,
+): void => {
   if (isAdditionChange(change)) {
-    await updateAdditionChange(change, authorMap)
+    updateAdditionChange(change, authorMap)
   } else if (isRemovalChange(change)) {
-    await updateRemovalChange(change, authorMap)
+    updateRemovalChange(change, authorMap)
   } else {
-    await updateModificationChange(change, authorMap)
+    updateModificationChange(change, authorMap)
   }
 }
 
@@ -158,18 +158,19 @@ const getUniqueAuthors = (changes: Change<Element>[]): Set<string> => {
 const mergeAuthorMap = (
   authorList: string[],
   indexValues: (ElemID[] | undefined)[]
-): Record<string, Set<ElemID>> => {
+): Record<string, Set<string>> => {
   const authorMap: Record<string, ElemID[]> = _.pickBy(
     _.zipObject(authorList, indexValues),
     isDefined,
   )
-  return _.mapValues(authorMap, (elemIds: ElemID[]) => new Set(elemIds))
+  return _.mapValues(authorMap,
+    (elemIds: ElemID[]) => new Set(elemIds.map(elemId => elemId.getFullName())))
 }
 
 const getCompleteAuthorMap = async (
   changes: Change<Element>[],
   index: RemoteMap<ElemID[]>,
-): Promise<Record<string, Set<ElemID>>> => {
+): Promise<Record<string, Set<string>>> => {
   const authorList = Array.from(getUniqueAuthors(changes))
   const indexValues = await index.getMany(authorList)
   const authorMap = mergeAuthorMap(authorList, indexValues)
@@ -186,7 +187,8 @@ const updateChanges = async (
     Object.keys(completeAuthorMap),
     key => isEmpty(completeAuthorMap[key]),
   )
-  await index.setAll(toBeSet.map(key => ({ key, value: Array.from(completeAuthorMap[key]) })))
+  await index.setAll(toBeSet
+    .map(key =>({ key, value: Array.from(completeAuthorMap[key]).map(ElemID.fromFullName) })))
   await index.deleteAll(toBeRemoved)
 }
 

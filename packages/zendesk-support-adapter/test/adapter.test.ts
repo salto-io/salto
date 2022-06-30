@@ -824,14 +824,8 @@ describe('adapter', () => {
         },
       })
 
+      // Mind that brands have filter that deploys them before the default instances
       expect(deployRes.appliedChanges).toEqual([
-        toChange({ after: new InstanceElement(
-          'inst',
-          groupType,
-          { id: 1 },
-          undefined,
-          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://abc.zendesk.com/admin/people/team/groups' },
-        ) }),
         toChange({ after: new InstanceElement(
           'inst3',
           brandType,
@@ -839,8 +833,15 @@ describe('adapter', () => {
           undefined,
           { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://abc.zendesk.com/admin/account/brand_management/brands' },
         ) }),
-        toChange({ after: new InstanceElement('inst4', anotherType, { key: 2 }) }),
         modificationChange,
+        toChange({ after: new InstanceElement(
+          'inst',
+          groupType,
+          { id: 1 },
+          undefined,
+          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://abc.zendesk.com/admin/people/team/groups' },
+        ) }),
+        toChange({ after: new InstanceElement('inst4', anotherType, { key: 2 }) }),
       ])
     })
 

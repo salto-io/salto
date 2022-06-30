@@ -112,7 +112,6 @@ const modifyBrandLogo = async (
     const res = await client.put({
       url: `/brands/${brandId}`,
       data: form,
-      // data: `brand[logo][uploaded_data]=${logoContent}`,
       headers: { ...form.getHeaders() },
     })
     return res
@@ -141,8 +140,6 @@ const filterCreator: FilterCreator = ({ client }) => ({
       change => getChangeData(change).elemID.typeName === BRAND_LOGO_TYPE_NAME,
     )
 
-    // Logo for multiple brands
-    // Verify if a logo is modified that it's only the content
     const [brandLogoRemovals, brandLogoAdditionsOrModifications] = _.partition(
       brandLogoChanges, isRemovalChange
     )

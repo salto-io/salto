@@ -40,11 +40,7 @@ describe('changes_detector', () => {
   } as unknown as SuiteAppClient
 
   const client = new NetsuiteClient(mockSdfClient(), suiteAppClient)
-
-  const getIndexesMock = jest.fn()
-  const elementsSourceIndex = {
-    getIndexes: getIndexesMock,
-  }
+  let serviceIdToLastFetchDate: Record<string, Date> = {}
 
   beforeEach(() => {
     jest.resetAllMocks()
@@ -70,11 +66,6 @@ describe('changes_detector', () => {
       { recordid: '6', date: '03/15/2023 03:04 pm' },
       { invalid: {} },
     ])
-
-    getIndexesMock.mockResolvedValue({
-      serviceIdsIndex: {},
-      internalIdsIndex: {},
-    })
   })
 
   it('should only query requested types', async () => {
@@ -82,7 +73,7 @@ describe('changes_detector', () => {
       client,
       query,
       createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
-      elementsSourceIndex,
+      serviceIdToLastFetchDate,
     )
     expect(getCustomRecordTypeChangesMock).toHaveBeenCalled()
     expect(getScriptChangesMock).not.toHaveBeenCalled()
@@ -93,7 +84,7 @@ describe('changes_detector', () => {
       client,
       query,
       createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
-      elementsSourceIndex,
+      serviceIdToLastFetchDate,
     )
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file')).toBeTruthy()
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file2')).toBeFalsy()
@@ -119,7 +110,7 @@ describe('changes_detector', () => {
       client,
       query,
       createDateRange(new Date('2022-01-11T18:55:17.949Z'), new Date('2022-02-22T18:55:17.949Z')),
-      elementsSourceIndex,
+      serviceIdToLastFetchDate,
     )
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/anyFile')).toBeTruthy()
   })
@@ -134,7 +125,7 @@ describe('changes_detector', () => {
       client,
       query,
       createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
-      elementsSourceIndex,
+      serviceIdToLastFetchDate,
     )
     expect(changedObjectsQuery.isTypeMatch('addressForm')).toBeTruthy()
   })
@@ -145,7 +136,7 @@ describe('changes_detector', () => {
       client,
       query,
       createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
-      elementsSourceIndex,
+      serviceIdToLastFetchDate,
     )
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file')).toBeTruthy()
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file2')).toBeTruthy()
@@ -169,23 +160,17 @@ describe('changes_detector', () => {
       { recordid: '6', date: '03/15/2023 03:04 pm' },
       { invalid: {} },
     ])
-
-    getIndexesMock.mockResolvedValue(
-      {
-        serviceIdsIndex: {
-          '/Templates/path/to/file': { lastFetchTime: new Date('2022-02-22T18:55:17.949Z') },
-          '/Templates/path/to/file2': { lastFetchTime: new Date('2022-02-22T18:55:17.949Z') },
-          a: { lastFetchTime: new Date('2022-02-22T18:55:17.949Z') },
-          b: { lastFetchTime: new Date('2022-02-22T18:55:17.949Z') },
-        },
-        internalIdsIndex: {},
-      }
-    )
+    serviceIdToLastFetchDate = {
+      '/Templates/path/to/file': new Date('2022-02-22T18:55:17.949Z'),
+      '/Templates/path/to/file2': new Date('2022-02-22T18:55:17.949Z'),
+      a: new Date('2022-02-22T18:55:17.949Z'),
+      b: new Date('2022-02-22T18:55:17.949Z'),
+    }
     const changedObjectsQuery = await getChangedObjects(
       client,
       query,
       createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
-      elementsSourceIndex,
+      serviceIdToLastFetchDate,
     )
 
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file')).toBeFalsy()
@@ -201,7 +186,7 @@ describe('changes_detector', () => {
       client,
       query,
       createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
-      elementsSourceIndex,
+      serviceIdToLastFetchDate,
     )
     expect(changedObjectsQuery.areSomeFilesMatch()).toBeFalsy()
   })
@@ -214,19 +199,16 @@ describe('changes_detector', () => {
       client,
       query,
       createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
-      elementsSourceIndex,
+      serviceIdToLastFetchDate,
     )
     expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', instanceId: 'a' })).toBeTruthy()
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file')).toBeFalsy()
   })
 
   it('should return the results when the results time is invalid', async () => {
-    getIndexesMock.mockResolvedValue({
-      serviceIdsIndex: {
-        b: { lastFetchTime: new Date('2022-02-22T18:55:17.949Z') },
-      },
-      internalIdsIndex: {},
-    })
+    serviceIdToLastFetchDate = {
+      b: new Date('2022-02-22T18:55:17.949Z'),
+    }
 
     getCustomRecordTypeChangesMock.mockResolvedValue([
       { type: 'object', externalId: 'B', time: undefined },
@@ -235,7 +217,7 @@ describe('changes_detector', () => {
       client,
       query,
       createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
-      elementsSourceIndex,
+      serviceIdToLastFetchDate,
     )
     expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', instanceId: 'b' })).toBeTruthy()
   })

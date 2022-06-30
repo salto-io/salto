@@ -43,6 +43,7 @@ describe('netsuite system note author information', () => {
   } as unknown as SuiteAppClient
 
   const client = new NetsuiteClient(SDFClient, suiteAppClient)
+  const { type: serverTimeType, instance: serverTimeInstance } = createServerTimeElements(new Date('2022-01-01'))
 
   beforeEach(async () => {
     runSuiteQLMock.mockReset()
@@ -76,7 +77,7 @@ describe('netsuite system note author information', () => {
       elementsSourceIndex: {
         getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
       },
-      elementsSource: buildElementsSourceFromElements(createServerTimeElements(new Date('2022-01-01'))),
+      elementsSource: buildElementsSourceFromElements([serverTimeType, serverTimeInstance]),
       isPartial: false,
       config: await getDefaultAdapterConfig(),
     }
@@ -136,7 +137,7 @@ describe('netsuite system note author information', () => {
           },
         }),
       },
-      elementsSource: buildElementsSourceFromElements(createServerTimeElements(new Date('2022-01-01'))),
+      elementsSource: buildElementsSourceFromElements([serverTimeType, serverTimeInstance]),
       isPartial: false,
       config: await getDefaultAdapterConfig(),
     }

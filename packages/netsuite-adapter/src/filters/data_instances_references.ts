@@ -26,14 +26,14 @@ const { awu } = collections.asynciterable
 const generateReference = (
   value: Value,
   type: TypeElement,
-  elementsMap: Record<string, { elemID: ElemID }>,
+  elementsMap: Record<string, ElemID>,
 ): ReferenceExpression | undefined =>
   value.internalId
   && elementsMap[getDataInstanceId(value.internalId, type)]
-  && new ReferenceExpression(elementsMap[getDataInstanceId(value.internalId, type)].elemID)
+  && new ReferenceExpression(elementsMap[getDataInstanceId(value.internalId, type)])
 
 const replaceReference: (
-  elementsMap: Record<string, { elemID: ElemID }>
+  elementsMap: Record<string, ElemID>
 ) => TransformFunc = elementsMap => async ({ value, path, field }) => {
   if (path?.isTopLevel()) {
     return value
@@ -60,7 +60,7 @@ const replaceReference: (
 const filterCreator: FilterCreator = ({ elementsSourceIndex, isPartial }): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
     const instances = elements.filter(isInstanceElement)
-    const dataInstancesMap: Record<string, { elemID: ElemID }> = isPartial ? _.clone(
+    const dataInstancesMap: Record<string, ElemID> = isPartial ? _.clone(
       (await elementsSourceIndex.getIndexes()).internalIdsIndex
     ) : {}
 

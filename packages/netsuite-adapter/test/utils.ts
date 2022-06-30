@@ -28,7 +28,6 @@ export const getDefaultAdapterConfig = async (): Promise<NetsuiteConfig> => {
 }
 
 export const createEmptyElementsSourceIndexes = (): ElementsSourceIndexes => ({
-  serviceIdsIndex: {},
   serviceIdRecordsIndex: {},
   internalIdsIndex: {},
   customFieldsIndex: {},

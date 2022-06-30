@@ -61,7 +61,7 @@ import omitFieldsFilter from './filters/omit_fields'
 import { createFilterCreatorsWithLogs, Filter, FilterCreator } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_USE_CHANGES_DETECTION, DEFAULT_VALIDATE } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams } from './query'
-import { createServerTimeElements, getLastServerTime } from './server_time'
+import { getLastServerTime, getServerTimeElements, getLastServiceIdToFetchTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
 import NetsuiteClient from './client/client'
 import { createDateRange } from './changes_detector/date_formats'
@@ -220,14 +220,21 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const {
       changedObjectsQuery,
       serverTime,
-    } = await this.runSuiteAppOperations(fetchQuery, this.elementsSourceIndex, useChangesDetection)
+    } = await this.runSuiteAppOperations(
+      fetchQuery,
+      useChangesDetection,
+    )
     const updatedFetchQuery = changedObjectsQuery !== undefined
       ? andQuery(changedObjectsQuery, fetchQuery)
       : fetchQuery
 
-    const serverTimeElements = !this.isPartialFetch() && serverTime !== undefined
-      ? createServerTimeElements(serverTime)
-      : []
+    const serverTimeElements = serverTime !== undefined
+      ? await getServerTimeElements(
+        serverTime,
+        this.elementsSource,
+        this.isPartialFetch(),
+      )
+      : undefined
 
     const dataElementsPromise = getDataElements(this.client, fetchQuery,
       this.getElemIdFunc)
@@ -275,9 +282,16 @@ export default class NetsuiteAdapter implements AdapterOperations {
         ? customTypes[customizationInfo.typeName].type
         : additionalTypes[customizationInfo.typeName]
       return type
-        ? createInstanceElement(customizationInfo, type, this.getElemIdFunc, serverTime)
+        ? createInstanceElement(
+          customizationInfo,
+          type,
+          this.getElemIdFunc,
+          serverTime,
+          serverTimeElements?.instance,
+        )
         : undefined
     }).filter(isInstanceElement).toArray()
+    // TODO: Add the server time for all the instances to the singleton
 
     const dataElements = await dataElementsPromise
     const suiteAppConfigElements = this.client.isSuiteAppConfigured()
@@ -289,7 +303,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       ...dataElements,
       ...suiteAppConfigElements,
       ...instances,
-      ...serverTimeElements,
+      ...(serverTimeElements ? [serverTimeElements.type, serverTimeElements.instance] : []),
     ]
 
     await this.createFiltersRunner(isPartial).onFetch(elements)
@@ -343,8 +357,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
   private async runSuiteAppOperations(
     fetchQuery: NetsuiteQuery,
-    elementsSourceIndex: LazyElementsSourceIndexes,
-    useChangesDetection: boolean
+    useChangesDetection: boolean,
   ):
     Promise<{
       changedObjectsQuery?: NetsuiteQuery
@@ -374,12 +387,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
       log.debug('Failed to get last fetch time')
       return { serverTime: sysInfo.time }
     }
-
+    const serviceIdToLastFetchDate = await getLastServiceIdToFetchTime(this.elementsSource)
     const changedObjectsQuery = await getChangedObjects(
       this.client,
       fetchQuery,
       createDateRange(lastFetchTime, sysInfo.time),
-      elementsSourceIndex,
+      serviceIdToLastFetchDate,
     )
 
     return { changedObjectsQuery, serverTime: sysInfo.time }

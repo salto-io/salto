@@ -13,15 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, ReadOnlyElementsSource, TypeElement, TypeReference } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, ReadOnlyElementsSource, TypeElement, TypeReference, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import _ from 'lodash'
-import { LAST_FETCH_TIME } from '../constants'
 import { isFileCabinetInstance } from '../types'
-import { getInstanceServiceIdRecords } from '../filters/instance_references'
-import { ElementsSourceIndexes, ElementsSourceValue, LazyElementsSourceIndexes, ServiceIdRecords } from './types'
-import { getServiceId } from '../transformer'
+import { ElementsSourceIndexes, LazyElementsSourceIndexes, ServiceIdRecords } from './types'
 import { getFieldInstanceTypes } from '../data_elements/custom_fields'
 
 const { awu } = collections.asynciterable
@@ -34,41 +30,18 @@ export const getDataInstanceId = (
 
 const createIndexes = async (elementsSource: ReadOnlyElementsSource):
   Promise<ElementsSourceIndexes> => {
-  const serviceIdsIndex: Record<string, ElementsSourceValue> = {}
   const serviceIdRecordsIndex: ServiceIdRecords = {}
-  const internalIdsIndex: Record<string, ElementsSourceValue> = {}
+  const internalIdsIndex: Record<string, ElemID> = {}
   const customFieldsIndex: Record<string, InstanceElement[]> = {}
   const pathToInternalIdsIndex: Record<string, number> = {}
   const elemIdToChangeByIndex: Record<string, string> = {}
-
-  const updateServiceIdIndex = async (element: InstanceElement): Promise<void> => {
-    const serviceIdRecords = await getInstanceServiceIdRecords(element, elementsSource)
-    _.assign(serviceIdRecordsIndex, serviceIdRecords)
-
-    const rawLastFetchTime = element.value[LAST_FETCH_TIME]
-    const lastFetchTime = rawLastFetchTime && new Date(rawLastFetchTime)
-
-    _.assign(
-      serviceIdsIndex,
-      _.isEmpty(serviceIdRecords)
-        ? { [getServiceId(element)]: { lastFetchTime } }
-        : _.mapValues(serviceIdRecords, ({ elemID }) => ({ elemID, lastFetchTime }))
-    )
-  }
 
   const updateInternalIdsIndex = (element: InstanceElement): void => {
     const { internalId, isSubInstance } = element.value
     if (internalId === undefined || isSubInstance) {
       return
     }
-
-    const rawLastFetchTime = element.value[LAST_FETCH_TIME]
-    const lastFetchTime = rawLastFetchTime && new Date(rawLastFetchTime)
-
-    internalIdsIndex[getDataInstanceId(internalId, element.refType)] = {
-      elemID: element.elemID,
-      lastFetchTime,
-    }
+    internalIdsIndex[getDataInstanceId(internalId, element.refType)] = element.elemID
   }
 
   const updateCustomFieldsIndex = (element: InstanceElement): void => {
@@ -100,7 +73,6 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
   await awu(await elementsSource.getAll())
     .filter(isInstanceElement)
     .forEach(async element => {
-      await updateServiceIdIndex(element)
       updateInternalIdsIndex(element)
       updateCustomFieldsIndex(element)
       updatePathToInternalIdsIndex(element)
@@ -108,7 +80,6 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
     })
 
   return {
-    serviceIdsIndex,
     serviceIdRecordsIndex,
     internalIdsIndex,
     customFieldsIndex,

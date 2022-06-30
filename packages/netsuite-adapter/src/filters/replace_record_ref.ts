@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, Field, isContainerType, isObjectType, isPrimitiveType, ListType, ObjectType, TypeElement } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, Field, isContainerType, isObjectType, isPrimitiveType, ListType, ObjectType, TypeElement, createRefToElmWithValue } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { NETSUITE } from '../constants'
@@ -437,30 +437,16 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
     )
 
     await awu(types).forEach(async element => {
-      element.fields = Object.fromEntries(await awu(Object.entries(element.fields))
-        .map(async ([name, field]) => {
-          let newField = field
-          const fieldRealType = getFieldType(element, field, typeMap)
-          if (fieldRealType !== undefined) {
-            if ((await field.getType()).elemID.isEqual(recordRefElemId)) {
-              newField = new Field(
-                element,
-                name,
-                fieldRealType,
-                { ...field.annotations, isReference: true }
-              )
-            }
-            if ((await field.getType()).elemID.isEqual(new ElemID(NETSUITE, 'recordRefList'))) {
-              newField = new Field(
-                element,
-                name,
-                new ListType(fieldRealType),
-                { ...field.annotations, isReference: true }
-              )
-            }
+      await awu(Object.entries(element.fields)).forEach(async ([_name, field]) => {
+        const fieldRealType = getFieldType(element, field, typeMap)
+        if (fieldRealType !== undefined) {
+          if ((await field.getType()).elemID.isEqual(recordRefElemId)) {
+            field.refType = createRefToElmWithValue(fieldRealType)
+          } else if ((await field.getType()).elemID.isEqual(new ElemID(NETSUITE, 'recordRefList'))) {
+            field.refType = createRefToElmWithValue(new ListType(fieldRealType))
           }
-          return [name, newField]
-        }).toArray())
+        }
+      })
     })
   },
 })

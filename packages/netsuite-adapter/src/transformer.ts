@@ -45,8 +45,16 @@ const toXmlBoolean = (value: boolean): string => (value ? XML_TRUE_VALUE : XML_F
 // don't load hidden files to the workspace in the core.
 const removeDotPrefix = (name: string): string => name.replace(/^\.+/, '_')
 
-export const createInstanceElement = async (customizationInfo: CustomizationInfo, type: ObjectType,
-  getElemIdFunc?: ElemIdGetter, fetchTime?: Date): Promise<InstanceElement> => {
+export const getServiceId = (instance: InstanceElement): string =>
+  instance.value[isCustomType(instance.refType) ? SCRIPT_ID : PATH]
+
+export const createInstanceElement = async (
+  customizationInfo: CustomizationInfo,
+  type: ObjectType,
+  getElemIdFunc?: ElemIdGetter,
+  fetchTime?: Date,
+  serverTimeInstance?: InstanceElement,
+): Promise<InstanceElement> => {
   const getInstanceName = (transformedValues: Values): string => {
     if (isSDFConfigType(type)) {
       return ElemID.CONFIG_NAME
@@ -139,26 +147,21 @@ export const createInstanceElement = async (customizationInfo: CustomizationInfo
       content: customizationInfo.fileContent,
     })
   }
-
-  const lastFetchTimeValue = fetchTime !== undefined ? {
-    [LAST_FETCH_TIME]: fetchTime.toJSON(),
-  } : {}
-
-  const transformedValues = await transformValues({
-    values: valuesWithTransformedAttrs,
-    type,
-    transformFunc: transformPrimitive,
-    strict: false,
-  }) as Values
-  return new InstanceElement(
+  const instance = new InstanceElement(
     instanceName,
     type,
-    {
-      ...transformedValues,
-      ...lastFetchTimeValue,
-    },
+    await transformValues({
+      values: valuesWithTransformedAttrs,
+      type,
+      transformFunc: transformPrimitive,
+      strict: false,
+    }) as Values,
     getInstancePath(instanceFileName),
   )
+  if (fetchTime !== undefined && serverTimeInstance !== undefined) {
+    serverTimeInstance.value.instancesFetchTime[getServiceId(instance)] = fetchTime.toJSON()
+  }
+  return instance
 }
 
 export const restoreAttributes = async (values: Values, type: ObjectType, instancePath: ElemID):
@@ -288,9 +291,6 @@ export const toCustomizationInfo = async (
   }
   return { typeName, values, scriptId } as CustomTypeInfo
 }
-
-export const getServiceId = (instance: InstanceElement): string =>
-  instance.value[isCustomType(instance.refType) ? SCRIPT_ID : PATH]
 
 const getScriptIdParts = (topLevelParent: InstanceElement, elemId: ElemID): string[] => {
   if (elemId.isTopLevel()) {

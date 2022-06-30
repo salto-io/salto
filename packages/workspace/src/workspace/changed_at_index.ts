@@ -55,7 +55,7 @@ const getChangedAt = (change: Change<Element>): string | undefined =>
 
 const updateAdditionChange = (
   change: AdditionChange<Element>,
-  datesMap: Record<string, Set<ElemID>>,
+  datesMap: Record<string, Set<string>>,
 ): void => {
   const modificationDate = getChangedAt(change)
   if (!modificationDate) {
@@ -64,22 +64,22 @@ const updateAdditionChange = (
   if (!datesMap[modificationDate]) {
     datesMap[modificationDate] = new Set()
   }
-  datesMap[modificationDate].add(change.data.after.elemID)
+  datesMap[modificationDate].add(change.data.after.elemID.getFullName())
 }
 
 const updateRemovalChange = (
   change: RemovalChange<Element>,
-  datesMap: Record<string, Set<ElemID>>,
+  datesMap: Record<string, Set<string>>,
 ): void => {
   const modificationDate = getChangedAt(change)
   if (modificationDate && datesMap[modificationDate]) {
-    datesMap[modificationDate].delete(change.data.before.elemID)
+    datesMap[modificationDate].delete(change.data.before.elemID.getFullName())
   }
 }
 
 const updateModificationChange = (
   change: ModificationChange<Element>,
-  datesMap: Record<string, Set<ElemID>>,
+  datesMap: Record<string, Set<string>>,
 ): void => {
   if (change.data.after.annotations[CORE_ANNOTATIONS.CHANGED_AT]
     !== change.data.before.annotations[CORE_ANNOTATIONS.CHANGED_AT]) {
@@ -96,7 +96,7 @@ const updateModificationChange = (
 
 const updateChange = (
   change: Change<Element>,
-  datesMap: Record<string, Set<ElemID>>,
+  datesMap: Record<string, Set<string>>,
 ): void => {
   if (isAdditionChange(change)) {
     updateAdditionChange(change, datesMap)
@@ -122,18 +122,19 @@ const getUniqueDates = (changes: Change<Element>[]): Set<string> => {
 const mergeDateMap = (
   dateList: string[],
   indexValues: (ElemID[] | undefined)[]
-): Record<string, Set<ElemID>> => {
+): Record<string, Set<string>> => {
   const datesMap: Record<string, ElemID[]> = _.pickBy(
     _.zipObject(dateList, indexValues),
     isDefined,
   )
-  return _.mapValues(datesMap, (elemIds: ElemID[]) => new Set(elemIds))
+  return _.mapValues(datesMap,
+    (elemIds: ElemID[]) => new Set(elemIds.map(elemId => elemId.getFullName())))
 }
 
 const getCompleteDateMap = async (
   changes: Change<Element>[],
   index: RemoteMap<ElemID[]>,
-): Promise<Record<string, Set<ElemID>>> => {
+): Promise<Record<string, Set<string>>> => {
   const datesList = Array.from(getUniqueDates(changes))
   const indexValues = await index.getMany(datesList)
   const dateMap = mergeDateMap(datesList, indexValues)
@@ -150,7 +151,8 @@ const updateChanges = async (
     Object.keys(completeAuthorMap),
     key => isEmpty(completeAuthorMap[key]),
   )
-  await index.setAll(toBeSet.map(key => ({ key, value: Array.from(completeAuthorMap[key]) })))
+  await index.setAll(toBeSet
+    .map(key => ({ key, value: Array.from(completeAuthorMap[key]).map(ElemID.fromFullName) })))
   await index.deleteAll(toBeRemoved)
 }
 

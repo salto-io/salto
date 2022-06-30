@@ -194,11 +194,7 @@ SALTO_LOG_GLOBAL_TAGS='{"requestId":20}'
 
 Add tags to all log messages. When configuring this variable via the CLI, make sure this variable is a JSON.
 
-Default: {} - Doesn't add any tags to log messages. 
-
-### `maxJsonMessageSize: number | null`
-
-Environment variable:
+Default: {} - Doesn't add any tags to log messages.
 
 ### `maxJsonLogChunkSize: number | null`
 

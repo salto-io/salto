@@ -2325,6 +2325,11 @@ describe('workspace', () => {
       )
     })
     describe('getChangedElementsBetween', () => {
+      it('get correct element ids without full date range', async () => {
+        const dateRange = { start: new Date('1999-01-01T00:00:00.000Z') }
+        const result = await workspace.getChangedElementsBetween(dateRange)
+        expect(result[0].getFullName()).toEqual('salesforce.lead')
+      })
       it('get correct element ids until date failure', async () => {
         const dateRange = { end: new Date('1999-02-01T00:00:00.000Z'), start: new Date('1999-01-01T00:00:00.000Z') }
         const result = await workspace.getChangedElementsBetween(dateRange)

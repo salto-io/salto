@@ -21,6 +21,7 @@ import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, Detail
 import { logger } from '@salto-io/logging'
 import { applyDetailedChanges, naclCase, resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
+import { isDefined } from '@salto-io/lowerdash/src/values'
 import { ValidationError, validateElements, isUnresolvedRefError } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
@@ -44,7 +45,6 @@ import { AdaptersConfigSource } from './adapters_config_source'
 import { updateReferenceIndexes } from './reference_indexes'
 import { updateChangedByIndex, Author, authorKeyToAuthor, authorToAuthorKey } from './changed_by_index'
 import { updateChangedAtIndex } from './changed_at_index'
-import { isDefined } from '@salto-io/lowerdash/src/values'
 
 const log = logger(module)
 
@@ -939,7 +939,7 @@ export const loadWorkspace = async (
     const isDateInRange = (date: string): boolean => {
       const dateToCheck = new Date(date)
       return dateToCheck >= dateRange.start
-      && (isDefined(dateRange.end) && dateToCheck <= dateRange.end)
+      && (isDefined(dateRange.end) ? dateToCheck <= dateRange.end : true)
     }
     const env = envName ?? currentEnv()
     const workspace = await getWorkspaceState()

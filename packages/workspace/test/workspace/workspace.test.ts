@@ -2325,16 +2325,14 @@ describe('workspace', () => {
       )
     })
     describe('getChangedElementsBetween', () => {
-      it('get correct element ids until now', async () => {
-        const result = await workspace.getChangedElementsBetween('1999-01-01T00:00:00.000Z')
-        expect(result[0].getFullName()).toEqual('salesforce.lead')
-      })
       it('get correct element ids until date failure', async () => {
-        const result = await workspace.getChangedElementsBetween('1999-01-01T00:00:00.000Z', '1999-02-01T00:00:00.000Z')
+        const dateRange = { end: new Date('1999-02-01T00:00:00.000Z'), start: new Date('1999-01-01T00:00:00.000Z') }
+        const result = await workspace.getChangedElementsBetween(dateRange)
         expect(result.length).toEqual(0)
       })
       it('get correct element ids until date success', async () => {
-        const result = await workspace.getChangedElementsBetween('1999-01-01T00:00:00.000Z', '2000-02-01T00:00:00.000Z')
+        const dateRange = { end: new Date('2001-01-01T00:00:00.000Z'), start: new Date('1999-01-01T00:00:00.000Z') }
+        const result = await workspace.getChangedElementsBetween(dateRange)
         expect(result[0].getFullName()).toEqual('salesforce.lead')
       })
     })

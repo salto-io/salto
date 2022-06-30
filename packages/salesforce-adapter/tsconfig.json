@@ -23,6 +23,7 @@
         { "path": "../adapter-components" },
         { "path": "../adapter-utils" },
         { "path": "../e2e-credentials-store" },
+        { "path": "../file" },
         { "path": "../logging" },
         { "path": "../lowerdash" },
         { "path": "../test-utils" },

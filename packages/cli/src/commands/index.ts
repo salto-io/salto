@@ -21,6 +21,7 @@ import initDef from './init'
 import restoreDef from './restore'
 import elementGroupDef from './element'
 import workspaceGroupDef from './workspace'
+import salesforceGroupDef from './salesforce'
 
 // The order of the builders determines order of appearance in help text
 export default [
@@ -32,4 +33,5 @@ export default [
   restoreDef,
   elementGroupDef,
   workspaceGroupDef,
+  salesforceGroupDef,
 ]

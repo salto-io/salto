@@ -92,11 +92,11 @@ const { concatObjects } = objects
 
 const log = logger(module)
 
-type RemoteFilterCreatorDefinition = {
+export type RemoteFilterCreatorDefinition = {
   creator: RemoteFilterCreator
   addsNewInformation: true
 }
-type LocalFilterCreatorDefinition = {
+export type LocalFilterCreatorDefinition = {
   creator: LocalFilterCreator
   addsNewInformation?: false
 }
@@ -202,7 +202,7 @@ export interface SalesforceAdapterParams {
 
   // Unsupported System fields that salesforce may add to custom objects
   // to not be fetched and managed
-  unsupportedSystemFields?: string[]
+  unsupportedFields?: string[]
 
   config: SalesforceConfig
 
@@ -264,6 +264,11 @@ export const allSystemFields = [
   'SetupOwnerId',
 ]
 
+export const unsupportedSystemFields = [
+  'LastReferencedDate',
+  'LastViewedDate',
+]
+
 export default class SalesforceAdapter implements AdapterOperations {
   private maxItemsInRetrieveRequest: number
   private metadataToRetrieve: string[]
@@ -322,10 +327,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     getElemIdFunc,
     elementsSource,
     systemFields = allSystemFields,
-    unsupportedSystemFields = [
-      'LastReferencedDate',
-      'LastViewedDate',
-    ],
+    unsupportedFields = unsupportedSystemFields,
     config,
   }: SalesforceAdapterParams) {
     this.maxItemsInRetrieveRequest = config.maxItemsInRetrieveRequest ?? maxItemsInRetrieveRequest
@@ -341,7 +343,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       {
         client,
         config: {
-          unsupportedSystemFields,
+          unsupportedSystemFields: unsupportedFields,
           systemFields,
           enumFieldPermissions: config.enumFieldPermissions
             ?? constants.DEFAULT_ENUM_FIELD_PERMISSIONS,

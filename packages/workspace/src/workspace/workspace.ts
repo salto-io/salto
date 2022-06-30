@@ -60,6 +60,10 @@ const STATE_SOURCE_PREFIX = 'state_element_source'
 export const isValidEnvName = (envName: string): boolean =>
   /^[a-z0-9-_.!\s]+$/i.test(envName) && envName.length <= MAX_ENV_NAME_LEN
 
+export type DateRange = {
+  start: Date
+  end: Date
+}
 
 export type SourceLocation = {
   sourceRange: SourceRange
@@ -246,7 +250,7 @@ export type Workspace = {
     encoding: BufferEncoding
     env?: string
   }): Promise<StaticFile | undefined>
-  getChangedElementsBetween(after: string, before?: string, envName?: string): Promise<ElemID[]>
+  getChangedElementsBetween(dateRange: DateRange, envName?: string): Promise<ElemID[]>
 }
 
 type SingleState = {
@@ -928,17 +932,16 @@ export const loadWorkspace = async (
     return result.filter(values.isDefined).flat()
   }
   const getChangedElementsBetween = async (
-    after: string,
-    before?: string,
+    dateRange: DateRange,
     envName?: string,
   ): Promise<ElemID[]> => {
     const env = envName ?? currentEnv()
     const workspace = await getWorkspaceState()
-    const beforeTimestamp = before ? Date.parse(before) : Date.now()
-    const afterTimestamp = Date.parse(after)
-    const relevantTimestamps = (await awu(workspace.states[env].changedAt.keys()).toArray())
-      .filter(t => Date.parse(t) <= beforeTimestamp && Date.parse(t) >= afterTimestamp)
-    const result = await workspace.states[env].changedAt.getMany(relevantTimestamps) ?? []
+    const relevantTimestamps = await awu(workspace.states[env].changedAt.keys())
+      .filter(t => Date.parse(t) <= dateRange.end.getTime()
+      && Date.parse(t) >= dateRange.start.getTime())
+      .toArray()
+    const result = await workspace.states[env].changedAt.getMany(relevantTimestamps)
     return result.filter(values.isDefined).flat()
   }
   return {

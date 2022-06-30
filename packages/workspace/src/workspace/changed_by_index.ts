@@ -188,7 +188,7 @@ const updateChanges = async (
     key => isEmpty(completeAuthorMap[key]),
   )
   await index.setAll(toBeSet
-    .map(key =>({ key, value: Array.from(completeAuthorMap[key]).map(ElemID.fromFullName) })))
+    .map(key => ({ key, value: Array.from(completeAuthorMap[key]).map(ElemID.fromFullName) })))
   await index.deleteAll(toBeRemoved)
 }
 

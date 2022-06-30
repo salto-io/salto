@@ -44,6 +44,7 @@ import { AdaptersConfigSource } from './adapters_config_source'
 import { updateReferenceIndexes } from './reference_indexes'
 import { updateChangedByIndex, Author, authorKeyToAuthor, authorToAuthorKey } from './changed_by_index'
 import { updateChangedAtIndex } from './changed_at_index'
+import { isDefined } from '@salto-io/lowerdash/src/values'
 
 const log = logger(module)
 
@@ -62,7 +63,7 @@ export const isValidEnvName = (envName: string): boolean =>
 
 export type DateRange = {
   start: Date
-  end: Date
+  end?: Date
 }
 
 export type SourceLocation = {
@@ -935,11 +936,15 @@ export const loadWorkspace = async (
     dateRange: DateRange,
     envName?: string,
   ): Promise<ElemID[]> => {
+    const isDateInRange = (date: string): boolean => {
+      const dateToCheck = new Date(date)
+      return dateToCheck >= dateRange.start
+      && (isDefined(dateRange.end) && dateToCheck <= dateRange.end)
+    }
     const env = envName ?? currentEnv()
     const workspace = await getWorkspaceState()
     const relevantTimestamps = await awu(workspace.states[env].changedAt.keys())
-      .filter(t => Date.parse(t) <= dateRange.end.getTime()
-      && Date.parse(t) >= dateRange.start.getTime())
+      .filter(isDateInRange)
       .toArray()
     const result = await workspace.states[env].changedAt.getMany(relevantTimestamps)
     return result.filter(values.isDefined).flat()

@@ -124,7 +124,6 @@ const modifyBrandLogo = async (
 /**
  * Supports brands' logo type and instances
  */
-// const filterCreator: FilterCreator = ({ config, client }) => ({
 const filterCreator: FilterCreator = ({ client }) => ({
   onFetch: async elements => {
     const brandsWithLogos = elements

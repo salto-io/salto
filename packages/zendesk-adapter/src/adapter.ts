@@ -144,7 +144,6 @@ const SKIP_RESOLVE_TYPE_NAMES = [
   'organization_field__custom_field_options',
   'macro',
   'macro_attachment',
-  // 'brand',
   'brand_logo',
 ]
 

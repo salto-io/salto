@@ -15,10 +15,9 @@
 */
 import { ChangeValidator, getChangeData, InstanceElement, isInstanceChange,
   isModificationChange, isRemovalChange, ModificationChange } from '@salto-io/adapter-api'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { BRAND_LOGO_TYPE_NAME, BRAND_NAME } from '../constants'
 
-const isLogoFieldRemovedChange = (
+const isLogoRemoved = (
   change: ModificationChange<InstanceElement>
 ): boolean => (
   change.data.before.value.logo !== undefined
@@ -30,16 +29,15 @@ export const brandLogoFieldRemovalValidator: ChangeValidator = async changes => 
     .filter(change => getChangeData(change).elemID.typeName === BRAND_LOGO_TYPE_NAME)
     .filter(isRemovalChange)
     .filter(isInstanceChange)
-    .map(change => change.data.before.elemID)
-  console.log(`!!!! - ${safeJsonStringify(removedBrandLogosElemIds)}`)
-  console.log(`@@@@ - ${safeJsonStringify(changes)}`)
+    .map(change => change.data.before.elemID.getFullName())
 
   return changes
     .filter(change => getChangeData(change).elemID.typeName === BRAND_NAME)
     .filter(isInstanceChange)
     .filter(isModificationChange)
-    .filter(isLogoFieldRemovedChange)
-    .filter(change => !removedBrandLogosElemIds.includes(change.data.before.value.logo.elemID))
+    .filter(isLogoRemoved)
+    .filter(change => !removedBrandLogosElemIds
+      .includes(change.data.before.value.logo.elemID.getFullName()))
     .map(getChangeData)
     .flatMap(instance => (
       [{

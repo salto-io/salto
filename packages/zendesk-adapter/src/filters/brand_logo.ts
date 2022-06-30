@@ -107,7 +107,6 @@ const modifyBrandLogo = async (
 ): ReturnType<typeof client.put> => {
   const form = new FormData()
   form.append('brand[logo][uploaded_data]', logoContent || Buffer.from(''), logoInstance.value.filename)
-  console.log(form)
   try {
     const brandId = getParents(logoInstance)?.[0].resValue.value.id
     const res = await client.put({
@@ -123,7 +122,7 @@ const modifyBrandLogo = async (
 }
 
 /**
- * Adds brands' logo type and instances
+ * Supports brands' logo type and instances
  */
 // const filterCreator: FilterCreator = ({ config, client }) => ({
 const filterCreator: FilterCreator = ({ client }) => ({
@@ -165,17 +164,10 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
     return {
       deployResult: {
-        // appliedChanges: [
-        //   ...macroDeployResult.appliedChanges
-        //     .filter(change =>
-        //       !additionalParentFullNames.has(getChangeData(change).elemID.getFullName())),
-        //   ...attachmentDeployResult.appliedChanges,
-        // ],
         appliedChanges: [
           ...brandLogoAdditionsOrModifications,
           ...brandLogoRemovals,
         ],
-        // errors: [...macroDeployResult.errors, ...attachmentDeployResult.errors],
         errors: [],
       },
       leftoverChanges,

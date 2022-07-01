@@ -258,6 +258,18 @@ jobs:
           name: run CLI --help
           command: ./salto.exe --help
 
+      - run:
+          name: run CLI init
+          command: ./salto.exe init -e env1
+
+      - run:
+          name: run CLI service add
+          command: ./salto.exe service add dummy
+
+      - run:
+          name: run CLI fetch
+          command: ./salto.exe fetch
+
   package_vscode_extension:
     docker:
       - image: cimg/node:14.15

@@ -64,7 +64,8 @@ const getRemoteDbImpl = (): any => {
 
 const isDBLockErr = (error: Error): boolean => (
   error.message.includes('LOCK: Resource temporarily unavailable')
-  || error.message.includes('lock hold by current process')
+    || error.message.includes('lock hold by current process')
+    || error.message.includes('LOCK: The process cannot access the file because it is being used by another process')
 )
 
 const isDBNotExistErr = (error: Error): boolean => (

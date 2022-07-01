@@ -49,7 +49,10 @@ export const usernamePasswordCredentialsType = createMatchingObjectType<
     },
     subdomain: {
       refType: BuiltinTypes.STRING,
-      annotations: { _required: true },
+      annotations: {
+        _required: true,
+        message: 'subdomain (https://<your subdomain>.zendesk.com)',
+      },
     },
   },
 })
@@ -65,7 +68,10 @@ export const oauthAccessTokenCredentialsType = createMatchingObjectType<
     },
     subdomain: {
       refType: BuiltinTypes.STRING,
-      annotations: { _required: true },
+      annotations: {
+        _required: true,
+        message: 'subdomain (https://<your subdomain>.zendesk.com)',
+      },
     },
   },
 })

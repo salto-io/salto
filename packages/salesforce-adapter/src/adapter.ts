@@ -70,6 +70,7 @@ import elementsUrlFilter from './filters/elements_url'
 import territoryFilter from './filters/territory'
 import customMetadataRecordsFilter from './filters/custom_metadata'
 import currencyIsoCodeFilter from './filters/currency_iso_code'
+import splitCustomLabels from './filters/split_custom_labels'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { FilterCreator, Filter, FilterResult } from './filter'
@@ -144,6 +145,7 @@ export const DEFAULT_FILTERS = [
   extraDependenciesFilter,
   customObjectsSplitFilter,
   profileInstanceSplitFilter,
+  splitCustomLabels,
 ]
 
 export interface SalesforceAdapterParams {

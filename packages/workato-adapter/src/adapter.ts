@@ -25,7 +25,7 @@ import { FilterCreator, Filter, filtersRunner } from './filter'
 import { FETCH_CONFIG, WorkatoConfig } from './config'
 import addRootFolderFilter from './filters/add_root_folder'
 import fieldReferencesFilter from './filters/field_references'
-import fixMultienvIDs from './filters/fix_multienv_ids'
+import referencedIdFieldsFilter from './filters/referenced_id_fields'
 import recipeCrossServiceReferencesFilter from './filters/cross_service/recipe_references'
 import serviceUrlFilter from './filters/service_url'
 import ducktypeCommonFilters from './filters/ducktype_common'
@@ -40,11 +40,11 @@ const { getAllElements } = elementUtils.ducktype
 
 export const DEFAULT_FILTERS = [
   addRootFolderFilter,
-  // fixMultienvIDs should run after addRootFolderFilter
-  fixMultienvIDs,
   // fieldReferencesFilter should run after all element manipulations are done
   fieldReferencesFilter,
   recipeCrossServiceReferencesFilter,
+  // referencedIdFieldsFilter should run after element references are resolved
+  referencedIdFieldsFilter,
   serviceUrlFilter,
   ...ducktypeCommonFilters,
 ]
@@ -88,6 +88,7 @@ export default class WorkatoAdapter implements AdapterOperations {
           fetch: config.fetch,
           apiDefinitions: config.apiDefinitions,
         },
+        getElemIdFunc,
         fetchQuery: this.fetchQuery,
       },
       filterCreators,

@@ -20,7 +20,7 @@ import { chunks, collections, promises, values } from '@salto-io/lowerdash'
 import Ajv from 'ajv'
 import _ from 'lodash'
 import path from 'path'
-import { ReadFileEncodingError, ReadFileInsufficientPermissionError } from './client/suiteapp_client/errors'
+import { ReadFileEncodingError, ReadFileInsufficientPermissionError, RetryableError, retryOnRetryableError } from './client/suiteapp_client/errors'
 import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
 import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from './client/suiteapp_client/types'
 import { ImportFileCabinetResult } from './client/types'
@@ -181,24 +181,30 @@ SuiteAppFileCabinetOperations => {
   let fileCabinetResults: FileCabinetResults
   let pathToIdResults: Record<string, number>
 
-  const queryFolders = async (whereQuery: string): Promise<FolderResult[]> => {
+  const queryFolders = (
+    whereQuery: string
+  ): Promise<FolderResult[]> => retryOnRetryableError(async () => {
     const foldersResults = await suiteAppClient.runSuiteQL(
       'SELECT name, id, bundleable, isinactive, isprivate, description, parent'
       + ` FROM mediaitemfolder WHERE ${whereQuery} ORDER BY id ASC`
     )
 
     if (foldersResults === undefined) {
-      throw new Error('Failed to list folders')
+      throw new RetryableError(new Error('Failed to list folders'))
     }
 
     const ajv = new Ajv({ allErrors: true, strict: false })
     if (!ajv.validate<FolderResult[]>(FOLDERS_SCHEMA, foldersResults)) {
-      log.error(`Got invalid results from listing folders: ${ajv.errorsText()}`)
-      throw new Error('Failed to list folders')
+      log.error(
+        'Got invalid results from listing folders - %s: %o',
+        ajv.errorsText(),
+        foldersResults
+      )
+      throw new RetryableError(new Error('Failed to list folders'))
     }
 
     return foldersResults
-  }
+  })
 
   const queryTopLevelFolders = async (): Promise<FolderResult[]> =>
     queryFolders('istoplevel = \'T\'')
@@ -211,7 +217,9 @@ SuiteAppFileCabinetOperations => {
     return queryFolders(whereQuery)
   }
 
-  const queryFiles = async (foldersToQuery: FolderResult[]): Promise<FileResult[]> => {
+  const queryFiles = (
+    foldersToQuery: FolderResult[]
+  ): Promise<FileResult[]> => retryOnRetryableError(async () => {
     const fileCriteria = 'hideinbundle = \'F\''
     const whereQueries = foldersToQuery.length > 0
       ? _.chunk(foldersToQuery, MAX_ITEMS_IN_WHERE_QUERY).map(foldersToQueryChunk =>
@@ -226,19 +234,23 @@ SuiteAppFileCabinetOperations => {
       )
 
       if (filesResults === undefined) {
-        throw new Error('Failed to list files')
+        throw new RetryableError(new Error('Failed to list files'))
       }
 
       const ajv = new Ajv({ allErrors: true, strict: false })
       if (!ajv.validate<FileResult[]>(FILES_SCHEMA, filesResults)) {
-        log.error(`Got invalid results from listing files: ${ajv.errorsText()}`)
-        throw new Error('Failed to list files')
+        log.error(
+          'Got invalid results from listing files - %s: %o',
+          ajv.errorsText(),
+          filesResults
+        )
+        throw new RetryableError(new Error('Failed to list files'))
       }
       return filesResults
     }))
 
     return results.flat()
-  }
+  })
 
   const queryFileCabinet = async (query: NetsuiteQuery): Promise<FileCabinetResults> => {
     if (fileCabinetResults === undefined) {
@@ -328,10 +340,13 @@ SuiteAppFileCabinetOperations => {
             return suiteAppClient.readLargeFile(id)
           }
 
-          const results = await suiteAppClient.readFiles(fileChunk.map(f => parseInt(f.id, 10)))
-          if (results === undefined) {
-            throw new Error('Request for reading files from the file cabinet failed')
-          }
+          const results = await retryOnRetryableError(async () => {
+            const res = await suiteAppClient.readFiles(fileChunk.map(f => parseInt(f.id, 10)))
+            if (res === undefined) {
+              throw new RetryableError(new Error('Request for reading files from the file cabinet failed'))
+            }
+            return res
+          })
           log.debug(`Finished Reading files chunk ${i + 1}/${fileChunks.length} with ${fileChunk.length} files`)
 
           return results && Promise.all(results.map(async (content, index) => {

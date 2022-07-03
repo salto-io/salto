@@ -68,9 +68,10 @@ export const extractTypes = async (
 ): Promise<ObjectType[]> => {
   log.debug('Generating SOAP types')
 
-  const { wsdl: wsdlObj } = wsdl instanceof soap.WSDL
-    ? { wsdl }
-    : (await soap.createClientAsync(wsdl)) as unknown as { wsdl: soap.WSDL }
+  const { wsdl: wsdlObj } = typeof wsdl === 'string'
+    ? (await soap.createClientAsync(wsdl)) as unknown as { wsdl: soap.WSDL }
+    : { wsdl }
+
   const schemas = Object.values(wsdlObj.definitions.schemas)
   const unresolvedTypes = schemas
     .map((schema: SchemaElement) => convertComplexTypes(adapterName, schema, camelCase))

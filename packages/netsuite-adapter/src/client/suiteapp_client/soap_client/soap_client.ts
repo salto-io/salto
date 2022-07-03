@@ -46,7 +46,7 @@ const REQUEST_RETRY_DELAY = 5000
 const NETSUITE_VERSION = '2020_2'
 const SEARCH_PAGE_SIZE = 100
 
-const RETRYABLE_MESSAGES = ['ECONN', 'UNEXPECTED_ERROR', 'INSUFFICIENT_PERMISSION']
+const RETRYABLE_MESSAGES = ['ECONN', 'UNEXPECTED_ERROR', 'INSUFFICIENT_PERMISSION', 'VALIDATION_ERROR']
 const SOAP_RETRYABLE_MESSAGES = ['CONCURRENT']
 
 type SoapSearchType = {
@@ -67,8 +67,8 @@ const retryOnBadResponseWithDelay = (
           // eslint-disable-next-line @typescript-eslint/return-await
           return await call.call()
         } catch (e) {
-          if (retryableMessages.some(message => e.message.toUpperCase().includes(message)
-            || e.code?.toUpperCase?.()?.includes(message)) && retriesLeft > 0) {
+          if (retryableMessages.some(message => e?.message?.toUpperCase?.()?.includes?.(message)
+            || e?.code?.toUpperCase?.()?.includes?.(message)) && retriesLeft > 0) {
             log.warn('Retrying soap request with error: %s. Retries left: %d', e.message, retriesLeft)
             if (retryDelay) {
               await new Promise(f => setTimeout(f, retryDelay))
@@ -135,7 +135,7 @@ export default class SoapClient {
       response
     )) {
       log.error(`Got invalid response from get request with id ${id} in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`Got invalid response from get request with id ${id} in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`VALIDATION_ERROR - Got invalid response from get request with id ${id} in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
     }
 
     if (!isGetSuccess(response)) {
@@ -234,7 +234,7 @@ export default class SoapClient {
       response
     )) {
       log.error(`Got invalid response from addList request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`Got invalid response from addList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`VALIDATION_ERROR - Got invalid response from addList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
     }
 
     if (!isDeployListSuccess(response)) {
@@ -267,7 +267,7 @@ export default class SoapClient {
       response
     )) {
       log.error(`Got invalid response from deleteList request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`Got invalid response from deleteList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`VALIDATION_ERROR - Got invalid response from deleteList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
     }
 
     if (!isDeployListSuccess(response)) {
@@ -300,7 +300,7 @@ export default class SoapClient {
       response
     )) {
       log.error(`Got invalid response from updateList request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`Got invalid response from updateList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`VALIDATION_ERROR - Got invalid response from updateList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
     }
 
     if (!isDeployListSuccess(response)) {
@@ -442,7 +442,7 @@ export default class SoapClient {
       response
     )) {
       log.error(`Got invalid response from ${action} request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`Got invalid response from ${action} request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`VALIDATION_ERROR - Got invalid response from ${action} request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
     }
 
     if (!isDeployListSuccess(response)) {
@@ -544,7 +544,7 @@ export default class SoapClient {
       response
     )) {
       log.error(`Got invalid response from get all request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`Got invalid response from get all request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`VALIDATION_ERROR - Got invalid response from get all request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
     }
 
     return response.getAllResult.recordList.record
@@ -591,7 +591,7 @@ export default class SoapClient {
       response
     )) {
       log.error(`Got invalid response from search request with SOAP api of type ${type}. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`Got invalid response from search request of type ${type}. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`VALIDATION_ERROR - Got invalid response from search request of type ${type}. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
     }
     log.debug(`Finished sending search request for page 1/${Math.max(response.searchResult.totalPages, 1)} of type ${type}`)
     return response
@@ -611,7 +611,7 @@ export default class SoapClient {
       response
     )) {
       log.error(`Got invalid response from search with id request with in SOAP api. Id: ${args.searchId}, index: ${args.pageIndex}, errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`Got invalid response from search with id request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`VALIDATION_ERROR - Got invalid response from search with id request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
     }
 
     return response

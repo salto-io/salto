@@ -89,8 +89,8 @@ const getInstanceNameDependencies = (
       return undefined
     })
     .filter(isDefined)
-  const parentFullName = getFirstParentElemId(instance)?.getFullName() ?? undefined
-  if (extendsParentId && parentFullName) {
+  const parentFullName = getFirstParentElemId(instance)?.getFullName()
+  if (extendsParentId && parentFullName !== undefined) {
     referencedInstances.push(parentFullName)
   }
   return referencedInstances
@@ -106,7 +106,7 @@ const createInstanceNameAndFilePath = (
   const { idFields } = idConfig
   const newNameParts = createInstanceReferencedNameParts(instance, idFields)
   const newName = joinInstanceNameParts(newNameParts) ?? instance.elemID.name
-  const parentName = getFirstParentElemId(instance)?.name ?? undefined
+  const parentName = getFirstParentElemId(instance)?.name
   const { typeName, adapter } = instance.elemID
   const { fileNameFields, serviceIdField } = configByType[typeName]
 
@@ -176,6 +176,7 @@ const getReferencesToElemIds = (
   return refs
 }
 
+/* Creates the same nested path under the updated instance */
 const createUpdatedPath = (
   oldPath: ElemID,
   updatedInstance: InstanceElement

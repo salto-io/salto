@@ -26,10 +26,8 @@ export class ReadFileEncodingError extends ReadFileError {}
 export class ReadFileInsufficientPermissionError extends ReadFileError {}
 
 export class RetryableError extends Error {
-  originalError: Error
-  constructor(originalError: Error) {
+  constructor(readonly originalError: Error) {
     super(originalError.message)
-    this.originalError = originalError
   }
 }
 
@@ -40,14 +38,13 @@ export const retryOnRetryableError = async <T>(
   try {
     return await call()
   } catch (e) {
-    if (e instanceof RetryableError && retriesLeft > 0) {
+    if (e instanceof RetryableError) {
+      if (retriesLeft === 0) {
+        log.error('Retryable request exceed max retries with error: %s', e.message)
+        throw e.originalError
+      }
       return retryOnRetryableError(call, retriesLeft - 1)
     }
-    if (retriesLeft === 0) {
-      log.error('Retryable request exceed max retries with error: %s', e.message)
-    } else {
-      log.error('Retryable request had error: %s', e.message)
-    }
-    throw e instanceof RetryableError ? e.originalError : e
+    throw e
   }
 }

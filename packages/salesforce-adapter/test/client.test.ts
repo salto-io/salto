@@ -365,15 +365,12 @@ describe('salesforce client', () => {
     })
 
     describe('when user reaches the max concurrent request limit of Salesforce', () => {
-      let bottleneckStopSpy: jest.SpyInstance
+      let dodoScope: nock.Scope
 
       beforeEach(() => {
-        bottleneckStopSpy = jest.spyOn(client.rateLimiters.total, 'stop').mockImplementation()
-      })
-      it('should lower the total max concurrent request limit', async () => {
-        const dodoScope = nock(`http://dodo22/servies/Soap/m/${API_VERSION}`)
+        dodoScope = nock(`http://dodo22/servies/Soap/m/${API_VERSION}`)
           .post(/.*/)
-          .times(1) // Once for the chunk and once for item
+          .times(2) // Once for the chunk and once for item
           .reply(
             500,
             '<?xml version="1.0" encoding="UTF-8"?><soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:sf="http://soap.sforce.com/2006/04/metadata"><soapenv:Body><soapenv:Fault><faultcode>sf:REQUEST_LIMIT_EXCEEDED</faultcode><faultstring>REQUEST_LIMIT_EXCEEDED: ConcurrentRequests (Concurrent API Requests) Limit exceeded.</faultstring></soapenv:Fault></soapenv:Body></soapenv:Envelope>',
@@ -382,9 +379,14 @@ describe('salesforce client', () => {
           .post(/.*/)
           .times(1)
           .reply(200, workingReadReplay)
-        await client.readMetadata('Layout', ['aaa', 'bbb'])
+      })
+      it('should lower the total max concurrent request limit', async () => {
+        await expect(client.readMetadata('Layout', ['aaa', 'bbb']))
+          .rejects
+          .toThrow('Received REQUEST_LIMIT_EXCEEDED from Salesforce')
         expect(dodoScope.isDone()).toBeTruthy()
-        expect(bottleneckStopSpy).toHaveBeenCalled()
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
         // eslint-disable-next-line no-underscore-dangle
         expect(client.rateLimiters.total._store.storeOptions.maxConcurrent)
           .toEqual(REQUEST_LIMIT_EXCEEDED_CONCURRENT_LIMIT)

@@ -137,6 +137,14 @@ const NON_TRANSIENT_ERROR_TYPES = [
   'sf:INVALID_TYPE',
   'sf:UNKNOWN_EXCEPTION',
 ]
+
+export class SalesforceConcurrentRequestLimitError extends Error {
+  constructor() {
+    super('Received REQUEST_LIMIT_EXCEEDED from Salesforce')
+    Object.setPrototypeOf(this, SalesforceConcurrentRequestLimitError.prototype)
+  }
+}
+
 const isSFDCUnhandledException = (error: Error): boolean => (
   !NON_TRANSIENT_ERROR_TYPES.includes(error.name)
 )
@@ -451,6 +459,14 @@ export default class SalesforceClient {
       _.defaults({}, config?.maxConcurrentApiRequests, DEFAULT_MAX_CONCURRENT_API_REQUESTS),
       SALESFORCE
     )
+    this.rateLimiters.total.once('failed', async (e, _jobInfo) => {
+      if (e instanceof SalesforceConcurrentRequestLimitError) {
+        log.warn('Error occurred while executing request: %s. Limiting Salesforce max concurrent requests to %d', e.message, REQUEST_LIMIT_EXCEEDED_CONCURRENT_LIMIT)
+        this.rateLimiters.total?.updateSettings({
+          maxConcurrent: REQUEST_LIMIT_EXCEEDED_CONCURRENT_LIMIT,
+        })
+      }
+    })
     this.dataRetry = config?.dataRetry ?? DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS
     this.clientName = 'SFDC'
     this.readMetadataChunkSize = _.merge(
@@ -478,12 +494,7 @@ export default class SalesforceClient {
           throw e
         }
         if (e.errorCode === REQUEST_LIMIT_EXCEEDED_ERROR_CODE && e.message.toLowerCase().includes('concurrent')) {
-          log.warn('Received %s for concurrent requests error from Salesforce. Limiting maximum total concurrent request to %d', REQUEST_LIMIT_EXCEEDED_ERROR_CODE, REQUEST_LIMIT_EXCEEDED_CONCURRENT_LIMIT)
-          await this.rateLimiters.total?.stop()
-          this.rateLimiters.total = new Bottleneck({
-            maxConcurrent: REQUEST_LIMIT_EXCEEDED_CONCURRENT_LIMIT,
-          })
-          return requestWithRetry(attempts - 1)
+          throw new SalesforceConcurrentRequestLimitError()
         } if (errorMessagesToRetry.some(message => e.message.includes(message))) {
           log.warn('Encountered invalid result from salesforce, error message: %s, will retry %d more times', e.message, attempts - 1)
           return requestWithRetry(attempts - 1)

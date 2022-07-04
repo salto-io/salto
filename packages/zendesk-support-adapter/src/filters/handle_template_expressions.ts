@@ -47,12 +47,21 @@ const zendeskReferenceTypeToSaltoType: Record<string, string> = {
   'ticket.ticket_field_option_title': 'ticket_field__custom_field_options',
 }
 
+
 const saltoTypeToZendeskReferenceType = Object.fromEntries(
   Object.entries(zendeskReferenceTypeToSaltoType)
     .map(entry => [entry[1], entry[0]])
 )
 
-const potentialReferenceTypes = ['ticket.ticket_field', 'ticket.ticket_field_option_title']
+const potentialReferenceTypes = Object.keys(zendeskReferenceTypeToSaltoType)
+const typeSearchRegexes: RegExp[] = []
+BRACKETS.forEach(([opener, closer]) => {
+  potentialReferenceTypes.forEach(type => {
+    typeSearchRegexes.push(new RegExp(`(${opener})([^\\$}]*${type}_[\\d]+[^}]*)(${closer})`, 'g'))
+  })
+  // dynamic content references look different, but can still be part of template
+  typeSearchRegexes.push(new RegExp(`(${opener})([^\\$}]*dc\\.[\\w]+[^}]*)(${closer})`, 'g'))
+})
 const potentialReferenceTypeRegex = new RegExp(`((?:${potentialReferenceTypes.join('|')})_[\\d]+)`, 'g')
 const potentialMacroFields = ['comment_value', 'comment_value_html', 'side_conversation']
 // triggers and automations notify users, webhooks
@@ -119,19 +128,12 @@ const potentialTemplates: PotentialTemplateField[] = [
 
 const seekAndMarkPotentialReferences = (formula: string): string => {
   let formulaWithDetectedParts = formula
-  BRACKETS.forEach(([opener, closer]) => {
+  typeSearchRegexes.forEach(regex => {
     // The first part of the regex identifies ids, with the pattern {some_id_field_1234}
     // The replace flags the pattern with a reference-like string to avoid the later code from
     // detecting ids in numbers that are not marked as ids.
-    potentialReferenceTypes.forEach(type => {
-      formulaWithDetectedParts = formulaWithDetectedParts
-        // eslint-disable-next-line no-template-curly-in-string
-        .replace(new RegExp(`(${opener})([^\\$}]*${type}_[\\d]+[^}]*)(${closer})`, 'g'), '$1$${$2}$3')
-    })
-    // dynamic content references look different, but can still be part of template
-    formulaWithDetectedParts = formulaWithDetectedParts
     // eslint-disable-next-line no-template-curly-in-string
-      .replace(new RegExp(`(${opener})([^\\$}]*dc\\.[\\w]+[^}]*)(${closer})`, 'g'), '$1$${$2}$3')
+    formulaWithDetectedParts = formulaWithDetectedParts.replace(regex, '$1$${$2}$3')
   })
   return formulaWithDetectedParts
 }
@@ -143,19 +145,18 @@ const formulaToTemplate = (formula: string,
   const handleZendeskReference = (expression: string, ref: RegExpMatchArray): TemplatePart => {
     const reference = ref.pop() ?? ''
     const splitReference = reference.split(/_([\d]+)/).filter(v => !_.isEmpty(v))
+    // should be exactly of the form TYPE_INNERID, so should contain exactly two parts
     if (splitReference.length !== 2) {
       return expression
     }
-    const innerId = splitReference[1]
-    const type = splitReference[0]
-    const elem = (instancesByType[zendeskReferenceTypeToSaltoType[type] ?? ''] ?? [])
+    const [type, innerId] = splitReference
+    const elem = (instancesByType[zendeskReferenceTypeToSaltoType[type]] ?? [])
       .find(instance => instance.value.id?.toString() === innerId)
     if (elem) {
       return new ReferenceExpression(elem.elemID, elem)
     }
-    // if no id was detected we return these parts that will later be joined to
-    // create the original string.
-    return `${type}_${innerId}`
+    // if no id was detected we return the original expression.
+    return expression
   }
 
   const handleDynamicContentReference = (expression: string, ref: RegExpMatchArray):
@@ -237,15 +238,14 @@ const replaceTemplatesWithValues = async (
     const templateUsingIdField = new TemplateExpression({
       parts: template.parts.map(part => {
         if (isReferenceExpression(part)) {
+          if (!isInstanceElement(part.value)) {
+            return part
+          }
           if (saltoTypeToZendeskReferenceType[part.elemID.typeName]) {
-            return [saltoTypeToZendeskReferenceType[part.elemID.typeName],
-              '_',
-              new ReferenceExpression(part.elemID.createNestedID('id'), part.value.value.id)]
+            return [`${saltoTypeToZendeskReferenceType[part.elemID.typeName]}_${part
+              .value.value.id}`]
           }
           if (part.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME) {
-            if (!isInstanceElement(part.value)) {
-              return part
-            }
             if (!_.isString(part.value.value.placeholder)) {
               return part
             }

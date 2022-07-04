@@ -26,6 +26,7 @@ import {
   isAdditionChange,
   isRemovalChange,
   isModificationChange,
+  isObjectType,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
@@ -38,7 +39,7 @@ const { isDefined } = values
 const { awu } = collections.asynciterable
 
 const log = logger(module)
-export const CHANGED_BY_INDEX_VERSION = 1
+export const CHANGED_BY_INDEX_VERSION = 2
 const CHANGED_BY_INDEX_KEY = 'changed_by_index'
 const UNKNOWN_USER_NAME = 'Unknown'
 const CHANGED_BY_KEY_DELIMITER = '@@'
@@ -78,35 +79,49 @@ const getAllElementsChanges = async (
     .concat(currentChanges)
     .toArray()
 
-const getChangeAuthor = (change: Change<Element>): string => {
+const getChangeAuthors = (change: Change<Element>): string[] => {
   const element = getChangeData(change)
-  if (element.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
-    return `${element.elemID.adapter}${CHANGED_BY_KEY_DELIMITER}${
-      element.annotations[CORE_ANNOTATIONS.CHANGED_BY]
-    }`
+  const authors = []
+  if (isObjectType(element)) {
+    Object.values(element.fields).forEach(field => {
+      if (field.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
+        authors.push(`${element.elemID.adapter}${CHANGED_BY_KEY_DELIMITER}${
+          field.annotations[CORE_ANNOTATIONS.CHANGED_BY]
+        }`)
+      }
+    })
   }
-  return UNKNOWN_USER_NAME
+  if (element.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
+    authors.push(`${element.elemID.adapter}${CHANGED_BY_KEY_DELIMITER}${
+      element.annotations[CORE_ANNOTATIONS.CHANGED_BY]
+    }`)
+  }
+  return authors.length > 0 ? authors : [UNKNOWN_USER_NAME]
 }
 
 const updateAdditionChange = (
   change: AdditionChange<Element>,
   authorMap: Record<string, Set<string>>,
 ): void => {
-  const author = getChangeAuthor(change)
-  if (!authorMap[author]) {
-    authorMap[author] = new Set()
-  }
-  authorMap[author].add(change.data.after.elemID.getFullName())
+  const authors = getChangeAuthors(change)
+  authors.forEach(author => {
+    if (!authorMap[author]) {
+      authorMap[author] = new Set()
+    }
+    authorMap[author].add(change.data.after.elemID.getFullName())
+  })
 }
 
 const updateRemovalChange = (
   change: RemovalChange<Element>,
   authorMap: Record<string, Set<string>>,
 ): void => {
-  const author = getChangeAuthor(change)
-  if (authorMap[author]) {
-    authorMap[author].delete(change.data.before.elemID.getFullName())
-  }
+  const authors = getChangeAuthors(change)
+  authors.forEach(author => {
+    if (authorMap[author]) {
+      authorMap[author].delete(change.data.before.elemID.getFullName())
+    }
+  })
 }
 
 const updateModificationChange = (
@@ -145,11 +160,11 @@ const getUniqueAuthors = (changes: Change<Element>[]): Set<string> => {
     if (isModificationChange(change)) {
       if (change.data.after.annotations[CORE_ANNOTATIONS.CHANGED_BY]
           !== change.data.before.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
-        authorSet.add(getChangeAuthor(toChange({ before: change.data.before })))
-        authorSet.add(getChangeAuthor(toChange({ after: change.data.after })))
+        getChangeAuthors(toChange({ before: change.data.before })).forEach(authorSet.add)
+        getChangeAuthors(toChange({ after: change.data.after })).forEach(authorSet.add)
       }
     } else {
-      authorSet.add(getChangeAuthor(change))
+      getChangeAuthors(change).forEach(authorSet.add)
     }
   })
   return authorSet

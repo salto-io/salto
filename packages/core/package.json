@@ -32,6 +32,7 @@
     "generate": "./generate.sh"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.38.0",
     "@salto-io/adapter-api": "0.3.18",
     "@salto-io/adapter-components": "0.3.18",
     "@salto-io/adapter-utils": "0.3.18",
@@ -51,7 +52,9 @@
     "@salto-io/zuora-billing-adapter": "0.3.18",
     "async-lock": "^1.2.4",
     "axios": "^0.21.3",
+    "bottleneck": "^2.19.5",
     "fs-extra": "^9.1.0",
+    "get-stream": "^6.0.1",
     "glob": "^7.1.6",
     "levelup": "^4.4.0",
     "lodash": "^4.17.21",

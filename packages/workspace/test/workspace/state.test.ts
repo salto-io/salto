@@ -13,12 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, StaticFile } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { StateData, buildInMemState } from '../../src/workspace/state'
+import { mockFunction, MockInterface } from '@salto-io/test-utils'
+import { serialize } from '../../src/serializer'
+import { StateData, buildInMemState, buildStateData } from '../../src/workspace/state'
 import { PathIndex, getElementsPathHints } from '../../src/workspace/path_index'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
-import { InMemoryRemoteMap } from '../../src/workspace/remote_map'
+import { InMemoryRemoteMap, RemoteMapCreator } from '../../src/workspace/remote_map'
+import { StaticFilesSource } from '../../src/workspace/static_files/common'
+import { mockStaticFilesSource } from '../utils'
 
 const { awu } = collections.asynciterable
 
@@ -29,16 +33,81 @@ describe('state', () => {
   let pathIndex: PathIndex
   const updateDate = new Date()
   const accountsUpdateDate = { [adapter]: updateDate }
-  const loadStateData = async (): Promise<StateData> => ({
-    elements: createInMemoryElementSource([elem]),
-    accountsUpdateDate: new InMemoryRemoteMap([{ key: adapter, value: updateDate }]),
-    pathIndex,
-    saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),
-  })
+
+  let loadStateData: () => Promise<StateData>
+  let stateStaticFilesSource: MockInterface<StaticFilesSource>
+
+  let newElemID: ElemID
+  let staticFile: StaticFile
+  let newElem: ObjectType
 
   beforeAll(async () => {
     pathIndex = new InMemoryRemoteMap(getElementsPathHints([elem]))
   })
+
+  beforeEach(() => {
+    stateStaticFilesSource = mockStaticFilesSource() as MockInterface<StaticFilesSource>
+    loadStateData = async () => ({
+      elements: createInMemoryElementSource([elem]),
+      accountsUpdateDate: new InMemoryRemoteMap([{ key: adapter, value: updateDate }]),
+      pathIndex,
+      saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),
+      staticFilesSource: stateStaticFilesSource,
+    })
+
+    newElemID = new ElemID('dummy', 'newElem')
+    staticFile = new StaticFile({
+      filepath: 'path',
+      content: Buffer.from('content'),
+      encoding: 'utf8',
+    })
+    newElem = new ObjectType({
+      elemID: newElemID,
+      path: ['test', 'newOne'],
+      annotations: {
+        staticFile,
+      },
+    })
+  })
+
+  describe('buildStateData', () => {
+    it('should call staticFilesSource get when deserializing elements', async () => {
+      const remoteMapCreator = mockFunction<RemoteMapCreator>()
+      await buildStateData(
+        'env',
+        remoteMapCreator,
+        stateStaticFilesSource,
+        false,
+      )
+
+      const elementsDeserialize = remoteMapCreator.mock.calls
+        .find(call => call[0].namespace === 'state-env-elements')?.[0].deserialize
+
+      expect(elementsDeserialize).toBeDefined()
+
+      await elementsDeserialize?.(await serialize([newElem]))
+      expect(stateStaticFilesSource.getStaticFile).toHaveBeenCalledWith(staticFile.filepath, 'utf8', staticFile.hash)
+    })
+
+    it('should call staticFilesSource get when serializing elements', async () => {
+      const remoteMapCreator = mockFunction<RemoteMapCreator>()
+      await buildStateData(
+        'env',
+        remoteMapCreator,
+        stateStaticFilesSource,
+        false,
+      )
+
+      const elementsSerialize = remoteMapCreator.mock.calls
+        .find(call => call[0].namespace === 'state-env-elements')?.[0].serialize
+
+      expect(elementsSerialize).toBeDefined()
+
+      await elementsSerialize?.(newElem)
+      expect(stateStaticFilesSource.persistStaticFile).toHaveBeenCalledWith(staticFile)
+    })
+  })
+
   describe('build in-mem state', () => {
     let state: ReturnType<typeof buildInMemState>
     beforeEach(() => {
@@ -57,25 +126,25 @@ describe('state', () => {
       expect(await state.get(elemID)).toEqual(elem)
     })
     it('set', async () => {
-      const newElemID = new ElemID('dummy', 'newElem')
-      const newElem = new ObjectType({ elemID: newElemID, path: ['test', 'newOne'] })
       await state.set(newElem)
       expect(await state.get(newElemID)).toEqual(newElem)
     })
     it('remove', async () => {
-      const newElemID = new ElemID('dummy', 'toRemove')
-      const newElem = new ObjectType({ elemID: newElemID, path: ['test', 'toRemove'] })
       await state.set(newElem)
       await state.remove(newElemID)
       expect(await state.get(newElemID)).toBe(undefined)
+      expect(stateStaticFilesSource.delete).toHaveBeenCalledWith(staticFile)
+    })
+
+    it('setAll', async () => {
+      await state.setAll(awu([newElem]))
+      expect(await state.get(newElemID)).toEqual(newElem)
     })
     it('override', async () => {
-      const newAdapter = 'dummy'
-      const newElemID = new ElemID(newAdapter, 'newElem')
-      const newElem = new ObjectType({ elemID: newElemID, path: ['test', 'newElem'] })
-      await state.override(awu([newElem]), [newAdapter])
+      await state.override(awu([newElem]), ['dummy'])
       expect(await awu(await state.getAll()).toArray()).toEqual([newElem])
-      expect(Object.keys(await state.getAccountsUpdateDates())).toEqual([newAdapter, adapter])
+      expect(Object.keys(await state.getAccountsUpdateDates())).toEqual(['dummy', adapter])
+      expect(stateStaticFilesSource.clear).toHaveBeenCalled()
     })
     it('getAccountsUpdateDates', async () => {
       expect(await state.getAccountsUpdateDates()).toEqual(accountsUpdateDate)
@@ -87,8 +156,6 @@ describe('state', () => {
       expect(await state.getPathIndex()).toEqual(pathIndex)
     })
     it('overridePathIndex', async () => {
-      const newElemID = new ElemID('dummy', 'newElem')
-      const newElem = new ObjectType({ elemID: newElemID, path: ['test', 'newElem'] })
       const elements = [elem, newElem]
       await state.overridePathIndex(elements)
       const index = await awu((await state.getPathIndex()).entries()).toArray()
@@ -96,8 +163,6 @@ describe('state', () => {
     })
 
     it('updatePathIndex', async () => {
-      const newElemID = new ElemID('dummy', 'newElem')
-      const newElem = new ObjectType({ elemID: newElemID, path: ['test', 'newElem'] })
       const elements = [elem, newElem]
       await state.overridePathIndex(elements)
       const oneElement = [newElem]
@@ -111,10 +176,12 @@ describe('state', () => {
       expect(await awu(await state.getAll()).toArray()).toHaveLength(0)
       expect((await awu((await state.getPathIndex()).keys()).toArray()).length).toEqual(0)
       expect(await state.getAccountsUpdateDates()).toEqual({})
+      expect(stateStaticFilesSource.clear).toHaveBeenCalled()
     })
 
     it('flush should do nothing', async () => {
       await expect(state.flush()).resolves.not.toThrow()
+      expect(stateStaticFilesSource.flush).toHaveBeenCalled()
     })
 
     it('rename should do nothing', async () => {

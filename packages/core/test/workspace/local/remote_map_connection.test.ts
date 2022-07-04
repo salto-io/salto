@@ -46,7 +46,7 @@ describe('connection creation', () => {
       createRemoteMapCreator(DB_LOCATION)({
         namespace,
         batchInterval: 1000,
-        serialize: str => str,
+        serialize: async str => str,
         deserialize: async str => Promise.resolve(str),
         persistent,
       })
@@ -105,7 +105,7 @@ describe('connection creation', () => {
         createRemoteMapCreator(location)({
           namespace: 'namespace',
           batchInterval: 1000,
-          serialize: str => str,
+          serialize: async str => str,
           deserialize: async str => Promise.resolve(str),
           persistent: true,
         })

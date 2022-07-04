@@ -325,6 +325,7 @@ describe('deploy command', () => {
         pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
         accountsUpdateDate: dateMap ?? new InMemoryRemoteMap(),
         saltoMetadata,
+        staticFilesSource: mocks.mockStateStaticFilesSource(),
       }))
     }
     const inputOptions = {

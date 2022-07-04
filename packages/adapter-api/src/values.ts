@@ -50,7 +50,7 @@ export class StaticFile {
   public readonly filepath: string
   public readonly hash: string
   public readonly encoding: BufferEncoding
-  protected internalContent?: Buffer
+  private internalContent?: Buffer
   constructor(params: StaticFileParameters) {
     this.filepath = params.filepath
     this.encoding = params.encoding ?? DEFAULT_STATIC_FILE_ENCODING

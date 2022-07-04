@@ -280,6 +280,8 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
     ),
     getFullPath: filename => getAbsFileName(filename),
     isPathIncluded,
+    exists: async (filename: string): Promise<boolean> =>
+      fileUtils.exists(getAbsFileName(filename)),
   }
 }
 

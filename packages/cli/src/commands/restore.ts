@@ -18,7 +18,8 @@ import { Workspace, nacl, createElementSelectors } from '@salto-io/workspace'
 import { EOL } from 'os'
 import { logger } from '@salto-io/logging'
 import { CommandConfig, LocalChange, restore } from '@salto-io/core'
-import { getChangeData, isStaticFile, isAdditionChange } from '@salto-io/adapter-api'
+import { getChangeData, isRemovalChange } from '@salto-io/adapter-api'
+import { collections, promises, values } from '@salto-io/lowerdash'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
 import { header, formatDetailedChanges, formatInvalidFilters, formatStepStart, formatRestoreFinish, formatStepCompleted, formatStepFailed, formatStateRecencies, formatAppliedChanges, formatShowWarning, formatListRecord, formatCancelCommand } from '../formatter'
@@ -29,7 +30,11 @@ import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_build
 import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts } from './common/accounts'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
 
+const { awu } = collections.asynciterable
+
 const log = logger(module)
+
+const GETTING_CONTENT_CONCURRENCY_LIMIT = 100
 
 const printRestorePlan = async (
   changes: LocalChange[],
@@ -86,15 +91,27 @@ const applyLocalChangesToWorkspace = async (
   cliTelemetry.changesToApply(changesToApply.length)
   log.debug(`Applying ${changesToApply.length} semantic changes to the local workspace`)
 
-  // Addition of static file is irrelevant because Salto doesn't save a copy of static files,
-  // so restoring added files (=deletion) will work
-  const nonRestorableChanges = changes.filter(change =>
-    (isStaticFile(getChangeData(change.change)) && !isAdditionChange(change.change)))
-  if (!_.isEmpty(nonRestorableChanges)) {
+  // In some cases, Salto won't have the state copy of the static file.
+  // So we need to check whether a static file change is restorable
+  const changedStaticFiles = await awu(changesToApply)
+    // To remove a static file from the workspace, we don't need
+    // its state copy so we can ignore here removal changes
+    .filter(change => !isRemovalChange(change.change))
+    .flatMap(change => getChangeData(change.change))
+    .flatMap(nacl.getNestedStaticFiles)
+    .toArray()
+
+  const nonRestorableFiles = (await promises.array.withLimitedConcurrency(
+    changedStaticFiles
+      .map(file => async () => (await file.getContent() === undefined ? file : undefined)),
+    GETTING_CONTENT_CONCURRENCY_LIMIT,
+  )).filter(values.isDefined)
+
+  if (!_.isEmpty(nonRestorableFiles)) {
     outputLine(EOL, output)
     outputLine(formatShowWarning(Prompts.STATIC_RESOURCES_NOT_SUPPORTED), output)
-    nonRestorableChanges.forEach(change => {
-      outputLine(formatListRecord(getChangeData(change.change).filepath), output)
+    nonRestorableFiles.forEach(file => {
+      outputLine(formatListRecord(file.filepath), output)
     })
   }
 
@@ -202,8 +219,7 @@ export const action: WorkspaceCommandAction<RestoreArgs> = async ({
 const restoreDef = createWorkspaceCommand({
   properties: {
     name: 'restore',
-    description: `Update the workspace configuration elements from the state file
-Static resources are not supported for this operation as their content is not kept in the state file`,
+    description: 'Update the workspace configuration elements from the state file',
     positionalOptions: [
       {
         name: 'elementSelectors',

@@ -377,7 +377,7 @@ export const loadWorkspace = async (
           }),
           changedAt: await remoteMapCreator<ElemID[]>({
             namespace: getRemoteMapNamespace('changedAt', envName),
-            serialize: val => safeJsonStringify(val.map(id => id.getFullName())),
+            serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
             deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
             persistent,
           }),

@@ -711,6 +711,34 @@ describe('Test utils.ts', () => {
           .toContain(mockInstance.elemID.createNestedID('obj', '0', 'mapOfStringList', 'l1', '0').getFullName())
       })
     })
+
+    describe('when called with array', () => {
+      beforeEach(async () => {
+        const result = await transformValues({
+          values: [{ key: 1 }, { key: 2 }, { key: 3 }],
+          type: new ListType(
+            new ObjectType({
+              elemID: mockElem,
+              fields: { key: { refType: BuiltinTypes.NUMBER } },
+            })
+          ),
+          transformFunc: ({ value, path }) => (
+            _.isPlainObject(value) || _.isArray(value) ? value : `${path?.getFullName()}:${value}`
+          ),
+          pathID: mockElem.createNestedID('instance', 'list'),
+          strict: true,
+        })
+        expect(result).toBeDefined()
+        resp = result as Values
+      })
+      it('should return array with transformed values', () => {
+        expect(resp).toEqual([
+          { key: 'mockAdapter.test.instance.list.0.key:1' },
+          { key: 'mockAdapter.test.instance.list.1.key:2' },
+          { key: 'mockAdapter.test.instance.list.2.key:3' },
+        ])
+      })
+    })
   })
 
   describe('transformElement', () => {

@@ -181,7 +181,7 @@ export const wrapNestedValues = (
 }
 
 const getPathFromDetailedAddition = (addition: DetailedAddition): string[] => (
-  addition.pathIndex.get(addition.id.getFullName()) ?? []
+  addition.pathIndex?.get(addition.id.getFullName()) ?? []
 )
 
 export const wrapAdditions = (

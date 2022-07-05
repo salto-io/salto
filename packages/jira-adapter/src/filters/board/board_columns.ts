@@ -32,20 +32,6 @@ export const COLUMNS_CONFIG_FIELD = 'columnConfig'
 
 const log = logger(module)
 
-type UpdateColumnsResponse = {
-  mappedColumns: {
-    name: string
-  }[]
-}
-
-const UPDATE_COLUMNS_RESPONSE_SCHEME = Joi.object({
-  mappedColumns: Joi.array().items(Joi.object({
-    name: Joi.string().required(),
-  }).unknown(true)).required(),
-}).unknown(true).required()
-
-const isUpdateColumnsResponse = createSchemeGuard<UpdateColumnsResponse>(UPDATE_COLUMNS_RESPONSE_SCHEME, 'Received an invalid columns update response')
-
 type BoardConfigResponse = {
   [COLUMNS_CONFIG_FIELD]: {
     columns: {
@@ -64,6 +50,17 @@ const BOARD_CONFIG_RESPONSE_SCHEME = Joi.object({
 
 const isBoardConfigResponse = createSchemeGuard<BoardConfigResponse>(BOARD_CONFIG_RESPONSE_SCHEME, 'Received an invalid board config response')
 
+const getColumnsName = async (id: string, client: JiraClient): Promise<string[] | undefined> => {
+  const response = await client.getSinglePage({
+    url: `/rest/agile/1.0/board/${id}/configuration`,
+  })
+
+  if (!isBoardConfigResponse(response.data)) {
+    return undefined
+  }
+
+  return response.data[COLUMNS_CONFIG_FIELD].columns.map(({ name }) => name)
+}
 
 const convertColumn = (column: Values): Values => ({
   name: column.name,
@@ -89,7 +86,7 @@ export const deployColumns = async (
 
   const instance = getChangeData(resolvedChange)
 
-  const response = await client.putPrivate({
+  await client.putPrivate({
     url: '/rest/greenhopper/1.0/rapidviewconfig/columns',
     data: {
       currentStatisticsField: {
@@ -102,21 +99,17 @@ export const deployColumns = async (
     },
   })
 
-  if (!isUpdateColumnsResponse(response.data)) {
-    throw new Error(`Received an invalid response from Jira when updating the columns of ${instance.elemID.getFullName()}`)
-  }
-
   const columnsToUpdate = instance.value[COLUMNS_CONFIG_FIELD].columns
     .map(({ name }: Values) => name)
 
-  const updatedColumns = response.data.mappedColumns.map(({ name }) => name)
+  const updatedColumns = await getColumnsName(instance.value.id, client)
   if (instance.value.type === KANBAN_TYPE) {
-    log.info(`Columns of ${getChangeData(change).elemID.getFullName()} are ${updatedColumns.join(', ')}, and the columnsToUpdate are ${columnsToUpdate.join(', ')}`)
+    log.info(`Columns of ${getChangeData(change).elemID.getFullName()} are ${updatedColumns?.join(', ')}, and the columnsToUpdate are ${columnsToUpdate.join(', ')}`)
     // In Kanban boards, the first column is always backlog, which is non-editable.
-    updatedColumns.shift()
+    updatedColumns?.shift()
   }
 
-  if (!_.isEqual(columnsToUpdate, updatedColumns)) {
+  if (updatedColumns !== undefined && !_.isEqual(columnsToUpdate, updatedColumns)) {
     log.warn(`Failed to update columns of ${instance.elemID.getFullName()} - ${updatedColumns.join(', ')}, retries left - ${retriesLeft}`)
     if (retriesLeft > 0) {
       await deployColumns(change, client, retriesLeft - 1)
@@ -125,7 +118,6 @@ export const deployColumns = async (
     }
   }
 }
-
 
 const removeRedundantColumns = async (
   instance: InstanceElement,
@@ -148,15 +140,13 @@ const removeRedundantColumns = async (
   }
 
   log.info(`${instance.elemID.getFullName()} has two backlog columns`)
-  const response = await client.getSinglePage({
-    url: `/rest/agile/1.0/board/${instance.value.id}/configuration`,
-  })
+  const columnsName = await getColumnsName(instance.value.id, client)
 
-  if (!isBoardConfigResponse(response.data)) {
+  if (columnsName === undefined) {
     return
   }
 
-  if (response.data[COLUMNS_CONFIG_FIELD].columns[1]?.name !== 'Backlog') {
+  if (columnsName[1] !== 'Backlog') {
     log.info(`${instance.elemID.getFullName()} removing second backlog column`)
     instance.value[COLUMNS_CONFIG_FIELD].columns.shift()
   } else {

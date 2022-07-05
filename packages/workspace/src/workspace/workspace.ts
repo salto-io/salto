@@ -252,6 +252,7 @@ export type Workspace = {
     env?: string
   }): Promise<StaticFile | undefined>
   getChangedElementsBetween(dateRange: DateRange, envName?: string): Promise<ElemID[]>
+  getStaticFilesByElementIds(elementIds: ElemID[], envName?: string): Promise<string[]>
 }
 
 type SingleState = {
@@ -964,6 +965,18 @@ export const loadWorkspace = async (
     const result = await workspace.states[env].changedAt.getMany(relevantTimestamps)
     return result.filter(values.isDefined).flat()
   }
+
+  const getStaticFilesByElementIds = async (
+    elementIds: ElemID[],
+    envName?: string,
+  ): Promise<string[]> => {
+    const env = envName ?? currentEnv()
+    const workspace = await getWorkspaceState()
+    const result = await workspace.states[env].staticFiles.getMany(
+      elementIds.map(elemId => elemId.getFullName())
+    )
+    return result.filter(values.isDefined).flat()
+  }
   return {
     uid: workspaceConfig.uid,
     name: workspaceConfig.name,
@@ -1359,6 +1372,7 @@ export const loadWorkspace = async (
     getStaticFile: async ({ filepath, encoding, env }) =>
       (naclFilesSource.getStaticFile(filepath, encoding, env ?? currentEnv())),
     getChangedElementsBetween,
+    getStaticFilesByElementIds,
   }
 }
 

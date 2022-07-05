@@ -52,9 +52,8 @@ const getLogoContent = async (
   client: ZendeskClient,
   brand: InstanceElement,
 ): Promise<Buffer | undefined> => {
-  const res = await client.getSinglePage({
-    // TODO support other baseUrl options instead of using '../../'
-    url: `../../system/brands/${brand.value.logo.id}/${brand.value.logo.file_name}`,
+  const res = await client.getResource({
+    url: `/brands/${brand.value.logo.id}/${brand.value.logo.file_name}`,
     responseType: 'arraybuffer',
   })
   const content = _.isString(res.data) ? Buffer.from(res.data) : res.data

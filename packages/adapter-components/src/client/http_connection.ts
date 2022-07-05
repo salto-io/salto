@@ -48,7 +48,7 @@ export type APIConnection<T = any, S = any> = {
     => Promise<Response<T>>
 }
 
-type AuthenticatedAPIConnection = APIConnection & {
+export type AuthenticatedAPIConnection = APIConnection & {
   accountId: AccountId
 }
 

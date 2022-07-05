@@ -25,6 +25,8 @@ import ZendeskClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
 import { BRAND_LOGO_TYPE_NAME, BRAND_NAME, ZENDESK_SUPPORT } from '../../src/constants'
 
+jest.useFakeTimers()
+
 describe('brand logo filter', () => {
   let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'deploy' | 'onFetch'>
@@ -78,9 +80,9 @@ describe('brand logo filter', () => {
           },
         },
       )
-      mockGet = jest.spyOn(client, 'getSinglePage')
+      mockGet = jest.spyOn(client, 'getResource')
       mockGet.mockImplementation(params => {
-        if (params.url === `../../system/brands/${logoId}/brand1_logo.png`) {
+        if (params.url === `/brands/${logoId}/brand1_logo.png`) {
           return {
             status: 200,
             data: content,

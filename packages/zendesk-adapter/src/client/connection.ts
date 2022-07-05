@@ -13,9 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import axios from 'axios'
+import axiosRetry from 'axios-retry'
 import { AccountId } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { AuthParams } from '@salto-io/adapter-components/src/client/http_connection'
+import { AuthenticatedAPIConnection, AuthParams, RetryOptions } from '@salto-io/adapter-components/src/client/http_connection'
 import { logger } from '@salto-io/logging'
 import { Credentials, isOauthAccessTokenCredentials, OauthAccessTokenCredentials, UsernamePasswordCredentials } from '../auth'
 
@@ -23,6 +25,7 @@ const log = logger(module)
 
 export const instanceUrl = (subdomain: string): string => `https://${subdomain}.zendesk.com`
 const baseUrl = (subdomain: string): string => (new URL('/api/v2', instanceUrl(subdomain))).href
+const resourcesUrl = (subdomain: string): string => (new URL('/system', instanceUrl(subdomain))).href
 
 const MARKETPLACE_NAME = 'Salto'
 const MARKETPLACE_ORG_ID = 5110
@@ -67,7 +70,9 @@ const accessTokenAuthParamsFunc = (
   },
 })
 
-export const createConnection: clientUtils.ConnectionCreator<Credentials> = retryOptions => (
+export const createConnection: clientUtils.ConnectionCreator<Credentials> = (
+  retryOptions: RetryOptions,
+) => (
   clientUtils.axiosConnection({
     retryOptions,
     authParamsFunc: async (creds: Credentials) => (
@@ -79,3 +84,23 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = retr
     credValidateFunc: validateCredentials,
   })
 )
+
+export const createResourcesConnection:
+clientUtils.ConnectionCreator<Credentials> = retryOptions => {
+  const login = async (
+    creds: Credentials,
+  ): Promise<AuthenticatedAPIConnection> => {
+    resourcesUrl(creds.subdomain)
+    const httpClient = axios.create({
+      baseURL: resourcesUrl(creds.subdomain),
+    })
+    axiosRetry(httpClient, retryOptions)
+    return {
+      ...httpClient,
+      accountId: creds.subdomain,
+    }
+  }
+  return {
+    login,
+  }
+}

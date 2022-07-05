@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { updateChangedAtIndex, CHANGED_AT_INDEX_VERSION } from '../../src/workspace/changed_at_index'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
@@ -38,8 +38,17 @@ describe('changed at index', () => {
 
     object = new ObjectType({
       elemID: new ElemID('test', 'object'),
-      annotations: {},
-      fields: {},
+      annotations: {
+        [CORE_ANNOTATIONS.CHANGED_AT]: '2000-03-01T00:00:00.000Z',
+      },
+      fields: {
+        field: {
+          annotations: {
+            [CORE_ANNOTATIONS.CHANGED_AT]: '2000-02-01T00:00:00.000Z',
+          },
+          refType: BuiltinTypes.STRING,
+        },
+      },
     })
     knownUserInstance = new InstanceElement(
       'instance1',
@@ -66,11 +75,12 @@ describe('changed at index', () => {
   describe('mixed changes', () => {
     beforeEach(async () => {
       changedAtIndex.getMany.mockResolvedValue([[knownUserInstance.elemID],
-        [knownUserSecondInstance.elemID]])
+        [knownUserSecondInstance.elemID], undefined, undefined])
       const changes = [
         toChange({ after: knownUserInstance }),
         toChange({ before: knownUserSecondInstance, after: knownUserSecondInstance }),
         toChange({ before: unknownUserInstance }),
+        toChange({ after: object }),
       ]
       await updateChangedAtIndex(
         changes,
@@ -81,8 +91,11 @@ describe('changed at index', () => {
       )
     })
     it('should add the new instances changed by values to index', () => {
-      expect(changedAtIndex.getMany).toHaveBeenCalledWith(['2000-01-01T00:00:00.000Z', '2001-01-01T00:00:00.000Z'])
-      expect(changedAtIndex.setAll).toHaveBeenCalledWith([{ key: '2000-01-01T00:00:00.000Z', value: [knownUserInstance.elemID] }, { key: '2001-01-01T00:00:00.000Z', value: [knownUserSecondInstance.elemID] }])
+      expect(changedAtIndex.getMany).toHaveBeenCalledWith(['2000-01-01T00:00:00.000Z', '2001-01-01T00:00:00.000Z', '2000-02-01T00:00:00.000Z', '2000-03-01T00:00:00.000Z'])
+      expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-01-01T00:00:00.000Z', value: [knownUserInstance.elemID] }]))
+      expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2001-01-01T00:00:00.000Z', value: [knownUserSecondInstance.elemID] }]))
+      expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-02-01T00:00:00.000Z', value: [object.elemID] }]))
+      expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-03-01T00:00:00.000Z', value: [object.elemID] }]))
     })
   })
 
@@ -93,6 +106,7 @@ describe('changed at index', () => {
         toChange({ after: knownUserInstance }),
         toChange({ after: knownUserSecondInstance }),
         toChange({ after: unknownUserInstance }),
+        toChange({ after: object }),
       ]
       await updateChangedAtIndex(
         changes,
@@ -103,8 +117,11 @@ describe('changed at index', () => {
       )
     })
     it('should add the new instances changed by values to index', () => {
-      expect(changedAtIndex.getMany).toHaveBeenCalledWith(['2000-01-01T00:00:00.000Z', '2001-01-01T00:00:00.000Z'])
-      expect(changedAtIndex.setAll).toHaveBeenCalledWith([{ key: '2000-01-01T00:00:00.000Z', value: [knownUserInstance.elemID] }, { key: '2001-01-01T00:00:00.000Z', value: [knownUserSecondInstance.elemID] }])
+      expect(changedAtIndex.getMany).toHaveBeenCalledWith(['2000-01-01T00:00:00.000Z', '2001-01-01T00:00:00.000Z', '2000-02-01T00:00:00.000Z', '2000-03-01T00:00:00.000Z'])
+      expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-01-01T00:00:00.000Z', value: [knownUserInstance.elemID] }]))
+      expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2001-01-01T00:00:00.000Z', value: [knownUserSecondInstance.elemID] }]))
+      expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-02-01T00:00:00.000Z', value: [object.elemID] }]))
+      expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-03-01T00:00:00.000Z', value: [object.elemID] }]))
     })
   })
   describe('when elements were modified', () => {
@@ -198,7 +215,11 @@ describe('changed at index', () => {
       beforeEach(async () => {
         await updateChangedAtIndex(
           // all elements will be considered as new when cache is invalid
-          [toChange({ after: knownUserInstance }), toChange({ after: unknownUserInstance })],
+          [
+            toChange({ after: knownUserInstance }),
+            toChange({ after: unknownUserInstance }),
+            toChange({ after: object }),
+          ],
           changedAtIndex,
           mapVersions,
           elementsSource,
@@ -207,8 +228,10 @@ describe('changed at index', () => {
       })
       it('should update changed by index with all additions', () => {
         expect(changedAtIndex.clear).toHaveBeenCalled()
-        expect(changedAtIndex.getMany).toHaveBeenCalledWith(['2000-01-01T00:00:00.000Z'])
-        expect(changedAtIndex.setAll).toHaveBeenCalledWith([{ key: '2000-01-01T00:00:00.000Z', value: [knownUserInstance.elemID] }])
+        expect(changedAtIndex.getMany).toHaveBeenCalledWith(['2000-01-01T00:00:00.000Z', '2000-02-01T00:00:00.000Z', '2000-03-01T00:00:00.000Z'])
+        expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-01-01T00:00:00.000Z', value: [knownUserInstance.elemID] }]))
+        expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-02-01T00:00:00.000Z', value: [object.elemID] }]))
+        expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-03-01T00:00:00.000Z', value: [object.elemID] }]))
       })
     })
 
@@ -216,6 +239,7 @@ describe('changed at index', () => {
       beforeEach(async () => {
         await elementsSource.set(knownUserInstance)
         await elementsSource.set(unknownUserInstance)
+        await elementsSource.set(object)
         mapVersions.get.mockResolvedValue(0)
         await updateChangedAtIndex(
           [],
@@ -227,8 +251,10 @@ describe('changed at index', () => {
       })
       it('should update changed by index using the element source', () => {
         expect(changedAtIndex.clear).toHaveBeenCalled()
-        expect(changedAtIndex.getMany).toHaveBeenCalledWith(['2000-01-01T00:00:00.000Z'])
-        expect(changedAtIndex.setAll).toHaveBeenCalledWith([{ key: '2000-01-01T00:00:00.000Z', value: [knownUserInstance.elemID] }])
+        expect(changedAtIndex.getMany).toHaveBeenCalledWith(['2000-02-01T00:00:00.000Z', '2000-03-01T00:00:00.000Z', '2000-01-01T00:00:00.000Z'])
+        expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-01-01T00:00:00.000Z', value: [knownUserInstance.elemID] }]))
+        expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-02-01T00:00:00.000Z', value: [object.elemID] }]))
+        expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-03-01T00:00:00.000Z', value: [object.elemID] }]))
       })
     })
   })

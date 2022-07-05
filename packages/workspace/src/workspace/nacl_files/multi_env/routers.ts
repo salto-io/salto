@@ -74,7 +74,8 @@ const filterByFile = async (
       e,
       getMergeableParentID(id, fileElements).mergeableID
     ) !== undefined
-  ))
+  )),
+  true
 )
 
 const isEmptyAnnoAndAnnoTypes = (element: Element): boolean =>

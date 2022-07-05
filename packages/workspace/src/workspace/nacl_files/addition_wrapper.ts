@@ -16,8 +16,8 @@
 import { AdditionDiff } from '@salto-io/dag'
 import { collections } from '@salto-io/lowerdash'
 import {
-  Element, ElemID, ObjectType, InstanceElement, Value,
-  isObjectType, isInstanceElement, PrimitiveType, isField, FieldDefinition, Field,
+  Element, ElemID, ObjectType, InstanceElement, Value, isObjectType, isInstanceElement,
+  PrimitiveType, isField, FieldDefinition, Field,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 
@@ -98,7 +98,7 @@ const createObjectTypeFromNestedAdditions = (
     fields: {} as Record<string, FieldDefinition>,
     annotationRefsOrTypes: {},
     annotations: {},
-    pathIndex,
+    path: pathIndex,
     isSettings: commonObjectType.isSettings,
   }))
 
@@ -151,7 +151,7 @@ const createPrimitiveTypeFromNestedAdditions = (
   primitive: commonPrimitiveType.primitive,
   annotationRefTypes: {},
   annotations: {},
-  pathIndex,
+  path: pathIndex,
 }))
 
 export const wrapNestedValues = (
@@ -180,21 +180,28 @@ export const wrapNestedValues = (
   )
 }
 
+const getPathFromDetailedAddition = (addition: DetailedAddition): string[] => (
+  addition.pathIndex.get(addition.id.getFullName()) ?? []
+)
+
 export const wrapAdditions = (
   nestedAdditions: DetailedAddition[],
   commonElement: Element,
 ): DetailedAddition => {
-  const refAddition = nestedAdditions[0]
-  const refPath = nestedAdditions[0].pathIndex
+  const pathIndex = new collections.treeMap.TreeMap<string>([
+    [commonElement.elemID.getFullName(), getPathFromDetailedAddition(nestedAdditions[0])],
+    ...nestedAdditions.map(addition =>
+      [addition.id.getFullName(), getPathFromDetailedAddition(addition)] as [string, string[]]),
+  ])
   const wrapperElement = wrapNestedValues(
     nestedAdditions.map(addition => ({ ...addition, value: addition.data.after })),
     commonElement,
-    refPath
+    pathIndex
   )
   return {
     action: 'add',
     id: wrapperElement.elemID,
-    pathIndex: refAddition.pathIndex,
+    pathIndex,
     data: {
       after: wrapperElement as Element,
     },

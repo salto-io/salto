@@ -37,4 +37,5 @@ export type DirectoryStore<T extends ContentType> = {
   isEmpty(): Promise<boolean>
   getFullPath(filename: string): string
   isPathIncluded(filePath: string): boolean
+  exists: (filePath: string) => Promise<boolean>
 }

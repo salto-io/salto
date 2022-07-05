@@ -26,8 +26,7 @@ import { AdditionDiff } from '@salto-io/dag'
 import { AwuIterable } from '@salto-io/lowerdash/src/collections/asynciterable'
 import osPath from 'path'
 import { MergeError, mergeElements } from '../../merger'
-import { getChangeLocations, updateNaclFileData, getChangesToUpdate, DetailedChangeWithSource,
-  getNestedStaticFiles } from './nacl_file_update'
+import { getChangeLocations, updateNaclFileData, getChangesToUpdate, DetailedChangeWithSource, getNestedStaticFiles } from './nacl_file_update'
 import { parse, SourceRange, ParseResult, SourceMap } from '../../parser'
 import { ElementsSource, RemoteElementSource } from '../elements_source'
 import { DirectoryStore } from '../dir_store'
@@ -248,7 +247,7 @@ const createNaclFilesState = async (
 ): Promise<NaclFilesState> => ({
   elementsIndex: await remoteMapCreator<string[]>({
     namespace: getRemoteMapNamespace('elements_index', sourceName),
-    serialize: val => safeJsonStringify(val),
+    serialize: async val => safeJsonStringify(val),
     deserialize: data => JSON.parse(data),
     persistent,
   }),
@@ -260,7 +259,7 @@ const createNaclFilesState = async (
   }),
   mergedElements: new RemoteElementSource(await remoteMapCreator<Element>({
     namespace: getRemoteMapNamespace('merged', sourceName),
-    serialize: element => serialize([element], 'keepRef'),
+    serialize: async element => serialize([element], 'keepRef'),
     deserialize: async data => deserializeSingleElement(
       data,
       async sf => staticFilesSource.getStaticFile(sf.filepath, sf.encoding)
@@ -275,25 +274,25 @@ const createNaclFilesState = async (
   ),
   referencedIndex: await remoteMapCreator<string[]>({
     namespace: getRemoteMapNamespace('referenced_index', sourceName),
-    serialize: val => safeJsonStringify(val),
+    serialize: async val => safeJsonStringify(val),
     deserialize: data => JSON.parse(data),
     persistent,
   }),
   searchableNamesIndex: await remoteMapCreator<boolean>({
     namespace: getRemoteMapNamespace('searchableNamesIndex', sourceName),
-    serialize: val => (val === true ? '1' : '0'),
+    serialize: async val => (val === true ? '1' : '0'),
     deserialize: async data => data !== '0',
     persistent,
   }),
   staticFilesIndex: await remoteMapCreator<string[]>({
     namespace: getRemoteMapNamespace('static_files_index', sourceName),
-    serialize: val => safeJsonStringify(val),
+    serialize: async val => safeJsonStringify(val),
     deserialize: data => JSON.parse(data),
     persistent,
   }),
   metadata: await remoteMapCreator<string>({
     namespace: getRemoteMapNamespace('metadata', sourceName),
-    serialize: val => val,
+    serialize: async val => val,
     deserialize: async data => data,
     persistent,
   }),

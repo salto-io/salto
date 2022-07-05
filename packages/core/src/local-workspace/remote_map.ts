@@ -550,10 +550,10 @@ remoteMap.RemoteMapCreator => {
       elementsEntries: AsyncIterable<remoteMap.RemoteMapEntry<T, K>>,
       temp = true,
     ): Promise<void> => {
-      const batchInsertIterator = awu(elementsEntries).map(entry => {
+      const batchInsertIterator = awu(elementsEntries).map(async entry => {
         delKeys.delete(entry.key)
         locationCache.set(keyToTempDBKey(entry.key), entry.value)
-        return { key: entry.key, value: serialize(entry.value) }
+        return { key: entry.key, value: await serialize(entry.value) }
       })
       await batchUpdate(batchInsertIterator, temp)
     }
@@ -727,7 +727,7 @@ remoteMap.RemoteMapCreator => {
       set: async (key: string, element: T): Promise<void> => {
         delKeys.delete(key)
         locationCache.set(keyToTempDBKey(key), element)
-        await promisify(tmpDB.put.bind(tmpDB))(keyToTempDBKey(key), serialize(element))
+        await promisify(tmpDB.put.bind(tmpDB))(keyToTempDBKey(key), await serialize(element))
       },
       setAll: setAllImpl,
       deleteAll: async (iterator: AsyncIterable<K>) => awu(iterator).forEach(deleteImpl),

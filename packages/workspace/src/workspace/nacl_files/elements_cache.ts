@@ -183,7 +183,7 @@ export const createMergeManager = async (flushables: Flushable[],
   const hashes = await mapCreator<string>({
     namespace: fullNamespace,
     persistent,
-    serialize: s => s,
+    serialize: async s => s,
     deserialize: async s => s,
   })
   const getSourceHashKey = (prefix: string): string => `${prefix}_source_hash`

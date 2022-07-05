@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { types } from '@salto-io/lowerdash'
+import { collections, types } from '@salto-io/lowerdash'
 import {
   PrimitiveType, ElemID, Field, Element, ListType, MapType,
   ObjectType, InstanceElement, isType, isElement, isContainerType,
@@ -47,6 +47,8 @@ import {
   InvalidTypeValidationError,
   InvalidValueMaxListLengthValidationError,
 } from '../validator'
+
+const { awu } = collections.asynciterable
 
 // There are two issues with naive json stringification:
 //
@@ -137,10 +139,13 @@ function isSerializedClass(value: any): value is SerializedClass {
     && value[SALTO_CLASS_FIELD] in NameToType
 }
 
-export const serialize = <T = Element>(
+export const serialize = async <T = Element>(
   elements: T[],
-  referenceSerializerMode: 'replaceRefWithValue' | 'keepRef' = 'replaceRefWithValue'
-): string => {
+  referenceSerializerMode: 'replaceRefWithValue' | 'keepRef' = 'replaceRefWithValue',
+  storeStaticFile?: (file: StaticFile) => Promise<void>
+): Promise<string> => {
+  const promises: Promise<void>[] = []
+
   // eslint-disable-next-line @typescript-eslint/no-shadow
   const saltoClassReplacer = <T extends Serializable>(e: T): T & SerializedClass => {
     // Add property SALTO_CLASS_FIELD
@@ -149,9 +154,12 @@ export const serialize = <T = Element>(
       || nameToTypeEntries.find(([_name, type]) => e instanceof type)?.[0]
     return o
   }
-  const staticFileReplacer = (e: StaticFile): Omit<Omit<StaticFile & SerializedClass, 'internalContent'>, 'content'> => (
-    _.omit(saltoClassReplacer(e), 'content', 'internalContent')
-  )
+  const staticFileReplacer = (e: StaticFile): Omit<Omit<StaticFile & SerializedClass, 'internalContent'>, 'content'> => {
+    if (storeStaticFile !== undefined) {
+      promises.push(storeStaticFile(e))
+    }
+    return _.omit(saltoClassReplacer(e), 'content', 'internalContent')
+  }
   const referenceExpressionReplacer = (e: ReferenceExpression):
     ReferenceExpression & SerializedClass => {
     if (e.value === undefined || referenceSerializerMode === 'keepRef' || !isVariableExpression(e)) {
@@ -207,6 +215,10 @@ export const serialize = <T = Element>(
     return isSaltoSerializable(element) ? saltoClassReplacer(clone) : clone
   })
   const sortedElements = _.sortBy(cloneElements, e => e.elemID.getFullName())
+
+  // Avoiding Promise.all to not reach Promise.all limit
+  await awu(promises).forEach(promise => promise)
+
   // We don't use safeJsonStringify to save some time, because we know  we made sure there aren't
   // circles
   // eslint-disable-next-line no-restricted-syntax

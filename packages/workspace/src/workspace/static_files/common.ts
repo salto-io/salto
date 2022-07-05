@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { StaticFile, Value } from '@salto-io/adapter-api'
+import { DirectoryStore } from '../dir_store'
 
 export abstract class InvalidStaticFile {
   constructor(
@@ -26,7 +27,7 @@ export abstract class InvalidStaticFile {
 export type StaticFilesSource = {
   // Load is optional for backwards compatibility
   load?(): Promise<string[]>
-  getStaticFile: (filepath: string, encoding: BufferEncoding) =>
+  getStaticFile: (filepath: string, encoding: BufferEncoding, hash?: string) =>
     Promise<StaticFile | InvalidStaticFile>
   getContent: (filepath: string) => Promise<Buffer>
   persistStaticFile: (staticFile: StaticFile) => Promise<void>
@@ -66,3 +67,7 @@ export const isInvalidStaticFile = (
 ): val is InvalidStaticFile => (
   val instanceof InvalidStaticFile
 )
+
+export type StateStaticFilesSource = Pick<StaticFilesSource, 'getStaticFile' | 'persistStaticFile' | 'flush' | 'clear' | 'rename' | 'delete' >
+
+export type StateStaticFilesStore = Pick<DirectoryStore<Buffer>, 'get' | 'set' | 'list' | 'getFullPath' | 'flush'>

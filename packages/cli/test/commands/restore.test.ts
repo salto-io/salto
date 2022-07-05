@@ -15,6 +15,7 @@
 */
 import { restore } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
+import { DetailedChange, ElemID, ModificationChange, StaticFile, Values } from '@salto-io/adapter-api'
 import { getUserBooleanInput } from '../../src/callbacks'
 import { CliExitCode } from '../../src/types'
 import { action } from '../../src/commands/restore'
@@ -384,10 +385,10 @@ describe('restore command', () => {
     })
   })
   describe('restoring modified static files', () => {
-    it('should not print about addition changes of static files', async () => {
+    it('should not print about removal changes of static files', async () => {
       const workspace = mocks.mockWorkspace({})
       mockRestore.mockResolvedValueOnce([
-        { change: mocks.staticFileChange('add'), serviceChanges: [mocks.staticFileChange('add')] }])
+        { change: mocks.staticFileChange('remove'), serviceChanges: [mocks.staticFileChange('add')] }])
 
       const result = await action({
         ...cliCommandArgs,
@@ -406,7 +407,7 @@ describe('restore command', () => {
       expect(result).toBe(CliExitCode.Success)
     })
 
-    it('should warn of unrestoring modified static files', async () => {
+    it('should warn of unrestoring modified static files without content', async () => {
       const workspace = mocks.mockWorkspace({})
       mockRestore.mockResolvedValueOnce([
         { change: mocks.staticFileChange('modify'), serviceChanges: [mocks.staticFileChange('modify')] }])
@@ -428,10 +429,77 @@ describe('restore command', () => {
       expect(result).toBe(CliExitCode.Success)
     })
 
-    it('should warn of unrestoring removed static files', async () => {
+    it('should warn of inner unrestoring modified static files without content', async () => {
+      const workspace = mocks.mockWorkspace({})
+      const change: ModificationChange<Values> & DetailedChange = {
+        data: {
+          before: {
+            file: new StaticFile({
+              filepath: 'filepath',
+              hash: 'hash',
+            }),
+          },
+          after: {
+            file: new StaticFile({
+              filepath: 'filepath',
+              hash: 'hash2',
+            }),
+          },
+        },
+        action: 'modify',
+        id: new ElemID('adapter', 'type', 'instance', 'inst', 'value'),
+      }
+      mockRestore.mockResolvedValueOnce([
+        {
+          change,
+          serviceChanges: [change],
+        },
+      ])
+
+      const result = await action({
+        ...cliCommandArgs,
+        input: {
+          force: false,
+          dryRun: false,
+          detailedPlan: false,
+          listPlannedChanges: false,
+          mode: 'default',
+          accounts,
+        },
+        workspace,
+      })
+
+      expect(output.stdout.content).toContain('filepath')
+      expect(result).toBe(CliExitCode.Success)
+    })
+
+    it('should not warn about modified static files with content', async () => {
       const workspace = mocks.mockWorkspace({})
       mockRestore.mockResolvedValueOnce([
-        { change: mocks.staticFileChange('remove'), serviceChanges: [mocks.staticFileChange('remove')] }])
+        { change: mocks.staticFileChange('modify', true), serviceChanges: [mocks.staticFileChange('modify', true)] }])
+
+      const result = await action({
+        ...cliCommandArgs,
+        input: {
+          force: false,
+          dryRun: false,
+          detailedPlan: false,
+          listPlannedChanges: false,
+          mode: 'default',
+          accounts,
+        },
+        workspace,
+      })
+
+      expect(output.stdout.content).not.toContain('Static resources are not supported')
+      expect(result).toBe(CliExitCode.Success)
+    })
+
+
+    it('should warn of unrestoring added static files', async () => {
+      const workspace = mocks.mockWorkspace({})
+      mockRestore.mockResolvedValueOnce([
+        { change: mocks.staticFileChange('add'), serviceChanges: [mocks.staticFileChange('remove')] }])
 
       const result = await action({
         ...cliCommandArgs,
@@ -447,6 +515,28 @@ describe('restore command', () => {
       })
 
       expect(output.stdout.content).toContain('salesforce/advancedpdftemplate/custtmpl_103_t2257860_156.xml')
+      expect(result).toBe(CliExitCode.Success)
+    })
+
+    it('should not warn of added static files with content', async () => {
+      const workspace = mocks.mockWorkspace({})
+      mockRestore.mockResolvedValueOnce([
+        { change: mocks.staticFileChange('add', true), serviceChanges: [mocks.staticFileChange('remove', true)] }])
+
+      const result = await action({
+        ...cliCommandArgs,
+        input: {
+          force: false,
+          dryRun: false,
+          detailedPlan: false,
+          listPlannedChanges: false,
+          mode: 'default',
+          accounts,
+        },
+        workspace,
+      })
+
+      expect(output.stdout.content).not.toContain('Static resources are not supported')
       expect(result).toBe(CliExitCode.Success)
     })
   })

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, getChangeData, Element, toChange } from '@salto-io/adapter-api'
+import { Change, getChangeData, Element, toChange, isAdditionOrModificationChange, isRemovalChange } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -24,7 +24,7 @@ import { LazyStaticFile } from './static_files'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
-export const STATIC_FILES_INDEX_VERSION = 1
+export const STATIC_FILES_INDEX_VERSION = 2
 const STATIC_FILES_INDEX_KEY = 'static_files_index'
 
 const getAllElementsChanges = async (
@@ -56,6 +56,7 @@ const updateChanges = async (
 ): Promise<void> => {
   const staticFilesMap = Object.fromEntries(
     changes
+      .filter(isAdditionOrModificationChange)
       .map(getChangeData)
       .map(element => [element.elemID.getFullName(), getStaticFilesPaths(element)])
   )
@@ -63,9 +64,13 @@ const updateChanges = async (
     Object.keys(staticFilesMap),
     key => isEmpty(staticFilesMap[key]),
   )
+  const removedElementIds = changes
+    .filter(isRemovalChange)
+    .map(getChangeData)
+    .map(element => element.elemID.getFullName())
   await index.setAll(toBeSet
     .map(key => ({ key, value: Array.from(staticFilesMap[key]) })))
-  await index.deleteAll(toBeRemoved)
+  await index.deleteAll([...toBeRemoved, ...removedElementIds])
 }
 
 export const updateStaticFilesIndex = async (

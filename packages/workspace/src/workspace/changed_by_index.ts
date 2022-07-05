@@ -160,11 +160,13 @@ const getUniqueAuthors = (changes: Change<Element>[]): Set<string> => {
     if (isModificationChange(change)) {
       if (change.data.after.annotations[CORE_ANNOTATIONS.CHANGED_BY]
           !== change.data.before.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
-        getChangeAuthors(toChange({ before: change.data.before })).forEach(authorSet.add)
-        getChangeAuthors(toChange({ after: change.data.after })).forEach(authorSet.add)
+        getChangeAuthors(toChange({ before: change.data.before }))
+          .forEach(author => authorSet.add(author))
+        getChangeAuthors(toChange({ after: change.data.after }))
+          .forEach(author => authorSet.add(author))
       }
     } else {
-      getChangeAuthors(change).forEach(authorSet.add)
+      getChangeAuthors(change).forEach(author => authorSet.add(author))
     }
   })
   return authorSet

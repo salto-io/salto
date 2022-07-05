@@ -53,16 +53,16 @@ const getAllElementsChanges = async (
 
 const getChangedAtDates = (change: Change<Element>): string[] => {
   const element = getChangeData(change)
-  const authors = []
+  const dates = []
   if (isObjectType(element)) {
-    authors.push(...Object.values(element.fields)
+    dates.push(...Object.values(element.fields)
       .map(field => field.annotations[CORE_ANNOTATIONS.CHANGED_AT])
       .filter(isDefined))
   }
   if (element.annotations[CORE_ANNOTATIONS.CHANGED_AT]) {
-    authors.push(element.annotations[CORE_ANNOTATIONS.CHANGED_AT])
+    dates.push(element.annotations[CORE_ANNOTATIONS.CHANGED_AT])
   }
-  return authors
+  return dates
 }
 
 const updateAdditionChange = (

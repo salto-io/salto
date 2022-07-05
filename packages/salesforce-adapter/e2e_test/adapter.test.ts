@@ -43,6 +43,7 @@ import {
   Types, metadataType, apiName, formulaTypeName, MetadataInstanceElement, MetadataObjectType,
   createInstanceElement,
   assertMetadataObjectType,
+  isCustom,
 } from '../src/transformers/transformer'
 import realAdapter from './adapter'
 import { findElements, findFullCustomObject } from '../test/utils'
@@ -1441,14 +1442,16 @@ describe('Salesforce adapter E2E with real account', () => {
       describe('add', () => {
         const testAddFieldPrefix = 'TestAdd'
         const mockElemID = new ElemID(constants.SALESFORCE, 'test add object with field types')
-        let customObject: ObjectType
         let post: ObjectType
         let objectInfo: CustomObject
 
         beforeAll(async () => {
-          customObject = findElement(
+          const customObject = (findElement(
             result, new ElemID(constants.SALESFORCE, customObjectWithFieldsName)
-          ) as ObjectType
+          ) as ObjectType).clone()
+          customObject.fields = _.pickBy(customObject.fields, (_value, key) => isCustom(key))
+          customObject.annotations = {}
+          customObject.annotationRefTypes = {}
           const newCustomObject = new ObjectType({
             elemID: mockElemID,
             fields: _(customObject.fields)
@@ -1472,11 +1475,9 @@ describe('Salesforce adapter E2E with real account', () => {
               })
               .value(),
             annotations: {
-              ...customObject.annotations,
               [constants.API_NAME]: customObjectAddFieldsName,
               [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
             },
-            annotationRefsOrTypes: { ...customObject.annotationRefTypes },
           })
 
           // Resolve reference expression before deploy

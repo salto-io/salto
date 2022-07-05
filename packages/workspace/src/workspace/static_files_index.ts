@@ -37,17 +37,17 @@ const getAllElementsChanges = async (
     .toArray()
 
 const getStaticFilesPaths = (element: Element): string[] => {
-  const staticFilesPaths: string[] = []
+  const staticFilesPaths = new Set<string>()
   walkOnElement({
     element,
     func: ({ value }) => {
       if (value instanceof LazyStaticFile) {
-        staticFilesPaths.push(value.filepath)
+        staticFilesPaths.add(value.filepath)
       }
       return WALK_NEXT_STEP.RECURSE
     },
   })
-  return staticFilesPaths
+  return Array.from(staticFilesPaths)
 }
 
 const updateChanges = async (

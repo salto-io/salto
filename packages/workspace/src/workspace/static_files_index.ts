@@ -68,7 +68,7 @@ const updateChanges = async (
   await index.deleteAll(toBeRemoved)
 }
 
-export const updateReferenceIndexes = async (
+export const updateStaticFilesIndex = async (
   changes: Change<Element>[],
   staticFilesIndex: RemoteMap<string[]>,
   mapVersions: RemoteMap<number>,

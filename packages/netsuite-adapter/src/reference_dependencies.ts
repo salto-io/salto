@@ -62,7 +62,7 @@ export const findDependingInstancesFromRefs = async (
   await transformElement({
     element: instance,
     transformFunc: createDependingElementsCallback,
-    strict: true,
+    strict: false,
   })
   return wu(visitedIdToInstance.values()).toArray()
 }

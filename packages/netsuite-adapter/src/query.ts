@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { regex, strings } from '@salto-io/lowerdash'
 import { getCustomTypesNames } from './autogen/types'
-import { INCLUDE, EXCLUDE, LOCKED_ELEMENTS_TO_EXCLUDE, AUTHOR_INFO_CONFIG, CONFIG_FEATURES } from './constants'
+import { INCLUDE, EXCLUDE, LOCKED_ELEMENTS_TO_EXCLUDE, AUTHOR_INFO_CONFIG, CONFIG_FEATURES, CUSTOM_FIELDS } from './constants'
 import { SUPPORTED_TYPES, TYPES_TO_INTERNAL_ID } from './data_elements/types'
 import { SUITEAPP_CONFIG_TYPE_NAMES } from './types'
 
@@ -45,6 +45,9 @@ export type FetchParams = {
   [EXCLUDE]?: QueryParams
   [LOCKED_ELEMENTS_TO_EXCLUDE]?: QueryParams
   [AUTHOR_INFO_CONFIG]?: {
+    enable?: boolean
+  }
+  [CUSTOM_FIELDS]?: {
     enable?: boolean
   }
 }

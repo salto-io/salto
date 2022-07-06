@@ -55,8 +55,6 @@ export const buildInMemState = (
     const stateDataVal = await awu(getUpdateDate(await stateData()).entries()).toArray()
     return Object.fromEntries(stateDataVal.map(e => [e.key, e.value]))
   }
-  const setHashImpl = async (newHash: string): Promise<void> => (await stateData())
-    .saltoMetadata.set('hash', newHash)
 
   const deleteFromFilesSource = async (elements: Element[]): Promise<void> => {
     const files = await getNestedStaticFiles(elements)
@@ -141,7 +139,7 @@ export const buildInMemState = (
     },
     rename: () => Promise.resolve(),
     getHash: async () => (await stateData()).saltoMetadata.get('hash'),
-    setHash: setHashImpl,
+    setHash: async newHash => (await stateData()).saltoMetadata.set('hash', newHash),
     // hash doesn't get calculated in memory
     calculateHash: async () => Promise.resolve(),
     getStateSaltoVersion: async () => (await stateData()).saltoMetadata.get('version'),

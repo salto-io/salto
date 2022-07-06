@@ -2400,7 +2400,7 @@ describe('workspace', () => {
         },
       )
     })
-    describe.only('getStaticFilesByElementIds', () => {
+    describe('getStaticFilesByElementIds', () => {
       it('get correct paths when providing a correct element id', async () => {
         const result = await workspace.getStaticFilesByElementIds([ElemID.fromFullName('salesforce.lead.instance.someName')])
         expect(result).toEqual(['static.nacl'])

@@ -2343,6 +2343,70 @@ describe('workspace', () => {
       })
     })
   })
+  describe('static files index', () => {
+    let workspace: Workspace
+    const firstFile = `
+      type salesforce.text is string {}
+      type salesforce.lead {
+        annotations {
+          string _changed_by {
+          }
+        }
+        _changed_by = "test user"
+        salesforce.text singleDef {
+  
+        }
+        salesforce.text multiDef {
+  
+        }
+      }
+    `
+    const secondFile = `
+    salesforce.lead someName {
+      salesforce.text = file("static.nacl")
+    }
+  `
+    const naclFileStore = mockDirStore(undefined, undefined, {
+      'firstFile.nacl': firstFile,
+      'someName.nacl': secondFile,
+    })
+    beforeEach(async () => {
+      const defaultStaticFile = new StaticFile({
+        content: Buffer.from('I am a little static file'),
+        filepath: 'static.nacl',
+        hash: 'FFFF',
+      })
+      workspace = await createWorkspace(
+        naclFileStore,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        {
+          '': {
+            naclFiles: createMockNaclFileSource([]),
+          },
+          default: {
+            naclFiles: await naclFilesSource(
+              'default',
+              naclFileStore,
+              mockStaticFilesSource([defaultStaticFile]),
+              persistentMockCreateRemoteMap(),
+              true
+            ),
+            state: createState([]),
+          },
+        },
+      )
+    })
+    describe('getStaticFilesByElementIds', () => {
+      it('get correct paths when providing a correct element id', async () => {
+        const result = await workspace.getStaticFilesByElementIds([ElemID.fromFullName('salesforce.lead.instance.someName')])
+        expect(result).toEqual(['static.nacl'])
+      })
+    })
+  })
   describe('changed by index', () => {
     let workspace: Workspace
     const firstFile = `

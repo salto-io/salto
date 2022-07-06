@@ -24,6 +24,7 @@ import { localState, filePathGlob, ZIPPED_STATE_EXTENSION } from '../../../src/l
 import { getAllElements } from '../../common/elements'
 import { version } from '../../../src/generated/version.json'
 import { mockStaticFilesSource } from '../../common/state'
+import { inMemRemoteMapCreator } from '../../common/helpers'
 
 const { awu } = collections.asynciterable
 const { serialize } = serialization
@@ -52,7 +53,7 @@ jest.mock('@salto-io/file', () => ({
     if (filename === 'full' || filename.startsWith('deprecated_file')) {
       return Promise.resolve('[{"elemID":{"adapter":"salesforce","nameParts":["_config"]},"refType":{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"salesforce","nameParts":[]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"value":{"token":"token","sandbox":false,"username":"test@test","password":"pass"},"_salto_class":"InstanceElement"},{"annotationRefTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"salesforce","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"salesforce","nameParts":["test"]},"name":"name","refType":{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"salesforce","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationRefTypes":{},"annotations":{"metadataType":"Settings"},"elemID":{"adapter":"salesforce","nameParts":["settings"]},"fields":{},"isSettings":true,"_salto_class":"ObjectType"}]')
     }
-    if (filename === 'mutiple_adapters') {
+    if (filename === 'multiple_adapters') {
       return Promise.resolve('[{"annotationRefTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"salesforce","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"salesforce","nameParts":["test"]},"name":"name","refType":{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"salesforce","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"netsuite","nameParts":["foo"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"}]\n{ "salto" :"2020-04-21T09:44:20.824Z", "netsuite":"2020-04-21T09:44:20.824Z"}')
     }
     if (filename === 'on-delete') {
@@ -70,7 +71,7 @@ jest.mock('@salto-io/file', () => ({
     if (filename === 'multiple_files.netsuite.jsonl.zip') {
       return Promise.resolve('[{"elemID":{"adapter":"netsuite","nameParts":["_config"]},"refType":{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"netsuite","nameParts":[]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"value":{"token":"token","sandbox":false,"username":"test@test","password":"pass"},"_salto_class":"InstanceElement"},{"annotationRefTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"netsuite","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"netsuite","nameParts":["test"]},"name":"name","refType":{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"netsuite","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationRefTypes":{},"annotations":{"metadataType":"Settings"},"elemID":{"adapter":"netsuite","nameParts":["settings"]},"fields":{},"isSettings":true,"_salto_class":"ObjectType"}]\n{ "netsuite" :"2020-04-21T09:44:20.824Z"}')
     }
-    if (filename === 'mutiple_adapters.jsonl.zip') {
+    if (filename === 'multiple_adapters.jsonl.zip') {
       return Promise.resolve('[{"annotationRefTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"salesforce","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"salesforce","nameParts":["test"]},"name":"name","refType":{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"salesforce","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"netsuite","nameParts":["foo"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"}]\n{ "salto" :"2020-04-21T09:44:20.824Z", "netsuite":"2020-04-21T09:44:20.824Z"}')
     }
     if (filename === 'on-delete.jsonl.zip') {
@@ -175,7 +176,7 @@ describe('local state', () => {
       state = localState('empty', '', remoteMapCreator, mockStaticFilesSource())
     })
 
-    it('should return an unedfined hash', async () => {
+    it('should return an undefined hash', async () => {
       const stateHash = await state.getHash()
       expect(stateHash).toBeUndefined()
     })
@@ -279,7 +280,7 @@ describe('local state', () => {
   })
 
   it('should return undefined version if the version was not provided in the state file', async () => {
-    const state = localState('mutiple_adapters', '', remoteMapCreator, mockStaticFilesSource())
+    const state = localState('multiple_adapters', '', remoteMapCreator, mockStaticFilesSource())
     expect(await state.getStateSaltoVersion()).not.toBeDefined()
   })
 
@@ -382,7 +383,7 @@ describe('local state', () => {
       expect(adapters).toHaveLength(0)
     })
     it('should return all adapters in a full state', async () => {
-      const state = localState('mutiple_adapters', '', remoteMapCreator, mockStaticFilesSource())
+      const state = localState('multiple_adapters', '', remoteMapCreator, mockStaticFilesSource())
       const adapters = await state.existingAccounts()
       expect(adapters).toEqual(['netsuite', 'salto'])
     })
@@ -426,6 +427,33 @@ describe('local state', () => {
         '/tmp': badFiles,
       } })
       expect(results).toEqual([])
+    })
+  })
+  describe('when cache does not match state file', () => {
+    let state: wsState.State
+    let mapCreator: remoteMap.RemoteMapCreator
+    beforeEach(() => {
+      mapCreator = inMemRemoteMapCreator()
+      state = localState('multiple_files', '', mapCreator, mockStaticFilesSource())
+    })
+    describe('flush', () => {
+      beforeEach(async () => {
+        // Force loading the state so it detects the cache is outdated
+        await state.getHash()
+        await state.flush()
+      })
+      it('should update the cache remote maps', async () => {
+        const cachedMetadata = await mapCreator<string>({
+          namespace: 'state--salto_metadata',
+          serialize: async x => x,
+          deserialize: async x => x,
+          persistent: false,
+        })
+        const currentStateHash = await state.getHash()
+        const cachedHash = await cachedMetadata.get('hash')
+        expect(cachedHash).toEqual(currentStateHash)
+        expect(cachedHash).toBeDefined()
+      })
     })
   })
 })

@@ -100,6 +100,11 @@ export const localState = (
   let pathToClean = ''
   let currentFilePrefix = filePrefix
 
+  const setDirty = (): void => {
+    dirty = true
+    contentsAndHash = undefined
+  }
+
   const syncQuickAccessStateData = async ({
     stateData, filePaths, newHash,
   }: {
@@ -165,18 +170,16 @@ export const localState = (
     const quickAccessHash = (await quickAccessStateData.saltoMetadata.get('hash'))
       ?? toMD5(safeJsonStringify([]))
     if (quickAccessHash !== stateFilesHash) {
+      log.debug('found different hash - loading state data (quickAccessHash=%s stateFilesHash=%s)', quickAccessHash, stateFilesHash)
       await syncQuickAccessStateData({
         stateData: quickAccessStateData,
         filePaths,
         newHash: stateFilesHash,
       })
+      // We updated the remote maps, we should flush them if flush is called
+      setDirty()
     }
     return quickAccessStateData
-  }
-
-  const setDirty = (): void => {
-    dirty = true
-    contentsAndHash = undefined
   }
 
   const inMemState = state.buildInMemState(loadStateData)
@@ -262,16 +265,15 @@ export const localState = (
       if (pathToClean !== '') {
         await rm(pathToClean)
       }
-      const filePathToContent = (await getContentAndHash()).contents
+      const { contents: filePathToContent, hash: updatedHash } = await getContentAndHash()
       await awu(filePathToContent).forEach(f => replaceContents(...f))
       await inMemState.setVersion(version)
-      await calculateHashImpl()
+      await inMemState.setHash(updatedHash)
       await inMemState.flush()
       await staticFilesSource.flush()
       dirty = false
       log.debug('finish flushing state')
     },
-    getHash: async (): Promise<string | undefined> => inMemState.getHash(),
     calculateHash: calculateHashImpl,
     clear: async (): Promise<void> => {
       const stateFiles = await findStateFiles(currentFilePrefix)

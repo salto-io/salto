@@ -200,7 +200,7 @@ ${Prompts.SERVICE_ADD_HELP}`
   public static readonly RESTORE_CALC_DIFF_FINISH = 'Finished calculating the difference between state and NaCL files.'
   public static readonly RESTORE_CALC_DIFF_FAIL = 'Calculating diff failed!'
   public static readonly RESTORE_UPDATE_WORKSPACE_SUCCESS = 'Applied changes'
-  public static readonly STATIC_RESOURCES_NOT_SUPPORTED = `Static resources are not supported for this operation as their content is not kept in the state file.
+  public static readonly STATIC_RESOURCES_NOT_SUPPORTED = `The state version of some of the static resources is not available.
   Therefore, the following files will not be restored:`
   public static readonly RESTORE_SUCCESS_FINISHED = 'Done! Your NaCL files are now updated with the latest changes.'
   public static readonly RESTORE_UPDATE_WORKSPACE_FAIL = 'Failed to apply changes to your NaCL files.'

@@ -26,6 +26,7 @@ import {
   isAdditionChange,
   isRemovalChange,
   isModificationChange,
+  isObjectType,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
@@ -38,7 +39,7 @@ const { isDefined } = values
 const { awu } = collections.asynciterable
 
 const log = logger(module)
-export const CHANGED_BY_INDEX_VERSION = 1
+export const CHANGED_BY_INDEX_VERSION = 2
 const CHANGED_BY_INDEX_KEY = 'changed_by_index'
 const UNKNOWN_USER_NAME = 'Unknown'
 const CHANGED_BY_KEY_DELIMITER = '@@'
@@ -78,64 +79,78 @@ const getAllElementsChanges = async (
     .concat(currentChanges)
     .toArray()
 
-const getChangeAuthor = (change: Change<Element>): string => {
+const getChangeAuthors = (change: Change<Element>): string[] => {
   const element = getChangeData(change)
+  const authors = []
+  if (isObjectType(element)) {
+    Object.values(element.fields).forEach(field => {
+      if (field.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
+        authors.push(`${element.elemID.adapter}${CHANGED_BY_KEY_DELIMITER}${
+          field.annotations[CORE_ANNOTATIONS.CHANGED_BY]
+        }`)
+      }
+    })
+  }
   if (element.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
-    return `${element.elemID.adapter}${CHANGED_BY_KEY_DELIMITER}${
+    authors.push(`${element.elemID.adapter}${CHANGED_BY_KEY_DELIMITER}${
       element.annotations[CORE_ANNOTATIONS.CHANGED_BY]
-    }`
+    }`)
   }
-  return UNKNOWN_USER_NAME
+  return authors.length > 0 ? authors : [UNKNOWN_USER_NAME]
 }
 
-const updateAdditionChange = async (
+const updateAdditionChange = (
   change: AdditionChange<Element>,
-  authorMap: Record<string, Set<ElemID>>,
-): Promise<void> => {
-  const author = getChangeAuthor(change)
-  if (!authorMap[author]) {
-    authorMap[author] = new Set()
-  }
-  authorMap[author].add(change.data.after.elemID)
+  authorMap: Record<string, Set<string>>,
+): void => {
+  const authors = getChangeAuthors(change)
+  authors.forEach(author => {
+    if (!authorMap[author]) {
+      authorMap[author] = new Set()
+    }
+    authorMap[author].add(change.data.after.elemID.getFullName())
+  })
 }
 
-const updateRemovalChange = async (
+const updateRemovalChange = (
   change: RemovalChange<Element>,
-  authorMap: Record<string, Set<ElemID>>,
-): Promise<void> => {
-  const author = getChangeAuthor(change)
-  if (authorMap[author]) {
-    authorMap[author].delete(change.data.before.elemID)
-  }
+  authorMap: Record<string, Set<string>>,
+): void => {
+  const authors = getChangeAuthors(change)
+  authors.forEach(author => {
+    if (authorMap[author]) {
+      authorMap[author].delete(change.data.before.elemID.getFullName())
+    }
+  })
 }
 
-const updateModificationChange = async (
+const updateModificationChange = (
   change: ModificationChange<Element>,
-  authorMap: Record<string, Set<ElemID>>,
-): Promise<void> => {
+  authorMap: Record<string, Set<string>>,
+): void => {
   if (change.data.after.annotations[CORE_ANNOTATIONS.CHANGED_BY]
     !== change.data.before.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
-    await updateRemovalChange(
+    updateRemovalChange(
       toChange({ before: change.data.before }) as RemovalChange<Element>,
       authorMap,
     )
-    await updateAdditionChange(
+    updateAdditionChange(
       toChange({ after: change.data.after }) as AdditionChange<Element>,
       authorMap,
     )
   }
 }
 
-const updateChange = async (
+const updateChange = (
   change: Change<Element>,
-  authorMap: Record<string, Set<ElemID>>,
-): Promise<void> => {
+  authorMap: Record<string, Set<string>>,
+): void => {
   if (isAdditionChange(change)) {
-    await updateAdditionChange(change, authorMap)
+    updateAdditionChange(change, authorMap)
   } else if (isRemovalChange(change)) {
-    await updateRemovalChange(change, authorMap)
+    updateRemovalChange(change, authorMap)
   } else {
-    await updateModificationChange(change, authorMap)
+    updateModificationChange(change, authorMap)
   }
 }
 
@@ -145,11 +160,13 @@ const getUniqueAuthors = (changes: Change<Element>[]): Set<string> => {
     if (isModificationChange(change)) {
       if (change.data.after.annotations[CORE_ANNOTATIONS.CHANGED_BY]
           !== change.data.before.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
-        authorSet.add(getChangeAuthor(toChange({ before: change.data.before })))
-        authorSet.add(getChangeAuthor(toChange({ after: change.data.after })))
+        getChangeAuthors(toChange({ before: change.data.before }))
+          .forEach(author => authorSet.add(author))
+        getChangeAuthors(toChange({ after: change.data.after }))
+          .forEach(author => authorSet.add(author))
       }
     } else {
-      authorSet.add(getChangeAuthor(change))
+      getChangeAuthors(change).forEach(author => authorSet.add(author))
     }
   })
   return authorSet
@@ -158,18 +175,19 @@ const getUniqueAuthors = (changes: Change<Element>[]): Set<string> => {
 const mergeAuthorMap = (
   authorList: string[],
   indexValues: (ElemID[] | undefined)[]
-): Record<string, Set<ElemID>> => {
+): Record<string, Set<string>> => {
   const authorMap: Record<string, ElemID[]> = _.pickBy(
     _.zipObject(authorList, indexValues),
     isDefined,
   )
-  return _.mapValues(authorMap, (elemIds: ElemID[]) => new Set(elemIds))
+  return _.mapValues(authorMap,
+    (elemIds: ElemID[]) => new Set(elemIds.map(elemId => elemId.getFullName())))
 }
 
 const getCompleteAuthorMap = async (
   changes: Change<Element>[],
   index: RemoteMap<ElemID[]>,
-): Promise<Record<string, Set<ElemID>>> => {
+): Promise<Record<string, Set<string>>> => {
   const authorList = Array.from(getUniqueAuthors(changes))
   const indexValues = await index.getMany(authorList)
   const authorMap = mergeAuthorMap(authorList, indexValues)
@@ -186,7 +204,8 @@ const updateChanges = async (
     Object.keys(completeAuthorMap),
     key => isEmpty(completeAuthorMap[key]),
   )
-  await index.setAll(toBeSet.map(key => ({ key, value: Array.from(completeAuthorMap[key]) })))
+  await index.setAll(toBeSet
+    .map(key => ({ key, value: Array.from(completeAuthorMap[key]).map(ElemID.fromFullName) })))
   await index.deleteAll(toBeRemoved)
 }
 

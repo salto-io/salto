@@ -56,7 +56,8 @@ export type TransformationConfig = {
   fieldsToHide?: FieldToHideType[]
   // fields to convert into their instances (and reference from the parent)
   standaloneFields?: StandaloneFieldConfigType[]
-
+  // set to true if the instance id depends on its parent
+  extendsParentId?: boolean
   // set '.' to indicate that the full object should be returned
   dataField?: string
   // set to true if the defined instance element has only one instance

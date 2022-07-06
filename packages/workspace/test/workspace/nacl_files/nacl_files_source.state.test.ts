@@ -50,6 +50,7 @@ describe('Nacl Files Source', () => {
       clone: () => mockDirStore,
       getFullPath: filename => filename,
       isPathIncluded: jest.fn().mockResolvedValue(true),
+      exists: jest.fn().mockResolvedValue(false),
     }
     mockedStaticFilesSource = mockStaticFilesSource()
   })

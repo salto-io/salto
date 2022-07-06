@@ -88,7 +88,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       paginationField: 'since_id',
     },
     transformation: {
-      idFields: ['name', 'id'], // not multienv-friendly - see SALTO-1241
+      idFields: ['name', '&folder_id'],
       fieldsToHide: [
         ...FIELDS_TO_HIDE,
         { fieldName: 'id' },
@@ -110,6 +110,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   [RECIPE_CODE_TYPE]: {
     transformation: {
       idFields: [], // there is one code per recipe, so no need for additional details
+      extendsParentId: true,
     },
   },
   [FOLDER_TYPE]: {
@@ -122,7 +123,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       paginationField: 'page',
     },
     transformation: {
-      idFields: ['name', 'parent_id'], // not multienv-friendly - see SALTO-1241
+      idFields: ['name', '&parent_id'],
       fieldsToHide: [
         ...FIELDS_TO_HIDE,
         { fieldName: 'id' },

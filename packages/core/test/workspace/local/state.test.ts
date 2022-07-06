@@ -17,12 +17,13 @@ import { EOL } from 'os'
 import { replaceContents, exists, readZipFile, rm, rename, generateZipString } from '@salto-io/file'
 import { ObjectType, ElemID, isObjectType, BuiltinTypes } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { state as wsState, serialization, pathIndex, remoteMap } from '@salto-io/workspace'
+import { state as wsState, serialization, pathIndex, remoteMap, staticFiles } from '@salto-io/workspace'
 import { hash, collections } from '@salto-io/lowerdash'
 import { promisify } from 'util'
 import { localState, filePathGlob, ZIPPED_STATE_EXTENSION } from '../../../src/local-workspace/state'
 import { getAllElements } from '../../common/elements'
 import { version } from '../../../src/generated/version.json'
+import { mockStaticFilesSource } from '../../common/state'
 
 const { awu } = collections.asynciterable
 const { serialize } = serialization
@@ -110,8 +111,10 @@ describe('local state', () => {
 
   describe('multiple state files', () => {
     let state: wsState.State
+    let stateStaticFilesSource: staticFiles.StateStaticFilesSource
     beforeEach(() => {
-      state = localState('multiple_files', '', remoteMapCreator)
+      stateStaticFilesSource = mockStaticFilesSource()
+      state = localState('multiple_files', '', remoteMapCreator, stateStaticFilesSource)
     })
 
     it('reads all from both files but not from files with an additional suffix', async () => {
@@ -148,6 +151,8 @@ describe('local state', () => {
         `new.netsuite${ZIPPED_STATE_EXTENSION}`)
       expect(mockRename).toHaveBeenCalledWith(`multiple_files${ZIPPED_STATE_EXTENSION}`,
         `new${ZIPPED_STATE_EXTENSION}`)
+
+      expect(stateStaticFilesSource.rename).toHaveBeenCalledWith('new')
       mockRename.mockClear()
     })
 
@@ -167,7 +172,7 @@ describe('local state', () => {
   describe('empty state', () => {
     let state: wsState.State
     beforeEach(() => {
-      state = localState('empty', '', remoteMapCreator)
+      state = localState('empty', '', remoteMapCreator, mockStaticFilesSource())
     })
 
     it('should return an unedfined hash', async () => {
@@ -232,21 +237,21 @@ describe('local state', () => {
   })
 
   it('should read valid state file', async () => {
-    const state = localState('full', '', remoteMapCreator)
+    const state = localState('full', '', remoteMapCreator, mockStaticFilesSource())
     const elements = await awu(await state.getAll()).toArray()
     expect(elements).toHaveLength(2)
     expect(await state.getStateSaltoVersion()).toBe('0.0.1')
   })
 
   it('should override path index when asked to', async () => {
-    const state = localState('full', '', remoteMapCreator)
+    const state = localState('full', '', remoteMapCreator, mockStaticFilesSource())
     await state.overridePathIndex([mockElement])
     const entries = await awu((await state.getPathIndex()).entries()).toArray()
     expect(entries).toEqual(pathIndex.getElementsPathHints([mockElement]))
   })
 
   it('should update path index when asked to', async () => {
-    const state = localState('full', '', remoteMapCreator)
+    const state = localState('full', '', remoteMapCreator, mockStaticFilesSource())
     // This doesn't fully test the update functionality. That should be tested in path index test.
     // This just tests that we reach the function.
     await state.updatePathIndex([mockElement], [])
@@ -255,18 +260,18 @@ describe('local state', () => {
   })
 
   it('should throw an error if the state nacl file is not valid', async () => {
-    const state = localState('error', '', remoteMapCreator)
+    const state = localState('error', '', remoteMapCreator, mockStaticFilesSource())
     await expect(state.getAll()).rejects.toThrow()
   })
 
   it('should write file on flush and update version', async () => {
-    const state = localState('on-flush', '', remoteMapCreator)
+    const state = localState('on-flush', '', remoteMapCreator, mockStaticFilesSource())
     await state.set(mockElement)
     await state.flush()
     const onFlush = findReplaceContentCall('on-flush.salto.jsonl.zip')
     expect(onFlush).toBeDefined()
     expect(onFlush[1]).toEqual(await generateZipString([
-      serialize([mockElement]),
+      await serialize([mockElement]),
       safeJsonStringify({}),
       safeJsonStringify([]),
       version,
@@ -274,7 +279,7 @@ describe('local state', () => {
   })
 
   it('should return undefined version if the version was not provided in the state file', async () => {
-    const state = localState('mutiple_adapters', '', remoteMapCreator)
+    const state = localState('mutiple_adapters', '', remoteMapCreator, mockStaticFilesSource())
     expect(await state.getStateSaltoVersion()).not.toBeDefined()
   })
 
@@ -282,7 +287,7 @@ describe('local state', () => {
     let state: wsState.State
 
     beforeEach(async () => {
-      state = localState('deprecated_file_zip', '', remoteMapCreator)
+      state = localState('deprecated_file_zip', '', remoteMapCreator, mockStaticFilesSource())
       await state.getAll() // force read file
     })
 
@@ -298,7 +303,7 @@ describe('local state', () => {
   })
 
   it('shouldn\'t write file if state was not loaded on flush', async () => {
-    const state = localState('not-flush', '', remoteMapCreator)
+    const state = localState('not-flush', '', remoteMapCreator, mockStaticFilesSource())
     await state.flush()
     expect(findReplaceContentCall('not-flush')).toBeUndefined()
   })
@@ -315,20 +320,20 @@ describe('local state', () => {
 
     it('should return an empty object when the state does not exist', async () => {
       mockExists.mockResolvedValueOnce(false)
-      const state = localState('filename', '', remoteMapCreator)
+      const state = localState('filename', '', remoteMapCreator, mockStaticFilesSource())
       const date = await state.getAccountsUpdateDates()
       expect(date).toEqual({})
     })
     it('should return empty object when the updated date is not set', async () => {
       mockExists.mockResolvedValueOnce(true)
-      const state = localState('filename', '', remoteMapCreator)
+      const state = localState('filename', '', remoteMapCreator, mockStaticFilesSource())
       const date = await state.getAccountsUpdateDates()
       expect(date).toEqual({})
     })
     it('should return the modification date of the state', async () => {
       mockExists.mockResolvedValueOnce(true)
       readZipFileMock.mockResolvedValueOnce(mockStateStr)
-      const state = localState('filename', '', remoteMapCreator)
+      const state = localState('filename', '', remoteMapCreator, mockStaticFilesSource())
       const date = await state.getAccountsUpdateDates()
       expect(date.salto).toEqual(saltoModificationDate)
       expect(date.netsuite).toEqual(netsuiteModificationDate)
@@ -338,7 +343,7 @@ describe('local state', () => {
       readZipFileMock.mockResolvedValueOnce(mockStateStr)
       const now = new Date(2013, 6, 4).getTime()
       jest.spyOn(Date, 'now').mockImplementation(() => now)
-      const state = localState('filename', '', remoteMapCreator)
+      const state = localState('filename', '', remoteMapCreator, mockStaticFilesSource())
 
       const beforeOverrideDate = await state.getAccountsUpdateDates()
       expect(beforeOverrideDate.salto).toEqual(saltoModificationDate)
@@ -351,7 +356,7 @@ describe('local state', () => {
     it('should not update modification date on set/remove', async () => {
       mockExists.mockResolvedValueOnce(true)
       readZipFileMock.mockResolvedValueOnce(mockStateStr)
-      const state = localState('filename', '', remoteMapCreator)
+      const state = localState('filename', '', remoteMapCreator, mockStaticFilesSource())
 
       await state.set(mockElement)
       const overrideDate = await state.getAccountsUpdateDates()
@@ -363,7 +368,7 @@ describe('local state', () => {
     })
     it('should ignore built in types in set ops', async () => {
       mockExists.mockResolvedValueOnce(true)
-      const state = localState('empty', '', remoteMapCreator)
+      const state = localState('empty', '', remoteMapCreator, mockStaticFilesSource())
       await state.set(BuiltinTypes.STRING)
       const overrideDate = await state.getAccountsUpdateDates()
       expect(overrideDate).toEqual({})
@@ -372,12 +377,12 @@ describe('local state', () => {
 
   describe('exsitingAdapters', () => {
     it('should return empty list on empty state', async () => {
-      const state = localState('empty', '', remoteMapCreator)
+      const state = localState('empty', '', remoteMapCreator, mockStaticFilesSource())
       const adapters = await state.existingAccounts()
       expect(adapters).toHaveLength(0)
     })
     it('should return all adapters in a full state', async () => {
-      const state = localState('mutiple_adapters', '', remoteMapCreator)
+      const state = localState('mutiple_adapters', '', remoteMapCreator, mockStaticFilesSource())
       const adapters = await state.existingAccounts()
       expect(adapters).toEqual(['netsuite', 'salto'])
     })
@@ -385,7 +390,7 @@ describe('local state', () => {
 
   describe('getHash', () => {
     it('should call toMd5', async () => {
-      const state = localState('empty-state', '', remoteMapCreator)
+      const state = localState('empty-state', '', remoteMapCreator, mockStaticFilesSource())
       await state.set(mockElement)
       await state.flush()
       const stateHash = await state.getHash()
@@ -393,7 +398,7 @@ describe('local state', () => {
         .toEqual(toMD5(safeJsonStringify(
           [
             toMD5(await generateZipString([
-              serialize([mockElement]),
+              await serialize([mockElement]),
               safeJsonStringify({}),
               safeJsonStringify([]),
               version,

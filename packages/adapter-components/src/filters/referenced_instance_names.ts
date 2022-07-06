@@ -36,6 +36,19 @@ const log = logger(module)
 const { isDefined } = lowerDashValues
 const { getUpdatedReference, createReferencesTransformFunc } = references
 
+type TransformationIdConfig = {
+  idFields: string[]
+  extendsParentId?: boolean
+}
+
+const getFirstParentElemId = (instance: InstanceElement): ElemID | undefined => {
+  const parentsElemIds = getParents(instance)
+    .filter(parent => isReferenceExpression(parent) && isInstanceElement(parent.value))
+    .map(parent => parent.elemID)
+  // we are only using the first parent ElemId
+  return parentsElemIds.length > 0 ? parentsElemIds[0] : undefined
+}
+
 const createInstanceReferencedNameParts = (
   instance: InstanceElement,
   idFields: string[],
@@ -62,8 +75,9 @@ const createInstanceReferencedNameParts = (
 
 /* Finds all elemIDs that the current instance relies on based on the idFields */
 const getInstanceNameDependencies = (
-  idFields: string[],
   instance: InstanceElement,
+  idFields: string[],
+  extendsParentId?: boolean,
 ): string[] => {
   const referencedInstances = idFields
     .filter(isReferencedIdField)
@@ -75,23 +89,24 @@ const getInstanceNameDependencies = (
       return undefined
     })
     .filter(isDefined)
+  const parentFullName = getFirstParentElemId(instance)?.getFullName()
+  if (extendsParentId && parentFullName !== undefined) {
+    referencedInstances.push(parentFullName)
+  }
   return referencedInstances
 }
 
 /* Calculates the new instance name and file path */
 const createInstanceNameAndFilePath = (
   instance: InstanceElement,
-  idFields: string[],
+  idConfig: TransformationIdConfig,
   configByType: Record<string, TransformationConfig>,
   getElemIdFunc?: ElemIdGetter,
 ): { newNaclName: string; filePath: string[] } => {
+  const { idFields } = idConfig
   const newNameParts = createInstanceReferencedNameParts(instance, idFields)
   const newName = joinInstanceNameParts(newNameParts) ?? instance.elemID.name
-  const parentIds = getParents(instance)
-    .filter(parent => isReferenceExpression(parent) && isInstanceElement(parent.value))
-    .map(parent => parent.value.elemID.name)
-  const parentName = parentIds.length > 0 ? parentIds[0] : undefined
-
+  const parentName = getFirstParentElemId(instance)?.name
   const { typeName, adapter } = instance.elemID
   const { fileNameFields, serviceIdField } = configByType[typeName]
 
@@ -161,6 +176,15 @@ const getReferencesToElemIds = (
   return refs
 }
 
+/* Creates the same nested path under the updated instance */
+const createUpdatedPath = (
+  oldPath: ElemID,
+  updatedInstance: InstanceElement
+): ElemID => {
+  const { path } = oldPath.createBaseID()
+  return updatedInstance.elemID.createNestedID(...path)
+}
+
 /* Update all references for all the renamed instances with the new elemIds */
 const updateAllReferences = ({
   referenceIndex,
@@ -192,7 +216,9 @@ const updateAllReferences = ({
         ref.path.createTopLevelParentID().parent.getFullName()
       ]
       if (topLevelInstance !== undefined) {
-        setPath(topLevelInstance, ref.path, updatedReference)
+        // update the path so it would match the new instance
+        const updatedPath = createUpdatedPath(ref.path, topLevelInstance as InstanceElement)
+        setPath(topLevelInstance, updatedPath, updatedReference)
       }
     })
   // We changed all the references to the original instance, so this entry can be removed
@@ -202,7 +228,7 @@ const updateAllReferences = ({
 /* Create a graph with instance names as nodes and instance name dependencies as edges */
 const createGraph = (
   instances: InstanceElement[],
-  instancesToIdFields: {instance: InstanceElement; idFields: string[]}[]
+  instanceToIdConfig: {instance: InstanceElement; idConfig: TransformationIdConfig}[]
 ): DAG<InstanceElement> => {
   const hasReferencedIdFields = (idFields: string[]): boolean => (
     idFields.some(field => isReferencedIdField(field))
@@ -218,12 +244,13 @@ const createGraph = (
   }
 
   const graph = new DAG<InstanceElement>()
-  instancesToIdFields.forEach(({ instance, idFields }) => {
-    if (hasReferencedIdFields(idFields)) {
+  instanceToIdConfig.forEach(({ instance, idConfig }) => {
+    const { idFields, extendsParentId } = idConfig
+    if (hasReferencedIdFields(idFields) || extendsParentId) {
       // removing duplicate elemIDs to create a graph
       // we can traverse based on references to unique elemIDs
       if (!isDuplicateInstance(instance.elemID.getFullName())) {
-        const nameDependencies = getInstanceNameDependencies(idFields, instance)
+        const nameDependencies = getInstanceNameDependencies(instance, idFields, extendsParentId)
           .filter(instanceName => !isDuplicateInstance(instanceName))
         graph.addNode(
           instance.elemID.getFullName(),
@@ -275,15 +302,18 @@ export const addReferencesToInstanceNames = async (
       ])
   )
 
-  const instancesToIdFields = instances.map(instance => ({
+  const instancesToIdConfig = instances.map(instance => ({
     instance,
-    idFields: configByType[instance.elemID.typeName].idFields,
+    idConfig: {
+      idFields: configByType[instance.elemID.typeName].idFields,
+      extendsParentId: configByType[instance.elemID.typeName].extendsParentId,
+    },
   }))
 
-  const graph = createGraph(instances, instancesToIdFields)
+  const graph = createGraph(instances, instancesToIdConfig)
 
-  const nameToInstanceIdFields = _.keyBy(
-    instancesToIdFields,
+  const nameToInstanceIdConfig = _.keyBy(
+    instancesToIdConfig,
     obj => obj.instance.elemID.getFullName()
   )
   const nameToInstance = _.keyBy(instances, i => i.elemID.getFullName())
@@ -294,13 +324,13 @@ export const addReferencesToInstanceNames = async (
 
   await awu(graph.evaluationOrder()).forEach(
     async graphNode => {
-      const instanceIdFields = nameToInstanceIdFields[graphNode.toString()]
-      if (instanceIdFields !== undefined) {
-        const { instance, idFields } = instanceIdFields
+      const instanceIdConfig = nameToInstanceIdConfig[graphNode.toString()]
+      if (instanceIdConfig !== undefined) {
+        const { instance, idConfig } = instanceIdConfig
         const originalFullName = instance.elemID.getFullName()
         const { newNaclName, filePath } = createInstanceNameAndFilePath(
           instance,
-          idFields,
+          idConfig,
           configByType,
           getElemIdFunc,
         )
@@ -312,6 +342,10 @@ export const addReferencesToInstanceNames = async (
           nameToInstance,
           newElemId: newInstance.elemID,
         })
+
+        if (nameToInstance[originalFullName] !== undefined) {
+          nameToInstance[originalFullName] = newInstance
+        }
 
         const originalInstanceIdx = elements
           .findIndex(e => (e.elemID.getFullName()) === originalFullName)

@@ -24,7 +24,7 @@ import compareVersions from 'compare-versions'
 import os from 'os'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { values } from '@salto-io/lowerdash'
+import { values, decorators } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { WSDL } from 'soap'
@@ -40,7 +40,7 @@ import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
 import { DEFAULT_CONCURRENCY } from '../../config'
 import { CONSUMER_KEY, CONSUMER_SECRET } from './constants'
 import SoapClient from './soap_client/soap_client'
-import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError } from './errors'
+import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError, RetryableError, retryOnRetryableError } from './errors'
 import { InvalidSuiteAppCredentialsError } from '../types'
 
 const { isDefined } = values
@@ -88,6 +88,12 @@ const getAxiosErrorDetailedMessage = (error: AxiosError): string | undefined => 
   const detailedMessages = errorDetails.map(errorItem => errorItem?.detail).filter(_.isString)
   return detailedMessages.length > 0 ? detailedMessages.join(os.EOL) : undefined
 }
+
+export const retryable = decorators.wrapMethodWith(
+  async (
+    call: decorators.OriginalCall,
+  ): Promise<unknown> => retryOnRetryableError(async () => call.call())
+)
 
 export default class SuiteAppClient {
   private credentials: SuiteAppCredentials
@@ -191,7 +197,11 @@ export default class SuiteAppClient {
       SYSTEM_INFORMATION_SCHEME,
       results
     )) {
-      log.error(`getSystemInformation failed. Got invalid results: ${this.ajv.errorsText()}`)
+      log.error(
+        'getSystemInformation failed. Got invalid results - %s: %o',
+        this.ajv.errorsText(),
+        results
+      )
       return undefined
     }
 
@@ -213,11 +223,12 @@ export default class SuiteAppClient {
     try {
       const results = await this.sendRestletRequest('readFile', { ids })
 
-      if (!this.ajv.validate<ReadResults>(
-        FILES_READ_SCHEMA,
-        results
-      )) {
-        log.error(`readFiles failed. Got invalid results: ${this.ajv.errorsText()}`)
+      if (!this.ajv.validate<ReadResults>(FILES_READ_SCHEMA, results)) {
+        log.error(
+          'readFiles failed. Got invalid results - %s: %o',
+          this.ajv.errorsText(),
+          results
+        )
         return undefined
       }
 
@@ -252,7 +263,11 @@ export default class SuiteAppClient {
       })
 
       if (!this.ajv.validate<GetConfigResult>(GET_CONFIG_RESULT_SCHEMA, result)) {
-        log.error('getConfigRecords failed. Got invalid results: %s', this.ajv.errorsText())
+        log.error(
+          'getConfigRecords failed. Got invalid results - %s: %o',
+          this.ajv.errorsText(),
+          result
+        )
         return []
       }
 
@@ -271,13 +286,23 @@ export default class SuiteAppClient {
       return results.map(configRecord => {
         const { configType, fieldsDef, data } = configRecord
         if (!this.ajv.validate<ConfigRecordData>(CONFIG_RECORD_DATA_SCHEMA, data)) {
-          log.error('failed parsing ConfigRecordData of type \'%s\': %s', configType, this.ajv.errorsText())
+          log.error(
+            'failed parsing ConfigRecordData of type \'%s\' - %s: %o',
+            configType,
+            this.ajv.errorsText(),
+            data
+          )
           return undefined
         }
 
         const validatedFields = fieldsDef.filter(fieldDef => {
           if (!this.ajv.validate<ConfigFieldDefinition>(CONFIG_FIELD_DEFINITION_SCHEMA, fieldDef)) {
-            log.error('failed parsing ConfigFieldDefinition of type \'%s\': %s', configType, this.ajv.errorsText())
+            log.error(
+              'failed parsing ConfigFieldDefinition of type \'%s\' - %s: %o',
+              configType,
+              this.ajv.errorsText(),
+              fieldDef
+            )
             return false
           }
           return true
@@ -302,7 +327,11 @@ export default class SuiteAppClient {
       const result = await this.sendRestletRequest('config', { action: 'set', types })
 
       if (!this.ajv.validate<SetConfigResult>(SET_CONFIG_RESULT_SCHEMA, result)) {
-        log.error('setConfigRecordsValues failed. Got invalid results: %s', this.ajv.errorsText())
+        log.error(
+          'setConfigRecordsValues failed. Got invalid results - %s: %o',
+          this.ajv.errorsText(),
+          result
+        )
         return { errorMessage: this.ajv.errorsText() }
       }
       return result
@@ -348,6 +377,7 @@ export default class SuiteAppClient {
     }
   }
 
+  @retryable
   private async sendSuiteQLRequest(query: string, offset: number, limit: number):
   Promise<SuiteQLResults> {
     const url = new URL(this.suiteQLUrl.href)
@@ -360,7 +390,12 @@ export default class SuiteAppClient {
     }
     const response = await this.safeAxiosPost(url.href, { q: query }, headers)
     if (!this.ajv.validate<SuiteQLResults>(SUITE_QL_RESULTS_SCHEMA, response.data)) {
-      throw new Error(`Got invalid results from the SuiteQL query: ${this.ajv.errorsText()}`)
+      log.error(
+        'Got invalid results from the SuiteQL query - %s: %o',
+        this.ajv.errorsText(),
+        response.data
+      )
+      throw new RetryableError(new Error('Invalid SuiteQL query result'))
     }
 
     return response.data
@@ -399,6 +434,7 @@ export default class SuiteAppClient {
     })
   }
 
+  @retryable
   private async innerSendRestletRequest(
     operation: RestletOperation,
     args: Record<string, unknown> = {}
@@ -418,7 +454,12 @@ export default class SuiteAppClient {
     )
 
     if (!this.ajv.validate<RestletResults>(RESTLET_RESULTS_SCHEMA, response.data)) {
-      throw new Error(`Got invalid results from a Restlet request: ${this.ajv.errorsText()}`)
+      log.error(
+        'Got invalid results from a Restlet request - %s: %o',
+        this.ajv.errorsText(),
+        response.data
+      )
+      throw new RetryableError(new Error('Invalid Restlet query result'))
     }
 
     if (isError(response.data)) {
@@ -436,6 +477,7 @@ export default class SuiteAppClient {
     return this.innerSendRestletRequest(operation, args)
   }
 
+  @retryable
   private async sendSavedSearchRequest(query: SavedSearchQuery, offset: number, limit: number):
   Promise<SavedSearchResults> {
     const results = await this.sendRestletRequest('search', {
@@ -445,7 +487,12 @@ export default class SuiteAppClient {
     })
 
     if (!this.ajv.validate<SavedSearchResults>(SAVED_SEARCH_RESULTS_SCHEMA, results)) {
-      throw new Error(`Got invalid results from the saved search query: ${this.ajv.errorsText()}`)
+      log.error(
+        'Got invalid results from the saved search query - %s: %o',
+        this.ajv.errorsText(),
+        results
+      )
+      throw new RetryableError(new Error('Invalid Saved Search query error'))
     }
 
     return results

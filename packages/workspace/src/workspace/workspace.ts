@@ -43,6 +43,7 @@ import { serialize, deserializeMergeErrors, deserializeSingleElement, deserializ
 import { AdaptersConfigSource } from './adapters_config_source'
 import { updateReferenceIndexes } from './reference_indexes'
 import { updateChangedByIndex, Author, authorKeyToAuthor, authorToAuthorKey } from './changed_by_index'
+import { updateChangedAtIndex } from './changed_at_index'
 
 const log = logger(module)
 
@@ -59,6 +60,10 @@ const STATE_SOURCE_PREFIX = 'state_element_source'
 export const isValidEnvName = (envName: string): boolean =>
   /^[a-z0-9-_.!\s]+$/i.test(envName) && envName.length <= MAX_ENV_NAME_LEN
 
+export type DateRange = {
+  start: Date
+  end?: Date
+}
 
 export type SourceLocation = {
   sourceRange: SourceRange
@@ -245,6 +250,7 @@ export type Workspace = {
     encoding: BufferEncoding
     env?: string
   }): Promise<StaticFile | undefined>
+  getChangedElementsBetween(dateRange: DateRange, envName?: string): Promise<ElemID[]>
 }
 
 type SingleState = {
@@ -252,6 +258,7 @@ type SingleState = {
   errors: RemoteMap<MergeError[]>
   validationErrors: RemoteMap<ValidationError[]>
   changedBy: RemoteMap<ElemID[]>
+  changedAt: RemoteMap<ElemID[]>
   referenceSources: RemoteMap<ElemID[]>
   referenceTargets: RemoteMap<ElemID[]>
   mapVersions: RemoteMap<number>
@@ -364,25 +371,31 @@ export const loadWorkspace = async (
           }),
           changedBy: await remoteMapCreator<ElemID[]>({
             namespace: getRemoteMapNamespace('changedBy', envName),
-            serialize: val => safeJsonStringify(val.map(id => id.getFullName())),
+            serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
+            deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
+            persistent,
+          }),
+          changedAt: await remoteMapCreator<ElemID[]>({
+            namespace: getRemoteMapNamespace('changedAt', envName),
+            serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
             deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
             persistent,
           }),
           referenceSources: await remoteMapCreator<ElemID[]>({
             namespace: getRemoteMapNamespace('referenceSources', envName),
-            serialize: val => safeJsonStringify(val.map(id => id.getFullName())),
+            serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
             deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
             persistent,
           }),
           referenceTargets: await remoteMapCreator<ElemID[]>({
             namespace: getRemoteMapNamespace('referenceTargets', envName),
-            serialize: val => safeJsonStringify(val.map(id => id.getFullName())),
+            serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
             deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
             persistent,
           }),
           mapVersions: await remoteMapCreator<number>({
             namespace: getRemoteMapNamespace('mapVersions', envName),
-            serialize: val => val.toString(),
+            serialize: async val => val.toString(),
             deserialize: async data => parseInt(data, 10),
             persistent,
           }),
@@ -592,6 +605,14 @@ export const loadWorkspace = async (
       await updateChangedByIndex(
         changes,
         stateToBuild.states[envName].changedBy,
+        stateToBuild.states[envName].mapVersions,
+        stateToBuild.states[envName].merged,
+        changeResult.cacheValid,
+      )
+
+      await updateChangedAtIndex(
+        changes,
+        stateToBuild.states[envName].changedAt,
         stateToBuild.states[envName].mapVersions,
         stateToBuild.states[envName].merged,
         changeResult.cacheValid,
@@ -908,6 +929,23 @@ export const loadWorkspace = async (
     const workspace = await getWorkspaceState()
     const result = await workspace.states[env].changedBy.getMany(authors.map(authorToAuthorKey))
     ?? []
+    return result.filter(values.isDefined).flat()
+  }
+  const getChangedElementsBetween = async (
+    dateRange: DateRange,
+    envName?: string,
+  ): Promise<ElemID[]> => {
+    const isDateInRange = (date: string): boolean => {
+      const dateToCheck = new Date(date)
+      return dateToCheck >= dateRange.start
+      && (dateRange.end === undefined || dateToCheck <= dateRange.end)
+    }
+    const env = envName ?? currentEnv()
+    const workspace = await getWorkspaceState()
+    const relevantTimestamps = await awu(workspace.states[env].changedAt.keys())
+      .filter(isDateInRange)
+      .toArray()
+    const result = await workspace.states[env].changedAt.getMany(relevantTimestamps)
     return result.filter(values.isDefined).flat()
   }
   return {
@@ -1304,6 +1342,7 @@ export const loadWorkspace = async (
     getFileEnvs: filePath => naclFilesSource.getFileEnvs(filePath),
     getStaticFile: async ({ filepath, encoding, env }) =>
       (naclFilesSource.getStaticFile(filepath, encoding, env ?? currentEnv())),
+    getChangedElementsBetween,
   }
 }
 

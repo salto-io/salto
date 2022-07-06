@@ -130,4 +130,18 @@ describe('unresolved_references', () => {
     const errors = await unresolvedReferencesValidator([toChange({ after: type })])
     expect(errors).toHaveLength(0)
   })
+  it('should not return errors if there are unresolved references in removal change', async () => {
+    const instance = new InstanceElement(
+      'instance',
+      new ObjectType({ elemID: new ElemID('adapter', 'type') }),
+      {
+        value: new ReferenceExpression(
+          unresolvedElemId,
+          new expressions.UnresolvedReference(unresolvedElemId)
+        ),
+      }
+    )
+    const errors = await unresolvedReferencesValidator([toChange({ before: instance })])
+    expect(errors).toHaveLength(0)
+  })
 })

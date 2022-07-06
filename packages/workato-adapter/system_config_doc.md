@@ -72,7 +72,7 @@ workato {
         transformation = {
           idFields = [
             "name",
-            "id",
+            "&folder_id",
           ]
           fieldsToHide = [
             {
@@ -125,6 +125,7 @@ workato {
         transformation = {
           idFields = [
           ]
+          extendsParentId = true
         }
       }
       folder = {
@@ -138,7 +139,7 @@ workato {
         transformation = {
           idFields = [
             "name",
-            "parent_id",
+            "&parent_id",
           ]
           fieldsToHide = [
             {

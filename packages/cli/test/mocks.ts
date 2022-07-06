@@ -27,7 +27,7 @@ import {
   Plan, PlanItem, EVENT_TYPES, DeployResult,
   telemetrySender, Telemetry, Tags, TelemetryEvent, CommandConfig,
 } from '@salto-io/core'
-import { Workspace, errors as wsErrors, state as wsState, parser, remoteMap, elementSource, pathIndex } from '@salto-io/workspace'
+import { Workspace, errors as wsErrors, state as wsState, parser, remoteMap, elementSource, pathIndex, staticFiles } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
@@ -315,6 +315,18 @@ type MockWorkspaceArgs = {
   envs?: string[]
   accounts?: string[]
 }
+
+export const mockStateStaticFilesSource = ()
+: MockInterface<staticFiles.StateStaticFilesSource> => ({
+  persistStaticFile: mockFunction<staticFiles.StateStaticFilesSource['persistStaticFile']>(),
+  getStaticFile: mockFunction<staticFiles.StateStaticFilesSource['getStaticFile']>(),
+  clear: mockFunction<staticFiles.StateStaticFilesSource['clear']>(),
+  rename: mockFunction<staticFiles.StateStaticFilesSource['rename']>(),
+  delete: mockFunction<staticFiles.StateStaticFilesSource['delete']>(),
+  flush: mockFunction<staticFiles.StateStaticFilesSource['flush']>(),
+})
+
+
 export const mockWorkspace = ({
   uid = '123',
   name = '',
@@ -329,6 +341,7 @@ export const mockWorkspace = ({
       saltoMetadata: new InMemoryRemoteMap([
         { key: 'version', value: currentVersion },
       ] as {key: wsState.StateMetadataKey; value: string}[]),
+      staticFilesSource: mockStateStaticFilesSource(),
     })
   )
   return {
@@ -418,6 +431,7 @@ export const mockWorkspace = ({
     getFileEnvs: mockFunction<Workspace['getFileEnvs']>(),
     getStaticFile: mockFunction<Workspace['getStaticFile']>(),
     getElementFileNames: mockFunction<Workspace['getElementFileNames']>(),
+    getChangedElementsBetween: mockFunction<Workspace['getChangedElementsBetween']>(),
   }
 }
 
@@ -727,18 +741,20 @@ export const deploy = async (
   }
 }
 
-export const staticFileChange = (action: 'add' | 'modify' | 'remove'): DetailedChange => {
+export const staticFileChange = (action: 'add' | 'modify' | 'remove', withContent = false): DetailedChange => {
   const id = new ElemID('salesforce')
   const path = ['salesforce', 'Records', 'advancedpdftemplate', 'custtmpl_103_t2257860_156']
   const beforeFile = new StaticFile({
     filepath: 'salesforce/advancedpdftemplate/custtmpl_103_t2257860_156.xml',
     encoding: 'binary',
     hash: '5fa14331d637ce9b056be8abe433d43d',
+    ...(withContent ? { content: Buffer.from('before') } : {}),
   })
   const afterFile = new StaticFile({
     filepath: 'salesforce/advancedpdftemplate/custtmpl_103_t2257860_156.xml',
     encoding: 'binary',
     hash: '81511e24c8023d819040a196fbaf8ee7',
+    ...(withContent ? { content: Buffer.from('after') } : {}),
   })
 
   if (action === 'add') {

@@ -63,7 +63,7 @@ export const applyFunctionToChangeData = async <T extends Change<unknown>>(
  * @param type    The map type for determining the field types
  * @param value   The map instance for determining the field names
  */
-export const toObjectType = (type: MapType | ObjectType, value: Values): ObjectType => (
+export const toObjectType = (type: MapType | ObjectType | ListType, value: Values): ObjectType => (
   isObjectType(type)
     ? type
     : new ObjectType({
@@ -82,10 +82,10 @@ export const toObjectType = (type: MapType | ObjectType, value: Values): ObjectT
 type FieldMapperFunc = (key: string) => Field | undefined
 
 const fieldMapperGenerator = (
-  type: ObjectType | TypeMap | MapType,
+  type: ObjectType | TypeMap | MapType | ListType,
   value: Values,
 ): FieldMapperFunc => {
-  if (isObjectType(type) || isMapType(type)) {
+  if (isObjectType(type) || isMapType(type) || isListType(type)) {
     const objType = toObjectType(type, value)
     return name => objType.fields[name]
   }
@@ -118,7 +118,7 @@ export const transformValues = async (
     allowEmpty = false,
   }: {
     values: Value
-    type: ObjectType | TypeMap | MapType
+    type: ObjectType | TypeMap | MapType | ListType
     transformFunc: TransformFunc
     strict?: boolean
     pathID?: ElemID
@@ -229,17 +229,28 @@ export const transformValues = async (
   const fieldMapper = fieldMapperGenerator(type, values)
 
   const newVal = isTopLevel ? await transformFunc({ value: values, path: pathID }) : values
-  if (!_.isPlainObject(newVal) && !_.isArray(newVal)) {
-    return newVal
+  if (_.isPlainObject(newVal)) {
+    const result = _.omitBy(
+      await mapValuesAsync(
+        newVal ?? {},
+        (value, key) => transformValue(value, pathID?.createNestedID(key), fieldMapper(key))
+      ),
+      _.isUndefined
+    )
+    return _.isEmpty(result) ? undefined : result
   }
-  const result = _.omitBy(
-    await mapValuesAsync(
-      newVal ?? {},
-      (value, key) => transformValue(value, pathID?.createNestedID(key), fieldMapper(key))
-    ),
-    _.isUndefined
-  )
-  return _.isEmpty(result) ? undefined : result
+  if (_.isArray(newVal)) {
+    const result = await awu(newVal)
+      .map((value, index) => transformValue(
+        value,
+        pathID?.createNestedID(String(index)),
+        fieldMapper(String(index))
+      ))
+      .filter(value => !_.isUndefined(value))
+      .toArray()
+    return result.length === 0 ? undefined : result
+  }
+  return newVal
 }
 
 export const elementAnnotationTypes = async (

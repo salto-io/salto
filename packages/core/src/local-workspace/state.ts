@@ -20,8 +20,8 @@ import { Element, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { exists, readTextFile, mkdirp, rm, rename, readZipFile, replaceContents, generateZipString } from '@salto-io/file'
 import { flattenElementStr, safeJsonStringify } from '@salto-io/adapter-utils'
-import { serialization, pathIndex, state, remoteMap } from '@salto-io/workspace'
-import { hash, collections } from '@salto-io/lowerdash'
+import { serialization, pathIndex, state, remoteMap, staticFiles } from '@salto-io/workspace'
+import { hash, collections, promises } from '@salto-io/lowerdash'
 import origGlob from 'glob'
 import semver from 'semver'
 import { promisify } from 'util'
@@ -92,6 +92,7 @@ export const localState = (
   filePrefix: string,
   envName: string,
   remoteMapCreator: remoteMap.RemoteMapCreator,
+  staticFilesSource: staticFiles.StateStaticFilesSource,
   persistent = true
 ): state.State => {
   let dirty = false
@@ -156,7 +157,8 @@ export const localState = (
     const quickAccessStateData = await state.buildStateData(
       envName,
       remoteMapCreator,
-      persistent
+      staticFilesSource,
+      persistent,
     )
     const filePaths = await getRelevantStateFiles()
     const stateFilesHash = await getHash(filePaths)
@@ -182,8 +184,10 @@ export const localState = (
   const createStateTextPerAccount = async (): Promise<Record<string, string>> => {
     const elements = await awu(await inMemState.getAll()).toArray()
     const elementsByAccount = _.groupBy(elements, element => element.elemID.adapter)
-    const accountToElementStrings = _.mapValues(elementsByAccount,
-      accountElements => serialize(accountElements))
+    const accountToElementStrings = await promises.object.mapValuesAsync(
+      elementsByAccount,
+      accountElements => serialize(accountElements),
+    )
     const accountToDates = await inMemState.getAccountsUpdateDates()
     const accountToPathIndex = pathIndex.serializePathIndexByAccount(
       await awu((await inMemState.getPathIndex()).entries()).toArray()
@@ -238,6 +242,8 @@ export const localState = (
       setDirty()
     },
     rename: async (newPrefix: string): Promise<void> => {
+      await staticFilesSource.rename(newPrefix)
+
       const stateFiles = await findStateFiles(currentFilePrefix)
       await awu(stateFiles).forEach(async filename => {
         const newFilePath = filename.replace(currentFilePrefix,
@@ -261,6 +267,7 @@ export const localState = (
       await inMemState.setVersion(version)
       await calculateHashImpl()
       await inMemState.flush()
+      await staticFilesSource.flush()
       dirty = false
       log.debug('finish flushing state')
     },

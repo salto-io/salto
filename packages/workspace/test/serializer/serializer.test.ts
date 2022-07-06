@@ -41,7 +41,6 @@ import { DuplicateVariableNameError } from '../../src/merger/internal/variables'
 import { CircularReferenceValidationError, IllegalReferenceValidationError, MissingRequiredFieldValidationError, RegexMismatchValidationError, InvalidValueRangeValidationError, InvalidStaticFileError, InvalidTypeValidationError } from '../../src/validator'
 import { UnresolvedReferenceValidationError } from '../../src/errors'
 import { MissingStaticFile, AccessDeniedStaticFile } from '../../src/workspace/static_files'
-import { DirectoryStore } from '../../src/workspace/dir_store'
 
 const { awu } = collections.asynciterable
 describe('State/cache serialization', () => {
@@ -210,8 +209,16 @@ describe('State/cache serialization', () => {
     functionRefInstance, settings, config, innerRefsInstance]
 
   it('should serialize and deserialize without relying on the constructor name', async () => {
-    const serialized = serialize([subInstance])
+    const serialized = await serialize([subInstance])
     expect(serialized).not.toMatch(subInstance.constructor.name)
+  })
+
+  it('should call the static files handler with the static files', async () => {
+    const file = new StaticFile({ filepath: 'filepath', content: Buffer.from('content') })
+    subInstance.value.a = file
+    const staticFileHandler = jest.fn()
+    await serialize([subInstance], 'replaceRefWithValue', staticFileHandler)
+    expect(staticFileHandler).toHaveBeenCalledWith(file)
   })
 
   it('should not serialize resolved values', async () => {
@@ -221,7 +228,7 @@ describe('State/cache serialization', () => {
       elementsToSerialize,
       createInMemoryElementSource(elementsToSerialize)
     )
-    const serialized = serialize(await awu(resolved).toArray(), 'keepRef')
+    const serialized = await serialize(await awu(resolved).toArray(), 'keepRef')
     const deserialized = await deserialize(serialized)
     const sortedElements = _.sortBy(elementsToSerialize, e => e.elemID.getFullName())
     const sortedElementsWithoutRefs = sortedElements
@@ -250,7 +257,7 @@ describe('State/cache serialization', () => {
   // Serializing our nacls to the state file should be the same as serializing the result of fetch
   it('should serialize resolved values to state', async () => {
     const elementsToSerialize = elements.filter(e => e.elemID.name !== 'also_me_template')
-    const serialized = serialize(
+    const serialized = await serialize(
       await awu(await resolve(
         elementsToSerialize,
         createInMemoryElementSource(elementsToSerialize)
@@ -280,9 +287,9 @@ describe('State/cache serialization', () => {
     expect(innerRefsInst.value.c).toBe(2)
   })
 
-  it('should create the same result for the same input regardless of elements order', () => {
-    const serialized = serialize(elements)
-    const shuffledSer = serialize(_.shuffle(elements))
+  it('should create the same result for the same input regardless of elements order', async () => {
+    const serialized = await serialize(elements)
+    const shuffledSer = await serialize(_.shuffle(elements))
     expect(serialized).toEqual(shuffledSer)
   })
 
@@ -295,7 +302,7 @@ describe('State/cache serialization', () => {
     let funcElement: InstanceElement
     beforeAll(async () => {
       const elementsToSerialize = elements.filter(e => e.elemID.name === 'also_me_function')
-      const serialized = serialize(elementsToSerialize)
+      const serialized = await serialize(elementsToSerialize)
       funcElement = (await deserialize(serialized))[0] as InstanceElement
     })
 
@@ -347,7 +354,7 @@ describe('State/cache serialization', () => {
   describe('with custom static files reviver', () => {
     it('should alter static files', async () => {
       const elementsToSerialize = elements.filter(e => e.elemID.name === 'also_me_function')
-      const serialized = serialize(elementsToSerialize)
+      const serialized = await serialize(elementsToSerialize)
       const funcElement = (await deserialize(
         serialized,
         x => Promise.resolve(new StaticFile({ filepath: x.filepath, hash: 'ZOMGZOMGZOMG', encoding: 'utf-8' }))
@@ -361,7 +368,7 @@ describe('State/cache serialization', () => {
     let deserialized: InstanceElement
     beforeEach(async () => {
       const classNameInst = new InstanceElement('ClsName', model, { [SALTO_CLASS_FIELD]: 'bla' })
-      deserialized = (await deserialize(serialize([classNameInst])))[0] as InstanceElement
+      deserialized = (await deserialize(await serialize([classNameInst])))[0] as InstanceElement
     })
     it('should keep deserialize the instance', () => {
       expect(isInstanceElement(deserialized)).toBeTruthy()
@@ -387,11 +394,11 @@ describe('State/cache serialization', () => {
         typeWithLazyStaticFile,
         {
           file: new LazyStaticFile(
-            'some/path.ext', 'hash', {} as unknown as DirectoryStore<Buffer>
+            'some/path.ext', 'hash', 'some/path.ext', async () => Buffer.from('content'),
           ),
         },
       )
-      deserialized = (await deserialize(serialize([classNameInst])))[0] as InstanceElement
+      deserialized = (await deserialize(await serialize([classNameInst])))[0] as InstanceElement
     })
     it('should serialize LazyStaticFile to StaticFile', () => {
       expect(isInstanceElement(deserialized)).toBeTruthy()
@@ -428,7 +435,7 @@ describe('State/cache serialization', () => {
         conflictingSettingError, duplicateInstanceKeyError, multiplePrimitiveTypesUnsupportedError,
         duplicateVariableNameError,
       ]
-      serialized = serialize(mergeErrors)
+      serialized = await serialize(mergeErrors)
       deserialized = await deserializeMergeErrors(serialized)
     })
     it('serialized value should be non empty string', () => {
@@ -505,7 +512,7 @@ describe('State/cache serialization', () => {
     ], err => err.elemID.getFullName())
 
     it('should serialize and deserialize correctly', async () => {
-      const serialized = serialize(validationErrors)
+      const serialized = await serialize(validationErrors)
       const deserialized = _.sortBy(
         await deserializeValidationErrors(serialized),
         err => err.elemID.getFullName()

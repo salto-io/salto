@@ -335,6 +335,7 @@ export const mockDirStore = (
     ),
     getFullPath: mockFunction<DirectoryStore<string>['getFullPath']>().mockImplementation(filename => filename),
     isPathIncluded: mockFunction<DirectoryStore<string>['isPathIncluded']>().mockReturnValue(true),
+    exists: mockFunction<DirectoryStore<string>['exists']>().mockImplementation(async filename => naclFiles.has(filename)),
   }
 }
 

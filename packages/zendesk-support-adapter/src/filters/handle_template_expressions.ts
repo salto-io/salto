@@ -177,19 +177,24 @@ const getContainers = async (instances: InstanceElement[]): Promise<
       ].flat().filter(template.containerValidator),
     }))).flat()
 
-const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promise<void> =>
-  (await getContainers(instances)).forEach(container => {
-    const { fieldName } = container.template
-    const instancesByType = _.groupBy(instances, i => i.elemID.typeName)
-    container.values.forEach(value => {
-      if (Array.isArray(value[fieldName])) {
-        value[fieldName] = value[fieldName].map((innerValue: unknown) =>
-          (_.isString(innerValue) ? formulaToTemplate(innerValue, instancesByType) : innerValue))
-      } else if (value[fieldName]) {
-        value[fieldName] = formulaToTemplate(value[fieldName], instancesByType)
-      }
+const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promise<void> => {
+  try {
+    (await getContainers(instances)).forEach(container => {
+      const { fieldName } = container.template
+      const instancesByType = _.groupBy(instances, i => i.elemID.typeName)
+      container.values.forEach(value => {
+        if (Array.isArray(value[fieldName])) {
+          value[fieldName] = value[fieldName].map((innerValue: unknown) =>
+            (_.isString(innerValue) ? formulaToTemplate(innerValue, instancesByType) : innerValue))
+        } else if (value[fieldName]) {
+          value[fieldName] = formulaToTemplate(value[fieldName], instancesByType)
+        }
+      })
     })
-  })
+  } catch (e) {
+    log.error(`Error parsing templates in deployment: ${e.message}`)
+  }
+}
 
 /**
  * Process values that can reference other objects and turn them into TemplateExpressions
@@ -200,39 +205,50 @@ const filterCreator: FilterCreator = () => {
     onFetch: async (elements: Element[]): Promise<void> => log.time(async () =>
       replaceFormulasWithTemplates(elements.filter(isInstanceElement)), 'Create template creation filter'),
     preDeploy: (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () => {
-      (await getContainers(await awu(changes).map(getChangeData).toArray())).forEach(
-        async container => {
-          const { fieldName } = container.template
-          const handleTemplateValue = (template: TemplateExpression): string => {
-            const templateUsingIdField = new TemplateExpression({
-              parts: template.parts.map(part => {
-                if (isReferenceExpression(part)) {
-                  if (saltoTypeToZendeskReferenceType[part.elemID.typeName]) {
-                    return [saltoTypeToZendeskReferenceType[part.elemID.typeName],
-                      '_',
-                      new ReferenceExpression(part.elemID.createNestedID('id'), part.value.value.id)]
+      try {
+        (await getContainers(await awu(changes).map(getChangeData).toArray())).forEach(
+          async container => {
+            const { fieldName } = container.template
+            const handleTemplateValue = (template: TemplateExpression): string => {
+              const templateUsingIdField = new TemplateExpression({
+                parts: template.parts.map(part => {
+                  if (isReferenceExpression(part)) {
+                    if (saltoTypeToZendeskReferenceType[part.elemID.typeName]) {
+                      return [saltoTypeToZendeskReferenceType[part.elemID.typeName],
+                        '_',
+                        new ReferenceExpression(part.elemID.createNestedID('id'), part.value.value.id)]
+                    }
+                    if (part.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME) {
+                      if (!isInstanceElement(part.value)) {
+                        return part
+                      }
+                      if (!_.isString(part.value.value.placeholder)) {
+                        return part
+                      }
+                      const placeholder = part.value.value.placeholder.match(/{{(.*)}}/)
+                      return placeholder?.pop() ?? part
+                    }
                   }
-                  if (part.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME) {
-                    return part.value.value.placeholder.match(/{{(.*)}}/).pop()
-                  }
-                }
-                return part
-              }).flat(),
-            })
-            deployTemplateMapping[templateUsingIdField.value] = template
-            return templateUsingIdField.value
-          }
-          const replaceIfTemplate = (value: unknown): unknown =>
-            (isTemplateExpression(value) ? handleTemplateValue(value) : value)
-          container.values.forEach(value => {
-            if (Array.isArray(value[fieldName])) {
-              value[fieldName] = value[fieldName].map(replaceIfTemplate)
-            } else {
-              value[fieldName] = replaceIfTemplate(value[fieldName])
+                  return part
+                }).flat(),
+              })
+              deployTemplateMapping[templateUsingIdField.value] = template
+              return templateUsingIdField.value
             }
-          })
-        }
-      )
+            const replaceIfTemplate = (value: unknown): unknown =>
+              (isTemplateExpression(value) ? handleTemplateValue(value) : value)
+            container.values.forEach(value => {
+              if (Array.isArray(value[fieldName])) {
+                value[fieldName] = value[fieldName].map(replaceIfTemplate)
+              } else {
+                value[fieldName] = replaceIfTemplate(value[fieldName])
+              }
+            })
+          }
+        )
+      } catch (e) {
+        log.error(`Error parsing templates in deployment: ${e.message}`)
+      }
     }, 'Create template resolve filter'),
     onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () =>
       (await getContainers(await awu(changes).map(getChangeData).toArray()))

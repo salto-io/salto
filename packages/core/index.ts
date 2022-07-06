@@ -45,6 +45,7 @@ export {
   isStackEvent, EVENT_TYPES,
 } from './src/telemetry'
 export { localDirectoryStore } from './src/local-workspace/dir_store'
+export { buildS3DirectoryStore } from './src/local-workspace/s3_dir_store'
 export {
   WORKSPACE_CONFIG_NAME,
   USER_CONFIG_NAME,

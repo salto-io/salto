@@ -14,7 +14,9 @@
 * limitations under the License.
 */
 import { Element, ElemID } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
+import { getNestedStaticFiles } from '../nacl_files/nacl_file_update'
 import { updatePathIndex, overridePathIndex, PathIndex } from '../path_index'
 import { RemoteMap } from '../remote_map'
 import { State, StateData } from './state'
@@ -22,6 +24,8 @@ import { State, StateData } from './state'
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 
 const { awu } = collections.asynciterable
+
+const log = logger(module)
 
 type InMemoryState = State & {
   setVersion(version: string): Promise<void>
@@ -53,27 +57,50 @@ export const buildInMemState = (
   }
   const setHashImpl = async (newHash: string): Promise<void> => (await stateData())
     .saltoMetadata.set('hash', newHash)
+
+  const deleteFromFilesSource = async (elements: Element[]): Promise<void> => {
+    const files = await getNestedStaticFiles(elements)
+    await Promise.all(files.map(async file => (await stateData()).staticFilesSource.delete(file)))
+  }
+
+  const removeId = async (id: ElemID): Promise<void> => {
+    await deleteFromFilesSource([await (await stateData()).elements.get(id)])
+    await (await stateData()).elements.delete(id)
+  }
+
   return {
     getAll: async (): Promise<AsyncIterable<Element>> => (await stateData()).elements.getAll(),
     list: async (): Promise<AsyncIterable<ElemID>> => (await stateData()).elements.list(),
     get: async (id: ElemID): Promise<Element | undefined> => (await stateData()).elements.get(id),
     has: async (id: ElemID): Promise<boolean> => (await stateData()).elements.has(id),
-    delete: async (id: ElemID): Promise<void> => (await stateData()).elements.delete(id),
-    deleteAll: async (ids: ThenableIterable<ElemID>): Promise<void> => (
-      await stateData()).elements.deleteAll(ids),
-    set: async (element: Element): Promise<void> => (await stateData()).elements.set(element),
-    setAll: async (elements: ThenableIterable<Element>): Promise<void> => (
-      await stateData()).elements.setAll(elements),
-    remove: async (id: ElemID): Promise<void> => (await stateData()).elements.delete(id),
-    isEmpty: async (): Promise<boolean> => (await stateData()).elements.isEmpty(),
-    override: async (elements: AsyncIterable<Element>, accounts?: string[]): Promise<void> => {
-      const data = await stateData()
-      const newAccounts = accounts ?? await awu(getUpdateDate(data).keys()).toArray()
-      await data.elements.overide(elements)
-      await getUpdateDate(data).setAll(
-        awu(newAccounts.map(s => ({ key: s, value: new Date(Date.now()) })))
+    delete: removeId,
+    deleteAll: async (ids: ThenableIterable<ElemID>): Promise<void> => {
+      await deleteFromFilesSource(
+        await awu(ids).map(async id => (await stateData()).elements.get(id)).toArray()
       )
+      return (await stateData()).elements.deleteAll(ids)
     },
+    set: async (element: Element): Promise<void> =>
+      (await stateData()).elements.set(element),
+    setAll: async (elements: ThenableIterable<Element>): Promise<void> =>
+      (await stateData()).elements.setAll(elements),
+    remove: removeId,
+    isEmpty: async (): Promise<boolean> => (await stateData()).elements.isEmpty(),
+    override: (elements: AsyncIterable<Element>, accounts?: string[])
+      : Promise<void> => log.time(
+      async () => {
+        const data = await stateData()
+        const newAccounts = accounts ?? await awu(getUpdateDate(data).keys()).toArray()
+
+        await data.staticFilesSource.clear()
+
+        await data.elements.overide(elements)
+        return getUpdateDate(data).setAll(
+          awu(newAccounts.map(s => ({ key: s, value: new Date(Date.now()) })))
+        )
+      },
+      'state override'
+    ),
     getAccountsUpdateDates,
     getServicesUpdateDates: getAccountsUpdateDates,
     existingAccounts: async (): Promise<string[]> =>
@@ -99,6 +126,7 @@ export const buildInMemState = (
       await currentStateData.pathIndex.clear()
       await getUpdateDate(currentStateData).clear()
       await currentStateData.saltoMetadata.clear()
+      await currentStateData.staticFilesSource.clear()
     },
     flush: async () => {
       if (!persistent) {
@@ -109,6 +137,7 @@ export const buildInMemState = (
       await currentStateData.pathIndex.flush()
       await getUpdateDate(currentStateData).flush()
       await currentStateData.saltoMetadata.flush()
+      await currentStateData.staticFilesSource.flush()
     },
     rename: () => Promise.resolve(),
     getHash: async () => (await stateData()).saltoMetadata.get('hash'),

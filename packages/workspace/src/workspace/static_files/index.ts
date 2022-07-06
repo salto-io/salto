@@ -15,4 +15,4 @@
 */
 export { StaticFilesCache, StaticFilesData } from './cache'
 export { buildStaticFilesSource, buildInMemStaticFilesSource, LazyStaticFile, AbsoluteStaticFile } from './source'
-export { StaticFilesSource, MissingStaticFile, AccessDeniedStaticFile } from './common'
+export { StaticFilesSource, MissingStaticFile, AccessDeniedStaticFile, StateStaticFilesStore, StateStaticFilesSource } from './common'

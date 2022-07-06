@@ -173,14 +173,16 @@ describe('boardDeploymentFilter', () => {
     beforeEach(() => {
       deployChangeMock.mockReset()
 
-      connection.put.mockResolvedValue({
+      connection.get.mockResolvedValue({
         status: 200,
         data: {
-          mappedColumns: [
-            {
-              name: 'someColumn',
-            },
-          ],
+          [COLUMNS_CONFIG_FIELD]: {
+            columns: [
+              {
+                name: 'someColumn',
+              },
+            ],
+          },
         },
       })
     })
@@ -308,14 +310,16 @@ describe('boardDeploymentFilter', () => {
       })
 
       it('should deploy columns when changed', async () => {
-        connection.put.mockResolvedValue({
+        connection.get.mockResolvedValue({
           status: 200,
           data: {
-            mappedColumns: [
-              {
-                name: 'someColumn2',
-              },
-            ],
+            [COLUMNS_CONFIG_FIELD]: {
+              columns: [
+                {
+                  name: 'someColumn2',
+                },
+              ],
+            },
           },
         })
 
@@ -353,17 +357,19 @@ describe('boardDeploymentFilter', () => {
       })
 
       it('should deploy columns of a kanban when changed', async () => {
-        connection.put.mockResolvedValue({
+        connection.get.mockResolvedValue({
           status: 200,
           data: {
-            mappedColumns: [
-              {
-                name: 'backlog',
-              },
-              {
-                name: 'someColumn2',
-              },
-            ],
+            [COLUMNS_CONFIG_FIELD]: {
+              columns: [
+                {
+                  name: 'backlog',
+                },
+                {
+                  name: 'someColumn2',
+                },
+              ],
+            },
           },
         })
 
@@ -404,36 +410,42 @@ describe('boardDeploymentFilter', () => {
       })
 
       it('should retry deploy columns', async () => {
-        connection.put.mockResolvedValueOnce({
+        connection.get.mockResolvedValueOnce({
           status: 200,
           data: {
-            mappedColumns: [
-              {
-                name: 'someColumn',
-              },
-            ],
+            [COLUMNS_CONFIG_FIELD]: {
+              columns: [
+                {
+                  name: 'someColumn',
+                },
+              ],
+            },
           },
         })
 
-        connection.put.mockResolvedValueOnce({
+        connection.get.mockResolvedValueOnce({
           status: 200,
           data: {
-            mappedColumns: [
-              {
-                name: 'someColumn',
-              },
-            ],
+            [COLUMNS_CONFIG_FIELD]: {
+              columns: [
+                {
+                  name: 'someColumn',
+                },
+              ],
+            },
           },
         })
 
-        connection.put.mockResolvedValueOnce({
+        connection.get.mockResolvedValueOnce({
           status: 200,
           data: {
-            mappedColumns: [
-              {
-                name: 'someColumn2',
-              },
-            ],
+            [COLUMNS_CONFIG_FIELD]: {
+              columns: [
+                {
+                  name: 'someColumn2',
+                },
+              ],
+            },
           },
         })
 
@@ -471,14 +483,16 @@ describe('boardDeploymentFilter', () => {
       })
 
       it('should throw if deploy columns does not change the columns', async () => {
-        connection.put.mockResolvedValue({
+        connection.get.mockResolvedValue({
           status: 200,
           data: {
-            mappedColumns: [
-              {
-                name: 'someColumn',
-              },
-            ],
+            [COLUMNS_CONFIG_FIELD]: {
+              columns: [
+                {
+                  name: 'someColumn',
+                },
+              ],
+            },
           },
         })
 
@@ -495,8 +509,8 @@ describe('boardDeploymentFilter', () => {
         expect(deployResult.errors).toHaveLength(1)
       })
 
-      it('should throw if update columns response is invalid', async () => {
-        connection.put.mockResolvedValue({
+      it('should do nothing if get columns response is invalid', async () => {
+        connection.get.mockResolvedValue({
           status: 200,
           data: {
           },
@@ -509,8 +523,7 @@ describe('boardDeploymentFilter', () => {
             },
           ],
         }
-        const { deployResult } = await filter.deploy([change])
-        expect(deployResult.errors).toHaveLength(1)
+        await filter.deploy([change])
       })
 
       it('should deploy sub query when changed', async () => {

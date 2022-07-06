@@ -28,7 +28,7 @@ import { TestFuncImpl } from '../utils'
 
 import { serialize, deserialize, SALTO_CLASS_FIELD, deserializeMergeErrors, deserializeValidationErrors } from '../../src/serializer/elements'
 import { resolve } from '../../src/expressions'
-import { LazyStaticFile } from '../../src/workspace/static_files/source'
+import { AbsoluteStaticFile, LazyStaticFile } from '../../src/workspace/static_files/source'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
 import { MergeError, DuplicateAnnotationError } from '../../src/merger/internal/common'
 import {
@@ -295,6 +295,19 @@ describe('State/cache serialization', () => {
 
   it('should throw error if trying to deserialize a non element object', async () => {
     await expect(deserialize(safeJsonStringify([{ test }]))).rejects.toThrow()
+  })
+
+  it('should not serialize redundant values in StaticFile sub classes', async () => {
+    const absInstance = new InstanceElement(
+      'instance',
+      model,
+      {
+        file: new AbsoluteStaticFile({ filepath: 'filepath', content: Buffer.from('content'), absoluteFilePath: 'absolute/filepath' }),
+      },
+    )
+    expect(
+      await serialize([absInstance])
+    ).not.toContain('absolute/filepath')
   })
 
   describe('functions', () => {

@@ -14,9 +14,12 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { isObjectType, ObjectType, isInstanceElement, InstanceElement } from '@salto-io/adapter-api'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { EOL } from 'os'
 import { diff, localWorkspaceConfigSource, createEnvironmentSource, loadLocalWorkspace } from '@salto-io/core'
-import { Workspace, createElementSelectors, remoteMap as rm, EnvironmentSource } from '@salto-io/workspace'
+import { Workspace, createElementSelectors, remoteMap as rm, EnvironmentSource, ElementsSource } from '@salto-io/workspace'
 import { CommandDefAction, createCommandGroupDef, createPublicCommandDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
 import { CliOutput, CliExitCode } from '../types'
 import {
@@ -30,6 +33,8 @@ import { outputLine, errorOutputLine } from '../outputer'
 import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts } from './common/accounts'
 import { ConfigOverrideArg, CONFIG_OVERRIDE_OPTION, getConfigOverrideChanges } from './common/config_override'
 import { getWorkspaceTelemetryTags } from '../workspace/workspace'
+
+const { awu } = collections.asynciterable
 
 const setEnvironment = async (
   envName: string,
@@ -174,6 +179,132 @@ const envDiffDef = createWorkspaceCommand({
     ],
   },
   action: diffAction,
+})
+
+// Delete
+type sfProfilesInfoArgs = {
+  envName?: string
+}
+
+const RELEVANT_METADATA_TYPES = [
+  'ApexClass',
+  'ApexPage',
+  'FlowDefinition',
+  'ExternalDataSource',
+  'CustomPermission',
+  'CustomApplication',
+  'Layout',
+  'RecordType',
+  'InstalledPackage',
+]
+
+const CUSTOM_SUFFIX = '__c'
+const NAMESPACE_SEPARATOR = '__'
+
+const getInstancesCounts = async (
+  salesforceElements: InstanceElement[],
+  elementsSource: ElementsSource,
+): Promise<Record<string, number>> =>
+  (Object.fromEntries((await awu(RELEVANT_METADATA_TYPES).map(async metadataType => (
+    {
+      type: metadataType,
+      count: (await awu(salesforceElements).filter(async e =>
+        (await e.getType(elementsSource)).annotations.metadataType === metadataType)
+        .toArray()).length,
+    }
+  )).toArray()).map(tC => [tC.type, tC.count])))
+
+const sfProfilesInfoAction: WorkspaceCommandAction<sfProfilesInfoArgs> = async ({
+  input,
+  output,
+  workspace,
+}): Promise<CliExitCode> => {
+  const { envName } = input
+  if (envName !== undefined && !(workspace.envs().includes(envName))) {
+    errorOutputLine(`Unknown environment ${envName}`, output)
+    return CliExitCode.UserInputError
+  }
+  try {
+    const elementsSource = await workspace.elements(false, envName ?? workspace.currentEnv())
+    const sfElements = await awu(await elementsSource.getAll())
+      .filter(e => e.elemID.adapter === 'salesforce')
+      .toArray()
+    const customObjects = sfElements.filter(e =>
+      isObjectType(e)
+      && e.annotations.metadataType === 'CustomObject'
+      && e.annotations.apiName !== undefined)
+    const [custom, standard] = _.partition(
+      customObjects,
+      e => e.annotations.apiName.endsWith(CUSTOM_SUFFIX),
+    )
+    const customObjectFields = (custom as ObjectType[]).flatMap(c =>
+      Object.values(c.fields))
+    const [coCustomFields, coStandardFields] = _.partition(
+      customObjectFields,
+      f => f.name.endsWith(CUSTOM_SUFFIX),
+    )
+    const [namespacedCoCustomFields, nonNamespacedCoCustomFields] = _.partition(
+      coCustomFields,
+      f => f.name.split(NAMESPACE_SEPARATOR).length === 3,
+    )
+    const standardObjectFields = (standard as ObjectType[]).flatMap(s =>
+      Object.values(s.fields))
+    const [soCustomFields, soStandardFields] = _.partition(
+      standardObjectFields,
+      f => f.name.endsWith(CUSTOM_SUFFIX),
+    )
+    const [namespacedSoCustomFields, nonNamespacedSoCustomFields] = _.partition(
+      soCustomFields,
+      f => f.name.split(NAMESPACE_SEPARATOR).length === 3,
+    )
+    const instances = sfElements.filter(e => isInstanceElement(e)) as InstanceElement[]
+    const summary = {
+      ...(await getInstancesCounts(instances, elementsSource)),
+      customObjects: {
+        objects: custom.length,
+        standardFields: coStandardFields.length,
+        packageCustomFields: namespacedCoCustomFields.length,
+        userCustomFields: nonNamespacedCoCustomFields.length,
+      },
+      standardObjects: {
+        objects: standard.length,
+        standardFields: soStandardFields.length,
+        packageCustomFields: namespacedSoCustomFields.length,
+        userCustomFields: nonNamespacedSoCustomFields.length,
+      },
+    }
+    outputLine(
+      safeJsonStringify(
+        summary,
+        undefined,
+        2
+      ),
+      output,
+    )
+  } catch (error) {
+    outputLine(
+      error.message,
+      output,
+    )
+  }
+  return CliExitCode.Success
+}
+
+const envSfProfilesInfoDef = createWorkspaceCommand({
+  properties: {
+    name: 'sfProfilesInfo',
+    description: 'Information about Salesforce that helps with understanding Profiles',
+    keyedOptions: [],
+    positionalOptions: [
+      {
+        name: 'envName',
+        required: false,
+        description: 'The environment name',
+        type: 'string',
+      },
+    ],
+  },
+  action: sfProfilesInfoAction,
 })
 
 // Rename
@@ -406,6 +537,7 @@ const envGroupDef = createCommandGroupDef({
     envDeleteDef,
     envRenameDef,
     envDiffDef,
+    envSfProfilesInfoDef,
   ],
 })
 

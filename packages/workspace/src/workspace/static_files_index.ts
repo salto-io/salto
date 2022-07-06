@@ -13,14 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, getChangeData, Element, toChange, isAdditionOrModificationChange, isRemovalChange } from '@salto-io/adapter-api'
+import { Change, getChangeData, Element, toChange, isAdditionOrModificationChange, isRemovalChange, isStaticFile } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _, { isEmpty } from 'lodash'
 import { ElementsSource } from './elements_source'
 import { RemoteMap } from './remote_map'
-import { LazyStaticFile } from './static_files'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -41,7 +40,7 @@ const getStaticFilesPaths = (element: Element): string[] => {
   walkOnElement({
     element,
     func: ({ value }) => {
-      if (value instanceof LazyStaticFile) {
+      if (isStaticFile(value)) {
         staticFilesPaths.add(value.filepath)
       }
       return WALK_NEXT_STEP.RECURSE

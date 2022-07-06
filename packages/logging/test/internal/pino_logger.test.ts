@@ -352,37 +352,21 @@ describe('pino based logger', () => {
       const logTags = { number: 1, string: '1', bool: true }
 
       describe('text format', () => {
-        const LOG_MESSAGE = 'Test log message'
-
-        beforeEach(() => {
+        beforeEach(async () => {
           initialConfig.globalTags = logTags
           logger = createLogger()
+          await logLine({ level: 'warn' })
         })
         it('line should contain log tags', async () => {
-          await logLine({ level: 'warn' })
           expect(line).toContain('number=1')
           expect(line).toContain('string="1"')
           expect(line).toContain('bool=true')
         })
-        it('line should contain basic log data', async () => {
-          await logLine({ level: 'warn' })
+        it('line should contain basic log data', () => {
           expect(line).toMatch(TIMESTAMP_REGEX)
           expect(line).toContain(NAMESPACE)
           expect(line).toContain('warn')
           expect(line).toContain('hello { world: true }')
-        })
-        describe('when log is longer than maxLogChunkSize', () => {
-          beforeEach(() => {
-            initialConfig.maxJsonLogChunkSize = 5
-            logger = createLogger()
-            logger.assignTags(logTags)
-          })
-
-          it('should not split into chunks', () => {
-            logger.log('warn', LOG_MESSAGE)
-            const lines = consoleStream.contents().split(EOL).filter(l => l !== '')
-            expect(lines).toHaveLength(1)
-          })
         })
       })
       describe('json format', () => {
@@ -449,7 +433,7 @@ describe('pino based logger', () => {
           })
         })
         describe('getGlobalTags', () => {
-          let globalTagsResponse: LogTags | undefined
+          let globalTagsResponse: LogTags| undefined
           beforeEach(async () => {
             initialConfig.globalTags = logTags
             logger = createLogger()
@@ -497,31 +481,84 @@ describe('pino based logger', () => {
         })
       })
     })
-    describe('log level methods', () => {
-      beforeEach(() => {
-        [initialConfig.minLevel] = LOG_LEVELS
-        initialConfig.colorize = false
-        logger = createLogger()
-      })
+  })
+  describe('log level methods', () => {
+    beforeEach(() => {
+      [initialConfig.minLevel] = LOG_LEVELS
+      initialConfig.colorize = false
+      logger = createLogger()
+    })
 
-      LOG_LEVELS.forEach(level => {
-        describe(`when calling method ${level}`, () => {
-          beforeEach(async () => {
-            await logLine({ level })
-          })
+    LOG_LEVELS.forEach(level => {
+      describe(`when calling method ${level}`, () => {
+        beforeEach(async () => {
+          await logLine({ level })
+        })
 
-          it('should log the message correctly', () => {
-            expect(line).toContain(`${level} ${NAMESPACE} hello { world: true }`)
-          })
+        it('should log the message correctly', () => {
+          expect(line).toContain(`${level} ${NAMESPACE} hello { world: true }`)
         })
       })
     })
+  })
 
-    describe('time', () => {
+  describe('time', () => {
+    beforeEach(() => {
+      initialConfig.minLevel = 'debug'
+      initialConfig.colorize = false
+      logger = createLogger()
+    })
+
+    describe('when a sync method is given', () => {
+      const expectedResult = { hello: 'world' }
+      let result: unknown
+      let startLine: string
+
+      beforeEach(async () => {
+        result = logger.time(() => expectedResult, 'hello func %o', 12)
+        await repo.end();
+        [startLine, line] = consoleStream.contents().split(EOL)
+      })
+
+      it('should return the original value', () => {
+        expect(result).toBe(expectedResult)
+      })
+
+      it('should log the time correctly', () => {
+        expect(startLine).toContain(`debug ${NAMESPACE} hello func 12 starting`)
+        expect(line).toContain(`debug ${NAMESPACE} hello func 12 took`)
+      })
+    })
+
+    describe('when an async method is given', () => {
+      const expectedResult = { hello: 'world' }
+      let result: unknown
+      let startLine: string
+
+      beforeEach(async () => {
+        result = await logger.time(async () => expectedResult, 'hello func %o', 12)
+        await repo.end();
+        [startLine, line] = consoleStream.contents().split('\n')
+      })
+
+      it('should return the original value', () => {
+        expect(result).toBe(expectedResult)
+      })
+
+      it('should log the time correctly', () => {
+        expect(startLine).toContain(`debug ${NAMESPACE} hello func 12 starting`)
+        expect(line).toContain(`debug ${NAMESPACE} hello func 12 took`)
+      })
+    })
+
+    describe('assignGlobalLogTimeDecorator', () => {
+      let decoratorCalled = false
       beforeEach(() => {
-        initialConfig.minLevel = 'debug'
-        initialConfig.colorize = false
-        logger = createLogger()
+        decoratorCalled = false
+        logger.assignGlobalLogTimeDecorator(inner => {
+          decoratorCalled = true
+          return inner
+        })
       })
 
       describe('when a sync method is given', () => {
@@ -542,6 +579,10 @@ describe('pino based logger', () => {
         it('should log the time correctly', () => {
           expect(startLine).toContain(`debug ${NAMESPACE} hello func 12 starting`)
           expect(line).toContain(`debug ${NAMESPACE} hello func 12 took`)
+        })
+
+        it('expect decoratorCalled should be true', () => {
+          expect(decoratorCalled).toBeTruthy()
         })
       })
 
@@ -564,589 +605,524 @@ describe('pino based logger', () => {
           expect(startLine).toContain(`debug ${NAMESPACE} hello func 12 starting`)
           expect(line).toContain(`debug ${NAMESPACE} hello func 12 took`)
         })
-      })
 
-      describe('assignGlobalLogTimeDecorator', () => {
-        let decoratorCalled = false
-        beforeEach(() => {
-          decoratorCalled = false
-          logger.assignGlobalLogTimeDecorator(inner => {
-            decoratorCalled = true
-            return inner
-          })
-        })
-
-        describe('when a sync method is given', () => {
-          const expectedResult = { hello: 'world' }
-          let result: unknown
-          let startLine: string
-
-          beforeEach(async () => {
-            result = logger.time(() => expectedResult, 'hello func %o', 12)
-            await repo.end();
-            [startLine, line] = consoleStream.contents().split(EOL)
-          })
-
-          it('should return the original value', () => {
-            expect(result).toBe(expectedResult)
-          })
-
-          it('should log the time correctly', () => {
-            expect(startLine).toContain(`debug ${NAMESPACE} hello func 12 starting`)
-            expect(line).toContain(`debug ${NAMESPACE} hello func 12 took`)
-          })
-
-          it('expect decoratorCalled should be true', () => {
-            expect(decoratorCalled).toBeTruthy()
-          })
-        })
-
-        describe('when an async method is given', () => {
-          const expectedResult = { hello: 'world' }
-          let result: unknown
-          let startLine: string
-
-          beforeEach(async () => {
-            result = await logger.time(async () => expectedResult, 'hello func %o', 12)
-            await repo.end();
-            [startLine, line] = consoleStream.contents().split('\n')
-          })
-
-          it('should return the original value', () => {
-            expect(result).toBe(expectedResult)
-          })
-
-          it('should log the time correctly', () => {
-            expect(startLine).toContain(`debug ${NAMESPACE} hello func 12 starting`)
-            expect(line).toContain(`debug ${NAMESPACE} hello func 12 took`)
-          })
-
-          it('expect decoratorCalled should be true', () => {
-            expect(decoratorCalled).toBeTruthy()
-          })
+        it('expect decoratorCalled should be true', () => {
+          expect(decoratorCalled).toBeTruthy()
         })
       })
     })
-    describe('logger creation', () => {
+  })
+  describe('logger creation', () => {
+    beforeEach(() => {
+      logger = createLogger()
+    })
+
+    describe('when created with a string namespace', () => {
+      beforeEach(async () => {
+        logger = repo(NAMESPACE)
+        await logLine()
+      })
+
+      it('should write the message with the namespace', () => {
+        expect(line).toContain(`${NAMESPACE}`)
+      })
+
+      describe('when getting the same logger again', () => {
+        let logger2: Logger
+
+        beforeEach(() => {
+          logger2 = repo(NAMESPACE)
+        })
+
+        it('should return the same instance', () => {
+          expect(logger).toBe(logger2)
+        })
+      })
+    })
+
+    describe('when created with a module namespace arg', () => {
+      beforeEach(async () => {
+        logger = repo(module)
+        await logLine()
+      })
+
+      it('should write the message with the child namespace as string', () => {
+        expect(line).toContain('logging/test/internal/pino_logger.test')
+      })
+
+      describe('when getting the same logger again', () => {
+        let logger2: Logger
+
+        beforeEach(() => {
+          logger2 = repo(module)
+        })
+
+        it('should return the same instance', () => {
+          expect(logger).toBe(logger2)
+        })
+      })
+    })
+
+    describe('when created with existing logTags in globals', () => {
+      beforeEach(async () => {
+        global.globalLogTags = { someTags: 'tag here' }
+        logger = repo(NAMESPACE)
+        await logLine()
+        global.globalLogTags = {}
+      })
+
+      it('should include logTag from globals', () => {
+        expect(line).toMatch(/someTags="tag here"/)
+      })
+    })
+  })
+  describe('setMinLevel', () => {
+    describe('when a partial config is specified', () => {
+      beforeEach(async () => {
+        logger = createLogger()
+        repo.setMinLevel('trace')
+        await logLine({ level: 'trace' })
+      })
+
+      it('should update the existing logger', () => {
+        expect(line).not.toHaveLength(0)
+      })
+    })
+  })
+
+  let jsonLine: { [key: string]: unknown }
+  describe('logging Error instances', () => {
+    let error: Error
+
+    class MyError extends Error {
+      readonly customProp1: string
+      readonly customProp2: { aNumber: number }
+      constructor(message: string, customProp1: string, customProp2: { aNumber: number }) {
+        super(message)
+        this.customProp1 = customProp1
+        this.customProp2 = customProp2
+      }
+    }
+
+    beforeEach(() => {
+      error = new MyError('testing 123', 'customVal1', { aNumber: 42 })
+    })
+
+    describe('when format is "text"', () => {
+      let line1: string
+      let line2: string
+
       beforeEach(() => {
         logger = createLogger()
+        logger.log('warn', error);
+        [line1, line2] = consoleStream.contents().split('\n')
       })
 
-      describe('when created with a string namespace', () => {
-        beforeEach(async () => {
-          logger = repo(NAMESPACE)
-          await logLine()
-        })
-
-        it('should write the message with the namespace', () => {
-          expect(line).toContain(`${NAMESPACE}`)
-        })
-
-        describe('when getting the same logger again', () => {
-          let logger2: Logger
-
-          beforeEach(() => {
-            logger2 = repo(NAMESPACE)
-          })
-
-          it('should return the same instance', () => {
-            expect(logger).toBe(logger2)
-          })
-        })
-      })
-
-      describe('when created with a module namespace arg', () => {
-        beforeEach(async () => {
-          logger = repo(module)
-          await logLine()
-        })
-
-        it('should write the message with the child namespace as string', () => {
-          expect(line).toContain('logging/test/internal/pino_logger.test')
-        })
-
-        describe('when getting the same logger again', () => {
-          let logger2: Logger
-
-          beforeEach(() => {
-            logger2 = repo(module)
-          })
-
-          it('should return the same instance', () => {
-            expect(logger).toBe(logger2)
-          })
-        })
-      })
-
-      describe('when created with existing logTags in globals', () => {
-        beforeEach(async () => {
-          global.globalLogTags = { someTags: 'tag here' }
-          logger = repo(NAMESPACE)
-          await logLine()
-          global.globalLogTags = {}
-        })
-
-        it('should include logTag from globals', () => {
-          expect(line).toMatch(/someTags="tag here"/)
-        })
-      })
-    })
-    describe('setMinLevel', () => {
-      describe('when a partial config is specified', () => {
-        beforeEach(async () => {
-          logger = createLogger()
-          repo.setMinLevel('trace')
-          await logLine({ level: 'trace' })
-        })
-
-        it('should update the existing logger', () => {
-          expect(line).not.toHaveLength(0)
-        })
+      it('should log the error message and stack in multiple lines', () => {
+        expect(line1).toContain('Error: testing 123') // message
+        expect(line2).toContain(' at ') // stack
+        expect(consoleStream.contents())
+        // custom props
+          .toContain("customProp1: 'customVal1', customProp2: { aNumber: 42 }")
       })
     })
 
-    let jsonLine: { [key: string]: unknown }
-    describe('logging Error instances', () => {
-      let error: Error
-
-      class MyError extends Error {
-        readonly customProp1: string
-        readonly customProp2: { aNumber: number }
-
-        constructor(message: string, customProp1: string, customProp2: { aNumber: number }) {
-          super(message)
-          this.customProp1 = customProp1
-          this.customProp2 = customProp2
-        }
-      }
-
+    describe('when format is "json"', () => {
       beforeEach(() => {
-        error = new MyError('testing 123', 'customVal1', { aNumber: 42 })
+        initialConfig.format = 'json'
+        logger = createLogger()
+        logger.log('warn', error)
+        const [line1] = consoleStream.contents().split('\n')
+        jsonLine = JSON.parse(line1)
       })
 
-      describe('when format is "text"', () => {
-        let line1: string
-        let line2: string
-
-        beforeEach(() => {
-          logger = createLogger()
-          logger.log('warn', error);
-          [line1, line2] = consoleStream.contents().split('\n')
-        })
-
-        it('should log the error message and stack in multiple lines', () => {
-          expect(line1).toContain('Error: testing 123') // message
-          expect(line2).toContain(' at ') // stack
-          expect(consoleStream.contents())
-          // custom props
-            .toContain("customProp1: 'customVal1', customProp2: { aNumber: 42 }")
+      it('should log the error message and stack as JSON on a single line', () => {
+        expect(jsonLine).toMatchObject({
+          time: expect.stringMatching(TIMESTAMP_REGEX),
+          level: 'warn',
+          message: 'testing 123',
+          stack: error.stack,
+          customProp1: 'customVal1',
+          customProp2: { aNumber: 42 },
         })
       })
+    })
 
-      describe('when format is "json"', () => {
-        beforeEach(() => {
-          initialConfig.format = 'json'
-          logger = createLogger()
-          logger.log('warn', error)
-          const [line1] = consoleStream.contents().split('\n')
-          jsonLine = JSON.parse(line1)
-        })
+    describe('logging errors in tags', () => {
+      beforeEach(() => {
+        logger = createLogger()
+        logger.error('hello world', { error })
+      })
 
-        it('should log the error message and stack as JSON on a single line', () => {
-          expect(jsonLine).toMatchObject({
-            time: expect.stringMatching(TIMESTAMP_REGEX),
-            level: 'warn',
-            message: 'testing 123',
+      afterEach(() => repo.end())
+
+      it('should print error stacktrace, message, and error', () => {
+        const contents = consoleStream.contents()
+        expect(contents).toContain('hello world')
+        expect(contents).toContain('.ts')
+        expect(contents).toContain('stack')
+        expect(contents).toContain('testing 123')
+      })
+    })
+    describe('logging errors in tags in json format', () => {
+      beforeEach(() => {
+        initialConfig.format = 'json'
+        logger = createLogger()
+        logger.error('hello world', { error })
+        const [line1] = consoleStream.contents().split('\n')
+        jsonLine = JSON.parse(line1)
+      })
+
+      it('should print error stacktrace, message, and error', () => {
+        expect(jsonLine).toMatchObject({
+          level: 'error',
+          message: 'hello world',
+          error: {
             stack: error.stack,
+            message: 'testing 123',
             customProp1: 'customVal1',
             customProp2: { aNumber: 42 },
-          })
-        })
-      })
-
-      describe('logging errors in tags', () => {
-        beforeEach(() => {
-          logger = createLogger()
-          logger.error('hello world', { error })
-        })
-
-        afterEach(() => repo.end())
-
-        it('should print error stacktrace, message, and error', () => {
-          const contents = consoleStream.contents()
-          expect(contents).toContain('hello world')
-          expect(contents).toContain('.ts')
-          expect(contents).toContain('stack')
-          expect(contents).toContain('testing 123')
-        })
-      })
-      describe('logging errors in tags in json format', () => {
-        beforeEach(() => {
-          initialConfig.format = 'json'
-          logger = createLogger()
-          logger.error('hello world', { error })
-          const [line1] = consoleStream.contents().split('\n')
-          jsonLine = JSON.parse(line1)
-        })
-
-        it('should print error stacktrace, message, and error', () => {
-          expect(jsonLine).toMatchObject({
-            level: 'error',
-            message: 'hello world',
-            error: {
-              stack: error.stack,
-              message: 'testing 123',
-              customProp1: 'customVal1',
-              customProp2: { aNumber: 42 },
-            },
-          })
+          },
         })
       })
     })
-    describe('JSON format', () => {
+  })
+  describe('JSON format', () => {
+    beforeEach(async () => {
+      initialConfig.format = 'json'
+      logger = createLogger()
+    })
+    describe('without excess args', () => {
       beforeEach(async () => {
-        initialConfig.format = 'json'
-        logger = createLogger()
+        await logLine({ level: 'warn' })
+        jsonLine = JSON.parse(line)
       })
-      describe('without excess args', () => {
+      it('should log the props as JSON', async () => {
+        expect(jsonLine).toMatchObject({
+          time: expect.stringMatching(TIMESTAMP_REGEX),
+          level: 'warn',
+          message: 'hello { world: true }',
+        })
+      })
+      it('should log only the expected properties', async () => {
+        expect(Object.keys(jsonLine).sort()).toEqual([
+          'level', 'message', 'name', 'time',
+        ])
+      })
+
+      it('should not colorize the line', () => {
+        expect(line).not.toContainColors()
+      })
+    })
+    describe('with excess args', () => {
+      afterEach(async () => {
+        await repo.end()
+      })
+
+      it('verify object was extended with excess args formatted object - simple', async () => {
+        logger.warn(
+          'where is extra args object %s',
+          'foo',
+          'moo',
+          { extra: 'should be in log' },
+          true,
+          'string with "bad chars"\t\n'
+        );
+        [line] = consoleStream.contents().split(EOL)
+        jsonLine = JSON.parse(line)
+        expect(jsonLine).toMatchObject({
+          time: expect.stringMatching(TIMESTAMP_REGEX),
+          level: 'warn',
+          message: 'where is extra args object foo',
+          arg0: 'moo',
+          extra: 'should be in log',
+          arg2: true,
+          arg3: '"string with \\"bad chars\\"\\t\\n"',
+        })
+      })
+
+      it('verify object was extended with excess args formatted object - complex', async () => {
+        logger.warn(
+          'where is extra args object %s',
+          'foo',
+          { inlineTag1: 'inlineTag1', inlineTag2: 'inlineTag2', inlineTag3: 'so many tags' },
+          { extra: 'should be in log' },
+        );
+        [line] = consoleStream.contents().split(EOL)
+        jsonLine = JSON.parse(line)
+        expect(jsonLine).toMatchObject({
+          time: expect.stringMatching(TIMESTAMP_REGEX),
+          level: 'warn',
+          message: 'where is extra args object foo',
+          inlineTag1: 'inlineTag1',
+          inlineTag2: 'inlineTag2',
+          inlineTag3: 'so many tags',
+          extra: 'should be in log',
+        })
+      })
+
+      it('verify object was extended with excess args another', async () => {
+        logger.warn('where is mix object %s', 'foo', { moo: 'moo', foo: 'foo', boo: { loo: 'loo' } }, { extra: 'should be in log' });
+        [line] = consoleStream.contents().split(EOL)
+        jsonLine = JSON.parse(line)
+        expect(jsonLine).toMatchObject({
+          time: expect.stringMatching(TIMESTAMP_REGEX),
+          level: 'warn',
+          message: 'where is mix object foo',
+          moo: 'moo',
+          foo: 'foo',
+          boo: { loo: 'loo' },
+          extra: 'should be in log',
+        })
+      })
+    })
+  })
+
+  describe('retrieving the logger config', () => {
+    beforeEach(() => {
+      initialConfig.format = 'json'
+      logger = createLogger()
+    })
+
+    it('should return a Config instance', () => {
+      const expectedProperties = 'minLevel filename format namespaceFilter colorize globalTags maxJsonLogChunkSize'
+        .split(' ')
+        .sort()
+
+      expect(Object.keys(repo.config).sort()).toEqual(expectedProperties)
+    })
+
+    it('should return the configured values', () => {
+      expect(repo.config.format).toEqual('json')
+    })
+
+    it('should return a frozen object', () => {
+      expect(() => { (repo.config as Config).minLevel = 'info' }).toThrow()
+    })
+  })
+  describe('local logging tags', () => {
+    const logTags = { number: 1, string: '1', bool: true, functionTag: () => 5 }
+
+    describe('text format', () => {
+      describe('without global loggers', () => {
         beforeEach(async () => {
+          logger = createLogger()
+          logger.assignTags(logTags)
           await logLine({ level: 'warn' })
-          jsonLine = JSON.parse(line)
         })
-        it('should log the props as JSON', async () => {
-          expect(jsonLine).toMatchObject({
-            time: expect.stringMatching(TIMESTAMP_REGEX),
-            level: 'warn',
-            message: 'hello { world: true }',
-          })
+        it('line should contain log tags', async () => {
+          expect(line).toContain('number=1')
+          expect(line).toContain('string="1"')
+          expect(line).toContain('bool=true')
+          expect(line).toContain('functionTag=5')
         })
-        it('should log only the expected properties', async () => {
-          expect(Object.keys(jsonLine).sort()).toEqual([
-            'level', 'message', 'name', 'time',
-          ])
-        })
-
-        it('should not colorize the line', () => {
-          expect(line).not.toContainColors()
+        it('line should contain basic log data', () => {
+          expect(line).toMatch(TIMESTAMP_REGEX)
+          expect(line).toContain(NAMESPACE)
+          expect(line).toContain('warn')
+          expect(line).toContain('hello { world: true }')
         })
       })
-      describe('with excess args', () => {
-        afterEach(async () => {
-          await repo.end()
+      describe('complex function tags', () => {
+        const complexTags = {
+          normalTags: 1,
+          functionStringTags: () => '5',
+          functionObjTag: () => ({ something: 'bad', happened: 'here' }),
+        }
+        beforeEach(async () => {
+          logger = createLogger()
+          logger.assignTags(complexTags)
+          await logLine({ level: 'warn' })
         })
-
-        it('verify object was extended with excess args formatted object - simple', async () => {
-          logger.warn(
-            'where is extra args object %s',
-            'foo',
-            'moo',
-            { extra: 'should be in log' },
-            true,
-            'string with "bad chars"\t\n'
+        it('line should contain log tags', async () => {
+          expect(line).toContain('normalTags=1')
+          expect(line).toContain('functionStringTags="5"')
+          expect(line).toContain('functionObjTag={"something":"bad","happened":"here"}')
+        })
+        it('line should contain basic log data', () => {
+          expect(line).toMatch(TIMESTAMP_REGEX)
+          expect(line).toContain(NAMESPACE)
+          expect(line).toContain('warn')
+          expect(line).toContain('hello { world: true }')
+        })
+      })
+      describe('with global tags', () => {
+        const moreTags = { anotherTag: 'foo', anotherNumber: 4 }
+        beforeEach(async () => {
+          initialConfig.minLevel = 'info'
+          initialConfig.globalTags = moreTags
+          logger = createLogger()
+          logger.assignTags(logTags)
+          logger.log(
+            'error', 'lots of data %s', 'datadata', 'excessArgs',
+            true, { someArg: { with: 'data' }, anotherArg: 'much simpler' }, 'bad\n\t"string', undefined
           );
           [line] = consoleStream.contents().split(EOL)
-          jsonLine = JSON.parse(line)
-          expect(jsonLine).toMatchObject({
-            time: expect.stringMatching(TIMESTAMP_REGEX),
-            level: 'warn',
-            message: 'where is extra args object foo',
-            arg0: 'moo',
-            extra: 'should be in log',
-            arg2: true,
-            arg3: '"string with \\"bad chars\\"\\t\\n"',
-          })
         })
 
-        it('verify object was extended with excess args formatted object - complex', async () => {
-          logger.warn(
-            'where is extra args object %s',
-            'foo',
-            { inlineTag1: 'inlineTag1', inlineTag2: 'inlineTag2', inlineTag3: 'so many tags' },
-            { extra: 'should be in log' },
-          );
-          [line] = consoleStream.contents().split(EOL)
-          jsonLine = JSON.parse(line)
-          expect(jsonLine).toMatchObject({
-            time: expect.stringMatching(TIMESTAMP_REGEX),
-            level: 'warn',
-            message: 'where is extra args object foo',
-            inlineTag1: 'inlineTag1',
-            inlineTag2: 'inlineTag2',
-            inlineTag3: 'so many tags',
-            extra: 'should be in log',
-          })
+        it('should contain parent log tags', () => {
+          expect(line).toContain('number=1')
+          expect(line).toContain('string="1"')
+          expect(line).toContain('bool=true')
         })
-
-        it('verify object was extended with excess args another', async () => {
-          logger.warn('where is mix object %s', 'foo', {
-            moo: 'moo',
-            foo: 'foo',
-            boo: { loo: 'loo' },
-          }, { extra: 'should be in log' });
-          [line] = consoleStream.contents().split(EOL)
-          jsonLine = JSON.parse(line)
-          expect(jsonLine).toMatchObject({
-            time: expect.stringMatching(TIMESTAMP_REGEX),
-            level: 'warn',
-            message: 'where is mix object foo',
-            moo: 'moo',
-            foo: 'foo',
-            boo: { loo: 'loo' },
-            extra: 'should be in log',
-          })
+        it('should new log tags', () => {
+          expect(line).toContain('anotherTag="foo"')
+          expect(line).toContain('anotherNumber=4')
+        })
+        it('should contain excess arg', () => {
+          expect(line).toContain('arg0="excessArgs"')
+          expect(line).toContain('arg1=true')
+          expect(line).toContain('someArg={"with":"data"}')
+          expect(line).toContain('anotherArg="much simpler"')
+          expect(line).toContain('arg3="bad\\n\\t\\"string"')
+          expect(line).toContain('arg4="undefined"')
+        })
+        it('line should contain basic log data', () => {
+          expect(line).toMatch(TIMESTAMP_REGEX)
+          expect(line).toContain(NAMESPACE)
+          expect(line).toContain('error')
+          expect(line).toContain('lots of data datadata')
         })
       })
     })
 
-    describe('retrieving the logger config', () => {
+    describe('json format', () => {
       beforeEach(() => {
         initialConfig.format = 'json'
-        logger = createLogger()
       })
-
-      it('should return a Config instance', () => {
-        const expectedProperties = 'minLevel filename format namespaceFilter colorize globalTags maxJsonLogChunkSize'
-          .split(' ')
-          .sort()
-
-        expect(Object.keys(repo.config).sort()).toEqual(expectedProperties)
+      describe('without global tags', () => {
+        beforeEach(async () => {
+          logger = createLogger()
+          logger.assignTags(logTags)
+          await logLine({ level: 'warn' })
+        })
+        it('line should contain log tags', async () => {
+          expect(line).toContain('"number":1')
+          expect(line).toContain('"functionTag":5')
+          expect(line).toContain('"string":"1"')
+          expect(line).toContain('"bool":true')
+        })
+        it('line should contain basic log data', () => {
+          expect(line).toMatch(TIMESTAMP_REGEX)
+          expect(line).toContain(NAMESPACE)
+          expect(line).toContain('warn')
+          expect(line).toContain('hello { world: true }')
+        })
       })
-
-      it('should return the configured values', () => {
-        expect(repo.config.format).toEqual('json')
+      describe('with global tags', () => {
+        const moreTags = { anotherTag: 'foo', anotherNumber: 4 }
+        beforeEach(async () => {
+          initialConfig.minLevel = 'info'
+          initialConfig.globalTags = moreTags
+          logger = createLogger()
+          logger.assignTags(logTags)
+          logger.log('error', 'lots of data %s', 'datadata',
+            { firstExcess: 'simple', secondExcess: { complex: 'data' } },
+            'mixExcessArgs', 'moreExcess');
+          [line] = consoleStream.contents().split(EOL)
+        })
+        it('should contain parent log tags', () => {
+          expect(line).toContain('"number":1')
+          expect(line).toContain('"string":"1"')
+          expect(line).toContain('"bool":true')
+        })
+        it('should new log tags', () => {
+          expect(line).toContain('"anotherTag":"foo"')
+          expect(line).toContain('"anotherNumber":4')
+        })
+        it('line should contain basic log data', () => {
+          expect(line).toMatch(TIMESTAMP_REGEX)
+          expect(line).toContain(NAMESPACE)
+          expect(line).toContain('error')
+          expect(line).toContain('lots of data datadata')
+        })
+        it('should contain excess data', () => {
+          expect(line).toContain('"firstExcess":"simple"')
+          expect(line).toContain('"secondExcess":{"complex":"data"}')
+          expect(line).toContain('"arg1":"mixExcessArgs"')
+          expect(line).toContain('"arg2":"moreExcess"')
+        })
       })
+      describe('when log is split into chunks', () => {
+        const LOG_MESSAGE = 'Test log message'
+        let lines: string[]
+        beforeEach(() => {
+          initialConfig.maxJsonLogChunkSize = 5
+          logger = createLogger()
+          logger.assignTags(logTags)
+          logger.log('warn', LOG_MESSAGE)
+          lines = consoleStream.contents().split(EOL).filter(l => l !== '')
+        })
 
-      it('should return a frozen object', () => {
-        expect(() => {
-          (repo.config as Config).minLevel = 'info'
-        }).toThrow()
+        it('should log the full message in chunks', () => {
+          const reformedLog = lines.map(l => JSON.parse(l).message).join('')
+          expect(reformedLog).toEqual(LOG_MESSAGE)
+        })
+        it('should add the same logId to each chunk', () => {
+          const logIds = lines.map(l => JSON.parse(l).logId)
+          expect(new Set(logIds).size).toEqual(1)
+        })
+        it('should add correct index to each chunk', () => {
+          const chunkIndexes = lines.map(l => JSON.parse(l).chunkIndex)
+          expect(chunkIndexes).toEqual(Array.from(Array(lines.length).keys()))
+        })
+      })
+      describe('when log is not split into chunks', () => {
+        const LOG_MESSAGE = 'Test log message'
+        beforeEach(() => {
+          logger = createLogger()
+          logger.log('warn', LOG_MESSAGE)
+        })
+
+        it('should log a single line with no chunk log tags', () => {
+          const nonChunkedLog = JSON.parse(consoleStream.contents())
+          expect(nonChunkedLog.message).toEqual(LOG_MESSAGE)
+          expect(nonChunkedLog.chunkIndex).toBeUndefined()
+          expect(nonChunkedLog.logId).toBeUndefined()
+        })
       })
     })
-    describe('local logging tags', () => {
-      const logTags = { number: 1, string: '1', bool: true, functionTag: () => 5 }
 
-      describe('text format', () => {
-        describe('without global loggers', () => {
-          beforeEach(async () => {
-            logger = createLogger()
-            logger.assignTags(logTags)
-            await logLine({ level: 'warn' })
-          })
-          it('line should contain log tags', async () => {
-            expect(line).toContain('number=1')
-            expect(line).toContain('string="1"')
-            expect(line).toContain('bool=true')
-            expect(line).toContain('functionTag=5')
-          })
-          it('line should contain basic log data', () => {
-            expect(line).toMatch(TIMESTAMP_REGEX)
-            expect(line).toContain(NAMESPACE)
-            expect(line).toContain('warn')
-            expect(line).toContain('hello { world: true }')
-          })
+    describe('remove assigned tags', () => {
+      describe('remove all tags', () => {
+        beforeEach(async () => {
+          logger = createLogger()
+          logger.assignTags(logTags)
+          logger.assignTags(undefined)
+          await logLine({ level: 'warn' })
         })
-        describe('complex function tags', () => {
-          const complexTags = {
-            normalTags: 1,
-            functionStringTags: () => '5',
-            functionObjTag: () => ({ something: 'bad', happened: 'here' }),
-          }
-          beforeEach(async () => {
-            logger = createLogger()
-            logger.assignTags(complexTags)
-            await logLine({ level: 'warn' })
-          })
-          it('line should contain log tags', async () => {
-            expect(line).toContain('normalTags=1')
-            expect(line).toContain('functionStringTags="5"')
-            expect(line).toContain('functionObjTag={"something":"bad","happened":"here"}')
-          })
-          it('line should contain basic log data', () => {
-            expect(line).toMatch(TIMESTAMP_REGEX)
-            expect(line).toContain(NAMESPACE)
-            expect(line).toContain('warn')
-            expect(line).toContain('hello { world: true }')
-          })
+        it('line should not contain log tags', async () => {
+          expect(line).not.toContain('number=1')
+          expect(line).not.toContain('string=1')
+          expect(line).not.toContain('bool=true')
+          expect(line).not.toContain('functionTag=5')
         })
-        describe('with global tags', () => {
-          const moreTags = { anotherTag: 'foo', anotherNumber: 4 }
-          beforeEach(async () => {
-            initialConfig.minLevel = 'info'
-            initialConfig.globalTags = moreTags
-            logger = createLogger()
-            logger.assignTags(logTags)
-            logger.log(
-              'error', 'lots of data %s', 'datadata', 'excessArgs',
-              true, { someArg: { with: 'data' }, anotherArg: 'much simpler' }, 'bad\n\t"string', undefined
-            );
-            [line] = consoleStream.contents().split(EOL)
-          })
-
-          it('should contain parent log tags', () => {
-            expect(line).toContain('number=1')
-            expect(line).toContain('string="1"')
-            expect(line).toContain('bool=true')
-          })
-          it('should new log tags', () => {
-            expect(line).toContain('anotherTag="foo"')
-            expect(line).toContain('anotherNumber=4')
-          })
-          it('should contain excess arg', () => {
-            expect(line).toContain('arg0="excessArgs"')
-            expect(line).toContain('arg1=true')
-            expect(line).toContain('someArg={"with":"data"}')
-            expect(line).toContain('anotherArg="much simpler"')
-            expect(line).toContain('arg3="bad\\n\\t\\"string"')
-            expect(line).toContain('arg4="undefined"')
-          })
-          it('line should contain basic log data', () => {
-            expect(line).toMatch(TIMESTAMP_REGEX)
-            expect(line).toContain(NAMESPACE)
-            expect(line).toContain('error')
-            expect(line).toContain('lots of data datadata')
-          })
+        it('line should contain basic log data', () => {
+          expect(line).toMatch(TIMESTAMP_REGEX)
+          expect(line).toContain(NAMESPACE)
+          expect(line).toContain('warn')
+          expect(line).toContain('hello { world: true }')
         })
       })
-
-      describe('json format', () => {
-        beforeEach(() => {
-          initialConfig.format = 'json'
+      describe('remove some tags', () => {
+        beforeEach(async () => {
+          logger = createLogger()
+          logger.assignTags(logTags)
+          logger.assignTags({ number: undefined, string: undefined, anotherTag: 'foo' })
+          await logLine({ level: 'warn' })
         })
-        describe('without global tags', () => {
-          beforeEach(async () => {
-            logger = createLogger()
-            logger.assignTags(logTags)
-            await logLine({ level: 'warn' })
-          })
-          it('line should contain log tags', async () => {
-            expect(line).toContain('"number":1')
-            expect(line).toContain('"functionTag":5')
-            expect(line).toContain('"string":"1"')
-            expect(line).toContain('"bool":true')
-          })
-          it('line should contain basic log data', () => {
-            expect(line).toMatch(TIMESTAMP_REGEX)
-            expect(line).toContain(NAMESPACE)
-            expect(line).toContain('warn')
-            expect(line).toContain('hello { world: true }')
-          })
+        it('line should contain current log tags', async () => {
+          expect(line).not.toContain('number=1')
+          expect(line).not.toContain('string=1')
+          expect(line).toContain('bool=true')
+          expect(line).toContain('anotherTag="foo"')
+          expect(line).toContain('functionTag=5')
         })
-        describe('with global tags', () => {
-          const moreTags = { anotherTag: 'foo', anotherNumber: 4 }
-          beforeEach(async () => {
-            initialConfig.minLevel = 'info'
-            initialConfig.globalTags = moreTags
-            logger = createLogger()
-            logger.assignTags(logTags)
-            logger.log('error', 'lots of data %s', 'datadata',
-              { firstExcess: 'simple', secondExcess: { complex: 'data' } },
-              'mixExcessArgs', 'moreExcess');
-            [line] = consoleStream.contents().split(EOL)
-          })
-          it('should contain parent log tags', () => {
-            expect(line).toContain('"number":1')
-            expect(line).toContain('"string":"1"')
-            expect(line).toContain('"bool":true')
-          })
-          it('should new log tags', () => {
-            expect(line).toContain('"anotherTag":"foo"')
-            expect(line).toContain('"anotherNumber":4')
-          })
-          it('line should contain basic log data', () => {
-            expect(line).toMatch(TIMESTAMP_REGEX)
-            expect(line).toContain(NAMESPACE)
-            expect(line).toContain('error')
-            expect(line).toContain('lots of data datadata')
-          })
-          it('should contain excess data', () => {
-            expect(line).toContain('"firstExcess":"simple"')
-            expect(line).toContain('"secondExcess":{"complex":"data"}')
-            expect(line).toContain('"arg1":"mixExcessArgs"')
-            expect(line).toContain('"arg2":"moreExcess"')
-          })
-        })
-
-        describe('when log is split into chunks', () => {
-          const LOG_MESSAGE = 'Test log message'
-          let lines: string[]
-          beforeEach(() => {
-            initialConfig.maxJsonLogChunkSize = 5
-            logger = createLogger()
-            logger.assignTags(logTags)
-            logger.log('warn', LOG_MESSAGE)
-            lines = consoleStream.contents().split(EOL).filter(l => l !== '')
-          })
-
-          it('should log the full message in chunks', () => {
-            const reformedLog = lines.map(l => JSON.parse(l).message).join('')
-            expect(reformedLog).toEqual(LOG_MESSAGE)
-          })
-          it('should add the same logId to each chunk', () => {
-            const logIds = lines.map(l => JSON.parse(l).logId)
-            expect(new Set(logIds).size).toEqual(1)
-          })
-          it('should add correct index to each chunk', () => {
-            const chunkIndexes = lines.map(l => JSON.parse(l).chunkIndex)
-            expect(chunkIndexes).toEqual(Array.from(Array(lines.length).keys()))
-          })
-        })
-        describe('when log is not split into chunks', () => {
-          const LOG_MESSAGE = 'Test log message'
-          beforeEach(() => {
-            logger = createLogger()
-            logger.log('warn', LOG_MESSAGE)
-          })
-
-          it('should log a single line with no chunk log tags', () => {
-            const nonChunkedLog = JSON.parse(consoleStream.contents())
-            expect(nonChunkedLog.message).toEqual(LOG_MESSAGE)
-            expect(nonChunkedLog.chunkIndex).toBeUndefined()
-            expect(nonChunkedLog.logId).toBeUndefined()
-          })
-        })
-      })
-
-      describe('remove assigned tags', () => {
-        describe('remove all tags', () => {
-          beforeEach(async () => {
-            logger = createLogger()
-            logger.assignTags(logTags)
-            logger.assignTags(undefined)
-            await logLine({ level: 'warn' })
-          })
-          it('line should not contain log tags', async () => {
-            expect(line).not.toContain('number=1')
-            expect(line).not.toContain('string=1')
-            expect(line).not.toContain('bool=true')
-            expect(line).not.toContain('functionTag=5')
-          })
-          it('line should contain basic log data', () => {
-            expect(line).toMatch(TIMESTAMP_REGEX)
-            expect(line).toContain(NAMESPACE)
-            expect(line).toContain('warn')
-            expect(line).toContain('hello { world: true }')
-          })
-        })
-        describe('remove some tags', () => {
-          beforeEach(async () => {
-            logger = createLogger()
-            logger.assignTags(logTags)
-            logger.assignTags({ number: undefined, string: undefined, anotherTag: 'foo' })
-            await logLine({ level: 'warn' })
-          })
-          it('line should contain current log tags', async () => {
-            expect(line).not.toContain('number=1')
-            expect(line).not.toContain('string=1')
-            expect(line).toContain('bool=true')
-            expect(line).toContain('anotherTag="foo"')
-            expect(line).toContain('functionTag=5')
-          })
-          it('line should contain basic log data', () => {
-            expect(line).toMatch(TIMESTAMP_REGEX)
-            expect(line).toContain(NAMESPACE)
-            expect(line).toContain('warn')
-            expect(line).toContain('hello { world: true }')
-          })
+        it('line should contain basic log data', () => {
+          expect(line).toMatch(TIMESTAMP_REGEX)
+          expect(line).toContain(NAMESPACE)
+          expect(line).toContain('warn')
+          expect(line).toContain('hello { world: true }')
         })
       })
     })

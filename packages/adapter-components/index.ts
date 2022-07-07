@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+export * as soap from 'soap'
 export * as auth from './src/auth'
 export * as deployment from './src/deployment'
 export * as client from './src/client'

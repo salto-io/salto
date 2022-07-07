@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import * as soap from 'soap'
+import { soap } from '@salto-io/adapter-components'
 import { ElemID, InstanceElement, ListType, ObjectType } from '@salto-io/adapter-api'
 import { ExistingFileCabinetInstanceDetails } from '../../src/client/suiteapp_client/types'
 import { ReadFileError } from '../../src/client/suiteapp_client/errors'

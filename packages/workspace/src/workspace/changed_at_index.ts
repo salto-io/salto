@@ -93,10 +93,9 @@ const updateRemovalChange = (
 ): void => {
   Object.entries(getChangedAtDates(change)).forEach(entry => {
     const [date, elemIds] = entry
-    if (!datesMap[date]) {
-      datesMap[date] = new Set()
+    if (datesMap[date]) {
+      elemIds.forEach(elemId => datesMap[date].delete(elemId.getFullName()))
     }
-    elemIds.forEach(elemId => datesMap[date].delete(elemId.getFullName()))
   })
 }
 

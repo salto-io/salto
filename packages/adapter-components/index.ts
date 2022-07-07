@@ -13,12 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export * as soap from 'soap'
 export * as auth from './src/auth'
-export * as deployment from './src/deployment'
 export * as client from './src/client'
 export * as config from './src/config'
+export * as deployment from './src/deployment'
 export * as elements from './src/elements'
+export * as filters from './src/filters'
 export * as filterUtils from './src/filter_utils'
 export * as references from './src/references'
-export * as filters from './src/filters'

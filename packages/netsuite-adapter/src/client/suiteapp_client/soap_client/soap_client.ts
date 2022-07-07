@@ -17,7 +17,7 @@ import { logger } from '@salto-io/logging'
 import Ajv from 'ajv'
 import crypto from 'crypto'
 import path from 'path'
-import { soap } from '@salto-io/adapter-components'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { InstanceElement, isListType, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import { collections, decorators, strings } from '@salto-io/lowerdash'
@@ -34,6 +34,7 @@ import { INTERNAL_ID_TO_TYPES, ITEM_TYPE_ID, ITEM_TYPE_TO_SEARCH_STRING } from '
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 
+export const { createClientAsync } = elementUtils.soap
 
 const log = logger(module)
 
@@ -96,7 +97,7 @@ export default class SoapClient {
   private credentials: SuiteAppSoapCredentials
   private callsLimiter: CallsLimiter
   private ajv: Ajv
-  private client: soap.Client | undefined
+  private client: elementUtils.soap.Client | undefined
 
   constructor(credentials: SuiteAppSoapCredentials, callsLimiter: CallsLimiter) {
     this.credentials = credentials
@@ -105,9 +106,9 @@ export default class SoapClient {
   }
 
   @retryOnBadResponse
-  private async getClient(): Promise<soap.Client> {
+  private async getClient(): Promise<elementUtils.soap.Client> {
     if (this.client === undefined) {
-      this.client = await soap.createClientAsync(
+      this.client = await createClientAsync(
         `https://webservices.netsuite.com/wsdl/v${NETSUITE_VERSION}_0/netsuite.wsdl`,
         { endpoint: `https://${toUrlAccountId(this.credentials.accountId)}.suitetalk.api.netsuite.com/services/NetSuitePort_${NETSUITE_VERSION}` }
       )
@@ -320,16 +321,16 @@ export default class SoapClient {
     })
   }
 
-  public async getNetsuiteWsdl(): Promise<soap.WSDL> {
+  public async getNetsuiteWsdl(): Promise<elementUtils.soap.WSDL> {
     // Though wsdl is private on the client, it is available publicly when using
     // the library without typescript so we rely on it to not change
-    const { wsdl } = (await this.getClient()) as unknown as { wsdl: soap.WSDL }
+    const { wsdl } = (await this.getClient()) as unknown as { wsdl: elementUtils.soap.WSDL }
     return wsdl
   }
 
   @retryOnBadResponseWithDelay(SOAP_RETRYABLE_MESSAGES, REQUEST_RETRY_DELAY)
   private static async soapRequestWithRetries(
-    client: soap.Client, operation: string, body: object
+    client: elementUtils.soap.Client, operation: string, body: object
   ): Promise<unknown> {
     return (await client[`${operation}Async`](body))[0]
   }

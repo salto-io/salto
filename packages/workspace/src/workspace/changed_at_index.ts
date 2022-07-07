@@ -30,7 +30,7 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
-import _, { entries, isEmpty } from 'lodash'
+import _, { isEmpty } from 'lodash'
 import { ElementsSource } from './elements_source'
 import { RemoteMap } from './remote_map'
 

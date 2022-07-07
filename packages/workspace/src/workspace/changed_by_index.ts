@@ -100,7 +100,7 @@ const getChangeAuthors = (change: Change<Element>): Record<string, ElemID[]> => 
   if (changeElement.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
     addElementToMap(changeElement)
   }
-  return Object.keys(authors).length > 0 ? authors : { UNKNOWN_USER_NAME: [changeElement.elemID] }
+  return Object.keys(authors).length > 0 ? authors : { [UNKNOWN_USER_NAME]: [changeElement.elemID] }
 }
 
 const updateAdditionChange = (

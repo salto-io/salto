@@ -55,6 +55,10 @@ export const customlistType = (): TypeAndInnerTypes => {
         annotations: {
         },
       }, /* Original description: The default value is F. */
+      internalId: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+      },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, customlistElemID.name],
   })

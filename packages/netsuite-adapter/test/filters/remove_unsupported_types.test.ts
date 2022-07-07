@@ -29,10 +29,17 @@ describe('remove_unsupported_types', () => {
   const supportedSoapType = new ObjectType({ elemID: new ElemID(NETSUITE, 'subsidiary'), annotations: { source: 'soap' } })
   const unsupportedSoapType = new ObjectType({ elemID: new ElemID(NETSUITE, 'someType'), annotations: { source: 'soap' } })
   const sdfSoapType = new ObjectType({ elemID: new ElemID(NETSUITE, 'CustomRecordType'), annotations: { source: 'soap' } })
+  const customRecordType = new ObjectType({
+    elemID: new ElemID(NETSUITE, 'custrecord'),
+    annotations: {
+      source: 'soap',
+      metadataType: 'customrecordtype',
+    },
+  })
   const isSuiteAppConfiguredMock = jest.fn()
 
   beforeEach(async () => {
-    elements = [sdfType, supportedSoapType, unsupportedSoapType, sdfSoapType]
+    elements = [sdfType, supportedSoapType, unsupportedSoapType, sdfSoapType, customRecordType]
     isSuiteAppConfiguredMock.mockReset()
     isSuiteAppConfiguredMock.mockReturnValue(true)
     filterOpts = {
@@ -48,12 +55,12 @@ describe('remove_unsupported_types', () => {
 
   it('should remove the unsupported types', async () => {
     await filterCreator(filterOpts).onFetch?.(elements)
-    expect(elements.map(e => e.elemID.name)).toEqual(['customrecordtype', 'subsidiary'])
+    expect(elements.map(e => e.elemID.name)).toEqual(['customrecordtype', 'subsidiary', 'custrecord'])
   })
 
   it('should do nothing if suiteApp is not installed', async () => {
     isSuiteAppConfiguredMock.mockReturnValue(false)
     await filterCreator(filterOpts).onFetch?.(elements)
-    expect(elements.map(e => e.elemID.name)).toEqual(['customrecordtype', 'subsidiary', 'someType', 'CustomRecordType'])
+    expect(elements.map(e => e.elemID.name)).toEqual(['customrecordtype', 'subsidiary', 'someType', 'CustomRecordType', 'custrecord'])
   })
 })

@@ -314,7 +314,7 @@ const getScriptIdParts = (
   return getScriptIdParts(values, elemId.createParentID())
 }
 
-export const getLookUpName: GetLookupNameFunc = ({ ref }) => {
+export const getLookUpName: GetLookupNameFunc = async ({ ref }) => {
   const { elemID, value, topLevelParent } = ref
   if (
     isObjectType(topLevelParent)
@@ -337,6 +337,10 @@ export const getLookUpName: GetLookupNameFunc = ({ ref }) => {
     return `[${SCRIPT_ID}=${getScriptIdParts({
       instance: topLevelParent.value,
     }, elemID).join('.')}]`
+  }
+  const type = await topLevelParent.getType()
+  if (isCustomRecordType(type) && elemID.name === SCRIPT_ID) {
+    return `[${SCRIPT_ID}=${type.annotations[SCRIPT_ID]}.${value}]`
   }
   return value
 }

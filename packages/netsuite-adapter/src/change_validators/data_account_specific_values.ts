@@ -54,7 +54,7 @@ const changeValidator: ChangeValidator = async changes => (
     .filter(async change => isDataObjectType(
       await getChangeData<InstanceElement>(change).getType()
     ))
-    .map(async change => {
+    .map(change => {
       if (isAdditionChange(change)) {
         return change
       }
@@ -62,7 +62,7 @@ const changeValidator: ChangeValidator = async changes => (
         before: change.data.before.clone(),
         after: change.data.after.clone(),
       }) as ModificationChange<InstanceElement>
-      await removeIdenticalValues(modificationChange)
+      removeIdenticalValues(modificationChange)
       return modificationChange
     })
     .map(change => getChangeData<InstanceElement>(change))

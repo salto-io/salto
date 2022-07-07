@@ -18,7 +18,7 @@ import { applyFunctionToChangeData, naclCase, TransformFunc, transformValues } f
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { isStandardType, isDataObjectType, isFileCabinetType } from '../types'
-import { ACCOUNT_SPECIFIC_VALUE, NETSUITE, RECORDS_PATH } from '../constants'
+import { ACCOUNT_SPECIFIC_VALUE, IS_SUB_INSTANCE, NETSUITE, RECORDS_PATH, RECORD_REF } from '../constants'
 import { FilterWith } from '../filter'
 
 const { awu } = collections.asynciterable
@@ -26,7 +26,9 @@ const { awu } = collections.asynciterable
 const isNumberStr = (str: string): boolean => !Number.isNaN(Number(str))
 
 const getSubInstanceName = (path: ElemID, internalId: string): string => {
-  const name = _.findLast(path.getFullNameParts(), part => !isNumberStr(part) && part !== 'recordRef')
+  const name = _.findLast(
+    path.getFullNameParts(), part => !isNumberStr(part) && part !== RECORD_REF
+  )
   return naclCase(`${path.typeName}_${name}_${internalId}`)
 }
 
@@ -38,11 +40,11 @@ const getSubInstanceName = (path: ElemID, internalId: string): string => {
 const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
   onFetch: async elements => {
     const newInstancesMap: Record<string, InstanceElement> = {}
-    const recordRefType = elements.filter(isObjectType).find(e => e.elemID.name === 'recordRef')
+    const recordRefType = elements.filter(isObjectType).find(e => e.elemID.name === RECORD_REF)
 
     const transformIds: TransformFunc = async ({ value, field, path }) => {
       const fieldType = await field?.getType()
-      if (fieldType?.elemID.name === 'recordRef') {
+      if (fieldType?.elemID.name === RECORD_REF) {
         value.id = ACCOUNT_SPECIFIC_VALUE
       }
 
@@ -70,7 +72,7 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
             (isStandardType(fieldType) || isFileCabinetType(fieldType))
               && recordRefType !== undefined
               ? recordRefType : fieldType,
-            { ...value, isSubInstance: true },
+            { ...value, [IS_SUB_INSTANCE]: true },
             [NETSUITE, RECORDS_PATH, fieldType.elemID.name, instanceName]
           )
           newInstancesMap[instanceName] = newInstance
@@ -118,7 +120,7 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
                   ? await element.getType()
                   : await field?.getType()
 
-                if (fieldType?.elemID.name === 'recordRef') {
+                if (fieldType?.elemID.name === RECORD_REF) {
                   if (value.id !== '[ACCOUNT_SPECIFIC_VALUE]') {
                     value.internalId = value.id
                   }

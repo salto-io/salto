@@ -15,16 +15,15 @@
 */
 import wu from 'wu'
 import {
-  Change, ChangeGroupIdFunction, ChangeId, getChangeData, InstanceElement, isAdditionChange,
-  isField,
-  isInstanceChange, isInstanceElement, isModificationChange, isObjectType, isReferenceExpression,
-  isRemovalChange,
+  Change, ChangeGroupIdFunction, ChangeId, getChangeData, isAdditionChange,
+  isInstanceElement, isModificationChange, isObjectType, isReferenceExpression,
+  isField, isRemovalChange, Element,
 } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import * as suiteAppFileCabinet from './suiteapp_file_cabinet'
-import { isSuiteAppConfigInstance, isSDFConfigTypeName, isDataObjectType, isFileCabinetInstance, isStandardInstanceOrCustomRecordType } from './types'
+import { isSuiteAppConfigInstance, isSDFConfigTypeName, isDataObjectType, isFileCabinetInstance, isStandardInstanceOrCustomRecordType, isCustomRecordType } from './types'
 import { APPLICATION_ID } from './constants'
 import { fileCabinetTypesNames } from './types/file_cabinet_types'
 
@@ -75,7 +74,7 @@ const getChangeGroupIdsWithoutSuiteApp: ChangeGroupIdFunction = async changes =>
   }
 }
 
-const getRecordDependencies = (element: InstanceElement): string[] => {
+const getRecordDependencies = (element: Element): string[] => {
   const dependencies: string[] = []
   walkOnElement({
     element,
@@ -96,8 +95,7 @@ const getRecordDependencies = (element: InstanceElement): string[] => {
 const getChangesChunks = async (
   changes: { change: Change; id: ChangeId }[],
   groupID: string,
-)
-: Promise<ChangeId[][]> => {
+) : Promise<ChangeId[][]> => {
   if (SUITEAPP_CREATING_RECORDS_GROUP_ID !== groupID) {
     return [changes.map(({ id }) => id)]
   }
@@ -105,16 +103,15 @@ const getChangesChunks = async (
   const changesChunks: ChangeId[][] = [[]]
   const iteratedIds: Set<string> = new Set()
   await awu(changes)
-    .filter(change => isInstanceChange(change.change))
     .forEach(async change => {
-      const instance = getChangeData(change.change) as InstanceElement
-      const dependencies = getRecordDependencies(instance)
+      const data = getChangeData(change.change)
+      const dependencies = getRecordDependencies(data)
       if (dependencies.some(dependency => iteratedIds.has(dependency))) {
         changesChunks.push([])
         iteratedIds.clear()
       }
       changesChunks[changesChunks.length - 1].push(change.id)
-      iteratedIds.add(instance.elemID.getFullName())
+      iteratedIds.add(data.elemID.getFullName())
     })
 
   return changesChunks
@@ -151,8 +148,11 @@ const isSdfChange = async (change: Change): Promise<boolean> => {
 
 const isSuiteAppRecordChange = async (change: Change): Promise<boolean> => {
   const changeData = getChangeData(change)
-  return isInstanceElement(changeData)
-  && isDataObjectType(await changeData.getType())
+  if (!isInstanceElement(changeData)) {
+    return false
+  }
+  const type = await changeData.getType()
+  return isDataObjectType(type) || isCustomRecordType(type)
 }
 
 const isSuiteAppRecordAddition = async (change: Change): Promise<boolean> =>

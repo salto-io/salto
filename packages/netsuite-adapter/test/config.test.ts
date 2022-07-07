@@ -52,6 +52,7 @@ describe('config', () => {
           { name: 'testExistingPartial', ids: ['scriptid1', 'scriptid2'] },
         ],
         fileCabinet: ['SomeRegex'],
+        customRecords: [],
       },
     },
     [CLIENT_CONFIG]: {
@@ -92,6 +93,7 @@ describe('config', () => {
           [EXCLUDE]: {
             types: Object.entries(suggestedSkipListTypes).map(([name, ids]) => ({ name, ids })),
             fileCabinet: [newFailedFilePath],
+            customRecords: [],
           },
         },
         [CLIENT_CONFIG]: {
@@ -108,6 +110,7 @@ describe('config', () => {
           [LOCKED_ELEMENTS_TO_EXCLUDE]: {
             types: Object.entries(lockedTypes).map(([name, ids]) => ({ name, ids })),
             fileCabinet: lockedFiles,
+            customRecords: [],
           },
         },
       }
@@ -124,6 +127,7 @@ describe('config', () => {
         { name: 'testNew', ids: ['scriptid5', 'scriptid6'] },
       ],
       fileCabinet: ['SomeRegex'],
+      customRecords: [],
     }
     newExclude.fileCabinet.push(_.escapeRegExp(newFailedFilePath))
     const configChange = getConfigFromConfigChanges(
@@ -161,6 +165,7 @@ describe('config', () => {
           { name: 'someType', ids: ['.*'] },
         ],
         fileCabinet: ['.*someRegex1.*', 'someRegex2.*', '.*someRegex3', 'someRegex4'],
+        customRecords: [],
       },
       fetchDefault[EXCLUDE]),
     }
@@ -317,6 +322,7 @@ describe('config', () => {
                 { name: 'testAll', ids: ['.*'] },
                 { name: 'testExistingPartial', ids: ['scriptid1', 'scriptid2'] },
               ],
+              customRecords: [],
             },
           },
           [CLIENT_CONFIG]: {
@@ -336,6 +342,7 @@ describe('config', () => {
             name: 'Subsidiary',
           }],
           fileCabinet: [],
+          customRecords: [],
         },
       },
     }
@@ -352,6 +359,7 @@ describe('config', () => {
             name: 'subsidiary',
           }],
           fileCabinet: [],
+          customRecords: [],
         },
       },
     })

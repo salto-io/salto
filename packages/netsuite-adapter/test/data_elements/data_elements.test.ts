@@ -14,9 +14,8 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ElemID, ElemIdGetter, Field, InstanceElement, ObjectType, OBJECT_NAME, OBJECT_SERVICE_ID, toServiceIdsString } from '@salto-io/adapter-api'
-import * as soap from 'soap'
 import Bottleneck from 'bottleneck'
-import { elements as elementsComponents } from '@salto-io/adapter-components'
+import { elements as elementsComponents, soap } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 import NetsuiteClient from '../../src/client/client'

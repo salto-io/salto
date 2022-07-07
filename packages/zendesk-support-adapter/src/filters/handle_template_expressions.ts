@@ -237,10 +237,7 @@ const replaceTemplatesWithValues = async (
   const handleTemplateValue = (template: TemplateExpression): string => {
     const templateUsingIdField = new TemplateExpression({
       parts: template.parts.map(part => {
-        if (isReferenceExpression(part)) {
-          if (!isInstanceElement(part.value)) {
-            return part
-          }
+        if (isReferenceExpression(part) && isInstanceElement(part.value)) {
           if (saltoTypeToZendeskReferenceType[part.elemID.typeName]) {
             return [`${saltoTypeToZendeskReferenceType[part.elemID.typeName]}_${part
               .value.value.id}`]

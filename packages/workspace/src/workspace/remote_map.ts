@@ -48,7 +48,7 @@ export interface CreateRemoteMapParams<T> {
   namespace: string
   batchInterval?: number
   persistent: boolean
-  serialize: (value: T) => string
+  serialize: (value: T) => Promise<string>
   deserialize: (s: string) => Promise<T>
 }
 

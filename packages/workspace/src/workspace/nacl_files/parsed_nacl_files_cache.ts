@@ -96,7 +96,7 @@ const getMetadata = async (
 ): Promise<RemoteMap<FileCacheMetadata>> => (
   remoteMapCreator({
     namespace: getRemoteMapCacheNamespace(cacheName, 'metadata'),
-    serialize: (val: FileCacheMetadata) => safeJsonStringify(val),
+    serialize: async (val: FileCacheMetadata) => safeJsonStringify(val),
     deserialize: data => JSON.parse(data),
     persistent,
   })
@@ -109,7 +109,7 @@ const getErrors = async (
 ): Promise<RemoteMap<ParseError[]>> => (
   remoteMapCreator({
     namespace: getRemoteMapCacheNamespace(cacheName, 'errors'),
-    serialize: (errors: ParseError[]) => safeJsonStringify(errors ?? []),
+    serialize: async (errors: ParseError[]) => safeJsonStringify(errors ?? []),
     deserialize: data => JSON.parse(data),
     persistent,
   })
@@ -124,7 +124,7 @@ const getCacheSources = async (
   metadata: await getMetadata(cacheName, remoteMapCreator, persistent),
   elements: await remoteMapCreator({
     namespace: getRemoteMapCacheNamespace(cacheName, 'elements'),
-    serialize: (elements: Element[]) => serialize(elements ?? [], 'keepRef'),
+    serialize: async (elements: Element[]) => serialize(elements ?? [], 'keepRef'),
     deserialize: async data => (deserialize(
       data,
       async sf => staticFilesSource.getStaticFile(sf.filepath, sf.encoding),
@@ -133,20 +133,20 @@ const getCacheSources = async (
   }),
   sourceMap: (await remoteMapCreator({
     namespace: getRemoteMapCacheNamespace(cacheName, 'sourceMap'),
-    serialize: (sourceMap: SourceMap) => safeJsonStringify(Array.from(sourceMap.entries())),
+    serialize: async (sourceMap: SourceMap) => safeJsonStringify(Array.from(sourceMap.entries())),
     deserialize: async data => (new SourceMap(JSON.parse(data))),
     persistent,
   })),
   errors: await getErrors(cacheName, remoteMapCreator, persistent),
   referenced: (await remoteMapCreator({
     namespace: getRemoteMapCacheNamespace(cacheName, 'referenced'),
-    serialize: (val: string[]) => safeJsonStringify(val ?? []),
+    serialize: async (val: string[]) => safeJsonStringify(val ?? []),
     deserialize: data => (JSON.parse(data)),
     persistent,
   })),
   staticFiles: (await remoteMapCreator({
     namespace: getRemoteMapCacheNamespace(cacheName, 'staticFiles'),
-    serialize: (val: string[]) => safeJsonStringify(val ?? []),
+    serialize: async (val: string[]) => safeJsonStringify(val ?? []),
     deserialize: data => (JSON.parse(data)),
     persistent,
   })),

@@ -16,4 +16,5 @@
 export { ParsedNaclFile, ParsedNaclFileData } from './parsed_nacl_file'
 export { ChangeSet } from './elements_cache'
 export { NaclFile, FILE_EXTENSION, NaclFilesSource, naclFilesSource, RoutingMode, getFunctions } from './nacl_files_source'
+export { getNestedStaticFiles } from './nacl_file_update'
 export { ENVS_PREFIX } from './multi_env/multi_env_source'

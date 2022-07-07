@@ -149,6 +149,7 @@ describe('SuiteAppClient', () => {
         it('invalid results', async () => {
           mockAxiosAdapter.onPost().reply(200, {})
           expect(await client.runSuiteQL('')).toBeUndefined()
+          expect(mockAxiosAdapter.history.post.length).toBe(6)
         })
       })
     })

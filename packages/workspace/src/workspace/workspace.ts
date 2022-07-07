@@ -371,31 +371,31 @@ export const loadWorkspace = async (
           }),
           changedBy: await remoteMapCreator<ElemID[]>({
             namespace: getRemoteMapNamespace('changedBy', envName),
-            serialize: val => safeJsonStringify(val.map(id => id.getFullName())),
+            serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
             deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
             persistent,
           }),
           changedAt: await remoteMapCreator<ElemID[]>({
             namespace: getRemoteMapNamespace('changedAt', envName),
-            serialize: val => safeJsonStringify(val.map(id => id.getFullName())),
+            serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
             deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
             persistent,
           }),
           referenceSources: await remoteMapCreator<ElemID[]>({
             namespace: getRemoteMapNamespace('referenceSources', envName),
-            serialize: val => safeJsonStringify(val.map(id => id.getFullName())),
+            serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
             deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
             persistent,
           }),
           referenceTargets: await remoteMapCreator<ElemID[]>({
             namespace: getRemoteMapNamespace('referenceTargets', envName),
-            serialize: val => safeJsonStringify(val.map(id => id.getFullName())),
+            serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
             deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
             persistent,
           }),
           mapVersions: await remoteMapCreator<number>({
             namespace: getRemoteMapNamespace('mapVersions', envName),
-            serialize: val => val.toString(),
+            serialize: async val => val.toString(),
             deserialize: async data => parseInt(data, 10),
             persistent,
           }),
@@ -503,13 +503,16 @@ export const loadWorkspace = async (
             .filter(element => isHidden(element, state(envName)))
             .map(elem => toChange({ after: elem })).toArray()
           : []
+        log.debug('got %d init hidden element changes', initHiddenElementsChanges.length)
 
-        const stateRemovedElementChanges = await awu(
-          (workspaceChanges[envName] ?? createEmptyChangeSet())
-            .changes
-        ).filter(async change => isRemovalChange(change)
+        const stateRemovedElementChanges = await awu(workspaceChanges[envName]?.changes ?? [])
+          .filter(async change => (
+            isRemovalChange(change)
             && getChangeData(change).elemID.isTopLevel()
-            && !await isHidden(getChangeData(change), state(envName))).toArray()
+            && !await isHidden(getChangeData(change), state(envName))
+          ))
+          .toArray()
+        log.debug('got %d state removed element changes', stateRemovedElementChanges.length)
 
         // To preserve the old ws functionality - hidden values should be added to the workspace
         // cache only if their top level element is in the nacls, or they are marked as hidden
@@ -540,9 +543,8 @@ export const loadWorkspace = async (
             .concat(initHiddenElementsChanges)
             .concat(stateRemovedElementChanges),
           cacheValid,
-          preChangeHash: partialStateChanges.preChangeHash
-            ?? await stateToBuild.mergeManager.getHash(STATE_SOURCE_PREFIX + envName),
-          postChangeHash: await state(envName).getHash(),
+          preChangeHash: partialStateChanges.preChangeHash ?? cachedHash,
+          postChangeHash: stateHash,
         }
       }
 
@@ -1083,11 +1085,12 @@ export const loadWorkspace = async (
       if (!persistent) {
         throw new Error('Can not flush a non-persistent workspace.')
       }
-      await state().flush()
-      await (await getLoadedNaclFilesSource()).flush()
+      // Must call getWorkspaceState first to make sure everything is loaded before flushing
       const currentWSState = await getWorkspaceState()
       await currentWSState.mergeManager.flush()
+      await (await getLoadedNaclFilesSource()).flush()
       await adaptersConfig.flush()
+      await state().flush()
     },
     clone: (): Promise<Workspace> => {
       const sources = _.mapValues(environmentsSources.sources, source =>

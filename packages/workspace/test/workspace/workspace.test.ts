@@ -135,6 +135,7 @@ const createState = (
   accountsUpdateDate: new InMemoryRemoteMap(),
   changedBy: new InMemoryRemoteMap([{ key: 'name@@account', value: ['elemId'] }]),
   saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),
+  staticFilesSource: mockStaticFilesSource(),
 }), persistent)
 const createWorkspace = async (
   dirStore?: DirectoryStore<string>,

@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { Element } from '@salto-io/adapter-api'
+import { mockStaticFilesSource } from '../utils'
 import { State, buildInMemState } from '../../src/workspace/state'
 import { InMemoryRemoteMap } from '../../src/workspace/remote_map'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
@@ -28,5 +29,6 @@ export const mockState = (
     accountsUpdateDate: new InMemoryRemoteMap(),
     saltoVersion: '0.0.1',
     saltoMetadata: new InMemoryRemoteMap(),
+    staticFilesSource: mockStaticFilesSource(),
   }))
 )

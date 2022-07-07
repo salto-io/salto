@@ -42,36 +42,36 @@ class MissingStaticFileError extends Error {
 }
 
 export class AbsoluteStaticFile extends StaticFile {
-  protected dirStore: DirectoryStore<Buffer>
+  readonly absoluteFilePath: string
 
   constructor(
-    params: StaticFileParameters,
-    dirStore: DirectoryStore<Buffer>,
+    params: StaticFileParameters & {
+      absoluteFilePath: string
+    },
   ) {
     super(params)
-    this.dirStore = dirStore
-  }
-
-  get absoluteFilePath(): string {
-    return this.dirStore.getFullPath(this.filepath)
+    this.absoluteFilePath = params.absoluteFilePath
   }
 }
 
 export class LazyStaticFile extends AbsoluteStaticFile {
+  private resolvedContent: Promise<Buffer | undefined> | undefined
+
   constructor(
     filepath: string,
     hash: string,
-    dirStore: DirectoryStore<Buffer>,
+    absoluteFilePath: string,
+    private getContentFunc: () => Promise<Buffer | undefined>,
     encoding?: BufferEncoding
   ) {
-    super({ filepath, hash, encoding }, dirStore)
+    super({ filepath, hash, encoding, absoluteFilePath })
   }
 
   async getContent(): Promise<Buffer | undefined> {
-    if (this.internalContent === undefined) {
-      this.internalContent = (await this.dirStore.get(this.filepath))?.buffer
+    if (this.resolvedContent === undefined) {
+      this.resolvedContent = this.getContentFunc()
     }
-    return this.internalContent
+    return this.resolvedContent
   }
 }
 
@@ -123,37 +123,6 @@ export const buildStaticFilesSource = (
     }
   }
 
-  const getStaticFile = async (
-    filepath: string,
-    encoding: BufferEncoding,
-  ): Promise<StaticFile | InvalidStaticFile> => {
-    try {
-      const staticFileData = await getStaticFileData(filepath)
-
-      if (staticFileData.hasChanged) {
-        const staticFileWithHashAndContent = new AbsoluteStaticFile({ filepath,
-          content: staticFileData.buffer,
-          encoding },
-        staticFilesDirStore)
-        return staticFileWithHashAndContent
-      }
-      return new LazyStaticFile(
-        filepath,
-        staticFileData.hash,
-        staticFilesDirStore,
-        encoding,
-      )
-    } catch (e) {
-      if (e instanceof MissingStaticFileError) {
-        return new MissingStaticFile(filepath)
-      }
-      if (e instanceof StaticFileAccessDeniedError) {
-        return new AccessDeniedStaticFile(filepath)
-      }
-      throw e
-    }
-  }
-
   const staticFilesSource: Required<StaticFilesSource> = {
     load: async () => {
       const existingFiles = new Set(await staticFilesDirStore.list())
@@ -178,7 +147,59 @@ export const buildStaticFilesSource = (
         ...modifiedFilesSet.keys(),
       ]
     },
-    getStaticFile,
+    getStaticFile: async (
+      filepath: string,
+      encoding: BufferEncoding,
+      hash?: string,
+    ): Promise<StaticFile | InvalidStaticFile> => {
+      try {
+        const staticFileData = await getStaticFileData(filepath)
+        if (hash !== undefined && staticFileData.hash !== hash) {
+          // We return a StaticFile in this case and not a MissingStaticFile to be able to differ
+          // in the elements cache between a file that was really missing when the cache was
+          // written, and a file that existed but was modified since the cache was written,
+          // as the latter should not be represented in the element that is returned from
+          // the cache as MissingStaticFile
+          return new StaticFile({ filepath, encoding, hash })
+        }
+
+        if (staticFileData.hasChanged) {
+          const staticFileWithHashAndContent = new AbsoluteStaticFile(
+            {
+              filepath,
+              content: staticFileData.buffer,
+              encoding,
+              absoluteFilePath: staticFilesDirStore.getFullPath(filepath),
+            },
+          )
+          return staticFileWithHashAndContent
+        }
+        return new LazyStaticFile(
+          filepath,
+          staticFileData.hash,
+          staticFilesDirStore.getFullPath(filepath),
+          async () => (await staticFilesDirStore.get(filepath))?.buffer,
+          encoding,
+        )
+      } catch (e) {
+        if (hash !== undefined) {
+          // We return a StaticFile in this case and not a MissingStaticFile to be able to differ
+          // in the elements cache between a file that was really missing when the cache was
+          // written, and a file that existed but was removed since the cache was written,
+          // as the latter should not be represented in the element that is returned from
+          // the cache as MissingStaticFile
+          return new StaticFile({ filepath, encoding, hash })
+        }
+
+        if (e instanceof MissingStaticFileError) {
+          return new MissingStaticFile(filepath)
+        }
+        if (e instanceof StaticFileAccessDeniedError) {
+          return new AccessDeniedStaticFile(filepath)
+        }
+        throw e
+      }
+    },
     getContent: async (
       filepath: string
     ): Promise<Buffer> => {

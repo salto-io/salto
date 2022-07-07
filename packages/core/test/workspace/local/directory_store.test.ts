@@ -149,6 +149,28 @@ describe('localDirectoryStore', () => {
     })
   })
 
+  describe('exists', () => {
+    it('returns true if exists in the dir store', async () => {
+      const baseDir = 'exists'
+      const naclFileName = 'blabla/exist.nacl'
+      mockFileExists.mockResolvedValue(true)
+      expect(await localDirectoryStore({ baseDir, name: '', encoding }).exists(naclFileName)).toBeTruthy()
+      expect(mockFileExists).toHaveBeenCalledWith(
+        expect.stringContaining(path.join(baseDir, naclFileName))
+      )
+    })
+
+    it('returns false if does not exist in the dir store', async () => {
+      const baseDir = 'exists'
+      const naclFileName = 'blabla/exist.nacl'
+      mockFileExists.mockResolvedValue(false)
+      expect(await localDirectoryStore({ baseDir, name: '', encoding }).exists(naclFileName)).toBeFalsy()
+      expect(mockFileExists).toHaveBeenCalledWith(
+        expect.stringContaining(path.join(baseDir, naclFileName))
+      )
+    })
+  })
+
   describe('set', () => {
     const filename = 'inner/file'
 

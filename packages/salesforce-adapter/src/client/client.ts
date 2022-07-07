@@ -67,7 +67,7 @@ const { toMD5 } = hash
 const log = logger(module)
 const { logDecorator, throttle, requiresLogin, createRateLimitersFromConfig } = clientUtils
 
-export const API_VERSION = '50.0'
+export const API_VERSION = '55.0'
 export const METADATA_NAMESPACE = 'http://soap.sforce.com/2006/04/metadata'
 
 // Salesforce limitation of maximum number of items per create/update/delete call

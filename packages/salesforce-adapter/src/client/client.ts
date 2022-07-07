@@ -334,7 +334,7 @@ const createRetryOptions = (retryOptions: Required<ClientRetryConfig>): RequestR
   retryStrategy: retry400ErrorWrapper(RetryStrategies[retryOptions.retryStrategy]),
   timeout: retryOptions.timeout,
   delayStrategy: (err, _response, _body) => {
-    log.error('failed to run SFDC call for reason: %s. Retrying in %ss.',
+    log.warn('failed to run SFDC call for reason: %s. Retrying in %ss.',
       err?.message ?? '', (retryOptions.retryDelay / 1000))
     return retryOptions.retryDelay
   },

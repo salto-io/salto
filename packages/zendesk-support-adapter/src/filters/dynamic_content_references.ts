@@ -34,24 +34,26 @@ const transformDynamicContentDependencies = async (
   instance: InstanceElement,
   placeholderToItem: Record<string, InstanceElement>
 ): Promise<void> => {
+  const partToTemplate = (part: string): TemplatePart[] => {
+    const placeholder = part.match(INNER_PLACEHOLDER_REGEX)
+    if (!placeholder) {
+      return [part]
+    }
+    const itemInstance = placeholderToItem[placeholder[0]]
+    if (!itemInstance) {
+      return [part]
+    }
+    return ['{{', new ReferenceExpression(itemInstance.elemID, itemInstance), '}}']
+  }
   instance.value = await transformValues({
     values: instance.value,
     type: await instance.getType(),
     pathID: instance.elemID,
     transformFunc: ({ value, path }) => {
       if (path && path.name.startsWith('raw_') && _.isString(value)) {
-        const templateParts: TemplatePart[] = value.split(PLACEHOLDER_REGEX).filter(e => e)
-          .flatMap(part => {
-            const placeholder = part.match(INNER_PLACEHOLDER_REGEX)
-            if (!placeholder) {
-              return part
-            }
-            const itemInstance = placeholderToItem[placeholder[0]]
-            if (!itemInstance) {
-              return part
-            }
-            return ['{{', new ReferenceExpression(itemInstance.elemID, itemInstance), '}}']
-          })
+        const templateParts: TemplatePart[] = value.split(PLACEHOLDER_REGEX)
+          .filter(e => !_.isEmpty(e))
+          .flatMap(partToTemplate)
         if (templateParts.every(part => _.isString(part))) {
           return templateParts.join('')
         }
@@ -62,7 +64,21 @@ const transformDynamicContentDependencies = async (
   }) ?? instance.value
 }
 
-const deTransformDynamicContentDependencies = async (
+const templatePartToApiValue = (part: TemplatePart): string => {
+  // remove brackets because they're included in placeholder
+  if (_.isString(part) && ['{{', '}}'].includes(part)) {
+    return ''
+  }
+  if (isReferenceExpression(part)) {
+    if (!isInstanceElement(part.value)) {
+      return part.value
+    }
+    return part.value.value.placeholder ?? part
+  }
+  return part
+}
+
+const returnDynamicContentsToApiValue = async (
   instance: InstanceElement,
   mapping: Record<string, TemplateExpression>,
 ): Promise<void> => {
@@ -72,24 +88,7 @@ const deTransformDynamicContentDependencies = async (
     pathID: instance.elemID,
     transformFunc: ({ value, path }) => {
       if (path && path.name.startsWith('raw_') && isTemplateExpression(value)) {
-        const transformedValue = value.parts.map(
-          part => {
-            // remove brackets because they're included in placeholder
-            if (part === '{{') {
-              return ''
-            }
-            if (part === '}}') {
-              return ''
-            }
-            if (isReferenceExpression(part)) {
-              if (!isInstanceElement(part.value)) {
-                return part
-              }
-              return part.value.value.placeholder ?? part
-            }
-            return part
-          }
-        ).join('')
+        const transformedValue = value.parts.map(templatePartToApiValue).join('')
         mapping[transformedValue] = value
         return transformedValue
       }
@@ -118,7 +117,7 @@ const filterCreator: FilterCreator = () => {
     }, 'Dynamic content references filter'),
     preDeploy: (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () => {
       await Promise.all(changes.map(getChangeData).map(instance =>
-        deTransformDynamicContentDependencies(instance, templateMapping)))
+        returnDynamicContentsToApiValue(instance, templateMapping)))
     }, 'Dynamic content references filter'),
     onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () =>
       awu(changes.map(getChangeData)).forEach(async instance => {

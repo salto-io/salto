@@ -292,14 +292,16 @@ const cleanTmpDatabases = async (loc: string, ignoreErrors = false): Promise<voi
   const tmpDir = getDBTmpDir(loc)
   await awu(await fileUtils.readDir(tmpDir)).forEach(async tmpLoc => {
     try {
-      await deleteLocation(path.join(tmpDir, tmpLoc))
       log.debug('cleaning tmp db %s', tmpLoc)
+      await deleteLocation(path.join(tmpDir, tmpLoc))
     } catch (e) {
-      if (ignoreErrors) {
-        if (!isDBLockErr(e)) {
-          log.warn('ignoring an unexpected error while cleaning tmp db %s: %s', tmpLoc, e.message)
-        }
+      if (isDBLockErr(e)) {
+        log.debug('caught a rocksdb lock error while cleaning tmp db: %s', e.message)
       } else {
+        log.warn('caught an unexpected error while cleaning tmp db: %s', e.message)
+      }
+
+      if (!ignoreErrors) {
         throw isDBLockErr(e) ? new DBLockError() : e
       }
     }

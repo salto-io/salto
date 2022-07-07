@@ -218,6 +218,10 @@ jobs:
           name: run CLI --help
           command: ./salto --help
 
+      - run:
+          name: Test CLI init
+          command: mkdir workspace && cd workspace && ../salto init -e env1
+
   test_cli_linux:
     docker:
       - image: cimg/node:14.15
@@ -241,6 +245,10 @@ jobs:
       - run:
           name: run CLI --help
           command: ./salto --help
+
+      - run:
+          name: Test CLI init
+          command: mkdir workspace && cd workspace && ../salto init -e env1
 
   test_cli_win:
     executor:

@@ -110,11 +110,12 @@ const updateAdditionChange = (
   const authors = getChangeAuthors(change)
   Object.entries(authors).forEach(entry => {
     const [author, elements] = entry
-    if (authorMap[author]) {
-      elements.forEach(element => {
-        authorMap[author].add(element.getFullName())
-      })
+    if (!authorMap[author]) {
+      authorMap[author] = new Set()
     }
+    elements.forEach(element => {
+      authorMap[author].add(element.getFullName())
+    })
   })
 }
 

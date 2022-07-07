@@ -62,11 +62,10 @@ const getRemoteDbImpl = (): any => {
   return rocksdbImpl
 }
 
-const isDBLockErr = (error: Error): boolean => (
+const isDBLockErr = (error: Error): boolean =>
   error.message.includes('LOCK: Resource temporarily unavailable')
-    || error.message.includes('lock hold by current process')
-    || error.message.includes('LOCK: The process cannot access the file because it is being used by another process')
-)
+  || error.message.includes('lock hold by current process')
+  || error.message.includes('LOCK: The process cannot access the file because it is being used by another process')
 
 const isDBNotExistErr = (error: Error): boolean => (
   error.message.includes('LOCK: No such file or directory')
@@ -289,21 +288,19 @@ export const closeAllRemoteMaps = async (): Promise<void> => {
   })
 }
 
-const cleanTmpDatabases = async (loc: string, ignoreUsed = false): Promise<void> => {
+const cleanTmpDatabases = async (loc: string, ignoreErrors = false): Promise<void> => {
   const tmpDir = getDBTmpDir(loc)
   await awu(await fileUtils.readDir(tmpDir)).forEach(async tmpLoc => {
     try {
       await deleteLocation(path.join(tmpDir, tmpLoc))
       log.debug('cleaning tmp db %s', tmpLoc)
     } catch (e) {
-      if (isDBLockErr(e)) {
-        if (ignoreUsed) {
-          log.debug('will not clean tmp db %s as it is being used', tmpLoc)
-        } else {
-          throw new DBLockError()
+      if (ignoreErrors) {
+        if (!isDBLockErr(e)) {
+          log.warn('ignoring an unexpected error while cleaning tmp db %s: %s', tmpLoc, e.message)
         }
       } else {
-        throw e
+        throw isDBLockErr(e) ? new DBLockError() : e
       }
     }
   })

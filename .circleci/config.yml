@@ -259,7 +259,7 @@ jobs:
           command: ./salto.exe --help
 
       - run:
-          name: run CLI init
+          name: Test CLI init
           command: mkdir workspace && cd workspace && ../salto.exe init -e env1
 
   package_vscode_extension:

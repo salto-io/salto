@@ -93,11 +93,9 @@ const getChangeAuthors = (change: Change<Element>): Record<string, ElemID[]> => 
     authors[authorKey].push(element.elemID)
   }
   if (isObjectType(changeElement)) {
-    Object.values(changeElement.fields).forEach(field => {
-      if (field.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
-        addElementToMap(field)
-      }
-    })
+    Object.values(changeElement.fields)
+      .filter(field => field.annotations[CORE_ANNOTATIONS.CHANGED_BY])
+      .forEach(addElementToMap)
   }
   if (changeElement.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
     addElementToMap(changeElement)

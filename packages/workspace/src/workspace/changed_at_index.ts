@@ -39,7 +39,7 @@ const { isDefined } = values
 const { awu } = collections.asynciterable
 
 const log = logger(module)
-export const CHANGED_AT_INDEX_VERSION = 2
+export const CHANGED_AT_INDEX_VERSION = 3
 const CHANGED_AT_INDEX_KEY = 'changed_at_index'
 
 const getAllElementsChanges = async (

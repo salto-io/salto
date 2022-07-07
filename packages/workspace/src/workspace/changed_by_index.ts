@@ -39,7 +39,7 @@ const { isDefined } = values
 const { awu } = collections.asynciterable
 
 const log = logger(module)
-export const CHANGED_BY_INDEX_VERSION = 2
+export const CHANGED_BY_INDEX_VERSION = 3
 const CHANGED_BY_INDEX_KEY = 'changed_by_index'
 const UNKNOWN_USER_NAME = 'Unknown'
 const CHANGED_BY_KEY_DELIMITER = '@@'

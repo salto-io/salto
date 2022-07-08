@@ -13,4 +13,4 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { extractTypes } from './type_elements/types_generator'
+export { createClientAsync, extractTypes, Client, WSDL } from './type_elements/types_generator'

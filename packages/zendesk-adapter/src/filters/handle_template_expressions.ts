@@ -42,7 +42,7 @@ type TemplateContainer = {
   template: PotentialTemplateField
 }
 
-const zendeskReferenceTypeToSaltoType: Record<string, string> = {
+export const zendeskReferenceTypeToSaltoType: Record<string, string> = {
   'ticket.ticket_field': 'ticket_field',
   'ticket.ticket_field_option_title': 'ticket_field__custom_field_options',
 }
@@ -52,6 +52,27 @@ const saltoTypeToZendeskReferenceType = Object.fromEntries(
   Object.entries(zendeskReferenceTypeToSaltoType)
     .map(entry => [entry[1], entry[0]])
 )
+
+export const createTemplateUsingIdField = (template: TemplateExpression,
+  idOnly = false): TemplateExpression =>
+  new TemplateExpression({
+    parts: template.parts.map(part => {
+      if (isReferenceExpression(part) && isInstanceElement(part.value)) {
+        if (saltoTypeToZendeskReferenceType[part.elemID.typeName]) {
+          return idOnly ? _.toString(part.value.value.id)
+            : `${saltoTypeToZendeskReferenceType[part.elemID.typeName]}_${part.value.value.id}`
+        }
+        if (part.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME) {
+          if (!_.isString(part.value.value.placeholder)) {
+            return part
+          }
+          const placeholder = part.value.value.placeholder.match(DYNAMIC_CONTENT_REGEX)
+          return placeholder?.pop() ?? part
+        }
+      }
+      return part
+    }).flat(),
+  })
 
 const potentialReferenceTypes = Object.keys(zendeskReferenceTypeToSaltoType)
 const typeSearchRegexes: RegExp[] = []
@@ -235,24 +256,7 @@ const replaceTemplatesWithValues = async (
 ): Promise<void> => {
   const { fieldName } = container.template
   const handleTemplateValue = (template: TemplateExpression): string => {
-    const templateUsingIdField = new TemplateExpression({
-      parts: template.parts.map(part => {
-        if (isReferenceExpression(part) && isInstanceElement(part.value)) {
-          if (saltoTypeToZendeskReferenceType[part.elemID.typeName]) {
-            return [`${saltoTypeToZendeskReferenceType[part.elemID.typeName]}_${part
-              .value.value.id}`]
-          }
-          if (part.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME) {
-            if (!_.isString(part.value.value.placeholder)) {
-              return part
-            }
-            const placeholder = part.value.value.placeholder.match(DYNAMIC_CONTENT_REGEX)
-            return placeholder?.pop() ?? part
-          }
-        }
-        return part
-      }).flat(),
-    })
+    const templateUsingIdField = createTemplateUsingIdField(template)
     deployTemplateMapping[templateUsingIdField.value] = template
     return templateUsingIdField.value
   }

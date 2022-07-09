@@ -86,12 +86,10 @@ export const isFieldChange = <T extends Change<unknown>>(change: T):
     isField(getChangeData(change))
   )
 
-export type PathIndex = collections.treeMap.TreeMap<string>
-
 export type DetailedChange<T = ChangeDataType | Values | Value> =
   Change<T> & {
     id: ElemID
-    pathIndex?: PathIndex
+    pathIndex?: collections.treeMap.TreeMap<string>
   }
 
 export type ChangeParams<T> = { before?: T; after?: T }

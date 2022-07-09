@@ -13,7 +13,10 @@
         "${workspaceRoot}/node_modules/.bin/jest",
         "--runInBand",
         "--config",
-        "${workspaceRoot}/jest.config.js"
+        "${workspaceRoot}/jest.config.js",
+        "test/adapter.test.ts",
+        "-t",
+        "should return the applied changes"
       ],
       "outFiles": [],
       "console": "integratedTerminal",

@@ -17,8 +17,8 @@ import _ from 'lodash'
 import {
   Values, isObjectType, TypeElement, ObjectType, PrimitiveType, Field, InstanceElement,
   Element, isType, isField, isInstanceElement, getChangeData, Value, ElemID, DetailedChange,
-  PathIndex,
 } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { ElementsSource } from '../../elements_source'
 
@@ -104,7 +104,7 @@ export const projectElementOrValueToEnv = (
 export const createAddChange = (
   value: Element | Value,
   id: ElemID,
-  pathIndex?: PathIndex
+  pathIndex?: collections.treeMap.TreeMap<string>
 ): DetailedChange => ({
   data: { after: value },
   action: 'add',
@@ -115,12 +115,10 @@ export const createAddChange = (
 export const createRemoveChange = (
   value: Element | Value,
   id: ElemID,
-  pathIndex?: PathIndex
 ): DetailedChange => ({
   data: { before: value },
   action: 'remove',
   id,
-  pathIndex,
 })
 
 export const projectChange = async (

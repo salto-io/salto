@@ -151,7 +151,8 @@ const toChangesWithPath = (
       log.debug(`no path index was found for the top level element id ${changeID.getFullName()}`)
       return change
     }
-    const changePathIndex = pathIndex.getPathIndexOfId(changeID, parentPathIndex)
+    const changePathIndex = collections.treeMap.TreeMap
+      .getTreeMapOfId(parentPathIndex, changeID.getFullName())
     return _.merge({}, change, { change: { pathIndex: changePathIndex } })
   })
 

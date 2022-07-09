@@ -15,8 +15,9 @@
 */
 import _ from 'lodash'
 import { inspect } from 'util'
-import { types } from '@salto-io/lowerdash'
+import { collections, types } from '@salto-io/lowerdash'
 import { ElemID, SaltoElementError, SeverityLevel } from '@salto-io/adapter-api'
+import wu from 'wu'
 
 
 export abstract class MergeError extends types.Bean<Readonly<{
@@ -54,27 +55,54 @@ export class DuplicateAnnotationError extends MergeError {
 export type MergeResult<T> = {
   merged: T
   errors: MergeError[]
+  pathIndex?: collections.treeMap.TreeMap<string>
 }
 
-export const mergeNoDuplicates = <T>(
-  sources: T[],
-  errorCreator: (key: string, existingValue?: unknown, newValue?: unknown) => MergeError,
-): MergeResult<T> => {
+type MergeSource<T> = {
+  source: T
+  pathIndex?: collections.treeMap.TreeMap<string>
+}
+
+export const mergeNoDuplicates = <T>({
+  sources, errorCreator, baseId,
+}: {
+  sources: MergeSource<T>[]
+  errorCreator: (key: string, existingValue?: unknown, newValue?: unknown) => MergeError
+  baseId: ElemID
+}): MergeResult<T> => {
   const errors: MergeError[] = []
-  const merged: unknown = _.mergeWith(
-    {},
-    ...sources,
-    (existingValue: unknown, newValue: unknown, key: string): unknown => {
-      if (!_.isUndefined(existingValue)
-        && !_.isUndefined(newValue)
-        && !(_.isPlainObject(existingValue) && _.isPlainObject(newValue))) {
-        errors.push(errorCreator(key, existingValue, newValue))
-        return existingValue
+  const pathIndex = new collections.treeMap.TreeMap<string>()
+  const merged: unknown = {}
+  sources.forEach(source => {
+    const pathParts: string[] = []
+    let depth = 0
+    _.mergeWith(
+      merged,
+      source.source,
+      (existingValue: unknown, newValue: unknown, key: string,
+        _object: unknown, _source: unknown, stack: { size: number }): unknown => {
+        if (stack.size < depth) {
+          pathParts.splice(stack.size - depth)
+        }
+        pathParts.push(key)
+        depth = stack.size + 1
+        if (!_.isUndefined(existingValue)
+          && !_.isUndefined(newValue)
+          && !(_.isPlainObject(existingValue) && _.isPlainObject(newValue))) {
+          errors.push(errorCreator(key, existingValue, newValue))
+          return existingValue
+        }
+        if (_.isUndefined(existingValue) && !_.isUndefined(newValue) && source.pathIndex) {
+          const id = baseId.createNestedID(...pathParts).getFullName()
+          const prefixPathIndex = collections.treeMap.TreeMap
+            .getTreeMapOfId(source.pathIndex, id)
+          wu(prefixPathIndex.entries()).forEach(entry => { pathIndex.set(entry[0], entry[1]) })
+        }
+        return undefined
       }
-      return undefined
-    }
-  )
-  return { merged: merged as T, errors }
+    )
+  })
+  return { merged: merged as T, errors, pathIndex }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

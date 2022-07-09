@@ -15,8 +15,9 @@
 */
 import _ from 'lodash'
 import {
-  ObjectType, ElemID, Field,
+  ObjectType, ElemID, Field, getTopLevelPath,
 } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import {
   MergeResult, MergeError, mergeNoDuplicates, DuplicateAnnotationError,
 } from './common'
@@ -70,20 +71,28 @@ export class DuplicateAnnotationTypeError extends MergeError {
   }
 }
 
+// TODO: not sure about this one
 const mergeFieldDefinitions = (
   elemID: ElemID,
   definitions: Field[]
 ): MergeResult<Field> => {
   const [base] = definitions
   if (definitions.length === 1) {
-    return { merged: base, errors: [] }
+    return {
+      merged: base,
+      errors: [],
+      pathIndex: base.pathIndex,
+    }
   }
 
   // Ensure each annotation value is updated at most once.
-  const mergedAnnotations = mergeNoDuplicates(
-    definitions.map(u => u.annotations),
-    annotationKey => new DuplicateAnnotationFieldDefinitionError({ elemID, annotationKey }),
-  )
+  const mergedAnnotations = mergeNoDuplicates({
+    sources: definitions
+      .map(u => ({ source: u.annotations, pathIndex: u.pathIndex })),
+    errorCreator: annotationKey =>
+      new DuplicateAnnotationFieldDefinitionError({ elemID, annotationKey }),
+    baseId: elemID,
+  })
 
   // Ensure all types are compatible
   const definedTypes = new Set(definitions.map(field => field.refType.elemID.getFullName()))
@@ -97,15 +106,22 @@ const mergeFieldDefinitions = (
       ...mergedAnnotations.errors,
       ...typeErrors,
     ],
+    pathIndex: mergedAnnotations.pathIndex,
   }
 }
 
 const mergeObjectDefinitions = (
-  { elemID }: { elemID: ElemID },
+  { elemID }: ObjectType,
   objects: ObjectType[],
 ): MergeResult<ObjectType> => {
   const fieldDefs = _(objects)
-    .map(obj => Object.values(obj.fields))
+    .map(obj => Object.values(obj.fields)
+      .map(field => {
+        field.pathIndex = obj.pathIndex
+          ? collections.treeMap.TreeMap.getTreeMapOfId(obj.pathIndex, field.elemID.getFullName())
+          : undefined
+        return field
+      }))
     .flatten()
     .groupBy(field => field.name)
     .value()
@@ -119,27 +135,41 @@ const mergeObjectDefinitions = (
     return {
       merged: objects[0],
       errors: _.flatten(Object.values(fieldsMergeResults).map(r => r.errors)),
+      pathIndex: objects[0].pathIndex,
     }
   }
   // There are no rules in the spec on merging annotations and
   // annotations values so we simply merge without allowing duplicates
-  const annotationTypesMergeResults = mergeNoDuplicates(
-    objects.map(o => o.annotationRefTypes),
-    key => new DuplicateAnnotationTypeError({ elemID, key }),
-  )
+  const annotationTypesMergeResults = mergeNoDuplicates({
+    sources: objects.map(o => ({ source: o.annotationRefTypes, pathIndex: o.pathIndex })),
+    errorCreator: key => new DuplicateAnnotationTypeError({ elemID, key }),
+    baseId: elemID.createNestedID('annotation'),
+  })
 
   // There are no rules in the spec on merging annotations and
   // annotations values so we simply merge without allowing duplicates
-  const annotationsMergeResults = mergeNoDuplicates(
-    objects.map(o => o.annotations),
-    (key, existingValue, newValue) =>
+  const annotationsMergeResults = mergeNoDuplicates({
+    sources: objects.map(o => ({ source: o.annotations, pathIndex: o.pathIndex })),
+    errorCreator: (key, existingValue, newValue) =>
       new DuplicateAnnotationError({ elemID, key, existingValue, newValue }),
-  )
+    baseId: elemID.createNestedID('attr'),
+  })
 
   const refIsSettings = objects[0].isSettings
   const isSettingsErrors = _.every(objects, obj => obj.isSettings === refIsSettings)
     ? []
     : [new ConflictingSettingError({ elemID: objects[0].elemID })]
+
+  const objTypeWithPath = objects.find(obj => !_.isEmpty(getTopLevelPath(obj)))
+  const objPathIndex = new collections.treeMap.TreeMap<string>([
+    ...((objTypeWithPath
+      ? [[elemID.getFullName(), getTopLevelPath(objTypeWithPath)]]
+      : []) as [string, string[]][]),
+    ...Object.values(fieldsMergeResults)
+      .map(mergeRes => Array.from(mergeRes.pathIndex?.entries() ?? [])).flat(),
+    ...(annotationsMergeResults.pathIndex?.entries() ?? []),
+    ...(annotationTypesMergeResults.pathIndex?.entries() ?? []),
+  ])
 
   return {
     merged: new ObjectType({
@@ -148,6 +178,7 @@ const mergeObjectDefinitions = (
       annotationRefsOrTypes: annotationTypesMergeResults.merged,
       annotations: annotationsMergeResults.merged,
       isSettings: refIsSettings,
+      path: objPathIndex,
     }),
     errors: _.flatten([
       ...Object.values(fieldsMergeResults).map(r => r.errors),
@@ -155,6 +186,7 @@ const mergeObjectDefinitions = (
       ...annotationsMergeResults.errors,
       ...isSettingsErrors,
     ]),
+    pathIndex: objPathIndex,
   }
 }
 

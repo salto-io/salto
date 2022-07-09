@@ -13,12 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { inspect } from 'util'
-import { InstanceElement, ElemID, TypeReference } from '@salto-io/adapter-api'
+import { InstanceElement, ElemID, getTopLevelPath } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import {
   MergeResult, MergeError, mergeNoDuplicates, DuplicateAnnotationError,
 } from './common'
-
 
 export class DuplicateInstanceKeyError extends MergeError {
   readonly key: string
@@ -38,29 +39,42 @@ export class DuplicateInstanceKeyError extends MergeError {
 }
 
 const mergeInstanceDefinitions = (
-  { elemID, refType }: { elemID: ElemID; refType: TypeReference },
+  { elemID, refType }: InstanceElement,
   instanceDefs: InstanceElement[]
 ): MergeResult<InstanceElement> => {
-  const valueMergeResult = instanceDefs.length > 1 ? mergeNoDuplicates(
-    instanceDefs.map(i => i.value),
-    (key, existingValue, newValue) =>
+  const valueMergeResult = instanceDefs.length > 1 ? mergeNoDuplicates({
+    sources: instanceDefs.map(i => ({ source: i.value, pathIndex: i.pathIndex })),
+    errorCreator: (key, existingValue, newValue) =>
       new DuplicateInstanceKeyError({ elemID, key, existingValue, newValue }),
-  ) : {
+    baseId: elemID,
+  }) : {
     merged: instanceDefs[0].value,
     errors: [],
+    pathIndex: instanceDefs[0].pathIndex,
   }
 
-  const annotationsMergeResults = mergeNoDuplicates(
-    instanceDefs.map(o => o.annotations),
-    (key, existingValue, newValue) =>
+  const annotationsMergeResults = mergeNoDuplicates({
+    sources: instanceDefs.map(o => ({ source: o.annotations, pathIndex: o.pathIndex })),
+    errorCreator: (key, existingValue, newValue) =>
       new DuplicateAnnotationError({ elemID, key, existingValue, newValue }),
-  )
+    baseId: elemID,
+  })
+
+  const instanceWithPath = instanceDefs.find(inst => !_.isEmpty(getTopLevelPath(inst)))
+  const instPathIndex = new collections.treeMap.TreeMap<string>([
+    ...((instanceWithPath
+      ? [[elemID.getFullName(), getTopLevelPath(instanceWithPath)]]
+      : []) as [string, string[]][]),
+    ...(valueMergeResult.pathIndex?.entries() ?? []),
+    ...(annotationsMergeResults.pathIndex?.entries() ?? []),
+  ])
 
   return {
     merged: new InstanceElement(
-      elemID.name, refType, valueMergeResult.merged, undefined, annotationsMergeResults.merged,
+      elemID.name, refType, valueMergeResult.merged, instPathIndex, annotationsMergeResults.merged,
     ),
     errors: [...valueMergeResult.errors, ...annotationsMergeResults.errors],
+    pathIndex: instPathIndex,
   }
 }
 

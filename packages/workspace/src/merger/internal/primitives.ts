@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { PrimitiveType, ElemID, PrimitiveTypes } from '@salto-io/adapter-api'
+import { PrimitiveType, ElemID, getTopLevelPath } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { MergeResult, MergeError, mergeNoDuplicates } from './common'
 import { DuplicateAnnotationTypeError } from './object_types'
@@ -37,17 +38,20 @@ export class MultiplePrimitiveTypesError extends MergeError {
 }
 
 const mergePrimitiveDefinitions = (
-  { elemID, primitive }: { elemID: ElemID; primitive: PrimitiveTypes }, primitives: PrimitiveType[],
+  { elemID, primitive }: PrimitiveType, primitives: PrimitiveType[],
 ): MergeResult<PrimitiveType> => {
-  const annotationsMergeResults = mergeNoDuplicates(
-    primitives.map(prim => prim.annotations),
-    key => new DuplicateAnnotationTypeError({ elemID, key })
-  )
+  const annotationsMergeResults = mergeNoDuplicates({
+    sources: primitives.map(prim => ({ source: prim.annotations, pathIndex: prim.pathIndex })),
+    errorCreator: key => new DuplicateAnnotationTypeError({ elemID, key }),
+    baseId: elemID.createNestedID('attr'),
+  })
 
-  const annotationTypesMergeResults = mergeNoDuplicates(
-    primitives.map(prim => prim.annotationRefTypes),
-    key => new DuplicateAnnotationTypeError({ elemID, key }),
-  )
+  const annotationTypesMergeResults = mergeNoDuplicates({
+    sources: primitives
+      .map(prim => ({ source: prim.annotationRefTypes, pathIndex: prim.pathIndex })),
+    errorCreator: key => new DuplicateAnnotationTypeError({ elemID, key }),
+    baseId: elemID.createNestedID('annotation'),
+  })
 
   const primitiveType = primitives[0].primitive
   const primitveTypeErrors = _.every(
@@ -57,6 +61,14 @@ const mergePrimitiveDefinitions = (
       elemID: primitives[0].elemID,
       duplicates: primitives,
     })]
+  const primitiveWithPath = primitives.find(prim => !_.isEmpty(getTopLevelPath(prim)))
+  const pathIndex = new collections.treeMap.TreeMap<string>([
+    ...((primitiveWithPath
+      ? [[elemID.getFullName(), getTopLevelPath(primitiveWithPath)]]
+      : []) as [string, string[]][]),
+    ...(annotationsMergeResults.pathIndex?.entries() ?? []),
+    ...(annotationTypesMergeResults.pathIndex?.entries() ?? []),
+  ])
 
   return {
     merged: new PrimitiveType({
@@ -64,12 +76,14 @@ const mergePrimitiveDefinitions = (
       primitive,
       annotationRefsOrTypes: annotationTypesMergeResults.merged,
       annotations: annotationsMergeResults.merged,
+      path: pathIndex,
     }),
     errors: [
       ...annotationsMergeResults.errors,
       ...annotationTypesMergeResults.errors,
       ...primitveTypeErrors,
     ],
+    pathIndex,
   }
 }
 

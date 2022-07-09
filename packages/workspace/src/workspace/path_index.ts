@@ -361,29 +361,3 @@ export const splitDetailedChange = (
     id: change.id,
   }))
 }
-
-const getPathOfId = (elemID: ElemID, pathIndex: collections.treeMap.TreeMap<string>): string[] => {
-  const idParts = elemID.getFullNameParts()
-  const topLevelKey = elemID.createTopLevelParentID().parent.getFullName()
-  let key: string
-  do {
-    key = idParts.join(ElemID.NAMESPACE_SEPARATOR)
-    const pathHint = pathIndex.get(key)
-    if (pathHint !== undefined) {
-      return pathHint
-    }
-    idParts.pop()
-  } while (idParts.length > 0 && key !== topLevelKey)
-  return []
-}
-
-export const getPathIndexOfId = (
-  elemID: ElemID, pathIndex: collections.treeMap.TreeMap<string>
-): collections.treeMap.TreeMap<string> => {
-  const rootPath = getPathOfId(elemID, pathIndex)
-  const pathIndexOfId = new collections.treeMap.TreeMap<string>(
-    pathIndex.entriesWithPrefix(elemID.getFullName())
-  )
-  pathIndexOfId.set(elemID.getFullName(), rootPath)
-  return pathIndexOfId
-}

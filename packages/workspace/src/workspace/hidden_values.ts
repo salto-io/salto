@@ -258,7 +258,7 @@ const getHiddenTypeChanges = async (
     }
     return isChangeToHidden(change, false)
       ? createRemoveChange(elem, elemId)
-      : createAddChange(elem, elemId)
+      : createAddChange(elem, elemId) // TODO: should I add pathIndex?
   })
   .filter(values.isDefined)
   .toArray()
@@ -456,6 +456,7 @@ const getHiddenFieldAndAnnotationValueChanges = async (
           if (annotationsToHide?.has(name)) {
             hiddenValueChanges.push(createRemoveChange(attrValue, path.createNestedID(name)))
           } else if (annotationsToUnHide?.has(name)) {
+            // TODO: should I add pathIndex?
             hiddenValueChanges.push(createAddChange(attrValue, path.createNestedID(name)))
           }
         })

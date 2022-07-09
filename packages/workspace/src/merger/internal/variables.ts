@@ -29,6 +29,7 @@ const mergeVariableDefinitions = (
   errors: variableDefs.length > 1
     ? [new DuplicateVariableNameError({ elemID: variableDefs[0].elemID })]
     : [],
+  pathIndex: variableDefs[0].pathIndex,
 })
 
 export const mergeVariables = (

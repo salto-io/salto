@@ -23,7 +23,7 @@ import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
-import { Workspace, ElementSelector, elementSource } from '@salto-io/workspace'
+import { Workspace, ElementSelector, elementSource, pathIndex } from '@salto-io/workspace'
 import { EOL } from 'os'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
@@ -240,8 +240,14 @@ const updateStateWithFetchResults = async (
   await workspace.state()
     .override(awu(mergedElements)
       .concat(stateElementsNotCoveredByFetch), fetchedAccounts)
-  await workspace.state().updatePathIndex(unmergedElements,
-    (await workspace.state().existingAccounts()).filter(key => !fetchedAccounts.includes(key)))
+  const statePathIndex = await workspace.state().getPathIndex()
+  const splittedElements = (await Promise.all(
+    unmergedElements.map(element => pathIndex.splitElementByPath(element, statePathIndex))
+  )).flat()
+  await workspace.state().updatePathIndex(
+    splittedElements,
+    (await workspace.state().existingAccounts()).filter(key => !fetchedAccounts.includes(key)),
+  )
   log.debug(`finish to override state with ${mergedElements.length} elements`)
 }
 

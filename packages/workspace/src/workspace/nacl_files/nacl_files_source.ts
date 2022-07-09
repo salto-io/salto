@@ -657,7 +657,6 @@ const buildNaclFilesSource = (
       elements: async () => {
         const parsedElement = await parsed.elements()
         return parsedElement && parsedElement.map(elem => {
-          // TODO: double check it - I think its wrong
           // We need to do it and merge elements with path indexes
           elem.pathIndex = createPathIndexFromPath(elem.elemID, toPathHint(filename))
           return elem
@@ -757,8 +756,8 @@ const buildNaclFilesSource = (
     await awu(emptyNaclFiles).forEach(naclFile => naclFilesStore.delete(naclFile.filename))
   }
 
-  const updateNaclFiles = async (mergedChanges: DetailedChange[]): Promise<ChangeSet<Change>> => {
-    const changes = mergedChanges.flatMap(splitDetailedChange)
+  const updateNaclFiles = async (changes: DetailedChange[]): Promise<ChangeSet<Change>> => {
+    const splittedChanges = changes.flatMap(splitDetailedChange)
     const preChangeHash = await (await state)?.parsedNaclFiles.getHash()
     const getNaclFileData = async (filename: string): Promise<string> => {
       const naclFile = await naclFilesStore.get(filename)
@@ -776,7 +775,7 @@ const buildNaclFilesSource = (
         .forEach(file => staticFilesSource.delete(file))
     }
     const naclFiles = _.uniq(
-      await awu(changes).map(change => change.id)
+      await awu(splittedChanges).map(change => change.id)
         .flatMap(elemID => getElementNaclFiles(elemID.createTopLevelParentID().parent))
         .toArray()
     )
@@ -797,7 +796,7 @@ const buildNaclFilesSource = (
       acc.merge(sourceMap)
       return acc
     }, new SourceMap())
-    const changesToUpdate = getChangesToUpdate(changes, mergedSourceMap)
+    const changesToUpdate = getChangesToUpdate(splittedChanges, mergedSourceMap)
     const allFileNames = _.keyBy(await parsedNaclFiles.list(), name => name.toLowerCase())
     const updatedNaclFiles = (await withLimitedConcurrency(
       _(changesToUpdate)

@@ -106,6 +106,11 @@ const separateChangeByFiles = async (
   if (_.isEmpty(elementNaclFiles)) {
     return [change]
   }
+  // Note: this is the only place in the workspace (aside from updateNaclFiles in naclFileSource)
+  //  that we are splitting the elements. Therefore, from this point, we can't assume that
+  //  the changes are merged.
+  //  Once we implement the merge of pathIndex in mergeElements, we would be able to keep the
+  //  changes merged and we won't need this function
   const sortedChanges = (await Promise.all(
     (elementNaclFiles)
       .map(async filename => {

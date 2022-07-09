@@ -203,7 +203,7 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
   }
 
   cloneEmpty(): ListType {
-    return new ListType(this.refInnerType.clone())
+    return this.clone()
   }
 
   async getInnerType(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
@@ -267,7 +267,7 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
   }
 
   cloneEmpty(): MapType {
-    return new MapType(this.refInnerType.clone())
+    return this.clone()
   }
 
   async getInnerType(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {

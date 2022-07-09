@@ -68,7 +68,7 @@ describe('Test elements.ts', () => {
     expect(primNum.primitive).toBe(PrimitiveTypes.NUMBER)
   })
 
-  it('should clone path when a primitive type is cloned', () => {
+  it('should clone pathIndex when a primitive type is cloned', () => {
     const primToClone = new PrimitiveType({
       elemID: primID,
       primitive: PrimitiveTypes.STRING,
@@ -76,8 +76,8 @@ describe('Test elements.ts', () => {
       annotations: {},
       path: ['testPath'],
     })
-    expect(primToClone.clone().pathIndex)
-      .toEqual(createPathIndexFromPath(primID, ['testPath']))
+    expect(Array.from(primToClone.clone().pathIndex?.entries() ?? []))
+      .toEqual([[primID.getFullName(), ['testPath']]])
   })
 
   it('should create a basic object type with all params passed to the constructor', async () => {
@@ -892,6 +892,103 @@ describe('Test elements.ts', () => {
     it('Should return placeholder type if type is not ObjectType', async () => {
       const instance = new InstanceElement('instance', BuiltinTypes.STRING as unknown as ObjectType)
       expect(await instance.getType()).toBeInstanceOf(PlaceholderObjectType)
+    })
+  })
+  describe('cloneEmpty', () => {
+    const elemID = new ElemID('adapter', 'test')
+    describe('ObjectType', () => {
+      it('should clone an empty element', async () => {
+        const objType = new ObjectType({
+          elemID,
+          fields: {
+            f1: {
+              refType: BuiltinTypes.BOOLEAN,
+              annotations: { f1Anno: 1 },
+            },
+          },
+          annotations: { test: 1 },
+          annotationRefsOrTypes: { test: BuiltinTypes.NUMBER },
+          path: ['path'],
+        })
+        const emptyCloned = objType.cloneEmpty()
+        expect(emptyCloned.elemID).toEqual(objType.elemID)
+        expect(emptyCloned.annotations).toEqual({})
+        expect(emptyCloned.annotations).not.toEqual(objType.annotations)
+        expect(emptyCloned.annotationRefTypes).toEqual({})
+        expect(emptyCloned.annotationRefTypes).not.toEqual(objType.annotationRefTypes)
+        expect(emptyCloned.fields).toEqual({})
+        expect(emptyCloned.fields).not.toEqual(objType.fields)
+        expect(emptyCloned.pathIndex).toEqual(undefined)
+        expect(emptyCloned.pathIndex).not.toEqual(objType.pathIndex)
+      })
+    })
+    describe('Field', () => {
+      it('should clone an empty element', async () => {
+        const field = new Field(
+          new ObjectType({ elemID }), 'f1', BuiltinTypes.NUMBER, { f1Anno: 1 }
+        )
+        field.annotationRefTypes.f1Anno = createRefToElmWithValue(BuiltinTypes.NUMBER)
+        const emptyCloned = field.cloneEmpty()
+        expect(emptyCloned.elemID).toEqual(field.elemID)
+        expect(emptyCloned.annotations).toEqual({})
+        expect(emptyCloned.annotations).not.toEqual(field.annotations)
+        expect(emptyCloned.annotationRefTypes).toEqual({})
+        expect(emptyCloned.annotationRefTypes).not.toEqual(field.annotationRefTypes)
+      })
+    })
+    describe('InstanceElement', () => {
+      it('should clone an empty element', async () => {
+        const instance = new InstanceElement(
+          'test', new ObjectType({ elemID }), { f1: true }, ['path'], { i1Anno: 'hello' }
+        )
+        instance.annotationRefTypes.i1Anno = createRefToElmWithValue(BuiltinTypes.STRING)
+        const emptyCloned = instance.cloneEmpty()
+        expect(emptyCloned.elemID).toEqual(instance.elemID)
+        expect(emptyCloned.annotations).toEqual({})
+        expect(emptyCloned.annotations).not.toEqual(instance.annotations)
+        expect(emptyCloned.annotationRefTypes).toEqual({})
+        expect(emptyCloned.annotationRefTypes).not.toEqual(instance.annotationRefTypes)
+        expect(emptyCloned.value).toEqual({})
+        expect(emptyCloned.value).not.toEqual(instance.value)
+        expect(emptyCloned.pathIndex).toEqual(undefined)
+        expect(emptyCloned.pathIndex).not.toEqual(instance.pathIndex)
+      })
+    })
+    describe('PrimitiveType', () => {
+      it('should clone an empty element', async () => {
+        const primitiveType = new PrimitiveType({
+          elemID,
+          primitive: 1,
+          annotations: { pt1Anno: 1 },
+          annotationRefsOrTypes: { pt1Anno: BuiltinTypes.NUMBER },
+          path: ['path'],
+        })
+        const emptyCloned = primitiveType.cloneEmpty()
+        expect(emptyCloned.elemID).toEqual(primitiveType.elemID)
+        expect(emptyCloned.annotations).toEqual({})
+        expect(emptyCloned.annotations).not.toEqual(primitiveType.annotations)
+        expect(emptyCloned.annotationRefTypes).toEqual({})
+        expect(emptyCloned.annotationRefTypes).not.toEqual(primitiveType.annotationRefTypes)
+        expect(emptyCloned.pathIndex).toEqual(undefined)
+        expect(emptyCloned.pathIndex).not.toEqual(primitiveType.pathIndex)
+      })
+      describe('Variable', () => {
+        it('should clone an empty element', async () => {
+          const variable = new Variable(elemID, 1, ['path'])
+          variable.annotations = { v1Anno: 2 }
+          variable.annotationRefTypes.v1Anno = createRefToElmWithValue(BuiltinTypes.NUMBER)
+          const emptyCloned = variable.cloneEmpty()
+          expect(emptyCloned.elemID).toEqual(variable.elemID)
+          expect(emptyCloned.value).toEqual(undefined)
+          expect(emptyCloned.value).not.toEqual(variable.value)
+          expect(emptyCloned.annotations).toEqual({})
+          expect(emptyCloned.annotations).not.toEqual(variable.annotations)
+          expect(emptyCloned.annotationRefTypes).toEqual({})
+          expect(emptyCloned.annotationRefTypes).not.toEqual(variable.annotationRefTypes)
+          expect(emptyCloned.pathIndex).toEqual(undefined)
+          expect(emptyCloned.pathIndex).not.toEqual(variable.pathIndex)
+        })
+      })
     })
   })
 })

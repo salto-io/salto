@@ -47,6 +47,13 @@ describe('merger', () => {
         field2: 'base2',
       },
     },
+    path: new collections.treeMap.TreeMap<string>([
+      [baseElemID.getFullName(), ['def']],
+      [baseElemID.createNestedID('field', 'field1', 'label').getFullName(), ['anno1']],
+      [baseElemID.createNestedID('attr', '_default', 'field1').getFullName(), ['anno1']],
+      [baseElemID.createNestedID('field', 'field1').getFullName(), ['field1']],
+      [baseElemID.createNestedID('field', 'field2').getFullName(), ['field2']],
+    ]),
   })
 
   const unrelated = new ObjectType({
@@ -57,6 +64,7 @@ describe('merger', () => {
         annotations: { label: 'base' },
       },
     },
+    path: ['unrelatd'],
   })
 
   const fieldAnnotationConflict = new ObjectType({
@@ -84,6 +92,7 @@ describe('merger', () => {
         annotations: { a: 'update' },
       },
     },
+    path: ['anno1'],
   })
 
   const fieldUpdate2 = new ObjectType({
@@ -94,6 +103,7 @@ describe('merger', () => {
         annotations: { b: 'update' },
       },
     },
+    path: ['anno2'],
   })
 
   const newField = new ObjectType({
@@ -101,6 +111,7 @@ describe('merger', () => {
     fields: {
       field3: { refType: BuiltinTypes.STRING },
     },
+    path: ['field3'],
   })
 
   const updateAnno = new ObjectType({
@@ -108,6 +119,7 @@ describe('merger', () => {
     annotationRefsOrTypes: {
       anno1: BuiltinTypes.STRING,
     },
+    path: ['anno3'],
   })
 
   const multipleUpdateAnno = new ObjectType({
@@ -122,6 +134,7 @@ describe('merger', () => {
     annotations: {
       anno1: 'updated',
     },
+    path: ['anno3'],
   })
 
   const multipleUpdateAnnoValues = new ObjectType({
@@ -156,6 +169,17 @@ describe('merger', () => {
     annotationRefsOrTypes: {
       anno1: BuiltinTypes.STRING,
     },
+    path: new collections.treeMap.TreeMap<string>([
+      [baseElemID.getFullName(), ['anno3']],
+      [baseElemID.createNestedID('field', 'field3').getFullName(), ['field3']],
+      [baseElemID.createNestedID('field', 'field1', 'b').getFullName(), ['anno2']],
+      [baseElemID.createNestedID('field', 'field1', 'a').getFullName(), ['anno1']],
+      [baseElemID.createNestedID('field', 'field1', 'label').getFullName(), ['anno1']],
+      [baseElemID.createNestedID('field', 'field2').getFullName(), ['field2']],
+      [baseElemID.createNestedID('attr', 'anno1').getFullName(), ['anno3']],
+      [baseElemID.createNestedID('attr', '_default', 'field1').getFullName(), ['anno1']],
+      [baseElemID.createNestedID('annotation', 'anno1').getFullName(), ['anno3']],
+    ]),
   })
 
   const typeRef = (typeToRef: TypeElement): ObjectType =>
@@ -198,7 +222,7 @@ describe('merger', () => {
       const { merged, errors } = await mergeElements(awu(elements))
       expect(await awu(errors.values()).flat().toArray()).toHaveLength(0)
       expect(await awu(merged.values()).toArray()).toHaveLength(2)
-      expect((await awu(merged.values()).toArray())[0]).toEqual(mergedObject)
+      expect((await awu(merged.values()).toArray())[0].isEqual(mergedObject)).toBe(true)
     })
 
     it('returns an error when the same field annotation is defined multiple times', async () => {
@@ -337,23 +361,36 @@ describe('merger', () => {
   })
 
   describe('merging primitives', () => {
-    const strType = new PrimitiveType({
-      elemID: new ElemID('salto', 'string'),
+    const elemID = new ElemID('salto', 'string')
+    const strTypeFrag1 = new PrimitiveType({
+      elemID,
       primitive: PrimitiveTypes.STRING,
       annotationRefsOrTypes: {
         somethingElse: BuiltinTypes.STRING,
       },
       annotations: { somethingElse: 'type' },
+      path: ['file1'],
+    })
+
+    const strTypeFrag2 = new PrimitiveType({
+      elemID,
+      primitive: PrimitiveTypes.STRING,
+      annotationRefsOrTypes: {
+        somethingElser: BuiltinTypes.STRING,
+      },
+      annotations: { somethingElser: 'type' },
+      path: ['file2'],
     })
 
     const duplicateType = new PrimitiveType({
-      elemID: new ElemID('salto', 'string'),
+      elemID,
       primitive: PrimitiveTypes.NUMBER,
       annotations: { _default: 'type' },
+      path: ['file3'],
     })
 
     it('should fail when more then one primitive is defined with same elemID and different primitives', async () => {
-      const elements = [strType, duplicateType]
+      const elements = [strTypeFrag1, strTypeFrag2, duplicateType]
       const errors = await awu(
         (await mergeElements(awu(elements))
         ).errors.values()
@@ -363,7 +400,7 @@ describe('merger', () => {
     })
 
     it('should fail when annotation types and annoations are defined in multiple fragments', async () => {
-      const elements = [strType, strType]
+      const elements = [strTypeFrag1, strTypeFrag1]
       const errors = await awu(
         (await mergeElements(awu(elements))
         ).errors.values()
@@ -371,6 +408,23 @@ describe('merger', () => {
       expect(errors).toHaveLength(2)
       expect(errors[0]).toBeInstanceOf(DuplicateAnnotationTypeError)
       expect(errors[1]).toBeInstanceOf(DuplicateAnnotationTypeError)
+    })
+
+    it('should create correct pathIndex', async () => {
+      const elements = [strTypeFrag1, strTypeFrag2]
+      const mergedElements = await awu(
+        (await mergeElements(awu(elements))
+        ).merged.values()
+      ).flat().toArray()
+      expect(mergedElements).toHaveLength(1)
+      const [mergedElement] = mergedElements
+      expect(Array.from(mergedElement.pathIndex.entries())).toEqual([
+        [mergedElement.elemID.getFullName(), ['file2']],
+        [mergedElement.elemID.createNestedID('attr', 'somethingElser').getFullName(), ['file2']],
+        [mergedElement.elemID.createNestedID('attr', 'somethingElse').getFullName(), ['file1']],
+        [mergedElement.elemID.createNestedID('annotation', 'somethingElser').getFullName(), ['file2']],
+        [mergedElement.elemID.createNestedID('annotation', 'somethingElse').getFullName(), ['file1']],
+      ])
     })
   })
 
@@ -413,6 +467,7 @@ describe('merger', () => {
           refType: BuiltinTypes.STRING,
         },
       },
+      path: ['set1'],
     })
     const setting2 = new ObjectType({
       isSettings: true,
@@ -422,6 +477,7 @@ describe('merger', () => {
           refType: BuiltinTypes.STRING,
         },
       },
+      path: ['set2'],
     })
     const mergedSetting = new ObjectType({
       isSettings: true,
@@ -434,6 +490,11 @@ describe('merger', () => {
           refType: BuiltinTypes.STRING,
         },
       },
+      path: new collections.treeMap.TreeMap<string>([
+        [settingElemID.getFullName(), ['set2']],
+        [settingElemID.createNestedID('field', 'setting2').getFullName(), ['set2']],
+        [settingElemID.createNestedID('field', 'setting1').getFullName(), ['set1']],
+      ]),
     })
     const badSettingType = new ObjectType({
       isSettings: false,

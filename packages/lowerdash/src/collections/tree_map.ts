@@ -195,6 +195,32 @@ export class TreeMap<T> implements Map<string, T[]> {
       wu(this.entries()).map(entry => (cloneEntry ? cloneEntry(entry) : _.cloneDeep(entry)))
     )
   }
+
+  // This function returns the value of the id if exists.
+  // Otherwise, it returns the value of its first ancestor that has a value
+  getClosestValue(id: string): T[] {
+    const idParts = id.split(this.separator)
+    let key: string
+    do {
+      key = idParts.join(this.separator)
+      const value = this.get(key)
+      if (value !== undefined) {
+        return value
+      }
+      idParts.pop()
+    } while (idParts.length > 0)
+    return []
+  }
+
+  static getTreeMapOfId = <S>(
+    treeMap: TreeMap<S>,
+    id: string,
+  ): TreeMap<S> => (
+    new TreeMap([
+      ...(treeMap.has(id) ? [] : [[id, treeMap.getClosestValue(id)] as [string, S[]]]),
+      ...treeMap.entriesWithPrefix(id),
+    ])
+  )
 }
 
 export class PartialTreeMap<T> extends TreeMap<T> {

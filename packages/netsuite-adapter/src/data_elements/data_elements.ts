@@ -15,7 +15,7 @@
 */
 import { InstanceElement, ObjectType, Element, BuiltinTypes, ElemIdGetter, OBJECT_SERVICE_ID, toServiceIdsString, OBJECT_NAME, Values, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { elements as elementsComponents } from '@salto-io/adapter-components'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { naclCase, pathNaclCase, transformValues } from '@salto-io/adapter-utils'
 import { collections, strings } from '@salto-io/lowerdash'
@@ -48,7 +48,7 @@ export const getDataTypes = async (
     log.warn('Failed to get WSDL, skipping data elements')
     return []
   }
-  const types = await elementsComponents.soap.extractTypes(NETSUITE, wsdl, { camelCase: true })
+  const types = await elementUtils.soap.extractTypes(NETSUITE, wsdl, { camelCase: true })
 
   types.forEach(type => {
     setTypeSourceAnnotation(type)

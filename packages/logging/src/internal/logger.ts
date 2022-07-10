@@ -122,8 +122,8 @@ export const logger = (
 }
 
 export type LoggerRepo = (
-  (namespace: NamespaceOrModule, ...namespaceFragments: NamespaceFragment[]) => Logger
-  ) & {
+    (namespace: NamespaceOrModule, ...namespaceFragments: NamespaceFragment[]) => Logger
+    ) & {
   setMinLevel(level: LogLevel): void
   readonly config: Readonly<Config>
   end(): Promise<void>

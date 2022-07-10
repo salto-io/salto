@@ -174,16 +174,16 @@ describe('env', () => {
     })
   })
 
-  describe('maxJsonMessageSize', () => {
+  describe('maxJsonLogChunkSize', () => {
     describe('when the env variable is not defined', () => {
       it('should return undefined', () => {
-        expect(config({}).maxJsonMessageSize).toBeUndefined()
+        expect(config({}).maxJsonLogChunkSize).toBeUndefined()
       })
     })
 
     describe('when the env variable is an invalid number', () => {
       it('should throw validation error', () => {
-        expect(() => config({ SALTO_LOG_MAX_JSON_MESSAGE_SIZE: 'aa' }).maxJsonMessageSize).toThrow(
+        expect(() => config({ SALTO_LOG_MAX_JSON_LOG_CHUNK_SIZE: 'aa' }).maxJsonLogChunkSize).toThrow(
           new ValidationError('invalid value "aa", expected number')
         )
       })
@@ -191,11 +191,11 @@ describe('env', () => {
 
     describe('when the env variable is defined and a valid number', () => {
       it('should return the parsed definition for bytes', () => {
-        expect(config({ SALTO_LOG_MAX_JSON_MESSAGE_SIZE: '6' }).maxJsonMessageSize).toBe(6)
+        expect(config({ SALTO_LOG_MAX_JSON_LOG_CHUNK_SIZE: '6' }).maxJsonLogChunkSize).toBe(6)
       })
 
       it('should return the parsed definition for large amount of bytes', () => {
-        expect(config({ SALTO_LOG_MAX_JSON_MESSAGE_SIZE: '68921234' }).maxJsonMessageSize).toBe(68921234)
+        expect(config({ SALTO_LOG_MAX_JSON_LOG_CHUNK_SIZE: '68921234' }).maxJsonLogChunkSize).toBe(68921234)
       })
     })
   })

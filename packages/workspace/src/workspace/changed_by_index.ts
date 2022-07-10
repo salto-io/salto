@@ -86,7 +86,9 @@ const getChangeAuthors = (change: Change<Element>): Record<string, ElemID[]> => 
   const changeElement = getChangeData(change)
   const authors: Record<string, ElemID[]> = {}
   const addElementToMap = (element: Element): void => {
-    const authorKey = elementToAuthorKey(element)
+    const authorKey = element.annotations[CORE_ANNOTATIONS.CHANGED_BY]
+      ? elementToAuthorKey(element)
+      : UNKNOWN_USER_NAME
     if (!authors[authorKey]) {
       authors[authorKey] = []
     }
@@ -97,10 +99,8 @@ const getChangeAuthors = (change: Change<Element>): Record<string, ElemID[]> => 
       .filter(field => field.annotations[CORE_ANNOTATIONS.CHANGED_BY])
       .forEach(addElementToMap)
   }
-  if (changeElement.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
-    addElementToMap(changeElement)
-  }
-  return Object.keys(authors).length > 0 ? authors : { [UNKNOWN_USER_NAME]: [changeElement.elemID] }
+  addElementToMap(changeElement)
+  return authors
 }
 
 const updateAdditionChange = (

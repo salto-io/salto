@@ -26,6 +26,7 @@ import chalk from 'chalk'
 import safeStringify from 'fast-safe-stringify'
 import { streams, collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { v4 as uuidv4 } from 'uuid'
 import {
   toHexColor as namespaceToHexColor,
   Namespace,
@@ -117,13 +118,11 @@ const textPrettifier = (
 
 const numberOfSpecifiers = (s: string): number => s.match(/%[^%]/g)?.length ?? 0
 
-const formatMessage = (config: Config, s: string, ...args: unknown[]): [string, unknown[]] => {
+const formatMessage = (s: string, ...args: unknown[]): [string, unknown[]] => {
   const n = numberOfSpecifiers(s)
   const formattedMessage = format(s, ...args.slice(0, n))
   return [
-    config.format === 'json'
-      ? formattedMessage.slice(0, config.maxJsonMessageSize)
-      : formattedMessage,
+    formattedMessage,
     args.slice(n),
   ]
 }
@@ -201,10 +200,10 @@ export const loggerRepo = (
     } : false,
     formatters: {
       level: (level: string) => ({ level: level.toLowerCase() }),
-      log: (object: object) => {
+      log: (obj: object) => {
         // When config is text leave the formatting for prettifier.
-        if (config.format === 'json') return formatJsonLog(object as FormatterBaseInput)
-        return object
+        if (config.format === 'json') return formatJsonLog(obj as FormatterBaseInput)
+        return obj
       },
       bindings: (bindings: pino.Bindings) => _.omit(bindings, [...excessDefaultPinoKeys]),
     },
@@ -218,6 +217,69 @@ export const loggerRepo = (
     (namespace: string) => rootPinoLogger.child({ name: namespace })
   )
 
+  const getLogMessageChunks = (message: string, chunkSize: number): string[] => {
+    // Handle empty string message
+    if (message.length === 0) {
+      return [message]
+    }
+    const numberOfChunks = Math.ceil(message.length / chunkSize)
+    const chunks = new Array(numberOfChunks)
+    for (let i = 0, j = 0; i < numberOfChunks; i += 1, j += chunkSize) {
+      chunks[i] = message.substr(j, chunkSize)
+    }
+    return chunks
+  }
+
+  const createLogArgs = (unconsumedArgs: unknown[], message: string | Error): unknown[] => (
+    unconsumedArgs.length
+      ? [
+        // mark excessArgs for optional formatting later
+        { excessArgs: unconsumedArgs },
+        message,
+      ]
+      : [message]
+  )
+
+  const logMessage = (
+    pinoLogger: pino.Logger,
+    level: LogLevel,
+    unconsumedArgs: unknown[],
+    message: string | Error
+  ): void => (
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    pinoLogger[level](...createLogArgs(unconsumedArgs, message))
+  )
+
+  const logChunks = (
+    pinoLogger: pino.Logger,
+    level: LogLevel,
+    unconsumedArgs: unknown[],
+    chunks: string[]
+  ): void => {
+    if (chunks.length === 1) {
+      logMessage(pinoLogger, level, unconsumedArgs, chunks[0])
+      return
+    }
+    const logUuid = uuidv4()
+    for (let i = 0; i < chunks.length; i += 1) {
+      const chunkTags = { chunkIndex: i, logId: logUuid }
+      const loggerWithChunkTags = pinoLogger.child(normalizeLogTags(chunkTags))
+      logMessage(loggerWithChunkTags, level, unconsumedArgs, chunks[i])
+    }
+  }
+
+  const logJson = (
+    pinoLogger: pino.Logger,
+    level: LogLevel,
+    unconsumedArgs: unknown[],
+    message: string
+  ): void => {
+    const chunks = getLogMessageChunks(message, config.maxJsonLogChunkSize)
+    logChunks(pinoLogger, level, unconsumedArgs, chunks)
+  }
+
+
   const loggerMaker: BaseLoggerMaker = (namespace: Namespace) => {
     const pinoLoggerWithoutTags = childrenByNamespace.get(namespace)
     return {
@@ -230,21 +292,15 @@ export const loggerRepo = (
         const pinoLogger = pinoLoggerWithoutTags.child(
           normalizeLogTags({ ...namespaceTags, ...global.globalLogTags })
         )
-        const [formatted, unconsumedArgs] = typeof message === 'string'
-          ? formatMessage(config, message, ...args)
+        const [formattedOrError, unconsumedArgs] = typeof message === 'string'
+          ? formatMessage(message, ...args)
           : [message, args]
 
-        const logArgs = unconsumedArgs.length
-          ? [
-            // mark excessArgs for optional formatting later
-            { excessArgs: unconsumedArgs },
-            formatted,
-          ]
-          : [formatted]
-
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        pinoLogger[level](...logArgs)
+        if (_.isError(formattedOrError) || config.format === 'text') {
+          logMessage(pinoLogger, level, unconsumedArgs, formattedOrError)
+        } else {
+          logJson(pinoLogger, level, unconsumedArgs, formattedOrError)
+        }
       },
       assignGlobalTags(logTags?: LogTags): void {
         if (!logTags) global.globalLogTags = {}

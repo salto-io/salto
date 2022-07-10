@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { elements as elementsComponents } from '@salto-io/adapter-components'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import { isObjectType } from '@salto-io/adapter-api'
 import { NETSUITE } from '../constants'
 import { FilterCreator, FilterWith } from '../filter'
@@ -31,7 +31,7 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
       metadataTypesToList(getMetadataTypes())
         .map(e => e.elemID.getFullName().toLowerCase())
     )
-    const supportedDataTypes = (await elementsComponents
+    const supportedDataTypes = (await elementUtils
       .filterTypes(
         NETSUITE,
         elements

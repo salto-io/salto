@@ -26,8 +26,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { values, decorators } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { client as clientUtils } from '@salto-io/adapter-components'
-import { WSDL } from 'soap'
+import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { InstanceElement } from '@salto-io/adapter-api'
 import { CallsLimiter, ConfigRecord, ConfigRecordData, GetConfigResult, CONFIG_RECORD_DATA_SCHEMA,
   GET_CONFIG_RESULT_SCHEMA, ExistingFileCabinetInstanceDetails,
@@ -546,7 +545,7 @@ export default class SuiteAppClient {
     return this.soapClient.deleteFileCabinetInstances(fileCabinetInstances)
   }
 
-  public async getNetsuiteWsdl(): Promise<WSDL> {
+  public async getNetsuiteWsdl(): Promise<elementUtils.soap.WSDL> {
     return this.soapClient.getNetsuiteWsdl()
   }
 

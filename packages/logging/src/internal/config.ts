@@ -33,7 +33,7 @@ export type Config = {
   namespaceFilter: NamespaceFilter | string
   colorize: boolean | null
   globalTags: LogTags
-  maxJsonMessageSize: number
+  maxJsonLogChunkSize: number
 }
 
 export const DEFAULT_CONFIG: Readonly<Config> = Object.freeze({
@@ -43,7 +43,7 @@ export const DEFAULT_CONFIG: Readonly<Config> = Object.freeze({
   namespaceFilter: '*',
   colorize: null,
   globalTags: {},
-  maxJsonMessageSize: 200 * 1024, // 200K
+  maxJsonLogChunkSize: 200 * 1024, // 200K
 })
 
 export const stringToNamespaceFilter = (filter: string): NamespaceFilter => {

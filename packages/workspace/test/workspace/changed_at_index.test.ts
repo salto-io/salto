@@ -28,6 +28,7 @@ describe('changed at index', () => {
   let knownUserInstance: InstanceElement
   let unknownUserInstance: InstanceElement
   let knownUserSecondInstance: InstanceElement
+  const objectFieldElementId = new ElemID('test', 'object', 'field', 'field')
 
   beforeEach(() => {
     jest.resetAllMocks()
@@ -94,7 +95,7 @@ describe('changed at index', () => {
       expect(changedAtIndex.getMany).toHaveBeenCalledWith(['2000-01-01T00:00:00.000Z', '2001-01-01T00:00:00.000Z', '2000-02-01T00:00:00.000Z', '2000-03-01T00:00:00.000Z'])
       expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-01-01T00:00:00.000Z', value: [knownUserInstance.elemID] }]))
       expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2001-01-01T00:00:00.000Z', value: [knownUserSecondInstance.elemID] }]))
-      expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-02-01T00:00:00.000Z', value: [object.elemID] }]))
+      expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-02-01T00:00:00.000Z', value: [objectFieldElementId] }]))
       expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-03-01T00:00:00.000Z', value: [object.elemID] }]))
     })
   })
@@ -120,7 +121,7 @@ describe('changed at index', () => {
       expect(changedAtIndex.getMany).toHaveBeenCalledWith(['2000-01-01T00:00:00.000Z', '2001-01-01T00:00:00.000Z', '2000-02-01T00:00:00.000Z', '2000-03-01T00:00:00.000Z'])
       expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-01-01T00:00:00.000Z', value: [knownUserInstance.elemID] }]))
       expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2001-01-01T00:00:00.000Z', value: [knownUserSecondInstance.elemID] }]))
-      expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-02-01T00:00:00.000Z', value: [object.elemID] }]))
+      expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-02-01T00:00:00.000Z', value: [objectFieldElementId] }]))
       expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-03-01T00:00:00.000Z', value: [object.elemID] }]))
     })
   })
@@ -230,7 +231,7 @@ describe('changed at index', () => {
         expect(changedAtIndex.clear).toHaveBeenCalled()
         expect(changedAtIndex.getMany).toHaveBeenCalledWith(['2000-01-01T00:00:00.000Z', '2000-02-01T00:00:00.000Z', '2000-03-01T00:00:00.000Z'])
         expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-01-01T00:00:00.000Z', value: [knownUserInstance.elemID] }]))
-        expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-02-01T00:00:00.000Z', value: [object.elemID] }]))
+        expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-02-01T00:00:00.000Z', value: [objectFieldElementId] }]))
         expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-03-01T00:00:00.000Z', value: [object.elemID] }]))
       })
     })
@@ -253,7 +254,7 @@ describe('changed at index', () => {
         expect(changedAtIndex.clear).toHaveBeenCalled()
         expect(changedAtIndex.getMany).toHaveBeenCalledWith(['2000-02-01T00:00:00.000Z', '2000-03-01T00:00:00.000Z', '2000-01-01T00:00:00.000Z'])
         expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-01-01T00:00:00.000Z', value: [knownUserInstance.elemID] }]))
-        expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-02-01T00:00:00.000Z', value: [object.elemID] }]))
+        expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-02-01T00:00:00.000Z', value: [objectFieldElementId] }]))
         expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-03-01T00:00:00.000Z', value: [object.elemID] }]))
       })
     })

@@ -1043,6 +1043,20 @@ describe('pino based logger', () => {
           expect(line).toContain('"arg2":"moreExcess"')
         })
       })
+      describe('when log message is empty', () => {
+        beforeEach(() => {
+          initialConfig.maxJsonLogChunkSize = 5
+          logger = createLogger()
+          logger.assignTags(logTags)
+          logger.log('warn', '')
+        })
+        it('should log a single line with empty string with no chunk log tags', () => {
+          const nonChunkedLog = JSON.parse(consoleStream.contents())
+          expect(nonChunkedLog.message).toEqual('')
+          expect(nonChunkedLog.chunkIndex).toBeUndefined()
+          expect(nonChunkedLog.logId).toBeUndefined()
+        })
+      })
       describe('when log is split into chunks', () => {
         const LOG_MESSAGE = 'Test log message'
         let lines: string[]

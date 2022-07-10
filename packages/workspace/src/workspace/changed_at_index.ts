@@ -65,12 +65,9 @@ const getChangedAtDates = (change: Change<Element>): Record<string, ElemID[]> =>
   }
   if (isObjectType(changeElement)) {
     Object.values(changeElement.fields)
-      .filter(field => field.annotations[CORE_ANNOTATIONS.CHANGED_AT])
       .forEach(addElementToDatesMap)
   }
-  if (changeElement.annotations[CORE_ANNOTATIONS.CHANGED_AT]) {
-    addElementToDatesMap(changeElement)
-  }
+  addElementToDatesMap(changeElement)
   return datesMap
 }
 

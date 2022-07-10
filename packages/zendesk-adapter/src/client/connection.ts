@@ -25,7 +25,8 @@ const log = logger(module)
 
 export const instanceUrl = (subdomain: string): string => `https://${subdomain}.zendesk.com`
 const baseUrl = (subdomain: string): string => (new URL('/api/v2', instanceUrl(subdomain))).href
-const resourcesUrl = (subdomain: string): string => (new URL('/system', instanceUrl(subdomain))).href
+// A URL for resource files
+const resourceUrl = (subdomain: string): string => (new URL('/system', instanceUrl(subdomain))).href
 
 const MARKETPLACE_NAME = 'Salto'
 const MARKETPLACE_ORG_ID = 5110
@@ -85,14 +86,14 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = (
   })
 )
 
-export const createResourcesConnection:
+export const createResourceConnection:
 clientUtils.ConnectionCreator<Credentials> = retryOptions => {
   const login = async (
     creds: Credentials,
   ): Promise<AuthenticatedAPIConnection> => {
-    resourcesUrl(creds.subdomain)
+    resourceUrl(creds.subdomain)
     const httpClient = axios.create({
-      baseURL: resourcesUrl(creds.subdomain),
+      baseURL: resourceUrl(creds.subdomain),
     })
     axiosRetry(httpClient, retryOptions)
     return {

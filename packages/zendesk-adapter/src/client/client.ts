@@ -18,7 +18,7 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
-import { createConnection, createResourcesConnection, instanceUrl } from './connection'
+import { createConnection, createResourceConnection, instanceUrl } from './connection'
 import { ZENDESK } from '../constants'
 import { Credentials } from '../auth'
 
@@ -40,13 +40,13 @@ const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
 export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
   Credentials, clientUtils.ClientRateLimitConfig
 > {
-  protected readonly resourcesConn: clientUtils.Connection<Credentials> | undefined
-  protected isResourcesApiLoggedIn = false
-  protected resourceasLoginPromise?: Promise<clientUtils.APIConnection>
-  protected resourcesClient: clientUtils.APIConnection<
+  // These properties creates another connection and client for Zendesk resoucres API
+  protected readonly resourceConn: clientUtils.Connection<Credentials>
+  protected isResourceApiLoggedIn = false
+  protected resourceLoginPromise?: Promise<clientUtils.APIConnection>
+  protected resourceClient?: clientUtils.APIConnection<
     clientUtils.ResponseValue | clientUtils.ResponseValue[]
   >
-  | undefined
 
   constructor(
     clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig>,
@@ -61,11 +61,11 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
         retry: DEFAULT_RETRY_OPTS,
       },
     )
-    this.resourcesConn = clientUtils.createClientConnection({
+    this.resourceConn = clientUtils.createClientConnection({
       retryOptions: clientUtils.createRetryOptions(
         _.defaults({}, this.config?.retry, DEFAULT_RETRY_OPTS)
       ),
-      createConnection: createResourcesConnection,
+      createConnection: createResourceConnection,
     })
   }
 
@@ -92,41 +92,40 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
 
   public async ensureLoggedIn(): Promise<void> {
     await super.ensureLoggedIn()
-    if (!this.isResourcesApiLoggedIn && this.resourcesConn) {
-      if (this.resourceasLoginPromise === undefined) {
-        this.resourceasLoginPromise = this.resourcesConn.login(this.credentials)
+    if (!this.isResourceApiLoggedIn) {
+      if (this.resourceLoginPromise === undefined) {
+        this.resourceLoginPromise = this.resourceConn.login(this.credentials)
       }
-      const resourcesClient = await this.resourceasLoginPromise
-      if (this.resourcesClient === undefined) {
-        this.resourcesClient = resourcesClient
-        this.isResourcesApiLoggedIn = true
+      const resourceClient = await this.resourceLoginPromise
+      if (this.resourceClient === undefined) {
+        this.resourceClient = resourceClient
+        this.isResourceApiLoggedIn = true
       }
     }
   }
 
-  @throttle<clientUtils.ClientRateLimitConfig>({ bucketName: 'get', keys: ['url', 'queryParams'] })
-  @logDecorator(['url', 'queryParams'])
+  @throttle<clientUtils.ClientRateLimitConfig>({ bucketName: 'get', keys: ['url'] })
+  @logDecorator(['url'])
   @requiresLogin()
   public async getResource(
     args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
-    if (this.resourcesClient === undefined) {
+    if (this.resourceClient === undefined) {
       // initialized by requiresLogin (through ensureLoggedIn in this case)
-      throw new Error(`uninitialized ${this.clientName} client`)
+      throw new Error(`uninitialized ${this.clientName} resource client`)
     }
     try {
-      const { url, queryParams, headers, responseType } = args
-      const requestConfig = [queryParams, headers, responseType].some(values.isDefined)
+      const { url, headers, responseType } = args
+      const requestConfig = [headers, responseType].some(values.isDefined)
         ? {
-          params: queryParams,
           headers,
           responseType,
         }
         : undefined
-      const { data, status } = await this.resourcesClient.get(url, requestConfig)
-      log.debug('Received response for %s (%s) with status %d', url, safeJsonStringify({ url, queryParams }), status)
+      const { data, status } = await this.resourceClient.get(url, requestConfig)
+      log.debug('Received response for resource request %s with status %d', url, status)
       log.trace('Full HTTP response for %s: %s', url, safeJsonStringify({
-        url, queryParams, response: data,
+        url, response: data,
       }))
       return {
         data,

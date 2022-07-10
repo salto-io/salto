@@ -25,19 +25,20 @@ const isLogoRemoved = (
 )
 
 export const brandLogoFieldRemovalValidator: ChangeValidator = async changes => {
-  const removedBrandLogosElemIds = changes
+  const removedBrandLogosElemIds = new Set(changes
     .filter(change => getChangeData(change).elemID.typeName === BRAND_LOGO_TYPE_NAME)
     .filter(isRemovalChange)
     .filter(isInstanceChange)
-    .map(change => change.data.before.elemID.getFullName())
+    .map(change => change.data.before.elemID.getFullName()))
 
   return changes
     .filter(change => getChangeData(change).elemID.typeName === BRAND_NAME)
     .filter(isInstanceChange)
     .filter(isModificationChange)
     .filter(isLogoRemoved)
-    .filter(change => !removedBrandLogosElemIds
-      .includes(change.data.before.value.logo.elemID.getFullName()))
+    .filter(change => !removedBrandLogosElemIds.has(
+      change.data.before.value.logo.elemID.getFullName()
+    ))
     .map(getChangeData)
     .flatMap(instance => (
       [{

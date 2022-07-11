@@ -19,6 +19,7 @@ import { ElementsSource, RemoteElementSource } from '../elements_source'
 import { PathIndex, Path } from '../path_index'
 import { RemoteMap, RemoteMapCreator } from '../remote_map'
 import { serialize, deserializeSingleElement } from '../../serializer/elements'
+import { StateStaticFilesSource } from '../static_files/common'
 
 export type StateMetadataKey = 'version' | 'hash'
 
@@ -30,6 +31,7 @@ type OldStateData = {
   accountsUpdateDate: RemoteMap<Date>
   pathIndex: PathIndex
   saltoMetadata: RemoteMap<string, StateMetadataKey>
+  staticFilesSource: StateStaticFilesSource
 }
 
 // This distinction is temporary for the transition to multiple services.
@@ -40,6 +42,7 @@ type NewStateData = {
   servicesUpdateDate: RemoteMap<Date>
   pathIndex: PathIndex
   saltoMetadata: RemoteMap<string, StateMetadataKey>
+  staticFilesSource: StateStaticFilesSource
 }
 
 export type StateData = OldStateData | NewStateData
@@ -70,32 +73,44 @@ export const createStateNamespace = (envName: string, namespace: string): string
 export const buildStateData = async (
   envName: string,
   remoteMapCreator: RemoteMapCreator,
+  staticFilesSource: StateStaticFilesSource,
   persistent: boolean
 ):
 Promise<StateData> => ({
   elements: new RemoteElementSource(await remoteMapCreator<Element>({
     namespace: createStateNamespace(envName, 'elements'),
-    serialize: elem => serialize([elem]),
-    // TODO: I don't think we should add reviver here but I need to think about it more
-    deserialize: deserializeSingleElement,
+    serialize: elem => serialize(
+      [elem],
+      'replaceRefWithValue',
+      file => staticFilesSource.persistStaticFile(file)
+    ),
+    deserialize: elem => deserializeSingleElement(
+      elem,
+      staticFile => staticFilesSource.getStaticFile(
+        staticFile.filepath,
+        staticFile.encoding,
+        staticFile.hash,
+      )
+    ),
     persistent,
   })),
   pathIndex: await remoteMapCreator<Path[]>({
     namespace: createStateNamespace(envName, 'path_index'),
-    serialize: paths => safeJsonStringify(paths),
+    serialize: async paths => safeJsonStringify(paths),
     deserialize: async data => JSON.parse(data),
     persistent,
   }),
   accountsUpdateDate: await remoteMapCreator<Date>({
     namespace: createStateNamespace(envName, 'service_update_date'),
-    serialize: date => date.toISOString(),
+    serialize: async date => date.toISOString(),
     deserialize: async data => new Date(data),
     persistent,
   }),
   saltoMetadata: await remoteMapCreator<string, 'version'>({
     namespace: createStateNamespace(envName, 'salto_metadata'),
-    serialize: data => data,
+    serialize: async data => data,
     deserialize: async data => data,
     persistent,
   }),
+  staticFilesSource,
 })

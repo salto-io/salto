@@ -15,6 +15,7 @@
 */
 import { StaticFile } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { mockStaticFilesCache } from '../../common/static_files_cache'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 import { buildStaticFilesSource, StaticFilesCache, LazyStaticFile, buildInMemStaticFilesSource } from '../../../src/workspace/static_files'
 
@@ -34,16 +35,7 @@ describe('Static Files', () => {
     let mockDirStore: DirectoryStore<Buffer>
     let mockCacheStore: StaticFilesCache
     beforeEach(() => {
-      mockCacheStore = {
-        list: jest.fn().mockResolvedValue([]),
-        get: jest.fn().mockResolvedValue(undefined),
-        getByFile: jest.fn().mockResolvedValue(undefined),
-        put: jest.fn().mockResolvedValue(Promise.resolve()),
-        flush: () => Promise.resolve(),
-        clear: () => Promise.resolve(),
-        rename: () => Promise.resolve(),
-        clone: () => mockCacheStore,
-      } as StaticFilesCache
+      mockCacheStore = mockStaticFilesCache()
       mockDirStore = {
         list: () => Promise.resolve([]),
         isEmpty: () => Promise.resolve(false),
@@ -60,6 +52,7 @@ describe('Static Files', () => {
         clone: () => mockDirStore,
         getFullPath: filename => filename,
         isPathIncluded: jest.fn().mockResolvedValue(true),
+        exists: jest.fn().mockResolvedValue(true),
       }
       staticFilesSource = buildStaticFilesSource(
         mockDirStore,
@@ -72,6 +65,12 @@ describe('Static Files', () => {
           const result = await staticFilesSource.getStaticFile('aa', 'binary')
           expect(result).toBeInstanceOf(InvalidStaticFile)
           expect(result).toBeInstanceOf(MissingStaticFile)
+        })
+
+        it('return without content when hash requested and not matching', async () => {
+          const result = await staticFilesSource.getStaticFile('aa', 'binary', 'hash')
+          expect(result).toBeInstanceOf(StaticFile)
+          return expect(await (result as StaticFile).getContent()).toBeUndefined()
         })
         it('blow up if invalid file', async () => {
           mockDirStore.mtimestamp = jest.fn().mockRejectedValue('whatevz')
@@ -98,7 +97,31 @@ describe('Static Files', () => {
           const result = await staticFilesSource.getStaticFile(filepathFromCache, 'binary')
 
           expect(mockDirStore.mtimestamp).toHaveBeenCalledWith(filepathFromCache)
-          return expect(result).toHaveProperty('hash', hashedContent)
+          expect(result).toHaveProperty('hash', hashedContent)
+          expect(result).toBeInstanceOf(StaticFile)
+          expect(await (result as StaticFile).getContent()).toBe(defaultBuffer)
+        })
+
+        it('return without content when matching with wrong hash', async () => {
+          const filepathFromCache = 'filepathfromcache'
+          mockDirStore.get = jest.fn().mockResolvedValue(defaultFile)
+          mockDirStore.mtimestamp = jest.fn(
+            (filepath: string): Promise<number | undefined> =>
+              Promise.resolve(
+                filepath.endsWith(filepathFromCache)
+                  ? 1000
+                  : undefined
+              )
+          )
+          mockCacheStore.get = jest.fn().mockResolvedValue({
+            filepath: filepathFromCache,
+            modified: 100,
+            hash: 'aaa',
+          })
+          const result = await staticFilesSource.getStaticFile(filepathFromCache, 'binary', 'bbb')
+
+          expect(result).toBeInstanceOf(StaticFile)
+          expect(await (result as StaticFile).getContent()).toBeUndefined()
         })
       })
       describe('hashing', () => {
@@ -313,9 +336,8 @@ describe('Static Files', () => {
     describe('getContent', () => {
       it('should not call directory store get method twice', async () => {
         const buffer = 'test'
-        const mockDirStoreGet = jest.fn().mockResolvedValue({ buffer })
-        const mockSyncDirStore = { get: mockDirStoreGet } as unknown as DirectoryStore<Buffer>
-        const lazyStaticFile = new LazyStaticFile('test', 'abcdefgh', mockSyncDirStore)
+        const mockDirStoreGet = jest.fn().mockResolvedValue(buffer)
+        const lazyStaticFile = new LazyStaticFile('test', 'abcdefgh', 'test', mockDirStoreGet)
         // Twice on purpose
         expect(await lazyStaticFile.getContent()).toEqual(buffer)
         expect(await lazyStaticFile.getContent()).toEqual(buffer)

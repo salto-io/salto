@@ -99,7 +99,7 @@ export const persistentMockCreateRemoteMap = (): RemoteMapCreator => {
         entries: collections.asynciterable.ThenableIterable<RemoteMapEntry<T, K>>
       ): Promise<void> => {
         for await (const entry of entries) {
-          maps[opts.namespace][entry.key] = opts.serialize(entry.value)
+          maps[opts.namespace][entry.key] = await opts.serialize(entry.value)
         }
       },
       delete: async (key: K) => {
@@ -114,7 +114,7 @@ export const persistentMockCreateRemoteMap = (): RemoteMapCreator => {
       getMany: async (keys: K[]): Promise<(T | undefined)[]> => Promise.all(keys.map(get)),
       has: async (key: K): Promise<boolean> => key in maps[opts.namespace],
       set: async (key: K, value: T): Promise<void> => {
-        maps[opts.namespace][key] = opts.serialize(value)
+        maps[opts.namespace][key] = await opts.serialize(value)
       },
       clear: async (): Promise<void> => {
         maps[opts.namespace] = {} as Record<K, string>

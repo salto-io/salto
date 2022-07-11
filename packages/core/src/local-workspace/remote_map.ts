@@ -62,10 +62,10 @@ const getRemoteDbImpl = (): any => {
   return rocksdbImpl
 }
 
-const isDBLockErr = (error: Error): boolean => (
+const isDBLockErr = (error: Error): boolean =>
   error.message.includes('LOCK: Resource temporarily unavailable')
   || error.message.includes('lock hold by current process')
-)
+  || error.message.includes('LOCK: The process cannot access the file because it is being used by another process')
 
 const isDBNotExistErr = (error: Error): boolean => (
   error.message.includes('LOCK: No such file or directory')
@@ -288,21 +288,21 @@ export const closeAllRemoteMaps = async (): Promise<void> => {
   })
 }
 
-const cleanTmpDatabases = async (loc: string, ignoreUsed = false): Promise<void> => {
+const cleanTmpDatabases = async (loc: string, ignoreErrors = false): Promise<void> => {
   const tmpDir = getDBTmpDir(loc)
   await awu(await fileUtils.readDir(tmpDir)).forEach(async tmpLoc => {
     try {
-      await deleteLocation(path.join(tmpDir, tmpLoc))
       log.debug('cleaning tmp db %s', tmpLoc)
+      await deleteLocation(path.join(tmpDir, tmpLoc))
     } catch (e) {
       if (isDBLockErr(e)) {
-        if (ignoreUsed) {
-          log.debug('will not clean tmp db %s as it is being used', tmpLoc)
-        } else {
-          throw new DBLockError()
-        }
+        log.debug('caught a rocksdb lock error while cleaning tmp db: %s', e.message)
       } else {
-        throw e
+        log.warn('caught an unexpected error while cleaning tmp db: %s', e.message)
+      }
+
+      if (!ignoreErrors) {
+        throw isDBLockErr(e) ? new DBLockError() : e
       }
     }
   })
@@ -550,10 +550,10 @@ remoteMap.RemoteMapCreator => {
       elementsEntries: AsyncIterable<remoteMap.RemoteMapEntry<T, K>>,
       temp = true,
     ): Promise<void> => {
-      const batchInsertIterator = awu(elementsEntries).map(entry => {
+      const batchInsertIterator = awu(elementsEntries).map(async entry => {
         delKeys.delete(entry.key)
         locationCache.set(keyToTempDBKey(entry.key), entry.value)
-        return { key: entry.key, value: serialize(entry.value) }
+        return { key: entry.key, value: await serialize(entry.value) }
       })
       await batchUpdate(batchInsertIterator, temp)
     }
@@ -727,7 +727,7 @@ remoteMap.RemoteMapCreator => {
       set: async (key: string, element: T): Promise<void> => {
         delKeys.delete(key)
         locationCache.set(keyToTempDBKey(key), element)
-        await promisify(tmpDB.put.bind(tmpDB))(keyToTempDBKey(key), serialize(element))
+        await promisify(tmpDB.put.bind(tmpDB))(keyToTempDBKey(key), await serialize(element))
       },
       setAll: setAllImpl,
       deleteAll: async (iterator: AsyncIterable<K>) => awu(iterator).forEach(deleteImpl),

@@ -111,10 +111,10 @@ describe('salesforce client', () => {
   })
 
   describe('with network errors ', () => {
-    let log: jest.SpyInstance
+    let logWarnSpy: jest.SpyInstance
 
     beforeAll(() => {
-      log = jest.spyOn(logging, 'error')
+      logWarnSpy = jest.spyOn(logging, 'warn')
     })
 
     it('retries with 400 error', async () => {
@@ -167,7 +167,7 @@ describe('salesforce client', () => {
       expect(res).toEqual([])
     })
     it('writes the right things to log', () => {
-      expect(log).toHaveBeenCalledWith('failed to run SFDC call for reason: %s. Retrying in %ss.', 'something awful happened', 0.1)
+      expect(logWarnSpy).toHaveBeenCalledWith('failed to run SFDC call for reason: %s. Retrying in %ss.', 'something awful happened', 0.1)
     })
   })
 

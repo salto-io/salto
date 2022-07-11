@@ -135,6 +135,7 @@ const createState = (
   accountsUpdateDate: new InMemoryRemoteMap(),
   changedBy: new InMemoryRemoteMap([{ key: 'name@@account', value: ['elemId'] }]),
   saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),
+  staticFilesSource: mockStaticFilesSource(),
 }), persistent)
 const createWorkspace = async (
   dirStore?: DirectoryStore<string>,
@@ -2398,7 +2399,9 @@ describe('workspace', () => {
     describe('getChangedElementsByAuthor', () => {
       it('get correct elements', async () => {
         const unknownUser = await workspace.getChangedElementsByAuthors([{ user: 'Unknown', account: '' }])
-        expect(unknownUser[0].getFullName()).toEqual('salesforce.text')
+        expect(unknownUser[0].getFullName()).toEqual('salesforce.lead.field.singleDef')
+        expect(unknownUser[1].getFullName()).toEqual('salesforce.lead.field.multiDef')
+        expect(unknownUser[2].getFullName()).toEqual('salesforce.text')
         const testUser = await workspace.getChangedElementsByAuthors([{ user: 'test user', account: 'salesforce' }])
         expect(testUser[0].getFullName()).toEqual('salesforce.lead')
         const multipleUsers = await workspace.getChangedElementsByAuthors([{ user: 'test user', account: 'salesforce' }, { user: 'Unknown', account: '' }])

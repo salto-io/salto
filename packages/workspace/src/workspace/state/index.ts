@@ -14,4 +14,6 @@
 * limitations under the License.
 */
 export { State, StateData, StateMetadataKey, buildStateData, createStateNamespace } from './state'
+export { buildHistoryStateStaticFilesSource } from './static_files_sources/history_static_files_source'
+export { buildOverrideStateStaticFilesSource } from './static_files_sources/override_static_files_source'
 export { buildInMemState } from './in_mem'

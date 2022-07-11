@@ -218,6 +218,10 @@ jobs:
           name: run CLI --help
           command: ./salto --help
 
+      - run:
+          name: Test CLI init
+          command: mkdir workspace && cd workspace && ../salto init -e env1
+
   test_cli_linux:
     docker:
       - image: cimg/node:14.15
@@ -242,6 +246,10 @@ jobs:
           name: run CLI --help
           command: ./salto --help
 
+      - run:
+          name: Test CLI init
+          command: mkdir workspace && cd workspace && ../salto init -e env1
+
   test_cli_win:
     executor:
       name: win/default
@@ -257,6 +265,10 @@ jobs:
       - run:
           name: run CLI --help
           command: ./salto.exe --help
+
+      - run:
+          name: Test CLI init
+          command: mkdir workspace && cd workspace && ../salto.exe init -e env1
 
   package_vscode_extension:
     docker:

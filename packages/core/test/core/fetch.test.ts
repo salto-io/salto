@@ -29,7 +29,7 @@ import * as utils from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { elementSource, pathIndex, remoteMap, createAdapterReplacedID } from '@salto-io/workspace'
 import { mockFunction } from '@salto-io/test-utils'
-import { mockWorkspace, mockStaticFilesSource } from '../common/workspace'
+import { mockWorkspace } from '../common/workspace'
 import {
   fetchChanges, FetchChange, generateServiceIdToStateElemId,
   FetchChangesResult, FetchProgressEvents, getAdaptersFirstFetchPartial,
@@ -37,6 +37,7 @@ import {
 } from '../../src/core/fetch'
 import { getPlan, Plan } from '../../src/core/plan'
 import { createElementSource } from '../common/helpers'
+import { mockStaticFilesSource } from '../common/state'
 
 const { createInMemoryElementSource } = elementSource
 const { awu } = collections.asynciterable

@@ -17,7 +17,7 @@ import { logger } from '@salto-io/logging'
 import Ajv from 'ajv'
 import crypto from 'crypto'
 import path from 'path'
-import * as soap from 'soap'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { InstanceElement, isListType, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import { collections, decorators, strings } from '@salto-io/lowerdash'
@@ -34,6 +34,7 @@ import { INTERNAL_ID_TO_TYPES, ITEM_TYPE_ID, ITEM_TYPE_TO_SEARCH_STRING } from '
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 
+export const { createClientAsync } = elementUtils.soap
 
 const log = logger(module)
 
@@ -46,7 +47,7 @@ const REQUEST_RETRY_DELAY = 5000
 const NETSUITE_VERSION = '2020_2'
 const SEARCH_PAGE_SIZE = 100
 
-const RETRYABLE_MESSAGES = ['ECONN', 'UNEXPECTED_ERROR', 'INSUFFICIENT_PERMISSION']
+const RETRYABLE_MESSAGES = ['ECONN', 'UNEXPECTED_ERROR', 'INSUFFICIENT_PERMISSION', 'VALIDATION_ERROR']
 const SOAP_RETRYABLE_MESSAGES = ['CONCURRENT']
 
 type SoapSearchType = {
@@ -67,8 +68,8 @@ const retryOnBadResponseWithDelay = (
           // eslint-disable-next-line @typescript-eslint/return-await
           return await call.call()
         } catch (e) {
-          if (retryableMessages.some(message => e.message.toUpperCase().includes(message)
-            || e.code?.toUpperCase?.()?.includes(message)) && retriesLeft > 0) {
+          if (retryableMessages.some(message => e?.message?.toUpperCase?.()?.includes?.(message)
+            || e?.code?.toUpperCase?.()?.includes?.(message)) && retriesLeft > 0) {
             log.warn('Retrying soap request with error: %s. Retries left: %d', e.message, retriesLeft)
             if (retryDelay) {
               await new Promise(f => setTimeout(f, retryDelay))
@@ -96,7 +97,7 @@ export default class SoapClient {
   private credentials: SuiteAppSoapCredentials
   private callsLimiter: CallsLimiter
   private ajv: Ajv
-  private client: soap.Client | undefined
+  private client: elementUtils.soap.Client | undefined
 
   constructor(credentials: SuiteAppSoapCredentials, callsLimiter: CallsLimiter) {
     this.credentials = credentials
@@ -105,9 +106,9 @@ export default class SoapClient {
   }
 
   @retryOnBadResponse
-  private async getClient(): Promise<soap.Client> {
+  private async getClient(): Promise<elementUtils.soap.Client> {
     if (this.client === undefined) {
-      this.client = await soap.createClientAsync(
+      this.client = await createClientAsync(
         `https://webservices.netsuite.com/wsdl/v${NETSUITE_VERSION}_0/netsuite.wsdl`,
         { endpoint: `https://${toUrlAccountId(this.credentials.accountId)}.suitetalk.api.netsuite.com/services/NetSuitePort_${NETSUITE_VERSION}` }
       )
@@ -135,7 +136,7 @@ export default class SoapClient {
       response
     )) {
       log.error(`Got invalid response from get request with id ${id} in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`Got invalid response from get request with id ${id} in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`VALIDATION_ERROR - Got invalid response from get request with id ${id} in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
     }
 
     if (!isGetSuccess(response)) {
@@ -234,7 +235,7 @@ export default class SoapClient {
       response
     )) {
       log.error(`Got invalid response from addList request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`Got invalid response from addList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`VALIDATION_ERROR - Got invalid response from addList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
     }
 
     if (!isDeployListSuccess(response)) {
@@ -267,7 +268,7 @@ export default class SoapClient {
       response
     )) {
       log.error(`Got invalid response from deleteList request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`Got invalid response from deleteList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`VALIDATION_ERROR - Got invalid response from deleteList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
     }
 
     if (!isDeployListSuccess(response)) {
@@ -300,7 +301,7 @@ export default class SoapClient {
       response
     )) {
       log.error(`Got invalid response from updateList request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`Got invalid response from updateList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`VALIDATION_ERROR - Got invalid response from updateList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
     }
 
     if (!isDeployListSuccess(response)) {
@@ -320,16 +321,16 @@ export default class SoapClient {
     })
   }
 
-  public async getNetsuiteWsdl(): Promise<soap.WSDL> {
+  public async getNetsuiteWsdl(): Promise<elementUtils.soap.WSDL> {
     // Though wsdl is private on the client, it is available publicly when using
     // the library without typescript so we rely on it to not change
-    const { wsdl } = (await this.getClient()) as unknown as { wsdl: soap.WSDL }
+    const { wsdl } = (await this.getClient()) as unknown as { wsdl: elementUtils.soap.WSDL }
     return wsdl
   }
 
   @retryOnBadResponseWithDelay(SOAP_RETRYABLE_MESSAGES, REQUEST_RETRY_DELAY)
   private static async soapRequestWithRetries(
-    client: soap.Client, operation: string, body: object
+    client: elementUtils.soap.Client, operation: string, body: object
   ): Promise<unknown> {
     return (await client[`${operation}Async`](body))[0]
   }
@@ -442,7 +443,7 @@ export default class SoapClient {
       response
     )) {
       log.error(`Got invalid response from ${action} request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`Got invalid response from ${action} request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`VALIDATION_ERROR - Got invalid response from ${action} request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
     }
 
     if (!isDeployListSuccess(response)) {
@@ -544,7 +545,7 @@ export default class SoapClient {
       response
     )) {
       log.error(`Got invalid response from get all request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`Got invalid response from get all request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`VALIDATION_ERROR - Got invalid response from get all request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
     }
 
     return response.getAllResult.recordList.record
@@ -591,7 +592,7 @@ export default class SoapClient {
       response
     )) {
       log.error(`Got invalid response from search request with SOAP api of type ${type}. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`Got invalid response from search request of type ${type}. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`VALIDATION_ERROR - Got invalid response from search request of type ${type}. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
     }
     log.debug(`Finished sending search request for page 1/${Math.max(response.searchResult.totalPages, 1)} of type ${type}`)
     return response
@@ -611,7 +612,7 @@ export default class SoapClient {
       response
     )) {
       log.error(`Got invalid response from search with id request with in SOAP api. Id: ${args.searchId}, index: ${args.pageIndex}, errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`Got invalid response from search with id request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`VALIDATION_ERROR - Got invalid response from search with id request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
     }
 
     return response

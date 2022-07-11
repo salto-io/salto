@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { updateChangedByIndex, CHANGED_BY_INDEX_VERSION, authorKeyToAuthor, authorToAuthorKey } from '../../src/workspace/changed_by_index'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
@@ -40,6 +40,8 @@ describe('changed by index', () => {
   let knownUserInstance: InstanceElement
   let unKnownUserInstance: InstanceElement
   let knownUserSecondInstance: InstanceElement
+  const objectKnownFieldElementId = new ElemID('test', 'object', 'field', 'known')
+  const objectUnknownFieldElementId = new ElemID('test', 'object', 'field', 'unknown')
 
   beforeEach(() => {
     jest.resetAllMocks()
@@ -50,8 +52,21 @@ describe('changed by index', () => {
 
     object = new ObjectType({
       elemID: new ElemID('test', 'object'),
-      annotations: {},
-      fields: {},
+      annotations: {
+        [CORE_ANNOTATIONS.CHANGED_BY]: 'user two',
+      },
+      fields: {
+        known: {
+          annotations: {
+            [CORE_ANNOTATIONS.CHANGED_BY]: 'user three',
+          },
+          refType: BuiltinTypes.STRING,
+        },
+        unknown: {
+          annotations: {},
+          refType: BuiltinTypes.STRING,
+        },
+      },
     })
     knownUserInstance = new InstanceElement(
       'instance1',
@@ -77,11 +92,14 @@ describe('changed by index', () => {
   })
   describe('mixed changes', () => {
     beforeEach(async () => {
-      changedByIndex.getMany.mockResolvedValue([[knownUserSecondInstance.elemID], undefined])
+      changedByIndex.getMany.mockResolvedValue(
+        [[knownUserSecondInstance.elemID], undefined, undefined, undefined]
+      )
       const changes = [
         toChange({ after: knownUserInstance }),
         toChange({ before: knownUserSecondInstance, after: knownUserSecondInstance }),
         toChange({ before: unKnownUserInstance }),
+        toChange({ after: object }),
       ]
       await updateChangedByIndex(
         changes,
@@ -92,18 +110,22 @@ describe('changed by index', () => {
       )
     })
     it('should add the new instances changed by values to index', () => {
-      expect(changedByIndex.getMany).toHaveBeenCalledWith(['test@@user one', 'Unknown'])
-      expect(changedByIndex.setAll).toHaveBeenCalledWith([{ key: 'test@@user one', value: expect.arrayContaining([knownUserInstance.elemID, knownUserSecondInstance.elemID]) }])
+      expect(changedByIndex.getMany).toHaveBeenCalledWith(['test@@user one', 'Unknown', 'test@@user three', 'test@@user two'])
+      expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user one', value: expect.arrayContaining([knownUserInstance.elemID, knownUserSecondInstance.elemID]) }]))
+      expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user two', value: [object.elemID] }]))
+      expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user three', value: [objectKnownFieldElementId] }]))
+      expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'Unknown', value: [objectUnknownFieldElementId] }]))
     })
   })
 
   describe('when got new elements', () => {
     beforeEach(async () => {
-      changedByIndex.getMany.mockResolvedValue([undefined, undefined])
+      changedByIndex.getMany.mockResolvedValue([undefined, undefined, undefined, undefined])
       const changes = [
         toChange({ after: knownUserInstance }),
         toChange({ after: knownUserSecondInstance }),
         toChange({ after: unKnownUserInstance }),
+        toChange({ after: object }),
       ]
       await updateChangedByIndex(
         changes,
@@ -114,8 +136,11 @@ describe('changed by index', () => {
       )
     })
     it('should add the new instances changed by values to index', () => {
-      expect(changedByIndex.getMany).toHaveBeenCalledWith(['test@@user one', 'Unknown'])
-      expect(changedByIndex.setAll).toHaveBeenCalledWith([{ key: 'test@@user one', value: [knownUserInstance.elemID, knownUserSecondInstance.elemID] }, { key: 'Unknown', value: [unKnownUserInstance.elemID] }])
+      expect(changedByIndex.getMany).toHaveBeenCalledWith(['test@@user one', 'Unknown', 'test@@user three', 'test@@user two'])
+      expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user one', value: [knownUserInstance.elemID, knownUserSecondInstance.elemID] }]))
+      expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'Unknown', value: [unKnownUserInstance.elemID, objectUnknownFieldElementId] }]))
+      expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user two', value: [object.elemID] }]))
+      expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user three', value: [objectKnownFieldElementId] }]))
     })
   })
   describe('when elements were modified', () => {
@@ -230,7 +255,11 @@ describe('changed by index', () => {
       beforeEach(async () => {
         await updateChangedByIndex(
           // all elements will be considered as new when cache is invalid
-          [toChange({ after: knownUserInstance }), toChange({ after: unKnownUserInstance })],
+          [
+            toChange({ after: knownUserInstance }),
+            toChange({ after: unKnownUserInstance }),
+            toChange({ after: object }),
+          ],
           changedByIndex,
           mapVersions,
           elementsSource,
@@ -239,8 +268,11 @@ describe('changed by index', () => {
       })
       it('should update changed by index with all additions', () => {
         expect(changedByIndex.clear).toHaveBeenCalled()
-        expect(changedByIndex.getMany).toHaveBeenCalledWith(['test@@user one', 'Unknown'])
-        expect(changedByIndex.setAll).toHaveBeenCalledWith([{ key: 'test@@user one', value: [knownUserInstance.elemID] }, { key: 'Unknown', value: [unKnownUserInstance.elemID] }])
+        expect(changedByIndex.getMany).toHaveBeenCalledWith(['test@@user one', 'Unknown', 'test@@user three', 'test@@user two'])
+        expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user one', value: [knownUserInstance.elemID] }]))
+        expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'Unknown', value: [unKnownUserInstance.elemID, objectUnknownFieldElementId] }]))
+        expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user two', value: [object.elemID] }]))
+        expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user three', value: [objectKnownFieldElementId] }]))
       })
     })
 
@@ -248,6 +280,7 @@ describe('changed by index', () => {
       beforeEach(async () => {
         await elementsSource.set(knownUserInstance)
         await elementsSource.set(unKnownUserInstance)
+        await elementsSource.set(object)
         mapVersions.get.mockResolvedValue(0)
         await updateChangedByIndex(
           [],
@@ -259,8 +292,11 @@ describe('changed by index', () => {
       })
       it('should update changed by index using the element source', () => {
         expect(changedByIndex.clear).toHaveBeenCalled()
-        expect(changedByIndex.getMany).toHaveBeenCalledWith(['test@@user one', 'Unknown'])
-        expect(changedByIndex.setAll).toHaveBeenCalledWith([{ key: 'test@@user one', value: [knownUserInstance.elemID] }, { key: 'Unknown', value: [unKnownUserInstance.elemID] }])
+        expect(changedByIndex.getMany).toHaveBeenCalledWith(['test@@user three', 'Unknown', 'test@@user two', 'test@@user one'])
+        expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user one', value: [knownUserInstance.elemID] }]))
+        expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'Unknown', value: [objectUnknownFieldElementId, unKnownUserInstance.elemID] }]))
+        expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user two', value: [object.elemID] }]))
+        expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user three', value: [objectKnownFieldElementId] }]))
       })
     })
   })

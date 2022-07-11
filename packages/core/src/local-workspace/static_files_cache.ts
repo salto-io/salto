@@ -63,7 +63,7 @@ export const buildLocalStaticFilesCache = (
   ): Promise<StaticFilesCacheState> =>
     remoteMapCreator<staticFiles.StaticFilesData>({
       namespace: `staticFilesCache-${cacheName}`,
-      serialize: cacheEntry => safeJsonStringify(cacheEntry),
+      serialize: async cacheEntry => safeJsonStringify(cacheEntry),
       deserialize: async data => JSON.parse(data),
       persistent,
     })

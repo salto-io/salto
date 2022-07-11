@@ -18,7 +18,7 @@ import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, is
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
-import { WSDL } from 'soap'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { NetsuiteQuery } from '../query'
 import { Credentials, isSuiteAppCredentials, toUrlAccountId } from './credentials'
@@ -379,7 +379,7 @@ export default class NetsuiteClient {
     }
   )
 
-  public async getNetsuiteWsdl(): Promise<WSDL | undefined> {
+  public async getNetsuiteWsdl(): Promise<elementUtils.soap.WSDL | undefined> {
     return this.suiteAppClient?.getNetsuiteWsdl()
   }
 

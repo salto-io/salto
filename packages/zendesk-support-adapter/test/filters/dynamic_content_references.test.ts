@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import {
-  ObjectType, ElemID, InstanceElement, ReferenceExpression, CORE_ANNOTATIONS,
+  ObjectType, ElemID, InstanceElement, ReferenceExpression, TemplateExpression, BuiltinTypes,
+  toChange,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { DEFAULT_CONFIG } from '../../src/config'
@@ -26,7 +27,7 @@ import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../../src/filters/dynamic_conten
 
 describe('dynamic content references filter', () => {
   let client: ZendeskClient
-  type FilterType = filterUtils.FilterWith<'onFetch'>
+  type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let filter: FilterType
   let dynamicContentType: ObjectType
   let type: ObjectType
@@ -34,9 +35,15 @@ describe('dynamic content references filter', () => {
   beforeEach(async () => {
     dynamicContentType = new ObjectType({
       elemID: new ElemID(ZENDESK_SUPPORT, DYNAMIC_CONTENT_ITEM_TYPE_NAME),
+      fields: {
+        placeholder: { refType: BuiltinTypes.STRING },
+      },
     })
     type = new ObjectType({
       elemID: new ElemID(ZENDESK_SUPPORT, 'someType'),
+      fields: {
+        raw_value: { refType: BuiltinTypes.STRING },
+      },
     })
 
     client = new ZendeskClient({
@@ -53,40 +60,73 @@ describe('dynamic content references filter', () => {
     }) as FilterType
   })
 
-  describe('onFetch', () => {
-    it('should add generated dependencies for dynamic content placeholders', async () => {
-      const dynamicContentInstance = new InstanceElement(
-        'dynamicContentInstance',
-        dynamicContentType,
-        {
-          placeholder: '{{somePlaceholder}}',
-        },
-      )
+  const createInstances = (): {
+    dynamicContentInstance: InstanceElement
+    instance: InstanceElement
+  } => {
+    const dynamicContentInstance = new InstanceElement(
+      'dynamicContentInstance',
+      dynamicContentType,
+      {
+        placeholder: '{{somePlaceholder}}',
+      },
+    )
 
-      const instance = new InstanceElement(
-        'instance',
-        type,
-        {
-          raw_value: '{{somePlaceholder}} {{notExistsPlaceholder}} {{somePlaceholder}}',
-        }
-      )
+    const instance = new InstanceElement(
+      'instance',
+      type,
+      {
+        raw_value: '{{somePlaceholder}} {{notExistsPlaceholder}} {{somePlaceholder}}',
+      }
+    )
+    return {
+      dynamicContentInstance,
+      instance,
+    }
+  }
+
+  describe('onFetch', () => {
+    it('should replace dynamic content placeholders with templates', async () => {
+      const { dynamicContentInstance, instance } = createInstances()
 
       await filter.onFetch([dynamicContentInstance, instance])
-      expect(instance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual([{
-        reference: new ReferenceExpression(
-          dynamicContentInstance.elemID,
-          dynamicContentInstance
-        ),
-        occurrences: [{
-          location: new ReferenceExpression(
-            instance.elemID.createNestedID('raw_value'),
-            '{{somePlaceholder}} {{notExistsPlaceholder}} {{somePlaceholder}}'
-          ),
-        }],
-      }])
+      expect(instance.value.raw_value).toEqual(new TemplateExpression({
+        parts: ['{{',
+          new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
+          '}}', ' ', '{{notExistsPlaceholder}}', ' ', '{{',
+          new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
+          '}}'],
+      }))
+    })
+  })
 
-      expect(dynamicContentInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES])
-        .toBeUndefined()
+  describe('preDeploy', () => {
+    it('should switch instance back to original value before deploy', async () => {
+      const { dynamicContentInstance, instance } = createInstances()
+      const instanceCopy = instance.clone()
+      await filter.onFetch([dynamicContentInstance, instanceCopy])
+      expect(instanceCopy).not.toEqual(instance)
+      await filter.preDeploy([toChange({ after: instanceCopy })])
+      expect(instanceCopy).toEqual(instance)
+    })
+  })
+
+  describe('onDeploy', () => {
+    it('should switch instance back to template value after deploy', async () => {
+      const { dynamicContentInstance, instance } = createInstances()
+      const instanceCopy = instance.clone()
+      await filter.onFetch([dynamicContentInstance, instanceCopy])
+      expect(instanceCopy).not.toEqual(instance)
+      await filter.preDeploy([toChange({ after: instanceCopy })])
+      expect(instanceCopy).toEqual(instance)
+      await filter.onDeploy([toChange({ after: instanceCopy })])
+      expect(instanceCopy.value.raw_value).toEqual(new TemplateExpression({
+        parts: ['{{',
+          new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
+          '}}', ' ', '{{notExistsPlaceholder}}', ' ', '{{',
+          new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
+          '}}'],
+      }))
     })
   })
 })

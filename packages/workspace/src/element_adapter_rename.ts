@@ -31,6 +31,7 @@ import {
   Element,
   ElemID,
   GLOBAL_ADAPTER,
+  isTemplateExpression,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import { UnresolvedReference } from './expressions'
@@ -81,9 +82,7 @@ const updateRefTypeWithId = (refType: TypeReference, accountName: string): void 
   _.set(refType, 'elemID', refType.type.elemID)
 }
 
-const transformElemIDAdapter = (accountName: string): TransformFunc => async (
-  { value }
-) => {
+const updateReferenceExpression = (value: unknown, accountName: string): void => {
   if (isReferenceExpression(value)) {
     _.set(value, 'elemID', createAdapterReplacedID(value.elemID, accountName))
     // This will happen because we used resolve on a list of elements, and some of the types
@@ -93,6 +92,15 @@ const transformElemIDAdapter = (accountName: string): TransformFunc => async (
       value.value = undefined
     }
   }
+}
+
+const updateTemplateExpression = (value: unknown, accountName: string): void => {
+  if (isTemplateExpression(value)) {
+    value.parts.forEach(part => updateReferenceExpression(part, accountName))
+  }
+}
+
+const updateElement = (value: unknown, accountName: string): void => {
   if (isElement(value) && value.elemID.adapter !== accountName) {
     _.set(value, 'elemID', createAdapterReplacedID(value.elemID, accountName))
     value.annotationRefTypes = _.mapValues(value.annotationRefTypes,
@@ -107,6 +115,14 @@ const transformElemIDAdapter = (accountName: string): TransformFunc => async (
       value.refType = fieldType
     }
   }
+}
+
+const transformElemIDAdapter = (accountName: string): TransformFunc => async (
+  { value }
+) => {
+  updateReferenceExpression(value, accountName)
+  updateTemplateExpression(value, accountName)
+  updateElement(value, accountName)
   return value
 }
 

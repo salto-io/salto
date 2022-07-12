@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ObjectType, TypeElement } from '@salto-io/adapter-api'
+import { Element, isObjectType, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
+import _ from 'lodash'
 import { FilterCreator, FilterResult } from '../filter'
 import { createMetadataTypeElements, apiName } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
@@ -67,6 +68,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
    * @param elements
    */
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
+    const objectTypes = elements.filter(isObjectType)
     // Fetch list of all settings types
     const {
       elements: settingsList, configChanges: listObjectsConfigChanges,
@@ -86,6 +88,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
         .map(info => getSettingsTypeName(info.fullName))
         .map(typeName => createSettingsType(client, typeName, knownTypes))
     )).flat()
+    _.pullAllBy(settingsTypes, objectTypes, e => e.elemID.getFullName())
     elements.push(...settingsTypes)
 
     // Create settings instances

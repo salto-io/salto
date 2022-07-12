@@ -44,7 +44,7 @@ import { AdaptersConfigSource } from './adapters_config_source'
 import { updateReferenceIndexes } from './reference_indexes'
 import { updateChangedByIndex, Author, authorKeyToAuthor, authorToAuthorKey } from './changed_by_index'
 import { updateChangedAtIndex } from './changed_at_index'
-import { updateStaticFilesIndex } from './static_files_index'
+import { updateReferencedStaticFilesIndex } from './static_files_index'
 
 const log = logger(module)
 
@@ -261,7 +261,7 @@ type SingleState = {
   validationErrors: RemoteMap<ValidationError[]>
   changedBy: RemoteMap<ElemID[]>
   changedAt: RemoteMap<ElemID[]>
-  staticFiles: RemoteMap<string[]>
+  referencedStaticFiles: RemoteMap<string[]>
   referenceSources: RemoteMap<ElemID[]>
   referenceTargets: RemoteMap<ElemID[]>
   mapVersions: RemoteMap<number>
@@ -384,8 +384,8 @@ export const loadWorkspace = async (
             deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
             persistent,
           }),
-          staticFiles: await remoteMapCreator<string[]>({
-            namespace: getRemoteMapNamespace('staticFiles', envName),
+          referencedStaticFiles: await remoteMapCreator<string[]>({
+            namespace: getRemoteMapNamespace('referencedStaticFiles', envName),
             serialize: async val => safeJsonStringify(val),
             deserialize: data => JSON.parse(data),
             persistent,
@@ -629,9 +629,9 @@ export const loadWorkspace = async (
         changeResult.cacheValid,
       )
 
-      await updateStaticFilesIndex(
+      await updateReferencedStaticFilesIndex(
         changes,
-        stateToBuild.states[envName].staticFiles,
+        stateToBuild.states[envName].referencedStaticFiles,
         stateToBuild.states[envName].mapVersions,
         stateToBuild.states[envName].merged,
         changeResult.cacheValid,
@@ -974,7 +974,7 @@ export const loadWorkspace = async (
   ): Promise<string[]> => {
     const env = envName ?? currentEnv()
     const workspace = await getWorkspaceState()
-    const result = await workspace.states[env].staticFiles.getMany(
+    const result = await workspace.states[env].referencedStaticFiles.getMany(
       elementIds.map(elemId => elemId.getFullName())
     )
     return result.filter(values.isDefined).flat()

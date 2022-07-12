@@ -15,7 +15,7 @@
 */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, StaticFile, toChange } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
-import { updateStaticFilesIndex, STATIC_FILES_INDEX_VERSION } from '../../src/workspace/static_files_index'
+import { updateReferencedStaticFilesIndex, STATIC_FILES_INDEX_VERSION } from '../../src/workspace/static_files_index'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
 import { RemoteMap } from '../../src/workspace/remote_map'
 import { createMockRemoteMap } from '../utils'
@@ -91,7 +91,7 @@ describe('static files index', () => {
         toChange({ before: unKnownUserInstance }),
         toChange({ after: object }),
       ]
-      await updateStaticFilesIndex(
+      await updateReferencedStaticFilesIndex(
         changes,
         staticFilesIndex,
         mapVersions,
@@ -115,7 +115,7 @@ describe('static files index', () => {
   describe('invalid indexes', () => {
     describe('When cache is invalid', () => {
       beforeEach(async () => {
-        await updateStaticFilesIndex(
+        await updateReferencedStaticFilesIndex(
           // all elements will be considered as new when cache is invalid
           [
             toChange({ after: knownUserInstance }),
@@ -145,7 +145,7 @@ describe('static files index', () => {
         await elementsSource.set(unKnownUserInstance)
         await elementsSource.set(object)
         mapVersions.get.mockResolvedValue(0)
-        await updateStaticFilesIndex(
+        await updateReferencedStaticFilesIndex(
           [],
           staticFilesIndex,
           mapVersions,

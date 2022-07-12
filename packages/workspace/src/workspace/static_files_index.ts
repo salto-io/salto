@@ -68,7 +68,7 @@ const updateChanges = async (
     .map(getChangeData)
     .map(element => element.elemID.getFullName())
   await index.setAll(toBeSet
-    .map(key => ({ key, value: Array.from(staticFilesMap[key]) })))
+    .map(key => ({ key, value: staticFilesMap[key] })))
   await index.deleteAll(toBeRemoved.concat(removedElementIds))
 }
 

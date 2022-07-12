@@ -935,8 +935,8 @@ export const loadWorkspace = async (
   }
   const getAllChangedByAuthors = async (envName?: string): Promise<Author[]> => {
     const env = envName ?? currentEnv()
-    const workspace = await getWorkspaceState()
-    const keys = await awu(workspace.states[env].changedBy.keys()).toArray()
+    const currentState = await getWorkspaceState()
+    const keys = await awu(currentState.states[env].changedBy.keys()).toArray()
     return keys.map(authorKeyToAuthor)
   }
 
@@ -945,8 +945,8 @@ export const loadWorkspace = async (
     envName?: string,
   ): Promise<ElemID[]> => {
     const env = envName ?? currentEnv()
-    const workspace = await getWorkspaceState()
-    const result = await workspace.states[env].changedBy.getMany(authors.map(authorToAuthorKey))
+    const currentState = await getWorkspaceState()
+    const result = await currentState.states[env].changedBy.getMany(authors.map(authorToAuthorKey))
     ?? []
     return result.filter(values.isDefined).flat()
   }
@@ -960,11 +960,11 @@ export const loadWorkspace = async (
       && (dateRange.end === undefined || dateToCheck <= dateRange.end)
     }
     const env = envName ?? currentEnv()
-    const workspace = await getWorkspaceState()
-    const relevantTimestamps = await awu(workspace.states[env].changedAt.keys())
+    const currentState = await getWorkspaceState()
+    const relevantTimestamps = await awu(currentState.states[env].changedAt.keys())
       .filter(isDateInRange)
       .toArray()
-    const result = await workspace.states[env].changedAt.getMany(relevantTimestamps)
+    const result = await currentState.states[env].changedAt.getMany(relevantTimestamps)
     return result.filter(values.isDefined).flat()
   }
 
@@ -973,8 +973,8 @@ export const loadWorkspace = async (
     envName?: string,
   ): Promise<string[]> => {
     const env = envName ?? currentEnv()
-    const workspace = await getWorkspaceState()
-    const result = await workspace.states[env].referencedStaticFiles.getMany(
+    const currentState = await getWorkspaceState()
+    const result = await currentState.states[env].referencedStaticFiles.getMany(
       elementIds.map(elemId => elemId.getFullName())
     )
     return result.filter(values.isDefined).flat()

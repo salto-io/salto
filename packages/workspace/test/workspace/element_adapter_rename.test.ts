@@ -60,7 +60,12 @@ describe('rename adapter in elements', () => {
   const instanceToChange = new InstanceElement('InstanceElement', objectToChange, {
     field: new ReferenceExpression(innerType.elemID),
     templateField: new TemplateExpression({
-      parts: ['prefix', new ReferenceExpression(innerType.elemID)],
+      parts: [
+        'prefix',
+        new ReferenceExpression(innerType.elemID),
+        'middle',
+        new ReferenceExpression(innerRefType.elemID),
+      ],
     }),
     innerRefField: innerType,
   })
@@ -93,7 +98,12 @@ describe('rename adapter in elements', () => {
   const changedInstance = new InstanceElement('InstanceElement', changedObject, {
     field: new ReferenceExpression(changedInnerType.elemID),
     templateField: new TemplateExpression({
-      parts: ['prefix', new ReferenceExpression(changedInnerType.elemID)],
+      parts: [
+        'prefix',
+        new ReferenceExpression(changedInnerType.elemID),
+        'middle',
+        new ReferenceExpression(changedInnerRefType.elemID),
+      ],
     }),
     innerRefField: changedInnerType,
   })

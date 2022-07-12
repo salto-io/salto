@@ -32,6 +32,8 @@ import {
   ElemID,
   GLOBAL_ADAPTER,
   isTemplateExpression,
+  ReferenceExpression,
+  TemplateExpression,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import { UnresolvedReference } from './expressions'
@@ -82,47 +84,51 @@ const updateRefTypeWithId = (refType: TypeReference, accountName: string): void 
   _.set(refType, 'elemID', refType.type.elemID)
 }
 
-const updateReferenceExpression = (value: unknown, accountName: string): void => {
-  if (isReferenceExpression(value)) {
-    _.set(value, 'elemID', createAdapterReplacedID(value.elemID, accountName))
-    // This will happen because we used resolve on a list of elements, and some of the types
-    // will not resolve by the time we reach an element that references them. Since we don't
-    // care about resolved values, we can just remove this.
-    if (value.value instanceof UnresolvedReference) {
-      value.value = undefined
-    }
+const updateReferenceExpression = (value: ReferenceExpression, accountName: string): void => {
+  _.set(value, 'elemID', createAdapterReplacedID(value.elemID, accountName))
+  // This will happen because we used resolve on a list of elements, and some of the types
+  // will not resolve by the time we reach an element that references them. Since we don't
+  // care about resolved values, we can just remove this.
+  if (value.value instanceof UnresolvedReference) {
+    value.value = undefined
   }
 }
 
-const updateTemplateExpression = (value: unknown, accountName: string): void => {
-  if (isTemplateExpression(value)) {
-    value.parts.forEach(part => updateReferenceExpression(part, accountName))
-  }
+const updateTemplateExpression = (value: TemplateExpression, accountName: string): void => {
+  value.parts.forEach(part => {
+    if (isReferenceExpression(part)) {
+      updateReferenceExpression(part, accountName)
+    }
+  })
 }
 
-const updateElement = (value: unknown, accountName: string): void => {
-  if (isElement(value) && value.elemID.adapter !== accountName) {
-    _.set(value, 'elemID', createAdapterReplacedID(value.elemID, accountName))
-    value.annotationRefTypes = _.mapValues(value.annotationRefTypes,
-      annotation => {
-        const annotationType = _.clone(annotation)
-        updateRefTypeWithId(annotationType, accountName)
-        return annotationType
-      })
-    if (isField(value)) {
-      const fieldType = _.clone(value.refType)
-      updateRefTypeWithId(fieldType, accountName)
-      value.refType = fieldType
-    }
+const updateElement = (value: Element, accountName: string): void => {
+  _.set(value, 'elemID', createAdapterReplacedID(value.elemID, accountName))
+  value.annotationRefTypes = _.mapValues(value.annotationRefTypes,
+    annotation => {
+      const annotationType = _.clone(annotation)
+      updateRefTypeWithId(annotationType, accountName)
+      return annotationType
+    })
+  if (isField(value)) {
+    const fieldType = _.clone(value.refType)
+    updateRefTypeWithId(fieldType, accountName)
+    value.refType = fieldType
   }
 }
 
 const transformElemIDAdapter = (accountName: string): TransformFunc => async (
   { value }
 ) => {
-  updateReferenceExpression(value, accountName)
-  updateTemplateExpression(value, accountName)
-  updateElement(value, accountName)
+  if (isReferenceExpression(value)) {
+    updateReferenceExpression(value, accountName)
+  }
+  if (isTemplateExpression(value)) {
+    updateTemplateExpression(value, accountName)
+  }
+  if (isElement(value) && value.elemID.adapter !== accountName) {
+    updateElement(value, accountName)
+  }
   return value
 }
 

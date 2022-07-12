@@ -17,6 +17,7 @@ import { DependencyChanger } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { dashboardGadgetsDependencyChanger } from './dashboard_gadgets'
+import { globalFieldContextsDependencyChanger } from './global_field_contexts'
 import { projectDependencyChanger } from './project'
 import { removalsDependencyChanger } from './removals'
 import { workflowDependencyChanger } from './workflow'
@@ -29,6 +30,7 @@ const DEPENDENCY_CHANGERS: DependencyChanger[] = [
   workflowDependencyChanger,
   dashboardGadgetsDependencyChanger,
   removalsDependencyChanger,
+  globalFieldContextsDependencyChanger,
 ]
 
 export const dependencyChanger: DependencyChanger = async (

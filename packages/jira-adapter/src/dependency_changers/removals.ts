@@ -17,7 +17,11 @@ import { CORE_ANNOTATIONS, dependencyChange, DependencyChanger, getChangeData, I
 import { references } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { FIELD_CONTEXT_TYPE_NAME } from '../filters/fields/constants'
 
+const TYPES_TO_IGNORE = [
+  FIELD_CONTEXT_TYPE_NAME,
+]
 
 export const removalsDependencyChanger: DependencyChanger = async changes => {
   const removalsChanges = _(Array.from(changes.entries()))
@@ -26,6 +30,7 @@ export const removalsDependencyChanger: DependencyChanger = async changes => {
       (change): change is { key: collections.set.SetId; change: RemovalChange<InstanceElement> } =>
         isInstanceChange(change.change)
         && isRemovalChange(change.change)
+        && !TYPES_TO_IGNORE.includes(getChangeData(change.change).elemID.typeName)
     )
     .keyBy(({ change }) => getChangeData(change).elemID.getFullName())
     .value()

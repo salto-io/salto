@@ -129,6 +129,7 @@ export const DEFAULT_FILTERS = [
   validationRulesAuthorFilter,
   hideReadOnlyValuesFilter,
   currencyIsoCodeFilter,
+  splitCustomLabels,
   // The following filters should remain last in order to make sure they fix all elements
   convertListsFilter,
   convertTypeFilter,
@@ -145,7 +146,6 @@ export const DEFAULT_FILTERS = [
   extraDependenciesFilter,
   customObjectsSplitFilter,
   profileInstanceSplitFilter,
-  splitCustomLabels,
 ]
 
 export interface SalesforceAdapterParams {

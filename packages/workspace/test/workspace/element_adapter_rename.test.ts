@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, InstanceElement, ListType, MapType, ObjectType, ReferenceExpression, TypeReference } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, InstanceElement, ListType, MapType, ObjectType, ReferenceExpression, TemplateExpression, TypeReference } from '@salto-io/adapter-api'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
 import { createAdapterReplacedID, updateElementsWithAlternativeAccount } from '../../src/element_adapter_rename'
 import { UnresolvedReference } from '../../src/expressions'
@@ -50,6 +50,7 @@ describe('rename adapter in elements', () => {
     path: [serviceName, 'somepath'],
     fields: {
       field: { refType: innerType },
+      templateField: { refType: innerType },
       listField: { refType: new ListType(innerType) },
       listOfListField: { refType: new ListType(new ListType(innerType)) },
       mapField: { refType: new MapType(innerType) },
@@ -58,6 +59,14 @@ describe('rename adapter in elements', () => {
   })
   const instanceToChange = new InstanceElement('InstanceElement', objectToChange, {
     field: new ReferenceExpression(innerType.elemID),
+    templateField: new TemplateExpression({
+      parts: [
+        'prefix',
+        new ReferenceExpression(innerType.elemID),
+        'middle',
+        new ReferenceExpression(innerRefType.elemID),
+      ],
+    }),
     innerRefField: innerType,
   })
   // the adapter change is supposed to set this value to undefined if it finds unresolved reference.
@@ -79,6 +88,7 @@ describe('rename adapter in elements', () => {
     elemID: new ElemID(newServiceName, 'objectType'),
     fields: {
       field: { refType: changedInnerType },
+      templateField: { refType: changedInnerType },
       listField: { refType: new ListType(changedInnerType) },
       listOfListField: { refType: new ListType(new ListType(changedInnerType)) },
       mapField: { refType: new MapType(changedInnerType) },
@@ -87,6 +97,14 @@ describe('rename adapter in elements', () => {
   })
   const changedInstance = new InstanceElement('InstanceElement', changedObject, {
     field: new ReferenceExpression(changedInnerType.elemID),
+    templateField: new TemplateExpression({
+      parts: [
+        'prefix',
+        new ReferenceExpression(changedInnerType.elemID),
+        'middle',
+        new ReferenceExpression(changedInnerRefType.elemID),
+      ],
+    }),
     innerRefField: changedInnerType,
   })
   const changedUnresolvedReferenceInstanceToChange = new InstanceElement('InstanceElement',

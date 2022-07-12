@@ -40,6 +40,7 @@ import { RemoteMap, RemoteMapCreator } from '../remote_map'
 import { ParsedNaclFile } from './parsed_nacl_file'
 import { ParsedNaclFileCache, createParseResultCache } from './parsed_nacl_files_cache'
 import { isInvalidStaticFile } from '../static_files/common'
+import { memoryUsage } from '../../memory_usage'
 
 const { awu } = collections.asynciterable
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
@@ -53,7 +54,7 @@ export const FILE_EXTENSION = '.nacl'
 export const HASH_KEY = 'hash'
 
 const PARSE_CONCURRENCY = 100
-const DUMP_CONCURRENCY = 100
+// const DUMP_CONCURRENCY = 100
 // TODO: this should moved into cache implementation
 const CACHE_READ_CONCURRENCY = 100
 const UPDATE_INDEX_CONCURRENCY = 100
@@ -299,10 +300,11 @@ const createNaclFilesState = async (
 })
 
 const buildNaclFilesState = async ({
-  newNaclFiles, currentState,
+  newNaclFiles, currentState, forceBuffer = false,
 }: {
   newNaclFiles: ParsedNaclFile[]
   currentState: NaclFilesState
+  forceBuffer?: boolean
 }): Promise<buildNaclFilesStateResult> => {
   const preChangeHash = await currentState.metadata.get(HASH_KEY)
   const cacheValid = (preChangeHash === await currentState.parsedNaclFiles.getHash())
@@ -441,7 +443,7 @@ const buildNaclFilesState = async ({
       }
       // This is temp and should be removed when we change the init flow
       // This happens now cause we get here with ParsedNaclFiles that originate from the cache
-      if (values.isDefined(naclFile.buffer)) {
+      if (values.isDefined(naclFile.buffer) || forceBuffer) {
         await currentState.parsedNaclFiles.put(naclFile.filename, naclFile)
       }
     })
@@ -547,6 +549,101 @@ const logNaclFileUpdateErrorContext = (
   log.debug('data after:\n%s', naclDataAfter)
 }
 
+const setNaclFiles = async (
+  naclFiles: NaclFile[],
+  naclFilesStore: DirectoryStore<string>,
+): Promise<void> => {
+  const [emptyNaclFiles, nonEmptyNaclFiles] = _.partition(
+    naclFiles,
+    naclFile => _.isEmpty(naclFile.buffer.trim())
+  )
+  await awu(nonEmptyNaclFiles).forEach(naclFile => naclFilesStore.set(naclFile))
+  await awu(emptyNaclFiles).forEach(naclFile => naclFilesStore.delete(naclFile.filename))
+}
+
+const createNaclFileFromChange = async (
+  filename: string,
+  change: AdditionDiff<Element>,
+  fileData: string,
+): Promise<ParsedNaclFile> => {
+  const elements = [change.data.after]
+  let referenced: string[]
+  let staticFiles: string[]
+  const loadRefs = async (): Promise<void> => {
+    if (referenced === undefined || staticFiles === undefined) {
+      const referencedAndStaticFiles = await getElementsReferencedAndStaticFiles(elements)
+      referenced = referencedAndStaticFiles.referenced
+      staticFiles = referencedAndStaticFiles.staticFiles
+    }
+  }
+  return {
+    filename,
+    elements: () => Promise.resolve(elements),
+    data: {
+      errors: () => Promise.resolve([]),
+      referenced: async () => {
+        await loadRefs()
+        return referenced
+      },
+      staticFiles: async () => {
+        await loadRefs()
+        return staticFiles
+      },
+    },
+    buffer: fileData,
+  }
+}
+
+const toUpdatedNaclFile = async (
+  filename: string,
+  fileChanges: DetailedChangeWithSource[],
+  functions: Functions,
+  naclFilesStore: DirectoryStore<string>,
+  staticFilesSource: StaticFilesSource
+): Promise<ParsedNaclFile | undefined> => {
+  memoryUsage.log()
+
+  let naclFileData: string | null
+  let buffer: string | null
+  try {
+    naclFileData = (await naclFilesStore.get(filename))?.buffer ?? ''
+    buffer = await updateNaclFileData(naclFileData, fileChanges, functions)
+    const shouldNotParse = _.isEmpty(naclFileData)
+      && fileChanges.length === 1
+      && fileChanges[0].action === 'add'
+      && isElement(fileChanges[0].data.after)
+    const { elements, data, sourceMap } = shouldNotParse
+      ? await createNaclFileFromChange(filename, fileChanges[0] as AdditionDiff<Element>,
+        buffer)
+      : await toParsedNaclFile(
+        { filename, buffer },
+        await parseNaclFile({ filename, buffer }, functions),
+      )
+    if (((await data.errors()) ?? []).length > 0) {
+      logNaclFileUpdateErrorContext(filename, fileChanges, naclFileData, buffer)
+    }
+
+    // This method was written with the assumption that each static file is pointed by no more
+    // then one value in the nacls. A ticket was open to fix that (SALTO-954)
+    await awu(fileChanges)
+      .filter(change => change.action === 'remove')
+      .map(getChangeData)
+      .flatMap(getNestedStaticFiles)
+      .forEach(file => staticFilesSource.delete(file))
+
+    await setNaclFiles([{ filename, buffer }], naclFilesStore)
+
+    naclFileData = null
+    buffer = null
+    return { filename, elements, data, sourceMap }
+  } catch (e) {
+    log.error('failed to update NaCl file %s with %o changes due to: %o', filename, fileChanges, e)
+    naclFileData = null
+    buffer = null
+    return undefined
+  }
+}
+
 const buildNaclFilesSource = (
   sourceName: string,
   naclFilesStore: DirectoryStore<string>,
@@ -635,6 +732,7 @@ const buildNaclFilesSource = (
   const buildNaclFilesStateInner = async (
     parsedNaclFiles: ParsedNaclFile[] = [],
     ignoreFileChanges = false,
+    forceBuffer = false
   ):
   Promise<buildNaclFilesStateResult> => {
     if (_.isUndefined(state)) {
@@ -644,6 +742,7 @@ const buildNaclFilesSource = (
     return buildNaclFilesState({
       newNaclFiles: parsedNaclFiles,
       currentState: current,
+      forceBuffer,
     })
   }
 
@@ -710,147 +809,85 @@ const buildNaclFilesSource = (
     return parsedResult.sourceMap
   }
 
-  const createNaclFileFromChange = async (
-    filename: string,
-    change: AdditionDiff<Element>,
-    fileData: string,
-  ): Promise<ParsedNaclFile> => {
-    const elements = [change.data.after]
-    let referenced: string[]
-    let staticFiles: string[]
-    const loadRefs = async (): Promise<void> => {
-      if (referenced === undefined || staticFiles === undefined) {
-        const referencedAndStaticFiles = await getElementsReferencedAndStaticFiles(elements)
-        referenced = referencedAndStaticFiles.referenced
-        staticFiles = referencedAndStaticFiles.staticFiles
-      }
-    }
-    return {
-      filename,
-      elements: () => Promise.resolve(elements),
-      data: {
-        errors: () => Promise.resolve([]),
-        referenced: async () => {
-          await loadRefs()
-          return referenced
-        },
-        staticFiles: async () => {
-          await loadRefs()
-          return staticFiles
-        },
-      },
-      buffer: fileData,
-    }
-  }
-
-  const setNaclFiles = async (
-    naclFiles: NaclFile[]
-  ): Promise<void> => {
-    const [emptyNaclFiles, nonEmptyNaclFiles] = _.partition(
-      naclFiles,
-      naclFile => _.isEmpty(naclFile.buffer.trim())
-    )
-    await awu(nonEmptyNaclFiles).forEach(naclFile => naclFilesStore.set(naclFile))
-    await awu(emptyNaclFiles).forEach(naclFile => naclFilesStore.delete(naclFile.filename))
-  }
 
   const updateNaclFiles = async (changes: DetailedChange[]): Promise<ChangeSet<Change>> => {
+    log.debug('starting updateNaclFiles')
+    memoryUsage.log()
     const preChangeHash = await (await state)?.parsedNaclFiles.getHash()
-    const getNaclFileData = async (filename: string): Promise<string> => {
-      const naclFile = await naclFilesStore.get(filename)
-      return naclFile ? naclFile.buffer : ''
-    }
-
-    // This method was written with the assumption that each static file is pointed by no more
-    // then one value in the nacls. A ticket was open to fix that (SALTO-954)
-
-    const removeDanglingStaticFiles = async (fileChanges: DetailedChange[]): Promise<void> => {
-      await awu(fileChanges).filter(change => change.action === 'remove')
-        .map(getChangeData)
-        .map(getNestedStaticFiles)
-        .flat()
-        .forEach(file => staticFilesSource.delete(file))
-    }
+    memoryUsage.log()
     const naclFiles = _.uniq(
       await awu(changes).map(change => change.id)
         .flatMap(elemID => getElementNaclFiles(elemID.createTopLevelParentID().parent))
         .toArray()
     )
+    memoryUsage.log()
     const { parsedNaclFiles } = await getState()
-    const changedFileToSourceMap: Record<string, SourceMap> = Object.fromEntries(
-      (await withLimitedConcurrency(naclFiles
-        .map(naclFile => async () => {
-          const parsedNaclFile = await parsedNaclFiles.get(naclFile)
-          return values.isDefined(parsedNaclFile)
-            ? [
-              parsedNaclFile.filename,
-              await getSourceMap(parsedNaclFile.filename),
-            ] : undefined
-        }),
-      CACHE_READ_CONCURRENCY)).filter(values.isDefined)
-    )
-    const mergedSourceMap = Object.values(changedFileToSourceMap).reduce((acc, sourceMap) => {
-      acc.merge(sourceMap)
-      return acc
-    }, new SourceMap())
-    const changesToUpdate = getChangesToUpdate(changes, mergedSourceMap)
-    const allFileNames = _.keyBy(await parsedNaclFiles.list(), name => name.toLowerCase())
-    const updatedNaclFiles = (await withLimitedConcurrency(
-      _(changesToUpdate)
-        .map(change => getChangeLocations(change, mergedSourceMap))
-        .flatten()
+    memoryUsage.log()
+
+    const getChangesEntries = async (): Promise<[string, DetailedChangeWithSource[]][]> => {
+      memoryUsage.log()
+
+      const createSourceMap = async (): Promise<SourceMap> => (
+        await withLimitedConcurrency(naclFiles
+          .map(naclFile => async () => {
+            const parsedNaclFile = await parsedNaclFiles.get(naclFile)
+            return values.isDefined(parsedNaclFile)
+              ? getSourceMap(parsedNaclFile.filename)
+              : undefined
+          }),
+        CACHE_READ_CONCURRENCY)
+      ).filter(values.isDefined).reduce((acc, sourceMap) => {
+        acc.merge(sourceMap)
+        return acc
+      }, new SourceMap())
+
+      const getChangesWithSource = (detailedChanges: DetailedChange[], sourceMap: SourceMap):
+      DetailedChangeWithSource[] => getChangesToUpdate(detailedChanges, sourceMap)
+        .flatMap(change => getChangeLocations(change, sourceMap))
+
+      return _(getChangesWithSource(changes, await createSourceMap()))
         // Group changes file, we use lower case in order to support case insensitive file systems
         .groupBy(change => change.location.filename.toLowerCase())
         .entries()
-        .map(([lowerCaseFilename, fileChanges]) => async ():
-          Promise<ParsedNaclFile & NaclFile | undefined> => {
-          // Changes might have a different cased filename, we take the version that already exists
-          // or the first variation if this is a new file
-          const filename = (
-            allFileNames[lowerCaseFilename]
-            ?? fileChanges.map(change => change.location.filename).sort()[0]
-          )
-          try {
-            const naclFileData = await getNaclFileData(filename)
-            const buffer = await updateNaclFileData(naclFileData, fileChanges, functions)
-            const shouldNotParse = _.isEmpty(naclFileData)
-              && fileChanges.length === 1
-              && fileChanges[0].action === 'add'
-              && isElement(fileChanges[0].data.after)
-            const parsed = shouldNotParse
-              ? await createNaclFileFromChange(filename, fileChanges[0] as AdditionDiff<Element>,
-                buffer)
-              : await toParsedNaclFile(
-                { filename, buffer },
-                await parseNaclFile({ filename, buffer }, functions),
-              )
-            if (((await parsed.data.errors()) ?? []).length > 0) {
-              logNaclFileUpdateErrorContext(filename, fileChanges, naclFileData, buffer)
-            }
-            await removeDanglingStaticFiles(fileChanges)
-            return { ...parsed, buffer }
-          } catch (e) {
-            log.error('failed to update NaCl file %s with %o changes due to: %o',
-              filename, fileChanges, e)
-            return undefined
-          }
-        })
-        .value(),
-      DUMP_CONCURRENCY
-    )).filter(values.isDefined)
+        .value()
+    }
 
+    const allFileNames = _.keyBy(await parsedNaclFiles.list(), name => name.toLowerCase())
+    memoryUsage.log()
+    const updatedNaclFiles = await awu(await getChangesEntries())
+      .map(([lowerCaseFilename, fileChanges]) => {
+        // Changes might have a different cased filename, we take the version that already exists
+        // or the first variation if this is a new file
+        const filename = (
+          allFileNames[lowerCaseFilename]
+          ?? fileChanges.map(change => change.location.filename).sort()[0]
+        )
+        return toUpdatedNaclFile(
+          filename,
+          fileChanges,
+          functions,
+          naclFilesStore,
+          staticFilesSource
+        )
+      })
+      .filter(values.isDefined).toArray()
+
+    memoryUsage.log()
+    log.debug('testtttttttt')
     if (updatedNaclFiles.length > 0) {
       log.debug('going to update %d NaCl files', updatedNaclFiles.length)
       // The map is to avoid saving unnecessary fields in the nacl files
-      await setNaclFiles(
-        updatedNaclFiles.map(file => _.pick(file, ['buffer', 'filename']))
-      )
-      const res = await buildNaclFilesStateInner(updatedNaclFiles)
+      memoryUsage.log()
+      const res = await buildNaclFilesStateInner(updatedNaclFiles, false, true)
+      memoryUsage.log()
       state = Promise.resolve(res.state)
+      memoryUsage.log()
       res.changes.preChangeHash = preChangeHash
       res.changes.postChangeHash = await ((await state).parsedNaclFiles.getHash())
+      memoryUsage.log()
       return res.changes
     }
+    memoryUsage.log()
     return { changes: [],
       cacheValid: true,
       preChangeHash,
@@ -1007,7 +1044,7 @@ const buildNaclFilesSource = (
     ),
     updateNaclFiles,
     setNaclFiles: async naclFiles => {
-      await setNaclFiles(naclFiles)
+      await setNaclFiles(naclFiles, naclFilesStore)
       const res = await buildNaclFilesStateInner(
         await parseNaclFiles(naclFiles, functions)
       )

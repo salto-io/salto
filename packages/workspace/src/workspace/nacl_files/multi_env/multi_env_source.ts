@@ -35,6 +35,7 @@ import { Errors } from '../../errors'
 import { RemoteElementSource, ElementsSource } from '../../elements_source'
 import { serialize, deserializeSingleElement, deserializeMergeErrors } from '../../../serializer/elements'
 import { MissingStaticFile } from '../../static_files'
+import { memoryUsage } from '../../../memory_usage'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -345,6 +346,8 @@ const buildMultiEnvSource = (
     changes: DetailedChange[],
     mode: RoutingMode = 'default'
   ): Promise<EnvsChanges> => {
+    log.debug('starting updateNaclFiles')
+    memoryUsage.log()
     const routedChanges = await routeChanges(
       changes,
       env,
@@ -352,8 +355,11 @@ const buildMultiEnvSource = (
       envSources(),
       mode
     )
+    memoryUsage.log()
     const elementChanges = await applyRoutedChanges(routedChanges)
+    memoryUsage.log()
     const buildRes = await buildMultiEnvState({ envChanges: elementChanges })
+    memoryUsage.log()
     state = buildRes.state
     return buildRes.changes
   }

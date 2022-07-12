@@ -44,6 +44,7 @@ import { AdaptersConfigSource } from './adapters_config_source'
 import { updateReferenceIndexes } from './reference_indexes'
 import { updateChangedByIndex, Author, authorKeyToAuthor, authorToAuthorKey } from './changed_by_index'
 import { updateChangedAtIndex } from './changed_at_index'
+import { memoryUsage } from '../memory_usage'
 
 const log = logger(module)
 
@@ -670,10 +671,13 @@ export const loadWorkspace = async (
 
   const getWorkspaceState = async (): Promise<WorkspaceState> => {
     if (_.isUndefined(workspaceState)) {
+      memoryUsage.log()
       const workspaceChanges = await naclFilesSource.load({ ignoreFileChanges })
+      memoryUsage.log()
       workspaceState = buildWorkspaceState({
         workspaceChanges,
       })
+      memoryUsage.log()
     }
     return workspaceState
   }
@@ -681,7 +685,9 @@ export const loadWorkspace = async (
   const getLoadedNaclFilesSource = async (): Promise<MultiEnvSource> => {
     // We load the nacl file source, and make sure the state of the WS is also
     // updated. (Without this - the load changes will be lost)
+    memoryUsage.log()
     await getWorkspaceState()
+    memoryUsage.log()
     return naclFilesSource
   }
 
@@ -728,23 +734,32 @@ export const loadWorkspace = async (
       validate?: boolean
       stateOnly?: boolean
     }) : Promise<UpdateNaclFilesResult> => {
+    log.debug('starting updateNaclFiles')
+    memoryUsage.log()
     const { visible: visibleChanges, hidden: hiddenChanges } = await handleHiddenChanges(
       changes,
       state(),
       await (await getLoadedNaclFilesSource()).getElementsSource(currentEnv()),
     )
+    memoryUsage.log()
     const workspaceChanges = await ((await getLoadedNaclFilesSource())
       .updateNaclFiles(
         currentEnv(),
         stateOnly ? [] : visibleChanges,
         mode
       ))
+    memoryUsage.log()
     const currentStateHash = workspaceState ? await (await workspaceState)
       .mergeManager.getHash(STATE_SOURCE_PREFIX + currentEnv()) : undefined
+    memoryUsage.log()
     const loadedStateHash = await state(currentEnv()).getHash()
+    memoryUsage.log()
     await state(currentEnv()).calculateHash()
+    memoryUsage.log()
     const postChangeHash = await state(currentEnv()).getHash()
+    memoryUsage.log()
     const stateOnlyChanges = await getStateOnlyChanges(hiddenChanges)
+    memoryUsage.log()
     workspaceState = buildWorkspaceState({ workspaceChanges,
       stateOnlyChanges: { [currentEnv()]: {
         changes: stateOnlyChanges,
@@ -753,6 +768,7 @@ export const loadWorkspace = async (
         postChangeHash,
       } },
       validate })
+    memoryUsage.log()
     return {
       naclFilesChangesCount: Object.values(workspaceChanges)
         .map(changeSet => changeSet.changes)

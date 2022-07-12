@@ -26,6 +26,7 @@ import { State } from './state'
 import { createAddChange, createRemoveChange } from './nacl_files/multi_env/projections'
 import { ElementsSource } from './elements_source'
 import { splitElementByPath } from './path_index'
+import { memoryUsage } from '../memory_usage'
 
 const { pickAsync } = promises.object
 const { awu } = collections.asynciterable
@@ -537,14 +538,16 @@ const removeDuplicateChanges = (
   // this can happen if a field is both hidden and changed at the same time
   // this specific logic is needed to support cases in which we had multiple changes
   // with the same id (fragments addition)
+  memoryUsage.log()
   const origChangesById = _.groupBy(origChanges, change => change.id.getFullName())
+  memoryUsage.log()
   const additionalChangesById = _.groupBy(additionalChanges, change => change.id.getFullName())
-
+  memoryUsage.log()
   const changeById = {
     ...origChangesById,
     ...additionalChangesById,
   }
-
+  memoryUsage.log()
   // If we have a change to A.B and a change to A.B.C, the second change is redundant because
   // its value is included in the first one.
   const hasChangeOnParent = (id: ElemID): boolean => {
@@ -554,8 +557,10 @@ const removeDuplicateChanges = (
     const parent = id.createParentID()
     return changeById[parent.getFullName()] !== undefined || hasChangeOnParent(parent)
   }
-
-  return Object.values(changeById).flat().filter(change => !hasChangeOnParent(change.id))
+  memoryUsage.log()
+  const result = Object.values(changeById).flat().filter(change => !hasChangeOnParent(change.id))
+  memoryUsage.log()
+  return result
 }
 
 /**
@@ -568,11 +573,13 @@ const getHiddenChangeNaclSideEffects = async (
   state: State,
   visibleElementSource: ReadOnlyElementsSource,
 ): Promise<DetailedChange[]> => {
+  memoryUsage.log()
   const additionalChanges = [
     ...await getHiddenTypeChanges(changes, state),
     ...await getHiddenFieldAndAnnotationValueChanges(changes, state, visibleElementSource),
     ...await getInstanceTypeHiddenChanges(changes, state),
   ]
+  memoryUsage.log()
   return additionalChanges
 }
 
@@ -837,8 +844,10 @@ export const filterOutHiddenChanges = async (
 
     return { visible: change }
   }
-
-  return awu(changes).map(filterOutHidden).toArray()
+  memoryUsage.log()
+  const result = awu(changes).map(filterOutHidden).toArray()
+  memoryUsage.log()
+  return result
 }
 
 export const handleHiddenChanges = async (
@@ -851,16 +860,21 @@ export const handleHiddenChanges = async (
   // of the changes in order to prevent remove changes (which are always
   // sent to both the visible and hidden parts) from being applied to
   // the state as well.
+  memoryUsage.log()
   const additionalNaclChanges = (await filterOutHiddenChanges(
     await getHiddenChangeNaclSideEffects(changes, state, visibleElementSource),
     state
   )).map(change => change.visible).filter(values.isDefined)
+  memoryUsage.log()
   const filteredChanges = await filterOutHiddenChanges(changes, state)
-  return {
+  memoryUsage.log()
+  const result = {
     visible: removeDuplicateChanges(
       filteredChanges.map(change => change.visible).filter(values.isDefined),
       additionalNaclChanges
     ),
     hidden: filteredChanges.map(change => change.hidden).filter(values.isDefined),
   }
+  memoryUsage.log()
+  return result
 }

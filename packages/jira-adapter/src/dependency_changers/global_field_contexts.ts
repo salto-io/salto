@@ -29,7 +29,8 @@ export const globalFieldContextsDependencyChanger: DependencyChanger = async cha
     )
     .filter(({ change }) => getChangeData(change).elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
     .filter(({ change }) => isAdditionOrRemovalChange(change))
-    .filter(({ change }) => _.isEmpty(getChangeData(change).value.projectIds))
+    .filter(({ change }) => _.isEmpty(getChangeData(change).value.projectIds)
+      || _.isEmpty(getChangeData(change).value.issueTypeIds))
 
   const fieldToContexts = _.groupBy(
     globalContextChanges,

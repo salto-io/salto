@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import * as soap from 'soap'
 import { ElemID, InstanceElement, ListType, ObjectType } from '@salto-io/adapter-api'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import { ExistingFileCabinetInstanceDetails } from '../../src/client/suiteapp_client/types'
 import { ReadFileError } from '../../src/client/suiteapp_client/errors'
-import SoapClient from '../../src/client/suiteapp_client/soap_client/soap_client'
+import SoapClient, * as soapClientUtils from '../../src/client/suiteapp_client/soap_client/soap_client'
 import { InvalidSuiteAppCredentialsError } from '../../src/client/types'
 import { NETSUITE } from '../../src/constants'
 
@@ -31,7 +31,7 @@ describe('soap_client', () => {
   const getAllAsyncMock = jest.fn()
   const getAsyncMock = jest.fn()
   let wsdl: Record<string, unknown>
-  const createClientAsyncMock = jest.spyOn(soap, 'createClientAsync')
+  const createClientAsyncMock = jest.spyOn(soapClientUtils, 'createClientAsync')
   let client: SoapClient
 
   beforeEach(() => {
@@ -59,7 +59,7 @@ describe('soap_client', () => {
       getAllAsync: getAllAsyncMock,
       addSoapHeader: (fn: () => object) => fn(),
       wsdl,
-    } as unknown as soap.Client)
+    } as unknown as elementUtils.soap.Client)
 
     client = new SoapClient(
       {

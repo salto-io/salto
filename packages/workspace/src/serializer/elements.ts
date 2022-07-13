@@ -158,7 +158,7 @@ export const serialize = async <T = Element>(
     if (storeStaticFile !== undefined) {
       promises.push(storeStaticFile(e))
     }
-    return _.omit(saltoClassReplacer(e), 'content', 'internalContent')
+    return _.pick(saltoClassReplacer(e), SALTO_CLASS_FIELD, 'filepath', 'hash', 'encoding')
   }
   const referenceExpressionReplacer = (e: ReferenceExpression):
     ReferenceExpression & SerializedClass => {

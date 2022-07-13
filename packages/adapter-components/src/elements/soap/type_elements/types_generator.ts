@@ -48,6 +48,8 @@ type ExtractOptions = {
   camelCase?: boolean
 }
 
+export const { createClientAsync } = soap
+
 /**
  * Converts WSDL to object types.
  *
@@ -69,7 +71,7 @@ export const extractTypes = async (
   log.debug('Generating SOAP types')
 
   const { wsdl: wsdlObj } = typeof wsdl === 'string'
-    ? (await soap.createClientAsync(wsdl)) as unknown as { wsdl: soap.WSDL }
+    ? (await createClientAsync(wsdl)) as unknown as { wsdl: soap.WSDL }
     : { wsdl }
 
   const schemas = Object.values(wsdlObj.definitions.schemas)
@@ -93,3 +95,6 @@ export const extractTypes = async (
   log.debug('Finished generating SOAP types')
   return objectTypes
 }
+
+export type Client = soap.Client
+export type WSDL = soap.WSDL

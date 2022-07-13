@@ -13,19 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, toChange, getAllChangeData } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../../utils'
 import automationStructureFilter from '../../../src/filters/automation/automation_structure'
 import { DEFAULT_CONFIG } from '../../../src/config'
-import { AUTOMATION_TYPE, JIRA } from '../../../src/constants'
+import { createAutomationTypes } from '../../../src/filters/automation/types'
 
 
-describe('automationFetchFilter', () => {
-  let filter: filterUtils.FilterWith<'onFetch'>
+describe('automationStructureFilter', () => {
+  let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let type: ObjectType
   let instance: InstanceElement
+  let afterChangeInstance: InstanceElement
 
 
   beforeEach(async () => {
@@ -37,11 +38,9 @@ describe('automationFetchFilter', () => {
       config: DEFAULT_CONFIG,
       elementsSource: buildElementsSourceFromElements([]),
       fetchQuery: elementUtils.query.createMockQuery(),
-    }) as filterUtils.FilterWith<'onFetch'>
+    }) as typeof filter
 
-    type = new ObjectType({
-      elemID: new ElemID(JIRA, AUTOMATION_TYPE),
-    })
+    type = createAutomationTypes().automationType
 
     instance = new InstanceElement(
       'instance',
@@ -58,6 +57,21 @@ describe('automationFetchFilter', () => {
             component: 'ACTION',
             value: null,
             updated: 1234,
+          },
+          {
+            id: '3',
+            component: 'CONDITION',
+            value: 'priority > Medium',
+            updated: 1111,
+          },
+          {
+            id: '4',
+            component: 'CONDITION',
+            value: {
+              linkType: 'inward:10003',
+              value: '123',
+            },
+            updated: 1111,
           },
         ],
         projects: [
@@ -99,6 +113,52 @@ describe('automationFetchFilter', () => {
           projectTypeKey: 'key2',
         },
       ])
+    })
+
+    it('should change string value fields to rawValues', async () => {
+      await filter.onFetch([instance])
+      expect(instance.value.components[1].rawValue).toBeDefined()
+      expect(instance.value.components[1].value).toBeUndefined()
+    })
+
+    it('should should split linkType field', async () => {
+      await filter.onFetch([instance])
+      expect(instance.value.components[2].value.linkType).toEqual('10003')
+      expect(instance.value.components[2].value.linkTypeDirection).toEqual('inward')
+    })
+  })
+
+  describe('preDeploy & onDeploy ', () => {
+    it('should preDeploy and onDeploy as expected', async () => {
+      instance.value.components[2].value.linkType = '10003'
+      instance.value.components[2].value.linkTypeDirection = 'inward'
+      instance.value.components[1].rawValue = 'priority > Medium'
+      delete instance.value.components[1].value
+      afterChangeInstance = instance.clone()
+      afterChangeInstance.value.components[0].component = 'BRANCH'
+
+      const changes = [toChange({ before: instance, after: afterChangeInstance })]
+      await filter.preDeploy(changes)
+      const c = changes[0]
+      expect(getAllChangeData(c)[0].value.components[1].value).toBeDefined()
+      expect(getAllChangeData(c)[0].value.components[1].rawValue).toBeUndefined()
+      expect(getAllChangeData(c)[0].value.components[2].value.linkType).toBeDefined()
+      expect(getAllChangeData(c)[0].value.components[2].value.linkTypeDirection).toBeUndefined()
+      expect(getAllChangeData(c)[1].value.components[1].value).toBeDefined()
+      expect(getAllChangeData(c)[1].value.components[1].rawValue).toBeUndefined()
+      expect(getAllChangeData(c)[1].value.components[2].value.linkType).toBeDefined()
+      expect(getAllChangeData(c)[1].value.components[2].value.linkTypeDirection).toBeUndefined()
+
+      await filter.onDeploy(changes)
+      const d = changes[0]
+      expect(getAllChangeData(d)[0].value.components[1].value).toBeUndefined()
+      expect(getAllChangeData(d)[0].value.components[1].rawValue).toBeDefined()
+      expect(getAllChangeData(d)[0].value.components[2].value.linkType).toBeDefined()
+      expect(getAllChangeData(d)[0].value.components[2].value.linkTypeDirection).toBeDefined()
+      expect(getAllChangeData(d)[1].value.components[1].value).toBeUndefined()
+      expect(getAllChangeData(d)[1].value.components[1].rawValue).toBeDefined()
+      expect(getAllChangeData(d)[1].value.components[2].value.linkType).toBeDefined()
+      expect(getAllChangeData(d)[1].value.components[2].value.linkTypeDirection).toBeDefined()
     })
   })
 })

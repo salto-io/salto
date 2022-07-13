@@ -331,6 +331,81 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     serializationStrategy: 'name',
     target: { type: 'Group' },
   },
+  {
+    src: { field: 'boardId', parentTypes: ['AutomationComponentValue'] },
+    serializationStrategy: 'id',
+    target: { type: 'Board' },
+  },
+  {
+    src: { field: 'linkTypes', parentTypes: ['AutomationComponentValue'] },
+    serializationStrategy: 'name',
+    target: { type: 'IssueLinkType' },
+  },
+  {
+    src: { field: 'linkType', parentTypes: ['AutomationComponentValue'] },
+    serializationStrategy: 'id',
+    target: { type: 'IssueLinkType' },
+  },
+  {
+    src: { field: 'sourceProject', parentTypes: ['AutomationComponentValue'] },
+    serializationStrategy: 'id',
+    target: { type: 'Project' },
+  },
+  {
+    src: { field: 'targetProject', parentTypes: ['AutomationComponentValue'] },
+    serializationStrategy: 'id',
+    target: { type: 'Project' },
+  },
+  {
+    src: { field: 'groups', parentTypes: ['AutomationComponentValue'] },
+    serializationStrategy: 'name',
+    target: { type: 'Group' },
+  },
+  {
+    src: { field: 'value', parentTypes: ['AutomationField'] },
+    serializationStrategy: 'name',
+    target: { type: 'Field' },
+  },
+  {
+    src: { field: 'value', parentTypes: ['AutomationField'] },
+    serializationStrategy: 'id',
+    target: { type: 'Field' },
+  },
+  {
+    src: { field: 'value', parentTypes: ['AutomationStatus'] },
+    serializationStrategy: 'name',
+    target: { type: 'Status' },
+  },
+  {
+    src: { field: 'value', parentTypes: ['AutomationStatus'] },
+    serializationStrategy: 'id',
+    target: { type: 'Status' },
+  },
+  {
+    src: { field: 'value', parentTypes: ['AutomationEmailRecipent', 'AutomationConditionCriteria', 'AutomationGroup'] },
+    serializationStrategy: 'name',
+    target: { type: 'Group' },
+  },
+  {
+    src: { field: 'field', parentTypes: ['AutomationCondition'] },
+    serializationStrategy: 'id',
+    target: { type: 'Field' },
+  },
+  {
+    src: { field: 'type', parentTypes: ['AutomationSubtask'] },
+    serializationStrategy: 'id',
+    target: { type: 'IssueType' },
+  },
+  {
+    src: { field: 'value', parentTypes: [AUTOMATION_PROJECT_TYPE] },
+    serializationStrategy: 'id',
+    target: { type: 'Project' },
+  },
+  {
+    src: { field: 'value', parentTypes: ['AutomationRole'] },
+    serializationStrategy: 'name',
+    target: { type: 'ProjectRole' },
+  },
 ]
 
 const lookupNameFuncs: GetLookupNameFunc[] = [

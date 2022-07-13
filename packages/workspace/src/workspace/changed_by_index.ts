@@ -28,15 +28,14 @@ import {
   isModificationChange,
   isObjectType,
 } from '@salto-io/adapter-api'
+import { getAllElementsChanges } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections, values } from '@salto-io/lowerdash'
+import { values } from '@salto-io/lowerdash'
 import _, { isEmpty } from 'lodash'
 import { ElementsSource } from './elements_source'
 import { RemoteMap } from './remote_map'
 
 const { isDefined } = values
-
-const { awu } = collections.asynciterable
 
 const log = logger(module)
 export const CHANGED_BY_INDEX_VERSION = 2
@@ -69,15 +68,6 @@ export const authorToAuthorKey = (author: Author): string => {
   }
   return `${author.account}${CHANGED_BY_KEY_DELIMITER}${author.user}`
 }
-
-const getAllElementsChanges = async (
-  currentChanges: Change<Element>[],
-  elementsSource: ElementsSource
-): Promise<Change<Element>[]> =>
-  awu(await elementsSource.getAll())
-    .map(element => toChange({ after: element }))
-    .concat(currentChanges)
-    .toArray()
 
 const getChangeAuthors = (change: Change<Element>): string[] => {
   const element = getChangeData(change)

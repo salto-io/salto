@@ -13,15 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ElemID, getChangeData, isReferenceExpression, Element, isModificationChange, toChange, isObjectTypeChange, isRemovalOrModificationChange, isAdditionOrModificationChange, isTemplateExpression } from '@salto-io/adapter-api'
-import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { Change, ElemID, getChangeData, isReferenceExpression, Element, isModificationChange, isObjectTypeChange, isRemovalOrModificationChange, isAdditionOrModificationChange, isTemplateExpression } from '@salto-io/adapter-api'
+import { getAllElementsChanges, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { ElementsSource } from './elements_source'
 import { RemoteMap, RemoteMapEntry } from './remote_map'
-
-const { awu } = collections.asynciterable
 
 const log = logger(module)
 export const REFERENCE_INDEXES_VERSION = 2
@@ -219,14 +216,6 @@ const updateReferenceSourcesIndex = async (
 
   await updateUniqueIndex(index, updates)
 }
-
-const getAllElementsChanges = async (
-  currentChanges: Change<Element>[],
-  elementsSource: ElementsSource,
-): Promise<Change<Element>[]> => awu(await elementsSource.getAll())
-  .map(element => toChange({ after: element }))
-  .concat(currentChanges)
-  .toArray()
 
 export const updateReferenceIndexes = async (
   changes: Change<Element>[],

@@ -39,7 +39,7 @@ const { isDefined } = values
 const { awu } = collections.asynciterable
 
 const log = logger(module)
-export const CHANGED_AT_INDEX_VERSION = 2
+export const CHANGED_AT_INDEX_VERSION = 3
 const CHANGED_AT_INDEX_KEY = 'changed_at_index'
 
 const getAllElementsChanges = async (
@@ -51,29 +51,36 @@ const getAllElementsChanges = async (
     .concat(currentChanges)
     .toArray()
 
-const getChangedAtDates = (change: Change<Element>): string[] => {
-  const element = getChangeData(change)
-  const dates = []
-  if (isObjectType(element)) {
-    dates.push(...Object.values(element.fields)
-      .map(field => field.annotations[CORE_ANNOTATIONS.CHANGED_AT])
-      .filter(isDefined))
+const getChangedAtDates = (change: Change<Element>): Record<string, ElemID[]> => {
+  const changeElement = getChangeData(change)
+  const datesMap: Record<string, ElemID[]> = {}
+  const addElementToDatesMap = (element: Element): void => {
+    const date = element.annotations[CORE_ANNOTATIONS.CHANGED_AT]
+    if (isDefined(date)) {
+      if (!datesMap[date]) {
+        datesMap[date] = []
+      }
+      datesMap[date].push(element.elemID)
+    }
   }
-  if (element.annotations[CORE_ANNOTATIONS.CHANGED_AT]) {
-    dates.push(element.annotations[CORE_ANNOTATIONS.CHANGED_AT])
+  if (isObjectType(changeElement)) {
+    Object.values(changeElement.fields)
+      .forEach(addElementToDatesMap)
   }
-  return dates
+  addElementToDatesMap(changeElement)
+  return datesMap
 }
 
 const updateAdditionChange = (
   change: AdditionChange<Element>,
   datesMap: Record<string, Set<string>>,
 ): void => {
-  getChangedAtDates(change).forEach(modificationDate => {
-    if (!datesMap[modificationDate]) {
-      datesMap[modificationDate] = new Set()
+  Object.entries(getChangedAtDates(change)).forEach(entry => {
+    const [date, elemIds] = entry
+    if (!datesMap[date]) {
+      datesMap[date] = new Set()
     }
-    datesMap[modificationDate].add(change.data.after.elemID.getFullName())
+    elemIds.forEach(elemId => datesMap[date].add(elemId.getFullName()))
   })
 }
 
@@ -81,9 +88,10 @@ const updateRemovalChange = (
   change: RemovalChange<Element>,
   datesMap: Record<string, Set<string>>,
 ): void => {
-  getChangedAtDates(change).forEach(modificationDate => {
-    if (datesMap[modificationDate]) {
-      datesMap[modificationDate].delete(change.data.before.elemID.getFullName())
+  Object.entries(getChangedAtDates(change)).forEach(entry => {
+    const [date, elemIds] = entry
+    if (datesMap[date]) {
+      elemIds.forEach(elemId => datesMap[date].delete(elemId.getFullName()))
     }
   })
 }
@@ -122,9 +130,9 @@ const getUniqueDates = (changes: Change<Element>[]): Set<string> => {
   const dateSet = new Set<string>()
   changes.flatMap(change => (
     isModificationChange(change)
-      ? [...getChangedAtDates(toChange({ before: change.data.before })),
-        ...getChangedAtDates(toChange({ after: change.data.after }))]
-      : [...getChangedAtDates(change)])
+      ? [...Object.keys(getChangedAtDates(toChange({ before: change.data.before }))),
+        ...Object.keys(getChangedAtDates(toChange({ after: change.data.after })))]
+      : [...Object.keys(getChangedAtDates(change))])
     .forEach(date => dateSet.add(date)))
   return dateSet
 }

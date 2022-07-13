@@ -841,7 +841,7 @@ export const loadWorkspace = async (
 
   const errors = async (env?: string): Promise<Errors> => {
     const envToUse = env ?? currentEnv()
-    const currentState = await getWorkspaceState()
+    const currentWorkspaceState = await getWorkspaceState()
     const loadNaclFileSource = await getLoadedNaclFilesSource()
     // It is important to make sure these are obtain using Promise.all in order to allow
     // the SaaS UI to debounce the DB accesses.
@@ -849,8 +849,8 @@ export const loadWorkspace = async (
       : [Errors, Errors, ValidationError[], MergeError[]] = await Promise.all([
         loadNaclFileSource.getErrors(env ?? currentEnv()),
         adaptersConfig.getErrors(),
-        awu(currentState.states[envToUse].validationErrors.values()).flat().toArray(),
-        awu(currentState.states[envToUse].errors.values()).flat().toArray(),
+        awu(currentWorkspaceState.states[envToUse].validationErrors.values()).flat().toArray(),
+        awu(currentWorkspaceState.states[envToUse].errors.values()).flat().toArray(),
       ])
 
     _(validationErrors)
@@ -935,8 +935,8 @@ export const loadWorkspace = async (
   }
   const getAllChangedByAuthors = async (envName?: string): Promise<Author[]> => {
     const env = envName ?? currentEnv()
-    const currentState = await getWorkspaceState()
-    const keys = await awu(currentState.states[env].changedBy.keys()).toArray()
+    const currentWorkspaceState = await getWorkspaceState()
+    const keys = await awu(currentWorkspaceState.states[env].changedBy.keys()).toArray()
     return keys.map(authorKeyToAuthor)
   }
 
@@ -945,8 +945,10 @@ export const loadWorkspace = async (
     envName?: string,
   ): Promise<ElemID[]> => {
     const env = envName ?? currentEnv()
-    const currentState = await getWorkspaceState()
-    const result = await currentState.states[env].changedBy.getMany(authors.map(authorToAuthorKey))
+    const currentWorkspaceState = await getWorkspaceState()
+    const result = await currentWorkspaceState.states[env].changedBy.getMany(
+      authors.map(authorToAuthorKey)
+    )
     ?? []
     return result.filter(values.isDefined).flat()
   }
@@ -960,11 +962,11 @@ export const loadWorkspace = async (
       && (dateRange.end === undefined || dateToCheck <= dateRange.end)
     }
     const env = envName ?? currentEnv()
-    const currentState = await getWorkspaceState()
-    const relevantTimestamps = await awu(currentState.states[env].changedAt.keys())
+    const currentWorkspaceState = await getWorkspaceState()
+    const relevantTimestamps = await awu(currentWorkspaceState.states[env].changedAt.keys())
       .filter(isDateInRange)
       .toArray()
-    const result = await currentState.states[env].changedAt.getMany(relevantTimestamps)
+    const result = await currentWorkspaceState.states[env].changedAt.getMany(relevantTimestamps)
     return result.filter(values.isDefined).flat()
   }
 
@@ -973,8 +975,8 @@ export const loadWorkspace = async (
     envName?: string,
   ): Promise<string[]> => {
     const env = envName ?? currentEnv()
-    const currentState = await getWorkspaceState()
-    const result = await currentState.states[env].referencedStaticFiles.getMany(
+    const currentWorkspaceState = await getWorkspaceState()
+    const result = await currentWorkspaceState.states[env].referencedStaticFiles.getMany(
       elementIds.map(elemId => elemId.getFullName())
     )
     return result.filter(values.isDefined).flat()

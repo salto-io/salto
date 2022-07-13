@@ -341,7 +341,7 @@ export const getChangesToUpdate = (
   return groupAnnotationTypeChanges(_.concat(otherChanges, wrappedNestedAdditions), sourceMap)
 }
 
-export const getNestedStaticFiles = async (value: Value): Promise<StaticFile[]> => {
+export const getNestedStaticFiles = (value: Value): StaticFile[] => {
   if (isElement(value)) {
     const allStaticFiles = new Set<StaticFile>()
     const func: WalkOnFunc = ({ value: val }) => {
@@ -355,10 +355,10 @@ export const getNestedStaticFiles = async (value: Value): Promise<StaticFile[]> 
     return Array.from(allStaticFiles.values())
   }
   if (_.isArray(value)) {
-    return awu(value).flatMap(getNestedStaticFiles).toArray()
+    return value.flatMap(getNestedStaticFiles)
   }
   if (_.isPlainObject(value)) {
-    return awu(Object.values(value)).flatMap(getNestedStaticFiles).toArray()
+    return Object.values(value).flatMap(getNestedStaticFiles)
   }
   if (isStaticFile(value)) {
     return [value]

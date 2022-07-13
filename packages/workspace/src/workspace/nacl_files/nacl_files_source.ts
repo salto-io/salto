@@ -765,7 +765,7 @@ const buildNaclFilesSource = (
     // then one value in the nacls. A ticket was open to fix that (SALTO-954)
 
     const removeDanglingStaticFiles = async (fileChanges: DetailedChange[]): Promise<void> => {
-      await awu(fileChanges).filter(change => change.action === 'remove')
+      fileChanges.filter(change => change.action === 'remove')
         .map(getChangeData)
         .map(getNestedStaticFiles)
         .flat()

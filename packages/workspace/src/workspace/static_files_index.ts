@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import { Change, getChangeData, Element, isAdditionOrModificationChange, isRemovalChange } from '@salto-io/adapter-api'
-import { getAllElementsChanges } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import _, { isEmpty } from 'lodash'
 import { ElementsSource } from './elements_source'
+import { getAllElementsChanges } from './index_utils'
 import { getNestedStaticFiles } from './nacl_files'
 import { RemoteMap } from './remote_map'
 

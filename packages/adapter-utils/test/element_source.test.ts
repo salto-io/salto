@@ -14,34 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, ObjectType, ReadOnlyElementsSource, toChange } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { buildElementsSourceFromElements, getAllElementsChanges } from '../src/element_source'
+import { buildElementsSourceFromElements } from '../src/element_source'
 
 const { toArrayAsync } = collections.asynciterable
-
-describe('getAllElementsChanges', () => {
-  const firstObject = new ObjectType({ elemID: new ElemID('adapter', 'type1') })
-  const secondObject = new ObjectType({ elemID: new ElemID('adapter', 'type2') })
-  const thirdObject = new ObjectType({ elemID: new ElemID('adapter', 'type3') })
-  const elements = [
-    firstObject,
-    secondObject,
-  ]
-  const elementsSource = buildElementsSourceFromElements(elements)
-  it('should return all elements', async () => {
-    const result = await getAllElementsChanges([], elementsSource)
-    expect(result).toEqual([toChange({ after: firstObject }), toChange({ after: secondObject })])
-  })
-  it('should merge current changes with all other element changes', async () => {
-    const result = await getAllElementsChanges([toChange({ after: thirdObject })], elementsSource)
-    expect(result).toEqual([
-      toChange({ after: firstObject }),
-      toChange({ after: secondObject }),
-      toChange({ after: thirdObject }),
-    ])
-  })
-})
 
 describe('buildElementsSourceFromElements', () => {
   describe('when built from elements', () => {

@@ -28,11 +28,11 @@ import {
   isModificationChange,
   isObjectType,
 } from '@salto-io/adapter-api'
-import { getAllElementsChanges } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import _, { isEmpty } from 'lodash'
 import { ElementsSource } from './elements_source'
+import { getAllElementsChanges } from './index_utils'
 import { RemoteMap } from './remote_map'
 
 const { isDefined } = values

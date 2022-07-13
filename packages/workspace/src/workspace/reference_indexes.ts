@@ -14,10 +14,11 @@
 * limitations under the License.
 */
 import { Change, ElemID, getChangeData, isReferenceExpression, Element, isModificationChange, isObjectTypeChange, isRemovalOrModificationChange, isAdditionOrModificationChange, isTemplateExpression } from '@salto-io/adapter-api'
-import { getAllElementsChanges, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { ElementsSource } from './elements_source'
+import { getAllElementsChanges } from './index_utils'
 import { RemoteMap, RemoteMapEntry } from './remote_map'
 
 const log = logger(module)

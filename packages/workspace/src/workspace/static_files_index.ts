@@ -22,7 +22,7 @@ import { getNestedStaticFiles } from './nacl_files'
 import { RemoteMap } from './remote_map'
 
 const log = logger(module)
-export const STATIC_FILES_INDEX_VERSION = 2
+export const STATIC_FILES_INDEX_VERSION = 1
 const STATIC_FILES_INDEX_KEY = 'static_files_index'
 
 const updateChanges = async (

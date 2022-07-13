@@ -16,7 +16,6 @@
 import { Element, isObjectType, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import _ from 'lodash'
 import { FilterCreator, FilterResult } from '../filter'
 import { createMetadataTypeElements, apiName } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
@@ -82,13 +81,14 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     )
 
     // Create settings types
-    const knownTypes = new Map()
+    const knownTypes: Map<string, TypeElement> = new Map()
+    objectTypes.forEach(e => knownTypes.set(e.elemID.typeName, e))
+
     const settingsTypes = (await Promise.all(
       settingsTypeInfos
         .map(info => getSettingsTypeName(info.fullName))
         .map(typeName => createSettingsType(client, typeName, knownTypes))
     )).flat()
-    _.pullAllBy(settingsTypes, objectTypes, e => e.elemID.getFullName())
     elements.push(...settingsTypes)
 
     // Create settings instances

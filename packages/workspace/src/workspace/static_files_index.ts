@@ -13,27 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, getChangeData, Element, toChange, isAdditionOrModificationChange, isRemovalChange } from '@salto-io/adapter-api'
+import { Change, getChangeData, Element, isAdditionOrModificationChange, isRemovalChange } from '@salto-io/adapter-api'
+import { getAllElementsChanges } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
 import _, { isEmpty } from 'lodash'
 import { ElementsSource } from './elements_source'
 import { getNestedStaticFiles } from './nacl_files'
 import { RemoteMap } from './remote_map'
 
-const { awu } = collections.asynciterable
 const log = logger(module)
-export const STATIC_FILES_INDEX_VERSION = 1
+export const STATIC_FILES_INDEX_VERSION = 2
 const STATIC_FILES_INDEX_KEY = 'static_files_index'
-
-const getAllElementsChanges = async (
-  currentChanges: Change<Element>[],
-  elementsSource: ElementsSource
-): Promise<Change<Element>[]> =>
-  awu(await elementsSource.getAll())
-    .map(element => toChange({ after: element }))
-    .concat(currentChanges)
-    .toArray()
 
 const updateChanges = async (
   changes: Change<Element>[],

@@ -13,9 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ReadOnlyElementsSource, Element, ElemID } from '@salto-io/adapter-api'
+import { ReadOnlyElementsSource, Element, ElemID, Change, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { collections } from '@salto-io/lowerdash'
 import { resolveTypeShallow } from './utils'
+
+const { awu } = collections.asynciterable
 
 export const buildElementsSourceFromElements = (
   elements: ReadonlyArray<Element>,
@@ -64,3 +67,12 @@ export const buildElementsSourceFromElements = (
   }
   return self
 }
+
+export const getAllElementsChanges = async (
+  currentChanges: Change<Element>[],
+  elementsSource: ReadOnlyElementsSource
+): Promise<Change<Element>[]> =>
+  awu(await elementsSource.getAll())
+    .map(element => toChange({ after: element }))
+    .concat(currentChanges)
+    .toArray()

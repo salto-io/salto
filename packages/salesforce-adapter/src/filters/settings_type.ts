@@ -23,7 +23,6 @@ import { SETTINGS_METADATA_TYPE } from '../constants'
 import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
 
 const { awu } = collections.asynciterable
-
 const log = logger(module)
 
 // This method receiving settings type name and call to describeMetadataType
@@ -82,7 +81,8 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
 
     // Create settings types
     const knownTypes: Map<string, TypeElement> = new Map()
-    objectTypes.forEach(e => knownTypes.set(e.elemID.typeName, e))
+    await awu(objectTypes)
+      .forEach(async e => knownTypes.set(await apiName(e), e))
 
     const settingsTypes = (await Promise.all(
       settingsTypeInfos

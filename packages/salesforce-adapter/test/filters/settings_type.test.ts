@@ -23,6 +23,7 @@ import * as constants from '../../src/constants'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { mockFileProperties, mockDescribeValueResult, mockValueTypeField } from '../connection'
 import { defaultFilterContext } from '../utils'
+import { API_NAME } from '../../src/constants'
 
 
 describe('Test Settings Type', () => {
@@ -123,6 +124,9 @@ describe('Test Settings Type', () => {
     it('should not add existing object types', async () => {
       const macroSettingsType = new ObjectType({
         elemID: new ElemID(constants.SALESFORCE, MACRO_SETTINGS),
+        annotations: {
+          [API_NAME]: MACRO_SETTINGS,
+        },
       })
       testElements.push(macroSettingsType)
       await filter.onFetch(testElements)

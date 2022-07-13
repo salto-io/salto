@@ -106,7 +106,6 @@ const consolidateLinkTypeFields = async (instance: InstanceElement): Promise<voi
       if (_.isPlainObject(value) && path?.name === 'value'
       && value.linkType !== undefined && value.linkTypeDirection !== undefined) {
         value.linkType = value.linkTypeDirection.concat(':', value.linkType)
-        // maybe change to undefined
         delete value.linkTypeDirection
       }
       return value

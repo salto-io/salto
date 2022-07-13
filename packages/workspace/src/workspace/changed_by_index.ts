@@ -224,6 +224,7 @@ export const updateChangedByIndex = async (
         log.info('changed by index map is out of date, re-indexing')
       }
       if (!isCacheValid) {
+        // When cache is invalid, changes will include all of the elements in the workspace.
         log.info('cache is invalid, re-indexing changed by index')
       }
       await Promise.all([

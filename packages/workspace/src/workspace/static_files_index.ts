@@ -67,6 +67,7 @@ export const updateReferencedStaticFilesIndex = async (
       log.info('static files index is out of date, re-indexing')
     }
     if (!isCacheValid) {
+      // When cache is invalid, changes will include all of the elements in the workspace.
       log.info('cache is invalid, re-indexing static files index')
     }
     await Promise.all([

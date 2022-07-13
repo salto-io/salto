@@ -235,6 +235,7 @@ export const updateReferenceIndexes = async (
       log.info('references indexes maps are out of date, re-indexing')
     }
     if (!isCacheValid) {
+      // When cache is invalid, changes will include all of the elements in the workspace.
       log.info('cache is invalid, re-indexing references indexes')
     }
     await Promise.all([

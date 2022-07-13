@@ -57,7 +57,7 @@ export const buildInMemState = (
   }
 
   const deleteFromFilesSource = async (elements: Element[]): Promise<void> => {
-    const files = await getNestedStaticFiles(elements)
+    const files = getNestedStaticFiles(elements)
     await Promise.all(files.map(async file => (await stateData()).staticFilesSource.delete(file)))
   }
 

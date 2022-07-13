@@ -815,7 +815,8 @@ describe('adapter', () => {
           changes: [
             toChange({ after: new InstanceElement('inst', groupType) }),
             toChange({ before: new InstanceElement('inst2', groupType) }),
-            toChange({ after: new InstanceElement('inst3', brandType, { ref }) }),
+            // explicitly state key so that it appears in the instance's generated type
+            toChange({ after: new InstanceElement('inst3', brandType, { ref, key: undefined }) }),
             toChange({ after: new InstanceElement('inst4', anotherType) }),
             modificationChange,
           ],

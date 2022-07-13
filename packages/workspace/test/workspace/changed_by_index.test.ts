@@ -40,6 +40,8 @@ describe('changed by index', () => {
   let knownUserInstance: InstanceElement
   let unKnownUserInstance: InstanceElement
   let knownUserSecondInstance: InstanceElement
+  const objectKnownFieldElementId = new ElemID('test', 'object', 'field', 'known')
+  const objectUnknownFieldElementId = new ElemID('test', 'object', 'field', 'unknown')
 
   beforeEach(() => {
     jest.resetAllMocks()
@@ -54,10 +56,14 @@ describe('changed by index', () => {
         [CORE_ANNOTATIONS.CHANGED_BY]: 'user two',
       },
       fields: {
-        field: {
+        known: {
           annotations: {
             [CORE_ANNOTATIONS.CHANGED_BY]: 'user three',
           },
+          refType: BuiltinTypes.STRING,
+        },
+        unknown: {
+          annotations: {},
           refType: BuiltinTypes.STRING,
         },
       },
@@ -107,7 +113,8 @@ describe('changed by index', () => {
       expect(changedByIndex.getMany).toHaveBeenCalledWith(['test@@user one', 'Unknown', 'test@@user three', 'test@@user two'])
       expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user one', value: expect.arrayContaining([knownUserInstance.elemID, knownUserSecondInstance.elemID]) }]))
       expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user two', value: [object.elemID] }]))
-      expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user three', value: [object.elemID] }]))
+      expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user three', value: [objectKnownFieldElementId] }]))
+      expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'Unknown', value: [objectUnknownFieldElementId] }]))
     })
   })
 
@@ -131,9 +138,9 @@ describe('changed by index', () => {
     it('should add the new instances changed by values to index', () => {
       expect(changedByIndex.getMany).toHaveBeenCalledWith(['test@@user one', 'Unknown', 'test@@user three', 'test@@user two'])
       expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user one', value: [knownUserInstance.elemID, knownUserSecondInstance.elemID] }]))
-      expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'Unknown', value: [unKnownUserInstance.elemID] }]))
+      expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'Unknown', value: [unKnownUserInstance.elemID, objectUnknownFieldElementId] }]))
       expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user two', value: [object.elemID] }]))
-      expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user three', value: [object.elemID] }]))
+      expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user three', value: [objectKnownFieldElementId] }]))
     })
   })
   describe('when elements were modified', () => {
@@ -263,9 +270,9 @@ describe('changed by index', () => {
         expect(changedByIndex.clear).toHaveBeenCalled()
         expect(changedByIndex.getMany).toHaveBeenCalledWith(['test@@user one', 'Unknown', 'test@@user three', 'test@@user two'])
         expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user one', value: [knownUserInstance.elemID] }]))
-        expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'Unknown', value: [unKnownUserInstance.elemID] }]))
+        expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'Unknown', value: [unKnownUserInstance.elemID, objectUnknownFieldElementId] }]))
         expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user two', value: [object.elemID] }]))
-        expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user three', value: [object.elemID] }]))
+        expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user three', value: [objectKnownFieldElementId] }]))
       })
     })
 
@@ -285,11 +292,11 @@ describe('changed by index', () => {
       })
       it('should update changed by index using the element source', () => {
         expect(changedByIndex.clear).toHaveBeenCalled()
-        expect(changedByIndex.getMany).toHaveBeenCalledWith(['test@@user three', 'test@@user two', 'test@@user one', 'Unknown'])
+        expect(changedByIndex.getMany).toHaveBeenCalledWith(['test@@user three', 'Unknown', 'test@@user two', 'test@@user one'])
         expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user one', value: [knownUserInstance.elemID] }]))
-        expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'Unknown', value: [unKnownUserInstance.elemID] }]))
+        expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'Unknown', value: [objectUnknownFieldElementId, unKnownUserInstance.elemID] }]))
         expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user two', value: [object.elemID] }]))
-        expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user three', value: [object.elemID] }]))
+        expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user three', value: [objectKnownFieldElementId] }]))
       })
     })
   })

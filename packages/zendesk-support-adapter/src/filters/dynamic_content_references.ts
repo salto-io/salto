@@ -14,66 +14,127 @@
 * limitations under the License.
 */
 import {
-  Element, InstanceElement, isInstanceElement, ReferenceExpression,
+  Change,
+  Element, getChangeData, InstanceElement, isInstanceElement, isReferenceExpression,
+  isTemplateExpression, ReferenceExpression, TemplateExpression, TemplatePart,
 } from '@salto-io/adapter-api'
-import { extendGeneratedDependencies, FlatDetailedDependency, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
-import { strings, values } from '@salto-io/lowerdash'
+import { transformValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from './dynamic_content'
 
-const PLACEHOLDER_REGEX = /{{.+?}}/g
+const { awu } = collections.asynciterable
+const PLACEHOLDER_REGEX = /({{.+?}})/g
+const INNER_PLACEHOLDER_REGEX = /{{(.+?)}}/g
 const log = logger(module)
 
-const extractPlaceholders = (value: string): string[] =>
-  _.uniq(Array.from(strings.matchAll(value, PLACEHOLDER_REGEX)).map(match => match[0]))
-
-const getDynamicContentDependencies = (
+const transformDynamicContentDependencies = async (
   instance: InstanceElement,
   placeholderToItem: Record<string, InstanceElement>
-): FlatDetailedDependency[] => {
-  const dependencies: FlatDetailedDependency[] = []
-  walkOnElement({
-    element: instance,
-    func: ({ value, path }) => {
-      if (path.name.startsWith('raw_') && typeof value === 'string') {
-        dependencies.push(
-          ...extractPlaceholders(value)
-            .map(placeholder => placeholderToItem[placeholder])
-            .filter(values.isDefined)
-            .map(itemInstance => ({
-              reference: new ReferenceExpression(itemInstance.elemID, itemInstance),
-              location: new ReferenceExpression(path, value),
-            }))
-        )
+): Promise<void> => {
+  const partToTemplate = (part: string): TemplatePart[] => {
+    const placeholder = part.match(INNER_PLACEHOLDER_REGEX)
+    if (!placeholder) {
+      return [part]
+    }
+    const itemInstance = placeholderToItem[placeholder[0]]
+    if (!itemInstance) {
+      return [part]
+    }
+    return ['{{', new ReferenceExpression(itemInstance.elemID, itemInstance), '}}']
+  }
+  instance.value = await transformValues({
+    values: instance.value,
+    type: await instance.getType(),
+    pathID: instance.elemID,
+    transformFunc: ({ value, path }) => {
+      if (path && path.name.startsWith('raw_') && _.isString(value)) {
+        const templateParts: TemplatePart[] = value.split(PLACEHOLDER_REGEX)
+          .filter(e => !_.isEmpty(e))
+          .flatMap(partToTemplate)
+        if (templateParts.every(part => _.isString(part))) {
+          return templateParts.join('')
+        }
+        return new TemplateExpression({ parts: templateParts })
       }
-
-      return WALK_NEXT_STEP.RECURSE
+      return value
     },
-  })
+  }) ?? instance.value
+}
 
-  return dependencies
+const templatePartToApiValue = (part: TemplatePart): string => {
+  // remove brackets because they're included in placeholder
+  if (_.isString(part) && ['{{', '}}'].includes(part)) {
+    return ''
+  }
+  if (isReferenceExpression(part)) {
+    if (!isInstanceElement(part.value)) {
+      return part.value
+    }
+    return part.value.value.placeholder ?? part
+  }
+  return part
+}
+
+const returnDynamicContentsToApiValue = async (
+  instance: InstanceElement,
+  mapping: Record<string, TemplateExpression>,
+): Promise<void> => {
+  instance.value = await transformValues({
+    values: instance.value,
+    type: await instance.getType(),
+    pathID: instance.elemID,
+    transformFunc: ({ value, path }) => {
+      if (path && path.name.startsWith('raw_') && isTemplateExpression(value)) {
+        const transformedValue = value.parts.map(templatePartToApiValue).join('')
+        mapping[transformedValue] = value
+        return transformedValue
+      }
+      return value
+    },
+  }) ?? instance.value
 }
 
 /**
  * Add dependencies from elements to dynamic content items in
  * the _generated_ dependencies annotation
  */
-const filterCreator: FilterCreator = () => ({
-  onFetch: async (elements: Element[]): Promise<void> => log.time(async () => {
-    const instances = elements.filter(isInstanceElement)
+const filterCreator: FilterCreator = () => {
+  const templateMapping: Record<string, TemplateExpression> = {}
+  return ({
+    onFetch: async (elements: Element[]): Promise<void> => log.time(async () => {
+      const instances = elements.filter(isInstanceElement)
 
-    const placeholderToItem = _(instances)
-      .filter(instance => instance.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME)
-      .keyBy(instance => instance.value.placeholder)
-      .value()
+      const placeholderToItem = _(instances)
+        .filter(instance => instance.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME)
+        .keyBy(instance => instance.value.placeholder)
+        .value()
 
-    instances.forEach(instance => {
-      const dependencies = getDynamicContentDependencies(instance, placeholderToItem)
-      extendGeneratedDependencies(instance, dependencies)
-    })
-  }, 'Dynamic content references filter'),
-})
+      await Promise.all(instances.map(instance =>
+        transformDynamicContentDependencies(instance, placeholderToItem)))
+    }, 'Dynamic content references filter'),
+    preDeploy: (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () => {
+      await Promise.all(changes.map(getChangeData).map(instance =>
+        returnDynamicContentsToApiValue(instance, templateMapping)))
+    }, 'Dynamic content references filter'),
+    onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () =>
+      awu(changes.map(getChangeData)).forEach(async instance => {
+        instance.value = await transformValues({
+          values: instance.value,
+          type: await instance.getType(),
+          pathID: instance.elemID,
+          transformFunc: ({ value, path }) => {
+            if (path && path.name.startsWith('raw_') && _.isString(value)
+              && templateMapping[value]) {
+              return templateMapping[value]
+            }
+            return value
+          },
+        }) ?? instance.value
+      }), 'Dynamic content references filter'),
+  })
+}
 
 export default filterCreator

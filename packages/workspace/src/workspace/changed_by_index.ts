@@ -39,7 +39,7 @@ const { isDefined } = values
 const { awu } = collections.asynciterable
 
 const log = logger(module)
-export const CHANGED_BY_INDEX_VERSION = 2
+export const CHANGED_BY_INDEX_VERSION = 3
 const CHANGED_BY_INDEX_KEY = 'changed_by_index'
 const UNKNOWN_USER_NAME = 'Unknown'
 const CHANGED_BY_KEY_DELIMITER = '@@'
@@ -70,6 +70,9 @@ export const authorToAuthorKey = (author: Author): string => {
   return `${author.account}${CHANGED_BY_KEY_DELIMITER}${author.user}`
 }
 
+const elementToAuthorKey = (element: Element): string =>
+  `${element.elemID.adapter}${CHANGED_BY_KEY_DELIMITER}${element.annotations[CORE_ANNOTATIONS.CHANGED_BY]}`
+
 const getAllElementsChanges = async (
   currentChanges: Change<Element>[],
   elementsSource: ElementsSource
@@ -79,24 +82,23 @@ const getAllElementsChanges = async (
     .concat(currentChanges)
     .toArray()
 
-const getChangeAuthors = (change: Change<Element>): string[] => {
-  const element = getChangeData(change)
-  const authors = []
-  if (isObjectType(element)) {
-    Object.values(element.fields).forEach(field => {
-      if (field.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
-        authors.push(`${element.elemID.adapter}${CHANGED_BY_KEY_DELIMITER}${
-          field.annotations[CORE_ANNOTATIONS.CHANGED_BY]
-        }`)
-      }
-    })
+const getChangeAuthors = (change: Change<Element>): Record<string, ElemID[]> => {
+  const changeElement = getChangeData(change)
+  const authors: Record<string, ElemID[]> = {}
+  const addElementToMap = (element: Element): void => {
+    const authorKey = element.annotations[CORE_ANNOTATIONS.CHANGED_BY]
+      ? elementToAuthorKey(element)
+      : UNKNOWN_USER_NAME
+    if (!authors[authorKey]) {
+      authors[authorKey] = []
+    }
+    authors[authorKey].push(element.elemID)
   }
-  if (element.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
-    authors.push(`${element.elemID.adapter}${CHANGED_BY_KEY_DELIMITER}${
-      element.annotations[CORE_ANNOTATIONS.CHANGED_BY]
-    }`)
+  if (isObjectType(changeElement)) {
+    Object.values(changeElement.fields).forEach(addElementToMap)
   }
-  return authors.length > 0 ? authors : [UNKNOWN_USER_NAME]
+  addElementToMap(changeElement)
+  return authors
 }
 
 const updateAdditionChange = (
@@ -104,11 +106,14 @@ const updateAdditionChange = (
   authorMap: Record<string, Set<string>>,
 ): void => {
   const authors = getChangeAuthors(change)
-  authors.forEach(author => {
+  Object.entries(authors).forEach(entry => {
+    const [author, elements] = entry
     if (!authorMap[author]) {
       authorMap[author] = new Set()
     }
-    authorMap[author].add(change.data.after.elemID.getFullName())
+    elements.forEach(element => {
+      authorMap[author].add(element.getFullName())
+    })
   })
 }
 
@@ -117,9 +122,12 @@ const updateRemovalChange = (
   authorMap: Record<string, Set<string>>,
 ): void => {
   const authors = getChangeAuthors(change)
-  authors.forEach(author => {
+  Object.entries(authors).forEach(entry => {
+    const [author, elements] = entry
     if (authorMap[author]) {
-      authorMap[author].delete(change.data.before.elemID.getFullName())
+      elements.forEach(element => {
+        authorMap[author].delete(element.getFullName())
+      })
     }
   })
 }
@@ -160,13 +168,13 @@ const getUniqueAuthors = (changes: Change<Element>[]): Set<string> => {
     if (isModificationChange(change)) {
       if (change.data.after.annotations[CORE_ANNOTATIONS.CHANGED_BY]
           !== change.data.before.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
-        getChangeAuthors(toChange({ before: change.data.before }))
+        Object.keys(getChangeAuthors(toChange({ before: change.data.before })))
           .forEach(author => authorSet.add(author))
-        getChangeAuthors(toChange({ after: change.data.after }))
+        Object.keys(getChangeAuthors(toChange({ after: change.data.after })))
           .forEach(author => authorSet.add(author))
       }
     } else {
-      getChangeAuthors(change).forEach(author => authorSet.add(author))
+      Object.keys(getChangeAuthors(change)).forEach(author => authorSet.add(author))
     }
   })
   return authorSet

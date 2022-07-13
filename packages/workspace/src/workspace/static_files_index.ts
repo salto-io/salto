@@ -13,12 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, getChangeData, Element, toChange, isAdditionOrModificationChange, isRemovalChange, isStaticFile } from '@salto-io/adapter-api'
-import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { Change, getChangeData, Element, toChange, isAdditionOrModificationChange, isRemovalChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _, { isEmpty } from 'lodash'
 import { ElementsSource } from './elements_source'
+import { getNestedStaticFiles } from './nacl_files'
 import { RemoteMap } from './remote_map'
 
 const { awu } = collections.asynciterable
@@ -35,20 +35,6 @@ const getAllElementsChanges = async (
     .concat(currentChanges)
     .toArray()
 
-const getStaticFilesPaths = (element: Element): string[] => {
-  const staticFilesPaths = new Set<string>()
-  walkOnElement({
-    element,
-    func: ({ value }) => {
-      if (isStaticFile(value)) {
-        staticFilesPaths.add(value.filepath)
-      }
-      return WALK_NEXT_STEP.RECURSE
-    },
-  })
-  return Array.from(staticFilesPaths)
-}
-
 const updateChanges = async (
   changes: Change<Element>[],
   index: RemoteMap<string[]>
@@ -57,7 +43,10 @@ const updateChanges = async (
     changes
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
-      .map(element => [element.elemID.getFullName(), getStaticFilesPaths(element)])
+      .map(element => [
+        element.elemID.getFullName(),
+        getNestedStaticFiles(element).map(staticFile => staticFile.filepath),
+      ])
   )
   const [toBeRemoved, toBeSet] = _.partition(
     Object.keys(staticFilesMap),

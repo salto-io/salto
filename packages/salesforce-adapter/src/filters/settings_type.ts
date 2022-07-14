@@ -66,7 +66,6 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
    * @param elements
    */
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
-    const objectTypes = elements.filter(isObjectType)
     // Fetch list of all settings types
     const {
       elements: settingsList, configChanges: listObjectsConfigChanges,
@@ -81,6 +80,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
 
     // Create settings types
     const knownTypes: Map<string, TypeElement> = new Map()
+    const objectTypes = elements.filter(isObjectType)
     await awu(objectTypes)
       .forEach(async e => knownTypes.set(await apiName(e), e))
 

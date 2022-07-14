@@ -17,6 +17,7 @@ import { ObjectType, InstanceElement, ElemID, toChange, ReferenceExpression } fr
 import { collections } from '@salto-io/lowerdash'
 import { removalsDependencyChanger } from '../../src/dependency_changers/removals'
 import { JIRA } from '../../src/constants'
+import { FIELD_CONTEXT_TYPE_NAME } from '../../src/filters/fields/constants'
 
 describe('removalsDependencyChanger', () => {
   let type: ObjectType
@@ -59,5 +60,41 @@ describe('removalsDependencyChanger', () => {
     expect(dependencyChanges[0].action).toEqual('add')
     expect(dependencyChanges[0].dependency.source).toEqual(0)
     expect(dependencyChanges[0].dependency.target).toEqual(1)
+  })
+
+  it('should not add dependency if type is in ignored types', async () => {
+    type = new ObjectType({
+      elemID: new ElemID(JIRA, FIELD_CONTEXT_TYPE_NAME),
+    })
+
+    const removedInstance = new InstanceElement(
+      'inst',
+      type,
+      {},
+    )
+
+    const modifiedInstance = new InstanceElement(
+      'inst2',
+      type,
+      {
+        ref: new ReferenceExpression(removedInstance.elemID, removedInstance),
+      },
+    )
+
+    const addedInstance = new InstanceElement(
+      'inst3',
+      type,
+      {}
+    )
+
+    const inputChanges = new Map([
+      [0, toChange({ before: removedInstance })],
+      [1, toChange({ before: modifiedInstance, after: modifiedInstance })],
+      [2, toChange({ after: addedInstance })],
+    ])
+    const inputDeps = new Map<collections.set.SetId, Set<collections.set.SetId>>([])
+
+    const dependencyChanges = [...await removalsDependencyChanger(inputChanges, inputDeps)]
+    expect(dependencyChanges).toHaveLength(0)
   })
 })

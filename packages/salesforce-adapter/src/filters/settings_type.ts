@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ObjectType, TypeElement } from '@salto-io/adapter-api'
+import { Element, isObjectType, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator, FilterResult } from '../filter'
@@ -23,7 +23,6 @@ import { SETTINGS_METADATA_TYPE } from '../constants'
 import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
 
 const { awu } = collections.asynciterable
-
 const log = logger(module)
 
 // This method receiving settings type name and call to describeMetadataType
@@ -80,7 +79,11 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     )
 
     // Create settings types
-    const knownTypes = new Map()
+    const knownTypes: Map<string, TypeElement> = new Map()
+    const objectTypes = elements.filter(isObjectType)
+    await awu(objectTypes)
+      .forEach(async e => knownTypes.set(await apiName(e), e))
+
     const settingsTypes = (await Promise.all(
       settingsTypeInfos
         .map(info => getSettingsTypeName(info.fullName))

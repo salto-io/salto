@@ -22,7 +22,6 @@ import {
   isInstanceElement,
   ObjectType,
 } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/split_custom_labels'
 import mockClient from '../client'
 import { defaultFilterContext } from '../utils'
@@ -110,25 +109,33 @@ describe('Test split custom labels filter', () => {
         .not.toSatisfyAny(e => e.elemID.typeName === CUSTOM_LABELS_METADATA_TYPE)
     })
   })
-  describe('preDeploy', () => {
+  describe('deploy', () => {
     const CUSTOM_LABEL_NAME = 'TestCustomLabel'
     const OTHER_CHANGE_NAME = 'OtherChange'
+    const OTHER_CHANGE_TYPE = 'OtherChangeType'
 
     let customLabelChange: Change
     let otherChange: Change
     let afterCustomLabelInstance: InstanceElement
 
-    let filter: () => FilterWith<'preDeploy'>
+    let filter: FilterWith<'preDeploy' | 'onDeploy'>
+
+    let preDeployChanges: Change[]
 
 
     const runPreDeploy = async (...changes: Change[]): Promise<Change[]> => {
-      await filter().preDeploy(changes)
+      await filter.preDeploy(changes)
       return changes
     }
 
-    beforeEach(() => {
+    const runOnDeploy = async (...changes: Change[]): Promise<Change[]> => {
+      await filter.onDeploy(changes)
+      return changes
+    }
+
+    beforeAll(() => {
       const otherChangeType = new ObjectType({
-        elemID: new ElemID(SALESFORCE, 'OtherChangeType'),
+        elemID: new ElemID(SALESFORCE, OTHER_CHANGE_TYPE),
       })
       afterCustomLabelInstance = new InstanceElement(
         CUSTOM_LABEL_NAME,
@@ -179,23 +186,38 @@ describe('Test split custom labels filter', () => {
           ),
         },
       }
-      filter = () => filterCreator({
+      filter = filterCreator({
         client: mockClient().client,
-        config: {
-          ...defaultFilterContext,
-          elementsSource: buildElementsSourceFromElements([customLabelsType]),
-        },
-      }) as FilterWith<'preDeploy'>
+        config: defaultFilterContext,
+      }) as FilterWith<'preDeploy' | 'onDeploy'>
     })
-    it('should prepare CustomLabels change in preDeploy', async () => {
-      const preDeployChanges = await runPreDeploy(customLabelChange, otherChange)
-      expect(preDeployChanges).toHaveLength(2)
-      const customLabelsChangeInstance = preDeployChanges
-        .map(getChangeData)
-        .filter(isInstanceElement)
-        .find(e => e.elemID.typeName === CUSTOM_LABELS_METADATA_TYPE)
-      expect(customLabelsChangeInstance?.value).toMatchObject({
-        labels: [afterCustomLabelInstance.value],
+    describe('preDeploy', () => {
+      it('should prepare CustomLabels change', async () => {
+        preDeployChanges = await runPreDeploy(customLabelChange, otherChange)
+        expect(preDeployChanges).toHaveLength(2)
+        const customLabelsChangeInstance = preDeployChanges
+          .map(getChangeData)
+          .filter(isInstanceElement)
+          .find(e => e.elemID.typeName === CUSTOM_LABELS_METADATA_TYPE)
+        expect(customLabelsChangeInstance?.value).toMatchObject({
+          labels: [afterCustomLabelInstance.value],
+        })
+      })
+    })
+
+    describe('onDeploy', () => {
+      it('should remove CustomLabels change and add the original CustomLabel changes', async () => {
+        const onDeployChanges = await runOnDeploy(...preDeployChanges)
+        expect(onDeployChanges).toHaveLength(2)
+        const receivedCustomLabelChange = onDeployChanges
+          .find(c => getChangeData(c).elemID.typeName === CUSTOM_LABEL_METADATA_TYPE)
+        expect(receivedCustomLabelChange).toEqual(customLabelChange)
+      })
+      it('should not add CustomLabel changes if no CustomLabels change occurred', async () => {
+        const onDeployChanges = await runOnDeploy(otherChange)
+        expect(onDeployChanges).toHaveLength(1)
+        const receivedChangeType = getChangeData(onDeployChanges[0]).elemID.typeName
+        expect(receivedChangeType).toEqual(OTHER_CHANGE_TYPE)
       })
     })
   })

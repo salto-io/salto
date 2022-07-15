@@ -17,6 +17,7 @@ import _ from 'lodash'
 import Joi from 'joi'
 import {
   Change, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange,
+  isInstanceElement, Element,
 } from '@salto-io/adapter-api'
 import { retry } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
@@ -83,6 +84,12 @@ Promise<void> => {
  * Deploys app installation
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  onFetch: async (elements: Element[]) =>
+    elements
+      .filter(isInstanceElement)
+      .filter(e => e.elemID.typeName === APP_INSTALLATION_TYPE_NAME).forEach(e => {
+        delete e.value.settings_objects
+      }),
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,

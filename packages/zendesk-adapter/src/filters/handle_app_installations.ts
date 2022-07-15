@@ -14,70 +14,67 @@
 * limitations under the License.
 */
 import {
-  Change, getChangeData, InstanceElement, isInstanceElement, isTemplateExpression,
+  Change, getChangeData, InstanceElement, isInstanceElement, Element,
   ReferenceExpression, TemplateExpression,
 } from '@salto-io/adapter-api'
+import { extractTemplate, replaceTemplatesWithValues, resolveTemplates } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { strings } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
+import { FETCH_CONFIG, IdLocator } from '../config'
 import { APP_INSTALLATION_TYPE_NAME } from './app'
-import { createTemplateUsingIdField, zendeskReferenceTypeToSaltoType } from './handle_template_expressions'
+import { zendeskReferenceTypeToSaltoType } from './handle_template_expressions'
 
 const log = logger(module)
 
-const { matchAll } = strings
+const DELIMITERS = /(\\n | ,)/g
 
+const APP_INSTLLATION_SPECIFIC_TYPES = ['group']
 
-const potentialReferences = Object.values(zendeskReferenceTypeToSaltoType)
+const GENERAL_ID_REGEX = '([\\d]{10,})'
 
-type IdLocator = {
-    fieldRegex: RegExp
-    idRegex: RegExp
-    type: string
-}
-
-const locators: IdLocator[] = [{
-  fieldRegex: /.*_fields/g,
-  idRegex: /(?:([\d]+)\s*,\s*|([\d]+)$)/g,
-  type: 'ticket_field',
+const LOCATORS: IdLocator[] = [{
+  fieldRegex: '(?:(.*_fields)|(.*_field)|^(ticketfield.*))$',
+  idRegex: GENERAL_ID_REGEX,
+  type: ['ticket_field'],
+}, {
+  fieldRegex: '.*_options$',
+  idRegex: '(custom_field_)([\\d]+)',
+  type: ['ticket_field__custom_field_options'],
+}, {
+  fieldRegex: '.*group.*$',
+  idRegex: GENERAL_ID_REGEX,
+  type: ['group'],
 }]
 
-const valueToTemplate = (val: string, regex: RegExp, locatorType: string,
-  typeToElements: Record<string, InstanceElement[]>): TemplateExpression | string => {
-  const matches = Array.from(matchAll(val, regex))
-    .flatMap(match => Array.from(match.slice(1))).filter(e => !_.isUndefined(e))
-  if (matches.length > 0) {
-    // If we found any matches, we now want to cut the string around the matches
-    // We make no assumptions on the structure of the regex, so we can't do this with one run
-    const exactPartsRegex = new RegExp(`(${matches.join('|')})`, 'g')
-    const parts = val.split(exactPartsRegex).filter(e => !_.isEmpty(e)).map(part => {
-      if (part.match(exactPartsRegex)) {
-        const elementsToSearch = (locatorType === '*')
-          ? Object.values(typeToElements).flat()
-          : typeToElements[locatorType]
-        const element = elementsToSearch.find(e => _.toString(e.value?.id) === part)
-        if (!element) {
-          return part
-        }
-        return new ReferenceExpression(element.elemID, element)
-      }
-      return part
-    })
-    if (parts.every(_.isString)) {
-      return parts.join('')
-    }
-    return new TemplateExpression({ parts })
-  }
-  return val
+const ALL_LOCATOR = {
+  fieldRegex: '.*',
+  idRegex: GENERAL_ID_REGEX,
+  type: ['*'],
 }
 
+const valueToTemplate = (val: string, regex: RegExp, locatorTypes: string[],
+  typeToElements: Record<string, InstanceElement[]>): TemplateExpression | string =>
+  extractTemplate(val, [DELIMITERS, regex], expression => {
+    if (expression.match(GENERAL_ID_REGEX)) {
+      const elementsToSearch = (locatorTypes.includes('*'))
+        ? Object.values(typeToElements).flat()
+        : locatorTypes.flatMap(t => (typeToElements[t] ?? []))
+      const element = elementsToSearch.find(e => _.toString(e.value?.id) === expression)
+      if (!element) {
+        return expression
+      }
+      return new ReferenceExpression(element.elemID, element)
+    }
+    return expression
+  })
+
 const runFunctionOnLocatedFields = (
-  app: InstanceElement, func: (field: string, locator: IdLocator) => void
+  app: InstanceElement, locators: IdLocator[], func: (field: string, locator: IdLocator) => void
 ): void =>
   locators.forEach(locator => {
     Object.keys(app.value.settings).forEach(key => {
-      if (key.match(locator.fieldRegex)) {
+      if (key.match(new RegExp(locator.fieldRegex, 'gi'))) {
         func(key, locator)
       }
     })
@@ -85,52 +82,58 @@ const runFunctionOnLocatedFields = (
 
 
 const replaceFieldsWithTemplates = (
-  app: InstanceElement, typeToElements: Record<string, InstanceElement[]>
+  app: InstanceElement, typeToElements: Record<string, InstanceElement[]>, locators: IdLocator[],
 ): void => {
   const convertValuesToTemplate = (field: string, locator: IdLocator): void => {
-    // eslint-disable-next-line no-console
-    console.log(field)
-    app.value.settings[field] = valueToTemplate(app.value.settings[field],
-      locator.idRegex, locator.type, typeToElements)
+    if (app.value.settings && _.isString(app.value.settings[field])) {
+      app.value.settings[field] = valueToTemplate(app.value.settings[field],
+        new RegExp(locator.idRegex, 'gi'), locator.type, typeToElements)
+    }
   }
-  runFunctionOnLocatedFields(app, convertValuesToTemplate)
+  runFunctionOnLocatedFields(app, locators, convertValuesToTemplate)
 }
 
-const getAppInstallations = (instances: InstanceElement[]): InstanceElement[] =>
-  instances.filter(e => e.elemID.typeName === APP_INSTALLATION_TYPE_NAME)
+const getAppInstallations = (instances: Element[]): InstanceElement[] =>
+  instances.filter(isInstanceElement)
+    .filter(e => e.elemID.typeName === APP_INSTALLATION_TYPE_NAME)
     .filter(e => e.value.settings)
 
-const filterCreator: FilterCreator = () => {
+const filterCreator: FilterCreator = ({ config }) => {
   const deployTemplateMapping: Record<string, TemplateExpression> = {}
+  const fetchConfig = config[FETCH_CONFIG]
+  const locators = fetchConfig.greedyAppReferences ? [ALL_LOCATOR]
+    : (fetchConfig.appReferenceLocators ?? LOCATORS)
   return ({
     onFetch: async (elements: InstanceElement[]): Promise<void> => log.time(async () =>
-      getAppInstallations(elements.filter(isInstanceElement))
+      getAppInstallations(elements)
         .forEach(app => replaceFieldsWithTemplates(app, _.groupBy(elements.filter(
-          e => potentialReferences.includes((e.elemID.typeName))
-        ), e => e.elemID.typeName))),
+          e => [...Object.values(zendeskReferenceTypeToSaltoType),
+            ...APP_INSTLLATION_SPECIFIC_TYPES]
+            .includes((e.elemID.typeName))
+        ), e => e.elemID.typeName), locators)),
     'Create template creation filter'),
     preDeploy: (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () => {
-      getAppInstallations(changes.map(getChangeData).filter(isInstanceElement))
+      getAppInstallations(changes.map(getChangeData))
         .forEach(app => {
-          const convertTemplatesToValues = (field: string): void => {
-            if (isTemplateExpression(app.value.settings[field])) {
-              const templateUsingIdField = createTemplateUsingIdField(app.value.settings[field],
-                true)
-              deployTemplateMapping[templateUsingIdField.value] = app.value.settings[field]
-              app.value.settings[field] = templateUsingIdField.value
-            }
+          const convertTemplatesToValues = (fieldName: string): void => {
+            replaceTemplatesWithValues({ fieldName, values: [app.value] },
+              deployTemplateMapping, (part: ReferenceExpression) => {
+                if (isInstanceElement(part.value) && part.value.value.id) {
+                  return _.toString(part.value.value.id)
+                }
+                return part
+              })
           }
-          runFunctionOnLocatedFields(app, convertTemplatesToValues)
+          runFunctionOnLocatedFields(app, locators, convertTemplatesToValues)
         })
     }, 'Create template resolve filter'),
     onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () =>
-      getAppInstallations(changes.map(getChangeData).filter(isInstanceElement))
+      getAppInstallations(changes.map(getChangeData))
         .forEach(app => {
-          const resolveTemplates = (field: string): void => {
-            app.value.settings[field] = deployTemplateMapping[app.value.settings[field]]
-                ?? app.value.settings[field]
+          const resolveTemplateForApp = (fieldName: string): void => {
+            resolveTemplates({ fieldName, values: [app.value] }, deployTemplateMapping)
           }
-          runFunctionOnLocatedFields(app, resolveTemplates)
+          runFunctionOnLocatedFields(app, locators, resolveTemplateForApp)
         }),
     'Create templates restore filter'),
   })

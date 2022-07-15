@@ -18,7 +18,7 @@ import {
   Element, getChangeData, InstanceElement, isInstanceElement, isReferenceExpression,
   isTemplateExpression, ReferenceExpression, TemplateExpression, TemplatePart,
 } from '@salto-io/adapter-api'
-import { transformValues } from '@salto-io/adapter-utils'
+import { extractTemplate, transformValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -51,13 +51,7 @@ const transformDynamicContentDependencies = async (
     pathID: instance.elemID,
     transformFunc: ({ value, path }) => {
       if (path && path.name.startsWith('raw_') && _.isString(value)) {
-        const templateParts: TemplatePart[] = value.split(PLACEHOLDER_REGEX)
-          .filter(e => !_.isEmpty(e))
-          .flatMap(partToTemplate)
-        if (templateParts.every(part => _.isString(part))) {
-          return templateParts.join('')
-        }
-        return new TemplateExpression({ parts: templateParts })
+        return extractTemplate(value, [PLACEHOLDER_REGEX], partToTemplate)
       }
       return value
     },

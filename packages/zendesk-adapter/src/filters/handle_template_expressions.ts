@@ -14,9 +14,10 @@
 * limitations under the License.
 */
 import {
-  Change, Element, getChangeData, InstanceElement, isInstanceElement, isReferenceExpression,
-  isTemplateExpression, ReferenceExpression, TemplateExpression, TemplatePart, Values,
+  Change, Element, getChangeData, InstanceElement, isInstanceElement,
+  ReferenceExpression, TemplateExpression, TemplatePart, Values,
 } from '@salto-io/adapter-api'
+import { extractTemplate, TemplateContainer, replaceTemplatesWithValues, resolveTemplates } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -29,50 +30,15 @@ const BRACKETS = [['{{', '}}'], ['{%', '%}']]
 const REFERENCE_MARKER_REGEX = /\$\{(.+?)}/
 const DYNAMIC_CONTENT_REGEX = /(dc\.[\w]+)/g
 
-
-type PotentialTemplateField = {
-  instanceType: string
-  pathToContainer?: string[]
-  fieldName: string
-  containerValidator: (container: Values) => boolean
-}
-
-type TemplateContainer = {
-  values: Values[]
-  template: PotentialTemplateField
-}
-
 export const zendeskReferenceTypeToSaltoType: Record<string, string> = {
   'ticket.ticket_field': 'ticket_field',
   'ticket.ticket_field_option_title': 'ticket_field__custom_field_options',
 }
 
-
-const saltoTypeToZendeskReferenceType = Object.fromEntries(
+export const saltoTypeToZendeskReferenceType = Object.fromEntries(
   Object.entries(zendeskReferenceTypeToSaltoType)
     .map(entry => [entry[1], entry[0]])
 )
-
-export const createTemplateUsingIdField = (template: TemplateExpression,
-  idOnly = false): TemplateExpression =>
-  new TemplateExpression({
-    parts: template.parts.map(part => {
-      if (isReferenceExpression(part) && isInstanceElement(part.value)) {
-        if (saltoTypeToZendeskReferenceType[part.elemID.typeName]) {
-          return idOnly ? _.toString(part.value.value.id)
-            : `${saltoTypeToZendeskReferenceType[part.elemID.typeName]}_${part.value.value.id}`
-        }
-        if (part.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME) {
-          if (!_.isString(part.value.value.placeholder)) {
-            return part
-          }
-          const placeholder = part.value.value.placeholder.match(DYNAMIC_CONTENT_REGEX)
-          return placeholder?.pop() ?? part
-        }
-      }
-      return part
-    }).flat(),
-  })
 
 const potentialReferenceTypes = Object.keys(zendeskReferenceTypeToSaltoType)
 const typeSearchRegexes: RegExp[] = []
@@ -88,6 +54,13 @@ const potentialMacroFields = ['comment_value', 'comment_value_html', 'side_conve
 // triggers and automations notify users, webhooks
 // groups or targets with text that can include templates.
 const notificationTypes = ['notification_webhook', 'notification_user', 'notification_group', 'notification_target']
+
+type PotentialTemplateField = {
+  instanceType: string
+  pathToContainer?: string[]
+  fieldName: string
+  containerValidator: (container: Values) => boolean
+}
 
 const NoValidator = (): boolean => true
 const potentialTemplates: PotentialTemplateField[] = [
@@ -192,30 +165,20 @@ const formulaToTemplate = (formula: string,
   }
   // The second part is a split that separates the now-marked ids, so they could be replaced
   // with ReferenceExpression in the loop code.
-  const templateParts = seekAndMarkPotentialReferences(formula)
-    .split(REFERENCE_MARKER_REGEX).filter(v => !_.isEmpty(v))
-    .flatMap(wholeExpression =>
-      // we continuously split the expression to find all kinds of potential references
-      wholeExpression.split(potentialReferenceTypeRegex).flatMap(
-        partiallyParsedExpression => partiallyParsedExpression.split(DYNAMIC_CONTENT_REGEX).flatMap(
-          expression => {
-            const zendeskReference = expression.match(potentialReferenceTypeRegex)
-            if (zendeskReference) {
-              return handleZendeskReference(expression, zendeskReference)
-            }
-            const dynamicContentReference = expression.match(DYNAMIC_CONTENT_REGEX)
-            if (dynamicContentReference) {
-              return handleDynamicContentReference(expression, dynamicContentReference)
-            }
-            return expression
-          }
-        )
-      ))
-    .filter(v => !_.isEmpty(v))
-  if (templateParts.every(_.isString)) {
-    return templateParts.join('')
-  }
-  return new TemplateExpression({ parts: templateParts })
+  // we continuously split the expression to find all kinds of potential references
+  return extractTemplate(seekAndMarkPotentialReferences(formula),
+    [REFERENCE_MARKER_REGEX, potentialReferenceTypeRegex, DYNAMIC_CONTENT_REGEX],
+    expression => {
+      const zendeskReference = expression.match(potentialReferenceTypeRegex)
+      if (zendeskReference) {
+        return handleZendeskReference(expression, zendeskReference)
+      }
+      const dynamicContentReference = expression.match(DYNAMIC_CONTENT_REGEX)
+      if (dynamicContentReference) {
+        return handleDynamicContentReference(expression, dynamicContentReference)
+      }
+      return expression
+    })
 }
 
 const getContainers = async (instances: InstanceElement[]): Promise<TemplateContainer[]> =>
@@ -223,7 +186,7 @@ const getContainers = async (instances: InstanceElement[]): Promise<TemplateCont
     potentialTemplates.filter(
       t => instance.elemID.typeName === t.instanceType
     ).map(template => ({
-      template,
+      fieldName: template.fieldName,
       values: [
         template.pathToContainer
           ? _.get(instance.value, template.pathToContainer, [])
@@ -234,7 +197,7 @@ const getContainers = async (instances: InstanceElement[]): Promise<TemplateCont
 const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promise<void> => {
   try {
     (await getContainers(instances)).forEach(container => {
-      const { fieldName } = container.template
+      const { fieldName } = container
       const instancesByType = _.groupBy(instances, i => i.elemID.typeName)
       container.values.forEach(value => {
         if (Array.isArray(value[fieldName])) {
@@ -250,37 +213,16 @@ const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promi
   }
 }
 
-const replaceTemplatesWithValues = async (
-  container: TemplateContainer,
-  deployTemplateMapping: Record<string, TemplateExpression>
-): Promise<void> => {
-  const { fieldName } = container.template
-  const handleTemplateValue = (template: TemplateExpression): string => {
-    const templateUsingIdField = createTemplateUsingIdField(template)
-    deployTemplateMapping[templateUsingIdField.value] = template
-    return templateUsingIdField.value
+const prepRef = (part: ReferenceExpression): TemplatePart => {
+  if (saltoTypeToZendeskReferenceType[part.elemID.typeName]) {
+    return `${saltoTypeToZendeskReferenceType[part.elemID.typeName]}_${part.value.value.id}`
   }
-  const replaceIfTemplate = (value: unknown): unknown =>
-    (isTemplateExpression(value) ? handleTemplateValue(value) : value)
-  container.values.forEach(value => {
-    if (Array.isArray(value[fieldName])) {
-      value[fieldName] = value[fieldName].map(replaceIfTemplate)
-    } else {
-      value[fieldName] = replaceIfTemplate(value[fieldName])
-    }
-  })
-}
-
-const resolveTemplates = (
-  container: TemplateContainer,
-  deployTemplateMapping: Record<string, TemplateExpression>
-): void => {
-  const { fieldName } = container.template
-  const resolveTemplate = (v: string): string | TemplateExpression =>
-    deployTemplateMapping[v] ?? v
-  container.values.forEach(value => {
-    value[fieldName] = resolveTemplate(value[fieldName])
-  })
+  if (part.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME
+    && _.isString(part.value.value.placeholder)) {
+    const placeholder = part.value.value.placeholder.match(DYNAMIC_CONTENT_REGEX)
+    return placeholder?.pop() ?? part
+  }
+  return part
 }
 
 /**
@@ -294,7 +236,7 @@ const filterCreator: FilterCreator = () => {
     preDeploy: (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () => {
       try {
         (await getContainers(await awu(changes).map(getChangeData).toArray())).forEach(
-          async container => replaceTemplatesWithValues(container, deployTemplateMapping)
+          async container => replaceTemplatesWithValues(container, deployTemplateMapping, prepRef)
         )
       } catch (e) {
         log.error(`Error parsing templates in deployment: ${e.message}`)

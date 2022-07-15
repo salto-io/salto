@@ -13,6 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
+
 export const DEFAULT_ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 export const LOWERCASE = 'abcdefghijklmnopqrstuvwxyz'
 
@@ -31,6 +33,13 @@ export const capitalizeFirstLetter = (str: string): string =>
 export const lowerCaseFirstLetter = (str: string): string =>
   str.charAt(0).toLowerCase() + str.slice(1)
 
+export const continuousSplit = (str: string, regexes: RegExp[], i = 0): string[] => {
+  if (regexes.length === i) {
+    return [str]
+  }
+  return str.split(regexes[i]).flatMap(st => continuousSplit(st, regexes, i + 1))
+    .filter(st => !_.isEmpty(st))
+}
 
 /**
  * Find all matches to the specified regular expression.

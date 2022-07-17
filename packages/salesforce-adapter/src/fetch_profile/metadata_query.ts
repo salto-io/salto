@@ -38,6 +38,17 @@ const PERMANENT_SKIP_LIST: MetadataQueryParams[] = [
   { metadataType: 'EscalationRule' },
 ]
 
+// Instances of these types will match all namespaces
+// and not just standard if '' (aka default) is provided in the namespace filter
+const DEFAULT_NAMESPACE_MATCH_ALL_TYPE_LIST = [
+  'InstalledPackage',
+]
+
+const getDefaultNamespace = (metadataType: string): string =>
+  (DEFAULT_NAMESPACE_MATCH_ALL_TYPE_LIST.includes(metadataType)
+    ? '.*'
+    : DEFAULT_NAMESPACE)
+
 export const buildMetadataQuery = (
   { include = [{}], exclude = [] }: MetadataParams,
   target?: string[],
@@ -52,7 +63,9 @@ export const buildMetadataQuery = (
       name = '.*',
     }: MetadataQueryParams
   ): boolean => {
-    const realNamespace = namespace === '' ? DEFAULT_NAMESPACE : namespace
+    const realNamespace = namespace === ''
+      ? getDefaultNamespace(instance.metadataType)
+      : namespace
     return regex.isFullRegexMatch(instance.metadataType, metadataType)
     && regex.isFullRegexMatch(instance.namespace, realNamespace)
     && regex.isFullRegexMatch(instance.name, name)

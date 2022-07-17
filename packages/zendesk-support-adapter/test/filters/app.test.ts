@@ -37,7 +37,7 @@ jest.mock('@salto-io/adapter-components', () => {
 
 describe('app installation filter', () => {
   let client: ZendeskClient
-  type FilterType = filterUtils.FilterWith<'deploy'>
+  type FilterType = filterUtils.FilterWith<'deploy' | 'onFetch'>
   let filter: FilterType
   let mockGet: jest.SpyInstance
   const app = new InstanceElement(
@@ -64,6 +64,14 @@ describe('app installation filter', () => {
       config: DEFAULT_CONFIG,
       fetchQuery: elementUtils.query.createMockQuery(),
     }) as FilterType
+  })
+
+  it('should remove settings object on fetch', async () => {
+    const appClone = app.clone()
+    await filter.onFetch([appClone])
+    const appCloneWithoutSettingsObject = app.clone()
+    appCloneWithoutSettingsObject.value.settings_objects = undefined
+    expect(appClone).toEqual(appCloneWithoutSettingsObject)
   })
 
   it('should pass the correct params to deployChange and client on create and wait until the job is done', async () => {

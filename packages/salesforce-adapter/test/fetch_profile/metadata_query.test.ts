@@ -170,13 +170,22 @@ describe('buildMetadataQuery', () => {
       expect(query.isInstanceMatch({ namespace: 'notstandard', metadataType: '', name: '' })).toBeFalsy()
     })
 
-    it('should not filter InstalledPackage by namespace', () => {
+    it('should return InstalledPackage with namespace if \'\' namespace is provided', () => {
       const query = buildMetadataQuery({
         include: [
           { namespace: '' },
         ],
       })
       expect(query.isInstanceMatch({ namespace: 'SBQQ', metadataType: 'InstalledPackage', name: 'lala' })).toBeTruthy()
+    })
+
+    it('should not return InstalledPackage with a different namespace then one specifically provided', () => {
+      const query = buildMetadataQuery({
+        include: [
+          { namespace: 'SBAA' },
+        ],
+      })
+      expect(query.isInstanceMatch({ namespace: 'SBQQ', metadataType: 'InstalledPackage', name: 'lala' })).toBeFalsy()
     })
   })
 

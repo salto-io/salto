@@ -143,7 +143,7 @@ const filterCreator: FilterCreator = () : FilterWith<'onFetch'> & FilterWith<'on
         .filter(isObjectType)
         .find(async e => await apiName(e) === CUSTOM_LABEL_METADATA_TYPE)
       if (customLabelType === undefined) {
-        log.warn('CustomLabel type does not exist, skipping split into CustomLabel instances')
+        log.info('CustomLabel type does not exist, skipping filter')
         return
       }
       const customLabelsInstances = await awu(elements)
@@ -152,11 +152,12 @@ const filterCreator: FilterCreator = () : FilterWith<'onFetch'> & FilterWith<'on
         .map(e => e as CustomLabelsInstance)
         .toArray()
       if (_.isEmpty(customLabelsInstances)) {
-        log.warn('CustomLabels instance does not exist, skipping split into CustomLabel instances')
+        log.info('CustomLabels instance does not exist, skipping filter')
         return
       }
       if (customLabelsInstances.length > 1) {
-        log.warn('Found more than one instance of CustomLabels, using first')
+        log.error('Found more than one instance of CustomLabels, skipping filter')
+        return
       }
       const customLabelsInstance = customLabelsInstances[0]
       const customLabelInstances = customLabelsInstance.value.labels

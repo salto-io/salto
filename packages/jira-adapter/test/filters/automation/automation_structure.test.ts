@@ -115,10 +115,12 @@ describe('automationStructureFilter', () => {
       ])
     })
 
-    it('should change string value fields to rawValues', async () => {
+    it('should change value fields to rawValues only if value is strings', async () => {
       await filter.onFetch([instance])
-      expect(instance.value.components[1].rawValue).toBeDefined()
+      expect(instance.value.components[1].rawValue).toEqual('priority > Medium')
       expect(instance.value.components[1].value).toBeUndefined()
+      expect(instance.value.components[2].rawValue).toBeUndefined()
+      expect(instance.value.components[2].value).toBeObject()
     })
 
     it('should should split linkType field', async () => {
@@ -128,7 +130,7 @@ describe('automationStructureFilter', () => {
     })
   })
 
-  describe('preDeploy & onDeploy ', () => {
+  describe('preDeploy & onDeploy', () => {
     it('should preDeploy and onDeploy as expected', async () => {
       instance.value.components[2].value.linkType = '10003'
       instance.value.components[2].value.linkTypeDirection = 'inward'

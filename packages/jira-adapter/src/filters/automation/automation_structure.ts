@@ -69,7 +69,7 @@ const replaceStringValuesFieldName = async (instance: InstanceElement): Promise<
       && (await field?.getType())?.elemID.typeName === AUTOMATION_COMPONENT_TYPE
       && _.isString(value.value)) {
         value.rawValue = value.value
-        value.value = undefined
+        delete value.value
       }
       return value
     },
@@ -77,6 +77,7 @@ const replaceStringValuesFieldName = async (instance: InstanceElement): Promise<
 }
 
 // linkType field is a string containing a reference to IssueLinkType and the link direction
+// for example: linkType = 'inward:10025'
 // we separate the field in order to resolve the reference
 const separateLinkTypeField = async (instance: InstanceElement): Promise<void> => {
   instance.value = (await transformElement({

@@ -29,14 +29,13 @@ import {
   isObjectType,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { collections, values } from '@salto-io/lowerdash'
+import { values } from '@salto-io/lowerdash'
 import _, { isEmpty } from 'lodash'
 import { ElementsSource } from './elements_source'
+import { getAllElementsChanges } from './index_utils'
 import { RemoteMap } from './remote_map'
 
 const { isDefined } = values
-
-const { awu } = collections.asynciterable
 
 const log = logger(module)
 export const CHANGED_BY_INDEX_VERSION = 3
@@ -72,15 +71,6 @@ export const authorToAuthorKey = (author: Author): string => {
 
 const elementToAuthorKey = (element: Element): string =>
   `${element.elemID.adapter}${CHANGED_BY_KEY_DELIMITER}${element.annotations[CORE_ANNOTATIONS.CHANGED_BY]}`
-
-const getAllElementsChanges = async (
-  currentChanges: Change<Element>[],
-  elementsSource: ElementsSource
-): Promise<Change<Element>[]> =>
-  awu(await elementsSource.getAll())
-    .map(element => toChange({ after: element }))
-    .concat(currentChanges)
-    .toArray()
 
 const getChangeAuthors = (change: Change<Element>): Record<string, ElemID[]> => {
   const changeElement = getChangeData(change)
@@ -234,6 +224,7 @@ export const updateChangedByIndex = async (
         log.info('changed by index map is out of date, re-indexing')
       }
       if (!isCacheValid) {
+        // When cache is invalid, changes will include all of the elements in the workspace.
         log.info('cache is invalid, re-indexing changed by index')
       }
       await Promise.all([

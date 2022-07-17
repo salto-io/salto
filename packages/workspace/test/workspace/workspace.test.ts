@@ -2343,6 +2343,92 @@ describe('workspace', () => {
       })
     })
   })
+  describe('static files index', () => {
+    let workspace: Workspace
+    const firstTypeFile = `
+      type salesforce.text is string {}
+      type salesforce.lead {
+        annotations {
+          string _changed_by {
+          }
+        }
+        _changed_by = "test user"
+        salesforce.text singleDef {
+  
+        }
+        salesforce.text multiDef {
+  
+        }
+      }
+    `
+    const firstInstance = `
+      salesforce.lead someName1 {
+        salesforce.text = file("static1.nacl")
+      }
+    `
+    const secondInstance = `
+      salesforce.lead someName2 {
+      salesforce.text = file("static2.nacl")
+      }
+    `
+    const naclFileStore = mockDirStore(undefined, undefined, {
+      'firstFile.nacl': firstTypeFile,
+      'someName1.nacl': firstInstance,
+      'someName2.nacl': secondInstance,
+    })
+    beforeEach(async () => {
+      const firstStaticFile = new StaticFile({
+        content: Buffer.from('I am a little static file'),
+        filepath: 'static1.nacl',
+        hash: 'FFFF',
+      })
+      const secondStaticFile = new StaticFile({
+        content: Buffer.from('I am a little static file'),
+        filepath: 'static2.nacl',
+        hash: 'FFFF',
+      })
+      workspace = await createWorkspace(
+        naclFileStore,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        {
+          '': {
+            naclFiles: createMockNaclFileSource([]),
+          },
+          default: {
+            naclFiles: await naclFilesSource(
+              'default',
+              naclFileStore,
+              mockStaticFilesSource([firstStaticFile, secondStaticFile]),
+              persistentMockCreateRemoteMap(),
+              true
+            ),
+            state: createState([]),
+          },
+        },
+      )
+    })
+    describe('getReferencedStaticFilePaths', () => {
+      it('get correct paths when providing a correct element id', async () => {
+        const result = await workspace.getReferencedStaticFilePaths([ElemID.fromFullName('salesforce.lead.instance.someName1')])
+        expect(result).toEqual(['static1.nacl'])
+      })
+      it('get multiple static files with multiple element ids', async () => {
+        const result = await workspace.getReferencedStaticFilePaths([
+          ElemID.fromFullName('salesforce.lead.instance.someName1'),
+          ElemID.fromFullName('salesforce.lead.instance.someName2'),
+        ])
+        expect(result).toEqual(['static1.nacl', 'static2.nacl'])
+      })
+      it('get no paths when providing a bad element id', async () => {
+        const result = await workspace.getReferencedStaticFilePaths([ElemID.fromFullName('salesforce.lead.type')])
+        expect(result).toEqual([])
+      })
+    })
+  })
   describe('changed by index', () => {
     let workspace: Workspace
     const firstFile = `

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ElemID, InstanceElement, isInstanceElement, isObjectType, ObjectType,
+  ElemID, InstanceElement, isInstanceElement, isObjectType, ObjectType, Element,
 } from '@salto-io/adapter-api'
 import filterCreator, { } from '../../src/filters/settings_type'
 import mockClient from '../client'
@@ -23,9 +23,11 @@ import * as constants from '../../src/constants'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { mockFileProperties, mockDescribeValueResult, mockValueTypeField } from '../connection'
 import { defaultFilterContext } from '../utils'
+import { API_NAME } from '../../src/constants'
 
 
 describe('Test Settings Type', () => {
+  const MACRO_SETTINGS = 'MacroSettings'
   const { client, connection } = mockClient()
 
   const filter = filterCreator(
@@ -76,10 +78,10 @@ describe('Test Settings Type', () => {
     },
   )
 
-  const testElements = [mockInstance, mockObject, anotherMockInstance]
-
   describe('on discover', () => {
+    let testElements: Element[]
     beforeEach(() => {
+      testElements = [mockInstance, mockObject, anotherMockInstance]
       connection.metadata.list.mockResolvedValue(
         ['Macro', 'Case'].map(fullName => mockFileProperties({ fullName, type: 'Settings' }))
       )
@@ -118,6 +120,20 @@ describe('Test Settings Type', () => {
       }
       expect(isInstanceElement(testElements[4])).toBeTruthy()
       expect(await (testElements[4] as InstanceElement).getType()).toEqual(testElements[3])
+    })
+    it('should not add existing object types', async () => {
+      const macroSettingsType = new ObjectType({
+        elemID: new ElemID(constants.SALESFORCE, MACRO_SETTINGS),
+        annotations: {
+          [API_NAME]: MACRO_SETTINGS,
+        },
+      })
+      testElements.push(macroSettingsType)
+      await filter.onFetch(testElements)
+      expect(testElements.filter(isObjectType)).toHaveLength(2)
+      expect(testElements
+        .filter(isObjectType)
+        .filter(e => e.elemID.typeName === MACRO_SETTINGS)).toHaveLength(1)
     })
   })
 })

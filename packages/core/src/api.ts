@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import {
   Adapter, InstanceElement, ObjectType, ElemID, AccountId, getChangeData, isField,
   Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
@@ -23,7 +24,7 @@ import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
-import { Workspace, ElementSelector, elementSource } from '@salto-io/workspace'
+import { Workspace, ElementSelector, elementSource, updateElementsWithAlternativeAccount, nacl } from '@salto-io/workspace'
 import { EOL } from 'os'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
@@ -495,4 +496,105 @@ export const rename = async (
   }
 
   return renameElementChanges
+}
+
+const fixAdapterConfig = async (
+  workspace: Workspace, oldAdapterName: string, newAdapterName: string
+): Promise<void> => {
+  const config = await workspace.accountConfig(oldAdapterName)
+  const configType = adapterCreators[newAdapterName]?.configType
+  if (config && config.elemID.adapter === oldAdapterName && configType) {
+    await workspace.updateAccountConfig(
+      newAdapterName,
+      new InstanceElement(ElemID.CONFIG_NAME, configType, config.value)
+    )
+  }
+}
+
+const fixEnvsConfig = async (
+  workspace: Workspace, oldAdapterName: string, newAdapterName: string
+): Promise<void> => {
+  const workspaceConfigSource = workspace.getWorkspaceConfigSource()
+  const config = await workspaceConfigSource.getWorkspaceConfig()
+  config.envs.forEach(env => {
+    if (env.accountToServiceName) {
+      env.accountToServiceName = _.fromPairs(Object.entries(env.accountToServiceName)
+        .map(([key, value]) => [
+          key === oldAdapterName ? newAdapterName : key,
+          value === oldAdapterName ? newAdapterName : value,
+        ]))
+    }
+  })
+  await workspaceConfigSource.setWorkspaceConfig(config)
+}
+
+const getElementPathFromFileName = (filename: string, envName: string): string[] => {
+  const splittedPath = filename
+    .split(nacl.FILE_EXTENSION)[0]
+    .split(path.join(nacl.ENVS_PREFIX, envName))
+  return splittedPath[splittedPath.length - 1].split(path.sep).filter(e => e)
+}
+
+export const migrateWorkspace = async (
+  workspace: Workspace,
+): Promise<void> => {
+  const oldAdapterName = 'zendesk_support'
+  const newAdapterName = 'zendesk'
+  const unmigratableEnvs = workspace.envs()
+    .filter(envName => !_.isEqual(workspace.services(envName), [oldAdapterName]))
+  if (!_.isEmpty(unmigratableEnvs)) {
+    log.error(`Cannot migrate the workspace: ${workspace.uid
+    } because the following envs are not migratable: ${unmigratableEnvs.join(', ')}`)
+    return
+  }
+  const oldConfigFilePaths = (await workspace.accountConfigPaths(oldAdapterName))
+    .filter(configPath => configPath.endsWith(`${oldAdapterName}${nacl.FILE_EXTENSION}`))
+  await fixAdapterConfig(workspace, oldAdapterName, newAdapterName)
+  await fixEnvsConfig(workspace, oldAdapterName, newAdapterName)
+  try {
+    await awu(workspace.envs()).forEach(async envName => {
+      log.info(`Start to migrate ${envName}`)
+      await workspace.setCurrentEnv(envName, false)
+      const elements = await workspace.elements()
+      const fullElements = await awu(await elements.getAll()).toArray()
+      const statePathIndex = await workspace.state().getPathIndex()
+      const pathIndexEntries = _.keyBy(await awu(
+        statePathIndex.entries()
+      ).toArray(), entry => entry.key)
+      await awu(fullElements).forEach(async element => {
+        if (element.path === undefined) {
+          element.path = pathIndexEntries[element.elemID.getFullName()]?.value[0]
+            ?? getElementPathFromFileName(
+              (await workspace.getElementNaclFiles(element.elemID))[0],
+              envName
+            )
+        }
+      })
+      const oldElements = fullElements.map(element => element.clone())
+      await updateElementsWithAlternativeAccount(
+        fullElements, newAdapterName, oldAdapterName, elements
+      )
+      fullElements.forEach(element => {
+        if (!_.isEmpty(element.path) && element.path?.[0] === oldAdapterName) {
+          element.path = [newAdapterName, ...(element.path?.slice(1) ?? [])]
+        }
+      })
+      await workspace.state().clear()
+      await updateStateWithFetchResults(
+        workspace, fullElements, fullElements, [newAdapterName, oldAdapterName]
+      )
+      const removalChanges: DetailedChange[] = oldElements.map(e =>
+        ({ data: { before: e }, action: 'remove', id: e.elemID, path: e.path }))
+      const additionChanges: DetailedChange[] = fullElements.map(e =>
+        ({ data: { after: e }, action: 'add', id: e.elemID, path: e.path }))
+      const changes = [...removalChanges, ...additionChanges]
+      await workspace.updateNaclFiles(changes, 'isolated')
+      await workspace.setNaclFiles(oldConfigFilePaths.map(filename => ({ filename, buffer: '' })))
+      await workspace.flush()
+    })
+  } catch (err) {
+    log.error(`Failed to migrate workspace: ${workspace.uid}. Error: ${err}`)
+    throw err
+  }
+  log.info(`Finished to migrate workspace: ${workspace.uid}`)
 }

@@ -227,6 +227,7 @@ export type Workspace = {
     account?: string,
   ) => Promise<void>
   getServiceFromAccountName: (account: string) => string
+  getWorkspaceConfigSource: () => WorkspaceConfigSource
   getStateRecency(accounts: string): Promise<StateRecency>
   promote(
     idsToMove: ElemID[],
@@ -1378,6 +1379,7 @@ export const loadWorkspace = async (
       (naclFilesSource.getStaticFile(filepath, encoding, env ?? currentEnv())),
     getChangedElementsBetween,
     getReferencedStaticFilePaths,
+    getWorkspaceConfigSource: () => config,
   }
 }
 

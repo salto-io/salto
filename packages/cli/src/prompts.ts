@@ -360,6 +360,12 @@ ${Prompts.LIST_IDS(ids)}
     err: string
   ): string => `Error encountered while cleaning the workspace: ${err}.`
 
+  public static readonly MIGRATION_STARTED = 'Starting to migrate the workspace.'
+  public static readonly MIGRATION_FINISHED = 'Finished migrating the workspace.'
+  public static readonly MIGRATION_FAILED = (
+    err: string
+  ): string => `Error encountered while migrating the workspace: ${err}.`
+
   public static readonly NO_MATCHES_FOUND_FOR_ELEMENT =
     (elementId: string): string => `Did not find any matches for element ${elementId}`
 

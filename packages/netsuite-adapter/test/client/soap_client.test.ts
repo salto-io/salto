@@ -92,7 +92,7 @@ describe('soap_client', () => {
       await expect(client.readFile(1)).rejects.toThrow()
     })
 
-    it('when having a delayed retry', async () => {
+    it('when having a delayed concurrency retry', async () => {
       jest.spyOn(global, 'setTimeout').mockImplementation((cb: TimerHandler) => (_.isFunction(cb) ? cb() : undefined))
       getAsyncMock.mockRejectedValueOnce(new Error('Concurrent request limit exceeded'))
       getAsyncMock.mockResolvedValueOnce([{
@@ -105,6 +105,23 @@ describe('soap_client', () => {
       }])
       expect(await client.readFile(1)).toEqual(Buffer.from('demo'))
       expect(getAsyncMock).toHaveBeenCalledTimes(2)
+    })
+
+    it('when having a delayed server error retry', async () => {
+      jest.spyOn(global, 'setTimeout').mockImplementation((cb: TimerHandler) => (_.isFunction(cb) ? cb() : undefined))
+      getAsyncMock.mockRejectedValueOnce({ response: { status: 500 } })
+      getAsyncMock.mockRejectedValueOnce({ response: { status: 501 } })
+      getAsyncMock.mockRejectedValueOnce({ response: { status: 502 } })
+      getAsyncMock.mockResolvedValueOnce([{
+        readResponse: {
+          record: {
+            content: 'ZGVtbw==',
+          },
+          status: { attributes: { isSuccess: 'true' } },
+        },
+      }])
+      expect(await client.readFile(1)).toEqual(Buffer.from('demo'))
+      expect(getAsyncMock).toHaveBeenCalledTimes(4)
     })
   })
   it('client should be cached', async () => {

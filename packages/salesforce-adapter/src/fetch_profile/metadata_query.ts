@@ -38,6 +38,10 @@ const PERMANENT_SKIP_LIST: MetadataQueryParams[] = [
   { metadataType: 'EscalationRule' },
 ]
 
+const ACCEPT_ALL_NAMESPACES_TYPE_LIST = [
+  'InstalledPackage',
+]
+
 export const buildMetadataQuery = (
   { include = [{}], exclude = [] }: MetadataParams,
   target?: string[],
@@ -52,7 +56,10 @@ export const buildMetadataQuery = (
       name = '.*',
     }: MetadataQueryParams
   ): boolean => {
-    const realNamespace = namespace === '' ? DEFAULT_NAMESPACE : namespace
+    // eslint-disable-next-line no-nested-ternary
+    const realNamespace = ACCEPT_ALL_NAMESPACES_TYPE_LIST.includes(instance.metadataType)
+      ? '.*'
+      : (namespace === '' ? DEFAULT_NAMESPACE : namespace)
     return regex.isFullRegexMatch(instance.metadataType, metadataType)
     && regex.isFullRegexMatch(instance.namespace, realNamespace)
     && regex.isFullRegexMatch(instance.name, name)

@@ -169,6 +169,15 @@ describe('buildMetadataQuery', () => {
       expect(query.isInstanceMatch({ namespace: 'standard', metadataType: '', name: '' })).toBeTruthy()
       expect(query.isInstanceMatch({ namespace: 'notstandard', metadataType: '', name: '' })).toBeFalsy()
     })
+
+    it('should not filter InstalledPackage by namespace', () => {
+      const query = buildMetadataQuery({
+        include: [
+          { namespace: '' },
+        ],
+      })
+      expect(query.isInstanceMatch({ namespace: 'SBQQ', metadataType: 'InstalledPackage', name: 'lala' })).toBeTruthy()
+    })
   })
 
   it('isTypeMatch should return correct results', () => {

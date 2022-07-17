@@ -18,7 +18,7 @@ Currently, Salto supports the following services:
 - [NetSuite](../packages/netsuite-adapter)
 - [HubSpot](../packages/hubspot-adapter)
 - [Workato](../packages/workato-adapter)
-- [Zendesk Support](../packages/zendesk-support-adapter)
+- [Zendesk](../packages/zendesk-adapter)
 - [Zuora Billing](../packages/zuora-billing-adapter)
 - [Jira](../packages/jira-adapter)
 - [Stripe](../packages/stripe-adapter)

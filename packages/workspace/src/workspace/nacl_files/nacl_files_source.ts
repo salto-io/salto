@@ -112,6 +112,7 @@ type NaclFilesState = {
 const getRemoteMapNamespace = (namespace: string, name: string): string =>
   `naclFileSource-${name}-${namespace}`
 
+const getMemoryUsageInGb = (): number => process.memoryUsage().heapUsed / 1024 / 1024 / 1024
 
 export const toPathHint = (filename: string): string[] => {
   const dirName = osPath.dirname(filename)
@@ -755,6 +756,7 @@ const buildNaclFilesSource = (
   }
 
   const updateNaclFiles = async (changes: DetailedChange[]): Promise<ChangeSet<Change>> => {
+    log.debug(`running updateNaclFiles with ${changes.length} changes and current memory usage is ${getMemoryUsageInGb().toFixed(3)}GB`)
     const preChangeHash = await (await state)?.parsedNaclFiles.getHash()
     const getNaclFileData = async (filename: string): Promise<string> => {
       const naclFile = await naclFilesStore.get(filename)
@@ -778,6 +780,7 @@ const buildNaclFilesSource = (
         .toArray()
     )
     const { parsedNaclFiles } = await getState()
+    log.debug(`memory usage before calculating sourceMap is ${getMemoryUsageInGb().toFixed(3)}GB`)
     const changedFileToSourceMap: Record<string, SourceMap> = Object.fromEntries(
       (await withLimitedConcurrency(naclFiles
         .map(naclFile => async () => {
@@ -796,6 +799,9 @@ const buildNaclFilesSource = (
     }, new SourceMap())
     const changesToUpdate = getChangesToUpdate(changes, mergedSourceMap)
     const allFileNames = _.keyBy(await parsedNaclFiles.list(), name => name.toLowerCase())
+
+    let memoryUsage = getMemoryUsageInGb()
+    log.debug(`memory usage after calculating sourceMap is ${memoryUsage.toFixed(3)}GB`)
     const updatedNaclFiles = (await withLimitedConcurrency(
       _(changesToUpdate)
         .map(change => getChangeLocations(change, mergedSourceMap))
@@ -805,6 +811,12 @@ const buildNaclFilesSource = (
         .entries()
         .map(([lowerCaseFilename, fileChanges]) => async ():
           Promise<ParsedNaclFile & NaclFile | undefined> => {
+          const currentMemoryUsage = getMemoryUsageInGb()
+          const memoryUsageDiff = currentMemoryUsage - memoryUsage
+          if (Math.abs(memoryUsageDiff) > 1) {
+            log.debug(`memory usage ${memoryUsageDiff > 0 ? 'increased' : 'decreased'} by ${memoryUsageDiff.toFixed(3)}GB (total ${currentMemoryUsage.toFixed(3)}GB)`)
+            memoryUsage = currentMemoryUsage
+          }
           // Changes might have a different cased filename, we take the version that already exists
           // or the first variation if this is a new file
           const filename = (
@@ -840,6 +852,7 @@ const buildNaclFilesSource = (
       DUMP_CONCURRENCY
     )).filter(values.isDefined)
 
+    log.debug(`memory usage after calculating updated nacl files is ${getMemoryUsageInGb().toFixed(3)}GB`)
     if (updatedNaclFiles.length > 0) {
       log.debug('going to update %d NaCl files', updatedNaclFiles.length)
       // The map is to avoid saving unnecessary fields in the nacl files

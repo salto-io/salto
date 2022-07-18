@@ -158,8 +158,7 @@ const filterCreator: FilterCreator = () : FilterWith<'onFetch'> & FilterWith<'on
       const customLabelsInstances = await awu(elements)
         .filter(isInstanceElement)
         .filter(isCustomLabelsInstance)
-        .map(e => e as CustomLabelsInstance)
-        .toArray()
+        .toArray() as CustomLabelsInstance[]
       if (_.isEmpty(customLabelsInstances)) {
         log.info('CustomLabels instance does not exist, skipping filter')
         return

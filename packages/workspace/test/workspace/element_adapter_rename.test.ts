@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, InstanceElement, ListType, MapType, ObjectType, ReferenceExpression, TemplateExpression, TypeReference } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, InstanceElement, ListType, MapType, ObjectType, ReferenceExpression, StaticFile, TemplateExpression, TypeReference } from '@salto-io/adapter-api'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
 import { createAdapterReplacedID, updateElementsWithAlternativeAccount } from '../../src/element_adapter_rename'
 import { UnresolvedReference } from '../../src/expressions'
@@ -57,6 +57,10 @@ describe('rename adapter in elements', () => {
       mapOfMapField: { refType: new MapType(new MapType(innerType)) },
     },
   })
+  const staticFileToChange = new StaticFile({
+    filepath: `static-resources/${serviceName}/test.txt`,
+    content: Buffer.from('test'),
+  })
   const instanceToChange = new InstanceElement('InstanceElement', objectToChange, {
     field: new ReferenceExpression(innerType.elemID),
     templateField: new TemplateExpression({
@@ -68,6 +72,7 @@ describe('rename adapter in elements', () => {
       ],
     }),
     innerRefField: innerType,
+    staticFileField: staticFileToChange,
   })
   // the adapter change is supposed to set this value to undefined if it finds unresolved reference.
   instanceToChange.value.field.value = new UnresolvedReference(innerType.elemID)
@@ -95,6 +100,10 @@ describe('rename adapter in elements', () => {
       mapOfMapField: { refType: new MapType(new MapType(changedInnerType)) },
     },
   })
+  const changedStaticFile = new StaticFile({
+    filepath: `static-resources/${newServiceName}/test.txt`,
+    content: Buffer.from('test'),
+  })
   const changedInstance = new InstanceElement('InstanceElement', changedObject, {
     field: new ReferenceExpression(changedInnerType.elemID),
     templateField: new TemplateExpression({
@@ -106,6 +115,7 @@ describe('rename adapter in elements', () => {
       ],
     }),
     innerRefField: changedInnerType,
+    staticFileField: changedStaticFile,
   })
   const changedUnresolvedReferenceInstanceToChange = new InstanceElement('InstanceElement',
     new TypeReference(changedObject.elemID))

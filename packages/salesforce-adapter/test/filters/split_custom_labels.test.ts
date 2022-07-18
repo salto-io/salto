@@ -22,7 +22,7 @@ import {
   isInstanceElement,
   ObjectType,
 } from '@salto-io/adapter-api'
-import filterCreator from '../../src/filters/split_custom_labels'
+import filterCreator, { CUSTOM_LABEL_INSTANCES_FILE_PATH } from '../../src/filters/split_custom_labels'
 import mockClient from '../client'
 import { defaultFilterContext } from '../utils'
 import { FilterWith } from '../../src/filter'
@@ -30,7 +30,6 @@ import {
   CUSTOM_LABEL_METADATA_TYPE,
   CUSTOM_LABELS_METADATA_TYPE,
   INSTANCE_FULL_NAME_FIELD, METADATA_TYPE,
-  RECORDS_PATH,
   SALESFORCE,
 } from '../../src/constants'
 
@@ -90,18 +89,18 @@ describe('Test split custom labels filter', () => {
       expect(receivedElements).toEqual([customLabelsInstance])
     })
 
-    it('should split CustomLabels instance into CustomLabel instances and remove it', async () => {
+    it('should split CustomLabels instance into CustomLabel instances with the same path, and remove it', async () => {
       const receivedElements = await runFetch(customLabelsInstance, customLabelType)
       const receivedCustomLabelInstances = receivedElements
         .filter(e => e.elemID.typeName === CUSTOM_LABEL_METADATA_TYPE)
       expect(receivedCustomLabelInstances).toIncludeAllPartialMembers([
         {
           value: customLabelsInstance.value.labels[0],
-          path: [SALESFORCE, RECORDS_PATH, CUSTOM_LABEL_METADATA_TYPE, CUSTOM_LABEL_1],
+          path: CUSTOM_LABEL_INSTANCES_FILE_PATH,
         },
         {
           value: customLabelsInstance.value.labels[1],
-          path: [SALESFORCE, RECORDS_PATH, CUSTOM_LABEL_METADATA_TYPE, CUSTOM_LABEL_2],
+          path: CUSTOM_LABEL_INSTANCES_FILE_PATH,
         },
       ])
       // validates the custom labels instance was removed

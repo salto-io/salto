@@ -26,13 +26,14 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import Joi from 'joi'
 import { collections } from '@salto-io/lowerdash'
+import { pathNaclCase } from '@salto-io/adapter-utils'
 import { FilterCreator, FilterWith } from '../filter'
 import { apiName, createInstanceElement, metadataAnnotationTypes } from '../transformers/transformer'
 import { getDataFromChanges, isInstanceOfType } from './utils'
 import {
   CUSTOM_LABEL_METADATA_TYPE,
   CUSTOM_LABELS_METADATA_TYPE,
-  INSTANCE_FULL_NAME_FIELD, METADATA_TYPE,
+  INSTANCE_FULL_NAME_FIELD, METADATA_TYPE, RECORDS_PATH,
   SALESFORCE,
 } from '../constants'
 
@@ -40,6 +41,14 @@ import {
 const log = logger(module)
 
 const CUSTOM_LABELS_FULL_NAME = 'CustomLabels'
+const CUSTOM_LABEL_INSTANCES_FILE_NAME = 'All'
+export const CUSTOM_LABEL_INSTANCES_FILE_PATH = [
+  SALESFORCE,
+  RECORDS_PATH,
+  pathNaclCase(CUSTOM_LABEL_METADATA_TYPE),
+  pathNaclCase(CUSTOM_LABEL_INSTANCES_FILE_NAME),
+]
+
 
 const { awu } = collections.asynciterable
 
@@ -161,9 +170,11 @@ const filterCreator: FilterCreator = () : FilterWith<'onFetch'> & FilterWith<'on
       }
       const customLabelsInstance = customLabelsInstances[0]
       const customLabelInstances = customLabelsInstance.value.labels
-        .map(label => createInstanceElement(
-          label,
+        .map(label => new InstanceElement(
+          label[INSTANCE_FULL_NAME_FIELD],
           customLabelType,
+          label,
+          CUSTOM_LABEL_INSTANCES_FILE_PATH,
         ))
       _.pull(elements, customLabelsInstance)
       elements.push(...customLabelInstances)

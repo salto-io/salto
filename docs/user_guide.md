@@ -61,8 +61,6 @@ Please refer to [https://github.com/salto-io/salto](https://github.com/salto-io/
 
 ## Quick Start
 
->Examples for CLI interactions throughout the guide assume you're in a **unix style shell** (e.g. on Mac or Linux). In case you're using some other shell on Windows, please make sure to make the required adjustments.
-
 We will walk you through `initiating` a new Salto `workspace`, adding a service to it, `fetching` the current configuration from the service, making a change to it and `deploying` the change back to the service. 
 
 This quick start guide assumes you have credentials for a `Salesforce` dev account (for the sake of the example). If not, either do the relevant adaptations for the business application you would like to interact with, or open a Salesforce developer account at [https://developer.salesforce.com/signup](https://developer.salesforce.com/signup).

@@ -19,7 +19,7 @@ import crypto from 'crypto'
 import path from 'path'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { InstanceElement, isListType, isObjectType, ObjectType } from '@salto-io/adapter-api'
+import { InstanceElement, isListType, isObjectType, ObjectType, Value } from '@salto-io/adapter-api'
 import { collections, decorators, strings } from '@salto-io/lowerdash'
 import { v4 as uuidv4 } from 'uuid'
 import { SuiteAppSoapCredentials, toUrlAccountId } from '../../credentials'
@@ -49,6 +49,7 @@ const SEARCH_PAGE_SIZE = 100
 
 const RETRYABLE_MESSAGES = ['ECONN', 'UNEXPECTED_ERROR', 'INSUFFICIENT_PERMISSION', 'VALIDATION_ERROR']
 const SOAP_RETRYABLE_MESSAGES = ['CONCURRENT']
+const SOAP_RETRYABLE_STATUS_INITIALS = ['5']
 
 type SoapSearchType = {
   type: string
@@ -57,19 +58,24 @@ type SoapSearchType = {
 
 const retryOnBadResponseWithDelay = (
   retryableMessages: string[],
+  retryableStatuses: string[] = [],
   retryDelay?: number
 ): decorators.InstanceMethodDecorator => (
   decorators.wrapMethodWith(
     async (
       call: decorators.OriginalCall,
     ): Promise<unknown> => {
+      const shouldRetry = (e: Value): boolean =>
+        retryableMessages.some(message => e?.message?.toUpperCase?.()?.includes?.(message)
+          || e?.code?.toUpperCase?.()?.includes?.(message))
+        || retryableStatuses.some(status => String(e?.response?.status).startsWith(status))
+
       const runWithRetry = async (retriesLeft: number): Promise<unknown> => {
         try {
           // eslint-disable-next-line @typescript-eslint/return-await
           return await call.call()
         } catch (e) {
-          if (retryableMessages.some(message => e?.message?.toUpperCase?.()?.includes?.(message)
-            || e?.code?.toUpperCase?.()?.includes?.(message)) && retriesLeft > 0) {
+          if (shouldRetry(e) && retriesLeft > 0) {
             log.warn('Retrying soap request with error: %s. Retries left: %d', e.message, retriesLeft)
             if (retryDelay) {
               await new Promise(f => setTimeout(f, retryDelay))
@@ -328,7 +334,11 @@ export default class SoapClient {
     return wsdl
   }
 
-  @retryOnBadResponseWithDelay(SOAP_RETRYABLE_MESSAGES, REQUEST_RETRY_DELAY)
+  @retryOnBadResponseWithDelay(
+    SOAP_RETRYABLE_MESSAGES,
+    SOAP_RETRYABLE_STATUS_INITIALS,
+    REQUEST_RETRY_DELAY
+  )
   private static async soapRequestWithRetries(
     client: elementUtils.soap.Client, operation: string, body: object
   ): Promise<unknown> {

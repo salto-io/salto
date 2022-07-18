@@ -341,6 +341,8 @@ export const TERRITORY2_MODEL_TYPE = 'Territory2Model'
 export const TERRITORY2_RULE_TYPE = 'Territory2Rule'
 export const LIGHTNING_PAGE_TYPE = 'LightningPage'
 export const FLEXI_PAGE_TYPE = 'FlexiPage'
+export const CUSTOM_LABEL_METADATA_TYPE = 'CustomLabel'
+export const CUSTOM_LABELS_METADATA_TYPE = 'CustomLabels'
 
 // Artifitial Types
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'

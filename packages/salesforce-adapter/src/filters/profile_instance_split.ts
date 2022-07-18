@@ -70,12 +70,8 @@ const isProfileInstance = async (elem: Element): Promise<boolean> => (
  * Each map field is assigned to a separate file, and the other fields and annotations
  * to Attributes.nacl.
  */
-const filterCreator: FilterCreator = ({ config }) => ({
+const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
-    if (config.useOldProfiles) {
-      return
-    }
-
     const profileInstances = await removeAsync(elements, isProfileInstance) as InstanceElement[]
     if (profileInstances.length === 0) {
       return

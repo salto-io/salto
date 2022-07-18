@@ -160,7 +160,6 @@ export const getConfigFromConfigChanges = (
           },
         }, isDefined),
         maxItemsInRetrieveRequest,
-        useOldProfiles: currentConfig.useOldProfiles,
         client: currentConfig.client,
       }, isDefined)
     )],

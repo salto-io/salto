@@ -153,9 +153,6 @@ export interface SalesforceAdapterParams {
   // Metadata types that are being fetched in the filters
   metadataTypesOfInstancesFetchedInFilters?: string[]
 
-  // Work with list-based profiles instead of map-based ones
-  useOldProfiles?: boolean
-
   // Metadata types that we have to fetch using the retrieve API
   metadataToRetrieve?: string[]
 
@@ -303,7 +300,6 @@ export default class SalesforceAdapter implements AdapterOperations {
       'LastReferencedDate',
       'LastViewedDate',
     ],
-    useOldProfiles = constants.DEFAULT_USE_OLD_PROFILES,
     config,
   }: SalesforceAdapterParams) {
     this.maxItemsInRetrieveRequest = config.maxItemsInRetrieveRequest ?? maxItemsInRetrieveRequest
@@ -321,7 +317,6 @@ export default class SalesforceAdapter implements AdapterOperations {
         config: {
           unsupportedSystemFields,
           systemFields,
-          useOldProfiles: config.useOldProfiles ?? useOldProfiles,
           fetchProfile,
           elementsSource,
           separateFieldToFiles: config.fetch?.metadata?.objectsToSeperateFieldsToFiles,

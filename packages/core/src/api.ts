@@ -17,7 +17,7 @@ import {
   Adapter, InstanceElement, ObjectType, ElemID, AccountId, getChangeData, isField,
   Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
   isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
-  SaltoError, Element, DetailedChange, isCredentialError,
+  SaltoError, Element, DetailedChange, isCredentialError, DeployExtraProperties,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -134,6 +134,7 @@ export interface DeployResult {
   errors: DeployError[]
   changes?: Iterable<FetchChange>
   appliedChanges?: Change[]
+  extraProperties?: DeployExtraProperties
 }
 
 export const deploy = async (
@@ -177,7 +178,7 @@ export const deploy = async (
       }
     }))
   }
-  const { errors, appliedChanges } = await deployActions(
+  const { errors, appliedChanges, extraProperties } = await deployActions(
     actionPlan, adapters, reportProgress, postDeployAction
   )
 
@@ -196,6 +197,7 @@ export const deploy = async (
     changes,
     appliedChanges,
     errors: errored ? errors : [],
+    extraProperties,
   }
 }
 

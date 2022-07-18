@@ -275,7 +275,8 @@ const filter: FilterCreator = ({ client, config }) => ({
     ) {
       return {
         leftoverChanges,
-        deployResult: objects.concatObjects([schemesDeployResult, levelsDeployResult]),
+        deployResult: objects.concatObjects([schemesDeployResult, levelsDeployResult]
+          .map(deployResult => _.omit(deployResult, 'extraProperties'))),
       }
     }
 
@@ -318,7 +319,7 @@ const filter: FilterCreator = ({ client, config }) => ({
     return {
       leftoverChanges,
       deployResult: objects.concatObjects([
-        levelsDeployResult,
+        _.omit(levelsDeployResult, 'extraProperties'),
         schemesResults,
       ]),
     }

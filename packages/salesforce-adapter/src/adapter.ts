@@ -417,6 +417,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     return {
       appliedChanges,
       errors: result.errors,
+      extraProperties: result.extraProperties,
     }
   }
 

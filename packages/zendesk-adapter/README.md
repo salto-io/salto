@@ -2,7 +2,7 @@
 
 Zendesk read-only adapter for salto.io
 
-Salto helps you keep track of the main configuration entities for Zendesk in areas such as ticket management and customization (fields, forms, dynamic content, schedules, routing, …), business rules (views, triggers, macros, automations, SLA policies), account configuration (account settings, groups and agent roles, brands, locales, etc) and more.
+Salto helps you keep track of the main configuration entities for Zendesk Support in areas such as ticket management and customization (fields, forms, dynamic content, schedules, routing, …), business rules (views, triggers, macros, automations, SLA policies), account configuration (account settings, groups and agent roles, brands, locales, etc) and more.
 
 We do this using the [Zendesk REST API](<https://developer.zendesk.com/api-reference/>).
 

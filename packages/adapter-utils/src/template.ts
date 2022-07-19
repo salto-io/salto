@@ -28,12 +28,7 @@ export type TemplateContainer = {
 export const prepareTemplateForDeploy = (template: TemplateExpression,
   prepRef: (part: ReferenceExpression) => TemplatePart): TemplateExpression =>
   new TemplateExpression({
-    parts: template.parts.map(part => {
-      if (isReferenceExpression(part)) {
-        return prepRef(part)
-      }
-      return part
-    }).flat(),
+    parts: template.parts.map(part => (isReferenceExpression(part) ? prepRef(part) : part)),
   })
 
 export const replaceTemplatesWithValues = (
@@ -63,15 +58,17 @@ export const resolveTemplates = (
   deployTemplateMapping: Record<string, TemplateExpression>
 ): void => {
   const { fieldName } = container
-  const resolveTemplate = (v: string): string | TemplateExpression =>
-    deployTemplateMapping[v] ?? v
   container.values.forEach(value => {
-    value[fieldName] = resolveTemplate(value[fieldName])
+    const val = value[fieldName]
+    value[fieldName] = deployTemplateMapping[val] ?? val
   })
 }
 
-export const extractTemplate = (formula: string, regexes: RegExp[],
-  extractionFunc: (st: string) => TemplatePart | TemplatePart[]): TemplateExpression | string => {
+export const extractTemplate = (
+  formula: string,
+  regexes: RegExp[],
+  extractionFunc: (expression: string) => TemplatePart | TemplatePart[],
+): TemplateExpression | string => {
   // The second part is a split that separates the now-marked ids, so they could be replaced
   // with ReferenceExpression in the loop code.
   // we continuously split the expression to find all kinds of potential references

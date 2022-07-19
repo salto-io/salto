@@ -23,7 +23,7 @@ import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { FETCH_CONFIG, IdLocator } from '../config'
 import { APP_INSTALLATION_TYPE_NAME } from './app'
-import { zendeskReferenceTypeToSaltoType } from './handle_template_expressions'
+import { ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE } from './handle_template_expressions'
 
 const log = logger(module)
 
@@ -107,7 +107,7 @@ const filterCreator: FilterCreator = ({ config }) => {
     onFetch: async (elements: InstanceElement[]): Promise<void> => log.time(async () =>
       getAppInstallations(elements)
         .forEach(app => replaceFieldsWithTemplates(app, _.groupBy(elements.filter(
-          e => [...Object.values(zendeskReferenceTypeToSaltoType),
+          e => [...Object.values(ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE),
             ...APP_INSTLLATION_SPECIFIC_TYPES]
             .includes((e.elemID.typeName))
         ), e => e.elemID.typeName), locators)),
@@ -116,7 +116,7 @@ const filterCreator: FilterCreator = ({ config }) => {
       getAppInstallations(changes.map(getChangeData))
         .forEach(app => {
           const convertTemplatesToValues = (fieldName: string): void => {
-            replaceTemplatesWithValues({ fieldName, values: [app.value] },
+            replaceTemplatesWithValues({ fieldName, values: [app.value.settings] },
               deployTemplateMapping, (part: ReferenceExpression) => {
                 if (isInstanceElement(part.value) && part.value.value.id) {
                   return _.toString(part.value.value.id)
@@ -131,7 +131,7 @@ const filterCreator: FilterCreator = ({ config }) => {
       getAppInstallations(changes.map(getChangeData))
         .forEach(app => {
           const resolveTemplateForApp = (fieldName: string): void => {
-            resolveTemplates({ fieldName, values: [app.value] }, deployTemplateMapping)
+            resolveTemplates({ fieldName, values: [app.value.settings] }, deployTemplateMapping)
           }
           runFunctionOnLocatedFields(app, locators, resolveTemplateForApp)
         }),

@@ -15,7 +15,7 @@
 */
 
 import { client as clientUtils, elements as elementUtils, filterUtils } from '@salto-io/adapter-components'
-import { BuiltinTypes, ElemID, InstanceElement, MapType, ObjectType, ReferenceExpression, TemplateExpression } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, InstanceElement, MapType, ObjectType, ReferenceExpression, TemplateExpression, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import ZendeskClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
@@ -25,81 +25,85 @@ import { ZENDESK_SUPPORT } from '../../src/constants'
 
 describe('handle app installations filter', () => {
   let client: ZendeskClient
-    type FilterType = filterUtils.FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
-    let filter: FilterType
+  type FilterType = filterUtils.FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
+  let filter: FilterType
 
-    beforeAll(() => {
-      client = new ZendeskClient({
-        credentials: { username: 'a', password: 'b', subdomain: 'c' },
-      })
+  beforeAll(() => {
+    client = new ZendeskClient({
+      credentials: { username: 'a', password: 'b', subdomain: 'c' },
     })
+  })
 
-    const appType = new ObjectType({
-      elemID: new ElemID(ZENDESK_SUPPORT, 'app_installation'),
-      fields: {
-        settings: { refType: new MapType(BuiltinTypes.STRING) },
-      },
-    })
+  const appType = new ObjectType({
+    elemID: new ElemID(ZENDESK_SUPPORT, 'app_installation'),
+    fields: {
+      settings: { refType: new MapType(BuiltinTypes.STRING) },
+    },
+  })
 
-    const ticketFieldType = new ObjectType({
-      elemID: new ElemID(ZENDESK_SUPPORT, 'ticket_field'),
-    })
+  const ticketFieldType = new ObjectType({
+    elemID: new ElemID(ZENDESK_SUPPORT, 'ticket_field'),
+  })
 
-    const fieldOptionType = new ObjectType({
-      elemID: new ElemID(ZENDESK_SUPPORT, 'ticket_field__custom_field_options'),
-    })
+  const fieldOptionType = new ObjectType({
+    elemID: new ElemID(ZENDESK_SUPPORT, 'ticket_field__custom_field_options'),
+  })
 
-    const groupType = new ObjectType({
-      elemID: new ElemID(ZENDESK_SUPPORT, 'group'),
-    })
+  const groupType = new ObjectType({
+    elemID: new ElemID(ZENDESK_SUPPORT, 'group'),
+  })
 
-    const field1 = new InstanceElement('field1', ticketFieldType, { id: 1451000000 })
-    const field2 = new InstanceElement('field2', ticketFieldType, { id: 1452000000 })
-    const option1 = new InstanceElement('option1', fieldOptionType, { id: 1351000000 })
-    const option2 = new InstanceElement('option2', fieldOptionType, { id: 1352000000 })
-    const group1 = new InstanceElement('group1', groupType, { id: 1251000000 })
-    const group2 = new InstanceElement('group2', groupType, { id: 1252000000 })
+  const field1 = new InstanceElement('field1', ticketFieldType, { id: 1451000000 })
+  const field2 = new InstanceElement('field2', ticketFieldType, { id: 1452000000 })
+  const option1 = new InstanceElement('option1', fieldOptionType, { id: 1351000000 })
+  const option2 = new InstanceElement('option2', fieldOptionType, { id: 1352000000 })
+  const group1 = new InstanceElement('group1', groupType, { id: 1251000000 })
+  const group2 = new InstanceElement('group2', groupType, { id: 1252000000 })
 
-    let app: InstanceElement
+  let app: InstanceElement
 
-    beforeEach(async () => {
-      app = new InstanceElement('appOne', appType, {
-        settings: {
-          unmappedF: '1452000000',
-          unmappedFO: '1352000000',
-          unmappedG: '1252000000',
-          mapped_field: '1451000000',
-          nonExistent_field: '1444000000',
-          mapped_fields: 'before1451000000, 1452000000after',
-          ticketFieldMapped: '1451000000',
-          mapped_options: 'custom_field_1351000000,custom_field_1352000000',
-          oneMapped_options: 'custom_field_1351000000',
-          nonExistant_options: 'custom_field_1333000000',
-          mappedGroup: '1251000000',
-          nonExistantGroup: '1222000000',
-          mappedWithNewlineSeparatorGroups: `
+  const generateApp = (): InstanceElement => new InstanceElement('appOne', appType, {
+    settings: {
+      unmappedF: '1452000000',
+      unmappedFO: '1352000000',
+      unmappedG: '1252000000',
+      mapped_field: '1451000000',
+      nonExistent_field: '1444000000',
+      mapped_fields: 'before1451000000, 1452000000after',
+      ticketFieldMapped: '1451000000',
+      mapped_options: 'custom_field_1351000000,custom_field_1352000000',
+      oneMapped_options: 'custom_field_1351000000',
+      nonExistant_options: 'custom_field_1333000000',
+      mappedGroup: '1251000000',
+      nonExistantGroup: '1222000000',
+      mappedWithNewlineSeparatorGroups: `
 before1251000000
 1252000000
 after
 `,
-        },
-      })
-    })
+    },
+  })
+  beforeEach(async () => {
+    app = generateApp()
+  })
 
-    const initFilterAndFetch = async (config = DEFAULT_CONFIG): Promise<void> => {
-      filter = filterCreator({
+  const SUPPORTING_ELEMENTS = [appType, ticketFieldType, fieldOptionType, groupType, field1,
+    field2, option1, option2, group1, group2]
+
+  const initFilterAndFetch = async (config = DEFAULT_CONFIG): Promise<void> => {
+    filter = filterCreator({
+      client,
+      paginator: clientUtils.createPaginator({
         client,
-        paginator: clientUtils.createPaginator({
-          client,
-          paginationFuncCreator: paginate,
-        }),
-        config,
-        fetchQuery: elementUtils.query.createMockQuery(),
-      }) as FilterType
-      await filter.onFetch([app, appType, ticketFieldType, fieldOptionType, groupType, field1,
-        field2, option1, option2, group1, group2])
-    }
+        paginationFuncCreator: paginate,
+      }),
+      config,
+      fetchQuery: elementUtils.query.createMockQuery(),
+    }) as FilterType
+    await filter.onFetch([app, ...SUPPORTING_ELEMENTS])
+  }
 
+  describe('onFetch', () => {
     it('Should not map fields with unmapped field names', async () => {
       await initFilterAndFetch()
       expect(app.value.settings.unmappedF).toEqual('1452000000')
@@ -174,4 +178,26 @@ after
         parts: [new ReferenceExpression(group2.elemID, group2)],
       }))
     })
+  })
+
+  describe('preDeploy', () => {
+    it('should return template values to original state', async () => {
+      await initFilterAndFetch()
+      const appClone = app.clone()
+      const cleanApp = generateApp()
+      expect(appClone).not.toEqual(cleanApp)
+      await filter.preDeploy([toChange({ before: appClone, after: appClone })])
+      expect(appClone).toEqual(cleanApp)
+    })
+  })
+
+  describe('onDeploy', () => {
+    it('should return template values to onFetch status', async () => {
+      await initFilterAndFetch()
+      const appClone = app.clone()
+      await filter.preDeploy([toChange({ before: appClone, after: appClone })])
+      await filter.onDeploy([toChange({ before: appClone, after: appClone })])
+      expect(appClone).toEqual(app)
+    })
+  })
 })

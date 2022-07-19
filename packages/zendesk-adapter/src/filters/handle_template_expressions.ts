@@ -30,26 +30,26 @@ const BRACKETS = [['{{', '}}'], ['{%', '%}']]
 const REFERENCE_MARKER_REGEX = /\$\{(.+?)}/
 const DYNAMIC_CONTENT_REGEX = /(dc\.[\w]+)/g
 
-export const zendeskReferenceTypeToSaltoType: Record<string, string> = {
+export const ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE: Record<string, string> = {
   'ticket.ticket_field': 'ticket_field',
   'ticket.ticket_field_option_title': 'ticket_field__custom_field_options',
 }
 
-export const saltoTypeToZendeskReferenceType = Object.fromEntries(
-  Object.entries(zendeskReferenceTypeToSaltoType)
+export const SALTO_TYPE_TO_ZENDESK_REFERENCE_TYPE = Object.fromEntries(
+  Object.entries(ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE)
     .map(entry => [entry[1], entry[0]])
 )
 
-const potentialReferenceTypes = Object.keys(zendeskReferenceTypeToSaltoType)
+const POTENTIAL_REFERENCE_TYPES = Object.keys(ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE)
 const typeSearchRegexes: RegExp[] = []
 BRACKETS.forEach(([opener, closer]) => {
-  potentialReferenceTypes.forEach(type => {
+  POTENTIAL_REFERENCE_TYPES.forEach(type => {
     typeSearchRegexes.push(new RegExp(`(${opener})([^\\$}]*${type}_[\\d]+[^}]*)(${closer})`, 'g'))
   })
   // dynamic content references look different, but can still be part of template
   typeSearchRegexes.push(new RegExp(`(${opener})([^\\$}]*dc\\.[\\w]+[^}]*)(${closer})`, 'g'))
 })
-const potentialReferenceTypeRegex = new RegExp(`((?:${potentialReferenceTypes.join('|')})_[\\d]+)`, 'g')
+const potentialReferenceTypeRegex = new RegExp(`((?:${POTENTIAL_REFERENCE_TYPES.join('|')})_[\\d]+)`, 'g')
 const potentialMacroFields = ['comment_value', 'comment_value_html', 'side_conversation']
 // triggers and automations notify users, webhooks
 // groups or targets with text that can include templates.
@@ -144,7 +144,7 @@ const formulaToTemplate = (formula: string,
       return expression
     }
     const [type, innerId] = splitReference
-    const elem = (instancesByType[zendeskReferenceTypeToSaltoType[type]] ?? [])
+    const elem = (instancesByType[ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[type]] ?? [])
       .find(instance => instance.value.id?.toString() === innerId)
     if (elem) {
       return new ReferenceExpression(elem.elemID, elem)
@@ -214,8 +214,8 @@ const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promi
 }
 
 const prepRef = (part: ReferenceExpression): TemplatePart => {
-  if (saltoTypeToZendeskReferenceType[part.elemID.typeName]) {
-    return `${saltoTypeToZendeskReferenceType[part.elemID.typeName]}_${part.value.value.id}`
+  if (SALTO_TYPE_TO_ZENDESK_REFERENCE_TYPE[part.elemID.typeName]) {
+    return `${SALTO_TYPE_TO_ZENDESK_REFERENCE_TYPE[part.elemID.typeName]}_${part.value.value.id}`
   }
   if (part.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME
     && _.isString(part.value.value.placeholder)) {

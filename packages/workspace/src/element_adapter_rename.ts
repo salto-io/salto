@@ -109,6 +109,7 @@ const updateStaticFile = (
   newAccountName: string,
   oldAccountName: string,
 ): void => {
+  // Note: the replace function only replace the first occurrence (which will be the folder name)
   _.set(value, 'filepath', value.filepath.replace(`${oldAccountName}/`, `${newAccountName}/`))
 }
 

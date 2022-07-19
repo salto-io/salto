@@ -104,8 +104,12 @@ const updateTemplateExpression = (value: TemplateExpression, accountName: string
   })
 }
 
-const updateStaticFile = (value: StaticFile, accountName: string, oldAccount: string): void => {
-  _.set(value, 'filepath', value.filepath.replace(`${oldAccount}/`, `${accountName}/`))
+const updateStaticFile = (
+  value: StaticFile,
+  newAccountName: string,
+  oldAccountName: string,
+): void => {
+  _.set(value, 'filepath', value.filepath.replace(`${oldAccountName}/`, `${newAccountName}/`))
 }
 
 const updateElement = (value: Element, accountName: string): void => {

@@ -30,7 +30,6 @@ import * as constants from './constants'
 export const CLIENT_CONFIG = 'client'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
 export const CUSTOM_OBJECTS_DEPLOY_RETRY_OPTIONS = 'customObjectsDeployRetryOptions'
-export const USE_OLD_PROFILES = 'useOldProfiles'
 export const FETCH_CONFIG = 'fetch'
 export const METADATA_CONFIG = 'metadata'
 export const METADATA_INCLUDE_LIST = 'include'
@@ -220,7 +219,6 @@ export type SalesforceClientConfig = Partial<{
 export type SalesforceConfig = {
   [FETCH_CONFIG]?: FetchParameters
   [MAX_ITEMS_IN_RETRIEVE_REQUEST]?: number
-  [USE_OLD_PROFILES]?: boolean
   [CLIENT_CONFIG]?: SalesforceClientConfig
   validators?: ChangeValidatorConfig
 }
@@ -577,9 +575,6 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
           max: constants.MAXIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST,
         }),
       },
-    },
-    [USE_OLD_PROFILES]: {
-      refType: BuiltinTypes.BOOLEAN,
     },
     [CLIENT_CONFIG]: {
       refType: clientConfigType,

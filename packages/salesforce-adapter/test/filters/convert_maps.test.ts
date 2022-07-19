@@ -51,7 +51,7 @@ describe('ProfileMaps filter', () => {
   const { client } = mockClient()
 
   describe('on fetch', () => {
-    const filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch' | 'preDeploy'>
+    const filter = filterCreator({ client, config: { ...defaultFilterContext } }) as FilterWith<'onFetch' | 'preDeploy'>
     let profileObj: ObjectType
     let instances: InstanceElement[]
 
@@ -317,60 +317,6 @@ describe('ProfileMaps filter', () => {
       expect(afterProfileObj).toEqual(generateProfileType(true))
       expect(beforeInstances).toEqual(generateInstances(beforeProfileObj))
       expect(afterInstances).toEqual(generateInstances(afterProfileObj))
-    })
-  })
-
-  describe('with profile maps disabled', () => {
-    const filter = filterCreator({ client, config: { ...defaultFilterContext, useOldProfiles: true } }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
-
-    it('should do nothing onFetch', async () => {
-      const profileObj = generateProfileType()
-      const elements = [
-        profileObj,
-        generateProfileInstance({
-          profileObj,
-          instanceName: 'aaa',
-          applications: ['app1', 'app2'],
-          fields: ['Account.AccountNumber', 'Contact.HasOptedOutOfEmail'],
-          layoutAssignments: [],
-        }),
-      ]
-
-      await filter.onFetch(elements)
-      expect(profileObj).toEqual(generateProfileType())
-    })
-
-    it('should do nothing preDeploy', async () => {
-      const profileObj = generateProfileType(true)
-      const inst = new InstanceElement(
-        'profileWithMaps',
-        profileObj,
-        {
-          applicationVisibilities: { app1: { application: 'app1' } },
-          fieldPermissions: { Account: { AccountNumber: { field: 'Account.AccountNumber' } } },
-          layoutAssignments: {},
-        },
-      )
-
-      await filter.preDeploy([{ action: 'add', data: { after: inst } }])
-      expect(profileObj).toEqual(generateProfileType(true))
-      expect(inst.value.fieldPermissions).toEqual({ Account: { AccountNumber: { field: 'Account.AccountNumber' } } })
-    })
-
-    it('should do nothing onDeploy', async () => {
-      const profileObj = generateProfileType()
-      const inst = generateProfileInstance({
-        profileObj,
-        instanceName: 'aaa',
-        applications: ['app1', 'app2'],
-        fields: ['Account.AccountNumber', 'Contact.HasOptedOutOfEmail'],
-        layoutAssignments: [],
-      })
-
-      await filter.onDeploy([{ action: 'add', data: { after: inst } }])
-      expect(await inst.getType()).toEqual(generateProfileType())
-      expect(profileObj).toEqual(generateProfileType())
-      expect(Array.isArray(inst.value.fieldPermissions)).toBeTruthy()
     })
   })
 })

@@ -21,7 +21,7 @@ import {
 import { applyRecursive, resolvePath } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
-import { SALESFORCE, PROFILE_METADATA_TYPE } from '../constants'
+import { SALESFORCE } from '../constants'
 import hardcodedListsData from './hardcoded_lists.json'
 import { metadataType } from '../transformers/transformer'
 import { metadataTypeToFieldToMapDef } from './convert_maps'
@@ -161,17 +161,10 @@ export const convertList = async (type: ObjectType, values: Values): Promise<voi
 
 const getMapFieldIds = async (
   types: ObjectType[],
-  useOldProfiles?: boolean
 ): Promise<Set<string>> => {
-  let objectsWithMapFields = await awu(types).filter(
+  const objectsWithMapFields = await awu(types).filter(
     async obj => Object.keys(metadataTypeToFieldToMapDef).includes(await metadataType(obj))
   ).toArray()
-
-  if (useOldProfiles) { // profile instance is irrelevant
-    objectsWithMapFields = await awu(objectsWithMapFields).filter(
-      async obj => await metadataType(obj) !== PROFILE_METADATA_TYPE
-    ).toArray()
-  }
 
   if (objectsWithMapFields.length > 0) {
     const allObjectsFields = objectsWithMapFields.flatMap(obj => Object.values(obj.fields))
@@ -198,7 +191,7 @@ export const makeFilter = (
   unorderedListFields: ReadonlyArray<UnorderedList>,
   unorderedListAnnotations: ReadonlyArray<UnorderedList>,
   hardcodedLists: ReadonlyArray<string>
-): FilterCreator => ({ config }) => ({
+): FilterCreator => () => ({
   /**
    * Upon fetch, mark all list fields as list fields in all fetched types
    *
@@ -211,7 +204,7 @@ export const makeFilter = (
       .toArray()
     const objectTypes = elements.filter(isObjectType)
 
-    const mapFieldIds = await getMapFieldIds(objectTypes, config.useOldProfiles)
+    const mapFieldIds = await getMapFieldIds(objectTypes)
     const knownListIds = new Set([
       ...hardcodedLists,
       ...unorderedListFields.map(sortDef => sortDef.elemID.getFullName()),

@@ -85,16 +85,6 @@ describe('elements generator', () => {
       expect(lists.length).toBeGreaterThan(0)
       expect(maps.length).toBeGreaterThan(0)
     })
-    it('should support old profiles', async () => {
-      const elements = await generateElements({
-        ...testParams,
-        useOldProfiles: true,
-      }, mockProgressReporter)
-      const profiles = elements.filter(isInstanceElement).filter(
-        e => e.path !== undefined && e.path[2] === 'Profile'
-      )
-      expect(profiles).toHaveLength(testParams.numOfProfiles)
-    })
 
     it('should return elements in the extra nacl dir', async () => {
       const elements = await generateElements({

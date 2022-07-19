@@ -157,7 +157,6 @@ export type GeneratorParams = {
     staticFileLinesStd: number
     listLengthMean: number
     listLengthStd: number
-    useOldProfiles: boolean
     changeErrors?: ChangeErrorFromConfigFile[]
     extraNaclPath?: string
     generateEnvName? : string
@@ -194,7 +193,6 @@ export const defaultParams: Omit<GeneratorParams, 'extraNaclPath'> = {
   staticFileLinesStd: 4.85,
   listLengthMean: 8.7,
   listLengthStd: 3.6,
-  useOldProfiles: false,
 }
 
 const MOCK_NACL_SUFFIX = 'nacl.mock'
@@ -232,15 +230,6 @@ const layoutAssignmentsType = new ObjectType({
     recordType: { refType: BuiltinTypes.STRING },
   },
   path: [DUMMY_ADAPTER, 'Default', 'LayoutAssignments'],
-})
-
-const oldProfileType = new ObjectType({
-  elemID: new ElemID(DUMMY_ADAPTER, 'Profile'),
-  fields: {
-    ObjectLevelPermissions: { refType: new ListType(permissionsType) },
-    FieldLevelPermissions: { refType: new ListType(permissionsType) },
-  },
-  path: [DUMMY_ADAPTER, 'Default', 'Profile'],
 })
 
 const profileType = new ObjectType({
@@ -588,7 +577,7 @@ export const generateElements = async (
     return record
   }))
 
-  const generateProfileLike = (useOldProfile = false): InstanceElement[] => {
+  const generateProfileLike = (): InstanceElement[] => {
     const objects = objByRank.flat()
     const allObjectsIDs = objects.map(obj => obj.elemID.getFullName())
     const allFieldsIDs = objects.flatMap(
@@ -632,18 +621,6 @@ export const generateElements = async (
         const objectPermissions = generatePermissions(allObjectsIDs)
         const fieldPermissions = generatePermissions(allFieldsIDs)
         const layoutAssignments = generateLayoutAssignments(allObjectsIDs)
-        if (useOldProfile) {
-          return [new InstanceElement(
-            name,
-            oldProfileType,
-            {
-              fullName: name,
-              ObjectLevelPermissions: objectPermissions,
-              FieldLevelPermissions: fieldPermissions,
-            },
-            [DUMMY_ADAPTER, 'Records', 'Profile', name],
-          )]
-        }
         const profileTypeRef = createRefToElmWithValue(profileType)
         return [
           new InstanceElement(
@@ -807,7 +784,7 @@ export const generateElements = async (
   progressReporter.reportProgress({ message: 'Generating records' })
   const records = await generateRecords()
   progressReporter.reportProgress({ message: 'Generating profile likes' })
-  const profiles = generateProfileLike(params.useOldProfiles)
+  const profiles = generateProfileLike()
   progressReporter.reportProgress({ message: 'Generating extra elements' })
   const extraElements = params.extraNaclPath
     ? await generateExtraElements(params.extraNaclPath)

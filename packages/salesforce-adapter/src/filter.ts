@@ -41,4 +41,11 @@ export type Filter = filter.Filter<FilterResult>
 
 export type FilterWith<M extends keyof Filter> = filter.FilterWith<FilterResult, M>
 
-export type FilterCreator = filter.FilterCreator<FilterResult, FilterOpts>
+// Local filters only use information in existing elements
+// They can change the format of elements, but cannot use external sources of information
+export type LocalFilterCreator = filter.FilterCreator<FilterResult, Omit<FilterOpts, 'client'>>
+
+// Remote filters can add more information to existing elements
+// They should not change the format of existing elements, they should focus only on adding
+// the new information
+export type RemoteFilterCreator = filter.FilterCreator<FilterResult, FilterOpts>

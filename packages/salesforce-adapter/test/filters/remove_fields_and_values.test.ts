@@ -17,7 +17,6 @@ import { ObjectType, ElemID, BuiltinTypes, Element, InstanceElement } from '@sal
 import { makeFilter } from '../../src/filters/remove_fields_and_values'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
-import mockClient from '../client'
 import { defaultFilterContext } from '../utils'
 
 describe('remove fields filter', () => {
@@ -71,14 +70,13 @@ describe('remove fields filter', () => {
     }
   )
 
-  const { client } = mockClient()
   const filter = makeFilter(
     new Map([
       ['typeRemoval', ['remove']],
       ['typeWithInstance', ['removeAlsoFromInstance', 'removeAlsoFromInstance2']],
       ['nested', ['remove']],
     ]),
-  )({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
+  )({ config: defaultFilterContext }) as FilterWith<'onFetch'>
 
   let testElements: Element[]
 

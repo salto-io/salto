@@ -16,7 +16,6 @@
 import { ObjectType, ElemID, BuiltinTypes, InstanceElement, toChange, Change, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
 import filterCreator from '../../src/filters/territory'
-import mockClient from '../client'
 import { createMetadataTypeElement, defaultFilterContext } from '../utils'
 import { createInstanceElement, MetadataInstanceElement } from '../../src/transformers/transformer'
 import { CONTENT_FILENAME_OVERRIDE } from '../../src/transformers/xml_transformer'
@@ -25,10 +24,7 @@ import { SALESFORCE, TERRITORY2_TYPE, TERRITORY2_MODEL_TYPE, CUSTOM_OBJECT } fro
 describe('territory filter', () => {
   let filter: FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   beforeEach(() => {
-    filter = filterCreator({
-      client: mockClient().client,
-      config: defaultFilterContext,
-    }) as typeof filter
+    filter = filterCreator({ config: defaultFilterContext }) as typeof filter
   })
   describe('onFetch', () => {
     let type: ObjectType

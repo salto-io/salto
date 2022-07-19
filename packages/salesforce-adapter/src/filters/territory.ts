@@ -15,7 +15,7 @@
 */
 import { Element, isInstanceElement, InstanceElement, getChangeData, Change, isInstanceChange, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
-import { FilterCreator } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { isMetadataObjectType, metadataType, apiName } from '../transformers/transformer'
 import { CONTENT_FILENAME_OVERRIDE } from '../transformers/xml_transformer'
 import { TERRITORY2_TYPE, TERRITORY2_MODEL_TYPE, TERRITORY2_RULE_TYPE } from '../constants'
@@ -70,7 +70,7 @@ const setTerritoryDeployPkgStructure = async (element: InstanceElement): Promise
   element.annotate({ [CONTENT_FILENAME_OVERRIDE]: contentPath })
 }
 
-const filterCreator: FilterCreator = () => ({
+const filterCreator: LocalFilterCreator = () => ({
   onFetch: async elements => {
     // Territory2 and Territory2Model support custom fields - these are returned
     // in a CustomObject with the appropriate name and also in each instance of these types

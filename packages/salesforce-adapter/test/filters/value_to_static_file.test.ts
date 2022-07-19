@@ -15,9 +15,7 @@
 */
 import { Element, ElemID, ObjectType, InstanceElement, isInstanceElement, BuiltinTypes, StaticFile, FieldDefinition } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
-import SalesforceClient from '../../src/client/client'
 import filterCreator from '../../src/filters/value_to_static_file'
-import mockClient from '../client'
 import { SALESFORCE, WEBLINK_METADATA_TYPE, METADATA_TYPE } from '../../src/constants'
 import { defaultFilterContext } from '../utils'
 
@@ -27,7 +25,6 @@ const URL = 'url'
 const NOT_URL = 'notUrlField'
 
 describe('value to static file filter', () => {
-  let client: SalesforceClient
   let elements: Element[]
   let regularUrl: string
   let codeAsString: string
@@ -36,8 +33,6 @@ describe('value to static file filter', () => {
   let fields: Record<string, FieldDefinition>
 
   beforeAll(() => {
-    client = mockClient().client
-
     anotherFieldContent = 'anotherFieldContent'
     regularUrl = 'www.myAwesomeWebsite.com'
     codeAsString = 'console.log()'
@@ -104,7 +99,7 @@ describe('value to static file filter', () => {
       let filter: FilterType
 
       beforeAll(() => {
-        filter = filterCreator({ client, config: defaultFilterContext }) as FilterType
+        filter = filterCreator({ config: defaultFilterContext }) as FilterType
       })
 
       describe('extract code to static file', () => {

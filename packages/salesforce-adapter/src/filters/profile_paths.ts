@@ -17,7 +17,7 @@ import { Element, InstanceElement, isInstanceElement } from '@salto-io/adapter-a
 import { pathNaclCase, naclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 
-import { FilterCreator, FilterWith } from '../filter'
+import { FilterWith, RemoteFilterCreator } from '../filter'
 import { apiName } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import { getInternalId, isInstanceOfType, ensureSafeFilterFetch } from './utils'
@@ -60,7 +60,7 @@ export const WARNING_MESSAGE = 'Failed to update the NaCl file names for some of
 /**
  * replace paths for profile instances upon fetch
  */
-const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
+const filterCreator: RemoteFilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

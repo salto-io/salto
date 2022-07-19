@@ -29,7 +29,6 @@ import {
   SALESFORCE,
   OBJECT_FIELDS_PATH,
 } from '../../src/constants'
-import mockClient from '../client'
 import { defaultFilterContext, createCustomObjectType } from '../utils'
 
 type FilterType = FilterWith<'onFetch'>
@@ -42,7 +41,6 @@ const getElementPaths = (elements: Element[]): string[] => elements
 describe('Custom Object Split filter', () => {
   describe('when using default file split', () => {
     const filter = (): FilterType => filterCreator({
-      client: mockClient().client,
       config: defaultFilterContext,
     }) as FilterType
 
@@ -261,7 +259,6 @@ describe('Custom Object Split filter', () => {
   })
   describe('when using per field file split', () => {
     const filter = (separateFieldToFiles: string[]): FilterType => filterCreator({
-      client: mockClient().client,
       config: { ...defaultFilterContext, separateFieldToFiles },
     }) as FilterType
 

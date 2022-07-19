@@ -23,7 +23,6 @@ import {
   ObjectType,
 } from '@salto-io/adapter-api'
 import filterCreator, { CUSTOM_LABEL_INSTANCES_FILE_PATH } from '../../src/filters/split_custom_labels'
-import mockClient from '../client'
 import { defaultFilterContext } from '../utils'
 import { FilterWith } from '../../src/filter'
 import {
@@ -57,7 +56,6 @@ describe('Test split custom labels filter', () => {
 
     let customLabelsInstance: InstanceElement
     const filter = (): FilterWith<'onFetch'> => filterCreator({
-      client: mockClient().client,
       config: defaultFilterContext,
     }) as FilterWith<'onFetch'>
 
@@ -185,10 +183,7 @@ describe('Test split custom labels filter', () => {
           ),
         },
       }
-      filter = filterCreator({
-        client: mockClient().client,
-        config: defaultFilterContext,
-      }) as FilterWith<'preDeploy' | 'onDeploy'>
+      filter = filterCreator({ config: defaultFilterContext }) as typeof filter
     })
     describe('preDeploy', () => {
       it('should prepare CustomLabels change', async () => {

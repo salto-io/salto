@@ -15,15 +15,12 @@
 */
 import { ObjectType, ElemID, Element, InstanceElement, isObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { FilterWith } from '../../../src/filter'
-import SalesforceClient from '../../../src/client/client'
 import { SALESFORCE, CPQ_PRODUCT_RULE, CPQ_LOOKUP_OBJECT_NAME, API_NAME, METADATA_TYPE, CUSTOM_OBJECT, CPQ_LOOKUP_QUERY, CPQ_LOOKUP_PRODUCT_FIELD, CPQ_LOOKUP_FIELD, CPQ_LOOKUP_MESSAGE_FIELD, API_NAME_SEPARATOR } from '../../../src/constants'
 import { Types } from '../../../src/transformers/transformer'
 import filterCreator from '../../../src/filters/field_references'
-import mockClient from '../../client'
 import { defaultFilterContext } from '../../utils'
 
 describe('fields with context references filter', () => {
-  let client: SalesforceClient
   type FilterType = FilterWith<'onFetch'>
   let filter: FilterType
   let elements: Element[]
@@ -140,8 +137,7 @@ describe('fields with context references filter', () => {
 
   describe('When all context objects exist in elements', () => {
     beforeAll(async () => {
-      client = mockClient().client
-      filter = filterCreator({ client, config: defaultFilterContext }) as FilterType
+      filter = filterCreator({ config: defaultFilterContext }) as FilterType
       elements = [
         ...getCloneOfAllObjects(),
         productRuleWithBadLookupObjInstance.clone(),

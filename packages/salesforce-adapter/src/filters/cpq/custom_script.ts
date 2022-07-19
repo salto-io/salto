@@ -18,7 +18,7 @@ import { Element, ObjectType, ListType, InstanceElement, isAdditionOrModificatio
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { FilterCreator } from '../../filter'
+import { LocalFilterCreator } from '../../filter'
 import { isInstanceOfTypeChange } from '../utils'
 import { CPQ_CUSTOM_SCRIPT, CPQ_CONSUMPTION_SCHEDULE_FIELDS, CPQ_GROUP_FIELDS, CPQ_QUOTE_FIELDS, CPQ_QUOTE_LINE_FIELDS, CPQ_CONSUMPTION_RATE_FIELDS, CPQ_CODE_FIELD } from '../../constants'
 import { Types, apiName, isInstanceOfCustomObject, isCustomObject } from '../../transformers/transformer'
@@ -154,7 +154,7 @@ const applyFuncOnCustomScriptFieldChange = async (
     .forEach(change => applyFunctionToChangeData(change, fn))
 }
 
-const filter: FilterCreator = () => ({
+const filter: LocalFilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     const customObjects = await awu(elements).filter(isCustomObject).toArray() as ObjectType[]
     const cpqCustomScriptObject = await awu(customObjects)

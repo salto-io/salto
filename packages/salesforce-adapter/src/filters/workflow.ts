@@ -28,7 +28,7 @@ import {
   WORKFLOW_TASK_METADATA_TYPE,
   SALESFORCE,
 } from '../constants'
-import { FilterCreator } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import {
   apiName, metadataType, createInstanceElement, metadataAnnotationTypes, MetadataTypeAnnotations,
   toMetadataInfo,
@@ -165,7 +165,7 @@ const getWorkflowApiName = async (change: Change<InstanceElement>): Promise<stri
   return await isWorkflowInstance(inst) ? apiName(inst) : parentApiName(inst)
 }
 
-const filterCreator: FilterCreator = () => {
+const filterCreator: LocalFilterCreator = () => {
   let originalWorkflowChanges: Record<string, Change<InstanceElement>[]> = {}
   return {
     /**

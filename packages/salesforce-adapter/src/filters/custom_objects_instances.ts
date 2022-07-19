@@ -25,7 +25,7 @@ import {
   SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGES_PATH, CUSTOM_OBJECT_ID_FIELD,
   OBJECTS_PATH, FIELD_ANNOTATIONS, MAX_QUERY_LENGTH,
 } from '../constants'
-import { FilterCreator, FilterResult } from '../filter'
+import { FilterResult, RemoteFilterCreator } from '../filter'
 import { apiName, isCustomObject, Types, createInstanceServiceIds, isNameField } from '../transformers/transformer'
 import { getNamespace, isMasterDetailField, isLookupField, conditionQueries, queryClient } from './utils'
 import { ConfigChangeSuggestion } from '../types'
@@ -410,7 +410,7 @@ export const getCustomObjectsFetchSettings = async (
     .toArray()
 }
 
-const filterCreator: FilterCreator = ({ client, config }) => ({
+const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
     const { dataManagement } = config.fetchProfile
     if (dataManagement === undefined) {

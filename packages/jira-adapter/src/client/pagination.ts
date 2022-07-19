@@ -24,7 +24,10 @@ const removeScopedObjectsImpl = <T extends clientUtils.ResponseValue>(
 ): T | T[] => {
   if (Array.isArray(response)) {
     return response
-      .filter(item => !(_.isPlainObject(item) && Object.keys(item).includes('scope')))
+      .filter(item =>
+        // filters out enries of specific project scope as we don't support it,
+        // but leaves entries of global scope
+        !(_.isPlainObject(item) && Object.keys(item).includes('scope') && !Object.values(item).some(v => _.isEqual(v, { type: 'GLOBAL' }))))
       .flatMap(removeScopedObjectsImpl) as T[]
   }
   if (_.isObject(response)) {

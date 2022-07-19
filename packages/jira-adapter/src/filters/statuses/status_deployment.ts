@@ -22,6 +22,7 @@ import { deployWithJspEndpoints } from '../../deployment/jsp_deployment'
 import { STATUS_TYPE_NAME } from '../../constants'
 
 const log = logger(module)
+const statusCategoryNameToId = new Map([['TODO', 2], ['DONE', 3], ['IN_PROGRESS', 4]])
 
 const filter: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]) => {
@@ -30,7 +31,9 @@ const filter: FilterCreator = ({ client, config }) => ({
       .filter(instance => instance.elemID.typeName === STATUS_TYPE_NAME)
       .filter(instance => instance.value.statusCategory !== undefined)
       .forEach(instance => {
-        instance.value.statusCategory = instance.value.statusCategory.id?.toString()
+        // statusCategory has a fixed number of options so we map the statusCategory name to its id
+        instance.value.statusCategory = statusCategoryNameToId.get(instance.value.statusCategory)
+        ?? instance.value.statusCategory
       })
 
     if (!config.client.usePrivateAPI) {
@@ -48,7 +51,6 @@ const filter: FilterCreator = ({ client, config }) => ({
     statusType.annotations[CORE_ANNOTATIONS.DELETABLE] = true
     setFieldDeploymentAnnotations(statusType, 'statusCategory')
     setFieldDeploymentAnnotations(statusType, 'description')
-    setFieldDeploymentAnnotations(statusType, 'iconUrl')
     setFieldDeploymentAnnotations(statusType, 'name')
     setFieldDeploymentAnnotations(statusType, 'id')
   },

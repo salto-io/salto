@@ -543,12 +543,22 @@ export const migrateWorkspace = async (
   const unmigratableEnvs = workspace.envs()
     .filter(envName => !_.isEqual(workspace.services(envName), [oldAdapterName]))
   if (!_.isEmpty(unmigratableEnvs)) {
-    log.error(`Cannot migrate the workspace: ${workspace.uid
-    } because the following envs are not migratable: ${unmigratableEnvs.join(', ')}`)
+    const [envsWithOtherServices, envsWithoutZendesk] = _.partition(
+      unmigratableEnvs,
+      env => workspace.services(env).includes(oldAdapterName)
+    )
+    if (!_.isEmpty(envsWithOtherServices)) {
+      log.error(`Cannot migrate the workspace: ${workspace.uid
+      } because the following envs have other services as well: ${unmigratableEnvs.join(', ')}`)
+    }
+    if (!_.isEmpty(envsWithoutZendesk)) {
+      log.error(`Cannot migrate the workspace: ${workspace.uid
+      } because the following envs don't have ${oldAdapterName}: ${unmigratableEnvs.join(', ')}`)
+    }
     return
   }
   const oldConfigFilePaths = (await workspace.accountConfigPaths(oldAdapterName))
-    .filter(configPath => configPath.endsWith(`${oldAdapterName}${nacl.FILE_EXTENSION}`))
+    .filter(configPath => configPath.endsWith(`.${oldAdapterName}${nacl.FILE_EXTENSION}`))
   await fixAdapterConfig(workspace, oldAdapterName, newAdapterName)
   await fixEnvsConfig(workspace, oldAdapterName, newAdapterName)
   try {

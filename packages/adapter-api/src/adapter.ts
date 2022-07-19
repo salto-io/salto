@@ -31,7 +31,7 @@ export interface FetchResult {
 }
 
 export type DeployExtraProperties = {
-  deploymentUrl?: URL
+  deploymentUrls?: URL[]
 }
 
 export type DeployResult = {

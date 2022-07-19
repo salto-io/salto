@@ -54,7 +54,7 @@ export type StepEvents<T = void> = {
 type DeployActionResult = {
   errors: DeployError[]
   appliedChanges: Change[]
-  extraProperties?: DeployExtraProperties
+  extraProperties: Required<DeployExtraProperties>
 }
 
 const updatePlanElement = (item: PlanItem, appliedChanges: ReadonlyArray<Change>): void => {
@@ -80,7 +80,7 @@ export const deployActions = async (
   postDeployAction: (appliedChanges: ReadonlyArray<Change>) => Promise<void>
 ): Promise<DeployActionResult> => {
   const appliedChanges: Change[] = []
-  let extraProperties: DeployExtraProperties | undefined
+  const deploymentUrls: URL[] = []
   try {
     await deployPlan.walkAsync(async (itemId: PlanItemId): Promise<void> => {
       const item = deployPlan.getItem(itemId) as PlanItem
@@ -88,7 +88,9 @@ export const deployActions = async (
       try {
         const result = await deployAction(item, adapters)
         result.appliedChanges.forEach(appliedChange => appliedChanges.push(appliedChange))
-        extraProperties = result.extraProperties
+        if (result.extraProperties?.deploymentUrls !== undefined) {
+          deploymentUrls.push(...result.extraProperties.deploymentUrls)
+        }
         // Update element with changes so references to it
         // will have an updated version throughout the deploy plan
         updatePlanElement(item, result.appliedChanges)
@@ -110,7 +112,7 @@ export const deployActions = async (
         throw error
       }
     })
-    return { errors: [], appliedChanges, extraProperties }
+    return { errors: [], appliedChanges, extraProperties: { deploymentUrls } }
   } catch (error) {
     const deployErrors: DeployError[] = []
     if (error instanceof WalkError) {
@@ -129,6 +131,6 @@ export const deployActions = async (
         })
       }
     }
-    return { errors: deployErrors, appliedChanges, extraProperties }
+    return { errors: deployErrors, appliedChanges, extraProperties: { deploymentUrls } }
   }
 }

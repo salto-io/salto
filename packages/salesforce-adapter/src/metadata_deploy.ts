@@ -314,11 +314,12 @@ export const deployMetadata = async (
       successfulId => changeDeployedIds[successfulId.type]?.has(successfulId.fullName)
     )
   }
+  const deploymentUrl = await getDeployStatusUrl(deployRes, client)
   return {
     appliedChanges: validChanges.filter(isSuccessfulChange),
     errors: [...validationErrors, ...errors],
     extraProperties: {
-      deploymentUrl: await getDeployStatusUrl(deployRes, client),
+      deploymentUrls: deploymentUrl ? [deploymentUrl] : undefined,
     },
   }
 }

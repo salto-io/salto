@@ -34,6 +34,8 @@ import {
   isTemplateExpression,
   ReferenceExpression,
   TemplateExpression,
+  isStaticFile,
+  StaticFile,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import { UnresolvedReference } from './expressions'
@@ -102,6 +104,14 @@ const updateTemplateExpression = (value: TemplateExpression, accountName: string
   })
 }
 
+const updateStaticFile = (
+  value: StaticFile,
+  newAccountName: string,
+  oldAccountName: string,
+): void => {
+  _.set(value, 'filepath', value.filepath.replace(`${oldAccountName}/`, `${newAccountName}/`))
+}
+
 const updateElement = (value: Element, accountName: string): void => {
   _.set(value, 'elemID', createAdapterReplacedID(value.elemID, accountName))
   value.annotationRefTypes = _.mapValues(value.annotationRefTypes,
@@ -117,11 +127,14 @@ const updateElement = (value: Element, accountName: string): void => {
   }
 }
 
-const transformElemIDAdapter = (accountName: string): TransformFunc => async (
+const transformElemIDAdapter = (accountName: string, oldAccount: string): TransformFunc => async (
   { value }
 ) => {
   if (isReferenceExpression(value)) {
     updateReferenceExpression(value, accountName)
+  }
+  if (isStaticFile(value)) {
+    updateStaticFile(value, accountName, oldAccount)
   }
   if (isTemplateExpression(value)) {
     updateTemplateExpression(value, accountName)
@@ -141,7 +154,7 @@ export const updateElementsWithAlternativeAccount = async (elementsToUpdate: Ele
     if (element.elemID.adapter === oldAccount) {
       await transformElement({
         element,
-        transformFunc: transformElemIDAdapter(newAccount),
+        transformFunc: transformElemIDAdapter(newAccount, oldAccount),
         strict: false,
         runOnFields: true,
         elementsSource: source,

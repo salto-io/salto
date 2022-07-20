@@ -928,6 +928,7 @@ describe('pino based logger', () => {
           normalTags: 1,
           functionStringTags: () => '5',
           functionObjTag: () => ({ something: 'bad', happened: 'here' }),
+          functionArrTag: () => ['one', 'two', 'three']
         }
         beforeEach(async () => {
           logger = createLogger()
@@ -938,6 +939,7 @@ describe('pino based logger', () => {
           expect(line).toContain('normalTags=1')
           expect(line).toContain('functionStringTags="5"')
           expect(line).toContain('functionObjTag={"something":"bad","happened":"here"}')
+          expect(line).toContain('functionArrTag=["one","two","three"]')
         })
         it('line should contain basic log data', () => {
           expect(line).toMatch(TIMESTAMP_REGEX)
@@ -955,7 +957,7 @@ describe('pino based logger', () => {
           logger.assignTags(logTags)
           logger.log(
             'error', 'lots of data %s', 'datadata', 'excessArgs',
-            true, { someArg: { with: 'data' }, anotherArg: 'much simpler' }, 'bad\n\t"string', undefined
+            true, { someArg: { with: 'data' }, anotherArg: 'much simpler' }, 'bad\n\t"string', undefined,
           );
           [line] = consoleStream.contents().split(EOL)
         })

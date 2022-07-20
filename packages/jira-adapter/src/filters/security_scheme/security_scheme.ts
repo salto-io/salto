@@ -58,7 +58,7 @@ const deploySecurityLevels = async (
   changes: Change<InstanceElement>[],
   config: JiraConfig,
   client: JiraClient,
-): Promise<DeployResult> => {
+): Promise<Omit<DeployResult, 'extraProperties'>> => {
   if (changes.length === 0) {
     return {
       appliedChanges: [],
@@ -275,8 +275,7 @@ const filter: FilterCreator = ({ client, config }) => ({
     ) {
       return {
         leftoverChanges,
-        deployResult: objects.concatObjects([schemesDeployResult, levelsDeployResult]
-          .map(deployResult => _.omit(deployResult, 'extraProperties'))),
+        deployResult: objects.concatObjects([schemesDeployResult, levelsDeployResult]),
       }
     }
 
@@ -319,7 +318,7 @@ const filter: FilterCreator = ({ client, config }) => ({
     return {
       leftoverChanges,
       deployResult: objects.concatObjects([
-        _.omit(levelsDeployResult, 'extraProperties'),
+        levelsDeployResult,
         schemesResults,
       ]),
     }

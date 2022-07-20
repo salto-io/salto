@@ -73,7 +73,7 @@ const runFunctionOnLocatedFields = (
   app: InstanceElement, locators: IdLocator[], func: (field: string, locator: IdLocator) => void
 ): void =>
   locators.forEach(locator => {
-    Object.keys(app.value.settings).forEach(key => {
+    Object.keys(app.value.settings ?? {}).forEach(key => {
       if (key.match(new RegExp(locator.fieldRegex, 'gi'))) {
         func(key, locator)
       }

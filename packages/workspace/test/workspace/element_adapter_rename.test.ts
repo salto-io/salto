@@ -58,7 +58,7 @@ describe('rename adapter in elements', () => {
     },
   })
   const staticFileToChange = new StaticFile({
-    filepath: `static-resources/${serviceName}/test.txt`,
+    filepath: `static-resources/${serviceName}/test${serviceName}.txt`,
     content: Buffer.from('test'),
   })
   const instanceToChange = new InstanceElement('InstanceElement', objectToChange, {
@@ -101,7 +101,7 @@ describe('rename adapter in elements', () => {
     },
   })
   const changedStaticFile = new StaticFile({
-    filepath: `static-resources/${newServiceName}/test.txt`,
+    filepath: `static-resources/${newServiceName}/test${serviceName}.txt`,
     content: Buffer.from('test'),
   })
   const changedInstance = new InstanceElement('InstanceElement', changedObject, {
@@ -138,6 +138,7 @@ describe('rename adapter in elements', () => {
       .value.innerRefField.annotationRefTypes.someRef.type
     changedInstance.value.innerRefField.fields.value = instanceToChange
       .value.innerRefField.fields.value
+    expect(instanceToChange.value.staticFileField).toEqual(changedInstance.value.staticFileField)
     expect(instanceToChange.isEqual(changedInstance)).toBeTruthy()
   })
 

@@ -597,7 +597,7 @@ export const migrateWorkspace = async (
         ({ data: { before: e }, action: 'remove', id: e.elemID, path: e.path }))
       const additionChanges: DetailedChange[] = fullElements.map(e =>
         ({ data: { after: e }, action: 'add', id: e.elemID, path: e.path }))
-      const changes = [...removalChanges, ...additionChanges]
+      const changes = removalChanges.concat(additionChanges)
       await workspace.updateNaclFiles(changes, 'isolated')
       await workspace.setNaclFiles(oldConfigFilePaths.map(filename => ({ filename, buffer: '' })))
       await workspace.flush()

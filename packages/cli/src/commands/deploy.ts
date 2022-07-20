@@ -228,6 +228,10 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
     }
   )
   outputLine(postDeployActionsOutput.join('\n'), output)
+  const deploymentUrl = _.get(result.extraProperties?.deploymentUrls, 0)
+  if (deploymentUrl !== undefined) {
+    outputLine(`You can see your deployment here: ${deploymentUrl}`, output)
+  }
   return cliExitCode
 }
 

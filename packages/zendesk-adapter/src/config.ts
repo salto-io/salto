@@ -1650,7 +1650,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
 }
 
 const IdLocatorType = createMatchingObjectType<IdLocator>({
-  elemID: new ElemID(ZENDESK_SUPPORT, 'recurseIntoContext'),
+  elemID: new ElemID(ZENDESK, 'recurseIntoContext'),
   fields: {
     fieldRegex: {
       refType: BuiltinTypes.STRING,

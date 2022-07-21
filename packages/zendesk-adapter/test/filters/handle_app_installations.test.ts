@@ -21,7 +21,7 @@ import ZendeskClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
 import filterCreator from '../../src/filters/handle_app_installations'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
-import { ZENDESK_SUPPORT } from '../../src/constants'
+import { ZENDESK } from '../../src/constants'
 
 describe('handle app installations filter', () => {
   let client: ZendeskClient
@@ -35,22 +35,22 @@ describe('handle app installations filter', () => {
   })
 
   const appType = new ObjectType({
-    elemID: new ElemID(ZENDESK_SUPPORT, 'app_installation'),
+    elemID: new ElemID(ZENDESK, 'app_installation'),
     fields: {
       settings: { refType: new MapType(BuiltinTypes.STRING) },
     },
   })
 
   const ticketFieldType = new ObjectType({
-    elemID: new ElemID(ZENDESK_SUPPORT, 'ticket_field'),
+    elemID: new ElemID(ZENDESK, 'ticket_field'),
   })
 
   const fieldOptionType = new ObjectType({
-    elemID: new ElemID(ZENDESK_SUPPORT, 'ticket_field__custom_field_options'),
+    elemID: new ElemID(ZENDESK, 'ticket_field__custom_field_options'),
   })
 
   const groupType = new ObjectType({
-    elemID: new ElemID(ZENDESK_SUPPORT, 'group'),
+    elemID: new ElemID(ZENDESK, 'group'),
   })
 
   const field1 = new InstanceElement('field1', ticketFieldType, { id: 1451000000 })

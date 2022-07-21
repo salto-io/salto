@@ -37,7 +37,7 @@
         { "path": "../test-utils" },
         { "path": "../workato-adapter" },
         { "path": "../workspace" },
-        { "path": "../zendesk-adapter" },
+        { "path": "../zendesk-support-adapter" },
         { "path": "../zuora-billing-adapter" },
     ]
 }

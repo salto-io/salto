@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, CORE_ANNOTATIONS, BuiltinTypes } from '@salto-io/adapter-api'
+import { ElemID, CORE_ANNOTATIONS, BuiltinTypes, ListType } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
 import { BRAND_NAME, ZENDESK } from './constants'
@@ -45,10 +45,20 @@ export const FETCH_CONFIG = 'fetch'
 
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
+export type IdLocator = {
+  fieldRegex: string
+  idRegex: string
+  type: string[]
+}
+
 export type ZendeskClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
 
 export type ZendeskFetchConfig = configUtils.DuckTypeUserFetchConfig
-  & { enableMissingReferences?: boolean }
+  & {
+    enableMissingReferences?: boolean
+    greedyAppReferences?: boolean
+    appReferenceLocators?: IdLocator[]
+  }
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
   configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean }
 >
@@ -1639,6 +1649,30 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
   },
 }
 
+const IdLocatorType = createMatchingObjectType<IdLocator>({
+  elemID: new ElemID(ZENDESK, 'recurseIntoContext'),
+  fields: {
+    fieldRegex: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        _required: true,
+      },
+    },
+    idRegex: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        _required: true,
+      },
+    },
+    type: {
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        _required: true,
+      },
+    },
+  },
+})
+
 export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
   elemID: new ElemID(ZENDESK),
   fields: {
@@ -1651,6 +1685,8 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
         {
           hideTypes: { refType: BuiltinTypes.BOOLEAN },
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
+          greedyAppReferences: { refType: BuiltinTypes.BOOLEAN },
+          appReferenceLocators: { refType: IdLocatorType },
         },
       ),
     },

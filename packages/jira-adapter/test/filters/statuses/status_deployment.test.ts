@@ -62,7 +62,6 @@ describe('statusDeploymentFilter', () => {
   })
 
   describe('onFetch', () => {
-    // change this test
     it('should replace status category with id', async () => {
       const instances = [new InstanceElement(
         'instance',

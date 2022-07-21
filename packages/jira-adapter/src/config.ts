@@ -1289,6 +1289,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         {
           fieldName: 'scope',
         },
+        {
+          fieldName: 'icon',
+        },
+        {
+          fieldName: 'resolved',
+        },
       ],
       serviceUrl: '/secure/admin/EditStatus!default.jspa?id={id}',
     },

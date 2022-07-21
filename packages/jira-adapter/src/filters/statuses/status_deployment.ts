@@ -22,7 +22,11 @@ import { deployWithJspEndpoints } from '../../deployment/jsp_deployment'
 import { STATUS_TYPE_NAME } from '../../constants'
 
 const log = logger(module)
-const statusCategoryNameToId = new Map([['TODO', 2], ['DONE', 3], ['IN_PROGRESS', 4]])
+const STATUS_CATEGORY_NAME_TO_ID : Record<string, number> = {
+  TODO: 2,
+  DONE: 3,
+  IN_PROGRESS: 4,
+}
 
 const filter: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]) => {
@@ -32,7 +36,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       .filter(instance => instance.value.statusCategory !== undefined)
       .forEach(instance => {
         // statusCategory has a fixed number of options so we map the statusCategory name to its id
-        instance.value.statusCategory = statusCategoryNameToId.get(instance.value.statusCategory)
+        instance.value.statusCategory = STATUS_CATEGORY_NAME_TO_ID[instance.value.statusCategory]
         ?? instance.value.statusCategory
       })
 

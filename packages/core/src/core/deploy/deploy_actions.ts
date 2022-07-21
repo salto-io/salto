@@ -80,7 +80,7 @@ export const deployActions = async (
   postDeployAction: (appliedChanges: ReadonlyArray<Change>) => Promise<void>
 ): Promise<DeployActionResult> => {
   const appliedChanges: Change[] = []
-  const deploymentUrls: URL[] = []
+  const deploymentUrls: string[] = []
   try {
     await deployPlan.walkAsync(async (itemId: PlanItemId): Promise<void> => {
       const item = deployPlan.getItem(itemId) as PlanItem

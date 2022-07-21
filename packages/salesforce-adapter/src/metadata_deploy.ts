@@ -268,13 +268,13 @@ const validateChanges = async (
 const getDeployStatusUrl = async (
   { id }: SFDeployResult,
   client: SalesforceClient
-): Promise<URL | undefined> => {
+): Promise<string | undefined> => {
   const baseUrl = await client.getUrl()
   if (baseUrl === undefined) {
     log.warn('Could not resolve Salesforce deployment URL')
     return undefined
   }
-  return new URL(`${baseUrl}lightning/setup/DeployStatus/page?address=%2Fchangemgmt%2FmonitorDeploymentsDetails.apexp%3FasyncId%3D${id}`)
+  return `${baseUrl}lightning/setup/DeployStatus/page?address=%2Fchangemgmt%2FmonitorDeploymentsDetails.apexp%3FasyncId%3D${id}`
 }
 
 export const deployMetadata = async (

@@ -817,7 +817,7 @@ describe('SalesforceAdapter CRUD', () => {
           const receivedUrls = result.extraProperties?.deploymentUrls
           const receivedUrl = receivedUrls?.[0]
           expect(receivedUrls).toHaveLength(1)
-          expect(receivedUrl?.toString()).toContain(DEPLOYMENT_ID)
+          expect(receivedUrl).toContain(DEPLOYMENT_ID)
         })
       })
 

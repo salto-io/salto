@@ -61,7 +61,7 @@ const changeValidator: ClientChangeValidator = async (
             .filter(instance => error.invalidObjects.has(instance.value[SCRIPT_ID]))
             .map(instance => ({
               message: 'SDF Objects Validation Error',
-              severity: 'Error' as const,
+              severity: 'Warning' as const,
               elemID: instance.elemID,
               detailedMessage: error.invalidObjects.get(instance.value[SCRIPT_ID]),
             }))
@@ -71,7 +71,7 @@ const changeValidator: ClientChangeValidator = async (
           : `Validation Error on ${groupId}`
         return groupChanges.map(change => ({
           message,
-          severity: 'Error' as const,
+          severity: 'Warning' as const,
           elemID: getChangeData(change).elemID,
           detailedMessage: error.message,
         }))

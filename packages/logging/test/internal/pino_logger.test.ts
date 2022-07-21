@@ -928,7 +928,7 @@ describe('pino based logger', () => {
           normalTags: 1,
           functionStringTags: () => '5',
           functionObjTag: () => ({ something: 'bad', happened: 'here' }),
-          functionArrTag: () => ['one', 'two', 'three']
+          functionArrTag: () => ['one', 2, false],
         }
         beforeEach(async () => {
           logger = createLogger()
@@ -939,7 +939,7 @@ describe('pino based logger', () => {
           expect(line).toContain('normalTags=1')
           expect(line).toContain('functionStringTags="5"')
           expect(line).toContain('functionObjTag={"something":"bad","happened":"here"}')
-          expect(line).toContain('functionArrTag=["one","two","three"]')
+          expect(line).toContain('functionArrTag=["one",2,false]')
         })
         it('line should contain basic log data', () => {
           expect(line).toMatch(TIMESTAMP_REGEX)
@@ -1012,7 +1012,7 @@ describe('pino based logger', () => {
         })
       })
       describe('with global tags', () => {
-        const moreTags = { anotherTag: 'foo', anotherNumber: 4 }
+        const moreTags = { anotherTag: 'foo', anotherNumber: 4, andAList: [true, 'two', 3] }
         beforeEach(async () => {
           initialConfig.minLevel = 'info'
           initialConfig.globalTags = moreTags
@@ -1027,6 +1027,7 @@ describe('pino based logger', () => {
           expect(line).toContain('"number":1')
           expect(line).toContain('"string":"1"')
           expect(line).toContain('"bool":true')
+          expect(line).toContain('"andAList":[true,"two",3]')
         })
         it('should new log tags', () => {
           expect(line).toContain('"anotherTag":"foo"')

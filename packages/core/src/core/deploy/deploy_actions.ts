@@ -15,7 +15,8 @@
 */
 import _ from 'lodash'
 import {
-  AdapterOperations, getChangeData, Change, isAdditionOrModificationChange, DeployResult,
+  AdapterOperations, getChangeData, Change,
+  isAdditionOrModificationChange, DeployResult, DeployExtraProperties,
 } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { WalkError, NodeSkippedError } from '@salto-io/dag'
@@ -50,6 +51,12 @@ export type StepEvents<T = void> = {
   failed: (errorText?: string) => void
 }
 
+type DeployActionResult = {
+  errors: DeployError[]
+  appliedChanges: Change[]
+  extraProperties: Required<DeployExtraProperties>
+}
+
 const updatePlanElement = (item: PlanItem, appliedChanges: ReadonlyArray<Change>): void => {
   const planElementById = _.keyBy(
     [...item.items.values()].map(getChangeData),
@@ -71,8 +78,9 @@ export const deployActions = async (
   adapters: Record<string, AdapterOperations>,
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
   postDeployAction: (appliedChanges: ReadonlyArray<Change>) => Promise<void>
-): Promise<{ errors: DeployError[]; appliedChanges: Change[]}> => {
+): Promise<DeployActionResult> => {
   const appliedChanges: Change[] = []
+  const deploymentUrls: string[] = []
   try {
     await deployPlan.walkAsync(async (itemId: PlanItemId): Promise<void> => {
       const item = deployPlan.getItem(itemId) as PlanItem
@@ -80,6 +88,9 @@ export const deployActions = async (
       try {
         const result = await deployAction(item, adapters)
         result.appliedChanges.forEach(appliedChange => appliedChanges.push(appliedChange))
+        if (result.extraProperties?.deploymentUrls !== undefined) {
+          deploymentUrls.push(...result.extraProperties.deploymentUrls)
+        }
         // Update element with changes so references to it
         // will have an updated version throughout the deploy plan
         updatePlanElement(item, result.appliedChanges)
@@ -101,7 +112,7 @@ export const deployActions = async (
         throw error
       }
     })
-    return { errors: [], appliedChanges }
+    return { errors: [], appliedChanges, extraProperties: { deploymentUrls } }
   } catch (error) {
     const deployErrors: DeployError[] = []
     if (error instanceof WalkError) {
@@ -120,6 +131,6 @@ export const deployActions = async (
         })
       }
     }
-    return { errors: deployErrors, appliedChanges }
+    return { errors: deployErrors, appliedChanges, extraProperties: { deploymentUrls } }
   }
 }

@@ -44,8 +44,8 @@ export const brandLogoFieldRemovalValidator: ChangeValidator = async changes => 
       [{
         elemID: instance.elemID,
         severity: 'Error',
-        message: `Error while trying to remove the brand_logo field while its instance still exists for brand ${instance.value.name}`,
-        detailedMessage: `Error while trying to remove the brand_logo field while its instance still exists for brand ${instance.value.name}`,
+        message: 'Cannot remove brand logo because it is still in use',
+        detailedMessage: `Cannot remove brand ${instance.value.name} logo because it's instace still exists. If you want to delete the brand logo, please remove the instance as well.`,
       }]
     ))
 }

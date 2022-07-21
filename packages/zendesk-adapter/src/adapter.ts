@@ -117,9 +117,9 @@ export const DEFAULT_FILTERS = [
   usersFilter,
   tagsFilter,
   macroAttachmentsFilter,
-  removeBrandLogoFieldFilter,
-  // brandLogoFilter should be after removeBrandLogoFieldFilter
   brandLogoFilter,
+  // removeBrandLogoFieldFilter should be after brandLogoFilter
+  removeBrandLogoFieldFilter,
   fieldReferencesFilter,
   appsFilter,
   appOwnedConvertListToMapFilter,
@@ -144,7 +144,6 @@ const SKIP_RESOLVE_TYPE_NAMES = [
   'organization_field__custom_field_options',
   'macro',
   'macro_attachment',
-  'brand_logo',
 ]
 
 export interface ZendeskAdapterParams {

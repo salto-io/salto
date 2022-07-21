@@ -45,7 +45,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
   protected isResourceApiLoggedIn = false
   protected resourceLoginPromise?: Promise<clientUtils.APIConnection>
   protected resourceClient?: clientUtils.APIConnection<
-    clientUtils.ResponseValue | clientUtils.ResponseValue[]
+  clientUtils.ResponseValue | clientUtils.ResponseValue[]
   >
 
   constructor(

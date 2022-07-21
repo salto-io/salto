@@ -18,7 +18,7 @@ import FormData from 'form-data'
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement,
   isInstanceElement, ObjectType, ReferenceExpression, StaticFile,
-  isRemovalChange, isStaticFile, Change, getChangeData,
+  isStaticFile, Change, getChangeData, isRemovalChange, isModificationChange,
 } from '@salto-io/adapter-api'
 import { getParents, naclCase, pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -108,12 +108,11 @@ const modifyBrandLogo = async (
   form.append('brand[logo][uploaded_data]', logoContent || Buffer.from(''), logoInstance.value.filename)
   try {
     const brandId = getParents(logoInstance)?.[0].resValue.value.id
-    const res = await client.put({
+    return await client.put({
       url: `/brands/${brandId}`,
       data: form,
       headers: { ...form.getHeaders() },
     })
-    return res
   } catch (err) {
     throw getZendeskError(logoInstance.elemID.getFullName(), err)
   }
@@ -139,30 +138,31 @@ const filterCreator: FilterCreator = ({ client }) => ({
       change => getChangeData(change).elemID.typeName === BRAND_LOGO_TYPE_NAME,
     )
 
-    const [brandLogoRemovals, brandLogoAdditionsOrModifications] = _.partition(
-      brandLogoChanges, isRemovalChange
-    )
-
-    brandLogoRemovals.map(change => modifyBrandLogo(
-      client, getChangeData(change), undefined,
-    ))
-
-    brandLogoAdditionsOrModifications.map(async change => {
+    brandLogoChanges.map(async change => {
       const logoInstance = getChangeData(change)
-      const fileContent = isStaticFile(logoInstance.value.content)
+      const fileContent = !isRemovalChange(change) && isStaticFile(logoInstance.value.content)
         ? await logoInstance.value.content.getContent()
         : undefined
-      if (fileContent !== undefined) {
-        await modifyBrandLogo(client, logoInstance, fileContent)
-      }
+      await modifyBrandLogo(client, logoInstance, fileContent)
     })
+
+    const logoFieldBrandModificationChanges = leftoverChanges
+      .filter(change => getChangeData(change).elemID.typeName === BRAND_NAME)
+      .filter(isModificationChange)
+      .filter(change => change.data.before.value.logo !== undefined)
+      .filter(change => change.data.after.value.logo !== undefined)
+      .filter(change => change.data.before.value.logo !== change.data.after.value.logo)
+
+    logoFieldBrandModificationChanges
+      .map(change => change.data.after.value.logo)
+      .map(async logoInstance => {
+        const fileContent = await logoInstance.value.content.getContent()
+        await modifyBrandLogo(client, logoInstance, fileContent)
+      })
 
     return {
       deployResult: {
-        appliedChanges: [
-          ...brandLogoAdditionsOrModifications,
-          ...brandLogoRemovals,
-        ],
+        appliedChanges: [...brandLogoChanges, ...logoFieldBrandModificationChanges],
         errors: [],
       },
       leftoverChanges,

@@ -23,17 +23,18 @@ import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction }
 
 type MigrationArgs = {
   force: boolean
+  common: boolean
 }
 
 export const migrateAction: WorkspaceCommandAction<MigrationArgs> = async ({
-  input: { force },
+  input: { force, common },
   output,
   workspace,
 }): Promise<CliExitCode> => {
   outputLine(formatStepStart(Prompts.MIGRATION_STARTED), output)
 
   try {
-    await migrateWorkspace(workspace, force)
+    await migrateWorkspace(workspace, force, common)
   } catch (e) {
     errorOutputLine(formatStepFailed(Prompts.MIGRATION_FAILED(e.toString())), output)
     return CliExitCode.AppError
@@ -55,6 +56,14 @@ const wsMigrateZendeskDef = createWorkspaceCommand({
         required: false,
         default: false,
         description: 'Force the migration',
+        type: 'boolean',
+      },
+      {
+        name: 'common',
+        alias: 'c',
+        required: false,
+        default: false,
+        description: 'Migrate to common',
         type: 'boolean',
       },
     ],

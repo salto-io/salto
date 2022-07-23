@@ -538,6 +538,7 @@ const getElementPathFromFileName = (filename: string, envName: string): string[]
 export const migrateWorkspace = async (
   workspace: Workspace,
   force: boolean,
+  common: boolean,
 ): Promise<void> => {
   const oldAdapterName = 'zendesk_support'
   const newAdapterName = 'zendesk'
@@ -603,7 +604,7 @@ export const migrateWorkspace = async (
       const additionChanges: DetailedChange[] = fullElements.map(e =>
         ({ data: { after: e }, action: 'add', id: e.elemID, path: e.path }))
       const changes = removalChanges.concat(additionChanges)
-      await workspace.updateNaclFiles(changes, 'isolated')
+      await workspace.updateNaclFiles(changes, common ? 'override' : 'isolated')
       await workspace.setNaclFiles(oldConfigFilePaths.map(filename => ({ filename, buffer: '' })))
       await workspace.flush()
     })

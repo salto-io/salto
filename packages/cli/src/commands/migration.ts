@@ -21,14 +21,19 @@ import Prompts from '../prompts'
 import { CliExitCode } from '../types'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
 
-export const migrateAction: WorkspaceCommandAction<unknown> = async ({
+type MigrationArgs = {
+  force: boolean
+}
+
+export const migrateAction: WorkspaceCommandAction<MigrationArgs> = async ({
+  input: { force },
   output,
   workspace,
 }): Promise<CliExitCode> => {
   outputLine(formatStepStart(Prompts.MIGRATION_STARTED), output)
 
   try {
-    await migrateWorkspace(workspace)
+    await migrateWorkspace(workspace, force)
   } catch (e) {
     errorOutputLine(formatStepFailed(Prompts.MIGRATION_FAILED(e.toString())), output)
     return CliExitCode.AppError
@@ -43,6 +48,16 @@ const wsMigrateZendeskDef = createWorkspaceCommand({
   properties: {
     name: 'migrate-zendesk',
     description: 'Migrate Zendesk adapter name from zendesk_support to zendesk',
+    keyedOptions: [
+      {
+        name: 'force',
+        alias: 'f',
+        required: false,
+        default: false,
+        description: 'Force the migration',
+        type: 'boolean',
+      },
+    ],
   },
   action: migrateAction,
 })

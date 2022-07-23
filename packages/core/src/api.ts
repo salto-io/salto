@@ -537,12 +537,13 @@ const getElementPathFromFileName = (filename: string, envName: string): string[]
 
 export const migrateWorkspace = async (
   workspace: Workspace,
+  force: boolean,
 ): Promise<void> => {
   const oldAdapterName = 'zendesk_support'
   const newAdapterName = 'zendesk'
   const unmigratableEnvs = workspace.envs()
     .filter(envName => !_.isEqual(workspace.services(envName), [oldAdapterName]))
-  if (!_.isEmpty(unmigratableEnvs)) {
+  if (!_.isEmpty(unmigratableEnvs) && !force) {
     const [envsWithOtherServices, envsWithoutZendesk] = _.partition(
       unmigratableEnvs,
       env => workspace.services(env).includes(oldAdapterName)
@@ -557,8 +558,9 @@ export const migrateWorkspace = async (
     }
     return
   }
-  const oldConfigFilePaths = (await workspace.accountConfigPaths(oldAdapterName))
-    .filter(configPath => configPath.endsWith(`.${oldAdapterName}${nacl.FILE_EXTENSION}`))
+  const configPaths = await workspace.accountConfigPaths(oldAdapterName)
+  const oldConfigFilePaths = configPaths
+    .filter(configPath => configPath.endsWith(`${oldAdapterName}${nacl.FILE_EXTENSION}`))
   await fixAdapterConfig(workspace, oldAdapterName, newAdapterName)
   await fixEnvsConfig(workspace, oldAdapterName, newAdapterName)
   try {
@@ -566,7 +568,8 @@ export const migrateWorkspace = async (
       log.info(`Start to migrate ${envName}`)
       await workspace.setCurrentEnv(envName, false)
       const elements = await workspace.elements()
-      const fullElements = await awu(await elements.getAll()).toArray()
+      const fullElements = (await awu(await elements.getAll()).toArray())
+        .filter(e => e.elemID.adapter === oldAdapterName)
       const statePathIndex = await workspace.state().getPathIndex()
       const pathIndexEntries = _.keyBy(await awu(
         statePathIndex.entries()
@@ -589,7 +592,9 @@ export const migrateWorkspace = async (
           element.path = [newAdapterName, ...(element.path?.slice(1) ?? [])]
         }
       })
-      await workspace.state().clear()
+      if (!force) {
+        await workspace.state().clear()
+      }
       await updateStateWithFetchResults(
         workspace, fullElements, fullElements, [newAdapterName, oldAdapterName]
       )

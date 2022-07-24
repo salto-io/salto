@@ -22,6 +22,7 @@ import { ConfigChangeSuggestion } from './types'
 export type FilterContext = {
   unsupportedSystemFields?: string[]
   systemFields?: string[]
+  enumFieldPermissions?: boolean
   fetchProfile: FetchProfile
   elementsSource: ReadOnlyElementsSource
   separateFieldToFiles?: string[]

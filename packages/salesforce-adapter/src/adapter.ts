@@ -70,6 +70,7 @@ import elementsUrlFilter from './filters/elements_url'
 import territoryFilter from './filters/territory'
 import customMetadataRecordsFilter from './filters/custom_metadata'
 import currencyIsoCodeFilter from './filters/currency_iso_code'
+import enumFieldPermissionsFilter from './filters/field_permissions_enum'
 import splitCustomLabels from './filters/split_custom_labels'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
@@ -154,6 +155,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   // extraDependenciesFilter should run after addMissingIdsFilter
   { creator: extraDependenciesFilter, addsNewInformation: true },
   { creator: customObjectsSplitFilter },
+  // should be before profileInstanceSplitFilter
+  { creator: enumFieldPermissionsFilter },
   { creator: profileInstanceSplitFilter },
 ]
 
@@ -166,6 +169,9 @@ export interface SalesforceAdapterParams {
 
   // Metadata types that are being fetched in the filters
   metadataTypesOfInstancesFetchedInFilters?: string[]
+
+  // Use enum instead of object to describe fieldPermissions
+  enumFieldPermissions?: boolean
 
   // Metadata types that we have to fetch using the retrieve API
   metadataToRetrieve?: string[]
@@ -314,6 +320,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       'LastReferencedDate',
       'LastViewedDate',
     ],
+    enumFieldPermissions = constants.DEFAULT_ENUM_FIELD_PERMISSIONS,
     config,
   }: SalesforceAdapterParams) {
     this.maxItemsInRetrieveRequest = config.maxItemsInRetrieveRequest ?? maxItemsInRetrieveRequest
@@ -331,6 +338,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         config: {
           unsupportedSystemFields,
           systemFields,
+          enumFieldPermissions: config.enumFieldPermissions ?? enumFieldPermissions,
           fetchProfile,
           elementsSource,
           separateFieldToFiles: config.fetch?.metadata?.objectsToSeperateFieldsToFiles,

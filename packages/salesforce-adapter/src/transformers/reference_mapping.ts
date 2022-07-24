@@ -164,7 +164,8 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   // note: not all field values under ReportColumn match this rule - but it's ok because
   // only the ones that match are currently extracted (SALTO-1758)
   {
-    src: { field: 'field', parentTypes: ['ProfileFieldLevelSecurity', 'FilterItem', 'PermissionSetFieldPermissions', 'ReportColumn'] },
+    // src: { field: 'field', parentTypes: ['ProfileFieldLevelSecurity', 'FilterItem', 'PermissionSetFieldPermissions', 'ReportColumn'] },
+    src: { field: 'field', parentTypes: ['FilterItem', 'ReportColumn'] },
     target: { type: CUSTOM_FIELD },
   },
   {

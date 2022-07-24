@@ -19,7 +19,6 @@ import { mockTypes, mockInstances } from '../mock_elements'
 import { defaultFilterContext } from '../utils'
 import makeFilter, { ServiceMDTRecordValue, NaclMDTRecordValue } from '../../src/filters/custom_metadata'
 import { FilterWith } from '../../src/filter'
-import mockClient from '../client'
 import { MetadataInstanceElement, createInstanceElement, MetadataValues } from '../../src/transformers/transformer'
 import { XML_ATTRIBUTE_PREFIX } from '../../src/constants'
 
@@ -43,10 +42,7 @@ describe('CustomMetadata filter', () => {
   describe('onFetch', () => {
     let filter: FilterType
     beforeEach(() => {
-      filter = makeFilter({
-        client: mockClient().client,
-        config: defaultFilterContext,
-      }) as FilterType
+      filter = makeFilter({ config: defaultFilterContext }) as FilterType
     })
     describe('with no custom metadata records', () => {
       let elements: Element[]
@@ -111,10 +107,7 @@ describe('CustomMetadata filter', () => {
     beforeAll(() => {
       // Note - intentionally using the same filter and "beforeAll" to mimic real flow where
       // the same filter instance would be used in both preDeploy and onDeploy
-      filter = makeFilter({
-        client: mockClient().client,
-        config: defaultFilterContext,
-      }) as FilterType
+      filter = makeFilter({ config: defaultFilterContext }) as FilterType
     })
     describe('preDeploy', () => {
       let changeInstance: MetadataInstanceElement

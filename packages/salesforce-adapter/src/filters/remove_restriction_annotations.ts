@@ -15,7 +15,7 @@
 */
 import { isObjectType, Element, ObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { FilterCreator } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { metadataType } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
@@ -39,7 +39,7 @@ const FIELDS_TO_REMOVE_RESTRICTION_FROM_BY_TYPE: Record<string, string[]> = {
  */
 export const makeFilter = (
   typeNameToFieldMapping: Record<string, string[]>,
-): FilterCreator => () => ({
+): LocalFilterCreator => () => ({
   onFetch: async (elements: Element[]) => {
     const removeRestrictionsFromTypeFields = async (type: ObjectType): Promise<void> => {
       const relevantFields = typeNameToFieldMapping[await metadataType(type)]

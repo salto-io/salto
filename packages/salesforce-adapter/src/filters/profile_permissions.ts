@@ -22,7 +22,7 @@ import { logger } from '@salto-io/logging'
 import { collections, promises } from '@salto-io/lowerdash'
 import { PROFILE_METADATA_TYPE, ADMIN_PROFILE, API_NAME, SALESFORCE } from '../constants'
 import { isCustomObject, apiName, isCustom, createInstanceElement, metadataAnnotationTypes, MetadataTypeAnnotations } from '../transformers/transformer'
-import { FilterCreator } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { ProfileInfo, FieldPermissions, ObjectPermissions } from '../client/types'
 import { isInstanceOfType, isMasterDetailField } from './utils'
 
@@ -117,7 +117,7 @@ const isAdminProfileChange = async (change: Change): Promise<boolean> => {
  * Profile permissions filter.
  * creates default Admin Profile.fieldsPermissions and Profile.objectsPermissions.
  */
-const filterCreator: FilterCreator = () => {
+const filterCreator: LocalFilterCreator = () => {
   let isPartialAdminProfile = false
   return {
     preDeploy: async changes => {

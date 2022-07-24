@@ -19,7 +19,7 @@ import { getParents } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, multiIndex } from '@salto-io/lowerdash'
 import { apiName, metadataType } from '../transformers/transformer'
-import { FilterCreator } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { generateReferenceResolverFinder, ReferenceContextStrategyName, FieldReferenceDefinition, getLookUpName } from '../transformers/reference_mapping'
 import {
   WORKFLOW_ACTION_ALERT_METADATA_TYPE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
@@ -131,7 +131,7 @@ export const addReferences = async (
  * Convert field values into references, based on predefined rules.
  *
  */
-const filter: FilterCreator = ({ config }) => ({
+const filter: LocalFilterCreator = ({ config }) => ({
   onFetch: async elements => {
     await addReferences(
       elements,

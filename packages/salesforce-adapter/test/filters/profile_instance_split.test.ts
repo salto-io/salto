@@ -18,14 +18,11 @@ import { ObjectType, Element, InstanceElement, isInstanceElement } from '@salto-
 import filterCreator from '../../src/filters/profile_instance_split'
 import { FilterWith } from '../../src/filter'
 import { generateProfileType, defaultFilterContext } from '../utils'
-import mockClient from '../client'
 
 
 describe('Profile Instance Split filter', () => {
-  const { client } = mockClient()
-
   describe('Map profile instances', () => {
-    const filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
+    const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch'>
 
     let profileObj: ObjectType
     let profileInstances: InstanceElement[]

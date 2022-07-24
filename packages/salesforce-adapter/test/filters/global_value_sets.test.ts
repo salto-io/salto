@@ -19,7 +19,6 @@ import { FilterWith } from '../../src/filter'
 import filterCreator,
 { GLOBAL_VALUE_SET, CUSTOM_VALUE, MASTER_LABEL } from '../../src/filters/global_value_sets'
 import { Types } from '../../src/transformers/transformer'
-import mockClient from '../client'
 import { defaultFilterContext } from '../utils'
 
 const createGlobalValueSetInstanceElement = (name: string, values: string[]): InstanceElement =>
@@ -73,10 +72,7 @@ const createPicklistObjectType = (
 })
 
 describe('Global Value Sets filter', () => {
-  const filter = filterCreator({
-    client: mockClient().client,
-    config: defaultFilterContext,
-  }) as FilterWith<'onFetch'>
+  const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch'>
   const mockElemID = new ElemID(constants.SALESFORCE, 'test')
   let elements: Element[] = []
 

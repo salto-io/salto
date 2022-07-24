@@ -20,7 +20,7 @@ import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { SHARING_RULES_TYPE } from '../../constants'
 import { getAuthorAnnotations } from '../../transformers/transformer'
-import { FilterCreator, FilterWith } from '../../filter'
+import { FilterWith, RemoteFilterCreator } from '../../filter'
 import SalesforceClient from '../../client/client'
 import { ensureSafeFilterFetch, isInstanceOfType } from '../utils'
 
@@ -67,7 +67,7 @@ export const WARNING_MESSAGE = 'Encountered an error while trying to populate au
 /*
  * add author information to sharing rules instances.
  */
-const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
+const filterCreator: RemoteFilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

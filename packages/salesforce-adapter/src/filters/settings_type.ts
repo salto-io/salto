@@ -16,7 +16,7 @@
 import { Element, isObjectType, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { FilterCreator, FilterResult } from '../filter'
+import { FilterResult, RemoteFilterCreator } from '../filter'
 import { createMetadataTypeElements, apiName } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import { SETTINGS_METADATA_TYPE } from '../constants'
@@ -59,7 +59,7 @@ const getSettingsTypeName = (typeName: string): string => typeName.concat(SETTIN
 /**
  * Add settings type
  */
-const filterCreator: FilterCreator = ({ client, config }) => ({
+const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   /**
    * Add all settings types and instances as filter.
    *

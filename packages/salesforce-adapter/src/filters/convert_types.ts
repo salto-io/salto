@@ -20,7 +20,7 @@ import {
   transformValues,
 } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { FilterCreator } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { transformPrimitive } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
@@ -30,7 +30,7 @@ const { awu } = collections.asynciterable
  * Convert types of values in instance elements to match the expected types according to the
  * instance type definition.
  */
-const filterCreator: FilterCreator = () => ({
+const filterCreator: LocalFilterCreator = () => ({
   /**
    * Upon fetch, convert all instance values to their correct type according to the
    * type definitions

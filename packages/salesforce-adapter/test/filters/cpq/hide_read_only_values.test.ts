@@ -18,15 +18,12 @@ import { ObjectType, ElemID, Element, CORE_ANNOTATIONS } from '@salto-io/adapter
 import { buildDataManagement } from '../../../src/fetch_profile/data_management'
 import { SaltoIDSettings, DataManagementConfig } from '../../../src/types'
 import { FilterWith } from '../../../src/filter'
-import SalesforceClient from '../../../src/client/client'
 import { SALESFORCE, API_NAME, METADATA_TYPE, CUSTOM_OBJECT, CPQ_TESTED_OBJECT, FIELD_ANNOTATIONS } from '../../../src/constants'
 import { Types } from '../../../src/transformers/transformer'
 import filterCreator from '../../../src/filters/cpq/hide_read_only_values'
-import mockClient from '../../client'
 import { defaultFilterContext } from '../../utils'
 
 describe('hide read only values filter', () => {
-  let client: SalesforceClient
   type FilterType = FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
   let filter: FilterType
   let elements: Element[]
@@ -97,9 +94,8 @@ describe('hide read only values filter', () => {
       ]
     })
     it('Should do nothing for not custom object type', async () => {
-      client = mockClient().client
       const config = defaultFilterContext
-      filter = filterCreator({ client, config }) as FilterType
+      filter = filterCreator({ config }) as FilterType
       await filter.onFetch(elements)
       const notCustomObjAfterFilter = elements[1] as ObjectType
       expect(notCustomObjAfterFilter).toBeDefined()
@@ -114,9 +110,8 @@ describe('hide read only values filter', () => {
         .toBeUndefined()
     })
     it('Should add "_hidden_value = true" to read only fields on custom object when showReadOnlyValue flag is undefined', async () => {
-      client = mockClient().client
       const config = defaultFilterContext
-      filter = filterCreator({ client, config }) as FilterType
+      filter = filterCreator({ config }) as FilterType
       await filter.onFetch(elements)
       const customObjAfterFilter = elements[0] as ObjectType
       expect(customObjAfterFilter).toBeDefined()
@@ -130,7 +125,6 @@ describe('hide read only values filter', () => {
         .toBeUndefined()
     })
     it('Should add "_hidden_value = true" to read only fields on custom object when showReadOnlyValue flag = false', async () => {
-      client = mockClient().client
       const dataManagmentConfig = {
         includeObjects: ['*'],
         saltoIDSettings: {} as SaltoIDSettings,
@@ -144,7 +138,7 @@ describe('hide read only values filter', () => {
           dataManagement: buildDataManagement(dataManagmentConfig),
         },
       }
-      filter = filterCreator({ client, config }) as FilterType
+      filter = filterCreator({ config }) as FilterType
       await filter.onFetch(elements)
       const customObjAfterFilter = elements[0] as ObjectType
       expect(customObjAfterFilter).toBeDefined()
@@ -158,7 +152,6 @@ describe('hide read only values filter', () => {
         .toBeUndefined()
     })
     it('Should do nothing to read only fields on custom object when showReadOnlyValue flag = true', async () => {
-      client = mockClient().client
       const dataManagmentConfig = {
         includeObjects: ['*'],
         saltoIDSettings: {} as SaltoIDSettings,
@@ -172,7 +165,7 @@ describe('hide read only values filter', () => {
           dataManagement: buildDataManagement(dataManagmentConfig),
         },
       }
-      filter = filterCreator({ client, config }) as FilterType
+      filter = filterCreator({ config }) as FilterType
       await filter.onFetch(elements)
       const customObjAfterFilter = elements[0] as ObjectType
       expect(customObjAfterFilter).toBeDefined()

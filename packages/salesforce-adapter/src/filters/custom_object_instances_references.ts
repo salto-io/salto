@@ -26,7 +26,7 @@ import {
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Element, Values, Field, InstanceElement, ReferenceExpression, SaltoError } from '@salto-io/adapter-api'
-import { FilterCreator, FilterResult } from '../filter'
+import { FilterResult, RemoteFilterCreator } from '../filter'
 import { apiName, isInstanceOfCustomObject, isCustomObject } from '../transformers/transformer'
 import { FIELD_ANNOTATIONS, KEY_PREFIX, KEY_PREFIX_LENGTH, SALESFORCE } from '../constants'
 import { addElementParentReference, isLookupField, isMasterDetailField } from './utils'
@@ -257,7 +257,7 @@ const buildCustomObjectPrefixKeyMap = async (
   )
 }
 
-const filter: FilterCreator = ({ client, config }) => ({
+const filter: RemoteFilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
     const { dataManagement } = config.fetchProfile
     if (dataManagement === undefined) {

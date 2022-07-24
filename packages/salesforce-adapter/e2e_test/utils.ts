@@ -21,7 +21,7 @@ import { MetadataInfo } from 'jsforce'
 import { SalesforceRecord } from '../src/client/types'
 import { FilterContext, FilterResult } from '../src/filter'
 import { SALESFORCE } from '../src/constants'
-import SalesforceAdapter, { DEFAULT_FILTERS } from '../src/adapter'
+import SalesforceAdapter, { allFilters } from '../src/adapter'
 import SalesforceClient from '../src/client/client'
 import { createInstanceElement, metadataType, apiName, MetadataValues, isInstanceOfCustomObject } from '../src/transformers/transformer'
 import { fetchMetadataType } from '../src/fetch'
@@ -239,7 +239,7 @@ export const runFiltersOnFetch = async (
   client: SalesforceClient,
   context: Partial<FilterContext>,
   elements: Element[],
-  filterCreators = DEFAULT_FILTERS
+  filterCreators = allFilters.map(({ creator }) => creator)
 ): Promise<void | FilterResult> =>
   filter.filtersRunner({ client, config: { ...defaultFilterContext, ...context } }, filterCreators)
     .onFetch(elements)

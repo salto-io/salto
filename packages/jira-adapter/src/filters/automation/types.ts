@@ -16,8 +16,9 @@
 
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, ObjectType } from '@salto-io/adapter-api'
 import { elements } from '@salto-io/adapter-components'
-import { AUTOMATION_PROJECT_TYPE, AUTOMATION_TYPE, AUTOMATION_COMPONENT_TYPE,
-  AUTOMATION_COMPONENT_VALUE_TYPE, JIRA } from '../../constants'
+import { AUTOMATION_PROJECT_TYPE, AUTOMATION_TYPE, AUTOMATION_COMPONENT_TYPE, AUTOMATION_FIELD,
+  AUTOMATION_STATUS, AUTOMATION_CONDITION, AUTOMATION_CONDITION_CRITERIA, AUTOMATION_SUBTASK,
+  AUTOMATION_ROLE, AUTOMATION_GROUP, AUTOMATION_EMAIL_RECIPENT, AUTOMATION_COMPONENT_VALUE_TYPE, JIRA } from '../../constants'
 
 export const createAutomationTypes = (): {
   automationType: ObjectType
@@ -33,29 +34,29 @@ export const createAutomationTypes = (): {
   })
 
   const fieldType = new ObjectType({
-    elemID: new ElemID(JIRA, 'AutomationField'),
+    elemID: new ElemID(JIRA, AUTOMATION_FIELD),
     fields: {
       type: { refType: BuiltinTypes.STRING },
       value: { refType: BuiltinTypes.STRING },
     },
-    path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, 'AutomationField'],
+    path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_FIELD],
   })
 
   const recipientType = new ObjectType({
-    elemID: new ElemID(JIRA, 'AutomationEmailRecipent'),
+    elemID: new ElemID(JIRA, AUTOMATION_EMAIL_RECIPENT),
     fields: {
       value: { refType: BuiltinTypes.STRING },
     },
-    path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, 'AutomationEmailRecipent'],
+    path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_EMAIL_RECIPENT],
   })
 
   const statusType = new ObjectType({
-    elemID: new ElemID(JIRA, 'AutomationStatus'),
+    elemID: new ElemID(JIRA, AUTOMATION_STATUS),
     fields: {
       type: { refType: BuiltinTypes.STRING },
       value: { refType: BuiltinTypes.STRING },
     },
-    path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, 'AutomationStatus'],
+    path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_STATUS],
   })
 
   const operationType = new ObjectType({
@@ -67,44 +68,44 @@ export const createAutomationTypes = (): {
   })
 
   const conditionCriteriaType = new ObjectType({
-    elemID: new ElemID(JIRA, 'AutomationConditionCriteria'),
+    elemID: new ElemID(JIRA, AUTOMATION_CONDITION_CRITERIA),
     fields: {
       value: { refType: BuiltinTypes.STRING },
     },
-    path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, 'AutomationConditionCriteria'],
+    path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_CONDITION_CRITERIA],
   })
 
   const conditionType = new ObjectType({
-    elemID: new ElemID(JIRA, 'AutomationCondition'),
+    elemID: new ElemID(JIRA, AUTOMATION_CONDITION),
     fields: {
       field: { refType: BuiltinTypes.STRING },
       criteria: { refType: new ListType(conditionCriteriaType) },
     },
-    path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, 'AutomationCondition'],
+    path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_CONDITION],
   })
 
   const groupType = new ObjectType({
-    elemID: new ElemID(JIRA, 'AutomationGroup'),
+    elemID: new ElemID(JIRA, AUTOMATION_GROUP),
     fields: {
       value: { refType: BuiltinTypes.STRING },
     },
-    path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, 'AutomationGroup'],
+    path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_GROUP],
   })
 
   const roleType = new ObjectType({
-    elemID: new ElemID(JIRA, 'AutomationRole'),
+    elemID: new ElemID(JIRA, AUTOMATION_ROLE),
     fields: {
       value: { refType: BuiltinTypes.STRING },
     },
-    path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, 'AutomationRole'],
+    path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_ROLE],
   })
 
   const subtaskType = new ObjectType({
-    elemID: new ElemID(JIRA, 'AutomationSubtask'),
+    elemID: new ElemID(JIRA, AUTOMATION_SUBTASK),
     fields: {
       type: { refType: BuiltinTypes.STRING },
     },
-    path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, 'AutomationSubtask'],
+    path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_SUBTASK],
   })
 
   const projectType = new ObjectType({

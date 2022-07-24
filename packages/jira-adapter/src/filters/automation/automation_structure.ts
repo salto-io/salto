@@ -14,9 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import Joi from 'joi'
 import { InstanceElement, isInstanceElement, Values, getChangeData,
   Change, isInstanceChange } from '@salto-io/adapter-api'
-import { transformElement, applyFunctionToChangeData, resolveValues } from '@salto-io/adapter-utils'
+import { transformElement, applyFunctionToChangeData, resolveValues, restoreChangeElement } from '@salto-io/adapter-utils'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { AUTOMATION_TYPE, AUTOMATION_COMPONENT_TYPE } from '../../constants'
@@ -24,6 +25,38 @@ import { FilterCreator } from '../../filter'
 import { getLookUpName } from '../../reference_mapping'
 
 const { awu } = collections.asynciterable
+
+type LinkTypeObject = {
+  linkType: string
+  linkTypeDirection: string
+}
+
+type RawValueObject = {
+  rawValue: string
+}
+
+type DeployableValueObject = {
+  value: string
+}
+
+const LINK_TYPE_SCHEME = Joi.object({
+  linkType: Joi.string().required(),
+  linkTypeDirection: Joi.string().required(),
+}).unknown(true).required()
+
+const RAW_VALUE_SCHEME = Joi.object({
+  rawValue: Joi.string().required(),
+}).unknown(true).required()
+
+const isLinkTypeObject = (value: unknown): value is LinkTypeObject => {
+  const { error } = LINK_TYPE_SCHEME.validate(value)
+  return error === undefined
+}
+
+const isRawValueObject = (value: unknown): value is RawValueObject => {
+  const { error } = RAW_VALUE_SCHEME.validate(value)
+  return error === undefined
+}
 
 const KEYS_TO_REMOVE = [
   'clientKey',
@@ -65,9 +98,11 @@ const replaceStringValuesFieldName = async (instance: InstanceElement): Promise<
     strict: false,
     allowEmpty: true,
     transformFunc: async ({ value, field }) => {
-      if (_.isPlainObject(value)
-      && (await field?.getType())?.elemID.typeName === AUTOMATION_COMPONENT_TYPE
-      && _.isString(value.value)) {
+      if (
+        _.isPlainObject(value)
+        && (await field?.getType())?.elemID.typeName === AUTOMATION_COMPONENT_TYPE
+        && _.isString(value.value)
+      ) {
         value.rawValue = value.value
         delete value.value
       }
@@ -85,8 +120,11 @@ const separateLinkTypeField = async (instance: InstanceElement): Promise<void> =
     strict: false,
     allowEmpty: true,
     transformFunc: async ({ value, path }) => {
-      if (_.isPlainObject(value)
-      && path?.name === 'value' && _.isString(value.linkType)) {
+      if (
+        _.isPlainObject(value)
+        && path?.name === 'value'
+        && _.isString(value.linkType)
+      ) {
         const [linkTypeDirection, linkTypeId] = _.split(value.linkType, ':')
         if (linkTypeDirection !== undefined && linkTypeId !== undefined) {
           value.linkType = linkTypeId
@@ -104,8 +142,10 @@ const consolidateLinkTypeFields = async (instance: InstanceElement): Promise<voi
     strict: false,
     allowEmpty: true,
     transformFunc: async ({ value, path }) => {
-      if (_.isPlainObject(value) && path?.name === 'value'
-      && value.linkType !== undefined && value.linkTypeDirection !== undefined) {
+      if (
+        path?.name === 'value'
+        && isLinkTypeObject(value)
+      ) {
         value.linkType = value.linkTypeDirection.concat(':', value.linkType)
         delete value.linkTypeDirection
       }
@@ -120,11 +160,13 @@ const changeRawValueFieldsToValue = async (instance: InstanceElement): Promise<v
     strict: false,
     allowEmpty: true,
     transformFunc: async ({ value, field }) => {
-      if (_.isPlainObject(value)
-      && (await field?.getType())?.elemID.typeName === AUTOMATION_COMPONENT_TYPE
-      && value.value === undefined && _.isString(value.rawValue)) {
-        value.value = value.rawValue
-        delete value.rawValue
+      if (
+        isRawValueObject(value)
+        && (await field?.getType())?.elemID.typeName === AUTOMATION_COMPONENT_TYPE
+      ) {
+        const { rawValue } = value
+        const deployableObject: DeployableValueObject = _.omit({ ...value, value: rawValue }, 'rawValue')
+        return deployableObject
       }
       return value
     },
@@ -133,8 +175,7 @@ const changeRawValueFieldsToValue = async (instance: InstanceElement): Promise<v
 
 
 const filter: FilterCreator = () => {
-  let originalAutomationChanges: Change<InstanceElement>[]
-  let deployableAutomationChanges: Change<InstanceElement>[]
+  let originalAutomationChanges: Record<string, Change<InstanceElement>>
   return {
     onFetch: async elements =>
       awu(elements)
@@ -160,30 +201,51 @@ const filter: FilterCreator = () => {
         }),
 
     preDeploy: async changes => {
-      originalAutomationChanges = changes
+      originalAutomationChanges = Object.fromEntries(changes
         .filter(isInstanceChange)
         .filter(change => getChangeData(change).elemID.typeName === AUTOMATION_TYPE)
+        .map(change => [getChangeData(change).elemID.getFullName(), _.cloneDeep(change)]))
 
-      deployableAutomationChanges = await awu(originalAutomationChanges)
-        .map(async change =>
+      await awu(changes)
+        .filter(isInstanceChange)
+        .filter(change => getChangeData(change).elemID.typeName === AUTOMATION_TYPE)
+        .forEach(async change =>
           applyFunctionToChangeData<Change<InstanceElement>>(
             change,
             async instance => {
               const resolvedInstance = await resolveValues(instance, getLookUpName)
               await consolidateLinkTypeFields(resolvedInstance)
               await changeRawValueFieldsToValue(resolvedInstance)
-              return resolvedInstance
+              instance.value = resolvedInstance.value
+              return instance
             }
           ))
-        .toArray()
-
-      _.pullAll(changes, originalAutomationChanges)
-      changes.push(...deployableAutomationChanges)
     },
 
     onDeploy: async changes => {
-      _.pullAll(changes, deployableAutomationChanges)
-      changes.push(...originalAutomationChanges)
+      await awu(changes)
+        .filter(isInstanceChange)
+        .filter(change => getChangeData(change).elemID.typeName === AUTOMATION_TYPE)
+        .forEach(async change => {
+          await applyFunctionToChangeData<Change<InstanceElement>>(
+            change,
+            async instance => {
+              await replaceStringValuesFieldName(instance)
+              await separateLinkTypeField(instance)
+              return instance
+            }
+          )
+        })
+
+      const automationChanges = changes
+        .filter(isInstanceChange)
+        .filter(change => getChangeData(change).elemID.typeName === AUTOMATION_TYPE)
+
+      const automationChangesToReturn = await awu(automationChanges)
+        .map(async change => restoreChangeElement(change, originalAutomationChanges, getLookUpName))
+        .toArray()
+      _.pullAll(changes, automationChanges)
+      changes.push(...automationChangesToReturn)
     },
   }
 }

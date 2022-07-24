@@ -16,7 +16,11 @@
 import { isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
-import { AUTOMATION_PROJECT_TYPE, BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, PROJECT_TYPE, SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME } from './constants'
+import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_TYPE,
+  BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, AUTOMATION_STATUS,
+  AUTOMATION_CONDITION, AUTOMATION_CONDITION_CRITERIA, AUTOMATION_SUBTASK,
+  AUTOMATION_ROLE, AUTOMATION_GROUP, AUTOMATION_EMAIL_RECIPENT, PROJECT_TYPE,
+  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 
 
@@ -332,67 +336,67 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     target: { type: 'Group' },
   },
   {
-    src: { field: 'boardId', parentTypes: ['AutomationComponentValue'] },
+    src: { field: 'boardId', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
     serializationStrategy: 'id',
     target: { type: 'Board' },
   },
   {
-    src: { field: 'linkTypes', parentTypes: ['AutomationComponentValue'] },
+    src: { field: 'linkTypes', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
     serializationStrategy: 'name',
     target: { type: 'IssueLinkType' },
   },
   {
-    src: { field: 'linkType', parentTypes: ['AutomationComponentValue'] },
+    src: { field: 'linkType', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
     serializationStrategy: 'id',
     target: { type: 'IssueLinkType' },
   },
   {
-    src: { field: 'sourceProject', parentTypes: ['AutomationComponentValue'] },
+    src: { field: 'sourceProject', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
     serializationStrategy: 'id',
     target: { type: 'Project' },
   },
   {
-    src: { field: 'targetProject', parentTypes: ['AutomationComponentValue'] },
+    src: { field: 'targetProject', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
     serializationStrategy: 'id',
     target: { type: 'Project' },
   },
   {
-    src: { field: 'groups', parentTypes: ['AutomationComponentValue'] },
+    src: { field: 'groups', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
     serializationStrategy: 'name',
     target: { type: 'Group' },
   },
   {
-    src: { field: 'value', parentTypes: ['AutomationField'] },
+    src: { field: 'value', parentTypes: [AUTOMATION_FIELD] },
     serializationStrategy: 'name',
     target: { type: 'Field' },
   },
   {
-    src: { field: 'value', parentTypes: ['AutomationField'] },
+    src: { field: 'value', parentTypes: [AUTOMATION_FIELD] },
     serializationStrategy: 'id',
     target: { type: 'Field' },
   },
   {
-    src: { field: 'value', parentTypes: ['AutomationStatus'] },
+    src: { field: 'value', parentTypes: [AUTOMATION_STATUS] },
     serializationStrategy: 'name',
     target: { type: 'Status' },
   },
   {
-    src: { field: 'value', parentTypes: ['AutomationStatus'] },
+    src: { field: 'value', parentTypes: [AUTOMATION_STATUS] },
     serializationStrategy: 'id',
     target: { type: 'Status' },
   },
   {
-    src: { field: 'value', parentTypes: ['AutomationEmailRecipent', 'AutomationConditionCriteria', 'AutomationGroup'] },
+    src: { field: 'value', parentTypes: [AUTOMATION_EMAIL_RECIPENT, AUTOMATION_CONDITION_CRITERIA, AUTOMATION_GROUP] },
     serializationStrategy: 'name',
     target: { type: 'Group' },
   },
   {
-    src: { field: 'field', parentTypes: ['AutomationCondition'] },
+    src: { field: 'field', parentTypes: [AUTOMATION_CONDITION] },
     serializationStrategy: 'id',
     target: { type: 'Field' },
   },
   {
-    src: { field: 'type', parentTypes: ['AutomationSubtask'] },
+    src: { field: 'type', parentTypes: [AUTOMATION_SUBTASK] },
     serializationStrategy: 'id',
     target: { type: 'IssueType' },
   },
@@ -402,7 +406,7 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     target: { type: 'Project' },
   },
   {
-    src: { field: 'value', parentTypes: ['AutomationRole'] },
+    src: { field: 'value', parentTypes: [AUTOMATION_ROLE] },
     serializationStrategy: 'name',
     target: { type: 'ProjectRole' },
   },

@@ -13,20 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ObjectType, toChange, getAllChangeData } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, toChange, getAllChangeData, ReferenceExpression, ElemID } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../../utils'
 import automationStructureFilter from '../../../src/filters/automation/automation_structure'
 import { DEFAULT_CONFIG } from '../../../src/config'
 import { createAutomationTypes } from '../../../src/filters/automation/types'
+import { JIRA } from '../../../src/constants'
 
 
 describe('automationStructureFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let type: ObjectType
   let instance: InstanceElement
-  let afterChangeInstance: InstanceElement
+  let ref: InstanceElement
+  let instanceAfterFetch: InstanceElement
+  let changedInstance: InstanceElement
 
 
   beforeEach(async () => {
@@ -85,6 +88,27 @@ describe('automationStructureFilter', () => {
         ],
       }
     )
+
+    ref = new InstanceElement(
+      'linkInstance',
+      new ObjectType({
+        elemID: new ElemID(JIRA, 'someType'),
+      }),
+      {
+        id: '10003',
+        name: 'LinkTypeee',
+      }
+    )
+
+    instanceAfterFetch = instance.clone()
+    instanceAfterFetch.value.components[2].value.linkType = new ReferenceExpression(
+      ref.elemID, ref.value.id
+    )
+    instanceAfterFetch.value.components[2].value.linkTypeDirection = 'inward'
+    instanceAfterFetch.value.components[1].rawValue = 'priority > Medium'
+    delete instanceAfterFetch.value.components[1].value
+    changedInstance = instanceAfterFetch.clone()
+    changedInstance.value.components[0].component = 'BRANCH'
   })
 
   describe('onFetch', () => {
@@ -130,37 +154,36 @@ describe('automationStructureFilter', () => {
     })
   })
 
-  describe('preDeploy & onDeploy', () => {
-    it('should preDeploy and onDeploy as expected', async () => {
-      instance.value.components[2].value.linkType = '10003'
-      instance.value.components[2].value.linkTypeDirection = 'inward'
-      instance.value.components[1].rawValue = 'priority > Medium'
-      delete instance.value.components[1].value
-      afterChangeInstance = instance.clone()
-      afterChangeInstance.value.components[0].component = 'BRANCH'
-
-      const changes = [toChange({ before: instance, after: afterChangeInstance })]
+  describe('preDeploy', () => {
+    it('should combine linkType fields and change rawValue to value', async () => {
+      const changes = [toChange({ before: instanceAfterFetch, after: changedInstance })]
       await filter.preDeploy(changes)
-      const c = changes[0]
-      expect(getAllChangeData(c)[0].value.components[1].value).toBeDefined()
-      expect(getAllChangeData(c)[0].value.components[1].rawValue).toBeUndefined()
-      expect(getAllChangeData(c)[0].value.components[2].value.linkType).toBeDefined()
-      expect(getAllChangeData(c)[0].value.components[2].value.linkTypeDirection).toBeUndefined()
-      expect(getAllChangeData(c)[1].value.components[1].value).toBeDefined()
-      expect(getAllChangeData(c)[1].value.components[1].rawValue).toBeUndefined()
-      expect(getAllChangeData(c)[1].value.components[2].value.linkType).toBeDefined()
-      expect(getAllChangeData(c)[1].value.components[2].value.linkTypeDirection).toBeUndefined()
+      const [before, after] = getAllChangeData(changes[0])
+      expect(before.value.components[1].value).toEqual('priority > Medium')
+      expect(before.value.components[1].rawValue).toBeUndefined()
+      expect(before.value.components[2].value.linkType).toEqual('inward:10003')
+      expect(before.value.components[2].value.linkTypeDirection).toBeUndefined()
+      expect(after.value.components[1].value).toEqual('priority > Medium')
+      expect(after.value.components[1].rawValue).toBeUndefined()
+      expect(after.value.components[2].value.linkType).toEqual('inward:10003')
+      expect(after.value.components[2].value.linkTypeDirection).toBeUndefined()
+    })
+  })
 
+  describe('onDeplopy', () => {
+    it('should split linkType fields and change value to rawValue', async () => {
+      const changes = [toChange({ before: instanceAfterFetch, after: changedInstance })]
+      await filter.preDeploy(changes)
       await filter.onDeploy(changes)
-      const d = changes[0]
-      expect(getAllChangeData(d)[0].value.components[1].value).toBeUndefined()
-      expect(getAllChangeData(d)[0].value.components[1].rawValue).toBeDefined()
-      expect(getAllChangeData(d)[0].value.components[2].value.linkType).toBeDefined()
-      expect(getAllChangeData(d)[0].value.components[2].value.linkTypeDirection).toBeDefined()
-      expect(getAllChangeData(d)[1].value.components[1].value).toBeUndefined()
-      expect(getAllChangeData(d)[1].value.components[1].rawValue).toBeDefined()
-      expect(getAllChangeData(d)[1].value.components[2].value.linkType).toBeDefined()
-      expect(getAllChangeData(d)[1].value.components[2].value.linkTypeDirection).toBeDefined()
+      const [before, after] = getAllChangeData(changes[0])
+      expect(before.value.components[1].value).toBeUndefined()
+      expect(before.value.components[1].rawValue).toEqual('priority > Medium')
+      expect(before.value.components[2].value.linkType).toBeInstanceOf(ReferenceExpression)
+      expect(before.value.components[2].value.linkTypeDirection).toEqual('inward')
+      expect(after.value.components[1].value).toBeUndefined()
+      expect(after.value.components[1].rawValue).toEqual('priority > Medium')
+      expect(after.value.components[2].value.linkType).toBeInstanceOf(ReferenceExpression)
+      expect(after.value.components[2].value.linkTypeDirection).toEqual('inward')
     })
   })
 })

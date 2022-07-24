@@ -23,7 +23,8 @@ const { awu } = collections.asynciterable
 
 const filterCreator: FilterCreator = ({ config }): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
-    if (config.fetch?.customFields?.enable) {
+    // if undefined, we want to be treated as true so we check `=== false`
+    if (config.fetch?.strictInstanceStructure?.enable === false) {
       return
     }
     await awu(elements)

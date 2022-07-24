@@ -27,7 +27,7 @@ import {
   SUITEAPP_CONCURRENCY_LIMIT, SUITEAPP_CLIENT_CONFIG, USE_CHANGES_DETECTION,
   CONCURRENCY_LIMIT, FETCH, INCLUDE, EXCLUDE, DEPLOY, DATASET, WORKBOOK, WARN_STALE_DATA,
   INSTALLED_SUITEAPPS, LOCKED_ELEMENTS_TO_EXCLUDE, AUTHOR_INFO_CONFIG, ADDITIONAL_DEPS, VALIDATE,
-  CUSTOM_FIELDS,
+  STRICT_INSTANCE_STRUCTURE,
 } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from './data_elements/types'
@@ -199,7 +199,7 @@ const authorInfoConfig = new ObjectType({
   },
 })
 
-const customFieldsConfig = new ObjectType({
+const strictInstanceStructureConfig = new ObjectType({
   elemID: new ElemID(NETSUITE, 'fetchCustomFields'),
   fields: {
     enable: {
@@ -215,7 +215,7 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
     [EXCLUDE]: { refType: queryParamsConfigType },
     [LOCKED_ELEMENTS_TO_EXCLUDE]: { refType: queryParamsConfigType },
     [AUTHOR_INFO_CONFIG]: { refType: authorInfoConfig },
-    [CUSTOM_FIELDS]: { refType: customFieldsConfig },
+    [STRICT_INSTANCE_STRUCTURE]: { refType: strictInstanceStructureConfig },
   },
 })
 

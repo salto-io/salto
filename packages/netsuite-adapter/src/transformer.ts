@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ElemID, Field, InstanceElement, isPrimitiveType, ObjectType, PrimitiveType,
+  ElemID, Field, InstanceElement, isPrimitiveType, ObjectType,
   PrimitiveTypes, Values, isObjectType, isPrimitiveValue, StaticFile, ElemIdGetter,
   OBJECT_SERVICE_ID, OBJECT_NAME, toServiceIdsString, ServiceIds,
   isInstanceElement,
@@ -39,6 +39,7 @@ const { awu } = collections.asynciterable
 
 const XML_TRUE_VALUE = 'T'
 const XML_FALSE_VALUE = 'F'
+const toXmlBoolean = (value: boolean): string => (value ? XML_TRUE_VALUE : XML_FALSE_VALUE)
 
 // FileCabinet instance path might start with '.' and we can't have NaCLs with that prefix as we
 // don't load hidden files to the workspace in the core.
@@ -84,13 +85,9 @@ export const createInstanceElement = async (customizationInfo: CustomizationInfo
 
   const transformPrimitive: TransformFunc = async ({ value, field }) => {
     const fieldType = await field?.getType()
-    if (!isPrimitiveType(fieldType) || !isPrimitiveValue(value)) {
-      return value
-    }
-
-    // We sometimes get empty strings that we want to filter out
-    if (value === '') {
-      return undefined
+    if (value === '' || !isPrimitiveType(fieldType) || !isPrimitiveValue(value)) {
+      // We sometimes get empty strings that we want to filter out
+      return value === '' ? undefined : value
     }
 
     switch (fieldType.primitive) {
@@ -146,6 +143,7 @@ export const createInstanceElement = async (customizationInfo: CustomizationInfo
     values: valuesWithTransformedAttrs,
     type,
     transformFunc: transformPrimitive,
+    strict: false,
   }) as Values
   return new InstanceElement(
     instanceName,
@@ -206,7 +204,7 @@ const sortValuesBasedOnType = async (
   }
 
   return (await transformValues(
-    { type: topLevelType, values, transformFunc: sortValues, pathID: instancePath, strict: true }
+    { type: topLevelType, values, transformFunc: sortValues, pathID: instancePath, strict: false }
   )) ?? {}
 }
 
@@ -214,17 +212,17 @@ export const toCustomizationInfo = async (
   instance: InstanceElement
 ): Promise<CustomizationInfo> => {
   const transformPrimitive: TransformFunc = async ({ value, field }) => {
-    const fieldType = await field?.getType()
-    if (!isPrimitiveType(fieldType) || (!isPrimitiveValue(value) && !Buffer.isBuffer(value))) {
+    if (_.isBoolean(value)) {
+      return toXmlBoolean(value)
+    }
+    if (!isPrimitiveValue(value) && !Buffer.isBuffer(value)) {
       return value
     }
-    if (fieldType.primitive === PrimitiveTypes.BOOLEAN) {
-      return value ? XML_TRUE_VALUE : XML_FALSE_VALUE
-    }
-    if (fieldType.isEqual(fieldTypes.cdata as PrimitiveType)) {
+    const fieldType = await field?.getType()
+    if (fieldType?.elemID.isEqual(fieldTypes.cdata.elemID)) {
       return { [CDATA_TAG_NAME]: value }
     }
-    if (fieldType.isEqual(fieldTypes.fileContent as PrimitiveType)) {
+    if (fieldType?.elemID.isEqual(fieldTypes.fileContent.elemID)) {
       return value
     }
     return String(value)
@@ -234,6 +232,7 @@ export const toCustomizationInfo = async (
     values: instance.value,
     type: instanceType,
     transformFunc: transformPrimitive,
+    strict: false,
   })) ?? {}
 
   const typeName = instance.refType.elemID.name

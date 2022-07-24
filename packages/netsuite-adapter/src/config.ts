@@ -178,6 +178,7 @@ export const fetchDefault: FetchParams = {
       { name: 'solution' },
       { name: 'giftCertificateItem' }, // requires special features enabled in the account. O.W fetch will fail
       { name: 'downloadItem' }, // requires special features enabled in the account. O.W fetch will fail
+      { name: 'account' },
       {
         name: Object.keys(ITEM_TYPE_TO_SEARCH_STRING)
           .filter(itemTypeName => !['giftCertificateItem', 'downloadItem'].includes(itemTypeName))

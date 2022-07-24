@@ -199,15 +199,6 @@ const authorInfoConfig = new ObjectType({
   },
 })
 
-const strictInstanceStructureConfig = new ObjectType({
-  elemID: new ElemID(NETSUITE, 'fetchCustomFields'),
-  fields: {
-    enable: {
-      refType: BuiltinTypes.BOOLEAN,
-    },
-  },
-})
-
 const fetchConfigType = createMatchingObjectType<FetchParams>({
   elemID: new ElemID(NETSUITE, 'fetchConfig'),
   fields: {
@@ -215,7 +206,7 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
     [EXCLUDE]: { refType: queryParamsConfigType },
     [LOCKED_ELEMENTS_TO_EXCLUDE]: { refType: queryParamsConfigType },
     [AUTHOR_INFO_CONFIG]: { refType: authorInfoConfig },
-    [STRICT_INSTANCE_STRUCTURE]: { refType: strictInstanceStructureConfig },
+    [STRICT_INSTANCE_STRUCTURE]: { refType: BuiltinTypes.BOOLEAN },
   },
 })
 

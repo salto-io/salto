@@ -47,9 +47,7 @@ export type FetchParams = {
   [AUTHOR_INFO_CONFIG]?: {
     enable?: boolean
   }
-  [STRICT_INSTANCE_STRUCTURE]?: {
-    enable?: boolean
-  }
+  [STRICT_INSTANCE_STRUCTURE]?: boolean
 }
 
 export const convertToQueryParams = ({ types = {}, filePaths = [] }:

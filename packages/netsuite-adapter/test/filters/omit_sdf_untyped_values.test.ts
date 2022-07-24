@@ -52,14 +52,14 @@ describe('omit sdf untyped values filter', () => {
   it('should omit untyped values when enable=true', async () => {
     await filterCreator({
       ...defaultOpts,
-      config: { fetch: { strictInstanceStructure: { enable: true } } },
+      config: { fetch: { strictInstanceStructure: true } },
     }).onFetch?.([instance])
     expect(instance.value).toEqual({ someField: true })
   })
   it('should not omit untyped values when enable=false', async () => {
     await filterCreator({
       ...defaultOpts,
-      config: { fetch: { strictInstanceStructure: { enable: false } } },
+      config: { fetch: { strictInstanceStructure: false } },
     }).onFetch?.([instance])
     expect(instance.value).toEqual({ someField: true, untypedField: 'test' })
   })

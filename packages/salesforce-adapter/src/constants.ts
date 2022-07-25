@@ -310,6 +310,7 @@ export const MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD = 20
 // Metadata types
 export const TOPICS_FOR_OBJECTS_METADATA_TYPE = 'TopicsForObjects'
 export const PROFILE_METADATA_TYPE = 'Profile'
+export const PERMISSION_SET_METADATA_TYPE = 'PermissionSet'
 export const WORKFLOW_METADATA_TYPE = 'Workflow'
 export const ASSIGNMENT_RULES_METADATA_TYPE = 'AssignmentRules'
 export const VALIDATION_RULES_METADATA_TYPE = 'ValidationRule'

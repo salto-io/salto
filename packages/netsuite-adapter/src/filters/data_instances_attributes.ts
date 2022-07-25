@@ -18,11 +18,11 @@ import { collections } from '@salto-io/lowerdash'
 import { applyFunctionToChangeData, transformValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { isDataObjectType } from '../types'
-import { FilterWith } from '../filter'
+import { FilterCreator, FilterWith } from '../filter'
 
 const { awu } = collections.asynciterable
 
-const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
+const filterCreator: FilterCreator = ({ elementsSource }): FilterWith<'onFetch' | 'preDeploy'> => ({
   onFetch: async elements => {
     await awu(elements)
       .filter(isInstanceElement)
@@ -59,12 +59,15 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
               type: await element.getType(),
               strict: false,
               pathID: element.elemID,
+              elementsSource,
               transformFunc: async ({ value, field, path }) => {
                 if (!_.isPlainObject(value) || path?.name === 'attributes') {
                   return value
                 }
 
-                const type = path?.isTopLevel() ? await element.getType() : await field?.getType()
+                const type = path?.isTopLevel()
+                  ? await element.getType()
+                  : await field?.getType(elementsSource)
 
                 value.attributes = {
                   ...value.attributes,

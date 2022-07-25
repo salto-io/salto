@@ -15,11 +15,11 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { BuiltinTypes, Change, CORE_ANNOTATIONS, Field, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isListType, isObjectType, isPrimitiveType, ListType, ObjectType, PrimitiveTypes, TypeElement, Value, Values } from '@salto-io/adapter-api'
+import { BuiltinTypes, Change, CORE_ANNOTATIONS, Field, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isListType, isObjectType, isPrimitiveType, ListType, ObjectType, PrimitiveTypes, ReadOnlyElementsSource, TypeElement, Value, Values } from '@salto-io/adapter-api'
 import { collections, promises } from '@salto-io/lowerdash'
 import { ConfigRecord, SelectOption } from '../client/suiteapp_client/types'
 import { SELECT_OPTION } from '../constants'
-import { FilterWith } from '../filter'
+import { FilterCreator, FilterWith } from '../filter'
 import { isSuiteAppConfigInstance, isSuiteAppConfigType } from '../types'
 
 const log = logger(module)
@@ -146,7 +146,9 @@ const getConfigInstanceValue = async (
   })
 }
 
-const transformValuesForDeploy = async (change: Change<InstanceElement>): Promise<void> =>
+const transformValuesForDeploy = (elementsSource: ReadOnlyElementsSource) => async (
+  change: Change<InstanceElement>
+): Promise<void> =>
   awu(Object.values(change.data)).forEach(
     async instance => {
       const type = await instance.getType()
@@ -154,7 +156,7 @@ const transformValuesForDeploy = async (change: Change<InstanceElement>): Promis
         const field = type.fields[fieldName]
         if (!field) return value
 
-        const fieldType = await field.getType()
+        const fieldType = await field.getType(elementsSource)
         if (isSelectFieldType(fieldType)) {
           return value.value
         }
@@ -166,7 +168,7 @@ const transformValuesForDeploy = async (change: Change<InstanceElement>): Promis
     }
   )
 
-const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
+const filterCreator: FilterCreator = ({ elementsSource }): FilterWith<'onFetch' | 'preDeploy'> => ({
   onFetch: async elements => {
     const [selectOptionType] = elements
       .filter(isObjectType)
@@ -192,7 +194,7 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
     await awu(changes)
       .filter(isInstanceChange)
       .filter(async change => isSuiteAppConfigInstance(getChangeData(change)))
-      .forEach(transformValuesForDeploy)
+      .forEach(transformValuesForDeploy(elementsSource))
   },
 })
 

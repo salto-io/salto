@@ -14,17 +14,32 @@
 * limitations under the License.
 */
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { ATTRIBUTE_PREFIX } from '../../src/client/constants'
 import { translationcollectionType } from '../../src/autogen/types/custom_types/translationcollection'
 import filterCreator from '../../src/filters/translation_converter'
+import { FilterOpts } from '../../src/filter'
+import NetsuiteClient from '../../src/client/client'
+import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../utils'
 
 
 describe('translation_converter filter', () => {
   const translationcollection = translationcollectionType().type
-
+  let filterOpts: FilterOpts
+  beforeEach(async () => {
+    filterOpts = {
+      client: {} as NetsuiteClient,
+      elementsSourceIndex: {
+        getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+      },
+      elementsSource: buildElementsSourceFromElements([]),
+      isPartial: false,
+      config: await getDefaultAdapterConfig(),
+    }
+  })
   describe('onFetch', () => {
     it('should add nameTranslate to type', async () => {
-      await filterCreator().onFetch([translationcollection])
+      await filterCreator(filterOpts).onFetch?.([translationcollection])
       expect(translationcollection.fields.nameTranslate).toBeDefined()
     })
 
@@ -35,7 +50,7 @@ describe('translation_converter filter', () => {
           translate: 'T',
         },
       })
-      await filterCreator().onFetch([instance])
+      await filterCreator(filterOpts).onFetch?.([instance])
       expect(instance.value).toEqual({ name: 'name', nameTranslate: true })
     })
 
@@ -43,7 +58,7 @@ describe('translation_converter filter', () => {
       const instance = new InstanceElement('instance', translationcollection, {
         name: 'name',
       })
-      await filterCreator().onFetch([instance])
+      await filterCreator(filterOpts).onFetch?.([instance])
       expect(instance.value).toEqual({ name: 'name' })
     })
   })
@@ -54,7 +69,7 @@ describe('translation_converter filter', () => {
         name: 'name',
         nameTranslate: true,
       })
-      await filterCreator().preDeploy([toChange({ after: instance })])
+      await filterCreator(filterOpts).preDeploy?.([toChange({ after: instance })])
       expect(instance.value).toEqual({ name: {
         '#text': 'name',
         [`${ATTRIBUTE_PREFIX}translate`]: 'T',
@@ -65,7 +80,7 @@ describe('translation_converter filter', () => {
       const instance = new InstanceElement('instance', translationcollection, {
         name: 'name',
       })
-      await filterCreator().preDeploy([toChange({ after: instance })])
+      await filterCreator(filterOpts).preDeploy?.([toChange({ after: instance })])
       expect(instance.value).toEqual({ name: 'name' })
     })
   })

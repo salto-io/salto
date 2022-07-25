@@ -18,7 +18,7 @@ import { applyFunctionToChangeData, getPath, transformValues } from '@salto-io/a
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { FilterWith } from '../filter'
+import { FilterCreator, FilterWith } from '../filter'
 import { ATTRIBUTE_PREFIX } from '../client/constants'
 import { CENTER_CATEGORY, CENTER_TAB, DATASET, NETSUITE, SUBTAB, TRANSLATION_COLLECTION, WORKBOOK } from '../constants'
 
@@ -64,7 +64,7 @@ const addTranslateFields = (typeElements: TypeElement[]): void => {
   })
 }
 
-const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
+const filterCreator: FilterCreator = ({ elementsSource }): FilterWith<'onFetch' | 'preDeploy'> => ({
   onFetch: async elements => {
     const types = elements.filter(isObjectType)
     const primitives = elements.filter(isPrimitiveType)
@@ -108,6 +108,7 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
               type: await instance.getType(),
               strict: false,
               pathID: instance.elemID,
+              elementsSource,
               transformFunc: ({ value }) => {
                 if (!_.isPlainObject(value)) {
                   return value

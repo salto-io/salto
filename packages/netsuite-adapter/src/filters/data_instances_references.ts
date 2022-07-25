@@ -57,7 +57,11 @@ const replaceReference: (
   return value
 }
 
-const filterCreator: FilterCreator = ({ elementsSourceIndex, isPartial }): FilterWith<'onFetch'> => ({
+const filterCreator: FilterCreator = ({
+  elementsSource,
+  elementsSourceIndex,
+  isPartial,
+}): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
     const instances = elements.filter(isInstanceElement)
     const dataInstancesMap: Record<string, { elemID: ElemID }> = isPartial ? _.clone(
@@ -102,9 +106,11 @@ const filterCreator: FilterCreator = ({ elementsSourceIndex, isPartial }): Filte
               type: await element.getType(),
               strict: false,
               pathID: element.elemID,
+              elementsSource,
               transformFunc: async ({ value, field }) => {
                 if (isReferenceExpression(value)) {
-                  return { internalId: (await value.getResolvedValue()).value.internalId }
+                  return { internalId: (await value.getResolvedValue(elementsSource))
+                    .value.internalId }
                 }
                 if (Array.isArray(value) && field?.annotations.isReference) {
                   return {
@@ -112,7 +118,8 @@ const filterCreator: FilterCreator = ({ elementsSourceIndex, isPartial }): Filte
                       async val => (isReferenceExpression(val)
                         ? {
                           attributes: {
-                            internalId: (await val.getResolvedValue()).value.internalId,
+                            internalId: (await val.getResolvedValue(elementsSource))
+                              .value.internalId,
                           },
                         } : val)
                     ).toArray(),

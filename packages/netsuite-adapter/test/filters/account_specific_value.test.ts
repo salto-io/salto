@@ -14,11 +14,27 @@
 * limitations under the License.
 */
 import { getChangeData, InstanceElement, toChange } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/account_specific_values'
 import { ACCOUNT_SPECIFIC_VALUE, APPLICATION_ID } from '../../src/constants'
 import { addressFormType } from '../../src/autogen/types/custom_types/addressForm'
+import { FilterOpts } from '../../src/filter'
+import NetsuiteClient from '../../src/client/client'
+import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../utils'
 
 describe('account_specific_values filter', () => {
+  let filterOpts: FilterOpts
+  beforeEach(async () => {
+    filterOpts = {
+      client: {} as NetsuiteClient,
+      elementsSourceIndex: {
+        getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+      },
+      elementsSource: buildElementsSourceFromElements([]),
+      isPartial: false,
+      config: await getDefaultAdapterConfig(),
+    }
+  })
   it('should remove account specific values', async () => {
     const instance = new InstanceElement(
       'instance',
@@ -34,7 +50,7 @@ describe('account_specific_values filter', () => {
       }
     )
     const change = toChange({ after: instance })
-    await filterCreator().preDeploy([change])
+    await filterCreator(filterOpts).preDeploy?.([change])
     expect(getChangeData(change).value).toEqual({ a: 2, c: { e: 3 }, [APPLICATION_ID]: 'a.b.c' })
   })
 })

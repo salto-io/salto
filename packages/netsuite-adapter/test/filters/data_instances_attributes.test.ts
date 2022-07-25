@@ -14,10 +14,26 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/data_instances_attributes'
 import { NETSUITE } from '../../src/constants'
+import { FilterOpts } from '../../src/filter'
+import NetsuiteClient from '../../src/client/client'
+import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../utils'
 
 describe('data_instances_attributes', () => {
+  let filterOpts: FilterOpts
+  beforeEach(async () => {
+    filterOpts = {
+      client: {} as NetsuiteClient,
+      elementsSourceIndex: {
+        getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+      },
+      elementsSource: buildElementsSourceFromElements([]),
+      isPartial: false,
+      config: await getDefaultAdapterConfig(),
+    }
+  })
   it('on fetch should remove the attributes value', async () => {
     const instance = new InstanceElement(
       'instance',
@@ -25,7 +41,7 @@ describe('data_instances_attributes', () => {
       { attributes: { internalId: '1', 'xsi:type': 'listAcct:Subsidiary' } }
     )
 
-    await filterCreator().onFetch([instance])
+    await filterCreator(filterOpts).onFetch?.([instance])
     expect(instance.value.internalId).toEqual('1')
     expect(instance.value.attributes).toBeUndefined()
   })
@@ -45,7 +61,7 @@ describe('data_instances_attributes', () => {
       { internalId: '1', attrField: '2', otherField: '3' }
     )
 
-    await filterCreator().preDeploy?.([
+    await filterCreator(filterOpts).preDeploy?.([
       toChange({ before: instance, after: instance }),
       toChange({ before: type, after: type }),
     ])

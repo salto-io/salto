@@ -19,7 +19,7 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { isCustomType, isDataObjectType, isFileCabinetType } from '../types'
 import { ACCOUNT_SPECIFIC_VALUE, NETSUITE, RECORDS_PATH } from '../constants'
-import { FilterWith } from '../filter'
+import { FilterCreator, FilterWith } from '../filter'
 
 const { awu } = collections.asynciterable
 
@@ -35,7 +35,7 @@ const getSubInstanceName = (path: ElemID, internalId: string): string => {
  * (since the internal id is hidden, and we don't support hidden values in lists,
  * the objects in the list need to be extracted to new instances).
  */
-const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
+const filterCreator: FilterCreator = ({ elementsSource }): FilterWith<'onFetch' | 'preDeploy'> => ({
   onFetch: async elements => {
     const newInstancesMap: Record<string, InstanceElement> = {}
     const recordRefType = elements.filter(isObjectType).find(e => e.elemID.name === 'recordRef')
@@ -113,10 +113,11 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
               type: await element.getType(),
               strict: false,
               pathID: element.elemID,
+              elementsSource,
               transformFunc: async ({ value, field, path }) => {
                 const fieldType = path?.isTopLevel()
                   ? await element.getType()
-                  : await field?.getType()
+                  : await field?.getType(elementsSource)
 
                 if (fieldType?.elemID.name === 'recordRef') {
                   if (value.id !== '[ACCOUNT_SPECIFIC_VALUE]') {

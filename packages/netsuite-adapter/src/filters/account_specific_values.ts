@@ -18,13 +18,13 @@ import { applyFunctionToChangeData, transformValues } from '@salto-io/adapter-ut
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { isCustomType } from '../types'
-import { FilterWith } from '../filter'
+import { FilterCreator, FilterWith } from '../filter'
 import { ACCOUNT_SPECIFIC_VALUE, APPLICATION_ID } from '../constants'
 
 const { awu } = collections.asynciterable
 
 
-const filterCreator = (): FilterWith<'preDeploy'> => ({
+const filterCreator: FilterCreator = ({ elementsSource }): FilterWith<'preDeploy'> => ({
   preDeploy: async changes => {
     await awu(changes)
       .forEach(async change =>
@@ -44,6 +44,7 @@ const filterCreator = (): FilterWith<'preDeploy'> => ({
               type: await element.getType(),
               strict: false,
               pathID: element.elemID,
+              elementsSource,
               transformFunc: async ({ value }) =>
                 (_.isString(value) && value.includes(ACCOUNT_SPECIFIC_VALUE) ? undefined : value),
             }) ?? element.value

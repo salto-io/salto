@@ -51,7 +51,7 @@ const FIELD_PERMISSION_ENUM_SCHEMA = Joi.string().regex(/ReadOnly|ReadWrite|NoAc
 const isFieldPermissionEnum = createSchemeGuard<FieldPermissionEnum>(FIELD_PERMISSION_ENUM_SCHEMA, 'Received an invalid Field Permission enum value')
 
 const enumFieldPermissions = new PrimitiveType({
-  elemID: new ElemID(SALESFORCE, 'FieldPermissionsValue'),
+  elemID: new ElemID(SALESFORCE, 'FieldPermissionEnum'),
   primitive: PrimitiveTypes.STRING,
   annotations: {
     [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
@@ -75,7 +75,7 @@ const profileFieldLevelSecurity = new ObjectType({
 
 let mapOfMapOfEnumFieldPermissions: TypeReference
 
-const getMapOfMapOfEnumFieldPermissions = (): TypeReference => {
+const getMapOfMapOfFieldPermissionEnum = (): TypeReference => {
   if (mapOfMapOfEnumFieldPermissions === undefined) {
     mapOfMapOfEnumFieldPermissions = createRefToElmWithValue(
       new MapType(new MapType(enumFieldPermissions)),
@@ -95,11 +95,13 @@ const getMapOfMapOfProfileFieldLevelSecurity = (): TypeReference => {
   return mapOfProfileFieldLevelSecurity
 }
 
-const permissionsObjectToEnum = (permissionsObject: FieldPermissionObject): FieldPermissionEnum => {
-  if (permissionsObject.editable && permissionsObject.readable) {
+const fieldPermissionsObjectToEnum = (
+  fieldPermissionsObject: FieldPermissionObject,
+): FieldPermissionEnum => {
+  if (fieldPermissionsObject.editable && fieldPermissionsObject.readable) {
     return 'ReadWrite'
   }
-  if (permissionsObject.readable) {
+  if (fieldPermissionsObject.readable) {
     return 'ReadOnly'
   }
   return 'NoAccess'
@@ -151,7 +153,7 @@ const fieldPermissionValuesToEnum = (instance: InstanceElement): InstanceElement
         if (validatedPermission === false) {
           return fieldPermission
         }
-        return permissionsObjectToEnum(fieldPermission)
+        return fieldPermissionsObjectToEnum(fieldPermission)
       }
     )
   )
@@ -167,11 +169,11 @@ const fieldPermissionValuesToObject = (instance: InstanceElement): InstanceEleme
     fieldPermissions,
     (objectPermission, objectName) => _.mapValues(
       objectPermission,
-      (fieldPermissionVal, fieldName) => {
-        if (!isFieldPermissionEnum(fieldPermissionVal)) {
-          return fieldPermissionVal
+      (fieldPermissionValue, fieldName) => {
+        if (!isFieldPermissionEnum(fieldPermissionValue)) {
+          return fieldPermissionValue
         }
-        return permissionsEnumToObject(`${objectName}.${fieldName}`, fieldPermissionVal)
+        return permissionsEnumToObject(`${objectName}.${fieldName}`, fieldPermissionValue)
       }
     )
   )
@@ -179,17 +181,16 @@ const fieldPermissionValuesToObject = (instance: InstanceElement): InstanceEleme
 }
 
 const fieldPermissionFieldToEnum = (objectType: ObjectType): void => {
-  if (objectType.fields.fieldPermission !== undefined) {
-    objectType.fields.fieldPermissions.refType = getMapOfMapOfEnumFieldPermissions()
+  if (objectType.fields.fieldPermissions !== undefined) {
+    objectType.fields.fieldPermissions.refType = getMapOfMapOfFieldPermissionEnum()
   }
 }
 
 const fieldPermissionsFieldToOriginalType = (objectType: ObjectType): void => {
-  if (objectType.fields.fieldPermission !== undefined) {
+  if (objectType.fields.fieldPermissions !== undefined) {
     objectType.fields.fieldPermissions.refType = getMapOfMapOfProfileFieldLevelSecurity()
   }
 }
-
 
 const filter: LocalFilterCreator = ({ config }) => ({
   onFetch: async elements => {

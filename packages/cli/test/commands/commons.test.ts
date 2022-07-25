@@ -35,6 +35,10 @@ describe('Commands commons tests', () => {
     it('Should throw an error if the account does not exist in the workspace', () => {
       expect(() => getAndValidateActiveAccounts(mockWorkspace, ['wtfService'])).toThrow()
     })
+
+    it('Should throw an error if the accounts does not exist in the workspace', () => {
+      expect(() => getAndValidateActiveAccounts(mockWorkspace, ['wtfService1', 'wtfService2'])).toThrow()
+    })
   })
   describe('getAndValidateActiveAccounts with workspace with no accounts', () => {
     const mockWorkspace = mocks.mockWorkspace({ accounts: [] })

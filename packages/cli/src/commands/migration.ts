@@ -45,6 +45,27 @@ export const migrateAction: WorkspaceCommandAction<MigrationArgs> = async ({
   return CliExitCode.Success
 }
 
+export const checkAction: WorkspaceCommandAction<unknown> = async ({
+  output,
+  workspace,
+}): Promise<CliExitCode> => {
+  outputLine(formatStepStart(Prompts.MIGRATION_CHECK_STARTED), output)
+  try {
+    const errors = await workspace.errors()
+    if (errors.hasErrors('Error')) {
+      outputLine(formatStepStart(Prompts.MIGRATION_CHECK_HAS_ERRORS(errors.strings().join('\n'))), output)
+      return CliExitCode.AppError
+    }
+  } catch (e) {
+    errorOutputLine(formatStepFailed(Prompts.MIGRATION_CHECK_FAILED(e.toString())), output)
+    return CliExitCode.AppError
+  }
+
+  outputLine(formatStepCompleted(Prompts.MIGRATION_CHECK_FINISHED), output)
+  outputLine(EOL, output)
+  return CliExitCode.Success
+}
+
 const wsMigrateZendeskDef = createWorkspaceCommand({
   properties: {
     name: 'migrate-zendesk',
@@ -71,6 +92,14 @@ const wsMigrateZendeskDef = createWorkspaceCommand({
   action: migrateAction,
 })
 
+const wsMigrateCheckDef = createWorkspaceCommand({
+  properties: {
+    name: 'check',
+    description: 'Check if the workspace is ok',
+  },
+  action: checkAction,
+})
+
 // Group definition
 const wsGroupDef = createCommandGroupDef({
   properties: {
@@ -79,6 +108,7 @@ const wsGroupDef = createCommandGroupDef({
   },
   subCommands: [
     wsMigrateZendeskDef,
+    wsMigrateCheckDef,
   ],
 })
 

@@ -195,8 +195,7 @@ const fieldPermissionsFieldToOriginalType = (objectType: ObjectType): void => {
 const filter: LocalFilterCreator = ({ config }) => ({
   onFetch: async elements => {
     if (config.enumFieldPermissions === false) {
-      console.log('should not have done anything')
-      // return
+      return
     }
     await awu(metadataTypesWithFieldPermissions).forEach(async metadataType => {
       const type = await awu(elements).find(
@@ -212,9 +211,11 @@ const filter: LocalFilterCreator = ({ config }) => ({
         && metadataTypesWithFieldPermissions.includes(await apiName(await element.getType()))))
       .toArray() as InstanceElement[]
     instancesWithFieldPermissions.forEach(fieldPermissionValuesToEnum)
-    console.log(instancesWithFieldPermissions.length)
   },
   preDeploy: async changes => {
+    if (config.enumFieldPermissions === false) {
+      return
+    }
     await awu(metadataTypesWithFieldPermissions).forEach(async metadataType => {
       const instanceChanges = await awu(changes)
         .filter(isAdditionOrModificationChange)
@@ -234,6 +235,9 @@ const filter: LocalFilterCreator = ({ config }) => ({
     })
   },
   onDeploy: async changes => {
+    if (config.enumFieldPermissions === false) {
+      return
+    }
     await awu(metadataTypesWithFieldPermissions).forEach(async metadataType => {
       const instanceChanges = await awu(changes)
         .filter(isAdditionOrModificationChange)

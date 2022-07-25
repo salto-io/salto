@@ -48,7 +48,7 @@
     "@salto-io/stripe-adapter": "0.3.20",
     "@salto-io/workato-adapter": "0.3.20",
     "@salto-io/workspace": "0.3.20",
-    "@salto-io/zendesk-support-adapter": "0.3.20",
+    "@salto-io/zendesk-adapter": "0.3.20",
     "@salto-io/zuora-billing-adapter": "0.3.20",
     "async-lock": "^1.2.4",
     "axios": "^0.21.3",

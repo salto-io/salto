@@ -18,7 +18,6 @@ import { collections } from '@salto-io/lowerdash'
 import { metadataType, apiName, MetadataTypeAnnotations } from '../../src/transformers/transformer'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
-import mockClient from '../client'
 import filterCreator from '../../src/filters/topics_for_objects'
 import { defaultFilterContext } from '../utils'
 
@@ -29,7 +28,6 @@ const { TOPICS_FOR_OBJECTS_ANNOTATION, TOPICS_FOR_OBJECTS_FIELDS,
 const { ENABLE_TOPICS, ENTITY_API_NAME } = TOPICS_FOR_OBJECTS_FIELDS
 
 describe('Topics for objects filter', () => {
-  const { client } = mockClient()
   const mockTopicElemID = new ElemID(constants.SALESFORCE, constants.TOPICS_FOR_OBJECTS_ANNOTATION)
   const mockObject = (name: string, withTopics?: boolean): ObjectType => new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, name),
@@ -69,7 +67,7 @@ describe('Topics for objects filter', () => {
 
   describe('onFetch', () => {
     beforeAll(() => {
-      filter = filterCreator({ client, config: defaultFilterContext }) as typeof filter
+      filter = filterCreator({ config: defaultFilterContext }) as typeof filter
     })
     it('should add topicsForObjects to object types and remove topics type & instances', async () => {
       const elements = [mockObject('Test__c'), mockTopicForObject, mockTopic]
@@ -90,7 +88,7 @@ describe('Topics for objects filter', () => {
   describe('preDeploy and onDeploy', () => {
     let changes: Change[]
     beforeAll(() => {
-      filter = filterCreator({ client, config: defaultFilterContext }) as typeof filter
+      filter = filterCreator({ config: defaultFilterContext }) as typeof filter
     })
     describe('preDeploy', () => {
       beforeAll(async () => {

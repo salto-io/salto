@@ -119,4 +119,20 @@ describe('strings', () => {
       expect(() => [...strings.matchAll('abcdacdbcd', /[ab](cd)/)]).toThrow(new Error('matchAll only supports global regular expressions'))
     })
   })
+
+  describe('continuous split', () => {
+    const FIND_A = new RegExp('a', 'g')
+    const FIND_B = new RegExp('b', 'g')
+
+    it('should return empty array for empty string', () => {
+      expect(strings.continuousSplit('', [FIND_A, FIND_B])).toEqual([])
+    })
+    it('should return one length array for empty search', () => {
+      expect(strings.continuousSplit('hello world', [])).toEqual(['hello world'])
+    })
+    it('should split string by all regexes', () => {
+      expect(strings.continuousSplit('afirstasecondbthirdafourthb', [FIND_A, FIND_B]))
+        .toEqual(['first', 'second', 'third', 'fourth'])
+    })
+  })
 })

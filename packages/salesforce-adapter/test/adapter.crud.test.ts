@@ -783,8 +783,10 @@ describe('SalesforceAdapter CRUD', () => {
       })
 
       describe('when the request succeeds', () => {
+        const DEPLOYMENT_ID = 'testDeploymentId'
         beforeEach(async () => {
           connection.metadata.deploy.mockReturnValueOnce(mockDeployResult({
+            id: DEPLOYMENT_ID,
             success: true,
             componentSuccess: [{
               fullName: mockDefaultValues.Profile.fullName,
@@ -798,7 +800,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
           })
         })
-
         it('should return an InstanceElement', () => {
           expect(result.appliedChanges).toHaveLength(1)
           expect(getChangeData(result.appliedChanges[0])).toBeInstanceOf(InstanceElement)
@@ -811,6 +812,12 @@ describe('SalesforceAdapter CRUD', () => {
             name: constants.PROFILE_METADATA_TYPE,
             members: mockDefaultValues.Profile.fullName,
           })
+        })
+        it('should return deployment URL containing the deployment ID in the extra properties', async () => {
+          const receivedUrls = result.extraProperties?.deploymentUrls
+          const receivedUrl = receivedUrls?.[0]
+          expect(receivedUrls).toHaveLength(1)
+          expect(receivedUrl).toContain(DEPLOYMENT_ID)
         })
       })
 

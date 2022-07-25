@@ -73,7 +73,7 @@ Supported login parameters per service type:
 [jira](/packages/jira-adapter/specific-cli-options.md#non-interactive-login-parameters),
 [workato](/packages/workato-adapter/specific-cli-options.md#non-interactive-login-parameters),
 [stripe](/packages/stripe-adapter/specific-cli-options.md#non-interactive-login-parameters),
-[zendesk support](/packages/zendesk-support-adapter/specific-cli-options.md#non-interactive-login-parameters),
+[zendesk](/packages/zendesk-adapter/specific-cli-options.md#non-interactive-login-parameters),
 [zuora billing](/packages/zuora-billing-adapter/specific-cli-options.md#non-interactive-login-parameters)
 
 ### **salto env \<command>**

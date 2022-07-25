@@ -19,15 +19,12 @@ import { FilterWith } from '../../src/filter'
 import { INSTANCE_FULL_NAME_FIELD, SALESFORCE, FOREIGN_KEY_DOMAIN } from '../../src/constants'
 import referenceAnnotationfilterCreator from '../../src/filters/reference_annotations'
 import filterCreator from '../../src/filters/foreign_key_references'
-import mockClient from '../client'
 import { defaultFilterContext, createMetadataTypeElement } from '../utils'
 
 // Based on the instance_reference test scenarios
 describe('foregin_key_references filter', () => {
-  const { client } = mockClient()
-
-  const refAnnotationFilter = referenceAnnotationfilterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
-  const filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
+  const refAnnotationFilter = referenceAnnotationfilterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch'>
+  const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch'>
 
   const parentObjFullName = 'parentFullName'
   const parentObjFieldName = 'parentObj'

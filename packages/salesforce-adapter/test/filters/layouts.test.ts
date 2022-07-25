@@ -20,7 +20,6 @@ import { createCustomObjectType, createMetadataTypeElement, defaultFilterContext
 import makeFilter, { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
-import mockClient from '../client'
 import { getObjectDirectoryPath } from '../../src/filters/custom_objects'
 
 describe('Test layout filter', () => {
@@ -81,8 +80,7 @@ describe('Test layout filter', () => {
         testSObj, testLayout, webLinkObj, webLinkInst,
       ]
 
-      const { client } = mockClient()
-      const filter = makeFilter({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
+      const filter = makeFilter({ config: defaultFilterContext }) as FilterWith<'onFetch'>
       await filter.onFetch(elements)
 
       const instance = elements[1] as InstanceElement

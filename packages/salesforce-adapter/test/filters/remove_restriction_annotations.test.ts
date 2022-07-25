@@ -17,7 +17,6 @@ import { ObjectType, ElemID, BuiltinTypes, Element, CORE_ANNOTATIONS } from '@sa
 import { makeFilter } from '../../src/filters/remove_restriction_annotations'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
-import mockClient from '../client'
 import { defaultFilterContext } from '../utils'
 
 describe('remove restriction annotations filter', () => {
@@ -63,10 +62,9 @@ describe('remove restriction annotations filter', () => {
     },
   })
 
-  const { client } = mockClient()
   const filter = makeFilter({
     AnimationRule: ['sobjectType', 'targetField'],
-  })({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
+  })({ config: defaultFilterContext }) as FilterWith<'onFetch'>
 
   let testElements: Element[]
 

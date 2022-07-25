@@ -21,7 +21,7 @@ import {
 import { resolveTypeShallow } from '@salto-io/adapter-utils'
 import { collections, promises } from '@salto-io/lowerdash'
 
-import { FilterCreator, FilterResult } from '../filter'
+import { FilterResult, RemoteFilterCreator } from '../filter'
 import { FIELD_ANNOTATIONS, VALUE_SET_FIELDS } from '../constants'
 import {
   metadataType, apiName, isCustomObject, Types, isCustom,
@@ -196,7 +196,7 @@ const emptyFileProperties = (fullName: string): FileProperties => ({
 */
 export const makeFilter = (
   standardValueSetNames: StandardValuesSets
-): FilterCreator => ({ client, config }) => ({
+): RemoteFilterCreator => ({ client, config }) => ({
   /**
    * Upon fetch, retrieve standard value sets and
    * modify references to them in fetched elements

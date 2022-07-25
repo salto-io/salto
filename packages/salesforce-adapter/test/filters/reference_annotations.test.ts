@@ -16,7 +16,6 @@
 import { ObjectType, ElemID, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
 import { SALESFORCE, FIELD_ANNOTATIONS, FOREIGN_KEY_DOMAIN } from '../../src/constants'
 import { FilterWith } from '../../src/filter'
-import mockClient from '../client'
 import filterCreator from '../../src/filters/reference_annotations'
 import { defaultFilterContext, createMetadataTypeElement } from '../utils'
 
@@ -25,8 +24,7 @@ describe('reference_annotations filter', () => {
   const parentObjFieldName = 'parentObj'
   const objTypeName = 'obj'
 
-  const { client } = mockClient()
-  const filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
+  const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch'>
 
   let nestedType: ObjectType
   let objType: ObjectType

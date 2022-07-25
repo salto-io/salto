@@ -24,7 +24,7 @@ import { collections } from '@salto-io/lowerdash'
 import { naclCase, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 
-import { FilterCreator } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { API_NAME_SEPARATOR, PROFILE_METADATA_TYPE, BUSINESS_HOURS_METADATA_TYPE } from '../constants'
 import { metadataType } from '../transformers/transformer'
 
@@ -339,13 +339,9 @@ export const findInstancesToConvert = (
  * Convert certain instances' fields into maps, so that they are easier to view,
  * could be referenced, and can be split across multiple files.
  */
-const filter: FilterCreator = ({ config }) => ({
+const filter: LocalFilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     await awu(Object.keys(metadataTypeToFieldToMapDef)).forEach(async targetMetadataType => {
-      if (targetMetadataType === PROFILE_METADATA_TYPE && config.useOldProfiles) {
-        return
-      }
-
       const instancesToConvert = await findInstancesToConvert(elements, targetMetadataType)
       if (instancesToConvert.length === 0) {
         return
@@ -358,9 +354,6 @@ const filter: FilterCreator = ({ config }) => ({
 
   preDeploy: async changes => {
     await awu(Object.keys(metadataTypeToFieldToMapDef)).forEach(async targetMetadataType => {
-      if (targetMetadataType === PROFILE_METADATA_TYPE && config.useOldProfiles) {
-        return
-      }
       const instanceChanges = await getInstanceChanges(changes, targetMetadataType)
       if (instanceChanges.length === 0) {
         return
@@ -378,9 +371,6 @@ const filter: FilterCreator = ({ config }) => ({
 
   onDeploy: async changes => {
     await awu(Object.keys(metadataTypeToFieldToMapDef)).forEach(async targetMetadataType => {
-      if (targetMetadataType === PROFILE_METADATA_TYPE && config.useOldProfiles) {
-        return
-      }
       const instanceChanges = await getInstanceChanges(changes, targetMetadataType)
       if (instanceChanges.length === 0) {
         return

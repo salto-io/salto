@@ -18,14 +18,11 @@ import filterCreator from '../../src/filters/profile_permissions'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import { ProfileInfo } from '../../src/client/types'
-import mockClient from '../client'
 import { Types, createInstanceElement, metadataType, apiName } from '../../src/transformers/transformer'
 import { mockTypes } from '../mock_elements'
 import { defaultFilterContext } from '../utils'
 
 describe('Object Permissions filter', () => {
-  const { client } = mockClient()
-
   const createField = (
     parent: string,
     name: string,
@@ -62,7 +59,7 @@ describe('Object Permissions filter', () => {
   describe('with new object, new fields and no permission change', () => {
     let changes: Change[]
     beforeAll(() => {
-      filter = filterCreator({ client, config: defaultFilterContext }) as typeof filter
+      filter = filterCreator({ config: defaultFilterContext }) as typeof filter
     })
     describe('preDeploy', () => {
       beforeAll(async () => {
@@ -153,7 +150,7 @@ describe('Object Permissions filter', () => {
       field: 'Test2__c.desc__c', readable: true, editable: false,
     }
     beforeAll(() => {
-      filter = filterCreator({ client, config: defaultFilterContext }) as typeof filter
+      filter = filterCreator({ config: defaultFilterContext }) as typeof filter
     })
     describe('preDeploy', () => {
       beforeAll(async () => {

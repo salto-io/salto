@@ -21,7 +21,7 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { WEBLINK_METADATA_TYPE } from '../constants'
-import { FilterCreator } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { generateReferenceResolverFinder } from '../transformers/reference_mapping'
 import { apiName, metadataType } from '../transformers/transformer'
 
@@ -88,7 +88,7 @@ const extractToStaticFile = async (instance: InstanceElement): Promise<void> => 
 /**
  * Extract field value to static-resources for chosen intstances.
  */
-const filter: FilterCreator = () => ({
+const filter: LocalFilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     await awu(elements)
       .filter(isInstanceElement)

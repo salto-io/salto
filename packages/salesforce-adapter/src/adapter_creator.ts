@@ -25,7 +25,7 @@ import { configType, usernamePasswordCredentialsType, oauthRequestParameters,
   isAccessTokenConfig, SalesforceConfig, accessTokenCredentialsType,
   UsernamePasswordCredentials, Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG,
   SalesforceClientConfig, RetryStrategyName, FETCH_CONFIG, MAX_ITEMS_IN_RETRIEVE_REQUEST,
-  USE_OLD_PROFILES, ChangeValidatorConfig } from './types'
+  ChangeValidatorConfig } from './types'
 import { validateFetchParameters } from './fetch_profile/fetch_profile'
 import { ConfigValidationError } from './config_validation'
 import { updateDeprecatedConfiguration } from './deprecated_config'
@@ -111,7 +111,6 @@ SalesforceConfig => {
   const adapterConfig: { [K in keyof Required<SalesforceConfig>]: SalesforceConfig[K] } = {
     fetch: config?.value?.[FETCH_CONFIG],
     maxItemsInRetrieveRequest: config?.value?.[MAX_ITEMS_IN_RETRIEVE_REQUEST],
-    useOldProfiles: config?.value?.[USE_OLD_PROFILES],
     client: config?.value?.[CLIENT_CONFIG],
     validators: config?.value?.validators,
   }

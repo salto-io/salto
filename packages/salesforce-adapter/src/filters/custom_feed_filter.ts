@@ -16,7 +16,7 @@
 import { FileProperties } from 'jsforce-types'
 import { Element, ElemID } from '@salto-io/adapter-api'
 import { findObjectType } from '@salto-io/adapter-utils'
-import { FilterCreator, FilterResult } from '../filter'
+import { FilterResult, RemoteFilterCreator } from '../filter'
 import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
 import { SALESFORCE } from '../constants'
 
@@ -29,7 +29,7 @@ const fixCustomFeedFullName = (props: FileProperties): FileProperties => ({
   ...props, fullName: `Case.${props.fullName}`,
 })
 
-const filterCreator: FilterCreator = ({ client, config }) => ({
+const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
     const customFeedFilterType = findObjectType(
       elements, CUSTOM_FEED_FILTER_METADATA_TYPE_ID

@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { isInstanceElement, Values, isInstanceChange, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { FilterCreator } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { isInstanceOfType, isInstanceOfTypeChange } from './utils'
 import { XML_ATTRIBUTE_PREFIX } from '../constants'
 import { isNull } from '../transformers/transformer'
@@ -127,7 +127,7 @@ const formatRecordValuesForService = (values: Values): Values => {
   return values
 }
 
-const filterCreator: FilterCreator = () => ({
+const filterCreator: LocalFilterCreator = () => ({
   onFetch: async elements => {
     await awu(elements)
       .filter(isInstanceElement)

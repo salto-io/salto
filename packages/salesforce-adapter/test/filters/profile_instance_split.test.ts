@@ -18,14 +18,11 @@ import { ObjectType, Element, InstanceElement, isInstanceElement } from '@salto-
 import filterCreator from '../../src/filters/profile_instance_split'
 import { FilterWith } from '../../src/filter'
 import { generateProfileType, defaultFilterContext } from '../utils'
-import mockClient from '../client'
 
 
 describe('Profile Instance Split filter', () => {
-  const { client } = mockClient()
-
   describe('Map profile instances', () => {
-    const filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
+    const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch'>
 
     let profileObj: ObjectType
     let profileInstances: InstanceElement[]
@@ -133,44 +130,6 @@ describe('Profile Instance Split filter', () => {
     it('should have the default Attributes element first', () => {
       const profElems = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'profile1')
       expect(profElems[0].path?.slice(-1)[0]).toEqual('Attributes')
-    })
-  })
-
-  describe('Old (list) profile instances', () => {
-    const filter = filterCreator({ client, config: { ...defaultFilterContext, useOldProfiles: true } }) as FilterWith<'onFetch'>
-
-    let profileObj: ObjectType
-    let profileInstances: InstanceElement[]
-    let elements: Element[]
-
-    beforeAll(async () => {
-      profileObj = generateProfileType(false)
-      profileInstances = [
-        new InstanceElement(
-          'profile1',
-          profileObj,
-          {
-            applicationVisibilities: [
-              { application: 'app1', default: true, visible: false },
-            ],
-            fieldPermissions: [
-              { field: 'Account.AccountNumber', editable: true, readable: true },
-              { field: 'Contact.HasOptedOutOfEmail', editable: true, readable: true },
-            ],
-            fullName: 'profile1',
-            userLicense: 'Salesforce Platform',
-          },
-          ['salesforce', 'Records', 'Profile', 'profile1'],
-        ),
-      ]
-
-      elements = [profileObj, ...profileInstances.map(e => e.clone())]
-      await filter.onFetch(elements)
-    })
-    it('should do nothing, and keep the profile as a single instance with the original path', () => {
-      const profElems = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'profile1')
-      expect(profElems).toHaveLength(1)
-      expect(profElems[0].path).toEqual(['salesforce', 'Records', 'Profile', 'profile1'])
     })
   })
 })

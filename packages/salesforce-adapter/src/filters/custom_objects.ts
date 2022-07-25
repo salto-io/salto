@@ -39,7 +39,7 @@ import {
   COMPOUND_FIELD_TYPE_NAMES, INTERNAL_ID_ANNOTATION, INTERNAL_ID_FIELD, LIGHTNING_PAGE_TYPE,
   FLEXI_PAGE_TYPE,
 } from '../constants'
-import { FilterCreator } from '../filter'
+import { RemoteFilterCreator } from '../filter'
 import {
   getSObjectFieldElement, Types, isCustomObject, apiName, transformPrimitive, MetadataValues,
   formulaTypeName, metadataType, isCustom, isCustomSettings, metadataAnnotationTypes,
@@ -843,7 +843,7 @@ const isSideEffectRemoval = (
  * Custom objects filter.
  * Fetches the custom objects via the soap api and adds them to the elements
  */
-const filterCreator: FilterCreator = ({ client, config }) => {
+const filterCreator: RemoteFilterCreator = ({ client, config }) => {
   let originalChanges: Record<string, Change[]> = {}
   return {
     onFetch: async (elements: Element[]): Promise<void> => {

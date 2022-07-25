@@ -166,9 +166,9 @@ describe('Transformer', () => {
       expect(customrecordcustomfield[SCRIPT_ID]).toEqual('custrecord_my_nested_script_id')
     })
 
-    it('should ignore unknown attribute', async () => {
+    it('should not ignore unknown attribute', async () => {
       const result = await transformCustomFieldRecord(XML_TEMPLATES.WITH_UNKNOWN_ATTRIBUTE)
-      expect(result.value.unknownattr).toBeUndefined()
+      expect(result.value.unknownattr).toBeDefined()
     })
 
     it('should transform boolean primitive field when is true', async () => {
@@ -240,9 +240,9 @@ describe('Transformer', () => {
       expect(result.value.roleaccesses).toBeUndefined()
     })
 
-    it('should ignore unknown fields', async () => {
+    it('should not ignore unknown fields', async () => {
       const result = await transformCustomFieldRecord(XML_TEMPLATES.WITH_UNKNOWN_FIELD)
-      expect(result.value.unknownfield).toBeUndefined()
+      expect(result.value.unknownfield).toBeDefined()
     })
 
     it('should decode html chars', async () => {
@@ -496,11 +496,11 @@ describe('Transformer', () => {
       expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_NESTED_ATTRIBUTE))
     })
 
-    it('should ignore unknown field', async () => {
-      instance.value.unknownfield = 'unknownValue'
+    it('should not ignore unknown field', async () => {
+      instance.value.unknownfield = 'unknownVal'
       const customizationInfo = await toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
-      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_SCRIPT_ID))
+      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_UNKNOWN_FIELD))
     })
 
     it('should transform list field', async () => {

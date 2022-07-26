@@ -50,7 +50,7 @@ const FIELD_PERMISSION_ENUM_SCHEMA = Joi.string().regex(/ReadOnly|ReadWrite|NoAc
 
 const isFieldPermissionEnum = createSchemeGuard<FieldPermissionEnum>(FIELD_PERMISSION_ENUM_SCHEMA, 'Received an invalid Field Permission enum value')
 
-const enumFieldPermissions = new PrimitiveType({
+export const enumFieldPermissions = new PrimitiveType({
   elemID: new ElemID(SALESFORCE, 'FieldPermissionEnum'),
   primitive: PrimitiveTypes.STRING,
   annotations: {
@@ -61,7 +61,7 @@ const enumFieldPermissions = new PrimitiveType({
   },
 })
 
-const profileFieldLevelSecurity = new ObjectType({
+export const profileFieldLevelSecurity = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'ProfileFieldLevelSecurity'),
   fields: {
     field: { refType: BuiltinTypes.STRING },
@@ -213,9 +213,6 @@ const filter: LocalFilterCreator = ({ config }) => ({
     instancesWithFieldPermissions.forEach(fieldPermissionValuesToEnum)
   },
   preDeploy: async changes => {
-    if (config.enumFieldPermissions === false) {
-      return
-    }
     await awu(metadataTypesWithFieldPermissions).forEach(async metadataType => {
       const instanceChanges = await awu(changes)
         .filter(isAdditionOrModificationChange)

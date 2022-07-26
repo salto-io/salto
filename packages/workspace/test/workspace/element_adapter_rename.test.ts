@@ -55,6 +55,7 @@ describe('rename adapter in elements', () => {
       listOfListField: { refType: new ListType(new ListType(innerType)) },
       mapField: { refType: new MapType(innerType) },
       mapOfMapField: { refType: new MapType(new MapType(innerType)) },
+      nonResolvedMapField: { refType: new MapType(new TypeReference(innerType.elemID)) },
     },
   })
   const staticFileToChange = new StaticFile({
@@ -98,6 +99,7 @@ describe('rename adapter in elements', () => {
       listOfListField: { refType: new ListType(new ListType(changedInnerType)) },
       mapField: { refType: new MapType(changedInnerType) },
       mapOfMapField: { refType: new MapType(new MapType(changedInnerType)) },
+      nonResolvedMapField: { refType: new MapType(new TypeReference(changedInnerType.elemID)) },
     },
   })
   const changedStaticFile = new StaticFile({

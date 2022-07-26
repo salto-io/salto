@@ -63,7 +63,8 @@ export const getAndValidateActiveAccounts = (
   if (inputAccounts) {
     const diffAccounts = _.difference(inputAccounts, validAccounts)
     if (diffAccounts.length > 0) {
-      throw new Error(`Not all accounts (${diffAccounts.length}) are set up for this workspace`)
+      const accountsErrorMessage = diffAccounts.length === 1 ? 'an account' : 'accounts'
+      throw new Error(`Environment ${workspace.currentEnv()} does not have ${accountsErrorMessage} named ${diffAccounts.join(', ')}`)
     }
   }
 

@@ -354,6 +354,105 @@ describe('projectFilter', () => {
     })
   })
 
+  describe('When deploying an addition change with 500 error and field configuration was already deleted', () => {
+    let change: Change
+
+    beforeEach(async () => {
+      deployChangeMock.mockRejectedValue({
+        response: {
+          status: 500,
+        },
+      })
+
+      instance.value.id = '3'
+      instance.value.key = 'key'
+      change = toChange({ after: instance })
+
+      connection.get.mockImplementation(async url => {
+        if (url.includes('/rest/api/3/project')) {
+          return {
+            status: 200,
+            data: {
+              id: '3',
+              components: [
+                {
+                  id: '1',
+                },
+                {
+                  id: '2',
+                },
+              ],
+            },
+          }
+        }
+
+        if (url.includes('/rest/api/3/fieldconfigurationscheme/')) {
+          return {
+            status: 200,
+            data: {
+              values: [{
+              }],
+            },
+          }
+        }
+
+        throw new Error('Unexpected url')
+      })
+
+      await filter.deploy([change])
+    })
+    it('should call deployChange and ignore the right fields', () => {
+      expect(deployChangeMock).toHaveBeenCalledWith(
+        change,
+        client,
+        DEFAULT_CONFIG.apiDefinitions.types.Project.deployRequests,
+        ['components', 'fieldConfigurationScheme'],
+        undefined,
+        undefined,
+      )
+    })
+
+    it('should call the endpoint to get the projectId', () => {
+      expect(connection.get).toHaveBeenCalledWith(
+        '/rest/api/3/project/key',
+        undefined,
+      )
+    })
+
+    it('should call the endpoint to get the fieldConfigurationScheme', () => {
+      expect(connection.get).toHaveBeenCalledWith(
+        '/rest/api/3/fieldconfigurationscheme/project?projectId=3',
+        undefined,
+      )
+    })
+
+    it('should not call the endpoint to delete the fieldConfigurationScheme', () => {
+      expect(connection.delete).not.toHaveBeenCalledWith(
+        '/rest/api/3/fieldconfigurationscheme/4',
+        undefined,
+      )
+    })
+
+    it('should call the endpoint to get the components', () => {
+      expect(connection.get).toHaveBeenCalledWith(
+        '/rest/api/3/project/3',
+        undefined,
+      )
+    })
+
+    it('should call the endpoint to remove the components', () => {
+      expect(connection.delete).toHaveBeenCalledWith(
+        '/rest/api/3/component/1',
+        undefined,
+      )
+
+      expect(connection.delete).toHaveBeenCalledWith(
+        '/rest/api/3/component/2',
+        undefined,
+      )
+    })
+  })
+
   describe('onDeploy', () => {
     beforeEach(async () => {
       instance.value.id = 1

@@ -112,7 +112,7 @@ const getProjectId = async (projectKey: string, client: JiraClient): Promise<str
 
 const isFieldConfigurationSchemeResponse = createSchemeGuard<{
   values: {
-    fieldConfigurationScheme: {
+    fieldConfigurationScheme?: {
       id: string
     }
   }[]
@@ -120,7 +120,7 @@ const isFieldConfigurationSchemeResponse = createSchemeGuard<{
   values: Joi.array().items(Joi.object({
     fieldConfigurationScheme: Joi.object({
       id: Joi.string().required(),
-    }).unknown(true).required(),
+    }).unknown(true).optional(),
   }).unknown(true)),
 }).unknown(true).required(), 'Received an invalid field configuration scheme response')
 
@@ -143,6 +143,11 @@ const deleteFieldConfigurationScheme = async (
   }
 
   await deployScheme(instance, client, FIELD_CONFIG_SCHEME_FIELD, 'fieldConfigurationSchemeId')
+
+  if (response.data.values[0].fieldConfigurationScheme === undefined) {
+    log.debug(`project ${instance.elemID.getFullName()} does not have a field configuration scheme, skipping deletion`)
+    return
+  }
 
   const schemeId = response.data.values[0].fieldConfigurationScheme.id
   await client.delete({

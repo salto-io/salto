@@ -36,6 +36,8 @@ import {
   TemplateExpression,
   isStaticFile,
   StaticFile,
+  MAP_ID_PREFIX,
+  LIST_ID_PREFIX,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import { UnresolvedReference } from './expressions'
@@ -68,19 +70,36 @@ const recursivelyUpdateContainerType = (type: ContainerType, accountName: string
   }
 }
 
-const updateRefTypeWithId = (refType: TypeReference, accountName: string): void => {
+const updateRefTypeWithId = (
+  refType: TypeReference,
+  newAccountName: string,
+  oldAccountName: string
+): void => {
   if (refType.type === undefined) {
-    _.set(refType, 'elemID', createAdapterReplacedID(refType.elemID, accountName))
+    // check if it is a container type
+    const internalElemId = ElemID.getTypeOrContainerTypeID(refType.elemID)
+    if (!internalElemId.isEqual(refType.elemID) && internalElemId.adapter === oldAccountName) {
+      const fullName = refType.elemID.getFullName()
+      const newInternalElemId = createAdapterReplacedID(internalElemId, newAccountName)
+      if (fullName.startsWith(MAP_ID_PREFIX)) {
+        _.set(refType, 'elemID', MapType.createElemID(new TypeReference(newInternalElemId)))
+      }
+      if (fullName.startsWith(LIST_ID_PREFIX)) {
+        _.set(refType, 'elemID', ListType.createElemID(new TypeReference(newInternalElemId)))
+      }
+    } else {
+      _.set(refType, 'elemID', createAdapterReplacedID(refType.elemID, newAccountName))
+    }
     return
   }
   if (isContainerType(refType.type)) {
     refType.type = refType.type.clone()
-    recursivelyUpdateContainerType(refType.type, accountName)
+    recursivelyUpdateContainerType(refType.type, newAccountName)
   } else {
-    const newElemID = createAdapterReplacedID(refType.type.elemID, accountName)
+    const newElemID = createAdapterReplacedID(refType.type.elemID, newAccountName)
     if (!newElemID.isEqual(refType.type.elemID)) {
       refType.type = refType.type.clone()
-      _.set(refType.type, 'elemID', createAdapterReplacedID(refType.type.elemID, accountName))
+      _.set(refType.type, 'elemID', createAdapterReplacedID(refType.type.elemID, newAccountName))
     }
   }
   _.set(refType, 'elemID', refType.type.elemID)
@@ -113,35 +132,38 @@ const updateStaticFile = (
   _.set(value, 'filepath', value.filepath.replace(`${oldAccountName}/`, `${newAccountName}/`))
 }
 
-const updateElement = (value: Element, accountName: string): void => {
-  _.set(value, 'elemID', createAdapterReplacedID(value.elemID, accountName))
+const updateElement = (value: Element, newAccountName: string, oldAccountName: string): void => {
+  _.set(value, 'elemID', createAdapterReplacedID(value.elemID, newAccountName))
   value.annotationRefTypes = _.mapValues(value.annotationRefTypes,
     annotation => {
       const annotationType = _.clone(annotation)
-      updateRefTypeWithId(annotationType, accountName)
+      updateRefTypeWithId(annotationType, newAccountName, oldAccountName)
       return annotationType
     })
   if (isField(value)) {
     const fieldType = _.clone(value.refType)
-    updateRefTypeWithId(fieldType, accountName)
+    updateRefTypeWithId(fieldType, newAccountName, oldAccountName)
     value.refType = fieldType
   }
 }
 
-const transformElemIDAdapter = (accountName: string, oldAccount: string): TransformFunc => async (
+const transformElemIDAdapter = (
+  newAccountName: string,
+  oldAccountName: string
+): TransformFunc => async (
   { value }
 ) => {
   if (isReferenceExpression(value)) {
-    updateReferenceExpression(value, accountName)
+    updateReferenceExpression(value, newAccountName)
   }
   if (isStaticFile(value)) {
-    updateStaticFile(value, accountName, oldAccount)
+    updateStaticFile(value, newAccountName, oldAccountName)
   }
   if (isTemplateExpression(value)) {
-    updateTemplateExpression(value, accountName)
+    updateTemplateExpression(value, newAccountName)
   }
-  if (isElement(value) && value.elemID.adapter !== accountName) {
-    updateElement(value, accountName)
+  if (isElement(value) && value.elemID.adapter !== newAccountName) {
+    updateElement(value, newAccountName, oldAccountName)
   }
   return value
 }
@@ -162,10 +184,10 @@ export const updateElementsWithAlternativeAccount = async (elementsToUpdate: Ele
       })
       _.set(element, 'elemID', createAdapterReplacedID(element.elemID, newAccount))
       if (isInstanceElement(element)) {
-        updateRefTypeWithId(element.refType, newAccount)
+        updateRefTypeWithId(element.refType, newAccount, oldAccount)
       }
       Object.values(element.annotationRefTypes).forEach(annotation => updateRefTypeWithId(
-        annotation, newAccount
+        annotation, newAccount, oldAccount
       ))
     }
   })

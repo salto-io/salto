@@ -170,7 +170,8 @@ const fieldPermissionValuesToObject = (instance: InstanceElement): InstanceEleme
     (objectPermission, objectName) => _.mapValues(
       objectPermission,
       (fieldPermissionValue, fieldName) => {
-        if (!isFieldPermissionEnum(fieldPermissionValue)) {
+        if (FIELD_PERMISSION_OBJECT_SCHEME.validate(fieldPermissionValue).error === undefined
+          || !isFieldPermissionEnum(fieldPermissionValue)) {
           return fieldPermissionValue
         }
         return permissionsEnumToObject(`${objectName}.${fieldName}`, fieldPermissionValue)

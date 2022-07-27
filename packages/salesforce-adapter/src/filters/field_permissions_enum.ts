@@ -16,11 +16,10 @@
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { isInstanceElement, InstanceElement, isObjectType, MapType, PrimitiveType, ElemID, PrimitiveTypes, CORE_ANNOTATIONS, createRestriction, createRefToElmWithValue, TypeReference, ObjectType, getChangeData, BuiltinTypes, isAdditionOrModificationChange, AdditionChange, ModificationChange } from '@salto-io/adapter-api'
-import { createSchemeGuard, applyFunctionToChangeData } from '@salto-io/adapter-utils'
-import Joi from 'joi'
+import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
 import { apiName } from '../transformers/transformer'
-import { SALESFORCE, METADATA_TYPE, PROFILE_METADATA_TYPE, PERMISSION_SET_METADATA_TYPE } from '../constants'
+import { SALESFORCE, METADATA_TYPE, PROFILE_METADATA_TYPE, PERMISSION_SET_METADATA_TYPE, TYPES_PATH, SUBTYPES_PATH } from '../constants'
 import { isInstanceOfTypeChange } from './utils'
 
 const { awu } = collections.asynciterable
@@ -36,19 +35,7 @@ type FieldPermissionObject = {
   readable: boolean
 }
 
-const FIELD_PERMISSION_OBJECT_SCHEME = Joi.object({
-  field: Joi.string().required(),
-  editable: Joi.boolean().required(),
-  readable: Joi.boolean().required(),
-})
-
-const isFieldPermissionObject = createSchemeGuard<FieldPermissionObject>(FIELD_PERMISSION_OBJECT_SCHEME, 'Received an invalid Field Permission value')
-
 type FieldPermissionEnum = 'ReadOnly' | 'ReadWrite' | 'NoAccess'
-
-const FIELD_PERMISSION_ENUM_SCHEMA = Joi.string().regex(/ReadOnly|ReadWrite|NoAccess/)
-
-const isFieldPermissionEnum = createSchemeGuard<FieldPermissionEnum>(FIELD_PERMISSION_ENUM_SCHEMA, 'Received an invalid Field Permission enum value')
 
 export const enumFieldPermissions = new PrimitiveType({
   elemID: new ElemID(SALESFORCE, 'FieldPermissionEnum'),
@@ -59,6 +46,7 @@ export const enumFieldPermissions = new PrimitiveType({
       enforce_value: true,
     }),
   },
+  path: [SALESFORCE, TYPES_PATH, SUBTYPES_PATH, 'FieldPermissionEnum'],
 })
 
 export const profileFieldLevelSecurity = new ObjectType({
@@ -149,11 +137,10 @@ const fieldPermissionValuesToEnum = (instance: InstanceElement): InstanceElement
     objectPermission => _.mapValues(
       objectPermission,
       fieldPermission => {
-        const validatedPermission = isFieldPermissionObject(fieldPermission)
-        if (validatedPermission === false) {
-          return fieldPermission
+        if (_.isBoolean(fieldPermission.readable) && _.isBoolean(fieldPermission.editable)) {
+          return fieldPermissionsObjectToEnum(fieldPermission)
         }
-        return fieldPermissionsObjectToEnum(fieldPermission)
+        return fieldPermission
       }
     )
   )
@@ -169,13 +156,9 @@ const fieldPermissionValuesToObject = (instance: InstanceElement): InstanceEleme
     fieldPermissions,
     (objectPermission, objectName) => _.mapValues(
       objectPermission,
-      (fieldPermissionValue, fieldName) => {
-        if (FIELD_PERMISSION_OBJECT_SCHEME.validate(fieldPermissionValue).error === undefined
-          || !isFieldPermissionEnum(fieldPermissionValue)) {
-          return fieldPermissionValue
-        }
-        return permissionsEnumToObject(`${objectName}.${fieldName}`, fieldPermissionValue)
-      }
+      (fieldPermissionValue, fieldName) => (
+        permissionsEnumToObject(`${objectName}.${fieldName}`, fieldPermissionValue)
+      )
     )
   )
   return instance
@@ -192,6 +175,8 @@ const fieldPermissionsFieldToOriginalType = (objectType: ObjectType): void => {
     objectType.fields.fieldPermissions.refType = getMapOfMapOfProfileFieldLevelSecurity()
   }
 }
+
+let shouldRunDeployFilters: boolean
 
 const filter: LocalFilterCreator = ({ config }) => ({
   onFetch: async elements => {
@@ -212,6 +197,7 @@ const filter: LocalFilterCreator = ({ config }) => ({
         && metadataTypesWithFieldPermissions.includes(await apiName(await element.getType()))))
       .toArray() as InstanceElement[]
     instancesWithFieldPermissions.forEach(fieldPermissionValuesToEnum)
+    elements.push(enumFieldPermissions)
   },
   preDeploy: async changes => {
     await awu(metadataTypesWithFieldPermissions).forEach(async metadataType => {
@@ -222,18 +208,23 @@ const filter: LocalFilterCreator = ({ config }) => ({
       if (instanceChanges.length === 0) {
         return
       }
+      const instanceType = await getChangeData(instanceChanges[0]).getType()
+      shouldRunDeployFilters = !instanceType.fields.fieldPermissions.elemID
+        .isEqual(enumFieldPermissions.elemID)
+      if (!shouldRunDeployFilters) {
+        return
+      }
       instanceChanges.forEach(instanceChange => (
         applyFunctionToChangeData(
           instanceChange,
           fieldPermissionValuesToObject,
         )
       ))
-      const instanceType = await getChangeData(instanceChanges[0]).getType()
       fieldPermissionsFieldToOriginalType(instanceType)
     })
   },
   onDeploy: async changes => {
-    if (config.enumFieldPermissions === false) {
+    if (!shouldRunDeployFilters) {
       return
     }
     await awu(metadataTypesWithFieldPermissions).forEach(async metadataType => {

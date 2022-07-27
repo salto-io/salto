@@ -117,7 +117,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   // profilePermissionsFilter depends on layoutFilter because layoutFilter
   // changes ElemIDs that the profile references
   { creator: profilePermissionsFilter },
-  // profileMapsFilter should run before profile fieldReferencesFilter
+  // convertMapsFilter should run before profile fieldReferencesFilter
   { creator: convertMapsFilter },
   { creator: standardValueSetFilter, addsNewInformation: true },
   { creator: flowFilter },
@@ -143,6 +143,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   // The following filters should remain last in order to make sure they fix all elements
   { creator: convertListsFilter },
   { creator: convertTypeFilter },
+  // should be after convertTypeFilter & convertMapsFilter and before profileInstanceSplitFilter
+  { creator: enumFieldPermissionsFilter },
   // should run after convertListsFilter
   { creator: xmlAttributesFilter },
   { creator: replaceFieldValuesFilter },
@@ -155,8 +157,6 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   // extraDependenciesFilter should run after addMissingIdsFilter
   { creator: extraDependenciesFilter, addsNewInformation: true },
   { creator: customObjectsSplitFilter },
-  // should be before profileInstanceSplitFilter
-  { creator: enumFieldPermissionsFilter },
   { creator: profileInstanceSplitFilter },
 ]
 

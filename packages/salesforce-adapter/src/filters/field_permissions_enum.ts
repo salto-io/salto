@@ -209,8 +209,9 @@ const filter: LocalFilterCreator = ({ config }) => ({
         return
       }
       const instanceType = await getChangeData(instanceChanges[0]).getType()
-      shouldRunDeployFilters = !instanceType.fields.fieldPermissions.elemID
-        .isEqual(enumFieldPermissions.elemID)
+      shouldRunDeployFilters = instanceType.fields.fieldPermissions !== undefined
+        && (await instanceType.fields.fieldPermissions.getType()).elemID
+          .isEqual(getMapOfMapOfFieldPermissionEnum().elemID)
       if (!shouldRunDeployFilters) {
         return
       }

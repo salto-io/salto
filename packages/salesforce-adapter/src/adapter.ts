@@ -170,9 +170,6 @@ export interface SalesforceAdapterParams {
   // Metadata types that are being fetched in the filters
   metadataTypesOfInstancesFetchedInFilters?: string[]
 
-  // Use enum instead of object to describe fieldPermissions
-  enumFieldPermissions?: boolean
-
   // Metadata types that we have to fetch using the retrieve API
   metadataToRetrieve?: string[]
 
@@ -320,7 +317,6 @@ export default class SalesforceAdapter implements AdapterOperations {
       'LastReferencedDate',
       'LastViewedDate',
     ],
-    enumFieldPermissions = constants.DEFAULT_ENUM_FIELD_PERMISSIONS,
     config,
   }: SalesforceAdapterParams) {
     this.maxItemsInRetrieveRequest = config.maxItemsInRetrieveRequest ?? maxItemsInRetrieveRequest
@@ -338,7 +334,8 @@ export default class SalesforceAdapter implements AdapterOperations {
         config: {
           unsupportedSystemFields,
           systemFields,
-          enumFieldPermissions: config.enumFieldPermissions ?? enumFieldPermissions,
+          enumFieldPermissions: config.enumFieldPermissions
+            ?? constants.DEFAULT_ENUM_FIELD_PERMISSIONS,
           fetchProfile,
           elementsSource,
           separateFieldToFiles: config.fetch?.metadata?.objectsToSeperateFieldsToFiles,

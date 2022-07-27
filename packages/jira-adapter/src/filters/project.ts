@@ -144,7 +144,7 @@ const deleteFieldConfigurationScheme = async (
 
   await deployScheme(instance, client, FIELD_CONFIG_SCHEME_FIELD, 'fieldConfigurationSchemeId')
 
-  if (response.data.values[0].fieldConfigurationScheme === undefined) {
+  if (response.data.values[0]?.fieldConfigurationScheme === undefined) {
     log.debug(`project ${instance.elemID.getFullName()} does not have a field configuration scheme, skipping deletion`)
     return
   }

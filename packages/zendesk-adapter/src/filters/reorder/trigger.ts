@@ -66,7 +66,7 @@ const deployFunc: DeployFuncType = async (change, client, apiDefinitions) => {
     // We send position + 1, since the position in the service are starting from 1
     .map((id, position) => ({ id, position: position + 1 }))
   const triggers = order
-    .flatMap(entry => entry.active.concat(entry.inactive).map((id, position) => ({
+    .flatMap(entry => (entry.active ?? []).concat(entry.inactive ?? []).map((id, position) => ({
       id: id.toString(),
       // We send position + 1, since the position in the service are starting from 1
       position: position + 1,

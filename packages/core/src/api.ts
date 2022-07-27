@@ -18,13 +18,14 @@ import {
   Adapter, InstanceElement, ObjectType, ElemID, AccountId, getChangeData, isField,
   Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
   isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
-  SaltoError, Element, DetailedChange, isCredentialError, DeployExtraProperties,
+  SaltoError, Element, DetailedChange, isCredentialError, DeployExtraProperties, isObjectType,
+  TypeReference, LIST_ID_PREFIX, ListType, MAP_ID_PREFIX, MapType, Field,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
-import { Workspace, ElementSelector, elementSource, updateElementsWithAlternativeAccount, nacl } from '@salto-io/workspace'
+import { Workspace, ElementSelector, elementSource, updateElementsWithAlternativeAccount, nacl, createAdapterReplacedID } from '@salto-io/workspace'
 import { EOL } from 'os'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
@@ -606,6 +607,98 @@ export const migrateWorkspace = async (
       const changes = removalChanges.concat(additionChanges)
       await workspace.updateNaclFiles(changes, common ? 'override' : 'isolated')
       await workspace.setNaclFiles(oldConfigFilePaths.map(filename => ({ filename, buffer: '' })))
+      await workspace.flush()
+    })
+  } catch (err) {
+    log.error(`Failed to migrate workspace: ${workspace.uid}. Error: ${err}`)
+    throw err
+  }
+  log.info(`Finished to migrate workspace: ${workspace.uid}`)
+}
+
+const fixFieldRefTypes = (field: Field, oldAdapterName: string, newAdapterName: string): void => {
+  const { refType } = field
+  if (refType.type === undefined) {
+    // check if it is a container type
+    const internalElemId = ElemID.getTypeOrContainerTypeID(refType.elemID)
+    if (!internalElemId.isEqual(refType.elemID) && internalElemId.adapter === oldAdapterName) {
+      const fullName = refType.elemID.getFullName()
+      const newInternalElemId = createAdapterReplacedID(internalElemId, newAdapterName)
+      if (fullName.startsWith(MAP_ID_PREFIX)) {
+        _.set(refType, 'elemID', MapType.createElemID(new TypeReference(newInternalElemId)))
+      }
+      if (fullName.startsWith(LIST_ID_PREFIX)) {
+        _.set(refType, 'elemID', ListType.createElemID(new TypeReference(newInternalElemId)))
+      }
+    } else {
+      _.set(refType, 'elemID', createAdapterReplacedID(refType.elemID, newAdapterName))
+    }
+  }
+}
+
+export const migrateState = async (
+  workspace: Workspace,
+): Promise<void> => {
+  const oldAdapterName = 'zendesk_support'
+  const newAdapterName = 'zendesk'
+  const unmigratableEnvs = workspace.envs()
+    .filter(envName => !_.isEqual(workspace.services(envName), [newAdapterName]))
+  if (!_.isEmpty(unmigratableEnvs)) {
+    const [envsWithOtherServices, envsWithoutZendesk] = _.partition(
+      unmigratableEnvs,
+      env => workspace.services(env).includes(newAdapterName)
+    )
+    if (!_.isEmpty(envsWithOtherServices)) {
+      log.error(`Cannot migrate the workspace: ${workspace.uid
+      } because the following envs have other services as well: ${unmigratableEnvs.join(', ')}`)
+    }
+    if (!_.isEmpty(envsWithoutZendesk)) {
+      log.error(`Cannot migrate the workspace: ${workspace.uid
+      } because the following envs don't have ${newAdapterName}: ${unmigratableEnvs.join(', ')}`)
+    }
+    return
+  }
+  try {
+    await awu(workspace.envs()).forEach(async envName => {
+      log.info(`Start to migrate ${envName}`)
+      await workspace.setCurrentEnv(envName, false)
+      const elements = await awu(await (await workspace.elements()).getAll())
+        .filter(element => element.elemID.adapter === newAdapterName)
+        .toArray()
+      const [objTypes, nonObjTypes] = _.partition(elements, isObjectType)
+      const statePathIndex = await workspace.state().getPathIndex()
+      const pathIndexEntries = _.keyBy(await awu(
+        statePathIndex.entries()
+      ).toArray(), entry => entry.key)
+      await awu(objTypes).forEach(async element => {
+        if (element.path === undefined) {
+          element.path = pathIndexEntries[element.elemID.getFullName()]?.value[0]
+            ?? getElementPathFromFileName(
+              (await workspace.getElementNaclFiles(element.elemID))[0],
+              envName
+            )
+        }
+      })
+      const oldObjTypes = objTypes.map(element => element.clone())
+      objTypes.forEach(objType => {
+        Object.values(objType.fields).forEach(field => {
+          fixFieldRefTypes(field, oldAdapterName, newAdapterName)
+        })
+      })
+      objTypes.forEach(element => {
+        if (!_.isEmpty(element.path) && element.path?.[0] === oldAdapterName) {
+          element.path = [newAdapterName, ...(element.path?.slice(1) ?? [])]
+        }
+      })
+      await updateStateWithFetchResults(
+        workspace, nonObjTypes.concat(objTypes), nonObjTypes.concat(objTypes), [newAdapterName]
+      )
+      const removalChanges: DetailedChange[] = oldObjTypes.map(e =>
+        ({ data: { before: e }, action: 'remove', id: e.elemID, path: e.path }))
+      const additionChanges: DetailedChange[] = objTypes.map(e =>
+        ({ data: { after: e }, action: 'add', id: e.elemID, path: e.path }))
+      const changes = removalChanges.concat(additionChanges)
+      await workspace.updateNaclFiles(changes, 'isolated')
       await workspace.flush()
     })
   } catch (err) {

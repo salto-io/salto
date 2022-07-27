@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { EOL } from 'os'
-import { migrateWorkspace } from '@salto-io/core'
+import { migrateState, migrateWorkspace } from '@salto-io/core'
 import { formatStepStart, formatStepFailed, formatStepCompleted } from '../formatter'
 import { outputLine, errorOutputLine } from '../outputer'
 import Prompts from '../prompts'
@@ -45,23 +45,20 @@ export const migrateAction: WorkspaceCommandAction<MigrationArgs> = async ({
   return CliExitCode.Success
 }
 
-export const checkAction: WorkspaceCommandAction<unknown> = async ({
+export const migrateStateAction: WorkspaceCommandAction<MigrationArgs> = async ({
   output,
   workspace,
 }): Promise<CliExitCode> => {
-  outputLine(formatStepStart(Prompts.MIGRATION_CHECK_STARTED), output)
+  outputLine(formatStepStart(Prompts.MIGRATION_STARTED), output)
+
   try {
-    const errors = await workspace.errors()
-    if (errors.hasErrors('Error')) {
-      outputLine(formatStepStart(Prompts.MIGRATION_CHECK_HAS_ERRORS(errors.strings().join('\n'))), output)
-      return CliExitCode.AppError
-    }
+    await migrateState(workspace)
   } catch (e) {
-    errorOutputLine(formatStepFailed(Prompts.MIGRATION_CHECK_FAILED(e.toString())), output)
+    errorOutputLine(formatStepFailed(Prompts.MIGRATION_FAILED(e.toString())), output)
     return CliExitCode.AppError
   }
 
-  outputLine(formatStepCompleted(Prompts.MIGRATION_CHECK_FINISHED), output)
+  outputLine(formatStepCompleted(Prompts.MIGRATION_FINISHED), output)
   outputLine(EOL, output)
   return CliExitCode.Success
 }
@@ -92,12 +89,12 @@ const wsMigrateZendeskDef = createWorkspaceCommand({
   action: migrateAction,
 })
 
-const wsMigrateCheckDef = createWorkspaceCommand({
+const wsMigrateStateDef = createWorkspaceCommand({
   properties: {
-    name: 'check',
-    description: 'Check if the workspace is ok',
+    name: 'state',
+    description: 'Migrate the state',
   },
-  action: checkAction,
+  action: migrateStateAction,
 })
 
 // Group definition
@@ -108,7 +105,7 @@ const wsGroupDef = createCommandGroupDef({
   },
   subCommands: [
     wsMigrateZendeskDef,
-    wsMigrateCheckDef,
+    wsMigrateStateDef,
   ],
 })
 

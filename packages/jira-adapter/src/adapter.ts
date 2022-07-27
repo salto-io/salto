@@ -40,7 +40,6 @@ import boardDeploymentFilter from './filters/board/board_deployment'
 import automationDeploymentFilter from './filters/automation/automation_deployment'
 import webhookFilter from './filters/webhook/webhook'
 import screenFilter from './filters/screen/screen'
-import missingStatusesFilter from './filters/statuses/missing_statuses'
 import issueTypeScreenSchemeFilter from './filters/issue_type_screen_scheme'
 import fieldConfigurationFilter from './filters/field_configuration/field_configuration'
 import fieldConfigurationIrrelevantFields from './filters/field_configuration/field_configuration_irrelevant_fields'
@@ -109,7 +108,6 @@ export const DEFAULT_FILTERS = [
   automationStructureFilter,
   automationDeploymentFilter,
   webhookFilter,
-  missingStatusesFilter,
   // Should run before duplicateIdsFilter
   fieldNameFilter,
   // This should happen before any filter that creates references

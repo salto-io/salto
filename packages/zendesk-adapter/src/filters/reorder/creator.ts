@@ -112,7 +112,8 @@ export const createReorderFilterCreator = (
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === createOrderTypeName(typeName))
       .forEach(instance => {
-        instance.value[orderFieldName] = instance.value.active.concat(instance.value.inactive)
+        instance.value[orderFieldName] = (instance.value.active ?? [])
+          .concat(instance.value.inactive ?? [])
       })
   },
   onDeploy: async changes => {

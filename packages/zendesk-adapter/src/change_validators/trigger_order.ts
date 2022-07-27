@@ -72,11 +72,11 @@ export const triggerOrderInstanceContainsAllTheInstancesValidator: ChangeValidat
         }
       }
       const instanceActivityValue = instance.value.active
-      const orderEntry = orderInstance.value.order.find((entry: Values) =>
+      const orderEntry = (orderInstance.value.order ?? []).find((entry: Values) =>
         (isReferenceExpression(entry.category) && entry.category.elemID.isEqual(categoryId.elemID)))
       if (
         orderEntry === undefined
-        || (instanceActivityValue ? orderEntry.active : orderEntry.inactive)
+        || ((instanceActivityValue ? orderEntry.active : orderEntry.inactive) ?? [])
           .filter(isReferenceExpression)
           .find((ref: ReferenceExpression) => ref.elemID.isEqual(instance.elemID)) === undefined
       ) {
@@ -87,7 +87,7 @@ export const triggerOrderInstanceContainsAllTheInstancesValidator: ChangeValidat
           detailedMessage: `Instance ${instance.elemID.name} of type ${instance.elemID.typeName} not listed in ${instance.elemID.typeName} sort order under the ${categoryId.elemID.name} category, and will be added at the end by default. If order is important, please include it under the ${categoryId.elemID.name} category in the ${instanceActivityValue ? 'active' : 'inactive'} list`,
         }]
       }
-      if ((instanceActivityValue ? orderEntry.inactive : orderEntry.active)
+      if (((instanceActivityValue ? orderEntry.inactive : orderEntry.active) ?? [])
         .filter(isReferenceExpression)
         .find((ref: ReferenceExpression) => ref.elemID.isEqual(instance.elemID))) {
         return [createWrongPlaceErrorMessage(
@@ -104,7 +104,7 @@ export const triggerOrderInstanceContainsAllTheInstancesValidator: ChangeValidat
         ))
         .flatMap((entry: Values) => {
           if (
-            entry.active.concat(entry.inactive)
+            (entry.active ?? []).concat(entry.inactive ?? [])
               .filter(isReferenceExpression)
               .find((ref: ReferenceExpression) =>
                 ref.elemID.isEqual(instance.elemID))

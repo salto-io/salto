@@ -349,6 +349,18 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { typeContext: 'neighborSharedToTypeLookup' },
   },
   {
+    src: { field: 'role', parentTypes: ['SharedTo'] },
+    target: { type: 'Role' },
+  },
+  {
+    src: { field: 'roleAndSubordinates', parentTypes: ['SharedTo'] },
+    target: { type: 'Role' },
+  },
+  {
+    src: { field: 'group', parentTypes: ['SharedTo'] },
+    target: { type: 'Group' },
+  },
+  {
     // sometimes has a value that is not a reference - should only convert to reference
     // if lookupValueType exists
     src: { field: 'lookupValue', parentTypes: ['WorkflowFieldUpdate'] },

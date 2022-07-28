@@ -665,12 +665,11 @@ export const migrateState = async (
       const elements = await awu(await (await workspace.elements()).getAll())
         .filter(element => element.elemID.adapter === newAdapterName)
         .toArray()
-      const [objTypes, nonObjTypes] = _.partition(elements, isObjectType)
       const statePathIndex = await workspace.state().getPathIndex()
       const pathIndexEntries = _.keyBy(await awu(
         statePathIndex.entries()
       ).toArray(), entry => entry.key)
-      await awu(objTypes).forEach(async element => {
+      await awu(elements).forEach(async element => {
         if (element.path === undefined) {
           element.path = pathIndexEntries[element.elemID.getFullName()]?.value[0]
             ?? getElementPathFromFileName(
@@ -679,16 +678,17 @@ export const migrateState = async (
             )
         }
       })
-      const oldObjTypes = objTypes.map(element => element.clone())
+      const oldObjTypes = elements.map(element => element.clone())
+      elements.forEach(element => {
+        if (!_.isEmpty(element.path) && element.path?.[0] === oldAdapterName) {
+          element.path = [newAdapterName, ...(element.path?.slice(1) ?? [])]
+        }
+      })
+      const [objTypes, nonObjTypes] = _.partition(elements, isObjectType)
       objTypes.forEach(objType => {
         Object.values(objType.fields).forEach(field => {
           fixFieldRefTypes(field, oldAdapterName, newAdapterName)
         })
-      })
-      objTypes.forEach(element => {
-        if (!_.isEmpty(element.path) && element.path?.[0] === oldAdapterName) {
-          element.path = [newAdapterName, ...(element.path?.slice(1) ?? [])]
-        }
       })
       await updateStateWithFetchResults(
         workspace, nonObjTypes.concat(objTypes), nonObjTypes.concat(objTypes), [newAdapterName]

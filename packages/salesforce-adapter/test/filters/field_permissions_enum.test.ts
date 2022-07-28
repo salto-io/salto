@@ -209,25 +209,24 @@ describe('FieldPermissionsEnum filter', () => {
       }
     )
     let changes: Change<InstanceElement>[]
-    describe('with enumFieldPermissions true', () => {
+
+    describe('with instances and types that had this filter\'s onFetch run on them', () => {
       beforeAll(async () => {
         filter = fieldPermissionsEnumFilter(
           { config: { ...defaultFilterContext, enumFieldPermissions: true } },
         ) as FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
+        changes = [
+          profileInstancePostOnFetch,
+          permissionSetInstancePostOnFetch,
+        ].map(elem => toChange({ after: elem.clone() }))
       })
 
       describe('preDeploy', () => {
         beforeAll(async () => {
-          changes = [
-            profileInstancePostOnFetch,
-            permissionSetInstancePostOnFetch,
-            profileInstance,
-            permissionSetInstance,
-          ].map(elem => toChange({ after: elem.clone() }))
           await filter.preDeploy(changes)
         })
 
-        it('Should have instances with fieldPermission Object values', () => {
+        it('Should have instances with fieldPermission Object values', async () => {
           changes.forEach(change => {
             const instance = getChangeData(change)
             expect(instance.value.fieldPermissions).toEqual(fieldPermissionObjectValue)
@@ -248,11 +247,6 @@ describe('FieldPermissionsEnum filter', () => {
 
       describe('onDeploy', () => {
         beforeAll(async () => {
-          changes = [
-            profileInstance,
-            permissionSetInstance,
-          ].map(elem => toChange({ after: elem.clone() }))
-          // The postOnFetch instances are irrelevant
           await filter.onDeploy(changes)
         })
 
@@ -276,21 +270,19 @@ describe('FieldPermissionsEnum filter', () => {
       })
     })
 
-    describe('with enumFieldPermissions false', () => {
+    describe('with instances and types that did not have this filter\'s onFetch run on them', () => {
       beforeAll(async () => {
         filter = fieldPermissionsEnumFilter(
-          { config: { ...defaultFilterContext } },
+          { config: { ...defaultFilterContext, enumFieldPermissions: true } },
         ) as FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
+        changes = [
+          profileInstance,
+          permissionSetInstance,
+        ].map(elem => toChange({ after: elem.clone() }))
       })
 
       describe('preDeploy', () => {
         beforeAll(async () => {
-          changes = [
-            profileInstancePostOnFetch,
-            permissionSetInstancePostOnFetch,
-            profileInstance,
-            permissionSetInstance,
-          ].map(elem => toChange({ after: elem.clone() }))
           await filter.preDeploy(changes)
         })
 
@@ -315,11 +307,6 @@ describe('FieldPermissionsEnum filter', () => {
 
       describe('onDeploy', () => {
         beforeAll(async () => {
-          changes = [
-            profileInstance,
-            permissionSetInstance,
-          ].map(elem => toChange({ after: elem.clone() }))
-          // The postOnFetch instances are irrelevant
           await filter.onDeploy(changes)
         })
 

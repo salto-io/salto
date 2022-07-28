@@ -21,6 +21,7 @@ import {
   isAdditionOrModificationChange,
   isInstanceChange,
 } from '@salto-io/adapter-api'
+import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { isCustomType } from '../types'
 import { ACCOUNT_SPECIFIC_VALUE } from '../constants'
 import { isInstanceContainsStringValue } from './utils'
@@ -39,6 +40,26 @@ const changeValidator: ChangeValidator = async changes => (
       }
       if (!isInstanceContainsStringValue(instance, ACCOUNT_SPECIFIC_VALUE)) {
         return undefined
+      }
+      let foundError = {}
+      walkOnElement({
+        element: instance,
+        func: ({ value, path }) => {
+          const nameParts = path.getFullNameParts()
+          if ((nameParts[nameParts.length - 1] === 'sender' && value === ACCOUNT_SPECIFIC_VALUE) || (nameParts[nameParts.length - 1] === 'recipientemail' && value === ACCOUNT_SPECIFIC_VALUE)) {
+            foundError = {
+              elemID: instance.elemID,
+              severity: 'Error',
+              message: 'Temp message: please change fields manualy',
+              detailedMessage: 'Fields with account specific values (ACCOUNT_SPECIFIC_VALUE) will be skipped from the deployment. After deploying this element, please make sure these fields are mapped correctly in NetSuite.',
+            }
+            return WALK_NEXT_STEP.EXIT
+          }
+          return WALK_NEXT_STEP.RECURSE
+        },
+      })
+      if (Object.keys(foundError).length !== 0) {
+        return foundError as ChangeError
       }
       return {
         elemID: instance.elemID,

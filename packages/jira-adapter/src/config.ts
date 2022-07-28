@@ -1084,8 +1084,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
   },
   Statuses: {
-    transformation: {
-      dataField: '.',
+    request: {
+      url: '/rest/api/3/statuses/search',
+      paginationField: 'startAt',
     },
   },
   Workflows: {
@@ -1273,11 +1274,26 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   Status: {
     transformation: {
       fieldTypeOverrides: [
-        { fieldName: 'untranslatedName', fieldType: 'string' },
+        { fieldName: 'id', fieldType: 'string' },
+        { fieldName: 'name', fieldType: 'string' },
+        { fieldName: 'statusCategory', fieldType: 'string' },
+        { fieldName: 'scope', fieldType: 'StatusScope' },
+        { fieldName: 'description', fieldType: 'string' },
       ],
       fieldsToHide: [
         {
           fieldName: 'id',
+        },
+      ],
+      fieldsToOmit: [
+        {
+          fieldName: 'scope',
+        },
+        {
+          fieldName: 'icon',
+        },
+        {
+          fieldName: 'resolved',
         },
       ],
       serviceUrl: '/secure/admin/EditStatus!default.jspa?id={id}',
@@ -1674,7 +1690,7 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
         newName: ISSUE_TYPE_NAME,
       },
       {
-        originalName: 'StatusDetails',
+        originalName: 'JiraStatus',
         newName: STATUS_TYPE_NAME,
       },
       {
@@ -1774,7 +1790,7 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
         newName: 'ScreenSchemes',
       },
       {
-        originalName: 'rest__api__3__status',
+        originalName: 'PageOfStatuses',
         newName: 'Statuses',
       },
       {

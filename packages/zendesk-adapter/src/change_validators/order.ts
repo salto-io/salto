@@ -93,8 +93,8 @@ export const orderInstanceContainsAllTheInstancesValidator: ChangeValidator = as
       const [
         orderListOfInstanceActivity, orderListOfTheOtherInstanceActivity,
       ] = instanceActivityValue
-        ? [orderInstance.value.active, orderInstance.value.inactive]
-        : [orderInstance.value.inactive, orderInstance.value.active]
+        ? [orderInstance.value.active ?? [], orderInstance.value.inactive ?? []]
+        : [orderInstance.value.inactive ?? [], orderInstance.value.active ?? []]
       if (!isInstanceInOrderList(orderListOfInstanceActivity, instance)) {
         return [{
           elemID: instance.elemID,

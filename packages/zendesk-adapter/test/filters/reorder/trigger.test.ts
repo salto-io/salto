@@ -153,7 +153,7 @@ describe('trigger reorder filter', () => {
         order: [
           { category: '1', active: [11, 22], inactive: [55, 66] },
           { category: '2', active: [33, 44], inactive: [] },
-          { category: '3', active: [], inactive: [] },
+          { category: '3' },
         ],
       },
     )

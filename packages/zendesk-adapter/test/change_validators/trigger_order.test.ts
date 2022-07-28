@@ -276,4 +276,29 @@ describe('triggerOrderInstanceContainsAllTheInstancesValidator', () => {
       detailedMessage: `Invalid category id '${invalidTrigger.value.category_id}' for instance ${invalidTrigger.elemID.name} of type ${invalidTrigger.elemID.typeName}`,
     }])
   })
+  it('should not return an error if active field is missing and the change should not result error', async () => {
+    const orderInstanceWithNoTriggers = new InstanceElement(
+      ElemID.CONFIG_NAME,
+      triggerOrderType,
+      {
+        order: [
+          {
+            category: new ReferenceExpression(category1.elemID, category1),
+            inactive: [
+              new ReferenceExpression(trigger3.elemID, trigger3),
+            ],
+          },
+        ],
+      },
+    )
+    const elementsSource = buildElementsSourceFromElements([
+      triggerType, triggerOrderType, triggerCategoryType, orderInstanceWithNoTriggers, trigger3,
+    ].map(e => e.clone()))
+    const elementsToAdd = [trigger3.clone()]
+    const errors = await triggerOrderInstanceContainsAllTheInstancesValidator(
+      elementsToAdd.map(e => toChange({ after: e })),
+      elementsSource,
+    )
+    expect(errors).toEqual([])
+  })
 })

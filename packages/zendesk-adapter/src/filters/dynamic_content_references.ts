@@ -55,6 +55,7 @@ const transformDynamicContentDependencies = async (
       }
       return value
     },
+    allowEmpty: true,
   }) ?? instance.value
 }
 
@@ -88,6 +89,7 @@ const returnDynamicContentsToApiValue = async (
       }
       return value
     },
+    allowEmpty: true,
   }) ?? instance.value
 }
 
@@ -126,6 +128,7 @@ const filterCreator: FilterCreator = () => {
             }
             return value
           },
+          allowEmpty: true,
         }) ?? instance.value
       }), 'Dynamic content references filter'),
   })

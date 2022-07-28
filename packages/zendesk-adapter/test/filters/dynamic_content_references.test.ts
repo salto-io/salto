@@ -16,6 +16,7 @@
 import {
   ObjectType, ElemID, InstanceElement, ReferenceExpression, TemplateExpression, BuiltinTypes,
   toChange,
+  ListType,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { DEFAULT_CONFIG } from '../../src/config'
@@ -43,6 +44,7 @@ describe('dynamic content references filter', () => {
       elemID: new ElemID(ZENDESK, 'someType'),
       fields: {
         raw_value: { refType: BuiltinTypes.STRING },
+        empty_value: { refType: new ListType(BuiltinTypes.NUMBER) },
       },
     })
 
@@ -77,6 +79,7 @@ describe('dynamic content references filter', () => {
       type,
       {
         raw_value: '{{somePlaceholder}} {{notExistsPlaceholder}} {{somePlaceholder}}',
+        empty_value: [],
       }
     )
     return {
@@ -97,6 +100,7 @@ describe('dynamic content references filter', () => {
           new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
           '}}'],
       }))
+      expect(instance.value.empty_value).toEqual([])
     })
   })
 
@@ -127,6 +131,7 @@ describe('dynamic content references filter', () => {
           new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
           '}}'],
       }))
+      expect(instanceCopy.value.empty_value).toEqual([])
     })
   })
 })

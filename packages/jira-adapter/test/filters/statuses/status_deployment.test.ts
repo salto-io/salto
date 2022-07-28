@@ -63,31 +63,44 @@ describe('statusDeploymentFilter', () => {
 
   describe('onFetch', () => {
     it('should replace status category with id', async () => {
-      const instance = new InstanceElement(
+      const instances = [new InstanceElement(
         'instance',
         type,
-        {
-          statusCategory: {
-            id: 1,
-          },
-        }
-      )
-      await filter.onFetch?.([instance, type])
-      expect(instance.value).toEqual({
-        statusCategory: '1',
+        { statusCategory: 'TODO' }
+      ),
+      new InstanceElement(
+        'instance',
+        type,
+        { statusCategory: 'IN_PROGRESS' }
+      ),
+      new InstanceElement(
+        'instance',
+        type,
+        { statusCategory: 'DONE' }
+      )]
+
+      await filter.onFetch?.([...instances, type])
+      expect(instances[0].value).toEqual({
+        statusCategory: 2,
+      })
+      expect(instances[1].value).toEqual({
+        statusCategory: 4,
+      })
+      expect(instances[2].value).toEqual({
+        statusCategory: 3,
       })
     })
 
-    it('should do nothing if there is no status category with id', async () => {
+    it('should do nothing if the status category is different', async () => {
       const instance = new InstanceElement(
         'instance',
         type,
         {
-          statusCategory: {},
+          statusCategory: 'NEW',
         },
       )
       await filter.onFetch?.([instance, type])
-      expect(instance.value).toEqual({})
+      expect(instance.value.statusCategory).toEqual('NEW')
     })
 
     it('should add deployment annotations', async () => {
@@ -109,11 +122,6 @@ describe('statusDeploymentFilter', () => {
       })
 
       expect(type.fields.description.annotations).toEqual({
-        [CORE_ANNOTATIONS.CREATABLE]: true,
-        [CORE_ANNOTATIONS.UPDATABLE]: true,
-      })
-
-      expect(type.fields.iconUrl.annotations).toEqual({
         [CORE_ANNOTATIONS.CREATABLE]: true,
         [CORE_ANNOTATIONS.UPDATABLE]: true,
       })

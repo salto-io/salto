@@ -25,7 +25,7 @@ import {
   WORKFLOW_ACTION_ALERT_METADATA_TYPE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
   WORKFLOW_FLOW_ACTION_METADATA_TYPE, WORKFLOW_OUTBOUND_MESSAGE_METADATA_TYPE,
   WORKFLOW_TASK_METADATA_TYPE, CPQ_LOOKUP_OBJECT_NAME, CPQ_RULE_LOOKUP_OBJECT_FIELD,
-  QUICK_ACTION_METADATA_TYPE,
+  QUICK_ACTION_METADATA_TYPE, GROUP_METADATA_TYPE, ROLE_METADATA_TYPE,
 } from '../constants'
 import { buildElementsSourceForFetch, extractFlatCustomObjectFields, hasApiName } from './utils'
 
@@ -50,6 +50,15 @@ const flowActionCallMapper: referenceUtils.ContextValueMapperFunc = (val: string
     apex: 'ApexClass',
     emailAlert: WORKFLOW_ACTION_ALERT_METADATA_TYPE,
     quickAction: QUICK_ACTION_METADATA_TYPE,
+  }
+  return typeMapping[val]
+}
+
+const shareToMapper: referenceUtils.ContextValueMapperFunc = (val: string) => {
+  const typeMapping: Record<string, string> = {
+    Role: ROLE_METADATA_TYPE,
+    Group: GROUP_METADATA_TYPE,
+    RoleAndSubordinates: ROLE_METADATA_TYPE,
   }
   return typeMapping[val]
 }
@@ -82,6 +91,7 @@ const contextStrategyLookup: Record<
   parentInputObjectLookup: neighborContextFunc({ contextFieldName: 'inputObject', levelsUp: 1 }),
   parentOutputObjectLookup: neighborContextFunc({ contextFieldName: 'outputObject', levelsUp: 1 }),
   neighborPicklistObjectLookup: neighborContextFunc({ contextFieldName: 'picklistObject' }),
+  neighborSharedToTypeLookup: neighborContextFunc({ contextFieldName: 'sharedToType', contextValueMapper: shareToMapper }),
 }
 
 

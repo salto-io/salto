@@ -136,9 +136,9 @@ describe('screenFilter', () => {
       )
     })
 
-    it('should call deployChange and ignore tabs and names of were not changed', async () => {
+    it('should call deployChange and ignore tabs and names if were not changed', async () => {
       const change = toChange({
-        before: new InstanceElement('instance2', screenType),
+        before: new InstanceElement('instance2', screenType, { description: 'desc' }),
         after: new InstanceElement('instance2', screenType),
       })
       await filter.deploy?.([change])

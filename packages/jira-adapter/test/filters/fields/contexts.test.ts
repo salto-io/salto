@@ -120,6 +120,7 @@ describe('deployContextChange', () => {
       [
         'defaultValue',
         'options',
+        'isGlobalContext',
         'issueTypeIds',
         'projectIds',
       ],
@@ -211,8 +212,11 @@ describe('deployContextChange', () => {
       })
     })
 
+
+    const instanceBefore = instance.clone()
+    instanceBefore.value.description = 'desc'
     const change = toChange({
-      before: instance,
+      before: instanceBefore,
       after: instance,
     })
     await expect(

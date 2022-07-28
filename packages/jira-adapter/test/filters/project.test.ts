@@ -22,6 +22,7 @@ import JiraClient from '../../src/client/client'
 import { JIRA } from '../../src/constants'
 import projectFilter from '../../src/filters/project'
 import { mockClient } from '../utils'
+import { PROJECT_CONTEXTS_FIELD } from '../../src/filters/fields/contexts_projects_filter'
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -180,7 +181,7 @@ describe('projectFilter', () => {
         change,
         client,
         getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Project.deployRequests,
-        ['components', 'workflowScheme', 'issueTypeScreenScheme', 'fieldConfigurationScheme', 'issueTypeScheme'],
+        ['components', 'workflowScheme', 'issueTypeScreenScheme', 'fieldConfigurationScheme', 'issueTypeScheme', PROJECT_CONTEXTS_FIELD],
         undefined,
         undefined,
       )
@@ -226,7 +227,7 @@ describe('projectFilter', () => {
         change,
         client,
         getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Project.deployRequests,
-        ['components', 'fieldConfigurationScheme'],
+        ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD],
         undefined,
         undefined,
       )
@@ -307,7 +308,7 @@ describe('projectFilter', () => {
         change,
         client,
         getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Project.deployRequests,
-        ['components', 'fieldConfigurationScheme'],
+        ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD],
         undefined,
         undefined,
       )
@@ -406,7 +407,7 @@ describe('projectFilter', () => {
         change,
         client,
         getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Project.deployRequests,
-        ['components', 'fieldConfigurationScheme'],
+        ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD],
         undefined,
         undefined,
       )

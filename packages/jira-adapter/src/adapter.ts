@@ -72,6 +72,7 @@ import fieldDeploymentFilter from './filters/fields/field_deployment_filter'
 import contextDeploymentFilter from './filters/fields/context_deployment_filter'
 import fieldTypeReferencesFilter from './filters/fields/field_type_references_filter'
 import contextReferencesFilter from './filters/fields/context_references_filter'
+import contextsProjectsFilter from './filters/fields/contexts_projects_filter'
 import queryFilter from './filters/query'
 import serviceUrlInformationFilter from './filters/service_url/service_url_information'
 import serviceUrlFilter from './filters/service_url/service_url'
@@ -166,6 +167,8 @@ export const DEFAULT_FILTERS = [
   removeSelfFilter,
   fieldReferencesFilter,
   // Must run after fieldReferencesFilter
+  contextsProjectsFilter,
+  // Must run after fieldReferencesFilter
   fieldConfigurationIrrelevantFields,
   // Must run after fieldConfigurationIrrelevantFields
   fieldConfigurationSplitFilter,
@@ -198,7 +201,7 @@ type AdapterSwaggers = {
 }
 
 export default class JiraAdapter implements AdapterOperations {
-  private createFiltersRunner: () => Required<Filter>
+  private filtersRunner: Required<Filter>
   private client: JiraClient
   private userConfig: JiraConfig
   private paginator: clientUtils.Paginator
@@ -227,19 +230,17 @@ export default class JiraAdapter implements AdapterOperations {
     )
 
     this.paginator = paginator
-    this.createFiltersRunner = () => (
-      filtersRunner(
-        {
-          client,
-          paginator,
-          config,
-          getElemIdFunc,
-          elementsSource,
-          fetchQuery: this.fetchQuery,
-        },
-        filterCreators,
-        objects.concatObjects
-      )
+    this.filtersRunner = filtersRunner(
+      {
+        client,
+        paginator,
+        config,
+        getElemIdFunc,
+        elementsSource,
+        fetchQuery: this.fetchQuery,
+      },
+      filterCreators,
+      objects.concatObjects
     )
   }
 
@@ -315,7 +316,7 @@ export default class JiraAdapter implements AdapterOperations {
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
-    const filterResult = await this.createFiltersRunner().onFetch(elements) || {}
+    const filterResult = await this.filtersRunner.onFetch(elements) || {}
 
     // This needs to happen after the onFetch since some filters
     // may add fields that deployment annotation should be added to
@@ -342,13 +343,13 @@ export default class JiraAdapter implements AdapterOperations {
         instance => instance.clone()
       )))
 
-    const runner = this.createFiltersRunner()
-    await runner.preDeploy(changesToDeploy)
+    await this.filtersRunner.preDeploy(changesToDeploy)
 
-    const { deployResult: { appliedChanges, errors } } = await runner.deploy(changesToDeploy)
+    const { deployResult: { appliedChanges, errors } } = await this.filtersRunner
+      .deploy(changesToDeploy)
 
     const changesToReturn = [...appliedChanges]
-    await runner.onDeploy(changesToReturn)
+    await this.filtersRunner.onDeploy(changesToReturn)
 
     return {
       appliedChanges: changesToReturn,

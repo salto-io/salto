@@ -21,7 +21,7 @@ import { deployChanges } from '../../deployment/standard_deployment'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from './constants'
 import { findObject, setFieldDeploymentAnnotations } from '../../utils'
 
-const filter: FilterCreator = ({ client, config }) => ({
+const filter: FilterCreator = ({ client, config, elementsSource }) => ({
   onFetch: async (elements: Element[]) => {
     const fieldType = findObject(elements, FIELD_TYPE_NAME)
     if (fieldType !== undefined) {
@@ -43,7 +43,7 @@ const filter: FilterCreator = ({ client, config }) => ({
 
     const deployResult = await deployChanges(
       relevantChanges.filter(isInstanceChange),
-      change => deployContextChange(change, client, config.apiDefinitions)
+      change => deployContextChange(change, client, config.apiDefinitions, elementsSource)
     )
 
     return {

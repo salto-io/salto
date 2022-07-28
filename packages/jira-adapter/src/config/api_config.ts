@@ -15,7 +15,7 @@
 */
 import { config as configUtils } from '@salto-io/adapter-components'
 import { AUTOMATION_TYPE, BOARD_COLUMN_CONFIG_TYPE, BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME } from '../constants'
-import { FIELD_TYPE_NAME } from '../filters/fields/constants'
+import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../filters/fields/constants'
 
 
 export type JspUrls = {
@@ -310,7 +310,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         },
       ],
       fieldsToOmit: [
-        { fieldName: 'isGlobalContext' },
         { fieldName: 'isAnyIssueType' },
       ],
     },
@@ -824,6 +823,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'issueTypeScreenScheme', fieldType: 'IssueTypeScreenScheme' },
         { fieldName: 'fieldConfigurationScheme', fieldType: 'FieldConfigurationScheme' },
         { fieldName: 'issueTypeScheme', fieldType: ISSUE_TYPE_SCHEMA_NAME },
+        { fieldName: 'fieldContexts', fieldType: `list<${FIELD_CONTEXT_TYPE_NAME}>` },
       ],
       fieldsToHide: [
         {

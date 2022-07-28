@@ -95,11 +95,6 @@ describe('fieldContextDeployment', () => {
         [CORE_ANNOTATIONS.UPDATABLE]: true,
       })
 
-      expect(contextType.fields.projectIds.annotations).toEqual({
-        [CORE_ANNOTATIONS.CREATABLE]: true,
-        [CORE_ANNOTATIONS.UPDATABLE]: true,
-      })
-
       expect(contextType.fields.issueTypeIds.annotations).toEqual({
         [CORE_ANNOTATIONS.CREATABLE]: true,
         [CORE_ANNOTATIONS.UPDATABLE]: true,
@@ -154,6 +149,7 @@ describe('fieldContextDeployment', () => {
       change,
       client,
       getDefaultConfig({ isDataCenter: false }).apiDefinitions,
+      expect.anything(),
     )
   })
 })

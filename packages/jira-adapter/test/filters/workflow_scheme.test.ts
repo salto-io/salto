@@ -252,10 +252,13 @@ describe('workflowScheme', () => {
         },
       })
 
-      await filter.deploy?.([toChange({ before: instance, after: instance })])
+
+      const instanceBefore = instance.clone()
+      instanceBefore.value.description = 'desc'
+      await filter.deploy?.([toChange({ before: instanceBefore, after: instance })])
 
       expect(deployChangeMock).toHaveBeenCalledWith(
-        toChange({ before: instance, after: instance }),
+        toChange({ before: instanceBefore, after: instance }),
         client,
         getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.WorkflowScheme.deployRequests,
@@ -331,11 +334,13 @@ describe('workflowScheme', () => {
         },
       })
 
-      await filter.deploy?.([toChange({ before: instance, after: instance })])
+      const instanceBefore = instance.clone()
+      instanceBefore.value.description = 'desc'
+      await filter.deploy?.([toChange({ before: instanceBefore, after: instance })])
 
 
       expect(deployChangeMock).toHaveBeenCalledWith(
-        toChange({ before: instance, after: instance }),
+        toChange({ before: instanceBefore, after: instance }),
         client,
         getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.WorkflowScheme.deployRequests,
@@ -394,10 +399,12 @@ describe('workflowScheme', () => {
         },
       })
 
-      await filter.deploy?.([toChange({ before: instance, after: instance })])
+      const instanceBefore = instance.clone()
+      instanceBefore.value.description = 'desc'
+      await filter.deploy?.([toChange({ before: instanceBefore, after: instance })])
 
       expect(deployChangeMock).toHaveBeenCalledWith(
-        toChange({ before: instance, after: instance }),
+        toChange({ before: instanceBefore, after: instance }),
         client,
         getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.WorkflowScheme.deployRequests,
@@ -462,10 +469,12 @@ describe('workflowScheme', () => {
         },
       })
 
-      await filter.deploy?.([toChange({ before: instance, after: instance })])
+      const instanceBefore = instance.clone()
+      instanceBefore.value.description = 'desc'
+      await filter.deploy?.([toChange({ before: instanceBefore, after: instance })])
 
       expect(deployChangeMock).toHaveBeenCalledWith(
-        toChange({ before: instance, after: instance }),
+        toChange({ before: instanceBefore, after: instance }),
         client,
         getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.WorkflowScheme.deployRequests,
@@ -506,7 +515,9 @@ describe('workflowScheme', () => {
         },
       })
 
-      const res = await filter.deploy?.([toChange({ before: instance, after: instance })])
+      const instanceBefore = instance.clone()
+      instanceBefore.value.description = 'desc'
+      const res = await filter.deploy?.([toChange({ before: instanceBefore, after: instance })])
       expect(res?.deployResult.appliedChanges).toEqual([])
       expect(res?.deployResult.errors).toHaveLength(1)
     })
@@ -544,7 +555,9 @@ describe('workflowScheme', () => {
         },
       })
 
-      const res = await filter.deploy?.([toChange({ before: instance, after: instance })])
+      const instanceBefore = instance.clone()
+      instanceBefore.value.description = 'desc'
+      const res = await filter.deploy?.([toChange({ before: instanceBefore, after: instance })])
 
       // + 1 is for the internal id check
       expect(connection.get).toHaveBeenCalledTimes(MAX_TASK_CHECKS + 1)
@@ -579,7 +592,9 @@ describe('workflowScheme', () => {
         },
       })
 
-      const res = await filter.deploy?.([toChange({ before: instance, after: instance })])
+      const instanceBefore = instance.clone()
+      instanceBefore.value.description = 'desc'
+      const res = await filter.deploy?.([toChange({ before: instanceBefore, after: instance })])
 
       expect(res?.deployResult.appliedChanges).toEqual([])
       expect(res?.deployResult.errors).toHaveLength(1)

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, Change, getChangeData, InstanceElement, isAdditionChange, isMapType, isObjectType, isRemovalChange, ModificationChange, ObjectType, Value, Values } from '@salto-io/adapter-api'
+import { AdditionChange, Change, getChangeData, InstanceElement, isAdditionChange, isEqualValues, isMapType, isModificationChange, isObjectType, isRemovalChange, ModificationChange, ObjectType, ReadOnlyElementsSource, Value, Values } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { getParents, naclCase, resolveValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -155,10 +155,22 @@ const reorderContextOptions = async (
   contextChange: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
   client: clientUtils.HTTPWriteClientInterface,
   baseUrl: string,
+  elementsSource?: ReadOnlyElementsSource,
 ): Promise<void> => {
   const afterOptions = getOptionsFromContext(
-    await resolveValues(contextChange.data.after, getLookUpName)
+    await resolveValues(contextChange.data.after, getLookUpName, elementsSource)
   )
+
+  const beforeOptions = isModificationChange(contextChange)
+    ? getOptionsFromContext(
+      await resolveValues(contextChange.data.before, getLookUpName, elementsSource)
+    )
+    : []
+
+  if (isEqualValues(beforeOptions, afterOptions)) {
+    return
+  }
+
   const optionsGroups = _(afterOptions).groupBy(option => option.optionId).values().value()
   await Promise.all(optionsGroups.map(
     group => client.put({
@@ -174,6 +186,7 @@ const reorderContextOptions = async (
 export const setContextOptions = async (
   contextChange: Change<InstanceElement>,
   client: clientUtils.HTTPWriteClientInterface,
+  elementsSource?: ReadOnlyElementsSource
 ): Promise<void> => {
   if (isRemovalChange(contextChange)) {
     return
@@ -186,7 +199,8 @@ export const setContextOptions = async (
     option => option.optionId !== undefined || option.parentValue === undefined
   )
 
-  const fieldId = getParents(getChangeData(contextChange))[0].value.value.id
+  const fieldId = (await getParents(getChangeData(contextChange))[0]
+    .getResolvedValue(elementsSource)).value.id
 
   const url = `/rest/api/3/field/${fieldId}/context/${getChangeData(contextChange).value.id}/option`
   await updateContextOptions({
@@ -213,7 +227,7 @@ export const setContextOptions = async (
     contextChange,
   })
 
-  await reorderContextOptions(contextChange, client, url)
+  await reorderContextOptions(contextChange, client, url, elementsSource)
 }
 
 export const setOptionTypeDeploymentAnnotations = async (

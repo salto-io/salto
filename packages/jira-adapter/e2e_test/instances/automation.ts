@@ -76,7 +76,7 @@ export const createAutomationValues = (name: string): Values => ({
           component: 'CONDITION',
           schemaVersion: 1,
           type: 'jira.jql.condition',
-          value: 'priority > Medium',
+          rawValue: 'priority > Medium',
         },
         {
           component: 'ACTION',

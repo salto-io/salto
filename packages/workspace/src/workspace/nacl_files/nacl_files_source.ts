@@ -172,15 +172,15 @@ export const getElementReferenced = async (element: Element): Promise<{
 }
 
 const getElementsReferencedAndStaticFiles = (elements: ThenableIterable<Element>): Promise<{
-  referenced: string[]
-  staticFiles: string[]
+  referenced: Set<string>
+  staticFiles: Set<string>
 }> => awu(elements)
   .reduce(async (acc, element) => {
     const elementRefs = await getElementReferenced(element)
-    acc.referenced.push(...elementRefs.referenced.keys())
-    acc.staticFiles.push(...elementRefs.staticFiles.keys())
+    wu(elementRefs.referenced.keys()).forEach(key => acc.referenced.add(key))
+    wu(elementRefs.staticFiles.keys()).forEach(key => acc.staticFiles.add(key))
     return acc
-  }, { referenced: [] as string[], staticFiles: [] as string[] })
+  }, { referenced: new Set<string>(), staticFiles: new Set<string>() })
 
 export const toParsedNaclFile = async (
   naclFile: NaclFile,
@@ -193,8 +193,8 @@ export const toParsedNaclFile = async (
       const referencedAndStaticFiles = await getElementsReferencedAndStaticFiles(
         parseResult.elements
       )
-      referenced = referencedAndStaticFiles.referenced
-      staticFiles = referencedAndStaticFiles.staticFiles
+      referenced = Array.from(referencedAndStaticFiles.referenced)
+      staticFiles = Array.from(referencedAndStaticFiles.staticFiles)
     }
   }
   return {
@@ -721,8 +721,8 @@ const buildNaclFilesSource = (
     const loadRefs = async (): Promise<void> => {
       if (referenced === undefined || staticFiles === undefined) {
         const referencedAndStaticFiles = await getElementsReferencedAndStaticFiles(elements)
-        referenced = referencedAndStaticFiles.referenced
-        staticFiles = referencedAndStaticFiles.staticFiles
+        referenced = Array.from(referencedAndStaticFiles.referenced)
+        staticFiles = Array.from(referencedAndStaticFiles.staticFiles)
       }
     }
     return {

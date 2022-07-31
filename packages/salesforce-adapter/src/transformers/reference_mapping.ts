@@ -340,6 +340,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: CUSTOM_FIELD },
   },
   {
+<<<<<<< HEAD
     src: { field: 'value', parentTypes: ['FilterItem'] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'instanceParent', type: RECORD_TYPE_METADATA_TYPE },
@@ -359,6 +360,11 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: { field: 'group', parentTypes: ['SharedTo'] },
     target: { type: 'Group' },
+  },
+  {
+    src: { field: 'compactLayoutAssignment', parentTypes: ['RecordType'] },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'instanceParent', type: 'CompactLayout' },
   },
   {
     // sometimes has a value that is not a reference - should only convert to reference

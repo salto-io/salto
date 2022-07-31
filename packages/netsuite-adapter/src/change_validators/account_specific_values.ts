@@ -50,8 +50,8 @@ const changeValidator: ChangeValidator = async changes => (
             foundError = {
               elemID: instance.elemID,
               severity: 'Error',
-              message: 'Temp message: please change fields manualy',
-              detailedMessage: ' <instance> of type contains sender or recepientemail with ACCOUNT_SPECIFIC_VALUE and therfore will not be deployed. Please manualy edit the fields with ACCOUNT_SPECIFIC_VALUES and run deploy again ',
+              message: 'Element contains sender or  recepientmail fields with account specific values. This element will be skipped in the deployment',
+              detailedMessage: 'An instance of customworkflow contains sender or recepientemail with ACCOUNT_SPECIFIC_VALUE and therfore will not be deployed. Please manualy edit the fields with ACCOUNT_SPECIFIC_VALUES and run deploy again ',
             }
             return WALK_NEXT_STEP.EXIT
           }

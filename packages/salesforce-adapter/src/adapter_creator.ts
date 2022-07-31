@@ -104,11 +104,19 @@ SalesforceConfig => {
     }
   }
 
+  const validateEnumFieldPermissions = (enumFieldPermissions: boolean | undefined): void => {
+    if (enumFieldPermissions !== undefined && _.isBoolean(enumFieldPermissions)) {
+      throw new ConfigValidationError(['enumFieldPermissions'], 'Enabled enumFieldPermissions configuration must be boolean if it is defined')
+    }
+  }
+
   validateFetchParameters(config?.value?.[FETCH_CONFIG] ?? {}, [FETCH_CONFIG])
 
   validateClientConfig(config?.value?.client)
 
   validateValidatorsConfig(config?.value?.validators)
+
+  validateEnumFieldPermissions(config?.value?.enumFieldPermissions)
 
   const adapterConfig: { [K in keyof Required<SalesforceConfig>]: SalesforceConfig[K] } = {
     fetch: config?.value?.[FETCH_CONFIG],

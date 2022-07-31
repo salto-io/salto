@@ -28,7 +28,7 @@ const MARKETPLACE_NAME = 'Salto'
 const MARKETPLACE_ORG_ID = 5110
 const MARKETPLACE_APP_ID = 608042
 
-const APP_MARKETPLACE_HEADERS = {
+export const APP_MARKETPLACE_HEADERS = {
   'X-Zendesk-Marketplace-Name': MARKETPLACE_NAME,
   'X-Zendesk-Marketplace-Organization-Id': MARKETPLACE_ORG_ID,
   'X-Zendesk-Marketplace-App-Id': MARKETPLACE_APP_ID,

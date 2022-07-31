@@ -294,7 +294,10 @@ export class ElemID {
       throw new Error(`Cannot get relative path of ${this.getFullName()} and ${other.getFullName()
       } - ${this.getFullName()} is not parent of ${other.getFullName()}`)
     }
-    return other.createTopLevelParentID().path.slice(this.nestingLevel)
+    const relPath = other.createTopLevelParentID().path.slice(this.nestingLevel)
+    return ['attr', 'annotation', 'field'].includes(other.idType)
+      ? [other.idType as string].concat(relPath)
+      : relPath
   }
 
   isAttrID(): boolean {

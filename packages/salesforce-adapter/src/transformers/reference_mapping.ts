@@ -346,7 +346,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   },
   {
     src: { field: 'sharedTo', parentTypes: ['FolderShare'] },
-    target: { typeContext: 'neighborTypeLookup' },
+    target: { typeContext: 'neighborSharedToTypeLookup' },
   },
   {
     // sometimes has a value that is not a reference - should only convert to reference

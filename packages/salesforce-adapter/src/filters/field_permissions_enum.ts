@@ -15,14 +15,16 @@
 */
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { isInstanceElement, InstanceElement, isObjectType, MapType, PrimitiveType, ElemID, PrimitiveTypes, CORE_ANNOTATIONS, createRestriction, createRefToElmWithValue, TypeReference, ObjectType, getChangeData, BuiltinTypes, isAdditionOrModificationChange, AdditionChange, ModificationChange } from '@salto-io/adapter-api'
+import { InstanceElement, isObjectType, MapType, PrimitiveType, ElemID, PrimitiveTypes, CORE_ANNOTATIONS, createRestriction, createRefToElmWithValue, TypeReference, ObjectType, getChangeData, BuiltinTypes, isAdditionOrModificationChange, AdditionChange, ModificationChange } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { LocalFilterCreator } from '../filter'
 import { apiName } from '../transformers/transformer'
 import { SALESFORCE, METADATA_TYPE, PROFILE_METADATA_TYPE, PERMISSION_SET_METADATA_TYPE, TYPES_PATH, SUBTYPES_PATH } from '../constants'
-import { isInstanceOfTypeChange } from './utils'
+import { isInstanceOfType, isInstanceOfTypeChange } from './utils'
 
 const { awu } = collections.asynciterable
+const log = logger(module)
 
 const metadataTypesWithFieldPermissions = [
   PROFILE_METADATA_TYPE,
@@ -130,6 +132,7 @@ const permissionsEnumToObject = (
 const fieldPermissionValuesToEnum = (instance: InstanceElement): InstanceElement => {
   const { fieldPermissions } = instance.value
   if (fieldPermissions === undefined) {
+    log.warn('Instance of type %s does not have fieldPermissions value (as expected)', instance.elemID.typeName)
     return instance
   }
   instance.value.fieldPermissions = _.mapValues(
@@ -178,11 +181,22 @@ const fieldPermissionsFieldToOriginalType = (objectType: ObjectType): void => {
 
 let shouldRunDeployFilters: boolean
 
+// The decision if to run the deploy filters is based on the fieldPermissions type
+// which indicates if it this filter ran onFetch or not
+const shouldRunDeployFiltersAccordingToInstanceType = async (
+  instanceType: ObjectType,
+): Promise<boolean> =>
+  (instanceType.fields.fieldPermissions !== undefined
+    && (await instanceType.fields.fieldPermissions.getType()).elemID
+      .isEqual(getMapOfMapOfFieldPermissionEnum().elemID))
+
+
 const filter: LocalFilterCreator = ({ config }) => ({
   onFetch: async elements => {
     if (config.enumFieldPermissions === false) {
       return
     }
+    log.info('Running enumFieldPermissions onFetch')
     await awu(metadataTypesWithFieldPermissions).forEach(async metadataType => {
       const type = await awu(elements).find(
         async element => isObjectType(element) && await apiName(element) === metadataType,
@@ -192,59 +206,64 @@ const filter: LocalFilterCreator = ({ config }) => ({
       }
     })
     const instancesWithFieldPermissions = await awu(elements)
-      .filter(async element => (
-        isInstanceElement(element)
-        && metadataTypesWithFieldPermissions.includes(await apiName(await element.getType()))))
+      .filter(isInstanceOfType(...metadataTypesWithFieldPermissions))
       .toArray() as InstanceElement[]
     instancesWithFieldPermissions.forEach(fieldPermissionValuesToEnum)
     elements.push(enumFieldPermissions)
   },
   preDeploy: async changes => {
-    await awu(metadataTypesWithFieldPermissions).forEach(async metadataType => {
-      const instanceChanges = await awu(changes)
-        .filter(isAdditionOrModificationChange)
-        .filter(isInstanceOfTypeChange(metadataType))
-        .toArray() as (AdditionChange<InstanceElement> | ModificationChange<InstanceElement>)[]
-      if (instanceChanges.length === 0) {
-        return
-      }
-      const instanceType = await getChangeData(instanceChanges[0]).getType()
-      shouldRunDeployFilters = instanceType.fields.fieldPermissions !== undefined
-        && (await instanceType.fields.fieldPermissions.getType()).elemID
-          .isEqual(getMapOfMapOfFieldPermissionEnum().elemID)
-      if (!shouldRunDeployFilters) {
-        return
-      }
-      instanceChanges.forEach(instanceChange => (
-        applyFunctionToChangeData(
-          instanceChange,
-          fieldPermissionValuesToObject,
-        )
-      ))
-      fieldPermissionsFieldToOriginalType(instanceType)
-    })
+    const instanceChangesWithFieldPermissions = await awu(changes)
+      .filter(isAdditionOrModificationChange)
+      .filter(isInstanceOfTypeChange(...metadataTypesWithFieldPermissions))
+      .toArray() as (AdditionChange<InstanceElement> | ModificationChange<InstanceElement>)[]
+    if (instanceChangesWithFieldPermissions.length === 0) {
+      return
+    }
+    const instanceType = await getChangeData(instanceChangesWithFieldPermissions[0]).getType()
+    shouldRunDeployFilters = await shouldRunDeployFiltersAccordingToInstanceType(instanceType)
+    if (!shouldRunDeployFilters) {
+      return
+    }
+    log.info('Running enumFieldPermissions preDeploy')
+    instanceChangesWithFieldPermissions.forEach(instanceChange => (
+      applyFunctionToChangeData(
+        instanceChange,
+        fieldPermissionValuesToObject,
+      )
+    ))
+    const metadataTypeToInstanceChanges = await awu(instanceChangesWithFieldPermissions)
+      .groupBy(async instanceChange =>
+        apiName(await getChangeData(instanceChange).getType()))
+    const instanceTypes = await awu(Object.values(metadataTypeToInstanceChanges))
+      .map(async instanceChanges => getChangeData(instanceChanges[0]).getType())
+      .toArray()
+    instanceTypes.forEach(fieldPermissionsFieldToOriginalType)
   },
   onDeploy: async changes => {
     if (!shouldRunDeployFilters) {
       return
     }
-    await awu(metadataTypesWithFieldPermissions).forEach(async metadataType => {
-      const instanceChanges = await awu(changes)
-        .filter(isAdditionOrModificationChange)
-        .filter(isInstanceOfTypeChange(metadataType))
-        .toArray() as (AdditionChange<InstanceElement> | ModificationChange<InstanceElement>)[]
-      if (instanceChanges.length === 0) {
-        return
-      }
-      instanceChanges.forEach(instanceChange => (
-        applyFunctionToChangeData(
-          instanceChange,
-          fieldPermissionValuesToEnum,
-        )
-      ))
-      const instanceType = await getChangeData(instanceChanges[0]).getType()
-      fieldPermissionFieldToEnum(instanceType)
-    })
+    log.info('Running enumFieldPermissions onDeploy')
+    const instanceChangesWithFieldPermissions = await awu(changes)
+      .filter(isAdditionOrModificationChange)
+      .filter(isInstanceOfTypeChange(...metadataTypesWithFieldPermissions))
+      .toArray() as (AdditionChange<InstanceElement> | ModificationChange<InstanceElement>)[]
+    if (instanceChangesWithFieldPermissions.length === 0) {
+      return
+    }
+    instanceChangesWithFieldPermissions.forEach(instanceChange => (
+      applyFunctionToChangeData(
+        instanceChange,
+        fieldPermissionValuesToEnum,
+      )
+    ))
+    const metadataTypeToInstanceChanges = await awu(instanceChangesWithFieldPermissions)
+      .groupBy(async instanceChange =>
+        apiName(await getChangeData(instanceChange).getType()))
+    const instanceTypes = await awu(Object.values(metadataTypeToInstanceChanges))
+      .map(async instanceChanges => getChangeData(instanceChanges[0]).getType())
+      .toArray()
+    instanceTypes.forEach(fieldPermissionFieldToEnum)
   },
 })
 

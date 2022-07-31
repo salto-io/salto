@@ -377,12 +377,12 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
   },
   {
     src: { field: 'value', parentTypes: [AUTOMATION_STATUS] },
-    serializationStrategy: 'name',
+    serializationStrategy: 'id',
     target: { type: 'Status' },
   },
   {
     src: { field: 'value', parentTypes: [AUTOMATION_STATUS] },
-    serializationStrategy: 'id',
+    serializationStrategy: 'name',
     target: { type: 'Status' },
   },
   {

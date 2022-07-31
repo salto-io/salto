@@ -51,7 +51,7 @@ const changeValidator: ChangeValidator = async changes => (
               elemID: instance.elemID,
               severity: 'Error',
               message: 'Temp message: please change fields manualy',
-              detailedMessage: 'Fields with account specific values (ACCOUNT_SPECIFIC_VALUE) will be skipped from the deployment. After deploying this element, please make sure these fields are mapped correctly in NetSuite.',
+              detailedMessage: ' <instance> of type contains sender or recepientemail with ACCOUNT_SPECIFIC_VALUE and therfore will not be deployed. Please manualy edit the fields with ACCOUNT_SPECIFIC_VALUES and run deploy again ',
             }
             return WALK_NEXT_STEP.EXIT
           }

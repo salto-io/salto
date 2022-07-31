@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { InstanceElement, isObjectType, MapType, PrimitiveType, ElemID, PrimitiveTypes, CORE_ANNOTATIONS, createRestriction, createRefToElmWithValue, TypeReference, ObjectType, getChangeData, BuiltinTypes, isAdditionOrModificationChange, AdditionChange, ModificationChange } from '@salto-io/adapter-api'
+import { InstanceElement, isObjectType, MapType, PrimitiveType, ElemID, PrimitiveTypes, CORE_ANNOTATIONS, createRestriction, createRefToElmWithValue, TypeReference, ObjectType, getChangeData, BuiltinTypes, isAdditionOrModificationChange, AdditionChange, ModificationChange, Field } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { LocalFilterCreator } from '../filter'
@@ -30,6 +30,17 @@ const metadataTypesWithFieldPermissions = [
   PROFILE_METADATA_TYPE,
   PERMISSION_SET_METADATA_TYPE,
 ]
+
+const FIELD_PERMISSIONS = 'fieldPermissions'
+
+type TypeWithFieldPermissions = ObjectType & {
+  fields: {
+    [FIELD_PERMISSIONS]: Field
+  }
+}
+
+const isTypeWithFieldPermissions = (elem: ObjectType): elem is TypeWithFieldPermissions =>
+  (Object.prototype.hasOwnProperty.call(elem.fields, FIELD_PERMISSIONS))
 
 type FieldPermissionObject = {
   field: string
@@ -152,7 +163,8 @@ const fieldPermissionValuesToEnum = (instance: InstanceElement): InstanceElement
 
 const fieldPermissionValuesToObject = (instance: InstanceElement): InstanceElement => {
   const { fieldPermissions } = instance.value
-  if (fieldPermissions === undefined) {
+  if (fieldPermissions === undefined || !_.isPlainObject(fieldPermissions)) {
+    log.warn('Instance of type %s does not have fieldPermissions value or is not an object (as expected)', instance.elemID.typeName)
     return instance
   }
   instance.value.fieldPermissions = _.mapValues(
@@ -168,13 +180,13 @@ const fieldPermissionValuesToObject = (instance: InstanceElement): InstanceEleme
 }
 
 const fieldPermissionFieldToEnum = (objectType: ObjectType): void => {
-  if (objectType.fields.fieldPermissions !== undefined) {
+  if (isTypeWithFieldPermissions(objectType)) {
     objectType.fields.fieldPermissions.refType = getMapOfMapOfFieldPermissionEnum()
   }
 }
 
 const fieldPermissionsFieldToOriginalType = (objectType: ObjectType): void => {
-  if (objectType.fields.fieldPermissions !== undefined) {
+  if (isTypeWithFieldPermissions(objectType)) {
     objectType.fields.fieldPermissions.refType = getMapOfMapOfProfileFieldLevelSecurity()
   }
 }
@@ -186,7 +198,7 @@ let shouldRunDeployFilters: boolean
 const shouldRunDeployFiltersAccordingToInstanceType = async (
   instanceType: ObjectType,
 ): Promise<boolean> =>
-  (instanceType.fields.fieldPermissions !== undefined
+  (isTypeWithFieldPermissions(instanceType)
     && (await instanceType.fields.fieldPermissions.getType()).elemID
       .isEqual(getMapOfMapOfFieldPermissionEnum().elemID))
 

@@ -480,6 +480,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   },
 ]
 
+// Optional reference that should not be used if enumFieldPermissions config is on
 const fieldPermissionEnumDisabledExtraMappingDefs: FieldReferenceDefinition[] = [
   {
     src: { field: 'field', parentTypes: ['ProfileFieldLevelSecurity', 'PermissionSetFieldPermissions'] },

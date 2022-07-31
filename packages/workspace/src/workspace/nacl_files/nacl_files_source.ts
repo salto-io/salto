@@ -831,8 +831,8 @@ const buildNaclFilesSource = (
             await removeDanglingStaticFiles(fileChanges)
             return { ...parsed, buffer }
           } catch (e) {
-            log.error('failed to update NaCl file %s with %o changes due to: %o',
-              filename, fileChanges, e)
+            log.error('failed to update NaCl file %s due to %o with %o changes',
+              filename, e, fileChanges)
             return undefined
           }
         })

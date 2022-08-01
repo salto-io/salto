@@ -21,7 +21,6 @@ import {
   isAdditionOrModificationChange,
   isInstanceChange,
 } from '@salto-io/adapter-api'
-import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { isCustomType } from '../types'
 import { ACCOUNT_SPECIFIC_VALUE } from '../constants'
 import { isInstanceContainsStringValue } from './utils'
@@ -40,26 +39,6 @@ const changeValidator: ChangeValidator = async changes => (
       }
       if (!isInstanceContainsStringValue(instance, ACCOUNT_SPECIFIC_VALUE)) {
         return undefined
-      }
-      let foundError = {}
-      walkOnElement({
-        element: instance,
-        func: ({ value, path }) => {
-          const nameParts = path.getFullNameParts()
-          if ((nameParts[nameParts.length - 1] === 'sender' && value === ACCOUNT_SPECIFIC_VALUE) || (nameParts[nameParts.length - 1] === 'recipientemail' && value === ACCOUNT_SPECIFIC_VALUE)) {
-            foundError = {
-              elemID: instance.elemID,
-              severity: 'Error',
-              message: 'Element contains sender or  recepientmail fields with account specific values. This element will be skipped in the deployment',
-              detailedMessage: 'An instance of customworkflow contains sender or recepientemail with ACCOUNT_SPECIFIC_VALUE and therfore will not be deployed. Please manualy edit the fields with ACCOUNT_SPECIFIC_VALUES and run deploy again ',
-            }
-            return WALK_NEXT_STEP.EXIT
-          }
-          return WALK_NEXT_STEP.RECURSE
-        },
-      })
-      if (Object.keys(foundError).length !== 0) {
-        return foundError as ChangeError
       }
       return {
         elemID: instance.elemID,

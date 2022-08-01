@@ -340,6 +340,11 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: CUSTOM_FIELD },
   },
   {
+    src: { field: 'value', parentTypes: ['FieldSetItem'] },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'instanceParent', type: 'RecordType' },
+  },
+  {
     // sometimes has a value that is not a reference - should only convert to reference
     // if lookupValueType exists
     src: { field: 'lookupValue', parentTypes: ['WorkflowFieldUpdate'] },

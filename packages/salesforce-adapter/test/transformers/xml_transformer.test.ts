@@ -204,9 +204,8 @@ describe('XML Transformer', () => {
         describe('when a field is missing', () => {
           beforeEach(async () => {
             pkg = createDeployPackage()
-            const values = _.omit(mockDefaultValues.AuraDefinitionBundle, ['designContent'])
             await pkg.add(createInstanceElement(
-              values,
+              _.omit(mockDefaultValues.AuraDefinitionBundle, 'designContent'),
               mockTypes.AuraDefinitionBundle,
             ))
             zipFiles = await getZipFiles(pkg)

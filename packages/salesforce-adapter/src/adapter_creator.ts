@@ -105,8 +105,8 @@ SalesforceConfig => {
   }
 
   const validateEnumFieldPermissions = (enumFieldPermissions: boolean | undefined): void => {
-    if (enumFieldPermissions !== undefined && _.isBoolean(enumFieldPermissions)) {
-      throw new ConfigValidationError(['enumFieldPermissions'], 'Enabled enumFieldPermissions configuration must be boolean if it is defined')
+    if (enumFieldPermissions !== undefined && !_.isBoolean(enumFieldPermissions)) {
+      throw new ConfigValidationError(['enumFieldPermissions'], 'Enabled enumFieldPermissions configuration must be true or false if it is defined')
     }
   }
 

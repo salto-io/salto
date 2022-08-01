@@ -294,15 +294,15 @@ export const getDataFromChanges = <T extends Change<unknown>>(
 // This function checks whether an element is an instance of a certain metadata type
 // note that for instances of custom objects this will check the specific type (i.e Lead)
 // if you want instances of all custom objects use isInstanceOfCustomObject
-export const isInstanceOfType = (type: string) => (
+export const isInstanceOfType = (...types: string[]) => (
   async (elem: Element): Promise<boolean> => (
-    isInstanceElement(elem) && await apiName(await elem.getType()) === type
+    isInstanceElement(elem) && types.includes(await apiName(await elem.getType()))
   )
 )
 
-export const isInstanceOfTypeChange = (type: string) => (
+export const isInstanceOfTypeChange = (...types: string[]) => (
   (change: Change): Promise<boolean> => (
-    isInstanceOfType(type)(getChangeData(change))
+    isInstanceOfType(...types)(getChangeData(change))
   )
 )
 

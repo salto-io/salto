@@ -296,6 +296,7 @@ export const DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST = 2500
 export const MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST = 500
 export const MAXIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST = 10000
 export const MAX_QUERY_LENGTH = 2000
+export const DEFAULT_ENUM_FIELD_PERMISSIONS = false
 export const DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS = {
   maxAttempts: 3,
   retryDelay: 1000,
@@ -309,6 +310,7 @@ export const MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD = 20
 // Metadata types
 export const TOPICS_FOR_OBJECTS_METADATA_TYPE = 'TopicsForObjects'
 export const PROFILE_METADATA_TYPE = 'Profile'
+export const PERMISSION_SET_METADATA_TYPE = 'PermissionSet'
 export const WORKFLOW_METADATA_TYPE = 'Workflow'
 export const ASSIGNMENT_RULES_METADATA_TYPE = 'AssignmentRules'
 export const VALIDATION_RULES_METADATA_TYPE = 'ValidationRule'

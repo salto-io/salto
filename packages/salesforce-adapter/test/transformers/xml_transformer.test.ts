@@ -201,6 +201,21 @@ describe('XML Transformer', () => {
           checkContentFile('rendererContent', 'Renderer.js')
           checkContentFile('styleContent', '.css')
         })
+        describe('when a field is missing', () => {
+          beforeEach(async () => {
+            pkg = createDeployPackage()
+            const values = _.omit(mockDefaultValues.AuraDefinitionBundle, ['designContent'])
+            await pkg.add(createInstanceElement(
+              values,
+              mockTypes.AuraDefinitionBundle,
+            ))
+            zipFiles = await getZipFiles(pkg)
+          })
+          it('should not create file for missing field', () => {
+            const filePath = `${packageName}/aura/TestAuraDefinitionBundle/TestAuraDefinitionBundle.design`
+            expect(zipFiles[filePath]).toBeUndefined()
+          })
+        })
       })
       describe('LightningComponentBundle', () => {
         beforeEach(async () => {

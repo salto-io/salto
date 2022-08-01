@@ -16,8 +16,9 @@
 import _ from 'lodash'
 import { ChangeValidator, getChangeData, isInstanceChange,
   ChangeError, InstanceElement, ModificationChange, isAdditionOrModificationChange,
-  isReferenceExpression, isInstanceElement, AdditionChange, CORE_ANNOTATIONS,
-  ReferenceExpression, isAdditionChange } from '@salto-io/adapter-api'
+  isReferenceExpression, isInstanceElement, AdditionChange, ReferenceExpression,
+  isAdditionChange } from '@salto-io/adapter-api'
+import { getParent } from '@salto-io/adapter-utils'
 import { ZendeskApiConfig } from '../../config'
 import { getChildAndParentTypeNames } from './utils'
 
@@ -29,8 +30,8 @@ export const createChildReferencesError = (
   return {
     elemID: instance.elemID,
     severity: 'Error',
-    message: `Can’t add or modify instances of ${instance.elemID.typeName} without updating their related children as well`,
-    detailedMessage: `Can’t add or modify ${instance.elemID.getFullName()} without updating ${childFullName} as its child`,
+    message: `Can't add or modify instances of ${instance.elemID.typeName} without updating their related children as well`,
+    detailedMessage: `Can't add or modify ${instance.elemID.getFullName()} without updating ${childFullName} as its child`,
   }
 }
 
@@ -47,7 +48,7 @@ const validateChildParentAnnotation = (
   const childFullName = childInstance.elemID.getFullName()
   if (!(
     childInstance.elemID.typeName === validChildType
-    && childInstance.annotations[CORE_ANNOTATIONS.PARENT]?.[0].value.elemID.getFullName()
+    && getParent(childInstance).elemID.getFullName()
       === parentInstance.elemID.getFullName()
   )) {
     return [createChildReferencesError(parentChange, childFullName)]

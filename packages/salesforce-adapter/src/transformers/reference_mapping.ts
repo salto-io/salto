@@ -131,18 +131,7 @@ export type FieldReferenceDefinition = {
   target?: referenceUtils.ReferenceTargetDefinition<ReferenceContextStrategyName>
 }
 
-/**
- * The rules for finding and resolving values into (and back from) reference expressions.
- * Overlaps between rules are allowed, and the first successful conversion wins.
- * Current order (defined by generateReferenceResolverFinder):
- *  1. Exact field names take precedence over regexp
- *  2. Order within each group is currently *not* guaranteed (groupBy is not stable)
- *
- * A value will be converted into a reference expression if:
- * 1. An element matching the rule is found.
- * 2. Resolving the resulting reference expression back returns the original value.
- */
-export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
+export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: { field: 'field', parentTypes: [WORKFLOW_FIELD_UPDATE_METADATA_TYPE, LAYOUT_ITEM_METADATA_TYPE, SUMMARY_LAYOUT_ITEM_METADATA_TYPE, 'WorkflowEmailRecipient', 'QuickActionLayoutItem', 'FieldSetItem'] },
     serializationStrategy: 'relativeApiName',
@@ -164,7 +153,7 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   // note: not all field values under ReportColumn match this rule - but it's ok because
   // only the ones that match are currently extracted (SALTO-1758)
   {
-    src: { field: 'field', parentTypes: ['ProfileFieldLevelSecurity', 'FilterItem', 'PermissionSetFieldPermissions', 'ReportColumn'] },
+    src: { field: 'field', parentTypes: ['FilterItem', 'ReportColumn'] },
     target: { type: CUSTOM_FIELD },
   },
   {
@@ -489,6 +478,30 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     src: { field: 'column', parentTypes: ['ReportFilterItem', 'DashboardFilterColumn', 'DashboardTableColumn'] },
     target: { type: CUSTOM_FIELD },
   },
+]
+
+// Optional reference that should not be used if enumFieldPermissions config is on
+const fieldPermissionEnumDisabledExtraMappingDefs: FieldReferenceDefinition[] = [
+  {
+    src: { field: 'field', parentTypes: ['ProfileFieldLevelSecurity', 'PermissionSetFieldPermissions'] },
+    target: { type: CUSTOM_FIELD },
+  },
+]
+
+/**
+ * The rules for finding and resolving values into (and back from) reference expressions.
+ * Overlaps between rules are allowed, and the first successful conversion wins.
+ * Current order (defined by generateReferenceResolverFinder):
+ *  1. Exact field names take precedence over regexp
+ *  2. Order within each group is currently *not* guaranteed (groupBy is not stable)
+ *
+ * A value will be converted into a reference expression if:
+ * 1. An element matching the rule is found.
+ * 2. Resolving the resulting reference expression back returns the original value.
+ */
+export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
+  ...defaultFieldNameToTypeMappingDefs,
+  ...fieldPermissionEnumDisabledExtraMappingDefs,
 ]
 
 const matchName = (fieldName: string, matcher: string | RegExp): boolean => (

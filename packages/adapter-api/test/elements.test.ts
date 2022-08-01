@@ -455,6 +455,21 @@ describe('Test elements.ts', () => {
         const nestedID = elemID.createNestedID(...nested)
         expect(elemID.getRelativePath(nestedID)).toEqual(nested)
       })
+      it('should return the correct relative path - field', () => {
+        const elemID = new ElemID('adapter', 'typeName')
+        const nestedID = new ElemID('adapter', 'typeName', 'field', 'f1')
+        expect(elemID.getRelativePath(nestedID)).toEqual(['field', 'f1'])
+      })
+      it('should return the correct relative path - annotation', () => {
+        const elemID = new ElemID('adapter', 'typeName')
+        const nestedID = new ElemID('adapter', 'typeName', 'annotation', 'f1')
+        expect(elemID.getRelativePath(nestedID)).toEqual(['annotation', 'f1'])
+      })
+      it('should return the correct relative path - attr', () => {
+        const elemID = new ElemID('adapter', 'typeName')
+        const nestedID = new ElemID('adapter', 'typeName', 'attr', 'f1')
+        expect(elemID.getRelativePath(nestedID)).toEqual(['attr', 'f1'])
+      })
       it('should return the empty result if they are the same elemIDs', () => {
         const elemID = new ElemID('adapter', 'typeName', 'instance', 'test')
         const nestedID = new ElemID('adapter', 'typeName', 'instance', 'test')

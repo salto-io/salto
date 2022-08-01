@@ -20,7 +20,7 @@ import { logger } from '@salto-io/logging'
 import { collections, multiIndex } from '@salto-io/lowerdash'
 import { apiName, metadataType } from '../transformers/transformer'
 import { LocalFilterCreator } from '../filter'
-import { generateReferenceResolverFinder, ReferenceContextStrategyName, FieldReferenceDefinition, getLookUpName } from '../transformers/reference_mapping'
+import { generateReferenceResolverFinder, ReferenceContextStrategyName, FieldReferenceDefinition, getLookUpName, fieldNameToTypeMappingDefs, defaultFieldNameToTypeMappingDefs } from '../transformers/reference_mapping'
 import {
   WORKFLOW_ACTION_ALERT_METADATA_TYPE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
   WORKFLOW_FLOW_ACTION_METADATA_TYPE, WORKFLOW_OUTBOUND_MESSAGE_METADATA_TYPE,
@@ -133,9 +133,13 @@ export const addReferences = async (
  */
 const filter: LocalFilterCreator = ({ config }) => ({
   onFetch: async elements => {
+    const refDef = config.enumFieldPermissions
+      ? defaultFieldNameToTypeMappingDefs
+      : fieldNameToTypeMappingDefs
     await addReferences(
       elements,
       buildElementsSourceForFetch(elements, config),
+      refDef,
     )
   },
 })

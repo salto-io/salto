@@ -70,6 +70,7 @@ import elementsUrlFilter from './filters/elements_url'
 import territoryFilter from './filters/territory'
 import customMetadataRecordsFilter from './filters/custom_metadata'
 import currencyIsoCodeFilter from './filters/currency_iso_code'
+import enumFieldPermissionsFilter from './filters/field_permissions_enum'
 import splitCustomLabels from './filters/split_custom_labels'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
@@ -116,7 +117,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   // profilePermissionsFilter depends on layoutFilter because layoutFilter
   // changes ElemIDs that the profile references
   { creator: profilePermissionsFilter },
-  // profileMapsFilter should run before profile fieldReferencesFilter
+  // convertMapsFilter should run before profile fieldReferencesFilter
   { creator: convertMapsFilter },
   { creator: standardValueSetFilter, addsNewInformation: true },
   { creator: flowFilter },
@@ -142,6 +143,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   // The following filters should remain last in order to make sure they fix all elements
   { creator: convertListsFilter },
   { creator: convertTypeFilter },
+  // should be after convertTypeFilter & convertMapsFilter and before profileInstanceSplitFilter
+  { creator: enumFieldPermissionsFilter },
   // should run after convertListsFilter
   { creator: xmlAttributesFilter },
   { creator: replaceFieldValuesFilter },
@@ -331,6 +334,8 @@ export default class SalesforceAdapter implements AdapterOperations {
         config: {
           unsupportedSystemFields,
           systemFields,
+          enumFieldPermissions: config.enumFieldPermissions
+            ?? constants.DEFAULT_ENUM_FIELD_PERMISSIONS,
           fetchProfile,
           elementsSource,
           separateFieldToFiles: config.fetch?.metadata?.objectsToSeperateFieldsToFiles,

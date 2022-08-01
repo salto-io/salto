@@ -15,7 +15,9 @@
 */
 import _ from 'lodash'
 import { ChangeValidator, getChangeData, isInstanceChange,
-  ChangeError, InstanceElement, ModificationChange, isAdditionOrModificationChange, isReferenceExpression, isInstanceElement, AdditionChange, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+  ChangeError, InstanceElement, ModificationChange, isAdditionOrModificationChange,
+  isReferenceExpression, isInstanceElement, AdditionChange, CORE_ANNOTATIONS,
+  ReferenceExpression, isAdditionChange } from '@salto-io/adapter-api'
 import { ZendeskApiConfig } from '../../config'
 import { getChildAndParentTypeNames } from './utils'
 
@@ -27,14 +29,45 @@ export const createChildReferencesError = (
   return {
     elemID: instance.elemID,
     severity: 'Error',
-    message: `Can not add/modify ${instance.elemID.typeName} as long the child instance isn't updated`,
-    detailedMessage: `Can not add/modify ${instance.elemID.getFullName()} because it's not the parent in the insatnce ${childFullName}`,
+    message: `Can’t add or modify instances of ${instance.elemID.typeName} without updating their related children as well`,
+    detailedMessage: `Can’t add or modify ${instance.elemID.getFullName()} without updating ${childFullName} as its child`,
   }
 }
 
-/*
-When a child value being added or modified in the parent (reference expression)
-and the parent annotation in the child instance isn't updated
+const validateChildParentAnnotation = (
+  parentChange: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
+  childRef: ReferenceExpression,
+  validChildType: string,
+): ChangeError[] => {
+  if (!(isReferenceExpression(childRef) && isInstanceElement(childRef.value))) {
+    return []
+  }
+  const parentInstance = getChangeData(parentChange)
+  const childInstance = childRef.value
+  const childFullName = childInstance.elemID.getFullName()
+  if (!(
+    childInstance.elemID.typeName === validChildType
+    && childInstance.annotations[CORE_ANNOTATIONS.PARENT]?.[0].value.elemID.getFullName()
+      === parentInstance.elemID.getFullName()
+  )) {
+    return [createChildReferencesError(parentChange, childFullName)]
+  }
+  return []
+}
+
+const hasRelevantFieldChanged = (
+  change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
+  fieldName: string,
+): boolean => {
+  if (isAdditionChange(change)) {
+    return change.data.after.value[fieldName] !== undefined
+  }
+  return !_.isEqual(change.data.before.value[fieldName], change.data.after.value[fieldName])
+}
+
+/**
+* Creates an error when a child value being added or modified in the parent (reference expression)
+* and the parent annotation in the child instance isn't updated
 */
 export const childMissingParentAnnotationValidatorCreator = (
   apiConfig: ZendeskApiConfig,
@@ -49,27 +82,16 @@ export const childMissingParentAnnotationValidatorCreator = (
 
   return relevantParentChanges.flatMap(change => {
     const instance = getChangeData(change)
-    const { fieldName: relevantFieldName, child: childType } = relationships.find(
-      r => r.parent === instance.elemID.typeName
-    ) ?? {}
-    if (relevantFieldName === undefined) {
+    const relationship = relationships.find(r => r.parent === instance.elemID.typeName)
+    if (relationship === undefined || !hasRelevantFieldChanged(change, relationship.fieldName)) {
       return []
     }
-    // TODO: support lists fields
-    const childRef = _.isArray(instance.value[relevantFieldName])
-      ? instance.value[relevantFieldName]?.[0]
-      : instance.value[relevantFieldName]
-    if (!(isReferenceExpression(childRef) && isInstanceElement(childRef.value))) {
-      return []
-    }
-    const childInstance = childRef.value
-    const childFullName = childInstance.elemID.getFullName()
-    if (!(
-      childInstance.elemID.typeName === childType
-      && childInstance.annotations[CORE_ANNOTATIONS.PARENT]?.[0].value.elemID.getFullName()
-        === instance.elemID.getFullName())) {
-      return [createChildReferencesError(change, childFullName)]
-    }
-    return []
+    // Handling with list-type fields as well
+    const fieldValue = _.castArray(instance.value[relationship.fieldName])
+    return fieldValue.flatMap(childRef => validateChildParentAnnotation(
+      change,
+      childRef,
+      relationship.child
+    ))
   })
 }

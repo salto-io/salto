@@ -35,6 +35,9 @@ describe('childMissingParentAnnotationValidatorCreator', () => {
   const option2 = new InstanceElement(
     'option2', ticketFieldOptionType, { name: 'test2', value: 'v2' },
   )
+  const option3 = new InstanceElement(
+    'option3', ticketFieldOptionType, { name: 'test1', value: 'v1' },
+  )
   const ticketField = new InstanceElement(
     'ticketFieldInstance1',
     ticketFieldType,
@@ -42,6 +45,7 @@ describe('childMissingParentAnnotationValidatorCreator', () => {
       name: 'test1',
       [CUSTOM_FIELD_OPTIONS_FIELD_NAME]: [
         new ReferenceExpression(option1.elemID, option1),
+        new ReferenceExpression(option3.elemID, option3),
       ],
     },
   )
@@ -61,9 +65,13 @@ describe('childMissingParentAnnotationValidatorCreator', () => {
   option2.annotations[CORE_ANNOTATIONS.PARENT] = [
     new ReferenceExpression(anotherTicketField.elemID, anotherTicketField),
   ]
+  option3.annotations[CORE_ANNOTATIONS.PARENT] = [
+    new ReferenceExpression(ticketField.elemID, ticketField),
+  ]
   it('should return an error when we add a ticket_field instance but child _parent is not modified to it', async () => {
     const clonedTicketField = ticketField.clone()
     clonedTicketField.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] = [
+      new ReferenceExpression(option1.elemID, option1),
       new ReferenceExpression(option2.elemID, option2),
     ]
 
@@ -81,6 +89,7 @@ describe('childMissingParentAnnotationValidatorCreator', () => {
   it('should return an error when we modify a ticket_field instance but child _parent is not modified', async () => {
     const clonedTicketField = ticketField.clone()
     clonedTicketField.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] = [
+      new ReferenceExpression(option1.elemID, option1),
       new ReferenceExpression(option2.elemID, option2),
     ]
 
@@ -107,7 +116,6 @@ describe('childMissingParentAnnotationValidatorCreator', () => {
     )([
       addTicketField,
       toChange({ after: anotherTicketField }),
-      toChange({ after: option2 }),
     ])
     expect(errors)
       .toEqual([])
@@ -127,7 +135,22 @@ describe('childMissingParentAnnotationValidatorCreator', () => {
     )([
       modifyTicketField,
       toChange({ after: anotherTicketField }),
-      toChange({ after: option2 }),
+    ])
+    expect(errors)
+      .toEqual([])
+  })
+  it('should ignore unrelevant changes', async () => {
+    const clonedTicketField = ticketField.clone()
+    clonedTicketField.value.name = 'newName'
+
+    const modifyTicketField = toChange({
+      before: clonedTicketField,
+      after: ticketField,
+    }) as ModificationChange<InstanceElement>
+    const errors = await childMissingParentAnnotationValidatorCreator(
+      DEFAULT_CONFIG[API_DEFINITIONS_CONFIG]
+    )([
+      modifyTicketField,
     ])
     expect(errors)
       .toEqual([])

@@ -340,9 +340,9 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: CUSTOM_FIELD },
   },
   {
-    src: { field: 'value', parentTypes: ['FieldSetItem'] },
+    src: { field: 'value', parentTypes: ['FilterItem'] },
     serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'instanceParent', type: 'RecordType' },
+    target: { parentContext: 'instanceParent', type: RECORD_TYPE_METADATA_TYPE },
   },
   {
     // sometimes has a value that is not a reference - should only convert to reference

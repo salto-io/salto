@@ -18,7 +18,7 @@ import MockAdapter from 'axios-mock-adapter'
 import { ObjectType, InstanceElement, AccountId, ReadOnlyElementsSource, AdapterOperations } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
-import { JiraConfig, DEFAULT_CONFIG } from '../src/config'
+import { JiraConfig, getDefaultConfig } from '../src/config'
 import { createCredentialsInstance, createConfigInstance } from './utils'
 
 describe('adapter creator', () => {
@@ -81,7 +81,7 @@ describe('adapter creator', () => {
       let result: AdapterOperations
       beforeEach(() => {
         const configWithExtraValue = {
-          ...DEFAULT_CONFIG,
+          ...getDefaultConfig({ isDataCenter: false }),
           extraValue: true,
         }
         result = adapter.operations({
@@ -109,7 +109,7 @@ describe('adapter creator', () => {
           elementsSource,
           credentials: credentialsInstance,
           config: createConfigInstance({
-            ...DEFAULT_CONFIG,
+            ...getDefaultConfig({ isDataCenter: false }),
             fetch: undefined,
           } as unknown as JiraConfig),
         })).toThrow()
@@ -122,7 +122,7 @@ describe('adapter creator', () => {
           elementsSource,
           credentials: credentialsInstance,
           config: createConfigInstance({
-            ...DEFAULT_CONFIG,
+            ...getDefaultConfig({ isDataCenter: false }),
             apiDefinitions: { typeDefaults: 2 },
           } as unknown as JiraConfig),
         })).toThrow()

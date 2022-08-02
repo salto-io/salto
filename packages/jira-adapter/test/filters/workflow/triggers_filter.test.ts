@@ -19,7 +19,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
 import JiraClient, { PRIVATE_API_HEADERS } from '../../../src/client/client'
-import { DEFAULT_CONFIG, JiraConfig } from '../../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../../src/config'
 import { JIRA, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import triggersFilter from '../../../src/filters/workflow/triggers_filter'
 import { mockClient } from '../../utils'
@@ -39,7 +39,7 @@ describe('triggersFilter', () => {
     client = cli
     mockConnection = connection
 
-    config = _.cloneDeep(DEFAULT_CONFIG)
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
     filter = triggersFilter({
       client,

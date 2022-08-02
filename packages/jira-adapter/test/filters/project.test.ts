@@ -17,7 +17,7 @@ import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, Object
 import { filterUtils, client as clientUtils, deployment, elements as elementUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { DEFAULT_CONFIG } from '../../src/config'
+import { getDefaultConfig } from '../../src/config'
 import JiraClient from '../../src/client/client'
 import { JIRA } from '../../src/constants'
 import projectFilter from '../../src/filters/project'
@@ -54,7 +54,7 @@ describe('projectFilter', () => {
     filter = projectFilter({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
+      config: getDefaultConfig({ isDataCenter: false }),
       elementsSource: buildElementsSourceFromElements([]),
       fetchQuery: elementUtils.query.createMockQuery(),
     }) as typeof filter
@@ -179,7 +179,7 @@ describe('projectFilter', () => {
       expect(deployChangeMock).toHaveBeenCalledWith(
         change,
         client,
-        DEFAULT_CONFIG.apiDefinitions.types.Project.deployRequests,
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Project.deployRequests,
         ['components', 'workflowScheme', 'issueTypeScreenScheme', 'fieldConfigurationScheme', 'issueTypeScheme'],
         undefined,
         undefined,
@@ -225,7 +225,7 @@ describe('projectFilter', () => {
       expect(deployChangeMock).toHaveBeenCalledWith(
         change,
         client,
-        DEFAULT_CONFIG.apiDefinitions.types.Project.deployRequests,
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Project.deployRequests,
         ['components', 'fieldConfigurationScheme'],
         undefined,
         undefined,
@@ -306,7 +306,7 @@ describe('projectFilter', () => {
       expect(deployChangeMock).toHaveBeenCalledWith(
         change,
         client,
-        DEFAULT_CONFIG.apiDefinitions.types.Project.deployRequests,
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Project.deployRequests,
         ['components', 'fieldConfigurationScheme'],
         undefined,
         undefined,
@@ -405,7 +405,7 @@ describe('projectFilter', () => {
       expect(deployChangeMock).toHaveBeenCalledWith(
         change,
         client,
-        DEFAULT_CONFIG.apiDefinitions.types.Project.deployRequests,
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Project.deployRequests,
         ['components', 'fieldConfigurationScheme'],
         undefined,
         undefined,

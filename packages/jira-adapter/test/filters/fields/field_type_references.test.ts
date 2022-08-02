@@ -17,7 +17,7 @@ import { ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto
 import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockClient } from '../../utils'
-import { DEFAULT_CONFIG } from '../../../src/config'
+import { getDefaultConfig } from '../../../src/config'
 import { JIRA } from '../../../src/constants'
 import fieldsTypeReferencesFilter, { getFieldsLookUpName } from '../../../src/filters/fields/field_type_references_filter'
 import { FIELD_CONTEXT_TYPE_NAME } from '../../../src/filters/fields/constants'
@@ -30,7 +30,7 @@ describe('fields_references', () => {
     filter = fieldsTypeReferencesFilter({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
+      config: getDefaultConfig({ isDataCenter: false }),
       elementsSource: buildElementsSourceFromElements([]),
       fetchQuery: elementUtils.query.createMockQuery(),
     }) as typeof filter

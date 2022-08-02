@@ -23,7 +23,7 @@ describe('client', () => {
   let mockAxios: MockAdapter
   beforeEach(() => {
     mockAxios = new MockAdapter(axios)
-    client = new JiraClient({ credentials: { baseUrl: 'http://myjira.net', user: 'me', token: 'tok' } })
+    client = new JiraClient({ credentials: { baseUrl: 'http://myjira.net', user: 'me', token: 'tok' } }, false)
   })
   afterEach(() => {
     mockAxios.restore()

@@ -22,7 +22,7 @@ import { mockClient } from '../utils'
 import issueTypeScreenSchemeFilter from '../../src/filters/issue_type_screen_scheme'
 import { Filter } from '../../src/filter'
 import JiraClient from '../../src/client/client'
-import { DEFAULT_CONFIG } from '../../src/config'
+import { getDefaultConfig } from '../../src/config'
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -49,7 +49,7 @@ describe('issueTypeScreenScheme', () => {
     filter = issueTypeScreenSchemeFilter({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
+      config: getDefaultConfig({ isDataCenter: false }),
       elementsSource: buildElementsSourceFromElements([]),
       fetchQuery: elementUtils.query.createMockQuery(),
     })
@@ -141,7 +141,8 @@ describe('issueTypeScreenScheme', () => {
         expect(deployChangeMock).toHaveBeenCalledWith(
           change,
           client,
-          DEFAULT_CONFIG.apiDefinitions.types.IssueTypeScreenScheme.deployRequests,
+          getDefaultConfig({ isDataCenter: false })
+            .apiDefinitions.types.IssueTypeScreenScheme.deployRequests,
           ['issueTypeMappings'],
           undefined,
           undefined,

@@ -18,7 +18,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../../utils'
 import automationNameReferencesFilter from '../../../src/filters/automation/automation_name_references'
-import { DEFAULT_CONFIG } from '../../../src/config'
+import { getDefaultConfig } from '../../../src/config'
 import { createAutomationTypes } from '../../../src/filters/automation/types'
 import { JIRA } from '../../../src/constants'
 
@@ -35,7 +35,7 @@ describe('automationNameReferencesTest', () => {
     filter = automationNameReferencesFilter({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
+      config: getDefaultConfig({ isDataCenter: false }),
       elementsSource: buildElementsSourceFromElements([]),
       fetchQuery: elementUtils.query.createMockQuery(),
     }) as typeof filter

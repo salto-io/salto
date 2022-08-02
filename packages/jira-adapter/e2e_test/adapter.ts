@@ -19,7 +19,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import JiraClient from '../src/client/client'
 import JiraAdapter, { JiraAdapterParams } from '../src/adapter'
 import { Credentials } from '../src/auth'
-import { DEFAULT_CONFIG, JiraConfig } from '../src/config'
+import { getDefaultConfig, JiraConfig } from '../src/config'
 import { credsSpec } from './jest_environment'
 
 const log = logger(module)
@@ -35,10 +35,10 @@ export type Opts = {
 }
 
 export const realAdapter = ({ adapterParams, credentials }: Opts, config?: JiraConfig): Reals => {
-  const client = (adapterParams && adapterParams.client) || new JiraClient({ credentials })
+  const client = (adapterParams && adapterParams.client) || new JiraClient({ credentials }, false)
   const adapter = new JiraAdapter({
     client,
-    config: config ?? DEFAULT_CONFIG,
+    config: config ?? getDefaultConfig({ isDataCenter: false }),
     elementsSource: buildElementsSourceFromElements([]),
   })
   return { client, adapter }

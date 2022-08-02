@@ -20,7 +20,7 @@ import { deployment, filterUtils, client as clientUtils, elements as elementUtil
 import { MockInterface } from '@salto-io/test-utils'
 import { mockClient } from '../../utils'
 import dashboardDeploymentFilter from '../../../src/filters/dashboard/dashboard_deployment'
-import { DEFAULT_CONFIG, JiraConfig } from '../../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../../src/config'
 import { DASHBOARD_GADGET_POSITION_TYPE, DASHBOARD_GADGET_TYPE, DASHBOARD_TYPE, JIRA } from '../../../src/constants'
 import JiraClient, { PRIVATE_API_HEADERS } from '../../../src/client/client'
 import { getLookUpName } from '../../../src/reference_mapping'
@@ -50,7 +50,7 @@ describe('dashboardDeploymentFilter', () => {
     client = cli
     connection = conn
 
-    config = _.cloneDeep(DEFAULT_CONFIG)
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     filter = dashboardDeploymentFilter({
       client,
       paginator,
@@ -178,7 +178,8 @@ describe('dashboardDeploymentFilter', () => {
       expect(deployChangeMock).toHaveBeenCalledWith(
         await resolveChangeElement(change, getLookUpName),
         client,
-        DEFAULT_CONFIG.apiDefinitions.types[DASHBOARD_TYPE].deployRequests,
+        getDefaultConfig({ isDataCenter: false })
+          .apiDefinitions.types[DASHBOARD_TYPE].deployRequests,
         [
           'layout',
           'gadgets',

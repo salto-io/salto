@@ -40,6 +40,7 @@ export const credsSpec = (envName?: string): CredsSpec<Required<Credentials>> =>
         baseUrl: envUtils.required(jiraBaseUrlVarName),
         user: envUtils.required(jiraUserVarName),
         token: envUtils.required(jiraTokenVarName),
+        isDataCenter: false,
       }
     },
     validate: async (_creds: Credentials): Promise<void> => {

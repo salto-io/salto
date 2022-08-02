@@ -20,7 +20,7 @@ import { elements as elementUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../utils'
 import resolutionFilter from '../../src/filters/resolution'
 import { Filter } from '../../src/filter'
-import { DEFAULT_CONFIG, JiraConfig } from '../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../src/config'
 import { JIRA, RESOLUTION_TYPE_NAME } from '../../src/constants'
 import { deployWithJspEndpoints } from '../../src/deployment/jsp_deployment'
 import JiraClient from '../../src/client/client'
@@ -40,7 +40,7 @@ describe('resolutionFilter', () => {
     const { client: cli, paginator } = mockClient()
     client = cli
 
-    config = _.cloneDeep(DEFAULT_CONFIG)
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     filter = resolutionFilter({
       client,
       paginator,

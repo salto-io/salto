@@ -21,12 +21,12 @@ import { getParents, resolveValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { Credentials } from '../src/auth'
 import { credsLease, realAdapter } from './adapter'
-import { DEFAULT_API_DEFINITIONS, DEFAULT_CONFIG } from '../src/config'
 import 'jest-extended'
 import JiraAdapter from '../src/adapter'
 import { createInstances } from './instances'
 import { findInstance } from './utils'
 import { getLookUpName } from '../src/reference_mapping'
+import { getDefaultConfig } from '../src/config'
 
 const { awu } = collections.asynciterable
 
@@ -39,7 +39,7 @@ describe('Jira E2E', () => {
 
   beforeAll(async () => {
     credLease = await credsLease()
-    const config = _.cloneDeep(DEFAULT_CONFIG);
+    const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }));
     (config.apiDefinitions.types.Field.transformation as configUtils.TransformationConfig).idFields = ['name']
     const adapterAttr = realAdapter({ credentials: credLease.value }, config)
     adapter = adapterAttr.adapter
@@ -64,7 +64,7 @@ describe('Jira E2E', () => {
         .filter(isObjectType)
         .map(e => e.elemID.typeName)
     })
-    it.each(Object.keys(DEFAULT_API_DEFINITIONS.types))('%s', expectedType => {
+    it.each(Object.keys(getDefaultConfig({ isDataCenter: false }).apiDefinitions.types))('%s', expectedType => {
       expect(fetchedTypes).toContain(expectedType)
     })
   })

@@ -16,7 +16,7 @@
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ListType, ObjectType } from '@salto-io/adapter-api'
 import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { DEFAULT_CONFIG } from '../../../src/config'
+import { getDefaultConfig } from '../../../src/config'
 import { JIRA } from '../../../src/constants'
 import fieldConfigurationFilter from '../../../src/filters/field_configuration/field_configuration'
 import { mockClient } from '../../utils'
@@ -32,7 +32,7 @@ describe('fieldConfigurationFilter', () => {
     filter = fieldConfigurationFilter({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
+      config: getDefaultConfig({ isDataCenter: false }),
       elementsSource: buildElementsSourceFromElements([]),
       fetchQuery: elementUtils.query.createMockQuery(),
     }) as typeof filter

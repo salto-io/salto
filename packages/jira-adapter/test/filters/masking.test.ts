@@ -20,7 +20,7 @@ import { elements as elementUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../utils'
 import maskingFilter, { MASK_VALUE } from '../../src/filters/masking'
 import { Filter } from '../../src/filter'
-import { DEFAULT_CONFIG, JiraConfig } from '../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../src/config'
 import { AUTOMATION_TYPE, JIRA } from '../../src/constants'
 
 describe('maskingFilter', () => {
@@ -32,7 +32,7 @@ describe('maskingFilter', () => {
   beforeEach(async () => {
     const { client, paginator } = mockClient()
 
-    config = _.cloneDeep(DEFAULT_CONFIG)
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
     filter = maskingFilter({
       client,

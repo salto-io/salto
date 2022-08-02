@@ -20,7 +20,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockClient } from '../utils'
 import duplicateIdsFilter from '../../src/filters/duplicate_ids'
 import { Filter } from '../../src/filter'
-import { DEFAULT_CONFIG, JiraConfig } from '../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../src/config'
 import { JIRA, STATUS_TYPE_NAME } from '../../src/constants'
 
 describe('duplicateIdsFilter', () => {
@@ -30,7 +30,7 @@ describe('duplicateIdsFilter', () => {
   beforeEach(async () => {
     const { client, paginator } = mockClient()
 
-    config = _.cloneDeep(DEFAULT_CONFIG)
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
     config.fetch.fallbackToInternalId = true
 

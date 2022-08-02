@@ -20,7 +20,7 @@ import _ from 'lodash'
 import { deployWorkflow } from '../../../src/filters/workflow/workflow_deploy_filter'
 import { deployWorkflowScheme } from '../../../src/filters/workflow_scheme'
 import JiraClient from '../../../src/client/client'
-import { DEFAULT_CONFIG, JiraConfig } from '../../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../../src/config'
 import { JIRA, WORKFLOW_SCHEME_TYPE_NAME, WORKFLOW_STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import workflowModificationFilter from '../../../src/filters/workflow/workflow_modification_filter'
 import { mockClient } from '../../utils'
@@ -65,7 +65,7 @@ describe('workflowModificationFilter', () => {
     })
     workflowSchemeType = new ObjectType({ elemID: new ElemID(JIRA, WORKFLOW_SCHEME_TYPE_NAME) })
 
-    config = _.cloneDeep(DEFAULT_CONFIG)
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
     const { client: cli, paginator: pagi } = mockClient()
     client = cli

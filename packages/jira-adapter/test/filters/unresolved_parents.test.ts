@@ -19,7 +19,7 @@ import { elements as elementUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../utils'
 import unresolvedParentsFilter from '../../src/filters/unresolved_parents'
 import { Filter } from '../../src/filter'
-import { DEFAULT_CONFIG } from '../../src/config'
+import { getDefaultConfig } from '../../src/config'
 import { JIRA } from '../../src/constants'
 
 describe('unresolvedParentsFilter', () => {
@@ -31,7 +31,7 @@ describe('unresolvedParentsFilter', () => {
     filter = unresolvedParentsFilter({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
+      config: getDefaultConfig({ isDataCenter: false }),
       elementsSource: buildElementsSourceFromElements([]),
       fetchQuery: elementUtils.query.createMockQuery(),
     })

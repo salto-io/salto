@@ -22,9 +22,10 @@ import { client as clientUtils, config as configUtils } from '@salto-io/adapter-
 import JiraClient from './client/client'
 import JiraAdapter from './adapter'
 import { Credentials, basicAuthCredentialsType } from './auth'
-import { configType, JiraConfig, getApiDefinitions, DEFAULT_CONFIG } from './config'
+import { configType, JiraConfig, getApiDefinitions, getDefaultConfig } from './config'
 import { createConnection, validateCredentials } from './client/connection'
 import { AUTOMATION_TYPE, WEBHOOK_TYPE } from './constants'
+import { getProductSettings } from './product_settings'
 
 const log = logger(module)
 const { validateClientConfig, createRetryOptions, DEFAULT_RETRY_OPTS } = clientUtils
@@ -50,9 +51,12 @@ function validateConfig(config: Values): asserts config is JiraConfig {
   validateSwaggerFetchConfig('fetch', fetch, apiDefinitions)
 }
 
-const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): JiraConfig => {
+const adapterConfigFromConfig = (
+  config: Readonly<InstanceElement> | undefined,
+  defaultConfig: JiraConfig
+): JiraConfig => {
   const fullConfig = configUtils.mergeWithDefaultConfig(
-    _.omit(DEFAULT_CONFIG, 'fetch'),
+    _.omit(defaultConfig, 'fetch'),
     config?.value
   )
 
@@ -75,6 +79,10 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
 
 export const adapter: Adapter = {
   operations: context => {
+    const isDataCenter = Boolean(context.credentials.value.isDataCenter)
+
+    const defaultConfig = getDefaultConfig({ isDataCenter })
+
     // This can be removed once all the workspaces configs were migrated
     const updatedConfig = configUtils.configMigrations.migrateDeprecatedIncludeList(
       // Creating new instance is required because the type is not resolved in context.config
@@ -83,7 +91,7 @@ export const adapter: Adapter = {
         configType,
         context.config?.value
       ),
-      DEFAULT_CONFIG,
+      defaultConfig,
       [
         'IssueEvent',
         WEBHOOK_TYPE,
@@ -91,13 +99,19 @@ export const adapter: Adapter = {
       ]
     )
 
-    const config = adapterConfigFromConfig(updatedConfig?.config[0] ?? context.config)
+    const config = adapterConfigFromConfig(
+      updatedConfig?.config[0] ?? context.config,
+      defaultConfig
+    )
     const credentials = credentialsFromConfig(context.credentials)
     const adapterOperations = new JiraAdapter({
-      client: new JiraClient({
-        credentials,
-        config: config.client,
-      }),
+      client: new JiraClient(
+        {
+          credentials,
+          config: config.client,
+        },
+        isDataCenter,
+      ),
       config,
       getElemIdFunc: context.getElemIdFunc,
       elementsSource: context.elementsSource,
@@ -117,9 +131,12 @@ export const adapter: Adapter = {
   },
   validateCredentials: async config => {
     const connection = createConnection(createRetryOptions(DEFAULT_RETRY_OPTS))
-    return validateCredentials(
-      { connection: await connection.login(credentialsFromConfig(config)) }
-    )
+    const creds = credentialsFromConfig(config)
+    const productSettings = getProductSettings({ isDataCenter: Boolean(creds.isDataCenter) })
+
+    return validateCredentials({
+      connection: productSettings.wrapConnection(await connection.login(creds)),
+    })
   },
   authenticationMethods: {
     basic: {

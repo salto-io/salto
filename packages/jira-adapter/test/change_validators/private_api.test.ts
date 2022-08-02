@@ -15,7 +15,7 @@
 */
 import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { DEFAULT_CONFIG, JiraConfig } from '../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../src/config'
 import { privateApiValidator } from '../../src/change_validators/private_api'
 import { JIRA, STATUS_TYPE_NAME } from '../../src/constants'
 
@@ -27,7 +27,7 @@ describe('privateApiValidator', () => {
   beforeEach(() => {
     type = new ObjectType({ elemID: new ElemID(JIRA, STATUS_TYPE_NAME) })
     instance = new InstanceElement('instance', type)
-    config = _.cloneDeep(DEFAULT_CONFIG)
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
   })
   it('should return an error if privateAPI is disabled', async () => {
     config.client.usePrivateAPI = false

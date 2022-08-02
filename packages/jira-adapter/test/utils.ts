@@ -66,7 +66,7 @@ export const mockClient = (): ClientWithMockConnection => {
         ...connection,
       }),
     },
-  })
+  }, false)
   const paginator = clientUtils.createPaginator(
     { paginationFuncCreator: clientUtils.getWithOffsetAndLimit, client }
   )

@@ -19,8 +19,8 @@ import { elements as elementUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../utils'
 import avatarsFilter from '../../src/filters/avatars'
 import { Filter } from '../../src/filter'
-import { DEFAULT_CONFIG } from '../../src/config'
 import { JIRA } from '../../src/constants'
+import { getDefaultConfig } from '../../src/config'
 
 describe('avatarsFilter', () => {
   let filter: Filter
@@ -31,7 +31,7 @@ describe('avatarsFilter', () => {
     filter = avatarsFilter({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
+      config: getDefaultConfig({ isDataCenter: false }),
       elementsSource: buildElementsSourceFromElements([]),
       fetchQuery: elementUtils.query.createMockQuery(),
     })

@@ -20,7 +20,7 @@ import { deployment, filterUtils, client as clientUtils, elements as elementUtil
 import { MockInterface } from '@salto-io/test-utils'
 import { mockClient } from '../../utils'
 import gadgetFilter from '../../../src/filters/dashboard/gadget'
-import { DEFAULT_CONFIG, JiraConfig } from '../../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../../src/config'
 import { DASHBOARD_GADGET_TYPE, DASHBOARD_TYPE, JIRA } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
 import { getLookUpName } from '../../../src/reference_mapping'
@@ -52,7 +52,7 @@ describe('gadgetFilter', () => {
     client = cli
     connection = conn
 
-    config = _.cloneDeep(DEFAULT_CONFIG)
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     filter = gadgetFilter({
       client,
       paginator,
@@ -271,7 +271,8 @@ describe('gadgetFilter', () => {
       expect(deployChangeMock).toHaveBeenCalledWith(
         await resolveChangeElement(change, getLookUpName),
         client,
-        DEFAULT_CONFIG.apiDefinitions.types[DASHBOARD_GADGET_TYPE].deployRequests,
+        getDefaultConfig({ isDataCenter: false })
+          .apiDefinitions.types[DASHBOARD_GADGET_TYPE].deployRequests,
         ['properties'],
         undefined,
         undefined,

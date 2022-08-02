@@ -19,8 +19,8 @@ import { elements as elementUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../utils'
 import iconUrlFilter from '../../src/filters/icon_url'
 import { Filter } from '../../src/filter'
-import { DEFAULT_CONFIG } from '../../src/config'
 import { JIRA, STATUS_TYPE_NAME } from '../../src/constants'
+import { getDefaultConfig } from '../../src/config'
 
 describe('iconUrlFilter', () => {
   let filter: Filter
@@ -31,7 +31,7 @@ describe('iconUrlFilter', () => {
     filter = iconUrlFilter({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
+      config: getDefaultConfig({ isDataCenter: false }),
       elementsSource: buildElementsSourceFromElements([]),
       fetchQuery: elementUtils.query.createMockQuery(),
     })

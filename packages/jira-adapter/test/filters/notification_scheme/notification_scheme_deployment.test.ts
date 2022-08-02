@@ -20,7 +20,7 @@ import { filterUtils, client as clientUtils, elements as elementUtils } from '@s
 import { MockInterface } from '@salto-io/test-utils'
 import { mockClient } from '../../utils'
 import notificationSchemeDeploymentFilter from '../../../src/filters/notification_scheme/notification_scheme_deployment'
-import { DEFAULT_CONFIG, JiraConfig } from '../../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../../src/config'
 import { JIRA, NOTIFICATION_SCHEME_TYPE_NAME, NOTIFICATION_EVENT_TYPE_NAME } from '../../../src/constants'
 import { deployWithJspEndpoints } from '../../../src/deployment/jsp_deployment'
 import JiraClient from '../../../src/client/client'
@@ -44,7 +44,7 @@ describe('notificationSchemeDeploymentFilter', () => {
     connection = conn
     client = cli
 
-    config = _.cloneDeep(DEFAULT_CONFIG)
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     filter = notificationSchemeDeploymentFilter({
       client,
       paginator,

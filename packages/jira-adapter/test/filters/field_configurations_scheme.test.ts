@@ -22,7 +22,7 @@ import { mockClient } from '../utils'
 import fieldConfigurationsSchemeFilter from '../../src/filters/field_configurations_scheme'
 import { Filter } from '../../src/filter'
 import JiraClient from '../../src/client/client'
-import { DEFAULT_CONFIG } from '../../src/config'
+import { getDefaultConfig } from '../../src/config'
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -47,7 +47,7 @@ describe('field_configurations_scheme', () => {
     filter = fieldConfigurationsSchemeFilter({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
+      config: getDefaultConfig({ isDataCenter: false }),
       elementsSource: buildElementsSourceFromElements([]),
       fetchQuery: elementUtils.query.createMockQuery(),
     })

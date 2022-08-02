@@ -14,9 +14,8 @@
 * limitations under the License.
 */
 import { AdditionChange, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange, ModificationChange } from '@salto-io/adapter-api'
-import { ZENDESK_SUPPORT } from '../../src/constants'
+import { ZENDESK } from '../../src/constants'
 import {
-  createChildReferencesError,
   childMissingParentAnnotationValidatorCreator,
 } from '../../src/change_validators/child_parent/child_missing_parent_annotation'
 import { CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../src/filters/custom_field_options/creator'
@@ -24,10 +23,10 @@ import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../../src/config'
 
 describe('childMissingParentAnnotationValidatorCreator', () => {
   const ticketFieldType = new ObjectType({
-    elemID: new ElemID(ZENDESK_SUPPORT, 'ticket_field'),
+    elemID: new ElemID(ZENDESK, 'ticket_field'),
   })
   const ticketFieldOptionType = new ObjectType({
-    elemID: new ElemID(ZENDESK_SUPPORT, 'ticket_field__custom_field_options'),
+    elemID: new ElemID(ZENDESK, 'ticket_field__custom_field_options'),
   })
   const option1 = new InstanceElement(
     'option1', ticketFieldOptionType, { name: 'test1', value: 'v1' },
@@ -36,7 +35,10 @@ describe('childMissingParentAnnotationValidatorCreator', () => {
     'option2', ticketFieldOptionType, { name: 'test2', value: 'v2' },
   )
   const option3 = new InstanceElement(
-    'option3', ticketFieldOptionType, { name: 'test1', value: 'v1' },
+    'option3', ticketFieldOptionType, { name: 'test3', value: 'v3' },
+  )
+  const optionWithoutAParent = new InstanceElement(
+    'optionWithoutAParent', ticketFieldOptionType, { name: 'test4', value: 'v4' },
   )
   const ticketField = new InstanceElement(
     'ticketFieldInstance1',
@@ -84,7 +86,12 @@ describe('childMissingParentAnnotationValidatorCreator', () => {
       toChange({ after: option2 }),
     ])
     expect(errors)
-      .toEqual([createChildReferencesError(addTicketField, option2.elemID.getFullName())])
+      .toEqual([{
+        elemID: clonedTicketField.elemID,
+        severity: 'Error',
+        message: `Can't add or modify instances of ${clonedTicketField.elemID.typeName} without updating their related children as well`,
+        detailedMessage: `Can't add or modify ${clonedTicketField.elemID.getFullName()} without updating ${option2.elemID.getFullName()} as its child`,
+      }])
   })
   it('should return an error when we modify a ticket_field instance but child _parent is not modified', async () => {
     const clonedTicketField = ticketField.clone()
@@ -105,7 +112,12 @@ describe('childMissingParentAnnotationValidatorCreator', () => {
       toChange({ after: option2 }),
     ])
     expect(errors)
-      .toEqual([createChildReferencesError(modifyTicketField, option2.elemID.getFullName())])
+      .toEqual([{
+        elemID: clonedTicketField.elemID,
+        severity: 'Error',
+        message: `Can't add or modify instances of ${clonedTicketField.elemID.typeName} without updating their related children as well`,
+        detailedMessage: `Can't add or modify ${clonedTicketField.elemID.getFullName()} without updating ${option2.elemID.getFullName()} as its child`,
+      }])
   })
   it('should not return an error when we add a ticket_field instance and child _parent is modified', async () => {
     const clonedTicketField = ticketField.clone()
@@ -154,5 +166,25 @@ describe('childMissingParentAnnotationValidatorCreator', () => {
     ])
     expect(errors)
       .toEqual([])
+  })
+  it('should return an error when we add a ticket_field instance but the child instance has no _parent annotation', async () => {
+    const clonedTicketField = ticketField.clone()
+    clonedTicketField.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] = [
+      new ReferenceExpression(optionWithoutAParent.elemID, optionWithoutAParent),
+    ]
+
+    const addTicketField = toChange({ after: clonedTicketField }) as AdditionChange<InstanceElement>
+    const errors = await childMissingParentAnnotationValidatorCreator(
+      DEFAULT_CONFIG[API_DEFINITIONS_CONFIG]
+    )([
+      addTicketField,
+    ])
+    expect(errors)
+      .toEqual([{
+        elemID: clonedTicketField.elemID,
+        severity: 'Error',
+        message: `Can't add or modify instances of ${clonedTicketField.elemID.typeName} without updating their related children as well`,
+        detailedMessage: `Can't add or modify ${clonedTicketField.elemID.getFullName()} without updating ${optionWithoutAParent.elemID.getFullName()} as its child`,
+      }])
   })
 })

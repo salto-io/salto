@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { values, collections } from '@salto-io/lowerdash'
 import { ChangeValidator, getChangeData, isInstanceChange,
   ChangeError, InstanceElement, ModificationChange, isAdditionOrModificationChange,
   isReferenceExpression, isInstanceElement, AdditionChange, ReferenceExpression,
@@ -22,7 +23,7 @@ import { getParent } from '@salto-io/adapter-utils'
 import { ZendeskApiConfig } from '../../config'
 import { getChildAndParentTypeNames } from './utils'
 
-export const createChildReferencesError = (
+const createChildReferencesError = (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
   childFullName: string,
 ): ChangeError => {
@@ -39,21 +40,21 @@ const validateChildParentAnnotation = (
   parentChange: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
   childRef: ReferenceExpression,
   validChildType: string,
-): ChangeError[] => {
-  if (!(isReferenceExpression(childRef) && isInstanceElement(childRef.value))) {
-    return []
-  }
+): ChangeError | undefined => {
   const parentInstance = getChangeData(parentChange)
   const childInstance = childRef.value
   const childFullName = childInstance.elemID.getFullName()
-  if (!(
-    childInstance.elemID.typeName === validChildType
-    && getParent(childInstance).elemID.getFullName()
-      === parentInstance.elemID.getFullName()
-  )) {
-    return [createChildReferencesError(parentChange, childFullName)]
+  try {
+    if (!(
+      childInstance.elemID.typeName === validChildType
+      && getParent(childInstance).elemID.isEqual(parentInstance.elemID)
+    )) {
+      return createChildReferencesError(parentChange, childFullName)
+    }
+  } catch (e) {
+    return createChildReferencesError(parentChange, childFullName)
   }
-  return []
+  return undefined
 }
 
 const hasRelevantFieldChanged = (
@@ -67,9 +68,9 @@ const hasRelevantFieldChanged = (
 }
 
 /**
-* Creates an error when a child value being added or modified in the parent (reference expression)
-* and the parent annotation in the child instance isn't updated
-*/
+ * Creates an error when a child value being added or modified in the parent (reference expression)
+ * and the parent annotation in the child instance isn't updated
+ */
 export const childMissingParentAnnotationValidatorCreator = (
   apiConfig: ZendeskApiConfig,
 ): ChangeValidator => async changes => {
@@ -88,11 +89,15 @@ export const childMissingParentAnnotationValidatorCreator = (
       return []
     }
     // Handling with list-type fields as well
-    const fieldValue = _.castArray(instance.value[relationship.fieldName])
-    return fieldValue.flatMap(childRef => validateChildParentAnnotation(
-      change,
-      childRef,
-      relationship.child
-    ))
+    const { makeArray } = collections.array
+    const fieldValue = makeArray(instance.value[relationship.fieldName])
+    return fieldValue
+      .filter(value => isReferenceExpression(value) && isInstanceElement(value.value))
+      .map(childRef => validateChildParentAnnotation(
+        change,
+        childRef,
+        relationship.child
+      ))
+      .filter(values.isDefined)
   })
 }

@@ -24,7 +24,7 @@ import { getParents, naclCase, pathNaclCase, safeJsonStringify } from '@salto-io
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
-import { BRAND_LOGO_TYPE_NAME, BRAND_NAME, ZENDESK_SUPPORT } from '../constants'
+import { BRAND_LOGO_TYPE_NAME, BRAND_NAME, ZENDESK } from '../constants'
 import { getZendeskError } from '../errors'
 import ZendeskClient from '../client/client'
 
@@ -35,7 +35,7 @@ const { RECORDS_PATH, SUBTYPES_PATH, TYPES_PATH } = elementsUtils
 export const LOGO_FIELD = 'logo'
 
 export const BRAND_LOGO_TYPE = new ObjectType({
-  elemID: new ElemID(ZENDESK_SUPPORT, BRAND_LOGO_TYPE_NAME),
+  elemID: new ElemID(ZENDESK, BRAND_LOGO_TYPE_NAME),
   fields: {
     id: {
       refType: BuiltinTypes.SERVICE_ID_NUMBER,
@@ -45,7 +45,7 @@ export const BRAND_LOGO_TYPE = new ObjectType({
     contentType: { refType: BuiltinTypes.STRING },
     content: { refType: BuiltinTypes.STRING },
   },
-  path: [ZENDESK_SUPPORT, TYPES_PATH, SUBTYPES_PATH, BRAND_LOGO_TYPE_NAME],
+  path: [ZENDESK, TYPES_PATH, SUBTYPES_PATH, BRAND_LOGO_TYPE_NAME],
 })
 
 const getLogoContent = async (
@@ -86,11 +86,11 @@ const getBrandLogo = async ({ client, brand }: {
       filename: logoValues.file_name,
       contentType: logoValues.content_type,
       content: new StaticFile({
-        filepath: `${ZENDESK_SUPPORT}/${BRAND_LOGO_TYPE.elemID.name}/${pathName}`,
+        filepath: `${ZENDESK}/${BRAND_LOGO_TYPE.elemID.name}/${pathName}`,
         content,
       }),
     },
-    [ZENDESK_SUPPORT, RECORDS_PATH, BRAND_LOGO_TYPE_NAME, pathName],
+    [ZENDESK, RECORDS_PATH, BRAND_LOGO_TYPE_NAME, pathName],
     { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand.elemID, brand)] },
   )
 

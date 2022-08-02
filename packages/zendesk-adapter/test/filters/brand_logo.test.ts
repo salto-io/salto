@@ -23,7 +23,7 @@ import filterCreator, { BRAND_LOGO_TYPE, LOGO_FIELD } from '../../src/filters/br
 import { DEFAULT_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
-import { BRAND_LOGO_TYPE_NAME, BRAND_NAME, ZENDESK_SUPPORT } from '../../src/constants'
+import { BRAND_LOGO_TYPE_NAME, BRAND_NAME, ZENDESK } from '../../src/constants'
 
 jest.useFakeTimers()
 
@@ -34,7 +34,7 @@ describe('brand logo filter', () => {
   let mockGet: jest.SpyInstance
   let mockPut: jest.SpyInstance
   const brandType = new ObjectType({
-    elemID: new ElemID(ZENDESK_SUPPORT, BRAND_NAME),
+    elemID: new ElemID(ZENDESK, BRAND_NAME),
     fields: {
       [LOGO_FIELD]: { refType: new ObjectType(BRAND_LOGO_TYPE) },
     },
@@ -42,7 +42,7 @@ describe('brand logo filter', () => {
   const brandId = 11
   const logoId = 111
   const logoType = new ObjectType({
-    elemID: new ElemID(ZENDESK_SUPPORT, BRAND_LOGO_TYPE_NAME),
+    elemID: new ElemID(ZENDESK, BRAND_LOGO_TYPE_NAME),
   })
   const filename = 'brand1_logo.png'
   const content = Buffer.from('test')
@@ -96,10 +96,10 @@ describe('brand logo filter', () => {
       await filter.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName()).sort())
         .toEqual([
-          'zendesk_support.brand',
-          'zendesk_support.brand.instance.brand',
-          'zendesk_support.brand_logo',
-          'zendesk_support.brand_logo.instance.test__brand1_logo_png@uuuv',
+          'zendesk.brand',
+          'zendesk.brand.instance.brand',
+          'zendesk.brand_logo',
+          'zendesk.brand_logo.instance.test__brand1_logo_png@uuuv',
         ])
     })
     it('should create a new logo instance', async () => {
@@ -113,7 +113,7 @@ describe('brand logo filter', () => {
         filename,
         contentType: 'image/png',
         content: new StaticFile({
-          filepath: 'zendesk_support/brand_logo/test__brand1_logo.png', encoding: 'binary', content,
+          filepath: 'zendesk/brand_logo/test__brand1_logo.png', encoding: 'binary', content,
         }),
       })
     })
@@ -145,7 +145,7 @@ describe('brand logo filter', () => {
           filename: 'test.png',
           contentType: 'image/png',
           content: new StaticFile({
-            filepath: 'zendesk_support/brand_logo/test__test.png', encoding: 'binary', content,
+            filepath: 'zendesk/brand_logo/test__test.png', encoding: 'binary', content,
           }),
         },
       )
@@ -196,7 +196,7 @@ describe('brand logo filter', () => {
       const beforeLogo = logoInstance.clone()
       const afterLogo = logoInstance.clone()
       afterLogo.value.content = new StaticFile({
-        filepath: 'zendesk_support/brand_logo/test__test2.png',
+        filepath: 'zendesk/brand_logo/test__test2.png',
         encoding: 'binary',
         content: Buffer.from('changes!'),
       })

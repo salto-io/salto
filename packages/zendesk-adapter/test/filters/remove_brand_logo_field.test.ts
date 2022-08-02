@@ -20,7 +20,7 @@ import { client as clientUtils, filterUtils, elements as elementUtils } from '@s
 import { DEFAULT_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
-import { BRAND_NAME, ZENDESK_SUPPORT } from '../../src/constants'
+import { BRAND_NAME, ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/remove_brand_logo_field'
 import { LOGO_FIELD, BRAND_LOGO_TYPE } from '../../src/filters/brand_logo'
 
@@ -41,7 +41,7 @@ describe('remove brand logo field filter', () => {
   type FilterType = filterUtils.FilterWith<'deploy'>
   let filter: FilterType
   const brandType = new ObjectType({
-    elemID: new ElemID(ZENDESK_SUPPORT, BRAND_NAME),
+    elemID: new ElemID(ZENDESK, BRAND_NAME),
     fields: {
       [LOGO_FIELD]: { refType: new ObjectType(BRAND_LOGO_TYPE) },
     },

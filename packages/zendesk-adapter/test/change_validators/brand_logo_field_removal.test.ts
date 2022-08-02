@@ -14,17 +14,17 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { BRAND_LOGO_TYPE_NAME, BRAND_NAME, ZENDESK_SUPPORT } from '../../src/constants'
+import { BRAND_LOGO_TYPE_NAME, BRAND_NAME, ZENDESK } from '../../src/constants'
 import { brandLogoFieldRemovalValidator } from '../../src/change_validators/brand_logo_field_removal'
 
 describe('brandLogoFieldRemovalValidator', () => {
   const logoType = new ObjectType({
-    elemID: new ElemID(ZENDESK_SUPPORT, BRAND_LOGO_TYPE_NAME),
+    elemID: new ElemID(ZENDESK, BRAND_LOGO_TYPE_NAME),
   })
   const logoInstance = new InstanceElement('brand_logo', logoType, {})
   const anotherLogoInstance = new InstanceElement('another_brand_logo', logoType, {})
   const brandType = new ObjectType({
-    elemID: new ElemID(ZENDESK_SUPPORT, BRAND_NAME),
+    elemID: new ElemID(ZENDESK, BRAND_NAME),
   })
   const brandInstance = new InstanceElement(
     'New Test',

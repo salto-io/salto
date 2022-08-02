@@ -234,7 +234,10 @@ export const formatChangeErrors = (
       return indent(`${firstErr.severity}: ${formatError(firstErr)} (${groupedChangeErrors.length} Elements)`,
         errorsIndent)
     }
-    const formattedError = formatWorkspaceError(firstErr)
+    let formattedError = formatWorkspaceError(firstErr)
+    if (formattedError.trim() === formattedError) {
+      formattedError += ' '
+    }
     return indent(`${formattedError}${firstErr.severity}: ${firstErr.detailedMessage}`,
       errorsIndent)
   }

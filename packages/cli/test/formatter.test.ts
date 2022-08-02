@@ -164,6 +164,18 @@ describe('formatter', () => {
       expect(output)
         .toMatch(new RegExp(`.*${changeErrors[0].message}.*2 Elements`, 's'))
     })
+    it('should contain space between title and content', () => {
+      const changeErrors: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [{
+        elemID: new ElemID('salesforce', 'test'),
+        severity: 'Error',
+        message: 'Message key for test',
+        detailedMessage: 'Validation message',
+        sourceLocations: [],
+      }]
+      const output = formatChangeErrors(changeErrors)
+      expect(output)
+        .toContain(' Error')
+    })
     it('should order validations from most to least occurrences', () => {
       const differentValidationKey: wsErrors.WorkspaceError<ChangeError> = {
         elemID: new ElemID('salesforce', 'test3'),

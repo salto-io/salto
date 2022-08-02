@@ -43,8 +43,8 @@ describe('brandLogoFieldRemovalValidator', () => {
     expect(errors).toEqual([{
       elemID: brandInstance.elemID,
       severity: 'Error',
-      message: `Error while trying to remove the brand_logo field while its instance still exists for brand ${brandInstance.value.name}`,
-      detailedMessage: `Error while trying to remove the brand_logo field while its instance still exists for brand ${brandInstance.value.name}`,
+      message: 'Cannot remove brand logo because it is still in use',
+      detailedMessage: `Cannot remove brand logo ${brandInstance.value.name} because it is still in use by instance ${brandInstance.elemID.getFullName()}. If you want to delete the brand logo, please remove the instance as well`,
     }])
   })
   it('should not return an error if the logo is removed', async () => {

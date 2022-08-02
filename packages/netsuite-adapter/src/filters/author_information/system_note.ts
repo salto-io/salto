@@ -82,7 +82,7 @@ const buildRecordTypeSystemNotesQuery = (
     .join(' OR ')
   return 'SELECT name, recordid, recordtypeid FROM (SELECT name, recordid, recordtypeid,'
     + ` MAX(date) as date FROM systemnote WHERE ${toDateQuery(lastFetchTime)} AND (${whereQuery})`
-    + ' GROUP BY name, recordid, recordtypeid) ORDER BY date DESC'
+    + ' GROUP BY name, recordid, recordtypeid) ORDER BY name, recordid, recordtypeid DESC'
 }
 
 const buildFieldSystemNotesQuery = (
@@ -95,7 +95,7 @@ const buildFieldSystemNotesQuery = (
   return 'SELECT name, field, recordid from (SELECT name, field, recordid, MAX(date) AS date'
     + ` FROM (SELECT name, REGEXP_SUBSTR(field, '^(${FOLDER_FIELD_IDENTIFIER}|${FILE_FIELD_IDENTIFIER})')`
     + ` AS field, recordid, date FROM systemnote WHERE ${toDateQuery(lastFetchTime)} AND (${whereQuery}))`
-    + ' GROUP BY name, field, recordid) ORDER BY date DESC'
+    + ' GROUP BY name, field, recordid) ORDER BY name, field, recordid DESC'
 }
 
 const querySystemNotesByField = async (

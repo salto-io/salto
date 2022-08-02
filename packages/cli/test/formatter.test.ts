@@ -123,6 +123,22 @@ describe('formatter', () => {
   })
 
   describe('formatPlanValidations', () => {
+    const groupedChangeErrors: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [{
+      elemID: new ElemID('salesforce', 'test1'),
+      severity: 'Error',
+      message: 'Message key for test',
+      detailedMessage: 'Validation message 1',
+      sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
+
+    },
+    {
+      elemID: new ElemID('salesforce', 'test2'),
+      severity: 'Error',
+      message: 'Message key for test',
+      detailedMessage: 'Validation message 2',
+      sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
+
+    }]
     it('should be empty when there are no validations', async () => {
       const output = formatChangeErrors([],)
       expect(output).toEqual('')
@@ -141,25 +157,17 @@ describe('formatter', () => {
       expect(output).toMatch(new RegExp(`.*${workspaceErrorWithSourceLocations.sourceLocations[0].sourceRange.filename}`, 's'))
     })
     it('should have grouped validations', () => {
-      const changeErrors: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [{
-        elemID: new ElemID('salesforce', 'test'),
-        severity: 'Error',
-        message: 'Message key for test',
-        detailedMessage: 'Validation message',
-        sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
-
-      },
-      {
-        elemID: new ElemID('salesforce', 'test2'),
-        severity: 'Error',
-        message: 'Message key for test',
-        detailedMessage: 'Validation message 2',
-        sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
-
-      }]
-      const output = formatChangeErrors(changeErrors)
-      expect(output).toContain('Error')
-      expect(output).toMatch(new RegExp(`.*${changeErrors[0].message}.*2 Elements`, 's'))
+      const output = formatChangeErrors(groupedChangeErrors)
+      let expectedMessage = `    ${groupedChangeErrors[0].severity}: ${chalk.bold(groupedChangeErrors[0].message)} in the following elements:`
+      expectedMessage += `${EOL}      test1${EOL}      test2`
+      expect(output).toMatch(expectedMessage)
+    })
+    it('should display detailed message in detailed mode for grouped validations', () => {
+      const output = formatChangeErrors(groupedChangeErrors, true)
+      let expectedMessage = `    ${groupedChangeErrors[0].severity}: ${chalk.bold(groupedChangeErrors[0].message)} in the following elements:`
+      expectedMessage += `${EOL}      test1${EOL}        ${chalk.dim(groupedChangeErrors[0].detailedMessage)}`
+      expectedMessage += `${EOL}      test2${EOL}        ${chalk.dim(groupedChangeErrors[1].detailedMessage)}`
+      expect(output).toMatch(expectedMessage)
     })
     it('should contain EOL between title and content', () => {
       const changeErrors: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [{
@@ -203,6 +211,17 @@ describe('formatter', () => {
       const output = formatChangeErrors(changeErrorWithLocations)
       expect(output).not.toMatch(new RegExp(`${EOL} *${EOL}`)) // does not contain two EOL with only indent between them
     })
+    it('should contain space between title and content', () => {
+      const changeErrors: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [{
+        elemID: new ElemID('salesforce', 'test'),
+        severity: 'Error',
+        message: 'Message key for test',
+        detailedMessage: 'Validation message',
+        sourceLocations: [],
+      }]
+      const output = formatChangeErrors(changeErrors)
+      expect(output).toContain(' Error')
+    })
     it('should order validations from most to least occurrences', () => {
       const differentValidationKey: wsErrors.WorkspaceError<ChangeError> = {
         elemID: new ElemID('salesforce', 'test3'),
@@ -228,7 +247,7 @@ describe('formatter', () => {
       differentValidationKey]
       const output = formatChangeErrors(changeErrors)
       expect(output).toContain('Error')
-      expect(output).toMatch(new RegExp(`.*${changeErrors[0].message}.*2 Elements.*\n.*${differentValidationKey.detailedMessage}`, 's'))
+      expect(output).toMatch(new RegExp(`.*${changeErrors[0].message}.*${EOL}.*${differentValidationKey.detailedMessage}`, 's'))
     })
   })
 

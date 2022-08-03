@@ -135,10 +135,8 @@ describe('formatter', () => {
         sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
       }]
       const output = formatChangeErrors(changeErrors)
-      expect(output)
-        .toContain('Error')
-      expect(output)
-        .toMatch(new RegExp(`.*${changeErrors[0].detailedMessage}`, 's'))
+      expect(output).toContain('Error')
+      expect(output).toMatch(new RegExp(`.*${changeErrors[0].detailedMessage}`, 's'))
       expect(output).toMatch(new RegExp(`.*${workspaceErrorWithSourceLocations.sourceLocations[0].sourceRange.filename}`, 's'))
     })
     it('should have grouped validations', () => {
@@ -159,10 +157,8 @@ describe('formatter', () => {
 
       }]
       const output = formatChangeErrors(changeErrors)
-      expect(output)
-        .toContain('Error')
-      expect(output)
-        .toMatch(new RegExp(`.*${changeErrors[0].message}.*2 Elements`, 's'))
+      expect(output).toContain('Error')
+      expect(output).toMatch(new RegExp(`.*${changeErrors[0].message}.*2 Elements`, 's'))
     })
     it('should contain space between title and content', () => {
       const changeErrors: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [{
@@ -173,8 +169,7 @@ describe('formatter', () => {
         sourceLocations: [],
       }]
       const output = formatChangeErrors(changeErrors)
-      expect(output)
-        .toContain(' Error')
+      expect(output).toContain(' Error')
     })
     it('should order validations from most to least occurrences', () => {
       const differentValidationKey: wsErrors.WorkspaceError<ChangeError> = {
@@ -200,10 +195,8 @@ describe('formatter', () => {
       },
       differentValidationKey]
       const output = formatChangeErrors(changeErrors)
-      expect(output)
-        .toContain('Error')
-      expect(output)
-        .toMatch(new RegExp(`.*${changeErrors[0].message}.*2 Elements.*\n.*${differentValidationKey.detailedMessage}`, 's'))
+      expect(output).toContain('Error')
+      expect(output).toMatch(new RegExp(`.*${changeErrors[0].message}.*2 Elements.*\n.*${differentValidationKey.detailedMessage}`, 's'))
     })
   })
 

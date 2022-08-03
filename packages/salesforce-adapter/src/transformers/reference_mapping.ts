@@ -112,7 +112,7 @@ export type ReferenceContextStrategyName = (
   'instanceParent' | 'neighborTypeWorkflow' | 'neighborCPQLookup' | 'neighborCPQRuleLookup'
   | 'neighborLookupValueTypeLookup' | 'neighborObjectLookup' | 'neighborPicklistObjectLookup'
   | 'neighborTypeLookup' | 'neighborActionTypeFlowLookup' | 'neighborActionTypeLookup' | 'parentObjectLookup'
-  | 'parentInputObjectLookup' | 'parentOutputObjectLookup'
+  | 'parentInputObjectLookup' | 'parentOutputObjectLookup' | 'neighborSharedToTypeLookup'
 )
 
 type SourceDef = {
@@ -343,6 +343,10 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     src: { field: 'value', parentTypes: ['FilterItem'] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'instanceParent', type: RECORD_TYPE_METADATA_TYPE },
+  },
+  {
+    src: { field: 'sharedTo', parentTypes: ['FolderShare'] },
+    target: { typeContext: 'neighborSharedToTypeLookup' },
   },
   {
     // sometimes has a value that is not a reference - should only convert to reference

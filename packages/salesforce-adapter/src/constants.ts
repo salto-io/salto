@@ -344,6 +344,8 @@ export const LIGHTNING_PAGE_TYPE = 'LightningPage'
 export const FLEXI_PAGE_TYPE = 'FlexiPage'
 export const CUSTOM_LABEL_METADATA_TYPE = 'CustomLabel'
 export const CUSTOM_LABELS_METADATA_TYPE = 'CustomLabels'
+export const ROLE_METADATA_TYPE = 'Role'
+export const GROUP_METADATA_TYPE = 'Group'
 
 // Artifitial Types
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'

@@ -28,7 +28,7 @@ import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
 import { FilterCreator, Filter, filtersRunner, FilterResult } from './filter'
 import { API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZendeskConfig } from './config'
-import { ZENDESK } from './constants'
+import { ZENDESK, BRAND_LOGO_TYPE_NAME } from './constants'
 import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
 import { getChangeGroupIds } from './group_change'
@@ -144,6 +144,7 @@ const SKIP_RESOLVE_TYPE_NAMES = [
   'organization_field__custom_field_options',
   'macro',
   'macro_attachment',
+  'brand_logo',
 ]
 
 export interface ZendeskAdapterParams {
@@ -297,7 +298,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       changeValidator: createChangeValidator({
         client: this.client,
         apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
-        typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment', 'brand_logo'],
+        typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment', BRAND_LOGO_TYPE_NAME],
         typesWithNoDeploy: ['tag'],
       }),
       dependencyChanger,

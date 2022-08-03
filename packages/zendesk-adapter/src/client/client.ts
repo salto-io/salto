@@ -40,12 +40,12 @@ const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
 export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
   Credentials, clientUtils.ClientRateLimitConfig
 > {
-  // These properties creates another connection and client for Zendesk resoucres API
+  // These properties create another connection and client for Zendesk resources API
   protected readonly resourceConn: clientUtils.Connection<Credentials>
   protected isResourceApiLoggedIn = false
   protected resourceLoginPromise?: Promise<clientUtils.APIConnection>
   protected resourceClient?: clientUtils.APIConnection<
-  clientUtils.ResponseValue | clientUtils.ResponseValue[]
+    clientUtils.ResponseValue | clientUtils.ResponseValue[]
   >
 
   constructor(
@@ -124,7 +124,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
         : undefined
       const { data, status } = await this.resourceClient.get(url, requestConfig)
       log.debug('Received response for resource request %s with status %d', url, status)
-      log.trace('Full HTTP response for %s: %s', url, safeJsonStringify({
+      log.trace('Full HTTP response for resource %s: %s', url, safeJsonStringify({
         url, response: data,
       }))
       return {

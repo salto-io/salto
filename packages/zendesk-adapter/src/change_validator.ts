@@ -34,7 +34,6 @@ import {
   webhookAuthDataValidator,
   targetAuthDataValidator,
   phoneNumbersValidator,
-  brandLogoFieldRemovalValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 
@@ -78,7 +77,6 @@ export default ({
     webhookAuthDataValidator(client),
     targetAuthDataValidator(client, apiConfig),
     phoneNumbersValidator,
-    brandLogoFieldRemovalValidator,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

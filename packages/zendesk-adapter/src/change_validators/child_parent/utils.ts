@@ -14,9 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { collections } from '@salto-io/lowerdash'
 import { elements } from '@salto-io/adapter-components'
 import { AdditionChange, InstanceElement, isAdditionChange, isInstanceElement, isReferenceExpression, ModificationChange } from '@salto-io/adapter-api'
 import { ZendeskApiConfig } from '../../config'
+
 
 export type ChildParentRelationship = {
   parent: string
@@ -26,6 +28,7 @@ export type ChildParentRelationship = {
 
 const ADDITIONAL_CHILD_PARENT_RELATIONSHIPS: ChildParentRelationship[] = [
   { parent: 'macro', child: 'macro_attachment', fieldName: 'attachments' },
+  { parent: 'brand', child: 'brand_logo', fieldName: 'logo' },
 ]
 
 export const getChildAndParentTypeNames = (config: ZendeskApiConfig): ChildParentRelationship[] => {
@@ -43,14 +46,15 @@ export const getChildAndParentTypeNames = (config: ZendeskApiConfig): ChildParen
   }).concat(ADDITIONAL_CHILD_PARENT_RELATIONSHIPS)
 }
 
-const getIdsFromReferenceExpressions = (values: unknown): string[] =>
-  (_.isArray(values)
-    ? values
-      .filter(isReferenceExpression)
-      .map(ref => ref.value)
-      .filter(isInstanceElement)
-      .map(inst => inst.elemID.getFullName())
-    : [])
+const getIdsFromReferenceExpressions = (values: unknown): string[] => {
+  // Handling with list-type fields as well
+  const { makeArray } = collections.array
+  return makeArray(values)
+    .filter(isReferenceExpression)
+    .map(ref => ref.value)
+    .filter(isInstanceElement)
+    .map(inst => inst.elemID.getFullName())
+}
 
 export const getRemovedAndAddedChildren = (
   change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>, fieldName: string

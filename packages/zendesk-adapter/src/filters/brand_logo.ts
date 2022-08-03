@@ -14,25 +14,29 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import FormData from 'form-data'
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement,
-  isInstanceElement, ObjectType, ReferenceExpression, StaticFile,
-  isStaticFile, Change, getChangeData, isRemovalChange, isModificationChange,
+  BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement,
+  isAdditionOrModificationChange, isInstanceElement, isStaticFile, ObjectType,
+  ReferenceExpression, StaticFile,
 } from '@salto-io/adapter-api'
-import { getParents, naclCase, pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
-import { logger } from '@salto-io/logging'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
-import { FilterCreator } from '../filter'
+import { naclCase, pathNaclCase, safeJsonStringify, getParent } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
+import FormData from 'form-data'
+import { collections } from '@salto-io/lowerdash'
+import ZendeskClient from '../client/client'
 import { BRAND_LOGO_TYPE_NAME, BRAND_NAME, ZENDESK } from '../constants'
 import { getZendeskError } from '../errors'
-import ZendeskClient from '../client/client'
+import { FilterCreator } from '../filter'
 
 const log = logger(module)
+const { awu } = collections.asynciterable
 
 const { RECORDS_PATH, SUBTYPES_PATH, TYPES_PATH } = elementsUtils
 
 export const LOGO_FIELD = 'logo'
+
+const RESULT_MAXIMUM_OUTPUT_SIZE = 100
 
 export const BRAND_LOGO_TYPE = new ObjectType({
   elemID: new ElemID(ZENDESK, BRAND_LOGO_TYPE_NAME),
@@ -58,7 +62,9 @@ const getLogoContent = async (
   })
   const content = _.isString(res.data) ? Buffer.from(res.data) : res.data
   if (!Buffer.isBuffer(content)) {
-    log.error(`Received invalid response from Zendesk API for logo content, ${safeJsonStringify(res.data, undefined, 2)}. Not adding brand logo`)
+    log.error(`Received invalid response from Zendesk API for logo content, ${
+      Buffer.from(safeJsonStringify(res.data, undefined, 2)).toString('base64').slice(0, RESULT_MAXIMUM_OUTPUT_SIZE)
+    }. Not adding brand logo`)
     return undefined
   }
   return content
@@ -99,7 +105,7 @@ const getBrandLogo = async ({ client, brand }: {
   return logoInstance
 }
 
-const modifyBrandLogo = async (
+const deployBrandLogo = async (
   client: ZendeskClient,
   logoInstance: InstanceElement,
   logoContent: Buffer | undefined,
@@ -107,7 +113,7 @@ const modifyBrandLogo = async (
   const form = new FormData()
   form.append('brand[logo][uploaded_data]', logoContent || Buffer.from(''), logoInstance.value.filename)
   try {
-    const brandId = getParents(logoInstance)?.[0].resValue.value.id
+    const brandId = getParent(logoInstance).value.id
     return await client.put({
       url: `/brands/${brandId}`,
       data: form,
@@ -127,10 +133,12 @@ const filterCreator: FilterCreator = ({ client }) => ({
       .filter(isInstanceElement)
       .filter(e => e.elemID.typeName === BRAND_NAME)
       .filter(e => !_.isEmpty(e.value[LOGO_FIELD]))
+    elements.push(BRAND_LOGO_TYPE)
     const logoInstances = (await Promise.all(
       brandsWithLogos.map(async brand => getBrandLogo({ client, brand }))
-    )).filter(isInstanceElement)
-    elements.push(BRAND_LOGO_TYPE, ...logoInstances)
+    ))
+      .filter(isInstanceElement)
+    logoInstances.forEach(instance => elements.push(instance))
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [brandLogoChanges, leftoverChanges] = _.partition(
@@ -138,31 +146,18 @@ const filterCreator: FilterCreator = ({ client }) => ({
       change => getChangeData(change).elemID.typeName === BRAND_LOGO_TYPE_NAME,
     )
 
-    brandLogoChanges.map(async change => {
+    await awu(brandLogoChanges).forEach(async change => {
       const logoInstance = getChangeData(change)
-      const fileContent = !isRemovalChange(change) && isStaticFile(logoInstance.value.content)
+      const fileContent = isAdditionOrModificationChange(change)
+        && isStaticFile(logoInstance.value.content)
         ? await logoInstance.value.content.getContent()
         : undefined
-      await modifyBrandLogo(client, logoInstance, fileContent)
+      await deployBrandLogo(client, logoInstance, fileContent)
     })
-
-    const logoFieldBrandModificationChanges = leftoverChanges
-      .filter(change => getChangeData(change).elemID.typeName === BRAND_NAME)
-      .filter(isModificationChange)
-      .filter(change => change.data.before.value.logo !== undefined)
-      .filter(change => change.data.after.value.logo !== undefined)
-      .filter(change => change.data.before.value.logo !== change.data.after.value.logo)
-
-    logoFieldBrandModificationChanges
-      .map(change => change.data.after.value.logo)
-      .map(async logoInstance => {
-        const fileContent = await logoInstance.value.content.getContent()
-        await modifyBrandLogo(client, logoInstance, fileContent)
-      })
 
     return {
       deployResult: {
-        appliedChanges: [...brandLogoChanges, ...logoFieldBrandModificationChanges],
+        appliedChanges: brandLogoChanges,
         errors: [],
       },
       leftoverChanges,

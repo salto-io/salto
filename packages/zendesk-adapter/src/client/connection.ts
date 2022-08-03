@@ -87,21 +87,21 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = (
 )
 
 export const createResourceConnection:
-clientUtils.ConnectionCreator<Credentials> = retryOptions => {
-  const login = async (
-    creds: Credentials,
-  ): Promise<AuthenticatedAPIConnection> => {
-    resourceUrl(creds.subdomain)
-    const httpClient = axios.create({
-      baseURL: resourceUrl(creds.subdomain),
-    })
-    axiosRetry(httpClient, retryOptions)
+  clientUtils.ConnectionCreator<Credentials> = retryOptions => {
+    const login = async (
+      creds: Credentials,
+    ): Promise<AuthenticatedAPIConnection> => {
+      const httpClient = axios.create({
+        baseURL: resourceUrl(creds.subdomain),
+        headers: APP_MARKETPLACE_HEADERS,
+      })
+      axiosRetry(httpClient, retryOptions)
+      return {
+        ...httpClient,
+        accountId: creds.subdomain,
+      }
+    }
     return {
-      ...httpClient,
-      accountId: creds.subdomain,
+      login,
     }
   }
-  return {
-    login,
-  }
-}

@@ -167,6 +167,7 @@ describe('brand logo filter', () => {
       const clonedBrand = brandInstance.clone()
       const clonedLogo = logoInstance.clone()
       mockPut = jest.spyOn(client, 'put')
+      mockPut.mockResolvedValueOnce({ status: 201 })
       const res = await filter.deploy([
         { action: 'add', data: { after: clonedBrand } },
         { action: 'add', data: { after: clonedLogo } },
@@ -201,6 +202,7 @@ describe('brand logo filter', () => {
         content: Buffer.from('changes!'),
       })
       mockPut = jest.spyOn(client, 'put')
+      mockPut.mockResolvedValueOnce({ status: 201 })
       const res = await filter.deploy([
         { action: 'modify', data: { before: beforeLogo, after: afterLogo } },
       ])
@@ -224,6 +226,7 @@ describe('brand logo filter', () => {
       const clonedBrand = brandInstance.clone()
       const clonedLogo = logoInstance.clone()
       mockPut = jest.spyOn(client, 'put')
+      mockPut.mockResolvedValueOnce({ status: 201 })
       const res = await filter.deploy([
         { action: 'remove', data: { before: clonedBrand } },
         { action: 'remove', data: { before: clonedLogo } },

@@ -234,11 +234,9 @@ export const formatChangeErrors = (
       return indent(`${firstErr.severity}: ${formatError(firstErr)} (${groupedChangeErrors.length} Elements)`,
         errorsIndent)
     }
-    let formattedError = formatWorkspaceError(firstErr)
-    if (formattedError.trim() === formattedError) {
-      formattedError += ' '
-    }
-    return indent(`${formattedError}${firstErr.severity}: ${firstErr.detailedMessage}`,
+    const formattedError = formatWorkspaceError(firstErr)
+    const possibleSpace = formattedError.trimEnd() === formattedError ? ' ' : ''
+    return indent(`${formattedError}${possibleSpace}${firstErr.severity}: ${firstErr.detailedMessage}`,
       errorsIndent)
   }
   const ret = _(wsChangeErrors)

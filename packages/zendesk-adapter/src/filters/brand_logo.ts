@@ -146,14 +146,20 @@ const filterCreator: FilterCreator = ({ client }) => ({
       change => getChangeData(change).elemID.typeName === BRAND_LOGO_TYPE_NAME,
     )
 
-    await awu(brandLogoChanges).forEach(async change => {
-      const logoInstance = getChangeData(change)
-      const fileContent = isAdditionOrModificationChange(change)
-        && isStaticFile(logoInstance.value.content)
-        ? await logoInstance.value.content.getContent()
-        : undefined
-      await deployBrandLogo(client, logoInstance, fileContent)
-    })
+    // Making sure removals of brand_logo happens before the additions to cover elemID changes
+    const [brandLogoRemovals, brandLogoAddistionsAndModifications] = _.partition(
+      brandLogoChanges,
+      change => change.action === 'remove',
+    )
+    await awu(brandLogoRemovals.concat(brandLogoAddistionsAndModifications))
+      .forEach(async change => {
+        const logoInstance = getChangeData(change)
+        const fileContent = isAdditionOrModificationChange(change)
+          && isStaticFile(logoInstance.value.content)
+          ? await logoInstance.value.content.getContent()
+          : undefined
+        await deployBrandLogo(client, logoInstance, fileContent)
+      })
 
     return {
       deployResult: {

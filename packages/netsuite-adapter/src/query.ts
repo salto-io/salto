@@ -16,9 +16,11 @@
 import _ from 'lodash'
 import { regex, strings } from '@salto-io/lowerdash'
 import { getCustomTypesNames } from './autogen/types'
-import { INCLUDE, EXCLUDE, LOCKED_ELEMENTS_TO_EXCLUDE, AUTHOR_INFO_CONFIG, CONFIG_FEATURES, STRICT_INSTANCE_STRUCTURE } from './constants'
+import { INCLUDE, EXCLUDE, LOCKED_ELEMENTS_TO_EXCLUDE, AUTHOR_INFO_CONFIG, CONFIG_FEATURES, STRICT_INSTANCE_STRUCTURE, FIELDS_TO_OMIT } from './constants'
 import { SUPPORTED_TYPES, TYPES_TO_INTERNAL_ID } from './data_elements/types'
 import { SUITEAPP_CONFIG_TYPE_NAMES } from './types'
+
+const ERROR_MESSAGE_PREFIX = 'Received invalid adapter config input.'
 
 export interface ObjectID {
   type: string
@@ -40,6 +42,11 @@ export type QueryParams = {
   fileCabinet: string[]
 }
 
+export type FieldToOmitParams = {
+  type: string
+  fields: string[]
+}
+
 export type FetchParams = {
   [INCLUDE]?: QueryParams
   [EXCLUDE]?: QueryParams
@@ -48,6 +55,7 @@ export type FetchParams = {
     enable?: boolean
   }
   [STRICT_INSTANCE_STRUCTURE]?: boolean
+  [FIELDS_TO_OMIT]?: FieldToOmitParams[]
 }
 
 export const convertToQueryParams = ({ types = {}, filePaths = [] }:
@@ -70,20 +78,19 @@ const checkTypeNameRegMatch = (type: FetchTypeQueryParams, str: string): boolean
 
 export const validateFetchParameters = ({ types, fileCabinet }:
   Partial<QueryParams>): void => {
-  const errMessagePrefix = 'received invalid adapter config input.'
   if (!Array.isArray(types) || !Array.isArray(fileCabinet)) {
     const typesErr = !Array.isArray(types) ? ' "types" field is expected to be an array\n' : ''
     const fileCabinetErr = !Array.isArray(fileCabinet) ? ' "fileCabinet" field is expected to be an array\n' : ''
-    const message = `${errMessagePrefix}${typesErr}${fileCabinetErr}`
+    const message = `${ERROR_MESSAGE_PREFIX}${typesErr}${fileCabinetErr}`
     throw new Error(message)
   }
   const corruptedTypesNames = types.filter(obj => (obj.name === undefined || typeof obj.name !== 'string'))
   if (corruptedTypesNames.length !== 0) {
-    throw new Error(`${errMessagePrefix} Expected type name to be a string, but found:\n${JSON.stringify(corruptedTypesNames, null, 4)}.`)
+    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected type name to be a string, but found:\n${JSON.stringify(corruptedTypesNames, null, 4)}.`)
   }
   const corruptedTypesIds = types.filter(obj => (obj.ids !== undefined && (!Array.isArray(obj.ids) || obj.ids.some(id => typeof id !== 'string'))))
   if (corruptedTypesIds.length !== 0) {
-    throw new Error(`${errMessagePrefix} Expected type ids to be an array of strings, but found:\n${JSON.stringify(corruptedTypesIds, null, 4)}}.`)
+    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected type ids to be an array of strings, but found:\n${JSON.stringify(corruptedTypesIds, null, 4)}}.`)
   }
   const existingTypes = [
     ...getCustomTypesNames(),
@@ -102,7 +109,7 @@ export const validateFetchParameters = ({ types, fileCabinet }:
     .filter(reg => !regex.isValidRegex(reg))
 
   if (invalidRegexes.length !== 0) {
-    throw new Error(`${errMessagePrefix} The following regular expressions are invalid:\n${invalidRegexes}.`)
+    throw new Error(`${ERROR_MESSAGE_PREFIX} The following regular expressions are invalid:\n${invalidRegexes}.`)
   }
 
   const invalidTypes = receivedTypes
@@ -115,7 +122,21 @@ export const validateFetchParameters = ({ types, fileCabinet }:
             strings.capitalizeFirstLetter(existTypeName))))
 
   if (invalidTypes.length !== 0) {
-    throw new Error(`${errMessagePrefix} The following types or regular expressions do not match any supported type:\n${invalidTypes}.`)
+    throw new Error(`${ERROR_MESSAGE_PREFIX} The following types or regular expressions do not match any supported type:\n${invalidTypes}.`)
+  }
+}
+
+export const validateFieldsToOmitConfig = (fieldsToOmitConfig: unknown): void => {
+  if (!Array.isArray(fieldsToOmitConfig)) {
+    throw new Error(`${ERROR_MESSAGE_PREFIX} "${FIELDS_TO_OMIT}" field is expected to be an array`)
+  }
+  const corruptedTypes = fieldsToOmitConfig.filter(obj => typeof obj.type !== 'string')
+  if (corruptedTypes.length !== 0) {
+    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected "type" field to be a string, but found:\n${JSON.stringify(corruptedTypes, null, 4)}.`)
+  }
+  const corruptedFields = fieldsToOmitConfig.filter(obj => !Array.isArray(obj.fields) || obj.fields.some((item: unknown) => typeof item !== 'string'))
+  if (corruptedFields.length !== 0) {
+    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected "fields" field to be an array of strings, but found:\n${JSON.stringify(corruptedFields, null, 4)}}.`)
   }
 }
 

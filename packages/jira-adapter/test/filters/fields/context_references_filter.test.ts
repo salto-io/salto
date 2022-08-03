@@ -17,7 +17,7 @@ import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpress
 import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockClient } from '../../utils'
-import { getDefaultConfig } from '../../../src/config'
+import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA } from '../../../src/constants'
 import contextReferencesFilter from '../../../src/filters/fields/context_references_filter'
 

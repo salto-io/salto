@@ -26,7 +26,7 @@ import JiraAdapter from '../src/adapter'
 import { createInstances } from './instances'
 import { findInstance } from './utils'
 import { getLookUpName } from '../src/reference_mapping'
-import { getDefaultConfig } from '../src/config'
+import { getDefaultConfig } from '../src/config/config'
 
 const { awu } = collections.asynciterable
 

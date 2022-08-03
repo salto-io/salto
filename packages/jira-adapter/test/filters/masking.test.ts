@@ -20,7 +20,7 @@ import { elements as elementUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../utils'
 import maskingFilter, { MASK_VALUE } from '../../src/filters/masking'
 import { Filter } from '../../src/filter'
-import { getDefaultConfig, JiraConfig } from '../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../src/config/config'
 import { AUTOMATION_TYPE, JIRA } from '../../src/constants'
 
 describe('maskingFilter', () => {

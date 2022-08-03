@@ -18,7 +18,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../../utils'
 import notificationSchemeStructureFilter from '../../../src/filters/notification_scheme/notification_scheme_structure'
-import { getDefaultConfig } from '../../../src/config'
+import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA, NOTIFICATION_SCHEME_TYPE_NAME } from '../../../src/constants'
 
 describe('notificationSchemeStructureFilter', () => {

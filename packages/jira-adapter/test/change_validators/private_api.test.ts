@@ -15,7 +15,7 @@
 */
 import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { getDefaultConfig, JiraConfig } from '../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../src/config/config'
 import { privateApiValidator } from '../../src/change_validators/private_api'
 import { JIRA, STATUS_TYPE_NAME } from '../../src/constants'
 

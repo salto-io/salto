@@ -16,7 +16,7 @@
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { getDefaultConfig } from '../../../src/config'
+import { getDefaultConfig } from '../../../src/config/config'
 import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, FIELD_CONFIGURATION_TYPE_NAME, JIRA, PROJECT_TYPE } from '../../../src/constants'
 import fieldConfigurationDependenciesFilter from '../../../src/filters/field_configuration/field_configuration_dependencies'
 import { mockClient } from '../../utils'

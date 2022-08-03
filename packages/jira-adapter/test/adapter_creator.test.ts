@@ -18,7 +18,7 @@ import MockAdapter from 'axios-mock-adapter'
 import { ObjectType, InstanceElement, AccountId, ReadOnlyElementsSource, AdapterOperations } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
-import { JiraConfig, getDefaultConfig } from '../src/config'
+import { JiraConfig, getDefaultConfig } from '../src/config/config'
 import { createCredentialsInstance, createConfigInstance } from './utils'
 
 describe('adapter creator', () => {

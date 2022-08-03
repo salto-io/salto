@@ -14,10 +14,12 @@
 * limitations under the License.
 */
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { JiraApiConfig } from '../api_config'
+import { JiraApiConfig } from '../config/api_config'
+
+type ProductSettingsType = 'cloud' | 'dataCenter'
 
 export type ProductSettings = {
   defaultApiDefinitions: JiraApiConfig
   wrapConnection: (connection: clientUtils.APIConnection) => clientUtils.APIConnection
-  type: 'cloud' | 'dataCenter'
+  type: ProductSettingsType
 }

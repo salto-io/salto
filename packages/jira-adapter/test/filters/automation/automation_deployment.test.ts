@@ -20,7 +20,7 @@ import { filterUtils, client as clientUtils, elements as elementUtils } from '@s
 import { MockInterface } from '@salto-io/test-utils'
 import { mockClient } from '../../utils'
 import automationDeploymentFilter from '../../../src/filters/automation/automation_deployment'
-import { getDefaultConfig, JiraConfig } from '../../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { AUTOMATION_TYPE, JIRA } from '../../../src/constants'
 import JiraClient, { PRIVATE_API_HEADERS } from '../../../src/client/client'
 import { CLOUD_RESOURCE_FIELD } from '../../../src/filters/automation/cloud_id'

@@ -19,7 +19,7 @@ import { mockFunction } from '@salto-io/test-utils'
 import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockClient } from '../../utils'
-import { getDefaultConfig, JiraConfig } from '../../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { JIRA } from '../../../src/constants'
 import fieldNameFilter from '../../../src/filters/fields/field_name_filter'
 

@@ -18,7 +18,7 @@ import { deployment, filterUtils, client as clientUtils, elements as elementUtil
 import { MockInterface } from '@salto-io/test-utils'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockClient } from '../../utils'
-import { getDefaultConfig } from '../../../src/config'
+import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA } from '../../../src/constants'
 import fieldsDeploymentFilter from '../../../src/filters/fields/field_deployment_filter'
 import JiraClient from '../../../src/client/client'

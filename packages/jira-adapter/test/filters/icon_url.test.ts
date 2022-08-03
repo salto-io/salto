@@ -20,7 +20,7 @@ import { mockClient } from '../utils'
 import iconUrlFilter from '../../src/filters/icon_url'
 import { Filter } from '../../src/filter'
 import { JIRA, STATUS_TYPE_NAME } from '../../src/constants'
-import { getDefaultConfig } from '../../src/config'
+import { getDefaultConfig } from '../../src/config/config'
 
 describe('iconUrlFilter', () => {
   let filter: Filter

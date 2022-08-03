@@ -25,7 +25,7 @@ import { FilterCreator } from '../filter'
 import { JIRA } from '../constants'
 import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
 import JiraClient from '../client/client'
-import { JiraConfig } from '../config'
+import { JiraConfig } from '../config/config'
 
 const { awu } = collections.asynciterable
 

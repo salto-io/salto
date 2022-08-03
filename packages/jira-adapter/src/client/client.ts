@@ -50,9 +50,11 @@ export const JSP_API_HEADERS = {
 export default class JiraClient extends clientUtils.AdapterHTTPClient<
   Credentials, clientUtils.ClientRateLimitConfig
 > {
+  private isDataCenter: boolean
+
   constructor(
-    clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig>,
-    private isDataCenter: boolean,
+    clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig>
+      & { isDataCenter: boolean },
   ) {
     super(
       JIRA,
@@ -64,6 +66,7 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
         retry: DEFAULT_RETRY_OPTS,
       }
     )
+    this.isDataCenter = clientOpts.isDataCenter
   }
 
   public get baseUrl(): string {

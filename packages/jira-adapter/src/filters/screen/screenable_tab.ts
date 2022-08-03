@@ -20,7 +20,7 @@ import { naclCase, resolveChangeElement, safeJsonStringify } from '@salto-io/ada
 import { logger } from '@salto-io/logging'
 import { defaultDeployChange } from '../../deployment/standard_deployment'
 import JiraClient from '../../client/client'
-import { JiraConfig } from '../../config'
+import { JiraConfig } from '../../config/config'
 import { getLookUpName } from '../../reference_mapping'
 import { getDiffIds } from '../../diff'
 

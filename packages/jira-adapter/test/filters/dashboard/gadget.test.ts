@@ -20,7 +20,7 @@ import { deployment, filterUtils, client as clientUtils, elements as elementUtil
 import { MockInterface } from '@salto-io/test-utils'
 import { mockClient } from '../../utils'
 import gadgetFilter from '../../../src/filters/dashboard/gadget'
-import { getDefaultConfig, JiraConfig } from '../../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { DASHBOARD_GADGET_TYPE, DASHBOARD_TYPE, JIRA } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
 import { getLookUpName } from '../../../src/reference_mapping'

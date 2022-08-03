@@ -19,7 +19,7 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import JiraClient from '../client/client'
-import { JiraConfig } from '../config'
+import { JiraConfig } from '../config/config'
 
 const { awu } = collections.asynciterable
 

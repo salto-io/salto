@@ -20,7 +20,7 @@ import { elements as elementUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../utils'
 import missingDescriptionsFilter from '../../src/filters/missing_descriptions'
 import { Filter } from '../../src/filter'
-import { getDefaultConfig, JiraConfig } from '../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../src/config/config'
 import { JIRA, PROJECT_ROLE_TYPE } from '../../src/constants'
 
 describe('missingDescriptionsFilter', () => {

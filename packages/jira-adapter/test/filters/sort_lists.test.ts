@@ -19,7 +19,7 @@ import { elements as elementUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../utils'
 import sortListsFilter from '../../src/filters/sort_lists'
 import { Filter } from '../../src/filter'
-import { getDefaultConfig } from '../../src/config'
+import { getDefaultConfig } from '../../src/config/config'
 import { JIRA } from '../../src/constants'
 
 describe('sortListsFilter', () => {

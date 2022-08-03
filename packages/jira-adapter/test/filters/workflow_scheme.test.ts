@@ -22,7 +22,7 @@ import { JIRA } from '../../src/constants'
 import { mockClient } from '../utils'
 import workflowSchemeFilter, { MAX_TASK_CHECKS } from '../../src/filters/workflow_scheme'
 import { Filter } from '../../src/filter'
-import { getDefaultConfig } from '../../src/config'
+import { getDefaultConfig } from '../../src/config/config'
 import JiraClient from '../../src/client/client'
 
 jest.mock('@salto-io/adapter-components', () => {

@@ -19,7 +19,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockFunction } from '@salto-io/test-utils'
 import JiraClient from '../src/client/client'
 import { adapter as adapterCreator } from '../src/adapter_creator'
-import { getDefaultConfig } from '../src/config'
+import { getDefaultConfig } from '../src/config/config'
 import { ISSUE_TYPE_NAME, JIRA } from '../src/constants'
 import { createCredentialsInstance, createConfigInstance } from './utils'
 

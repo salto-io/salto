@@ -19,7 +19,7 @@ import { MockInterface } from '@salto-io/test-utils'
 import { JIRA } from '../../../src/constants'
 import { mockClient } from '../../utils'
 import JiraClient from '../../../src/client/client'
-import { getDefaultConfig } from '../../../src/config'
+import { getDefaultConfig } from '../../../src/config/config'
 import { deployTabs } from '../../../src/filters/screen/screenable_tab'
 
 jest.mock('@salto-io/adapter-components', () => {

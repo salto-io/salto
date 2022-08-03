@@ -27,7 +27,7 @@ import JiraClient from '../../client/client'
 import { getLookUpName } from '../../reference_mapping'
 import { getCloudId } from './cloud_id'
 import { getAutomations } from './automation_fetch'
-import { JiraConfig } from '../../config'
+import { JiraConfig } from '../../config/config'
 
 
 const log = logger(module)

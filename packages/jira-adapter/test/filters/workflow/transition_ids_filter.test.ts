@@ -17,7 +17,7 @@ import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType } from '@salto-io
 import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import JiraClient from '../../../src/client/client'
-import { getDefaultConfig } from '../../../src/config'
+import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import transitionIdsFilter from '../../../src/filters/workflow/transition_ids_filter'
 import { mockClient } from '../../utils'

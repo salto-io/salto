@@ -20,7 +20,7 @@ import { filterUtils, client as clientUtils, elements as elementUtils } from '@s
 import { MockInterface } from '@salto-io/test-utils'
 import { mockClient } from '../../utils'
 import webhookFilter from '../../../src/filters/webhook/webhook'
-import { getDefaultConfig, JiraConfig } from '../../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import JiraClient, { PRIVATE_API_HEADERS } from '../../../src/client/client'
 import { createWebhookTypes } from '../../../src/filters/webhook/types'
 import { JIRA, WEBHOOK_TYPE } from '../../../src/constants'

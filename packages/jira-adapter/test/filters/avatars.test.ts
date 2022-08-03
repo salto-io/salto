@@ -20,7 +20,7 @@ import { mockClient } from '../utils'
 import avatarsFilter from '../../src/filters/avatars'
 import { Filter } from '../../src/filter'
 import { JIRA } from '../../src/constants'
-import { getDefaultConfig } from '../../src/config'
+import { getDefaultConfig } from '../../src/config/config'
 
 describe('avatarsFilter', () => {
   let filter: Filter

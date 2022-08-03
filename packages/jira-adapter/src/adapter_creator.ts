@@ -22,7 +22,7 @@ import { client as clientUtils, config as configUtils } from '@salto-io/adapter-
 import JiraClient from './client/client'
 import JiraAdapter from './adapter'
 import { Credentials, basicAuthCredentialsType } from './auth'
-import { configType, JiraConfig, getApiDefinitions, getDefaultConfig } from './config'
+import { configType, JiraConfig, getApiDefinitions, getDefaultConfig } from './config/config'
 import { createConnection, validateCredentials } from './client/connection'
 import { AUTOMATION_TYPE, WEBHOOK_TYPE } from './constants'
 import { getProductSettings } from './product_settings'
@@ -105,13 +105,11 @@ export const adapter: Adapter = {
     )
     const credentials = credentialsFromConfig(context.credentials)
     const adapterOperations = new JiraAdapter({
-      client: new JiraClient(
-        {
-          credentials,
-          config: config.client,
-        },
+      client: new JiraClient({
+        credentials,
+        config: config.client,
         isDataCenter,
-      ),
+      }),
       config,
       getElemIdFunc: context.getElemIdFunc,
       elementsSource: context.elementsSource,

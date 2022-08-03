@@ -17,7 +17,7 @@ import { toChange, ObjectType, ElemID } from '@salto-io/adapter-api'
 import { mockClient } from '../utils'
 import changeValidator from '../../src/change_validators'
 import { JIRA } from '../../src/constants'
-import { getDefaultConfig } from '../../src/config'
+import { getDefaultConfig } from '../../src/config/config'
 
 describe('change validator creator', () => {
   describe('checkDeploymentAnnotationsValidator', () => {

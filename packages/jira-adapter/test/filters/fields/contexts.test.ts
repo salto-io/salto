@@ -17,7 +17,7 @@ import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpress
 import { deployment, filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements, resolveChangeElement } from '@salto-io/adapter-utils'
 import { mockClient } from '../../utils'
-import { getDefaultConfig } from '../../../src/config'
+import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA } from '../../../src/constants'
 import fieldsDeploymentFilter from '../../../src/filters/fields/field_deployment_filter'
 import JiraClient from '../../../src/client/client'

@@ -20,7 +20,7 @@ import { naclCase } from '@salto-io/adapter-utils'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { FilterCreator } from '../../filter'
 import JiraClient from '../../client/client'
-import { JiraConfig } from '../../config'
+import { JiraConfig } from '../../config/config'
 import { deployTabs, SCREEN_TAB_TYPE_NAME } from './screenable_tab'
 import { findObject } from '../../utils'
 

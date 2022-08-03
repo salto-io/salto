@@ -20,7 +20,7 @@ import { filterUtils, client as clientUtils, elements as elementUtils } from '@s
 import { MockInterface } from '@salto-io/test-utils'
 import { mockClient } from '../../utils'
 import automationFetchFilter from '../../../src/filters/automation/automation_fetch'
-import { getDefaultConfig, JiraConfig } from '../../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { JIRA, PROJECT_TYPE } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
 import { createAutomationTypes } from '../../../src/filters/automation/types'

@@ -22,7 +22,7 @@ import { mockClient } from '../../utils'
 import screenFilter from '../../../src/filters/screen/screen'
 import { Filter } from '../../../src/filter'
 import JiraClient from '../../../src/client/client'
-import { getDefaultConfig } from '../../../src/config'
+import { getDefaultConfig } from '../../../src/config/config'
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')

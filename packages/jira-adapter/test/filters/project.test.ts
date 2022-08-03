@@ -17,7 +17,7 @@ import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, Object
 import { filterUtils, client as clientUtils, deployment, elements as elementUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { getDefaultConfig } from '../../src/config'
+import { getDefaultConfig } from '../../src/config/config'
 import JiraClient from '../../src/client/client'
 import { JIRA } from '../../src/constants'
 import projectFilter from '../../src/filters/project'

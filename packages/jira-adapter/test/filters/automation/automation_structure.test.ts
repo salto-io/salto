@@ -18,7 +18,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../../utils'
 import automationStructureFilter from '../../../src/filters/automation/automation_structure'
-import { getDefaultConfig } from '../../../src/config'
+import { getDefaultConfig } from '../../../src/config/config'
 import { createAutomationTypes } from '../../../src/filters/automation/types'
 import { JIRA } from '../../../src/constants'
 

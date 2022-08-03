@@ -17,7 +17,7 @@ import { CORE_ANNOTATIONS, ObjectType, Element, isObjectType, getDeepInnerType, 
 import { logger } from '@salto-io/logging'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
-import { JiraConfig, JspUrls } from './config'
+import { JiraConfig, JspUrls } from './config/config'
 
 const log = logger(module)
 

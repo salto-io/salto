@@ -21,7 +21,7 @@ import { defaultFieldConfigurationValidator } from './default_field_configuratio
 import { issueTypeSchemeValidator } from './issue_type_scheme'
 import { screenValidator } from './screen'
 import JiraClient from '../client/client'
-import { JiraConfig } from '../config'
+import { JiraConfig } from '../config/config'
 import { projectDeletionValidator } from './project_deletion'
 import { statusValidator } from './status'
 import { privateApiValidator } from './private_api'

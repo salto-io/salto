@@ -21,7 +21,7 @@ import { resolveChangeElement, safeJsonStringify } from '@salto-io/adapter-utils
 import Joi from 'joi'
 import { getFilledJspUrls } from '../../utils'
 import JiraClient from '../../client/client'
-import { JiraConfig } from '../../config'
+import { JiraConfig } from '../../config/config'
 import { deployWithJspEndpoints } from '../../deployment/jsp_deployment'
 import { NOTIFICATION_EVENT_TYPE_NAME } from '../../constants'
 import { getLookUpName } from '../../reference_mapping'

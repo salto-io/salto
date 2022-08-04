@@ -22,7 +22,7 @@ import { JIRA } from '../../src/constants'
 import { mockClient } from '../utils'
 import workflowSchemeFilter, { MAX_TASK_CHECKS } from '../../src/filters/workflow_scheme'
 import { Filter } from '../../src/filter'
-import { DEFAULT_CONFIG } from '../../src/config'
+import { getDefaultConfig } from '../../src/config/config'
 import JiraClient from '../../src/client/client'
 
 jest.mock('@salto-io/adapter-components', () => {
@@ -49,7 +49,7 @@ describe('workflowScheme', () => {
     filter = workflowSchemeFilter({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
+      config: getDefaultConfig({ isDataCenter: false }),
       elementsSource: buildElementsSourceFromElements([]),
       fetchQuery: elementUtils.query.createMockQuery(),
     })
@@ -202,7 +202,8 @@ describe('workflowScheme', () => {
       expect(deployChangeMock).toHaveBeenCalledWith(
         change,
         client,
-        DEFAULT_CONFIG.apiDefinitions.types.WorkflowScheme.deployRequests,
+        getDefaultConfig({ isDataCenter: false })
+          .apiDefinitions.types.WorkflowScheme.deployRequests,
         ['items'],
         undefined,
         undefined,
@@ -256,7 +257,8 @@ describe('workflowScheme', () => {
       expect(deployChangeMock).toHaveBeenCalledWith(
         toChange({ before: instance, after: instance }),
         client,
-        DEFAULT_CONFIG.apiDefinitions.types.WorkflowScheme.deployRequests,
+        getDefaultConfig({ isDataCenter: false })
+          .apiDefinitions.types.WorkflowScheme.deployRequests,
         ['items'],
         undefined,
         undefined,
@@ -335,7 +337,8 @@ describe('workflowScheme', () => {
       expect(deployChangeMock).toHaveBeenCalledWith(
         toChange({ before: instance, after: instance }),
         client,
-        DEFAULT_CONFIG.apiDefinitions.types.WorkflowScheme.deployRequests,
+        getDefaultConfig({ isDataCenter: false })
+          .apiDefinitions.types.WorkflowScheme.deployRequests,
         ['items'],
         undefined,
         undefined,
@@ -396,7 +399,8 @@ describe('workflowScheme', () => {
       expect(deployChangeMock).toHaveBeenCalledWith(
         toChange({ before: instance, after: instance }),
         client,
-        DEFAULT_CONFIG.apiDefinitions.types.WorkflowScheme.deployRequests,
+        getDefaultConfig({ isDataCenter: false })
+          .apiDefinitions.types.WorkflowScheme.deployRequests,
         ['items'],
         undefined,
         undefined,
@@ -463,7 +467,8 @@ describe('workflowScheme', () => {
       expect(deployChangeMock).toHaveBeenCalledWith(
         toChange({ before: instance, after: instance }),
         client,
-        DEFAULT_CONFIG.apiDefinitions.types.WorkflowScheme.deployRequests,
+        getDefaultConfig({ isDataCenter: false })
+          .apiDefinitions.types.WorkflowScheme.deployRequests,
         ['items'],
         undefined,
         undefined,

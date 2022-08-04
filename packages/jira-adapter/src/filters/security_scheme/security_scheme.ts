@@ -22,7 +22,7 @@ import { findObject, getFilledJspUrls, setFieldDeploymentAnnotations, setTypeDep
 import { FilterCreator } from '../../filter'
 import { deployWithJspEndpoints } from '../../deployment/jsp_deployment'
 import { SECURITY_LEVEL_MEMBER_TYPE, SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE } from '../../constants'
-import { JiraConfig } from '../../config'
+import { JiraConfig } from '../../config/config'
 import JiraClient from '../../client/client'
 import { deployMembers, getMemberKey } from './members_deployment'
 import { deployChanges } from '../../deployment/standard_deployment'

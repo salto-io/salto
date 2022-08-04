@@ -19,7 +19,7 @@ import { mockFunction } from '@salto-io/test-utils'
 import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockClient } from '../../utils'
-import { DEFAULT_CONFIG, JiraConfig } from '../../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { JIRA } from '../../../src/constants'
 import fieldNameFilter from '../../../src/filters/fields/field_name_filter'
 
@@ -32,7 +32,7 @@ describe('field_name_filter', () => {
     elemIdGetter = mockFunction<ElemIdGetter>()
       .mockImplementation((adapterName, _serviceIds, name) => new ElemID(adapterName, name))
 
-    config = _.cloneDeep(DEFAULT_CONFIG)
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
     const { client, paginator } = mockClient()
     filter = fieldNameFilter({

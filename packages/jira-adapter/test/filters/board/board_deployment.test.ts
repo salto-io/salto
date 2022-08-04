@@ -20,7 +20,7 @@ import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
 import { COLUMNS_CONFIG_FIELD } from '../../../src/filters/board/board_columns'
 import JiraClient, { PRIVATE_API_HEADERS } from '../../../src/client/client'
-import { DEFAULT_CONFIG, JiraConfig } from '../../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { BOARD_LOCATION_TYPE, BOARD_TYPE_NAME, JIRA } from '../../../src/constants'
 import boardDeploymentFilter from '../../../src/filters/board/board_deployment'
 import { mockClient } from '../../utils'
@@ -50,7 +50,7 @@ describe('boardDeploymentFilter', () => {
     connection = conn
     client = cli
 
-    config = _.cloneDeep(DEFAULT_CONFIG)
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
     filter = boardDeploymentFilter({
       client,
@@ -197,7 +197,8 @@ describe('boardDeploymentFilter', () => {
         expect(deployChangeMock).toHaveBeenCalledWith(
           change,
           client,
-          DEFAULT_CONFIG.apiDefinitions.types[BOARD_TYPE_NAME].deployRequests,
+          getDefaultConfig({ isDataCenter: false })
+            .apiDefinitions.types[BOARD_TYPE_NAME].deployRequests,
           [COLUMNS_CONFIG_FIELD, 'subQuery', 'estimation'],
           undefined,
           undefined

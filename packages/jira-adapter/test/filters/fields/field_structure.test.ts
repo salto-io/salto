@@ -17,7 +17,7 @@ import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType } from '@salto
 import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockClient } from '../../utils'
-import { DEFAULT_CONFIG } from '../../../src/config'
+import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA } from '../../../src/constants'
 import fieldsStructureFilter from '../../../src/filters/fields/field_structure_filter'
 
@@ -32,7 +32,7 @@ describe('fields_structure', () => {
     filter = fieldsStructureFilter({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
+      config: getDefaultConfig({ isDataCenter: false }),
       elementsSource: buildElementsSourceFromElements([]),
       fetchQuery: elementUtils.query.createMockQuery(),
     }) as typeof filter
@@ -196,7 +196,7 @@ describe('fields_structure', () => {
     filter = fieldsStructureFilter({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
+      config: getDefaultConfig({ isDataCenter: false }),
       getElemIdFunc: () => new ElemID(JIRA, 'customName'),
       elementsSource: buildElementsSourceFromElements([]),
       fetchQuery: elementUtils.query.createMockQuery(),

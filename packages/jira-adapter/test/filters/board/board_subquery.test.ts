@@ -17,7 +17,7 @@ import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType } f
 import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { DEFAULT_CONFIG, JiraConfig } from '../../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { BOARD_TYPE_NAME, JIRA } from '../../../src/constants'
 import boardSubqueryFilter from '../../../src/filters/board/board_subquery'
 import { mockClient } from '../../utils'
@@ -31,7 +31,7 @@ describe('boardSubqueryFilter', () => {
   beforeEach(async () => {
     const { client, paginator } = mockClient()
 
-    config = _.cloneDeep(DEFAULT_CONFIG)
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
     filter = boardSubqueryFilter({
       client,

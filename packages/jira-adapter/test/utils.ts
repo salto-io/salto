@@ -19,7 +19,7 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { adapter } from '../src/adapter_creator'
 import { Credentials } from '../src/auth'
-import { JiraConfig, configType } from '../src/config'
+import { JiraConfig, configType } from '../src/config/config'
 import JiraClient from '../src/client/client'
 
 
@@ -66,6 +66,7 @@ export const mockClient = (): ClientWithMockConnection => {
         ...connection,
       }),
     },
+    isDataCenter: false,
   })
   const paginator = clientUtils.createPaginator(
     { paginationFuncCreator: clientUtils.getWithOffsetAndLimit, client }

@@ -20,7 +20,7 @@ import { MockInterface } from '@salto-io/test-utils'
 import { mockClient } from '../../utils'
 import jqlReferencesFilter from '../../../src/filters/jql/jql_references'
 import { Filter } from '../../../src/filter'
-import { DEFAULT_CONFIG } from '../../../src/config'
+import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA, STATUS_TYPE_NAME } from '../../../src/constants'
 import { FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
 
@@ -41,7 +41,7 @@ describe('jqlReferencesFilter', () => {
     filter = jqlReferencesFilter({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
+      config: getDefaultConfig({ isDataCenter: false }),
       elementsSource: buildElementsSourceFromElements([]),
       fetchQuery: elementUtils.query.createMockQuery(),
     })

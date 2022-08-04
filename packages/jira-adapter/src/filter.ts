@@ -16,7 +16,7 @@
 import { ReadOnlyElementsSource, SaltoError } from '@salto-io/adapter-api'
 import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import JiraClient from './client/client'
-import { JiraConfig } from './config'
+import { JiraConfig } from './config/config'
 
 export const { filtersRunner } = filterUtils
 

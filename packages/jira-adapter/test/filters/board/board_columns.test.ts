@@ -18,7 +18,7 @@ import { filterUtils, elements as elementUtils, client as clientUtils } from '@s
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
-import { DEFAULT_CONFIG, JiraConfig } from '../../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { BOARD_COLUMN_CONFIG_TYPE, BOARD_TYPE_NAME, JIRA } from '../../../src/constants'
 import boardColumnsFilter, { COLUMNS_CONFIG_FIELD } from '../../../src/filters/board/board_columns'
 import { mockClient } from '../../utils'
@@ -33,7 +33,7 @@ describe('boardColumnsFilter', () => {
 
   beforeEach(async () => {
     const { client, paginator, connection: conn } = mockClient()
-    config = _.cloneDeep(DEFAULT_CONFIG)
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     connection = conn
 
     filter = boardColumnsFilter({

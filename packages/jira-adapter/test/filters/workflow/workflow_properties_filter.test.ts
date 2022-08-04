@@ -17,7 +17,7 @@ import { ElemID, InstanceElement, ListType, ObjectType, toChange } from '@salto-
 import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import JiraClient from '../../../src/client/client'
-import { DEFAULT_CONFIG } from '../../../src/config'
+import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import workflowPropertiesFilter from '../../../src/filters/workflow/workflow_properties_filter'
 import { mockClient } from '../../utils'
@@ -41,7 +41,7 @@ describe('workflowPropertiesFilter', () => {
     filter = workflowPropertiesFilter({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
+      config: getDefaultConfig({ isDataCenter: false }),
       elementsSource: buildElementsSourceFromElements([]),
       fetchQuery: elementUtils.query.createMockQuery(),
     }) as typeof filter

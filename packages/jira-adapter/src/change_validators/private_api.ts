@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ChangeValidator, getChangeData, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
-import { JiraConfig } from '../config'
+import { JiraConfig } from '../config/config'
 import { PRIORITY_TYPE_NAME, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME } from '../constants'
 
 const RELEVANT_TYPES = [STATUS_TYPE_NAME, PRIORITY_TYPE_NAME, RESOLUTION_TYPE_NAME]

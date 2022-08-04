@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { filters } from '@salto-io/adapter-components'
-import { JiraConfig } from '../config'
+import { JiraConfig } from '../config/config'
 import JiraClient from '../client/client'
 import { FilterAdditionParams, FilterCreator, FilterResult } from '../filter'
 

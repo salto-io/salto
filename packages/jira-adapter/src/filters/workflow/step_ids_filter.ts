@@ -23,7 +23,7 @@ import { FilterCreator } from '../../filter'
 import { WORKFLOW_TYPE_NAME } from '../../constants'
 import { isWorkflowInstance, WorkflowInstance } from './types'
 import JiraClient from '../../client/client'
-import { JiraConfig } from '../../config'
+import { JiraConfig } from '../../config/config'
 
 const log = logger(module)
 

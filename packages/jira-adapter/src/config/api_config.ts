@@ -13,26 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
-import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
-import { AUTOMATION_TYPE, BOARD_COLUMN_CONFIG_TYPE, BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME } from './constants'
-import { FIELD_TYPE_NAME } from './filters/fields/constants'
+import { config as configUtils } from '@salto-io/adapter-components'
+import { AUTOMATION_TYPE, BOARD_COLUMN_CONFIG_TYPE, BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME } from '../constants'
+import { FIELD_TYPE_NAME } from '../filters/fields/constants'
 
-const { createUserFetchConfigType, createSwaggerAdapterApiConfigType } = configUtils
-
-const DEFAULT_ID_FIELDS = ['name']
-const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
-  { fieldName: 'expand', fieldType: 'string' },
-]
-
-type JiraClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
-  & {
-    fieldConfigurationItemsDeploymentLimit: number
-    usePrivateAPI: boolean
-    boardColumnRetry: number
-  }
 
 export type JspUrls = {
   add: string
@@ -42,7 +26,7 @@ export type JspUrls = {
   dataField?: string
 }
 
-type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'> & {
+export type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'> & {
   types: Record<string, configUtils.TypeConfig & {
     jspRequests?: JspUrls
   }>
@@ -51,6 +35,12 @@ type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'> & {
   typesToFallbackToInternalId: string[]
 }
 
+const DEFAULT_ID_FIELDS = ['name']
+const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
+  { fieldName: 'expand', fieldType: 'string' },
+]
+
+const DEFAULT_SERVICE_ID_FIELD = 'id'
 
 // A list of custom field types that support options
 // according to https://support.atlassian.com/jira-cloud-administration/docs/edit-a-custom-fields-options/
@@ -61,8 +51,6 @@ const FIELD_TYPES_WITH_OPTIONS = [
   'com.atlassian.jira.plugin.system.customfieldtypes:radiobuttons',
   'com.atlassian.jira.plugin.system.customfieldtypes:multicheckboxes',
 ]
-
-const DEFAULT_SERVICE_ID_FIELD = 'id'
 
 const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   // Cloud platform API
@@ -1861,170 +1849,4 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
     STATUS_TYPE_NAME,
   ],
   supportedTypes: SUPPORTED_TYPES,
-}
-
-type JiraDeployConfig = {
-  forceDelete: boolean
-}
-
-type JiraFetchFilters = {
-  name?: string
-}
-
-type JiraFetchConfig = configUtils.UserFetchConfig<JiraFetchFilters> & {
-  fallbackToInternalId?: boolean
-  addTypeToFieldName?: boolean
-}
-
-export type MaskingConfig = {
-  automationHeaders: string[]
-  secretRegexps: string[]
-}
-
-export type JiraConfig = {
-  client: JiraClientConfig
-  fetch: JiraFetchConfig
-  deploy: JiraDeployConfig
-  apiDefinitions: JiraApiConfig
-  masking: MaskingConfig
-}
-
-const jspUrlsType = createMatchingObjectType<Partial<JspUrls>>({
-  elemID: new ElemID(JIRA, 'apiDefinitions'),
-  fields: {
-    add: { refType: BuiltinTypes.STRING },
-    modify: { refType: BuiltinTypes.STRING },
-    remove: { refType: BuiltinTypes.STRING },
-    query: { refType: BuiltinTypes.STRING },
-    dataField: { refType: BuiltinTypes.STRING },
-  },
-})
-
-
-const defaultApiDefinitionsType = createSwaggerAdapterApiConfigType({
-  adapter: JIRA,
-  additionalTypeFields: {
-    jspRequests: {
-      refType: jspUrlsType,
-    },
-  },
-})
-
-
-const apiDefinitionsType = createMatchingObjectType<Partial<JiraApiConfig>>({
-  elemID: new ElemID(JIRA, 'apiDefinitions'),
-  fields: {
-    apiVersion: { refType: BuiltinTypes.STRING },
-    typeDefaults: {
-      refType: defaultApiDefinitionsType.fields.typeDefaults.refType,
-    },
-    types: {
-      refType: defaultApiDefinitionsType.fields.types.refType,
-    },
-    jiraSwagger: {
-      refType: defaultApiDefinitionsType.fields.swagger.refType,
-    },
-    platformSwagger: {
-      refType: defaultApiDefinitionsType.fields.swagger.refType,
-    },
-    supportedTypes: {
-      refType: new MapType(new ListType(BuiltinTypes.STRING)),
-    },
-    typesToFallbackToInternalId: {
-      refType: new ListType(BuiltinTypes.STRING),
-    },
-  },
-})
-
-export const DEFAULT_CONFIG: JiraConfig = {
-  client: {
-  // Jira does not allow more items in a single request than this
-    fieldConfigurationItemsDeploymentLimit: 100,
-    usePrivateAPI: true,
-    boardColumnRetry: 5,
-  },
-  fetch: elements.query.INCLUDE_ALL_CONFIG,
-  deploy: {
-    forceDelete: false,
-  },
-  apiDefinitions: DEFAULT_API_DEFINITIONS,
-  masking: {
-    automationHeaders: [],
-    secretRegexps: [],
-  },
-}
-
-const createClientConfigType = (): ObjectType => {
-  const configType = clientUtils.createClientConfigType(JIRA)
-  configType.fields.FieldConfigurationItemsDeploymentLimit = new Field(
-    configType, 'FieldConfigurationItemsDeploymentLimit', BuiltinTypes.NUMBER
-  )
-  configType.fields.usePrivateAPI = new Field(
-    configType, 'usePrivateAPI', BuiltinTypes.BOOLEAN
-  )
-
-  configType.fields.boardColumnRetry = new Field(
-    configType, 'boardColumnRetry', BuiltinTypes.NUMBER
-  )
-  return configType
-}
-
-const jiraDeployConfigType = new ObjectType({
-  elemID: new ElemID(JIRA, 'DeployConfig'),
-  fields: {
-    forceDelete: { refType: BuiltinTypes.BOOLEAN },
-  },
-})
-
-const fetchFiltersType = createMatchingObjectType<JiraFetchFilters>({
-  elemID: new ElemID(JIRA, 'FetchFilters'),
-  fields: {
-    name: { refType: BuiltinTypes.STRING },
-  },
-})
-
-const fetchConfigType = createUserFetchConfigType(
-  JIRA,
-  {
-    fallbackToInternalId: { refType: BuiltinTypes.BOOLEAN },
-    addTypeToFieldName: { refType: BuiltinTypes.BOOLEAN },
-  },
-  fetchFiltersType,
-)
-
-const maskingConfigType = createMatchingObjectType<Partial<MaskingConfig>>({
-  elemID: new ElemID(JIRA),
-  fields: {
-    automationHeaders: {
-      refType: new ListType(BuiltinTypes.STRING),
-    },
-    secretRegexps: {
-      refType: new ListType(BuiltinTypes.STRING),
-    },
-  },
-})
-
-export const configType = createMatchingObjectType<Partial<JiraConfig>>({
-  elemID: new ElemID(JIRA),
-  fields: {
-    client: { refType: createClientConfigType() },
-    deploy: { refType: jiraDeployConfigType },
-    fetch: { refType: fetchConfigType },
-    apiDefinitions: { refType: apiDefinitionsType },
-    masking: { refType: maskingConfigType },
-  },
-  annotations: {
-    [CORE_ANNOTATIONS.DEFAULT]: _.omit(DEFAULT_CONFIG, ['apiDefinitions', 'client', 'masking']),
-  },
-})
-
-export const getApiDefinitions = (config: JiraApiConfig): {
-  platform: configUtils.AdapterSwaggerApiConfig
-  jira: configUtils.AdapterSwaggerApiConfig
-} => {
-  const baseConfig = _.omit(config, ['platformSwagger', 'jiraSwagger'])
-  return {
-    platform: { ...baseConfig, swagger: config.platformSwagger },
-    jira: { ...baseConfig, swagger: config.jiraSwagger },
-  }
 }

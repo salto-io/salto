@@ -20,7 +20,7 @@ import { elements as elementUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../../utils'
 import statusDeploymentFilter from '../../../src/filters/statuses/status_deployment'
 import { Filter } from '../../../src/filter'
-import { DEFAULT_CONFIG, JiraConfig } from '../../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { JIRA, STATUS_TYPE_NAME } from '../../../src/constants'
 import { deployWithJspEndpoints } from '../../../src/deployment/jsp_deployment'
 import JiraClient from '../../../src/client/client'
@@ -40,7 +40,7 @@ describe('statusDeploymentFilter', () => {
     const { client: cli, paginator } = mockClient()
     client = cli
 
-    config = _.cloneDeep(DEFAULT_CONFIG)
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     filter = statusDeploymentFilter({
       client,
       paginator,

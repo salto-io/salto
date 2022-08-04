@@ -18,7 +18,7 @@ import { deployment, filterUtils, client as clientUtils, elements as elementUtil
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 import JiraClient from '../../../src/client/client'
-import { DEFAULT_CONFIG } from '../../../src/config'
+import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import workflowFilter, { INITIAL_VALIDATOR } from '../../../src/filters/workflow/workflow_deploy_filter'
 import { mockClient } from '../../utils'
@@ -50,7 +50,7 @@ describe('workflowDeployFilter', () => {
     filter = workflowFilter({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
+      config: getDefaultConfig({ isDataCenter: false }),
       elementsSource: buildElementsSourceFromElements([]),
       fetchQuery: elementUtils.query.createMockQuery(),
     }) as typeof filter
@@ -111,7 +111,7 @@ describe('workflowDeployFilter', () => {
           ),
         }),
         client,
-        DEFAULT_CONFIG.apiDefinitions.types.Workflow.deployRequests,
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Workflow.deployRequests,
         expect.toBeFunction(),
         undefined,
         undefined,
@@ -182,7 +182,7 @@ describe('workflowDeployFilter', () => {
           ),
         }),
         client,
-        DEFAULT_CONFIG.apiDefinitions.types.Workflow.deployRequests,
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Workflow.deployRequests,
         expect.toBeFunction(),
         undefined,
         undefined,
@@ -227,7 +227,7 @@ describe('workflowDeployFilter', () => {
           ),
         }),
         client,
-        DEFAULT_CONFIG.apiDefinitions.types.Workflow.deployRequests,
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Workflow.deployRequests,
         expect.toBeFunction(),
         undefined,
         undefined,
@@ -268,7 +268,7 @@ describe('workflowDeployFilter', () => {
           ),
         }),
         client,
-        DEFAULT_CONFIG.apiDefinitions.types.Workflow.deployRequests,
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Workflow.deployRequests,
         expect.toBeFunction(),
         undefined,
         undefined,

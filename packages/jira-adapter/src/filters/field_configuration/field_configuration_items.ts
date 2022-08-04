@@ -19,7 +19,7 @@ import _ from 'lodash'
 import { getParent, resolveValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
-import { JiraConfig } from '../../config'
+import { JiraConfig } from '../../config/config'
 import { FIELD_CONFIGURATION_ITEM_TYPE_NAME } from '../../constants'
 import { getLookUpName } from '../../reference_mapping'
 

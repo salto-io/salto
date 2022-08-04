@@ -20,7 +20,7 @@ import { elements as elementUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../utils'
 import missingDescriptionsFilter from '../../src/filters/missing_descriptions'
 import { Filter } from '../../src/filter'
-import { DEFAULT_CONFIG, JiraConfig } from '../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../src/config/config'
 import { JIRA, PROJECT_ROLE_TYPE } from '../../src/constants'
 
 describe('missingDescriptionsFilter', () => {
@@ -32,7 +32,7 @@ describe('missingDescriptionsFilter', () => {
   beforeEach(async () => {
     const { client, paginator } = mockClient()
 
-    config = _.cloneDeep(DEFAULT_CONFIG)
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
     filter = missingDescriptionsFilter({
       client,

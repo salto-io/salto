@@ -18,7 +18,7 @@ import { filterUtils, client as clientUtils, elements as elementUtils } from '@s
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
-import { DEFAULT_CONFIG, JiraConfig } from '../../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { BOARD_ESTIMATION_TYPE, BOARD_TYPE_NAME, JIRA } from '../../../src/constants'
 import boardEstimationFilter from '../../../src/filters/board/board_estimation'
 import { mockClient } from '../../utils'
@@ -35,7 +35,7 @@ describe('boardEstimationFilter', () => {
     const { client, paginator, connection: conn } = mockClient()
     connection = conn
 
-    config = _.cloneDeep(DEFAULT_CONFIG)
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
     filter = boardEstimationFilter({
       client,

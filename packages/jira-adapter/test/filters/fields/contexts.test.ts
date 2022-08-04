@@ -17,7 +17,7 @@ import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpress
 import { deployment, filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements, resolveChangeElement } from '@salto-io/adapter-utils'
 import { mockClient } from '../../utils'
-import { DEFAULT_CONFIG } from '../../../src/config'
+import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA } from '../../../src/constants'
 import fieldsDeploymentFilter from '../../../src/filters/fields/field_deployment_filter'
 import JiraClient from '../../../src/client/client'
@@ -57,7 +57,7 @@ describe('deployContextChange', () => {
     filter = fieldsDeploymentFilter({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
+      config: getDefaultConfig({ isDataCenter: false }),
       elementsSource: buildElementsSourceFromElements([]),
       fetchQuery: elementUtils.query.createMockQuery(),
     }) as typeof filter
@@ -106,12 +106,17 @@ describe('deployContextChange', () => {
       before: beforeInstance,
       after: afterInstance,
     })
-    await deployContextChange(change, client, DEFAULT_CONFIG.apiDefinitions)
+    await deployContextChange(
+      change,
+      client,
+      getDefaultConfig({ isDataCenter: false }).apiDefinitions
+    )
 
     expect(deployChangeMock).toHaveBeenCalledWith(
       await resolveChangeElement(change, getLookUpName),
       client,
-      DEFAULT_CONFIG.apiDefinitions.types.CustomFieldContext.deployRequests,
+      getDefaultConfig({ isDataCenter: false })
+        .apiDefinitions.types.CustomFieldContext.deployRequests,
       [
         'defaultValue',
         'options',
@@ -147,7 +152,11 @@ describe('deployContextChange', () => {
     const change = toChange({
       before: beforeInstance,
     })
-    await deployContextChange(change, client, DEFAULT_CONFIG.apiDefinitions)
+    await deployContextChange(
+      change,
+      client,
+      getDefaultConfig({ isDataCenter: false }).apiDefinitions
+    )
   })
 
   it('should throw for other error messages', async () => {
@@ -174,8 +183,9 @@ describe('deployContextChange', () => {
     const change = toChange({
       before: beforeInstance,
     })
-    await expect(deployContextChange(change, client, DEFAULT_CONFIG.apiDefinitions))
-      .rejects.toThrow()
+    await expect(
+      deployContextChange(change, client, getDefaultConfig({ isDataCenter: false }).apiDefinitions)
+    ).rejects.toThrow()
   })
 
   it('should throw if not removal', async () => {
@@ -205,7 +215,8 @@ describe('deployContextChange', () => {
       before: instance,
       after: instance,
     })
-    await expect(deployContextChange(change, client, DEFAULT_CONFIG.apiDefinitions))
-      .rejects.toThrow()
+    await expect(
+      deployContextChange(change, client, getDefaultConfig({ isDataCenter: false }).apiDefinitions)
+    ).rejects.toThrow()
   })
 })

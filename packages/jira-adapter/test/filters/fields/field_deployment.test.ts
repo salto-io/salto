@@ -18,7 +18,7 @@ import { deployment, filterUtils, client as clientUtils, elements as elementUtil
 import { MockInterface } from '@salto-io/test-utils'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockClient } from '../../utils'
-import { DEFAULT_CONFIG } from '../../../src/config'
+import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA } from '../../../src/constants'
 import fieldsDeploymentFilter from '../../../src/filters/fields/field_deployment_filter'
 import JiraClient from '../../../src/client/client'
@@ -62,7 +62,7 @@ describe('fields_deployment', () => {
     filter = fieldsDeploymentFilter({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
+      config: getDefaultConfig({ isDataCenter: false }),
       elementsSource: buildElementsSourceFromElements([]),
       fetchQuery: elementUtils.query.createMockQuery(),
     }) as typeof filter
@@ -90,7 +90,7 @@ describe('fields_deployment', () => {
     expect(deployChangeMock).toHaveBeenCalledWith(
       change,
       client,
-      DEFAULT_CONFIG.apiDefinitions.types.Field.deployRequests,
+      getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Field.deployRequests,
       ['contexts'],
       undefined,
       undefined,
@@ -135,7 +135,7 @@ describe('fields_deployment', () => {
         ),
       }),
       client,
-      DEFAULT_CONFIG.apiDefinitions,
+      getDefaultConfig({ isDataCenter: false }).apiDefinitions,
     )
   })
 

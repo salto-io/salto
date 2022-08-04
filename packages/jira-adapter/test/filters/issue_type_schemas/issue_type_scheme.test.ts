@@ -22,7 +22,7 @@ import { mockClient } from '../../utils'
 import issueTypeSchemeFilter from '../../../src/filters/issue_type_schemas/issue_type_scheme'
 import { Filter } from '../../../src/filter'
 import JiraClient from '../../../src/client/client'
-import { DEFAULT_CONFIG } from '../../../src/config'
+import { getDefaultConfig } from '../../../src/config/config'
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -46,7 +46,7 @@ describe('issueTypeScheme', () => {
     filter = issueTypeSchemeFilter({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
+      config: getDefaultConfig({ isDataCenter: false }),
       elementsSource: buildElementsSourceFromElements([]),
       fetchQuery: elementUtils.query.createMockQuery(),
     })

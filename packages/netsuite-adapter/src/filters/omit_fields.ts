@@ -26,7 +26,6 @@ const FIELDS_TO_OMIT: FieldToOmitParams[] = []
 
 const filterCreator: FilterCreator = ({ config }): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
-    console.log(config)
     const fieldsToOmitByType = _(FIELDS_TO_OMIT)
       // concating the user config with the default config will let the
       // user to override only specific types configuration without
@@ -44,7 +43,6 @@ const filterCreator: FilterCreator = ({ config }): FilterWith<'onFetch'> => ({
     await awu(elements)
       .filter(isInstanceElement)
       .forEach(async instance => {
-        console.log(fieldsToOmitByType)
         const updatedValues = instance.elemID.typeName in fieldsToOmitByType
           ? _.omit(instance.value, fieldsToOmitByType[instance.elemID.typeName])
           : instance.value

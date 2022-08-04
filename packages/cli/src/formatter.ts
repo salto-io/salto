@@ -60,19 +60,19 @@ export const formatWordsSeries = (words: string[]): string => (words.length > 1
   */
 
 const formatSourceLocation = (sl: Readonly<SourceLocation>): string =>
-  `${chalk.underline(sl.sourceRange.filename)}(${chalk.cyan(`line: ${sl.sourceRange.start.line}`)})\n`
+  `${chalk.underline(sl.sourceRange.filename)}(${chalk.cyan(`line: ${sl.sourceRange.start.line}`)})`
 
 const formatSourceLocations = (sourceLocations: ReadonlyArray<SourceLocation>): string =>
-  (sourceLocations.length > 0
-    ? `\n on ${sourceLocations.map(formatSourceLocation).join('\n and ')}`
-    : '')
+  `${sourceLocations.map(formatSourceLocation).join(EOL)}`
 
-export const formatWorkspaceError = (we: Readonly<errors.WorkspaceError<SaltoError>>): string =>
-  `${formatError(we)}${formatSourceLocations(we.sourceLocations)}`
+export const formatWorkspaceError = (we: Readonly<errors.WorkspaceError<SaltoError>>): string => {
+  const possibleEOL = we.sourceLocations.length > 0 ? EOL : ''
+  return `${formatError(we)}${possibleEOL}${formatSourceLocations(we.sourceLocations)}`
+}
 
 const indent = (text: string, level: number): string => {
   const indentText = _.repeat('  ', level)
-  return text.split('\n').map(line => `${indentText}${line}`).join('\n')
+  return text.split(EOL).map(line => `${indentText}${line}`).join(EOL)
 }
 
 const singleOrPluralString = (number: number, single: string, plural: string): string =>
@@ -235,8 +235,7 @@ export const formatChangeErrors = (
         errorsIndent)
     }
     const formattedError = formatWorkspaceError(firstErr)
-    const possibleSpace = formattedError.trimEnd() === formattedError ? ' ' : ''
-    return indent(`${formattedError}${possibleSpace}${firstErr.severity}: ${firstErr.detailedMessage}`,
+    return indent(`${formattedError}${EOL}${firstErr.severity}: ${firstErr.detailedMessage}`,
       errorsIndent)
   }
   const ret = _(wsChangeErrors)

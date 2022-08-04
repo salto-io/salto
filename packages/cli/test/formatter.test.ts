@@ -17,6 +17,7 @@ import {
   ObjectType, InstanceElement, ElemID, ChangeError, SaltoError, PrimitiveType,
   PrimitiveTypes, BuiltinTypes, StaticFile,
 } from '@salto-io/adapter-api'
+import { EOL } from 'os'
 import { FetchChange } from '@salto-io/core'
 import { errors as wsErrors } from '@salto-io/workspace'
 import chalk from 'chalk'
@@ -160,7 +161,7 @@ describe('formatter', () => {
       expect(output).toContain('Error')
       expect(output).toMatch(new RegExp(`.*${changeErrors[0].message}.*2 Elements`, 's'))
     })
-    it('should contain space between title and content', () => {
+    it('should contain EOL between title and content', () => {
       const changeErrors: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [{
         elemID: new ElemID('salesforce', 'test'),
         severity: 'Error',
@@ -169,7 +170,11 @@ describe('formatter', () => {
         sourceLocations: [],
       }]
       const output = formatChangeErrors(changeErrors)
-      expect(output).toContain(' Error')
+      expect(output).toMatch(new RegExp(`${EOL} *Error`)) // "Error" is not proceeded by EOL with indentation
+    })
+    it('should not contain double EOL in change error with several locations', () => {
+      const output = formatChangeErrors(workspaceErrorWithSourceLocations)
+      expect(output).not.toMatch(new RegExp(`${EOL} *${EOL}`)) // does not contain two EOL with only indent between them
     })
     it('should order validations from most to least occurrences', () => {
       const differentValidationKey: wsErrors.WorkspaceError<ChangeError> = {

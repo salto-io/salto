@@ -14,10 +14,8 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { elements as elementUtils } from '@salto-io/adapter-components'
-import { mockClient } from '../utils'
+import { getFilterParams } from '../utils'
 import maskingFilter, { MASK_VALUE } from '../../src/filters/masking'
 import { Filter } from '../../src/filter'
 import { getDefaultConfig, JiraConfig } from '../../src/config/config'
@@ -30,17 +28,9 @@ describe('maskingFilter', () => {
   let config: JiraConfig
 
   beforeEach(async () => {
-    const { client, paginator } = mockClient()
-
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
-    filter = maskingFilter({
-      client,
-      paginator,
-      config,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    })
+    filter = maskingFilter(getFilterParams({ config }))
 
     type = new ObjectType({
       elemID: new ElemID(JIRA, AUTOMATION_TYPE),

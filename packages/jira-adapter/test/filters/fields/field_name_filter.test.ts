@@ -14,11 +14,10 @@
 * limitations under the License.
 */
 import { ElemID, ElemIdGetter, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { filterUtils } from '@salto-io/adapter-components'
 import { mockFunction } from '@salto-io/test-utils'
 import _ from 'lodash'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { JIRA } from '../../../src/constants'
 import fieldNameFilter from '../../../src/filters/fields/field_name_filter'
@@ -35,14 +34,12 @@ describe('field_name_filter', () => {
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
     const { client, paginator } = mockClient()
-    filter = fieldNameFilter({
+    filter = fieldNameFilter(getFilterParams({
       client,
       paginator,
       config,
       getElemIdFunc: elemIdGetter,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    })) as typeof filter
 
     fieldType = new ObjectType({
       elemID: new ElemID(JIRA, 'Field'),
@@ -168,13 +165,11 @@ describe('field_name_filter', () => {
 
   it('should use the default name when elemIdGetter was not passed', async () => {
     const { client, paginator } = mockClient()
-    filter = fieldNameFilter({
+    filter = fieldNameFilter(getFilterParams({
       client,
       paginator,
       config,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    })) as typeof filter
 
     const custom = new InstanceElement(
       'custom',

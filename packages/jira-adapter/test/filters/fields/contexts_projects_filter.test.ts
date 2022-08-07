@@ -14,13 +14,12 @@
 * limitations under the License.
 */
 import { ElemID, getChangeData, InstanceElement, ObjectType, ReadOnlyElementsSource, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { filterUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 import { JIRA, PROJECT_TYPE } from '../../../src/constants'
 import { FIELD_CONTEXT_TYPE_NAME } from '../../../src/filters/fields/constants'
 import contextsProjectsFilter, { PROJECT_CONTEXTS_FIELD } from '../../../src/filters/fields/contexts_projects_filter'
-import { getDefaultConfig } from '../../../src/config/config'
 
 describe('contexts_projects_filter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
@@ -77,13 +76,11 @@ describe('contexts_projects_filter', () => {
       otherProject,
     ])
 
-    filter = contextsProjectsFilter({
+    filter = contextsProjectsFilter(getFilterParams({
       client,
       paginator,
-      config: getDefaultConfig({ isDataCenter: true }),
       elementsSource,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    })) as typeof filter
   })
 
   describe('onFetch', () => {

@@ -15,10 +15,10 @@
 */
 import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { buildElementsSourceFromElements, resolveChangeElement } from '@salto-io/adapter-utils'
-import { deployment, filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { resolveChangeElement } from '@salto-io/adapter-utils'
+import { deployment, filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 import gadgetFilter from '../../../src/filters/dashboard/gadget'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { DASHBOARD_GADGET_TYPE, DASHBOARD_TYPE, JIRA } from '../../../src/constants'
@@ -53,13 +53,11 @@ describe('gadgetFilter', () => {
     connection = conn
 
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    filter = gadgetFilter({
+    filter = gadgetFilter(getFilterParams({
       client,
       paginator,
       config,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as filterUtils.FilterWith<'onFetch' | 'deploy'>
+    })) as filterUtils.FilterWith<'onFetch' | 'deploy'>
 
     dashboardGadgetType = new ObjectType({
       elemID: new ElemID(JIRA, DASHBOARD_GADGET_TYPE),

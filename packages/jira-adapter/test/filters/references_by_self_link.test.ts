@@ -14,25 +14,15 @@
 * limitations under the License.
 */
 import { InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
-import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { filterUtils } from '@salto-io/adapter-components'
 import referenceBySelfLinkFilter from '../../src/filters/references_by_self_link'
 import { mockInstances, mockTypes } from '../mock_elements'
-import { mockClient, getDefaultAdapterConfig } from '../utils'
+import { getFilterParams } from '../utils'
 
 describe('referenceBySelfLinkFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
   beforeEach(async () => {
-    const { client, paginator } = mockClient()
-    filter = referenceBySelfLinkFilter({
-      client,
-      paginator,
-      config: {
-        ...await getDefaultAdapterConfig(),
-      },
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    filter = referenceBySelfLinkFilter(getFilterParams()) as typeof filter
   })
 
   describe('when an instance has a reference by self link', () => {

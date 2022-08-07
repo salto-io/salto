@@ -15,10 +15,10 @@
 */
 import { ElemID, InstanceElement, ObjectType, CORE_ANNOTATIONS, BuiltinTypes, Values, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { buildElementsSourceFromElements, safeJsonStringify } from '@salto-io/adapter-utils'
-import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 import automationDeploymentFilter from '../../../src/filters/automation/automation_deployment'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { AUTOMATION_TYPE, JIRA } from '../../../src/constants'
@@ -40,13 +40,11 @@ describe('automationDeploymentFilter', () => {
     connection = conn
 
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    filter = automationDeploymentFilter({
+    filter = automationDeploymentFilter(getFilterParams({
       client,
       paginator,
       config,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as filterUtils.FilterWith<'onFetch' | 'deploy'>
+    })) as filterUtils.FilterWith<'onFetch' | 'deploy'>
 
     type = new ObjectType({
       elemID: new ElemID(JIRA, AUTOMATION_TYPE),

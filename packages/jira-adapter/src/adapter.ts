@@ -200,7 +200,7 @@ type AdapterSwaggers = {
 }
 
 export default class JiraAdapter implements AdapterOperations {
-  private filtersRunner: Required<Filter>
+  private createFiltersRunner: () => Required<Filter>
   private client: JiraClient
   private userConfig: JiraConfig
   private paginator: clientUtils.Paginator
@@ -229,17 +229,22 @@ export default class JiraAdapter implements AdapterOperations {
     )
 
     this.paginator = paginator
-    this.filtersRunner = filtersRunner(
-      {
-        client,
-        paginator,
-        config,
-        getElemIdFunc,
-        elementsSource,
-        fetchQuery: this.fetchQuery,
-      },
-      filterCreators,
-      objects.concatObjects
+
+    const filterContext = {}
+    this.createFiltersRunner = () => (
+      filtersRunner(
+        {
+          client,
+          paginator,
+          config,
+          getElemIdFunc,
+          elementsSource,
+          fetchQuery: this.fetchQuery,
+          globalContext: filterContext,
+        },
+        filterCreators,
+        objects.concatObjects
+      )
     )
   }
 
@@ -315,7 +320,7 @@ export default class JiraAdapter implements AdapterOperations {
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
-    const filterResult = await this.filtersRunner.onFetch(elements) || {}
+    const filterResult = await this.createFiltersRunner().onFetch(elements) || {}
 
     // This needs to happen after the onFetch since some filters
     // may add fields that deployment annotation should be added to
@@ -342,13 +347,13 @@ export default class JiraAdapter implements AdapterOperations {
         instance => instance.clone()
       )))
 
-    await this.filtersRunner.preDeploy(changesToDeploy)
+    const runner = this.createFiltersRunner()
+    await runner.preDeploy(changesToDeploy)
 
-    const { deployResult: { appliedChanges, errors } } = await this.filtersRunner
-      .deploy(changesToDeploy)
+    const { deployResult: { appliedChanges, errors } } = await runner.deploy(changesToDeploy)
 
     const changesToReturn = [...appliedChanges]
-    await this.filtersRunner.onDeploy(changesToReturn)
+    await runner.onDeploy(changesToReturn)
 
     return {
       appliedChanges: changesToReturn,

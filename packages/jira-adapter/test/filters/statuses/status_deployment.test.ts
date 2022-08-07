@@ -15,9 +15,7 @@
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { elements as elementUtils } from '@salto-io/adapter-components'
-import { mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 import statusDeploymentFilter from '../../../src/filters/statuses/status_deployment'
 import { Filter } from '../../../src/filter'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
@@ -41,13 +39,11 @@ describe('statusDeploymentFilter', () => {
     client = cli
 
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    filter = statusDeploymentFilter({
+    filter = statusDeploymentFilter(getFilterParams({
       client,
       paginator,
       config,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    })
+    }))
 
     type = new ObjectType({
       elemID: new ElemID(JIRA, STATUS_TYPE_NAME),

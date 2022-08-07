@@ -14,10 +14,8 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS, toChange, getChangeData } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { mockClient } from '../../utils'
-import { getDefaultConfig } from '../../../src/config/config'
+import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
+import { getFilterParams, mockClient } from '../../utils'
 import JiraClient from '../../../src/client/client'
 import { JIRA } from '../../../src/constants'
 import filterCreator from '../../../src/filters/service_url/service_url'
@@ -37,13 +35,10 @@ describe('service url filter', () => {
     const mockCli = mockClient()
     client = mockCli.client
     paginator = mockCli.paginator
-    filter = filterCreator({
+    filter = filterCreator(getFilterParams({
       client,
       paginator,
-      config: getDefaultConfig({ isDataCenter: false }),
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    })) as typeof filter
   })
 
   describe('onFetch', () => {

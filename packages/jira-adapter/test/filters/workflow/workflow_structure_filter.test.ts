@@ -14,13 +14,11 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { filterUtils } from '@salto-io/adapter-components'
 import JiraClient from '../../../src/client/client'
-import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import workflowFilter from '../../../src/filters/workflow/workflow_structure_filter'
-import { mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 import { EXPECTED_POST_FUNCTIONS, WITH_POST_FUNCTIONS, WITH_UNSUPPORTED_POST_FUNCTIONS, WITH_VALIDATORS } from './workflow_values'
 
 jest.mock('@salto-io/adapter-components', () => {
@@ -48,13 +46,10 @@ describe('workflowStructureFilter', () => {
 
     const { client: cli, paginator } = mockClient()
     client = cli
-    filter = workflowFilter({
+    filter = workflowFilter(getFilterParams({
       client,
       paginator,
-      config: getDefaultConfig({ isDataCenter: false }),
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    })) as typeof filter
   })
 
   describe('onFetch', () => {

@@ -14,11 +14,9 @@
 * limitations under the License.
 */
 import { InstanceElement, ObjectType, ReferenceExpression, ElemID } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { mockClient } from '../../utils'
+import { filterUtils } from '@salto-io/adapter-components'
+import { getFilterParams, mockClient } from '../../utils'
 import automationNameReferencesFilter from '../../../src/filters/automation/automation_name_references'
-import { getDefaultConfig } from '../../../src/config/config'
 import { createAutomationTypes } from '../../../src/filters/automation/types'
 import { JIRA } from '../../../src/constants'
 
@@ -32,13 +30,10 @@ describe('automationNameReferencesTest', () => {
   beforeEach(async () => {
     const { client, paginator } = mockClient()
 
-    filter = automationNameReferencesFilter({
+    filter = automationNameReferencesFilter(getFilterParams({
       client,
       paginator,
-      config: getDefaultConfig({ isDataCenter: false }),
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    })) as typeof filter
 
     type = createAutomationTypes().automationType
 

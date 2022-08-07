@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { deployment, filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements, resolveChangeElement } from '@salto-io/adapter-utils'
-import { mockClient } from '../../utils'
+import { deployment, filterUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { resolveChangeElement } from '@salto-io/adapter-utils'
+import { getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA } from '../../../src/constants'
 import fieldsDeploymentFilter from '../../../src/filters/fields/field_deployment_filter'
@@ -54,13 +54,10 @@ describe('deployContextChange', () => {
     client = mockCli.client
     paginator = mockCli.paginator
 
-    filter = fieldsDeploymentFilter({
+    filter = fieldsDeploymentFilter(getFilterParams({
       client,
       paginator,
-      config: getDefaultConfig({ isDataCenter: false }),
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    })) as typeof filter
 
     contextType = new ObjectType({
       elemID: new ElemID(JIRA, FIELD_CONTEXT_TYPE_NAME),

@@ -52,17 +52,17 @@ const appendReference = (
 /**
  * A filter to change project to reference field contexts instead of the other way around
  */
-const filter: FilterCreator = ({ elementsSource }) => {
-  const afterContextToProjects: Record<string, ReferenceExpression[]> = {}
-  const beforeContextToProjects: Record<string, ReferenceExpression[]> = {}
-  const deployedProjectIds = new Set<string>()
+const filter: FilterCreator = ({ elementsSource, globalContext }) => {
+  globalContext.afterContextToProjects = {}
+  globalContext.beforeContextToProjects = {}
+  globalContext.deployedProjectIds = new Set<string>()
 
   const updateContextToProjectChanges = (projectChange: Change<InstanceElement>): void => {
     if (isAdditionOrModificationChange(projectChange)) {
       projectChange.data.after.value[PROJECT_CONTEXTS_FIELD]
         ?.forEach((context: ReferenceExpression) => {
           appendReference(
-            afterContextToProjects,
+            globalContext.afterContextToProjects,
             context.elemID.getFullName(),
             new ReferenceExpression(projectChange.data.after.elemID, projectChange.data.after),
           )
@@ -73,7 +73,7 @@ const filter: FilterCreator = ({ elementsSource }) => {
       projectChange.data.before.value[PROJECT_CONTEXTS_FIELD]
         ?.forEach((context: ReferenceExpression) => {
           appendReference(
-            beforeContextToProjects,
+            globalContext.beforeContextToProjects,
             context.elemID.getFullName(),
             new ReferenceExpression(projectChange.data.before.elemID, projectChange.data.before)
           )
@@ -83,8 +83,8 @@ const filter: FilterCreator = ({ elementsSource }) => {
 
   const getContextChanges = async (): Promise<Change<InstanceElement>[]> => {
     const existingIds = new Set([
-      ...Object.keys(afterContextToProjects),
-      ...Object.keys(beforeContextToProjects),
+      ...Object.keys(globalContext.afterContextToProjects),
+      ...Object.keys(globalContext.beforeContextToProjects),
     ])
 
     return awu(Array.from(existingIds))
@@ -123,7 +123,7 @@ const filter: FilterCreator = ({ elementsSource }) => {
         .filter(change => getChangeData(change).elemID.typeName === PROJECT_TYPE)
         .forEach(change => {
           updateContextToProjectChanges(change)
-          deployedProjectIds.add(getChangeData(change).elemID.getFullName())
+          globalContext.deployedProjectIds.add(getChangeData(change).elemID.getFullName())
         })
 
       const missingChanges = await getContextChanges()
@@ -136,24 +136,26 @@ const filter: FilterCreator = ({ elementsSource }) => {
           const projectReferencesFromSource = await getProjectReferencesFromSource(
             getChangeData(change).elemID,
             elementsSource,
-            deployedProjectIds,
+            globalContext.deployedProjectIds,
           )
           if (isAdditionOrModificationChange(change)) {
             change.data.after.value.projectIds = [
               ...projectReferencesFromSource,
-              ...(afterContextToProjects[getChangeData(change).elemID.getFullName()] ?? []),
+              ...(globalContext.afterContextToProjects[getChangeData(change).elemID.getFullName()]
+                ?? []),
             ]
           }
 
           if (isRemovalOrModificationChange(change)) {
             change.data.before.value.projectIds = [
               ...projectReferencesFromSource,
-              ...(beforeContextToProjects[getChangeData(change).elemID.getFullName()] ?? []),
+              ...(globalContext.beforeContextToProjects[getChangeData(change).elemID.getFullName()]
+                ?? []),
             ]
           }
 
-          delete afterContextToProjects[getChangeData(change).elemID.getFullName()]
-          delete beforeContextToProjects[getChangeData(change).elemID.getFullName()]
+          delete globalContext.afterContextToProjects[getChangeData(change).elemID.getFullName()]
+          delete globalContext.beforeContextToProjects[getChangeData(change).elemID.getFullName()]
         })
     },
 

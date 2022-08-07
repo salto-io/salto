@@ -14,10 +14,8 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { elements as elementUtils } from '@salto-io/adapter-components'
-import { mockClient } from '../utils'
+import { getFilterParams } from '../utils'
 import missingDescriptionsFilter from '../../src/filters/missing_descriptions'
 import { Filter } from '../../src/filter'
 import { getDefaultConfig, JiraConfig } from '../../src/config/config'
@@ -30,17 +28,9 @@ describe('missingDescriptionsFilter', () => {
   let config: JiraConfig
 
   beforeEach(async () => {
-    const { client, paginator } = mockClient()
-
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
-    filter = missingDescriptionsFilter({
-      client,
-      paginator,
-      config,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    })
+    filter = missingDescriptionsFilter(getFilterParams({ config }))
 
     type = new ObjectType({
       elemID: new ElemID(JIRA, PROJECT_ROLE_TYPE),

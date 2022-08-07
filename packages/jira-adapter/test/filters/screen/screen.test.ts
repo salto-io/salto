@@ -14,11 +14,10 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, MapType, ObjectType, toChange } from '@salto-io/adapter-api'
-import { deployment, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { JIRA } from '../../../src/constants'
-import { mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 import screenFilter from '../../../src/filters/screen/screen'
 import { Filter } from '../../../src/filter'
 import JiraClient from '../../../src/client/client'
@@ -47,13 +46,10 @@ describe('screenFilter', () => {
     mockConnection = connection
     mockConnection.get.mockResolvedValue({ status: 200, data: [] })
 
-    filter = screenFilter({
+    filter = screenFilter(getFilterParams({
       client,
       paginator,
-      config: getDefaultConfig({ isDataCenter: false }),
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    })
+    }))
     screenTabType = new ObjectType({
       elemID: new ElemID(JIRA, 'ScreenableTab'),
     })

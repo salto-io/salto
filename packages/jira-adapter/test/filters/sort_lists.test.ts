@@ -14,12 +14,9 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression, Values } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { elements as elementUtils } from '@salto-io/adapter-components'
-import { mockClient } from '../utils'
+import { getFilterParams } from '../utils'
 import sortListsFilter from '../../src/filters/sort_lists'
 import { Filter } from '../../src/filter'
-import { getDefaultConfig } from '../../src/config/config'
 import { JIRA } from '../../src/constants'
 
 describe('sortListsFilter', () => {
@@ -28,15 +25,7 @@ describe('sortListsFilter', () => {
   let instance: InstanceElement
   let sortedValues: Values
   beforeEach(async () => {
-    const { client, paginator } = mockClient()
-
-    filter = sortListsFilter({
-      client,
-      paginator,
-      config: getDefaultConfig({ isDataCenter: false }),
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    })
+    filter = sortListsFilter(getFilterParams())
 
     permissionSchemeType = new ObjectType({
       elemID: new ElemID(JIRA, 'PermissionScheme'),

@@ -17,6 +17,7 @@ import {
   ObjectType, InstanceElement, ElemID, ChangeError, SaltoError, PrimitiveType,
   PrimitiveTypes, BuiltinTypes, StaticFile,
 } from '@salto-io/adapter-api'
+import { EOL } from 'os'
 import { FetchChange } from '@salto-io/core'
 import { errors as wsErrors } from '@salto-io/workspace'
 import chalk from 'chalk'
@@ -135,10 +136,8 @@ describe('formatter', () => {
         sourceLocations: workspaceErrorWithSourceLocations.sourceLocations,
       }]
       const output = formatChangeErrors(changeErrors)
-      expect(output)
-        .toContain('Error')
-      expect(output)
-        .toMatch(new RegExp(`.*${changeErrors[0].detailedMessage}`, 's'))
+      expect(output).toContain('Error')
+      expect(output).toMatch(new RegExp(`.*${changeErrors[0].detailedMessage}`, 's'))
       expect(output).toMatch(new RegExp(`.*${workspaceErrorWithSourceLocations.sourceLocations[0].sourceRange.filename}`, 's'))
     })
     it('should have grouped validations', () => {
@@ -159,10 +158,50 @@ describe('formatter', () => {
 
       }]
       const output = formatChangeErrors(changeErrors)
-      expect(output)
-        .toContain('Error')
-      expect(output)
-        .toMatch(new RegExp(`.*${changeErrors[0].message}.*2 Elements`, 's'))
+      expect(output).toContain('Error')
+      expect(output).toMatch(new RegExp(`.*${changeErrors[0].message}.*2 Elements`, 's'))
+    })
+    it('should contain EOL between title and content', () => {
+      const changeErrors: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [{
+        elemID: new ElemID('salesforce', 'test'),
+        severity: 'Error',
+        message: 'Message key for test',
+        detailedMessage: 'Validation message',
+        sourceLocations: [],
+      }]
+      const output = formatChangeErrors(changeErrors)
+      expect(output).toMatch(new RegExp(`${EOL} *Error`)) // "Error" is not proceeded by EOL with indentation
+    })
+    it('should not contain double EOL in change error with several locations', () => {
+      const changeErrorWithLocations: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [{
+        sourceLocations: [{
+          sourceRange: {
+            start: { byte: 20, col: 10, line: 5 },
+            end: { byte: 30, col: 10, line: 3 },
+            filename: 'test.nacl',
+          },
+        },
+        {
+          sourceRange: {
+            start: { byte: 100, col: 10, line: 15 },
+            end: { byte: 150, col: 10, line: 15 },
+            filename: 'test.nacl',
+          },
+        },
+        {
+          sourceRange: {
+            start: { byte: 100, col: 10, line: 25 },
+            end: { byte: 150, col: 10, line: 15 },
+            filename: 'test2.nacl',
+          },
+        }],
+        message: 'Operation not supported',
+        detailedMessage: 'Salto does not support "remove" of zendesk...',
+        severity: 'Error',
+        elemID: new ElemID('salesforce', 'test'),
+      }]
+      const output = formatChangeErrors(changeErrorWithLocations)
+      expect(output).not.toMatch(new RegExp(`${EOL} *${EOL}`)) // does not contain two EOL with only indent between them
     })
     it('should order validations from most to least occurrences', () => {
       const differentValidationKey: wsErrors.WorkspaceError<ChangeError> = {
@@ -188,10 +227,8 @@ describe('formatter', () => {
       },
       differentValidationKey]
       const output = formatChangeErrors(changeErrors)
-      expect(output)
-        .toContain('Error')
-      expect(output)
-        .toMatch(new RegExp(`.*${changeErrors[0].message}.*2 Elements.*\n.*${differentValidationKey.detailedMessage}`, 's'))
+      expect(output).toContain('Error')
+      expect(output).toMatch(new RegExp(`.*${changeErrors[0].message}.*2 Elements.*\n.*${differentValidationKey.detailedMessage}`, 's'))
     })
   })
 

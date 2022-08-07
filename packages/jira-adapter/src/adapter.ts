@@ -168,7 +168,6 @@ export const DEFAULT_FILTERS = [
   fieldReferencesFilter,
   // Must run after fieldReferencesFilter
   contextsProjectsFilter,
-  // Must run after fieldReferencesFilter
   fieldConfigurationIrrelevantFields,
   // Must run after fieldConfigurationIrrelevantFields
   fieldConfigurationSplitFilter,

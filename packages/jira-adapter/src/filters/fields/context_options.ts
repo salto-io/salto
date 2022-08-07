@@ -199,8 +199,9 @@ export const setContextOptions = async (
     option => option.optionId !== undefined || option.parentValue === undefined
   )
 
-  const fieldId = (await getParents(getChangeData(contextChange))[0]
-    .getResolvedValue(elementsSource)).value.id
+  const fieldId = (
+    await getParents(getChangeData(contextChange))[0].getResolvedValue(elementsSource)
+  ).value.id
 
   const url = `/rest/api/3/field/${fieldId}/context/${getChangeData(contextChange).value.id}/option`
   await updateContextOptions({

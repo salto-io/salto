@@ -98,8 +98,8 @@ describe('globalProjectContextsValidator', () => {
         elemID: projectInstance.elemID,
         severity: 'Error',
         message: 'Cannot remove field context from a project',
-        detailedMessage: `A field context which is not global must be referenced by at least one project. The deployment of ${projectInstance.elemID.getFullName()} will results the following contexts to have no references: ${contextInstance.elemID.getFullName()} and therefore the project cannot be deployed.
-To solve this either modify the project to keep a reference to these contexts, or remove the contexts from the workspace`,
+        detailedMessage: `A field context which is not global must be referenced by at least one project. The deployment of jira.Project.instance.instance will result in the following contexts having no references: jira.CustomFieldContext.instance.instance. Therefore, the project cannot be deployed.
+To solve this, either modify the project to keep a reference to these contexts, or remove the contexts from the workspace`,
       },
     ])
   })

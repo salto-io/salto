@@ -14,11 +14,14 @@
 * limitations under the License.
 */
 import { Change, dependencyChange, DependencyChanger, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
 import { PROJECT_TYPE } from '../constants'
 import { FIELD_CONTEXT_TYPE_NAME } from '../filters/fields/constants'
+import { ChangeWithKey } from './types'
 
 
+/**
+ * Make sure contexts will be deployed only after their relevant projects were deployed
+ */
 export const projectContextsDependencyChanger: DependencyChanger = async (
   changes,
   dependencies,
@@ -26,7 +29,7 @@ export const projectContextsDependencyChanger: DependencyChanger = async (
   const projectKeys = Array.from(changes.entries())
     .map(([key, change]) => ({ key, change }))
     .filter(
-      (change): change is { key: collections.set.SetId; change: Change<InstanceElement> } =>
+      (change): change is ChangeWithKey<Change<InstanceElement>> =>
         isInstanceChange(change.change)
         && isAdditionOrModificationChange(change.change)
     )

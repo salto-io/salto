@@ -40,6 +40,18 @@ const getProjectReferencesFromSource = async (
     .map(projectInstance => new ReferenceExpression(projectInstance.elemID, projectInstance))
     .toArray()
 
+const appendReference = (
+  map: Record<string, ReferenceExpression[]>,
+  key: string,
+  value: ReferenceExpression,
+): void => {
+  map[key] = collections.array.makeArray(map[key])
+  map[key].push(value)
+}
+
+/**
+ * A filter to change project to reference field contexts instead of the other way around
+ */
 const filter: FilterCreator = ({ elementsSource }) => {
   const afterContextToProjects: Record<string, ReferenceExpression[]> = {}
   const beforeContextToProjects: Record<string, ReferenceExpression[]> = {}
@@ -49,11 +61,10 @@ const filter: FilterCreator = ({ elementsSource }) => {
     if (isAdditionOrModificationChange(projectChange)) {
       projectChange.data.after.value[PROJECT_CONTEXTS_FIELD]
         ?.forEach((context: ReferenceExpression) => {
-          if (afterContextToProjects[context.elemID.getFullName()] === undefined) {
-            afterContextToProjects[context.elemID.getFullName()] = []
-          }
-          afterContextToProjects[context.elemID.getFullName()].push(
-            new ReferenceExpression(projectChange.data.after.elemID, projectChange.data.after)
+          appendReference(
+            afterContextToProjects,
+            context.elemID.getFullName(),
+            new ReferenceExpression(projectChange.data.after.elemID, projectChange.data.after),
           )
         })
     }
@@ -61,10 +72,9 @@ const filter: FilterCreator = ({ elementsSource }) => {
     if (isRemovalOrModificationChange(projectChange)) {
       projectChange.data.before.value[PROJECT_CONTEXTS_FIELD]
         ?.forEach((context: ReferenceExpression) => {
-          if (beforeContextToProjects[context.elemID.getFullName()] === undefined) {
-            beforeContextToProjects[context.elemID.getFullName()] = []
-          }
-          beforeContextToProjects[context.elemID.getFullName()].push(
+          appendReference(
+            beforeContextToProjects,
+            context.elemID.getFullName(),
             new ReferenceExpression(projectChange.data.before.elemID, projectChange.data.before)
           )
         })
@@ -93,11 +103,11 @@ const filter: FilterCreator = ({ elementsSource }) => {
         .forEach(instance => {
           instance.value.projectIds
             ?.filter(isReferenceExpression)
+            .filter((ref: ReferenceExpression) => ref.elemID.typeName === 'Project')
             .forEach((ref: ReferenceExpression) => {
-              if (ref.value.value[PROJECT_CONTEXTS_FIELD] === undefined) {
-                ref.value.value[PROJECT_CONTEXTS_FIELD] = []
-              }
-              ref.value.value[PROJECT_CONTEXTS_FIELD].push(
+              appendReference(
+                ref.value.value,
+                PROJECT_CONTEXTS_FIELD,
                 new ReferenceExpression(instance.elemID, instance)
               )
             })

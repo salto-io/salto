@@ -86,6 +86,6 @@ export const getFilterParams = (params?: Partial<Parameters<FilterCreator>[0]>)
   config: getDefaultConfig({ isDataCenter: false }),
   elementsSource: buildElementsSourceFromElements([]),
   fetchQuery: elementUtils.query.createMockQuery(),
-  globalContext: {},
+  adapterContext: {},
   ...params ?? {},
 })

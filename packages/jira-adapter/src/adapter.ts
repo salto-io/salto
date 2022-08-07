@@ -240,7 +240,7 @@ export default class JiraAdapter implements AdapterOperations {
           getElemIdFunc,
           elementsSource,
           fetchQuery: this.fetchQuery,
-          globalContext: filterContext,
+          adapterContext: filterContext,
         },
         filterCreators,
         objects.concatObjects

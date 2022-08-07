@@ -52,17 +52,17 @@ const appendReference = (
 /**
  * A filter to change project to reference field contexts instead of the other way around
  */
-const filter: FilterCreator = ({ elementsSource, globalContext }) => {
-  globalContext.afterContextToProjects = {}
-  globalContext.beforeContextToProjects = {}
-  globalContext.deployedProjectIds = new Set<string>()
+const filter: FilterCreator = ({ elementsSource, adapterContext }) => {
+  adapterContext.afterContextToProjects = {}
+  adapterContext.beforeContextToProjects = {}
+  adapterContext.deployedProjectIds = new Set<string>()
 
   const updateContextToProjectChanges = (projectChange: Change<InstanceElement>): void => {
     if (isAdditionOrModificationChange(projectChange)) {
       projectChange.data.after.value[PROJECT_CONTEXTS_FIELD]
         ?.forEach((context: ReferenceExpression) => {
           appendReference(
-            globalContext.afterContextToProjects,
+            adapterContext.afterContextToProjects,
             context.elemID.getFullName(),
             new ReferenceExpression(projectChange.data.after.elemID, projectChange.data.after),
           )
@@ -73,7 +73,7 @@ const filter: FilterCreator = ({ elementsSource, globalContext }) => {
       projectChange.data.before.value[PROJECT_CONTEXTS_FIELD]
         ?.forEach((context: ReferenceExpression) => {
           appendReference(
-            globalContext.beforeContextToProjects,
+            adapterContext.beforeContextToProjects,
             context.elemID.getFullName(),
             new ReferenceExpression(projectChange.data.before.elemID, projectChange.data.before)
           )
@@ -83,8 +83,8 @@ const filter: FilterCreator = ({ elementsSource, globalContext }) => {
 
   const getContextChanges = async (): Promise<Change<InstanceElement>[]> => {
     const existingIds = new Set([
-      ...Object.keys(globalContext.afterContextToProjects),
-      ...Object.keys(globalContext.beforeContextToProjects),
+      ...Object.keys(adapterContext.afterContextToProjects),
+      ...Object.keys(adapterContext.beforeContextToProjects),
     ])
 
     return awu(Array.from(existingIds))
@@ -123,7 +123,7 @@ const filter: FilterCreator = ({ elementsSource, globalContext }) => {
         .filter(change => getChangeData(change).elemID.typeName === PROJECT_TYPE)
         .forEach(change => {
           updateContextToProjectChanges(change)
-          globalContext.deployedProjectIds.add(getChangeData(change).elemID.getFullName())
+          adapterContext.deployedProjectIds.add(getChangeData(change).elemID.getFullName())
         })
 
       const missingChanges = await getContextChanges()
@@ -136,12 +136,12 @@ const filter: FilterCreator = ({ elementsSource, globalContext }) => {
           const projectReferencesFromSource = await getProjectReferencesFromSource(
             getChangeData(change).elemID,
             elementsSource,
-            globalContext.deployedProjectIds,
+            adapterContext.deployedProjectIds,
           )
           if (isAdditionOrModificationChange(change)) {
             change.data.after.value.projectIds = [
               ...projectReferencesFromSource,
-              ...(globalContext.afterContextToProjects[getChangeData(change).elemID.getFullName()]
+              ...(adapterContext.afterContextToProjects[getChangeData(change).elemID.getFullName()]
                 ?? []),
             ]
           }
@@ -149,13 +149,13 @@ const filter: FilterCreator = ({ elementsSource, globalContext }) => {
           if (isRemovalOrModificationChange(change)) {
             change.data.before.value.projectIds = [
               ...projectReferencesFromSource,
-              ...(globalContext.beforeContextToProjects[getChangeData(change).elemID.getFullName()]
+              ...(adapterContext.beforeContextToProjects[getChangeData(change).elemID.getFullName()]
                 ?? []),
             ]
           }
 
-          delete globalContext.afterContextToProjects[getChangeData(change).elemID.getFullName()]
-          delete globalContext.beforeContextToProjects[getChangeData(change).elemID.getFullName()]
+          delete adapterContext.afterContextToProjects[getChangeData(change).elemID.getFullName()]
+          delete adapterContext.beforeContextToProjects[getChangeData(change).elemID.getFullName()]
         })
     },
 

@@ -32,7 +32,7 @@ export type FilterAdditionParams = {
   // A context for deployment that should be persistent across all the deployment steps.
   // Note that deployment steps can be executed in parallel so use this cautiously
   // and only when needed.
-  globalContext: Values
+  adapterContext: Values
 }
 
 export type FilterCreator = filterUtils.FilterCreator<

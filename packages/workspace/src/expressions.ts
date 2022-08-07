@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import wu from 'wu'
+import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { ElemID, Element, ReferenceExpression, TemplateExpression, isReferenceExpression, isElement, ReadOnlyElementsSource, isVariable, isInstanceElement, isObjectType, isContainerType, BuiltinTypes, CoreAnnotationTypes, TypeReference, isType, PlaceholderObjectType, Expression, isTemplateExpression, isExpression, isField } from '@salto-io/adapter-api'
 import { resolvePath, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
@@ -258,6 +259,17 @@ export const resolve = (
   // Create a clone of the input elements to ensure we do not modify the input
   const elementsToResolve = elements.map(e => e.clone())
 
+  // Since fields technically reference their parent type with the .parent property
+  // we need to make sure to resolve all field parents as well
+  const fieldParents = _(elementsToResolve)
+    .filter(isField)
+    .groupBy(field => field.parent.elemID.getFullName())
+    .values()
+    .map(([field]) => field.parent)
+    .value()
+
+  elementsToResolve.push(...fieldParents)
+
   const resolvedElements = new Map(
     elementsToResolve
       .concat(Object.values(BuiltinTypes))
@@ -348,5 +360,6 @@ export const resolve = (
   // and mark them as circular references
   markCircularReferences(referenceDependencies)
 
-  return elementsToResolve
+  const originalElementsSet = new Set(elements.map(({ elemID }) => elemID.getFullName()))
+  return elementsToResolve.filter(({ elemID }) => originalElementsSet.has(elemID.getFullName()))
 }, 'resolve %d elements', elements.length)

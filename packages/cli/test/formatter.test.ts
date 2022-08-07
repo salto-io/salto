@@ -173,7 +173,34 @@ describe('formatter', () => {
       expect(output).toMatch(new RegExp(`${EOL} *Error`)) // "Error" is not proceeded by EOL with indentation
     })
     it('should not contain double EOL in change error with several locations', () => {
-      const output = formatChangeErrors(workspaceErrorWithSourceLocations)
+      const changeErrorWithLocations: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [{
+        sourceLocations: [{
+          sourceRange: {
+            start: { byte: 20, col: 10, line: 5 },
+            end: { byte: 30, col: 10, line: 3 },
+            filename: 'test.nacl',
+          },
+        },
+        {
+          sourceRange: {
+            start: { byte: 100, col: 10, line: 15 },
+            end: { byte: 150, col: 10, line: 15 },
+            filename: 'test.nacl',
+          },
+        },
+        {
+          sourceRange: {
+            start: { byte: 100, col: 10, line: 25 },
+            end: { byte: 150, col: 10, line: 15 },
+            filename: 'test2.nacl',
+          },
+        }],
+        message: 'Operation not supported',
+        detailedMessage: 'Salto does not support "remove" of zendesk...',
+        severity: 'Error',
+        elemID: new ElemID('salesforce', 'test'),
+      }]
+      const output = formatChangeErrors(changeErrorWithLocations)
       expect(output).not.toMatch(new RegExp(`${EOL} *${EOL}`)) // does not contain two EOL with only indent between them
     })
     it('should order validations from most to least occurrences', () => {

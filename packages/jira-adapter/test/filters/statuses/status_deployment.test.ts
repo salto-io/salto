@@ -75,10 +75,11 @@ describe('statusDeploymentFilter', () => {
       'statusInstance',
       type,
       {
+        id: '10005',
         name: 'status',
         description: 'a new status',
         statusCategory: new ReferenceExpression(
-          statusCategoryInstance.elemID.createNestedID('id'), 3
+          statusCategoryInstance.elemID, statusCategoryInstance
         ),
       }
     )
@@ -171,68 +172,39 @@ describe('statusDeploymentFilter', () => {
     })
   })
 
-  describe('preDeploy', () => {
-    it('should replace instance references with values for modification changes', async () => {
-      const changes = [toChange({ before: statusInstance, after: modifiedInstance })]
-      await filter.preDeploy(changes)
-      const [before, after] = getAllChangeData(changes[0])
-      expect(before.value.statusCategory).toEqual('DONE')
-      expect(after.value.statusCategory).toEqual('DONE')
-    })
-
-    it('should replace instance references with values for addition changes', async () => {
-      const changes = [toChange({ after: modifiedInstance })]
-      await filter.preDeploy(changes)
-      const after = getChangeData(changes[0])
-      expect(after.value.statusCategory).toEqual('DONE')
-    })
-  })
-
   describe('deploy statuses', () => {
-    beforeEach(async () => {
-      mockConnection.post.mockClear()
-    })
+    let additionInstance: InstanceElement
 
-    it('should return applied changes with no errors', async () => {
-      const additionInstance = new InstanceElement(
-        'newInstance',
+    beforeEach(async () => {
+      additionInstance = new InstanceElement(
+        'addedStatus',
         type,
         {
-          name: 'status 2',
+          name: 'addedStatus',
           description: 'a new status',
           statusCategory: new ReferenceExpression(
-            statusCategoryInstance.elemID.createNestedID('id'), 3
+            statusCategoryInstance.elemID, statusCategoryInstance
           ),
         }
       )
-      const changes = [
-        toChange({ before: statusInstance, after: modifiedInstance }),
-        toChange({ after: additionInstance }),
-      ]
-      await filter.preDeploy(changes)
-      const { deployResult } = await filter.deploy(changes)
-      expect(deployResult.appliedChanges).toHaveLength(2)
-      expect(getChangeData(deployResult.appliedChanges[0]).elemID.getFullName())
-        .toEqual('jira.Status.instance.statusInstance')
-      expect(getChangeData(deployResult.appliedChanges[1]).elemID.getFullName())
-        .toEqual('jira.Status.instance.newInstance')
-      expect(deployResult.errors).toHaveLength(0)
+
+      mockConnection.post.mockClear()
+      mockConnection.put.mockClear()
     })
 
-    it('should return error if deploy fails', async () => {
-      mockConnection.post.mockRejectedValue(new Error('failed'))
-      const nonDeployableInstance = new InstanceElement(
-        'nonDeployable',
-        type,
-        {
-          name: 'nonDeployable',
-          description: 'a category',
-        }
-      )
-      const changes = [toChange({ after: nonDeployableInstance })]
+    it('should return applied changes with no errors', async () => {
+      mockConnection.put.mockResolvedValue({
+        status: 201,
+        data: [],
+      })
+      const changes = [
+        toChange({ before: statusInstance, after: modifiedInstance }),
+      ]
       const { deployResult } = await filter.deploy(changes)
-      expect(deployResult.appliedChanges).toHaveLength(0)
-      expect(deployResult.errors).toHaveLength(1)
+      expect(deployResult.appliedChanges).toHaveLength(1)
+      expect(deployResult.errors).toHaveLength(0)
+      expect(getChangeData(deployResult.appliedChanges[0]).elemID.getFullName())
+        .toEqual('jira.Status.instance.statusInstance')
     })
 
     it('should return status deletion changes as leftover changes', async () => {
@@ -244,16 +216,65 @@ describe('statusDeploymentFilter', () => {
       expect(getChangeData(leftoverChanges[0]).elemID.getFullName())
         .toEqual('jira.Status.instance.statusInstance')
     })
-  })
 
-  describe('onDeploy', () => {
-    it('should restore changes references', async () => {
-      const changes = [toChange({ before: statusInstance, after: modifiedInstance })]
-      await filter.preDeploy?.(changes)
-      await filter.onDeploy?.(changes)
-      const [before, after] = getAllChangeData(changes[0])
-      expect(before.value.statusCategory).toBeInstanceOf(ReferenceExpression)
-      expect(after.value.statusCategory).toBeInstanceOf(ReferenceExpression)
+    it('should not remove status category references after deploy', async () => {
+      const changes = [
+        toChange({ before: statusInstance, after: modifiedInstance }),
+        toChange({ after: additionInstance }),
+      ]
+      await filter.deploy(changes)
+      expect(getAllChangeData(changes[0])[0].value.statusCategory)
+        .toBeInstanceOf(ReferenceExpression)
+      expect(getAllChangeData(changes[0])[1].value.statusCategory)
+        .toBeInstanceOf(ReferenceExpression)
+      expect(getChangeData(changes[1]).value.statusCategory).toBeInstanceOf(ReferenceExpression)
+    })
+
+    it('should set id to added statuses on deploy', async () => {
+      mockConnection.post.mockResolvedValue({
+        status: 200,
+        data: [{
+          id: '12345',
+          name: 'addedStatus',
+          description: 'a new status',
+          statusCategory: 'DONE',
+        },
+        ],
+      })
+      await filter.deploy([toChange({ after: additionInstance })])
+      expect(additionInstance.value.id).toEqual('12345')
+    })
+
+    it('should deploy first chunk of changes and fail the other', async () => {
+      mockConnection.post
+        .mockResolvedValueOnce({ status: 200, data: [] })
+        .mockRejectedValueOnce((new Error('no status category')))
+      const validChanges = _.range(0, 50).map(i => toChange({
+        after: new InstanceElement(
+          `status${i}`,
+          type,
+          {
+            name: `status${i}`,
+            description: 'a new status',
+            statusCategory: new ReferenceExpression(
+              statusCategoryInstance.elemID, statusCategoryInstance
+            ),
+          },
+        ),
+      }))
+      const invalidChange = toChange({
+        after: new InstanceElement(
+          'invalidStatus',
+          type,
+          {
+            name: 'invalidStatus',
+            description: 'invalid',
+          },
+        ),
+      })
+      const { deployResult } = await filter.deploy([...validChanges, invalidChange])
+      expect(deployResult.appliedChanges).toHaveLength(50)
+      expect(deployResult.errors).toHaveLength(1)
     })
   })
 })

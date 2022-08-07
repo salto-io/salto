@@ -20,14 +20,38 @@ import { JIRA, STATUS_TYPE_NAME } from '../../src/constants'
 describe('statusValidator', () => {
   let type: ObjectType
   let instance: InstanceElement
+  let invalidStatusCategory: InstanceElement
+  let validStatusCategory: InstanceElement
 
   beforeEach(() => {
     type = new ObjectType({ elemID: new ElemID(JIRA, STATUS_TYPE_NAME) })
-    instance = new InstanceElement('instance', type)
+    instance = new InstanceElement(
+      'instance',
+      type,
+      {
+        name: 'status',
+      },
+    )
+
+    invalidStatusCategory = new InstanceElement(
+      'No_Category@s',
+      new ObjectType({ elemID: new ElemID(JIRA, 'StatusCategory') }),
+      {
+        name: 'No Category',
+      }
+    )
+
+    validStatusCategory = new InstanceElement(
+      'Done',
+      new ObjectType({ elemID: new ElemID(JIRA, 'StatusCategory') }),
+      {
+        name: 'Done',
+      }
+    )
   })
   it('should return if status category is No_Category', async () => {
     instance.value.statusCategory = new ReferenceExpression(
-      new ElemID(JIRA, 'StatusCategory', 'instance', 'No_Category@s')
+      invalidStatusCategory.elemID, invalidStatusCategory
     )
     expect(await statusValidator([
       toChange({
@@ -38,16 +62,15 @@ describe('statusValidator', () => {
         elemID: instance.elemID,
         severity: 'Error',
         message: 'statusCategory can not have No_Category value',
-        detailedMessage: 'The status jira.Status.instance.instance have an invalid statusCategory, statusCategory should be one of the following: [ Done, In_Progress, To_Do ]',
+        detailedMessage: 'The status jira.Status.instance.instance has an invalid statusCategory, statusCategory should be one of the following: [ Done, In_Progress, To_Do ]',
       },
     ])
   })
 
   it('should not return an error if status category is not No_Category', async () => {
     instance.value.statusCategory = new ReferenceExpression(
-      new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'Done')
+      validStatusCategory.elemID, validStatusCategory
     )
-
     expect(await statusValidator([
       toChange({
         after: instance,

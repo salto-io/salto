@@ -18,7 +18,7 @@ import { collections } from '@salto-io/lowerdash'
 import { STATUS_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
-const NO_CATEGORY_STATUS = 'jira.StatusCategory.instance.No_Category@s'
+const NO_CATEGORY_STATUS = 'No Category'
 
 export const statusValidator: ChangeValidator = async changes => (
   awu(changes)
@@ -28,12 +28,12 @@ export const statusValidator: ChangeValidator = async changes => (
     .filter(instance => instance.elemID.typeName === STATUS_TYPE_NAME)
     .filter(instance =>
       isReferenceExpression(instance.value.statusCategory)
-      && instance.value.statusCategory.elemID.getFullName() === NO_CATEGORY_STATUS)
+      && instance.value.statusCategory.value.value.name === NO_CATEGORY_STATUS)
     .map(async instance => ({
       elemID: instance.elemID,
       severity: 'Error' as SeverityLevel,
       message: 'statusCategory can not have No_Category value',
-      detailedMessage: `The status ${instance.elemID.getFullName()} have an invalid statusCategory, statusCategory should be one of the following: [ Done, In_Progress, To_Do ]`,
+      detailedMessage: `The status ${instance.elemID.getFullName()} has an invalid statusCategory, statusCategory should be one of the following: [ Done, In_Progress, To_Do ]`,
     }))
     .toArray()
 )

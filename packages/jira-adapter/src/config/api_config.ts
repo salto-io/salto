@@ -1286,11 +1286,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       ],
       serviceUrl: '/secure/admin/EditStatus!default.jspa?id={id}',
     },
-    jspRequests: {
-      add: '/secure/admin/AddStatus.jspa',
-      modify: '/secure/admin/EditStatus.jspa',
-      remove: '/secure/admin/DeleteStatus.jspa',
-      query: '/rest/workflowDesigner/1.0/statuses',
+    deployRequests: {
+      remove: {
+        url: '/rest/api/3/statuses?id={id}',
+        method: 'delete',
+      },
     },
   },
 

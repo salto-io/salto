@@ -312,7 +312,6 @@ describe('salesforce client', () => {
     let testClient: SalesforceClient
     let testConnection: MockInterface<Connection>
     let nullFailingImplementation: Metadata['list']
-    let rangeErrorFailingImplementation: Metadata['list']
     let unknownErrorToRetryImplementation: Metadata['list']
     let pollingTimeOutImplementation: Metadata['list']
 
@@ -324,9 +323,6 @@ describe('salesforce client', () => {
         // Intentionally access .result on null
         (null as unknown as { result: FileProperties[] }).result
       )
-      rangeErrorFailingImplementation = async () => {
-        throw new RangeError('Too many properties to enumerate')
-      }
       unknownErrorToRetryImplementation = async () => {
         throw new Error('unknown_error: retry your request')
       }

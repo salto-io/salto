@@ -165,7 +165,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
           ? await logoInstance.value.content.getContent()
           : undefined
         const deployResult = await deployBrandLogo(client, logoInstance, fileContent)
-        return deployResult === undefined ? change : deployResult
+        return deployResult ?? change
       })
       .toArray()
 

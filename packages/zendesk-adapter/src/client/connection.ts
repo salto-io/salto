@@ -17,7 +17,6 @@ import axios from 'axios'
 import axiosRetry from 'axios-retry'
 import { AccountId } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { AuthenticatedAPIConnection, AuthParams, RetryOptions } from '@salto-io/adapter-components/src/client/http_connection'
 import { logger } from '@salto-io/logging'
 import { Credentials, isOauthAccessTokenCredentials, OauthAccessTokenCredentials, UsernamePasswordCredentials } from '../auth'
 
@@ -54,7 +53,7 @@ export const validateCredentials = async ({ credentials, connection }: {
 
 const usernamePasswordAuthParamsFunc = (
   { username, password }: UsernamePasswordCredentials
-): AuthParams => ({
+): clientUtils.AuthParams => ({
   auth: {
     username,
     password,
@@ -64,7 +63,7 @@ const usernamePasswordAuthParamsFunc = (
 
 const accessTokenAuthParamsFunc = (
   { accessToken }: OauthAccessTokenCredentials
-): AuthParams => ({
+): clientUtils.AuthParams => ({
   headers: {
     Authorization: `Bearer ${accessToken}`,
     ...APP_MARKETPLACE_HEADERS,
@@ -72,7 +71,7 @@ const accessTokenAuthParamsFunc = (
 })
 
 export const createConnection: clientUtils.ConnectionCreator<Credentials> = (
-  retryOptions: RetryOptions,
+  retryOptions: clientUtils.RetryOptions,
 ) => (
   clientUtils.axiosConnection({
     retryOptions,
@@ -90,7 +89,7 @@ export const createResourceConnection:
   clientUtils.ConnectionCreator<Credentials> = retryOptions => {
     const login = async (
       creds: Credentials,
-    ): Promise<AuthenticatedAPIConnection> => {
+    ): Promise<clientUtils.AuthenticatedAPIConnection> => {
       const httpClient = axios.create({
         baseURL: resourceUrl(creds.subdomain),
         headers: APP_MARKETPLACE_HEADERS,

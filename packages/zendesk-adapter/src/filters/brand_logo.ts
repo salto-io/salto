@@ -75,6 +75,9 @@ const getBrandLogo = async ({ client, brand }: {
   brand: InstanceElement
 }): Promise<InstanceElement | undefined> => {
   const logoValues = brand.value.logo
+  if (logoValues === undefined) {
+    return undefined
+  }
   const name = elementsUtils.ducktype.toNestedTypeName(
     brand.value.name, logoValues.file_name
   )
@@ -109,12 +112,12 @@ const deployBrandLogo = async (
   client: ZendeskClient,
   logoInstance: InstanceElement,
   logoContent: Buffer | undefined,
-): ReturnType<typeof client.put> => {
+): Promise<void> => {
   const form = new FormData()
   form.append('brand[logo][uploaded_data]', logoContent || Buffer.from(''), logoInstance.value.filename)
   try {
     const brandId = getParent(logoInstance).value.id
-    return await client.put({
+    await client.put({
       url: `/brands/${brandId}`,
       data: form,
       headers: { ...form.getHeaders() },

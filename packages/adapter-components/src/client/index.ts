@@ -18,6 +18,6 @@ export { ClientBaseConfig, ClientRateLimitConfig, ClientPageSizeConfig, createCl
 export { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from './constants'
 export { logDecorator, requiresLogin } from './decorators'
 export { AdapterHTTPClient, ClientBaseParams, ClientDataParams, ClientOpts, HTTPReadClientInterface, HTTPWriteClientInterface, HTTPError } from './http_client'
-export { axiosConnection, createClientConnection, createRetryOptions, validateCredentials, APIConnection, ConnectionCreator, Response, ResponseValue, UnauthorizedError, Connection } from './http_connection'
+export { axiosConnection, createClientConnection, createRetryOptions, validateCredentials, APIConnection, ConnectionCreator, Response, ResponseValue, UnauthorizedError, Connection, RetryOptions, AuthParams, AuthenticatedAPIConnection } from './http_connection'
 export { createPaginator, getWithCursorPagination, getWithPageOffsetPagination, getWithPageOffsetAndLastPagination, getWithOffsetAndLimit, traverseRequests, ClientGetWithPaginationParams, GetAllItemsFunc, PageEntriesExtractor, PaginationFunc, PaginationFuncCreator, Paginator, PathCheckerFunc } from './pagination'
 export { createRateLimitersFromConfig, throttle, BottleneckBuckets } from './rate_limit'

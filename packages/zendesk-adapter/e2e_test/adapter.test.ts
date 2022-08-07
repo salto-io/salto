@@ -18,7 +18,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { Change, ChangeId, Element, ElemID, InstanceElement, isInstanceElement, ObjectType,
   isObjectType, toChange, Values, ReferenceExpression, CORE_ANNOTATIONS,
   FieldDefinition, BuiltinTypes, Value } from '@salto-io/adapter-api'
-import { naclCase } from '@salto-io/adapter-utils'
+import { naclCase, getParent } from '@salto-io/adapter-utils'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
@@ -288,6 +288,7 @@ describe('Zendesk adapter E2E', () => {
         'app_installation',
         'automation',
         'brand',
+        'brand_logo',
         'business_hours_schedule',
         'custom_role',
         'dynamic_content_item',
@@ -402,6 +403,19 @@ describe('Zendesk adapter E2E', () => {
           expect(order.value.active
             .map((ref: ReferenceExpression) => ref.elemID.getFullName()))
             .toContain(instance.elemID.getFullName())
+        })
+    })
+    it('should fetch brand_logo correctly', async () => {
+      const instances = Object.values(groupIdToInstances).flat()
+      instances
+        .filter(inst => inst.elemID.typeName === 'brand_logo')
+        .forEach(instanceToAdd => {
+          const instance = elements
+            .find(e => e.elemID.isEqual(instanceToAdd.elemID)) as InstanceElement
+          expect(instance).toBeDefined()
+          expect(instance.value).toMatchObject(instanceToAdd.value)
+          const brandInstance = getParent(instance)
+          expect(brandInstance.value.logo).toBe(instance.elemID)
         })
     })
   })

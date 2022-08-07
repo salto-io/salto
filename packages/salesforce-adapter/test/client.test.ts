@@ -61,7 +61,7 @@ describe('salesforce client', () => {
     }),
     config: {
       retry: {
-        maxAttempts: 4, // try 4 times
+        maxAttempts: 3, // try 3 times
         retryDelay: 100, // wait for 100ms before trying again
       },
       maxConcurrentApiRequests: {
@@ -144,7 +144,7 @@ describe('salesforce client', () => {
         throw new Error('client should have failed')
       } catch (e) {
         expect(e.message).toBe('something awful happened')
-        expect(e.attempts).toBe(4)
+        expect(e.attempts).toBe(3)
       }
       expect(dodoScope.isDone()).toBeTruthy()
     })
@@ -340,8 +340,6 @@ describe('salesforce client', () => {
       beforeEach(() => {
         expectedProperties = mockFileProperties({ type: 'CustomObject', fullName: 'A__c' })
         testConnection.metadata.list
-          .mockImplementationOnce(nullFailingImplementation)
-          .mockImplementationOnce(rangeErrorFailingImplementation)
           .mockImplementationOnce(unknownErrorToRetryImplementation)
           .mockImplementationOnce(pollingTimeOutImplementation)
           .mockResolvedValueOnce([expectedProperties])

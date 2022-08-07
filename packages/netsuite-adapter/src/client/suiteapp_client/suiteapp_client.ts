@@ -27,17 +27,17 @@ import _ from 'lodash'
 import { values, decorators } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { InstanceElement } from '@salto-io/adapter-api'
+import { CredentialError, InstanceElement } from '@salto-io/adapter-api'
 import { CallsLimiter, ConfigRecord, ConfigRecordData, GetConfigResult, CONFIG_RECORD_DATA_SCHEMA,
-  GET_CONFIG_RESULT_SCHEMA, ExistingFileCabinetInstanceDetails,
+  ExistingFileCabinetInstanceDetails,
   FILES_READ_SCHEMA, HttpMethod, isError, ReadResults, RestletOperation, RestletResults,
   RESTLET_RESULTS_SCHEMA, SavedSearchQuery, SavedSearchResults, SAVED_SEARCH_RESULTS_SCHEMA,
   SuiteAppClientParameters, SuiteQLResults, SUITE_QL_RESULTS_SCHEMA, SystemInformation,
-  SYSTEM_INFORMATION_SCHEME, FileCabinetInstanceDetails, ConfigFieldDefinition, CONFIG_FIELD_DEFINITION_SCHEMA, SetConfigType, SET_CONFIG_RESULT_SCHEMA, SetConfigRecordsValuesResult, SetConfigResult } from './types'
+  SYSTEM_INFORMATION_SCHEME, FileCabinetInstanceDetails, ConfigFieldDefinition, CONFIG_FIELD_DEFINITION_SCHEMA, SetConfigType, SetConfigRecordsValuesResult, SetConfigResult, getConfigResultSchema, SET_CONFIG_RESULT_SCHEMA } from './types'
 import { SuiteAppCredentials, toUrlAccountId } from '../credentials'
-import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
+import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_FEATURE_TYPE } from '../../types'
 import { DEFAULT_CONCURRENCY } from '../../config'
-import { CONSUMER_KEY, CONSUMER_SECRET } from './constants'
+import { CONSUMER_KEY, CONSUMER_SECRET, SDF, SUITE_BUNDLER, SOAP, REST, TBA } from './constants'
 import SoapClient from './soap_client/soap_client'
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError, RetryableError, retryOnRetryableError } from './errors'
 import { InvalidSuiteAppCredentialsError } from '../types'
@@ -260,8 +260,8 @@ export default class SuiteAppClient {
         action: 'get',
         types: SUITEAPP_CONFIG_RECORD_TYPES,
       })
-
-      if (!this.ajv.validate<GetConfigResult>(GET_CONFIG_RESULT_SCHEMA, result)) {
+      if (!this.ajv.validate<GetConfigResult>(getConfigResultSchema(SUITEAPP_CONFIG_RECORD_TYPES),
+        result)) {
         log.error(
           'getConfigRecords failed. Got invalid results - %s: %o',
           this.ajv.errorsText(),
@@ -343,7 +343,38 @@ export default class SuiteAppClient {
   public static async validateCredentials(credentials: SuiteAppCredentials): Promise<void> {
     const client = new SuiteAppClient({ credentials, globalLimiter: new Bottleneck() })
     await client.sendRestletRequest('sysInfo')
+    await client.validateFeatures()
   }
+
+  private async validateFeatures(): Promise<void> {
+    const result = await this.sendRestletRequest('config', {
+      action: 'get',
+      types: ['FEATURES'],
+    })
+    if (!this.ajv.validate<GetConfigResult>(getConfigResultSchema(SUITEAPP_FEATURE_TYPE), result)) {
+      log.error(
+        'validateFeatures failed. Got invalid results - %s: %o',
+        this.ajv.errorsText(),
+        result
+      )
+      return
+    }
+    const { results } = result
+    const featureFields = results[0].data.fields
+    const featureArr = [SDF, SUITE_BUNDLER, SOAP, REST, TBA]
+    const featuresToEnalble: string[] = []
+    featureArr.map(elem => {
+      if (featureFields[elem] !== 'T') {
+        featuresToEnalble.push(elem)
+      }
+      return []
+    })
+    if (featuresToEnalble.length !== 0) {
+      const message = `The following features are disabled: ${featuresToEnalble.toString()}. Please enable them using the NetSuite UI and try again.`
+      throw new CredentialError(message)
+    }
+  }
+
 
   private async safeAxiosPost(
     href: string,

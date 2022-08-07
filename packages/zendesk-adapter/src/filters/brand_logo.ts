@@ -112,7 +112,7 @@ const deployBrandLogo = async (
   client: ZendeskClient,
   logoInstance: InstanceElement,
   logoContent: Buffer | undefined,
-): Promise<void> => {
+): Promise<Error | void> => {
   const form = new FormData()
   form.append('brand[logo][uploaded_data]', logoContent || Buffer.from(''), logoInstance.value.filename)
   try {
@@ -123,8 +123,9 @@ const deployBrandLogo = async (
       headers: { ...form.getHeaders() },
     })
   } catch (err) {
-    throw getZendeskError(logoInstance.elemID.getFullName(), err)
+    return getZendeskError(logoInstance.elemID.getFullName(), err)
   }
+  return undefined
 }
 
 /**
@@ -154,20 +155,29 @@ const filterCreator: FilterCreator = ({ client }) => ({
       brandLogoChanges,
       change => change.action === 'remove',
     )
-    await awu(brandLogoRemovals.concat(brandLogoAddistionsAndModifications))
-      .forEach(async change => {
+    const deployLogoResults = await awu(
+      brandLogoRemovals.concat(brandLogoAddistionsAndModifications)
+    )
+      .map(async change => {
         const logoInstance = getChangeData(change)
         const fileContent = isAdditionOrModificationChange(change)
           && isStaticFile(logoInstance.value.content)
           ? await logoInstance.value.content.getContent()
           : undefined
-        await deployBrandLogo(client, logoInstance, fileContent)
+        const deployResult = await deployBrandLogo(client, logoInstance, fileContent)
+        return deployResult === undefined ? change : deployResult
       })
+      .toArray()
+
+    const [deployLogoErrors, successfulChanges] = _.partition(
+      deployLogoResults,
+      _.isError,
+    )
 
     return {
       deployResult: {
-        appliedChanges: brandLogoChanges,
-        errors: [],
+        appliedChanges: successfulChanges,
+        errors: deployLogoErrors,
       },
       leftoverChanges,
     }

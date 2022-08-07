@@ -231,9 +231,6 @@ describe('brand logo filter', () => {
         { action: 'remove', data: { before: clonedBrand } },
         { action: 'remove', data: { before: clonedLogo } },
       ])
-      const resolvedClonedBrand = clonedBrand.clone()
-      resolvedClonedBrand.value[LOGO_FIELD] = [logoId]
-      resolvedClonedBrand.value.id = brandId
 
       expect(mockPut).toHaveBeenCalledTimes(1)
       expect(mockPut).toHaveBeenCalledWith({
@@ -251,6 +248,22 @@ describe('brand logo filter', () => {
       expect(res.deployResult.appliedChanges[0]).toEqual(
         { action: 'remove', data: { before: clonedLogo } }
       )
+    })
+    it('should return errors', async () => {
+      const clonedBrand = brandInstance.clone()
+      const clonedLogo = logoInstance.clone()
+      clonedLogo.annotations[CORE_ANNOTATIONS.PARENT] = []
+      const res = await filter.deploy([
+        { action: 'add', data: { after: clonedBrand } },
+        { action: 'add', data: { after: clonedLogo } },
+      ])
+
+      expect(res.deployResult.errors).toHaveLength(1)
+      expect(res.deployResult.errors[0]).toEqual(Error(`Expected ${clonedLogo.elemID.getFullName()} to have exactly one parent, found 0`))
+      expect(res.deployResult.appliedChanges).toHaveLength(0)
+      expect(res.leftoverChanges).toHaveLength(1)
+      expect((getChangeData(res.leftoverChanges[0]) as InstanceElement).value)
+        .toEqual(clonedBrand.value)
     })
   })
 })

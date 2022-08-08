@@ -232,7 +232,7 @@ export const formatChangeErrors = (
   }
   const formatElement = (changeError: ChangeWorkspaceError):string => {
     const possibleDetailed: string = detailed ? `${EOL}${indent(chalk.dim(changeError.detailedMessage), errorsIndent + 2)}` : ''
-    return `${indent(changeError.elemID.name, errorsIndent + 1)}${possibleDetailed}`
+    return `${indent(changeError.elemID.getFullName(), errorsIndent + 1)}${possibleDetailed}`
   }
   const formatGroupedChangeErrors = (groupedChangeErrors: ChangeWorkspaceError[]): string => {
     const firstErr: ChangeWorkspaceError = groupedChangeErrors[0]

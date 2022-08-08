@@ -159,14 +159,14 @@ describe('formatter', () => {
     it('should have grouped validations', () => {
       const output = formatChangeErrors(groupedChangeErrors)
       let expectedMessage = `    ${groupedChangeErrors[0].severity}: ${chalk.bold(groupedChangeErrors[0].message)} in the following elements:`
-      expectedMessage += `${EOL}      test1${EOL}      test2`
+      expectedMessage += `${EOL}      ${groupedChangeErrors[0].elemID.getFullName()}${EOL}      ${groupedChangeErrors[1].elemID.getFullName()}`
       expect(output).toMatch(expectedMessage)
     })
     it('should display detailed message in detailed mode for grouped validations', () => {
       const output = formatChangeErrors(groupedChangeErrors, true)
       let expectedMessage = `    ${groupedChangeErrors[0].severity}: ${chalk.bold(groupedChangeErrors[0].message)} in the following elements:`
-      expectedMessage += `${EOL}      test1${EOL}        ${chalk.dim(groupedChangeErrors[0].detailedMessage)}`
-      expectedMessage += `${EOL}      test2${EOL}        ${chalk.dim(groupedChangeErrors[1].detailedMessage)}`
+      expectedMessage += `${EOL}      ${groupedChangeErrors[0].elemID.getFullName()}${EOL}        ${chalk.dim(groupedChangeErrors[0].detailedMessage)}`
+      expectedMessage += `${EOL}      ${groupedChangeErrors[1].elemID.getFullName()}${EOL}        ${chalk.dim(groupedChangeErrors[1].detailedMessage)}`
       expect(output).toMatch(expectedMessage)
     })
     it('should contain EOL between title and content', () => {

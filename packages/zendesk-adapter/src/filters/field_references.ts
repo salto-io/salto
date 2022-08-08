@@ -591,6 +591,36 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     serializationStrategy: 'id',
     target: { type: 'view' },
   },
+  {
+    src: { field: 'section_id' },
+    serializationStrategy: 'id',
+    target: { type: 'section' },
+  },
+  {
+    src: { field: 'category_id', parentTypes: ['section'] },
+    serializationStrategy: 'id',
+    target: { type: 'category' },
+  },
+  {
+    src: { field: 'user_segment_id' },
+    serializationStrategy: 'id',
+    target: { type: 'user_segment' },
+  },
+  {
+    src: { field: 'permission_group_id' },
+    serializationStrategy: 'id',
+    target: { type: 'permission_group' },
+  },
+  {
+    src: { field: 'organization_ids' },
+    serializationStrategy: 'id',
+    target: { type: 'organization' },
+  },
+  {
+    src: { field: 'badge_category_id' },
+    serializationStrategy: 'id',
+    target: { type: 'badge_category' },
+  },
 
   {
     src: {

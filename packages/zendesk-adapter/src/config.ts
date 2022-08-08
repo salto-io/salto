@@ -58,6 +58,7 @@ export type ZendeskFetchConfig = configUtils.DuckTypeUserFetchConfig
     enableMissingReferences?: boolean
     greedyAppReferences?: boolean
     appReferenceLocators?: IdLocator[]
+    enableGuide?: boolean
   }
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
   configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean }
@@ -1581,6 +1582,180 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
+  articles: {
+    request: {
+      url: '/help_center/articles',
+    },
+    transformation: {
+      dataField: 'articles',
+    },
+  },
+  article: {
+    transformation: {
+      sourceTypeName: 'articles__articles',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'vote_sum' },
+        { fieldName: 'vote_count' },
+        { fieldName: 'edited_at' },
+        { fieldName: 'html_url', fieldType: 'string' },
+      ),
+    },
+  },
+  sections: {
+    request: {
+      url: '/help_center/sections',
+    },
+    transformation: {
+      dataField: 'sections',
+    },
+  },
+  section: {
+    transformation: {
+      sourceTypeName: 'sections__sections',
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'number' },
+      ),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'html_url', fieldType: 'string' },
+      ),
+    },
+  },
+  labels: {
+    request: {
+      url: '/help_center/articles/labels',
+    },
+    transformation: {
+      dataField: 'labels',
+    },
+  },
+  label: {
+    transformation: {
+      sourceTypeName: 'labels__labels',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+    },
+  },
+  categories: {
+    request: {
+      url: '/help_center/categories',
+    },
+    transformation: {
+      dataField: 'categories',
+    },
+  },
+  category: {
+    transformation: {
+      sourceTypeName: 'categories__categories',
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'number' },
+      ),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'html_url', fieldType: 'string' },
+      ),
+    },
+  },
+  permission_groups: {
+    request: {
+      url: '/guide/permission_groups',
+    },
+    transformation: {
+      dataField: 'permission_groups',
+    },
+  },
+  permission_group: {
+    transformation: {
+      sourceTypeName: 'permission_groups__permission_groups',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+    },
+  },
+  user_segments: {
+    request: {
+      url: '/help_center/user_segments',
+    },
+    transformation: {
+      dataField: 'user_segments',
+    },
+  },
+  user_segment: {
+    transformation: {
+      sourceTypeName: 'user_segments__user_segments',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+    },
+  },
+  badges: {
+    request: {
+      url: '/gather/badges',
+    },
+    transformation: {
+      dataField: 'badges',
+    },
+  },
+  badge: {
+    transformation: {
+      sourceTypeName: 'badges__badges',
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'string' },
+      ),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'string' }],
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'icon_url', fieldType: 'string' },
+      ),
+    },
+  },
+  badge_categories: {
+    request: {
+      url: '/gather/badge_categories',
+    },
+    transformation: {
+      dataField: 'badge_categories',
+    },
+  },
+  badge_category: {
+    transformation: {
+      sourceTypeName: 'badge_categories__badge_categories',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'string' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'string' }],
+    },
+  },
+  themes: {
+    request: {
+      url: '/guide/theming/themes',
+    },
+    transformation: {
+      dataField: 'themes',
+    },
+  },
+  theme: {
+    transformation: {
+      sourceTypeName: 'themes__themes',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'string' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'string' }],
+    },
+  },
+  topics: {
+    request: {
+      url: '/community/topics',
+    },
+    transformation: {
+      dataField: 'topics',
+    },
+  },
+  topic: {
+    transformation: {
+      sourceTypeName: 'topics__topics',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'html_url', fieldType: 'string' },
+      ),
+    },
+  },
   // not included yet: satisfaction_reason (returns 403), sunshine apis
 }
 
@@ -1619,6 +1794,19 @@ export const SUPPORTED_TYPES = {
   workspace: ['workspaces'],
 }
 
+export const GUIDE_SUPPORTED_TYPES = {
+  article: ['articles'],
+  section: ['sections'],
+  label: ['labels'],
+  category: ['categories'],
+  permission_group: ['permission_groups'],
+  user_segment: ['user_segments'],
+  badge: ['badges'],
+  badge_category: ['badge_categories'],
+  theme: ['themes'],
+  topic: ['topics'],
+}
+
 export const DEFAULT_CONFIG: ZendeskConfig = {
   [FETCH_CONFIG]: {
     include: [{
@@ -1630,6 +1818,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     ],
     hideTypes: true,
     enableMissingReferences: true,
+    enableGuide: false,
   },
   [API_DEFINITIONS_CONFIG]: {
     typeDefaults: {
@@ -1687,6 +1876,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
           greedyAppReferences: { refType: BuiltinTypes.BOOLEAN },
           appReferenceLocators: { refType: IdLocatorType },
+          enableGuide: { refType: BuiltinTypes.BOOLEAN },
         },
       ),
     },
@@ -1700,6 +1890,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       API_DEFINITIONS_CONFIG,
       `${FETCH_CONFIG}.hideTypes`,
       `${FETCH_CONFIG}.enableMissingReferences`,
+      `${FETCH_CONFIG}.enableGuide`,
     ),
   },
 })

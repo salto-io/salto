@@ -26,7 +26,8 @@ import SalesforceClient from '../src/client/client'
 import { UsernamePasswordCredentials } from '../src/types'
 import { runFiltersOnFetch, createElement, removeElementAndVerify, createInstance, getRecordOfInstance, fetchTypes, getMetadataInstance, removeElement, removeElementIfAlreadyExists } from './utils'
 import { apiName, isInstanceOfCustomObject } from '../src/transformers/transformer'
-import customObjectsFilter from '../src/filters/custom_objects'
+import customObjectsFromDescribeFilter from '../src/filters/custom_objects_from_soap_describe'
+import customObjectsToObjectTypeFilter from '../src/filters/custom_objects_to_object_type'
 import customObjectsInstancesFilter from '../src/filters/custom_objects_instances'
 import { createCustomSettingsObject } from '../test/utils'
 import { CUSTOM_OBJECT, LIST_CUSTOM_SETTINGS_TYPE } from '../src/constants'
@@ -109,7 +110,11 @@ describe('custom object instances e2e', () => {
       client,
       filtersContext,
       elements,
-      [customObjectsFilter, customObjectsInstancesFilter],
+      [
+        customObjectsFromDescribeFilter,
+        customObjectsToObjectTypeFilter,
+        customObjectsInstancesFilter,
+      ],
     )
   })
 

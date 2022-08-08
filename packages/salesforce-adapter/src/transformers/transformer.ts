@@ -410,6 +410,7 @@ export class Types {
 
   // Type mapping for custom objects
   public static primitiveDataTypes: Record<ALL_FIELD_TYPE_NAMES, PrimitiveType> = {
+    serviceid: BuiltinTypes.SERVICE_ID,
     Text: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TEXT),
       primitive: PrimitiveTypes.STRING,
@@ -502,7 +503,7 @@ export class Types {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.VISIBLE_LINES]: restrictedNumberTypes.MultiPicklistVisibleLines,
         [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: Types.fieldDependencyType,
-        [FIELD_ANNOTATIONS.VALUE_SET]: Types.valueSetType,
+        [FIELD_ANNOTATIONS.VALUE_SET]: new ListType(Types.valueSetType),
         [FIELD_ANNOTATIONS.RESTRICTED]: BuiltinTypes.BOOLEAN,
         [VALUE_SET_FIELDS.VALUE_SET_NAME]: BuiltinTypes.STRING,
         [VALUE_SET_DEFINITION_FIELDS.SORTED]: BuiltinTypes.BOOLEAN,
@@ -586,7 +587,7 @@ export class Types {
       primitive: PrimitiveTypes.STRING,
       annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
-        [FIELD_ANNOTATIONS.REFERENCE_TO]: BuiltinTypes.STRING,
+        [FIELD_ANNOTATIONS.REFERENCE_TO]: new ListType(BuiltinTypes.STRING),
         [FIELD_ANNOTATIONS.LOOKUP_FILTER]: Types.lookupFilterType,
         [FIELD_ANNOTATIONS.RELATIONSHIP_NAME]: BuiltinTypes.STRING,
         [FIELD_ANNOTATIONS.RELATIONSHIP_LABEL]: BuiltinTypes.STRING,
@@ -601,7 +602,7 @@ export class Types {
         [FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.LOOKUP_FILTER]: Types.lookupFilterType,
-        [FIELD_ANNOTATIONS.REFERENCE_TO]: BuiltinTypes.STRING,
+        [FIELD_ANNOTATIONS.REFERENCE_TO]: new ListType(BuiltinTypes.STRING),
         [FIELD_ANNOTATIONS.RELATIONSHIP_ORDER]: restrictedNumberTypes.RelationshipOrder,
         [FIELD_ANNOTATIONS.RELATIONSHIP_NAME]: BuiltinTypes.STRING,
         [FIELD_ANNOTATIONS.RELATIONSHIP_LABEL]: BuiltinTypes.STRING,
@@ -618,6 +619,13 @@ export class Types {
         [FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]: new ListType(Types.rollupSummaryFilterItemsType),
         [FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]: BuiltinTypes.STRING,
         [FIELD_ANNOTATIONS.SUMMARY_OPERATION]: Types.rollupSummaryOperationType,
+      },
+    }),
+    Hierarchy: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.HIERARCHY),
+      primitive: PrimitiveTypes.STRING,
+      annotationRefsOrTypes: {
+        ...Types.commonAnnotationTypes,
       },
     }),
     Unknown: new PrimitiveType({
@@ -797,15 +805,15 @@ export class Types {
   }
 
   static getAllFieldTypes(): TypeElement[] {
-    return _.concat(
-      Object.values(Types.primitiveDataTypes),
-      Object.values(Types.compoundDataTypes) as TypeElement[],
-      Object.values(Types.formulaDataTypes),
-    ).map(type => {
-      const fieldType = type.clone()
-      fieldType.path = [SALESFORCE, TYPES_PATH, 'fieldTypes']
-      return fieldType
-    })
+    return Object.values<TypeElement>(Types.primitiveDataTypes)
+      .concat(Object.values(Types.compoundDataTypes))
+      .concat(Object.values(Types.formulaDataTypes))
+      .filter(type => type.elemID.adapter === SALESFORCE)
+      .map(type => {
+        const fieldType = type.clone()
+        fieldType.path = [SALESFORCE, TYPES_PATH, 'fieldTypes']
+        return fieldType
+      })
   }
 
   static getAllMissingTypes(): ObjectType[] {
@@ -901,7 +909,10 @@ export const instancesToCreateRecords = (
 export const instancesToDeleteRecords = (instances: InstanceElement[]): SalesforceRecord[] =>
   instances.map(instance => ({ Id: instance.value[CUSTOM_OBJECT_ID_FIELD] }))
 
-export const toCustomField = async (field: Field): Promise<CustomField> => {
+export const toCustomField = async (
+  field: Field,
+  omitInternalAnnotations = true,
+): Promise<CustomField> => {
   const fieldDependency = field.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
   const newField = new CustomField(
     await apiName(field, true),
@@ -954,8 +965,13 @@ export const toCustomField = async (field: Field): Promise<CustomField> => {
     ...isCustom(await apiName(field)) ? [] : [LABEL],
   ]
   const isAllowed = async (annotationName: string): Promise<boolean> => (
-    Object.keys((await field.getType()).annotationRefTypes).includes(annotationName)
-    && !annotationsToSkip.includes(annotationName)
+    (
+      omitInternalAnnotations
+      && Object.keys((await field.getType()).annotationRefTypes).includes(annotationName)
+      && !annotationsToSkip.includes(annotationName)
+    ) || (
+      !omitInternalAnnotations && !annotationsHandledInCtor.includes(annotationName)
+    )
   )
   // Convert the annotations' names to the required API name
   _.assign(

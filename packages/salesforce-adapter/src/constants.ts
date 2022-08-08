@@ -56,11 +56,13 @@ export enum FIELD_TYPE_NAMES {
   LOOKUP = 'Lookup',
   MASTER_DETAIL = 'MasterDetail',
   ROLLUP_SUMMARY = 'Summary',
+  HIERARCHY = 'Hierarchy',
 }
 
 export enum INTERNAL_FIELD_TYPE_NAMES {
   UNKNOWN = 'Unknown', // internal-only placeholder for fields whose type is unknown
   ANY = 'AnyType',
+  SERVICE_ID = 'serviceid',
 }
 
 export type ALL_FIELD_TYPE_NAMES = FIELD_TYPE_NAMES | INTERNAL_FIELD_TYPE_NAMES
@@ -90,7 +92,6 @@ export const CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES = [
   'MetadataRelationship',
   'ExternalLookup',
   'IndirectLookup',
-  'Hierarchy',
   'File',
 ]
 

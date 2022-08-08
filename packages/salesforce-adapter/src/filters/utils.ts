@@ -41,8 +41,6 @@ const { toArrayAsync, awu } = collections.asynciterable
 const { weightedChunks } = chunks
 const log = logger(module)
 
-export const id = (elem: Element): string => elem.elemID.getFullName()
-
 export const isCustomMetadataType = async (elem: ObjectType): Promise<boolean> => {
   const elementApiName = await apiName(elem)
   return elementApiName?.endsWith('__mdt') ?? false
@@ -71,11 +69,11 @@ const setAnnotationDefault = (
   type: TypeElement,
 ): void => {
   if (elem.annotations[key] === undefined) {
-    log.debug('setting default value on %s: %s=%s', elem.elemID.getFullName(), key, defaultValue)
+    log.trace('setting default value on %s: %s=%s', elem.elemID.getFullName(), key, defaultValue)
     elem.annotations[key] = defaultValue
   }
   if (elem.annotationRefTypes[key] === undefined) {
-    log.debug('adding annotation type %s on %s', key, elem.elemID.getFullName())
+    log.trace('adding annotation type %s on %s', key, elem.elemID.getFullName())
     elem.annotationRefTypes[key] = createRefToElmWithValue(type)
   }
 }
@@ -95,7 +93,7 @@ void => {
     const newApiName = name ?? defaultApiName(elem)
     const fullApiName = parentName ? [parentName, newApiName].join(API_NAME_SEPARATOR) : newApiName
     elem.annotations[API_NAME] = fullApiName
-    log.debug(`added API_NAME=${fullApiName} to ${elem.elemID.name}`)
+    log.trace(`added API_NAME=${fullApiName} to ${elem.elemID.name}`)
   }
   if (!isField(elem) && !elem.annotationRefTypes[API_NAME]) {
     elem.annotationRefTypes[API_NAME] = createRefToElmWithValue(BuiltinTypes.SERVICE_ID)

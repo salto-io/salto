@@ -103,7 +103,7 @@ const markListRecursively = async (
   await applyRecursive(type, values, markList)
 }
 
-const castListRecursively = async (
+export const castListRecursively = async (
   type: ObjectType,
   values: Values,
   unorderedLists: ReadonlyArray<UnorderedList> = [],

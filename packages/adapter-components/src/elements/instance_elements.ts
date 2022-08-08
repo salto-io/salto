@@ -62,6 +62,7 @@ export const getInstanceFilePath = ({
   naclName,
   typeName,
   isSettingType,
+  convertNameToLowercase,
   adapterName,
 }: {
   fileNameFields: string[] | undefined
@@ -69,6 +70,7 @@ export const getInstanceFilePath = ({
   naclName: string
   typeName: string
   isSettingType: boolean
+  convertNameToLowercase: boolean | undefined
   adapterName: string
 }): string[] => {
   const fileNameParts = (fileNameFields !== undefined
@@ -77,6 +79,7 @@ export const getInstanceFilePath = ({
   const fileName = ((fileNameParts?.every(p => _.isString(p) || _.isNumber(p))
     ? fileNameParts.join('_')
     : undefined))
+  const naclCaseFileName = fileName ? pathNaclCase(naclCase(fileName)) : pathNaclCase(naclName)
   return isSettingType
     ? [
       adapterName,
@@ -88,7 +91,7 @@ export const getInstanceFilePath = ({
       adapterName,
       RECORDS_PATH,
       pathNaclCase(typeName),
-      fileName ? pathNaclCase(naclCase(fileName)) : pathNaclCase(naclName),
+      convertNameToLowercase ? naclCaseFileName.toLowerCase() : naclCaseFileName,
     ]
 }
 
@@ -97,11 +100,13 @@ export const generateInstanceNameFromConfig = (
   typeName: string,
   apiDefinitions: AdapterApiConfig
 ): string | undefined => {
-  const { idFields } = getConfigWithDefault(
+  const { idFields, convertNameToLowercase } = getConfigWithDefault(
     apiDefinitions.types[typeName]?.transformation ?? {},
     apiDefinitions.typeDefaults.transformation
   )
-  return getInstanceName(values, idFields)
+  return convertNameToLowercase
+    ? getInstanceName(values, idFields)?.toLowerCase()
+    : getInstanceName(values, idFields)
 }
 
 export const removeNullValues = async (
@@ -132,6 +137,7 @@ export const getInstanceNaclName = ({
   getElemIdFunc,
   serviceIdField,
   typeElemId,
+  convertNameToLowercase,
 }:{
   entry: Values
   name: string
@@ -140,10 +146,12 @@ export const getInstanceNaclName = ({
   getElemIdFunc?: ElemIdGetter
   serviceIdField?: string
   typeElemId: ElemID
+  convertNameToLowercase: boolean | undefined
 }): string => {
-  const desiredName = naclCase(
+  const naclName = naclCase(
     parentName ? `${parentName}${ID_SEPARATOR}${name}` : String(name)
   )
+  const desiredName = convertNameToLowercase ? naclName.toLowerCase() : naclName
   return getElemIdFunc && serviceIdField
     ? getElemIdFunc(
       adapterName,
@@ -193,7 +201,7 @@ export const toBasicInstance = async ({
   })
 
   const {
-    idFields, fileNameFields, serviceIdField,
+    idFields, fileNameFields, serviceIdField, convertNameToLowercase,
   } = getConfigWithDefault(
     transformationConfigByType[type.elemID.name],
     transformationDefaultConfig,
@@ -210,6 +218,7 @@ export const toBasicInstance = async ({
     getElemIdFunc,
     serviceIdField,
     typeElemId: type.elemID,
+    convertNameToLowercase,
   })
 
   const filePath = getInstanceFilePath({
@@ -218,6 +227,7 @@ export const toBasicInstance = async ({
     naclName,
     typeName: type.elemID.name,
     isSettingType: type.isSettings,
+    convertNameToLowercase,
     adapterName,
   })
 

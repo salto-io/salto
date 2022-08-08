@@ -66,6 +66,8 @@ export type TransformationConfig = {
   serviceIdField?: string
   // The url of the type in the service
   serviceUrl?: string
+  // set to true to convert instance naclName and filename to lowercase
+  convertNameToLowercase?: boolean
 }
 
 export type TransformationDefaultConfig = types.PickyRequired<Partial<Omit<TransformationConfig, 'isSingleton'>>, 'idFields'>

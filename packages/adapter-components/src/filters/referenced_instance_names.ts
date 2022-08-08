@@ -39,6 +39,7 @@ const { getUpdatedReference, createReferencesTransformFunc } = references
 type TransformationIdConfig = {
   idFields: string[]
   extendsParentId?: boolean
+  convertNameToLowercase: boolean | undefined
 }
 
 const getFirstParentElemId = (instance: InstanceElement): ElemID | undefined => {
@@ -103,7 +104,7 @@ const createInstanceNameAndFilePath = (
   configByType: Record<string, TransformationConfig>,
   getElemIdFunc?: ElemIdGetter,
 ): { newNaclName: string; filePath: string[] } => {
-  const { idFields } = idConfig
+  const { idFields, convertNameToLowercase } = idConfig
   const newNameParts = createInstanceReferencedNameParts(instance, idFields)
   const newName = joinInstanceNameParts(newNameParts) ?? instance.elemID.name
   const parentName = getFirstParentElemId(instance)?.name
@@ -118,6 +119,7 @@ const createInstanceNameAndFilePath = (
     getElemIdFunc,
     serviceIdField,
     typeElemId: instance.refType.elemID,
+    convertNameToLowercase,
   })
 
   const filePath = getInstanceFilePath({
@@ -126,6 +128,7 @@ const createInstanceNameAndFilePath = (
     naclName: newNaclName,
     typeName,
     isSettingType: configByType[typeName].isSingleton ?? false,
+    convertNameToLowercase: configByType[typeName].convertNameToLowercase ?? false,
     adapterName: adapter,
   })
   return { newNaclName, filePath }
@@ -307,6 +310,7 @@ export const addReferencesToInstanceNames = async (
     idConfig: {
       idFields: configByType[instance.elemID.typeName].idFields,
       extendsParentId: configByType[instance.elemID.typeName].extendsParentId,
+      convertNameToLowercase: configByType[instance.elemID.typeName].convertNameToLowercase,
     },
   }))
 

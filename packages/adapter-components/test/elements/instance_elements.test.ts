@@ -59,4 +59,29 @@ describe('generateInstanceNameFromConfig', () => {
       }
     )).toBe('name')
   })
+  it('should create name in lower case if convertToLowercase is true', () => {
+    expect(generateInstanceNameFromConfig(
+      {
+        name: 'name',
+        id: 'ID',
+      },
+      'test',
+      {
+        typeDefaults: {
+          transformation: {
+            idFields: ['name'],
+          },
+        },
+        types: {
+          test: {
+            transformation: {
+              idFields: ['id'],
+              convertNameToLowercase: true,
+            },
+          },
+        },
+        supportedTypes: {},
+      }
+    )).toBe('id')
+  })
 })

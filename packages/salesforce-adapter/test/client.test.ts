@@ -61,7 +61,7 @@ describe('salesforce client', () => {
     }),
     config: {
       retry: {
-        maxAttempts: 4, // try 4 times
+        maxAttempts: 3, // try 3 times
         retryDelay: 100, // wait for 100ms before trying again
       },
       maxConcurrentApiRequests: {
@@ -144,7 +144,7 @@ describe('salesforce client', () => {
         throw new Error('client should have failed')
       } catch (e) {
         expect(e.message).toBe('something awful happened')
-        expect(e.attempts).toBe(4)
+        expect(e.attempts).toBe(3)
       }
       expect(dodoScope.isDone()).toBeTruthy()
     })
@@ -312,7 +312,6 @@ describe('salesforce client', () => {
     let testClient: SalesforceClient
     let testConnection: MockInterface<Connection>
     let nullFailingImplementation: Metadata['list']
-    let rangeErrorFailingImplementation: Metadata['list']
     let unknownErrorToRetryImplementation: Metadata['list']
     let pollingTimeOutImplementation: Metadata['list']
 
@@ -324,9 +323,6 @@ describe('salesforce client', () => {
         // Intentionally access .result on null
         (null as unknown as { result: FileProperties[] }).result
       )
-      rangeErrorFailingImplementation = async () => {
-        throw new RangeError('Too many properties to enumerate')
-      }
       unknownErrorToRetryImplementation = async () => {
         throw new Error('unknown_error: retry your request')
       }
@@ -340,8 +336,6 @@ describe('salesforce client', () => {
       beforeEach(() => {
         expectedProperties = mockFileProperties({ type: 'CustomObject', fullName: 'A__c' })
         testConnection.metadata.list
-          .mockImplementationOnce(nullFailingImplementation)
-          .mockImplementationOnce(rangeErrorFailingImplementation)
           .mockImplementationOnce(unknownErrorToRetryImplementation)
           .mockImplementationOnce(pollingTimeOutImplementation)
           .mockResolvedValueOnce([expectedProperties])

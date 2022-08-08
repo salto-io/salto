@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, isInstanceElement, isListType, isReferenceExpression, ReferenceExpression, TypeElement, Value } from '@salto-io/adapter-api'
+import { ElemID, isInstanceElement, isListType, isObjectType, isReferenceExpression, ReferenceExpression, TypeElement, Value } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { isDataObjectType } from '../types'
@@ -32,9 +32,9 @@ const generateReference = (
   && elementsMap[getDataInstanceId(value.internalId, type)]
   && new ReferenceExpression(elementsMap[getDataInstanceId(value.internalId, type)])
 
-const replaceReference: (
+const replaceReference = (
   elementsMap: Record<string, ElemID>
-) => TransformFunc = elementsMap => async ({ value, path, field }) => {
+): TransformFunc => async ({ value, path, field }) => {
   if (path?.isTopLevel()) {
     return value
   }
@@ -59,8 +59,9 @@ const replaceReference: (
 
 const filterCreator: FilterCreator = ({ elementsSourceIndex, isPartial }): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
+    const types = elements.filter(isObjectType)
     const instances = elements.filter(isInstanceElement)
-    const dataInstancesMap: Record<string, ElemID> = isPartial ? _.clone(
+    const elementsMap: Record<string, ElemID> = isPartial ? _.clone(
       (await elementsSourceIndex.getIndexes()).internalIdsIndex ?? {}
     ) : {}
 
@@ -71,8 +72,15 @@ const filterCreator: FilterCreator = ({ elementsSourceIndex, isPartial }): Filte
         instance.value.internalId,
         await instance.getType(),
       )
-      dataInstancesMap[instanceId] = instance.elemID
+      elementsMap[instanceId] = instance.elemID
     })
+
+    types
+      .filter(type => type.annotations.internalId !== undefined)
+      .forEach(type => {
+        const typeId = getDataInstanceId(type.annotations.internalId, type)
+        elementsMap[typeId] = type.elemID
+      })
 
     await awu(instances)
       .filter(async e => isDataObjectType(await e.getType()))
@@ -80,7 +88,7 @@ const filterCreator: FilterCreator = ({ elementsSourceIndex, isPartial }): Filte
         const values = await transformValues({
           values: instance.value,
           type: await instance.getType(),
-          transformFunc: replaceReference(dataInstancesMap),
+          transformFunc: replaceReference(elementsMap),
           strict: false,
           pathID: instance.elemID,
         }) ?? instance.value

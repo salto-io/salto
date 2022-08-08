@@ -13,16 +13,21 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isInstanceElement } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData, transformValues } from '@salto-io/adapter-utils'
+import { isInstanceElement, isObjectType } from '@salto-io/adapter-api'
+import { applyFunctionToChangeData, transformElement, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { isCustomType } from '../types'
+import { isCustomRecordType, isCustomType } from '../types'
 import { FilterWith } from '../filter'
 import { ACCOUNT_SPECIFIC_VALUE, APPLICATION_ID } from '../constants'
 
 const { awu } = collections.asynciterable
 
+const transformFunc: TransformFunc = ({ value }) => (
+  _.isString(value) && value.includes(ACCOUNT_SPECIFIC_VALUE)
+    ? undefined
+    : value
+)
 
 const filterCreator = (): FilterWith<'preDeploy'> => ({
   preDeploy: async changes => {
@@ -31,23 +36,39 @@ const filterCreator = (): FilterWith<'preDeploy'> => ({
         applyFunctionToChangeData(
           change,
           async element => {
-            if (!isInstanceElement(element)
-              || !isCustomType((await element.getType()))
+            if (
+              isObjectType(element)
+              && isCustomRecordType(element)
+              // customRecordTypes that are not from a suite app are handled
+              // using the accountspecificvalues flag
+              && element.annotations[APPLICATION_ID] !== undefined
+            ) {
+              const newElement = await transformElement({
+                element,
+                strict: false,
+                transformFunc,
+              })
+              element.annotations = newElement.annotations
+              Object.entries(newElement.fields).forEach(([fieldName, field]) => {
+                if (element.fields[fieldName]) {
+                  element.fields[fieldName].annotations = field.annotations
+                }
+              })
+            }
+            if (
+              isInstanceElement(element)
+              && isCustomType((await element.getType()))
               // instances that are not from a suite app are handled
               // using the accountspecificvalues flag
-              || element.value[APPLICATION_ID] === undefined) {
-              return element
+              && element.value[APPLICATION_ID] !== undefined
+            ) {
+              element.value = await transformValues({
+                values: element.value,
+                type: await element.getType(),
+                strict: false,
+                transformFunc,
+              }) ?? element.value
             }
-
-            element.value = await transformValues({
-              values: element.value,
-              type: await element.getType(),
-              strict: false,
-              pathID: element.elemID,
-              transformFunc: async ({ value }) =>
-                (_.isString(value) && value.includes(ACCOUNT_SPECIFIC_VALUE) ? undefined : value),
-            }) ?? element.value
-
             return element
           }
         ))

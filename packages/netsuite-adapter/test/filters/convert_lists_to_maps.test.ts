@@ -13,15 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement } from '@salto-io/adapter-api'
+import { promises } from '@salto-io/lowerdash'
+import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/convert_lists_to_maps'
 import { getCustomTypes } from '../../src/autogen/types'
 import { getInnerCustomTypes, getTopLevelCustomTypes } from '../../src/types'
+import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 
 describe('convert lists to maps filter', () => {
   const customTypes = getCustomTypes()
   let instance: InstanceElement
   let instanceWithMixedFieldKeys: InstanceElement
+  let customRecordType: ObjectType
   beforeAll(async () => {
     instance = new InstanceElement(
       'workflow1',
@@ -93,11 +96,29 @@ describe('convert lists to maps filter', () => {
         },
       }
     )
+    customRecordType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'customrecord1'),
+      annotationRefsOrTypes: await promises.object.mapValuesAsync(
+        customTypes.customrecordtype.type.fields,
+        field => field.getType()
+      ),
+      annotations: {
+        [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+        instances: {
+          instance: [{
+            [SCRIPT_ID]: 'customrecord1_record1',
+          }, {
+            [SCRIPT_ID]: 'customrecord1_record2',
+          }],
+        },
+      },
+    })
     await filterCreator().onFetch([
       ...getTopLevelCustomTypes(customTypes),
       ...getInnerCustomTypes(customTypes),
       instance,
       instanceWithMixedFieldKeys,
+      customRecordType,
     ])
   })
 
@@ -172,6 +193,24 @@ describe('convert lists to maps filter', () => {
             linktasktype: 'SCRIPT',
             shortlist: false,
             index: 4,
+          },
+        },
+      },
+    })
+  })
+
+  it('should modify custom record type annotations', () => {
+    expect(customRecordType.annotations).toEqual({
+      [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+      instances: {
+        instance: {
+          customrecord1_record1: {
+            [SCRIPT_ID]: 'customrecord1_record1',
+            index: 0,
+          },
+          customrecord1_record2: {
+            [SCRIPT_ID]: 'customrecord1_record2',
+            index: 1,
           },
         },
       },

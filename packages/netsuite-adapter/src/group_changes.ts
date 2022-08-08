@@ -16,18 +16,16 @@
 import wu from 'wu'
 import {
   Change, ChangeGroupIdFunction, ChangeId, getChangeData, InstanceElement, isAdditionChange,
-  isInstanceChange, isInstanceElement,
-  isModificationChange,
-  isReferenceExpression,
+  isField,
+  isInstanceChange, isInstanceElement, isModificationChange, isObjectType, isReferenceExpression,
   isRemovalChange,
 } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import * as suiteAppFileCabinet from './suiteapp_file_cabinet'
-import { isSuiteAppConfigInstance, isSDFConfigTypeName, isDataObjectType, isFileCabinetInstance } from './types'
+import { isSuiteAppConfigInstance, isSDFConfigTypeName, isDataObjectType, isFileCabinetInstance, isCustomTypeElement } from './types'
 import { APPLICATION_ID } from './constants'
-import { isCustomTypeName } from './autogen/types'
 import { fileCabinetTypesNames } from './types/file_cabinet_types'
 
 const { awu } = collections.asynciterable
@@ -49,19 +47,24 @@ export const SUITEAPP_FILE_CABINET_GROUPS = [
 
 const getSdfWithSuiteAppGroupName = (change: Change): string => {
   const element = getChangeData(change)
-  if (!isInstanceElement(element) || element.value[APPLICATION_ID] === undefined) {
-    return SDF_CHANGE_GROUP_ID
+  if (isInstanceElement(element) && element.value[APPLICATION_ID] !== undefined) {
+    return `${SDF_CHANGE_GROUP_ID} - ${element.value[APPLICATION_ID]}`
   }
-  return `${SDF_CHANGE_GROUP_ID} - ${element.value[APPLICATION_ID]}`
+  if (isObjectType(element) && element.annotations[APPLICATION_ID] !== undefined) {
+    return `${SDF_CHANGE_GROUP_ID} - ${element.annotations[APPLICATION_ID]}`
+  }
+  if (isField(element) && element.parent.annotations[APPLICATION_ID] !== undefined) {
+    return `${SDF_CHANGE_GROUP_ID} - ${element.parent.annotations[APPLICATION_ID]}`
+  }
+  return SDF_CHANGE_GROUP_ID
 }
 
 const getChangeGroupIdsWithoutSuiteApp: ChangeGroupIdFunction = async changes => {
   const isSdfChange = (change: Change): boolean => {
     const changeData = getChangeData(change)
-    return isInstanceElement(changeData)
-      && (isCustomTypeName(changeData.elemID.typeName)
-        || fileCabinetTypesNames.has(changeData.elemID.typeName)
-        || isSDFConfigTypeName(changeData.elemID.typeName))
+    return isCustomTypeElement(changeData)
+      || fileCabinetTypesNames.has(changeData.elemID.typeName)
+      || isSDFConfigTypeName(changeData.elemID.typeName)
   }
   return {
     changeGroupIdMap: new Map(
@@ -140,7 +143,7 @@ const isSuiteAppFileCabinetDeletion = async (change: Change): Promise<boolean> =
 
 const isSdfChange = async (change: Change): Promise<boolean> => {
   const changeData = getChangeData(change)
-  return isCustomTypeName(changeData.elemID.typeName)
+  return isCustomTypeElement(changeData)
     || (isFileCabinetInstance(changeData)
       && !await suiteAppFileCabinet.isChangeDeployable(change))
     || isSDFConfigTypeName(changeData.elemID.typeName)

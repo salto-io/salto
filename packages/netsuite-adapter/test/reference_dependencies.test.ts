@@ -20,8 +20,8 @@ import { datasetType } from '../src/autogen/types/custom_types/dataset'
 import { entitycustomfieldType } from '../src/autogen/types/custom_types/entitycustomfield'
 import { workbookType } from '../src/autogen/types/custom_types/workbook'
 import { fileType } from '../src/types/file_cabinet_types'
-import { PATH, SCRIPT_ID } from '../src/constants'
-import { getReferencedInstances } from '../src/reference_dependencies'
+import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, PATH, SCRIPT_ID } from '../src/constants'
+import { getReferencedElements } from '../src/reference_dependencies'
 
 describe('reference dependencies', () => {
   const entitycustomfield = entitycustomfieldType().type
@@ -71,15 +71,18 @@ describe('reference dependencies', () => {
 
   describe('getAllReferencedInstances', () => {
     it('should return all depending instances', async () => {
-      const result = await getReferencedInstances([instanceWithManyRefs], true)
+      const result = await getReferencedElements([instanceWithManyRefs], true)
       expect(result).toEqual([instanceWithManyRefs, dependsOn1Instance, fileInstance])
     })
   })
   describe('getRequiredReferencedInstances', () => {
-    const customRecordTypeInstance = new InstanceElement('customRecordTypeInstance',
-      customrecordtype, {
+    const customRecordType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'customrecord_my_script_id'),
+      annotations: {
+        [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
         [SCRIPT_ID]: 'customrecord_my_script_id',
-      })
+      },
+    })
 
     const customSegmentInstance = new InstanceElement('customSegmentInstance',
       customsegment, {
@@ -87,10 +90,10 @@ describe('reference dependencies', () => {
       })
 
     customSegmentInstance.value.recordtype = new ReferenceExpression(
-      customRecordTypeInstance.elemID, 'val', customRecordTypeInstance
+      customRecordType.elemID, 'val', customRecordType
     )
 
-    customRecordTypeInstance.value.customsegment = new ReferenceExpression(
+    customRecordType.annotations.customsegment = new ReferenceExpression(
       customSegmentInstance.elemID, 'val', customSegmentInstance
     )
 
@@ -110,29 +113,29 @@ describe('reference dependencies', () => {
       })
 
     it('should not add dependencies that are not required', async () => {
-      const result = await getReferencedInstances([instanceWithManyRefs], false)
+      const result = await getReferencedElements([instanceWithManyRefs], false)
       expect(result).toEqual([instanceWithManyRefs])
     })
 
     it('should add CUSTOM_SEGMENT dependency of CUSTOM_RECORD_TYPE', async () => {
-      const result = await getReferencedInstances([customRecordTypeInstance], false)
-      expect(result).toEqual([customRecordTypeInstance, customSegmentInstance])
+      const result = await getReferencedElements([customRecordType], false)
+      expect(result).toEqual([customRecordType, customSegmentInstance])
     })
 
     it('should add CUSTOM_RECORD_TYPE dependency of CUSTOM_SEGMENT', async () => {
-      const result = await getReferencedInstances([customSegmentInstance], false)
-      expect(result).toEqual([customSegmentInstance, customRecordTypeInstance])
+      const result = await getReferencedElements([customSegmentInstance], false)
+      expect(result).toEqual([customSegmentInstance, customRecordType])
     })
 
     it('should add DATASET dependency of WORKBOOK', async () => {
-      const result = await getReferencedInstances([workbookInstance], false)
+      const result = await getReferencedElements([workbookInstance], false)
       expect(result).toEqual([workbookInstance, datasetInstance])
     })
 
     it('should not add dependencies that already exist', async () => {
-      const input = [customRecordTypeInstance, customSegmentInstance, workbookInstance,
+      const input = [customRecordType, customSegmentInstance, workbookInstance,
         datasetInstance, instance]
-      const result = await getReferencedInstances(input, false)
+      const result = await getReferencedElements(input, false)
       expect(result).toEqual(input)
     })
 
@@ -145,12 +148,12 @@ describe('reference dependencies', () => {
           ),
         })
 
-      const result = await getReferencedInstances(
-        [customRecordTypeInstance, customRecordTypeInstance2],
+      const result = await getReferencedElements(
+        [customRecordType, customRecordTypeInstance2],
         false
       )
       expect(result)
-        .toEqual([customRecordTypeInstance, customRecordTypeInstance2, customSegmentInstance])
+        .toEqual([customRecordType, customRecordTypeInstance2, customSegmentInstance])
     })
   })
 })

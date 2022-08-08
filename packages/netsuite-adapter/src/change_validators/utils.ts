@@ -15,20 +15,17 @@
 */
 
 import _ from 'lodash'
-import { InstanceElement } from '@salto-io/adapter-api'
+import { Element } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 
-export const isInstanceContainsStringValue = (
-  instance: InstanceElement,
+export const isElementContainsStringValue = (
+  element: Element,
   expectedValue: string
 ): boolean => {
   let foundValue = false
   walkOnElement({
-    element: instance,
-    func: ({ value, path }) => {
-      if (path.isAttrID()) {
-        return WALK_NEXT_STEP.SKIP
-      }
+    element,
+    func: ({ value }) => {
       if (_.isString(value) && value.includes(expectedValue)) {
         foundValue = true
         return WALK_NEXT_STEP.EXIT

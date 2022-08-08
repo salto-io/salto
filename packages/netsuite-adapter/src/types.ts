@@ -13,17 +13,32 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { DeployResult as AdapterApiDeployResult, Element, InstanceElement, isInstanceElement, ObjectType, PrimitiveType, TypeElement, TypeReference } from '@salto-io/adapter-api'
+import { DeployResult as AdapterApiDeployResult, Element, InstanceElement, isField, isInstanceElement, isObjectType, ObjectType, PrimitiveType, TypeElement, TypeReference, Values } from '@salto-io/adapter-api'
 import { fieldTypes } from './types/field_types'
 import { enums } from './autogen/types/enums'
 import { CustomType, getCustomTypes, isCustomTypeName } from './autogen/types'
 import { TypesMap } from './types/object_types'
 import { fileCabinetTypesNames, getFileCabinetTypes } from './types/file_cabinet_types'
 import { getConfigurationTypes } from './types/configuration_types'
-import { CONFIG_FEATURES } from './constants'
+import { CONFIG_FEATURES, CUSTOM_RECORD_TYPE, METADATA_TYPE } from './constants'
+
+export const getElementValueOrAnnotations = (element: Element): Values => (
+  isInstanceElement(element) ? element.value : element.annotations
+)
 
 export const isCustomType = (type: ObjectType | TypeReference): boolean =>
   isCustomTypeName(type.elemID.name)
+
+export const isCustomRecordType = (type: ObjectType): boolean =>
+  type.annotations[METADATA_TYPE] === CUSTOM_RECORD_TYPE
+
+export const isCustomTypeElement = (element: Element): boolean => (
+  isInstanceElement(element) && isCustomType(element.refType)
+) || (
+  isObjectType(element) && isCustomRecordType(element)
+) || (
+  isField(element) && isCustomRecordType(element.parent)
+)
 
 export const isFileCabinetType = (type: ObjectType | TypeReference): boolean =>
   fileCabinetTypesNames.has(type.elemID.name)

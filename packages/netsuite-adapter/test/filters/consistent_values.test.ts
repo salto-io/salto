@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/consistent_values'
-import { PERMITTED_ROLE, RECORD_TYPE } from '../../src/constants'
+import { METADATA_TYPE, NETSUITE, PERMITTED_ROLE, RECORD_TYPE } from '../../src/constants'
 import { transactionFormType } from '../../src/autogen/types/custom_types/transactionForm'
 import { customrecordtypeType } from '../../src/autogen/types/custom_types/customrecordtype'
 import { entryFormType } from '../../src/autogen/types/custom_types/entryForm'
@@ -23,9 +23,8 @@ import { entitycustomfieldType } from '../../src/autogen/types/custom_types/enti
 
 describe('consistent_values filter', () => {
   const instanceName = 'instanceName'
-  const instanceWithNestedInconsistentValueName = 'instanceWithNestedInconsistentValue'
   let instance: InstanceElement
-  let instanceWithNestedInconsistentValue: InstanceElement
+  let customRecordType: ObjectType
   beforeEach(() => {
     instance = new InstanceElement(instanceName,
       transactionFormType().type,
@@ -33,37 +32,37 @@ describe('consistent_values filter', () => {
         name: instanceName,
         [RECORD_TYPE]: 'INTERCOMPANYJOURNALENTRY',
       })
-    instanceWithNestedInconsistentValue = new InstanceElement(
-      instanceWithNestedInconsistentValueName,
-      customrecordtypeType().type,
-      {
-        name: instanceWithNestedInconsistentValueName,
+    customRecordType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'customrecord1'),
+      annotationRefsOrTypes: {
+        permissions: customrecordtypeType().innerTypes.customrecordtype_permissions,
+      },
+      annotations: {
+        [METADATA_TYPE]: 'customrecordtype',
         permissions: {
           permission: [{
             [PERMITTED_ROLE]: 'CUSTOMROLEAP_CLERK',
           }],
         },
-      }
-    )
+      },
+    })
   })
 
   it('should modify field with inconsistent value', async () => {
-    await filterCreator().onFetch([instance, instanceWithNestedInconsistentValue])
+    await filterCreator().onFetch([instance, customRecordType])
     expect(instance.value.name).toEqual(instanceName)
     expect(instance.value[RECORD_TYPE]).toEqual('JOURNALENTRY')
   })
 
-  it('should modify nested field with inconsistent value', async () => {
-    await filterCreator().onFetch([instance, instanceWithNestedInconsistentValue])
-    expect(instanceWithNestedInconsistentValue.value.name)
-      .toEqual(instanceWithNestedInconsistentValueName)
-    expect(instanceWithNestedInconsistentValue.value.permissions.permission[0][PERMITTED_ROLE])
+  it('should modify custom record type annotations with inconsistent value', async () => {
+    await filterCreator().onFetch([instance, customRecordType])
+    expect(customRecordType.annotations.permissions.permission[0][PERMITTED_ROLE])
       .toEqual('AP_CLERK')
   })
 
   it('should not modify field with consistent value', async () => {
     instance.value[RECORD_TYPE] = 'some consistent value'
-    await filterCreator().onFetch([instance, instanceWithNestedInconsistentValue])
+    await filterCreator().onFetch([instance, customRecordType])
     expect(instance.value.name).toEqual(instanceName)
     expect(instance.value[RECORD_TYPE]).toEqual('some consistent value')
   })

@@ -13,19 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isInstanceElement, ChangeValidator, isRemovalChange, getChangeData } from '@salto-io/adapter-api'
-import { isCustomType } from '../types'
+import { ChangeValidator, isRemovalChange, getChangeData } from '@salto-io/adapter-api'
+import { isCustomTypeElement } from '../types'
 
 const changeValidator: ChangeValidator = async changes => (
   changes
     .filter(isRemovalChange)
     .map(getChangeData)
-    .filter(isInstanceElement)
-    .filter(inst => isCustomType(inst.refType))
+    .filter(isCustomTypeElement)
     .map(({ elemID }) => ({
       elemID,
       severity: 'Error',
-      message: 'Removal of custom types instances is not supported via Salto',
+      message: `Removal of custom type ${elemID.idType}s is not supported via Salto`,
       detailedMessage: `${elemID.name} cannot be removed`,
     }))
 )

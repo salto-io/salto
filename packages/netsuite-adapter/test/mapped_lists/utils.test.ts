@@ -15,7 +15,7 @@
 */
 import { collections } from '@salto-io/lowerdash'
 import { BuiltinTypes, createRefToElmWithValue, ElemID, Field, FieldMap, InstanceElement, isListType, isMapType, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
-import { convertFieldsTypesFromListToMap, convertInstanceMapsToLists, convertInstanceListsToMaps, getMappedLists, isMappedList, validateTypesFieldMapping } from '../../src/mapped_lists/utils'
+import { convertFieldsTypesFromListToMap, convertElementMapsToLists, convertInstanceListsToMaps, getMappedLists, isMappedList, validateTypesFieldMapping } from '../../src/mapped_lists/utils'
 import { getCustomTypes } from '../../src/autogen/types'
 import { LIST_MAPPED_BY_FIELD, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import { getInnerCustomTypes, getTopLevelCustomTypes } from '../../src/types'
@@ -92,7 +92,7 @@ describe('mapped lists', () => {
       .forEach(t => convertFieldsTypesFromListToMap(t))
     transformedInstance = instance.clone()
     transformedInstance.value = await convertInstanceListsToMaps(instance) ?? instance.value
-    transformedBackInstance = await convertInstanceMapsToLists(transformedInstance)
+    transformedBackInstance = await convertElementMapsToLists(transformedInstance)
 
     await awu(Object.values(workflow.innerTypes)).forEach(t => convertFieldsTypesFromListToMap(t))
   })

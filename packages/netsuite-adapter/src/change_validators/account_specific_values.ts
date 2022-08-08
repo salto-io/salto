@@ -14,16 +14,10 @@
 * limitations under the License.
 */
 import { values, collections } from '@salto-io/lowerdash'
-import {
-  ChangeError,
-  ChangeValidator,
-  getChangeData,
-  isAdditionOrModificationChange,
-  isInstanceChange,
-} from '@salto-io/adapter-api'
-import { isCustomType } from '../types'
+import { ChangeError, ChangeValidator, getChangeData, isAdditionOrModificationChange } from '@salto-io/adapter-api'
+import { isCustomTypeElement } from '../types'
 import { ACCOUNT_SPECIFIC_VALUE } from '../constants'
-import { isInstanceContainsStringValue } from './utils'
+import { isElementContainsStringValue } from './utils'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
@@ -31,17 +25,16 @@ const { isDefined } = values
 const changeValidator: ChangeValidator = async changes => (
   awu(changes)
     .filter(isAdditionOrModificationChange)
-    .filter(isInstanceChange)
     .map(async change => {
-      const instance = getChangeData(change)
-      if (!isCustomType(instance.refType)) {
+      const element = getChangeData(change)
+      if (!isCustomTypeElement(element)) {
         return undefined
       }
-      if (!isInstanceContainsStringValue(instance, ACCOUNT_SPECIFIC_VALUE)) {
+      if (!isElementContainsStringValue(element, ACCOUNT_SPECIFIC_VALUE)) {
         return undefined
       }
       return {
-        elemID: instance.elemID,
+        elemID: element.elemID,
         severity: 'Warning',
         message: 'Element contains fields with account specific values. These fields will be skipped from the deployment.',
         detailedMessage: 'Fields with account specific values (ACCOUNT_SPECIFIC_VALUE) will be skipped from the deployment. After deploying this element, please make sure these fields are mapped correctly in NetSuite.',

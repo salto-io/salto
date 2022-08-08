@@ -15,9 +15,9 @@
 */
 /* eslint-disable camelcase */
 import {
-  Field, isInstanceElement, isListType, ObjectType, Values, Value,
+  isInstanceElement, isListType, isObjectType,
 } from '@salto-io/adapter-api'
-import { applyRecursive } from '@salto-io/adapter-utils'
+import { transformElementAnnotations, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterWith } from '../filter'
@@ -37,6 +37,7 @@ import { sdfinstallationscriptType } from '../autogen/types/custom_types/sdfinst
 import { suiteletType } from '../autogen/types/custom_types/suitelet'
 import { usereventscriptType } from '../autogen/types/custom_types/usereventscript'
 import { workflowactionscriptType } from '../autogen/types/custom_types/workflowactionscript'
+import { isCustomRecordType } from '../types'
 
 const { awu } = collections.asynciterable
 
@@ -77,26 +78,21 @@ const unorderedListFields: FieldFullNameToOrderBy = new Map([
     .fields.scriptdeployment.elemID.getFullName(), SCRIPT_ID],
 ])
 
-const castAndOrderListsRecursively = async (
-  type: ObjectType,
-  values: Values,
-): Promise<void> => {
-  // Cast all values of list type to list and order lists according to unorderedListFields
-  const castAndOrderLists = async (field: Field, value: Value): Promise<Value> => {
-    if (!isListType(await field.getType())) {
-      return value
-    }
-    if (!_.isArray(value)) {
-      return [value]
-    }
-    // order lists
-    return unorderedListFields.has(field.elemID.getFullName())
-      ? _.orderBy(value, unorderedListFields.get(field.elemID.getFullName()))
-      : value
+const castAndOrderLists: TransformFunc = async ({ value, field }) => {
+  if (!field) {
+    return value
   }
-  await applyRecursive(type, values, castAndOrderLists)
+  if (!isListType(await field.getType())) {
+    return value
+  }
+  if (!_.isArray(value)) {
+    return [value]
+  }
+  // order lists
+  return unorderedListFields.has(field.elemID.getFullName())
+    ? _.orderBy(value, unorderedListFields.get(field.elemID.getFullName()))
+    : value
 }
-
 
 const filterCreator = (): FilterWith<'onFetch'> => ({
   /**
@@ -107,7 +103,26 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
     await awu(elements)
       .filter(isInstanceElement)
-      .forEach(async inst => castAndOrderListsRecursively(await inst.getType(), inst.value))
+      .forEach(async inst => {
+        inst.value = await transformValues({
+          values: inst.value,
+          type: await inst.getType(),
+          pathID: inst.elemID,
+          transformFunc: castAndOrderLists,
+          strict: false,
+        }) ?? {}
+      })
+
+    await awu(elements)
+      .filter(isObjectType)
+      .filter(isCustomRecordType)
+      .forEach(async type => {
+        type.annotations = await transformElementAnnotations({
+          element: type,
+          transformFunc: castAndOrderLists,
+          strict: false,
+        })
+      })
   },
 })
 

@@ -17,9 +17,9 @@ import {
   isInstanceElement, isObjectType,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { convertFieldsTypesFromListToMap, convertInstanceListsToMaps, validateTypesFieldMapping } from '../mapped_lists/utils'
+import { convertAnnotationListsToMaps, convertFieldsTypesFromListToMap, convertInstanceListsToMaps, validateTypesFieldMapping } from '../mapped_lists/utils'
 import { FilterWith } from '../filter'
-import { isCustomType, getInnerCustomTypes } from '../types'
+import { isCustomType, getInnerCustomTypes, isCustomRecordType } from '../types'
 import { getCustomTypes } from '../autogen/types'
 
 const { awu } = collections.asynciterable
@@ -59,6 +59,15 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
       .forEach(
         async inst => {
           inst.value = await convertInstanceListsToMaps(inst) ?? inst.value
+        }
+      )
+
+    await awu(elements)
+      .filter(isObjectType)
+      .filter(isCustomRecordType)
+      .forEach(
+        async type => {
+          type.annotations = await convertAnnotationListsToMaps(type)
         }
       )
   },

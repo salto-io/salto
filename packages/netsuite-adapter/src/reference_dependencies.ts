@@ -15,84 +15,85 @@
 */
 import { logger } from '@salto-io/logging'
 import {
-  InstanceElement, isInstanceElement, isPrimitiveType, ElemID, getFieldType,
-  isReferenceExpression, Value, isServiceId,
+  isInstanceElement, isPrimitiveType, ElemID, getFieldType,
+  isReferenceExpression, Value, isServiceId, isObjectType, Element,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import wu from 'wu'
 import os from 'os'
-import {
-  CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT, DATASET, NETSUITE, WORKBOOK,
-} from './constants'
+import { CUSTOM_SEGMENT, DATASET, NETSUITE, SCRIPT_ID, WORKBOOK } from './constants'
+import { isCustomRecordType } from './types'
 
 const { awu } = collections.asynciterable
 const { isDefined } = lowerDashValues
 const log = logger(module)
 
-export const findDependingInstancesFromRefs = async (
-  instance: InstanceElement
-): Promise<InstanceElement[]> => {
-  const visitedIdToInstance = new Map<string, InstanceElement>()
+export const findDependingElementsFromRefs = async (
+  element: Element
+): Promise<Element[]> => {
+  const visitedIdToElement = new Map<string, Element>()
   const isRefToServiceId = async (
-    topLevelParent: InstanceElement,
+    topLevelParent: Element,
     elemId: ElemID
   ): Promise<boolean> => {
-    const fieldType = await getFieldType(
-      await topLevelParent.getType(),
-      elemId.createTopLevelParentID().path
-    )
-    return (isPrimitiveType(fieldType)
-      && isServiceId(fieldType))
+    if (isInstanceElement(topLevelParent)) {
+      const fieldType = await getFieldType(
+        await topLevelParent.getType(),
+        elemId.createTopLevelParentID().path
+      )
+      return isPrimitiveType(fieldType) && isServiceId(fieldType)
+    }
+    return elemId.name === SCRIPT_ID
   }
 
   const createDependingElementsCallback: TransformFunc = async ({ value }) => {
     if (isReferenceExpression(value)) {
       const { topLevelParent, elemID } = value
-      if (isInstanceElement(topLevelParent)
-        && !visitedIdToInstance.has(topLevelParent.elemID.getFullName())
+      if (topLevelParent
+        && !visitedIdToElement.has(topLevelParent.elemID.getFullName())
         && elemID.adapter === NETSUITE
         && await isRefToServiceId(topLevelParent, elemID)) {
-        visitedIdToInstance.set(topLevelParent.elemID.getFullName(), topLevelParent)
+        visitedIdToElement.set(topLevelParent.elemID.getFullName(), topLevelParent)
       }
     }
     return value
   }
 
   await transformElement({
-    element: instance,
+    element,
     transformFunc: createDependingElementsCallback,
     strict: false,
   })
-  return wu(visitedIdToInstance.values()).toArray()
+  return wu(visitedIdToElement.values()).toArray()
 }
 
 /*
  * Due to SDF bugs, sometimes referenced objects are required to be as part of the project as part
  * of deploy and writing them in the manifest.xml doesn't suffice.
- * Here we add automatically all of the referenced instances.
+ * Here we add automatically all of the referenced elements.
  */
-const getAllReferencedInstances = async (
-  sourceInstances: ReadonlyArray<InstanceElement>
-): Promise<ReadonlyArray<InstanceElement>> => {
-  const visited = new Set<string>(sourceInstances.map(inst => inst.elemID.getFullName()))
-  const getNewReferencedInstances = async (
-    instance: InstanceElement
-  ): Promise<InstanceElement[]> => {
-    const newInstances = (await findDependingInstancesFromRefs(instance))
-      .filter(inst => !visited.has(inst.elemID.getFullName()))
-    newInstances.forEach(inst => {
-      log.debug(`adding referenced instance: ${inst.elemID.getFullName()}`)
-      visited.add(inst.elemID.getFullName())
+const getAllReferencedElements = async (
+  sourceElements: ReadonlyArray<Element>
+): Promise<ReadonlyArray<Element>> => {
+  const visited = new Set<string>(sourceElements.map(elem => elem.elemID.getFullName()))
+  const getNewReferencedElement = async (
+    element: Element
+  ): Promise<Element[]> => {
+    const newElements = (await findDependingElementsFromRefs(element))
+      .filter(elem => !visited.has(elem.elemID.getFullName()))
+    newElements.forEach(elem => {
+      log.debug(`adding referenced element: ${elem.elemID.getFullName()}`)
+      visited.add(elem.elemID.getFullName())
     })
     return [
-      ...newInstances,
-      ...await awu(newInstances).flatMap(getNewReferencedInstances).toArray(),
+      ...newElements,
+      ...await awu(newElements).flatMap(getNewReferencedElement).toArray(),
     ]
   }
   return [
-    ...sourceInstances,
-    ...await awu(sourceInstances).flatMap(getNewReferencedInstances).toArray(),
+    ...sourceElements,
+    ...await awu(sourceElements).flatMap(getNewReferencedElement).toArray(),
   ]
 }
 
@@ -101,45 +102,61 @@ const getAllReferencedInstances = async (
  * of deploy and writing them in the manifest.xml doesn't suffice.
  * Here we add manually all of the quirks we identified.
  */
-const getRequiredReferencedInstances = (
-  sourceInstances: ReadonlyArray<InstanceElement>
-): ReadonlyArray<InstanceElement> => {
-  const getReferencedInstance = (value: Value, type?: string): InstanceElement | undefined => (
+const getRequiredReferencedElements = (
+  sourceElements: ReadonlyArray<Element>
+): ReadonlyArray<Element> => {
+  const getReferencedElement = (
+    value: Value,
+    predicate: (element: Element) => boolean
+  ): Element | undefined => (
     (isReferenceExpression(value)
-      && isInstanceElement(value.topLevelParent)
-      && (type === undefined || value.topLevelParent.elemID.typeName === type))
+      && value.topLevelParent
+      && predicate(value.topLevelParent))
       ? value.topLevelParent
       : undefined
   )
 
-  const getInstanceRequiredDependency = (
-    instance: InstanceElement
-  ): InstanceElement | undefined => {
-    switch (instance.elemID.typeName) {
-      case CUSTOM_RECORD_TYPE:
-        return getReferencedInstance(instance.value.customsegment, CUSTOM_SEGMENT)
-      case CUSTOM_SEGMENT:
-        return getReferencedInstance(instance.value.recordtype, CUSTOM_RECORD_TYPE)
-      case WORKBOOK:
-        return getReferencedInstance(instance.value.dependencies?.dependency, DATASET)
-      default:
-        return undefined
+  const getRequiredDependency = (
+    element: Element
+  ): Element | undefined => {
+    if (isObjectType(element) && isCustomRecordType(element)) {
+      return getReferencedElement(
+        element.annotations.customsegment,
+        elem => isInstanceElement(elem) && elem.elemID.typeName === CUSTOM_SEGMENT
+      )
     }
+    if (isInstanceElement(element)) {
+      switch (element.elemID.typeName) {
+        case CUSTOM_SEGMENT:
+          return getReferencedElement(
+            element.value.recordtype,
+            elem => isObjectType(elem) && isCustomRecordType(elem)
+          )
+        case WORKBOOK:
+          return getReferencedElement(
+            element.value.dependencies?.dependency,
+            elem => isInstanceElement(elem) && elem.elemID.typeName === DATASET
+          )
+        default:
+          return undefined
+      }
+    }
+    return undefined
   }
-  const requiredReferencedInstances = sourceInstances
-    .map(getInstanceRequiredDependency)
+  const requiredReferencedElements = sourceElements
+    .map(getRequiredDependency)
     .filter(isDefined)
 
-  log.debug(`adding referenced instances:${os.EOL}${requiredReferencedInstances.map(inst => inst.elemID.getFullName()).join('\n')}`)
+  log.debug(`adding referenced element:${os.EOL}${requiredReferencedElements.map(elem => elem.elemID.getFullName()).join('\n')}`)
 
-  return Array.from(new Set(sourceInstances.concat(requiredReferencedInstances)))
+  return Array.from(new Set(sourceElements.concat(requiredReferencedElements)))
 }
 
-export const getReferencedInstances = async (
-  instances: ReadonlyArray<InstanceElement>,
+export const getReferencedElements = async (
+  elements: ReadonlyArray<Element>,
   deployAllReferencedElements: boolean
-): Promise<ReadonlyArray<InstanceElement>> => (
+): Promise<ReadonlyArray<Element>> => (
   deployAllReferencedElements
-    ? getAllReferencedInstances(instances)
-    : getRequiredReferencedInstances(instances)
+    ? getAllReferencedElements(elements)
+    : getRequiredReferencedElements(elements)
 )

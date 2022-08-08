@@ -19,26 +19,24 @@ import {
   ChangeValidator,
   getChangeData,
   isAdditionOrModificationChange,
-  isInstanceChange,
 } from '@salto-io/adapter-api'
-import { isCustomType } from '../types'
+import { isCustomTypeElement } from '../types'
 import { NOT_YET_SUPPORTED_VALUE } from '../constants'
-import { isInstanceContainsStringValue } from './utils'
+import { isElementContainsStringValue } from './utils'
 
 const { awu } = collections.asynciterable
 
 const changeValidator: ChangeValidator = async changes => (
   awu(changes)
     .filter(isAdditionOrModificationChange)
-    .filter(isInstanceChange)
     .map(getChangeData)
-    .filter(instance => isCustomType(instance.refType))
-    .filter(instance => isInstanceContainsStringValue(instance, NOT_YET_SUPPORTED_VALUE))
-    .map(instance => ({
-      elemID: instance.elemID,
+    .filter(isCustomTypeElement)
+    .filter(element => isElementContainsStringValue(element, NOT_YET_SUPPORTED_VALUE))
+    .map(element => ({
+      elemID: element.elemID,
       severity: 'Error',
-      message: 'Instances with values set to \'NOT_YET_SUPPORTED\' cannot be deployed',
-      detailedMessage: 'Instances with values set to \'NOT_YET_SUPPORTED\' cannot be deployed. In order to deploy, please manually replace \'NOT_YET_SUPPORTED\' with a valid value.',
+      message: 'Elements with values set to \'NOT_YET_SUPPORTED\' cannot be deployed',
+      detailedMessage: 'Elements with values set to \'NOT_YET_SUPPORTED\' cannot be deployed. In order to deploy, please manually replace \'NOT_YET_SUPPORTED\' with a valid value.',
     } as ChangeError))
     .toArray()
 )

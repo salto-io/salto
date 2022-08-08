@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 
-import { InstanceElement } from '@salto-io/adapter-api'
+import { InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { FIELD_TYPES } from '../types'
 import { ServiceUrlSetter } from './types'
-import { setInstancesUrls } from './instances_urls'
+import { setElementsUrls } from './instances_urls'
 
 const log = logger(module)
 
@@ -44,8 +44,8 @@ const generateUrl = (id: number, element: InstanceElement):
 }
 
 const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
-  await setInstancesUrls({
-    elements,
+  await setElementsUrls({
+    elements: elements.filter(isInstanceElement),
     client,
     filter: element => FIELD_TYPES.includes(element.refType.elemID.name),
     query: 'SELECT internalid AS id, scriptid FROM customfield ORDER BY internalid ASC',

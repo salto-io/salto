@@ -79,7 +79,7 @@ getChangeValidatorMock.mockImplementation(({}: {
 
 jest.mock('../src/reference_dependencies')
 const getReferencedInstancesMock = referenceDependenciesModule
-  .getReferencedInstances as jest.Mock
+  .getReferencedElements as jest.Mock
 getReferencedInstancesMock
   .mockImplementation((
     sourceInstances: ReadonlyArray<InstanceElement>,

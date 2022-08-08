@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import immutableChangesValidator from '../../src/change_validators/immutable_changes'
 import { NETSUITE, PATH, SCRIPT_ID } from '../../src/constants'
 import { addressFormType } from '../../src/autogen/types/custom_types/addressForm'
@@ -38,6 +38,43 @@ describe('customization type change validator', () => {
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Error')
     expect(changeErrors[0].elemID).toEqual(entityCustomFieldInstance.elemID)
+  })
+
+  it('should have change error if type SCRIPT_ID annotation has been modified', async () => {
+    const type = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'customrecord1'),
+      annotationRefsOrTypes: {
+        [SCRIPT_ID]: BuiltinTypes.SERVICE_ID,
+      },
+      annotations: {
+        [SCRIPT_ID]: 'customrecord1',
+      },
+    })
+    const after = type.clone()
+    after.annotations[SCRIPT_ID] = 'modified'
+    const changeErrors = await immutableChangesValidator(
+      [toChange({ before: type, after })]
+    )
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0].severity).toEqual('Error')
+    expect(changeErrors[0].elemID).toEqual(type.elemID)
+  })
+
+  it('should have change error if field SCRIPT_ID annotation has been modified', async () => {
+    const field = new Field(
+      new ObjectType({ elemID: new ElemID(NETSUITE, 'customrecord1') }),
+      'custom_field',
+      BuiltinTypes.STRING,
+      { [SCRIPT_ID]: 'custom_field' },
+    )
+    const after = field.clone()
+    after.annotations[SCRIPT_ID] = 'modified'
+    const changeErrors = await immutableChangesValidator(
+      [toChange({ before: field, after })]
+    )
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0].severity).toEqual('Error')
+    expect(changeErrors[0].elemID).toEqual(field.elemID)
   })
 
   it('should have change error if file cabinet type PATH has been modified', async () => {
@@ -141,9 +178,21 @@ describe('customization type change validator', () => {
     expect(changeErrors[0].elemID).toEqual(after.elemID)
   })
 
-  it('should have change error if application_id was modified', async () => {
+  it('should have change error if instance application_id was modified', async () => {
     const before = new InstanceElement('instance', addressForm, { application_id: 'a' })
     const after = new InstanceElement('instance', addressForm, { application_id: 'b' })
+
+    const changeErrors = await immutableChangesValidator(
+      [toChange({ before, after })]
+    )
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0].severity).toEqual('Error')
+    expect(changeErrors[0].elemID).toEqual(after.elemID)
+  })
+
+  it('should have change error if type application_id was modified', async () => {
+    const before = new ObjectType({ elemID: new ElemID(NETSUITE, 'customrecord1'), annotations: { application_id: 'a' } })
+    const after = new ObjectType({ elemID: new ElemID(NETSUITE, 'customrecord1'), annotations: { application_id: 'b' } })
 
     const changeErrors = await immutableChangesValidator(
       [toChange({ before, after })]

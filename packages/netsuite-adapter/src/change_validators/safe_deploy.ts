@@ -14,17 +14,14 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { isInstanceChange, InstanceElement, Element,
-  ProgressReporter, ChangeError, Change, isInstanceElement, isEqualElements,
-  getChangeData, ModificationChange,
-  isRemovalChange, isModificationChange, isAdditionChange, AdditionChange, RemovalChange } from '@salto-io/adapter-api'
+import { Element, ProgressReporter, ChangeError, Change, isInstanceElement, isEqualElements, getChangeData, ModificationChange, isRemovalChange, isModificationChange, isAdditionChange, AdditionChange, RemovalChange, isField, InstanceElement, toChange, isFieldChange } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { buildNetsuiteQuery, convertToQueryParams, NetsuiteQuery, NetsuiteQueryParameters } from '../query'
-import { isCustomType, isFileCabinetInstance } from '../types'
-import { PATH, SCRIPT_ID } from '../constants'
+import { isCustomTypeElement, isFileCabinetInstance } from '../types'
+import { CUSTOM_RECORD_TYPE, PATH, SCRIPT_ID } from '../constants'
 import { getTypeIdentifier } from '../data_elements/types'
 import { FailedFiles, FailedTypes } from '../client/types'
-import { getReferencedInstances } from '../reference_dependencies'
+import { getReferencedElements } from '../reference_dependencies'
 
 export type FetchByQueryReturnType = {
   failedToFetchAllAtOnce: boolean
@@ -47,9 +44,9 @@ export type QueryChangeValidator = (
 ) => Promise<ReadonlyArray<ChangeError>>
 
 type DependencyType = 'referenced' | 'required'
-type AdditionalInstance = {
-  instance: InstanceElement
-  referer: InstanceElement
+type AdditionalElement = {
+  element: Element
+  referer: Element
   dependency: DependencyType
 }
 
@@ -59,6 +56,7 @@ const { isDefined } = values
 const getIdentifyingValue = async (instance: InstanceElement): Promise<string> => (
   instance.value[SCRIPT_ID] ?? instance.value[getTypeIdentifier(await instance.getType())]
 )
+
 const getIdentifingValuesByType = async (
   instancesByType: Record<string, InstanceElement[]>
 ): Promise<Record<string, string[]>> => (
@@ -70,55 +68,70 @@ const getIdentifingValuesByType = async (
     .toArray())
 )
 
-const getMatchingServiceInstances = async (
-  baseInstances: InstanceElement[],
+const getCustomRecordTypeIdentifingValues = (
+  elements: Element[]
+): Record<string, string[]> => {
+  const customRecordTypeScriptIds = elements.map(element => (isField(element)
+    ? element.parent.annotations[SCRIPT_ID]
+    : element.annotations[SCRIPT_ID]
+  ))
+  return customRecordTypeScriptIds.length > 0 ? {
+    [CUSTOM_RECORD_TYPE]: customRecordTypeScriptIds,
+  } : {}
+}
+
+const getMatchingServiceElements = async (
+  baseElements: Element[],
   fetchByQuery: FetchByQueryFunc
-): Promise<Record<string, InstanceElement>> => {
-  const filePaths = baseInstances
+): Promise<Record<string, Element>> => {
+  const [instances, elements] = _.partition(baseElements, isInstanceElement)
+  const filePaths = instances
     .filter(isFileCabinetInstance)
     .filter(inst => inst.value[PATH] !== undefined)
     .map(inst => inst.value[PATH])
 
-  const nonFileCabinetInstances = baseInstances.filter(inst => !isFileCabinetInstance(inst))
+  const nonFileCabinetInstances = instances.filter(inst => !isFileCabinetInstance(inst))
   const instancesByType = _.groupBy(nonFileCabinetInstances, instance => instance.elemID.typeName)
   const fetchTarget: NetsuiteQueryParameters = {
-    types: await getIdentifingValuesByType(instancesByType),
+    types: {
+      ...(await getIdentifingValuesByType(instancesByType)),
+      ...getCustomRecordTypeIdentifingValues(elements),
+    },
     filePaths,
   }
 
   const fetchQuery = buildNetsuiteQuery(convertToQueryParams(fetchTarget))
-  const { elements } = await fetchByQuery(fetchQuery, { reportProgress: () => null }, false, true)
-  return _.keyBy(
-    elements.filter(isInstanceElement),
-    element => element.elemID.getFullName()
-  )
+  const {
+    elements: fetchedElements,
+  } = await fetchByQuery(fetchQuery, { reportProgress: () => null }, false, true)
+  return _.keyBy(fetchedElements, element => element.elemID.getFullName())
 }
 
-const getAdditionalInstances = async (
-  instances: InstanceElement[],
+const getAdditionalElements = async (
+  elements: Element[],
   deployAllReferencedElements: boolean
-): Promise<AdditionalInstance[]> => {
+): Promise<AdditionalElement[]> => {
   const dependency: DependencyType = deployAllReferencedElements ? 'referenced' : 'required'
-  const instancesElemIdSet = new Set(instances.map(instance => instance.elemID.getFullName()))
-  return awu(instances)
+  const elementsElemIdSet = new Set(elements.map(element => element.elemID.getFullName()))
+  return awu(elements)
     .flatMap(async referer => {
-      const additionalInstances = await getReferencedInstances(
+      const additionalElements = await getReferencedElements(
         [referer],
         deployAllReferencedElements
       )
-      return additionalInstances.map(instance => {
-        if (instancesElemIdSet.has(instance.elemID.getFullName())) {
+      return additionalElements.map(element => {
+        if (elementsElemIdSet.has(element.elemID.getFullName())) {
           return undefined
         }
-        instancesElemIdSet.add(instance.elemID.getFullName())
-        return { instance, referer, dependency }
+        elementsElemIdSet.add(element.elemID.getFullName())
+        return { element, referer, dependency }
       })
     })
     .filter(isDefined)
     .toArray()
 }
 
-const toChangeWarning = (change: Change<InstanceElement>): ChangeError => (
+const toChangeWarning = (change: Change): ChangeError => (
   {
     elemID: getChangeData(change).elemID,
     severity: 'Warning',
@@ -127,96 +140,107 @@ const toChangeWarning = (change: Change<InstanceElement>): ChangeError => (
   }
 )
 
-const toAdditionalInstanceWarning = (
-  { instance, referer, dependency }: AdditionalInstance
+const toAdditionalElementWarning = (
+  { element, referer, dependency }: AdditionalElement
 ): ChangeError => ({
   elemID: referer.elemID,
   severity: 'Warning',
   message: 'Continuing the deploy process will override changes made in the service to a referenced element.',
-  detailedMessage: `The element ${instance.elemID.getFullName()}, which is ${dependency} in ${referer.elemID.name} and going to be deployed with it, has recently changed in the service.`,
+  detailedMessage: `The element ${element.elemID.getFullName()}, which is ${dependency} in ${referer.elemID.name} and going to be deployed with it, has recently changed in the service.`,
 })
 
 const hasChangedInService = (
-  change: RemovalChange<InstanceElement> | ModificationChange<InstanceElement>,
-  serviceInstance: InstanceElement
+  change: RemovalChange<Element> | ModificationChange<Element>,
+  serviceElement: Element
 ): boolean => (
-  !isEqualElements(change.data.before, serviceInstance)
+  !isEqualElements(change.data.before, serviceElement)
 )
 
 const isChangeTheSameInService = (
-  change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
-  serviceInstance: InstanceElement
+  change: ModificationChange<Element> | AdditionChange<Element>,
+  serviceElement: Element
 ): boolean => (
-  isEqualElements(change.data.after, serviceInstance)
+  isEqualElements(change.data.after, serviceElement)
 )
 
 const isModificationOverridingChange = (
-  change: Change<InstanceElement>,
-  matchingServiceInstance: InstanceElement,
+  change: Change,
+  matchingServiceElement: Element,
 ): boolean => (
   isModificationChange(change)
-  && hasChangedInService(change, matchingServiceInstance)
-  && !isChangeTheSameInService(change, matchingServiceInstance)
+  && hasChangedInService(change, matchingServiceElement)
+  && !isChangeTheSameInService(change, matchingServiceElement)
 )
 
 const isRemovalOverridingChange = (
-  change: Change<InstanceElement>,
-  matchingServiceInstance: InstanceElement,
+  change: Change,
+  matchingServiceElement: Element,
 ): boolean => (
   isRemovalChange(change)
-  && hasChangedInService(change, matchingServiceInstance)
+  && hasChangedInService(change, matchingServiceElement)
 )
 
 const isAdditionOverridingChange = (
-  change: Change<InstanceElement>,
-  matchingServiceInstance: InstanceElement,
+  change: Change,
+  matchingServiceElement: Element,
 ): boolean => (
   isAdditionChange(change)
-  && matchingServiceInstance !== undefined
-  && !isChangeTheSameInService(change, matchingServiceInstance)
+  && matchingServiceElement !== undefined
+  && !isChangeTheSameInService(change, matchingServiceElement)
 )
 
+const toTopLevelChange = (change: Change): Change => (
+  isFieldChange(change)
+    ? toChange({
+      before: isAdditionChange(change) ? undefined : change.data.before.parent,
+      after: isRemovalChange(change) ? undefined : change.data.after.parent,
+    })
+    : change
+)
 
 const changeValidator: QueryChangeValidator = async (
   changes: ReadonlyArray<Change>,
   fetchByQuery: FetchByQueryFunc,
   deployAllReferencedElements = false
 ) => {
-  const instanceChanges = changes.filter(isInstanceChange)
-  const instances = instanceChanges.map(getChangeData)
+  const elements: Element[] = changes
+    .map(getChangeData)
+    .filter(elem => isInstanceElement(elem) || isCustomTypeElement(elem))
 
-  const additionalInstances = await getAdditionalInstances(
-    instances.filter(instance => isCustomType(instance.refType)),
+  const additionalElements = await getAdditionalElements(
+    elements.filter(isCustomTypeElement),
     deployAllReferencedElements
   )
 
-  const serviceInstances = await getMatchingServiceInstances(
-    instances.concat(additionalInstances.map(addedInst => addedInst.instance)),
+  const serviceElements = await getMatchingServiceElements(
+    elements.concat(additionalElements.map(addedElemn => addedElemn.element)),
     fetchByQuery
   )
 
   const isOverridingChange = (
-    change: Change<InstanceElement>
+    change: Change
   ): boolean => {
-    const matchingServiceInstance = serviceInstances[getChangeData(change).elemID.getFullName()]
-    return (isModificationOverridingChange(change, matchingServiceInstance)
-    || isRemovalOverridingChange(change, matchingServiceInstance)
-    || isAdditionOverridingChange(change, matchingServiceInstance)
+    const matchingServiceElement = serviceElements[getChangeData(change).elemID.getFullName()]
+    return (
+      isModificationOverridingChange(change, matchingServiceElement)
+      || isRemovalOverridingChange(change, matchingServiceElement)
+      || isAdditionOverridingChange(change, matchingServiceElement)
     )
   }
 
-  const isOverridingAdditionalInstance = ({ instance }: AdditionalInstance): boolean =>
-    !isEqualElements(instance, serviceInstances[instance.elemID.getFullName()])
+  const isOverridingAdditionalElement = ({ element }: AdditionalElement): boolean =>
+    !isEqualElements(element, serviceElements[element.elemID.getFullName()])
 
-  const changesWarnings = instanceChanges
+  const changesWarnings = changes
+    .map(toTopLevelChange)
     .filter(isOverridingChange)
     .map(toChangeWarning)
 
-  const additionalInstancesWarnings = additionalInstances
-    .filter(isOverridingAdditionalInstance)
-    .map(toAdditionalInstanceWarning)
+  const additionalElementsWarnings = additionalElements
+    .filter(isOverridingAdditionalElement)
+    .map(toAdditionalElementWarning)
 
-  return changesWarnings.concat(additionalInstancesWarnings)
+  return changesWarnings.concat(additionalElementsWarnings)
 }
 
 export default changeValidator

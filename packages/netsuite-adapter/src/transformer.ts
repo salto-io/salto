@@ -18,6 +18,7 @@ import {
   PrimitiveTypes, Values, isObjectType, isPrimitiveValue, StaticFile, ElemIdGetter,
   OBJECT_SERVICE_ID, OBJECT_NAME, toServiceIdsString, ServiceIds,
   isInstanceElement,
+  ElemIDType,
 } from '@salto-io/adapter-api'
 import { MapKeyFunc, mapKeysRecursive, TransformFunc, transformValues, GetLookupNameFunc, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -30,7 +31,7 @@ import {
   SETTINGS_PATH,
 } from './constants'
 import { fieldTypes } from './types/field_types'
-import { isSDFConfigType, isCustomType, isFileCabinetType } from './types'
+import { isSDFConfigType, isCustomType, isFileCabinetType, isCustomRecordType } from './types'
 import { isFileCustomizationInfo, isFolderCustomizationInfo, isTemplateCustomTypeInfo } from './client/utils'
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from './client/types'
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from './client/constants'
@@ -298,20 +299,34 @@ export const toCustomizationInfo = async (
   return { typeName, values, scriptId } as CustomTypeInfo
 }
 
-const getScriptIdParts = (topLevelParent: InstanceElement, elemId: ElemID): string[] => {
+const getScriptIdParts = (
+  values: Partial<Record<ElemIDType, Values>>,
+  elemId: ElemID
+): string[] => {
   if (elemId.isTopLevel()) {
-    return [topLevelParent.value[SCRIPT_ID]]
+    return [values[elemId.idType]?.[SCRIPT_ID]]
   }
   const relativePath = elemId.createTopLevelParentID().path
-  const value = _.get(topLevelParent.value, relativePath)
+  const value = _.get(values[elemId.idType], relativePath)
   if (_.has(value, SCRIPT_ID)) {
-    return [...getScriptIdParts(topLevelParent, elemId.createParentID()), value[SCRIPT_ID]]
+    return [...getScriptIdParts(values, elemId.createParentID()), value[SCRIPT_ID]]
   }
-  return getScriptIdParts(topLevelParent, elemId.createParentID())
+  return getScriptIdParts(values, elemId.createParentID())
 }
 
 export const getLookUpName: GetLookupNameFunc = ({ ref }) => {
   const { elemID, value, topLevelParent } = ref
+  if (
+    isObjectType(topLevelParent)
+    && isCustomRecordType(topLevelParent)
+    && elemID.name === SCRIPT_ID
+  ) {
+    return `[${SCRIPT_ID}=${getScriptIdParts({
+      type: topLevelParent.annotations,
+      attr: topLevelParent.annotations,
+      field: _.mapValues(topLevelParent.fields, field => field.annotations),
+    }, elemID).join('.')}]`
+  }
   if (!isInstanceElement(topLevelParent)) {
     return value
   }
@@ -319,7 +334,9 @@ export const getLookUpName: GetLookupNameFunc = ({ ref }) => {
     return `[${value}]`
   }
   if (isCustomType(topLevelParent.refType) && elemID.name === SCRIPT_ID) {
-    return `[${SCRIPT_ID}=${getScriptIdParts(topLevelParent, elemID).join('.')}]`
+    return `[${SCRIPT_ID}=${getScriptIdParts({
+      instance: topLevelParent.value,
+    }, elemID).join('.')}]`
   }
   return value
 }

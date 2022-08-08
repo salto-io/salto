@@ -14,12 +14,13 @@
 * limitations under the License.
 */
 
-import { setInstancesUrls } from './instances_urls'
+import { isInstanceElement } from '@salto-io/adapter-api'
+import { setElementsUrls } from './instances_urls'
 import { ServiceUrlSetter } from './types'
 
 const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
-  await setInstancesUrls({
-    elements,
+  await setElementsUrls({
+    elements: elements.filter(isInstanceElement),
     client,
     filter: element => element.refType.elemID.name === 'customtransactiontype',
     query: 'SELECT id, scriptid FROM customtransactiontype ORDER BY id ASC',

@@ -17,6 +17,7 @@ import axios from 'axios'
 import Bottleneck from 'bottleneck'
 import MockAdapter from 'axios-mock-adapter'
 import _ from 'lodash'
+import { configType } from 'src/config'
 import SoapClient from '../../src/client/suiteapp_client/soap_client/soap_client'
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError } from '../../src/client/suiteapp_client/errors'
 import SuiteAppClient, { PAGE_SIZE } from '../../src/client/suiteapp_client/suiteapp_client'
@@ -611,7 +612,6 @@ describe('SuiteAppClient', () => {
             ],
           },
         })
-
         await expect(SuiteAppClient.validateCredentials({
           accountId: 'ACCOUNT_ID',
           suiteAppTokenId: 'tokenId',

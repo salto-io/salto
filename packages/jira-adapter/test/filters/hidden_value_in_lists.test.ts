@@ -14,24 +14,16 @@
 * limitations under the License.
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ListType, ObjectType } from '@salto-io/adapter-api'
-import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { filterUtils } from '@salto-io/adapter-components'
 import { JIRA } from '../../src/constants'
 import hiddenValueInListsFilter from '../../src/filters/hidden_value_in_lists'
-import { mockClient, getDefaultAdapterConfig } from '../utils'
+import { getFilterParams } from '../utils'
 
 describe('hiddenValueInListsFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
   let instance: InstanceElement
   beforeEach(async () => {
-    const { client, paginator } = mockClient()
-    filter = hiddenValueInListsFilter({
-      client,
-      paginator,
-      config: await getDefaultAdapterConfig(),
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    filter = hiddenValueInListsFilter(getFilterParams()) as typeof filter
 
     const type = new ObjectType({
       elemID: new ElemID(JIRA, 'someType'),

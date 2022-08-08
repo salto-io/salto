@@ -14,12 +14,11 @@
 * limitations under the License.
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { deployment, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { JIRA } from '../../src/constants'
-import { mockClient } from '../utils'
+import { getFilterParams, mockClient } from '../utils'
 import workflowSchemeFilter, { MAX_TASK_CHECKS } from '../../src/filters/workflow_scheme'
 import { Filter } from '../../src/filter'
 import { getDefaultConfig } from '../../src/config/config'
@@ -46,13 +45,10 @@ describe('workflowScheme', () => {
     client = cli
     connection = conn
 
-    filter = workflowSchemeFilter({
+    filter = workflowSchemeFilter(getFilterParams({
       client,
       paginator,
-      config: getDefaultConfig({ isDataCenter: false }),
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    })
+    }))
     workflowSchemeType = new ObjectType({
       elemID: new ElemID(JIRA, 'WorkflowScheme'),
     })
@@ -252,10 +248,13 @@ describe('workflowScheme', () => {
         },
       })
 
-      await filter.deploy?.([toChange({ before: instance, after: instance })])
+
+      const instanceBefore = instance.clone()
+      instanceBefore.value.description = 'desc'
+      await filter.deploy?.([toChange({ before: instanceBefore, after: instance })])
 
       expect(deployChangeMock).toHaveBeenCalledWith(
-        toChange({ before: instance, after: instance }),
+        toChange({ before: instanceBefore, after: instance }),
         client,
         getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.WorkflowScheme.deployRequests,
@@ -331,11 +330,13 @@ describe('workflowScheme', () => {
         },
       })
 
-      await filter.deploy?.([toChange({ before: instance, after: instance })])
+      const instanceBefore = instance.clone()
+      instanceBefore.value.description = 'desc'
+      await filter.deploy?.([toChange({ before: instanceBefore, after: instance })])
 
 
       expect(deployChangeMock).toHaveBeenCalledWith(
-        toChange({ before: instance, after: instance }),
+        toChange({ before: instanceBefore, after: instance }),
         client,
         getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.WorkflowScheme.deployRequests,
@@ -394,10 +395,12 @@ describe('workflowScheme', () => {
         },
       })
 
-      await filter.deploy?.([toChange({ before: instance, after: instance })])
+      const instanceBefore = instance.clone()
+      instanceBefore.value.description = 'desc'
+      await filter.deploy?.([toChange({ before: instanceBefore, after: instance })])
 
       expect(deployChangeMock).toHaveBeenCalledWith(
-        toChange({ before: instance, after: instance }),
+        toChange({ before: instanceBefore, after: instance }),
         client,
         getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.WorkflowScheme.deployRequests,
@@ -462,10 +465,12 @@ describe('workflowScheme', () => {
         },
       })
 
-      await filter.deploy?.([toChange({ before: instance, after: instance })])
+      const instanceBefore = instance.clone()
+      instanceBefore.value.description = 'desc'
+      await filter.deploy?.([toChange({ before: instanceBefore, after: instance })])
 
       expect(deployChangeMock).toHaveBeenCalledWith(
-        toChange({ before: instance, after: instance }),
+        toChange({ before: instanceBefore, after: instance }),
         client,
         getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.WorkflowScheme.deployRequests,
@@ -506,7 +511,9 @@ describe('workflowScheme', () => {
         },
       })
 
-      const res = await filter.deploy?.([toChange({ before: instance, after: instance })])
+      const instanceBefore = instance.clone()
+      instanceBefore.value.description = 'desc'
+      const res = await filter.deploy?.([toChange({ before: instanceBefore, after: instance })])
       expect(res?.deployResult.appliedChanges).toEqual([])
       expect(res?.deployResult.errors).toHaveLength(1)
     })
@@ -544,7 +551,9 @@ describe('workflowScheme', () => {
         },
       })
 
-      const res = await filter.deploy?.([toChange({ before: instance, after: instance })])
+      const instanceBefore = instance.clone()
+      instanceBefore.value.description = 'desc'
+      const res = await filter.deploy?.([toChange({ before: instanceBefore, after: instance })])
 
       // + 1 is for the internal id check
       expect(connection.get).toHaveBeenCalledTimes(MAX_TASK_CHECKS + 1)
@@ -579,7 +588,9 @@ describe('workflowScheme', () => {
         },
       })
 
-      const res = await filter.deploy?.([toChange({ before: instance, after: instance })])
+      const instanceBefore = instance.clone()
+      instanceBefore.value.description = 'desc'
+      const res = await filter.deploy?.([toChange({ before: instanceBefore, after: instance })])
 
       expect(res?.deployResult.appliedChanges).toEqual([])
       expect(res?.deployResult.errors).toHaveLength(1)

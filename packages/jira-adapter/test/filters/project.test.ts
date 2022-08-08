@@ -14,14 +14,14 @@
 * limitations under the License.
 */
 import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { filterUtils, client as clientUtils, deployment, elements as elementUtils } from '@salto-io/adapter-components'
+import { filterUtils, client as clientUtils, deployment } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { getDefaultConfig } from '../../src/config/config'
 import JiraClient from '../../src/client/client'
 import { JIRA } from '../../src/constants'
 import projectFilter from '../../src/filters/project'
-import { mockClient } from '../utils'
+import { getFilterParams, mockClient } from '../utils'
+import { PROJECT_CONTEXTS_FIELD } from '../../src/filters/fields/contexts_projects_filter'
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -51,13 +51,10 @@ describe('projectFilter', () => {
 
     deployChangeMock.mockClear()
 
-    filter = projectFilter({
+    filter = projectFilter(getFilterParams({
       client,
       paginator,
-      config: getDefaultConfig({ isDataCenter: false }),
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    })) as typeof filter
 
     type = new ObjectType({
       elemID: new ElemID(JIRA, 'Project'),
@@ -180,7 +177,7 @@ describe('projectFilter', () => {
         change,
         client,
         getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Project.deployRequests,
-        ['components', 'workflowScheme', 'issueTypeScreenScheme', 'fieldConfigurationScheme', 'issueTypeScheme'],
+        ['components', 'workflowScheme', 'issueTypeScreenScheme', 'fieldConfigurationScheme', 'issueTypeScheme', PROJECT_CONTEXTS_FIELD],
         undefined,
         undefined,
       )
@@ -226,7 +223,7 @@ describe('projectFilter', () => {
         change,
         client,
         getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Project.deployRequests,
-        ['components', 'fieldConfigurationScheme'],
+        ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD],
         undefined,
         undefined,
       )
@@ -307,7 +304,7 @@ describe('projectFilter', () => {
         change,
         client,
         getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Project.deployRequests,
-        ['components', 'fieldConfigurationScheme'],
+        ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD],
         undefined,
         undefined,
       )
@@ -406,7 +403,7 @@ describe('projectFilter', () => {
         change,
         client,
         getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Project.deployRequests,
-        ['components', 'fieldConfigurationScheme'],
+        ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD],
         undefined,
         undefined,
       )

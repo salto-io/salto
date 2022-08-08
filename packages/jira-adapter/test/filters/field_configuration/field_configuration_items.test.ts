@@ -14,14 +14,12 @@
 * limitations under the License.
 */
 import { Change, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
-import { getDefaultConfig } from '../../../src/config/config'
 import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, FIELD_CONFIGURATION_TYPE_NAME, JIRA } from '../../../src/constants'
 import fieldConfigurationItemsFilter from '../../../src/filters/field_configuration/field_configuration_items'
-import { mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 
 describe('fieldConfigurationItemsFilter', () => {
   let filter: filterUtils.FilterWith<'deploy'>
@@ -32,13 +30,10 @@ describe('fieldConfigurationItemsFilter', () => {
     const { client, paginator, connection } = mockClient()
     mockConnection = connection
 
-    filter = fieldConfigurationItemsFilter({
+    filter = fieldConfigurationItemsFilter(getFilterParams({
       client,
       paginator,
-      config: getDefaultConfig({ isDataCenter: false }),
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    })) as typeof filter
 
     type = new ObjectType({
       elemID: new ElemID(JIRA, FIELD_CONFIGURATION_ITEM_TYPE_NAME),

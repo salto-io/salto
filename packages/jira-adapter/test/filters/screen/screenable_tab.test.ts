@@ -128,15 +128,17 @@ describe('screenableTab', () => {
           },
         },
       })
+      const instanceBefore = instance.clone()
+      instanceBefore.value.tabs.tab.description = 'desc'
       const change = toChange({
-        before: instance,
+        before: instanceBefore,
         after: instance,
       }) as ModificationChange<InstanceElement>
       await deployTabs(change, client, getDefaultConfig({ isDataCenter: false }))
 
       expect(deployChangeMock).toHaveBeenCalledWith(
         toChange({
-          before: new InstanceElement('tab', screenTabType, { name: 'tab' }),
+          before: new InstanceElement('tab', screenTabType, { name: 'tab', description: 'desc' }),
           after: new InstanceElement('tab', screenTabType, { name: 'tab' }),
         }),
         client,

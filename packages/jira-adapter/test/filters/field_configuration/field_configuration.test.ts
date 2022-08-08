@@ -14,12 +14,10 @@
 * limitations under the License.
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ListType, ObjectType } from '@salto-io/adapter-api'
-import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { getDefaultConfig } from '../../../src/config/config'
+import { filterUtils } from '@salto-io/adapter-components'
 import { JIRA } from '../../../src/constants'
 import fieldConfigurationFilter from '../../../src/filters/field_configuration/field_configuration'
-import { mockClient } from '../../utils'
+import { getFilterParams } from '../../utils'
 
 describe('fieldConfigurationFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'deploy'>
@@ -27,15 +25,7 @@ describe('fieldConfigurationFilter', () => {
   let fieldConfigurationItemType: ObjectType
 
   beforeEach(async () => {
-    const { client, paginator } = mockClient()
-
-    filter = fieldConfigurationFilter({
-      client,
-      paginator,
-      config: getDefaultConfig({ isDataCenter: false }),
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    filter = fieldConfigurationFilter(getFilterParams()) as typeof filter
 
     fieldConfigurationItemType = new ObjectType({
       elemID: new ElemID(JIRA, 'FieldConfigurationItem'),

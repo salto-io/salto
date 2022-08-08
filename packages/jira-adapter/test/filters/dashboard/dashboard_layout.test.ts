@@ -15,10 +15,9 @@
 */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 import dashboardLayoutFilter from '../../../src/filters/dashboard/dashboard_layout'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { DASHBOARD_TYPE, JIRA } from '../../../src/constants'
@@ -40,13 +39,11 @@ describe('dashboardLayoutFilter', () => {
     connection = conn
 
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    filter = dashboardLayoutFilter({
+    filter = dashboardLayoutFilter(getFilterParams({
       client,
       paginator,
       config,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as filterUtils.FilterWith<'onFetch'>
+    })) as filterUtils.FilterWith<'onFetch'>
 
     dashboardType = new ObjectType({
       elemID: new ElemID(JIRA, DASHBOARD_TYPE),

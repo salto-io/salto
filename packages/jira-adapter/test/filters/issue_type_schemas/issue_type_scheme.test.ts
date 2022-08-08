@@ -14,15 +14,13 @@
 * limitations under the License.
 */
 import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType, toChange } from '@salto-io/adapter-api'
-import { deployment, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { ISSUE_TYPE_SCHEMA_NAME, JIRA } from '../../../src/constants'
-import { mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 import issueTypeSchemeFilter from '../../../src/filters/issue_type_schemas/issue_type_scheme'
 import { Filter } from '../../../src/filter'
 import JiraClient from '../../../src/client/client'
-import { getDefaultConfig } from '../../../src/config/config'
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -43,13 +41,10 @@ describe('issueTypeScheme', () => {
     const { client, paginator, connection } = mockClient()
     mockConnection = connection
 
-    filter = issueTypeSchemeFilter({
+    filter = issueTypeSchemeFilter(getFilterParams({
       client,
       paginator,
-      config: getDefaultConfig({ isDataCenter: false }),
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    })
+    }))
     type = new ObjectType({
       elemID: new ElemID(JIRA, ISSUE_TYPE_SCHEMA_NAME),
       fields: {

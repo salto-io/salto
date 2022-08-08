@@ -14,15 +14,14 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, isInstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
 import JiraClient, { PRIVATE_API_HEADERS } from '../../../src/client/client'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { JIRA, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import triggersFilter from '../../../src/filters/workflow/triggers_filter'
-import { mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 
 describe('triggersFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
@@ -41,13 +40,11 @@ describe('triggersFilter', () => {
 
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
-    filter = triggersFilter({
+    filter = triggersFilter(getFilterParams({
       client,
       paginator,
       config,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    })) as typeof filter
   })
 
   describe('onFetch', () => {

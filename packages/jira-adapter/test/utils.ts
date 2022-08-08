@@ -14,13 +14,14 @@
 * limitations under the License.
 */
 import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType } from '@salto-io/adapter-utils'
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { buildElementsSourceFromElements, createDefaultInstanceFromType } from '@salto-io/adapter-utils'
+import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { adapter } from '../src/adapter_creator'
 import { Credentials } from '../src/auth'
-import { JiraConfig, configType } from '../src/config/config'
+import { JiraConfig, configType, getDefaultConfig } from '../src/config/config'
 import JiraClient from '../src/client/client'
+import { FilterCreator } from '../src/filter'
 
 
 export const createCredentialsInstance = (credentials: Credentials): InstanceElement => (
@@ -78,3 +79,13 @@ export const getDefaultAdapterConfig = async (): Promise<JiraConfig> => {
   const defaultConfigInstance = await createDefaultInstanceFromType('jira', configType)
   return defaultConfigInstance.value as JiraConfig
 }
+
+export const getFilterParams = (params?: Partial<Parameters<FilterCreator>[0]>)
+: Parameters<FilterCreator>[0] => ({
+  ...mockClient(),
+  config: getDefaultConfig({ isDataCenter: false }),
+  elementsSource: buildElementsSourceFromElements([]),
+  fetchQuery: elementUtils.query.createMockQuery(),
+  adapterContext: {},
+  ...params ?? {},
+})

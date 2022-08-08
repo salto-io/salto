@@ -31,6 +31,7 @@ import { dashboardLayoutValidator } from './dashboard_layout'
 import { maskingValidator } from './masking'
 import { automationsValidator } from './automations'
 import { lockedFieldsValidator } from './locked_fields'
+import { globalProjectContextsValidator } from './global_project_contexts'
 
 const {
   deployTypesNotSupportedValidator,
@@ -55,6 +56,7 @@ export default (
     automationsValidator,
     maskingValidator(client),
     lockedFieldsValidator,
+    globalProjectContextsValidator,
   ]
 
   return createChangeValidator(validators)

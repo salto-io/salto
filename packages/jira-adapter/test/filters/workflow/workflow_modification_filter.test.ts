@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, toChange, ReferenceExpression, ReadOnlyElementsSource, CORE_ANNOTATIONS, ListType, Field, BuiltinTypes } from '@salto-io/adapter-api'
-import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { deployWorkflow } from '../../../src/filters/workflow/workflow_deploy_filter'
@@ -23,7 +23,7 @@ import JiraClient from '../../../src/client/client'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { JIRA, WORKFLOW_SCHEME_TYPE_NAME, WORKFLOW_STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import workflowModificationFilter from '../../../src/filters/workflow/workflow_modification_filter'
-import { mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 
 jest.mock('../../../src/filters/workflow/workflow_deploy_filter', () => ({
   ...jest.requireActual('../../../src/filters/workflow/workflow_deploy_filter'),
@@ -109,13 +109,12 @@ describe('workflowModificationFilter', () => {
       workflowInstance,
     ])
 
-    filter = workflowModificationFilter({
+    filter = workflowModificationFilter(getFilterParams({
       client,
       paginator,
       config,
       elementsSource,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    })) as typeof filter
   })
 
   describe('onFetch', () => {

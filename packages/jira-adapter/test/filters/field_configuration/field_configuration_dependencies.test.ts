@@ -14,12 +14,10 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
-import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { getDefaultConfig } from '../../../src/config/config'
+import { filterUtils } from '@salto-io/adapter-components'
 import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, FIELD_CONFIGURATION_TYPE_NAME, JIRA, PROJECT_TYPE } from '../../../src/constants'
 import fieldConfigurationDependenciesFilter from '../../../src/filters/field_configuration/field_configuration_dependencies'
-import { mockClient } from '../../utils'
+import { getFilterParams } from '../../utils'
 import { FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
 
 describe('fieldConfigurationItemsFilter', () => {
@@ -38,15 +36,7 @@ describe('fieldConfigurationItemsFilter', () => {
   let fieldInstance: InstanceElement
 
   beforeEach(async () => {
-    const { client, paginator } = mockClient()
-
-    filter = fieldConfigurationDependenciesFilter({
-      client,
-      paginator,
-      config: getDefaultConfig({ isDataCenter: false }),
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    filter = fieldConfigurationDependenciesFilter(getFilterParams()) as typeof filter
 
     projectType = new ObjectType({
       elemID: new ElemID(JIRA, PROJECT_TYPE),

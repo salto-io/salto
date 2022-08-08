@@ -14,8 +14,7 @@
 * limitations under the License.
 */
 import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { filterUtils, client as clientUtils, deployment, elements as elementUtils } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { filterUtils, client as clientUtils, deployment } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
 import { COLUMNS_CONFIG_FIELD } from '../../../src/filters/board/board_columns'
@@ -23,7 +22,7 @@ import JiraClient, { PRIVATE_API_HEADERS } from '../../../src/client/client'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { BOARD_LOCATION_TYPE, BOARD_TYPE_NAME, JIRA } from '../../../src/constants'
 import boardDeploymentFilter from '../../../src/filters/board/board_deployment'
-import { mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -52,13 +51,11 @@ describe('boardDeploymentFilter', () => {
 
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
-    filter = boardDeploymentFilter({
+    filter = boardDeploymentFilter(getFilterParams({
       client,
       paginator,
       config,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    })) as typeof filter
 
     locationType = new ObjectType({
       elemID: new ElemID(JIRA, BOARD_LOCATION_TYPE),

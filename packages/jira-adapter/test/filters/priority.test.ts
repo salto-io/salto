@@ -15,9 +15,7 @@
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { elements as elementUtils } from '@salto-io/adapter-components'
-import { mockClient } from '../utils'
+import { getFilterParams, mockClient } from '../utils'
 import priorityFilter from '../../src/filters/priority'
 import { Filter } from '../../src/filter'
 import { getDefaultConfig, JiraConfig } from '../../src/config/config'
@@ -41,13 +39,11 @@ describe('priorityFilter', () => {
     client = cli
 
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    filter = priorityFilter({
+    filter = priorityFilter(getFilterParams({
       client,
       paginator,
       config,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    })
+    }))
 
     type = new ObjectType({
       elemID: new ElemID(JIRA, PRIORITY_TYPE_NAME),

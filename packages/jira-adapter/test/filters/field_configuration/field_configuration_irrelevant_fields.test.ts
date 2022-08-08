@@ -15,12 +15,10 @@
 */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
-import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA } from '../../../src/constants'
 import fieldConfigurationIrrelevantFields from '../../../src/filters/field_configuration/field_configuration_irrelevant_fields'
-import { mockClient } from '../../utils'
+import { getFilterParams } from '../../utils'
 
 
 describe('fieldConfigurationIrrelevantFields', () => {
@@ -29,15 +27,7 @@ describe('fieldConfigurationIrrelevantFields', () => {
   let fieldInstance: InstanceElement
 
   beforeEach(async () => {
-    const { client, paginator } = mockClient()
-
-    filter = fieldConfigurationIrrelevantFields({
-      client,
-      paginator,
-      config: getDefaultConfig({ isDataCenter: false }),
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    filter = fieldConfigurationIrrelevantFields(getFilterParams()) as typeof filter
 
 
     fieldConfigurationType = new ObjectType({
@@ -99,17 +89,12 @@ describe('fieldConfigurationIrrelevantFields', () => {
     })
 
     it('should do nothing of fields are not fetched', async () => {
-      const { client, paginator } = mockClient()
       const query = elementUtils.query.createMockQuery()
       query.isTypeMatch.mockImplementation(typeName => typeName !== FIELD_TYPE_NAME)
 
-      filter = fieldConfigurationIrrelevantFields({
-        client,
-        paginator,
-        config: getDefaultConfig({ isDataCenter: false }),
-        elementsSource: buildElementsSourceFromElements([]),
+      filter = fieldConfigurationIrrelevantFields(getFilterParams({
         fetchQuery: query,
-      }) as typeof filter
+      })) as typeof filter
 
       const instance = new InstanceElement(
         'instance',

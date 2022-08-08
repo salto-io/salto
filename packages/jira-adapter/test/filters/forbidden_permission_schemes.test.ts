@@ -14,12 +14,10 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { getDefaultConfig } from '../../src/config/config'
+import { filterUtils } from '@salto-io/adapter-components'
 import { JIRA } from '../../src/constants'
 import forbiddenPermissionScheme from '../../src/filters/forbidden_permission_schemes'
-import { mockClient } from '../utils'
+import { getFilterParams } from '../utils'
 
 describe('forbidden permission scheme', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
@@ -44,14 +42,7 @@ describe('forbidden permission scheme', () => {
     }
   )
   beforeEach(async () => {
-    const { client, paginator } = mockClient()
-    filter = forbiddenPermissionScheme({
-      client,
-      paginator,
-      config: getDefaultConfig({ isDataCenter: false }),
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    filter = forbiddenPermissionScheme(getFilterParams()) as typeof filter
   })
   it('should remove permissions from instances', async () => {
     await filter.onFetch([instance])

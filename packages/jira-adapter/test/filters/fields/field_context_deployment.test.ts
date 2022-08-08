@@ -14,9 +14,8 @@
 * limitations under the License.
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, MapType, ObjectType, toChange } from '@salto-io/adapter-api'
-import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { mockClient } from '../../utils'
+import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA } from '../../../src/constants'
 import contextDeploymentFilter from '../../../src/filters/fields/context_deployment_filter'
@@ -43,13 +42,10 @@ describe('fieldContextDeployment', () => {
     client = mockCli.client
     paginator = mockCli.paginator
 
-    filter = contextDeploymentFilter({
+    filter = contextDeploymentFilter(getFilterParams({
       client,
       paginator,
-      config: getDefaultConfig({ isDataCenter: false }),
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    })) as typeof filter
 
     optionType = new ObjectType({
       elemID: new ElemID(JIRA, 'CustomFieldContextOption'),
@@ -91,11 +87,6 @@ describe('fieldContextDeployment', () => {
       await filter.onFetch([fieldType, contextType])
 
       expect(fieldType.fields.contexts.annotations).toEqual({
-        [CORE_ANNOTATIONS.CREATABLE]: true,
-        [CORE_ANNOTATIONS.UPDATABLE]: true,
-      })
-
-      expect(contextType.fields.projectIds.annotations).toEqual({
         [CORE_ANNOTATIONS.CREATABLE]: true,
         [CORE_ANNOTATIONS.UPDATABLE]: true,
       })
@@ -154,6 +145,7 @@ describe('fieldContextDeployment', () => {
       change,
       client,
       getDefaultConfig({ isDataCenter: false }).apiDefinitions,
+      expect.anything(),
     )
   })
 })

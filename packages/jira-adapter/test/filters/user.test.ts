@@ -14,12 +14,9 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { elements as elementUtils } from '@salto-io/adapter-components'
-import { mockClient } from '../utils'
+import { getFilterParams } from '../utils'
 import userFilter from '../../src/filters/user'
 import { Filter } from '../../src/filter'
-import { getDefaultConfig } from '../../src/config/config'
 import { JIRA } from '../../src/constants'
 
 describe('userFilter', () => {
@@ -28,15 +25,7 @@ describe('userFilter', () => {
   let type: ObjectType
 
   beforeEach(async () => {
-    const { client, paginator } = mockClient()
-
-    filter = userFilter({
-      client,
-      paginator,
-      config: getDefaultConfig({ isDataCenter: false }),
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    })
+    filter = userFilter(getFilterParams())
 
     userType = new ObjectType({
       elemID: new ElemID(JIRA, 'User'),

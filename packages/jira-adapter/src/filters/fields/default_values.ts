@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 
-import { Change, compareSpecialValues, getChangeData, InstanceElement, isAdditionOrModificationChange, isObjectType, isReferenceExpression, isRemovalChange, isRemovalOrModificationChange, ObjectType, Value } from '@salto-io/adapter-api'
+import { Change, compareSpecialValues, getChangeData, InstanceElement, isAdditionOrModificationChange, isObjectType, isReferenceExpression, isRemovalChange, isRemovalOrModificationChange, ObjectType, ReadOnlyElementsSource, Value } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { applyFunctionToChangeData, getParents, resolveChangeElement, resolvePath } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, getParents, resolveChangeElement, resolvePath, resolveValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { getLookUpName } from '../../reference_mapping'
 import { setFieldDeploymentAnnotations } from '../../utils'
@@ -71,10 +71,13 @@ const resolveDefaultOption = (
 export const updateDefaultValues = async (
   contextChange: Change<InstanceElement>,
   client: clientUtils.HTTPWriteClientInterface,
+  elementsSource?: ReadOnlyElementsSource,
 ): Promise<void> => {
   const resolvedChange = await resolveChangeElement(
     await resolveDefaultOption(contextChange),
-    getLookUpName
+    getLookUpName,
+    resolveValues,
+    elementsSource,
   )
 
   const beforeDefault = isRemovalOrModificationChange(resolvedChange)

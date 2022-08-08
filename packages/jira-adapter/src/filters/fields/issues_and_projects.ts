@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, getChangeData, InstanceElement, isModificationChange } from '@salto-io/adapter-api'
-import { getParents, resolveChangeElement } from '@salto-io/adapter-utils'
+import { Change, getChangeData, InstanceElement, isModificationChange, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { getParents, resolveChangeElement, resolveValues } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { getLookUpName } from '../../reference_mapping'
 import { getDiffIds } from '../../diff'
@@ -25,13 +25,20 @@ export const setContextField = async ({
   fieldName,
   endpoint,
   client,
+  elementsSource,
 }: {
   contextChange: Change<InstanceElement>
   fieldName: string
   endpoint: string
   client: clientUtils.HTTPWriteClientInterface
+  elementsSource?: ReadOnlyElementsSource
 }): Promise<void> => {
-  const resolvedChange = await resolveChangeElement(contextChange, getLookUpName)
+  const resolvedChange = await resolveChangeElement(
+    contextChange,
+    getLookUpName,
+    resolveValues,
+    elementsSource,
+  )
   if (!isModificationChange(resolvedChange)) {
     // In create the issue types and projects ids are created
     // with the same request the context is created with

@@ -15,10 +15,9 @@
 */
 import { Element, InstanceElement, CORE_ANNOTATIONS, ElemID, ObjectType, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 import webhookFilter from '../../../src/filters/webhook/webhook'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import JiraClient, { PRIVATE_API_HEADERS } from '../../../src/client/client'
@@ -55,13 +54,12 @@ describe('webhookFilter', () => {
     fetchQuery = elementUtils.query.createMockQuery()
 
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    filter = webhookFilter({
+    filter = webhookFilter(getFilterParams({
       client,
       paginator,
       config,
-      elementsSource: buildElementsSourceFromElements([]),
       fetchQuery,
-    }) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
+    })) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
 
     connection.get.mockResolvedValue({
       status: 200,
@@ -142,14 +140,13 @@ describe('webhookFilter', () => {
 
     it('should use elemIdGetter', async () => {
       const { paginator } = mockClient()
-      filter = webhookFilter({
+      filter = webhookFilter(getFilterParams({
         client,
         paginator,
         config,
-        elementsSource: buildElementsSourceFromElements([]),
         getElemIdFunc: () => new ElemID(JIRA, 'someName2'),
         fetchQuery: elementUtils.query.createMockQuery(),
-      }) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
+      })) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
       const elements: Element[] = []
       await filter.onFetch(elements)
 

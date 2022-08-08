@@ -14,11 +14,9 @@
 * limitations under the License.
 */
 import { InstanceElement, ObjectType, toChange, getAllChangeData, ReferenceExpression, ElemID } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { mockClient } from '../../utils'
+import { filterUtils } from '@salto-io/adapter-components'
+import { getFilterParams } from '../../utils'
 import automationStructureFilter from '../../../src/filters/automation/automation_structure'
-import { getDefaultConfig } from '../../../src/config/config'
 import { createAutomationTypes } from '../../../src/filters/automation/types'
 import { JIRA } from '../../../src/constants'
 
@@ -33,15 +31,7 @@ describe('automationStructureFilter', () => {
 
 
   beforeEach(async () => {
-    const { client, paginator } = mockClient()
-
-    filter = automationStructureFilter({
-      client,
-      paginator,
-      config: getDefaultConfig({ isDataCenter: false }),
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    filter = automationStructureFilter(getFilterParams()) as typeof filter
 
     type = createAutomationTypes().automationType
 

@@ -72,6 +72,7 @@ import fieldDeploymentFilter from './filters/fields/field_deployment_filter'
 import contextDeploymentFilter from './filters/fields/context_deployment_filter'
 import fieldTypeReferencesFilter from './filters/fields/field_type_references_filter'
 import contextReferencesFilter from './filters/fields/context_references_filter'
+import contextsProjectsFilter from './filters/fields/contexts_projects_filter'
 import queryFilter from './filters/query'
 import serviceUrlInformationFilter from './filters/service_url/service_url_information'
 import serviceUrlFilter from './filters/service_url/service_url'
@@ -166,6 +167,7 @@ export const DEFAULT_FILTERS = [
   removeSelfFilter,
   fieldReferencesFilter,
   // Must run after fieldReferencesFilter
+  contextsProjectsFilter,
   fieldConfigurationIrrelevantFields,
   // Must run after fieldConfigurationIrrelevantFields
   fieldConfigurationSplitFilter,
@@ -227,6 +229,8 @@ export default class JiraAdapter implements AdapterOperations {
     )
 
     this.paginator = paginator
+
+    const filterContext = {}
     this.createFiltersRunner = () => (
       filtersRunner(
         {
@@ -236,6 +240,7 @@ export default class JiraAdapter implements AdapterOperations {
           getElemIdFunc,
           elementsSource,
           fetchQuery: this.fetchQuery,
+          adapterContext: filterContext,
         },
         filterCreators,
         objects.concatObjects

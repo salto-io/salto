@@ -434,6 +434,7 @@ export const mockWorkspace = ({
     getChangedElementsBetween: mockFunction<Workspace['getChangedElementsBetween']>(),
     getReferencedStaticFilePaths: mockFunction<Workspace['getReferencedStaticFilePaths']>(),
     isChangedAtIndexEmpty: mockFunction<Workspace['isChangedAtIndexEmpty']>(),
+    getReferencedStaticFilesIndex: mockFunction<Workspace['getReferencedStaticFilesIndex']>(),
   }
 }
 

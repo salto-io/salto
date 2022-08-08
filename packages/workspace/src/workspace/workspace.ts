@@ -253,6 +253,7 @@ export type Workspace = {
   }): Promise<StaticFile | undefined>
   getChangedElementsBetween(dateRange: DateRange, envName?: string): Promise<ElemID[]>
   getReferencedStaticFilePaths(elementIds: ElemID[], envName?: string): Promise<string[]>
+  getChangedAtIndexSize(envName?: string): Promise<number>
 }
 
 type SingleState = {
@@ -981,6 +982,14 @@ export const loadWorkspace = async (
     )
     return result.filter(values.isDefined).flat()
   }
+
+  const getChangedAtIndexSize = async (envName?: string): Promise<number> => {
+    const env = envName ?? currentEnv()
+    const currentWorkspaceState = await getWorkspaceState()
+    const keys = await awu(currentWorkspaceState.states[env].changedBy.keys()).toArray()
+    return keys.length
+  }
+
   return {
     uid: workspaceConfig.uid,
     name: workspaceConfig.name,
@@ -1378,6 +1387,7 @@ export const loadWorkspace = async (
       (naclFilesSource.getStaticFile(filepath, encoding, env ?? currentEnv())),
     getChangedElementsBetween,
     getReferencedStaticFilePaths,
+    getChangedAtIndexSize,
   }
 }
 

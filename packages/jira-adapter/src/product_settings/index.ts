@@ -15,7 +15,7 @@
 */
 import { cloudSettings } from './cloud'
 import { ProductSettings } from './product_settings'
-import { dataCenterSettings } from './dataCenter'
+import { dataCenterSettings } from './data_center'
 
 export const getProductSettings = (
   { isDataCenter }: { isDataCenter: boolean }

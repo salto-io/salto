@@ -15,6 +15,8 @@
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange, ReferenceExpression, getChangeData, getAllChangeData } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { MockInterface } from '@salto-io/test-utils'
 import { getFilterParams, mockClient } from '../../utils'
 import statusDeploymentFilter from '../../../src/filters/statuses/status_deployment'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'

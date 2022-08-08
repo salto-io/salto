@@ -2470,6 +2470,13 @@ describe('workspace', () => {
         expect(result).toEqual([])
       })
     })
+    describe('getReferencedStaticFilesIndex', () => {
+      it('should return index', async () => {
+        const index = await workspace.getReferencedStaticFilesIndex()
+        const result = await index.get('salesforce.lead.instance.someName1')
+        expect(result).toEqual(['static1.nacl'])
+      })
+    })
   })
   describe('changed by index', () => {
     let workspace: Workspace

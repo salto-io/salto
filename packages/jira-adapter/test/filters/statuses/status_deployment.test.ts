@@ -246,8 +246,11 @@ describe('statusDeploymentFilter', () => {
     })
 
     it('should deploy first chunk of changes and fail the other', async () => {
+      const responseData = _.range(0, 50)
+        .map(i => ({ id: `${i}`, name: `status${i}` }))
       mockConnection.post
-        .mockResolvedValueOnce({ status: 200, data: [] })
+        .mockResolvedValueOnce({ status: 200,
+          data: responseData })
         .mockRejectedValueOnce((new Error('no status category')))
       const validChanges = _.range(0, 50).map(i => toChange({
         after: new InstanceElement(

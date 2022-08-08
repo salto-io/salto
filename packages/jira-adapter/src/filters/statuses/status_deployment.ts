@@ -16,7 +16,8 @@
 import { CORE_ANNOTATIONS, Element, isInstanceElement, isInstanceChange, getChangeData, Change, InstanceElement, isAdditionOrModificationChange, DeployResult, isModificationChange, AdditionChange, ModificationChange, Values, isReferenceExpression, isAdditionChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
+import Joi from 'joi'
 import { findObject, setFieldDeploymentAnnotations } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { STATUS_TYPE_NAME } from '../../constants'
@@ -30,6 +31,20 @@ const STATUS_CATEGORY_NAME_TO_ID : Record<string, number> = {
 }
 const STATUS_DEPLOYMENT_LIMIT = 50
 
+type StatusResponse = {
+  id: string
+  name: string
+}[]
+
+const STATUS_RESPONSE_SCHEME = Joi.array().items(
+  Joi.object({
+    id: Joi.string().required(),
+    name: Joi.string().required(),
+  }).unknown(true).required(),
+)
+
+const isStatusResponse = createSchemeGuard<StatusResponse>(STATUS_RESPONSE_SCHEME, 'Received an invalid status addition response')
+
 const createDeployableStatusValues = (
   statusChanges: Array<Change<InstanceElement>>
 ): Values[] => statusChanges
@@ -39,7 +54,7 @@ const createDeployableStatusValues = (
     const deployableValue = _.clone(value)
     if (isReferenceExpression(value.statusCategory)) {
       // resolve statusCategory value before deploy
-      const resolvedCategory = _.invert(STATUS_CATEGORY_NAME_TO_ID) [
+      const resolvedCategory = _.invert(STATUS_CATEGORY_NAME_TO_ID)[
         value.statusCategory.value.value.id
       ]
       deployableValue.statusCategory = resolvedCategory
@@ -49,15 +64,13 @@ const createDeployableStatusValues = (
 
 const setStatusIds = (
   changes: Array<AdditionChange<InstanceElement>>,
-  response: clientUtils.ResponseValue[],
+  instanceNameToId: Record<string, string>
 ): void => {
   changes
     .map(getChangeData)
     .forEach(instance => {
-      const responseValue = response.find(r => r.name === instance.value.name)
-      if (responseValue !== undefined) {
-        instance.value.id = responseValue.id
-      }
+      const statusId = instanceNameToId[instance.value.name]
+      instance.value.id = statusId
     })
 }
 
@@ -86,7 +99,16 @@ const addStatuses = async (
       statuses: createDeployableStatusValues(additionChanges),
     },
   })
-  setStatusIds(additionChanges, response.data as clientUtils.ResponseValue[])
+
+  if (!isStatusResponse(response.data)) {
+    const statusFullNames = additionChanges
+      .map(change => getChangeData(change))
+      .map(instance => instance.elemID.getFullName())
+    throw new Error(`Received an invalid status response when attempting to create statuses: ${statusFullNames.join()}`)
+  }
+  const statusNameToId = Object.fromEntries(response.data
+    .map(statusValue => [statusValue.name, statusValue.id]))
+  setStatusIds(additionChanges, statusNameToId)
 }
 
 const deployStatuses = async (

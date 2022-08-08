@@ -33,7 +33,7 @@ export const createKanbanBoardValues = (name: string, allElements: Element[]): V
       {
         name: 'second',
         statuses: [
-          createReference(new ElemID(JIRA, 'Status', 'instance', 'Done'), allElements),
+          createReference(new ElemID(JIRA, 'Status', 'instance', 'done'), allElements),
         ],
         min: 2,
         max: 4,
@@ -59,7 +59,7 @@ export const createScrumBoardValues = (name: string, allElements: Element[]): Va
       {
         name: 'second',
         statuses: [
-          createReference(new ElemID(JIRA, 'Status', 'instance', 'Done'), allElements),
+          createReference(new ElemID(JIRA, 'Status', 'instance', 'done'), allElements),
         ],
       },
     ],

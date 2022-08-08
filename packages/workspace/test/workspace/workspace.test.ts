@@ -2342,6 +2342,12 @@ describe('workspace', () => {
         expect(result[0].getFullName()).toEqual('salesforce.lead')
       })
     })
+    describe('getChangedAtIndexSize', () => {
+      it('get correct element ids without full date range', async () => {
+        const result = await workspace.getChangedAtIndexSize()
+        expect(result).toEqual(1)
+      })
+    })
   })
   describe('static files index', () => {
     let workspace: Workspace

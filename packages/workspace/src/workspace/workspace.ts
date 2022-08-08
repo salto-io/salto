@@ -254,6 +254,7 @@ export type Workspace = {
   getChangedElementsBetween(dateRange: DateRange, envName?: string): Promise<ElemID[]>
   getReferencedStaticFilePaths(elementIds: ElemID[], envName?: string): Promise<string[]>
   getChangedAtIndexSize(envName?: string): Promise<number>
+  isChangedAtIndexEmpty(envName?: string): Promise<boolean>
 }
 
 type SingleState = {
@@ -990,6 +991,12 @@ export const loadWorkspace = async (
     return keys.length
   }
 
+  const isChangedAtIndexEmpty = async (envName?: string): Promise<boolean> => {
+    const env = envName ?? currentEnv()
+    const currentWorkspaceState = await getWorkspaceState()
+    return currentWorkspaceState.states[env].changedBy.isEmpty()
+  }
+
   return {
     uid: workspaceConfig.uid,
     name: workspaceConfig.name,
@@ -1388,6 +1395,7 @@ export const loadWorkspace = async (
     getChangedElementsBetween,
     getReferencedStaticFilePaths,
     getChangedAtIndexSize,
+    isChangedAtIndexEmpty,
   }
 }
 

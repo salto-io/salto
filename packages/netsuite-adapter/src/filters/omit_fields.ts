@@ -14,47 +14,55 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { isInstanceElement } from '@salto-io/adapter-api'
+import { isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import { transformValues } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { collections, regex } from '@salto-io/lowerdash'
 import { FilterCreator, FilterWith } from '../filter'
 import { FieldToOmitParams } from '../query'
 
 const { awu } = collections.asynciterable
+const { isFullRegexMatch } = regex
 
 const FIELDS_TO_OMIT: FieldToOmitParams[] = []
 
 const filterCreator: FilterCreator = ({ config }): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
-    const fieldsToOmitByType = _(FIELDS_TO_OMIT)
-      // concating the user config with the default config will let the
-      // user to override only specific types configuration without
-      // writing the whole default config in the adapter config
-      .concat(config.fetch?.fieldsToOmit ?? [])
-      .filter(params => params.fields.length > 0)
-      .keyBy(params => params.type)
-      .mapValues(params => params.fields)
-      .value()
+    const allFieldsToOmit = FIELDS_TO_OMIT.concat(config.fetch?.fieldsToOmit ?? [])
 
-    if (_.isEmpty(fieldsToOmitByType)) {
+    if (allFieldsToOmit.length === 0) {
       return
     }
+
+    const getFieldsToOmit = (typeName: string): string[] =>
+      allFieldsToOmit
+        .filter(params => isFullRegexMatch(typeName, params.type))
+        .flatMap(params => params.fields)
+
+    const omitByRegex = (fields: string[]) => (_val: unknown, key: string) =>
+      fields.some(fieldToOmit => isFullRegexMatch(key, fieldToOmit))
 
     await awu(elements)
       .filter(isInstanceElement)
       .forEach(async instance => {
-        const updatedValues = instance.elemID.typeName in fieldsToOmitByType
-          ? _.omit(instance.value, fieldsToOmitByType[instance.elemID.typeName])
+        const fieldsToOmit = getFieldsToOmit(instance.elemID.typeName)
+        const updatedValues = fieldsToOmit.length > 0
+          ? _.omitBy(instance.value, omitByRegex(fieldsToOmit))
           : instance.value
         instance.value = await transformValues({
           values: updatedValues,
           type: await instance.getType(),
           transformFunc: async ({ value, field }) => {
-            const fieldType = await field?.getType()
-            if (fieldType && fieldType.elemID.name in fieldsToOmitByType) {
-              return _.omit(value, fieldsToOmitByType[fieldType.elemID.name])
+            if (!_.isPlainObject(value)) {
+              return value
             }
-            return value
+            const fieldType = await field?.getType()
+            if (!isObjectType(fieldType)) {
+              return value
+            }
+            const innerFieldsToOmit = getFieldsToOmit(fieldType.elemID.name)
+            return innerFieldsToOmit.length > 0
+              ? _.omitBy(value, omitByRegex(innerFieldsToOmit))
+              : value
           },
           strict: false,
         }) ?? {}

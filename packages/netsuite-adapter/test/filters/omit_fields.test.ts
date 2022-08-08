@@ -58,14 +58,14 @@ describe('omit fields filter', () => {
   it('should omit fields in top level element', async () => {
     await filterCreator({
       ...defaultOpts,
-      config: { fetch: { fieldsToOmit: [{ type: 'someType', fields: ['field2'] }] } },
+      config: { fetch: { fieldsToOmit: [{ type: 'some.*', fields: ['.*2'] }] } },
     }).onFetch?.([instance])
     expect(instance.value).toEqual({ field1: true })
   })
   it('should omit fields in inner type', async () => {
     await filterCreator({
       ...defaultOpts,
-      config: { fetch: { fieldsToOmit: [{ type: 'innerType', fields: ['nested2'] }] } },
+      config: { fetch: { fieldsToOmit: [{ type: 'inner.*', fields: ['.*2'] }] } },
     }).onFetch?.([instance])
     expect(instance.value).toEqual({
       field1: true,

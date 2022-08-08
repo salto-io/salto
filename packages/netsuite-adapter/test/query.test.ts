@@ -279,6 +279,11 @@ describe('NetsuiteQuery', () => {
         validateFieldsToOmitConfig([{ type: 'a', fields: 'b' }])
       }).toThrow('Expected "fields" field to be an array of strings')
     })
+    it('should throw an error when "fields" field is an empty array', () => {
+      expect(() => {
+        validateFieldsToOmitConfig([{ type: 'a', fields: [] }])
+      }).toThrow('Expected "fields" field to be an array of strings')
+    })
   })
 
   describe('andQuery', () => {

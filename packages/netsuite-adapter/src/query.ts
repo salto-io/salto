@@ -134,7 +134,11 @@ export const validateFieldsToOmitConfig = (fieldsToOmitConfig: unknown): void =>
   if (corruptedTypes.length !== 0) {
     throw new Error(`${ERROR_MESSAGE_PREFIX} Expected "type" field to be a string, but found:\n${JSON.stringify(corruptedTypes, null, 4)}.`)
   }
-  const corruptedFields = fieldsToOmitConfig.filter(obj => !Array.isArray(obj.fields) || obj.fields.some((item: unknown) => typeof item !== 'string'))
+  const corruptedFields = fieldsToOmitConfig.filter(
+    obj => !Array.isArray(obj.fields)
+    || obj.fields.length === 0
+    || obj.fields.some((item: unknown) => typeof item !== 'string')
+  )
   if (corruptedFields.length !== 0) {
     throw new Error(`${ERROR_MESSAGE_PREFIX} Expected "fields" field to be an array of strings, but found:\n${JSON.stringify(corruptedFields, null, 4)}}.`)
   }

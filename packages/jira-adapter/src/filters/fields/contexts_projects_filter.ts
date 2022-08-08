@@ -53,9 +53,11 @@ const appendReference = (
  * A filter to change project to reference field contexts instead of the other way around
  */
 const filter: FilterCreator = ({ elementsSource, adapterContext }) => {
-  adapterContext.afterContextToProjects = {}
-  adapterContext.beforeContextToProjects = {}
-  adapterContext.deployedProjectIds = new Set<string>()
+  if (adapterContext.afterContextToProjects === undefined) {
+    adapterContext.afterContextToProjects = {}
+    adapterContext.beforeContextToProjects = {}
+    adapterContext.deployedProjectIds = new Set<string>()
+  }
 
   const updateContextToProjectChanges = (projectChange: Change<InstanceElement>): void => {
     if (isAdditionOrModificationChange(projectChange)) {

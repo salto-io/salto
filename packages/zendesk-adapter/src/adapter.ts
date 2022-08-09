@@ -27,7 +27,7 @@ import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
 import { FilterCreator, Filter, filtersRunner, FilterResult } from './filter'
-import { API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZendeskConfig } from './config'
+import { API_DEFINITIONS_CONFIG, FETCH_CONFIG, GUIDE_SUPPORTED_TYPES, ZendeskConfig } from './config'
 import { ZENDESK, BRAND_LOGO_TYPE_NAME } from './constants'
 import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
@@ -203,10 +203,15 @@ export default class ZendeskAdapter implements AdapterOperations {
 
   @logDuration('generating instances and types from service')
   private async getElements(): Promise<ReturnType<typeof getAllElements>> {
+    const supportedTypes = _.merge(
+      {},
+      this.userConfig.apiDefinitions.supportedTypes,
+      this.userConfig[FETCH_CONFIG].enableGuide ? GUIDE_SUPPORTED_TYPES : {},
+    )
     return getAllElements({
       adapterName: ZENDESK,
       types: this.userConfig.apiDefinitions.types,
-      supportedTypes: this.userConfig.apiDefinitions.supportedTypes,
+      supportedTypes,
       fetchQuery: this.fetchQuery,
       paginator: this.paginator,
       nestedFieldFinder: findDataField,

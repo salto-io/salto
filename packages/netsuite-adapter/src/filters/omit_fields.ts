@@ -27,16 +27,26 @@ const FIELDS_TO_OMIT: FieldToOmitParams[] = []
 
 const filterCreator: FilterCreator = ({ config }): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
-    const allFieldsToOmit = FIELDS_TO_OMIT.concat(config.fetch?.fieldsToOmit ?? [])
+    const fieldsToOmit = FIELDS_TO_OMIT.concat(config.fetch?.fieldsToOmit ?? [])
 
-    if (allFieldsToOmit.length === 0) {
+    if (fieldsToOmit.length === 0) {
       return
     }
 
-    const getFieldsToOmit = (typeName: string): string[] =>
-      allFieldsToOmit
-        .filter(params => isFullRegexMatch(typeName, params.type))
-        .flatMap(params => params.fields)
+    const fieldsToOmitByType = Object.fromEntries(
+      elements.filter(isObjectType).map(elem => elem.elemID.name).map(
+        (typeName: string): [string, string[]] => [
+          typeName,
+          fieldsToOmit
+            .filter(params => isFullRegexMatch(typeName, params.type))
+            .flatMap(params => params.fields),
+        ]
+      ).filter(([_t, fields]) => fields.length > 0)
+    )
+
+    if (_.isEmpty(fieldsToOmitByType)) {
+      return
+    }
 
     const omitByRegex = (fields: string[]) => (_val: unknown, key: string) =>
       fields.some(fieldToOmit => isFullRegexMatch(key, fieldToOmit))
@@ -44,9 +54,8 @@ const filterCreator: FilterCreator = ({ config }): FilterWith<'onFetch'> => ({
     await awu(elements)
       .filter(isInstanceElement)
       .forEach(async instance => {
-        const fieldsToOmit = getFieldsToOmit(instance.elemID.typeName)
-        const updatedValues = fieldsToOmit.length > 0
-          ? _.omitBy(instance.value, omitByRegex(fieldsToOmit))
+        const updatedValues = instance.elemID.typeName in fieldsToOmitByType
+          ? _.omitBy(instance.value, omitByRegex(fieldsToOmitByType[instance.elemID.typeName]))
           : instance.value
         instance.value = await transformValues({
           values: updatedValues,
@@ -59,9 +68,8 @@ const filterCreator: FilterCreator = ({ config }): FilterWith<'onFetch'> => ({
             if (!isObjectType(fieldType)) {
               return value
             }
-            const innerFieldsToOmit = getFieldsToOmit(fieldType.elemID.name)
-            return innerFieldsToOmit.length > 0
-              ? _.omitBy(value, omitByRegex(innerFieldsToOmit))
+            return fieldType.elemID.name in fieldsToOmitByType
+              ? _.omitBy(value, omitByRegex(fieldsToOmitByType[fieldType.elemID.name]))
               : value
           },
           strict: false,

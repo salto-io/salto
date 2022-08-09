@@ -23,23 +23,23 @@ import filterCreator from '../../src/filters/omit_fields'
 import { FilterOpts } from '../../src/filter'
 
 describe('omit fields filter', () => {
+  let type: ObjectType
+  let innerType: ObjectType
   let instance: InstanceElement
   let defaultOpts: FilterOpts
   beforeEach(async () => {
-    instance = new InstanceElement(
-      'test',
-      new ObjectType({
-        elemID: new ElemID(NETSUITE, 'someType'),
-        fields: {
-          field1: { refType: BuiltinTypes.BOOLEAN },
-          field2: { refType: new ObjectType({ elemID: new ElemID(NETSUITE, 'innerType') }) },
-        },
-      }),
-      {
-        field1: true,
-        field2: { nested1: 'test', nested2: 'test2' },
-      }
-    )
+    innerType = new ObjectType({ elemID: new ElemID(NETSUITE, 'innerType') })
+    type = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'someType'),
+      fields: {
+        field1: { refType: BuiltinTypes.BOOLEAN },
+        field2: { refType: innerType },
+      },
+    })
+    instance = new InstanceElement('test', type, {
+      field1: true,
+      field2: { nested1: 'test', nested2: 'test2' },
+    })
     defaultOpts = {
       client: {} as NetsuiteClient,
       elementsSourceIndex: {} as LazyElementsSourceIndexes,
@@ -55,18 +55,28 @@ describe('omit fields filter', () => {
       field2: { nested1: 'test', nested2: 'test2' },
     })
   })
+  it('should not omit when no rule matches', async () => {
+    await filterCreator({
+      ...defaultOpts,
+      config: { fetch: { fieldsToOmit: [{ type: 'notSome.*', fields: ['.*'] }] } },
+    }).onFetch?.([instance, type, innerType])
+    expect(instance.value).toEqual({
+      field1: true,
+      field2: { nested1: 'test', nested2: 'test2' },
+    })
+  })
   it('should omit fields in top level element', async () => {
     await filterCreator({
       ...defaultOpts,
       config: { fetch: { fieldsToOmit: [{ type: 'some.*', fields: ['.*2'] }] } },
-    }).onFetch?.([instance])
+    }).onFetch?.([instance, type, innerType])
     expect(instance.value).toEqual({ field1: true })
   })
   it('should omit fields in inner type', async () => {
     await filterCreator({
       ...defaultOpts,
       config: { fetch: { fieldsToOmit: [{ type: 'inner.*', fields: ['.*2'] }] } },
-    }).onFetch?.([instance])
+    }).onFetch?.([instance, type, innerType])
     expect(instance.value).toEqual({
       field1: true,
       field2: { nested1: 'test' },

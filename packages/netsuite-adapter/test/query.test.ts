@@ -284,6 +284,11 @@ describe('NetsuiteQuery', () => {
         validateFieldsToOmitConfig([{ type: 'a', fields: [] }])
       }).toThrow('Expected "fields" field to be an array of strings')
     })
+    it('should throw an error when regexes are invalid', () => {
+      expect(() => {
+        validateFieldsToOmitConfig([{ type: 'aa(a.*', fields: ['bb(b.*'] }])
+      }).toThrow('The following regular expressions are invalid')
+    })
   })
 
   describe('andQuery', () => {

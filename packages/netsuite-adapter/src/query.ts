@@ -140,7 +140,13 @@ export const validateFieldsToOmitConfig = (fieldsToOmitConfig: unknown): void =>
     || obj.fields.some((item: unknown) => typeof item !== 'string')
   )
   if (corruptedFields.length !== 0) {
-    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected "fields" field to be an array of strings, but found:\n${JSON.stringify(corruptedFields, null, 4)}}.`)
+    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected "fields" field to be an array of strings, but found:\n${JSON.stringify(corruptedFields, null, 4)}.`)
+  }
+  const invalidRegexes = fieldsToOmitConfig
+    .flatMap(obj => [obj.type, ...obj.fields])
+    .filter(reg => !regex.isValidRegex(reg))
+  if (invalidRegexes.length !== 0) {
+    throw new Error(`${ERROR_MESSAGE_PREFIX} The following regular expressions are invalid:\n${JSON.stringify(invalidRegexes, null, 4)}.`)
   }
 }
 

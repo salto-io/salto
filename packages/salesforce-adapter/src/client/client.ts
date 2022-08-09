@@ -115,6 +115,7 @@ const errorMessagesToRetry = [
    */
   'retry your request',
   'Polling time out',
+  'SERVER_UNAVAILABLE',
 ]
 
 type RateLimitBucketName = keyof ClientRateLimitConfig

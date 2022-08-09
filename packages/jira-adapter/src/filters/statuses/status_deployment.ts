@@ -13,19 +13,143 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, Element, getChangeData, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Element, isInstanceElement, isInstanceChange, getChangeData, Change, InstanceElement, isAdditionOrModificationChange, DeployResult, isModificationChange, AdditionChange, ModificationChange, Values, isReferenceExpression, isAdditionChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
+import Joi from 'joi'
 import { findObject, setFieldDeploymentAnnotations } from '../../utils'
 import { FilterCreator } from '../../filter'
-import { deployWithJspEndpoints } from '../../deployment/jsp_deployment'
 import { STATUS_TYPE_NAME } from '../../constants'
+import JiraClient from '../../client/client'
 
 const log = logger(module)
 const STATUS_CATEGORY_NAME_TO_ID : Record<string, number> = {
   TODO: 2,
   DONE: 3,
   IN_PROGRESS: 4,
+}
+const STATUS_DEPLOYMENT_LIMIT = 50
+
+type StatusResponse = {
+  id: string
+  name: string
+}[]
+
+const STATUS_RESPONSE_SCHEME = Joi.array().items(
+  Joi.object({
+    id: Joi.string().required(),
+    name: Joi.string().required(),
+  }).unknown(true).required(),
+)
+
+const isStatusResponse = createSchemeGuard<StatusResponse>(STATUS_RESPONSE_SCHEME, 'Received an invalid status addition response')
+
+const createDeployableStatusValues = (
+  statusChanges: Array<Change<InstanceElement>>
+): Values[] => statusChanges
+  .map(getChangeData)
+  .map(instance => instance.value)
+  .map(value => {
+    const deployableValue = _.clone(value)
+    if (isReferenceExpression(value.statusCategory)) {
+      // resolve statusCategory value before deploy
+      const resolvedCategory = _.invert(STATUS_CATEGORY_NAME_TO_ID)[
+        value.statusCategory.value.value.id
+      ]
+      deployableValue.statusCategory = resolvedCategory
+    }
+    return deployableValue
+  })
+
+const setStatusIds = (
+  changes: Array<AdditionChange<InstanceElement>>,
+  instanceNameToId: Record<string, string>
+): void => {
+  changes
+    .map(getChangeData)
+    .forEach(instance => {
+      const statusId = instanceNameToId[instance.value.name]
+      instance.value.id = statusId
+    })
+}
+
+const modifyStatuses = async (
+  modificationChanges: Array<ModificationChange<InstanceElement>>,
+  client: JiraClient,
+): Promise<void> => {
+  await client.put({
+    url: '/rest/api/3/statuses',
+    data: {
+      statuses: createDeployableStatusValues(modificationChanges),
+    },
+  })
+}
+
+const addStatuses = async (
+  additionChanges: Array<AdditionChange<InstanceElement>>,
+  client: JiraClient,
+): Promise<void> => {
+  const response = await client.post({
+    url: '/rest/api/3/statuses',
+    data: {
+      scope: {
+        type: 'GLOBAL',
+      },
+      statuses: createDeployableStatusValues(additionChanges),
+    },
+  })
+
+  if (!isStatusResponse(response.data)) {
+    const statusFullNames = additionChanges
+      .map(change => getChangeData(change))
+      .map(instance => instance.elemID.getFullName())
+    throw new Error(`Received an invalid status response when attempting to create statuses: ${statusFullNames.join()}`)
+  }
+  const statusNameToId = Object.fromEntries(response.data
+    .map(statusValue => [statusValue.name, statusValue.id]))
+  setStatusIds(additionChanges, statusNameToId)
+}
+
+const deployStatuses = async (
+  changes: Array<AdditionChange<InstanceElement> | ModificationChange<InstanceElement>>,
+  client: JiraClient,
+): Promise<DeployResult> => {
+  const deployErrors: Error[] = []
+
+  await Promise.all(
+    _.chunk(changes, STATUS_DEPLOYMENT_LIMIT)
+      .map(async statusChangesChunk => {
+        try {
+          const [modificationChanges, additionChanges] = _.partition(
+            changes,
+            change => isModificationChange(change),
+          )
+
+          if (modificationChanges.length > 0) {
+            await modifyStatuses(
+              statusChangesChunk.filter(isModificationChange),
+              client
+            )
+          }
+
+          if (additionChanges.length > 0) {
+            await addStatuses(
+              statusChangesChunk.filter(isAdditionChange),
+              client
+            )
+          }
+        } catch (err) {
+          _.pullAll(changes, statusChangesChunk)
+          deployErrors.push(err)
+        }
+      })
+  )
+
+  return {
+    appliedChanges: changes,
+    errors: deployErrors,
+  }
 }
 
 const filter: FilterCreator = ({ client, config }) => ({
@@ -63,6 +187,7 @@ const filter: FilterCreator = ({ client, config }) => ({
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change => isInstanceChange(change)
+        && isAdditionOrModificationChange(change)
         && getChangeData(change).elemID.typeName === STATUS_TYPE_NAME
     )
 
@@ -76,20 +201,13 @@ const filter: FilterCreator = ({ client, config }) => ({
       }
     }
 
-    const jspRequests = config.apiDefinitions.types[STATUS_TYPE_NAME]?.jspRequests
-    if (jspRequests === undefined) {
-      throw new Error(`${STATUS_TYPE_NAME} jsp urls are missing from the configuration`)
-    }
-
-    const deployResult = await deployWithJspEndpoints({
-      changes: relevantChanges.filter(isInstanceChange),
+    const deployResult = await deployStatuses(
+      relevantChanges
+        .filter(isInstanceChange)
+        .filter(isAdditionOrModificationChange),
       client,
-      urls: jspRequests,
-      serviceValuesTransformer: (serviceValues, currentInstance) => _.omit({
-        ...currentInstance.value,
-        ...serviceValues,
-      }, 'iconURL'),
-    })
+    )
+
     return {
       leftoverChanges,
       deployResult,

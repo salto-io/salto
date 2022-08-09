@@ -196,7 +196,7 @@ export const getAdaptersCreatorConfigs = async (
           credentials: credentials[account],
           config: await getConfig(account, defaultConfig),
           elementsSource: createElemIDReplacedElementsSource(filterElementsSource(
-            elementsSource, accountToServiceName[account]
+            elementsSource, account
           ), account, accountToServiceName[account]),
           getElemIdFunc: elemIdGetters[account],
         },

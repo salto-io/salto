@@ -34,6 +34,22 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     httpMethod: 'post',
     url: new RegExp('/rest/api/3/workflowscheme/.+/draft/publish'),
   },
+  {
+    httpMethod: 'get',
+    url: new RegExp('/rest/api/3/statuses/search'),
+  },
+  {
+    httpMethod: 'post',
+    url: new RegExp('/rest/api/3/statuses'),
+  },
+  {
+    httpMethod: 'put',
+    url: new RegExp('/rest/api/3/statuses'),
+  },
+  {
+    httpMethod: 'delete',
+    url: new RegExp('/rest/api/3/statuses'),
+  },
 ]
 
 

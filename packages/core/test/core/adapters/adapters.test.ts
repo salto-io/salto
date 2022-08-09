@@ -184,28 +184,38 @@ describe('adapters.ts', () => {
       expect(Object.keys(result)).toEqual([serviceName])
     })
 
-    let result: Record<string, AdapterOperationsContext>
-    describe('multi app adapter config', () => {
-      beforeEach(async () => {
-        result = await getAdaptersCreatorConfigs(
-          [serviceName, 'd1'],
-          { [sfConfig.elemID.adapter]: sfConfig },
-          async name => (name === sfConfig.elemID.adapter ? sfConfig : undefined),
-          buildElementsSourceFromElements([
-            objectType,
-            d1Type,
-          ]),
-          { [serviceName]: serviceName, d1: 'dummy' },
-        )
-      })
+    it('should return an ReadOnlyElementsSource with only the adapter elements', async () => {
+      const objectType = new ObjectType({ elemID: new ElemID(serviceName, 'type1') })
+      const result = await getAdaptersCreatorConfigs(
+        [serviceName, 'd1'],
+        { [sfConfig.elemID.adapter]: sfConfig },
+        async name => (name === sfConfig.elemID.adapter ? sfConfig : undefined),
+        buildElementsSourceFromElements([
+          new ObjectType({ elemID: new ElemID(serviceName, 'type1') }),
+          new ObjectType({ elemID: new ElemID('d1', 'type2') }),
+        ]),
+        { [serviceName]: serviceName, d1: 'dummy' },
+      )
+      const elementsSource = result[serviceName]?.elementsSource
+      expect(elementsSource).toBeDefined()
+      expect(await elementsSource.has(objectType.elemID)).toBeTruthy()
+      expect(await elementsSource.has(new ElemID('d1', 'type2'))).toBeFalsy()
+      expect(await elementsSource.has(new ElemID('dummy', 'type2'))).toBeFalsy()
 
-      it('should only return elements that belong to the relevant account', async () => {
-        const elementsSource = result[serviceName]?.elementsSource
-        expect(elementsSource).toBeDefined()
-        expect(await elementsSource.has(objectType.elemID)).toBeTruthy()
-        expect(await elementsSource.has(new ElemID('d1', 'type2'))).toBeFalsy()
-        expect(await elementsSource.has(new ElemID('dummy', 'type2'))).toBeFalsy()
 
+      expect(await elementsSource.get(objectType.elemID)).toBeDefined()
+      expect(await elementsSource.get(new ElemID('d1', 'type2'))).toBeUndefined()
+      expect(await elementsSource.get(new ElemID('dummy', 'type2'))).toBeUndefined()
+
+      const d1ElementsSource = result.d1?.elementsSource
+      // since element source is used inside the adapter, it should receive and return
+      // values with default adapter name as account name
+      expect(await d1ElementsSource.get(new ElemID('dummy', 'type2'))).toEqual(new ObjectType({
+        elemID: new ElemID('dummy', 'type2'),
+      }))
+
+      expect(await collections.asynciterable.toArrayAsync(await elementsSource.getAll()))
+        .toEqual([objectType])
 
         expect(await elementsSource.get(objectType.elemID)).toBeDefined()
         expect(await elementsSource.get(new ElemID('d1', 'type2'))).toBeUndefined()

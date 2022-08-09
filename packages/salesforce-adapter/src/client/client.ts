@@ -117,7 +117,7 @@ const errorMessagesToRetry = [
   'Polling time out',
   'SERVER_UNAVAILABLE',
   'system may be currently unavailable',
-  'Unexpected internal servlet state'
+  'Unexpected internal servlet state',
 ]
 
 type RateLimitBucketName = keyof ClientRateLimitConfig

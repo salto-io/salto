@@ -40,6 +40,7 @@ export const isRelevantChange = (change: Change<InstanceElement>): boolean => {
         isModificationChange(change)
         && (change.data.before.value.tag === change.data.after.value.tag)
       )
+      && !_.isEmpty(instance.value.tag)
   }
   if (RELEVANT_PARENT_AND_CHILD_TYPES.some(pair => pair.child === changeTypeName)) {
     return !(
@@ -135,7 +136,7 @@ export const duplicateCustomFieldOptionValuesValidator: ChangeValidator = async 
       relevantTypeToElementIds,
       typeName: pair.parent,
       elementSource,
-      filter: inst => inst.value.type === CHECKBOX_TYPE_NAME && inst.value.tag !== '',
+      filter: inst => inst.value.type === CHECKBOX_TYPE_NAME && !_.isEmpty(inst.value.tag),
     })
     return relevantChanges
       .filter(change => getRelevantPairType(change)?.parent === pair.parent)

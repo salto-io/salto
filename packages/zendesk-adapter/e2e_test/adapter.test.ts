@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { v4 as uuidv4 } from 'uuid'
 import { Change, ChangeId, Element, ElemID, InstanceElement, isInstanceElement, ObjectType,
   isObjectType, toChange, Values, ReferenceExpression, CORE_ANNOTATIONS,
-  FieldDefinition, BuiltinTypes, Value } from '@salto-io/adapter-api'
+  FieldDefinition, BuiltinTypes, Value, isStaticFile, DeployResult, getChangeData } from '@salto-io/adapter-api'
 import { naclCase, getParent } from '@salto-io/adapter-utils'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
@@ -56,15 +56,19 @@ const createInstanceElement = (
 
 const deployChanges = async (
   adapterAttr: Reals, changes: Record<ChangeId, Change<InstanceElement>[]>
-): Promise<void> => {
-  await awu(Object.entries(changes)).forEach(async ([id, group]) => {
-    // eslint-disable-next-line no-await-in-loop
-    const deployResult = await adapterAttr.adapter.deploy({
-      changeGroup: { groupID: id, changes: group },
+): Promise<DeployResult[]> => {
+  const deployResults = await awu(Object.entries(changes))
+    .map(async ([id, group]) => {
+      // eslint-disable-next-line no-await-in-loop
+      const deployResult = await adapterAttr.adapter.deploy({
+        changeGroup: { groupID: id, changes: group },
+      })
+      expect(deployResult.errors).toHaveLength(0)
+      expect(deployResult.appliedChanges).not.toHaveLength(0)
+      return deployResult
     })
-    expect(deployResult.errors).toHaveLength(0)
-    expect(deployResult.appliedChanges).not.toHaveLength(0)
-  })
+    .toArray()
+  return deployResults
 }
 
 describe('Zendesk adapter E2E', () => {
@@ -405,18 +409,52 @@ describe('Zendesk adapter E2E', () => {
             .toContain(instance.elemID.getFullName())
         })
     })
-    it('should fetch brand_logo correctly', async () => {
-      const instances = Object.values(groupIdToInstances).flat()
-      instances
-        .filter(inst => inst.elemID.typeName === 'brand_logo')
-        .forEach(instanceToAdd => {
-          const instance = elements
-            .find(e => e.elemID.isEqual(instanceToAdd.elemID)) as InstanceElement
-          expect(instance).toBeDefined()
-          expect(instance.value).toMatchObject(instanceToAdd.value)
+    it('should fetch and deploy brand_logo correctly', async () => {
+      const fetchedBrandLogoInstances = elements.filter(inst => inst.elemID.typeName === 'brand_logo').filter(isInstanceElement)
+      // We want to verify there's at least 1 brand_logo
+      expect(fetchedBrandLogoInstances.length > 0).toBeTruthy()
+      fetchedBrandLogoInstances
+        .forEach(instance => {
+          expect(isStaticFile(instance.value.content)).toBeTruthy()
           const brandInstance = getParent(instance)
-          expect(brandInstance.value.logo).toBe(instance.elemID)
+          expect(brandInstance.value.logo.resValue).toBe(instance)
         })
+      const brandLogoInstanceToAdd = fetchedBrandLogoInstances[0].clone()
+      const brandInstanceToAdd = createInstanceElement(
+        'brand',
+        {
+          name: createName('brand'),
+          subdomain: createName('brand'),
+          logo: new ReferenceExpression(brandLogoInstanceToAdd.elemID, brandLogoInstanceToAdd),
+        },
+      )
+      const brandDeployResults = await deployChanges(adapterAttr, {
+        brand: [{ action: 'add', data: { after: brandInstanceToAdd } }],
+      })
+      expect(brandDeployResults).toHaveLength(1)
+      const deployedBrand = brandDeployResults[0].appliedChanges
+        .map(getChangeData)
+        .filter(isInstanceElement)[0]
+      brandLogoInstanceToAdd.annotate({
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
+          deployedBrand.elemID,
+          deployedBrand,
+        ),
+      })
+      const brandLogoDeployResults = await deployChanges(adapterAttr, {
+        brand_logo: [{ action: 'add', data: { after: brandLogoInstanceToAdd } }],
+      })
+      expect(brandLogoDeployResults).toHaveLength(1)
+      const deployedBrandLogo = brandLogoDeployResults[0].appliedChanges
+        .map(getChangeData)
+        .filter(isInstanceElement)[0]
+
+      // Remove the tested brand and brand_logo
+      // It's important to remove the brand_logo before the brand
+      await deployChanges(adapterAttr, {
+        brand_logo: [{ action: 'remove', data: { before: deployedBrandLogo } }],
+        brand: [{ action: 'remove', data: { before: deployedBrand } }],
+      })
     })
   })
 })

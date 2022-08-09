@@ -39,6 +39,7 @@ describe('tags filter', () => {
   let filter: FilterType
   const slaPolicyType = new ObjectType({ elemID: new ElemID(ZENDESK, 'sla_policy') })
   const triggerType = new ObjectType({ elemID: new ElemID(ZENDESK, 'trigger') })
+  const ticketFieldType = new ObjectType({ elemID: new ElemID(ZENDESK, 'ticket_field') })
 
   const triggerInstance = new InstanceElement(
     'test',
@@ -112,6 +113,16 @@ describe('tags filter', () => {
       ],
     },
   )
+  const ticketFieldInstance = new InstanceElement(
+    'test',
+    ticketFieldType,
+    {
+      type: 'checkbox',
+      title: 'test',
+      raw_title: 'test',
+      tag: 'myTag',
+    }
+  )
   let mockPaginator: clientUtils.Paginator
   const tagRef = (val: string): ReferenceExpression =>
     new ReferenceExpression(new ElemID(ZENDESK, TAG_TYPE_NAME, 'instance', val))
@@ -144,7 +155,8 @@ describe('tags filter', () => {
   describe('onFetch', () => {
     it('should change the tags to be references', async () => {
       const elements = [
-        slaPolicyType, triggerType, slaPolicyInstance, triggerInstance,
+        slaPolicyType, triggerType, ticketFieldType,
+        slaPolicyInstance, triggerInstance, ticketFieldInstance,
       ].map(e => e.clone())
       await filter.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName()).sort())
@@ -152,6 +164,7 @@ describe('tags filter', () => {
           'zendesk.sla_policy',
           'zendesk.sla_policy.instance.test',
           'zendesk.tag',
+          'zendesk.tag.instance.myTag',
           'zendesk.tag.instance.t0',
           'zendesk.tag.instance.t1',
           'zendesk.tag.instance.t2',
@@ -159,6 +172,8 @@ describe('tags filter', () => {
           'zendesk.tag.instance.t4',
           'zendesk.tag.instance.t5',
           'zendesk.tag.instance.t6',
+          'zendesk.ticket_field',
+          'zendesk.ticket_field.instance.test',
           'zendesk.trigger',
           'zendesk.trigger.instance.test',
         ])
@@ -200,6 +215,13 @@ describe('tags filter', () => {
             business_hours: false,
           },
         ],
+      })
+      const ticketField = instances.find(e => e.elemID.typeName === 'ticket_field')
+      expect(ticketField?.value).toEqual({
+        type: 'checkbox',
+        title: 'test',
+        raw_title: 'test',
+        tag: tagRef('myTag'),
       })
     })
   })

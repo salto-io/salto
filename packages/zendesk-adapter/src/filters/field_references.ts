@@ -676,6 +676,11 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     serializationStrategy: 'id',
     target: { type: 'macro_attachment' },
   },
+  {
+    src: { field: 'tag', parentTypes: ['ticket_field', 'organization_field', 'user_field'] },
+    serializationStrategy: 'id',
+    target: { type: 'tag' },
+  },
 ]
 
 const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [

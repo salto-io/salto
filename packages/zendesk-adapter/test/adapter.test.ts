@@ -343,6 +343,7 @@ describe('adapter', () => {
           'zendesk.support_addresses',
           'zendesk.tag',
           'zendesk.tag.instance.Social',
+          'zendesk.tag.instance.checked32',
           'zendesk.target',
           'zendesk.target.instance.Slack_integration_Endpoint_url_target_v2@ssuuu',
           'zendesk.targets',

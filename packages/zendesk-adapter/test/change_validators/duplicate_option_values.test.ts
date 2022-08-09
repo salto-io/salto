@@ -26,6 +26,16 @@ describe('duplicateCustomFieldOptionValuesValidator', () => {
     ticketFieldType,
     { type: 'checkbox', title: 'myCheckbox', tag: 'cTag' },
   )
+  const checkboxWithNullTagTicketField = new InstanceElement(
+    'emptyCheckbox1',
+    ticketFieldType,
+    { type: 'checkbox', title: 'emptyCheckbox1', tag: null },
+  )
+  const checkboxWithEmptyTagAsStringTicketField = new InstanceElement(
+    'emptyCheckbox2',
+    ticketFieldType,
+    { type: 'checkbox', title: 'emptyCheckbox2', tag: '' },
+  )
   const ticketFieldOption1 = new InstanceElement(
     'option1',
     ticketFieldOptionType,
@@ -58,6 +68,7 @@ describe('duplicateCustomFieldOptionValuesValidator', () => {
     const elementsSource = buildElementsSourceFromElements([
       ticketFieldType, ticketFieldOptionType, checkboxTicketField, ticketFieldOption1,
       ticketFieldOption2, taggerTicketField, optionToAdd, checkboxToAdd,
+      checkboxWithNullTagTicketField, checkboxWithEmptyTagAsStringTicketField,
     ].map(e => e.clone()))
     const elementsToAdd = [optionToAdd, checkboxToAdd]
     const errors = await duplicateCustomFieldOptionValuesValidator(
@@ -89,6 +100,7 @@ describe('duplicateCustomFieldOptionValuesValidator', () => {
     const elementsSource = buildElementsSourceFromElements([
       ticketFieldType, ticketFieldOptionType, checkboxTicketField, ticketFieldOption1,
       ticketFieldOption2, taggerTicketField, checkboxToAdd,
+      checkboxWithNullTagTicketField, checkboxWithEmptyTagAsStringTicketField,
     ].map(e => e.clone()))
     const errors = await duplicateCustomFieldOptionValuesValidator(
       [toChange({ after: checkboxToAdd })],
@@ -122,6 +134,7 @@ describe('duplicateCustomFieldOptionValuesValidator', () => {
       ticketFieldType, ticketFieldOptionType, checkboxTicketField, ticketFieldOption1,
       ticketFieldOption2, taggerTicketField, optionToChangeAfter, checkboxToChangeAfter,
       instanceOfIrrelevantType, textToAdd,
+      checkboxWithNullTagTicketField, checkboxWithEmptyTagAsStringTicketField,
     ].map(e => e.clone()))
     const errors = await duplicateCustomFieldOptionValuesValidator(
       [
@@ -131,6 +144,24 @@ describe('duplicateCustomFieldOptionValuesValidator', () => {
         toChange({ before: checkboxToChangeBefore, after: checkboxToChangeAfter }),
         toChange({ after: instanceOfIrrelevantType }),
       ],
+      elementsSource,
+    )
+    expect(errors).toHaveLength(0)
+  })
+  it('should return no error if we add another checkbox with empty tag', async () => {
+    const checkboxToAddNullTag = new InstanceElement(
+      'checkbox2', ticketFieldType, { type: 'checkbox', title: 'myCheckbox2', tag: null }
+    )
+    const checkboxToAddEmptyStrTag = new InstanceElement(
+      'checkbox3', ticketFieldType, { type: 'checkbox', title: 'myCheckbox3', tag: '' }
+    )
+    const elementsSource = buildElementsSourceFromElements([
+      ticketFieldType, ticketFieldOptionType, checkboxTicketField, ticketFieldOption1,
+      ticketFieldOption2, taggerTicketField, checkboxToAddNullTag, checkboxToAddEmptyStrTag,
+      checkboxWithNullTagTicketField, checkboxWithEmptyTagAsStringTicketField,
+    ].map(e => e.clone()))
+    const errors = await duplicateCustomFieldOptionValuesValidator(
+      [toChange({ after: checkboxToAddNullTag }), toChange({ after: checkboxToAddEmptyStrTag })],
       elementsSource,
     )
     expect(errors).toHaveLength(0)

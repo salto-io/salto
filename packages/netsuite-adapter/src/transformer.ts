@@ -21,6 +21,7 @@ import {
 } from '@salto-io/adapter-api'
 import { MapKeyFunc, mapKeysRecursive, TransformFunc, transformValues, GetLookupNameFunc, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import {
   ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM, IS_ATTRIBUTE, NETSUITE, RECORDS_PATH,
@@ -35,6 +36,7 @@ import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomi
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from './client/constants'
 
 const { awu } = collections.asynciterable
+const log = logger(module)
 
 const XML_TRUE_VALUE = 'T'
 const XML_FALSE_VALUE = 'F'
@@ -159,7 +161,12 @@ export const createInstanceElement = async (
     getInstancePath(instanceFileName),
   )
   if (fetchTime !== undefined && serverTimeInstance !== undefined) {
-    serverTimeInstance.value.instancesFetchTime[getServiceId(instance)] = fetchTime.toJSON()
+    const serviceId = getServiceId(instance)
+    if (serviceId !== undefined) {
+      serverTimeInstance.value.instancesFetchTime[serviceId] = fetchTime.toJSON()
+    } else {
+      log.warn('Instance %s has no serviceId so cannot save it\'s fetchTime', instance.elemID.getFullName())
+    }
   }
   return instance
 }

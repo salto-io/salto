@@ -48,7 +48,6 @@ import {
   InvalidTypeValidationError,
   InvalidValueMaxListLengthValidationError,
 } from '../validator'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
 
 const { awu } = collections.asynciterable
 
@@ -222,15 +221,6 @@ export const serialize = async <T = Element>(
   // Avoiding Promise.all to not reach Promise.all limit
   await awu(promises).forEach(promise => promise)
 
-  const theElm = sortedElements.filter(e => {
-    const safeJ = safeJsonStringify(e)
-    console.log(safeJ)
-    return safeJ.includes('enforce_value')
-  })
-  console.log(theElm.length)
-  console.log(theElm.map(e => e.elemID.getFullName()).join(','))
-  // eslint-disable-next-line no-restricted-syntax
-  JSON.stringify(theElm)
   // We don't use safeJsonStringify to save some time, because we know  we made sure there aren't
   // circles
   // eslint-disable-next-line no-restricted-syntax

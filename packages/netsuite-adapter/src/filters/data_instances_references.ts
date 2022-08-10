@@ -66,11 +66,15 @@ const filterCreator: FilterCreator = ({ elementsSourceIndex, isPartial }): Filte
 
     _.assign(
       dataInstancesMap,
-      await awu(instances.filter(instance => instance.value.internalId !== undefined))
-        .keyBy(async instance => getDataInstanceId(
-          instance.value.internalId,
-          await instance.getType(),
-        ))
+      _.mapValues(
+        await awu(instances
+          .filter(instance => instance.value.internalId !== undefined))
+          .keyBy(async instance => getDataInstanceId(
+            instance.value.internalId,
+            await instance.getType(),
+          )),
+        instance => instance.elemID
+      )
     )
 
     await awu(instances)

@@ -16,7 +16,7 @@
 import { toChange, Change, FetchOptions } from '@salto-io/adapter-api'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import SalesforceAdapter from '../../src/adapter'
-import { FilterWith, FilterCreator } from '../../src/filter'
+import { FilterWith, LocalFilterCreator } from '../../src/filter'
 import mockAdapter from '../adapter'
 import { mockDeployResult, mockDeployMessage } from '../connection'
 import { apiName, createInstanceElement, metadataType } from '../../src/transformers/transformer'
@@ -26,7 +26,7 @@ describe('SalesforceAdapter filters', () => {
   describe('when filter methods are implemented', () => {
     let adapter: SalesforceAdapter
     let filter: MockInterface<FilterWith<'onFetch' | 'onDeploy' | 'deploy' | 'preDeploy' | 'onPostFetch'>>
-    let filterCreator: jest.MockedFunction<FilterCreator>
+    let filterCreator: jest.MockedFunction<LocalFilterCreator>
     let connection: ReturnType<typeof mockAdapter>['connection']
     const mockFetchOpts: MockInterface<FetchOptions> = {
       progressReporter: { reportProgress: jest.fn() },
@@ -41,7 +41,7 @@ describe('SalesforceAdapter filters', () => {
         onPostFetch: mockFunction<(typeof filter)['onPostFetch']>().mockResolvedValue(),
       }
 
-      filterCreator = mockFunction<FilterCreator>().mockReturnValue(filter)
+      filterCreator = mockFunction<LocalFilterCreator>().mockReturnValue(filter)
       const mocks = mockAdapter({ adapterParams: { filterCreators: [filterCreator] } })
       adapter = mocks.adapter
       connection = mocks.connection

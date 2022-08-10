@@ -29,7 +29,7 @@ describe('pageByOffset', () => {
   let mockAxios: MockAdapter
   beforeEach(() => {
     mockAxios = new MockAdapter(axios)
-    client = new JiraClient({ credentials: { baseUrl: 'http://myjira.net', user: 'me', token: 'tok' } })
+    client = new JiraClient({ credentials: { baseUrl: 'http://myjira.net', user: 'me', token: 'tok' }, isDataCenter: false })
   })
   afterEach(() => {
     mockAxios.restore()
@@ -44,6 +44,7 @@ describe('pageByOffset', () => {
           { name: 'thing' },
           { name: 'scoped', scope: {} },
           { name: 'nested scope', nested: [{ name: 'valid' }, { name: 'bad', scope: {} }] },
+          { name: 'globalScoped', scope: { type: 'GLOBAL' } },
         ],
       )
       const args = { url: 'http://myjira.net/thing' }
@@ -57,7 +58,7 @@ describe('pageByOffset', () => {
     it('should omit the scoped entities from the response', () => {
       expect(responses).toHaveLength(1)
       const [page] = responses
-      expect(page).not.toContainEqual(expect.objectContaining({ scope: expect.anything() }))
+      expect(page).not.toContainEqual(expect.objectContaining({ scope: expect.not.objectContaining({ type: 'GLOBAL' }) }))
     })
     it('should keep non-scoped entities', () => {
       const [page] = responses
@@ -66,6 +67,10 @@ describe('pageByOffset', () => {
     it('should omit nested scoped entities from the response', () => {
       const [page] = responses
       expect(page[1]).toEqual({ name: 'nested scope', nested: [{ name: 'valid' }] })
+    })
+    it('should keep global scoped entities', () => {
+      const [page] = responses
+      expect(page[2]).toEqual({ name: 'globalScoped', scope: { type: 'GLOBAL' } })
     })
   })
 

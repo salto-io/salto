@@ -20,7 +20,7 @@ import {
 import { collections, values as lowerDashValues, multiIndex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { getAllReferencedIds, buildElementsSourceFromElements, extendGeneratedDependencies } from '@salto-io/adapter-utils'
-import { FilterCreator } from '../filter'
+import { RemoteFilterCreator } from '../filter'
 import { metadataType, apiName, isCustomObject } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import { getInternalId, buildElementsSourceForFetch, extractFlatCustomObjectFields, hasInternalId, ensureSafeFilterFetch } from './utils'
@@ -188,7 +188,7 @@ export const WARNING_MESSAGE = 'Encountered an error while trying to query your 
 /**
  * Add references using the tooling API.
  */
-const creator: FilterCreator = ({ client, config }) => ({
+const creator: RemoteFilterCreator = ({ client, config }) => ({
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

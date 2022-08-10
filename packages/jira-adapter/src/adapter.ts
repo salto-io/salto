@@ -21,7 +21,7 @@ import { logger } from '@salto-io/logging'
 import { objects } from '@salto-io/lowerdash'
 import JiraClient from './client/client'
 import changeValidator from './change_validators'
-import { JiraConfig, getApiDefinitions } from './config'
+import { JiraConfig, getApiDefinitions } from './config/config'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import fieldReferencesFilter from './filters/field_references'
 import referenceBySelfLinkFilter from './filters/references_by_self_link'
@@ -40,7 +40,6 @@ import boardDeploymentFilter from './filters/board/board_deployment'
 import automationDeploymentFilter from './filters/automation/automation_deployment'
 import webhookFilter from './filters/webhook/webhook'
 import screenFilter from './filters/screen/screen'
-import missingStatusesFilter from './filters/statuses/missing_statuses'
 import issueTypeScreenSchemeFilter from './filters/issue_type_screen_scheme'
 import fieldConfigurationFilter from './filters/field_configuration/field_configuration'
 import fieldConfigurationIrrelevantFields from './filters/field_configuration/field_configuration_irrelevant_fields'
@@ -73,6 +72,7 @@ import fieldDeploymentFilter from './filters/fields/field_deployment_filter'
 import contextDeploymentFilter from './filters/fields/context_deployment_filter'
 import fieldTypeReferencesFilter from './filters/fields/field_type_references_filter'
 import contextReferencesFilter from './filters/fields/context_references_filter'
+import contextsProjectsFilter from './filters/fields/contexts_projects_filter'
 import queryFilter from './filters/query'
 import serviceUrlInformationFilter from './filters/service_url/service_url_information'
 import serviceUrlFilter from './filters/service_url/service_url'
@@ -88,6 +88,7 @@ import avatarsFilter from './filters/avatars'
 import iconUrlFilter from './filters/icon_url'
 import jqlReferencesFilter from './filters/jql/jql_references'
 import userFilter from './filters/user'
+import automationNameReferencesFilter from './filters/automation/automation_name_references'
 import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
@@ -109,7 +110,6 @@ export const DEFAULT_FILTERS = [
   automationStructureFilter,
   automationDeploymentFilter,
   webhookFilter,
-  missingStatusesFilter,
   // Should run before duplicateIdsFilter
   fieldNameFilter,
   // This should happen before any filter that creates references
@@ -167,6 +167,7 @@ export const DEFAULT_FILTERS = [
   removeSelfFilter,
   fieldReferencesFilter,
   // Must run after fieldReferencesFilter
+  contextsProjectsFilter,
   fieldConfigurationIrrelevantFields,
   // Must run after fieldConfigurationIrrelevantFields
   fieldConfigurationSplitFilter,
@@ -174,6 +175,8 @@ export const DEFAULT_FILTERS = [
   fieldConfigurationDependenciesFilter,
   // Must run after fieldReferencesFilter
   sortListsFilter,
+  // Must run after fieldReferencesFilter
+  automationNameReferencesFilter,
   serviceUrlInformationFilter,
   serviceUrlFilter,
   hiddenValuesInListsFilter,
@@ -226,6 +229,8 @@ export default class JiraAdapter implements AdapterOperations {
     )
 
     this.paginator = paginator
+
+    const filterContext = {}
     this.createFiltersRunner = () => (
       filtersRunner(
         {
@@ -235,6 +240,7 @@ export default class JiraAdapter implements AdapterOperations {
           getElemIdFunc,
           elementsSource,
           fetchQuery: this.fetchQuery,
+          adapterContext: filterContext,
         },
         filterCreators,
         objects.concatObjects

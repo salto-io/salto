@@ -14,15 +14,14 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, MapType, ObjectType, toChange } from '@salto-io/adapter-api'
-import { deployment, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { JIRA } from '../../../src/constants'
-import { mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 import screenFilter from '../../../src/filters/screen/screen'
 import { Filter } from '../../../src/filter'
 import JiraClient from '../../../src/client/client'
-import { DEFAULT_CONFIG } from '../../../src/config'
+import { getDefaultConfig } from '../../../src/config/config'
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -47,13 +46,10 @@ describe('screenFilter', () => {
     mockConnection = connection
     mockConnection.get.mockResolvedValue({ status: 200, data: [] })
 
-    filter = screenFilter({
+    filter = screenFilter(getFilterParams({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    })
+    }))
     screenTabType = new ObjectType({
       elemID: new ElemID(JIRA, 'ScreenableTab'),
     })
@@ -129,16 +125,16 @@ describe('screenFilter', () => {
       expect(deployChangeMock).toHaveBeenCalledWith(
         change,
         client,
-        DEFAULT_CONFIG.apiDefinitions.types.Screen.deployRequests,
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Screen.deployRequests,
         ['tabs'],
         undefined,
         undefined,
       )
     })
 
-    it('should call deployChange and ignore tabs and names of were not changed', async () => {
+    it('should call deployChange and ignore tabs and names if were not changed', async () => {
       const change = toChange({
-        before: new InstanceElement('instance2', screenType),
+        before: new InstanceElement('instance2', screenType, { description: 'desc' }),
         after: new InstanceElement('instance2', screenType),
       })
       await filter.deploy?.([change])
@@ -146,7 +142,7 @@ describe('screenFilter', () => {
       expect(deployChangeMock).toHaveBeenCalledWith(
         change,
         client,
-        DEFAULT_CONFIG.apiDefinitions.types.Screen.deployRequests,
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Screen.deployRequests,
         ['tabs', 'name'],
         undefined,
         undefined,

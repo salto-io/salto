@@ -287,4 +287,5 @@ export const defaultFilterContext: FilterContext = {
   systemFields: allSystemFields,
   fetchProfile: buildFetchProfile({}),
   elementsSource: buildElementsSourceFromElements([]),
+  enumFieldPermissions: false,
 }

@@ -15,17 +15,18 @@
 */
 import { Change, dependencyChange, DependencyChanger, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
-import { collections, values } from '@salto-io/lowerdash'
+import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { getGadgetInstanceKey, getGadgetKey } from '../change_validators/dashboard_gadgets'
 import { DASHBOARD_GADGET_TYPE, DASHBOARD_TYPE } from '../constants'
+import { ChangeWithKey } from './types'
 
 
 export const dashboardGadgetsDependencyChanger: DependencyChanger = async changes => {
   const instanceChanges = Array.from(changes.entries())
     .map(([key, change]) => ({ key, change }))
     .filter(
-      (change): change is { key: collections.set.SetId; change: Change<InstanceElement> } =>
+      (change): change is ChangeWithKey<Change<InstanceElement>> =>
         isInstanceChange(change.change)
     )
 

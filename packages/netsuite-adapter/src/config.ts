@@ -27,8 +27,10 @@ import {
   SUITEAPP_CONCURRENCY_LIMIT, SUITEAPP_CLIENT_CONFIG, USE_CHANGES_DETECTION,
   CONCURRENCY_LIMIT, FETCH, INCLUDE, EXCLUDE, DEPLOY, DATASET, WORKBOOK, WARN_STALE_DATA,
   INSTALLED_SUITEAPPS, LOCKED_ELEMENTS_TO_EXCLUDE, AUTHOR_INFO_CONFIG, ADDITIONAL_DEPS, VALIDATE,
+  STRICT_INSTANCE_STRUCTURE,
+  FIELDS_TO_OMIT,
 } from './constants'
-import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams } from './query'
+import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from './data_elements/types'
 import { AdditionalSdfDeployDependencies, FailedFiles, FailedTypes } from './client/types'
 
@@ -177,6 +179,7 @@ export const fetchDefault: FetchParams = {
       { name: 'solution' },
       { name: 'giftCertificateItem' }, // requires special features enabled in the account. O.W fetch will fail
       { name: 'downloadItem' }, // requires special features enabled in the account. O.W fetch will fail
+      { name: 'account' },
       {
         name: Object.keys(ITEM_TYPE_TO_SEARCH_STRING)
           .filter(itemTypeName => !['giftCertificateItem', 'downloadItem'].includes(itemTypeName))
@@ -198,6 +201,20 @@ const authorInfoConfig = new ObjectType({
   },
 })
 
+const fieldsToOmitConfig = createMatchingObjectType<FieldToOmitParams>({
+  elemID: new ElemID(NETSUITE, 'fieldsToOmitConfig'),
+  fields: {
+    type: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
+    fields: {
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: { _required: true },
+    },
+  },
+})
+
 const fetchConfigType = createMatchingObjectType<FetchParams>({
   elemID: new ElemID(NETSUITE, 'fetchConfig'),
   fields: {
@@ -205,6 +222,8 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
     [EXCLUDE]: { refType: queryParamsConfigType },
     [LOCKED_ELEMENTS_TO_EXCLUDE]: { refType: queryParamsConfigType },
     [AUTHOR_INFO_CONFIG]: { refType: authorInfoConfig },
+    [STRICT_INSTANCE_STRUCTURE]: { refType: BuiltinTypes.BOOLEAN },
+    [FIELDS_TO_OMIT]: { refType: new ListType(fieldsToOmitConfig) },
   },
 })
 

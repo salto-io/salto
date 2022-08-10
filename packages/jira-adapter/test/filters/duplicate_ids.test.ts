@@ -14,13 +14,11 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { mockClient } from '../utils'
+import { getFilterParams } from '../utils'
 import duplicateIdsFilter from '../../src/filters/duplicate_ids'
 import { Filter } from '../../src/filter'
-import { DEFAULT_CONFIG, JiraConfig } from '../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../src/config/config'
 import { JIRA, STATUS_TYPE_NAME } from '../../src/constants'
 
 describe('duplicateIdsFilter', () => {
@@ -28,19 +26,13 @@ describe('duplicateIdsFilter', () => {
   let type: ObjectType
   let config: JiraConfig
   beforeEach(async () => {
-    const { client, paginator } = mockClient()
-
-    config = _.cloneDeep(DEFAULT_CONFIG)
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
     config.fetch.fallbackToInternalId = true
 
-    filter = duplicateIdsFilter({
-      client,
-      paginator,
+    filter = duplicateIdsFilter(getFilterParams({
       config,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    })
+    }))
 
     type = new ObjectType({
       elemID: new ElemID(JIRA, STATUS_TYPE_NAME),

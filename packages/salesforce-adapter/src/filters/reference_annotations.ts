@@ -18,7 +18,7 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, multiIndex } from '@salto-io/lowerdash'
-import { FilterCreator } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { FIELD_ANNOTATIONS, FOREIGN_KEY_DOMAIN, CUSTOM_OBJECT } from '../constants'
 import { apiName, metadataType, isMetadataObjectType, isCustomObject } from '../transformers/transformer'
 import { buildElementsSourceForFetch } from './utils'
@@ -69,7 +69,7 @@ const convertAnnotationsToReferences = async (
 /**
  * Convert referenceTo and foreignKeyDomain annotations into reference expressions.
  */
-const filter: FilterCreator = ({ config }) => ({
+const filter: LocalFilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]) => {
     const referenceElements = buildElementsSourceForFetch(elements, config)
     const typeToElemID = await multiIndex.keyByAsync({

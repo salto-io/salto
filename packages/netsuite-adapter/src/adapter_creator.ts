@@ -34,8 +34,9 @@ import {
   DEPLOY,
   DEPLOY_REFERENCED_ELEMENTS,
   INSTALLED_SUITEAPPS,
+  FIELDS_TO_OMIT,
 } from './constants'
-import { validateFetchParameters, convertToQueryParams } from './query'
+import { validateFetchParameters, convertToQueryParams, validateFieldsToOmitConfig } from './query'
 import { Credentials, isSdfCredentialsOnly, isSuiteAppCredentials, toCredentialsAccountId } from './client/credentials'
 import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
 import SdfClient from './client/sdf_client'
@@ -141,6 +142,10 @@ const validateConfig = (config: Readonly<InstanceElement> | undefined):
 
   if (fetchParameters?.[EXCLUDE] !== undefined) {
     validateFetchParameters(fetchParameters[EXCLUDE])
+  }
+
+  if (fetchParameters?.[FIELDS_TO_OMIT] !== undefined) {
+    validateFieldsToOmitConfig(fetchParameters[FIELDS_TO_OMIT])
   }
 
   if (deployParams !== undefined) {

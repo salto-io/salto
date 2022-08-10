@@ -14,14 +14,14 @@
 * limitations under the License.
 */
 import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { filterUtils, client as clientUtils, deployment, elements as elementUtils } from '@salto-io/adapter-components'
+import { filterUtils, client as clientUtils, deployment } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { DEFAULT_CONFIG } from '../../src/config'
+import { getDefaultConfig } from '../../src/config/config'
 import JiraClient from '../../src/client/client'
 import { JIRA } from '../../src/constants'
 import projectFilter from '../../src/filters/project'
-import { mockClient } from '../utils'
+import { getFilterParams, mockClient } from '../utils'
+import { PROJECT_CONTEXTS_FIELD } from '../../src/filters/fields/contexts_projects_filter'
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -51,13 +51,10 @@ describe('projectFilter', () => {
 
     deployChangeMock.mockClear()
 
-    filter = projectFilter({
+    filter = projectFilter(getFilterParams({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    })) as typeof filter
 
     type = new ObjectType({
       elemID: new ElemID(JIRA, 'Project'),
@@ -179,8 +176,8 @@ describe('projectFilter', () => {
       expect(deployChangeMock).toHaveBeenCalledWith(
         change,
         client,
-        DEFAULT_CONFIG.apiDefinitions.types.Project.deployRequests,
-        ['components', 'workflowScheme', 'issueTypeScreenScheme', 'fieldConfigurationScheme', 'issueTypeScheme'],
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Project.deployRequests,
+        ['components', 'workflowScheme', 'issueTypeScreenScheme', 'fieldConfigurationScheme', 'issueTypeScheme', PROJECT_CONTEXTS_FIELD],
         undefined,
         undefined,
       )
@@ -225,8 +222,8 @@ describe('projectFilter', () => {
       expect(deployChangeMock).toHaveBeenCalledWith(
         change,
         client,
-        DEFAULT_CONFIG.apiDefinitions.types.Project.deployRequests,
-        ['components', 'fieldConfigurationScheme'],
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Project.deployRequests,
+        ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD],
         undefined,
         undefined,
       )
@@ -306,8 +303,8 @@ describe('projectFilter', () => {
       expect(deployChangeMock).toHaveBeenCalledWith(
         change,
         client,
-        DEFAULT_CONFIG.apiDefinitions.types.Project.deployRequests,
-        ['components', 'fieldConfigurationScheme'],
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Project.deployRequests,
+        ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD],
         undefined,
         undefined,
       )
@@ -329,6 +326,105 @@ describe('projectFilter', () => {
 
     it('should call the endpoint to delete the fieldConfigurationScheme', () => {
       expect(connection.delete).toHaveBeenCalledWith(
+        '/rest/api/3/fieldconfigurationscheme/4',
+        undefined,
+      )
+    })
+
+    it('should call the endpoint to get the components', () => {
+      expect(connection.get).toHaveBeenCalledWith(
+        '/rest/api/3/project/3',
+        undefined,
+      )
+    })
+
+    it('should call the endpoint to remove the components', () => {
+      expect(connection.delete).toHaveBeenCalledWith(
+        '/rest/api/3/component/1',
+        undefined,
+      )
+
+      expect(connection.delete).toHaveBeenCalledWith(
+        '/rest/api/3/component/2',
+        undefined,
+      )
+    })
+  })
+
+  describe('When deploying an addition change with 500 error and field configuration was already deleted', () => {
+    let change: Change
+
+    beforeEach(async () => {
+      deployChangeMock.mockRejectedValue({
+        response: {
+          status: 500,
+        },
+      })
+
+      instance.value.id = '3'
+      instance.value.key = 'key'
+      change = toChange({ after: instance })
+
+      connection.get.mockImplementation(async url => {
+        if (url.includes('/rest/api/3/project')) {
+          return {
+            status: 200,
+            data: {
+              id: '3',
+              components: [
+                {
+                  id: '1',
+                },
+                {
+                  id: '2',
+                },
+              ],
+            },
+          }
+        }
+
+        if (url.includes('/rest/api/3/fieldconfigurationscheme/')) {
+          return {
+            status: 200,
+            data: {
+              values: [{
+              }],
+            },
+          }
+        }
+
+        throw new Error('Unexpected url')
+      })
+
+      await filter.deploy([change])
+    })
+    it('should call deployChange and ignore the right fields', () => {
+      expect(deployChangeMock).toHaveBeenCalledWith(
+        change,
+        client,
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Project.deployRequests,
+        ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD],
+        undefined,
+        undefined,
+      )
+    })
+
+    it('should call the endpoint to get the projectId', () => {
+      expect(connection.get).toHaveBeenCalledWith(
+        '/rest/api/3/project/key',
+        undefined,
+      )
+    })
+
+    it('should call the endpoint to get the fieldConfigurationScheme', () => {
+      expect(connection.get).toHaveBeenCalledWith(
+        '/rest/api/3/fieldconfigurationscheme/project?projectId=3',
+        undefined,
+      )
+    })
+
+    it('should not call the endpoint to delete the fieldConfigurationScheme', () => {
+      expect(connection.delete).not.toHaveBeenCalledWith(
         '/rest/api/3/fieldconfigurationscheme/4',
         undefined,
       )

@@ -21,7 +21,7 @@ import { FilterCreator } from '../../filter'
 import { deployContextChange, getContexts, getContextType } from './contexts'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { FIELD_TYPE_NAME } from './constants'
-import { JiraConfig } from '../../config'
+import { JiraConfig } from '../../config/config'
 
 const { awu } = collections.asynciterable
 

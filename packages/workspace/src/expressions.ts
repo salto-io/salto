@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import wu from 'wu'
+import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { ElemID, Element, ReferenceExpression, TemplateExpression, isReferenceExpression, isElement, ReadOnlyElementsSource, isVariable, isInstanceElement, isObjectType, isContainerType, BuiltinTypes, CoreAnnotationTypes, TypeReference, isType, PlaceholderObjectType, Expression, isTemplateExpression, isExpression, isField } from '@salto-io/adapter-api'
 import { resolvePath, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
@@ -258,8 +259,20 @@ export const resolve = (
   // Create a clone of the input elements to ensure we do not modify the input
   const elementsToResolve = elements.map(e => e.clone())
 
+  // Since fields technically reference their parent type with the .parent property
+  // we need to make sure to resolve all field parents as well
+  const fieldParents = elementsToResolve.filter(isField).map(field => field.parent)
+
+  // We assume that if we got a field and its parent type in the same resolve call, the field's
+  // parent will point to the same object type that we got to resolve, so we don't need to resolve
+  // both.
+  const allElementsToResolve = _.uniqBy(
+    elementsToResolve.concat(fieldParents),
+    elem => elem.elemID.getFullName()
+  )
+
   const resolvedElements = new Map(
-    elementsToResolve
+    allElementsToResolve
       .concat(Object.values(BuiltinTypes))
       .concat(Object.values(CoreAnnotationTypes))
       .map(elem => [elem.elemID.getFullName(), elem])
@@ -302,7 +315,8 @@ export const resolve = (
         resolveTypeReference(element.refInnerType)
       }
       if (isField(element)) {
-        // Note - if we got a field as input, we are not resolving its parent
+        // Note - we don't need to resolve the field's parent here because it will be passed
+        // as a separate element to resolve
         resolveTypeReference(element.refType)
       }
 
@@ -340,7 +354,7 @@ export const resolve = (
     }
   }
 
-  await resolveElementGroup(elementsToResolve)
+  await resolveElementGroup(allElementsToResolve)
   log.debug('resolve handled a total of %d elements', resolvedElements.size)
 
   // Note - resolveElementGroup fills referenceDependencies as a side effect

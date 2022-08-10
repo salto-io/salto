@@ -23,6 +23,7 @@ import { defaultDeployChange, deployChanges } from '../deployment/standard_deplo
 import { getLookUpName } from '../reference_mapping'
 import { FilterCreator } from '../filter'
 import { findObject, setFieldDeploymentAnnotations } from '../utils'
+import { PROJECT_CONTEXTS_FIELD } from './fields/contexts_projects_filter'
 
 const PROJECT_TYPE_NAME = 'Project'
 
@@ -112,7 +113,7 @@ const getProjectId = async (projectKey: string, client: JiraClient): Promise<str
 
 const isFieldConfigurationSchemeResponse = createSchemeGuard<{
   values: {
-    fieldConfigurationScheme: {
+    fieldConfigurationScheme?: {
       id: string
     }
   }[]
@@ -120,7 +121,7 @@ const isFieldConfigurationSchemeResponse = createSchemeGuard<{
   values: Joi.array().items(Joi.object({
     fieldConfigurationScheme: Joi.object({
       id: Joi.string().required(),
-    }).unknown(true).required(),
+    }).unknown(true).optional(),
   }).unknown(true)),
 }).unknown(true).required(), 'Received an invalid field configuration scheme response')
 
@@ -144,6 +145,11 @@ const deleteFieldConfigurationScheme = async (
 
   await deployScheme(instance, client, FIELD_CONFIG_SCHEME_FIELD, 'fieldConfigurationSchemeId')
 
+  if (response.data.values[0]?.fieldConfigurationScheme === undefined) {
+    log.debug(`project ${instance.elemID.getFullName()} does not have a field configuration scheme, skipping deletion`)
+    return
+  }
+
   const schemeId = response.data.values[0].fieldConfigurationScheme.id
   await client.delete({
     url: `/rest/api/3/fieldconfigurationscheme/${schemeId}`,
@@ -162,6 +168,7 @@ const filter: FilterCreator = ({ config, client }) => ({
       setFieldDeploymentAnnotations(projectType, FIELD_CONFIG_SCHEME_FIELD)
       setFieldDeploymentAnnotations(projectType, ISSUE_TYPE_SCHEME)
       setFieldDeploymentAnnotations(projectType, COMPONENTS_FIELD)
+      setFieldDeploymentAnnotations(projectType, PROJECT_CONTEXTS_FIELD)
     }
 
     elements
@@ -204,14 +211,18 @@ const filter: FilterCreator = ({ config, client }) => ({
             client,
             apiDefinitions: config.apiDefinitions,
             fieldsToIgnore: isModificationChange(change)
-              ? [COMPONENTS_FIELD,
+              ? [
+                COMPONENTS_FIELD,
                 WORKFLOW_SCHEME_FIELD,
                 ISSUE_TYPE_SCREEN_SCHEME_FIELD,
                 FIELD_CONFIG_SCHEME_FIELD,
-                ISSUE_TYPE_SCHEME]
+                ISSUE_TYPE_SCHEME,
+                PROJECT_CONTEXTS_FIELD,
+              ]
               : [
                 COMPONENTS_FIELD,
                 FIELD_CONFIG_SCHEME_FIELD,
+                PROJECT_CONTEXTS_FIELD,
               ],
           })
         } catch (error) {

@@ -14,21 +14,23 @@
 * limitations under the License.
 */
 import { toChange, ObjectType, ElemID } from '@salto-io/adapter-api'
-import { DEFAULT_CONFIG } from '../../src/config'
 import { mockClient } from '../utils'
 import changeValidator from '../../src/change_validators'
 import { JIRA } from '../../src/constants'
+import { getDefaultConfig } from '../../src/config/config'
 
 describe('change validator creator', () => {
   describe('checkDeploymentAnnotationsValidator', () => {
     const { client } = mockClient()
 
     it('should not fail if there are no deploy changes', async () => {
-      expect(await changeValidator(client, DEFAULT_CONFIG)([])).toEqual([])
+      expect(
+        await changeValidator(client, getDefaultConfig({ isDataCenter: false }))([])
+      ).toEqual([])
     })
 
     it('should fail each change individually', async () => {
-      expect(await changeValidator(client, DEFAULT_CONFIG)([
+      expect(await changeValidator(client, getDefaultConfig({ isDataCenter: false }))([
         toChange({ after: new ObjectType({ elemID: new ElemID(JIRA, 'obj') }) }),
         toChange({ before: new ObjectType({ elemID: new ElemID(JIRA, 'obj2') }) }),
       ])).toEqual([

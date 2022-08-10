@@ -15,12 +15,10 @@
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { elements as elementUtils } from '@salto-io/adapter-components'
-import { mockClient } from '../utils'
+import { getFilterParams, mockClient } from '../utils'
 import resolutionFilter from '../../src/filters/resolution'
 import { Filter } from '../../src/filter'
-import { DEFAULT_CONFIG, JiraConfig } from '../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../src/config/config'
 import { JIRA, RESOLUTION_TYPE_NAME } from '../../src/constants'
 import { deployWithJspEndpoints } from '../../src/deployment/jsp_deployment'
 import JiraClient from '../../src/client/client'
@@ -40,14 +38,12 @@ describe('resolutionFilter', () => {
     const { client: cli, paginator } = mockClient()
     client = cli
 
-    config = _.cloneDeep(DEFAULT_CONFIG)
-    filter = resolutionFilter({
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+    filter = resolutionFilter(getFilterParams({
       client,
       paginator,
       config,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    })
+    }))
 
     type = new ObjectType({
       elemID: new ElemID(JIRA, 'Resolution'),

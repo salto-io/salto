@@ -216,7 +216,7 @@ describe('NetsuiteClient', () => {
           [{
             scriptId: 'someObject',
             typeName: 'type',
-            values: {},
+            values: { scriptid: 'someObject' },
           }],
           undefined,
           { additionalDependencies: validateParams[1], validateOnly: true }

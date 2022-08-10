@@ -16,7 +16,7 @@
 import { logger } from '@salto-io/logging'
 import { CORE_ANNOTATIONS, Element } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { FilterCreator } from '../filter'
+import { RemoteFilterCreator } from '../filter'
 import { lightningElementsUrlRetriever } from '../elements_url_retreiver/elements_url_retreiver'
 import { buildElementsSourceForFetch, extractFlatCustomObjectFields, ensureSafeFilterFetch } from './utils'
 
@@ -30,7 +30,7 @@ const getRelevantElements = (elements: Element[]): AsyncIterable<Element> =>
 
 export const WARNING_MESSAGE = 'Encountered an error while trying to populate URLs for some of your salesforce configuration elements. This might affect the availability of the ‘go to service’ functionality in your workspace.'
 
-const filterCreator: FilterCreator = ({ client, config }) => ({
+const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

@@ -22,7 +22,7 @@ import { findObject, getFilledJspUrls, setFieldDeploymentAnnotations, setTypeDep
 import { FilterCreator } from '../../filter'
 import { deployWithJspEndpoints } from '../../deployment/jsp_deployment'
 import { SECURITY_LEVEL_MEMBER_TYPE, SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE } from '../../constants'
-import { JiraConfig } from '../../config'
+import { JiraConfig } from '../../config/config'
 import JiraClient from '../../client/client'
 import { deployMembers, getMemberKey } from './members_deployment'
 import { deployChanges } from '../../deployment/standard_deployment'
@@ -58,7 +58,7 @@ const deploySecurityLevels = async (
   changes: Change<InstanceElement>[],
   config: JiraConfig,
   client: JiraClient,
-): Promise<DeployResult> => {
+): Promise<Omit<DeployResult, 'extraProperties'>> => {
   if (changes.length === 0) {
     return {
       appliedChanges: [],

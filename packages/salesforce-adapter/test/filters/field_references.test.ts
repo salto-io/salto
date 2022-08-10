@@ -20,7 +20,6 @@ import { collections } from '@salto-io/lowerdash'
 import { FilterWith } from '../../src/filter'
 import filterCreator, { addReferences } from '../../src/filters/field_references'
 import { fieldNameToTypeMappingDefs } from '../../src/transformers/reference_mapping'
-import mockClient from '../client'
 import { OBJECTS_PATH, SALESFORCE, CUSTOM_OBJECT, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD, CUSTOM_OBJECT_ID_FIELD, API_NAME, API_NAME_SEPARATOR, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, WORKFLOW_RULE_METADATA_TYPE, CPQ_QUOTE_LINE_FIELDS, CPQ_CUSTOM_SCRIPT, CPQ_CONFIGURATION_ATTRIBUTE, CPQ_DEFAULT_OBJECT_FIELD, CPQ_LOOKUP_QUERY, CPQ_TESTED_OBJECT, CPQ_DISCOUNT_SCHEDULE, CPQ_CONSTRAINT_FIELD } from '../../src/constants'
 import { metadataType, apiName } from '../../src/transformers/transformer'
 import { CUSTOM_OBJECT_TYPE_ID } from '../../src/filters/custom_objects'
@@ -113,9 +112,7 @@ const generateObjectAndInstance = ({
 }
 
 describe('FieldReferences filter', () => {
-  const { client } = mockClient()
-
-  const filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
+  const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch'>
 
   const generateElements = (
   ): Element[] => ([
@@ -239,6 +236,23 @@ describe('FieldReferences filter', () => {
       fieldValue: 'fffff',
       parentType: 'Account',
     }),
+    // shareTo should point to salesforce.Role.instance.CFO (neighbor context)
+    ...generateObjectAndInstance({
+      type: 'Role',
+      objType: 'Role',
+      instanceName: 'CFO',
+      fieldName: 'fullName',
+      fieldValue: 'CFO',
+    }),
+    ...generateObjectAndInstance({
+      type: 'FolderShare',
+      objType: 'FolderShare',
+      instanceName: 'folderShare',
+      fieldName: 'sharedTo',
+      fieldValue: 'CFO',
+      contextFieldName: 'sharedToType',
+      contextFieldValue: 'Role',
+    }),
   ])
 
   describe('on fetch', () => {
@@ -354,6 +368,14 @@ describe('FieldReferences filter', () => {
       expect(inst.value.field).not.toBeInstanceOf(ReferenceExpression)
       expect(inst.value.field).toEqual('fffff')
     })
+
+    it('should resolve field with neighbor context using share to type mapping when context is a string', async () => {
+      const inst = await awu(elements).find(
+        async e => isInstanceElement(e) && await metadataType(e) === 'FolderShare'
+      ) as InstanceElement
+      expect(inst.value.sharedTo).toBeInstanceOf(ReferenceExpression)
+      expect(inst.value.sharedTo?.elemID.getFullName()).toEqual('salesforce.Role.instance.CFO')
+    })
   })
 
   describe('on fetch with modified serialization', () => {
@@ -387,9 +409,7 @@ describe('FieldReferences filter', () => {
 })
 
 describe('FieldReferences filter - neighbor context strategy', () => {
-  const { client } = mockClient()
-
-  const filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
+  const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch'>
 
   const parentName = 'User'
   type WorkflowActionReference = {

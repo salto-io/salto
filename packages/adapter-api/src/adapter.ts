@@ -30,9 +30,14 @@ export interface FetchResult {
   isPartial?: boolean
 }
 
+export type DeployExtraProperties = {
+  deploymentUrls?: string[]
+}
+
 export type DeployResult = {
   appliedChanges: ReadonlyArray<Change>
   errors: ReadonlyArray<Error>
+  extraProperties?: DeployExtraProperties
 }
 
 export type Progress = {

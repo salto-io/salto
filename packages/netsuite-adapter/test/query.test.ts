@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { describe } from 'jest-circus'
-import { andQuery, buildNetsuiteQuery, notQuery, validateFetchParameters, convertToQueryParams, FetchTypeQueryParams } from '../src/query'
+import { andQuery, buildNetsuiteQuery, notQuery, validateFetchParameters, convertToQueryParams, FetchTypeQueryParams, validateFieldsToOmitConfig } from '../src/query'
 
 describe('NetsuiteQuery', () => {
   describe('buildNetsuiteQuery', () => {
@@ -192,7 +192,7 @@ describe('NetsuiteQuery', () => {
       }
 
       expect(error).toBeDefined()
-      expect(error?.message).toContain('received invalid adapter config input. Expected type name to be a string, but found:')
+      expect(error?.message).toContain('Received invalid adapter config input. Expected type name to be a string, but found:')
     })
     it('should throw an error when fileCabinet is undefined', () => {
       let error: Error | undefined
@@ -207,7 +207,7 @@ describe('NetsuiteQuery', () => {
       }
 
       expect(error).toBeDefined()
-      expect(error?.message).toContain('received invalid adapter config input. "fileCabinet" field is expected to be an array')
+      expect(error?.message).toContain('Received invalid adapter config input. "fileCabinet" field is expected to be an array')
     })
     it('should throw an error when types is undefined', () => {
       let error: Error | undefined
@@ -220,7 +220,7 @@ describe('NetsuiteQuery', () => {
       }
 
       expect(error).toBeDefined()
-      expect(error?.message).toContain('received invalid adapter config input. "types" field is expected to be an array')
+      expect(error?.message).toContain('Received invalid adapter config input. "types" field is expected to be an array')
     })
     it('should throw an error when types has invalid ids field', () => {
       let error: Error | undefined
@@ -237,7 +237,7 @@ describe('NetsuiteQuery', () => {
       }
 
       expect(error).toBeDefined()
-      expect(error?.message).toContain('received invalid adapter config input. Expected type ids to be an array of strings, but found:')
+      expect(error?.message).toContain('Received invalid adapter config input. Expected type ids to be an array of strings, but found:')
     })
     it('should throw an error with all invalid types', () => {
       let error: Error | undefined
@@ -256,6 +256,38 @@ describe('NetsuiteQuery', () => {
       expect(error).toBeDefined()
       expect(error?.message).toContain('invalidType')
       expect(error?.message).not.toContain('addressForm')
+    })
+  })
+  describe('validateFieldsToOmitConfig', () => {
+    it('should not throw', () => {
+      expect(() => {
+        validateFieldsToOmitConfig([{ type: 'a', fields: ['b'] }])
+      }).not.toThrow()
+    })
+    it('should throw an error when input is not an array', () => {
+      expect(() => {
+        validateFieldsToOmitConfig({ type: 'a', fields: ['b'] })
+      }).toThrow('"fieldsToOmit" field is expected to be an array')
+    })
+    it('should throw an error when "type" field is not a string', () => {
+      expect(() => {
+        validateFieldsToOmitConfig([{ type: { name: 'a' }, fields: ['b'] }])
+      }).toThrow('Expected "type" field to be a string')
+    })
+    it('should throw an error when "fields" field is not an array', () => {
+      expect(() => {
+        validateFieldsToOmitConfig([{ type: 'a', fields: 'b' }])
+      }).toThrow('Expected "fields" field to be an array of strings')
+    })
+    it('should throw an error when "fields" field is an empty array', () => {
+      expect(() => {
+        validateFieldsToOmitConfig([{ type: 'a', fields: [] }])
+      }).toThrow('Expected "fields" field to be an array of strings')
+    })
+    it('should throw an error when regexes are invalid', () => {
+      expect(() => {
+        validateFieldsToOmitConfig([{ type: 'aa(a.*', fields: ['bb(b.*'] }])
+      }).toThrow('The following regular expressions are invalid')
     })
   })
 

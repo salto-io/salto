@@ -22,7 +22,7 @@ import { collections } from '@salto-io/lowerdash'
 import { deployChanges } from './standard_deployment'
 import JiraClient from '../client/client'
 import { getLookUpName } from '../reference_mapping'
-import { JspUrls } from '../config'
+import { JspUrls } from '../config/config'
 
 const { awu } = collections.asynciterable
 

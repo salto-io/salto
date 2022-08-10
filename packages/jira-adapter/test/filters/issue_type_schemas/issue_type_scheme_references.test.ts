@@ -14,10 +14,9 @@
 * limitations under the License.
 */
 import 'jest-extended'
-import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { filterUtils } from '@salto-io/adapter-components'
 import { Element, ElemID, ReferenceExpression } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { getDefaultAdapterConfig, mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 import issueTypeSchemeReferences from '../../../src/filters/issue_type_schemas/issue_type_scheme_references'
 import { instanceCreators } from '../../mock_elements'
 
@@ -30,13 +29,10 @@ describe('issueTypeSchemeReferences', () => {
   let runFilter: (...elements: Element[]) => Promise<Element[]>
   beforeAll(async () => {
     const { client, paginator } = mockClient()
-    const filter = issueTypeSchemeReferences({
+    const filter = issueTypeSchemeReferences(getFilterParams({
       client,
       paginator,
-      config: await getDefaultAdapterConfig(),
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as filterUtils.FilterWith<'onFetch'>
+    })) as filterUtils.FilterWith<'onFetch'>
     runFilter = async (...elements: Element[]): Promise<Element[]> => {
       await filter.onFetch(elements)
       return elements

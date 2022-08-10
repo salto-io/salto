@@ -24,9 +24,7 @@ const { awu } = collections.asynciterable
 
 describe('Test Salto Expressions', () => {
   const refTo = ({ elemID }: { elemID: ElemID }, ...path: string[]): ReferenceExpression => (
-    new ReferenceExpression(
-      elemID.createNestedID(...path)
-    )
+    new ReferenceExpression(path.length === 0 ? elemID : elemID.createNestedID(...path))
   )
 
   describe('Reference Expression', () => {
@@ -486,6 +484,9 @@ describe('Test Salto Expressions', () => {
             annotations: { ref: refTo(referencedType, 'attr', 'value') },
           },
         },
+        annotations: {
+          ref: refTo(referencedType),
+        },
       })
       const fieldToResolve = objectType.fields.field
       const resolved = await resolve(
@@ -504,6 +505,10 @@ describe('Test Salto Expressions', () => {
     })
     it('should resolve references in the field', () => {
       expect(resolvedField.annotations.ref.value).toEqual(referencedType.annotations.value)
+    })
+    it('should resolve the fields parent', () => {
+      expect(resolvedField.parent.annotations.ref).toBeInstanceOf(ReferenceExpression)
+      expect(resolvedField.parent.annotations.ref.value).toEqual(referencedType)
     })
   })
 

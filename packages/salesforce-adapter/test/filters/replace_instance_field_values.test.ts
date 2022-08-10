@@ -17,9 +17,7 @@ import { Element, ElemID, ObjectType, InstanceElement, isInstanceElement, Change
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { FilterWith } from '../../src/filter'
-import SalesforceClient from '../../src/client/client'
 import filterCreator from '../../src/filters/replace_instance_field_values'
-import createClient from '../client'
 import {
   SALESFORCE, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD,
   CUSTOM_OBJECT, INTERNAL_ID_FIELD, CUSTOM_FIELD, API_NAME,
@@ -129,7 +127,6 @@ const types: Record<string, ObjectType> = {
 }
 
 describe('replace instance field values filter', () => {
-  let client: SalesforceClient
   let elements: Element[]
   let orjNumElements: number
   let nonForecastingInstance: Element
@@ -251,8 +248,6 @@ describe('replace instance field values filter', () => {
   }
 
   beforeAll(() => {
-    ({ client } = createClient())
-
     forecastingElementWithIDs = createForecastingElement(true)
     forecastingElementWithNames = createForecastingElement(false)
   })
@@ -267,7 +262,7 @@ describe('replace instance field values filter', () => {
       nonForecastingInstance = elements[elements.length - 1]
       orjNumElements = elements.length
       beforeNonForecastingInstance = nonForecastingInstance.clone()
-      filter = filterCreator({ client, config: defaultFilterContext }) as FilterType
+      filter = filterCreator({ config: defaultFilterContext }) as FilterType
       await filter.onFetch(elements)
 
       namesAfterFilter = []
@@ -309,7 +304,6 @@ describe('replace instance field values filter', () => {
 
     beforeAll(() => {
       filter = filterCreator({
-        client,
         config: {
           ...defaultFilterContext,
           elementsSource: buildElementsSourceFromElements(elements),
@@ -409,7 +403,6 @@ describe('replace instance field values filter', () => {
 
       beforeAll(() => {
         filter = filterCreator({
-          client,
           config: {
             ...defaultFilterContext,
             elementsSource: buildElementsSourceFromElements(elements),

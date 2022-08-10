@@ -18,7 +18,6 @@ import MockAdapter from 'axios-mock-adapter'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { createConnection, validateCredentials } from '../../src/client/connection'
 
-
 describe('validateCredentials', () => {
   let mockAxios: MockAdapter
   let connection: clientUtils.APIConnection
@@ -28,7 +27,7 @@ describe('validateCredentials', () => {
     mockAxios.onGet('/rest/api/3/configuration').reply(200)
     mockAxios.onGet('/rest/api/3/serverInfo').reply(200, { baseUrl: 'http://my.jira.net' })
     connection = await createConnection({ retries: 1 }).login(
-      { baseUrl: 'http://myJira.net', user: 'me', token: 'tok' }
+      { baseUrl: 'http://myJira.net', user: 'me', token: 'tok', isDataCenter: false }
     )
   })
   afterEach(() => {
@@ -39,7 +38,9 @@ describe('validateCredentials', () => {
     let result: string
 
     beforeEach(async () => {
-      result = await validateCredentials({ connection })
+      result = await validateCredentials({
+        connection,
+      })
     })
 
     it('should get server info with auth headers', () => {
@@ -64,6 +65,31 @@ describe('validateCredentials', () => {
     it('should rethrow unrelated Network Error', async () => {
       mockAxios.onGet('/rest/api/3/configuration').networkError()
       await expect(validateCredentials({ connection })).rejects.toThrow(new Error('Network Error'))
+    })
+  })
+
+  describe('when authorized with dataCenter', () => {
+    let result: string
+
+    beforeEach(async () => {
+      connection = await createConnection({ retries: 1 }).login(
+        { baseUrl: 'http://myJira.net', user: 'me', token: 'tok', isDataCenter: true }
+      )
+      result = await validateCredentials({
+        connection,
+      })
+    })
+
+    it('should get server info with auth headers', () => {
+      expect(mockAxios.history.get).toContainEqual(expect.objectContaining({
+        url: '/rest/api/3/serverInfo',
+        baseURL: 'http://myJira.net',
+        headers: expect.objectContaining({ Authorization: 'Bearer tok' }),
+      }))
+    })
+
+    it('should return the base url from the response as account id', () => {
+      expect(result).toEqual('http://my.jira.net')
     })
   })
 })

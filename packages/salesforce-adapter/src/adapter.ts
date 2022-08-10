@@ -70,10 +70,11 @@ import elementsUrlFilter from './filters/elements_url'
 import territoryFilter from './filters/territory'
 import customMetadataRecordsFilter from './filters/custom_metadata'
 import currencyIsoCodeFilter from './filters/currency_iso_code'
+import enumFieldPermissionsFilter from './filters/field_permissions_enum'
 import splitCustomLabels from './filters/split_custom_labels'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
-import { FilterCreator, Filter, FilterResult } from './filter'
+import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator } from './filter'
 import { addDefaults } from './filters/utils'
 import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, listMetadataObjects } from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
@@ -87,66 +88,80 @@ const { concatObjects } = objects
 
 const log = logger(module)
 
-export const DEFAULT_FILTERS = [
-  settingsFilter,
-  customFeedFilterFilter,
+type RemoteFilterCreatorDefinition = {
+  creator: RemoteFilterCreator
+  addsNewInformation: true
+}
+type LocalFilterCreatorDefinition = {
+  creator: LocalFilterCreator
+  addsNewInformation?: false
+}
+
+export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition> = [
+  { creator: settingsFilter, addsNewInformation: true },
+  { creator: customFeedFilterFilter, addsNewInformation: true },
   // should run before customObjectsFilter
-  workflowFilter,
+  { creator: workflowFilter },
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
-  customObjectsFilter,
+  { creator: customObjectsFilter, addsNewInformation: true },
   // customSettingsFilter depends on customObjectsFilter
-  customSettingsFilter,
+  { creator: customSettingsFilter, addsNewInformation: true },
   // customObjectsInstancesFilter depends on customObjectsFilter
-  customObjectsInstancesFilter,
-  removeFieldsAndValuesFilter,
-  removeRestrictionAnnotationsFilter,
+  { creator: customObjectsInstancesFilter, addsNewInformation: true },
+  { creator: removeFieldsAndValuesFilter },
+  { creator: removeRestrictionAnnotationsFilter },
   // addMissingIdsFilter should run after customObjectsFilter
-  addMissingIdsFilter,
-  customMetadataRecordsFilter,
-  layoutFilter,
+  { creator: addMissingIdsFilter, addsNewInformation: true },
+  { creator: customMetadataRecordsFilter },
+  { creator: layoutFilter },
   // profilePermissionsFilter depends on layoutFilter because layoutFilter
   // changes ElemIDs that the profile references
-  profilePermissionsFilter,
-  // profileMapsFilter should run before profile fieldReferencesFilter
-  convertMapsFilter,
-  standardValueSetFilter,
-  flowFilter,
-  customObjectInstanceReferencesFilter,
-  cpqCustomScriptFilter,
-  cpqLookupFieldsFilter,
-  animationRulesFilter,
-  samlInitMethodFilter,
-  topicsForObjectsFilter,
-  valueSetFilter,
-  globalValueSetFilter,
-  staticResourceFileExtFilter,
-  profilePathsFilter,
-  territoryFilter,
-  elementsUrlFilter,
-  customObjectAuthorFilter,
-  dataInstancesAuthorFilter,
-  sharingRulesAuthorFilter,
-  validationRulesAuthorFilter,
-  hideReadOnlyValuesFilter,
-  currencyIsoCodeFilter,
-  splitCustomLabels,
+  { creator: profilePermissionsFilter },
+  // convertMapsFilter should run before profile fieldReferencesFilter
+  { creator: convertMapsFilter },
+  { creator: standardValueSetFilter, addsNewInformation: true },
+  { creator: flowFilter },
+  { creator: customObjectInstanceReferencesFilter, addsNewInformation: true },
+  { creator: cpqCustomScriptFilter },
+  { creator: cpqLookupFieldsFilter },
+  { creator: animationRulesFilter },
+  { creator: samlInitMethodFilter },
+  { creator: topicsForObjectsFilter },
+  { creator: valueSetFilter },
+  { creator: globalValueSetFilter },
+  { creator: staticResourceFileExtFilter },
+  { creator: profilePathsFilter, addsNewInformation: true },
+  { creator: territoryFilter },
+  { creator: elementsUrlFilter, addsNewInformation: true },
+  { creator: customObjectAuthorFilter, addsNewInformation: true },
+  { creator: dataInstancesAuthorFilter, addsNewInformation: true },
+  { creator: sharingRulesAuthorFilter, addsNewInformation: true },
+  { creator: validationRulesAuthorFilter, addsNewInformation: true },
+  { creator: hideReadOnlyValuesFilter },
+  { creator: currencyIsoCodeFilter },
+  { creator: splitCustomLabels },
   // The following filters should remain last in order to make sure they fix all elements
-  convertListsFilter,
-  convertTypeFilter,
+  { creator: convertListsFilter },
+  { creator: convertTypeFilter },
+  // should be after convertTypeFilter & convertMapsFilter and before profileInstanceSplitFilter
+  { creator: enumFieldPermissionsFilter },
   // should run after convertListsFilter
-  xmlAttributesFilter,
-  replaceFieldValuesFilter,
-  valueToStaticFileFilter,
-  fieldReferencesFilter,
+  { creator: xmlAttributesFilter },
+  { creator: replaceFieldValuesFilter },
+  { creator: valueToStaticFileFilter },
+  { creator: fieldReferencesFilter },
   // should run after customObjectsInstancesFilter for now
-  referenceAnnotationsFilter,
+  { creator: referenceAnnotationsFilter },
   // foreignLeyReferences should come after referenceAnnotationsFilter
-  foreignKeyReferencesFilter,
+  { creator: foreignKeyReferencesFilter },
   // extraDependenciesFilter should run after addMissingIdsFilter
-  extraDependenciesFilter,
-  customObjectsSplitFilter,
-  profileInstanceSplitFilter,
+  { creator: extraDependenciesFilter, addsNewInformation: true },
+  { creator: customObjectsSplitFilter },
+  { creator: profileInstanceSplitFilter },
 ]
+
+// By default we run all filters and provide a client
+const defaultFilters = allFilters.map(({ creator }) => creator)
 
 export interface SalesforceAdapterParams {
   // Max items to fetch in one retrieve request
@@ -165,7 +180,7 @@ export interface SalesforceAdapterParams {
   nestedMetadataTypes?: Record<string, NestedMetadataTypeInfo>
 
   // Filters to deploy to all adapter operations
-  filterCreators?: FilterCreator[]
+  filterCreators?: Array<LocalFilterCreator | RemoteFilterCreator>
 
   // client to use
   client: SalesforceClient
@@ -293,7 +308,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         isNestedApiNameRelative: true,
       },
     },
-    filterCreators = DEFAULT_FILTERS,
+    filterCreators = defaultFilters,
     client,
     getElemIdFunc,
     elementsSource,
@@ -319,6 +334,8 @@ export default class SalesforceAdapter implements AdapterOperations {
         config: {
           unsupportedSystemFields,
           systemFields,
+          enumFieldPermissions: config.enumFieldPermissions
+            ?? constants.DEFAULT_ENUM_FIELD_PERMISSIONS,
           fetchProfile,
           elementsSource,
           separateFieldToFiles: config.fetch?.metadata?.objectsToSeperateFieldsToFiles,
@@ -414,6 +431,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     return {
       appliedChanges,
       errors: result.errors,
+      extraProperties: result.extraProperties,
     }
   }
 

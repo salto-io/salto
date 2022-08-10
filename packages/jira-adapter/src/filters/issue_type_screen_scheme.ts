@@ -19,7 +19,7 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { getLookUpName } from '../reference_mapping'
 import JiraClient from '../client/client'
-import { JiraConfig } from '../config'
+import { JiraConfig } from '../config/config'
 import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
 import { FilterCreator } from '../filter'
 

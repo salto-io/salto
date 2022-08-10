@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ReadOnlyElementsSource, SaltoError } from '@salto-io/adapter-api'
+import { ReadOnlyElementsSource, SaltoError, Values } from '@salto-io/adapter-api'
 import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import JiraClient from './client/client'
-import { JiraConfig } from './config'
+import { JiraConfig } from './config/config'
 
 export const { filtersRunner } = filterUtils
 
@@ -29,6 +29,10 @@ export type Filter = filterUtils.Filter<FilterResult>
 export type FilterAdditionParams = {
   elementsSource: ReadOnlyElementsSource
   fetchQuery: elementUtils.query.ElementQuery
+  // A context for deployment that should be persistent across all the deployment steps.
+  // Note that deployment steps can be executed in parallel so use this cautiously
+  // and only when needed.
+  adapterContext: Values
 }
 
 export type FilterCreator = filterUtils.FilterCreator<

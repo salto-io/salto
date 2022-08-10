@@ -18,6 +18,7 @@ import { logger } from '@salto-io/logging'
 import { createConnection } from './connection'
 import { JIRA } from '../constants'
 import { Credentials } from '../auth'
+import { getProductSettings } from '../product_settings'
 
 const log = logger(module)
 
@@ -49,8 +50,11 @@ export const JSP_API_HEADERS = {
 export default class JiraClient extends clientUtils.AdapterHTTPClient<
   Credentials, clientUtils.ClientRateLimitConfig
 > {
+  private isDataCenter: boolean
+
   constructor(
-    clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig>,
+    clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig>
+      & { isDataCenter: boolean },
   ) {
     super(
       JIRA,
@@ -62,6 +66,7 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
         retry: DEFAULT_RETRY_OPTS,
       }
     )
+    this.isDataCenter = clientOpts.isDataCenter
   }
 
   public get baseUrl(): string {
@@ -85,6 +90,15 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
         }
       }
       throw e
+    }
+  }
+
+  protected async ensureLoggedIn(): Promise<void> {
+    const wasLoggedIn = this.isLoggedIn
+    await super.ensureLoggedIn()
+    if (!wasLoggedIn && this.apiClient !== undefined) {
+      this.apiClient = getProductSettings({ isDataCenter: this.isDataCenter })
+        .wrapConnection(this.apiClient)
     }
   }
 

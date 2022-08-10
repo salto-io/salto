@@ -17,7 +17,16 @@ import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { DeployResult, Change, getChangeData, isRemovalChange, isModificationChange, isInstanceChange, isContainerType, isAdditionChange } from '@salto-io/adapter-api'
+import {
+  DeployResult,
+  Change,
+  getChangeData,
+  isRemovalChange,
+  isModificationChange,
+  isInstanceChange,
+  isContainerType,
+  isAdditionChange,
+} from '@salto-io/adapter-api'
 import { DeployResult as SFDeployResult, DeployMessage } from 'jsforce'
 
 import SalesforceClient from './client/client'
@@ -256,6 +265,17 @@ const validateChanges = async (
   }
 }
 
+const getDeployStatusUrl = async (
+  { id }: SFDeployResult,
+  client: SalesforceClient
+): Promise<string | undefined> => {
+  const baseUrl = await client.getUrl()
+  if (baseUrl === undefined) {
+    log.warn('Could not resolve Salesforce deployment URL')
+    return undefined
+  }
+  return `${baseUrl}lightning/setup/DeployStatus/page?address=%2Fchangemgmt%2FmonitorDeploymentsDetails.apexp%3FasyncId%3D${id}`
+}
 
 export const deployMetadata = async (
   changes: ReadonlyArray<Change>,
@@ -285,7 +305,6 @@ export const deployMetadata = async (
   const { errors, successfulFullNames } = processDeployResponse(
     deployRes, pkg.getDeletionsPackageName()
   )
-
   const isSuccessfulChange = (change: Change<MetadataInstanceElement>): boolean => {
     const changeElem = getChangeData(change)
     const changeDeployedIds = changeToDeployedIds[changeElem.elemID.getFullName()]
@@ -295,9 +314,12 @@ export const deployMetadata = async (
       successfulId => changeDeployedIds[successfulId.type]?.has(successfulId.fullName)
     )
   }
-
+  const deploymentUrl = await getDeployStatusUrl(deployRes, client)
   return {
     appliedChanges: validChanges.filter(isSuccessfulChange),
     errors: [...validationErrors, ...errors],
+    extraProperties: {
+      deploymentUrls: deploymentUrl ? [deploymentUrl] : undefined,
+    },
   }
 }

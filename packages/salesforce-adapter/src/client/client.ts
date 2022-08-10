@@ -89,10 +89,10 @@ const MAX_ITEMS_IN_READ_METADATA_REQUEST = 10
 const MAX_ITEMS_IN_LIST_METADATA_REQUEST = 3
 
 const DEFAULT_RETRY_OPTS: Required<ClientRetryConfig> = {
-  maxAttempts: 5, // try 5 times
+  maxAttempts: 3, // try 3 times
   retryDelay: 5000, // wait for 5s before trying again
   retryStrategy: 'NetworkError', // retry on network errors
-  timeout: 60 * 1000 * 15, // timeout per request retry in milliseconds
+  timeout: 60 * 1000 * 8, // timeout per request retry in milliseconds
 }
 
 const DEFAULT_READ_METADATA_CHUNK_SIZE: Required<ReadMetadataChunkSizeConfig> = {
@@ -115,6 +115,9 @@ const errorMessagesToRetry = [
    */
   'retry your request',
   'Polling time out',
+  'SERVER_UNAVAILABLE',
+  'system may be currently unavailable',
+  'Unexpected internal servlet state',
 ]
 
 type RateLimitBucketName = keyof ClientRateLimitConfig

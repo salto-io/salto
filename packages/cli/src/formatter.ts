@@ -60,19 +60,19 @@ export const formatWordsSeries = (words: string[]): string => (words.length > 1
   */
 
 const formatSourceLocation = (sl: Readonly<SourceLocation>): string =>
-  `${chalk.underline(sl.sourceRange.filename)}(${chalk.cyan(`line: ${sl.sourceRange.start.line}`)})\n`
+  `${chalk.underline(sl.sourceRange.filename)}(${chalk.cyan(`line: ${sl.sourceRange.start.line}`)})`
 
 const formatSourceLocations = (sourceLocations: ReadonlyArray<SourceLocation>): string =>
-  (sourceLocations.length > 0
-    ? `\n on ${sourceLocations.map(formatSourceLocation).join('\n and ')}`
-    : '')
+  `${sourceLocations.map(formatSourceLocation).join(EOL)}`
 
-export const formatWorkspaceError = (we: Readonly<errors.WorkspaceError<SaltoError>>): string =>
-  `${formatError(we)}${formatSourceLocations(we.sourceLocations)}`
+export const formatWorkspaceError = (we: Readonly<errors.WorkspaceError<SaltoError>>): string => {
+  const possibleEOL = we.sourceLocations.length > 0 ? EOL : ''
+  return `${formatError(we)}${possibleEOL}${formatSourceLocations(we.sourceLocations)}`
+}
 
 const indent = (text: string, level: number): string => {
   const indentText = _.repeat('  ', level)
-  return text.split('\n').map(line => `${indentText}${line}`).join('\n')
+  return text.split(EOL).map(line => `${indentText}${line}`).join(EOL)
 }
 
 const singleOrPluralString = (number: number, single: string, plural: string): string =>
@@ -222,28 +222,38 @@ const getElapsedTime = (start: Date): number => Math.ceil(
 type ChangeWorkspaceError = errors.WorkspaceError<ChangeError>
 
 export const formatChangeErrors = (
-  wsChangeErrors: ReadonlyArray<ChangeWorkspaceError>
+  wsChangeErrors: ReadonlyArray<ChangeWorkspaceError>, detailed = false
 ): string => {
+  const errorsIndent = 2
+  const formatSingleChangeError = (changeError: ChangeWorkspaceError): string => {
+    const formattedError = formatWorkspaceError(changeError)
+    return indent(`${formattedError}${EOL}${changeError.severity}: ${changeError.detailedMessage}`,
+      errorsIndent)
+  }
+  const formatElement = (changeError: ChangeWorkspaceError):string => {
+    const possibleDetailed: string = detailed ? `${EOL}${indent(chalk.dim(changeError.detailedMessage), errorsIndent + 2)}` : ''
+    return `${indent(changeError.elemID.getFullName(), errorsIndent + 1)}${possibleDetailed}`
+  }
   const formatGroupedChangeErrors = (groupedChangeErrors: ChangeWorkspaceError[]): string => {
-    const errorsIndent = 2
     const firstErr: ChangeWorkspaceError = groupedChangeErrors[0]
     if (firstErr.detailedMessage === '') {
       return ''
     }
-    if (groupedChangeErrors.length > 1) {
-      return indent(`${firstErr.severity}: ${formatError(firstErr)} (${groupedChangeErrors.length} Elements)`,
-        errorsIndent)
+    if (groupedChangeErrors.length === 1) {
+      return formatSingleChangeError(firstErr)
     }
-    const formattedError = formatWorkspaceError(firstErr)
-    return indent(`${formattedError}${firstErr.severity}: ${firstErr.detailedMessage}`,
-      errorsIndent)
+
+    const resultMessages: string = [indent(`${firstErr.severity}: ${formatError(firstErr)} in the following elements:`, errorsIndent)]
+      .concat(groupedChangeErrors.map(formatElement))
+      .join(EOL)
+    return resultMessages
   }
   const ret = _(wsChangeErrors)
     .groupBy(ce => ce.message)
     .values()
     .sortBy(errs => -errs.length)
     .map(formatGroupedChangeErrors)
-    .join('\n')
+    .join(EOL)
   return ret
 }
 
@@ -283,7 +293,7 @@ export const formatExecutionPlan = async (
   detailed = false,
 ): Promise<string> => {
   const formattedPlanChangeErrors: string = formatChangeErrors(
-    workspaceErrors
+    workspaceErrors, detailed
   )
   const preDeployCallToActions: string[] = formatDeployActions(
     {

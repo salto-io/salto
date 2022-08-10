@@ -15,13 +15,13 @@
 */
 import { Element, CORE_ANNOTATIONS, isObjectType } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { FilterCreator } from '../../filter'
+import { LocalFilterCreator } from '../../filter'
 import { isCustomObject } from '../../transformers/transformer'
 import { FIELD_ANNOTATIONS } from '../../constants'
 
 const { awu } = collections.asynciterable
 
-const filter: FilterCreator = ({ config }) => ({
+const filter: LocalFilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]) => {
     if (config.fetchProfile.dataManagement?.showReadOnlyValues === true) {
       // eslint-disable-next-line no-useless-return

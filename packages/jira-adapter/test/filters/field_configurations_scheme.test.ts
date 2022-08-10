@@ -14,15 +14,13 @@
 * limitations under the License.
 */
 import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType, toChange } from '@salto-io/adapter-api'
-import { deployment, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { JIRA } from '../../src/constants'
-import { mockClient } from '../utils'
+import { mockClient, getFilterParams } from '../utils'
 import fieldConfigurationsSchemeFilter from '../../src/filters/field_configurations_scheme'
 import { Filter } from '../../src/filter'
 import JiraClient from '../../src/client/client'
-import { DEFAULT_CONFIG } from '../../src/config'
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -44,13 +42,7 @@ describe('field_configurations_scheme', () => {
     const { client, paginator, connection } = mockClient()
     mockConnection = connection
 
-    filter = fieldConfigurationsSchemeFilter({
-      client,
-      paginator,
-      config: DEFAULT_CONFIG,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    })
+    filter = fieldConfigurationsSchemeFilter(getFilterParams({ client, paginator }))
 
     fieldConfigIssueTypeItemType = new ObjectType({
       elemID: new ElemID(JIRA, 'FieldConfigurationIssueTypeItem'),

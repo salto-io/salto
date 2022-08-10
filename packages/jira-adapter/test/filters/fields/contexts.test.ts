@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { deployment, filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements, resolveChangeElement } from '@salto-io/adapter-utils'
-import { mockClient } from '../../utils'
-import { DEFAULT_CONFIG } from '../../../src/config'
+import { deployment, filterUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { resolveChangeElement } from '@salto-io/adapter-utils'
+import { getFilterParams, mockClient } from '../../utils'
+import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA } from '../../../src/constants'
 import fieldsDeploymentFilter from '../../../src/filters/fields/field_deployment_filter'
 import JiraClient from '../../../src/client/client'
@@ -54,13 +54,10 @@ describe('deployContextChange', () => {
     client = mockCli.client
     paginator = mockCli.paginator
 
-    filter = fieldsDeploymentFilter({
+    filter = fieldsDeploymentFilter(getFilterParams({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    })) as typeof filter
 
     contextType = new ObjectType({
       elemID: new ElemID(JIRA, FIELD_CONTEXT_TYPE_NAME),
@@ -106,15 +103,21 @@ describe('deployContextChange', () => {
       before: beforeInstance,
       after: afterInstance,
     })
-    await deployContextChange(change, client, DEFAULT_CONFIG.apiDefinitions)
+    await deployContextChange(
+      change,
+      client,
+      getDefaultConfig({ isDataCenter: false }).apiDefinitions
+    )
 
     expect(deployChangeMock).toHaveBeenCalledWith(
       await resolveChangeElement(change, getLookUpName),
       client,
-      DEFAULT_CONFIG.apiDefinitions.types.CustomFieldContext.deployRequests,
+      getDefaultConfig({ isDataCenter: false })
+        .apiDefinitions.types.CustomFieldContext.deployRequests,
       [
         'defaultValue',
         'options',
+        'isGlobalContext',
         'issueTypeIds',
         'projectIds',
       ],
@@ -147,7 +150,11 @@ describe('deployContextChange', () => {
     const change = toChange({
       before: beforeInstance,
     })
-    await deployContextChange(change, client, DEFAULT_CONFIG.apiDefinitions)
+    await deployContextChange(
+      change,
+      client,
+      getDefaultConfig({ isDataCenter: false }).apiDefinitions
+    )
   })
 
   it('should throw for other error messages', async () => {
@@ -174,8 +181,9 @@ describe('deployContextChange', () => {
     const change = toChange({
       before: beforeInstance,
     })
-    await expect(deployContextChange(change, client, DEFAULT_CONFIG.apiDefinitions))
-      .rejects.toThrow()
+    await expect(
+      deployContextChange(change, client, getDefaultConfig({ isDataCenter: false }).apiDefinitions)
+    ).rejects.toThrow()
   })
 
   it('should throw if not removal', async () => {
@@ -201,11 +209,15 @@ describe('deployContextChange', () => {
       })
     })
 
+
+    const instanceBefore = instance.clone()
+    instanceBefore.value.description = 'desc'
     const change = toChange({
-      before: instance,
+      before: instanceBefore,
       after: instance,
     })
-    await expect(deployContextChange(change, client, DEFAULT_CONFIG.apiDefinitions))
-      .rejects.toThrow()
+    await expect(
+      deployContextChange(change, client, getDefaultConfig({ isDataCenter: false }).apiDefinitions)
+    ).rejects.toThrow()
   })
 })

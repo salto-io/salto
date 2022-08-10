@@ -18,7 +18,7 @@ import {
 } from '@salto-io/adapter-api'
 import { transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { FilterCreator } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { metadataType } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
@@ -76,7 +76,7 @@ const removeValuesFromInstances = async (
  * */
 export const makeFilter = (
   typeNameToFieldRemovals: Map<string, string[]>,
-): FilterCreator => () => ({
+): LocalFilterCreator => () => ({
   onFetch: async (elements: Element[]) => {
     await removeValuesFromInstances(elements, typeNameToFieldRemovals)
     await removeFieldsFromTypes(elements, typeNameToFieldRemovals)

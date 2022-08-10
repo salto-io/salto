@@ -14,15 +14,14 @@
 * limitations under the License.
 */
 import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType, toChange } from '@salto-io/adapter-api'
-import { deployment, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { JIRA } from '../../src/constants'
-import { mockClient } from '../utils'
+import { getFilterParams, mockClient } from '../utils'
 import issueTypeScreenSchemeFilter from '../../src/filters/issue_type_screen_scheme'
 import { Filter } from '../../src/filter'
 import JiraClient from '../../src/client/client'
-import { DEFAULT_CONFIG } from '../../src/config'
+import { getDefaultConfig } from '../../src/config/config'
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -46,13 +45,10 @@ describe('issueTypeScreenScheme', () => {
     client = cli
     mockConnection = connection
 
-    filter = issueTypeScreenSchemeFilter({
+    filter = issueTypeScreenSchemeFilter(getFilterParams({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    })
+    }))
     issueTypeScreenSchemeItemType = new ObjectType({
       elemID: new ElemID(JIRA, 'IssueTypeScreenSchemeItem'),
       fields: {
@@ -141,7 +137,8 @@ describe('issueTypeScreenScheme', () => {
         expect(deployChangeMock).toHaveBeenCalledWith(
           change,
           client,
-          DEFAULT_CONFIG.apiDefinitions.types.IssueTypeScreenScheme.deployRequests,
+          getDefaultConfig({ isDataCenter: false })
+            .apiDefinitions.types.IssueTypeScreenScheme.deployRequests,
           ['issueTypeMappings'],
           undefined,
           undefined,

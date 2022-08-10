@@ -21,7 +21,7 @@ import { defaultFieldConfigurationValidator } from './default_field_configuratio
 import { issueTypeSchemeValidator } from './issue_type_scheme'
 import { screenValidator } from './screen'
 import JiraClient from '../client/client'
-import { JiraConfig } from '../config'
+import { JiraConfig } from '../config/config'
 import { projectDeletionValidator } from './project_deletion'
 import { statusValidator } from './status'
 import { privateApiValidator } from './private_api'
@@ -31,6 +31,7 @@ import { dashboardLayoutValidator } from './dashboard_layout'
 import { maskingValidator } from './masking'
 import { automationsValidator } from './automations'
 import { lockedFieldsValidator } from './locked_fields'
+import { globalProjectContextsValidator } from './global_project_contexts'
 
 const {
   deployTypesNotSupportedValidator,
@@ -55,6 +56,7 @@ export default (
     automationsValidator,
     maskingValidator(client),
     lockedFieldsValidator,
+    globalProjectContextsValidator,
   ]
 
   return createChangeValidator(validators)

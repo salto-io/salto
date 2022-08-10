@@ -18,7 +18,7 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { FilterCreator } from '../filter'
+import { RemoteFilterCreator } from '../filter'
 import { apiName, metadataType } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import { getFullName, getInternalId, setInternalId, ensureSafeFilterFetch } from './utils'
@@ -73,7 +73,7 @@ export const WARNING_MESSAGE = 'Encountered an error while trying populate inter
 /**
  * Add missing env-specific ids using listMetadataObjects.
  */
-const filter: FilterCreator = ({ client, config }) => ({
+const filter: RemoteFilterCreator = ({ client, config }) => ({
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

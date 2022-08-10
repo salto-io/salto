@@ -14,13 +14,11 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { filterUtils } from '@salto-io/adapter-components'
 import JiraClient from '../../../src/client/client'
-import { DEFAULT_CONFIG } from '../../../src/config'
 import { GROUP_TYPE_NAME, JIRA, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import workflowGroupsFilter from '../../../src/filters/workflow/groups_filter'
-import { mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 
 describe('workflowGroupsFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
@@ -38,13 +36,10 @@ describe('workflowGroupsFilter', () => {
 
     const { client: cli, paginator } = mockClient()
     client = cli
-    filter = workflowGroupsFilter({
+    filter = workflowGroupsFilter(getFilterParams({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    })) as typeof filter
   })
 
   describe('onFetch', () => {

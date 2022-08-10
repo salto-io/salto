@@ -15,12 +15,12 @@
 */
 import { ElemID, InstanceElement, ObjectType, Element } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { buildElementsSourceFromElements, safeJsonStringify } from '@salto-io/adapter-utils'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 import automationFetchFilter from '../../../src/filters/automation/automation_fetch'
-import { DEFAULT_CONFIG, JiraConfig } from '../../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { JIRA, PROJECT_TYPE } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
 import { createAutomationTypes } from '../../../src/filters/automation/types'
@@ -41,17 +41,16 @@ describe('automationFetchFilter', () => {
     client = cli
     connection = conn
 
-    config = _.cloneDeep(DEFAULT_CONFIG)
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
     fetchQuery = elementUtils.query.createMockQuery()
 
-    filter = automationFetchFilter({
+    filter = automationFetchFilter(getFilterParams({
       client,
       paginator,
       config,
-      elementsSource: buildElementsSourceFromElements([]),
       fetchQuery,
-    }) as filterUtils.FilterWith<'onFetch'>
+    })) as filterUtils.FilterWith<'onFetch'>
 
     projectType = new ObjectType({
       elemID: new ElemID(JIRA, PROJECT_TYPE),
@@ -178,14 +177,12 @@ describe('automationFetchFilter', () => {
 
     it('should use elemIdGetter', async () => {
       const { paginator } = mockClient()
-      filter = automationFetchFilter({
+      filter = automationFetchFilter(getFilterParams({
         client,
         paginator,
         config,
-        elementsSource: buildElementsSourceFromElements([]),
         getElemIdFunc: () => new ElemID(JIRA, 'someName'),
-        fetchQuery: elementUtils.query.createMockQuery(),
-      }) as filterUtils.FilterWith<'onFetch'>
+      })) as filterUtils.FilterWith<'onFetch'>
 
       const elements = [projectInstance]
       await filter.onFetch(elements)

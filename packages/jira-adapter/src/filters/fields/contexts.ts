@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, Change, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isListType, isObjectType, isRemovalChange, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import { AdditionChange, Change, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isListType, isObjectType, isRemovalChange, ObjectType, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
 import { config, client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
@@ -24,7 +24,7 @@ import { setDefaultValueTypeDeploymentAnnotations, updateDefaultValues } from '.
 import { setContextField } from './issues_and_projects'
 import { setFieldDeploymentAnnotations } from '../../utils'
 
-const FIELDS_TO_IGNORE = ['defaultValue', 'options']
+const FIELDS_TO_IGNORE = ['defaultValue', 'options', 'isGlobalContext']
 
 const log = logger(module)
 
@@ -48,15 +48,19 @@ export const deployContextChange = async (
   change: Change<InstanceElement>,
   client: JiraClient,
   apiDefinitions: config.AdapterApiConfig,
+  elementsSource?: ReadOnlyElementsSource,
 ): Promise<void> => {
+  const fieldsToIgnore = isAdditionChange(change) ? FIELDS_TO_IGNORE : [...FIELDS_TO_IGNORE, 'issueTypeIds', 'projectIds']
+
   try {
     await defaultDeployChange({
       change,
       client,
       apiDefinitions,
-      // 'issueTypeIds', 'projectIds' can be deployed in the same endpoint as create
+      // 'issueTypeIds' can be deployed in the same endpoint as create
       // but for modify there are different endpoints for them
-      fieldsToIgnore: isAdditionChange(change) ? FIELDS_TO_IGNORE : [...FIELDS_TO_IGNORE, 'issueTypeIds', 'projectIds'],
+      fieldsToIgnore,
+      elementsSource,
     })
   } catch (err) {
     if (isRemovalChange(change)
@@ -68,10 +72,10 @@ export const deployContextChange = async (
     throw err
   }
 
-  await setContextField({ contextChange: change, fieldName: 'issueTypeIds', endpoint: 'issuetype', client })
-  await setContextField({ contextChange: change, fieldName: 'projectIds', endpoint: 'project', client })
-  await setContextOptions(change, client)
-  await updateDefaultValues(change, client)
+  await setContextField({ contextChange: change, fieldName: 'issueTypeIds', endpoint: 'issuetype', client, elementsSource })
+  await setContextField({ contextChange: change, fieldName: 'projectIds', endpoint: 'project', client, elementsSource })
+  await setContextOptions(change, client, elementsSource)
+  await updateDefaultValues(change, client, elementsSource)
 }
 
 export const getContexts = async (
@@ -99,8 +103,8 @@ export const getContexts = async (
 export const setContextDeploymentAnnotations = async (
   contextType: ObjectType,
 ): Promise<void> => {
+  setFieldDeploymentAnnotations(contextType, 'isGlobalContext')
   await setDefaultValueTypeDeploymentAnnotations(contextType)
-  setFieldDeploymentAnnotations(contextType, 'projectIds')
   setFieldDeploymentAnnotations(contextType, 'issueTypeIds')
   await setOptionTypeDeploymentAnnotations(contextType)
 }

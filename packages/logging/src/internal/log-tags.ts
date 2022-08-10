@@ -19,7 +19,7 @@ import safeStringify from 'fast-safe-stringify'
 import { byName as colorsByName } from './colors'
 
 export type PrimitiveType = string | number | boolean
-type LogTagValue = PrimitiveType | undefined | Record<string, unknown>
+type LogTagValue = PrimitiveType | undefined | Record<string, unknown> | Array<PrimitiveType>
 export type LogTags = Record<string, LogTagValue | (() => LogTagValue)>
 
 export const LOG_TAGS_COLOR = colorsByName.Olive

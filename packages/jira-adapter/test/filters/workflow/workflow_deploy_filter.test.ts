@@ -14,14 +14,13 @@
 * limitations under the License.
 */
 import { ElemID, getChangeData, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { deployment, filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { deployment, filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import JiraClient from '../../../src/client/client'
-import { DEFAULT_CONFIG } from '../../../src/config'
+import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import workflowFilter, { INITIAL_VALIDATOR } from '../../../src/filters/workflow/workflow_deploy_filter'
-import { mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 import { WITH_PERMISSION_VALIDATORS } from './workflow_values'
 
 jest.mock('@salto-io/adapter-components', () => {
@@ -47,13 +46,10 @@ describe('workflowDeployFilter', () => {
     client = cli
     mockConnection = connection
 
-    filter = workflowFilter({
+    filter = workflowFilter(getFilterParams({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    })) as typeof filter
   })
 
   describe('deploy', () => {
@@ -111,7 +107,7 @@ describe('workflowDeployFilter', () => {
           ),
         }),
         client,
-        DEFAULT_CONFIG.apiDefinitions.types.Workflow.deployRequests,
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Workflow.deployRequests,
         expect.toBeFunction(),
         undefined,
         undefined,
@@ -182,7 +178,7 @@ describe('workflowDeployFilter', () => {
           ),
         }),
         client,
-        DEFAULT_CONFIG.apiDefinitions.types.Workflow.deployRequests,
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Workflow.deployRequests,
         expect.toBeFunction(),
         undefined,
         undefined,
@@ -227,7 +223,7 @@ describe('workflowDeployFilter', () => {
           ),
         }),
         client,
-        DEFAULT_CONFIG.apiDefinitions.types.Workflow.deployRequests,
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Workflow.deployRequests,
         expect.toBeFunction(),
         undefined,
         undefined,
@@ -268,7 +264,7 @@ describe('workflowDeployFilter', () => {
           ),
         }),
         client,
-        DEFAULT_CONFIG.apiDefinitions.types.Workflow.deployRequests,
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Workflow.deployRequests,
         expect.toBeFunction(),
         undefined,
         undefined,

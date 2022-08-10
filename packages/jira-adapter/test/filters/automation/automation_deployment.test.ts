@@ -15,12 +15,12 @@
 */
 import { ElemID, InstanceElement, ObjectType, CORE_ANNOTATIONS, BuiltinTypes, Values, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { buildElementsSourceFromElements, safeJsonStringify } from '@salto-io/adapter-utils'
-import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 import automationDeploymentFilter from '../../../src/filters/automation/automation_deployment'
-import { DEFAULT_CONFIG, JiraConfig } from '../../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { AUTOMATION_TYPE, JIRA } from '../../../src/constants'
 import JiraClient, { PRIVATE_API_HEADERS } from '../../../src/client/client'
 import { CLOUD_RESOURCE_FIELD } from '../../../src/filters/automation/cloud_id'
@@ -39,14 +39,12 @@ describe('automationDeploymentFilter', () => {
     client = cli
     connection = conn
 
-    config = _.cloneDeep(DEFAULT_CONFIG)
-    filter = automationDeploymentFilter({
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+    filter = automationDeploymentFilter(getFilterParams({
       client,
       paginator,
       config,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as filterUtils.FilterWith<'onFetch' | 'deploy'>
+    })) as filterUtils.FilterWith<'onFetch' | 'deploy'>
 
     type = new ObjectType({
       elemID: new ElemID(JIRA, AUTOMATION_TYPE),

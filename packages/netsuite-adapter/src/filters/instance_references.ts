@@ -60,7 +60,7 @@ const customTypeServiceIdsToElemIds = async (
   await transformElement({
     element: instance,
     transformFunc: addFullServiceIdsCallback,
-    strict: true,
+    strict: false,
     elementsSource,
   })
   return serviceIdsToElemIds

@@ -17,7 +17,7 @@ import { Element, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { FilterCreator, FilterResult } from '../filter'
+import { FilterResult, RemoteFilterCreator } from '../filter'
 import { isCustomSettingsObject, apiName } from '../transformers/transformer'
 import { getAllInstances, getCustomObjectsFetchSettings, CustomObjectFetchSetting } from './custom_objects_instances'
 import { CUSTOM_SETTINGS_TYPE, LIST_CUSTOM_SETTINGS_TYPE } from '../constants'
@@ -37,7 +37,7 @@ const logInvalidCustomSettings = async (
     (log.debug(`Did not fetch instances for Custom Setting - ${await apiName(settings.objectType)} cause ${settings.invalidIdFields} do not exist or are not queryable`)))
 )
 
-const filterCreator: FilterCreator = ({ client, config }) => ({
+const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
     if (!config.fetchProfile.shouldFetchAllCustomSettings()) {
       return {}

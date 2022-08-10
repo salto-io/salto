@@ -14,27 +14,16 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { elements as elementUtils } from '@salto-io/adapter-components'
-import { mockClient } from '../utils'
+import { getFilterParams } from '../utils'
 import iconUrlFilter from '../../src/filters/icon_url'
 import { Filter } from '../../src/filter'
-import { DEFAULT_CONFIG } from '../../src/config'
 import { JIRA, STATUS_TYPE_NAME } from '../../src/constants'
 
 describe('iconUrlFilter', () => {
   let filter: Filter
   let type: ObjectType
   beforeEach(async () => {
-    const { client, paginator } = mockClient()
-
-    filter = iconUrlFilter({
-      client,
-      paginator,
-      config: DEFAULT_CONFIG,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    })
+    filter = iconUrlFilter(getFilterParams())
 
     type = new ObjectType({
       elemID: new ElemID(JIRA, STATUS_TYPE_NAME),

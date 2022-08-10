@@ -154,6 +154,7 @@ export const mockRunTestResult = (params?: PartialRunTestResult): RunTestsResult
 )
 
 type GetDeployResultParams = {
+  id?: string
   success?: boolean
   componentSuccess?: Partial<DeployMessage>[]
   componentFailure?: Partial<DeployMessage>[]
@@ -163,6 +164,7 @@ type GetDeployResultParams = {
   checkOnly?: boolean
 }
 export const mockDeployResultComplete = ({
+  id = _.uniqueId(),
   success = true,
   componentSuccess = [],
   componentFailure = [],
@@ -171,7 +173,7 @@ export const mockDeployResultComplete = ({
   rollbackOnError = true,
   checkOnly = false,
 }: GetDeployResultParams): DeployResult => ({
-  id: _.uniqueId(),
+  id,
   checkOnly,
   completedDate: '2020-05-01T14:31:36.000Z',
   createdDate: '2020-05-01T14:21:36.000Z',

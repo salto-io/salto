@@ -21,7 +21,7 @@ import { mockClient } from '../utils'
 import { deployWithJspEndpoints } from '../../src/deployment/jsp_deployment'
 import JiraClient, { JSP_API_HEADERS, PRIVATE_API_HEADERS } from '../../src/client/client'
 import { JIRA } from '../../src/constants'
-import { JspUrls } from '../../src/config'
+import { JspUrls } from '../../src/config/config'
 
 describe('jsp_deployment', () => {
   let mockConnection: MockInterface<clientUtils.APIConnection>

@@ -14,10 +14,8 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, Values } from '@salto-io/adapter-api'
-import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { mockClient } from '../../utils'
-import { DEFAULT_CONFIG } from '../../../src/config'
+import { filterUtils } from '@salto-io/adapter-components'
+import { getFilterParams } from '../../utils'
 import { JIRA } from '../../../src/constants'
 import contextReferencesFilter from '../../../src/filters/fields/context_references_filter'
 
@@ -26,14 +24,7 @@ describe('context_references_filter', () => {
   let fieldType: ObjectType
   let fieldContextType: ObjectType
   beforeEach(() => {
-    const { client, paginator } = mockClient()
-    filter = contextReferencesFilter({
-      client,
-      paginator,
-      config: DEFAULT_CONFIG,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    filter = contextReferencesFilter(getFilterParams()) as typeof filter
 
     fieldType = new ObjectType({ elemID: new ElemID(JIRA, 'Field') })
     fieldContextType = new ObjectType({ elemID: new ElemID(JIRA, 'CustomFieldContext') })

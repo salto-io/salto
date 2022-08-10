@@ -16,7 +16,6 @@
 import { InstanceElement, ObjectType, MapType, isListType, isMapType, Change, toChange } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
 import filterCreator from '../../src/filters/convert_maps'
-import mockClient from '../client'
 import { generateProfileType, defaultFilterContext } from '../utils'
 
 type layoutAssignmentType = { layout: string; recordType?: string }
@@ -48,10 +47,8 @@ const generateProfileInstance = ({
 )
 
 describe('ProfileMaps filter', () => {
-  const { client } = mockClient()
-
   describe('on fetch', () => {
-    const filter = filterCreator({ client, config: { ...defaultFilterContext } }) as FilterWith<'onFetch' | 'preDeploy'>
+    const filter = filterCreator({ config: { ...defaultFilterContext } }) as FilterWith<'onFetch' | 'preDeploy'>
     let profileObj: ObjectType
     let instances: InstanceElement[]
 
@@ -211,7 +208,7 @@ describe('ProfileMaps filter', () => {
   })
 
   describe('deploy (pre + on)', () => {
-    const filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'preDeploy' | 'onDeploy'>
+    const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'preDeploy' | 'onDeploy'>
     let beforeProfileObj: ObjectType
     let afterProfileObj: ObjectType
     let beforeInstances: InstanceElement[]

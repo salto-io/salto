@@ -18,12 +18,9 @@ import { ObjectType, ElemID, InstanceElement, Element, BuiltinTypes, Value, isLi
 import { makeFilter, UnorderedList } from '../../src/filters/convert_lists'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
-import mockClient from '../client'
 import { defaultFilterContext } from '../utils'
 
 describe('convert lists filter', () => {
-  const { client } = mockClient()
-
   const mockObjNoInstancesId = new ElemID(constants.SALESFORCE, 'noInstances')
   const mockTypeNoInstances = new ObjectType({
     elemID: mockObjNoInstancesId,
@@ -257,7 +254,7 @@ describe('convert lists filter', () => {
   let testElements: Element[]
 
   const filter = makeFilter(unorderedListFields, unorderedListAnnotations,
-    hardcodedLists)({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
+    hardcodedLists)({ config: defaultFilterContext }) as FilterWith<'onFetch'>
 
   beforeEach(() => {
     const typeClone = mockType.clone()

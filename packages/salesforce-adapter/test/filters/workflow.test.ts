@@ -25,7 +25,6 @@ import filterCreator, {
   WORKFLOW_ALERTS_FIELD, WORKFLOW_FIELD_UPDATES_FIELD, WORKFLOW_RULES_FIELD,
   WORKFLOW_TASKS_FIELD, WORKFLOW_FIELD_TO_TYPE,
 } from '../../src/filters/workflow'
-import mockClient from '../client'
 import {
   INSTANCE_FULL_NAME_FIELD, RECORDS_PATH, SALESFORCE, WORKFLOW_METADATA_TYPE,
 } from '../../src/constants'
@@ -37,8 +36,7 @@ import { defaultFilterContext } from '../utils'
 const { awu, groupByAsync } = collections.asynciterable
 
 describe('Workflow filter', () => {
-  const { client } = mockClient()
-  const filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+  const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   const dummyElemID = new ElemID(SALESFORCE, 'dummy')
   const dummyObj = new ObjectType({ elemID: dummyElemID })
   const dummyRefToObj = createRefToElmWithValue(dummyObj)
@@ -183,7 +181,7 @@ describe('Workflow filter', () => {
           { action: 'add', data: { after: innerInstance } },
         ]
         // Re-create the filter because it is stateful
-        testFilter = filterCreator({ client, config: defaultFilterContext }) as typeof filter
+        testFilter = filterCreator({ config: defaultFilterContext }) as typeof filter
       })
 
       describe('preDeploy', () => {
@@ -243,7 +241,7 @@ describe('Workflow filter', () => {
         changes = await Promise.all(_.times(5).map(createInnerChange))
 
         // Re-create the filter because it is stateful
-        testFilter = filterCreator({ client, config: defaultFilterContext }) as typeof filter
+        testFilter = filterCreator({ config: defaultFilterContext }) as typeof filter
       })
       describe('preDeploy', () => {
         beforeAll(async () => {

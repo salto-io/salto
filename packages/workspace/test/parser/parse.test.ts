@@ -855,6 +855,18 @@ value
       .toEqual(new ElemID('salesforce', 'anotherType'))
   })
 
+  describe('parse when calcSourceMap is false', () => {
+    it('should not return a sourceMap', async () => {
+      const body = `
+        type salesforce.string is string {
+        }
+      `
+      const parsed = await parse(Buffer.from(body), 'none', functions, false)
+      expect(parsed.errors).toHaveLength(0)
+      expect(parsed.sourceMap).toBeUndefined()
+    })
+  })
+
   describe('tokenizeContent', () => {
     it('seperate and token each part of a line correctly', () => {
       expect(Array.from(tokenizeContent('aaa   bbb ccc.ddd   "eee fff  ggg.hhh"'))).toEqual([

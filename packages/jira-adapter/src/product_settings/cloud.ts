@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { DEFAULT_API_DEFINITIONS } from '../config/api_config'
 import { ProductSettings } from './product_settings'
 
-export const cloudSettings: ProductSettings = {
+export const CLOUD_SETTINGS: ProductSettings = {
   defaultApiDefinitions: DEFAULT_API_DEFINITIONS,
   wrapConnection: _.identity,
   type: 'cloud',

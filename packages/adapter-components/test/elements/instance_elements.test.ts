@@ -15,6 +15,8 @@
 */
 
 import { generateInstanceNameFromConfig } from '../../src/elements/instance_elements'
+import { NameTrasformationOptions } from '../../src/config'
+
 
 describe('generateInstanceNameFromConfig', () => {
   it('should return the name of the instance based on the type config', () => {
@@ -60,28 +62,59 @@ describe('generateInstanceNameFromConfig', () => {
     )).toBe('name')
   })
   it('should create name in lower case if convertToLowercase is true', () => {
+    const lowercaseTransfomation : NameTrasformationOptions = 'lowercase'
+    const uppercaseTransfomation : NameTrasformationOptions = 'uppercase'
+    const defaultTransfomation : NameTrasformationOptions = 'default'
     expect(generateInstanceNameFromConfig(
       {
         name: 'name',
-        id: 'ID',
+        id: 'Id',
       },
       'test',
       {
         typeDefaults: {
           transformation: {
-            idFields: ['name'],
+            idFields: ['id'],
+            saltoNameTransformation: lowercaseTransfomation,
           },
         },
-        types: {
-          test: {
-            transformation: {
-              idFields: ['id'],
-              convertNameToLowercase: true,
-            },
-          },
-        },
+        types: {},
         supportedTypes: {},
       }
     )).toBe('id')
+    expect(generateInstanceNameFromConfig(
+      {
+        name: 'name',
+        id: 'Id',
+      },
+      'test',
+      {
+        typeDefaults: {
+          transformation: {
+            idFields: ['id'],
+            saltoNameTransformation: uppercaseTransfomation,
+          },
+        },
+        types: {},
+        supportedTypes: {},
+      }
+    )).toBe('ID')
+    expect(generateInstanceNameFromConfig(
+      {
+        name: 'name',
+        id: 'Id',
+      },
+      'test',
+      {
+        typeDefaults: {
+          transformation: {
+            idFields: ['id'],
+            saltoNameTransformation: defaultTransfomation,
+          },
+        },
+        types: {},
+        supportedTypes: {},
+      }
+    )).toBe('Id')
   })
 })

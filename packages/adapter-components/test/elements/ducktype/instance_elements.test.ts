@@ -356,14 +356,14 @@ describe('ducktype_instance_elements', () => {
       ))).toBeTruthy()
       expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', instanceName])
     })
-    it('should convert name to lowercase when convertNameToLowercase is true', async () => {
-      entry.name = 'CAPSLOCK NaMe'
-      const inst = await toInstance({
+    it('should convert name if saltoNametransformation exists', async () => {
+      entry.name = 'CaPSlOCK NaMe'
+      const inst1 = await toInstance({
         type,
         transformationConfigByType: {
           bla: {
             idFields: ['name'],
-            convertNameToLowercase: true,
+            saltoNameTransformation: 'lowercase',
           },
         },
         transformationDefaultConfig: {
@@ -372,9 +372,40 @@ describe('ducktype_instance_elements', () => {
         defaultName: 'abc',
         entry,
       })
-      expect(inst).toBeDefined()
-      expect(inst?.elemID.getFullName()).toEqual('myAdapter.bla.instance.capslock_name@s')
-      expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'capslock_name'])
+      const inst2 = await toInstance({
+        type,
+        transformationConfigByType: {
+          bla: {
+            idFields: ['name'],
+            saltoNameTransformation: 'uppercase',
+          },
+        },
+        transformationDefaultConfig: {
+          idFields: ['somethingElse'],
+        },
+        defaultName: 'abc',
+        entry,
+      })
+      const inst3 = await toInstance({
+        type,
+        transformationConfigByType: {
+          bla: {
+            idFields: ['name'],
+            saltoNameTransformation: 'default',
+          },
+        },
+        transformationDefaultConfig: {
+          idFields: ['somethingElse'],
+        },
+        defaultName: 'abc',
+        entry,
+      })
+      expect(inst1?.elemID.getFullName()).toEqual('myAdapter.bla.instance.capslock_name@s')
+      expect(inst1?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'capslock_name'])
+      expect(inst2?.elemID.getFullName()).toEqual('myAdapter.bla.instance.CAPSLOCK_NAME@S')
+      expect(inst2?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'CAPSLOCK_NAME'])
+      expect(inst3?.elemID.getFullName()).toEqual('myAdapter.bla.instance.CaPSlOCK_NaMe@s')
+      expect(inst3?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'CaPSlOCK_NaMe'])
     })
   })
 })

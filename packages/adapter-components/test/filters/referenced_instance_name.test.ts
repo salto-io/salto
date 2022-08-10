@@ -20,6 +20,7 @@ import { addReferencesToInstanceNames, referencedInstanceNamesFilterCreator,
 import { FilterWith } from '../../src/filter_utils'
 import { Paginator } from '../../src/client'
 import { createMockQuery } from '../../src/elements/query'
+import { NameTrasformationOptions } from '../../src/config'
 
 const ADAPTER_NAME = 'myAdapter'
 
@@ -41,6 +42,13 @@ describe('referenced instances', () => {
     })
     const groupType = new ObjectType({
       elemID: new ElemID(ADAPTER_NAME, 'group'),
+      fields: {
+        name: { refType: BuiltinTypes.STRING },
+        fav_recipe: { refType: BuiltinTypes.NUMBER },
+      },
+    })
+    const statusType = new ObjectType({
+      elemID: new ElemID(ADAPTER_NAME, 'status'),
       fields: {
         name: { refType: BuiltinTypes.STRING },
         fav_recipe: { refType: BuiltinTypes.NUMBER },
@@ -154,10 +162,19 @@ describe('referenced instances', () => {
         _parent: [new ReferenceExpression(lastRecipe.elemID, lastRecipe)],
       }
     )
+    const status = new InstanceElement(
+      'StAtUs',
+      statusType,
+      {
+        name: 'StAtUs',
+        fav_recipe: new ReferenceExpression(recipes[0].elemID, recipes[0]),
+      }
+    )
     return [recipeType, bookType, ...recipes, anotherBook, rootBook,
       sameRecipeOne, sameRecipeTwo, lastRecipe, groupType, ...groups,
-      folderType, folderOne, folderTwo]
+      folderType, folderOne, folderTwo, statusType, status]
   }
+  const lowercaseName : NameTrasformationOptions = 'lowercase'
   const config = {
     apiDefinitions: {
       types: {
@@ -180,6 +197,12 @@ describe('referenced instances', () => {
           transformation: {
             idFields: ['name'],
             extendsParentId: true,
+          },
+        },
+        status: {
+          transformation: {
+            idFields: ['name', '&fav_recipe'],
+            saltoNameTransformation: lowercaseName,
           },
         },
       },
@@ -223,6 +246,7 @@ describe('referenced instances', () => {
           'myAdapter.recipe.instance.recipe456_456_123_ROOT',
           'myAdapter.recipe.instance.sameRecipe',
           'myAdapter.recipe.instance.sameRecipe',
+          'myAdapter.status.instance.status_recipe123_123_root',
         ])
     })
   })
@@ -237,7 +261,7 @@ describe('referenced instances', () => {
     }
 
     it('should change name and references correctly', async () => {
-      elements = generateElements()
+      elements = generateElements().filter(e => e.elemID.typeName !== 'status')
       const result = await addReferencesToInstanceNames(
         elements.slice(0, 6).concat(elements.slice(8)),
         transformationConfigByType,
@@ -260,7 +284,7 @@ describe('referenced instances', () => {
         ])
     })
     it('should not change name for duplicate elemIDs', async () => {
-      elements = generateElements()
+      elements = generateElements().filter(e => e.elemID.typeName !== 'status')
       const result = await addReferencesToInstanceNames(
         elements.slice(0, 9).concat(elements.slice(12)),
         transformationConfigByType,
@@ -297,7 +321,7 @@ describe('referenced instances', () => {
         'myAdapter.recipe.instance.last',
       ])
       expect(Object.values(res).map(n => n.length))
-        .toEqual([4, 2, 3, 2])
+        .toEqual([4, 2, 4, 2])
     })
   })
 })

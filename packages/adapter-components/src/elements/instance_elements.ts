@@ -22,7 +22,7 @@ import { pathNaclCase, naclCase, transformValues, TransformFunc } from '@salto-i
 import { logger } from '@salto-io/logging'
 import { RECORDS_PATH, SETTINGS_NESTED_PATH } from './constants'
 import { TransformationConfig, TransformationDefaultConfig, getConfigWithDefault,
-  RecurseIntoCondition, isRecurseIntoConditionByField, AdapterApiConfig, dereferenceFieldName } from '../config'
+  RecurseIntoCondition, isRecurseIntoConditionByField, AdapterApiConfig, dereferenceFieldName, NameTrasformationOptions } from '../config'
 
 const log = logger(module)
 
@@ -38,6 +38,18 @@ export type InstanceCreationParams = {
   parent?: InstanceElement
   normalized?: boolean
   getElemIdFunc?: ElemIdGetter
+}
+
+const nameTransformation = (
+  saltoNameTransformation: NameTrasformationOptions | undefined,
+  name: string,
+): string => {
+  switch (saltoNameTransformation) {
+    case 'default': return name
+    case 'lowercase': return name.toLowerCase()
+    case 'uppercase': return name.toUpperCase()
+    default: return name
+  }
 }
 
 export const joinInstanceNameParts = (
@@ -62,7 +74,7 @@ export const getInstanceFilePath = ({
   naclName,
   typeName,
   isSettingType,
-  convertNameToLowercase,
+  saltoNameTransformation,
   adapterName,
 }: {
   fileNameFields: string[] | undefined
@@ -70,7 +82,7 @@ export const getInstanceFilePath = ({
   naclName: string
   typeName: string
   isSettingType: boolean
-  convertNameToLowercase: boolean | undefined
+  saltoNameTransformation: NameTrasformationOptions | undefined
   adapterName: string
 }): string[] => {
   const fileNameParts = (fileNameFields !== undefined
@@ -91,7 +103,8 @@ export const getInstanceFilePath = ({
       adapterName,
       RECORDS_PATH,
       pathNaclCase(typeName),
-      convertNameToLowercase ? naclCaseFileName.toLowerCase() : naclCaseFileName,
+      saltoNameTransformation
+        ? nameTransformation(saltoNameTransformation, naclCaseFileName) : naclCaseFileName,
     ]
 }
 
@@ -100,13 +113,13 @@ export const generateInstanceNameFromConfig = (
   typeName: string,
   apiDefinitions: AdapterApiConfig
 ): string | undefined => {
-  const { idFields, convertNameToLowercase } = getConfigWithDefault(
+  const { idFields, saltoNameTransformation } = getConfigWithDefault(
     apiDefinitions.types[typeName]?.transformation ?? {},
     apiDefinitions.typeDefaults.transformation
   )
-  return convertNameToLowercase
-    ? getInstanceName(values, idFields)?.toLowerCase()
-    : getInstanceName(values, idFields)
+  const instanceName = getInstanceName(values, idFields)
+  return instanceName !== undefined
+    ? nameTransformation(saltoNameTransformation, instanceName) : instanceName
 }
 
 export const removeNullValues = async (
@@ -137,7 +150,7 @@ export const getInstanceNaclName = ({
   getElemIdFunc,
   serviceIdField,
   typeElemId,
-  convertNameToLowercase,
+  saltoNameTransformation,
 }:{
   entry: Values
   name: string
@@ -146,12 +159,14 @@ export const getInstanceNaclName = ({
   getElemIdFunc?: ElemIdGetter
   serviceIdField?: string
   typeElemId: ElemID
-  convertNameToLowercase: boolean | undefined
+  saltoNameTransformation?: NameTrasformationOptions
 }): string => {
   const naclName = naclCase(
     parentName ? `${parentName}${ID_SEPARATOR}${name}` : String(name)
   )
-  const desiredName = convertNameToLowercase ? naclName.toLowerCase() : naclName
+  const desiredName = saltoNameTransformation
+    ? nameTransformation(saltoNameTransformation, naclName)
+    : naclName
   return getElemIdFunc && serviceIdField
     ? getElemIdFunc(
       adapterName,
@@ -201,7 +216,7 @@ export const toBasicInstance = async ({
   })
 
   const {
-    idFields, fileNameFields, serviceIdField, convertNameToLowercase,
+    idFields, fileNameFields, serviceIdField, saltoNameTransformation,
   } = getConfigWithDefault(
     transformationConfigByType[type.elemID.name],
     transformationDefaultConfig,
@@ -218,7 +233,7 @@ export const toBasicInstance = async ({
     getElemIdFunc,
     serviceIdField,
     typeElemId: type.elemID,
-    convertNameToLowercase,
+    saltoNameTransformation,
   })
 
   const filePath = getInstanceFilePath({
@@ -227,7 +242,7 @@ export const toBasicInstance = async ({
     naclName,
     typeName: type.elemID.name,
     isSettingType: type.isSettings,
-    convertNameToLowercase,
+    saltoNameTransformation,
     adapterName,
   })
 

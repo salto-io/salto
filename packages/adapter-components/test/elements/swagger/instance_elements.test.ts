@@ -1337,7 +1337,7 @@ describe('swagger_instance_elements', () => {
       })).rejects.toThrow(new Error('Invalid type config - type myAdapter.Pet has no request config'))
     })
 
-    it('should convert name to lowercase if convertNameToLowercase is true', async () => {
+    it('should convert name and filename if saltoNameTransformation exists', async () => {
       const objectTypes = generateObjectTypes()
       const res = await getAllInstances({
         paginator: mockPaginator,
@@ -1354,7 +1354,16 @@ describe('swagger_instance_elements', () => {
               },
               transformation: {
                 idFields: ['name'],
-                convertNameToLowercase: true,
+                saltoNameTransformation: 'lowercase',
+              },
+            },
+            Owner: {
+              request: {
+                url: '/owner',
+              },
+              transformation: {
+                idFields: ['name'],
+                saltoNameTransformation: 'uppercase',
               },
             },
           },
@@ -1362,23 +1371,31 @@ describe('swagger_instance_elements', () => {
         fetchQuery: createElementQuery({
           include: [
             { type: 'Status' },
+            { type: 'Owner' },
           ],
           exclude: [],
         }),
         supportedTypes: {
           Status: ['Status'],
+          Owner: ['Owner'],
         },
         objectTypes,
         computeGetArgs: simpleGetArgs,
         nestedFieldFinder: returnFullEntry,
       })
-      expect(res.map(e => e.elemID.name)).toEqual(['done'])
+      expect(res.map(e => e.elemID.name)).toEqual(['done', 'OWNER2'])
       expect(res.map(e => e.path)).toEqual([
         [
           ADAPTER_NAME,
           'Records',
           'Status',
           'done',
+        ],
+        [
+          ADAPTER_NAME,
+          'Records',
+          'Owner',
+          'OWNER2',
         ],
       ])
     })

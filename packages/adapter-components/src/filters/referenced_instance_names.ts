@@ -26,7 +26,7 @@ import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter_utils'
 import { AdapterApiConfig, getTransformationConfigByType,
   TransformationConfig, TransformationDefaultConfig, getConfigWithDefault,
-  dereferenceFieldName, isReferencedIdField } from '../config'
+  dereferenceFieldName, isReferencedIdField, NameTrasformationOptions } from '../config'
 import { joinInstanceNameParts, getInstanceFilePath, getInstanceNaclName } from '../elements/instance_elements'
 import { findDuplicates } from '../config/validation_utils'
 
@@ -39,7 +39,7 @@ const { getUpdatedReference, createReferencesTransformFunc } = references
 type TransformationIdConfig = {
   idFields: string[]
   extendsParentId?: boolean
-  convertNameToLowercase: boolean | undefined
+  saltoNameTransformation: NameTrasformationOptions | undefined
 }
 
 const getFirstParentElemId = (instance: InstanceElement): ElemID | undefined => {
@@ -104,7 +104,7 @@ const createInstanceNameAndFilePath = (
   configByType: Record<string, TransformationConfig>,
   getElemIdFunc?: ElemIdGetter,
 ): { newNaclName: string; filePath: string[] } => {
-  const { idFields, convertNameToLowercase } = idConfig
+  const { idFields, saltoNameTransformation } = idConfig
   const newNameParts = createInstanceReferencedNameParts(instance, idFields)
   const newName = joinInstanceNameParts(newNameParts) ?? instance.elemID.name
   const parentName = getFirstParentElemId(instance)?.name
@@ -119,7 +119,7 @@ const createInstanceNameAndFilePath = (
     getElemIdFunc,
     serviceIdField,
     typeElemId: instance.refType.elemID,
-    convertNameToLowercase,
+    saltoNameTransformation,
   })
 
   const filePath = getInstanceFilePath({
@@ -128,7 +128,7 @@ const createInstanceNameAndFilePath = (
     naclName: newNaclName,
     typeName,
     isSettingType: configByType[typeName].isSingleton ?? false,
-    convertNameToLowercase: configByType[typeName].convertNameToLowercase ?? false,
+    saltoNameTransformation: configByType[typeName].saltoNameTransformation,
     adapterName: adapter,
   })
   return { newNaclName, filePath }
@@ -310,7 +310,7 @@ export const addReferencesToInstanceNames = async (
     idConfig: {
       idFields: configByType[instance.elemID.typeName].idFields,
       extendsParentId: configByType[instance.elemID.typeName].extendsParentId,
-      convertNameToLowercase: configByType[instance.elemID.typeName].convertNameToLowercase,
+      saltoNameTransformation: configByType[instance.elemID.typeName].saltoNameTransformation,
     },
   }))
 

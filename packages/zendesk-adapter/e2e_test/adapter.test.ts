@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { v4 as uuidv4 } from 'uuid'
 import { Change, ChangeId, Element, ElemID, InstanceElement, isInstanceElement, ObjectType,
   isObjectType, toChange, Values, ReferenceExpression, CORE_ANNOTATIONS,
-  FieldDefinition, BuiltinTypes, Value, isStaticFile, DeployResult, getChangeData } from '@salto-io/adapter-api'
+  FieldDefinition, BuiltinTypes, Value, DeployResult, getChangeData, StaticFile } from '@salto-io/adapter-api'
 import { naclCase, getParent } from '@salto-io/adapter-utils'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
@@ -59,7 +59,6 @@ const deployChanges = async (
 ): Promise<DeployResult[]> => {
   const deployResults = await awu(Object.entries(changes))
     .map(async ([id, group]) => {
-      // eslint-disable-next-line no-await-in-loop
       const deployResult = await adapterAttr.adapter.deploy({
         changeGroup: { groupID: id, changes: group },
       })
@@ -411,11 +410,10 @@ describe('Zendesk adapter E2E', () => {
     })
     it('should fetch and deploy brand_logo correctly', async () => {
       const fetchedBrandLogoInstances = elements.filter(inst => inst.elemID.typeName === 'brand_logo').filter(isInstanceElement)
-      // We want to verify there's at least 1 brand_logo
-      expect(fetchedBrandLogoInstances.length > 0).toBeTruthy()
+      expect(fetchedBrandLogoInstances).not.toHaveLength(0)
       fetchedBrandLogoInstances
         .forEach(instance => {
-          expect(isStaticFile(instance.value.content)).toBeTruthy()
+          expect(instance.value.content).toBeInstanceOf(StaticFile)
           const brandInstance = getParent(instance)
           expect(brandInstance.value.logo.resValue).toBe(instance)
         })

@@ -222,28 +222,38 @@ const getElapsedTime = (start: Date): number => Math.ceil(
 type ChangeWorkspaceError = errors.WorkspaceError<ChangeError>
 
 export const formatChangeErrors = (
-  wsChangeErrors: ReadonlyArray<ChangeWorkspaceError>
+  wsChangeErrors: ReadonlyArray<ChangeWorkspaceError>, detailed = false
 ): string => {
+  const errorsIndent = 2
+  const formatSingleChangeError = (changeError: ChangeWorkspaceError): string => {
+    const formattedError = formatWorkspaceError(changeError)
+    return indent(`${formattedError}${EOL}${changeError.severity}: ${changeError.detailedMessage}`,
+      errorsIndent)
+  }
+  const formatElement = (changeError: ChangeWorkspaceError):string => {
+    const possibleDetailed: string = detailed ? `${EOL}${indent(chalk.dim(changeError.detailedMessage), errorsIndent + 2)}` : ''
+    return `${indent(changeError.elemID.getFullName(), errorsIndent + 1)}${possibleDetailed}`
+  }
   const formatGroupedChangeErrors = (groupedChangeErrors: ChangeWorkspaceError[]): string => {
-    const errorsIndent = 2
     const firstErr: ChangeWorkspaceError = groupedChangeErrors[0]
     if (firstErr.detailedMessage === '') {
       return ''
     }
-    if (groupedChangeErrors.length > 1) {
-      return indent(`${firstErr.severity}: ${formatError(firstErr)} (${groupedChangeErrors.length} Elements)`,
-        errorsIndent)
+    if (groupedChangeErrors.length === 1) {
+      return formatSingleChangeError(firstErr)
     }
-    const formattedError = formatWorkspaceError(firstErr)
-    return indent(`${formattedError}${EOL}${firstErr.severity}: ${firstErr.detailedMessage}`,
-      errorsIndent)
+
+    const resultMessages: string = [indent(`${firstErr.severity}: ${formatError(firstErr)} in the following elements:`, errorsIndent)]
+      .concat(groupedChangeErrors.map(formatElement))
+      .join(EOL)
+    return resultMessages
   }
   const ret = _(wsChangeErrors)
     .groupBy(ce => ce.message)
     .values()
     .sortBy(errs => -errs.length)
     .map(formatGroupedChangeErrors)
-    .join('\n')
+    .join(EOL)
   return ret
 }
 
@@ -283,7 +293,7 @@ export const formatExecutionPlan = async (
   detailed = false,
 ): Promise<string> => {
   const formattedPlanChangeErrors: string = formatChangeErrors(
-    workspaceErrors
+    workspaceErrors, detailed
   )
   const preDeployCallToActions: string[] = formatDeployActions(
     {

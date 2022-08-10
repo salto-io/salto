@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange, SeverityLevel, isReferenceExpression } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { STATUS_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
+const NO_CATEGORY_STATUS = 'No Category'
 
 export const statusValidator: ChangeValidator = async changes => (
   awu(changes)
@@ -25,12 +26,14 @@ export const statusValidator: ChangeValidator = async changes => (
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === STATUS_TYPE_NAME)
-    .filter(instance => instance.value.statusCategory === undefined)
+    .filter(instance =>
+      isReferenceExpression(instance.value.statusCategory)
+      && instance.value.statusCategory.value.value.name === NO_CATEGORY_STATUS)
     .map(async instance => ({
       elemID: instance.elemID,
       severity: 'Error' as SeverityLevel,
-      message: 'statusCategory is required in order to deploy statuses',
-      detailedMessage: `The status ${instance.elemID.getFullName()} is missing statusCategory`,
+      message: 'statusCategory can not have No_Category value',
+      detailedMessage: `The status ${instance.elemID.getFullName()} has an invalid statusCategory, statusCategory should be one of the following: [ Done, In_Progress, To_Do ]`,
     }))
     .toArray()
 )

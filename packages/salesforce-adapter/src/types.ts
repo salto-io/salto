@@ -562,6 +562,10 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
                 metadataType: 'Layout',
                 name: 'CollaborationGroup-Group Layout',
               },
+              {
+                metadataType: 'Layout',
+                name: 'CaseInteraction-Case Feed Layout',
+              },
             ],
           },
           [SHOULD_FETCH_ALL_CUSTOM_SETTINGS]: false,

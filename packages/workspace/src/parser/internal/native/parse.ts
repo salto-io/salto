@@ -30,12 +30,25 @@ const isVariableDef = (context: ParseContext): boolean => (
   && context.lexer.peek()?.value === Keywords.VARIABLES_DEFINITION
 )
 
-export const parseBuffer = async (
+export async function parseBuffer(
   content: string,
   filename: string,
-  functions: Functions = {},
-  calcSourceMap = true
-): Promise<Required<ParseResult>> => {
+  functions: Functions,
+  calcSourceMap: true,
+): Promise<Required<ParseResult>>
+export async function parseBuffer(
+  content: string,
+  filename: string,
+  functions: Functions,
+  calcSourceMap: boolean,
+): Promise<ParseResult>
+
+export async function parseBuffer(
+  content: string,
+  filename: string,
+  functions: Functions,
+  calcSourceMap: boolean,
+): Promise<ParseResult> {
   const context: ParseContext = {
     calcSourceMap,
     filename,
@@ -99,6 +112,6 @@ export const parseBuffer = async (
     // Elements string are flatten to solve a memory leak
     elements: elements.map(flattenElementStr),
     errors: context.errors,
-    sourceMap: context.sourceMap,
+    sourceMap: calcSourceMap ? context.sourceMap : undefined,
   }
 }

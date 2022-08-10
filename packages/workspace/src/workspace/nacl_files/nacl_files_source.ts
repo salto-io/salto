@@ -217,7 +217,7 @@ export const toParsedNaclFile = async (
 }
 
 const parseNaclFile = async (
-  naclFile: NaclFile, functions: Functions
+  naclFile: NaclFile, functions: Functions,
 ): Promise<Required<ParseResult>> =>
   (parse(Buffer.from(naclFile.buffer), naclFile.filename, functions))
 
@@ -848,14 +848,15 @@ const buildNaclFilesSource = (
                 buffer)
               : await toParsedNaclFile(
                 { filename, buffer },
-                await parseNaclFile({ filename, buffer }, functions),
+                await parse(Buffer.from(buffer), filename, functions, false),
               )
             if (((await parsed.data.errors()) ?? []).length > 0) {
               logNaclFileUpdateErrorContext(filename, fileChanges, naclFileData, buffer)
             }
             await removeDanglingStaticFiles(fileChanges)
             log.trace('Nacl source %s finished updating file %s with %d changes', sourceName, filename, fileChanges.length)
-            return { ...parsed, buffer }
+            const { data, elements } = parsed
+            return { filename, elements, data, buffer }
           } catch (e) {
             log.error('failed to update NaCl file %s due to %o with %o changes',
               filename, e, fileChanges)

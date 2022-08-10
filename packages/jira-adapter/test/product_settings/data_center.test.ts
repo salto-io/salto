@@ -15,7 +15,7 @@
 */
 import { client } from '@salto-io/adapter-components'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
-import { dataCenterSettings } from '../../src/product_settings/data_center'
+import { DATA_CENTER_SETTINGS } from '../../src/product_settings/data_center'
 
 describe('dataCenter settings', () => {
   describe('wrapConnection', () => {
@@ -30,7 +30,7 @@ describe('dataCenter settings', () => {
         patch: mockFunction<client.APIConnection['patch']>(),
       }
 
-      wrappedApiConnection = dataCenterSettings.wrapConnection(apiConnection)
+      wrappedApiConnection = DATA_CENTER_SETTINGS.wrapConnection(apiConnection)
     })
     it('should replace rest version from 3 to 2', async () => {
       await wrappedApiConnection.get('/rest/api/3/test')

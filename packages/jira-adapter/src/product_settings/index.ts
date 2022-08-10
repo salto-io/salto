@@ -13,12 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { cloudSettings } from './cloud'
+import { CLOUD_SETTINGS } from './cloud'
 import { ProductSettings } from './product_settings'
-import { dataCenterSettings } from './data_center'
+import { DATA_CENTER_SETTINGS } from './data_center'
 
 export const getProductSettings = (
   { isDataCenter }: { isDataCenter: boolean }
 ): ProductSettings => (
-  isDataCenter ? dataCenterSettings : cloudSettings
+  isDataCenter ? DATA_CENTER_SETTINGS : CLOUD_SETTINGS
 )

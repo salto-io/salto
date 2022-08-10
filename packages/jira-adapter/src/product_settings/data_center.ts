@@ -19,51 +19,52 @@ import { ProductSettings } from './product_settings'
 type HttpMethod = 'get' | 'post' | 'put' | 'delete' | 'patch'
 
 type UrlPattern = {
-  httpMethod: HttpMethod
-  url: RegExp
+  httpMethods: HttpMethod[]
+  url: string
 }
 
 const CLOUD_REST_PREFIX = '/rest/api/3/'
+const DATA_REST_CENTER_PREFIX = '/rest/api/2/'
+const PLUGIN_REST_PREFIX = '/rest/salto/1.0/'
 
+// A list to describe the endpoints we implemented with the plugin
+// to know when to use the plugin prefix
 const PLUGIN_URL_PATTERNS: UrlPattern[] = [
   {
-    httpMethod: 'get',
-    url: new RegExp('/rest/api/3/workflowscheme'),
+    httpMethods: ['get'],
+    url: '/rest/api/3/workflowscheme',
   },
   {
-    httpMethod: 'post',
-    url: new RegExp('/rest/api/3/workflowscheme/.+/draft/publish'),
+    httpMethods: ['post'],
+    url: '/rest/api/3/workflowscheme/.+/draft/publish',
   },
   {
-    httpMethod: 'get',
-    url: new RegExp('/rest/api/3/statuses/search'),
+    httpMethods: ['get'],
+    url: '/rest/api/3/statuses/search',
   },
   {
-    httpMethod: 'post',
-    url: new RegExp('/rest/api/3/statuses'),
-  },
-  {
-    httpMethod: 'put',
-    url: new RegExp('/rest/api/3/statuses'),
-  },
-  {
-    httpMethod: 'delete',
-    url: new RegExp('/rest/api/3/statuses'),
+    httpMethods: ['post', 'put', 'delete'],
+    url: '/rest/api/3/statuses',
   },
 ]
 
 
-const replaceRestVersion = (url: string): string => url.replace(CLOUD_REST_PREFIX, '/rest/api/2/')
+const replaceRestVersion = (url: string): string => url.replace(
+  CLOUD_REST_PREFIX,
+  DATA_REST_CENTER_PREFIX,
+)
+
+const createRegex = (patternUrl: string): RegExp => new RegExp(`^${patternUrl}/?$`)
 
 const replaceToPluginUrl = (url: string, httpMethod: HttpMethod): string | undefined => (
-  PLUGIN_URL_PATTERNS.some(({ httpMethod: patternHttpMethod, url: patternUrl }) =>
-    patternHttpMethod === httpMethod && patternUrl.test(url))
-    ? url.replace(CLOUD_REST_PREFIX, '/rest/salto/1.0/')
+  PLUGIN_URL_PATTERNS.some(({ httpMethods, url: patternUrl }) =>
+    httpMethods.includes(httpMethod) && createRegex(patternUrl).test(url))
+    ? url.replace(CLOUD_REST_PREFIX, PLUGIN_REST_PREFIX)
     : undefined
 )
 
-const replaceUrl = (url: string, httpMethod: HttpMethod): string =>
-  replaceToPluginUrl(url, httpMethod) ?? replaceRestVersion(url)
+const replaceUrl = (url: string, httpMethods: HttpMethod): string =>
+  replaceToPluginUrl(url, httpMethods) ?? replaceRestVersion(url)
 
 const wrapConnection: ProductSettings['wrapConnection'] = connection => ({
   get: (url, config) => connection.get(replaceUrl(url, 'get'), config),
@@ -73,7 +74,7 @@ const wrapConnection: ProductSettings['wrapConnection'] = connection => ({
   patch: (url, data, config) => connection.patch(replaceUrl(url, 'patch'), data, config),
 })
 
-export const dataCenterSettings: ProductSettings = {
+export const DATA_CENTER_SETTINGS: ProductSettings = {
   defaultApiDefinitions: DEFAULT_API_DEFINITIONS,
   wrapConnection,
   type: 'dataCenter',

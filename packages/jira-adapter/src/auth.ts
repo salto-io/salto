@@ -21,14 +21,17 @@ type BasicAuthCredentials = {
   baseUrl: string
   user: string
   token: string
+  isDataCenter?: boolean
 }
 
-export const basicAuthCredentialsType = createMatchingObjectType<BasicAuthCredentials>({
+export const basicAuthCredentialsType = createMatchingObjectType<Omit<BasicAuthCredentials, 'isDataCenter'>>({
   elemID: new ElemID(constants.JIRA),
   fields: {
     baseUrl: { refType: BuiltinTypes.STRING, annotations: { _required: true } },
     user: { refType: BuiltinTypes.STRING, annotations: { _required: true } },
     token: { refType: BuiltinTypes.STRING, annotations: { _required: true } },
+    // This will be added when the Jira DC Support will be ready
+    // isDataCenter: { refType: BuiltinTypes.BOOLEAN },
   },
 })
 

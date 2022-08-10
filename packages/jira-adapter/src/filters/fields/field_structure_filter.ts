@@ -20,7 +20,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { JIRA } from '../../constants'
-import { JiraConfig } from '../../config'
+import { JiraConfig } from '../../config/config'
 import { FilterCreator } from '../../filter'
 import { FIELD_CONTEXT_DEFAULT_TYPE_NAME, FIELD_CONTEXT_OPTION_TYPE_NAME, FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from './constants'
 

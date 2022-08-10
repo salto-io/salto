@@ -14,12 +14,10 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { DEFAULT_CONFIG } from '../../../src/config'
+import { filterUtils } from '@salto-io/adapter-components'
 import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, FIELD_CONFIGURATION_TYPE_NAME, JIRA } from '../../../src/constants'
 import fieldConfigurationSplitFilter from '../../../src/filters/field_configuration/field_configuration_split'
-import { mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 import { FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
 
 describe('fieldConfigurationItemsFilter', () => {
@@ -30,13 +28,10 @@ describe('fieldConfigurationItemsFilter', () => {
   beforeEach(async () => {
     const { client, paginator } = mockClient()
 
-    filter = fieldConfigurationSplitFilter({
+    filter = fieldConfigurationSplitFilter(getFilterParams({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    })) as typeof filter
 
     fieldConfigurationItemType = new ObjectType({
       elemID: new ElemID(JIRA, FIELD_CONFIGURATION_ITEM_TYPE_NAME),

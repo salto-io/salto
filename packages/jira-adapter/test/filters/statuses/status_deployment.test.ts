@@ -13,41 +13,38 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange, ReferenceExpression, getChangeData, getAllChangeData } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { elements as elementUtils } from '@salto-io/adapter-components'
-import { mockClient } from '../../utils'
+import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { MockInterface } from '@salto-io/test-utils'
+import { getFilterParams, mockClient } from '../../utils'
 import statusDeploymentFilter from '../../../src/filters/statuses/status_deployment'
-import { Filter } from '../../../src/filter'
-import { DEFAULT_CONFIG, JiraConfig } from '../../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { JIRA, STATUS_TYPE_NAME } from '../../../src/constants'
-import { deployWithJspEndpoints } from '../../../src/deployment/jsp_deployment'
 import JiraClient from '../../../src/client/client'
 
-jest.mock('../../../src/deployment/jsp_deployment', () => ({
-  ...jest.requireActual<{}>('../../../src/deployment/jsp_deployment'),
-  deployWithJspEndpoints: jest.fn(),
-}))
-
 describe('statusDeploymentFilter', () => {
-  let filter: Filter
+  let filter: filterUtils.FilterWith<'onFetch' | 'deploy'>
+  let mockConnection: MockInterface<clientUtils.APIConnection>
   let type: ObjectType
   let config: JiraConfig
   let client: JiraClient
+  let statusInstance: InstanceElement
+  let statusCategoryType: ObjectType
+  let statusCategoryInstance: InstanceElement
+  let modifiedInstance: InstanceElement
 
   beforeEach(async () => {
-    const { client: cli, paginator } = mockClient()
+    const { client: cli, paginator, connection } = mockClient()
+    mockConnection = connection
     client = cli
 
-    config = _.cloneDeep(DEFAULT_CONFIG)
-    filter = statusDeploymentFilter({
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+    filter = statusDeploymentFilter(getFilterParams({
       client,
       paginator,
       config,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    })
+    })) as filterUtils.FilterWith<'onFetch' | 'deploy'>
 
     type = new ObjectType({
       elemID: new ElemID(JIRA, STATUS_TYPE_NAME),
@@ -55,10 +52,42 @@ describe('statusDeploymentFilter', () => {
         id: { refType: BuiltinTypes.STRING },
         name: { refType: BuiltinTypes.STRING },
         description: { refType: BuiltinTypes.STRING },
-        iconUrl: { refType: BuiltinTypes.STRING },
         statusCategory: { refType: BuiltinTypes.STRING },
       },
     })
+
+    statusCategoryType = new ObjectType({
+      elemID: new ElemID(JIRA, 'Status Category'),
+      fields: {
+        id: { refType: BuiltinTypes.NUMBER },
+        name: { refType: BuiltinTypes.STRING },
+      },
+    })
+
+    statusCategoryInstance = new InstanceElement(
+      'Done',
+      statusCategoryType,
+      {
+        id: 3,
+        name: 'Done',
+      }
+    )
+
+    statusInstance = new InstanceElement(
+      'statusInstance',
+      type,
+      {
+        id: '10005',
+        name: 'status',
+        description: 'a new status',
+        statusCategory: new ReferenceExpression(
+          statusCategoryInstance.elemID, statusCategoryInstance
+        ),
+      }
+    )
+
+    modifiedInstance = statusInstance.clone()
+    modifiedInstance.value.description = 'new description'
   })
 
   describe('onFetch', () => {
@@ -141,59 +170,116 @@ describe('statusDeploymentFilter', () => {
       expect(type.fields.id.annotations).toEqual({})
       expect(type.fields.name.annotations).toEqual({})
       expect(type.fields.description.annotations).toEqual({})
-      expect(type.fields.iconUrl.annotations).toEqual({})
       expect(type.fields.statusCategory.annotations).toEqual({})
     })
   })
 
-  describe('deploy', () => {
-    let deployWithJspEndpointsMock: jest.MockedFunction<typeof deployWithJspEndpoints>
-    beforeEach(() => {
-      deployWithJspEndpointsMock = deployWithJspEndpoints as jest.MockedFunction<
-        typeof deployWithJspEndpoints
-      >
+  describe('deploy statuses', () => {
+    let additionInstance: InstanceElement
+
+    beforeEach(async () => {
+      additionInstance = new InstanceElement(
+        'addedStatus',
+        type,
+        {
+          name: 'addedStatus',
+          description: 'a new status',
+          statusCategory: new ReferenceExpression(
+            statusCategoryInstance.elemID, statusCategoryInstance
+          ),
+        }
+      )
+
+      mockConnection.post.mockClear()
+      mockConnection.put.mockClear()
     })
 
-    it('should call deployWithJspEndpoints', async () => {
-      const instance = new InstanceElement(
-        'instance',
-        type,
-      )
-      await filter.deploy?.([toChange({ after: instance })])
-
-      expect(deployWithJspEndpointsMock).toHaveBeenCalledWith({
-        changes: [toChange({ after: instance })],
-        client,
-        urls: {
-          add: '/secure/admin/AddStatus.jspa',
-          modify: '/secure/admin/EditStatus.jspa',
-          remove: '/secure/admin/DeleteStatus.jspa',
-          query: '/rest/workflowDesigner/1.0/statuses',
-        },
-        serviceValuesTransformer: expect.toBeFunction(),
+    it('should return applied changes with no errors', async () => {
+      mockConnection.put.mockResolvedValue({
+        status: 201,
+        data: [],
       })
+      const changes = [
+        toChange({ before: statusInstance, after: modifiedInstance }),
+      ]
+      const { deployResult } = await filter.deploy(changes)
+      expect(deployResult.appliedChanges).toHaveLength(1)
+      expect(deployResult.errors).toHaveLength(0)
+      expect(getChangeData(deployResult.appliedChanges[0]).elemID.getFullName())
+        .toEqual('jira.Status.instance.statusInstance')
     })
 
-    it('should throw if there are no jsp urls', async () => {
-      const instance = new InstanceElement(
-        'instance',
-        type,
-      )
-
-      delete config.apiDefinitions.types[STATUS_TYPE_NAME].jspRequests
-
-      await expect(filter.deploy?.([toChange({ after: instance })])).rejects.toThrow()
+    it('should return status deletion changes as leftover changes', async () => {
+      const changes = [toChange({ before: statusInstance })]
+      const { deployResult, leftoverChanges } = await filter.deploy(changes)
+      expect(deployResult.appliedChanges).toHaveLength(0)
+      expect(deployResult.errors).toHaveLength(0)
+      expect(leftoverChanges).toHaveLength(1)
+      expect(getChangeData(leftoverChanges[0]).elemID.getFullName())
+        .toEqual('jira.Status.instance.statusInstance')
     })
 
-    it('should throw if there is no type definition', async () => {
-      const instance = new InstanceElement(
-        'instance',
-        type,
-      )
+    it('should not remove status category references after deploy', async () => {
+      const changes = [
+        toChange({ before: statusInstance, after: modifiedInstance }),
+        toChange({ after: additionInstance }),
+      ]
+      await filter.deploy(changes)
+      expect(getAllChangeData(changes[0])[0].value.statusCategory)
+        .toBeInstanceOf(ReferenceExpression)
+      expect(getAllChangeData(changes[0])[1].value.statusCategory)
+        .toBeInstanceOf(ReferenceExpression)
+      expect(getChangeData(changes[1]).value.statusCategory).toBeInstanceOf(ReferenceExpression)
+    })
 
-      delete config.apiDefinitions.types[STATUS_TYPE_NAME]
+    it('should set id to added statuses on deploy', async () => {
+      mockConnection.post.mockResolvedValue({
+        status: 200,
+        data: [{
+          id: '12345',
+          name: 'addedStatus',
+          description: 'a new status',
+          statusCategory: 'DONE',
+        },
+        ],
+      })
+      await filter.deploy([toChange({ after: additionInstance })])
+      expect(additionInstance.value.id).toEqual('12345')
+    })
 
-      await expect(filter.deploy?.([toChange({ after: instance })])).rejects.toThrow()
+    it('should deploy first chunk of changes and fail the other', async () => {
+      const responseData = _.range(0, 50)
+        .map(i => ({ id: `${i}`, name: `status${i}` }))
+      mockConnection.post
+        .mockResolvedValueOnce({ status: 200,
+          data: responseData })
+        .mockRejectedValueOnce((new Error('no status category')))
+      const validChanges = _.range(0, 50).map(i => toChange({
+        after: new InstanceElement(
+          `status${i}`,
+          type,
+          {
+            name: `status${i}`,
+            description: 'a new status',
+            statusCategory: new ReferenceExpression(
+              statusCategoryInstance.elemID, statusCategoryInstance
+            ),
+          },
+        ),
+      }))
+      const invalidChange = toChange({
+        after: new InstanceElement(
+          'invalidStatus',
+          type,
+          {
+            name: 'invalidStatus',
+            description: 'invalid',
+          },
+        ),
+      })
+      const { deployResult } = await filter.deploy([...validChanges, invalidChange])
+      expect(deployResult.appliedChanges).toHaveLength(50)
+      expect(deployResult.errors).toHaveLength(1)
     })
   })
 })

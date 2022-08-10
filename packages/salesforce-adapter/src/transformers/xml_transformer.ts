@@ -173,6 +173,7 @@ const complexTypesMap: ComplexTypesMap = {
       }
       return Object.fromEntries(Object.entries(auraFileSuffixToFieldName)
         .filter(([_fileSuffix, fieldName]) => fieldName !== MARKUP)
+        .filter(([_fileSuffix, fieldName]) => isDefined(values[fieldName]))
         .map(([fileSuffix, fieldName]) => [fieldName, { [`${PACKAGE}/aura/${instanceName}/${instanceName}${fileSuffix}`]: values[fieldName] }])
         .concat([[MARKUP, { [`${PACKAGE}/aura/${instanceName}/${instanceName}${auraTypeToFileSuffix[type]}`]: values[MARKUP] }]]))
     },

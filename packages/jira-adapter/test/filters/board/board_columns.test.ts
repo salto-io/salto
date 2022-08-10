@@ -14,14 +14,13 @@
 * limitations under the License.
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType } from '@salto-io/adapter-api'
-import { filterUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
-import { DEFAULT_CONFIG, JiraConfig } from '../../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { BOARD_COLUMN_CONFIG_TYPE, BOARD_TYPE_NAME, JIRA } from '../../../src/constants'
 import boardColumnsFilter, { COLUMNS_CONFIG_FIELD } from '../../../src/filters/board/board_columns'
-import { mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 
 describe('boardColumnsFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
@@ -33,16 +32,14 @@ describe('boardColumnsFilter', () => {
 
   beforeEach(async () => {
     const { client, paginator, connection: conn } = mockClient()
-    config = _.cloneDeep(DEFAULT_CONFIG)
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     connection = conn
 
-    filter = boardColumnsFilter({
+    filter = boardColumnsFilter(getFilterParams({
       client,
       paginator,
       config,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    })) as typeof filter
 
     columnConfigType = new ObjectType({
       elemID: new ElemID(JIRA, BOARD_COLUMN_CONFIG_TYPE),

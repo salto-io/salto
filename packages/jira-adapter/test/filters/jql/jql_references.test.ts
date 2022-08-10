@@ -14,13 +14,11 @@
 * limitations under the License.
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 import jqlReferencesFilter from '../../../src/filters/jql/jql_references'
 import { Filter } from '../../../src/filter'
-import { DEFAULT_CONFIG } from '../../../src/config'
 import { JIRA, STATUS_TYPE_NAME } from '../../../src/constants'
 import { FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
 
@@ -38,13 +36,10 @@ describe('jqlReferencesFilter', () => {
     const { client, paginator, connection: conn } = mockClient()
     connection = conn
 
-    filter = jqlReferencesFilter({
+    filter = jqlReferencesFilter(getFilterParams({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    })
+    }))
 
     type = new ObjectType({
       elemID: new ElemID(JIRA, 'Filter'),

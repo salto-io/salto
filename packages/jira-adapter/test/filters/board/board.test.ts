@@ -14,25 +14,17 @@
 * limitations under the License.
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { filterUtils } from '@salto-io/adapter-components'
 import { JIRA } from '../../../src/constants'
 import boardFilter from '../../../src/filters/board/board'
-import { mockClient, getDefaultAdapterConfig } from '../../utils'
+import { getFilterParams } from '../../utils'
 
 describe('boardFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let instance: InstanceElement
   let type: ObjectType
   beforeEach(async () => {
-    const { client, paginator } = mockClient()
-    filter = boardFilter({
-      client,
-      paginator,
-      config: await getDefaultAdapterConfig(),
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    filter = boardFilter(getFilterParams()) as typeof filter
 
     type = new ObjectType({ elemID: new ElemID(JIRA, 'Board') })
 

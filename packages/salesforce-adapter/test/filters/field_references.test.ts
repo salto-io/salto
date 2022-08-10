@@ -236,6 +236,23 @@ describe('FieldReferences filter', () => {
       fieldValue: 'fffff',
       parentType: 'Account',
     }),
+    // shareTo should point to salesforce.Role.instance.CFO (neighbor context)
+    ...generateObjectAndInstance({
+      type: 'Role',
+      objType: 'Role',
+      instanceName: 'CFO',
+      fieldName: 'fullName',
+      fieldValue: 'CFO',
+    }),
+    ...generateObjectAndInstance({
+      type: 'FolderShare',
+      objType: 'FolderShare',
+      instanceName: 'folderShare',
+      fieldName: 'sharedTo',
+      fieldValue: 'CFO',
+      contextFieldName: 'sharedToType',
+      contextFieldValue: 'Role',
+    }),
   ])
 
   describe('on fetch', () => {
@@ -350,6 +367,14 @@ describe('FieldReferences filter', () => {
       ) as InstanceElement
       expect(inst.value.field).not.toBeInstanceOf(ReferenceExpression)
       expect(inst.value.field).toEqual('fffff')
+    })
+
+    it('should resolve field with neighbor context using share to type mapping when context is a string', async () => {
+      const inst = await awu(elements).find(
+        async e => isInstanceElement(e) && await metadataType(e) === 'FolderShare'
+      ) as InstanceElement
+      expect(inst.value.sharedTo).toBeInstanceOf(ReferenceExpression)
+      expect(inst.value.sharedTo?.elemID.getFullName()).toEqual('salesforce.Role.instance.CFO')
     })
   })
 

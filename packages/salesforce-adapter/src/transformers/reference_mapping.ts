@@ -112,7 +112,7 @@ export type ReferenceContextStrategyName = (
   'instanceParent' | 'neighborTypeWorkflow' | 'neighborCPQLookup' | 'neighborCPQRuleLookup'
   | 'neighborLookupValueTypeLookup' | 'neighborObjectLookup' | 'neighborPicklistObjectLookup'
   | 'neighborTypeLookup' | 'neighborActionTypeFlowLookup' | 'neighborActionTypeLookup' | 'parentObjectLookup'
-  | 'parentInputObjectLookup' | 'parentOutputObjectLookup'
+  | 'parentInputObjectLookup' | 'parentOutputObjectLookup' | 'neighborSharedToTypeLookup'
 )
 
 type SourceDef = {
@@ -133,7 +133,7 @@ export type FieldReferenceDefinition = {
 
 export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
-    src: { field: 'field', parentTypes: [WORKFLOW_FIELD_UPDATE_METADATA_TYPE, LAYOUT_ITEM_METADATA_TYPE, SUMMARY_LAYOUT_ITEM_METADATA_TYPE, 'WorkflowEmailRecipient', 'QuickActionLayoutItem', 'FieldSetItem'] },
+    src: { field: 'field', parentTypes: [WORKFLOW_FIELD_UPDATE_METADATA_TYPE, LAYOUT_ITEM_METADATA_TYPE, SUMMARY_LAYOUT_ITEM_METADATA_TYPE, 'WorkflowEmailRecipient', 'QuickActionLayoutItem', 'FieldSetItem', 'FilterItem'] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
@@ -338,6 +338,32 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: { field: 'relatedList', parentTypes: ['RelatedListItem'] },
     target: { type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: 'value', parentTypes: ['FilterItem'] },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'instanceParent', type: RECORD_TYPE_METADATA_TYPE },
+  },
+  {
+    src: { field: 'sharedTo', parentTypes: ['FolderShare'] },
+    target: { typeContext: 'neighborSharedToTypeLookup' },
+  },
+  {
+    src: { field: 'role', parentTypes: ['SharedTo'] },
+    target: { type: 'Role' },
+  },
+  {
+    src: { field: 'roleAndSubordinates', parentTypes: ['SharedTo'] },
+    target: { type: 'Role' },
+  },
+  {
+    src: { field: 'group', parentTypes: ['SharedTo'] },
+    target: { type: 'Group' },
+  },
+  {
+    src: { field: 'compactLayoutAssignment', parentTypes: [RECORD_TYPE_METADATA_TYPE] },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'instanceParent', type: 'CompactLayout' },
   },
   {
     // sometimes has a value that is not a reference - should only convert to reference

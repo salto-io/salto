@@ -37,6 +37,8 @@ const TYPE_NAME_TO_RELEVANT_FIELD_NAMES: Record<string, string[]> = {
   sla_policy: ['filter.all', 'filter.any'],
   workspace: ['conditions.all', 'conditions.any'],
 }
+const TYPE_NAME_WITH_CHECKBOXES = ['ticket_field', 'user_field', 'organization_field']
+const TAG_FIELD_NAME_IN_CHECKBOX = 'tag'
 export const TAG_TYPE_NAME = 'tag'
 const TAGS_FILE_NAME = 'tags'
 
@@ -46,6 +48,21 @@ const { awu } = collections.asynciterable
 const TAG_SEPERATOR = ' '
 const extractTags = (value: string): string[] =>
   value.split(TAG_SEPERATOR).filter(tag => !_.isEmpty(tag))
+
+const isRelevantCheckboxInstance = (instance: InstanceElement): boolean => (
+  TYPE_NAME_WITH_CHECKBOXES.includes(instance.elemID.typeName)
+  && instance.value.type === 'checkbox'
+  && !_.isEmpty(instance.value[TAG_FIELD_NAME_IN_CHECKBOX])
+)
+
+const isRelevantInstance = (instance: InstanceElement): boolean => (
+  Object.keys(TYPE_NAME_TO_RELEVANT_FIELD_NAMES).includes(instance.elemID.typeName)
+  || isRelevantCheckboxInstance(instance)
+)
+
+const createTagReferenceExpression = (tag: string): ReferenceExpression => (
+  new ReferenceExpression(new ElemID(ZENDESK, TAG_TYPE_NAME, 'instance', naclCase(tag)))
+)
 
 const replaceTagsWithReferences = (instance: InstanceElement): string[] => {
   const tags: string[] = [];
@@ -58,14 +75,18 @@ const replaceTagsWithReferences = (instance: InstanceElement): string[] => {
       conditions.forEach(condition => {
         if (RELEVANT_FIELD_NAMES.includes(condition.field) && _.isString(condition.value)) {
           const conditionTags = extractTags(condition.value)
-          tags.push(...conditionTags)
+          conditionTags.forEach(tag => { tags.push(tag) })
           condition.value = conditionTags
-            .map(tag => new ReferenceExpression(
-              new ElemID(ZENDESK, TAG_TYPE_NAME, 'instance', naclCase(tag))
-            ))
+            .map(tag => createTagReferenceExpression(tag))
         }
       })
     })
+  if (isRelevantCheckboxInstance(instance)) {
+    // There should be just one tag in checkbox
+    const tag = instance.value[TAG_FIELD_NAME_IN_CHECKBOX]
+    tags.push(tag)
+    instance.value[TAG_FIELD_NAME_IN_CHECKBOX] = createTagReferenceExpression(tag)
+  }
   return tags
 }
 
@@ -95,8 +116,7 @@ const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => log.time(async () => {
     const instances = elements
       .filter(isInstanceElement)
-      .filter(instance => Object.keys(TYPE_NAME_TO_RELEVANT_FIELD_NAMES)
-        .includes(instance.elemID.typeName))
+      .filter(isRelevantInstance)
 
     const tags = instances.map(instance => replaceTagsWithReferences(instance)).flat()
     const tagObjectType = new ObjectType({
@@ -130,8 +150,7 @@ const filterCreator: FilterCreator = () => ({
   },
   preDeploy: async (changes: Change<InstanceElement>[]) => {
     const relevantChanges = changes
-      .filter(change => Object.keys(TYPE_NAME_TO_RELEVANT_FIELD_NAMES)
-        .includes(getChangeData(change).elemID.typeName))
+      .filter(change => isRelevantInstance(getChangeData(change)))
     if (_.isEmpty(relevantChanges)) {
       return
     }

@@ -680,6 +680,9 @@ const buildNaclFilesSource = (
     const topLevelFiles = await (await getState()).elementsIndex.get(
       topLevelID.parent.getFullName()
     ) ?? []
+    if (elemID.isTopLevel()) {
+      return topLevelFiles
+    }
     return (await Promise.all(topLevelFiles.map(async filename => {
       const fragments = await (await (await getState()).parsedNaclFiles.get(filename)).elements()
       return wu(fragments ?? []).some(fragment => resolvePath(fragment, elemID) !== undefined)
@@ -754,6 +757,46 @@ const buildNaclFilesSource = (
     await awu(emptyNaclFiles).forEach(naclFile => naclFilesStore.delete(naclFile.filename))
   }
 
+  const groupChangesByFilename = async (
+    changes: DetailedChange[]
+  ): Promise<Record<string, DetailedChangeWithSource[]>> => {
+    const naclFiles = _.uniq(
+      await awu(changes).map(change => change.id)
+        .flatMap(elemID => getElementNaclFiles(elemID.createTopLevelParentID().parent))
+        .toArray()
+    )
+
+    const { parsedNaclFiles } = await getState()
+    log.debug('Nacl source %s getting source maps for %d nacl files', sourceName, naclFiles.length)
+    const changedFileSourceMaps = (
+      await withLimitedConcurrency(
+        naclFiles.map(naclFile => async () => {
+          const parsedNaclFile = await parsedNaclFiles.get(naclFile)
+          return values.isDefined(parsedNaclFile)
+            ? getSourceMap(parsedNaclFile.filename)
+            : undefined
+        }),
+        CACHE_READ_CONCURRENCY,
+      )
+    ).filter(values.isDefined)
+
+    const mergedSourceMap = changedFileSourceMaps.reduce(
+      (acc, sourceMap) => {
+        acc.merge(sourceMap)
+        return acc
+      },
+      new SourceMap(),
+    )
+    const changesWithLocation = getChangesToUpdate(changes, mergedSourceMap)
+      .flatMap(change => getChangeLocations(change, mergedSourceMap))
+
+    return _.groupBy(
+      changesWithLocation,
+      // Group changes file, we use lower case in order to support case insensitive file systems
+      change => change.location.filename.toLowerCase(),
+    )
+  }
+
   const updateNaclFiles = async (changes: DetailedChange[]): Promise<ChangeSet<Change>> => {
     const preChangeHash = await (await state)?.parsedNaclFiles.getHash()
     const getNaclFileData = async (filename: string): Promise<string> => {
@@ -763,7 +806,6 @@ const buildNaclFilesSource = (
 
     // This method was written with the assumption that each static file is pointed by no more
     // then one value in the nacls. A ticket was open to fix that (SALTO-954)
-
     const removeDanglingStaticFiles = async (fileChanges: DetailedChange[]): Promise<void> => {
       fileChanges
         .filter(change => change.action === 'remove')
@@ -772,37 +814,19 @@ const buildNaclFilesSource = (
         .flat()
         .forEach(file => staticFilesSource.delete(file))
     }
-    const naclFiles = _.uniq(
-      await awu(changes).map(change => change.id)
-        .flatMap(elemID => getElementNaclFiles(elemID.createTopLevelParentID().parent))
-        .toArray()
+
+    const changesByFileName = await groupChangesByFilename(changes)
+    log.debug(
+      'Nacl source %s going to update %d nacl files with %d changes',
+      sourceName,
+      Object.keys(changesByFileName).length,
+      changes.length,
     )
+
     const { parsedNaclFiles } = await getState()
-    const changedFileToSourceMap: Record<string, SourceMap> = Object.fromEntries(
-      (await withLimitedConcurrency(naclFiles
-        .map(naclFile => async () => {
-          const parsedNaclFile = await parsedNaclFiles.get(naclFile)
-          return values.isDefined(parsedNaclFile)
-            ? [
-              parsedNaclFile.filename,
-              await getSourceMap(parsedNaclFile.filename),
-            ] : undefined
-        }),
-      CACHE_READ_CONCURRENCY)).filter(values.isDefined)
-    )
-    const mergedSourceMap = Object.values(changedFileToSourceMap).reduce((acc, sourceMap) => {
-      acc.merge(sourceMap)
-      return acc
-    }, new SourceMap())
-    const changesToUpdate = getChangesToUpdate(changes, mergedSourceMap)
     const allFileNames = _.keyBy(await parsedNaclFiles.list(), name => name.toLowerCase())
     const updatedNaclFiles = (await withLimitedConcurrency(
-      _(changesToUpdate)
-        .map(change => getChangeLocations(change, mergedSourceMap))
-        .flatten()
-        // Group changes file, we use lower case in order to support case insensitive file systems
-        .groupBy(change => change.location.filename.toLowerCase())
-        .entries()
+      Object.entries(changesByFileName)
         .map(([lowerCaseFilename, fileChanges]) => async ():
           Promise<ParsedNaclFile & NaclFile | undefined> => {
           // Changes might have a different cased filename, we take the version that already exists
@@ -813,6 +837,7 @@ const buildNaclFilesSource = (
           )
           try {
             const naclFileData = await getNaclFileData(filename)
+            log.trace('Nacl source %s starting to update file %s with %d changes', sourceName, filename, fileChanges.length)
             const buffer = await updateNaclFileData(naclFileData, fileChanges, functions)
             const shouldNotParse = _.isEmpty(naclFileData)
               && fileChanges.length === 1
@@ -829,14 +854,14 @@ const buildNaclFilesSource = (
               logNaclFileUpdateErrorContext(filename, fileChanges, naclFileData, buffer)
             }
             await removeDanglingStaticFiles(fileChanges)
+            log.trace('Nacl source %s finished updating file %s with %d changes', sourceName, filename, fileChanges.length)
             return { ...parsed, buffer }
           } catch (e) {
             log.error('failed to update NaCl file %s due to %o with %o changes',
               filename, e, fileChanges)
             return undefined
           }
-        })
-        .value(),
+        }),
       DUMP_CONCURRENCY
     )).filter(values.isDefined)
 

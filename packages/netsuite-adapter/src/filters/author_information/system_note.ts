@@ -80,9 +80,9 @@ const buildRecordTypeSystemNotesQuery = (
   const whereQuery = recordTypeIds
     .map(toRecordTypeWhereQuery)
     .join(' OR ')
-  return 'SELECT name, recordid, recordtypeid FROM (SELECT name, recordid, recordtypeid,'
-    + ` MAX(date) as date FROM systemnote WHERE ${toDateQuery(lastFetchTime)} AND (${whereQuery})`
-    + ' GROUP BY name, recordid, recordtypeid) ORDER BY date DESC'
+  return 'SELECT name, recordid, recordtypeid, date FROM (SELECT name, recordid, recordtypeid,'
+    + ` TO_CHAR(MAX(date), 'YYYY-MM-DD') as date FROM systemnote WHERE ${toDateQuery(lastFetchTime)} AND (${whereQuery})`
+    + ' GROUP BY name, recordid, recordtypeid) ORDER BY name, recordid, recordtypeid ASC'
 }
 
 const buildFieldSystemNotesQuery = (
@@ -92,10 +92,10 @@ const buildFieldSystemNotesQuery = (
   const whereQuery = fieldIds
     .map(toFieldWhereQuery)
     .join(' OR ')
-  return 'SELECT name, field, recordid from (SELECT name, field, recordid, MAX(date) AS date'
+  return 'SELECT name, field, recordid, date from (SELECT name, field, recordid, TO_CHAR(MAX(date), \'YYYY-MM-DD\') AS date'
     + ` FROM (SELECT name, REGEXP_SUBSTR(field, '^(${FOLDER_FIELD_IDENTIFIER}|${FILE_FIELD_IDENTIFIER})')`
     + ` AS field, recordid, date FROM systemnote WHERE ${toDateQuery(lastFetchTime)} AND (${whereQuery}))`
-    + ' GROUP BY name, field, recordid) ORDER BY date DESC'
+    + ' GROUP BY name, field, recordid) ORDER BY name, field, recordid ASC'
 }
 
 const querySystemNotesByField = async (
@@ -164,8 +164,11 @@ const getKeyForNote = (systemNote: SystemNoteResult): string => {
 
 const distinctSortedSystemNotes = (
   systemNotes: SystemNoteResult[]
-): SystemNoteResult[] =>
-  _.uniqBy(systemNotes, note => getKeyForNote(note))
+): SystemNoteResult[] => _(systemNotes)
+  .sortBy(note => note.date)
+  .reverse()
+  .uniqBy(note => getKeyForNote(note))
+  .value()
 
 const indexSystemNotes = (systemNotes: SystemNoteResult[]): Record<string, string> =>
   Object.fromEntries(systemNotes.map(systemnote => [getKeyForNote(systemnote), systemnote.name]))

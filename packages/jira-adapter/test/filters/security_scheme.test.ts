@@ -15,11 +15,10 @@
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, isReferenceExpression, ListType, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { mockClient } from '../utils'
+import { filterUtils } from '@salto-io/adapter-components'
+import { getFilterParams, mockClient } from '../utils'
 import securitySchemeFilter, { NO_DEFAULT_VALUE } from '../../src/filters/security_scheme/security_scheme'
-import { DEFAULT_CONFIG, JiraConfig } from '../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../src/config/config'
 import { JIRA, SECURITY_LEVEL_MEMBER_TYPE, SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE } from '../../src/constants'
 import { deployWithJspEndpoints } from '../../src/deployment/jsp_deployment'
 import JiraClient from '../../src/client/client'
@@ -43,14 +42,12 @@ describe('securitySchemeFilter', () => {
     const { client: cli, paginator } = mockClient()
     client = cli
 
-    config = _.cloneDeep(DEFAULT_CONFIG)
-    filter = securitySchemeFilter({
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+    filter = securitySchemeFilter(getFilterParams({
       client,
       paginator,
       config,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
+    })) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
 
     securityMemberType = new ObjectType({
       elemID: new ElemID(JIRA, SECURITY_LEVEL_MEMBER_TYPE),

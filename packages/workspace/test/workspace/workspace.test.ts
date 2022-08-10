@@ -2300,46 +2300,88 @@ describe('workspace', () => {
     const naclFileStore = mockDirStore(undefined, undefined, {
       'firstFile.nacl': firstFile,
     })
-    beforeEach(async () => {
-      workspace = await createWorkspace(
-        naclFileStore,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        {
-          '': {
-            naclFiles: createMockNaclFileSource([]),
+    const emptyFileStore = mockDirStore(undefined, undefined, {})
+    describe('empty index', () => {
+      beforeEach(async () => {
+        workspace = await createWorkspace(
+          emptyFileStore,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          {
+            '': {
+              naclFiles: createMockNaclFileSource([]),
+            },
+            default: {
+              naclFiles: await naclFilesSource(
+                'default',
+                emptyFileStore,
+                mockStaticFilesSource(),
+                persistentMockCreateRemoteMap(),
+                true
+              ),
+              state: createState([]),
+            },
           },
-          default: {
-            naclFiles: await naclFilesSource(
-              'default',
-              naclFileStore,
-              mockStaticFilesSource(),
-              persistentMockCreateRemoteMap(),
-              true
-            ),
-            state: createState([]),
-          },
-        },
-      )
+        )
+      })
+      describe('isChangedAtIndexEmpty', () => {
+        it('should return true', async () => {
+          const result = await workspace.isChangedAtIndexEmpty()
+          expect(result).toBeTruthy()
+        })
+      })
     })
-    describe('getChangedElementsBetween', () => {
-      it('get correct element ids without full date range', async () => {
-        const dateRange = { start: new Date('1999-01-01T00:00:00.000Z') }
-        const result = await workspace.getChangedElementsBetween(dateRange)
-        expect(result[0].getFullName()).toEqual('salesforce.lead')
+    describe('populated index', () => {
+      beforeEach(async () => {
+        workspace = await createWorkspace(
+          naclFileStore,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          {
+            '': {
+              naclFiles: createMockNaclFileSource([]),
+            },
+            default: {
+              naclFiles: await naclFilesSource(
+                'default',
+                naclFileStore,
+                mockStaticFilesSource(),
+                persistentMockCreateRemoteMap(),
+                true
+              ),
+              state: createState([]),
+            },
+          },
+        )
       })
-      it('get correct element ids until date failure', async () => {
-        const dateRange = { end: new Date('1999-02-01T00:00:00.000Z'), start: new Date('1999-01-01T00:00:00.000Z') }
-        const result = await workspace.getChangedElementsBetween(dateRange)
-        expect(result.length).toEqual(0)
+      describe('getChangedElementsBetween', () => {
+        it('get correct element ids without full date range', async () => {
+          const dateRange = { start: new Date('1999-01-01T00:00:00.000Z') }
+          const result = await workspace.getChangedElementsBetween(dateRange)
+          expect(result[0].getFullName()).toEqual('salesforce.lead')
+        })
+        it('get correct element ids until date failure', async () => {
+          const dateRange = { end: new Date('1999-02-01T00:00:00.000Z'), start: new Date('1999-01-01T00:00:00.000Z') }
+          const result = await workspace.getChangedElementsBetween(dateRange)
+          expect(result.length).toEqual(0)
+        })
+        it('get correct element ids until date success', async () => {
+          const dateRange = { end: new Date('2001-01-01T00:00:00.000Z'), start: new Date('1999-01-01T00:00:00.000Z') }
+          const result = await workspace.getChangedElementsBetween(dateRange)
+          expect(result[0].getFullName()).toEqual('salesforce.lead')
+        })
       })
-      it('get correct element ids until date success', async () => {
-        const dateRange = { end: new Date('2001-01-01T00:00:00.000Z'), start: new Date('1999-01-01T00:00:00.000Z') }
-        const result = await workspace.getChangedElementsBetween(dateRange)
-        expect(result[0].getFullName()).toEqual('salesforce.lead')
+      describe('isChangedAtIndexEmpty', () => {
+        it('should return false', async () => {
+          const result = await workspace.isChangedAtIndexEmpty()
+          expect(result).toBeFalsy()
+        })
       })
     })
   })

@@ -15,12 +15,11 @@
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ListType, ObjectType, toChange, Values } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 import notificationSchemeDeploymentFilter from '../../../src/filters/notification_scheme/notification_scheme_deployment'
-import { DEFAULT_CONFIG, JiraConfig } from '../../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { JIRA, NOTIFICATION_SCHEME_TYPE_NAME, NOTIFICATION_EVENT_TYPE_NAME } from '../../../src/constants'
 import { deployWithJspEndpoints } from '../../../src/deployment/jsp_deployment'
 import JiraClient from '../../../src/client/client'
@@ -44,14 +43,12 @@ describe('notificationSchemeDeploymentFilter', () => {
     connection = conn
     client = cli
 
-    config = _.cloneDeep(DEFAULT_CONFIG)
-    filter = notificationSchemeDeploymentFilter({
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+    filter = notificationSchemeDeploymentFilter(getFilterParams({
       client,
       paginator,
       config,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
+    })) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
 
     notificationEventType = new ObjectType({
       elemID: new ElemID(JIRA, NOTIFICATION_EVENT_TYPE_NAME),

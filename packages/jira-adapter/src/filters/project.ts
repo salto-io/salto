@@ -23,6 +23,7 @@ import { defaultDeployChange, deployChanges } from '../deployment/standard_deplo
 import { getLookUpName } from '../reference_mapping'
 import { FilterCreator } from '../filter'
 import { findObject, setFieldDeploymentAnnotations } from '../utils'
+import { PROJECT_CONTEXTS_FIELD } from './fields/contexts_projects_filter'
 
 const PROJECT_TYPE_NAME = 'Project'
 
@@ -167,6 +168,7 @@ const filter: FilterCreator = ({ config, client }) => ({
       setFieldDeploymentAnnotations(projectType, FIELD_CONFIG_SCHEME_FIELD)
       setFieldDeploymentAnnotations(projectType, ISSUE_TYPE_SCHEME)
       setFieldDeploymentAnnotations(projectType, COMPONENTS_FIELD)
+      setFieldDeploymentAnnotations(projectType, PROJECT_CONTEXTS_FIELD)
     }
 
     elements
@@ -209,14 +211,18 @@ const filter: FilterCreator = ({ config, client }) => ({
             client,
             apiDefinitions: config.apiDefinitions,
             fieldsToIgnore: isModificationChange(change)
-              ? [COMPONENTS_FIELD,
+              ? [
+                COMPONENTS_FIELD,
                 WORKFLOW_SCHEME_FIELD,
                 ISSUE_TYPE_SCREEN_SCHEME_FIELD,
                 FIELD_CONFIG_SCHEME_FIELD,
-                ISSUE_TYPE_SCHEME]
+                ISSUE_TYPE_SCHEME,
+                PROJECT_CONTEXTS_FIELD,
+              ]
               : [
                 COMPONENTS_FIELD,
                 FIELD_CONFIG_SCHEME_FIELD,
+                PROJECT_CONTEXTS_FIELD,
               ],
           })
         } catch (error) {

@@ -15,12 +15,12 @@
 */
 import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { buildElementsSourceFromElements, resolveChangeElement } from '@salto-io/adapter-utils'
-import { deployment, filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { resolveChangeElement } from '@salto-io/adapter-utils'
+import { deployment, filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 import dashboardDeploymentFilter from '../../../src/filters/dashboard/dashboard_deployment'
-import { DEFAULT_CONFIG, JiraConfig } from '../../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { DASHBOARD_GADGET_POSITION_TYPE, DASHBOARD_GADGET_TYPE, DASHBOARD_TYPE, JIRA } from '../../../src/constants'
 import JiraClient, { PRIVATE_API_HEADERS } from '../../../src/client/client'
 import { getLookUpName } from '../../../src/reference_mapping'
@@ -50,14 +50,12 @@ describe('dashboardDeploymentFilter', () => {
     client = cli
     connection = conn
 
-    config = _.cloneDeep(DEFAULT_CONFIG)
-    filter = dashboardDeploymentFilter({
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+    filter = dashboardDeploymentFilter(getFilterParams({
       client,
       paginator,
       config,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as filterUtils.FilterWith<'onFetch' | 'deploy'>
+    })) as filterUtils.FilterWith<'onFetch' | 'deploy'>
 
     dashboardType = new ObjectType({
       elemID: new ElemID(JIRA, DASHBOARD_TYPE),
@@ -178,7 +176,8 @@ describe('dashboardDeploymentFilter', () => {
       expect(deployChangeMock).toHaveBeenCalledWith(
         await resolveChangeElement(change, getLookUpName),
         client,
-        DEFAULT_CONFIG.apiDefinitions.types[DASHBOARD_TYPE].deployRequests,
+        getDefaultConfig({ isDataCenter: false })
+          .apiDefinitions.types[DASHBOARD_TYPE].deployRequests,
         [
           'layout',
           'gadgets',

@@ -15,7 +15,7 @@
 */
 import { filters } from '@salto-io/adapter-components'
 import JiraClient from '../../client/client'
-import { JiraConfig } from '../../config'
+import { JiraConfig } from '../../config/config'
 import { FilterCreator, FilterResult } from '../../filter'
 
 const filter: FilterCreator = params =>

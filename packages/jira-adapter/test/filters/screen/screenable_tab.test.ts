@@ -19,7 +19,7 @@ import { MockInterface } from '@salto-io/test-utils'
 import { JIRA } from '../../../src/constants'
 import { mockClient } from '../../utils'
 import JiraClient from '../../../src/client/client'
-import { DEFAULT_CONFIG } from '../../../src/config'
+import { getDefaultConfig } from '../../../src/config/config'
 import { deployTabs } from '../../../src/filters/screen/screenable_tab'
 
 jest.mock('@salto-io/adapter-components', () => {
@@ -76,7 +76,8 @@ describe('screenableTab', () => {
       const change = toChange({
         after: new InstanceElement('instance', screenType),
       }) as AdditionChange<InstanceElement>
-      await expect(deployTabs(change, client, DEFAULT_CONFIG)).rejects.toThrow()
+      await expect(deployTabs(change, client, getDefaultConfig({ isDataCenter: false })))
+        .rejects.toThrow()
     })
 
     it('if tabs inner type is not an object type should throw', async () => {
@@ -84,7 +85,8 @@ describe('screenableTab', () => {
       const change = toChange({
         after: new InstanceElement('instance', screenType),
       }) as AdditionChange<InstanceElement>
-      await expect(deployTabs(change, client, DEFAULT_CONFIG)).rejects.toThrow()
+      await expect(deployTabs(change, client, getDefaultConfig({ isDataCenter: false })))
+        .rejects.toThrow()
     })
 
     it('should call deployChange and ignore fields', async () => {
@@ -100,7 +102,7 @@ describe('screenableTab', () => {
           },
         }),
       }) as ModificationChange<InstanceElement>
-      await deployTabs(change, client, DEFAULT_CONFIG)
+      await deployTabs(change, client, getDefaultConfig({ isDataCenter: false }))
 
       expect(deployChangeMock).toHaveBeenCalledWith(
         toChange({
@@ -109,7 +111,7 @@ describe('screenableTab', () => {
           }),
         }),
         client,
-        DEFAULT_CONFIG.apiDefinitions.types.ScreenableTab.deployRequests,
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.ScreenableTab.deployRequests,
         ['fields', 'position'],
         { screenId: 'screenId' },
         undefined,
@@ -126,19 +128,21 @@ describe('screenableTab', () => {
           },
         },
       })
+      const instanceBefore = instance.clone()
+      instanceBefore.value.tabs.tab.description = 'desc'
       const change = toChange({
-        before: instance,
+        before: instanceBefore,
         after: instance,
       }) as ModificationChange<InstanceElement>
-      await deployTabs(change, client, DEFAULT_CONFIG)
+      await deployTabs(change, client, getDefaultConfig({ isDataCenter: false }))
 
       expect(deployChangeMock).toHaveBeenCalledWith(
         toChange({
-          before: new InstanceElement('tab', screenTabType, { name: 'tab' }),
+          before: new InstanceElement('tab', screenTabType, { name: 'tab', description: 'desc' }),
           after: new InstanceElement('tab', screenTabType, { name: 'tab' }),
         }),
         client,
-        DEFAULT_CONFIG.apiDefinitions.types.ScreenableTab.deployRequests,
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.ScreenableTab.deployRequests,
         ['fields', 'position', 'name'],
         { screenId: 'screenId' },
         undefined,
@@ -164,14 +168,14 @@ describe('screenableTab', () => {
       const change = toChange({
         after: instance,
       }) as AdditionChange<InstanceElement>
-      await deployTabs(change, client, DEFAULT_CONFIG)
+      await deployTabs(change, client, getDefaultConfig({ isDataCenter: false }))
 
       expect(deployChangeMock).toHaveBeenCalledWith(
         toChange({
           before: new InstanceElement('fieldTab', screenTabType, { name: 'fieldTab', id: 'tabId' }),
         }),
         client,
-        DEFAULT_CONFIG.apiDefinitions.types.ScreenableTab.deployRequests,
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.ScreenableTab.deployRequests,
         ['fields', 'position'],
         { screenId: 'screenId' },
         undefined,
@@ -209,7 +213,7 @@ describe('screenableTab', () => {
           }),
         }) as ModificationChange<InstanceElement>
 
-        await deployTabs(change, client, DEFAULT_CONFIG)
+        await deployTabs(change, client, getDefaultConfig({ isDataCenter: false }))
       })
       it('should call endpoints to add fields', async () => {
         expect(mockConnection.post).toHaveBeenCalledWith(
@@ -264,7 +268,7 @@ describe('screenableTab', () => {
       await deployTabs(
         toChange({ before: instance, after: instance }) as ModificationChange<InstanceElement>,
         client,
-        DEFAULT_CONFIG
+        getDefaultConfig({ isDataCenter: false })
       )
       expect(mockConnection.post).not.toHaveBeenCalled()
     })

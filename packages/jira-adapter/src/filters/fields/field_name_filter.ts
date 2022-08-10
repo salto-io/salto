@@ -18,7 +18,7 @@ import { elements as elementUtils, config as configUtils } from '@salto-io/adapt
 import { naclCase } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { JiraConfig } from '../../config'
+import { JiraConfig } from '../../config/config'
 import { JIRA } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { FIELD_TYPE_NAME } from './constants'

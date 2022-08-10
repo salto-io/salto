@@ -37,6 +37,7 @@ import {
   INSTALLED_SUITEAPPS,
   ADDITIONAL_DEPS,
   VALIDATE,
+  FIELDS_TO_OMIT,
 } from '../src/constants'
 import { mockGetElemIdFunc } from './utils'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
@@ -386,6 +387,28 @@ describe('NetsuiteAdapter creator', () => {
                 { name: ['should be a string'] },
               ],
             },
+          },
+        }
+      )
+      expect(
+        () => adapter.operations({
+          credentials,
+          config: invalidConfig,
+          getElemIdFunc: mockGetElemIdFunc,
+          elementsSource: buildElementsSourceFromElements([]),
+        })
+      ).toThrow()
+    })
+
+    it('should throw an error when fieldsToOmit is invalid', () => {
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        {
+          [FETCH]: {
+            [FIELDS_TO_OMIT]: [{
+              type: 'a',
+            }],
           },
         }
       )

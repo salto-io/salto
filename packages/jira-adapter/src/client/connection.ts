@@ -17,7 +17,9 @@ import { AccountId, CredentialError } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { Credentials } from '../auth'
 
-const isAuthorized = async (connection: clientUtils.APIConnection): Promise<boolean> => {
+const isAuthorized = async (
+  connection: clientUtils.APIConnection,
+): Promise<boolean> => {
   try {
     await connection.get('/rest/api/3/configuration')
     return true
@@ -29,7 +31,9 @@ const isAuthorized = async (connection: clientUtils.APIConnection): Promise<bool
   }
 }
 
-const getBaseUrl = async (connection: clientUtils.APIConnection): Promise<string> => {
+const getBaseUrl = async (
+  connection: clientUtils.APIConnection,
+): Promise<string> => {
   const response = await connection.get('/rest/api/3/serverInfo')
   return response.data.baseUrl
 }
@@ -46,12 +50,17 @@ export const validateCredentials = async (
 export const createConnection: clientUtils.ConnectionCreator<Credentials> = retryOptions => (
   clientUtils.axiosConnection({
     retryOptions,
-    authParamsFunc: async credentials => ({
-      auth: {
-        username: credentials.user,
-        password: credentials.token,
-      },
-    }),
+    authParamsFunc: async credentials => (
+      credentials.isDataCenter
+        ? {
+          headers: { Authorization: `Bearer ${credentials.token}` },
+        } : {
+          auth: {
+            username: credentials.user,
+            password: credentials.token,
+          },
+        }
+    ),
     baseURLFunc: ({ baseUrl }) => baseUrl,
     credValidateFunc: async () => '', // There is no login endpoint to call
   })

@@ -14,11 +14,10 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { filterUtils } from '@salto-io/adapter-components'
 import { JIRA } from '../../src/constants'
 import sharePermissionFilter from '../../src/filters/share_permission'
-import { mockClient, getDefaultAdapterConfig } from '../utils'
+import { getFilterParams } from '../utils'
 
 describe('sharePermissionFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
@@ -26,14 +25,7 @@ describe('sharePermissionFilter', () => {
   let type: ObjectType
   let sharePermissionType: ObjectType
   beforeEach(async () => {
-    const { client, paginator } = mockClient()
-    filter = sharePermissionFilter({
-      client,
-      paginator,
-      config: await getDefaultAdapterConfig(),
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    filter = sharePermissionFilter(getFilterParams()) as typeof filter
 
     sharePermissionType = new ObjectType({
       elemID: new ElemID(JIRA, 'SharePermission'),

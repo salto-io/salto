@@ -14,9 +14,10 @@
 * limitations under the License.
 */
 import { Change, dependencyChange, DependencyChanger, getAllChangeData, getChangeData, InstanceElement, isInstanceChange, isModificationChange, Values } from '@salto-io/adapter-api'
-import { collections, values } from '@salto-io/lowerdash'
+import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { WORKFLOW_SCHEME_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../constants'
+import { ChangeWithKey } from './types'
 
 
 const getWorkflowSchemeReferences = (instance: InstanceElement): string[] => [
@@ -35,7 +36,7 @@ export const workflowDependencyChanger: DependencyChanger = async changes => {
   const instanceChanges = Array.from(changes.entries())
     .map(([key, change]) => ({ key, change }))
     .filter(
-      (change): change is { key: collections.set.SetId; change: Change<InstanceElement> } =>
+      (change): change is ChangeWithKey<Change<InstanceElement>> =>
         isInstanceChange(change.change)
     )
 

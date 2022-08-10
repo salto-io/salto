@@ -19,7 +19,7 @@ import { logger } from '@salto-io/logging'
 import { collections, regex as lowerdashRegex } from '@salto-io/lowerdash'
 import Joi, { string } from 'joi'
 import _ from 'lodash'
-import { MaskingConfig } from '../config'
+import { MaskingConfig } from '../config/config'
 import { FilterCreator } from '../filter'
 
 const { awu } = collections.asynciterable

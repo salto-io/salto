@@ -19,7 +19,7 @@ import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
 import { mockClient } from '../utils'
 import { projectDeletionValidator } from '../../src/change_validators/project_deletion'
-import { DEFAULT_CONFIG, JiraConfig } from '../../src/config'
+import { getDefaultConfig, JiraConfig } from '../../src/config/config'
 import { JIRA } from '../../src/constants'
 
 describe('projectDeletionValidator', () => {
@@ -40,7 +40,7 @@ describe('projectDeletionValidator', () => {
       },
     })
 
-    config = _.cloneDeep(DEFAULT_CONFIG)
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
     changeValidator = projectDeletionValidator(client, config)
 

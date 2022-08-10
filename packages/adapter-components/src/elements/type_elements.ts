@@ -176,7 +176,7 @@ export const fixFieldTypes = (
     }
     const type = definedTypes[typeName] ?? toPrimitiveType(typeName)
     if (isEqualElements(type, BuiltinTypes.UNKNOWN) && typeName.toLowerCase() !== 'unknown') {
-      log.error('could not find type %s, falling back to unknown', typeName)
+      log.warn('could not find type %s, falling back to unknown', typeName)
     }
     return type
   }

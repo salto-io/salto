@@ -27,8 +27,8 @@ import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
 import { FilterCreator, Filter, filtersRunner, FilterResult } from './filter'
-import { API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZendeskConfig } from './config'
-import { ZENDESK } from './constants'
+import { API_DEFINITIONS_CONFIG, FETCH_CONFIG, GUIDE_SUPPORTED_TYPES, ZendeskConfig } from './config'
+import { ZENDESK, BRAND_LOGO_TYPE_NAME } from './constants'
 import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
 import { getChangeGroupIds } from './group_change'
@@ -72,6 +72,8 @@ import ducktypeCommonFilters from './filters/ducktype_common'
 import handleTemplateExpressionFilter from './filters/handle_template_expressions'
 import handleAppInstallationsFilter from './filters/handle_app_installations'
 import referencedIdFieldsFilter from './filters/referenced_id_fields'
+import brandLogoFilter from './filters/brand_logo'
+import removeBrandLogoFieldFilter from './filters/remove_brand_logo_field'
 import { getConfigFromConfigChanges } from './config_change'
 import { dependencyChanger } from './dependency_changers'
 
@@ -115,6 +117,9 @@ export const DEFAULT_FILTERS = [
   usersFilter,
   tagsFilter,
   macroAttachmentsFilter,
+  brandLogoFilter,
+  // removeBrandLogoFieldFilter should be after brandLogoFilter
+  removeBrandLogoFieldFilter,
   fieldReferencesFilter,
   appsFilter,
   appOwnedConvertListToMapFilter,
@@ -139,6 +144,7 @@ const SKIP_RESOLVE_TYPE_NAMES = [
   'organization_field__custom_field_options',
   'macro',
   'macro_attachment',
+  'brand_logo',
 ]
 
 export interface ZendeskAdapterParams {
@@ -197,10 +203,15 @@ export default class ZendeskAdapter implements AdapterOperations {
 
   @logDuration('generating instances and types from service')
   private async getElements(): Promise<ReturnType<typeof getAllElements>> {
+    const supportedTypes = _.merge(
+      {},
+      this.userConfig.apiDefinitions.supportedTypes,
+      this.userConfig[FETCH_CONFIG].enableGuide ? GUIDE_SUPPORTED_TYPES : {},
+    )
     return getAllElements({
       adapterName: ZENDESK,
       types: this.userConfig.apiDefinitions.types,
-      supportedTypes: this.userConfig.apiDefinitions.supportedTypes,
+      supportedTypes,
       fetchQuery: this.fetchQuery,
       paginator: this.paginator,
       nestedFieldFinder: findDataField,
@@ -292,7 +303,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       changeValidator: createChangeValidator({
         client: this.client,
         apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
-        typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment'],
+        typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment', BRAND_LOGO_TYPE_NAME],
         typesWithNoDeploy: ['tag'],
       }),
       dependencyChanger,

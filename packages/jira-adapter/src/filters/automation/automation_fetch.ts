@@ -25,7 +25,7 @@ import JiraClient from '../../client/client'
 import { FilterCreator } from '../../filter'
 import { createAutomationTypes } from './types'
 import { getCloudId } from './cloud_id'
-import { JiraConfig } from '../../config'
+import { JiraConfig } from '../../config/config'
 
 const DEFAULT_PAGE_SIZE = 100
 

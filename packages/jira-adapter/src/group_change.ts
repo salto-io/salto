@@ -16,7 +16,7 @@
 import { collections, values } from '@salto-io/lowerdash'
 import { ChangeGroupIdFunction, getChangeData, ChangeGroupId, ChangeId, isModificationChange, Change, isAdditionChange, isReferenceExpression } from '@salto-io/adapter-api'
 import { getParent, getParents } from '@salto-io/adapter-utils'
-import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, SECURITY_LEVEL_TYPE, WORKFLOW_TYPE_NAME } from './constants'
+import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, SECURITY_LEVEL_TYPE, WORKFLOW_TYPE_NAME, STATUS_TYPE_NAME } from './constants'
 
 const { awu } = collections.asynciterable
 
@@ -57,10 +57,21 @@ const getFieldConfigItemGroup: ChangeIdFunction = async change => {
   return `${parent.elemID.getFullName()} items`
 }
 
+const getStatusGroup: ChangeIdFunction = async change => {
+  const { typeName } = getChangeData(change).elemID
+  if (isModificationChange(change) && typeName === STATUS_TYPE_NAME) {
+    return 'Status Modifications'
+  } if (isAdditionChange(change) && typeName === STATUS_TYPE_NAME) {
+    return 'Status Additions'
+  }
+  return undefined
+}
+
 const changeIdProviders: ChangeIdFunction[] = [
   getWorkflowGroup,
   getSecurityLevelGroup,
   getFieldConfigItemGroup,
+  getStatusGroup,
 ]
 
 export const getChangeGroupIds: ChangeGroupIdFunction = async changes => ({

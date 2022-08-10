@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeDataType, DeployResult, ElemID, getChangeData, InstanceElement, isAdditionChange, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { Change, ChangeDataType, DeployResult, ElemID, getChangeData, InstanceElement, isAdditionChange, isEqualValues, isModificationChange, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { config, deployment, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { resolveChangeElement, resolveValues, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -52,6 +52,26 @@ export const defaultDeployChange = async ({
     await resolveChangeElement(change, getLookUpName, resolveValues, elementsSource),
     elementsSource,
   )
+
+  if (isModificationChange(changeToDeploy)) {
+    const valuesBefore = (await deployment.filterIgnoredValues(
+      changeToDeploy.data.before.clone(),
+      fieldsToIgnore,
+      [],
+      elementsSource
+    )).value
+    const valuesAfter = (await deployment.filterIgnoredValues(
+      changeToDeploy.data.after.clone(),
+      fieldsToIgnore,
+      [],
+      elementsSource
+    )).value
+
+    if (isEqualValues(valuesBefore, valuesAfter)) {
+      return undefined
+    }
+  }
+
   const response = await deployment.deployChange(
     changeToDeploy,
     client,

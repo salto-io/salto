@@ -14,13 +14,11 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { filterUtils, client as clientUtils, deployment, elements as elementUtils } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { DEFAULT_CONFIG } from '../../src/config'
+import { filterUtils, client as clientUtils, deployment } from '@salto-io/adapter-components'
 import JiraClient from '../../src/client/client'
 import { JIRA } from '../../src/constants'
 import projectComponentFilter from '../../src/filters/project_component'
-import { mockClient } from '../utils'
+import { getFilterParams, mockClient } from '../utils'
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -46,13 +44,10 @@ describe('projectComponentFilter', () => {
     const { client: cli, paginator } = mockClient()
     client = cli
 
-    filter = projectComponentFilter({
+    filter = projectComponentFilter(getFilterParams({
       client,
       paginator,
-      config: DEFAULT_CONFIG,
-      elementsSource: buildElementsSourceFromElements([]),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as typeof filter
+    })) as typeof filter
 
     type = new ObjectType({
       elemID: new ElemID(JIRA, 'ProjectComponent'),

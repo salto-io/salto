@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import wu from 'wu'
 import semver from 'semver'
+import { EOL } from 'os'
 import { FetchChange, Tags, StepEmitter } from '@salto-io/core'
 import { SaltoError, DetailedChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
@@ -114,7 +115,7 @@ export const formatWorkspaceErrors = async (
     .slice(0, MAX_WORKSPACE_ERRORS_TO_LOG)
     .map(err => workspace.transformError(err))
     .map(async err => formatWorkspaceError(await err))
-)).join('\n')
+)).join(EOL)
 
 const printWorkspaceErrors = async (
   status: WorkspaceStatusErrors['status'],

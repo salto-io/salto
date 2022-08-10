@@ -22,6 +22,7 @@ Currently, Salto supports the following services:
 - [Zuora Billing](../packages/zuora-billing-adapter)
 - [Jira](../packages/jira-adapter)
 - [Stripe](../packages/stripe-adapter)
+- [Okta](../packages/okta-adapter)
 
 Support for other services is in the works.
 

@@ -16,7 +16,7 @@
 import {
   FetchResult, isInstanceElement, AdapterOperations, DeployResult, DeployOptions,
   ElemIdGetter, ReadOnlyElementsSource,
-  FetchOptions, Field, BuiltinTypes, CORE_ANNOTATIONS, DeployModifiers, Change, getChangeData,
+  FetchOptions, Field, BuiltinTypes, DeployModifiers, Change, getChangeData,
   Element, ProgressReporter,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
@@ -28,7 +28,7 @@ import {
 } from './transformer'
 import { getMetadataTypes, getTopLevelCustomTypes, metadataTypesToList } from './types'
 import { TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST,
-  INTEGRATION, FETCH_TARGET, SKIP_LIST, LAST_FETCH_TIME, USE_CHANGES_DETECTION, FETCH, INCLUDE, EXCLUDE, DEPLOY, DEPLOY_REFERENCED_ELEMENTS, WARN_STALE_DATA, APPLICATION_ID, LOCKED_ELEMENTS_TO_EXCLUDE, VALIDATE, ADDITIONAL_DEPS } from './constants'
+  INTEGRATION, FETCH_TARGET, SKIP_LIST, USE_CHANGES_DETECTION, FETCH, INCLUDE, EXCLUDE, DEPLOY, DEPLOY_REFERENCED_ELEMENTS, WARN_STALE_DATA, APPLICATION_ID, LOCKED_ELEMENTS_TO_EXCLUDE, VALIDATE, ADDITIONAL_DEPS } from './constants'
 import convertListsToMaps from './filters/convert_lists_to_maps'
 import replaceInstanceReferencesFilter from './filters/instance_references'
 import parseSavedSearch from './filters/parse_saved_searchs'
@@ -260,17 +260,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     } = await getCustomObjectsResult
 
     const topLevelCustomTypes = getTopLevelCustomTypes(customTypes)
-    progressReporter.reportProgress({ message: 'Running filters for additional information' })
-    _(topLevelCustomTypes)
-      .concat(Object.values(additionalTypes))
-      .forEach(type => {
-        type.fields[LAST_FETCH_TIME] = new Field(
-          type,
-          LAST_FETCH_TIME,
-          BuiltinTypes.STRING,
-          { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
-        )
-      });
+    progressReporter.reportProgress({ message: 'Running filters for additional information' });
 
     [...topLevelCustomTypes, ...Object.values(additionalTypes)].forEach(type => {
       type.fields[APPLICATION_ID] = new Field(type, APPLICATION_ID, BuiltinTypes.STRING)
@@ -291,7 +281,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
         )
         : undefined
     }).filter(isInstanceElement).toArray()
-    // TODO: Add the server time for all the instances to the singleton
 
     const dataElements = await dataElementsPromise
     const suiteAppConfigElements = this.client.isSuiteAppConfigured()

@@ -25,7 +25,6 @@ import _ from 'lodash'
 import {
   ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM, IS_ATTRIBUTE, NETSUITE, RECORDS_PATH,
   SCRIPT_ID, ADDITIONAL_FILE_SUFFIX, FILE, FILE_CABINET_PATH, PATH, FILE_CABINET_PATH_SEPARATOR,
-  LAST_FETCH_TIME,
   APPLICATION_ID,
   SETTINGS_PATH,
 } from './constants'
@@ -147,15 +146,16 @@ export const createInstanceElement = async (
       content: customizationInfo.fileContent,
     })
   }
+  const values = await transformValues({
+    values: valuesWithTransformedAttrs,
+    type,
+    transformFunc: transformPrimitive,
+    strict: false,
+  })
   const instance = new InstanceElement(
     instanceName,
     type,
-    await transformValues({
-      values: valuesWithTransformedAttrs,
-      type,
-      transformFunc: transformPrimitive,
-      strict: false,
-    }) as Values,
+    values,
     getInstancePath(instanceFileName),
   )
   if (fetchTime !== undefined && serverTimeInstance !== undefined) {
@@ -272,7 +272,6 @@ export const toCustomizationInfo = async (
     return { typeName, values, path } as FolderCustomizationInfo
   }
 
-  delete values[LAST_FETCH_TIME]
   delete values[APPLICATION_ID]
 
   const scriptId = instance.value[SCRIPT_ID]

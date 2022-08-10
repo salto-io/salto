@@ -21,7 +21,7 @@ import { isInstanceChange, InstanceElement, Element,
 import { collections, values } from '@salto-io/lowerdash'
 import { buildNetsuiteQuery, convertToQueryParams, NetsuiteQuery, NetsuiteQueryParameters } from '../query'
 import { isCustomType, isFileCabinetInstance } from '../types'
-import { LAST_FETCH_TIME, PATH, SCRIPT_ID } from '../constants'
+import { PATH, SCRIPT_ID } from '../constants'
 import { getTypeIdentifier } from '../data_elements/types'
 import { FailedFiles, FailedTypes } from '../client/types'
 import { getReferencedInstances } from '../reference_dependencies'
@@ -70,11 +70,12 @@ const getIdentifingValuesByType = async (
     .toArray())
 )
 
+// TODO: Probably remove this
 const getInstanceToCompare = (instance: InstanceElement): InstanceElement =>
   new InstanceElement(
     instance.elemID.name,
     instance.refType,
-    _.omit(instance.value, LAST_FETCH_TIME),
+    instance.value,
     instance.path,
     instance.annotations
   )

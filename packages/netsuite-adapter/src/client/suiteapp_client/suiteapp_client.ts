@@ -361,8 +361,8 @@ export default class SuiteAppClient {
     }
     const { results } = result
     const featureFields = results[0].data.fields
-    const featureArr = [SDF, SUITE_BUNDLER, SOAP, REST, TBA]
-    const featuresToEnable = featureArr.filter(feature => featureFields[feature] === 'F')
+    const requiredFeatures = [SDF, SUITE_BUNDLER, SOAP, REST, TBA]
+    const featuresToEnable = requiredFeatures.filter(feature => featureFields[feature] === 'F')
     if (featuresToEnable.length !== 0) {
       const message = `The following features are disabled: ${featuresToEnable.toString()}. Please enable them using the NetSuite UI and try again.`
       throw new CredentialError(message)

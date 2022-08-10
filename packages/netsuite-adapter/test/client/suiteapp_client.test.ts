@@ -621,7 +621,7 @@ describe('SuiteAppClient', () => {
         })).resolves.toBeUndefined()
       })
 
-      it('should fail when a must-have feaure is disabled', async () => {
+      it('should fail when a must-have feature is disabled', async () => {
         mockAxiosAdapter.onPost().reply(200, {
           status: 'success',
           result: {
@@ -648,7 +648,7 @@ describe('SuiteAppClient', () => {
         })).rejects.toThrow()
       })
 
-      it('should fail when all must-have feaures are disabled', async () => {
+      it('should fail when all must-have features are disabled', async () => {
         mockAxiosAdapter.onPost().reply(200, {
           status: 'success',
           result: {

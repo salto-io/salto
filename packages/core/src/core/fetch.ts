@@ -158,7 +158,7 @@ const toChangesWithPath = (
     }
     const originalElements = await accountElementByFullName(changeID)
     if (originalElements.length === 0) {
-      log.debug(`no original elements found for change element id ${changeID.getFullName()}`)
+      log.trace(`no original elements found for change element id ${changeID.getFullName()}`)
       return [change]
     }
     // Replace merged element with original elements that have a path hint

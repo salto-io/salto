@@ -2470,6 +2470,17 @@ describe('workspace', () => {
         expect(result).toEqual([])
       })
     })
+    describe('getElemIdsByStaticFilePaths', () => {
+      it('get full map', async () => {
+        const result = await workspace.getElemIdsByStaticFilePaths()
+        expect(result).toEqual(
+          {
+            'static1.nacl': 'salesforce.lead.instance.someName1',
+            'static2.nacl': 'salesforce.lead.instance.someName2',
+          }
+        )
+      })
+    })
   })
   describe('changed by index', () => {
     let workspace: Workspace

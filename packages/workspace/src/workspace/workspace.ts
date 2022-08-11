@@ -999,7 +999,11 @@ export const loadWorkspace = async (
           if (filePaths === undefined) {
             return true
           }
-          return filePaths.has(filePath)
+          if (filePaths.has(filePath)) {
+            filePaths.delete(filePath)
+            return true
+          }
+          return false
         })
         .map(filePath => [filePath, key])
     ).toArray())

@@ -251,12 +251,12 @@ export type Workspace = {
     encoding: BufferEncoding
     env?: string
   }): Promise<StaticFile | undefined>
-  getChangedElementsBetween(dateRange: DateRange, envName?: string): Promise<ElemID[]>
   getStaticFilesByElemIds(elementIds: ElemID[], envName?: string): Promise<string[]>
   getElemIdsByStaticFiles(
     filePaths?: string[],
     envName?: string
   ): Promise<Record<string, string>>
+  getChangedElementsBetween(dateRange: DateRange, envName?: string): Promise<ElemID[]>
   isChangedAtIndexEmpty(envName?: string): Promise<boolean>
 }
 

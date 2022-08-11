@@ -180,7 +180,6 @@ export type Workspace = {
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
   getReferenceSourcesIndex: () => Promise<ReadOnlyRemoteMap<ElemID[]>>
   getReferenceTargetsIndex: () =>Promise<ReadOnlyRemoteMap<ElemID[]>>
-  getReferencedStaticFilesIndex: (envName?: string) =>Promise<ReadOnlyRemoteMap<ElemID[]>>
   getElementOutgoingReferences: (id: ElemID) => Promise<ElemID[]>
   getElementIncomingReferences: (id: ElemID) => Promise<ElemID[]>
   getAllChangedByAuthors: (envName?: string) => Promise<Author[]>
@@ -1066,8 +1065,6 @@ export const loadWorkspace = async (
       .states[currentEnv()].referenceSources,
     getReferenceTargetsIndex: async () => (await getWorkspaceState())
       .states[currentEnv()].referenceTargets,
-    getReferencedStaticFilesIndex: async (envName?: string) => (await getWorkspaceState())
-      .states[envName ?? currentEnv()].referencedStaticFiles,
     getElementOutgoingReferences: async id => {
       if (!id.isBaseID()) {
         throw new Error(`getElementOutgoingReferences only support base ids, received ${id.getFullName()}`)

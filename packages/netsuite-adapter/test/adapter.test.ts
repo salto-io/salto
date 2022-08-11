@@ -1001,35 +1001,6 @@ describe('Adapter', () => {
       )).toHaveLength(0)
     })
 
-    // TODO: Make sure the behavior that is stays the same is good enough
-    // it('should not create serverTime elements
-    // when fetchTarget parameter was passed', async () => {
-    //   const suiteAppClient = {
-    //     getSystemInformation: getSystemInformationMock,
-    //     getNetsuiteWsdl: () => undefined,
-    //     getConfigRecords: () => [],
-    //   } as unknown as SuiteAppClient
-
-    //   adapter = new NetsuiteAdapter({
-    //     client: new NetsuiteClient(client, suiteAppClient),
-    //     elementsSource,
-    //     filtersCreators: [firstDummyFilter, secondDummyFilter],
-    //     config: {
-    //       ...config,
-    //       [FETCH_TARGET]: {
-    //         types: {},
-    //         filePaths: [],
-    //       },
-    //     },
-    //     getElemIdFunc: mockGetElemIdFunc,
-    //   })
-
-    //   const { elements } = await adapter.fetch(mockFetchOpts)
-    //   expect(elements.filter(
-    //     e => e.elemID.getFullName().includes(SERVER_TIME_TYPE_NAME)
-    //   )).toHaveLength(0)
-    // })
-
     it('should create the serverTime elements when getSystemInformation returns the time', async () => {
       const { elements } = await adapter.fetch(mockFetchOpts)
       expect(elements.filter(

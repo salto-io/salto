@@ -70,16 +70,6 @@ const getIdentifingValuesByType = async (
     .toArray())
 )
 
-// TODO: Probably remove this
-const getInstanceToCompare = (instance: InstanceElement): InstanceElement =>
-  new InstanceElement(
-    instance.elemID.name,
-    instance.refType,
-    instance.value,
-    instance.path,
-    instance.annotations
-  )
-
 const getMatchingServiceInstances = async (
   baseInstances: InstanceElement[],
   fetchByQuery: FetchByQueryFunc
@@ -99,7 +89,7 @@ const getMatchingServiceInstances = async (
   const fetchQuery = buildNetsuiteQuery(convertToQueryParams(fetchTarget))
   const { elements } = await fetchByQuery(fetchQuery, { reportProgress: () => null }, false, true)
   return _.keyBy(
-    elements.filter(isInstanceElement).map(getInstanceToCompare),
+    elements.filter(isInstanceElement),
     element => element.elemID.getFullName()
   )
 }
@@ -150,14 +140,14 @@ const hasChangedInService = (
   change: RemovalChange<InstanceElement> | ModificationChange<InstanceElement>,
   serviceInstance: InstanceElement
 ): boolean => (
-  !isEqualElements(getInstanceToCompare(change.data.before), serviceInstance)
+  !isEqualElements(change.data.before, serviceInstance)
 )
 
 const isChangeTheSameInService = (
   change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
   serviceInstance: InstanceElement
 ): boolean => (
-  isEqualElements(getInstanceToCompare(change.data.after), serviceInstance)
+  isEqualElements(change.data.after, serviceInstance)
 )
 
 const isModificationOverridingChange = (
@@ -216,10 +206,7 @@ const changeValidator: QueryChangeValidator = async (
   }
 
   const isOverridingAdditionalInstance = ({ instance }: AdditionalInstance): boolean =>
-    !isEqualElements(
-      getInstanceToCompare(instance),
-      serviceInstances[instance.elemID.getFullName()]
-    )
+    !isEqualElements(instance, serviceInstances[instance.elemID.getFullName()])
 
   const changesWarnings = instanceChanges
     .filter(isOverridingChange)

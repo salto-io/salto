@@ -251,8 +251,8 @@ export type Workspace = {
     encoding: BufferEncoding
     env?: string
   }): Promise<StaticFile | undefined>
-  getStaticFilesByElemIds(elementIds: ElemID[], envName?: string): Promise<string[]>
-  getElemIdsByStaticFiles(
+  getStaticFilePathsByElemIds(elementIds: ElemID[], envName?: string): Promise<string[]>
+  getElemIdsByStaticFilePaths(
     filePaths?: string[],
     envName?: string
   ): Promise<Record<string, string>>
@@ -974,7 +974,7 @@ export const loadWorkspace = async (
     const result = await currentWorkspaceState.states[env].changedAt.getMany(relevantTimestamps)
     return result.filter(values.isDefined).flat()
   }
-  const getStaticFilesByElemIds = async (
+  const getStaticFilePathsByElemIds = async (
     elementIds: ElemID[],
     envName?: string,
   ): Promise<string[]> => {
@@ -1404,8 +1404,8 @@ export const loadWorkspace = async (
     getStaticFile: async ({ filepath, encoding, env }) =>
       (naclFilesSource.getStaticFile(filepath, encoding, env ?? currentEnv())),
     getChangedElementsBetween,
-    getStaticFilesByElemIds,
-    getElemIdsByStaticFiles: getElemIdsByStaticFilePaths,
+    getStaticFilePathsByElemIds,
+    getElemIdsByStaticFilePaths,
     isChangedAtIndexEmpty,
   }
 }

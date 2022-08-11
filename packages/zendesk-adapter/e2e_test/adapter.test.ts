@@ -26,6 +26,7 @@ import { DEFAULT_CONFIG, API_DEFINITIONS_CONFIG, FETCH_CONFIG } from '../src/con
 import { ZENDESK } from '../src/constants'
 import { Credentials } from '../src/auth'
 import { getChangeGroupIds } from '../src/group_change'
+import { BRAND_LOGO_TYPE } from '../src/filters/brand_logo'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
 
@@ -219,7 +220,19 @@ describe('Zendesk adapter E2E', () => {
       new ReferenceExpression(userFieldOption1.elemID, userFieldOption1),
       new ReferenceExpression(userFieldOption2.elemID, userFieldOption2),
     ]
+    const brandLogoInstanceToAdd = new InstanceElement(
+      'brand_logo',
+      BRAND_LOGO_TYPE
+    )
+    const brandInstanceToAdd = createInstanceElement(
+      'brand',
+      {
+        name: createName('brand'),
+        subdomain: 'e2esubomainname',
+      },
+    )
     let groupIdToInstances: Record<string, InstanceElement[]>
+    let deployedBrandLogo: InstanceElement
 
     beforeAll(async () => {
       credLease = await credsLease()
@@ -250,6 +263,7 @@ describe('Zendesk adapter E2E', () => {
         macroInstance,
         slaPolicyInstance,
         viewInstance,
+        brandInstanceToAdd,
       ]
       const changeGroups = await getChangeGroupIds(new Map<string, Change>(instancesToAdd
         .map(inst => [inst.elemID.getFullName(), toChange({ after: inst })])))
@@ -268,6 +282,24 @@ describe('Zendesk adapter E2E', () => {
       })
       elements = fetchResult.elements
       expect(fetchResult.errors).toHaveLength(0)
+
+      const deployedBrand = elements
+        .filter(isInstanceElement)
+        .filter(elem => elem.elemID.typeName === 'brand')[0]
+      brandLogoInstanceToAdd.annotate({
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
+          deployedBrand.elemID,
+          deployedBrand,
+        ),
+      })
+      const brandLogoDeployResults = await deployChanges(adapterAttr, {
+        brand_logo: [{ action: 'add', data: { after: brandLogoInstanceToAdd } }],
+      })
+      expect(brandLogoDeployResults).toHaveLength(1)
+      // eslint-disable-next-line prefer-destructuring
+      deployedBrandLogo = brandLogoDeployResults[0].appliedChanges
+        .map(getChangeData)
+        .filter(isInstanceElement)[0]
     })
 
     afterAll(async () => {
@@ -280,7 +312,10 @@ describe('Zendesk adapter E2E', () => {
             : undefined
         }).filter(values.isDefined)
       )
-      await deployChanges(adapterAttr, changes)
+      await deployChanges(adapterAttr, {
+        ...changes,
+        brand_logo: [{ action: 'remove', data: { before: deployedBrandLogo } }],
+      })
       if (credLease.return) {
         await credLease.return()
       }
@@ -408,7 +443,7 @@ describe('Zendesk adapter E2E', () => {
             .toContain(instance.elemID.getFullName())
         })
     })
-    it('should fetch and deploy brand_logo correctly', async () => {
+    it('should fetch brand_logo correctly', async () => {
       const fetchedBrandLogoInstances = elements.filter(inst => inst.elemID.typeName === 'brand_logo').filter(isInstanceElement)
       expect(fetchedBrandLogoInstances).not.toHaveLength(0)
       fetchedBrandLogoInstances
@@ -417,42 +452,6 @@ describe('Zendesk adapter E2E', () => {
           const brandInstance = getParent(instance)
           expect(brandInstance.value.logo.resValue).toBe(instance)
         })
-      const brandLogoInstanceToAdd = fetchedBrandLogoInstances[0].clone()
-      const brandInstanceToAdd = createInstanceElement(
-        'brand',
-        {
-          name: createName('brand'),
-          subdomain: createName('brand'),
-          logo: new ReferenceExpression(brandLogoInstanceToAdd.elemID, brandLogoInstanceToAdd),
-        },
-      )
-      const brandDeployResults = await deployChanges(adapterAttr, {
-        brand: [{ action: 'add', data: { after: brandInstanceToAdd } }],
-      })
-      expect(brandDeployResults).toHaveLength(1)
-      const deployedBrand = brandDeployResults[0].appliedChanges
-        .map(getChangeData)
-        .filter(isInstanceElement)[0]
-      brandLogoInstanceToAdd.annotate({
-        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
-          deployedBrand.elemID,
-          deployedBrand,
-        ),
-      })
-      const brandLogoDeployResults = await deployChanges(adapterAttr, {
-        brand_logo: [{ action: 'add', data: { after: brandLogoInstanceToAdd } }],
-      })
-      expect(brandLogoDeployResults).toHaveLength(1)
-      const deployedBrandLogo = brandLogoDeployResults[0].appliedChanges
-        .map(getChangeData)
-        .filter(isInstanceElement)[0]
-
-      // Remove the tested brand and brand_logo
-      // It's important to remove the brand_logo before the brand
-      await deployChanges(adapterAttr, {
-        brand_logo: [{ action: 'remove', data: { before: deployedBrandLogo } }],
-        brand: [{ action: 'remove', data: { before: deployedBrand } }],
-      })
     })
   })
 })

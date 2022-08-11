@@ -253,7 +253,7 @@ export type Workspace = {
   }): Promise<StaticFile | undefined>
   getChangedElementsBetween(dateRange: DateRange, envName?: string): Promise<ElemID[]>
   getStaticFilesByElemIds(elementIds: ElemID[], envName?: string): Promise<string[]>
-  getElemIdsByStaticFilePaths(
+  getElemIdsByStaticFiles(
     filePaths?: string[],
     envName?: string
   ): Promise<Record<string, string>>
@@ -1405,7 +1405,7 @@ export const loadWorkspace = async (
       (naclFilesSource.getStaticFile(filepath, encoding, env ?? currentEnv())),
     getChangedElementsBetween,
     getStaticFilesByElemIds,
-    getElemIdsByStaticFilePaths,
+    getElemIdsByStaticFiles: getElemIdsByStaticFilePaths,
     isChangedAtIndexEmpty,
   }
 }

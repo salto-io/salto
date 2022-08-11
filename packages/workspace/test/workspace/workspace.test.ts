@@ -2470,9 +2470,9 @@ describe('workspace', () => {
         expect(result).toEqual([])
       })
     })
-    describe('getElemIdsByStaticFilePaths', () => {
+    describe('getElemIdsByStaticFiles', () => {
       it('get full map', async () => {
-        const result = await workspace.getElemIdsByStaticFilePaths()
+        const result = await workspace.getElemIdsByStaticFiles()
         expect(result).toEqual(
           {
             'static1.nacl': 'salesforce.lead.instance.someName1',
@@ -2481,7 +2481,7 @@ describe('workspace', () => {
         )
       })
       it('get partial map', async () => {
-        const result = await workspace.getElemIdsByStaticFilePaths(['static1.nacl'])
+        const result = await workspace.getElemIdsByStaticFiles(['static1.nacl'])
         expect(result).toEqual(
           {
             'static1.nacl': 'salesforce.lead.instance.someName1',
@@ -2489,7 +2489,7 @@ describe('workspace', () => {
         )
       })
       it('get empty map', async () => {
-        const result = await workspace.getElemIdsByStaticFilePaths(['not exists.nacl'])
+        const result = await workspace.getElemIdsByStaticFiles(['not exists.nacl'])
         expect(result).toEqual({})
       })
     })

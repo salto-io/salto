@@ -991,18 +991,16 @@ export const loadWorkspace = async (
   ): Promise<Record<string, string>> => {
     const env = envName ?? currentEnv()
     const currentWorkspaceState = await getWorkspaceState()
-    if (filePaths === undefined) {
-      return Object.fromEntries(
-        (await awu(
-          currentWorkspaceState.states[env].referencedStaticFiles.entries()
-        ).toArray()).flatMap(({ key, value }) => value.map(filePath => [filePath, key]))
-      )
-    }
     return Object.fromEntries(await awu(
       currentWorkspaceState.states[env].referencedStaticFiles.entries()
     ).flatMap(
       ({ key, value }) => value
-        .filter(filePath => filePaths.has(filePath))
+        .filter(filePath => {
+          if (filePaths === undefined) {
+            return true
+          }
+          return filePaths.has(filePath)
+        })
         .map(filePath => [filePath, key])
     ).toArray())
   }

@@ -2453,20 +2453,20 @@ describe('workspace', () => {
         },
       )
     })
-    describe('getReferencedStaticFilePaths', () => {
+    describe('getStaticFilesByElemIds', () => {
       it('get correct paths when providing a correct element id', async () => {
-        const result = await workspace.getReferencedStaticFilePaths([ElemID.fromFullName('salesforce.lead.instance.someName1')])
+        const result = await workspace.getStaticFilesByElemIds([ElemID.fromFullName('salesforce.lead.instance.someName1')])
         expect(result).toEqual(['static1.nacl'])
       })
       it('get multiple static files with multiple element ids', async () => {
-        const result = await workspace.getReferencedStaticFilePaths([
+        const result = await workspace.getStaticFilesByElemIds([
           ElemID.fromFullName('salesforce.lead.instance.someName1'),
           ElemID.fromFullName('salesforce.lead.instance.someName2'),
         ])
         expect(result).toEqual(['static1.nacl', 'static2.nacl'])
       })
       it('get no paths when providing a bad element id', async () => {
-        const result = await workspace.getReferencedStaticFilePaths([ElemID.fromFullName('salesforce.lead.type')])
+        const result = await workspace.getStaticFilesByElemIds([ElemID.fromFullName('salesforce.lead.type')])
         expect(result).toEqual([])
       })
     })

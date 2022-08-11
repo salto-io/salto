@@ -364,7 +364,7 @@ export default class SuiteAppClient {
     const requiredFeatures = [SDF, SUITE_BUNDLER, SOAP, REST, TBA]
     const featuresToEnable = requiredFeatures.filter(feature => featureFields[feature] === 'F')
     if (featuresToEnable.length !== 0) {
-      const message = `The following features are disabled: ${featuresToEnable.toString()}. Please enable them using the NetSuite UI and try again.`
+      const message = `Error: Operation failed because the required ${featuresToEnable.toString()} feature is not enabled. Please see https://docs.salto.io/docs/netsuite#setup-instructions for all required features and how to enable them in NetSuite.`
       throw new CredentialError(message)
     }
   }

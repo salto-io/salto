@@ -27,9 +27,11 @@ type ServerTypeElements = {
   instance: InstanceElement
 }
 
+const serverTimeElemID = new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME)
+const serverTimeInstanceElemID = new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME, 'instance', ElemID.CONFIG_NAME)
+
 export const createServerTimeElements = (time: Date): ServerTypeElements => {
   log.debug(`Creating server time elements with time: ${time.toJSON()}`)
-  const serverTimeElemID = new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME)
   const type = new ObjectType({
     elemID: serverTimeElemID,
     isSettings: true,
@@ -60,8 +62,6 @@ const getExistingServerTimeElements = async (
   time: Date,
   elementsSource: ReadOnlyElementsSource,
 ): Promise<ServerTypeElements> => {
-  const serverTimeElemID = new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME)
-  const serverTimeInstanceElemID = new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME, 'instance', ElemID.CONFIG_NAME)
   const type = await elementsSource.get(serverTimeElemID)
   const instance = await elementsSource.get(serverTimeInstanceElemID)
   if (type === undefined || !isInstanceElement(instance)) {
@@ -82,7 +82,6 @@ export const getServerTimeElements = async (
 
 export const getLastServiceIdToFetchTime = async (elementsSource: ReadOnlyElementsSource):
   Promise<Record<string, Date>> => {
-  const serverTimeInstanceElemID = new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME, 'instance', ElemID.CONFIG_NAME)
   const serverTimeElement = await elementsSource.get(serverTimeInstanceElemID)
 
   if (!isInstanceElement(serverTimeElement)) {
@@ -104,7 +103,6 @@ export const getLastServiceIdToFetchTime = async (elementsSource: ReadOnlyElemen
 export const getLastServerTime = async (elementsSource: ReadOnlyElementsSource):
   Promise<Date | undefined> => {
   log.debug('Getting server time')
-  const serverTimeInstanceElemID = new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME, 'instance', ElemID.CONFIG_NAME)
   const serverTimeElement = await elementsSource.get(serverTimeInstanceElemID)
 
   if (!isInstanceElement(serverTimeElement)) {

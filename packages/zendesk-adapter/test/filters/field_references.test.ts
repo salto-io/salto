@@ -114,6 +114,27 @@ describe('References by id filter', () => {
       id: { refType: BuiltinTypes.NUMBER },
     },
   })
+  const userLookupTicketFieldType = new ObjectType({
+    elemID: new ElemID(ZENDESK, 'ticket_field'),
+    fields: {
+      id: { refType: BuiltinTypes.NUMBER },
+      relationship_filter: {
+        refType: new ObjectType({
+          elemID: new ElemID(ZENDESK, 'ticket_field__relationship_filter'),
+          fields: {
+            all: { refType: new ListType(new ObjectType({
+              elemID: new ElemID(ZENDESK, 'ticket_field__relationship_filter__all'),
+              fields: {
+                field: { refType: BuiltinTypes.STRING },
+                operator: { refType: BuiltinTypes.STRING },
+                value: { refType: BuiltinTypes.STRING },
+              },
+            })) },
+          },
+        }),
+      },
+    },
+  })
   const ticketFieldOptionType = new ObjectType({
     elemID: new ElemID(ZENDESK, 'ticket_field__custom_field_options'),
     fields: {
@@ -288,6 +309,19 @@ describe('References by id filter', () => {
         },
       },
     ),
+    new InstanceElement(
+      'userLookup1',
+      userLookupTicketFieldType,
+      {
+        id: 2501,
+        type: 'lookup',
+        relationship_filter: {
+          all: [
+            { field: 'user.custom_fields.key_uf1', operator: 'is', value: 9002 },
+          ],
+        },
+      }
+    ),
   ])
 
   describe('on fetch', () => {
@@ -368,6 +402,16 @@ describe('References by id filter', () => {
       expect(trigger.value.conditions.all[4].field.elemID.getFullName())
         .toEqual('zendesk.ticket_field.instance.customField2')
       expect(trigger.value.conditions.all[4].value).not.toBeInstanceOf(ReferenceExpression)
+
+      const userLookup = elements.filter(
+        e => isInstanceElement(e) && e.elemID.name === 'userLookup1'
+      )[0] as InstanceElement
+      expect(userLookup.value.relationship_filter.all[0].field).toBeInstanceOf(ReferenceExpression)
+      expect(userLookup.value.relationship_filter.all[0].field.elemID.getFullName())
+        .toEqual('zendesk.user_field.instance.userField1')
+      expect(userLookup.value.relationship_filter.all[0].value).toBeInstanceOf(ReferenceExpression)
+      expect(userLookup.value.relationship_filter.all[0].value.elemID.getFullName())
+        .toEqual('zendesk.user_field__custom_field_options.instance.option2')
     })
     describe('missing references', () => {
       it('should create missing references', () => {

@@ -2484,7 +2484,7 @@ describe('workspace', () => {
       })
       describe('with supplied filepaths', () => {
         it('should return partial map when only part of the file paths are given', async () => {
-          const result = await workspace.getElemIdsByStaticFilePaths(['static1.nacl'])
+          const result = await workspace.getElemIdsByStaticFilePaths(new Set(['static1.nacl']))
           expect(result).toEqual(
             {
               'static1.nacl': 'salesforce.lead.instance.someName1',
@@ -2492,11 +2492,11 @@ describe('workspace', () => {
           )
         })
         it('should return an empty map when an unknown file path is given', async () => {
-          const result = await workspace.getElemIdsByStaticFilePaths(['not exists.nacl'])
+          const result = await workspace.getElemIdsByStaticFilePaths(new Set(['not exists.nacl']))
           expect(result).toEqual({})
         })
         it('should return an empty map when filePath is empty', async () => {
-          const result = await workspace.getElemIdsByStaticFilePaths([])
+          const result = await workspace.getElemIdsByStaticFilePaths(new Set())
           expect(result).toEqual({})
         })
       })

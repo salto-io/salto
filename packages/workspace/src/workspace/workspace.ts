@@ -253,7 +253,7 @@ export type Workspace = {
   }): Promise<StaticFile | undefined>
   getStaticFilePathsByElemIds(elementIds: ElemID[], envName?: string): Promise<string[]>
   getElemIdsByStaticFilePaths(
-    filePaths?: string[],
+    filePaths?: Set<string>,
     envName?: string
   ): Promise<Record<string, string>>
   getChangedElementsBetween(dateRange: DateRange, envName?: string): Promise<ElemID[]>
@@ -986,20 +986,25 @@ export const loadWorkspace = async (
     return result.filter(values.isDefined).flat()
   }
   const getElemIdsByStaticFilePaths = async (
-    filePaths?: string[],
+    filePaths?: Set<string>,
     envName?: string
   ): Promise<Record<string, string>> => {
     const env = envName ?? currentEnv()
     const currentWorkspaceState = await getWorkspaceState()
-    const staticFileIndexEntires = await awu(
+    if (filePaths === undefined) {
+      return Object.fromEntries(
+        (await awu(
+          currentWorkspaceState.states[env].referencedStaticFiles.entries()
+        ).toArray()).flatMap(({ key, value }) => value.map(filePath => [filePath, key]))
+      )
+    }
+    return Object.fromEntries(await awu(
       currentWorkspaceState.states[env].referencedStaticFiles.entries()
-    ).toArray()
-    const reverseMap = Object.fromEntries(
-      staticFileIndexEntires.flatMap(({ key, value }) =>
-        value.filter(filePath => (filePaths ? filePaths.includes(filePath) : true))
-          .map(filePath => [filePath, key]))
-    )
-    return reverseMap
+    ).flatMap(
+      ({ key, value }) => value
+        .filter(filePath => filePaths.has(filePath))
+        .map(filePath => [filePath, key])
+    ).toArray())
   }
 
   const isChangedAtIndexEmpty = async (envName?: string): Promise<boolean> => {

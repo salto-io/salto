@@ -254,7 +254,7 @@ export type Workspace = {
   getChangedElementsBetween(dateRange: DateRange, envName?: string): Promise<ElemID[]>
   getStaticFilesByElemIds(elementIds: ElemID[], envName?: string): Promise<string[]>
   getElemIdsByStaticFilePaths(
-    filePaths: string[],
+    filePaths?: string[],
     envName?: string
   ): Promise<Record<string, string>>
   isChangedAtIndexEmpty(envName?: string): Promise<boolean>

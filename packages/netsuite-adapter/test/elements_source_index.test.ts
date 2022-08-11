@@ -66,7 +66,7 @@ describe('createElementsSourceIndex', () => {
 
     const elementsSourceIndex = createElementsSourceIndex(elementsSource)
     const index = (await elementsSourceIndex.getIndexes()).internalIdsIndex
-    expect(index).toEqual({ 'someType-4': { elemID: new ElemID(NETSUITE, 'someType', 'instance', 'name') } })
+    expect(index).toEqual({ 'someType-4': new ElemID(NETSUITE, 'someType', 'instance', 'name') })
   })
 
   it('should create the right custom fields index', async () => {

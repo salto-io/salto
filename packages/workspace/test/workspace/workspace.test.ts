@@ -2471,26 +2471,34 @@ describe('workspace', () => {
       })
     })
     describe('getElemIdsByStaticFiles', () => {
-      it('get full map', async () => {
-        const result = await workspace.getElemIdsByStaticFiles()
-        expect(result).toEqual(
-          {
-            'static1.nacl': 'salesforce.lead.instance.someName1',
-            'static2.nacl': 'salesforce.lead.instance.someName2',
-          }
-        )
+      describe('with missing filepaths param', () => {
+        it('should return full map ', async () => {
+          const result = await workspace.getElemIdsByStaticFiles()
+          expect(result).toEqual(
+            {
+              'static1.nacl': 'salesforce.lead.instance.someName1',
+              'static2.nacl': 'salesforce.lead.instance.someName2',
+            }
+          )
+        })
       })
-      it('get partial map', async () => {
-        const result = await workspace.getElemIdsByStaticFiles(['static1.nacl'])
-        expect(result).toEqual(
-          {
-            'static1.nacl': 'salesforce.lead.instance.someName1',
-          }
-        )
-      })
-      it('get empty map', async () => {
-        const result = await workspace.getElemIdsByStaticFiles(['not exists.nacl'])
-        expect(result).toEqual({})
+      describe('with supplied filepaths', () => {
+        it('should return partial map when only part of the file paths are given', async () => {
+          const result = await workspace.getElemIdsByStaticFiles(['static1.nacl'])
+          expect(result).toEqual(
+            {
+              'static1.nacl': 'salesforce.lead.instance.someName1',
+            }
+          )
+        })
+        it('should return an empty map when an unknown file path is given', async () => {
+          const result = await workspace.getElemIdsByStaticFiles(['not exists.nacl'])
+          expect(result).toEqual({})
+        })
+        it('should return an empty map when filePath is empty', async () => {
+          const result = await workspace.getElemIdsByStaticFiles([])
+          expect(result).toEqual({})
+        })
       })
     })
   })

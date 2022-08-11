@@ -2480,6 +2480,18 @@ describe('workspace', () => {
           }
         )
       })
+      it('get partial map', async () => {
+        const result = await workspace.getElemIdsByStaticFilePaths(['static1.nacl'])
+        expect(result).toEqual(
+          {
+            'static1.nacl': 'salesforce.lead.instance.someName1',
+          }
+        )
+      })
+      it('get empty map', async () => {
+        const result = await workspace.getElemIdsByStaticFilePaths(['not exists.nacl'])
+        expect(result).toEqual({})
+      })
     })
   })
   describe('changed by index', () => {

@@ -151,7 +151,7 @@ const toChangesWithPath = (
         changeID,
         await accountElementByFullName(changeID.createTopLevelParentID().parent)
       )
-      log.debug(`addition change for nested ${changeID.idType} with id ${changeID.getFullName()}, path found ${path?.join('/')}`)
+      log.trace(`addition change for nested ${changeID.idType} with id ${changeID.getFullName()}, path found ${path?.join('/')}`)
       return path
         ? [_.merge({}, change, { change: { path } })]
         : [change]

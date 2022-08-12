@@ -151,14 +151,14 @@ const toChangesWithPath = (
         changeID,
         await accountElementByFullName(changeID.createTopLevelParentID().parent)
       )
-      log.debug(`addition change for nested ${changeID.idType} with id ${changeID.getFullName()}, path found ${path?.join('/')}`)
+      log.trace(`addition change for nested ${changeID.idType} with id ${changeID.getFullName()}, path found ${path?.join('/')}`)
       return path
         ? [_.merge({}, change, { change: { path } })]
         : [change]
     }
     const originalElements = await accountElementByFullName(changeID)
     if (originalElements.length === 0) {
-      log.debug(`no original elements found for change element id ${changeID.getFullName()}`)
+      log.trace(`no original elements found for change element id ${changeID.getFullName()}`)
       return [change]
     }
     // Replace merged element with original elements that have a path hint

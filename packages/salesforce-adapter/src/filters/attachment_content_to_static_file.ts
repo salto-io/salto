@@ -21,12 +21,11 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../filter'
 import { apiName, metadataType } from '../transformers/transformer'
+import { EMAIL_TEMPLATE_METADATA_TYPE } from '../constants'
 
 const { awu } = collections.asynciterable
 
 const log = logger(module)
-
-const EMAIL_TEMPLATE_METADATA_TYPE = 'EmailTemplate'
 
 const createStaticFile = async (
   instance: InstanceElement,

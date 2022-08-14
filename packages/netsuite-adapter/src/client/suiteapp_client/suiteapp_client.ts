@@ -37,7 +37,7 @@ import { CallsLimiter, ConfigRecord, ConfigRecordData, GetConfigResult, CONFIG_R
 import { SuiteAppCredentials, toUrlAccountId } from '../credentials'
 import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_FEATURE_TYPE } from '../../types'
 import { DEFAULT_CONCURRENCY } from '../../config'
-import { FEATURE_CONSUMER_KEY, FEATURE_CONSUMER_SECRET, REQUIRED_FEATUERS, FEATURE_TO_UI_NAME } from './constants'
+import { CONSUMER_KEY, CONSUMER_SECRET, REQUIRED_FEATUERS, FEATURE_TO_UI_NAME } from './constants'
 import SoapClient from './soap_client/soap_client'
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError, RetryableError, retryOnRetryableError } from './errors'
 import { InvalidSuiteAppCredentialsError } from '../types'
@@ -532,8 +532,8 @@ export default class SuiteAppClient {
   private generateAuthHeader(url: string, method: HttpMethod): OAuth.Header {
     const oauth = new OAuth({
       consumer: {
-        key: FEATURE_CONSUMER_KEY,
-        secret: FEATURE_CONSUMER_SECRET,
+        key: CONSUMER_KEY,
+        secret: CONSUMER_SECRET,
       },
       realm: this.credentials.accountId,
       // eslint-disable-next-line camelcase

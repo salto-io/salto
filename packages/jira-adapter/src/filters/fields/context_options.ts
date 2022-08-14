@@ -194,13 +194,17 @@ export const setContextOptions = async (
 
   const { added, modified, removed } = getOptionChanges(contextChange)
 
+  if (added.length === 0 && modified.length === 0 && removed.length === 0) {
+    return
+  }
+
   const [addedWithParentId, addedWithoutParentId] = _.partition(
     added,
     option => option.optionId !== undefined || option.parentValue === undefined
   )
 
   const fieldId = (
-    await getParents(getChangeData(contextChange))[0].getResolvedValue(elementsSource)
+    await getParents(getChangeData(contextChange))[0].value
   ).value.id
 
   const url = `/rest/api/3/field/${fieldId}/context/${getChangeData(contextChange).value.id}/option`

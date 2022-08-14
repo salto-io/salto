@@ -97,45 +97,29 @@ describe('attachments to static file filter', () => {
 
     beforeAll(async () => {
       filter = filterCreator({ config: defaultFilterContext }) as FilterType
+      await filter.onFetch(elements)
     })
 
-    describe('extract attachments to static file', () => {
-      beforeAll(async () => {
-        await filter.onFetch(elements)
-      })
-      it('should create static file when emailTemplate has one attachment', () => {
-        const emailTemplateAfterFilter = elements.filter(isInstanceElement)
-          .find(e => e.elemID.name === 'emailTemplateOne')
-        expect(emailTemplateAfterFilter?.value[ATTACHMENTS][0].content)
-          .toStrictEqual(attachmentOneAsFile)
-      })
-
-      it('should create static files when emailTemplate has two attachment', () => {
-        const emailTemplateAfterFilter = elements.filter(isInstanceElement)
-          .find(e => e.elemID.name === 'emailTemplateTwo')
-        expect(emailTemplateAfterFilter?.value[ATTACHMENTS][0].content)
-          .toStrictEqual(attachmentTwoAsFile)
-        expect(emailTemplateAfterFilter?.value[ATTACHMENTS][1].content)
-          .toStrictEqual(attachmentThreeAsFile)
-      })
+    it('should extract attachment content to static file when emailTemplate has one attachment', () => {
+      const emailTemplateAfterFilter = elements.filter(isInstanceElement)
+        .find(e => e.elemID.name === 'emailTemplateOne')
+      expect(emailTemplateAfterFilter?.value[ATTACHMENTS][0].content)
+        .toStrictEqual(attachmentOneAsFile)
     })
 
-    describe('do not replace content for undefined path', () => {
-      let instanceUndefinedPath: InstanceElement | undefined
-      beforeAll(async () => {
-        instanceUndefinedPath = elements?.filter(isInstanceElement)
-          .find(e => e.path === undefined)
-        if (instanceUndefinedPath !== undefined) {
-          instanceUndefinedPath.path = undefined
-        }
-        await filter.onFetch(elements)
-      })
+    it('should extract attachments content to static files when emailTemplate has two attachment', () => {
+      const emailTemplateAfterFilter = elements.filter(isInstanceElement)
+        .find(e => e.elemID.name === 'emailTemplateTwo')
+      expect(emailTemplateAfterFilter?.value[ATTACHMENTS][0].content)
+        .toStrictEqual(attachmentTwoAsFile)
+      expect(emailTemplateAfterFilter?.value[ATTACHMENTS][1].content)
+        .toStrictEqual(attachmentThreeAsFile)
+    })
 
-      it('should replace content to undefined', () => {
-        instanceUndefinedPath = elements?.filter(isInstanceElement)
-          .find(e => e.path === undefined)
-        expect(instanceUndefinedPath?.value[ATTACHMENTS].content).toBe(undefined)
-      })
+    it('should replace content to undefined', () => {
+      const instanceUndefinedPath = elements?.filter(isInstanceElement)
+        .find(e => e.path === undefined)
+      expect(instanceUndefinedPath?.value[ATTACHMENTS].content).toBe(undefined)
     })
   })
 })

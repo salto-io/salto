@@ -49,7 +49,7 @@ const extractAttachmetsToStaticFile = async (instance: InstanceElement): Promise
     const path = await createStaticFile(instance, attachments.name, attachments.content)
     attachments.content = path
   } else {
-    attachments.forEach(async attachment => {
+    await awu(attachments).forEach(async attachment => {
       attachment.content = await createStaticFile(instance, attachment.name, attachment.content)
     })
   }

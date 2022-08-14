@@ -14,24 +14,19 @@
 * limitations under the License.
 */
 import { Element, isInstanceElement } from '@salto-io/adapter-api'
-import { FilterCreator } from '../filter'
-import { PROJECT_ROLE_TYPE } from '../constants'
-import { FIELD_TYPE_NAME } from './fields/constants'
+import _ from 'lodash'
+import { FIELD_CONFIGURATION_ITEM_TYPE_NAME } from '../../constants'
+import { FilterCreator } from '../../filter'
 
-
-const RELEVANT_TYPES = [
-  PROJECT_ROLE_TYPE,
-  FIELD_TYPE_NAME,
-]
 
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)
-      .filter(instance => RELEVANT_TYPES.includes(instance.elemID.typeName))
-      .filter(instance => instance.value.description === undefined)
+      .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_ITEM_TYPE_NAME)
+      .filter(instance => _.isEmpty(instance.value.description))
       .forEach(instance => {
-        instance.value.description = ''
+        instance.value.description = instance.value.id.value.value.description ?? ''
       })
   },
 })

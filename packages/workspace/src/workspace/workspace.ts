@@ -251,8 +251,12 @@ export type Workspace = {
     encoding: BufferEncoding
     env?: string
   }): Promise<StaticFile | undefined>
+  getStaticFilePathsByElemIds(elementIds: ElemID[], envName?: string): Promise<string[]>
+  getElemIdsByStaticFilePaths(
+    filePaths?: Set<string>,
+    envName?: string
+  ): Promise<Record<string, string>>
   getChangedElementsBetween(dateRange: DateRange, envName?: string): Promise<ElemID[]>
-  getReferencedStaticFilePaths(elementIds: ElemID[], envName?: string): Promise<string[]>
   isChangedAtIndexEmpty(envName?: string): Promise<boolean>
 }
 
@@ -970,8 +974,7 @@ export const loadWorkspace = async (
     const result = await currentWorkspaceState.states[env].changedAt.getMany(relevantTimestamps)
     return result.filter(values.isDefined).flat()
   }
-
-  const getReferencedStaticFilePaths = async (
+  const getStaticFilePathsByElemIds = async (
     elementIds: ElemID[],
     envName?: string,
   ): Promise<string[]> => {
@@ -981,6 +984,22 @@ export const loadWorkspace = async (
       elementIds.map(elemId => elemId.getFullName())
     )
     return result.filter(values.isDefined).flat()
+  }
+  const getElemIdsByStaticFilePaths = async (
+    filePaths?: Set<string>,
+    envName?: string
+  ): Promise<Record<string, string>> => {
+    const env = envName ?? currentEnv()
+    const currentWorkspaceState = await getWorkspaceState()
+    return Object.fromEntries(
+      await awu(currentWorkspaceState.states[env].referencedStaticFiles.entries())
+        .flatMap(({ key: id, value: fileNames }) => (
+          fileNames
+            .filter(filename => filePaths === undefined || filePaths.has(filename))
+            .map(filename => [filename, id])
+        ))
+        .toArray()
+    )
   }
 
   const isChangedAtIndexEmpty = async (envName?: string): Promise<boolean> => {
@@ -1385,7 +1404,8 @@ export const loadWorkspace = async (
     getStaticFile: async ({ filepath, encoding, env }) =>
       (naclFilesSource.getStaticFile(filepath, encoding, env ?? currentEnv())),
     getChangedElementsBetween,
-    getReferencedStaticFilePaths,
+    getStaticFilePathsByElemIds,
+    getElemIdsByStaticFilePaths,
     isChangedAtIndexEmpty,
   }
 }

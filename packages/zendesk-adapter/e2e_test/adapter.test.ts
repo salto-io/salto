@@ -223,10 +223,6 @@ describe('Zendesk adapter E2E', () => {
     const brandLogoInstanceToAdd = new InstanceElement(
       'brand_logo',
       BRAND_LOGO_TYPE,
-      {
-        filename: 'singlePixle.png',
-        contentType: 'image/png',
-      }
     )
     const brandName = createName('brand')
     const brandInstanceToAdd = createInstanceElement(
@@ -301,7 +297,7 @@ describe('Zendesk adapter E2E', () => {
       const alreadyExistedBrandLogo = elements
         .filter(isInstanceElement)
         .filter(elem => elem.elemID.typeName === 'brand_logo')[0]
-      brandLogoInstanceToAdd.value.content = alreadyExistedBrandLogo.value.content
+      brandLogoInstanceToAdd.value = alreadyExistedBrandLogo.value
       const modifiedBrandInstance = deployedBrand.clone()
       modifiedBrandInstance.value.logo = new ReferenceExpression(
         brandLogoInstanceToAdd.elemID,
@@ -310,7 +306,7 @@ describe('Zendesk adapter E2E', () => {
 
       const secondGroupChanges: Record<ChangeId, Change<InstanceElement>[]> = {
         brand: [{ action: 'modify', data: { before: brandInstanceToAdd, after: modifiedBrandInstance } }],
-        // we relay on brand_logo being deployed second for deploy results
+        // we relay on brand_logo being deployed second for testing the deploy results
         brand_logo: [{ action: 'add', data: { after: brandLogoInstanceToAdd } }],
       }
       const secondGroupDeployResults = await deployChanges(adapterAttr, secondGroupChanges)
@@ -475,6 +471,9 @@ describe('Zendesk adapter E2E', () => {
     it('should fetch brand_logo correctly', async () => {
       const fetchedBrandLogoInstances = elements.filter(inst => inst.elemID.typeName === 'brand_logo').filter(isInstanceElement)
       expect(fetchedBrandLogoInstances).toHaveLength(2)
+      expect(fetchedBrandLogoInstances[0].value.content.hash).toEqual(
+        fetchedBrandLogoInstances[1].value.content.hash
+      )
       fetchedBrandLogoInstances
         .forEach(instance => {
           expect(instance.value.content).toBeInstanceOf(StaticFile)

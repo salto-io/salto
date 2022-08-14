@@ -16,7 +16,7 @@
 import { Element } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { referencesRules } from '../reference_mapping'
+import { referencesRules, contextStrategyLookup } from '../reference_mapping'
 import { FilterCreator } from '../filter'
 
 /**
@@ -29,6 +29,7 @@ const filter: FilterCreator = () => ({
       fieldsToGroupBy: ['id', 'name'],
       defs: referencesRules,
       isEqualValue: (lhs, rhs) => _.toString(lhs) === _.toString(rhs),
+      contextStrategyLookup,
     })
   },
 })

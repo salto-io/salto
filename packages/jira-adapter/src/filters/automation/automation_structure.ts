@@ -13,14 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
+import _, { isPlainObject } from 'lodash'
 import Joi from 'joi'
 import { InstanceElement, isInstanceElement, Values, getChangeData,
   Change, isInstanceChange } from '@salto-io/adapter-api'
 import { transformElement, applyFunctionToChangeData, resolveValues, restoreChangeElement } from '@salto-io/adapter-utils'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
-import { AUTOMATION_TYPE, AUTOMATION_COMPONENT_TYPE } from '../../constants'
+import { AUTOMATION_TYPE, AUTOMATION_COMPONENT_TYPE, AUTOMATION_COMPONENT_VALUE_TYPE, AUTOMATION_OPERATION } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { getLookUpName } from '../../reference_mapping'
 
@@ -39,6 +39,21 @@ type DeployableValueObject = {
   value: string
 }
 
+// type CompareValueObject = {
+//   compareValue: {
+//     multiValue: boolean
+//     // value: string
+//   }
+// }
+
+// type CompareFieldValueObject = {
+//   compareFieldValue: {
+//     multiValue: boolean
+//     value: string
+//     values: string
+//   }
+// }
+
 const LINK_TYPE_SCHEME = Joi.object({
   linkType: Joi.string().required(),
   linkTypeDirection: Joi.string().required(),
@@ -47,6 +62,20 @@ const LINK_TYPE_SCHEME = Joi.object({
 const RAW_VALUE_SCHEME = Joi.object({
   rawValue: Joi.string().required(),
 }).unknown(true).required()
+
+// const COMPARAE_VALUE_SCHEME = Joi.object({
+//   compareValue: Joi.object({
+//     multiValue: Joi.boolean().required()
+//   }),
+// }).unknown(true).required()
+
+// const COMPARAE_FIELD_VALUE_SCHEME = Joi.object({
+//   compareFieldValue: Joi.object({
+//     multiValue: Joi.boolean().required(),
+//     value: Joi.string().optional(),
+//     values: Joi.array().items(Joi.string()).optional(),
+//   }),
+// }).unknown(true).required()
 
 const isLinkTypeObject = (value: unknown): value is LinkTypeObject => {
   const { error } = LINK_TYPE_SCHEME.validate(value)
@@ -57,6 +86,16 @@ const isRawValueObject = (value: unknown): value is RawValueObject => {
   const { error } = RAW_VALUE_SCHEME.validate(value)
   return error === undefined
 }
+
+// const isCompareValueObject = (value: unknown): value is CompareValueObject => {
+//   const { error } = COMPARAE_VALUE_SCHEME.validate(value)
+//   return error === undefined
+// }
+
+// const isCompareFieldValueObject = (value: unknown): value is CompareFieldValueObject => {
+//   const { error } = COMPARAE_FIELD_VALUE_SCHEME.validate(value)
+//   return error === undefined
+// }
 
 const KEYS_TO_REMOVE = [
   'clientKey',
@@ -98,9 +137,10 @@ const replaceStringValuesFieldName = async (instance: InstanceElement): Promise<
     strict: false,
     allowEmpty: true,
     transformFunc: async ({ value, field }) => {
+      const typeName = (await field?.getType())?.elemID.typeName
       if (
         _.isPlainObject(value)
-        && (await field?.getType())?.elemID.typeName === AUTOMATION_COMPONENT_TYPE
+        && (typeName === AUTOMATION_COMPONENT_TYPE || typeName === AUTOMATION_OPERATION)
         && _.isString(value.value)
       ) {
         value.rawValue = value.value
@@ -136,6 +176,31 @@ const separateLinkTypeField = async (instance: InstanceElement): Promise<void> =
   })).value
 }
 
+const compareFieldValueStructure = async (instance: InstanceElement): Promise<void> => {
+  instance.value = (await transformElement({
+    element: instance,
+    strict: false,
+    allowEmpty: true,
+    transformFunc: async ({ value, path, field }) => {
+      if (
+        path?.name === 'value'
+        && (await field?.getType())?.elemID.typeName === AUTOMATION_COMPONENT_VALUE_TYPE
+        && isPlainObject(value.compareValue)
+      ) {
+        value.compareFieldValue = value.compareValue
+        delete value.compareValue
+        if (value.compareFieldValue.multiValue) {
+          // compareValue object might contain multiple references in one string
+          const values = _.trim(value.compareFieldValue.value, '["]')
+          value.compareFieldValue.values = _.split(values, '","')
+          delete value.compareFieldValue.value
+        }
+      }
+      return value
+    },
+  })).value
+}
+
 const consolidateLinkTypeFields = async (instance: InstanceElement): Promise<void> => {
   instance.value = (await transformElement({
     element: instance,
@@ -160,9 +225,10 @@ const changeRawValueFieldsToValue = async (instance: InstanceElement): Promise<v
     strict: false,
     allowEmpty: true,
     transformFunc: async ({ value, field }) => {
+      const typeName = (await field?.getType())?.elemID.typeName
       if (
         isRawValueObject(value)
-        && (await field?.getType())?.elemID.typeName === AUTOMATION_COMPONENT_TYPE
+        && (typeName === AUTOMATION_COMPONENT_TYPE || typeName === AUTOMATION_OPERATION)
       ) {
         const { rawValue } = value
         const deployableObject: DeployableValueObject = _.omit({ ...value, value: rawValue }, 'rawValue')
@@ -173,6 +239,30 @@ const changeRawValueFieldsToValue = async (instance: InstanceElement): Promise<v
   })).value
 }
 
+const revertCompareFieldValueStructure = async (instance: InstanceElement): Promise<void> => {
+  instance.value = (await transformElement({
+    element: instance,
+    strict: false,
+    allowEmpty: true,
+    transformFunc: async ({ value, field }) => {
+      if (
+        (await field?.getType())?.elemID.typeName === AUTOMATION_COMPONENT_VALUE_TYPE
+        && _.isPlainObject(value.compareFieldValue)
+      ) {
+        value.compareValue = value.compareFieldValue
+        delete value.compareFieldValue
+        if (value.compareValue.multiValue) {
+          // TODO change this join
+          value.compareValue.value = _.join(value.compareValue.values, '","')
+          _.padStart(value.compareValue.value, 2, '["')
+          _.padEnd(value.compareValue.value, 2, '"]')
+          delete value.compareValue.values
+        }
+      }
+      return value
+    },
+  })).value
+}
 
 const filter: FilterCreator = () => {
   let originalAutomationChanges: Record<string, Change<InstanceElement>>
@@ -190,6 +280,7 @@ const filter: FilterCreator = () => {
           await removeInnerIds(instance)
           await replaceStringValuesFieldName(instance)
           await separateLinkTypeField(instance)
+          await compareFieldValueStructure(instance)
 
           instance.value.projects = instance.value.projects
             ?.map(
@@ -213,9 +304,11 @@ const filter: FilterCreator = () => {
           applyFunctionToChangeData<Change<InstanceElement>>(
             change,
             async instance => {
+              // resolves typeContext references to full value instead name / id
               const resolvedInstance = await resolveValues(instance, getLookUpName)
               await consolidateLinkTypeFields(resolvedInstance)
               await changeRawValueFieldsToValue(resolvedInstance)
+              await revertCompareFieldValueStructure(resolvedInstance)
               instance.value = resolvedInstance.value
               return instance
             }
@@ -232,6 +325,7 @@ const filter: FilterCreator = () => {
             async instance => {
               await replaceStringValuesFieldName(instance)
               await separateLinkTypeField(instance)
+              await compareFieldValueStructure(instance)
               return instance
             }
           )

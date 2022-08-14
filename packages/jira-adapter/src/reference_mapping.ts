@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
@@ -20,11 +21,39 @@ import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_T
   BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, AUTOMATION_STATUS,
   AUTOMATION_CONDITION, AUTOMATION_CONDITION_CRITERIA, AUTOMATION_SUBTASK,
   AUTOMATION_ROLE, AUTOMATION_GROUP, AUTOMATION_EMAIL_RECIPENT, PROJECT_TYPE,
-  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME } from './constants'
+  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME, AUTOMATION_COMPARE_VALUE } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 
+const { neighborContextGetter } = referenceUtils
 
-export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] = [
+const neighborContextFunc = (args: {
+  contextFieldName: string
+  levelsUp?: number
+  contextValueMapper?: referenceUtils.ContextValueMapperFunc
+  getLookUpName?: GetLookupNameFunc
+}): referenceUtils.ContextFunc => neighborContextGetter({
+  getLookUpName: async ({ ref }) => ref.elemID.name,
+  ...args,
+})
+
+const toTypeName: referenceUtils.ContextValueMapperFunc = val => {
+  if (val === 'issuetype') {
+    return 'IssueType'
+  }
+  return _.capitalize(val)
+}
+
+export type ReferenceContextStrategyName = 'compareFieldValue' | 'setFieldOperation'
+export const contextStrategyLookup: Record<
+  ReferenceContextStrategyName, referenceUtils.ContextFunc
+> = {
+  compareFieldValue: neighborContextFunc({ contextFieldName: 'selectedFieldType', levelsUp: 1, contextValueMapper: toTypeName }),
+  setFieldOperation: neighborContextFunc({ contextFieldName: 'fieldType', levelsUp: 1, contextValueMapper: toTypeName }),
+}
+
+export const referencesRules: referenceUtils.FieldReferenceDefinition<
+ReferenceContextStrategyName
+>[] = [
   {
     src: { field: 'issueTypeId', parentTypes: ['IssueTypeScreenSchemeItem', 'FieldConfigurationIssueTypeItem'] },
     serializationStrategy: 'id',
@@ -409,6 +438,31 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     src: { field: 'value', parentTypes: [AUTOMATION_ROLE] },
     serializationStrategy: 'name',
     target: { type: 'ProjectRole' },
+  },
+  {
+    src: { field: 'value', parentTypes: [AUTOMATION_COMPARE_VALUE] },
+    serializationStrategy: 'id',
+    target: { typeContext: 'compareFieldValue' },
+  },
+  {
+    src: { field: 'value', parentTypes: [AUTOMATION_COMPARE_VALUE] },
+    serializationStrategy: 'name',
+    target: { typeContext: 'compareFieldValue' },
+  },
+  {
+    src: { field: 'values', parentTypes: [AUTOMATION_COMPARE_VALUE] },
+    serializationStrategy: 'id',
+    target: { typeContext: 'compareFieldValue' },
+  },
+  {
+    src: { field: 'values', parentTypes: [AUTOMATION_COMPARE_VALUE] },
+    serializationStrategy: 'name',
+    target: { typeContext: 'compareFieldValue' },
+  },
+  {
+    src: { field: 'value', parentTypes: [AUTOMATION_FIELD] },
+    serializationStrategy: 'id',
+    target: { typeContext: 'setFieldOperation' },
   },
 ]
 

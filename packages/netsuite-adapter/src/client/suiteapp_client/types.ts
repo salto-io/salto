@@ -266,7 +266,7 @@ export type ConfigRecord = {
   data: ConfigRecordData
 }
 
-export const getConfigResultSchema = (configType: readonly string[]): Values => ({
+export const getConfigResultSchema = (configType: ReadonlyArray<string>): Values => ({
   type: 'object',
   properties: {
     results: {

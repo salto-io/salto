@@ -13,10 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export const CONSUMER_KEY = '9dc4d9f6c593fcc417636990a7581ee1272c824eca0847fed5075276d630c338'
-export const CONSUMER_SECRET = '13f886e062f985b96068994b231f1b28c53d89b0dde04cc74244653f94226a38'
-export const TBA = 'tba'
-export const SOAP = 'webservicesexternal'
-export const REST = 'restwebservices'
-export const SUITE_BUNDLER = 'createsuitebundles'
-export const SDF = 'suiteappdevelopmentframework'
+export const FEATURE_CONSUMER_KEY = '9dc4d9f6c593fcc417636990a7581ee1272c824eca0847fed5075276d630c338'
+export const FEATURE_CONSUMER_SECRET = '13f886e062f985b96068994b231f1b28c53d89b0dde04cc74244653f94226a38'
+export const REQUIRED_FEATUERS = ['tba', 'webservicesexternal', 'createsuitebundles', 'restwebservices', 'suiteappdevelopmentframework']
+export const FEATURE_TO_UI_NAME: Record<string, string> = { tba: 'TOKEN BASED AUTHENTICATION',
+  webservicesexternal: 'SOAP WEB SERVICES',
+  createsuitebundles: 'CREATE BUNDLES WITH SUITEBUNDLER',
+  restwebservices: 'REST WEB SERVICES',
+  suiteappdevelopmentframework: 'SUITECLOUD DEVELOPMENT FREAMEWORK' }

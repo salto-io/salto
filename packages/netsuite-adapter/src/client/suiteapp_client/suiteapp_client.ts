@@ -37,7 +37,7 @@ import { CallsLimiter, ConfigRecord, ConfigRecordData, GetConfigResult, CONFIG_R
 import { SuiteAppCredentials, toUrlAccountId } from '../credentials'
 import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_FEATURE_TYPE } from '../../types'
 import { DEFAULT_CONCURRENCY } from '../../config'
-import { CONSUMER_KEY, CONSUMER_SECRET, SDF, SUITE_BUNDLER, SOAP, REST, TBA } from './constants'
+import { FEATURE_CONSUMER_KEY, FEATURE_CONSUMER_SECRET, REQUIRED_FEATUERS, FEATURE_TO_UI_NAME } from './constants'
 import SoapClient from './soap_client/soap_client'
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError, RetryableError, retryOnRetryableError } from './errors'
 import { InvalidSuiteAppCredentialsError } from '../types'
@@ -359,12 +359,19 @@ export default class SuiteAppClient {
       )
       return
     }
-    const { results } = result
-    const featureFields = results[0].data.fields
-    const requiredFeatures = [SDF, SUITE_BUNDLER, SOAP, REST, TBA]
-    const featuresToEnable = requiredFeatures.filter(feature => featureFields[feature] === 'F')
+    const featureFields = result.results?.[0]?.data?.fields
+    if (typeof featureFields === undefined) {
+      log.error('Recieved an unexpected response from the restlet request')
+      return
+    }
+    const unexpectedValueFeatures = REQUIRED_FEATUERS.filter(feature => !['F', 'T'].includes(featureFields[feature] as string))
+    if (unexpectedValueFeatures.length !== 0) {
+      const featureValuePair = unexpectedValueFeatures.map(e => `${e} - ${featureFields[e]}`)
+      log.error('The following features have the following unexpected values: ', featureValuePair.join(', '))
+    }
+    const featuresToEnable = REQUIRED_FEATUERS.filter(feature => featureFields[feature] === 'F')
     if (featuresToEnable.length !== 0) {
-      const message = `Error: Operation failed because the required ${featuresToEnable.toString()} feature is not enabled. Please see https://docs.salto.io/docs/netsuite#setup-instructions for all required features and how to enable them in NetSuite.`
+      const message = `Error: Operation failed because the required ${featuresToEnable.map(e => FEATURE_TO_UI_NAME[e]).join(', ')} features are not enabled. Please see https://docs.salto.io/docs/netsuite#setup-instructions for all required features and how to enable them in NetSuite.`
       throw new CredentialError(message)
     }
   }
@@ -525,8 +532,8 @@ export default class SuiteAppClient {
   private generateAuthHeader(url: string, method: HttpMethod): OAuth.Header {
     const oauth = new OAuth({
       consumer: {
-        key: CONSUMER_KEY,
-        secret: CONSUMER_SECRET,
+        key: FEATURE_CONSUMER_KEY,
+        secret: FEATURE_CONSUMER_SECRET,
       },
       realm: this.credentials.accountId,
       // eslint-disable-next-line camelcase

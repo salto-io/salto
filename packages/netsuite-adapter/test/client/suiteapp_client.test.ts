@@ -593,7 +593,7 @@ describe('SuiteAppClient', () => {
     })
 
     describe('validateFeatures', () => {
-      beforeEach(async () => {
+      it('should succeed if must-have features are enabled', async () => {
         mockAxiosAdapter.onPost().reply(200, {
           status: 'success',
           results: {
@@ -611,8 +611,7 @@ describe('SuiteAppClient', () => {
             ],
           },
         })
-      })
-      it('should succeed if must-have features are enabled', async () => {
+
         await expect(SuiteAppClient.validateCredentials({
           accountId: 'ACCOUNT_ID',
           suiteAppTokenId: 'tokenId',
@@ -624,19 +623,20 @@ describe('SuiteAppClient', () => {
       it('should fail when a must-have feature is disabled', async () => {
         mockAxiosAdapter.onPost().reply(200, {
           status: 'success',
-          result: {
-            results: {
-              configType: 'FEATURES',
+          results: {
+            errors: [],
+            results: [{ configType: 'FEATURES',
+              fieldsDef: [],
               data: {
                 fields: {
-                  webservicesexternal: 'F',
-                  restwebeservices: 'T',
-                  suiteappdevelopmentframework: 'T',
                   createsuitebundles: 'T',
                   tba: 'T',
+                  suiteappdevelopmentframework: 'T',
+                  restwebservices: 'T',
+                  webservicesexternal: 'F',
                 },
-              },
-            },
+              } },
+            ],
           },
         })
 
@@ -645,25 +645,26 @@ describe('SuiteAppClient', () => {
           suiteAppTokenId: 'tokenId',
           suiteAppTokenSecret: 'tokenSecret',
           suiteAppActivationKey: 'activationKey',
-        })).rejects.toThrow()
+        })).rejects.toThrow(/Operation failed because the required SOAP WEB SERVICES features are not enabled./)
       })
 
       it('should fail when all must-have features are disabled', async () => {
         mockAxiosAdapter.onPost().reply(200, {
           status: 'success',
-          result: {
-            results: {
-              configType: 'FEATURES',
+          results: {
+            errors: [],
+            results: [{ configType: 'FEATURES',
+              fieldsDef: [],
               data: {
                 fields: {
-                  webservicesexternal: 'F',
-                  restwebeservices: 'F',
-                  suiteappdevelopmentframework: 'F',
                   createsuitebundles: 'F',
                   tba: 'F',
+                  suiteappdevelopmentframework: 'F',
+                  restwebservices: 'F',
+                  webservicesexternal: 'F',
                 },
-              },
-            },
+              } },
+            ],
           },
         })
 
@@ -672,7 +673,7 @@ describe('SuiteAppClient', () => {
           suiteAppTokenId: 'tokenId',
           suiteAppTokenSecret: 'tokenSecret',
           suiteAppActivationKey: 'activationKey',
-        })).rejects.toThrow()
+        })).rejects.toThrow(/TOKEN BASED AUTHENTICATION, SOAP WEB SERVICES, CREATE BUNDLES WITH SUITEBUNDLER, REST WEB SERVICES, SUITECLOUD DEVELOPMENT FREAMEWORK/)
       })
     })
 

@@ -222,12 +222,17 @@ describe('Zendesk adapter E2E', () => {
     ]
     const brandLogoInstanceToAdd = new InstanceElement(
       'brand_logo',
-      BRAND_LOGO_TYPE
+      BRAND_LOGO_TYPE,
+      {
+        filename: 'singlePixle.png',
+        contentType: 'image/png',
+      }
     )
+    const brandName = createName('brand')
     const brandInstanceToAdd = createInstanceElement(
       'brand',
       {
-        name: createName('brand'),
+        name: brandName,
         subdomain: 'e2esubomainname',
       },
     )
@@ -285,23 +290,42 @@ describe('Zendesk adapter E2E', () => {
 
       const deployedBrand = elements
         .filter(isInstanceElement)
-        .filter(elem => elem.elemID.typeName === 'brand')[0]
+        .filter(elem => elem.elemID.typeName === 'brand')
+        .filter(elem => elem.elemID.name === brandName)[0]
       brandLogoInstanceToAdd.annotate({
         [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
           deployedBrand.elemID,
           deployedBrand,
         ),
       })
+      const alreadyExistedBrandLogo = elements
+        .filter(isInstanceElement)
+        .filter(elem => elem.elemID.typeName === 'brand_logo')[0]
+      brandLogoInstanceToAdd.value.content = alreadyExistedBrandLogo.value.content
+      const modifiedBrandInstance = deployedBrand.clone()
+      modifiedBrandInstance.value.logo = new ReferenceExpression(
+        brandLogoInstanceToAdd.elemID,
+        brandLogoInstanceToAdd,
+      )
+
       const secondGroupChanges: Record<ChangeId, Change<InstanceElement>[]> = {
-        // we relay on brand_logo being deployed first for deploy results
+        brand: [{ action: 'modify', data: { before: brandInstanceToAdd, after: modifiedBrandInstance } }],
+        // we relay on brand_logo being deployed second for deploy results
         brand_logo: [{ action: 'add', data: { after: brandLogoInstanceToAdd } }],
       }
       const secondGroupDeployResults = await deployChanges(adapterAttr, secondGroupChanges)
 
       // eslint-disable-next-line prefer-destructuring
-      deployedBrandLogo = secondGroupDeployResults[0].appliedChanges
+      deployedBrandLogo = secondGroupDeployResults[1].appliedChanges
         .map(getChangeData)
         .filter(isInstanceElement)[0]
+
+      const secondFetchResult = await adapterAttr.adapter.fetch({
+        progressReporter:
+          { reportProgress: () => null },
+      })
+      elements = secondFetchResult.elements
+      expect(secondFetchResult.errors).toHaveLength(0)
     })
 
     afterAll(async () => {
@@ -450,7 +474,7 @@ describe('Zendesk adapter E2E', () => {
     })
     it('should fetch brand_logo correctly', async () => {
       const fetchedBrandLogoInstances = elements.filter(inst => inst.elemID.typeName === 'brand_logo').filter(isInstanceElement)
-      expect(fetchedBrandLogoInstances).not.toHaveLength(0)
+      expect(fetchedBrandLogoInstances).toHaveLength(2)
       fetchedBrandLogoInstances
         .forEach(instance => {
           expect(instance.value.content).toBeInstanceOf(StaticFile)

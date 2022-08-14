@@ -271,11 +271,11 @@ describe('Zendesk adapter E2E', () => {
         instancesToAdd,
         inst => changeGroups.changeGroupIdMap.get(inst.elemID.getFullName())
       )
-      const changes = _.mapValues(
+      const firstGroupChanges = _.mapValues(
         groupIdToInstances,
         instances => instances.map(inst => toChange({ after: inst }))
       )
-      await deployChanges(adapterAttr, changes)
+      await deployChanges(adapterAttr, firstGroupChanges)
       const fetchResult = await adapterAttr.adapter.fetch({
         progressReporter:
           { reportProgress: () => null },
@@ -292,18 +292,20 @@ describe('Zendesk adapter E2E', () => {
           deployedBrand,
         ),
       })
-      const brandLogoDeployResults = await deployChanges(adapterAttr, {
+      const secondGroupChanges: Record<ChangeId, Change<InstanceElement>[]> = {
+        // we relay on brand_logo being deployed first for deploy results
         brand_logo: [{ action: 'add', data: { after: brandLogoInstanceToAdd } }],
-      })
-      expect(brandLogoDeployResults).toHaveLength(1)
+      }
+      const secondGroupDeployResults = await deployChanges(adapterAttr, secondGroupChanges)
+
       // eslint-disable-next-line prefer-destructuring
-      deployedBrandLogo = brandLogoDeployResults[0].appliedChanges
+      deployedBrandLogo = secondGroupDeployResults[0].appliedChanges
         .map(getChangeData)
         .filter(isInstanceElement)[0]
     })
 
     afterAll(async () => {
-      const changes = _.mapValues(
+      const firstGroupChanges = _.mapValues(
         groupIdToInstances,
         instancesToRemove => instancesToRemove.map(inst => {
           const instanceToRemove = elements.find(e => e.elemID.isEqual(inst.elemID))
@@ -312,9 +314,12 @@ describe('Zendesk adapter E2E', () => {
             : undefined
         }).filter(values.isDefined)
       )
-      await deployChanges(adapterAttr, {
-        ...changes,
+      const secondGroupChanges: Record<ChangeId, Change<InstanceElement>[]> = {
         brand_logo: [{ action: 'remove', data: { before: deployedBrandLogo } }],
+      }
+      await deployChanges(adapterAttr, {
+        ...secondGroupChanges,
+        ...firstGroupChanges,
       })
       if (credLease.return) {
         await credLease.return()

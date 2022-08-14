@@ -360,18 +360,18 @@ export default class SuiteAppClient {
       return
     }
     const featureFields = result.results?.[0]?.data?.fields
-    if (typeof featureFields === undefined) {
+    if (!featureFields) {
       log.error('Recieved an unexpected response from the restlet request')
       return
     }
     const unexpectedValueFeatures = REQUIRED_FEATUERS.filter(feature => !['F', 'T'].includes(featureFields[feature] as string))
     if (unexpectedValueFeatures.length !== 0) {
-      const featureValuePair = unexpectedValueFeatures.map(e => `${e} - ${featureFields[e]}`)
-      log.error('The following features have the following unexpected values: ', featureValuePair.join(', '))
+      log.error('The following features have the following unexpected values: %o', unexpectedValueFeatures.map(e => ({ [e]: featureFields[e] })))
     }
     const featuresToEnable = REQUIRED_FEATUERS.filter(feature => featureFields[feature] === 'F')
     if (featuresToEnable.length !== 0) {
-      const message = `Error: Operation failed because the required ${featuresToEnable.map(e => FEATURE_TO_UI_NAME[e]).join(', ')} features are not enabled. Please see https://docs.salto.io/docs/netsuite#setup-instructions for all required features and how to enable them in NetSuite.`
+      const singleOrPlural = featuresToEnable.length === 1 ? 'feature is' : 'features are'
+      const message = `Error: Operation failed because the required ${featuresToEnable.map(e => FEATURE_TO_UI_NAME[e]).join(', ')} ${singleOrPlural} not enabled. Please see https://docs.salto.io/docs/netsuite#setup-instructions for all required features and how to enable them in NetSuite.`
       throw new CredentialError(message)
     }
   }

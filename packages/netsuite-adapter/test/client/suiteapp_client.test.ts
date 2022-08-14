@@ -617,7 +617,7 @@ describe('SuiteAppClient', () => {
           suiteAppTokenId: 'tokenId',
           suiteAppTokenSecret: 'tokenSecret',
           suiteAppActivationKey: 'activationKey',
-        })).resolves.toBeUndefined()
+        })).resolves.not.toThrow()
       })
 
       it('should fail when a must-have feature is disabled', async () => {
@@ -645,7 +645,7 @@ describe('SuiteAppClient', () => {
           suiteAppTokenId: 'tokenId',
           suiteAppTokenSecret: 'tokenSecret',
           suiteAppActivationKey: 'activationKey',
-        })).rejects.toThrow(/Operation failed because the required SOAP WEB SERVICES features are not enabled./)
+        })).rejects.toThrow(/Operation failed because the required SOAP WEB SERVICES feature is not enabled./)
       })
 
       it('should fail when all must-have features are disabled', async () => {

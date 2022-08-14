@@ -991,22 +991,15 @@ export const loadWorkspace = async (
   ): Promise<Record<string, string>> => {
     const env = envName ?? currentEnv()
     const currentWorkspaceState = await getWorkspaceState()
-    return Object.fromEntries(await awu(
-      currentWorkspaceState.states[env].referencedStaticFiles.entries()
-    ).flatMap(
-      ({ key, value }) => value
-        .filter(filePath => {
-          if (filePaths === undefined) {
-            return true
-          }
-          if (filePaths.has(filePath)) {
-            filePaths.delete(filePath)
-            return true
-          }
-          return false
-        })
-        .map(filePath => [filePath, key])
-    ).toArray())
+    return Object.fromEntries(
+      await awu(currentWorkspaceState.states[env].referencedStaticFiles.entries())
+        .flatMap(({ key: id, value: fileNames }) => (
+          fileNames
+            .filter(filename => filePaths === undefined || filePaths.has(filename))
+            .map(filename => [filename, id])
+        ))
+        .toArray()
+    )
   }
 
   const isChangedAtIndexEmpty = async (envName?: string): Promise<boolean> => {

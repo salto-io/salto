@@ -26,12 +26,21 @@ describe('attachments to static file filter', () => {
   let fields: Record<string, FieldDefinition>
   let attachmentOneAsString: string
   let attachmentOneAsFile: StaticFile
+  let attachmentOneName: string
   let attachmentTwoAsString: string
   let attachmentTwoAsFile: StaticFile
+  let attachmentTwoName: string
+  let attachmentThreeAsString: string
+  let attachmentThreeAsFile: StaticFile
+  let attachmentThreeName: string
 
   beforeAll(() => {
     attachmentOneAsString = 'attachment-one'
     attachmentTwoAsString = 'attachment-two'
+    attachmentThreeAsString = 'attachment-three'
+    attachmentOneName = 'attachmentOne.txt'
+    attachmentTwoName = 'attachmentTwo.txt'
+    attachmentThreeName = 'attachmentThree.txt'
 
     const emailTemplateID = new ElemID(SALESFORCE, EMAIL_TEMPLATE_METADATA_TYPE)
 
@@ -40,35 +49,92 @@ describe('attachments to static file filter', () => {
     }
 
     const emailTemplateType = new ObjectType({
-      annotations: { [METADATA_TYPE]: EMAIL_TEMPLATE_METADATA_TYPE},
+      annotations: { [METADATA_TYPE]: EMAIL_TEMPLATE_METADATA_TYPE },
       elemID: emailTemplateID,
       fields,
       path: ['Objects', 'dir'],
     })
 
     const emailTemplateOne = new InstanceElement('emailTemplateOne', emailTemplateType, {
-      [ATTACHMENTS]: [{ name: 'attachment-one', content: attachmentOneAsString }],
-    })
+      [ATTACHMENTS]: [{ name: attachmentOneName, content: attachmentOneAsString }],
+    },
+    ['Objects', 'dir'])
 
     const emailTemplateTwo = new InstanceElement('emailTemplateTwo', emailTemplateType, {
-      [ATTACHMENTS]: [{ name: 'attachment-one', content: attachmentOneAsString },
-        { name: 'attachment-two', content: attachmentTwoAsString }],
+      [ATTACHMENTS]: [{ name: attachmentTwoName, content: attachmentTwoAsString },
+        { name: attachmentThreeName, content: attachmentThreeAsString }],
+    },
+    ['Objects', 'dir2'])
+
+    const emailTemplateNoPath = new InstanceElement('emailTemplateNoPath', emailTemplateType, {
+      [ATTACHMENTS]: [{ name: attachmentOneName, content: attachmentOneAsString }],
+    })
+
+    elements = [emailTemplateOne, emailTemplateTwo, emailTemplateNoPath, emailTemplateType]
+
+    attachmentOneAsFile = new StaticFile({
+      filepath: `${(emailTemplateOne.path ?? []).join('/')}/${attachmentOneName}`,
+      content: Buffer.from(attachmentOneAsString),
+      encoding: 'utf-8',
+    })
+
+    attachmentTwoAsFile = new StaticFile({
+      filepath: `${(emailTemplateTwo.path ?? []).join('/')}/${attachmentTwoName}`,
+      content: Buffer.from(attachmentTwoAsString),
+      encoding: 'utf-8',
+    })
+
+    attachmentThreeAsFile = new StaticFile({
+      filepath: `${(emailTemplateTwo.path ?? []).join('/')}/${attachmentThreeName}`,
+      content: Buffer.from(attachmentThreeAsString),
+      encoding: 'utf-8',
     })
   })
 
   describe('on fetch', () => {
     type FilterType = FilterWith<'onFetch'>
     let filter: FilterType
+
     beforeAll(async () => {
       filter = filterCreator({ config: defaultFilterContext }) as FilterType
     })
+
     describe('extract attachments to static file', () => {
       beforeAll(async () => {
         await filter.onFetch(elements)
       })
       it('should create static file when emailTemplate has one attachment', () => {
+        const emailTemplateAfterFilter = elements.filter(isInstanceElement)
+          .find(e => e.elemID.name === 'emailTemplateOne')
+        expect(emailTemplateAfterFilter?.value[ATTACHMENTS][0].content)
+          .toStrictEqual(attachmentOneAsFile)
       })
+
       it('should create static files when emailTemplate has two attachment', () => {
+        const emailTemplateAfterFilter = elements.filter(isInstanceElement)
+          .find(e => e.elemID.name === 'emailTemplateTwo')
+        expect(emailTemplateAfterFilter?.value[ATTACHMENTS][0].content)
+          .toStrictEqual(attachmentTwoAsFile)
+        expect(emailTemplateAfterFilter?.value[ATTACHMENTS][1].content)
+          .toStrictEqual(attachmentThreeAsFile)
+      })
+    })
+
+    describe('do not replace content for undefined path', () => {
+      let instanceUndefinedPath: InstanceElement | undefined
+      beforeAll(async () => {
+        instanceUndefinedPath = elements?.filter(isInstanceElement)
+          .find(e => e.path === undefined)
+        if (instanceUndefinedPath !== undefined) {
+          instanceUndefinedPath.path = undefined
+        }
+        await filter.onFetch(elements)
+      })
+
+      it('should replace content to undefined', () => {
+        instanceUndefinedPath = elements?.filter(isInstanceElement)
+          .find(e => e.path === undefined)
+        expect(instanceUndefinedPath?.value[ATTACHMENTS].content).toBe(undefined)
       })
     })
   })

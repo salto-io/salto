@@ -277,20 +277,48 @@ Built-in annotations are available everywhere in Salto. Their names will always 
 Annotations can be of any primitive type, as well as complex types.
 
 Currently the following core annotations are supported:
-- [_required](#_required)
-- [_restriction](#_restriction)
-- [_hidden / _hidden_value](#_hidden-_hidden_value)
-- [_parent](#_parent)
-- [_generated_dependencies / _depends_on](#_generated_dependencies-_depends_on)
-- [_service_url](#_service_url)
-- [_is_service_id](#_is_service_id)
-- [_created_by](#_created_by)
-- [_created_at](#_created_at)
-- [_changed_by](#_changed_by)
-- [_changed_at](#_changed_at)
-- [_creatable](#_created_at)
-- [_updatable](#_changed_by)
-- [_deletable](#_changed_at)
+- [NaCl Syntax](#nacl-syntax)
+  - [NaCl block types](#nacl-block-types)
+    - [Type blocks](#type-blocks)
+      - [Syntax](#syntax)
+      - [Example](#example)
+    - [Instance blocks](#instance-blocks)
+      - [Syntax](#syntax-1)
+      - [Example](#example-1)
+    - [Settings types and instances](#settings-types-and-instances)
+      - [Syntax](#syntax-2)
+      - [Example](#example-2)
+    - [Variables blocks](#variables-blocks)
+      - [Syntax](#syntax-3)
+      - [Example](#example-3)
+  - [Primitive types and values](#primitive-types-and-values)
+  - [Language features](#language-features)
+    - [References](#references)
+      - [Syntax](#syntax-4)
+      - [Examples](#examples)
+    - [Annotations](#annotations)
+      - [`_required`](#_required)
+      - [`_restriction`](#_restriction)
+      - [_hidden / _hidden_value](#_hidden--_hidden_value)
+      - [_parent](#_parent)
+      - [_generated_dependencies / _depends_on](#_generated_dependencies--_depends_on)
+      - [_service_url](#_service_url)
+      - [_is_service_id](#_is_service_id)
+      - [_created_by](#_created_by)
+      - [_created_at](#_created_at)
+      - [_changed_by](#_changed_by)
+      - [_changed_at](#_changed_at)
+      - [_creatable](#_creatable)
+      - [_updatable](#_updatable)
+      - [_deletable](#_deletable)
+      - [`_additional_properties`](#_additional_properties)
+      - [Adapter-specific annotations example](#adapter-specific-annotations-example)
+    - [Functions](#functions)
+      - [The `file` function](#the-file-function)
+  - [Merge rules](#merge-rules)
+    - [Value merging limitations](#value-merging-limitations)
+    - [Type merging limitations](#type-merging-limitations)
+
 
 #### `_required`
 This annotation is used on field blocks to specify that an instance must contain a value for this field.
@@ -703,6 +731,26 @@ For the deletion of the following instance, an error will be shown to the user a
 ```HCL
 salto.notDeletable instance {
   someField = 2
+}
+```
+
+#### `_additional_properties`
+This annotation is used on types. When it is set as false any instance of that type with a property that does not appear in the type definition will cause a validation warning
+
+Type: `boolean`
+Default: `true`
+Applicable to: Types
+Example:
+```HCL
+type salto.example_type {
+  number field {
+  }
+  _additional_properties = false
+}
+
+salto.example_type example_instance {
+  field = 1 // This is valid, as 'field' is a property of the type
+  other_field = 2 // This will cause a warning because 'other_field' does not appear in the type definition
 }
 ```
 

@@ -776,6 +776,81 @@ describe('Elements validation', () => {
           )).toHaveLength(0)
         })
       })
+      describe('additional properties annotation', () => {
+        it('should succeed when additional properties is false and there are no additional properties', async () => {
+          extType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] = false
+          extInst.refType = createRefToElmWithValue(extType)
+          extInst.value.reqNested = {
+            str: 'str',
+            num: 1,
+            bool: true,
+          }
+          const errors = await validateElements(
+            [extInst],
+            createInMemoryElementSource([
+              extInst,
+              extType,
+              ...await getFieldsAndAnnoTypes(extType),
+            ])
+          )
+          expect(errors).toHaveLength(0)
+        })
+        it('should warn when additional properties is false and there are additional properties', async () => {
+          extType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] = false
+          extInst.refType = createRefToElmWithValue(extType)
+          extInst.value.additional = 'fail'
+          extInst.value.additional2 = 'fail2'
+          const errors = await validateElements(
+            [extInst],
+            createInMemoryElementSource([
+              extInst,
+              extType,
+              ...await getFieldsAndAnnoTypes(extType),
+            ])
+          )
+          expect(errors).toHaveLength(2)
+          expect(errors[0].message).toMatch('Error validating "salto.nested.instance.nestedinst":'
+            + ' Field additional is invalid since it is not defined in nested: the type does not allow additional properties')
+          expect(errors[0].elemID).toEqual(extInst.elemID)
+          expect(errors[1].message).toMatch('Error validating "salto.nested.instance.nestedinst":'
+            + ' Field additional2 is invalid since it is not defined in nested: the type does not allow additional properties')
+          expect(errors[1].elemID).toEqual(extInst.elemID)
+        })
+        it('should succeed when additional properties is true and there are additional properties', async () => {
+          extType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] = true
+          extInst.refType = createRefToElmWithValue(extType)
+          extInst.value.unexpected = 'fail'
+          extInst.value.unexpected2 = 'fail2'
+          const errors = await validateElements(
+            [extInst],
+            createInMemoryElementSource([
+              extInst,
+              extType,
+              ...await getFieldsAndAnnoTypes(extType),
+            ])
+          )
+          expect(errors).toHaveLength(0)
+        })
+        it('should succeed when additional properties is set to false and there are additional properties in nested fields', async () => {
+          extType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] = false
+          extInst.refType = createRefToElmWithValue(extType)
+          extInst.value.reqNested = {
+            str: 'str',
+            num: 1,
+            bool: true,
+            additional: 'should not cause warn',
+          }
+          const errors = await validateElements(
+            [extInst],
+            createInMemoryElementSource([
+              extInst,
+              extType,
+              ...await getFieldsAndAnnoTypes(extType),
+            ])
+          )
+          expect(errors).toHaveLength(0)
+        })
+      })
 
       describe('values annotation', () => {
         it('should succeed when all values corresponds to values annotation', async () => {

@@ -217,7 +217,19 @@ export class MissingRequiredFieldValidationError extends ValidationError {
     this.fieldName = fieldName
   }
 }
+export class AdditionalPropertiesValidatorError extends ValidationError {
+  readonly fieldName: string
 
+  constructor({ elemID, fieldName }: { elemID: ElemID; fieldName: string }) {
+    super({
+      elemID,
+      error: `Field ${fieldName} is invalid since it is not defined in ${elemID.typeName}`
+      + ': the type does not allow additional properties',
+      severity: 'Warning',
+    })
+    this.fieldName = fieldName
+  }
+}
 export class UnresolvedReferenceValidationError extends ValidationError {
   readonly target: ElemID
   constructor(
@@ -447,6 +459,24 @@ const createReferenceValidationErrors = (elemID: ElemID, value: Value): Validati
   return []
 }
 
+const validateAdditionalPropertiesValue = (
+  objType: ObjectType, elemID: ElemID, fieldName: string
+): ValidationError[] =>
+  (objType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] === false
+    ? [new AdditionalPropertiesValidatorError({ elemID, fieldName })] : [])
+
+
+const validateFieldName = (
+  elemID: ElemID,
+  fieldName: string,
+  objType : ObjectType,
+) : ValidationError[] => {
+  if (!(fieldName in objType.fields)) {
+    return validateAdditionalPropertiesValue(objType, elemID, fieldName)
+  }
+  return []
+}
+
 const validateValue = (
   elemID: ElemID,
   value: Value,
@@ -512,6 +542,13 @@ const validateValue = (
       return [new InvalidValueTypeValidationError({ elemID, value, type: type.elemID })]
     }
     const objType = toObjectType(type, value)
+    const fieldValidationErrors = Object.keys(value).flatMap(
+      key => validateFieldName(
+        elemID,
+        key,
+        objType,
+      )
+    )
     return Object.keys(value).flatMap(
       // eslint-disable-next-line no-use-before-define
       k => validateFieldValue(
@@ -520,7 +557,7 @@ const validateValue = (
         objType.fields[k]?.refType.type ?? BuiltinTypes.UNKNOWN,
         objType.fields[k]?.annotations ?? {},
       )
-    )
+    ).concat(fieldValidationErrors)
   }
 
   if (type === BuiltinTypes.UNKNOWN) {

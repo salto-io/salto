@@ -420,43 +420,107 @@ export const SEARCH_RESPONSE_SCHEMA = {
       type: 'object',
     },
   },
-  properties: {
-    searchResult: {
+  anyOf: [
+    {
       properties: {
-        recordList: {
+        searchResult: {
           properties: {
-            record: {
-              items: {
-                $ref: '#/definitions/Record<string,unknown>',
+            recordList: {
+              properties: {
+                record: {
+                  items: {
+                    $ref: '#/definitions/Record<string,unknown>',
+                  },
+                  type: 'array',
+                },
               },
-              type: 'array',
+              required: [
+                'record',
+              ],
+              type: 'object',
+              nullable: true,
+            },
+            searchId: {
+              type: 'string',
+            },
+            totalPages: {
+              type: 'number',
             },
           },
           required: [
-            'record',
+            'recordList',
+            'searchId',
+            'totalPages',
           ],
           type: 'object',
-          nullable: true,
-        },
-        searchId: {
-          type: 'string',
-        },
-        totalPages: {
-          type: 'number',
         },
       },
       required: [
-        'recordList',
-        'searchId',
-        'totalPages',
+        'searchResult',
       ],
       type: 'object',
     },
-  },
-  required: [
-    'searchResult',
+    {
+      properties: {
+        searchResult: {
+          properties: {
+            status: {
+              properties: {
+                attributes: {
+                  properties: {
+                    isSuccess: {
+                      enum: [
+                        'false',
+                      ],
+                      type: 'string',
+                    },
+                  },
+                  required: [
+                    'isSuccess',
+                  ],
+                  type: 'object',
+                },
+                statusDetail: {
+                  items: [
+                    {
+                      properties: {
+                        attributes: {
+                          type: 'string',
+                        },
+                        code: {
+                          type: 'string',
+                        },
+                        message: {
+                          type: 'string',
+                        },
+                      },
+                      required: [
+                        'code',
+                        'message',
+                      ],
+                      type: 'object',
+                    },
+                  ],
+                  maxItems: 1,
+                  minItems: 1,
+                  type: 'array',
+                },
+              },
+              required: [
+                'attributes',
+                'statusDetail',
+              ],
+              type: 'object',
+            },
+          },
+        },
+      },
+      required: [
+        'searchResult',
+      ],
+      type: 'object',
+    },
   ],
-  type: 'object',
 }
 
 export const GET_ALL_RESPONSE_SCHEMA = {

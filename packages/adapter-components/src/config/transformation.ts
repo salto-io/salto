@@ -38,7 +38,7 @@ export type FieldTypeOverrideType = {
   fieldType: string
   restrictions?: RestrictionAnnotationType
 }
-export type NameTrasformationOptions = 'default' | 'lowercase' | 'uppercase'
+export type NameMappingOptions = 'lowercase' | 'uppercase'
 
 export type TransformationConfig = {
   // explicitly set types for fields that are not generated correctly
@@ -67,8 +67,8 @@ export type TransformationConfig = {
   serviceIdField?: string
   // The url of the type in the service
   serviceUrl?: string
-  // change instance id and filename
-  saltoNameTransformation?: NameTrasformationOptions
+  // if provided, instance id and file name change, otherwise there’s no change
+  nameMapping?: NameMappingOptions
 }
 
 export type TransformationDefaultConfig = types.PickyRequired<Partial<Omit<TransformationConfig, 'isSingleton'>>, 'idFields'>

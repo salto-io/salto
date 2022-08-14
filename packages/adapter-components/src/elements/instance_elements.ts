@@ -22,7 +22,7 @@ import { pathNaclCase, naclCase, transformValues, TransformFunc } from '@salto-i
 import { logger } from '@salto-io/logging'
 import { RECORDS_PATH, SETTINGS_NESTED_PATH } from './constants'
 import { TransformationConfig, TransformationDefaultConfig, getConfigWithDefault,
-  RecurseIntoCondition, isRecurseIntoConditionByField, AdapterApiConfig, dereferenceFieldName, NameTrasformationOptions } from '../config'
+  RecurseIntoCondition, isRecurseIntoConditionByField, AdapterApiConfig, dereferenceFieldName, NameMappingOptions } from '../config'
 
 const log = logger(module)
 
@@ -40,12 +40,11 @@ export type InstanceCreationParams = {
   getElemIdFunc?: ElemIdGetter
 }
 
-const nameTransformation = (
-  saltoNameTransformation: NameTrasformationOptions | undefined,
+const getNameMapping = (
   name: string,
+  nameMapping?: NameMappingOptions,
 ): string => {
-  switch (saltoNameTransformation) {
-    case 'default': return name
+  switch (nameMapping) {
     case 'lowercase': return name.toLowerCase()
     case 'uppercase': return name.toUpperCase()
     default: return name
@@ -74,7 +73,7 @@ export const getInstanceFilePath = ({
   naclName,
   typeName,
   isSettingType,
-  saltoNameTransformation,
+  nameMapping,
   adapterName,
 }: {
   fileNameFields: string[] | undefined
@@ -82,7 +81,7 @@ export const getInstanceFilePath = ({
   naclName: string
   typeName: string
   isSettingType: boolean
-  saltoNameTransformation: NameTrasformationOptions | undefined
+  nameMapping?: NameMappingOptions
   adapterName: string
 }): string[] => {
   const fileNameParts = (fileNameFields !== undefined
@@ -103,8 +102,8 @@ export const getInstanceFilePath = ({
       adapterName,
       RECORDS_PATH,
       pathNaclCase(typeName),
-      saltoNameTransformation
-        ? nameTransformation(saltoNameTransformation, naclCaseFileName) : naclCaseFileName,
+      nameMapping
+        ? getNameMapping(naclCaseFileName, nameMapping) : naclCaseFileName,
     ]
 }
 
@@ -113,13 +112,13 @@ export const generateInstanceNameFromConfig = (
   typeName: string,
   apiDefinitions: AdapterApiConfig
 ): string | undefined => {
-  const { idFields, saltoNameTransformation } = getConfigWithDefault(
+  const { idFields, nameMapping } = getConfigWithDefault(
     apiDefinitions.types[typeName]?.transformation ?? {},
     apiDefinitions.typeDefaults.transformation
   )
   const instanceName = getInstanceName(values, idFields)
   return instanceName !== undefined
-    ? nameTransformation(saltoNameTransformation, instanceName) : instanceName
+    ? getNameMapping(instanceName, nameMapping) : instanceName
 }
 
 export const removeNullValues = async (
@@ -150,7 +149,7 @@ export const getInstanceNaclName = ({
   getElemIdFunc,
   serviceIdField,
   typeElemId,
-  saltoNameTransformation,
+  nameMapping,
 }:{
   entry: Values
   name: string
@@ -159,13 +158,13 @@ export const getInstanceNaclName = ({
   getElemIdFunc?: ElemIdGetter
   serviceIdField?: string
   typeElemId: ElemID
-  saltoNameTransformation?: NameTrasformationOptions
+  nameMapping?: NameMappingOptions
 }): string => {
   const naclName = naclCase(
     parentName ? `${parentName}${ID_SEPARATOR}${name}` : String(name)
   )
-  const desiredName = saltoNameTransformation
-    ? nameTransformation(saltoNameTransformation, naclName)
+  const desiredName = nameMapping
+    ? getNameMapping(naclName, nameMapping)
     : naclName
   return getElemIdFunc && serviceIdField
     ? getElemIdFunc(
@@ -216,7 +215,7 @@ export const toBasicInstance = async ({
   })
 
   const {
-    idFields, fileNameFields, serviceIdField, saltoNameTransformation,
+    idFields, fileNameFields, serviceIdField, nameMapping,
   } = getConfigWithDefault(
     transformationConfigByType[type.elemID.name],
     transformationDefaultConfig,
@@ -233,7 +232,7 @@ export const toBasicInstance = async ({
     getElemIdFunc,
     serviceIdField,
     typeElemId: type.elemID,
-    saltoNameTransformation,
+    nameMapping,
   })
 
   const filePath = getInstanceFilePath({
@@ -242,7 +241,7 @@ export const toBasicInstance = async ({
     naclName,
     typeName: type.elemID.name,
     isSettingType: type.isSettings,
-    saltoNameTransformation,
+    nameMapping,
     adapterName,
   })
 

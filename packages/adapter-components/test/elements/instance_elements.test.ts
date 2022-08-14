@@ -15,7 +15,7 @@
 */
 
 import { generateInstanceNameFromConfig } from '../../src/elements/instance_elements'
-import { NameTrasformationOptions } from '../../src/config'
+import { NameMappingOptions } from '../../src/config'
 
 
 describe('generateInstanceNameFromConfig', () => {
@@ -61,10 +61,9 @@ describe('generateInstanceNameFromConfig', () => {
       }
     )).toBe('name')
   })
-  it('should create name in lower case if convertToLowercase is true', () => {
-    const lowercaseTransfomation : NameTrasformationOptions = 'lowercase'
-    const uppercaseTransfomation : NameTrasformationOptions = 'uppercase'
-    const defaultTransfomation : NameTrasformationOptions = 'default'
+  it('should covert name if nameMapping exists', () => {
+    const lowercaseTransfomation : NameMappingOptions = 'lowercase'
+    const uppercaseTransfomation : NameMappingOptions = 'uppercase'
     expect(generateInstanceNameFromConfig(
       {
         name: 'name',
@@ -75,7 +74,7 @@ describe('generateInstanceNameFromConfig', () => {
         typeDefaults: {
           transformation: {
             idFields: ['id'],
-            saltoNameTransformation: lowercaseTransfomation,
+            nameMapping: lowercaseTransfomation,
           },
         },
         types: {},
@@ -92,7 +91,7 @@ describe('generateInstanceNameFromConfig', () => {
         typeDefaults: {
           transformation: {
             idFields: ['id'],
-            saltoNameTransformation: uppercaseTransfomation,
+            nameMapping: uppercaseTransfomation,
           },
         },
         types: {},
@@ -109,7 +108,6 @@ describe('generateInstanceNameFromConfig', () => {
         typeDefaults: {
           transformation: {
             idFields: ['id'],
-            saltoNameTransformation: defaultTransfomation,
           },
         },
         types: {},

@@ -1337,7 +1337,7 @@ describe('swagger_instance_elements', () => {
       })).rejects.toThrow(new Error('Invalid type config - type myAdapter.Pet has no request config'))
     })
 
-    it('should convert name and filename if saltoNameTransformation exists', async () => {
+    it('should convert name and filename if nameMapping exists', async () => {
       const objectTypes = generateObjectTypes()
       const res = await getAllInstances({
         paginator: mockPaginator,
@@ -1354,7 +1354,7 @@ describe('swagger_instance_elements', () => {
               },
               transformation: {
                 idFields: ['name'],
-                saltoNameTransformation: 'lowercase',
+                nameMapping: 'lowercase',
               },
             },
             Owner: {
@@ -1363,7 +1363,7 @@ describe('swagger_instance_elements', () => {
               },
               transformation: {
                 idFields: ['name'],
-                saltoNameTransformation: 'uppercase',
+                nameMapping: 'uppercase',
               },
             },
           },

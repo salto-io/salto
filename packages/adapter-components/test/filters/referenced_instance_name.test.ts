@@ -20,7 +20,7 @@ import { addReferencesToInstanceNames, referencedInstanceNamesFilterCreator,
 import { FilterWith } from '../../src/filter_utils'
 import { Paginator } from '../../src/client'
 import { createMockQuery } from '../../src/elements/query'
-import { NameTrasformationOptions } from '../../src/config'
+import { NameMappingOptions } from '../../src/config'
 
 const ADAPTER_NAME = 'myAdapter'
 
@@ -174,7 +174,7 @@ describe('referenced instances', () => {
       sameRecipeOne, sameRecipeTwo, lastRecipe, groupType, ...groups,
       folderType, folderOne, folderTwo, statusType, status]
   }
-  const lowercaseName : NameTrasformationOptions = 'lowercase'
+  const lowercaseName : NameMappingOptions = 'lowercase'
   const config = {
     apiDefinitions: {
       types: {
@@ -202,7 +202,7 @@ describe('referenced instances', () => {
         status: {
           transformation: {
             idFields: ['name', '&fav_recipe'],
-            saltoNameTransformation: lowercaseName,
+            nameMapping: lowercaseName,
           },
         },
       },

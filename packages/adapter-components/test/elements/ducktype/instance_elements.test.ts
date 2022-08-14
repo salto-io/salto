@@ -356,14 +356,14 @@ describe('ducktype_instance_elements', () => {
       ))).toBeTruthy()
       expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', instanceName])
     })
-    it('should convert name if saltoNametransformation exists', async () => {
+    it('should convert name if nameMapping exists', async () => {
       entry.name = 'CaPSlOCK NaMe'
       const inst1 = await toInstance({
         type,
         transformationConfigByType: {
           bla: {
             idFields: ['name'],
-            saltoNameTransformation: 'lowercase',
+            nameMapping: 'lowercase',
           },
         },
         transformationDefaultConfig: {
@@ -377,21 +377,7 @@ describe('ducktype_instance_elements', () => {
         transformationConfigByType: {
           bla: {
             idFields: ['name'],
-            saltoNameTransformation: 'uppercase',
-          },
-        },
-        transformationDefaultConfig: {
-          idFields: ['somethingElse'],
-        },
-        defaultName: 'abc',
-        entry,
-      })
-      const inst3 = await toInstance({
-        type,
-        transformationConfigByType: {
-          bla: {
-            idFields: ['name'],
-            saltoNameTransformation: 'default',
+            nameMapping: 'uppercase',
           },
         },
         transformationDefaultConfig: {
@@ -404,8 +390,6 @@ describe('ducktype_instance_elements', () => {
       expect(inst1?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'capslock_name'])
       expect(inst2?.elemID.getFullName()).toEqual('myAdapter.bla.instance.CAPSLOCK_NAME@S')
       expect(inst2?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'CAPSLOCK_NAME'])
-      expect(inst3?.elemID.getFullName()).toEqual('myAdapter.bla.instance.CaPSlOCK_NaMe@s')
-      expect(inst3?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'CaPSlOCK_NaMe'])
     })
   })
 })

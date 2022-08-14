@@ -1285,7 +1285,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         },
       ],
       serviceUrl: '/secure/admin/EditStatus!default.jspa?id={id}',
-      saltoNameTransformation: 'lowercase',
+      nameMapping: 'lowercase',
     },
     deployRequests: {
       remove: {

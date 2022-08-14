@@ -2472,7 +2472,7 @@ describe('workspace', () => {
     })
     describe('getElemIdsByStaticFilePaths', () => {
       describe('with missing filepaths param', () => {
-        it('should return full map ', async () => {
+        it('should return full map', async () => {
           const result = await workspace.getElemIdsByStaticFilePaths()
           expect(result).toEqual(
             {

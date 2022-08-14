@@ -15,6 +15,8 @@
 */
 
 import { generateInstanceNameFromConfig } from '../../src/elements/instance_elements'
+import { NameMappingOptions } from '../../src/config'
+
 
 describe('generateInstanceNameFromConfig', () => {
   it('should return the name of the instance based on the type config', () => {
@@ -58,5 +60,59 @@ describe('generateInstanceNameFromConfig', () => {
         supportedTypes: {},
       }
     )).toBe('name')
+  })
+  it('should covert name if nameMapping exists', () => {
+    const lowercaseTransfomation : NameMappingOptions = 'lowercase'
+    const uppercaseTransfomation : NameMappingOptions = 'uppercase'
+    expect(generateInstanceNameFromConfig(
+      {
+        name: 'name',
+        id: 'Id',
+      },
+      'test',
+      {
+        typeDefaults: {
+          transformation: {
+            idFields: ['id'],
+            nameMapping: lowercaseTransfomation,
+          },
+        },
+        types: {},
+        supportedTypes: {},
+      }
+    )).toBe('id')
+    expect(generateInstanceNameFromConfig(
+      {
+        name: 'name',
+        id: 'Id',
+      },
+      'test',
+      {
+        typeDefaults: {
+          transformation: {
+            idFields: ['id'],
+            nameMapping: uppercaseTransfomation,
+          },
+        },
+        types: {},
+        supportedTypes: {},
+      }
+    )).toBe('ID')
+    expect(generateInstanceNameFromConfig(
+      {
+        name: 'name',
+        id: 'Id',
+      },
+      'test',
+      {
+        typeDefaults: {
+          transformation: {
+            idFields: ['id'],
+          },
+        },
+        types: {},
+        supportedTypes: {},
+      }
+    )).toBe('Id')
   })
 })

@@ -26,7 +26,7 @@ import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter_utils'
 import { AdapterApiConfig, getTransformationConfigByType,
   TransformationConfig, TransformationDefaultConfig, getConfigWithDefault,
-  dereferenceFieldName, isReferencedIdField } from '../config'
+  dereferenceFieldName, isReferencedIdField, NameMappingOptions } from '../config'
 import { joinInstanceNameParts, getInstanceFilePath, getInstanceNaclName } from '../elements/instance_elements'
 import { findDuplicates } from '../config/validation_utils'
 
@@ -39,6 +39,7 @@ const { getUpdatedReference, createReferencesTransformFunc } = references
 type TransformationIdConfig = {
   idFields: string[]
   extendsParentId?: boolean
+  nameMapping?: NameMappingOptions
 }
 
 const getFirstParentElemId = (instance: InstanceElement): ElemID | undefined => {
@@ -103,7 +104,7 @@ const createInstanceNameAndFilePath = (
   configByType: Record<string, TransformationConfig>,
   getElemIdFunc?: ElemIdGetter,
 ): { newNaclName: string; filePath: string[] } => {
-  const { idFields } = idConfig
+  const { idFields, nameMapping } = idConfig
   const newNameParts = createInstanceReferencedNameParts(instance, idFields)
   const newName = joinInstanceNameParts(newNameParts) ?? instance.elemID.name
   const parentName = getFirstParentElemId(instance)?.name
@@ -118,6 +119,7 @@ const createInstanceNameAndFilePath = (
     getElemIdFunc,
     serviceIdField,
     typeElemId: instance.refType.elemID,
+    nameMapping,
   })
 
   const filePath = getInstanceFilePath({
@@ -126,6 +128,7 @@ const createInstanceNameAndFilePath = (
     naclName: newNaclName,
     typeName,
     isSettingType: configByType[typeName].isSingleton ?? false,
+    nameMapping: configByType[typeName].nameMapping,
     adapterName: adapter,
   })
   return { newNaclName, filePath }
@@ -307,6 +310,7 @@ export const addReferencesToInstanceNames = async (
     idConfig: {
       idFields: configByType[instance.elemID.typeName].idFields,
       extendsParentId: configByType[instance.elemID.typeName].extendsParentId,
+      nameMapping: configByType[instance.elemID.typeName].nameMapping,
     },
   }))
 

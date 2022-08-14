@@ -22,7 +22,7 @@ import { pathNaclCase, naclCase, transformValues, TransformFunc } from '@salto-i
 import { logger } from '@salto-io/logging'
 import { RECORDS_PATH, SETTINGS_NESTED_PATH } from './constants'
 import { TransformationConfig, TransformationDefaultConfig, getConfigWithDefault,
-  RecurseIntoCondition, isRecurseIntoConditionByField, AdapterApiConfig, dereferenceFieldName } from '../config'
+  RecurseIntoCondition, isRecurseIntoConditionByField, AdapterApiConfig, dereferenceFieldName, NameMappingOptions } from '../config'
 
 const log = logger(module)
 
@@ -38,6 +38,17 @@ export type InstanceCreationParams = {
   parent?: InstanceElement
   normalized?: boolean
   getElemIdFunc?: ElemIdGetter
+}
+
+const getNameMapping = (
+  name: string,
+  nameMapping?: NameMappingOptions,
+): string => {
+  switch (nameMapping) {
+    case 'lowercase': return name.toLowerCase()
+    case 'uppercase': return name.toUpperCase()
+    default: return name
+  }
 }
 
 export const joinInstanceNameParts = (
@@ -62,6 +73,7 @@ export const getInstanceFilePath = ({
   naclName,
   typeName,
   isSettingType,
+  nameMapping,
   adapterName,
 }: {
   fileNameFields: string[] | undefined
@@ -69,6 +81,7 @@ export const getInstanceFilePath = ({
   naclName: string
   typeName: string
   isSettingType: boolean
+  nameMapping?: NameMappingOptions
   adapterName: string
 }): string[] => {
   const fileNameParts = (fileNameFields !== undefined
@@ -77,6 +90,7 @@ export const getInstanceFilePath = ({
   const fileName = ((fileNameParts?.every(p => _.isString(p) || _.isNumber(p))
     ? fileNameParts.join('_')
     : undefined))
+  const naclCaseFileName = fileName ? pathNaclCase(naclCase(fileName)) : pathNaclCase(naclName)
   return isSettingType
     ? [
       adapterName,
@@ -88,7 +102,8 @@ export const getInstanceFilePath = ({
       adapterName,
       RECORDS_PATH,
       pathNaclCase(typeName),
-      fileName ? pathNaclCase(naclCase(fileName)) : pathNaclCase(naclName),
+      nameMapping
+        ? getNameMapping(naclCaseFileName, nameMapping) : naclCaseFileName,
     ]
 }
 
@@ -97,11 +112,13 @@ export const generateInstanceNameFromConfig = (
   typeName: string,
   apiDefinitions: AdapterApiConfig
 ): string | undefined => {
-  const { idFields } = getConfigWithDefault(
+  const { idFields, nameMapping } = getConfigWithDefault(
     apiDefinitions.types[typeName]?.transformation ?? {},
     apiDefinitions.typeDefaults.transformation
   )
-  return getInstanceName(values, idFields)
+  const instanceName = getInstanceName(values, idFields)
+  return instanceName !== undefined
+    ? getNameMapping(instanceName, nameMapping) : instanceName
 }
 
 export const removeNullValues = async (
@@ -132,6 +149,7 @@ export const getInstanceNaclName = ({
   getElemIdFunc,
   serviceIdField,
   typeElemId,
+  nameMapping,
 }:{
   entry: Values
   name: string
@@ -140,10 +158,14 @@ export const getInstanceNaclName = ({
   getElemIdFunc?: ElemIdGetter
   serviceIdField?: string
   typeElemId: ElemID
+  nameMapping?: NameMappingOptions
 }): string => {
-  const desiredName = naclCase(
+  const naclName = naclCase(
     parentName ? `${parentName}${ID_SEPARATOR}${name}` : String(name)
   )
+  const desiredName = nameMapping
+    ? getNameMapping(naclName, nameMapping)
+    : naclName
   return getElemIdFunc && serviceIdField
     ? getElemIdFunc(
       adapterName,
@@ -193,7 +215,7 @@ export const toBasicInstance = async ({
   })
 
   const {
-    idFields, fileNameFields, serviceIdField,
+    idFields, fileNameFields, serviceIdField, nameMapping,
   } = getConfigWithDefault(
     transformationConfigByType[type.elemID.name],
     transformationDefaultConfig,
@@ -210,6 +232,7 @@ export const toBasicInstance = async ({
     getElemIdFunc,
     serviceIdField,
     typeElemId: type.elemID,
+    nameMapping,
   })
 
   const filePath = getInstanceFilePath({
@@ -218,6 +241,7 @@ export const toBasicInstance = async ({
     naclName,
     typeName: type.elemID.name,
     isSettingType: type.isSettings,
+    nameMapping,
     adapterName,
   })
 

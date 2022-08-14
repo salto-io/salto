@@ -15,7 +15,7 @@ jira {
           newName = "IssueType"
         },
         {
-          originalName = "StatusDetails"
+          originalName = "JiraStatus"
           newName = "Status"
         },
         {
@@ -115,7 +115,7 @@ jira {
           newName = "ScreenSchemes"
         },
         {
-          originalName = "rest__api__3__status"
+          originalName = "PageOfStatuses"
           newName = "Statuses"
         },
         {
@@ -137,6 +137,14 @@ jira {
         {
           originalName = "Webhook"
           newName = "AppWebhook"
+        },
+        {
+          originalName = "PageBeanGroupDetails"
+          newName = "Groups"
+        },
+        {
+          originalName = "GroupDetails"
+          newName = "Group"
         },
       ]
       additionalTypes = [
@@ -182,6 +190,7 @@ jira {
         transformation = {
           dataField = "."
           isSingleton = true
+          serviceUrl = "/secure/admin/ViewApplicationProperties.jspa"
         }
       }
       Dashboards = {
@@ -296,6 +305,7 @@ jira {
               fieldName = "gadgets"
             },
           ]
+          serviceUrl = "/jira/dashboards/{id}"
         }
         deployRequests = {
           add = {
@@ -528,9 +538,6 @@ jira {
           ]
           fieldsToOmit = [
             {
-              fieldName = "isGlobalContext"
-            },
-            {
               fieldName = "isAnyIssueType"
             },
           ]
@@ -606,6 +613,7 @@ jira {
               fieldName = "id"
             },
           ]
+          serviceUrl = "/secure/admin/ConfigureFieldLayout!default.jspa?=&id={id}"
         }
         deployRequests = {
           add = {
@@ -659,6 +667,7 @@ jira {
               fieldName = "id"
             },
           ]
+          serviceUrl = "/secure/admin/ConfigureFieldLayoutScheme!default.jspa?=&id={id}"
         }
         deployRequests = {
           add = {
@@ -733,6 +742,7 @@ jira {
               fieldName = "expand"
             },
           ]
+          serviceUrl = "/issues/?filter={id}"
         }
         deployRequests = {
           add = {
@@ -811,6 +821,7 @@ jira {
               fieldName = "id"
             },
           ]
+          serviceUrl = "/secure/admin/ConfigureOptionSchemes!default.jspa?fieldId=&schemeId={id}"
         }
         deployRequests = {
           add = {
@@ -879,6 +890,7 @@ jira {
               fieldName = "id"
             },
           ]
+          serviceUrl = "/secure/admin/ConfigureIssueTypeScreenScheme.jspa?id={id}"
         }
         request = {
           url = "/rest/api/3/issuetypescreenscheme"
@@ -958,6 +970,14 @@ jira {
               fieldType = "string"
             },
           ]
+          fieldsToOmit = [
+            {
+              fieldName = "value"
+            },
+            {
+              fieldName = "expand"
+            },
+          ]
         }
       }
       PermissionGrant = {
@@ -976,6 +996,7 @@ jira {
               fieldName = "id"
             },
           ]
+          serviceUrl = "/secure/admin/EditPermissions!default.jspa?schemeId={id}"
         }
         request = {
           url = "/rest/api/3/project/{projectId}/permissionscheme"
@@ -1130,6 +1151,7 @@ jira {
               fieldName = "id"
             },
           ]
+          serviceUrl = "/secure/admin/projectcategories/EditProjectCategory!default.jspa?id={id}"
         }
         deployRequests = {
           add = {
@@ -1193,6 +1215,10 @@ jira {
               fieldName = "issueTypeScheme"
               fieldType = "IssueTypeScheme"
             },
+            {
+              fieldName = "fieldContexts"
+              fieldType = "list<CustomFieldContext>"
+            },
           ]
           fieldsToHide = [
             {
@@ -1204,6 +1230,7 @@ jira {
               fieldName = "components"
             },
           ]
+          serviceUrl = "/secure/project/EditProject!default.jspa?pid={id}"
         }
         deployRequests = {
           add = {
@@ -1313,6 +1340,7 @@ jira {
               fieldName = "id"
             },
           ]
+          serviceUrl = "/secure/admin/EditNotifications!default.jspa?schemeId={id}"
         }
         jspRequests = {
           add = "/secure/admin/AddNotificationScheme.jspa"
@@ -1388,6 +1416,7 @@ jira {
               fieldName = "id"
             },
           ]
+          serviceUrl = "/secure/admin/EditResolution!default.jspa?id={id}"
         }
         jspRequests = {
           add = "/secure/admin/AddResolution.jspa"
@@ -1408,6 +1437,7 @@ jira {
               fieldName = "id"
             },
           ]
+          serviceUrl = "/secure/admin/ConfigureFieldScreen.jspa?id={id}"
         }
         deployRequests = {
           add = {
@@ -1492,8 +1522,9 @@ jira {
         }
       }
       Statuses = {
-        transformation = {
-          dataField = "."
+        request = {
+          url = "/rest/api/3/statuses/search"
+          paginationField = "startAt"
         }
       }
       Workflows = {
@@ -1552,6 +1583,7 @@ jira {
               fieldName = "updated"
             },
           ]
+          serviceUrl = "/secure/admin/workflows/ViewWorkflowSteps.jspa?workflowMode=live&workflowName={name}"
         }
         deployRequests = {
           add = {
@@ -1586,6 +1618,7 @@ jira {
               fieldName = "levels"
             },
           ]
+          serviceUrl = "/secure/admin/EditIssueSecurityScheme!default.jspa?=&schemeId={id}"
         }
         jspRequests = {
           add = "/secure/admin/AddIssueSecurityScheme.jspa"
@@ -1704,7 +1737,23 @@ jira {
         transformation = {
           fieldTypeOverrides = [
             {
-              fieldName = "untranslatedName"
+              fieldName = "id"
+              fieldType = "string"
+            },
+            {
+              fieldName = "name"
+              fieldType = "string"
+            },
+            {
+              fieldName = "statusCategory"
+              fieldType = "string"
+            },
+            {
+              fieldName = "scope"
+              fieldType = "StatusScope"
+            },
+            {
+              fieldName = "description"
               fieldType = "string"
             },
           ]
@@ -1713,12 +1762,25 @@ jira {
               fieldName = "id"
             },
           ]
+          fieldsToOmit = [
+            {
+              fieldName = "scope"
+            },
+            {
+              fieldName = "icon"
+            },
+            {
+              fieldName = "resolved"
+            },
+          ]
+          serviceUrl = "/secure/admin/EditStatus!default.jspa?id={id}"
+          nameMapping = "lowercase"
         }
-        jspRequests = {
-          add = "/secure/admin/AddStatus.jspa"
-          modify = "/secure/admin/EditStatus.jspa"
-          remove = "/secure/admin/DeleteStatus.jspa"
-          query = "/rest/workflowDesigner/1.0/statuses"
+        deployRequests = {
+          remove = {
+            url = "/rest/api/3/statuses?id={id}"
+            method = "delete"
+          }
         }
       }
       WorkflowScheme = {
@@ -1728,6 +1790,7 @@ jira {
               fieldName = "id"
             },
           ]
+          serviceUrl = "/secure/admin/EditWorkflowScheme.jspa?schemeId={id}"
         }
         deployRequests = {
           add = {
@@ -1760,12 +1823,19 @@ jira {
             {
               fieldName = "subtask"
             },
+            {
+              fieldName = "avatarId"
+            },
+            {
+              fieldName = "iconUrl"
+            },
           ]
           fieldsToHide = [
             {
               fieldName = "id"
             },
           ]
+          serviceUrl = "/secure/admin/EditIssueType!default.jspa?id={id}"
         }
         deployRequests = {
           add = {
@@ -1785,6 +1855,7 @@ jira {
       AttachmentSettings = {
         transformation = {
           isSingleton = true
+          serviceUrl = "/secure/admin/ViewAttachmentSettings.jspa"
         }
       }
       Permissions_permissions = {
@@ -1831,6 +1902,32 @@ jira {
               fieldName = "type"
             },
           ]
+        }
+      }
+      Group = {
+        transformation = {
+          fieldsToHide = [
+            {
+              fieldName = "groupId"
+            },
+          ]
+          serviceIdField = "groupId"
+        }
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/group"
+            method = "post"
+          }
+          remove = {
+            url = "/rest/api/3/group?groupId={groupId}"
+            method = "delete"
+          }
+        }
+      }
+      Groups = {
+        request = {
+          url = "/rest/api/3/group/bulk"
+          paginationField = "startAt"
         }
       }
       Board = {
@@ -1909,6 +2006,7 @@ jira {
               fieldName = "id"
             },
           ]
+          serviceUrl = "/secure/admin/EditLinkType!default.jspa?id={id}"
         }
       }
       ProjectRole = {
@@ -1918,6 +2016,7 @@ jira {
               fieldName = "id"
             },
           ]
+          serviceUrl = "/secure/project/EditProjectRole!default.jspa?id={id}"
         }
         deployRequests = {
           add = {
@@ -1934,6 +2033,16 @@ jira {
           }
         }
       }
+      TimeTrackingProvider = {
+        transformation = {
+          serviceUrl = "/secure/admin/TimeTrackingAdmin.jspa"
+        }
+      }
+      Automation = {
+        transformation = {
+          serviceUrl = "/jira/settings/automation#/rule/{id}"
+        }
+      }
       IssueEvent = {
         transformation = {
           fieldsToHide = [
@@ -1941,6 +2050,7 @@ jira {
               fieldName = "id"
             },
           ]
+          serviceUrl = "/secure/admin/ListEventTypes.jspa"
         }
       }
       Priority = {
@@ -1950,6 +2060,7 @@ jira {
               fieldName = "id"
             },
           ]
+          serviceUrl = "/secure/admin/EditPriority!default.jspa?id={id}"
         }
         jspRequests = {
           add = "/secure/admin/AddPriority.jspa"
@@ -1965,6 +2076,12 @@ jira {
             },
             {
               fieldName = "remainingSeats"
+            },
+            {
+              fieldName = "groupDetails"
+            },
+            {
+              fieldName = "defaultGroupsDetails"
             },
           ]
         }
@@ -1985,6 +2102,7 @@ jira {
               fieldName = "id"
             },
           ]
+          serviceUrl = "/secure/admin/ConfigureFieldScreenScheme.jspa?id={id}"
         }
         deployRequests = {
           add = {
@@ -2147,6 +2265,13 @@ jira {
       ]
       Board = [
         "Boards",
+      ]
+      Group = [
+        "Groups",
+      ]
+      Automation = [
+      ]
+      Webhook = [
       ]
     }
   }

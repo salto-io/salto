@@ -356,5 +356,40 @@ describe('ducktype_instance_elements', () => {
       ))).toBeTruthy()
       expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', instanceName])
     })
+    it('should convert name if nameMapping exists', async () => {
+      entry.name = 'CaPSlOCK NaMe'
+      const inst1 = await toInstance({
+        type,
+        transformationConfigByType: {
+          bla: {
+            idFields: ['name'],
+            nameMapping: 'lowercase',
+          },
+        },
+        transformationDefaultConfig: {
+          idFields: ['somethingElse'],
+        },
+        defaultName: 'abc',
+        entry,
+      })
+      const inst2 = await toInstance({
+        type,
+        transformationConfigByType: {
+          bla: {
+            idFields: ['name'],
+            nameMapping: 'uppercase',
+          },
+        },
+        transformationDefaultConfig: {
+          idFields: ['somethingElse'],
+        },
+        defaultName: 'abc',
+        entry,
+      })
+      expect(inst1?.elemID.getFullName()).toEqual('myAdapter.bla.instance.capslock_name@s')
+      expect(inst1?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'capslock_name'])
+      expect(inst2?.elemID.getFullName()).toEqual('myAdapter.bla.instance.CAPSLOCK_NAME@S')
+      expect(inst2?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'CAPSLOCK_NAME'])
+    })
   })
 })

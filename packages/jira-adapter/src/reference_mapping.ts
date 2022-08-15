@@ -439,24 +439,16 @@ ReferenceContextStrategyName
     serializationStrategy: 'name',
     target: { type: 'ProjectRole' },
   },
+  // TODO: add serialization by name once SALTO-2542 is done
   {
     src: { field: 'value', parentTypes: [AUTOMATION_COMPARE_VALUE] },
     serializationStrategy: 'id',
     target: { typeContext: 'compareFieldValue' },
   },
-  {
-    src: { field: 'value', parentTypes: [AUTOMATION_COMPARE_VALUE] },
-    serializationStrategy: 'name',
-    target: { typeContext: 'compareFieldValue' },
-  },
+  // TODO: add serialization by name once SALTO-2542 is done
   {
     src: { field: 'values', parentTypes: [AUTOMATION_COMPARE_VALUE] },
     serializationStrategy: 'id',
-    target: { typeContext: 'compareFieldValue' },
-  },
-  {
-    src: { field: 'values', parentTypes: [AUTOMATION_COMPARE_VALUE] },
-    serializationStrategy: 'name',
     target: { typeContext: 'compareFieldValue' },
   },
   {

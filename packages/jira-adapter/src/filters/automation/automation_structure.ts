@@ -39,20 +39,21 @@ type DeployableValueObject = {
   value: string
 }
 
-// type CompareValueObject = {
-//   compareValue: {
-//     multiValue: boolean
-//     // value: string
-//   }
-// }
+type CompareValueObject = {
+  compareValue: {
+    multiValue: boolean
+    value: string
+  }
+}
 
-// type CompareFieldValueObject = {
-//   compareFieldValue: {
-//     multiValue: boolean
-//     value: string
-//     values: string
-//   }
-// }
+type CompareFieldValueObject = {
+  compareFieldValue: {
+    multiValue: boolean
+    value: string
+    values: string
+    type: string
+  }
+}
 
 const LINK_TYPE_SCHEME = Joi.object({
   linkType: Joi.string().required(),
@@ -63,19 +64,14 @@ const RAW_VALUE_SCHEME = Joi.object({
   rawValue: Joi.string().required(),
 }).unknown(true).required()
 
-// const COMPARAE_VALUE_SCHEME = Joi.object({
-//   compareValue: Joi.object({
-//     multiValue: Joi.boolean().required()
-//   }),
-// }).unknown(true).required()
-
-// const COMPARAE_FIELD_VALUE_SCHEME = Joi.object({
-//   compareFieldValue: Joi.object({
-//     multiValue: Joi.boolean().required(),
-//     value: Joi.string().optional(),
-//     values: Joi.array().items(Joi.string()).optional(),
-//   }),
-// }).unknown(true).required()
+const COMPARAE_FIELD_VALUE_SCHEME = Joi.object({
+  compareFieldValue: Joi.object({
+    multiValue: Joi.boolean().required(),
+    value: Joi.string().optional(),
+    values: Joi.array().items(Joi.string()).optional(),
+    type: Joi.string(),
+  }).required(),
+}).unknown(true).required()
 
 const isLinkTypeObject = (value: unknown): value is LinkTypeObject => {
   const { error } = LINK_TYPE_SCHEME.validate(value)
@@ -87,15 +83,10 @@ const isRawValueObject = (value: unknown): value is RawValueObject => {
   return error === undefined
 }
 
-// const isCompareValueObject = (value: unknown): value is CompareValueObject => {
-//   const { error } = COMPARAE_VALUE_SCHEME.validate(value)
-//   return error === undefined
-// }
-
-// const isCompareFieldValueObject = (value: unknown): value is CompareFieldValueObject => {
-//   const { error } = COMPARAE_FIELD_VALUE_SCHEME.validate(value)
-//   return error === undefined
-// }
+const isCompareFieldValueObject = (value: unknown): value is CompareFieldValueObject => {
+  const { error } = COMPARAE_FIELD_VALUE_SCHEME.validate(value)
+  return error === undefined
+}
 
 const KEYS_TO_REMOVE = [
   'clientKey',
@@ -239,6 +230,29 @@ const changeRawValueFieldsToValue = async (instance: InstanceElement): Promise<v
   })).value
 }
 
+// const revertCompareFieldValueStructure = async (instance: InstanceElement): Promise<void> => {
+//   instance.value = (await transformElement({
+//     element: instance,
+//     strict: false,
+//     allowEmpty: true,
+//     transformFunc: async ({ value, field }) => {
+//       if (
+//         (await field?.getType())?.elemID.typeName === AUTOMATION_COMPONENT_VALUE_TYPE
+//         && _.isPlainObject(value.compareFieldValue)
+//       ) {
+//         value.compareValue = value.compareFieldValue
+//         delete value.compareFieldValue
+//         if (value.compareValue.multiValue) {
+//           const joinedValues = _.join(value.compareValue.values, '","')
+//           value.compareValue.value = '["'.concat(joinedValues, '"]')
+//           delete value.compareValue.values
+//         }
+//       }
+//       return value
+//     },
+//   })).value
+// }
+
 const revertCompareFieldValueStructure = async (instance: InstanceElement): Promise<void> => {
   instance.value = (await transformElement({
     element: instance,
@@ -246,18 +260,17 @@ const revertCompareFieldValueStructure = async (instance: InstanceElement): Prom
     allowEmpty: true,
     transformFunc: async ({ value, field }) => {
       if (
-        (await field?.getType())?.elemID.typeName === AUTOMATION_COMPONENT_VALUE_TYPE
-        && _.isPlainObject(value.compareFieldValue)
+        isCompareFieldValueObject(value)
+        && (await field?.getType())?.elemID.typeName === AUTOMATION_COMPONENT_VALUE_TYPE
       ) {
-        value.compareValue = value.compareFieldValue
-        delete value.compareFieldValue
-        if (value.compareValue.multiValue) {
-          // TODO change this join
-          value.compareValue.value = _.join(value.compareValue.values, '","')
-          _.padStart(value.compareValue.value, 2, '["')
-          _.padEnd(value.compareValue.value, 2, '"]')
-          delete value.compareValue.values
+        const { compareFieldValue } = value
+        if (compareFieldValue.multiValue) {
+          const joinedValues = _.join(compareFieldValue.values, '","')
+          compareFieldValue.value = '["'.concat(joinedValues, '"]')
+          delete compareFieldValue.values
         }
+        const deployableObject: CompareValueObject = _.omit({ ...value, compareValue: compareFieldValue }, 'compareFieldValue')
+        return deployableObject
       }
       return value
     },

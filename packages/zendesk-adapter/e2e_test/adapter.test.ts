@@ -231,7 +231,7 @@ describe('Zendesk adapter E2E', () => {
         filename: 'e2eIcon.png',
         content: new StaticFile({
           filepath: `${ZENDESK}/${BRAND_LOGO_TYPE.elemID.name}/e2eIcon.png`,
-          content: fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/e2eIcon.png`)),
+          content: fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/assets/e2eIcon.png`)),
         }),
       },
     )

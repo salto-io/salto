@@ -152,7 +152,7 @@ export const createAutomationTypes = (): {
       subtasks: { refType: new ListType(subtaskType) },
       project: { refType: projectType },
       role: { refType: roleType },
-      compareValue: { refType: compareFieldValueType },
+      compareFieldValue: { refType: compareFieldValueType },
     },
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_COMPONENT_VALUE_TYPE],
   })

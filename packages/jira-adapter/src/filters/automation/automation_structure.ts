@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _, { isPlainObject } from 'lodash'
+import _ from 'lodash'
 import Joi from 'joi'
 import { InstanceElement, isInstanceElement, Values, getChangeData,
   Change, isInstanceChange } from '@salto-io/adapter-api'
@@ -176,7 +176,7 @@ const compareFieldValueStructure = async (instance: InstanceElement): Promise<vo
       if (
         path?.name === 'value'
         && (await field?.getType())?.elemID.typeName === AUTOMATION_COMPONENT_VALUE_TYPE
-        && isPlainObject(value.compareValue)
+        && _.isPlainObject(value.compareValue)
       ) {
         value.compareFieldValue = value.compareValue
         delete value.compareValue
@@ -229,29 +229,6 @@ const changeRawValueFieldsToValue = async (instance: InstanceElement): Promise<v
     },
   })).value
 }
-
-// const revertCompareFieldValueStructure = async (instance: InstanceElement): Promise<void> => {
-//   instance.value = (await transformElement({
-//     element: instance,
-//     strict: false,
-//     allowEmpty: true,
-//     transformFunc: async ({ value, field }) => {
-//       if (
-//         (await field?.getType())?.elemID.typeName === AUTOMATION_COMPONENT_VALUE_TYPE
-//         && _.isPlainObject(value.compareFieldValue)
-//       ) {
-//         value.compareValue = value.compareFieldValue
-//         delete value.compareFieldValue
-//         if (value.compareValue.multiValue) {
-//           const joinedValues = _.join(value.compareValue.values, '","')
-//           value.compareValue.value = '["'.concat(joinedValues, '"]')
-//           delete value.compareValue.values
-//         }
-//       }
-//       return value
-//     },
-//   })).value
-// }
 
 const revertCompareFieldValueStructure = async (instance: InstanceElement): Promise<void> => {
   instance.value = (await transformElement({

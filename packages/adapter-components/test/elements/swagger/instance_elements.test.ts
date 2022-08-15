@@ -58,11 +58,19 @@ describe('swagger_instance_elements', () => {
           additionalProperties: { refType: new MapType(Food) },
         },
       })
+      const Status = new ObjectType({
+        elemID: new ElemID(ADAPTER_NAME, 'Status'),
+        fields: {
+          id: { refType: BuiltinTypes.STRING },
+          name: { refType: BuiltinTypes.STRING },
+        },
+      })
 
       return {
         Owner,
         Pet,
         Food,
+        Status,
       }
     }
 
@@ -106,6 +114,11 @@ describe('swagger_instance_elements', () => {
           if (getParams.url === '/owner') {
             yield [
               { name: 'owner2' },
+            ].flatMap(extractPageEntries)
+          }
+          if (getParams.url === '/status') {
+            yield [
+              { id: '1', name: 'DoNe' },
             ].flatMap(extractPageEntries)
           }
         }
@@ -1322,6 +1335,69 @@ describe('swagger_instance_elements', () => {
         },
         objectTypes,
       })).rejects.toThrow(new Error('Invalid type config - type myAdapter.Pet has no request config'))
+    })
+
+    it('should convert name and filename if nameMapping exists', async () => {
+      const objectTypes = generateObjectTypes()
+      const res = await getAllInstances({
+        paginator: mockPaginator,
+        apiConfig: {
+          typeDefaults: {
+            transformation: {
+              idFields: ['id'],
+            },
+          },
+          types: {
+            Status: {
+              request: {
+                url: '/status',
+              },
+              transformation: {
+                idFields: ['name'],
+                nameMapping: 'lowercase',
+              },
+            },
+            Owner: {
+              request: {
+                url: '/owner',
+              },
+              transformation: {
+                idFields: ['name'],
+                nameMapping: 'uppercase',
+              },
+            },
+          },
+        },
+        fetchQuery: createElementQuery({
+          include: [
+            { type: 'Status' },
+            { type: 'Owner' },
+          ],
+          exclude: [],
+        }),
+        supportedTypes: {
+          Status: ['Status'],
+          Owner: ['Owner'],
+        },
+        objectTypes,
+        computeGetArgs: simpleGetArgs,
+        nestedFieldFinder: returnFullEntry,
+      })
+      expect(res.map(e => e.elemID.name)).toEqual(['done', 'OWNER2'])
+      expect(res.map(e => e.path)).toEqual([
+        [
+          ADAPTER_NAME,
+          'Records',
+          'Status',
+          'done',
+        ],
+        [
+          ADAPTER_NAME,
+          'Records',
+          'Owner',
+          'OWNER2',
+        ],
+      ])
     })
   })
 

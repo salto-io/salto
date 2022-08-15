@@ -24,7 +24,7 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
     {
       name: 'Build Broken',
       description: '',
-      to: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'Backlog'), allElements),
+      to: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
       type: 'global',
       rules: {
         triggers: [
@@ -80,7 +80,7 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
     {
       name: 'Create',
       description: '',
-      to: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'Backlog'), allElements),
+      to: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
       type: 'initial',
       rules: {
         validators: [
@@ -162,9 +162,9 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
       name: 'TransitionToShared',
       description: '',
       from: [
-        createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'Done'), allElements),
+        createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
       ],
-      to: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'Backlog'), allElements),
+      to: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
       type: 'directed',
       rules: {
         validators: [
@@ -197,7 +197,7 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
             configuration: {
               parentStatuses: [
                 {
-                  id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'In_Progress@s'), allElements),
+                  id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'in_progress@s'), allElements),
                 },
               ],
             },
@@ -213,7 +213,7 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
             configuration: {
               mostRecentStatusOnly: false,
               previousStatus: {
-                id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'Done'), allElements),
+                id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
               },
             },
           },
@@ -291,7 +291,7 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
                 mostRecentStatusOnly: true,
                 reverseCondition: true,
                 previousStatus: {
-                  id: createReference(new ElemID(JIRA, 'Status', 'instance', 'Done'), allElements),
+                  id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
                 },
               },
             },
@@ -299,10 +299,10 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
               type: 'SeparationOfDutiesCondition',
               configuration: {
                 toStatus: {
-                  id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'Backlog'), allElements),
+                  id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
                 },
                 fromStatus: {
-                  id: createReference(new ElemID(JIRA, 'Status', 'instance', 'Done'), allElements),
+                  id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
                 },
               },
             },
@@ -311,10 +311,10 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
               configuration: {
                 statuses: [
                   {
-                    id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'Backlog'), allElements),
+                    id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
                   },
                   {
-                    id: createReference(new ElemID(JIRA, 'Status', 'instance', 'Done'), allElements),
+                    id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
                   },
                 ],
               },
@@ -368,7 +368,7 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
   ],
   statuses: [
     {
-      id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'Backlog'), allElements),
+      id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
       name: 'CustomBacklog',
       properties: [{
         key: 'jira.issue.editable',
@@ -376,7 +376,7 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
       }],
     },
     {
-      id: createReference(new ElemID(JIRA, 'Status', 'instance', 'Done'), allElements),
+      id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
       name: 'Done',
       properties: [{
         key: 'jira.issue.editable',

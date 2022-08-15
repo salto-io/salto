@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, MapType, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, MapType, ObjectType, ReadOnlyElementsSource, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { setContextOptions, setOptionTypeDeploymentAnnotations } from '../../../src/filters/fields/context_options'
 import { JIRA } from '../../../src/constants'
 
@@ -24,6 +25,7 @@ describe('context options', () => {
     let client: MockInterface<clientUtils.HTTPWriteClientInterface>
     let parentField: InstanceElement
     let contextInstance: InstanceElement
+    let elementSource: ReadOnlyElementsSource
 
     beforeEach(() => {
       client = {
@@ -56,10 +58,16 @@ describe('context options', () => {
       {
         [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
       })
+
+      const sourceParentField = parentField.clone()
+      delete sourceParentField.value.id
+      elementSource = buildElementsSourceFromElements([
+        sourceParentField,
+      ])
     })
 
     it('if change is removal, should do nothing', async () => {
-      await setContextOptions(toChange({ before: contextInstance }), client)
+      await setContextOptions(toChange({ before: contextInstance }), client, elementSource)
       expect(client.post).not.toHaveBeenCalled()
       expect(client.put).not.toHaveBeenCalled()
       expect(client.delete).not.toHaveBeenCalled()
@@ -87,7 +95,8 @@ describe('context options', () => {
         })
         await setContextOptions(
           toChange({ after: contextInstance }),
-          client
+          client,
+          elementSource
         )
       })
 
@@ -114,7 +123,8 @@ describe('context options', () => {
       })
       await expect(setContextOptions(
         toChange({ after: contextInstance }),
-        client
+        client,
+        elementSource
       )).rejects.toThrow()
     })
 
@@ -162,7 +172,8 @@ describe('context options', () => {
         })
         await setContextOptions(
           toChange({ before: contextInstance, after: contextInstanceAfter }),
-          client
+          client,
+          elementSource
         )
       })
 

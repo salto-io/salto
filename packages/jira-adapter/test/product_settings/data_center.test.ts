@@ -15,7 +15,7 @@
 */
 import { client } from '@salto-io/adapter-components'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
-import { dataCenterSettings } from '../../src/product_settings/dataCenter'
+import { DATA_CENTER_SETTINGS } from '../../src/product_settings/data_center'
 
 describe('dataCenter settings', () => {
   describe('wrapConnection', () => {
@@ -30,7 +30,7 @@ describe('dataCenter settings', () => {
         patch: mockFunction<client.APIConnection['patch']>(),
       }
 
-      wrappedApiConnection = dataCenterSettings.wrapConnection(apiConnection)
+      wrappedApiConnection = DATA_CENTER_SETTINGS.wrapConnection(apiConnection)
     })
     it('should replace rest version from 3 to 2', async () => {
       await wrappedApiConnection.get('/rest/api/3/test')
@@ -43,6 +43,13 @@ describe('dataCenter settings', () => {
       expect(apiConnection.put).toHaveBeenCalledWith('/rest/api/2/test', 'data', undefined)
       expect(apiConnection.delete).toHaveBeenCalledWith('/rest/api/2/test', undefined)
       expect(apiConnection.patch).toHaveBeenCalledWith('/rest/api/2/test', 'data', undefined)
+    })
+
+    it('should replace plugin urls', async () => {
+      await wrappedApiConnection.get('/rest/api/3/workflowscheme')
+      await wrappedApiConnection.post('/rest/api/3/workflowscheme', 'data')
+      expect(apiConnection.get).toHaveBeenCalledWith('/rest/salto/1.0/workflowscheme', undefined)
+      expect(apiConnection.post).toHaveBeenCalledWith('/rest/api/2/workflowscheme', 'data', undefined)
     })
 
     it('should not replace other versions', async () => {

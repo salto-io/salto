@@ -23,7 +23,7 @@ import SalesforceClient from '../client/client'
 import { SalesforceRecord } from '../client/types'
 import {
   SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGES_PATH, CUSTOM_OBJECT_ID_FIELD,
-  OBJECTS_PATH, FIELD_ANNOTATIONS, MAX_QUERY_LENGTH,
+  FIELD_ANNOTATIONS, MAX_QUERY_LENGTH,
 } from '../constants'
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import { apiName, isCustomObject, Types, createInstanceServiceIds, isNameField } from '../transformers/transformer'
@@ -169,10 +169,10 @@ const recordToInstance = async (
     const typeNamespace = await getNamespace(type)
     const instanceFileName = pathNaclCase(instanceName)
     if (typeNamespace) {
-      return [SALESFORCE, INSTALLED_PACKAGES_PATH, typeNamespace, OBJECTS_PATH,
-        type.elemID.typeName, RECORDS_PATH, instanceFileName]
+      return [SALESFORCE, INSTALLED_PACKAGES_PATH, typeNamespace,
+        RECORDS_PATH, type.elemID.typeName, instanceFileName]
     }
-    return [SALESFORCE, OBJECTS_PATH, type.elemID.typeName, RECORDS_PATH, instanceFileName]
+    return [SALESFORCE, RECORDS_PATH, type.elemID.typeName, instanceFileName]
   }
   const { name } = Types.getElemId(
     instanceSaltoName,

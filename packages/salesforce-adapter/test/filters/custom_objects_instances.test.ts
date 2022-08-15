@@ -420,11 +420,10 @@ describe('Custom Object Instances filter', () => {
         it('should create instances according to results', () => {
           expect(instances.length).toEqual(2)
         })
-
-        it('should create the instances with record path acccording to object', () => {
+        it('should create the instances with record path according to object', () => {
           expect(instances[0].path).toEqual(
-            [SALESFORCE, INSTALLED_PACKAGES_PATH, testNamespace, OBJECTS_PATH,
-              simpleName, RECORDS_PATH, expectedFirstInstanceName]
+            [SALESFORCE, INSTALLED_PACKAGES_PATH, testNamespace,
+              RECORDS_PATH, simpleName, expectedFirstInstanceName]
           )
         })
 
@@ -476,11 +475,10 @@ describe('Custom Object Instances filter', () => {
         it('should create instances according to results', () => {
           expect(instances.length).toEqual(2)
         })
-
         it('should create the instances with record path acccording to object', () => {
           expect(instances[0].path).toEqual(
-            [SALESFORCE, INSTALLED_PACKAGES_PATH, testNamespace, OBJECTS_PATH,
-              withNameName, RECORDS_PATH, expectedFirstInstanceName]
+            [SALESFORCE, INSTALLED_PACKAGES_PATH, testNamespace,
+              RECORDS_PATH, withNameName, expectedFirstInstanceName]
           )
         })
 
@@ -521,11 +519,10 @@ describe('Custom Object Instances filter', () => {
         it('should create instances according to results', () => {
           expect(instances.length).toEqual(2)
         })
-
         it('should create the instances with record path acccording to object', () => {
           expect(instances[0].path).toEqual(
-            [SALESFORCE, INSTALLED_PACKAGES_PATH, testNamespace, OBJECTS_PATH,
-              withAddressName, RECORDS_PATH, expectedFirstInstanceName]
+            [SALESFORCE, INSTALLED_PACKAGES_PATH, testNamespace,
+              RECORDS_PATH, withAddressName, expectedFirstInstanceName]
           )
         })
 

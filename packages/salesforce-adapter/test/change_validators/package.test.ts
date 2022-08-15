@@ -158,19 +158,35 @@ describe('package change validator', () => {
   })
 
   describe('onUpdate', () => {
-    describe('modify field', () => {
-      it('should have change error when modifing a type of field with namespace', async () => {
-        obj.annotate({ [API_NAME]: 'ObjectName__c' })
-        const beforeField = createField(obj, Types.primitiveDataTypes.Lookup, `${obj.annotations[API_NAME]}.MyNamespace__FieldName__c`)
-        const afterField = beforeField.clone()
-        afterField.annotations.modifyMe = 'modified'
-        afterField.refType = createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail)
-        const changeErrors = await packageValidator(
-          [toChange({ before: beforeField, after: afterField })]
-        )
-        expect(changeErrors).toHaveLength(1)
-        expect(changeErrors[0].severity).toEqual('Error')
-        expect(changeErrors[0].elemID).toEqual(beforeField.elemID)
+    describe('modify field with namespace', () => {
+      describe('when modifying a forbidden property', () => {
+        it('should have change error', async () => {
+          obj.annotate({ [API_NAME]: 'ObjectName__c' })
+          const beforeField = createField(obj, Types.primitiveDataTypes.Lookup, `${obj.annotations[API_NAME]}.MyNamespace__FieldName__c`)
+          const afterField = beforeField.clone()
+          afterField.annotations.modifyMe = 'modified'
+          afterField.refType = createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail)
+          const changeErrors = await packageValidator(
+            [toChange({ before: beforeField, after: afterField })]
+          )
+          expect(changeErrors).toHaveLength(1)
+          expect(changeErrors[0].severity).toEqual('Error')
+          expect(changeErrors[0].elemID).toEqual(beforeField.elemID)
+        })
+      })
+
+      describe('when modifying an allowed property', () => {
+        it('should not have change error', async () => {
+          obj.annotate({ [API_NAME]: 'ObjectName__c' })
+          const beforeField = createField(obj, Types.primitiveDataTypes.Lookup, `${obj.annotations[API_NAME]}.MyNamespace__FieldName__c`, undefined, 'description')
+          const afterField = beforeField.clone()
+          afterField.annotations.modifyMe = 'modified'
+          afterField.refType = createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail)
+          const changeErrors = await packageValidator(
+            [toChange({ before: beforeField, after: afterField })]
+          )
+          expect(changeErrors).toBeEmpty()
+        })
       })
     })
 

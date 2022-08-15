@@ -13,9 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, getChangeData, InstanceElement, isModificationChange, isRemovalChange, ChangeError, ChangeValidator, ActionName, isInstanceChange, isFieldChange, isObjectType } from '@salto-io/adapter-api'
+import {
+  Element,
+  getChangeData,
+  InstanceElement,
+  isModificationChange,
+  isRemovalChange,
+  ChangeError,
+  ChangeValidator,
+  ActionName,
+  isInstanceChange,
+  isFieldChange,
+  isObjectType,
+  getAllChangeData, Change, isAdditionChange, ChangeDataType,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
+import { detailedCompare } from '@salto-io/adapter-utils'
 import { apiName, isCustomObject, metadataType } from '../transformers/transformer'
 import { NAMESPACE_SEPARATOR } from '../constants'
 import { INSTANCE_SUFFIXES } from '../types'
@@ -60,6 +74,17 @@ const packageChangeError = async (
   })
 }
 
+const MODIFIABLE_PROPERTIES = [
+  'inlineHelpText',
+  'description',
+]
+
+const isInvalidModify = (change: Change<ChangeDataType>): boolean => {
+  const [before, after] = getAllChangeData(change)
+  const modifiedFieldNames = detailedCompare(before, after).map(valueDiff => valueDiff.id.name)
+  return !modifiedFieldNames.every(fieldName => MODIFIABLE_PROPERTIES.includes(fieldName))
+}
+
 const isInstalledPackageVersionChange = async (
   { before, after }: { before: InstanceElement; after: InstanceElement }
 ): Promise<boolean> => (
@@ -71,7 +96,20 @@ const changeValidator: ChangeValidator = async changes => {
   const addRemoveErrors = await awu(changes)
     .filter(async change => await isCustomObject(getChangeData(change)) || isFieldChange(change))
     .filter(change => hasNamespace(getChangeData(change)))
+    .filter(change => isAdditionChange(change) || isRemovalChange(change))
     .map(change => packageChangeError(change.action, getChangeData(change)))
+    .toArray()
+
+  const modifyErrors = await awu(changes)
+    .filter(async change => await isCustomObject(getChangeData(change)) || isFieldChange(change))
+    .filter(change => hasNamespace(getChangeData(change)))
+    .filter(change => isModificationChange(change))
+    .filter(isInvalidModify)
+    .map(change => packageChangeError(
+      change.action,
+      getChangeData(change),
+      `Modification is forbidden of any property that is not one of the following: ${MODIFIABLE_PROPERTIES.join(', ')}`,
+    ))
     .toArray()
 
   const removeObjectWithPackageFieldsErrors = awu(changes)
@@ -101,6 +139,7 @@ const changeValidator: ChangeValidator = async changes => {
 
   return [
     ...addRemoveErrors,
+    ...modifyErrors,
     ...await removeObjectWithPackageFieldsErrors,
     ...packageVersionChangeErrors,
   ]

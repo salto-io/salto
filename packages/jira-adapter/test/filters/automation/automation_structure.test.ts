@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { InstanceElement, ObjectType, toChange, getAllChangeData, ReferenceExpression, ElemID } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { getFilterParams } from '../../utils'
@@ -24,8 +25,10 @@ import { JIRA } from '../../../src/constants'
 describe('automationStructureFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let type: ObjectType
+  let someType: ObjectType
   let instance: InstanceElement
   let ref: InstanceElement
+  let statusim: InstanceElement[]
   let instanceAfterFetch: InstanceElement
   let changedInstance: InstanceElement
 
@@ -39,32 +42,79 @@ describe('automationStructureFilter', () => {
       'instance',
       type,
       {
-        id: '1',
+        id: '111',
         trigger: {
           component: 'TRIGGER',
           type: 'jira.issue.event.trigger:created',
         },
         components: [
           {
-            id: '2',
+            id: '0',
             component: 'ACTION',
             value: null,
             updated: 1234,
           },
           {
-            id: '3',
+            id: '1',
             component: 'CONDITION',
             value: 'priority > Medium',
             updated: 1111,
           },
           {
-            id: '4',
+            id: '2',
             component: 'CONDITION',
             value: {
               linkType: 'inward:10003',
               value: '123',
             },
             updated: 1111,
+          },
+          {
+            id: '3',
+            component: 'CONDITION',
+            value: {
+              selectedFieldType: 'priority',
+              comparison: 'NOT_ONE_OF',
+              compareValue: {
+                type: 'ID',
+                multiValue: true,
+                value: '["123","234","345"]',
+              },
+            },
+          },
+          {
+            id: '4',
+            component: 'CONDITION',
+            value: {
+              selectedFieldType: 'status',
+              comparison: 'EQUALS',
+              compareValue: {
+                type: 'ID',
+                multiValue: false,
+                value: 'Done',
+              },
+            },
+          },
+          {
+            id: '5',
+            component: 'ACTION',
+            value: {
+              operations: [
+                {
+                  fieldType: 'status',
+                  type: 'SET',
+                  value: {
+                    type: 'NAME',
+                    value: 'Done',
+                  },
+                },
+                {
+                  fieldType: 'status',
+                  type: 'SET',
+                  value: 'rawVal',
+                },
+              ],
+            },
           },
         ],
         projects: [
@@ -79,16 +129,24 @@ describe('automationStructureFilter', () => {
       }
     )
 
+    someType = new ObjectType({
+      elemID: new ElemID(JIRA, 'someType'),
+    })
+
     ref = new InstanceElement(
       'linkInstance',
-      new ObjectType({
-        elemID: new ElemID(JIRA, 'someType'),
-      }),
+      someType,
       {
         id: '10003',
         name: 'LinkTypeee',
       }
     )
+
+    statusim = [
+      new InstanceElement('s1', someType, { id: '123', name: 'S1' }),
+      new InstanceElement('s1', someType, { id: '234', name: 'S1' }),
+      new InstanceElement('s1', someType, { id: '345', name: 'S1' }),
+    ]
 
     instanceAfterFetch = instance.clone()
     instanceAfterFetch.value.components[2].value.linkType = new ReferenceExpression(
@@ -97,6 +155,21 @@ describe('automationStructureFilter', () => {
     instanceAfterFetch.value.components[2].value.linkTypeDirection = 'inward'
     instanceAfterFetch.value.components[1].rawValue = 'priority > Medium'
     delete instanceAfterFetch.value.components[1].value
+    const compareVal1 = instanceAfterFetch.value.components[3].value.compareValue
+    instanceAfterFetch.value.components[3].value.compareFieldValue = _.clone(compareVal1)
+    delete instanceAfterFetch.value.components[3].value.compareValue
+    instanceAfterFetch.value.components[3].value.compareFieldValue.values = [
+      new ReferenceExpression(statusim[0].elemID, statusim[0].value.id),
+      new ReferenceExpression(statusim[1].elemID, statusim[1].value.id),
+      new ReferenceExpression(statusim[2].elemID, statusim[2].value.id),
+    ]
+    delete instanceAfterFetch.value.components[3].value.compareFieldValue.value
+    const compareVal2 = instanceAfterFetch.value.components[4].value.compareValue
+    instanceAfterFetch.value.components[4].value.compareFieldValue = _.clone(compareVal2)
+    delete instanceAfterFetch.value.components[4].value.compareValue
+    instanceAfterFetch.value.components[4].value.compareFieldValue.value = new ReferenceExpression(
+      new ElemID(JIRA, 'Status', 'instance', 'Done'), 'Done'
+    )
     changedInstance = instanceAfterFetch.clone()
     changedInstance.value.components[0].component = 'BRANCH'
   })
@@ -135,12 +208,26 @@ describe('automationStructureFilter', () => {
       expect(instance.value.components[1].value).toBeUndefined()
       expect(instance.value.components[2].rawValue).toBeUndefined()
       expect(instance.value.components[2].value).toBeObject()
+      expect(instance.value.components[5].value.operations[1].value).toBeUndefined()
+      expect(instance.value.components[5].value.operations[1].rawValue).toEqual('rawVal')
     })
 
     it('should should split linkType field', async () => {
       await filter.onFetch([instance])
       expect(instance.value.components[2].value.linkType).toEqual('10003')
       expect(instance.value.components[2].value.linkTypeDirection).toEqual('inward')
+    })
+
+    it('should restructure compareFieldValue', async () => {
+      await filter.onFetch([instance])
+      expect(instance.value.components[3].value.compareValue).toBeUndefined()
+      expect(instance.value.components[3].value.compareFieldValue).toBeObject()
+      expect(instance.value.components[3].value.compareFieldValue.values)
+        .toEqual(['123', '234', '345'])
+      expect(instance.value.components[3].value.compareFieldValue.value).toBeUndefined()
+      expect(instance.value.components[4].value.compareValue).toBeUndefined()
+      expect(instance.value.components[4].value.compareFieldValue).toBeObject()
+      expect(instance.value.components[4].value.compareFieldValue.value).toEqual('Done')
     })
   })
 
@@ -157,6 +244,19 @@ describe('automationStructureFilter', () => {
       expect(after.value.components[1].rawValue).toBeUndefined()
       expect(after.value.components[2].value.linkType).toEqual('inward:10003')
       expect(after.value.components[2].value.linkTypeDirection).toBeUndefined()
+    })
+    it('should revert compare value structure to be depolyable', async () => {
+      const changes = [toChange({ before: instanceAfterFetch, after: changedInstance })]
+      await filter.preDeploy(changes)
+      const [before, after] = getAllChangeData(changes[0])
+      expect(before.value.components[3].value.compareFieldValue).toBeUndefined()
+      expect(before.value.components[3].value.compareValue.value).toEqual('["123","234","345"]')
+      expect(before.value.components[4].value.compareFieldValue).toBeUndefined()
+      expect(before.value.components[4].value.compareValue.value).toEqual('Done')
+      expect(after.value.components[3].value.compareFieldValue).toBeUndefined()
+      expect(after.value.components[3].value.compareValue.value).toEqual('["123","234","345"]')
+      expect(after.value.components[4].value.compareFieldValue).toBeUndefined()
+      expect(after.value.components[4].value.compareValue.value).toEqual('Done')
     })
   })
 

@@ -234,6 +234,10 @@ const changeRawValueFieldsToValue = async (instance: InstanceElement): Promise<v
         const deployableObject: DeployableValueObject = _.omit({ ...value, value: rawValue }, 'rawValue')
         return deployableObject
       }
+      if (
+        typeName === AUTOMATION_COMPONENT_VALUE_TYPE
+        && ()
+      )
       return value
     },
   })).value
@@ -304,7 +308,6 @@ const filter: FilterCreator = () => {
           applyFunctionToChangeData<Change<InstanceElement>>(
             change,
             async instance => {
-              // resolves typeContext references to full value instead name / id
               const resolvedInstance = await resolveValues(instance, getLookUpName)
               await consolidateLinkTypeFields(resolvedInstance)
               await changeRawValueFieldsToValue(resolvedInstance)

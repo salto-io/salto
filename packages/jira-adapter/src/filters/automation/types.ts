@@ -152,7 +152,7 @@ export const createAutomationTypes = (): {
       subtasks: { refType: new ListType(subtaskType) },
       project: { refType: projectType },
       role: { refType: roleType },
-      compareFieldValue: { refType: compareFieldValueType },
+      compareValue: { refType: compareFieldValueType },
     },
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_COMPONENT_VALUE_TYPE],
   })
@@ -217,6 +217,6 @@ export const createAutomationTypes = (): {
     automationType,
     subTypes: [actorType, componentType, tagType, projectType, componentValueType, fieldType,
       recipientType, statusType, operationType, conditionCriteriaType, conditionType,
-      groupType, roleType, subtaskType],
+      groupType, roleType, subtaskType, compareFieldValueType],
   }
 }

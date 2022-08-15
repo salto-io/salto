@@ -184,13 +184,14 @@ describe('adapters.ts', () => {
 
     it('should return an ReadOnlyElementsSource with only the adapter elements', async () => {
       const objectType = new ObjectType({ elemID: new ElemID(serviceName, 'type1') })
+      const d1Type = new ObjectType({ elemID: new ElemID('d1', 'type2') })
       const result = await getAdaptersCreatorConfigs(
         [serviceName, 'd1'],
         { [sfConfig.elemID.adapter]: sfConfig },
         async name => (name === sfConfig.elemID.adapter ? sfConfig : undefined),
         buildElementsSourceFromElements([
-          new ObjectType({ elemID: new ElemID(serviceName, 'type1') }),
-          new ObjectType({ elemID: new ElemID('d1', 'type2') }),
+          objectType,
+          d1Type,
         ]),
         { [serviceName]: serviceName, d1: 'dummy' },
       )
@@ -209,6 +210,10 @@ describe('adapters.ts', () => {
       // since element source is used inside the adapter, it should receive and return
       // values with default adapter name as account name
       expect(await d1ElementsSource.get(new ElemID('dummy', 'type2'))).toEqual(new ObjectType({
+        elemID: new ElemID('dummy', 'type2'),
+      }))
+      // this tests that the inner element source does not modify the element
+      expect(d1Type).not.toEqual(new ObjectType({
         elemID: new ElemID('dummy', 'type2'),
       }))
 

@@ -17,8 +17,8 @@ import _ from 'lodash'
 import { v4 as uuidv4 } from 'uuid'
 import { Change, ChangeId, Element, ElemID, InstanceElement, isInstanceElement, ObjectType,
   isObjectType, toChange, Values, ReferenceExpression, CORE_ANNOTATIONS,
-  FieldDefinition, BuiltinTypes, Value } from '@salto-io/adapter-api'
-import { naclCase } from '@salto-io/adapter-utils'
+  FieldDefinition, BuiltinTypes, Value, DeployResult, getChangeData, StaticFile } from '@salto-io/adapter-api'
+import { naclCase, getParent } from '@salto-io/adapter-utils'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
@@ -26,6 +26,7 @@ import { DEFAULT_CONFIG, API_DEFINITIONS_CONFIG, FETCH_CONFIG } from '../src/con
 import { ZENDESK } from '../src/constants'
 import { Credentials } from '../src/auth'
 import { getChangeGroupIds } from '../src/group_change'
+import { BRAND_LOGO_TYPE } from '../src/filters/brand_logo'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
 
@@ -56,15 +57,18 @@ const createInstanceElement = (
 
 const deployChanges = async (
   adapterAttr: Reals, changes: Record<ChangeId, Change<InstanceElement>[]>
-): Promise<void> => {
-  await awu(Object.entries(changes)).forEach(async ([id, group]) => {
-    // eslint-disable-next-line no-await-in-loop
-    const deployResult = await adapterAttr.adapter.deploy({
-      changeGroup: { groupID: id, changes: group },
+): Promise<DeployResult[]> => {
+  const deployResults = await awu(Object.entries(changes))
+    .map(async ([id, group]) => {
+      const deployResult = await adapterAttr.adapter.deploy({
+        changeGroup: { groupID: id, changes: group },
+      })
+      expect(deployResult.errors).toHaveLength(0)
+      expect(deployResult.appliedChanges).not.toHaveLength(0)
+      return deployResult
     })
-    expect(deployResult.errors).toHaveLength(0)
-    expect(deployResult.appliedChanges).not.toHaveLength(0)
-  })
+    .toArray()
+  return deployResults
 }
 
 describe('Zendesk adapter E2E', () => {
@@ -216,7 +220,20 @@ describe('Zendesk adapter E2E', () => {
       new ReferenceExpression(userFieldOption1.elemID, userFieldOption1),
       new ReferenceExpression(userFieldOption2.elemID, userFieldOption2),
     ]
+    const brandLogoInstanceToAdd = new InstanceElement(
+      'brand_logo',
+      BRAND_LOGO_TYPE,
+    )
+    const brandName = createName('brand')
+    const brandInstanceToAdd = createInstanceElement(
+      'brand',
+      {
+        name: brandName,
+        subdomain: 'e2esubomainname',
+      },
+    )
     let groupIdToInstances: Record<string, InstanceElement[]>
+    let deployedBrandLogo: InstanceElement
 
     beforeAll(async () => {
       credLease = await credsLease()
@@ -247,6 +264,7 @@ describe('Zendesk adapter E2E', () => {
         macroInstance,
         slaPolicyInstance,
         viewInstance,
+        brandInstanceToAdd,
       ]
       const changeGroups = await getChangeGroupIds(new Map<string, Change>(instancesToAdd
         .map(inst => [inst.elemID.getFullName(), toChange({ after: inst })])))
@@ -254,21 +272,60 @@ describe('Zendesk adapter E2E', () => {
         instancesToAdd,
         inst => changeGroups.changeGroupIdMap.get(inst.elemID.getFullName())
       )
-      const changes = _.mapValues(
+      const firstGroupChanges = _.mapValues(
         groupIdToInstances,
         instances => instances.map(inst => toChange({ after: inst }))
       )
-      await deployChanges(adapterAttr, changes)
+      await deployChanges(adapterAttr, firstGroupChanges)
       const fetchResult = await adapterAttr.adapter.fetch({
         progressReporter:
           { reportProgress: () => null },
       })
       elements = fetchResult.elements
       expect(fetchResult.errors).toHaveLength(0)
+
+      const deployedBrand = elements
+        .filter(isInstanceElement)
+        .filter(elem => elem.elemID.typeName === 'brand')
+        .filter(elem => elem.elemID.name === brandName)[0]
+      brandLogoInstanceToAdd.annotate({
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
+          deployedBrand.elemID,
+          deployedBrand,
+        ),
+      })
+      const alreadyExistedBrandLogo = elements
+        .filter(isInstanceElement)
+        .filter(elem => elem.elemID.typeName === 'brand_logo')[0]
+      brandLogoInstanceToAdd.value = alreadyExistedBrandLogo.value
+      const modifiedBrandInstance = deployedBrand.clone()
+      modifiedBrandInstance.value.logo = new ReferenceExpression(
+        brandLogoInstanceToAdd.elemID,
+        brandLogoInstanceToAdd,
+      )
+
+      const secondGroupChanges: Record<ChangeId, Change<InstanceElement>[]> = {
+        brand: [{ action: 'modify', data: { before: brandInstanceToAdd, after: modifiedBrandInstance } }],
+        // we relay on brand_logo being deployed second for testing the deploy results
+        brand_logo: [{ action: 'add', data: { after: brandLogoInstanceToAdd } }],
+      }
+      const secondGroupDeployResults = await deployChanges(adapterAttr, secondGroupChanges)
+
+      // eslint-disable-next-line prefer-destructuring
+      deployedBrandLogo = secondGroupDeployResults[1].appliedChanges
+        .map(getChangeData)
+        .filter(isInstanceElement)[0]
+
+      const secondFetchResult = await adapterAttr.adapter.fetch({
+        progressReporter:
+          { reportProgress: () => null },
+      })
+      elements = secondFetchResult.elements
+      expect(secondFetchResult.errors).toHaveLength(0)
     })
 
     afterAll(async () => {
-      const changes = _.mapValues(
+      const firstGroupChanges = _.mapValues(
         groupIdToInstances,
         instancesToRemove => instancesToRemove.map(inst => {
           const instanceToRemove = elements.find(e => e.elemID.isEqual(inst.elemID))
@@ -277,7 +334,13 @@ describe('Zendesk adapter E2E', () => {
             : undefined
         }).filter(values.isDefined)
       )
-      await deployChanges(adapterAttr, changes)
+      const secondGroupChanges: Record<ChangeId, Change<InstanceElement>[]> = {
+        brand_logo: [{ action: 'remove', data: { before: deployedBrandLogo } }],
+      }
+      await deployChanges(adapterAttr, {
+        ...secondGroupChanges,
+        ...firstGroupChanges,
+      })
       if (credLease.return) {
         await credLease.return()
       }
@@ -288,6 +351,7 @@ describe('Zendesk adapter E2E', () => {
         'app_installation',
         'automation',
         'brand',
+        'brand_logo',
         'business_hours_schedule',
         'custom_role',
         'dynamic_content_item',
@@ -402,6 +466,19 @@ describe('Zendesk adapter E2E', () => {
           expect(order.value.active
             .map((ref: ReferenceExpression) => ref.elemID.getFullName()))
             .toContain(instance.elemID.getFullName())
+        })
+    })
+    it('should fetch brand_logo correctly', async () => {
+      const fetchedBrandLogoInstances = elements.filter(inst => inst.elemID.typeName === 'brand_logo').filter(isInstanceElement)
+      expect(fetchedBrandLogoInstances).toHaveLength(2)
+      expect(fetchedBrandLogoInstances[0].value.content.hash).toEqual(
+        fetchedBrandLogoInstances[1].value.content.hash
+      )
+      fetchedBrandLogoInstances
+        .forEach(instance => {
+          expect(instance.value.content).toBeInstanceOf(StaticFile)
+          const brandInstance = getParent(instance)
+          expect(brandInstance.value.logo.resValue).toBe(instance)
         })
     })
   })

@@ -591,64 +591,149 @@ describe('SuiteAppClient', () => {
         },
       )).resolves.toBeUndefined()
     })
-  })
 
-  describe('versionFeatures', () => {
-    let client: SuiteAppClient
-    beforeEach(async () => {
-      client = new SuiteAppClient({
-        credentials: {
+    describe('validateFeatures', () => {
+      it('should succeed if must-have features are enabled', async () => {
+        mockAxiosAdapter.onPost().reply(200, {
+          status: 'success',
+          results: {
+            errors: [],
+            results: [{ configType: 'FEATURES',
+              data: {
+                fields: {
+                  createsuitebundles: 'T',
+                  tba: 'T',
+                  suiteappdevelopmentframework: 'T',
+                  restwebservices: 'T',
+                  webservicesexternal: 'T',
+                },
+              } },
+            ],
+          },
+        })
+
+        await expect(SuiteAppClient.validateCredentials({
           accountId: 'ACCOUNT_ID',
           suiteAppTokenId: 'tokenId',
           suiteAppTokenSecret: 'tokenSecret',
           suiteAppActivationKey: 'activationKey',
-        },
-        globalLimiter: new Bottleneck(),
+        })).resolves.not.toThrow()
+      })
+
+      it('should fail when a must-have feature is disabled', async () => {
+        mockAxiosAdapter.onPost().reply(200, {
+          status: 'success',
+          results: {
+            errors: [],
+            results: [{ configType: 'FEATURES',
+              fieldsDef: [],
+              data: {
+                fields: {
+                  createsuitebundles: 'T',
+                  tba: 'T',
+                  suiteappdevelopmentframework: 'T',
+                  restwebservices: 'T',
+                  webservicesexternal: 'F',
+                },
+              } },
+            ],
+          },
+        })
+
+        await expect(SuiteAppClient.validateCredentials({
+          accountId: 'ACCOUNT_ID',
+          suiteAppTokenId: 'tokenId',
+          suiteAppTokenSecret: 'tokenSecret',
+          suiteAppActivationKey: 'activationKey',
+        })).rejects.toThrow(/Operation failed because the required SOAP WEB SERVICES feature is not enabled./)
+      })
+
+      it('should fail when all must-have features are disabled', async () => {
+        mockAxiosAdapter.onPost().reply(200, {
+          status: 'success',
+          results: {
+            errors: [],
+            results: [{ configType: 'FEATURES',
+              fieldsDef: [],
+              data: {
+                fields: {
+                  createsuitebundles: 'F',
+                  tba: 'F',
+                  suiteappdevelopmentframework: 'F',
+                  restwebservices: 'F',
+                  webservicesexternal: 'F',
+                },
+              } },
+            ],
+          },
+        })
+
+        await expect(SuiteAppClient.validateCredentials({
+          accountId: 'ACCOUNT_ID',
+          suiteAppTokenId: 'tokenId',
+          suiteAppTokenSecret: 'tokenSecret',
+          suiteAppActivationKey: 'activationKey',
+        })).rejects.toThrow(/TOKEN BASED AUTHENTICATION, SOAP WEB SERVICES, CREATE BUNDLES WITH SUITEBUNDLER, REST WEB SERVICES, SUITECLOUD DEVELOPMENT FREAMEWORK/)
       })
     })
-    it('should set old versionFeatures', async () => {
-      mockAxiosAdapter.onPost().reply(200, {
-        status: 'success',
-        results: {
-          appVersion: [0, 1, 1],
-          time: 1000,
-        },
+
+    describe('versionFeatures', () => {
+      let client: SuiteAppClient
+      beforeEach(async () => {
+        client = new SuiteAppClient({
+          credentials: {
+            accountId: 'ACCOUNT_ID',
+            suiteAppTokenId: 'tokenId',
+            suiteAppTokenSecret: 'tokenSecret',
+            suiteAppActivationKey: 'activationKey',
+          },
+          globalLimiter: new Bottleneck(),
+        })
       })
-      expect(await client.isFeatureSupported('activationKey')).toBeFalsy()
-    })
-    it('should set new versionFeatures', async () => {
-      mockAxiosAdapter.onPost().reply(200, {
-        status: 'success',
-        results: {
-          appVersion: [0, 1, 3],
-          time: 1000,
-        },
+      it('should set old versionFeatures', async () => {
+        mockAxiosAdapter.onPost().reply(200, {
+          status: 'success',
+          results: {
+            appVersion: [0, 1, 1],
+            time: 1000,
+          },
+        })
+        expect(await client.isFeatureSupported('activationKey')).toBeFalsy()
       })
-      expect(await client.isFeatureSupported('activationKey')).toBeTruthy()
-    })
-    it('should set versionFeatures once on parallel request', async () => {
-      mockAxiosAdapter.onPost().reply(200, {
-        status: 'success',
-        results: {
-          appVersion: [0, 1, 3],
-          time: 1000,
-        },
+      it('should set new versionFeatures', async () => {
+        mockAxiosAdapter.onPost().reply(200, {
+          status: 'success',
+          results: {
+            appVersion: [0, 1, 3],
+            time: 1000,
+          },
+        })
+        expect(await client.isFeatureSupported('activationKey')).toBeTruthy()
       })
-      await Promise.all([
-        client.getSystemInformation(),
-        client.getSystemInformation(),
-      ])
-      expect(await client.isFeatureSupported('activationKey')).toBeTruthy()
-      expect(mockAxiosAdapter.history.post.length).toEqual(3)
-    })
-    it('should not set versionFeatures when getting invalid results', async () => {
-      mockAxiosAdapter.onPost().reply(200, {
-        status: 'success',
-        results: {
-          time: 1000,
-        },
+      it('should set versionFeatures once on parallel request', async () => {
+        mockAxiosAdapter.onPost().reply(200, {
+          status: 'success',
+          results: {
+            appVersion: [0, 1, 3],
+            time: 1000,
+          },
+        })
+        await Promise.all([
+          client.getSystemInformation(),
+          client.getSystemInformation(),
+        ])
+        expect(await client.isFeatureSupported('activationKey')).toBeTruthy()
+        expect(mockAxiosAdapter.history.post.length).toEqual(3)
       })
-      expect(await client.isFeatureSupported('activationKey')).toBeFalsy()
+      it('should not set versionFeatures when getting invalid results', async () => {
+        mockAxiosAdapter.onPost().reply(200, {
+          status: 'success',
+          results: {
+            time: 1000,
+          },
+        })
+        expect(await client.isFeatureSupported('activationKey')).toBeFalsy()
+      })
     })
   })
 })

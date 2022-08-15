@@ -14,6 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import path from 'path'
+import fs from 'fs'
 import { v4 as uuidv4 } from 'uuid'
 import { Change, ChangeId, Element, ElemID, InstanceElement, isInstanceElement, ObjectType,
   isObjectType, toChange, Values, ReferenceExpression, CORE_ANNOTATIONS,
@@ -34,6 +36,8 @@ const { awu } = collections.asynciterable
 
 // Set long timeout as we communicate with Zendesk APIs
 jest.setTimeout(600000)
+
+const BRAND_LOGO_EXPECTED_MD5 = '030752527ee496f1a2bfc1ccd3d7e59f'
 
 const createInstanceElement = (
   type: string, valuesOverride: Values, fields?: Record<string, FieldDefinition>
@@ -221,8 +225,15 @@ describe('Zendesk adapter E2E', () => {
       new ReferenceExpression(userFieldOption2.elemID, userFieldOption2),
     ]
     const brandLogoInstanceToAdd = new InstanceElement(
-      'brand_logo',
+      'brandLogoToAdd',
       BRAND_LOGO_TYPE,
+      {
+        filename: 'e2eIcon.png',
+        content: new StaticFile({
+          filepath: `${ZENDESK}/${BRAND_LOGO_TYPE.elemID.name}/e2eIcon.png`,
+          content: fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/e2eIcon.png`)),
+        }),
+      },
     )
     const brandName = createName('brand')
     const brandInstanceToAdd = createInstanceElement(
@@ -294,10 +305,6 @@ describe('Zendesk adapter E2E', () => {
           deployedBrand,
         ),
       })
-      const alreadyExistedBrandLogo = elements
-        .filter(isInstanceElement)
-        .filter(elem => elem.elemID.typeName === 'brand_logo')[0]
-      brandLogoInstanceToAdd.value = alreadyExistedBrandLogo.value
       const modifiedBrandInstance = deployedBrand.clone()
       modifiedBrandInstance.value.logo = new ReferenceExpression(
         brandLogoInstanceToAdd.elemID,
@@ -469,17 +476,15 @@ describe('Zendesk adapter E2E', () => {
         })
     })
     it('should fetch brand_logo correctly', async () => {
-      const fetchedBrandLogoInstances = elements.filter(inst => inst.elemID.typeName === 'brand_logo').filter(isInstanceElement)
-      expect(fetchedBrandLogoInstances).toHaveLength(2)
-      expect(fetchedBrandLogoInstances[0].value.content.hash).toEqual(
-        fetchedBrandLogoInstances[1].value.content.hash
-      )
-      fetchedBrandLogoInstances
-        .forEach(instance => {
-          expect(instance.value.content).toBeInstanceOf(StaticFile)
-          const brandInstance = getParent(instance)
-          expect(brandInstance.value.logo.resValue).toBe(instance)
-        })
+      const fetchedBrandLogoInstance = elements
+        .filter(inst => inst.elemID.typeName === 'brand_logo')
+        .filter(isInstanceElement)
+        .find(logoInstance => logoInstance.value.filename === 'e2eIcon.png')
+      expect(fetchedBrandLogoInstance).toBeDefined()
+      expect(fetchedBrandLogoInstance?.value.content.hash).toEqual(BRAND_LOGO_EXPECTED_MD5)
+      expect(fetchedBrandLogoInstance?.value.content).toBeInstanceOf(StaticFile)
+      const brandInstance = getParent(fetchedBrandLogoInstance as InstanceElement)
+      expect(brandInstance.value.logo.resValue).toBe(fetchedBrandLogoInstance)
     })
   })
 })

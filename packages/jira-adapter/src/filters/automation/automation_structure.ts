@@ -232,10 +232,6 @@ const changeRawValueFieldsToValue = async (instance: InstanceElement): Promise<v
         const deployableObject: DeployableValueObject = _.omit({ ...value, value: rawValue }, 'rawValue')
         return deployableObject
       }
-      if (
-        typeName === AUTOMATION_COMPONENT_VALUE_TYPE
-        && ()
-      )
       return value
     },
   })).value

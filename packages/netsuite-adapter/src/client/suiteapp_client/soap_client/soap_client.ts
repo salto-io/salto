@@ -27,7 +27,7 @@ import { CONSUMER_KEY, CONSUMER_SECRET } from '../constants'
 import { ReadFileError } from '../errors'
 import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails, FileDetails, FolderDetails } from '../types'
 import { DeployListResults, GetAllResponse, GetResult, isDeployListSuccess, isGetSuccess, isWriteResponseSuccess, SearchErrorResponse, SearchResponse } from './types'
-import { DEPLOY_LIST_SCHEMA, GET_ALL_RESPONSE_SCHEMA, GET_RESULTS_SCHEMA, SEARCH_RESPONSE_SCHEMA } from './schemas'
+import { DEPLOY_LIST_SCHEMA, GET_ALL_RESPONSE_SCHEMA, GET_RESULTS_SCHEMA, SEARCH_RESPONSE_SCHEMA, SEARCH_SUCCESS_SCHEMA } from './schemas'
 import { InvalidSuiteAppCredentialsError } from '../../types'
 import { INTERNAL_ID_TO_TYPES, ITEM_TYPE_ID, ITEM_TYPE_TO_SEARCH_STRING } from '../../../data_elements/types'
 
@@ -608,7 +608,10 @@ export default class SoapClient {
       log.debug(`Finished sending search request for page 1/${Math.max(response.searchResult.totalPages, 1)} of type ${type}`)
       return { searchResult: response.searchResult }
     }
-    return { searchResult: { totalPages: 0, searchId: '', recordList: null } }
+    if (response.searchResult.status.statusDetail[0].code === 'FEATURE_DISABLED') {
+      return { searchResult: { totalPages: 0, searchId: '', recordList: null } }
+    }
+    throw new Error('Blah')
   }
 
   @retryOnBadResponse
@@ -621,7 +624,7 @@ export default class SoapClient {
     const response = await this.sendSoapRequest('searchMoreWithId', args)
 
     if (!this.ajv.validate<SearchResponse>(
-      SEARCH_RESPONSE_SCHEMA,
+      SEARCH_SUCCESS_SCHEMA,
       response
     )) {
       log.error(`Got invalid response from search with id request with in SOAP api. Id: ${args.searchId}, index: ${args.pageIndex}, errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)

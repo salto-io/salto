@@ -346,7 +346,7 @@ export const DEPLOY_LIST_SCHEMA = {
   ],
 }
 
-export const RESPONSE_ERROR_SCHEMA = {
+export const SEARCH_ERROR_SCHEMA = {
   $schema: 'http://json-schema.org/draft-07/schema#',
   definitions: {
     'Record<string,unknown>': {
@@ -364,7 +364,6 @@ export const RESPONSE_ERROR_SCHEMA = {
                   enum: [
                     'false',
                   ],
-                  type: 'string',
                 },
               },
               required: [
@@ -375,10 +374,7 @@ export const RESPONSE_ERROR_SCHEMA = {
             statusDetail: {
               items: [
                 {
-                  properties: {
-                    attributes: {
-                      type: 'string',
-                    },
+                  protperties: {
                     code: {
                       type: 'string',
                     },
@@ -402,9 +398,58 @@ export const RESPONSE_ERROR_SCHEMA = {
             'attributes',
             'statusDetail',
           ],
-          type: 'object',
         },
       },
+      required: [
+        'status',
+      ],
+      type: 'object',
+    },
+  },
+  required: [
+    'searchResult',
+  ],
+  type: 'object',
+}
+
+export const SEARCH_SUCCESS_SCHEMA = {
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  definitions: {
+    'Record<string,unknown>': {
+      type: 'object',
+    },
+  },
+  properties: {
+    searchResult: {
+      properties: {
+        recordList: {
+          properties: {
+            record: {
+              items: {
+                $ref: '#/definitions/Record<string,unknown>',
+              },
+              type: 'array',
+            },
+          },
+          required: [
+            'record',
+          ],
+          type: 'object',
+          nullable: true,
+        },
+        searchId: {
+          type: 'string',
+        },
+        totalPages: {
+          type: 'number',
+        },
+      },
+      required: [
+        'recordList',
+        'searchId',
+        'totalPages',
+      ],
+      type: 'object',
     },
   },
   required: [
@@ -422,103 +467,10 @@ export const SEARCH_RESPONSE_SCHEMA = {
   },
   anyOf: [
     {
-      properties: {
-        searchResult: {
-          properties: {
-            recordList: {
-              properties: {
-                record: {
-                  items: {
-                    $ref: '#/definitions/Record<string,unknown>',
-                  },
-                  type: 'array',
-                },
-              },
-              required: [
-                'record',
-              ],
-              type: 'object',
-              nullable: true,
-            },
-            searchId: {
-              type: 'string',
-            },
-            totalPages: {
-              type: 'number',
-            },
-          },
-          required: [
-            'recordList',
-            'searchId',
-            'totalPages',
-          ],
-          type: 'object',
-        },
-      },
-      required: [
-        'searchResult',
-      ],
-      type: 'object',
+      SEARCH_SUCCESS_SCHEMA,
     },
     {
-      properties: {
-        searchResult: {
-          properties: {
-            status: {
-              properties: {
-                attributes: {
-                  properties: {
-                    isSuccess: {
-                      enum: [
-                        'false',
-                      ],
-                      type: 'string',
-                    },
-                  },
-                  required: [
-                    'isSuccess',
-                  ],
-                  type: 'object',
-                },
-                statusDetail: {
-                  items: [
-                    {
-                      properties: {
-                        attributes: {
-                          type: 'string',
-                        },
-                        code: {
-                          type: 'string',
-                        },
-                        message: {
-                          type: 'string',
-                        },
-                      },
-                      required: [
-                        'code',
-                        'message',
-                      ],
-                      type: 'object',
-                    },
-                  ],
-                  maxItems: 1,
-                  minItems: 1,
-                  type: 'array',
-                },
-              },
-              required: [
-                'attributes',
-                'statusDetail',
-              ],
-              type: 'object',
-            },
-          },
-        },
-      },
-      required: [
-        'searchResult',
-      ],
-      type: 'object',
+      SEARCH_ERROR_SCHEMA,
     },
   ],
 }

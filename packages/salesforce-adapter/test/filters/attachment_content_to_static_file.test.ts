@@ -34,8 +34,6 @@ describe('attachments to static file filter', () => {
   let attachmentThree: StaticFile
 
   beforeAll(() => {
-
-
     const emailTemplateID = new ElemID(SALESFORCE, EMAIL_TEMPLATE_METADATA_TYPE)
 
     fields = {
@@ -98,23 +96,24 @@ describe('attachments to static file filter', () => {
     it('should extract attachment content to static file when emailTemplate has one attachment', () => {
       const receivedEmailTemplate = elements.filter(isInstanceElement)
         .find(e => e.elemID.name === 'emailTemplateOne')
-      expect(receivedEmailTemplate?.value.attachments[0])
-        .toContainValue(attachmentOne)
+      expect(receivedEmailTemplate?.value.attachments)
+        .toIncludeAllMembers([{ name: attachmentOneName, content: attachmentOne }])
     })
 
     it('should extract attachments content to static files when emailTemplate has multiple attachments', () => {
       const receivedEmailTemplate = elements.filter(isInstanceElement)
         .find(e => e.elemID.name === 'emailTemplateTwo')
-      expect(receivedEmailTemplate?.value.attachments[0])
-        .toContainValue(attachmentTwo)
-      expect(receivedEmailTemplate?.value.attachments[1])
-        .toContainValue(attachmentThree)
+      expect(receivedEmailTemplate?.value.attachments).toIncludeAllMembers(
+        [{ name: attachmentTwoName, content: attachmentTwo },
+          { name: attachmentThreeName, content: attachmentThree }]
+      )
     })
 
     it('should replace content to undefined when instance has no path', () => {
       const instanceUndefinedPath = elements?.filter(isInstanceElement)
         .find(e => e.path === undefined)
-      expect(instanceUndefinedPath?.value.attachments[0]).toContainEntry(['content', undefined])
+      expect(instanceUndefinedPath?.value.attachments)
+        .toIncludeAllPartialMembers([{ content: undefined }])
     })
   })
 })

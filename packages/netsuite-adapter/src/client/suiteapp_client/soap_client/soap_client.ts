@@ -608,10 +608,7 @@ export default class SoapClient {
       log.debug(`Finished sending search request for page 1/${Math.max(response.searchResult.totalPages, 1)} of type ${type}`)
       return { searchResult: response.searchResult }
     }
-    if (response.searchResult.status.statusDetail[0].code === 'FEATURE_DISABLED') {
-      return { searchResult: { totalPages: 0, searchId: '', recordList: null } }
-    }
-    throw new Error('Blah')
+    return { searchResult: { totalPages: 0, searchId: '', recordList: null } }
   }
 
   @retryOnBadResponse

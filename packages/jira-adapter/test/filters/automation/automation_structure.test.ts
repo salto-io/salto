@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { InstanceElement, ObjectType, toChange, getAllChangeData, ReferenceExpression, ElemID } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, toChange, getAllChangeData, ReferenceExpression, ElemID, isReferenceExpression } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { getFilterParams } from '../../utils'
 import automationStructureFilter from '../../../src/filters/automation/automation_structure'
@@ -159,17 +159,20 @@ describe('automationStructureFilter', () => {
     instanceAfterFetch.value.components[3].value.compareFieldValue = _.clone(compareVal1)
     delete instanceAfterFetch.value.components[3].value.compareValue
     instanceAfterFetch.value.components[3].value.compareFieldValue.values = [
-      new ReferenceExpression(statusim[0].elemID, statusim[0].value.id),
-      new ReferenceExpression(statusim[1].elemID, statusim[1].value.id),
-      new ReferenceExpression(statusim[2].elemID, statusim[2].value.id),
+      new ReferenceExpression(statusim[0].elemID, statusim[0]),
+      new ReferenceExpression(statusim[1].elemID, statusim[1]),
+      new ReferenceExpression(statusim[2].elemID, statusim[2]),
     ]
     delete instanceAfterFetch.value.components[3].value.compareFieldValue.value
     const compareVal2 = instanceAfterFetch.value.components[4].value.compareValue
     instanceAfterFetch.value.components[4].value.compareFieldValue = _.clone(compareVal2)
     delete instanceAfterFetch.value.components[4].value.compareValue
     instanceAfterFetch.value.components[4].value.compareFieldValue.value = new ReferenceExpression(
-      new ElemID(JIRA, 'Status', 'instance', 'Done'), 'Done'
+      statusim[0].elemID, statusim[0]
     )
+    const rawVal = instanceAfterFetch.value.components[5].value.operations[1].value
+    instanceAfterFetch.value.components[5].value.operations[1].rawValue = rawVal
+    delete instanceAfterFetch.value.components[5].value.operations[1].value
     changedInstance = instanceAfterFetch.clone()
     changedInstance.value.components[0].component = 'BRANCH'
   })
@@ -244,6 +247,8 @@ describe('automationStructureFilter', () => {
       expect(after.value.components[1].rawValue).toBeUndefined()
       expect(after.value.components[2].value.linkType).toEqual('inward:10003')
       expect(after.value.components[2].value.linkTypeDirection).toBeUndefined()
+      expect(after.value.components[5].value.operations[1].value).toEqual('rawVal')
+      expect(after.value.components[5].value.operations[1].rawValue).toBeUndefined()
     })
     it('should revert compare value structure to be depolyable', async () => {
       const changes = [toChange({ before: instanceAfterFetch, after: changedInstance })]
@@ -252,11 +257,11 @@ describe('automationStructureFilter', () => {
       expect(before.value.components[3].value.compareFieldValue).toBeUndefined()
       expect(before.value.components[3].value.compareValue.value).toEqual('["123","234","345"]')
       expect(before.value.components[4].value.compareFieldValue).toBeUndefined()
-      expect(before.value.components[4].value.compareValue.value).toEqual('Done')
+      expect(before.value.components[4].value.compareValue.value).toEqual('123')
       expect(after.value.components[3].value.compareFieldValue).toBeUndefined()
       expect(after.value.components[3].value.compareValue.value).toEqual('["123","234","345"]')
       expect(after.value.components[4].value.compareFieldValue).toBeUndefined()
-      expect(after.value.components[4].value.compareValue.value).toEqual('Done')
+      expect(after.value.components[4].value.compareValue.value).toEqual('123')
     })
   })
 
@@ -274,6 +279,34 @@ describe('automationStructureFilter', () => {
       expect(after.value.components[1].rawValue).toEqual('priority > Medium')
       expect(after.value.components[2].value.linkType).toBeInstanceOf(ReferenceExpression)
       expect(after.value.components[2].value.linkTypeDirection).toEqual('inward')
+      expect(after.value.components[5].value.operations[1].value).toBeUndefined()
+      expect(after.value.components[5].value.operations[1].rawValue).toEqual('rawVal')
+    })
+    it('should change back compareFieldValue', async () => {
+      const changes = [toChange({ before: instanceAfterFetch, after: changedInstance })]
+      await filter.preDeploy(changes)
+      await filter.onDeploy(changes)
+      const [before, after] = getAllChangeData(changes[0])
+      expect(before.value.components[3].value.compareValue).toBeUndefined()
+      expect(before.value.components[3].value.compareFieldValue).toBeObject()
+      expect(before.value.components[3].value.compareFieldValue.values
+        .filter(isReferenceExpression)).toBeArrayOfSize(3)
+      expect(before.value.components[3].value.compareFieldValue.value).toBeUndefined()
+      expect(before.value.components[4].value.compareValue).toBeUndefined()
+      expect(before.value.components[4].value.compareFieldValue).toBeObject()
+      expect(before.value.components[4].value.compareFieldValue.value)
+        .toBeInstanceOf(ReferenceExpression)
+      expect(after.value.components[3].value.compareValue).toBeUndefined()
+      expect(after.value.components[3].value.compareFieldValue).toBeObject()
+      expect(
+        after.value.components[3].value.compareFieldValue.values
+          .filter(isReferenceExpression)
+      ).toBeArrayOfSize(3)
+      expect(after.value.components[3].value.compareFieldValue.value).toBeUndefined()
+      expect(after.value.components[4].value.compareValue).toBeUndefined()
+      expect(after.value.components[4].value.compareFieldValue).toBeObject()
+      expect(after.value.components[4].value.compareFieldValue.value)
+        .toBeInstanceOf(ReferenceExpression)
     })
   })
 })

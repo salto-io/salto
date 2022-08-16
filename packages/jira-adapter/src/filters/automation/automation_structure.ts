@@ -70,7 +70,7 @@ const COMPARAE_FIELD_VALUE_SCHEME = Joi.object({
     value: Joi.string().optional(),
     values: Joi.array().items(Joi.string()).optional(),
     type: Joi.string(),
-  }).required(),
+  }).unknown(true).required(),
 }).unknown(true).required()
 
 const isLinkTypeObject = (value: unknown): value is LinkTypeObject => {
@@ -176,14 +176,12 @@ const compareFieldValueStructure = async (instance: InstanceElement): Promise<vo
       if (
         path?.name === 'value'
         && (await field?.getType())?.elemID.typeName === AUTOMATION_COMPONENT_VALUE_TYPE
-        && _.isPlainObject(value.compareValue)
+        && _.isPlainObject(value?.compareValue)
       ) {
         value.compareFieldValue = value.compareValue
         delete value.compareValue
         if (value.compareFieldValue.multiValue) {
-          // compareValue object might contain multiple references in one string
-          const values = _.trim(value.compareFieldValue.value, '["]')
-          value.compareFieldValue.values = _.split(values, '","')
+          value.compareFieldValue.values = JSON.parse(value.compareFieldValue.value)
           delete value.compareFieldValue.value
         }
       }

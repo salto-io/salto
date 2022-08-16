@@ -23,7 +23,6 @@ import { Element, ElemID, Value, DetailedChange, isElement, getChangeData, isObj
 import { resolvePath, TransformFuncArgs, transformElement, safeJsonStringify } from '@salto-io/adapter-utils'
 import { promises, values, collections } from '@salto-io/lowerdash'
 import { AdditionDiff } from '@salto-io/dag'
-import { AwuIterable } from '@salto-io/lowerdash/src/collections/asynciterable'
 import osPath from 'path'
 import { MergeError, mergeElements } from '../../merger'
 import { getChangeLocations, updateNaclFileData, getChangesToUpdate, DetailedChangeWithSource, getNestedStaticFiles } from './nacl_file_update'
@@ -383,30 +382,29 @@ const buildNaclFilesState = async ({
     oldElemFullNames: string[] = [],
     currentElemFullNames: string[] = [],
   ): void => {
-    const oldElemFullNamesUniq = _.uniq(oldElemFullNames)
-    const currentElemFullNamesUniq = _.uniq(currentElemFullNames)
-    const toAdd = currentElemFullNamesUniq
-      .filter(e => !oldElemFullNamesUniq.includes(e))
-    const toRemove = oldElemFullNamesUniq
-      .filter(e => !currentElemFullNamesUniq.includes(e))
-    toAdd.forEach(fullname => {
-      indexAdditions[fullname] = indexAdditions[fullname] ?? new Set<string>()
-      indexAdditions[fullname].add(filename)
+    const oldElemFullNamesSet = new Set(oldElemFullNames)
+    const currentElemFullNamesSet = new Set(currentElemFullNames)
+    currentElemFullNamesSet.forEach(fullname => {
+      if (!oldElemFullNamesSet.has(fullname)) {
+        indexAdditions[fullname] = indexAdditions[fullname] ?? new Set<string>()
+        indexAdditions[fullname].add(filename)
+      }
     })
-    toRemove.forEach(fullname => {
-      indexDeletions[fullname] = indexDeletions[fullname] ?? new Set<string>()
-      indexDeletions[fullname].add(filename)
+    oldElemFullNamesSet.forEach(fullname => {
+      if (!currentElemFullNamesSet.has(fullname)) {
+        indexDeletions[fullname] = indexDeletions[fullname] ?? new Set<string>()
+        indexDeletions[fullname].add(filename)
+      }
     })
   }
 
   const getNaclFile = async (file: ParsedNaclFile):
     Promise<ParsedNaclFile | undefined> => currentState.parsedNaclFiles.get(file.filename)
 
-  const handleAdditionsOrModifications = async (naclFiles:
-    AwuIterable<ParsedNaclFile>): Promise<void> => {
-    const toAdd: Record<string, ParsedNaclFile> = {}
-    await naclFiles.forEach(async naclFile => {
+  const handleAdditionsOrModifications = async (naclFiles: ParsedNaclFile[]): Promise<void> => {
+    await awu(naclFiles).forEach(async naclFile => {
       const parsedFile = (await getNaclFile(naclFile))
+      log.trace('Updating indexes of %s nacl file: %s', !parsedFile ? 'added' : 'modified', naclFile.filename)
       updateIndexOfFile(
         referencedIndexAdditions,
         referencedIndexDeletions,
@@ -444,17 +442,18 @@ const buildNaclFilesState = async ({
       if (values.isDefined(naclFile.buffer)) {
         await currentState.parsedNaclFiles.put(naclFile.filename, naclFile)
       }
+      log.trace('Finished updating indexes of %s', naclFile.filename)
     })
-    await currentState.parsedNaclFiles.putAll(toAdd)
   }
 
-  const handleDeletions = async (naclFiles: AwuIterable<ParsedNaclFile>): Promise<void> => {
+  const handleDeletions = async (naclFiles: ParsedNaclFile[]): Promise<void> => {
     const toDelete: string[] = []
-    await naclFiles.forEach(async naclFile => {
+    await awu(naclFiles).forEach(async naclFile => {
       const oldNaclFile = await getNaclFile(naclFile)
       if (oldNaclFile === undefined) {
         return
       }
+      log.trace('Updating indexes of deleted nacl file: %s', naclFile.filename)
       const oldNaclFileReferenced = await oldNaclFile.data.referenced()
       oldNaclFileReferenced.forEach((elementFullName: string) => {
         referencedIndexDeletions[elementFullName] = referencedIndexDeletions[elementFullName]
@@ -470,15 +469,28 @@ const buildNaclFilesState = async ({
       })
       relevantElementIDs.push(...oldNaclFileElements.map(e => e.elemID))
       toDelete.push(naclFile.filename)
+      log.trace('Finished updating indexes of %s', naclFile.filename)
     })
     await currentState.parsedNaclFiles.deleteAll(toDelete)
   }
-  await handleDeletions(awu(Object.values(newParsed))
-    .filter(async naclFile => _.isEmpty(await naclFile
-      .elements()) && _.isEmpty(await naclFile.data.errors())))
-  await handleAdditionsOrModifications(awu(Object.values(newParsed))
-    .filter(async naclFile => !_.isEmpty(await naclFile.elements())
-      || !_.isEmpty(await naclFile.data.errors())))
+
+  const naclFilesToDelete = await awu(Object.values(newParsed))
+    .filter(async naclFile => _.isEmpty(await naclFile.elements())
+    && _.isEmpty(await naclFile.data.errors())).toArray()
+  await log.time(
+    () => handleDeletions(naclFilesToDelete),
+    'handle deletions of %d nacl files',
+    naclFilesToDelete.length
+  )
+
+  const naclFilenamesToDelete = new Set(naclFilesToDelete.map(naclFile => naclFile.filename))
+  const naclFilesToAddOrModify = Object.values(newParsed)
+    .filter(naclFile => !naclFilenamesToDelete.has(naclFile.filename))
+  await log.time(
+    () => handleAdditionsOrModifications(naclFilesToAddOrModify),
+    'handle additions/modifications of %d nacl files',
+    naclFilesToAddOrModify.length
+  )
 
   const unmodifiedFragments = awu(_.uniqBy(relevantElementIDs, e => e.getFullName()))
     .flatMap(async elemID => {
@@ -500,7 +512,7 @@ const buildNaclFilesState = async ({
     mergeFunc: elements => mergeElements(elements),
   }) as Change[]
   const postChangeHash = await currentState.parsedNaclFiles.getHash()
-  await Promise.all([
+  await log.time(() => Promise.all([
     updateIndex(
       currentState.elementsIndex,
       elementsIndexAdditions,
@@ -517,7 +529,7 @@ const buildNaclFilesState = async ({
       staticFilesIndexDeletions
     ),
     updateSearchableNamesIndex(changes),
-  ])
+  ]), 'updating indexes')
   if (postChangeHash && (postChangeHash !== preChangeHash)) {
     await currentState.metadata.set(HASH_KEY, postChangeHash)
   }
@@ -695,21 +707,26 @@ const buildNaclFilesSource = (
     elemID: ElemID
   ): Promise<string[]> => await (await getState()).referencedIndex.get(elemID.getFullName()) ?? []
 
-  const getSourceMap = async (filename: string): Promise<SourceMap> => {
-    // Need to check if need an extra hasValid check here
-    const parsedNaclFile = await (await getState()).parsedNaclFiles.get(filename)
-    const naclFileSourceMap = await parsedNaclFile.sourceMap?.()
-    if (values.isDefined(naclFileSourceMap)) {
-      return naclFileSourceMap
+  const getSourceMap = async (filename: string, useCache = true): Promise<SourceMap> => {
+    if (useCache) {
+      const parsedNaclFile = await (await getState()).parsedNaclFiles.get(filename)
+      const naclFileSourceMap = await parsedNaclFile.sourceMap?.()
+      if (values.isDefined(naclFileSourceMap)) {
+        return naclFileSourceMap
+      }
     }
     const naclFile = (await naclFilesStore.get(filename))
     if (_.isUndefined(naclFile)) {
       log.error('failed to find %s in NaCl file store', filename)
       return new SourceMap()
     }
+    log.trace('Start parsing sourceMap of %s', filename)
     const parsedResult = await parseNaclFile(naclFile, functions)
-    const newParsedNaclFile = await toParsedNaclFile(naclFile, parsedResult)
-    await (await getState()).parsedNaclFiles.put(filename, newParsedNaclFile)
+    if (useCache) {
+      const newParsedNaclFile = await toParsedNaclFile(naclFile, parsedResult)
+      await (await getState()).parsedNaclFiles.put(filename, newParsedNaclFile)
+    }
+    log.trace('Finished parsing sourceMap of %s', filename)
     return parsedResult.sourceMap
   }
 
@@ -773,7 +790,7 @@ const buildNaclFilesSource = (
         naclFiles.map(naclFile => async () => {
           const parsedNaclFile = await parsedNaclFiles.get(naclFile)
           return values.isDefined(parsedNaclFile)
-            ? getSourceMap(parsedNaclFile.filename)
+            ? getSourceMap(parsedNaclFile.filename, false)
             : undefined
         }),
         CACHE_READ_CONCURRENCY,

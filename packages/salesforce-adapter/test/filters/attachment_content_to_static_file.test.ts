@@ -19,28 +19,22 @@ import filterCreator from '../../src/filters/attachment_content_to_static_file'
 import { SALESFORCE, EMAIL_TEMPLATE_METADATA_TYPE, METADATA_TYPE } from '../../src/constants'
 import { defaultFilterContext } from '../utils'
 
-const ATTACHMENTS = 'attachments'
-
 describe('attachments to static file filter', () => {
+  const ATTACHMENTS = 'attachments'
+  const attachmentOneAsString = 'attachment-one'
+  const attachmentTwoAsString = 'attachment-two'
+  const attachmentThreeAsString = 'attachment-three'
+  const attachmentOneName = 'attachmentOne.txt'
+  const attachmentTwoName = 'attachmentTwo.txt'
+  const attachmentThreeName = 'attachmentThree.txt'
   let elements: Element[]
   let fields: Record<string, FieldDefinition>
-  let attachmentOneAsString: string
-  let attachmentOneAsFile: StaticFile
-  let attachmentOneName: string
-  let attachmentTwoAsString: string
-  let attachmentTwoAsFile: StaticFile
-  let attachmentTwoName: string
-  let attachmentThreeAsString: string
-  let attachmentThreeAsFile: StaticFile
-  let attachmentThreeName: string
+  let attachmentOne: StaticFile
+  let attachmentTwo: StaticFile
+  let attachmentThree: StaticFile
 
   beforeAll(() => {
-    attachmentOneAsString = 'attachment-one'
-    attachmentTwoAsString = 'attachment-two'
-    attachmentThreeAsString = 'attachment-three'
-    attachmentOneName = 'attachmentOne.txt'
-    attachmentTwoName = 'attachmentTwo.txt'
-    attachmentThreeName = 'attachmentThree.txt'
+
 
     const emailTemplateID = new ElemID(SALESFORCE, EMAIL_TEMPLATE_METADATA_TYPE)
 
@@ -72,20 +66,21 @@ describe('attachments to static file filter', () => {
 
     elements = [emailTemplateOne, emailTemplateTwo, emailTemplateNoPath, emailTemplateType]
 
-    attachmentOneAsFile = new StaticFile({
-      filepath: `${(emailTemplateOne.path ?? []).join('/')}/${attachmentOneName}`,
+
+    attachmentOne = new StaticFile({
+      filepath: 'Objects/dir/attachmentOne.txt',
       content: Buffer.from(attachmentOneAsString),
       encoding: 'utf-8',
     })
 
-    attachmentTwoAsFile = new StaticFile({
-      filepath: `${(emailTemplateTwo.path ?? []).join('/')}/${attachmentTwoName}`,
+    attachmentTwo = new StaticFile({
+      filepath: 'Objects/dir2/attachmentTwo.txt',
       content: Buffer.from(attachmentTwoAsString),
       encoding: 'utf-8',
     })
 
-    attachmentThreeAsFile = new StaticFile({
-      filepath: `${(emailTemplateTwo.path ?? []).join('/')}/${attachmentThreeName}`,
+    attachmentThree = new StaticFile({
+      filepath: 'Objects/dir2/attachmentThree.txt',
       content: Buffer.from(attachmentThreeAsString),
       encoding: 'utf-8',
     })
@@ -101,25 +96,25 @@ describe('attachments to static file filter', () => {
     })
 
     it('should extract attachment content to static file when emailTemplate has one attachment', () => {
-      const emailTemplateAfterFilter = elements.filter(isInstanceElement)
+      const receivedEmailTemplate = elements.filter(isInstanceElement)
         .find(e => e.elemID.name === 'emailTemplateOne')
-      expect(emailTemplateAfterFilter?.value[ATTACHMENTS][0].content)
-        .toStrictEqual(attachmentOneAsFile)
+      expect(receivedEmailTemplate?.value.attachments[0])
+        .toContainValue(attachmentOne)
     })
 
-    it('should extract attachments content to static files when emailTemplate has two attachment', () => {
-      const emailTemplateAfterFilter = elements.filter(isInstanceElement)
+    it('should extract attachments content to static files when emailTemplate has multiple attachments', () => {
+      const receivedEmailTemplate = elements.filter(isInstanceElement)
         .find(e => e.elemID.name === 'emailTemplateTwo')
-      expect(emailTemplateAfterFilter?.value[ATTACHMENTS][0].content)
-        .toStrictEqual(attachmentTwoAsFile)
-      expect(emailTemplateAfterFilter?.value[ATTACHMENTS][1].content)
-        .toStrictEqual(attachmentThreeAsFile)
+      expect(receivedEmailTemplate?.value.attachments[0])
+        .toContainValue(attachmentTwo)
+      expect(receivedEmailTemplate?.value.attachments[1])
+        .toContainValue(attachmentThree)
     })
 
-    it('should replace content to undefined', () => {
+    it('should replace content to undefined when instance has no path', () => {
       const instanceUndefinedPath = elements?.filter(isInstanceElement)
         .find(e => e.path === undefined)
-      expect(instanceUndefinedPath?.value[ATTACHMENTS].content).toBe(undefined)
+      expect(instanceUndefinedPath?.value.attachments[0]).toContainEntry(['content', undefined])
     })
   })
 })

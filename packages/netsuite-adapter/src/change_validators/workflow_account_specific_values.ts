@@ -28,10 +28,10 @@ const { isDefined } = values
 
 const changeValidator: ChangeValidator = async changes => (
   changes
-    .filter(isAdditionOrModificationChange) // leaves only addition and mod changes
-    .map(getChangeData) // get the change data of each type
-    .filter(isInstanceElement) // leaves only changed instances
-    .filter(inst => inst.elemID.typeName === WORKFLOW) // leave only changes  with typename WORKFLOW
+    .filter(isAdditionOrModificationChange)
+    .map(getChangeData)
+    .filter(isInstanceElement)
+    .filter(inst => inst.elemID.typeName === WORKFLOW)
     .map(changeData => {
       const instance = changeData
       const isAccSpecificVal: Record<string, boolean> = {

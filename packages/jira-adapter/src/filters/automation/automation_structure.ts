@@ -15,9 +15,10 @@
 */
 import _ from 'lodash'
 import Joi from 'joi'
+import { logger } from '@salto-io/logging'
 import { InstanceElement, isInstanceElement, Values, getChangeData,
   Change, isInstanceChange } from '@salto-io/adapter-api'
-import { transformElement, applyFunctionToChangeData, resolveValues, restoreChangeElement } from '@salto-io/adapter-utils'
+import { transformElement, applyFunctionToChangeData, resolveValues, restoreChangeElement, safeJsonStringify } from '@salto-io/adapter-utils'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { AUTOMATION_TYPE, AUTOMATION_COMPONENT_TYPE, AUTOMATION_COMPONENT_VALUE_TYPE, AUTOMATION_OPERATION } from '../../constants'
@@ -25,6 +26,7 @@ import { FilterCreator } from '../../filter'
 import { getLookUpName } from '../../reference_mapping'
 
 const { awu } = collections.asynciterable
+const log = logger(module)
 
 type LinkTypeObject = {
   linkType: string
@@ -64,11 +66,11 @@ const RAW_VALUE_SCHEME = Joi.object({
   rawValue: Joi.string().required(),
 }).unknown(true).required()
 
-const COMPARAE_FIELD_VALUE_SCHEME = Joi.object({
+const COMPARE_FIELD_VALUE_SCHEME = Joi.object({
   compareFieldValue: Joi.object({
     multiValue: Joi.boolean().required(),
-    value: Joi.string().optional(),
-    values: Joi.array().items(Joi.string()).optional(),
+    value: Joi.string(),
+    values: Joi.array().items(Joi.string()),
     type: Joi.string(),
   }).unknown(true).required(),
 }).unknown(true).required()
@@ -84,7 +86,7 @@ const isRawValueObject = (value: unknown): value is RawValueObject => {
 }
 
 const isCompareFieldValueObject = (value: unknown): value is CompareFieldValueObject => {
-  const { error } = COMPARAE_FIELD_VALUE_SCHEME.validate(value)
+  const { error } = COMPARE_FIELD_VALUE_SCHEME.validate(value)
   return error === undefined
 }
 
@@ -167,7 +169,7 @@ const separateLinkTypeField = async (instance: InstanceElement): Promise<void> =
   })).value
 }
 
-const compareFieldValueStructure = async (instance: InstanceElement): Promise<void> => {
+const convertToCompareFieldValue = async (instance: InstanceElement): Promise<void> => {
   instance.value = (await transformElement({
     element: instance,
     strict: false,
@@ -178,11 +180,18 @@ const compareFieldValueStructure = async (instance: InstanceElement): Promise<vo
         && (await field?.getType())?.elemID.typeName === AUTOMATION_COMPONENT_VALUE_TYPE
         && _.isPlainObject(value?.compareValue)
       ) {
+        // compareValue can be either an object or a primtive type
+        // we change the field name to compareFieldValue to distinguis between the cases
         value.compareFieldValue = value.compareValue
         delete value.compareValue
         if (value.compareFieldValue.multiValue) {
-          value.compareFieldValue.values = JSON.parse(value.compareFieldValue.value)
-          delete value.compareFieldValue.value
+          // compareFieldValue.value contains multiple references
+          try {
+            value.compareFieldValue.values = JSON.parse(value.compareFieldValue.value)
+            delete value.compareFieldValue.value
+          } catch (err) {
+            log.error(`Failed to parse string in instance ${instance.elemID.getFullName()}, in path: ${path.createNestedID('compareFieldValue', 'value').getFullName()}`)
+          }
         }
       }
       return value
@@ -240,8 +249,7 @@ const revertCompareFieldValueStructure = async (instance: InstanceElement): Prom
       ) {
         const { compareFieldValue } = value
         if (compareFieldValue.multiValue) {
-          const joinedValues = _.join(compareFieldValue.values, '","')
-          compareFieldValue.value = '["'.concat(joinedValues, '"]')
+          compareFieldValue.value = safeJsonStringify(compareFieldValue.values)
           delete compareFieldValue.values
         }
         const deployableObject: CompareValueObject = _.omit({ ...value, compareValue: compareFieldValue }, 'compareFieldValue')
@@ -268,7 +276,7 @@ const filter: FilterCreator = () => {
           await removeInnerIds(instance)
           await replaceStringValuesFieldName(instance)
           await separateLinkTypeField(instance)
-          await compareFieldValueStructure(instance)
+          await convertToCompareFieldValue(instance)
 
           instance.value.projects = instance.value.projects
             ?.map(
@@ -312,7 +320,7 @@ const filter: FilterCreator = () => {
             async instance => {
               await replaceStringValuesFieldName(instance)
               await separateLinkTypeField(instance)
-              await compareFieldValueStructure(instance)
+              await convertToCompareFieldValue(instance)
               return instance
             }
           )

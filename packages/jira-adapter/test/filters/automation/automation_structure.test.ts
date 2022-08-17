@@ -78,7 +78,7 @@ describe('automationStructureFilter', () => {
               compareValue: {
                 type: 'ID',
                 multiValue: true,
-                value: '["123","234","345"]',
+                value: '["\\"123","234","345","a]"]',
               },
             },
           },
@@ -143,7 +143,7 @@ describe('automationStructureFilter', () => {
     )
 
     statusim = [
-      new InstanceElement('s1', someType, { id: '123', name: 'S1' }),
+      new InstanceElement('s1', someType, { id: '"123', name: 'S1' }),
       new InstanceElement('s1', someType, { id: '234', name: 'S1' }),
       new InstanceElement('s1', someType, { id: '345', name: 'S1' }),
     ]
@@ -162,13 +162,14 @@ describe('automationStructureFilter', () => {
       new ReferenceExpression(statusim[0].elemID, statusim[0]),
       new ReferenceExpression(statusim[1].elemID, statusim[1]),
       new ReferenceExpression(statusim[2].elemID, statusim[2]),
+      'a]',
     ]
     delete instanceAfterFetch.value.components[3].value.compareFieldValue.value
     const compareVal2 = instanceAfterFetch.value.components[4].value.compareValue
     instanceAfterFetch.value.components[4].value.compareFieldValue = _.clone(compareVal2)
     delete instanceAfterFetch.value.components[4].value.compareValue
     instanceAfterFetch.value.components[4].value.compareFieldValue.value = new ReferenceExpression(
-      statusim[0].elemID, statusim[0]
+      statusim[1].elemID, statusim[1]
     )
     const rawVal = instanceAfterFetch.value.components[5].value.operations[1].value
     instanceAfterFetch.value.components[5].value.operations[1].rawValue = rawVal
@@ -226,7 +227,7 @@ describe('automationStructureFilter', () => {
       expect(instance.value.components[3].value.compareValue).toBeUndefined()
       expect(instance.value.components[3].value.compareFieldValue).toBeObject()
       expect(instance.value.components[3].value.compareFieldValue.values)
-        .toEqual(['123', '234', '345'])
+        .toEqual(['"123', '234', '345', 'a]'])
       expect(instance.value.components[3].value.compareFieldValue.value).toBeUndefined()
       expect(instance.value.components[4].value.compareValue).toBeUndefined()
       expect(instance.value.components[4].value.compareFieldValue).toBeObject()
@@ -255,13 +256,13 @@ describe('automationStructureFilter', () => {
       await filter.preDeploy(changes)
       const [before, after] = getAllChangeData(changes[0])
       expect(before.value.components[3].value.compareFieldValue).toBeUndefined()
-      expect(before.value.components[3].value.compareValue.value).toEqual('["123","234","345"]')
+      expect(before.value.components[3].value.compareValue.value).toEqual('["\\"123","234","345","a]"]')
       expect(before.value.components[4].value.compareFieldValue).toBeUndefined()
-      expect(before.value.components[4].value.compareValue.value).toEqual('123')
+      expect(before.value.components[4].value.compareValue.value).toEqual('234')
       expect(after.value.components[3].value.compareFieldValue).toBeUndefined()
-      expect(after.value.components[3].value.compareValue.value).toEqual('["123","234","345"]')
+      expect(after.value.components[3].value.compareValue.value).toEqual('["\\"123","234","345","a]"]')
       expect(after.value.components[4].value.compareFieldValue).toBeUndefined()
-      expect(after.value.components[4].value.compareValue.value).toEqual('123')
+      expect(after.value.components[4].value.compareValue.value).toEqual('234')
     })
   })
 

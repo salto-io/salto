@@ -38,17 +38,17 @@ const neighborContextFunc = (args: {
 
 const toTypeName: referenceUtils.ContextValueMapperFunc = val => {
   if (val === 'issuetype') {
-    return 'IssueType'
+    return ISSUE_TYPE_NAME
   }
   return _.capitalize(val)
 }
 
-export type ReferenceContextStrategyName = 'compareFieldValue' | 'setFieldOperation'
+export type ReferenceContextStrategyName = 'parentSelectedFieldType' | 'parentFieldType'
 export const contextStrategyLookup: Record<
   ReferenceContextStrategyName, referenceUtils.ContextFunc
 > = {
-  compareFieldValue: neighborContextFunc({ contextFieldName: 'selectedFieldType', levelsUp: 1, contextValueMapper: toTypeName }),
-  setFieldOperation: neighborContextFunc({ contextFieldName: 'fieldType', levelsUp: 1, contextValueMapper: toTypeName }),
+  parentSelectedFieldType: neighborContextFunc({ contextFieldName: 'selectedFieldType', levelsUp: 1, contextValueMapper: toTypeName }),
+  parentFieldType: neighborContextFunc({ contextFieldName: 'fieldType', levelsUp: 1, contextValueMapper: toTypeName }),
 }
 
 export const referencesRules: referenceUtils.FieldReferenceDefinition<
@@ -439,22 +439,20 @@ ReferenceContextStrategyName
     serializationStrategy: 'name',
     target: { type: 'ProjectRole' },
   },
-  // TODO: add serialization by name once SALTO-2542 is done
   {
     src: { field: 'value', parentTypes: [AUTOMATION_COMPARE_VALUE] },
     serializationStrategy: 'id',
-    target: { typeContext: 'compareFieldValue' },
+    target: { typeContext: 'parentSelectedFieldType' },
   },
-  // TODO: add serialization by name once SALTO-2542 is done
   {
     src: { field: 'values', parentTypes: [AUTOMATION_COMPARE_VALUE] },
     serializationStrategy: 'id',
-    target: { typeContext: 'compareFieldValue' },
+    target: { typeContext: 'parentSelectedFieldType' },
   },
   {
     src: { field: 'value', parentTypes: [AUTOMATION_FIELD] },
     serializationStrategy: 'id',
-    target: { typeContext: 'setFieldOperation' },
+    target: { typeContext: 'parentFieldType' },
   },
 ]
 

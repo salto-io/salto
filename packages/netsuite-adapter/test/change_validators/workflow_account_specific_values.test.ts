@@ -16,7 +16,7 @@
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
 import { workflowType } from '../../src/autogen/types/custom_types/workflow'
 import workflowAccountSpecificValidator from '../../src/change_validators/workflow_account_specific_values'
-import { SCRIPT_ID } from '../../src/constants'
+import { SCRIPT_ID, SPECIFIC } from '../../src/constants'
 
 describe('account specific values validator for sender and recepient fields', () => {
   let instance: InstanceElement
@@ -55,40 +55,38 @@ describe('account specific values validator for sender and recepient fields', ()
     expect(changeErrors).toHaveLength(0)
   })
 
-  it('should have changeError when deploying an instance with sender = ACCOUNT_SPECIFIC_VALUES', async () => {
+  it('should have changeError when deploying an instance with sender = ACCOUNT_SPECIFIC_VALUES and sendertype = SPECIFIC', async () => {
+    const after = instance.clone()
+    after.value.sender = '[ACCOUNT_SPECIFIC_VALUE]'
+    after.value.sendertype = SPECIFIC
+    const changeErrors = await workflowAccountSpecificValidator(
+      [toChange({ before: instance, after })]
+    )
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0].severity).toEqual('Error')
+    expect(changeErrors[0].elemID).toEqual(instance.elemID)
+    expect(changeErrors[0].detailedMessage).toContain('https://docs.salto.io/docs/netsuite#deploy-troubleshooting')
+  })
+
+  it('should have changeError when deploying an instance with recipient = ACCOUNT_SPECIFIC_VALUES and recipienttype = SPECIFIC', async () => {
+    const after = instance.clone()
+    after.value.recipient = '[ACCOUNT_SPECIFIC_VALUE]'
+    after.value.recipienttype = 'SPECIFIC'
+    const changeErrors = await workflowAccountSpecificValidator(
+      [toChange({ before: instance, after })]
+    )
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0].severity).toEqual('Error')
+    expect(changeErrors[0].elemID).toEqual(instance.elemID)
+    expect(changeErrors[0].detailedMessage).toContain('https://docs.salto.io/docs/netsuite#deploy-troubleshooting')
+  })
+
+  it('should not throw and error when sendertype is not SPECIFIC', async () => {
     const after = instance.clone()
     after.value.sender = '[ACCOUNT_SPECIFIC_VALUE]'
     const changeErrors = await workflowAccountSpecificValidator(
       [toChange({ before: instance, after })]
     )
-    expect(changeErrors).toHaveLength(1)
-    expect(changeErrors[0].severity).toEqual('Error')
-    expect(changeErrors[0].elemID).toEqual(instance.elemID)
-    expect(changeErrors[0].detailedMessage).toContain(instance.elemID.getFullName())
-  })
-
-  it('should have changeError when deploying an instance with recepientemail = ACCOUNT_SPECIFIC_VALUES', async () => {
-    const after = instance.clone()
-    after.value.recipientemail = '[ACCOUNT_SPECIFIC_VALUE]'
-    const changeErrors = await workflowAccountSpecificValidator(
-      [toChange({ before: instance, after })]
-    )
-    expect(changeErrors).toHaveLength(1)
-    expect(changeErrors[0].severity).toEqual('Error')
-    expect(changeErrors[0].elemID).toEqual(instance.elemID)
-    expect(changeErrors[0].detailedMessage).toContain(instance.elemID.getFullName())
-  })
-
-  it('should have changeError when deploying an instance with recepientemail = ACCOUNT_SPECIFIC_VALUES and sender = ACCOUNT_SPECIFIC_VALUES', async () => {
-    const after = instance.clone()
-    after.value.recipientemail = '[ACCOUNT_SPECIFIC_VALUE]'
-    after.value.sender = '[ACCOUNT_SPECIFIC_VALUE]'
-    const changeErrors = await workflowAccountSpecificValidator(
-      [toChange({ before: instance, after })]
-    )
-    expect(changeErrors).toHaveLength(1)
-    expect(changeErrors[0].severity).toEqual('Error')
-    expect(changeErrors[0].elemID).toEqual(instance.elemID)
-    expect(changeErrors[0].detailedMessage).toContain(instance.elemID.getFullName())
+    expect(changeErrors).toHaveLength(0)
   })
 })

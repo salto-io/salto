@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, InstanceElement, ReadOnlyElementsSource, isInstanceElement, MapType } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, InstanceElement, ReadOnlyElementsSource, isInstanceElement, MapType, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { NETSUITE } from './constants'
 
@@ -68,6 +68,8 @@ const getExistingServerTimeElements = async (
     log.warn('Server time not found in elements source')
     return createServerTimeElements(time)
   }
+  // Resolve the type of the instance cause it's used inside the adapter that assumes resolved types
+  instance.refType = createRefToElmWithValue(type)
   return { type, instance }
 }
 

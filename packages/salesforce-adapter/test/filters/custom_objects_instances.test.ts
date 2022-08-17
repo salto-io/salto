@@ -25,7 +25,7 @@ import filterCreator, { buildSelectQueries } from '../../src/filters/custom_obje
 import mockAdapter from '../adapter'
 import {
   LABEL, CUSTOM_OBJECT, API_NAME, METADATA_TYPE, SALESFORCE, INSTALLED_PACKAGES_PATH,
-  RECORDS_PATH, FIELD_ANNOTATIONS,
+  OBJECTS_PATH, RECORDS_PATH, FIELD_ANNOTATIONS,
 } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
@@ -82,8 +82,8 @@ const createCustomObject = (
     fields: additionalFields ? Object.assign(basicFields, additionalFields) : basicFields,
   })
   const path = namespace
-    ? [SALESFORCE, INSTALLED_PACKAGES_PATH, namespace, RECORDS_PATH, obj.elemID.name]
-    : [SALESFORCE, RECORDS_PATH, obj.elemID.name]
+    ? [SALESFORCE, INSTALLED_PACKAGES_PATH, namespace, OBJECTS_PATH, obj.elemID.name]
+    : [SALESFORCE, OBJECTS_PATH, obj.elemID.name]
   obj.path = path
   return obj
 }
@@ -539,7 +539,7 @@ describe('Custom Object Instances filter', () => {
         it('should create instances according to results', () => {
           expect(instances.length).toEqual(2)
         })
-        it('should create the instances with record path acccording to object', () => {
+        it('should create the instances with record path according to object', () => {
           expect(instances[0].path).toEqual(
             [SALESFORCE, INSTALLED_PACKAGES_PATH, testNamespace,
               RECORDS_PATH, withAddressName, expectedFirstInstanceName]

@@ -489,8 +489,8 @@ export const serializationMethodLookUp: GetLookupNameFunc = ({
     const pathValue = resolvePath(element, parentPath)
     const serializationType = pathValue?.type
     switch (serializationType) {
-      case (serializationType === 'NAME'): return ref.value.value.name
-      case (serializationType === 'ID'): return ref.value.value.id
+      case 'NAME': return ref.value.value.name
+      case 'ID': return ref.value.value.id
       default: return ref
     }
   }

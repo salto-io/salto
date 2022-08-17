@@ -44,9 +44,8 @@ export const removedFromParentValidatorCreator = (
       return [{
         elemID: instance.elemID,
         severity: 'Error',
-        message: `Can not change ${typeName} because there are removed references to children instances while the children instances still exist`,
-        detailedMessage: `Can not change ${instance.elemID.getFullName()} because there are removed references in ${
-          relation.fieldName}, but the instances still exist: ${nonFullyRemovedChildren.join(', ')}`,
+        message: `Error while trying to remove ${typeName}, because the related instance still exists, please remove it as well`,
+        detailedMessage: `Error while trying to remove ${instance.elemID.getFullName()}, because the related instance ${nonFullyRemovedChildren.join(', ')} still exists, please remove it as well`,
       }]
     })
   })

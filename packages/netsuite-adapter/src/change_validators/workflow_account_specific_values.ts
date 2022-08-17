@@ -22,9 +22,24 @@ import {
   isInstanceElement,
 } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
-import { ACCOUNT_SPECIFIC_VALUE, WORKFLOW, RECIPIENTEMAIL, SENDER, RECIPIENT, SPECIFIC, SENDERTYPE, RECIPIENTTYPE } from '../constants'
+import { ACCOUNT_SPECIFIC_VALUE, WORKFLOW } from '../constants'
 
 const { isDefined } = values
+const SENDER = 'sender'
+const RECIPIENT = 'recipient'
+const RECIPIENTTYPE = 'recipienttype'
+const SENDERTYPE = 'sendertype'
+const SPECIFIC = 'SPECIFIC'
+
+const mapFieldCounters = (
+  varName: string,
+  varMapping: Record<string, number>
+): boolean => {
+  const fieldToIncrement = varName.indexOf(SENDER) !== -1 ? 'sender' : 'recipient'
+  varMapping[fieldToIncrement] += 1
+  return varMapping[fieldToIncrement] === 2
+}
+
 
 const changeValidator: ChangeValidator = async changes => (
   changes
@@ -32,11 +47,10 @@ const changeValidator: ChangeValidator = async changes => (
     .map(getChangeData)
     .filter(isInstanceElement)
     .filter(inst => inst.elemID.typeName === WORKFLOW)
-    .map(changeData => {
-      const instance = changeData
-      const isAccSpecificVal: Record<string, boolean> = {
-        sendertype: false,
-        recipienttype: false,
+    .map(instance => {
+      const isAccSpecificVal: Record<string, number> = {
+        sender: 0,
+        recipient: 0,
       }
       let foundError: ChangeError | undefined
       walkOnElement({
@@ -45,20 +59,18 @@ const changeValidator: ChangeValidator = async changes => (
           if (path.isAttrID()) {
             return WALK_NEXT_STEP.SKIP
           }
-          if (value === ACCOUNT_SPECIFIC_VALUE && [SENDER, RECIPIENT].includes(path.name)) {
-            const tempName = [SENDER].includes(path.name) ? 'sendertype' : 'recipienttype'
-            isAccSpecificVal[tempName] = true
-          } else if (value === SPECIFIC
-            && [SENDERTYPE, RECIPIENTTYPE].includes(path.name)
-            && isAccSpecificVal[path.name]) {
-            const probField = [SENDERTYPE].includes(path.name) ? SENDER : RECIPIENT
-            foundError = {
-              elemID: instance.elemID,
-              severity: 'Error',
-              message: `Element contains '${SENDER}' or '${RECIPIENTEMAIL}' fields with ${ACCOUNT_SPECIFIC_VALUE}. Please set your specific desired values within NetSuite before deploying.`,
-              detailedMessage: `The Workflow contains a '${probField}' field with an ACCOUNT_SPECIFIC_VALUE which cannot be deployed due to NetSuite constraints. Please refer to https://docs.salto.io/docs/netsuite#deploy-troubleshooting for more information.`,
+          if ((value === ACCOUNT_SPECIFIC_VALUE && [SENDER, RECIPIENT].includes(path.name))
+          || (value === SPECIFIC && [SENDERTYPE, RECIPIENTTYPE].includes(path.name))) {
+            if (mapFieldCounters(path.name, isAccSpecificVal)) {
+              const probField = SENDERTYPE.indexOf(SENDER) !== -1 ? SENDER : RECIPIENT
+              foundError = {
+                elemID: instance.elemID,
+                severity: 'Error',
+                message: 'Workflow contains fields which cannot be deployed',
+                detailedMessage: `The Workflow contains a '${probField}' field with an ACCOUNT_SPECIFIC_VALUE which cannot be deployed due to NetSuite constraints. Please refer to https://docs.salto.io/docs/netsuite#deploy-troubleshooting for more information.`,
+              }
+              return WALK_NEXT_STEP.EXIT
             }
-            return WALK_NEXT_STEP.EXIT
           }
           return WALK_NEXT_STEP.RECURSE
         },

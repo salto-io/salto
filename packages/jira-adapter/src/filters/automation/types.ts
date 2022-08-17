@@ -174,6 +174,12 @@ export const createAutomationTypes = (): {
     new ListType(componentType),
   )
 
+  componentType.fields.conditions = new Field(
+    componentType,
+    'conditions',
+    new ListType(componentType),
+  )
+
   const tagType = new ObjectType({
     elemID: new ElemID(JIRA, 'AutomationTag'),
     fields: {

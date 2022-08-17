@@ -67,7 +67,7 @@ export const createAutomationValues = (name: string): Values => ({
             comparison: 'ONE_OF',
             compareFieldValue: {
               type: 'NAME',
-              values: '["Approved"]',
+              values: ['Approved'],
               multiValue: true,
             },
           },

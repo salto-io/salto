@@ -57,7 +57,12 @@ export const RECORD_TYPE = 'recordType'
 export const LAST_FETCH_TIME = '_lastfetchtime'
 export const APPLICATION_ID = 'application_id'
 export const SENDER = 'sender'
+export const RECIPIENT = 'recipient'
 export const RECIPIENTEMAIL = 'recipientemail'
+export const RECIPIENTFIELD = 'recipientfield'
+export const RECIPIENTTYPE = 'recipienttype'
+export const SENDERTYPE = 'sendertype'
+export const SENDERFIELD = 'senderfield'
 
 // Field Annotations
 export const IS_ATTRIBUTE = 'isAttribute'
@@ -100,4 +105,5 @@ export const DEPLOY = 'deploy'
 export const INSTALLED_SUITEAPPS = 'installedSuiteApps'
 
 export const ACCOUNT_SPECIFIC_VALUE = '[ACCOUNT_SPECIFIC_VALUE]'
+export const SPECIFIC = 'SPECIFIC'
 export const NOT_YET_SUPPORTED_VALUE = '[NOT_YET_SUPPORTED]'

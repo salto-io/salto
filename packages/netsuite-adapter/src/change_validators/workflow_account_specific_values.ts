@@ -22,7 +22,7 @@ import {
   isInstanceElement,
 } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
-import { ACCOUNT_SPECIFIC_VALUE, WORKFLOW, RECIPIENTEMAIL, SENDER } from '../constants'
+import { ACCOUNT_SPECIFIC_VALUE, WORKFLOW, RECIPIENTEMAIL, SENDER, RECIPIENT, SPECIFIC, SENDERTYPE, RECIPIENTTYPE } from '../constants'
 
 const { isDefined } = values
 
@@ -34,17 +34,29 @@ const changeValidator: ChangeValidator = async changes => (
     .filter(inst => inst.elemID.typeName === WORKFLOW) // leave only changes  with typename WORKFLOW
     .map(changeData => {
       const instance = changeData
+      const isAccSpecificVal: Record<string, boolean> = {
+        sendertype: false,
+        recipienttype: false,
+      }
       let foundError: ChangeError | undefined
       walkOnElement({
         element: instance,
         func: ({ value, path }) => {
-          if (value === ACCOUNT_SPECIFIC_VALUE && [RECIPIENTEMAIL, SENDER].includes(path.name)) {
-            const detMessage = `Instance (${instance.elemID.getFullName()}) contains sender or recepientemail field with ACCOUNT_SPECIFIC_VALUE and therfore will not be deployed. Please manualy edit the fields with ACCOUNT_SPECIFIC_VALUES and run deploy again.`
+          if (path.isAttrID()) {
+            return WALK_NEXT_STEP.SKIP
+          }
+          if (value === ACCOUNT_SPECIFIC_VALUE && [SENDER, RECIPIENT].includes(path.name)) {
+            const tempName = [SENDER].includes(path.name) ? 'sendertype' : 'recipienttype'
+            isAccSpecificVal[tempName] = true
+          } else if (value === SPECIFIC
+            && [SENDERTYPE, RECIPIENTTYPE].includes(path.name)
+            && isAccSpecificVal[path.name]) {
+            const probField = [SENDERTYPE].includes(path.name) ? SENDER : RECIPIENT
             foundError = {
               elemID: instance.elemID,
               severity: 'Error',
-              message: 'Element contains sender or  recepientmail fields with account specific values. This element will be skipped in the deployment',
-              detailedMessage: detMessage,
+              message: `Element contains '${SENDER}' or '${RECIPIENTEMAIL}' fields with ${ACCOUNT_SPECIFIC_VALUE}. Please set your specific desired values within NetSuite before deploying.`,
+              detailedMessage: `The Workflow contains a '${probField}' field with an ACCOUNT_SPECIFIC_VALUE which cannot be deployed due to NetSuite constraints. Please refer to https://docs.salto.io/docs/netsuite#deploy-troubleshooting for more information.`,
             }
             return WALK_NEXT_STEP.EXIT
           }

@@ -25,7 +25,7 @@ import filterCreator, { buildSelectQueries } from '../../src/filters/custom_obje
 import mockAdapter from '../adapter'
 import {
   LABEL, CUSTOM_OBJECT, API_NAME, METADATA_TYPE, SALESFORCE, INSTALLED_PACKAGES_PATH,
-  OBJECTS_PATH, RECORDS_PATH, FIELD_ANNOTATIONS,
+  RECORDS_PATH, FIELD_ANNOTATIONS,
 } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
@@ -82,8 +82,8 @@ const createCustomObject = (
     fields: additionalFields ? Object.assign(basicFields, additionalFields) : basicFields,
   })
   const path = namespace
-    ? [SALESFORCE, INSTALLED_PACKAGES_PATH, namespace, OBJECTS_PATH, obj.elemID.name]
-    : [SALESFORCE, OBJECTS_PATH, obj.elemID.name]
+    ? [SALESFORCE, INSTALLED_PACKAGES_PATH, namespace, RECORDS_PATH, obj.elemID.name]
+    : [SALESFORCE, RECORDS_PATH, obj.elemID.name]
   obj.path = path
   return obj
 }
@@ -156,6 +156,7 @@ describe('Custom Object Instances filter', () => {
   const refToFromNamespaceObjectName = 'RefFromNamespace__RefTo__c'
   const refFromAndToObjectName = 'RefFromAndTo'
   const emptyRefToObjectName = 'EmptyRefTo'
+  const notInNamespaceName = 'NotInNamespace__c'
 
   beforeEach(async () => {
     ({ connection, client } = mockAdapter({
@@ -245,6 +246,7 @@ describe('Custom Object Instances filter', () => {
                   includeObjectName,
                   excludeOverrideObjectName,
                   refFromAndToObjectName,
+                  notInNamespaceName,
                 ],
                 excludeObjects: [
                   '^TestNamespace__Exclude.*',
@@ -388,7 +390,6 @@ describe('Custom Object Instances filter', () => {
         },
       })
 
-      const notInNamespaceName = 'NotInNamespace__c'
       const objNotInNamespace = createCustomObject(notInNamespaceName)
       const expectedFirstInstanceName = `${NAME_FROM_GET_ELEM_ID}${TestCustomRecords[0].Id}`
 
@@ -401,9 +402,10 @@ describe('Custom Object Instances filter', () => {
 
       it('should add instances per catched by regex object with fields', async () => {
         // 2 new instances per namespaced object because of TestCustomRecords's length
-        expect(elements.length).toEqual(11)
-        expect((await awu(elements).filter(e => isInstanceElement(e)).toArray()).length).toEqual(6)
+        expect(elements.length).toEqual(13)
+        expect((await awu(elements).filter(e => isInstanceElement(e)).toArray()).length).toEqual(8)
       })
+
 
       describe('simple object', () => {
         let instances: InstanceElement[]
@@ -412,6 +414,7 @@ describe('Custom Object Instances filter', () => {
             async e => isInstanceElement(e) && await e.getType() === simpleObject
           ).toArray() as InstanceElement[]
         })
+
 
         it('should call query with the object fields', () => {
           expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Id,Name,TestField FROM ${simpleName}`)
@@ -460,6 +463,23 @@ describe('Custom Object Instances filter', () => {
         })
       })
 
+      describe('not in namespace object', () => {
+        let instances: InstanceElement[]
+        beforeEach(async () => {
+          instances = await awu(elements).filter(
+            async e => isInstanceElement(e) && await e.getType() === objNotInNamespace
+          ).toArray() as InstanceElement[]
+        })
+        it('should create instances according to results', () => {
+          expect(instances.length).toEqual(2)
+        })
+        it('should create the instances with record path according to object', () => {
+          expect(instances[0].path).toEqual(
+            [SALESFORCE, RECORDS_PATH, notInNamespaceName, expectedFirstInstanceName]
+          )
+        })
+      })
+
       describe('object with compound Name', () => {
         let instances: InstanceElement[]
         beforeEach(async () => {
@@ -475,7 +495,7 @@ describe('Custom Object Instances filter', () => {
         it('should create instances according to results', () => {
           expect(instances.length).toEqual(2)
         })
-        it('should create the instances with record path acccording to object', () => {
+        it('should create the instances with record path according to object', () => {
           expect(instances[0].path).toEqual(
             [SALESFORCE, INSTALLED_PACKAGES_PATH, testNamespace,
               RECORDS_PATH, withNameName, expectedFirstInstanceName]

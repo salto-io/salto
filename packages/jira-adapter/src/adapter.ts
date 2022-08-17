@@ -89,7 +89,6 @@ import avatarsFilter from './filters/avatars'
 import iconUrlFilter from './filters/icon_url'
 import jqlReferencesFilter from './filters/jql/jql_references'
 import userFilter from './filters/user'
-import automationNameReferencesFilter from './filters/automation/automation_name_references'
 import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
@@ -177,8 +176,6 @@ export const DEFAULT_FILTERS = [
   missingFieldDescriptionsFilter,
   // Must run after fieldReferencesFilter
   sortListsFilter,
-  // Must run after fieldReferencesFilter
-  automationNameReferencesFilter,
   serviceUrlInformationFilter,
   serviceUrlFilter,
   hiddenValuesInListsFilter,

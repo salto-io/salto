@@ -14,17 +14,17 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { isReferenceExpression } from '@salto-io/adapter-api'
+import { isReferenceExpression, isInstanceElement } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
-import { GetLookupNameFunc } from '@salto-io/adapter-utils'
+import { GetLookupNameFunc, resolvePath } from '@salto-io/adapter-utils'
 import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_TYPE,
   BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, AUTOMATION_STATUS,
   AUTOMATION_CONDITION, AUTOMATION_CONDITION_CRITERIA, AUTOMATION_SUBTASK,
   AUTOMATION_ROLE, AUTOMATION_GROUP, AUTOMATION_EMAIL_RECIPENT, PROJECT_TYPE,
-  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME, AUTOMATION_COMPARE_VALUE } from './constants'
+  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME, AUTOMATION_COMPARE_VALUE, AUTOMATION_TYPE } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 
-const { neighborContextGetter } = referenceUtils
+const { neighborContextGetter, findParentPath } = referenceUtils
 
 const neighborContextFunc = (args: {
   contextFieldName: string
@@ -439,7 +439,6 @@ ReferenceContextStrategyName
     serializationStrategy: 'name',
     target: { type: 'ProjectRole' },
   },
-  // TODO: add serialization by name once SALTO-2542 is done
   {
     src: { field: 'value', parentTypes: [AUTOMATION_COMPARE_VALUE] },
     serializationStrategy: 'id',
@@ -453,12 +452,21 @@ ReferenceContextStrategyName
 =======
     target: { typeContext: 'compareFieldValue' },
   },
-  // TODO: add serialization by name once SALTO-2542 is done
+  {
+    src: { field: 'value', parentTypes: [AUTOMATION_COMPARE_VALUE] },
+    serializationStrategy: 'name',
+    target: { typeContext: 'compareFieldValue' },
+  },
   {
     src: { field: 'values', parentTypes: [AUTOMATION_COMPARE_VALUE] },
     serializationStrategy: 'id',
     target: { typeContext: 'compareFieldValue' },
 >>>>>>> e8cb1f91 (first version)
+  },
+  {
+    src: { field: 'values', parentTypes: [AUTOMATION_COMPARE_VALUE] },
+    serializationStrategy: 'name',
+    target: { typeContext: 'compareFieldValue' },
   },
   {
     src: { field: 'value', parentTypes: [AUTOMATION_FIELD] },
@@ -467,8 +475,31 @@ ReferenceContextStrategyName
   },
 ]
 
+// during deploy, serialization method for references
+// from automations is determined by automations values
+export const serializationMethodLookUp: GetLookupNameFunc = ({
+  ref, path, element,
+}) => {
+  if (
+    path !== undefined
+    && isInstanceElement(element)
+    && element.elemID.typeName === AUTOMATION_TYPE
+  ) {
+    const parentPath = findParentPath(path)
+    const pathValue = resolvePath(element, parentPath)
+    const serializationType = pathValue?.type
+    switch (serializationType) {
+      case (serializationType === 'NAME'): return ref.value.value.name
+      case (serializationType === 'ID'): return ref.value.value.id
+      default: return ref
+    }
+  }
+  return ref
+}
+
 const lookupNameFuncs: GetLookupNameFunc[] = [
   getFieldsLookUpName,
+  serializationMethodLookUp,
   referenceUtils.generateLookupFunc(referencesRules),
 ]
 

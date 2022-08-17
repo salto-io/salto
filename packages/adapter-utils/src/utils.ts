@@ -439,6 +439,7 @@ export type GetLookupNameFuncArgs = {
   ref: ReferenceExpression
   field?: Field
   path?: ElemID
+  element?: Element
 }
 export type GetLookupNameFunc = (args: GetLookupNameFuncArgs) => Promise<Value>
 
@@ -463,6 +464,7 @@ export const resolveValues: ResolveValuesFunc = async (
         ) : value,
         field,
         path,
+        element,
       })
     }
     if (isStaticFile(value)) {

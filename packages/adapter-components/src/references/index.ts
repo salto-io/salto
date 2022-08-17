@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { neighborContextGetter, ContextFunc, ContextValueMapperFunc } from './context'
+export { neighborContextGetter, ContextFunc, ContextValueMapperFunc, findParentPath } from './context'
 export { addReferences, replaceReferenceValues, generateLookupFunc, MISSING_ANNOTATION } from './field_references'
 export {
   ReferenceSerializationStrategy,

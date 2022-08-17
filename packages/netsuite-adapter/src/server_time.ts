@@ -30,23 +30,23 @@ type ServerTypeElements = {
 const serverTimeElemID = new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME)
 const serverTimeInstanceElemID = new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME, 'instance', ElemID.CONFIG_NAME)
 
+const serverTimeType = new ObjectType({
+  elemID: serverTimeElemID,
+  isSettings: true,
+  fields: {
+    serverTime: { refType: BuiltinTypes.STRING },
+    instancesFetchTime: { refType: new MapType(BuiltinTypes.STRING) },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.HIDDEN]: true,
+  },
+})
+
 export const createServerTimeElements = (time: Date): ServerTypeElements => {
   log.debug(`Creating server time elements with time: ${time.toJSON()}`)
-  const type = new ObjectType({
-    elemID: serverTimeElemID,
-    isSettings: true,
-    fields: {
-      serverTime: { refType: BuiltinTypes.STRING },
-      instancesFetchTime: { refType: new MapType(BuiltinTypes.STRING) },
-    },
-    annotations: {
-      [CORE_ANNOTATIONS.HIDDEN]: true,
-    },
-  })
-
   const instance = new InstanceElement(
     ElemID.CONFIG_NAME,
-    type,
+    serverTimeType,
     {
       serverTime: time.toJSON(),
       instancesFetchTime: {},
@@ -55,22 +55,21 @@ export const createServerTimeElements = (time: Date): ServerTypeElements => {
     { [CORE_ANNOTATIONS.HIDDEN]: true },
   )
 
-  return { type, instance }
+  return { type: serverTimeType, instance }
 }
 
 const getExistingServerTimeElements = async (
   time: Date,
   elementsSource: ReadOnlyElementsSource,
 ): Promise<ServerTypeElements> => {
-  const type = await elementsSource.get(serverTimeElemID)
   const instance = await elementsSource.get(serverTimeInstanceElemID)
-  if (type === undefined || !isInstanceElement(instance)) {
-    log.warn('Server time not found in elements source')
+  if (!isInstanceElement(instance)) {
+    log.warn('Server time instance not found in elements source')
     return createServerTimeElements(time)
   }
   // Resolve the type of the instance cause it's used inside the adapter that assumes resolved types
-  instance.refType = createRefToElmWithValue(type)
-  return { type, instance }
+  instance.refType = createRefToElmWithValue(serverTimeType)
+  return { type: serverTimeType, instance }
 }
 
 export const getServerTimeElements = async (
@@ -105,14 +104,14 @@ export const getLastServiceIdToFetchTime = async (elementsSource: ReadOnlyElemen
 export const getLastServerTime = async (elementsSource: ReadOnlyElementsSource):
   Promise<Date | undefined> => {
   log.debug('Getting server time')
-  const serverTimeElement = await elementsSource.get(serverTimeInstanceElemID)
+  const serverTimeInstance = await elementsSource.get(serverTimeInstanceElemID)
 
-  if (!isInstanceElement(serverTimeElement)) {
-    log.warn('Server time not found in elements source')
+  if (!isInstanceElement(serverTimeInstance)) {
+    log.warn('Server time instance not found in elements source')
     return undefined
   }
 
-  const { serverTime } = serverTimeElement.value
+  const { serverTime } = serverTimeInstance.value
   if (serverTime === undefined) {
     log.warn('serverTime value does not exists in server time instance')
     return undefined

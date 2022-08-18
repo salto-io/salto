@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ElemID, AdapterAuthentication, ObjectType, Adapter } from '@salto-io/adapter-api'
+import { InstanceElement, ElemID, AdapterAuthentication, ObjectType, Adapter, AdapterOperationsContext } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { buildElementsSourceFromElements, createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -142,6 +142,8 @@ describe('adapters.ts', () => {
 
   describe('run get adapters creator configs', () => {
     const serviceName = 'salesforce'
+    const objectType = new ObjectType({ elemID: new ElemID(serviceName, 'type1') })
+    const d1Type = new ObjectType({ elemID: new ElemID('d1', 'type2') })
 
     it('should return default adapter config when there is no config', async () => {
       const result = await getAdaptersCreatorConfigs(
@@ -182,10 +184,9 @@ describe('adapters.ts', () => {
       expect(Object.keys(result)).toEqual([serviceName])
     })
 
-    it('should return an ReadOnlyElementsSource with only the adapter elements', async () => {
-      const objectType = new ObjectType({ elemID: new ElemID(serviceName, 'type1') })
-      const d1Type = new ObjectType({ elemID: new ElemID('d1', 'type2') })
-      const result = await getAdaptersCreatorConfigs(
+    const setupMultiAppAdapterConfig = async (): Promise<Record<string,
+      AdapterOperationsContext>> =>
+      getAdaptersCreatorConfigs(
         [serviceName, 'd1'],
         { [sfConfig.elemID.adapter]: sfConfig },
         async name => (name === sfConfig.elemID.adapter ? sfConfig : undefined),
@@ -195,6 +196,9 @@ describe('adapters.ts', () => {
         ]),
         { [serviceName]: serviceName, d1: 'dummy' },
       )
+
+    it('should only return elements that belong to the relevant account', async () => {
+      const result = await setupMultiAppAdapterConfig()
       const elementsSource = result[serviceName]?.elementsSource
       expect(elementsSource).toBeDefined()
       expect(await elementsSource.has(objectType.elemID)).toBeTruthy()
@@ -206,22 +210,31 @@ describe('adapters.ts', () => {
       expect(await elementsSource.get(new ElemID('d1', 'type2'))).toBeUndefined()
       expect(await elementsSource.get(new ElemID('dummy', 'type2'))).toBeUndefined()
 
+      expect(await collections.asynciterable.toArrayAsync(await elementsSource.getAll()))
+        .toEqual([objectType])
+
+      expect(await collections.asynciterable.toArrayAsync(await elementsSource.list()))
+        .toEqual([objectType.elemID])
+    })
+
+    it('should return renamed elements when account name is different from adapter name', async () => {
+      const result = await setupMultiAppAdapterConfig()
+
       const d1ElementsSource = result.d1?.elementsSource
       // since element source is used inside the adapter, it should receive and return
       // values with default adapter name as account name
       expect(await d1ElementsSource.get(new ElemID('dummy', 'type2'))).toEqual(new ObjectType({
         elemID: new ElemID('dummy', 'type2'),
       }))
-      // this tests that the inner element source does not modify the element
+    })
+
+    it('should not modify elements in the origin elements source', async () => {
+      const result = await setupMultiAppAdapterConfig()
+      const d1ElementsSource = result.d1?.elementsSource
+      await d1ElementsSource.get(new ElemID('dummy', 'type2'))
       expect(d1Type).not.toEqual(new ObjectType({
         elemID: new ElemID('dummy', 'type2'),
       }))
-
-      expect(await collections.asynciterable.toArrayAsync(await elementsSource.getAll()))
-        .toEqual([objectType])
-
-      expect(await collections.asynciterable.toArrayAsync(await elementsSource.list()))
-        .toEqual([objectType.elemID])
     })
   })
 

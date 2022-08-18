@@ -118,10 +118,6 @@ export const SUITEAPP_CONFIG_RECORD_TYPES = [
   'ACCOUNTING_PREFERENCES',
 ] as const
 
-export const SUITEAPP_FEATURE_TYPE = [
-  'FEATURES',
-] as const
-
 export type SuiteAppConfigRecordType = typeof SUITEAPP_CONFIG_RECORD_TYPES[number]
 
 export const SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES: Record<SuiteAppConfigRecordType, string> = {

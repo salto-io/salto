@@ -266,7 +266,7 @@ export type ConfigRecord = {
   data: ConfigRecordData
 }
 
-export const getConfigResultSchema = (configType: ReadonlyArray<string>): Values => ({
+export const GET_CONFIG_RESULT_SCHEMA = {
   type: 'object',
   properties: {
     results: {
@@ -274,7 +274,7 @@ export const getConfigResultSchema = (configType: ReadonlyArray<string>): Values
       items: {
         type: 'object',
         properties: {
-          configType: { enum: configType },
+          configType: { enum: SUITEAPP_CONFIG_RECORD_TYPES },
           fieldsDef: {
             type: 'array',
             items: { type: 'object' },
@@ -290,7 +290,7 @@ export const getConfigResultSchema = (configType: ReadonlyArray<string>): Values
     },
   },
   required: ['results', 'errors'],
-})
+}
 
 export type GetConfigResult = {
   results: ConfigRecord[]

@@ -264,19 +264,6 @@ describe('automationStructureFilter', () => {
       expect(after.value.components[4].value.compareFieldValue).toBeUndefined()
       expect(after.value.components[4].value.compareValue.value).toEqual('234')
     })
-    it('should revert compare value structure to be depolyable', async () => {
-      const changes = [toChange({ before: instanceAfterFetch, after: changedInstance })]
-      await filter.preDeploy(changes)
-      const [before, after] = getAllChangeData(changes[0])
-      expect(before.value.components[3].value.compareFieldValue).toBeUndefined()
-      expect(before.value.components[3].value.compareValue.value).toEqual('["123","234","345"]')
-      expect(before.value.components[4].value.compareFieldValue).toBeUndefined()
-      expect(before.value.components[4].value.compareValue.value).toEqual('123')
-      expect(after.value.components[3].value.compareFieldValue).toBeUndefined()
-      expect(after.value.components[3].value.compareValue.value).toEqual('["123","234","345"]')
-      expect(after.value.components[4].value.compareFieldValue).toBeUndefined()
-      expect(after.value.components[4].value.compareValue.value).toEqual('123')
-    })
   })
 
   describe('onDeplopy', () => {

@@ -442,31 +442,22 @@ ReferenceContextStrategyName
   {
     src: { field: 'value', parentTypes: [AUTOMATION_COMPARE_VALUE] },
     serializationStrategy: 'id',
-<<<<<<< HEAD
     target: { typeContext: 'parentSelectedFieldType' },
-  },
-  {
-    src: { field: 'values', parentTypes: [AUTOMATION_COMPARE_VALUE] },
-    serializationStrategy: 'id',
-    target: { typeContext: 'parentSelectedFieldType' },
-=======
-    target: { typeContext: 'compareFieldValue' },
   },
   {
     src: { field: 'value', parentTypes: [AUTOMATION_COMPARE_VALUE] },
     serializationStrategy: 'name',
-    target: { typeContext: 'compareFieldValue' },
+    target: { typeContext: 'parentSelectedFieldType' },
   },
   {
     src: { field: 'values', parentTypes: [AUTOMATION_COMPARE_VALUE] },
     serializationStrategy: 'id',
-    target: { typeContext: 'compareFieldValue' },
->>>>>>> e8cb1f91 (first version)
+    target: { typeContext: 'parentSelectedFieldType' },
   },
   {
     src: { field: 'values', parentTypes: [AUTOMATION_COMPARE_VALUE] },
     serializationStrategy: 'name',
-    target: { typeContext: 'compareFieldValue' },
+    target: { typeContext: 'parentSelectedFieldType' },
   },
   {
     src: { field: 'value', parentTypes: [AUTOMATION_FIELD] },

@@ -106,6 +106,9 @@ describe('emailTemplate static files filter', () => {
       expect(receivedEmailTemplate?.value.attachments).toIncludeAllMembers(
         [{ name: attachmentTwoName, content: attachmentTwo }]
       )
+      expect(receivedEmailTemplate?.value.content?.filepath).toEqual(
+        'Objects/dir/emailTemplateTwo/emailTemplateTwo.email'
+      )
     })
 
     it('should not replace content when instance has no path', () => {

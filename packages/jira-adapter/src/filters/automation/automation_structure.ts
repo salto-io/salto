@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _, { isPlainObject } from 'lodash'
+import _ from 'lodash'
 import Joi from 'joi'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, isInstanceElement, Values, getChangeData,
@@ -66,7 +66,6 @@ const RAW_VALUE_SCHEME = Joi.object({
   rawValue: Joi.string().required(),
 }).unknown(true).required()
 
-<<<<<<< HEAD
 const COMPARE_FIELD_VALUE_SCHEME = Joi.object({
   compareFieldValue: Joi.object({
     multiValue: Joi.boolean().required(),
@@ -74,15 +73,6 @@ const COMPARE_FIELD_VALUE_SCHEME = Joi.object({
     values: Joi.array().items(Joi.string()),
     type: Joi.string(),
   }).unknown(true).required(),
-=======
-const COMPARAE_FIELD_VALUE_SCHEME = Joi.object({
-  compareFieldValue: Joi.object({
-    multiValue: Joi.boolean().required(),
-    value: Joi.string().optional(),
-    values: Joi.array().items(Joi.string()).optional(),
-    type: Joi.string(),
-  }).required(),
->>>>>>> e8cb1f91 (first version)
 }).unknown(true).required()
 
 const isLinkTypeObject = (value: unknown): value is LinkTypeObject => {
@@ -96,11 +86,7 @@ const isRawValueObject = (value: unknown): value is RawValueObject => {
 }
 
 const isCompareFieldValueObject = (value: unknown): value is CompareFieldValueObject => {
-<<<<<<< HEAD
   const { error } = COMPARE_FIELD_VALUE_SCHEME.validate(value)
-=======
-  const { error } = COMPARAE_FIELD_VALUE_SCHEME.validate(value)
->>>>>>> e8cb1f91 (first version)
   return error === undefined
 }
 
@@ -251,29 +237,6 @@ const changeRawValueFieldsToValue = async (instance: InstanceElement): Promise<v
   })).value
 }
 
-// const revertCompareFieldValueStructure = async (instance: InstanceElement): Promise<void> => {
-//   instance.value = (await transformElement({
-//     element: instance,
-//     strict: false,
-//     allowEmpty: true,
-//     transformFunc: async ({ value, field }) => {
-//       if (
-//         (await field?.getType())?.elemID.typeName === AUTOMATION_COMPONENT_VALUE_TYPE
-//         && _.isPlainObject(value.compareFieldValue)
-//       ) {
-//         value.compareValue = value.compareFieldValue
-//         delete value.compareFieldValue
-//         if (value.compareValue.multiValue) {
-//           const joinedValues = _.join(value.compareValue.values, '","')
-//           value.compareValue.value = '["'.concat(joinedValues, '"]')
-//           delete value.compareValue.values
-//         }
-//       }
-//       return value
-//     },
-//   })).value
-// }
-
 const revertCompareFieldValueStructure = async (instance: InstanceElement): Promise<void> => {
   instance.value = (await transformElement({
     element: instance,
@@ -286,12 +249,7 @@ const revertCompareFieldValueStructure = async (instance: InstanceElement): Prom
       ) {
         const { compareFieldValue } = value
         if (compareFieldValue.multiValue) {
-<<<<<<< HEAD
           compareFieldValue.value = safeJsonStringify(compareFieldValue.values)
-=======
-          const joinedValues = _.join(compareFieldValue.values, '","')
-          compareFieldValue.value = '["'.concat(joinedValues, '"]')
->>>>>>> e8cb1f91 (first version)
           delete compareFieldValue.values
         }
         const deployableObject: CompareValueObject = _.omit({ ...value, compareValue: compareFieldValue }, 'compareFieldValue')

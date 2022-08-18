@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
+import _, { isPlainObject } from 'lodash'
 import Joi from 'joi'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, isInstanceElement, Values, getChangeData,
@@ -300,6 +300,7 @@ const filter: FilterCreator = () => {
           applyFunctionToChangeData<Change<InstanceElement>>(
             change,
             async instance => {
+              // resolves typeContext references to full value instead name / id
               const resolvedInstance = await resolveValues(instance, getLookUpName)
               await consolidateLinkTypeFields(resolvedInstance)
               await changeRawValueFieldsToValue(resolvedInstance)

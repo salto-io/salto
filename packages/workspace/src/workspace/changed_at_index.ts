@@ -37,7 +37,7 @@ import { RemoteMap } from './remote_map'
 const { isDefined } = values
 
 const log = logger(module)
-export const CHANGED_AT_INDEX_VERSION = 3
+export const CHANGED_AT_INDEX_VERSION = 4
 const CHANGED_AT_INDEX_KEY = 'changed_at_index'
 
 const getChangedAtDates = (change: Change<Element>): Record<string, ElemID[]> => {

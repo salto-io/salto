@@ -37,7 +37,7 @@ import { RemoteMap } from './remote_map'
 const { isDefined } = values
 
 const log = logger(module)
-export const CHANGED_BY_INDEX_VERSION = 3
+export const CHANGED_BY_INDEX_VERSION = 4
 const CHANGED_BY_INDEX_KEY = 'changed_by_index'
 const UNKNOWN_USER_NAME = 'Unknown'
 const CHANGED_BY_KEY_DELIMITER = '@@'

@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import { Element, ElemID, ObjectType, InstanceElement, isInstanceElement, BuiltinTypes, StaticFile, FieldDefinition } from '@salto-io/adapter-api'
+import filterCreator from '../../src/filters/email_template_static_files'
 import { FilterWith } from '../../src/filter'
-import filterCreator from '../../src/filters/attachment_content_to_static_file'
 import { SALESFORCE, EMAIL_TEMPLATE_METADATA_TYPE, METADATA_TYPE } from '../../src/constants'
 import { defaultFilterContext } from '../utils'
 

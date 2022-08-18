@@ -37,6 +37,7 @@ import validationRulesAuthorFilter from './filters/author_information/validation
 import profileInstanceSplitFilter from './filters/profile_instance_split'
 import customObjectsInstancesFilter from './filters/custom_objects_instances'
 import profilePermissionsFilter from './filters/profile_permissions'
+import emailTemplateFilter from './filters/email_template_static_files'
 import convertListsFilter from './filters/convert_lists'
 import convertTypeFilter from './filters/convert_types'
 import removeFieldsAndValuesFilter from './filters/remove_fields_and_values'
@@ -72,7 +73,6 @@ import customMetadataRecordsFilter from './filters/custom_metadata'
 import currencyIsoCodeFilter from './filters/currency_iso_code'
 import enumFieldPermissionsFilter from './filters/field_permissions_enum'
 import splitCustomLabels from './filters/split_custom_labels'
-import emailAttachmentsFilter from './filters/attachment_content_to_static_file'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator } from './filter'
@@ -118,8 +118,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   // profilePermissionsFilter depends on layoutFilter because layoutFilter
   // changes ElemIDs that the profile references
   { creator: profilePermissionsFilter },
-  // emailAttachmentsFilter should run before convertMapsFilter
-  { creator: emailAttachmentsFilter },
+  // emailTemplateFilter should run before convertMapsFilter
+  { creator: emailTemplateFilter },
   // convertMapsFilter should run before profile fieldReferencesFilter
   { creator: convertMapsFilter },
   { creator: standardValueSetFilter, addsNewInformation: true },

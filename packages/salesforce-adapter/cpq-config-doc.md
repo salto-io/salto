@@ -63,6 +63,12 @@ salesforce {
           metadataType = "DashboardFolder"
         },
         {
+          metadataType = "Document"
+        },
+        {
+          metadataType = "DocumentFolder"
+        },
+        {
           metadataType = "Profile"
         },
         {
@@ -81,9 +87,26 @@ salesforce {
           metadataType = "CustomObjectTranslation"
         },
         {
+          metadataType = "AnalyticSnapshot"
+        },
+        {
+          metadataType = "WaveDashboard"
+        },
+        {
+          metadataType = "WaveDataflow"
+        },
+        {
           metadataType = "StandardValueSet"
           name = "^(AddressCountryCode)|(AddressStateCode)$"
           namespace = ""
+        },
+        {
+          metadataType = "Layout"
+          name = "CollaborationGroup-Group Layout"
+        },
+        {
+          metadataType = "Layout"
+          name = "CaseInteraction-Case Feed Layout"
         },
       ]
     }

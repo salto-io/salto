@@ -20,7 +20,6 @@ import {
   Element,
   toChange,
   CORE_ANNOTATIONS,
-  ModificationChange,
   AdditionChange,
   RemovalChange,
   isAdditionChange,
@@ -122,23 +121,6 @@ const updateRemovalChange = (
   })
 }
 
-const updateModificationChange = (
-  change: ModificationChange<Element>,
-  authorMap: Record<string, Set<string>>,
-): void => {
-  if (change.data.after.annotations[CORE_ANNOTATIONS.CHANGED_BY]
-    !== change.data.before.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
-    updateRemovalChange(
-      toChange({ before: change.data.before }) as RemovalChange<Element>,
-      authorMap,
-    )
-    updateAdditionChange(
-      toChange({ after: change.data.after }) as AdditionChange<Element>,
-      authorMap,
-    )
-  }
-}
-
 const updateChange = (
   change: Change<Element>,
   authorMap: Record<string, Set<string>>,
@@ -148,7 +130,14 @@ const updateChange = (
   } else if (isRemovalChange(change)) {
     updateRemovalChange(change, authorMap)
   } else {
-    updateModificationChange(change, authorMap)
+    updateRemovalChange(
+      toChange({ before: change.data.before }) as RemovalChange<Element>,
+      authorMap,
+    )
+    updateAdditionChange(
+      toChange({ after: change.data.after }) as AdditionChange<Element>,
+      authorMap,
+    )
   }
 }
 

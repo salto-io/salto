@@ -172,7 +172,6 @@ type AccountAddArgs = {
 } & AuthTypeArgs & EnvArg & LoginParametersArg
 
 const MAX_ACCOUNT_NAME_LENGTH = 100
-
 export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
   input,
   output,

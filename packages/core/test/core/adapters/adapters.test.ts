@@ -190,7 +190,7 @@ describe('adapters.ts', () => {
         async name => (name === sfConfig.elemID.adapter ? sfConfig : undefined),
         buildElementsSourceFromElements([
           new ObjectType({ elemID: new ElemID(serviceName, 'type1') }),
-          new ObjectType({ elemID: new ElemID('d1', 'type2') }),
+          new ObjectType({ elemID: new ElemID('dummy', 'type2') }),
         ]),
         { [serviceName]: serviceName },
       )

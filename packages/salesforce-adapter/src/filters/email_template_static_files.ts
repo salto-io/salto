@@ -29,19 +29,17 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 const createStaticFile = (
-  instance: InstanceElement,
   instanceApiName: string,
   folderName: string | undefined,
   name: string,
   content: string
-): StaticFile | undefined => {
-  if (instance.path === undefined) {
-    log.error(`could not extract the attachment of instance ${instanceApiName} to static file, instance path is undefined`)
-    return undefined
+): string | StaticFile | undefined => {
+  if (folderName === undefined) {
+    log.error(`could not extract the attachment ${name} of instance ${instanceApiName} to static file, instance path is undefined`)
+    return content
   }
-  const path = folderName ?? instance.path.join('/')
   return new StaticFile({
-    filepath: `${path}/${name}`,
+    filepath: `${folderName}/${name}`,
     content: Buffer.from(content),
     encoding: 'utf-8',
   })
@@ -54,7 +52,7 @@ type Attachment = {
 
 type TransformAttachment = {
   name: string
-  content: StaticFile | undefined
+  content: string | StaticFile | undefined
 }
 
 const ATTACHMENT = Joi.object({
@@ -71,19 +69,21 @@ const createFolder = (instance: InstanceElement): string | undefined => {
     const folderName = `${oldPath.join('/')}/${emailName?.split('.')[0]}`
     _.set(instance, ['value', 'content', 'filepath'], `${folderName}/${emailName}`)
     return folderName
+  } if (instance.path !== undefined) {
+    return instance.path.join('/')
   }
   return undefined
 }
 
 const organizeStaticFiles = async (instance: InstanceElement): Promise<void> => {
-  const folferPath = createFolder(instance)
+  const folderPath = createFolder(instance)
   const transformFunc: TransformFunc = async ({ value, field }) => {
     const fieldName = _.isUndefined(field) ? undefined : field.name
     if (isAttachment(value) && fieldName === 'attachments') {
       const instApiName = await apiName(instance)
       const transformAttachment: TransformAttachment = {
         ...value,
-        content: createStaticFile(instance, instApiName, folferPath, value.name, value.content),
+        content: createStaticFile(instApiName, folderPath, value.name, value.content),
       }
       return transformAttachment
     }

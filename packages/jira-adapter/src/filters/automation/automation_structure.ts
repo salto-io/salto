@@ -180,8 +180,8 @@ const convertToCompareFieldValue = async (instance: InstanceElement): Promise<vo
         && (await field?.getType())?.elemID.typeName === AUTOMATION_COMPONENT_VALUE_TYPE
         && _.isPlainObject(value?.compareValue)
       ) {
-        // compareValue can be either an object or a primtive type
-        // we change the field name to compareFieldValue to distinguis between the cases
+        // compareValue can be either an object or a primitive type
+        // we change the field name to compareFieldValue to distinguish between the cases
         value.compareFieldValue = value.compareValue
         delete value.compareValue
         if (value.compareFieldValue.multiValue) {
@@ -190,7 +190,7 @@ const convertToCompareFieldValue = async (instance: InstanceElement): Promise<vo
             value.compareFieldValue.values = JSON.parse(value.compareFieldValue.value)
             delete value.compareFieldValue.value
           } catch (err) {
-            log.error(`Failed to parse string in instance ${instance.elemID.getFullName()}, in path: ${path.createNestedID('compareFieldValue', 'value').getFullName()}`)
+            log.error(`Failed to parse JSON string in path: ${path.createNestedID('compareFieldValue', 'value').getFullName()}`)
           }
         }
       }

@@ -414,6 +414,7 @@ const generalDeserialize = async <T>(
         new AdditionalPropertiesValidatorError({
           elemID: reviveElemID(v.elemID),
           fieldName: v.fieldName,
+          typeName: v.typeName,
         })
 
       ),

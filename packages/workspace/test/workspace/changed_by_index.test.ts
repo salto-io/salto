@@ -184,9 +184,10 @@ describe('changed by index', () => {
           true
         )
       })
-      it('should do nothing', () => {
-        expect(changedByIndex.getMany).toHaveBeenCalledWith([])
-        expect(changedByIndex.setAll).toHaveBeenCalledWith([])
+      it('should update both', () => {
+        expect(changedByIndex.getMany).toHaveBeenCalledWith(['test@@user one', 'Unknown'])
+        expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user one', value: [knownUserInstance.elemID] }]))
+        expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'Unknown', value: [unKnownUserInstance.elemID] }]))
         expect(changedByIndex.deleteAll).toHaveBeenCalledWith([])
       })
     })

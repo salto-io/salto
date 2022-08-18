@@ -18,7 +18,7 @@ import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, ObjectType } f
 import { elements } from '@salto-io/adapter-components'
 import { AUTOMATION_PROJECT_TYPE, AUTOMATION_TYPE, AUTOMATION_COMPONENT_TYPE, AUTOMATION_FIELD,
   AUTOMATION_STATUS, AUTOMATION_CONDITION, AUTOMATION_CONDITION_CRITERIA, AUTOMATION_SUBTASK,
-  AUTOMATION_ROLE, AUTOMATION_GROUP, AUTOMATION_EMAIL_RECIPENT, AUTOMATION_COMPONENT_VALUE_TYPE, JIRA } from '../../constants'
+  AUTOMATION_ROLE, AUTOMATION_GROUP, AUTOMATION_EMAIL_RECIPENT, AUTOMATION_COMPONENT_VALUE_TYPE, JIRA, AUTOMATION_COMPARE_VALUE, AUTOMATION_OPERATION } from '../../constants'
 
 export const createAutomationTypes = (): {
   automationType: ObjectType
@@ -60,11 +60,12 @@ export const createAutomationTypes = (): {
   })
 
   const operationType = new ObjectType({
-    elemID: new ElemID(JIRA, 'AutomationOperation'),
+    elemID: new ElemID(JIRA, AUTOMATION_OPERATION),
     fields: {
       field: { refType: fieldType },
+      value: { refType: fieldType },
     },
-    path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, 'AutomationOperation'],
+    path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_OPERATION],
   })
 
   const conditionCriteriaType = new ObjectType({
@@ -118,6 +119,15 @@ export const createAutomationTypes = (): {
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_PROJECT_TYPE],
   })
 
+  const compareFieldValueType = new ObjectType({
+    elemID: new ElemID(JIRA, AUTOMATION_COMPARE_VALUE),
+    fields: {
+      value: { refType: BuiltinTypes.STRING },
+      values: { refType: new ListType(BuiltinTypes.STRING) },
+    },
+    path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_COMPARE_VALUE],
+  })
+
   const componentValueType = new ObjectType({
     elemID: new ElemID(JIRA, AUTOMATION_COMPONENT_VALUE_TYPE),
     fields: {
@@ -142,6 +152,7 @@ export const createAutomationTypes = (): {
       subtasks: { refType: new ListType(subtaskType) },
       project: { refType: projectType },
       role: { refType: roleType },
+      compareFieldValue: { refType: compareFieldValueType },
     },
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_COMPONENT_VALUE_TYPE],
   })
@@ -160,6 +171,12 @@ export const createAutomationTypes = (): {
   componentType.fields.children = new Field(
     componentType,
     'children',
+    new ListType(componentType),
+  )
+
+  componentType.fields.conditions = new Field(
+    componentType,
+    'conditions',
     new ListType(componentType),
   )
 
@@ -206,6 +223,6 @@ export const createAutomationTypes = (): {
     automationType,
     subTypes: [actorType, componentType, tagType, projectType, componentValueType, fieldType,
       recipientType, statusType, operationType, conditionCriteriaType, conditionType,
-      groupType, roleType, subtaskType],
+      groupType, roleType, subtaskType, compareFieldValueType],
   }
 }

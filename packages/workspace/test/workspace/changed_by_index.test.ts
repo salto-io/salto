@@ -37,6 +37,7 @@ describe('changed by index', () => {
   let mapVersions: MockInterface<RemoteMap<number>>
   let elementsSource: ElementsSource
   let object: ObjectType
+  let emptyObject: ObjectType
   let knownUserInstance: InstanceElement
   let unKnownUserInstance: InstanceElement
   let knownUserSecondInstance: InstanceElement
@@ -62,6 +63,18 @@ describe('changed by index', () => {
           },
           refType: BuiltinTypes.STRING,
         },
+        unknown: {
+          annotations: {},
+          refType: BuiltinTypes.STRING,
+        },
+      },
+    })
+    emptyObject = new ObjectType({
+      elemID: new ElemID('test', 'object'),
+      annotations: {
+        [CORE_ANNOTATIONS.CHANGED_BY]: 'user two',
+      },
+      fields: {
         unknown: {
           annotations: {},
           refType: BuiltinTypes.STRING,
@@ -170,25 +183,70 @@ describe('changed by index', () => {
       })
     })
     describe('same author', () => {
-      beforeEach(async () => {
-        changedByIndex.getMany.mockResolvedValue(
-          [[knownUserInstance.elemID], [unKnownUserInstance.elemID]]
-        )
-        const changes = [toChange({ before: knownUserInstance, after: knownUserInstance }),
-          toChange({ before: unKnownUserInstance, after: unKnownUserInstance })]
-        await updateChangedByIndex(
-          changes,
-          changedByIndex,
-          mapVersions,
-          elementsSource,
-          true
-        )
+      describe('instances changed', () => {
+        beforeEach(async () => {
+          changedByIndex.getMany.mockResolvedValue(
+            [[knownUserInstance.elemID], [unKnownUserInstance.elemID]]
+          )
+          const changes = [toChange({ before: knownUserInstance, after: knownUserInstance }),
+            toChange({ before: unKnownUserInstance, after: unKnownUserInstance })]
+          await updateChangedByIndex(
+            changes,
+            changedByIndex,
+            mapVersions,
+            elementsSource,
+            true
+          )
+        })
+        it('should update both', () => {
+          expect(changedByIndex.getMany).toHaveBeenCalledWith(['test@@user one', 'Unknown'])
+          expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user one', value: [knownUserInstance.elemID] }]))
+          expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'Unknown', value: [unKnownUserInstance.elemID] }]))
+          expect(changedByIndex.deleteAll).toHaveBeenCalledWith([])
+        })
       })
-      it('should update both', () => {
-        expect(changedByIndex.getMany).toHaveBeenCalledWith(['test@@user one', 'Unknown'])
-        expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user one', value: [knownUserInstance.elemID] }]))
-        expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'Unknown', value: [unKnownUserInstance.elemID] }]))
-        expect(changedByIndex.deleteAll).toHaveBeenCalledWith([])
+      describe('field added in object', () => {
+        beforeEach(async () => {
+          changedByIndex.getMany.mockResolvedValue(
+            [[object.fields.unknown.elemID], [emptyObject.elemID], undefined]
+          )
+          const changes = [toChange({ before: emptyObject, after: object })]
+          await updateChangedByIndex(
+            changes,
+            changedByIndex,
+            mapVersions,
+            elementsSource,
+            true
+          )
+        })
+        it('should update fields author', () => {
+          expect(changedByIndex.getMany).toHaveBeenCalledWith(['Unknown', 'test@@user two', 'test@@user three'])
+          expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user two', value: [object.elemID] }]))
+          expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user three', value: [object.fields.known.elemID] }]))
+          expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'Unknown', value: [object.fields.unknown.elemID] }]))
+          expect(changedByIndex.deleteAll).toHaveBeenCalledWith([])
+        })
+      })
+      describe('field removed in object', () => {
+        beforeEach(async () => {
+          changedByIndex.getMany.mockResolvedValue(
+            [[object.fields.known.elemID], [object.fields.unknown.elemID], [object.elemID]]
+          )
+          const changes = [toChange({ before: object, after: emptyObject })]
+          await updateChangedByIndex(
+            changes,
+            changedByIndex,
+            mapVersions,
+            elementsSource,
+            true
+          )
+        })
+        it('should remove fields author', () => {
+          expect(changedByIndex.getMany).toHaveBeenCalledWith(['test@@user three', 'Unknown', 'test@@user two'])
+          expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'test@@user two', value: [object.elemID] }]))
+          expect(changedByIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: 'Unknown', value: [object.fields.unknown.elemID] }]))
+          expect(changedByIndex.deleteAll).toHaveBeenCalledWith(['test@@user three'])
+        })
       })
     })
   })

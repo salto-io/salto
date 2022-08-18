@@ -271,11 +271,11 @@ describe('automationStructureFilter', () => {
       expect(before.value.components[3].value.compareFieldValue).toBeUndefined()
       expect(before.value.components[3].value.compareValue.value).toEqual('["123","234","345"]')
       expect(before.value.components[4].value.compareFieldValue).toBeUndefined()
-      expect(before.value.components[4].value.compareValue.value).toEqual('Done')
+      expect(before.value.components[4].value.compareValue.value).toEqual('123')
       expect(after.value.components[3].value.compareFieldValue).toBeUndefined()
       expect(after.value.components[3].value.compareValue.value).toEqual('["123","234","345"]')
       expect(after.value.components[4].value.compareFieldValue).toBeUndefined()
-      expect(after.value.components[4].value.compareValue.value).toEqual('Done')
+      expect(after.value.components[4].value.compareValue.value).toEqual('123')
     })
   })
 

@@ -184,14 +184,13 @@ describe('adapters.ts', () => {
 
     it('should return an ReadOnlyElementsSource with only the adapter elements', async () => {
       const objectType = new ObjectType({ elemID: new ElemID(serviceName, 'type1') })
-      const d1Type = new ObjectType({ elemID: new ElemID('d1', 'type2') })
       const result = await getAdaptersCreatorConfigs(
         [serviceName],
         { [sfConfig.elemID.adapter]: sfConfig },
         async name => (name === sfConfig.elemID.adapter ? sfConfig : undefined),
         buildElementsSourceFromElements([
           new ObjectType({ elemID: new ElemID(serviceName, 'type1') }),
-          new ObjectType({ elemID: new ElemID('dummy', 'type2') }),
+          new ObjectType({ elemID: new ElemID('d1', 'type2') }),
         ]),
         { [serviceName]: serviceName },
       )

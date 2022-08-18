@@ -33,7 +33,7 @@ import {
   brandCreationValidator,
   webhookAuthDataValidator,
   targetAuthDataValidator,
-  phoneNumbersValidator,
+  phoneNumbersValidator, automationAllConditionsValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 
@@ -77,6 +77,7 @@ export default ({
     webhookAuthDataValidator(client),
     targetAuthDataValidator(client, apiConfig),
     phoneNumbersValidator,
+    automationAllConditionsValidator,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

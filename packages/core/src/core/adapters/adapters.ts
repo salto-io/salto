@@ -132,7 +132,7 @@ export const createElemIDReplacedElementsSource = (
           return ret
         }),
       get: async id => {
-        const element = (await elementsSource.get(createAdapterReplacedID(id, account))).clone()
+        const element = (await elementsSource.get(createAdapterReplacedID(id, account)))?.clone()
         if (element) {
           await updateElementsWithAlternativeAccount(
             [element], adapter, account, elementsSource

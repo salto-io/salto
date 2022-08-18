@@ -611,6 +611,7 @@ describe('SuiteAppClient', () => {
             ],
           },
         })
+
         await expect(SuiteAppClient.validateCredentials({
           accountId: 'ACCOUNT_ID',
           suiteAppTokenId: 'tokenId',

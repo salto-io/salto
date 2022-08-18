@@ -604,8 +604,8 @@ export default class SoapClient {
       log.error(`Got invalid response from search request with SOAP api of type ${type}. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
       throw new Error(`VALIDATION_ERROR - Got invalid response from search request of type ${type}. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
     }
-    if ('recordList' in response.searchResult) {
-      log.debug(`Finished sending search request for page 1/${Math.max(response.searchResult.totalPages, 1)} of type ${type}`)
+    if ('totalPages' in response.searchResult) {
+      log.debug(`Finished sending search request for page 1/${response.searchResult.totalPages} of type ${type}`)
       return { searchResult: response.searchResult }
     }
     return { searchResult: { totalPages: 0, searchId: '', recordList: null } }

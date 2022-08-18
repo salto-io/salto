@@ -33,7 +33,8 @@ import {
   brandCreationValidator,
   webhookAuthDataValidator,
   targetAuthDataValidator,
-  phoneNumbersValidator, automationAllConditionsValidator,
+  phoneNumbersValidator,
+  automationAllConditionsValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 

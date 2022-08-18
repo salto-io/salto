@@ -18,7 +18,6 @@ import { ZENDESK } from '../../src/constants'
 import { automationAllConditionsValidator } from '../../src/change_validators'
 
 
-// ['status', 'type', 'group.id', 'assignee_id', 'requester_id']
 describe('automationAllConditionsValidator', () => {
   const automationType = new ObjectType({
     elemID: new ElemID(ZENDESK, 'automation'),
@@ -157,9 +156,9 @@ describe('automationAllConditionsValidator', () => {
     expect(errors).toEqual([{
       elemID: notValidAutomation.elemID,
       severity: 'Error',
-      message: `Can not change automation ${notValidAutomation.elemID.getFullName()} ,because the all conditions do not contain necessary field`,
-      detailedMessage: `Can not change automation ${notValidAutomation.elemID.getFullName()} ,because none of the all conditions 
-      contain the fields: Status, Type, Group, Assignee, Requester `,
+      message: 'Can not change automation ,because the ALL conditions do not contain a necessary field',
+      detailedMessage: `Can not change automation ${notValidAutomation.elemID.getFullName()} ,because none of the ALL conditions 
+      section does not contain the fields: Status, Type, Group, Assignee, Requester `,
     }])
   })
   it('should return an error when automation does not contain necessary field condition of several conditions', async () => {
@@ -169,9 +168,9 @@ describe('automationAllConditionsValidator', () => {
     expect(errors).toEqual([{
       elemID: notValidAutomationSeveralConditions.elemID,
       severity: 'Error',
-      message: `Can not change automation ${notValidAutomationSeveralConditions.elemID.getFullName()} ,because the all conditions do not contain necessary field`,
-      detailedMessage: `Can not change automation ${notValidAutomationSeveralConditions.elemID.getFullName()} ,because none of the all conditions 
-      contain the fields: Status, Type, Group, Assignee, Requester `,
+      message: 'Can not change automation ,because the ALL conditions do not contain a necessary field',
+      detailedMessage: `Can not change automation ${notValidAutomationSeveralConditions.elemID.getFullName()} ,because none of the ALL conditions 
+      section does not contain the fields: Status, Type, Group, Assignee, Requester `,
     }])
   })
   it('should not return an error when automation contains necessary field condition', async () => {
@@ -199,9 +198,9 @@ describe('automationAllConditionsValidator', () => {
     expect(errors).toEqual([{
       elemID: noConditionInAutomation.elemID,
       severity: 'Error',
-      message: `Can not change automation ${noConditionInAutomation.elemID.getFullName()} ,because the all conditions do not contain necessary field`,
-      detailedMessage: `Can not change automation ${noConditionInAutomation.elemID.getFullName()} ,because none of the all conditions 
-      contain the fields: Status, Type, Group, Assignee, Requester `,
+      message: 'Can not change automation ,because the ALL conditions do not contain a necessary field',
+      detailedMessage: `Can not change automation ${noConditionInAutomation.elemID.getFullName()} ,because none of the ALL conditions 
+      section does not contain the fields: Status, Type, Group, Assignee, Requester `,
     }])
   })
   it('should return error when there are no All conditions', async () => {
@@ -211,9 +210,9 @@ describe('automationAllConditionsValidator', () => {
     expect(errors).toEqual([{
       elemID: noAllInConditionAutomation.elemID,
       severity: 'Error',
-      message: `Can not change automation ${noAllInConditionAutomation.elemID.getFullName()} ,because the all conditions do not contain necessary field`,
-      detailedMessage: `Can not change automation ${noAllInConditionAutomation.elemID.getFullName()} ,because none of the all conditions 
-      contain the fields: Status, Type, Group, Assignee, Requester `,
+      message: 'Can not change automation ,because the ALL conditions do not contain a necessary field',
+      detailedMessage: `Can not change automation ${noAllInConditionAutomation.elemID.getFullName()} ,because none of the ALL conditions 
+      section does not contain the fields: Status, Type, Group, Assignee, Requester `,
     }])
   })
 })

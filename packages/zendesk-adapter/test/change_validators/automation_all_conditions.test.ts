@@ -17,7 +17,6 @@ import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter
 import { ZENDESK } from '../../src/constants'
 import { automationAllConditionsValidator } from '../../src/change_validators'
 
-
 describe('automationAllConditionsValidator', () => {
   const automationType = new ObjectType({
     elemID: new ElemID(ZENDESK, 'automation'),
@@ -156,9 +155,11 @@ describe('automationAllConditionsValidator', () => {
     expect(errors).toEqual([{
       elemID: notValidAutomation.elemID,
       severity: 'Error',
-      message: 'Can not change automation ,because the ALL conditions do not contain a necessary field',
-      detailedMessage: `Can not change automation ${notValidAutomation.elemID.getFullName()} ,because none of the ALL conditions 
-      section do not contain the fields: Status, Type, Group, Assignee, Requester`,
+      message: 'Automation must test for at least one of the following ticket properties in the ALL '
+            + 'conditions section: Status, Type, Group, Assignee, Requester',
+      detailedMessage: `Automation ${notValidAutomation.elemID.getFullName()} must test for at least one of 
+      the following ticket properties in the ALL conditions section: Status, Type, Group, Assignee, 
+      Requester`,
     }])
   })
   it('should return an error when automation does not contain necessary field condition of several conditions', async () => {
@@ -168,9 +169,11 @@ describe('automationAllConditionsValidator', () => {
     expect(errors).toEqual([{
       elemID: notValidAutomationSeveralConditions.elemID,
       severity: 'Error',
-      message: 'Can not change automation ,because the ALL conditions do not contain a necessary field',
-      detailedMessage: `Can not change automation ${notValidAutomationSeveralConditions.elemID.getFullName()} ,because none of the ALL conditions 
-      section do not contain the fields: Status, Type, Group, Assignee, Requester`,
+      message: 'Automation must test for at least one of the following ticket properties in the ALL '
+            + 'conditions section: Status, Type, Group, Assignee, Requester',
+      detailedMessage: `Automation ${notValidAutomationSeveralConditions.elemID.getFullName()} must test for at least one of 
+      the following ticket properties in the ALL conditions section: Status, Type, Group, Assignee, 
+      Requester`,
     }])
   })
   it('should not return an error when automation contains necessary field condition', async () => {
@@ -198,9 +201,11 @@ describe('automationAllConditionsValidator', () => {
     expect(errors).toEqual([{
       elemID: noConditionInAutomation.elemID,
       severity: 'Error',
-      message: 'Can not change automation ,because the ALL conditions do not contain a necessary field',
-      detailedMessage: `Can not change automation ${noConditionInAutomation.elemID.getFullName()} ,because none of the ALL conditions 
-      section do not contain the fields: Status, Type, Group, Assignee, Requester`,
+      message: 'Automation must test for at least one of the following ticket properties in the ALL '
+            + 'conditions section: Status, Type, Group, Assignee, Requester',
+      detailedMessage: `Automation ${noConditionInAutomation.elemID.getFullName()} must test for at least one of 
+      the following ticket properties in the ALL conditions section: Status, Type, Group, Assignee, 
+      Requester`,
     }])
   })
   it('should return error when there are no All conditions', async () => {
@@ -210,9 +215,11 @@ describe('automationAllConditionsValidator', () => {
     expect(errors).toEqual([{
       elemID: noAllInConditionAutomation.elemID,
       severity: 'Error',
-      message: 'Can not change automation ,because the ALL conditions do not contain a necessary field',
-      detailedMessage: `Can not change automation ${noAllInConditionAutomation.elemID.getFullName()} ,because none of the ALL conditions 
-      section do not contain the fields: Status, Type, Group, Assignee, Requester`,
+      message: 'Automation must test for at least one of the following ticket properties in the ALL '
+            + 'conditions section: Status, Type, Group, Assignee, Requester',
+      detailedMessage: `Automation ${noAllInConditionAutomation.elemID.getFullName()} must test for at least one of 
+      the following ticket properties in the ALL conditions section: Status, Type, Group, Assignee, 
+      Requester`,
     }])
   })
 })

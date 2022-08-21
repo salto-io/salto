@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
+import _, { map } from 'lodash'
 import {
   InstanceElement, Values, ObjectType, isObjectType, ReferenceExpression, isReferenceExpression,
   isListType, isMapType, TypeElement, PrimitiveType, MapType, ElemIdGetter,
@@ -405,7 +405,8 @@ const getEntriesForType = async (
         return { ...entry, ...Object.fromEntries(extraFields) }
       } catch (err) {
         log.warn(`Failed getting extra field values for ${typeName} entry: ${safeJsonStringify(entry)}. Error: ${err.message}`)
-        return undefined
+        return recurseInto[1].skipOnError ? { ...entry }
+          : undefined
       }
     })
   )).filter(lowerdashValues.isDefined)

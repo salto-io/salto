@@ -199,6 +199,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         {
           type: 'PageBeanCustomFieldContextDefaultValue',
           toField: 'contextDefaults',
+          skipOnError: true,
           context: [{ name: 'fieldId', fromField: 'id' }],
           conditions: [{
             fromField: 'schema.custom',

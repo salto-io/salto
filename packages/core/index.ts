@@ -61,3 +61,4 @@ export {
   replicateDB,
   createReadOnlyRemoteMapCreator,
 } from './src/local-workspace/remote_map'
+export { NoWorkspaceConfig } from './src/local-workspace/errors'

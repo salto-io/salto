@@ -15,7 +15,7 @@
 */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, BuiltinTypes } from '@salto-io/adapter-api'
 import { STATUS_TYPE_NAME, JIRA } from '../src/constants'
-import { serializationMethodLookUp } from '../src/reference_mapping'
+import { getAutomationValuesLookupFunc } from '../src/reference_mapping'
 import { createAutomationTypes } from '../src/filters/automation/types'
 
 describe('reference mapping', () => {
@@ -95,17 +95,17 @@ describe('reference mapping', () => {
     })
 
     it('should return the correct serialization method', () => {
-      const nameSerialization = serializationMethodLookUp({
+      const nameSerialization = getAutomationValuesLookupFunc({
         ref: automationInstance.value.components[0].value.selectedField.value,
         path: automationInstance.elemID.createNestedID(...['components', '0', 'value', 'selectedField', 'value']),
         element: automationInstance,
       })
-      const idSerialization = serializationMethodLookUp({
+      const idSerialization = getAutomationValuesLookupFunc({
         ref: automationInstance.value.components[1].value.operations[0].field.value,
         path: automationInstance.elemID.createNestedID(...['components', '1', 'value', 'operations', '0', 'field', 'value']),
         element: automationInstance,
       })
-      const defaultSerialization = serializationMethodLookUp({
+      const defaultSerialization = getAutomationValuesLookupFunc({
         ref: automationInstance.value.components[1].value.operations[0].field.value,
         path: automationInstance.elemID.createNestedID(...['components', '1', 'value', 'operations', '1', 'field', 'value']),
         element: automationInstance,

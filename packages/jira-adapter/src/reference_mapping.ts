@@ -394,6 +394,7 @@ ReferenceContextStrategyName
     serializationStrategy: 'name',
     target: { type: 'Group' },
   },
+  // Overlapping rules, serialization strategy is determined by getAutomationValuesLookupFunc
   {
     src: { field: 'value', parentTypes: [AUTOMATION_FIELD] },
     serializationStrategy: 'id',
@@ -404,6 +405,7 @@ ReferenceContextStrategyName
     serializationStrategy: 'name',
     target: { type: 'Field' },
   },
+  // Overlapping rules, serialization strategy is determined by getAutomationValuesLookupFunc
   {
     src: { field: 'value', parentTypes: [AUTOMATION_STATUS] },
     serializationStrategy: 'id',
@@ -439,6 +441,7 @@ ReferenceContextStrategyName
     serializationStrategy: 'name',
     target: { type: 'ProjectRole' },
   },
+  // Overlapping rules, serialization strategy is determined by getAutomationValuesLookupFunc
   {
     src: { field: 'value', parentTypes: [AUTOMATION_COMPARE_VALUE] },
     serializationStrategy: 'id',
@@ -449,6 +452,7 @@ ReferenceContextStrategyName
     serializationStrategy: 'name',
     target: { typeContext: 'parentSelectedFieldType' },
   },
+  // Overlapping rules, serialization strategy is determined by getAutomationValuesLookupFunc
   {
     src: { field: 'values', parentTypes: [AUTOMATION_COMPARE_VALUE] },
     serializationStrategy: 'id',
@@ -466,9 +470,11 @@ ReferenceContextStrategyName
   },
 ]
 
-// during deploy, serialization method for references
-// from automations is determined by automations values
-export const serializationMethodLookUp: GetLookupNameFunc = ({
+/**
+* Determine serialization strategy for references with overlapping serialization rules
+* in automation instances: relevant fields will be resolved based on the neighbor type field
+*/
+export const getAutomationValuesLookupFunc: GetLookupNameFunc = ({
   ref, path, element,
 }) => {
   if (
@@ -490,7 +496,7 @@ export const serializationMethodLookUp: GetLookupNameFunc = ({
 
 const lookupNameFuncs: GetLookupNameFunc[] = [
   getFieldsLookUpName,
-  serializationMethodLookUp,
+  getAutomationValuesLookupFunc,
   referenceUtils.generateLookupFunc(referencesRules),
 ]
 

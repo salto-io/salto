@@ -65,9 +65,9 @@ export const createAutomationValues = (name: string): Values => ({
             },
             selectedFieldType: 'status',
             comparison: 'ONE_OF',
-            compareValue: {
+            compareFieldValue: {
               type: 'NAME',
-              value: '["Approved"]',
+              values: ['Approved'],
               multiValue: true,
             },
           },
@@ -91,7 +91,7 @@ export const createAutomationValues = (name: string): Values => ({
                 },
                 fieldType: 'summary',
                 type: 'SET',
-                value: 'value',
+                rawValue: 'value',
               },
               {
                 field: {
@@ -100,7 +100,7 @@ export const createAutomationValues = (name: string): Values => ({
                 },
                 fieldType: 'description',
                 type: 'SET',
-                value: 'descruotuib',
+                rawValue: 'descruotuib',
               },
               {
                 field: {
@@ -145,7 +145,7 @@ export const createAutomationValues = (name: string): Values => ({
             },
             fieldType: 'summary',
             type: 'SET',
-            value: 'value',
+            rawValue: 'value',
           },
           {
             field: {
@@ -154,7 +154,7 @@ export const createAutomationValues = (name: string): Values => ({
             },
             fieldType: 'description',
             type: 'SET',
-            value: 'description',
+            rawValue: 'description',
           },
           {
             field: {

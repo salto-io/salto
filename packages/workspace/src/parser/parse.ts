@@ -43,13 +43,27 @@ export type SourceRange = InternalSourceRange
  * @returns elements: Type elements found in the Nacl file
  *          errors: Errors encountered during parsing
  */
-export const parse = async (
+export async function parse(
+  naclFile: Buffer,
+  filename: string,
+  functions?: Functions,
+  calcSourceMap?: true
+): Promise<Required<ParseResult>>
+export async function parse(
+  naclFile: Buffer,
+  filename: string,
+  functions: Functions,
+  calcSourceMap: boolean
+): Promise<ParseResult>
+
+export async function parse(
   naclFile: Buffer,
   filename: string,
   functions: Functions = {},
-): Promise<Required<ParseResult>> => {
+  calcSourceMap = true,
+): Promise<ParseResult> {
   const srcString = naclFile.toString()
-  return parseBuffer(srcString, filename, functions)
+  return parseBuffer(srcString, filename, functions, calcSourceMap)
 }
 
 export type Token = {

@@ -2453,21 +2453,58 @@ describe('workspace', () => {
         },
       )
     })
-    describe('getReferencedStaticFilePaths', () => {
+    describe('getStaticFilePathsByElemIds', () => {
       it('get correct paths when providing a correct element id', async () => {
-        const result = await workspace.getReferencedStaticFilePaths([ElemID.fromFullName('salesforce.lead.instance.someName1')])
+        const result = await workspace.getStaticFilePathsByElemIds([ElemID.fromFullName('salesforce.lead.instance.someName1')])
         expect(result).toEqual(['static1.nacl'])
       })
       it('get multiple static files with multiple element ids', async () => {
-        const result = await workspace.getReferencedStaticFilePaths([
+        const result = await workspace.getStaticFilePathsByElemIds([
           ElemID.fromFullName('salesforce.lead.instance.someName1'),
           ElemID.fromFullName('salesforce.lead.instance.someName2'),
         ])
         expect(result).toEqual(['static1.nacl', 'static2.nacl'])
       })
       it('get no paths when providing a bad element id', async () => {
-        const result = await workspace.getReferencedStaticFilePaths([ElemID.fromFullName('salesforce.lead.type')])
+        const result = await workspace.getStaticFilePathsByElemIds([ElemID.fromFullName('salesforce.lead.type')])
         expect(result).toEqual([])
+      })
+    })
+    describe('getElemIdsByStaticFilePaths', () => {
+      describe('with missing filepaths param', () => {
+        it('should return full map', async () => {
+          const result = await workspace.getElemIdsByStaticFilePaths()
+          expect(result).toEqual(
+            {
+              'static1.nacl': 'salesforce.lead.instance.someName1',
+              'static2.nacl': 'salesforce.lead.instance.someName2',
+            }
+          )
+        })
+      })
+      describe('with supplied filepaths', () => {
+        describe('when specific paths are given', () => {
+          it('should return a mapping that only contains the given paths', async () => {
+            const result = await workspace.getElemIdsByStaticFilePaths(new Set(['static1.nacl']))
+            expect(result).toEqual(
+              {
+                'static1.nacl': 'salesforce.lead.instance.someName1',
+              }
+            )
+          })
+        })
+        describe('when given paths do no exist', () => {
+          it('should return an empty map', async () => {
+            const result = await workspace.getElemIdsByStaticFilePaths(new Set(['not exists.nacl']))
+            expect(result).toEqual({})
+          })
+        })
+        describe('when given paths are empty', () => {
+          it('should return an empty map', async () => {
+            const result = await workspace.getElemIdsByStaticFilePaths(new Set())
+            expect(result).toEqual({})
+          })
+        })
       })
     })
   })

@@ -19,7 +19,7 @@ type StatusSuccess = {
   }
 }
 
-type StatusError = {
+export type StatusError = {
   attributes: {
     isSuccess: 'false'
   }
@@ -96,6 +96,22 @@ export type SearchResponse = {
     recordList: {
       record: Record<string, unknown>[]
     } | null
+  }
+}
+
+export type SearchErrorResponse = {
+  searchResult: {
+    status: {
+      attributes: {
+        isSuccess: 'false'
+      }
+      statusDetail: [
+        {
+          code: string
+          message: string
+        }
+      ]
+    }
   }
 }
 

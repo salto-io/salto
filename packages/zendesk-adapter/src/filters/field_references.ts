@@ -81,6 +81,7 @@ const TICKET_FIELD_PREFIX = 'custom_fields_'
 const TICKET_FIELD_ALTERNATIVE_PREFIX = 'ticket_fields_'
 const ORG_FIELD_PREFIX = 'organization.custom_fields.'
 const USER_FIELD_PREFIX = 'requester.custom_fields.'
+const ALTERNATE_USER_FIELD_PREFIX = 'user.custom_fields.'
 const TICKET_FIELD_TYPE_NAME = 'ticket_field'
 const ORG_FIELD_TYPE_NAME = 'organization_field'
 const USER_FIELD_TYPE_NAME = 'user_field'
@@ -125,6 +126,7 @@ const getSerializationStrategyOfCustomFieldByContainingType = (
   prefix: string,
   lookupIndexName = 'id',
   ticketFieldPrefix = TICKET_FIELD_PREFIX,
+  userFieldPrefix = USER_FIELD_PREFIX,
 ): referenceUtils.ReferenceSerializationStrategy => {
   const serialize: GetLookupNameFunc = ({ ref }) => {
     if (isInstanceElement(ref.value)) {
@@ -137,7 +139,7 @@ const getSerializationStrategyOfCustomFieldByContainingType = (
           return `${ORG_FIELD_PREFIX}${ref.value.value.key?.toString()}`
         }
         case USER_FIELD_TYPE_NAME: {
-          return `${USER_FIELD_PREFIX}${ref.value.value.key?.toString()}`
+          return `${userFieldPrefix}${ref.value.value.key?.toString()}`
         }
       }
     }
@@ -153,6 +155,7 @@ type ZendeskReferenceSerializationStrategyName = 'ticketField'
   | 'localeId'
   | 'orgField'
   | 'userField'
+  | 'userFieldAlternative'
   | 'ticketFieldAlternative'
   | 'ticketFieldOption'
   | 'userFieldOption'
@@ -168,6 +171,7 @@ const ZendeskReferenceSerializationStrategyLookup: Record<
   ),
   orgField: getSerializationStrategyOfCustomFieldByContainingType(ORG_FIELD_PREFIX, 'key'),
   userField: getSerializationStrategyOfCustomFieldByContainingType(USER_FIELD_PREFIX, 'key'),
+  userFieldAlternative: getSerializationStrategyOfCustomFieldByContainingType(ALTERNATE_USER_FIELD_PREFIX, 'key', undefined, ALTERNATE_USER_FIELD_PREFIX),
   value: {
     serialize: ({ ref }) => (isInstanceElement(ref.value) ? ref.value.value.value : ref.value),
     lookup: val => val,
@@ -483,6 +487,8 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
         'automation__conditions__all',
         'automation__conditions__any',
         'automation__actions',
+        'ticket_field__relationship_filter__all',
+        'ticket_field__relationship_filter__any',
       ],
     },
     zendeskSerializationStrategy: 'ticketField',
@@ -522,6 +528,8 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
         'automation__actions',
         'sla_policy__filter__all',
         'sla_policy__filter__any',
+        'ticket_field__relationship_filter__all',
+        'ticket_field__relationship_filter__any',
       ],
     },
     zendeskSerializationStrategy: 'orgField',
@@ -553,6 +561,17 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       ],
     },
     zendeskSerializationStrategy: 'userField',
+    target: { type: 'user_field' },
+  },
+  {
+    src: {
+      field: 'field',
+      parentTypes: [
+        'ticket_field__relationship_filter__all',
+        'ticket_field__relationship_filter__any',
+      ],
+    },
+    zendeskSerializationStrategy: 'userFieldAlternative',
     target: { type: 'user_field' },
   },
   {
@@ -742,6 +761,8 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition
         'trigger__actions',
         'trigger__conditions__all',
         'trigger__conditions__any',
+        'ticket_field__relationship_filter__all',
+        'ticket_field__relationship_filter__any',
       ],
     },
     zendeskSerializationStrategy: 'userFieldOption',

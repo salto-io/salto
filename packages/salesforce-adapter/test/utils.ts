@@ -42,8 +42,8 @@ export const findElements = (
 }
 
 export const createField = (parent: ObjectType, fieldType: TypeElement,
-  fieldApiName: string, additionalAnnotations?: Values, name = 'field'): Field => {
-  const newField = new Field(parent, name, fieldType, {
+  fieldApiName: string, additionalAnnotations?: Values): Field => {
+  const newField = new Field(parent, 'field', fieldType, {
     [constants.API_NAME]: fieldApiName,
     modifyMe: 'modifyMe',
     ...additionalAnnotations,

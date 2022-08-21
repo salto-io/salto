@@ -31,12 +31,14 @@ describe('account specific values validator for sender and recepient fields', ()
         workflowstates: {
           workflowstate: {
             workflowstate1: {
-              sendmailaction: {
-                workflowaction: {
-                  recipientemail: '[STDUSERUSER]',
-                  recipienttype: 'FIELD',
-                  sender: '[STDUSERUSER]',
-                  sendertype: 'FIELD',
+              workflowactions: {
+                sendemailaction: {
+                  workflowaction: {
+                    recipientemail: '[STDUSERUSER]',
+                    recipienttype: 'FIELD',
+                    sender: '[STDUSERUSER]',
+                    sendertype: 'FIELD',
+                  },
                 },
               },
             },
@@ -57,28 +59,28 @@ describe('account specific values validator for sender and recepient fields', ()
 
   it('should have changeError when deploying an instance with sender = ACCOUNT_SPECIFIC_VALUES and sendertype = SPECIFIC', async () => {
     const after = instance.clone()
-    after.value.sender = '[ACCOUNT_SPECIFIC_VALUE]'
-    after.value.sendertype = 'SPECIFIC'
+    after.value.workflowstates.workflowstate.workflowstate1.workflowactions.sendemailaction.workflowaction.sender = '[ACCOUNT_SPECIFIC_VALUE]'
+    after.value.workflowstates.workflowstate.workflowstate1.workflowactions.sendemailaction.workflowaction.sendertype = 'SPECIFIC'
     const changeErrors = await workflowAccountSpecificValidator(
       [toChange({ before: instance, after })]
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Error')
     expect(changeErrors[0].elemID).toEqual(instance.elemID)
-    expect(changeErrors[0].detailedMessage).toContain('https://docs.salto.io/docs/netsuite#deploy-troubleshooting')
+    expect(changeErrors[0].detailedMessage).toContain('The Workflow contains a \'sender\' field with an ACCOUNT_SPECIFIC_VALUE')
   })
 
   it('should have changeError when deploying an instance with recipient = ACCOUNT_SPECIFIC_VALUES and recipienttype = SPECIFIC', async () => {
     const after = instance.clone()
-    after.value.recipient = '[ACCOUNT_SPECIFIC_VALUE]'
-    after.value.recipienttype = 'SPECIFIC'
+    after.value.workflowstates.workflowstate.workflowstate1.workflowactions.sendemailaction.workflowaction.recipient = '[ACCOUNT_SPECIFIC_VALUE]'
+    after.value.workflowstates.workflowstate.workflowstate1.workflowactions.sendemailaction.workflowaction.recipienttype = 'SPECIFIC'
     const changeErrors = await workflowAccountSpecificValidator(
       [toChange({ before: instance, after })]
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Error')
     expect(changeErrors[0].elemID).toEqual(instance.elemID)
-    expect(changeErrors[0].detailedMessage).toContain('https://docs.salto.io/docs/netsuite#deploy-troubleshooting')
+    expect(changeErrors[0].detailedMessage).toContain('The Workflow contains a \'recipient\' field with an ACCOUNT_SPECIFIC_VALUE')
   })
 
   it('should not throw and error when sendertype is not SPECIFIC', async () => {

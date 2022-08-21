@@ -48,7 +48,7 @@ const createOptionString = (
   isNegation = false
 ): string => {
   const actualName = isNegation ? `${OPTION_NEGATION_PREFIX}${name}` : name
-  const aliasAndName = alias ? `-${alias}, --${actualName}` : `--${actualName}`
+  const aliasAndName = alias ? `-${alias}, --${actualName}` : `,--${actualName}`
   const varDef = (type === 'boolean')
     ? ''
     // Keyed string/stringsList options are always wrapped with <>

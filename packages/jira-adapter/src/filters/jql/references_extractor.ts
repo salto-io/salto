@@ -16,13 +16,14 @@
 import { InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { ISSUE_TYPE_NAME, PRIORITY_TYPE_NAME, PROJECT_TYPE, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME } from '../../constants'
+import { ISSUE_TYPE_NAME, PRIORITY_TYPE_NAME, PROJECT_TYPE, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME, STATUS_CATEGORY_TYPE_NAME } from '../../constants'
 import { FIELD_TYPE_NAME } from '../fields/constants'
 import { isJqlFieldDetails, JqlFieldDetails } from './types'
 
 const JQL_NAME_TO_FIELD_NAME: Record<string, string | undefined> = {
   issuetype: 'issue type',
   type: 'issue type',
+  statuscategory: 'status category',
 }
 
 const CONTEXT_TYPE_TO_FIELD: Record<string, string> = {
@@ -32,6 +33,7 @@ const CONTEXT_TYPE_TO_FIELD: Record<string, string> = {
   [RESOLUTION_TYPE_NAME]: 'name',
   [PRIORITY_TYPE_NAME]: 'name',
   [ISSUE_TYPE_NAME]: 'name',
+  [STATUS_CATEGORY_TYPE_NAME]: 'name',
 }
 
 export const generateJqlContext = (

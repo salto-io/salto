@@ -21,8 +21,7 @@ import { JIRA } from '../../src/constants'
 describe('systemFieldsValidator', () => {
   const type = new ObjectType({ elemID: new ElemID(JIRA, FIELD_TYPE_NAME) })
   it('should return an error if a field is a system field', async () => {
-    const systemFieldInstance = new InstanceElement('instance', type)
-    systemFieldInstance.value.schema = {}
+    const systemFieldInstance = new InstanceElement('instance', type, { schema: {} })
     expect(await systemFieldsValidator([
       toChange({
         after: systemFieldInstance,

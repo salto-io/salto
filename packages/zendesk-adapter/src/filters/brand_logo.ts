@@ -25,7 +25,7 @@ import { logger } from '@salto-io/logging'
 import FormData from 'form-data'
 import { collections } from '@salto-io/lowerdash'
 import ZendeskClient from '../client/client'
-import { BRAND_LOGO_TYPE_NAME, BRAND_NAME, ZENDESK } from '../constants'
+import { BRAND_LOGO_TYPE_NAME, BRAND_TYPE_NAME, ZENDESK } from '../constants'
 import { getZendeskError } from '../errors'
 import { FilterCreator } from '../filter'
 
@@ -135,7 +135,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
   onFetch: async elements => {
     const brandsWithLogos = elements
       .filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === BRAND_NAME)
+      .filter(e => e.elemID.typeName === BRAND_TYPE_NAME)
       .filter(e => !_.isEmpty(e.value[LOGO_FIELD]))
     elements.push(BRAND_LOGO_TYPE)
     const logoInstances = (await Promise.all(

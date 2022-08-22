@@ -314,6 +314,24 @@ describe('service command group', () => {
         })
       })
 
+      describe('When called with accountName too long', () => {
+        beforeEach(async () => {
+          await addAction({
+            ...cliCommandArgs,
+            input: {
+              serviceType: 'salesforce',
+              accountName: 'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz',
+              authType: 'basic',
+              login: true,
+            },
+            workspace,
+          })
+        })
+        it('should throw error', () => {
+          expect(output.stderr.content).toContain('Account name too long (maximum')
+        })
+      })
+
       describe('when called with a new service', () => {
         describe('when called with valid login parameters', () => {
           let exitCode: number

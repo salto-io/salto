@@ -171,23 +171,30 @@ type AccountAddArgs = {
     accountName?: string
 } & AuthTypeArgs & EnvArg & LoginParametersArg
 
+const MAX_ACCOUNT_NAME_LENGTH = 100
 export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
   input,
   output,
   workspace,
 }): Promise<CliExitCode> => {
   const { login, serviceType, authType, accountName, loginParameters } = input
-  if (accountName !== undefined && !(naclCase(accountName) === accountName)) {
-    errorOutputLine(`Invalid account name: ${accountName}, account name may only include letters, digits or underscores`, output)
-    return CliExitCode.UserInputError
-  }
-  if (accountName !== undefined && (accountName === '')) {
-    errorOutputLine('Account name may not be an empty string.', output)
-    return CliExitCode.UserInputError
-  }
-  if (accountName !== undefined && accountName === 'var') {
-    errorOutputLine('Account name may not be "var"', output)
-    return CliExitCode.UserInputError
+  if (accountName !== undefined) {
+    if (naclCase(accountName) !== accountName) {
+      errorOutputLine(`Invalid account name: ${accountName}, account name may only include letters, digits or underscores`, output)
+      return CliExitCode.UserInputError
+    }
+    if (accountName === '') {
+      errorOutputLine('Account name may not be an empty string.', output)
+      return CliExitCode.UserInputError
+    }
+    if (accountName === 'var') {
+      errorOutputLine('Account name may not be "var"', output)
+      return CliExitCode.UserInputError
+    }
+    if (accountName.length > MAX_ACCOUNT_NAME_LENGTH) {
+      errorOutputLine(`Account name too long (maximum ${MAX_ACCOUNT_NAME_LENGTH})`, output)
+      return CliExitCode.UserInputError
+    }
   }
   const theAccountName = accountName ?? serviceType
   await validateAndSetEnv(workspace, input, output)

@@ -37,6 +37,13 @@ const { RECORDS_PATH, SUBTYPES_PATH, TYPES_PATH } = elementsUtils
 export const LOGO_FIELD = 'logo'
 
 const RESULT_MAXIMUM_OUTPUT_SIZE = 100
+const NUMBER_OF_DEPLOY_RETRIES = 5
+
+type Brand = {
+  logo: {
+    id: string
+  }
+}
 
 export const BRAND_LOGO_TYPE = new ObjectType({
   elemID: new ElemID(ZENDESK, BRAND_LOGO_TYPE_NAME),
@@ -54,10 +61,11 @@ export const BRAND_LOGO_TYPE = new ObjectType({
 
 const getLogoContent = async (
   client: ZendeskClient,
-  brand: InstanceElement,
+  logoId: string,
+  logoFileName: string,
 ): Promise<Buffer | undefined> => {
   const res = await client.getResource({
-    url: `/brands/${brand.value.logo.id}/${brand.value.logo.file_name}`,
+    url: `/brands/${logoId}/${logoFileName}`,
     responseType: 'arraybuffer',
   })
   const content = _.isString(res.data) ? Buffer.from(res.data) : res.data
@@ -83,7 +91,9 @@ const getBrandLogo = async ({ client, brand }: {
   )
   const pathName = pathNaclCase(name)
 
-  const content = await getLogoContent(client, brand)
+  // eslint-disable-next-line camelcase
+  const { id, file_name } = brand.value.logo
+  const content = await getLogoContent(client, id, file_name)
   if (content === undefined) {
     return undefined
   }
@@ -108,24 +118,54 @@ const getBrandLogo = async ({ client, brand }: {
   return logoInstance
 }
 
+const fetchBrand = async (
+  client: ZendeskClient,
+  brandId: string,
+): Promise<Brand | undefined> => {
+  const response = await client.getSinglePage({
+    url: `/brands/${brandId}`,
+  })
+  if (Array.isArray(response.data)) {
+    log.error(`Received invalid response from Zendesk API, ${safeJsonStringify(response.data, undefined, 2)}. Not adding macro attachments`)
+    return undefined
+  }
+  return response.data.brand as Brand
+}
+
 const deployBrandLogo = async (
   client: ZendeskClient,
   logoInstance: InstanceElement,
   logoContent: Buffer | undefined,
 ): Promise<Error | void> => {
-  const form = new FormData()
-  form.append('brand[logo][uploaded_data]', logoContent || Buffer.from(''), logoInstance.value.filename)
   try {
     const brandId = getParent(logoInstance).value.id
-    await client.put({
-      url: `/brands/${brandId}`,
-      data: form,
-      headers: { ...form.getHeaders() },
-    })
+    // Zendesk's bug might manipulate uploaded files - verification is needed
+    for (let i = 1; i <= NUMBER_OF_DEPLOY_RETRIES; i += 1) {
+      const form = new FormData()
+      form.append('brand[logo][uploaded_data]', logoContent || Buffer.from(''), logoInstance.value.filename)
+      // eslint-disable-next-line no-await-in-loop
+      const putResult = await client.put({
+        url: `/brands/${brandId}`,
+        data: form,
+        headers: { ...form.getHeaders() },
+      })
+      const updatedBrand = !_.isArray(putResult.data)
+        ? putResult.data.brand as Brand
+        : undefined
+      // eslint-disable-next-line no-await-in-loop
+      const fetchedBrand = await fetchBrand(client, brandId)
+      if (updatedBrand !== undefined
+        && fetchedBrand !== undefined
+        && (logoContent === undefined
+        || fetchedBrand.logo.id === updatedBrand.logo.id)) {
+        return undefined
+      }
+      log.debug(`Re-uploading ${logoInstance.elemID.name} of the type brand_logo due to logo modification. Try number ${i}/${NUMBER_OF_DEPLOY_RETRIES}`)
+    }
   } catch (err) {
     return getZendeskError(logoInstance.elemID.getFullName(), err)
   }
-  return undefined
+  return getZendeskError(logoInstance.elemID.getFullName(), new Error(`Can't deploy ${logoInstance.elemID.name} of the type brand_logo, due to Zendesk's API limitations. Please upload it manually in Zendesk Admin Center`))
 }
 
 /**

@@ -137,6 +137,16 @@ describe('brand logo filter', () => {
     let logoInstance: InstanceElement
     let brandInstance: InstanceElement
     beforeEach(() => {
+      mockGet = jest.spyOn(client, 'getResource')
+      mockGet.mockImplementation(params => {
+        if (params.url === `/brands/${logoId}/test.png`) {
+          return {
+            status: 200,
+            data: content,
+          }
+        }
+        throw new Error('Err')
+      })
       logoInstance = new InstanceElement(
         'brand_logo',
         logoType,
@@ -167,7 +177,7 @@ describe('brand logo filter', () => {
       const clonedBrand = brandInstance.clone()
       const clonedLogo = logoInstance.clone()
       mockPut = jest.spyOn(client, 'put')
-      mockPut.mockResolvedValueOnce({ status: 201 })
+      mockPut.mockResolvedValueOnce({ data: { brand: { logo: { id: logoId, file_name: 'test.png' } } }, status: 201 })
       const res = await filter.deploy([
         { action: 'add', data: { after: clonedBrand } },
         { action: 'add', data: { after: clonedLogo } },
@@ -202,7 +212,7 @@ describe('brand logo filter', () => {
         content: Buffer.from('changes!'),
       })
       mockPut = jest.spyOn(client, 'put')
-      mockPut.mockResolvedValueOnce({ status: 201 })
+      mockPut.mockResolvedValueOnce({ data: { brand: { logo: { id: logoId, file_name: 'test.png' } } }, status: 201 })
       const res = await filter.deploy([
         { action: 'modify', data: { before: beforeLogo, after: afterLogo } },
       ])
@@ -226,7 +236,7 @@ describe('brand logo filter', () => {
       const clonedBrand = brandInstance.clone()
       const clonedLogo = logoInstance.clone()
       mockPut = jest.spyOn(client, 'put')
-      mockPut.mockResolvedValueOnce({ status: 201 })
+      mockPut.mockResolvedValueOnce({ data: { brand: { logo: { id: logoId, file_name: 'test.png' } } }, status: 201 })
       const res = await filter.deploy([
         { action: 'remove', data: { before: clonedBrand } },
         { action: 'remove', data: { before: clonedLogo } },

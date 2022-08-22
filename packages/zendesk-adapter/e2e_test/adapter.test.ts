@@ -475,9 +475,7 @@ describe('Zendesk adapter E2E', () => {
             .toContain(instance.elemID.getFullName())
         })
     })
-    // Will be reenabled once SALTO-2616 is fixed
-    // eslint-disable-next-line jest/no-disabled-tests
-    it.skip('should fetch brand_logo correctly', async () => {
+    it('should fetch brand_logo correctly', async () => {
       const fetchedBrandLogoInstance = elements
         .filter(inst => inst.elemID.typeName === 'brand_logo')
         .filter(isInstanceElement)

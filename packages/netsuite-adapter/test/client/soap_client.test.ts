@@ -569,6 +569,28 @@ describe('soap_client', () => {
       await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
     })
 
+    it('should return empty record list when subsidiaries is disabled', async () => {
+      searchAsyncMock.mockResolvedValue([{
+        searchResult: {
+          status: {
+            attributes: {
+              isSuccess: 'false',
+            },
+            statusDetail: [
+              {
+                attributes: {
+                  type: 'Error',
+                },
+                code: 'FEATURE_DISABLED',
+                message: 'Subsidiaries feature is not enabled in your NetSuite account.',
+              },
+            ],
+          },
+        },
+      }])
+      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([])
+    })
+
     it('Should work for item type', async () => {
       searchAsyncMock.mockResolvedValue([{
         searchResult: {

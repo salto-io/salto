@@ -467,6 +467,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'columns', fieldType: 'list<ColumnItem>' },
         { fieldName: 'expand', fieldType: 'string' },
+        { fieldName: 'subscriptions', fieldType: 'list<FilterSubscription>' },
       ],
       fieldsToHide: [
         {
@@ -1559,6 +1560,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'remainingSeats' },
         { fieldName: 'groupDetails' },
         { fieldName: 'defaultGroupsDetails' },
+      ],
+    },
+  },
+
+  FilterSubscription: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'id' },
       ],
     },
   },

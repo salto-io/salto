@@ -167,6 +167,9 @@ const deployBrandLogo = async (
         data: form,
         headers: { ...form.getHeaders() },
       })
+      if (logoContent === undefined) {
+        return undefined
+      }
       const updatedBrand = !_.isArray(putResult.data) && isBrand(putResult.data.brand)
         ? putResult.data.brand
         : undefined
@@ -174,8 +177,7 @@ const deployBrandLogo = async (
       const fetchedBrand = await fetchBrand(client, brandId)
       if (updatedBrand !== undefined
         && fetchedBrand !== undefined
-        && (logoContent === undefined
-          || fetchedBrand.logo.id === updatedBrand.logo.id)) {
+        && fetchedBrand.logo.id === updatedBrand.logo.id) {
         return undefined
       }
       log.debug(`Re-uploading ${logoInstance.elemID.name} of the type brand_logo due to logo modification. Try number ${i}/${NUMBER_OF_DEPLOY_RETRIES}`)

@@ -46,12 +46,14 @@ type Brand = {
   }
 }
 
-const EXPECTED_BRAND_SCHEMA = Joi.array().items(Joi.object({
-  id: Joi.string().required(),
-}).unknown(true)).required()
+const EXPECTED_BRAND_SCHEMA = Joi.object({
+  logo: Joi.object({
+    id: Joi.string().required(),
+  }),
+}).unknown(true).required()
 
 const isBrand = (value: unknown): value is Brand => {
-  const { error } = EXPECTED_BRAND_SCHEMA.validate(value)
+  const { error } = EXPECTED_BRAND_SCHEMA.validate(value, { allowUnknown: true })
   if (error !== undefined) {
     log.error(`Received an invalid response for the brand values: ${error.message}, ${safeJsonStringify(value)}`)
     return false

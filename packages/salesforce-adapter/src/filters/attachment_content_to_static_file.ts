@@ -38,7 +38,7 @@ const createStaticFile = async (
     return undefined
   }
   return new StaticFile({
-    filepath: `${instance.path.join('/')}/${name}.attachment`,
+    filepath: `${instance.path.join('/')}/${name}`,
     content: Buffer.from(content),
     encoding: 'utf-8',
   })

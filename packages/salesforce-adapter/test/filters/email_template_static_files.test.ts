@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ElemID, ObjectType, InstanceElement, isInstanceElement, BuiltinTypes, StaticFile, FieldDefinition } from '@salto-io/adapter-api'
+import { Element, ElemID, ObjectType, InstanceElement, BuiltinTypes, StaticFile, FieldDefinition } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/email_template_static_files'
 import { FilterWith } from '../../src/filter'
 import { SALESFORCE, EMAIL_TEMPLATE_METADATA_TYPE, METADATA_TYPE } from '../../src/constants'
@@ -22,16 +22,17 @@ import { defaultFilterContext } from '../utils'
 describe('emailTemplate static files filter', () => {
   const ATTACHMENTS = 'attachments'
   const CONTENT = 'content'
-  const attachmentOneAsString = 'attachment-one'
-  const attachmentTwoAsString = 'attachment-two'
-  const emailContent = 'email-content'
-  const attachmentOneName = 'attachmentOne.txt'
-  const attachmentTwoName = 'attachmentTwo.txt'
+  const ATTACHMENTONEASSTRING = 'attachment-one'
+  const ATTACHMENTTWOASSTRING = 'attachment-two'
+  const EMAILCONTENT = 'email-content'
+  const ATTACHMENTONENAME = 'attachmentOne.txt'
+  const ATTACHMENTTWONAME = 'attachmentTwo.txt'
   let elements: Element[]
   let fields: Record<string, FieldDefinition>
   let attachmentOne: StaticFile
   let attachmentTwo: StaticFile
-  let StaticContent: StaticFile
+  let staticContentOne: StaticFile
+  let staticContentTwo: StaticFile
 
   beforeAll(() => {
     const emailTemplateID = new ElemID(SALESFORCE, EMAIL_TEMPLATE_METADATA_TYPE)
@@ -41,7 +42,7 @@ describe('emailTemplate static files filter', () => {
       [ATTACHMENTS]: { refType: BuiltinTypes.STRING },
     }
 
-    const emailTemplateType = new ObjectType({
+    const emailType = new ObjectType({
       annotations: { [METADATA_TYPE]: EMAIL_TEMPLATE_METADATA_TYPE },
       elemID: emailTemplateID,
       fields,
@@ -50,38 +51,46 @@ describe('emailTemplate static files filter', () => {
 
     attachmentOne = new StaticFile({
       filepath: 'Objects/dir/emailTemplateOne/attachmentOne.txt',
-      content: Buffer.from(attachmentOneAsString),
+      content: Buffer.from(ATTACHMENTONEASSTRING),
       encoding: 'utf-8',
     })
 
     attachmentTwo = new StaticFile({
       filepath: 'Objects/dir/emailTemplateTwo/attachmentTwo.txt',
-      content: Buffer.from(attachmentTwoAsString),
+      content: Buffer.from(ATTACHMENTTWOASSTRING),
       encoding: 'utf-8',
     })
 
-    StaticContent = new StaticFile({
+    staticContentOne = new StaticFile({
+      filepath: 'Objects/dir/emailTemplateOne.email',
+      content: Buffer.from(EMAILCONTENT),
+      encoding: 'utf-8',
+    })
+
+    staticContentTwo = new StaticFile({
       filepath: 'Objects/dir/emailTemplateTwo.email',
-      content: Buffer.from(emailContent),
+      content: Buffer.from(EMAILCONTENT),
       encoding: 'utf-8',
     })
 
-    const emailTemplateOne = new InstanceElement('emailTemplateOne', emailTemplateType, {
-      [ATTACHMENTS]: [{ name: attachmentOneName, content: attachmentOneAsString }],
+    const emailNoArrayAttachment = new InstanceElement('emailTemplateOne', emailType, {
+      [ATTACHMENTS]: { name: ATTACHMENTONENAME, content: ATTACHMENTONEASSTRING },
+      [CONTENT]: staticContentOne,
     },
     ['Objects', 'dir', 'emailTemplateOne'])
 
-    const emailTemplateTwo = new InstanceElement('emailTemplateTwo', emailTemplateType, {
-      [ATTACHMENTS]: [{ name: attachmentTwoName, content: attachmentTwoAsString }],
-      [CONTENT]: StaticContent,
+    const emailArrayAttachment = new InstanceElement('emailTemplateTwo', emailType, {
+      [ATTACHMENTS]: [{ name: ATTACHMENTTWONAME, content: ATTACHMENTTWOASSTRING }],
+      [CONTENT]: staticContentTwo,
     },
     ['Objects', 'dir', 'emailTemplateTwo'])
 
-    const emailTemplateNoPath = new InstanceElement('emailTemplateNoPath', emailTemplateType, {
-      [ATTACHMENTS]: [{ name: attachmentOneName, content: attachmentOneAsString }],
-    })
+    const emailTemplateNoContent = new InstanceElement('emailTemplateNoContent', emailType, {
+      [ATTACHMENTS]: [{ name: ATTACHMENTONENAME, content: ATTACHMENTONEASSTRING }],
+    },
+    ['Objects', 'dir', 'emailTemplateNoContent'])
 
-    elements = [emailTemplateOne, emailTemplateTwo, emailTemplateNoPath, emailTemplateType]
+    elements = [emailNoArrayAttachment, emailArrayAttachment, emailTemplateNoContent, emailType]
   })
 
   describe('on fetch', () => {
@@ -93,29 +102,29 @@ describe('emailTemplate static files filter', () => {
       await filter.onFetch(elements)
     })
 
-    it('should extract attachment content to static file when emailTemplate has no content as static file', () => {
-      const receivedEmailTemplate = elements.filter(isInstanceElement)
-        .find(e => e.elemID.name === 'emailTemplateOne')
+    it('should extract attachment content to static file when emailTemplate has has attachment not in array', () => {
+      const receivedEmailTemplate = elements[0] as InstanceElement
       expect(receivedEmailTemplate?.value.attachments)
-        .toIncludeAllMembers([{ name: attachmentOneName, content: attachmentOne }])
+        .toEqual({ name: ATTACHMENTONENAME, content: attachmentOne })
+      expect(receivedEmailTemplate?.value.content?.filepath).toEqual(
+        'Objects/dir/emailTemplateOne/emailTemplateOne.email'
+      )
     })
 
-    it('should extract attachment content to static file when emailTemplate has content as static file', () => {
-      const receivedEmailTemplate = elements.filter(isInstanceElement)
-        .find(e => e.elemID.name === 'emailTemplateTwo')
-      expect(receivedEmailTemplate?.value.attachments).toIncludeAllMembers(
-        [{ name: attachmentTwoName, content: attachmentTwo }]
+    it('should extract attachment content to static file when emailTemplate has attachment in array', () => {
+      const receivedEmailTemplate = elements[1] as InstanceElement
+      expect(receivedEmailTemplate?.value.attachments).toIncludeSameMembers(
+        [{ name: ATTACHMENTTWONAME, content: attachmentTwo }]
       )
       expect(receivedEmailTemplate?.value.content?.filepath).toEqual(
         'Objects/dir/emailTemplateTwo/emailTemplateTwo.email'
       )
     })
 
-    it('should not replace content when instance has no path', () => {
-      const instanceUndefinedPath = elements?.filter(isInstanceElement)
-        .find(e => e.path === undefined)
+    it('should not replace content when emailTemplate instance has no content', () => {
+      const instanceUndefinedPath = elements[2] as InstanceElement
       expect(instanceUndefinedPath?.value.attachments)
-        .toIncludeAllPartialMembers([{ content: 'attachment-one', name: 'attachmentOne.txt' }])
+        .toIncludeSameMembers([{ name: ATTACHMENTONENAME, content: ATTACHMENTONEASSTRING }])
     })
   })
 })

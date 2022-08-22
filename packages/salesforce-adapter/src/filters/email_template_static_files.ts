@@ -28,31 +28,14 @@ const { awu } = collections.asynciterable
 
 const log = logger(module)
 
-const createStaticFile = (
-  instanceApiName: string,
-  folderName: string | undefined,
-  name: string,
-  content: string
-): string | StaticFile | undefined => {
-  if (folderName === undefined) {
-    log.error(`could not extract the attachment ${name} of instance ${instanceApiName} to static file, instance path is undefined`)
-    return content
-  }
-  return new StaticFile({
-    filepath: `${folderName}/${name}`,
-    content: Buffer.from(content),
-    encoding: 'utf-8',
-  })
-}
-
 type Attachment = {
   name: string
   content: string
 }
 
-type TransformAttachment = {
+type TransformedAttachment = {
   name: string
-  content: string | StaticFile | undefined
+  content: StaticFile
 }
 
 const ATTACHMENT = Joi.object({
@@ -61,31 +44,39 @@ const ATTACHMENT = Joi.object({
 }).required()
 
 const isAttachment = createSchemeGuard<Attachment>(ATTACHMENT)
+const createStaticFile = (
+  folderName: string | undefined,
+  name: string,
+  content: string
+): StaticFile => new StaticFile({
+  filepath: `${folderName}/${name}`,
+  content: Buffer.from(content),
+  encoding: 'utf-8',
+})
 
-const createFolder = (instance: InstanceElement): string | undefined => {
-  if (isStaticFile(instance.value.content)) {
-    const oldPath = instance.value.content.filepath.split('/')
-    const emailName = oldPath.pop()
-    const folderName = `${oldPath.join('/')}/${emailName?.split('.')[0]}`
-    _.set(instance, ['value', 'content', 'filepath'], `${folderName}/${emailName}`)
-    return folderName
-  } if (instance.path !== undefined) {
-    return instance.path.join('/')
-  }
-  return undefined
+const createFolder = (instance: InstanceElement): string => {
+  const oldPath = instance.value.content.filepath.split('/')
+  const emailName = oldPath.pop()
+  const folderName = `${oldPath.join('/')}/${emailName?.split('.')[0]}`
+  _.set(instance, ['value', 'content', 'filepath'], `${folderName}/${emailName}`)
+  return folderName
 }
 
 const organizeStaticFiles = async (instance: InstanceElement): Promise<void> => {
-  const folderPath = createFolder(instance)
+  const folderPath = isStaticFile(instance.value.content) ? createFolder(instance) : undefined
   const transformFunc: TransformFunc = async ({ value, field }) => {
     const fieldName = _.isUndefined(field) ? undefined : field.name
     if (isAttachment(value) && fieldName === 'attachments') {
       const instApiName = await apiName(instance)
-      const transformAttachment: TransformAttachment = {
-        ...value,
-        content: createStaticFile(instApiName, folderPath, value.name, value.content),
+      if (folderPath === undefined) {
+        log.error(`could not extract the attachment ${value.name} of instance ${instApiName} to static file, instance path is undefined`)
+        return value
       }
-      return transformAttachment
+      const transformedAttachment: TransformedAttachment = {
+        ...value,
+        content: createStaticFile(folderPath, value.name, value.content),
+      }
+      return transformedAttachment
     }
     return value
   }

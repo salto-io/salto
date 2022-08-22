@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import Joi from 'joi'
 import {
   BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement,
   isAdditionOrModificationChange, isInstanceElement, isStaticFile, ObjectType,
@@ -43,6 +44,19 @@ type Brand = {
   logo: {
     id: string
   }
+}
+
+const EXPECTED_BRAND_SCHEMA = Joi.array().items(Joi.object({
+  id: Joi.string().required(),
+}).unknown(true)).required()
+
+const isBrand = (value: unknown): value is Brand => {
+  const { error } = EXPECTED_BRAND_SCHEMA.validate(value)
+  if (error !== undefined) {
+    log.error(`Received an invalid response for the brand values: ${error.message}, ${safeJsonStringify(value)}`)
+    return false
+  }
+  return true
 }
 
 export const BRAND_LOGO_TYPE = new ObjectType({
@@ -91,9 +105,8 @@ const getBrandLogo = async ({ client, brand }: {
   )
   const pathName = pathNaclCase(name)
 
-  // eslint-disable-next-line camelcase
-  const { id, file_name } = brand.value.logo
-  const content = await getLogoContent(client, id, file_name)
+  const { id, file_name: filename } = brand.value.logo
+  const content = await getLogoContent(client, id, filename)
   if (content === undefined) {
     return undefined
   }
@@ -126,10 +139,13 @@ const fetchBrand = async (
     url: `/brands/${brandId}`,
   })
   if (Array.isArray(response.data)) {
-    log.error(`Received invalid response from Zendesk API, ${safeJsonStringify(response.data, undefined, 2)}. Not adding macro attachments`)
+    log.error(`Received invalid response from Zendesk API, ${safeJsonStringify(response.data, undefined, 2).slice(0, RESULT_MAXIMUM_OUTPUT_SIZE)}. Not adding brand logo`)
     return undefined
   }
-  return response.data.brand as Brand
+  if (isBrand(response.data.brand)) {
+    return response.data.brand
+  }
+  return undefined
 }
 
 const deployBrandLogo = async (
@@ -139,7 +155,7 @@ const deployBrandLogo = async (
 ): Promise<Error | void> => {
   try {
     const brandId = getParent(logoInstance).value.id
-    // Zendesk's bug might manipulate uploaded files - verification is needed
+    // Zendesk's bug (ticket number 9800) might manipulate uploaded files - verification is needed
     for (let i = 1; i <= NUMBER_OF_DEPLOY_RETRIES; i += 1) {
       const form = new FormData()
       form.append('brand[logo][uploaded_data]', logoContent || Buffer.from(''), logoInstance.value.filename)
@@ -149,15 +165,15 @@ const deployBrandLogo = async (
         data: form,
         headers: { ...form.getHeaders() },
       })
-      const updatedBrand = !_.isArray(putResult.data)
-        ? putResult.data.brand as Brand
+      const updatedBrand = !_.isArray(putResult.data) && isBrand(putResult.data.brand)
+        ? putResult.data.brand
         : undefined
       // eslint-disable-next-line no-await-in-loop
       const fetchedBrand = await fetchBrand(client, brandId)
       if (updatedBrand !== undefined
         && fetchedBrand !== undefined
         && (logoContent === undefined
-        || fetchedBrand.logo.id === updatedBrand.logo.id)) {
+          || fetchedBrand.logo.id === updatedBrand.logo.id)) {
         return undefined
       }
       log.debug(`Re-uploading ${logoInstance.elemID.name} of the type brand_logo due to logo modification. Try number ${i}/${NUMBER_OF_DEPLOY_RETRIES}`)

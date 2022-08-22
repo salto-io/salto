@@ -471,9 +471,9 @@ ReferenceContextStrategyName
 ]
 
 /**
-* Determine serialization strategy for references with overlapping serialization rules
-* in automation instances: relevant fields will be resolved based on the neighbor type field
-*/
+ * Determine serialization strategy for references with overlapping serialization rules
+ * in automation instances: relevant fields will be resolved based on the neighbor type field
+ */
 export const getAutomationValuesLookupFunc: GetLookupNameFunc = ({
   ref, path, element,
 }) => {

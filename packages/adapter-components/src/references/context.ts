@@ -29,6 +29,24 @@ export type ContextFunc = ({ instance, elemByElemID, field, fieldPath }: {
   fieldPath?: ElemID
 }) => Promise<string | undefined>
 
+export const findParentPath = (currentFieldPath: ElemID, numLevels = 0): ElemID => {
+  const getParentPath = (p: ElemID): ElemID => {
+    const isNum = (str: string | undefined): boolean => (
+      !_.isEmpty(str) && !Number.isNaN(_.toNumber(str))
+    )
+    let path = p
+    // ignore array indices
+    while (isNum(path.getFullNameParts().pop())) {
+      path = path.createParentID()
+    }
+    return path.createParentID()
+  }
+  if (numLevels <= 0) {
+    return getParentPath(currentFieldPath)
+  }
+  return findParentPath(getParentPath(currentFieldPath), numLevels - 1)
+}
+
 /**
  * Use the value of a neighbor field as the context for finding the referenced element.
  *
@@ -67,26 +85,8 @@ export const neighborContextGetter = ({
     return getLookUpName({ ref: refWithValue, field: contextField, path })
   }
 
-  const getParent = (currentFieldPath: ElemID, numLevels = 0): ElemID => {
-    const getParentPath = (p: ElemID): ElemID => {
-      const isNum = (str: string | undefined): boolean => (
-        !_.isEmpty(str) && !Number.isNaN(_.toNumber(str))
-      )
-      let path = p
-      // ignore array indices
-      while (isNum(path.getFullNameParts().pop())) {
-        path = path.createParentID()
-      }
-      return path.createParentID()
-    }
-    if (numLevels <= 0) {
-      return getParentPath(currentFieldPath)
-    }
-    return getParent(getParentPath(currentFieldPath), numLevels - 1)
-  }
-
   try {
-    const parent = getParent(fieldPath, levelsUp)
+    const parent = findParentPath(fieldPath, levelsUp)
     if (parent.isConfig()) {
       // went up too many levels, the current rule is irrelevant for this potential reference
       return undefined

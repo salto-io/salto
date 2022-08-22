@@ -25,6 +25,7 @@ describe('changed at index', () => {
   let mapVersions: MockInterface<RemoteMap<number>>
   let elementsSource: ElementsSource
   let object: ObjectType
+  let emptyObject: ObjectType
   let knownUserInstance: InstanceElement
   let unknownUserInstance: InstanceElement
   let knownUserSecondInstance: InstanceElement
@@ -50,6 +51,13 @@ describe('changed at index', () => {
           refType: BuiltinTypes.STRING,
         },
       },
+    })
+    emptyObject = new ObjectType({
+      elemID: new ElemID('test', 'object'),
+      annotations: {
+        [CORE_ANNOTATIONS.CHANGED_AT]: '2000-02-21T00:00:00.000Z',
+      },
+      fields: {},
     })
     knownUserInstance = new InstanceElement(
       'instance1',
@@ -149,6 +157,46 @@ describe('changed at index', () => {
         expect(changedAtIndex.getMany).toHaveBeenCalledWith(['2000-01-01T00:00:00.000Z', '2002-01-01T00:00:00.000Z'])
         expect(changedAtIndex.setAll).toHaveBeenCalledWith([{ key: '2002-01-01T00:00:00.000Z', value: [knownUserInstance.elemID] }])
         expect(changedAtIndex.deleteAll).toHaveBeenCalledWith(['2000-01-01T00:00:00.000Z'])
+      })
+    })
+    describe('object fields modification', () => {
+      describe('field added', () => {
+        beforeEach(async () => {
+          changedAtIndex.getMany.mockResolvedValue([[emptyObject.elemID], undefined, undefined])
+          const changes = [toChange({ before: emptyObject, after: object })]
+          await updateChangedAtIndex(
+            changes,
+            changedAtIndex,
+            mapVersions,
+            elementsSource,
+            true
+          )
+        })
+        it('should updated fields date', () => {
+          expect(changedAtIndex.getMany).toHaveBeenCalledWith(['2000-02-21T00:00:00.000Z', '2000-02-01T00:00:00.000Z', '2000-03-01T00:00:00.000Z'])
+          expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-03-01T00:00:00.000Z', value: [object.elemID] }]))
+          expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-02-01T00:00:00.000Z', value: [object.fields.field.elemID] }]))
+          expect(changedAtIndex.deleteAll).toHaveBeenCalledWith(['2000-02-21T00:00:00.000Z'])
+        })
+      })
+      describe('field removed', () => {
+        beforeEach(async () => {
+          changedAtIndex.getMany.mockResolvedValue([
+            [object.fields.field.elemID], [object.elemID], undefined])
+          const changes = [toChange({ before: object, after: emptyObject })]
+          await updateChangedAtIndex(
+            changes,
+            changedAtIndex,
+            mapVersions,
+            elementsSource,
+            true
+          )
+        })
+        it('should remove fields date', () => {
+          expect(changedAtIndex.getMany).toHaveBeenCalledWith(['2000-02-01T00:00:00.000Z', '2000-03-01T00:00:00.000Z', '2000-02-21T00:00:00.000Z'])
+          expect(changedAtIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining([{ key: '2000-02-21T00:00:00.000Z', value: [emptyObject.elemID] }]))
+          expect(changedAtIndex.deleteAll).toHaveBeenCalledWith(['2000-02-01T00:00:00.000Z', '2000-03-01T00:00:00.000Z'])
+        })
       })
     })
   })

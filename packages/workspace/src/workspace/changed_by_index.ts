@@ -20,7 +20,6 @@ import {
   Element,
   toChange,
   CORE_ANNOTATIONS,
-  ModificationChange,
   AdditionChange,
   RemovalChange,
   isAdditionChange,
@@ -38,7 +37,7 @@ import { RemoteMap } from './remote_map'
 const { isDefined } = values
 
 const log = logger(module)
-export const CHANGED_BY_INDEX_VERSION = 3
+export const CHANGED_BY_INDEX_VERSION = 4
 const CHANGED_BY_INDEX_KEY = 'changed_by_index'
 const UNKNOWN_USER_NAME = 'Unknown'
 const CHANGED_BY_KEY_DELIMITER = '@@'
@@ -122,12 +121,15 @@ const updateRemovalChange = (
   })
 }
 
-const updateModificationChange = (
-  change: ModificationChange<Element>,
+const updateChange = (
+  change: Change<Element>,
   authorMap: Record<string, Set<string>>,
 ): void => {
-  if (change.data.after.annotations[CORE_ANNOTATIONS.CHANGED_BY]
-    !== change.data.before.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
+  if (isAdditionChange(change)) {
+    updateAdditionChange(change, authorMap)
+  } else if (isRemovalChange(change)) {
+    updateRemovalChange(change, authorMap)
+  } else {
     updateRemovalChange(
       toChange({ before: change.data.before }) as RemovalChange<Element>,
       authorMap,
@@ -139,30 +141,14 @@ const updateModificationChange = (
   }
 }
 
-const updateChange = (
-  change: Change<Element>,
-  authorMap: Record<string, Set<string>>,
-): void => {
-  if (isAdditionChange(change)) {
-    updateAdditionChange(change, authorMap)
-  } else if (isRemovalChange(change)) {
-    updateRemovalChange(change, authorMap)
-  } else {
-    updateModificationChange(change, authorMap)
-  }
-}
-
 const getUniqueAuthors = (changes: Change<Element>[]): Set<string> => {
   const authorSet = new Set<string>()
   changes.forEach(change => {
     if (isModificationChange(change)) {
-      if (change.data.after.annotations[CORE_ANNOTATIONS.CHANGED_BY]
-          !== change.data.before.annotations[CORE_ANNOTATIONS.CHANGED_BY]) {
-        Object.keys(getChangeAuthors(toChange({ before: change.data.before })))
-          .forEach(author => authorSet.add(author))
-        Object.keys(getChangeAuthors(toChange({ after: change.data.after })))
-          .forEach(author => authorSet.add(author))
-      }
+      Object.keys(getChangeAuthors(toChange({ before: change.data.before })))
+        .forEach(author => authorSet.add(author))
+      Object.keys(getChangeAuthors(toChange({ after: change.data.after })))
+        .forEach(author => authorSet.add(author))
     } else {
       Object.keys(getChangeAuthors(change)).forEach(author => authorSet.add(author))
     }

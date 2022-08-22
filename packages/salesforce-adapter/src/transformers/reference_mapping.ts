@@ -370,6 +370,10 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: 'EmailTemplate' },
   },
   {
+    src: { field: 'field', parentTypes: ['ReportGrouping'] },
+    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+  },
+  {
     // sometimes has a value that is not a reference - should only convert to reference
     // if lookupValueType exists
     src: { field: 'lookupValue', parentTypes: ['WorkflowFieldUpdate'] },

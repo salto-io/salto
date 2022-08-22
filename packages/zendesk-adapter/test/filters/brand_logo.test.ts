@@ -41,7 +41,7 @@ describe('brand logo filter', () => {
     },
   })
   const brandId = 11
-  const logoId = '111'
+  const logoId = 111
   const logoType = new ObjectType({
     elemID: new ElemID(ZENDESK, BRAND_LOGO_TYPE_NAME),
   })

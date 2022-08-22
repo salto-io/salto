@@ -42,14 +42,14 @@ const NUMBER_OF_DEPLOY_RETRIES = 5
 
 type Brand = {
   logo: {
-    id: string
+    id: number
   }
 }
 
 const EXPECTED_BRAND_SCHEMA = Joi.object({
   logo: Joi.object({
-    id: Joi.string().required(),
-  }),
+    id: Joi.number().required(),
+  }).unknown(true).optional(),
 }).unknown(true).required()
 
 const isBrand = (value: unknown): value is Brand => {

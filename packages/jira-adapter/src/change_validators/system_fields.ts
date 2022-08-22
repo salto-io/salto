@@ -13,21 +13,21 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isInstanceElement } from '@salto-io/adapter-api'
+import { ChangeValidator, isInstanceElement, isModificationChange, getChangeData } from '@salto-io/adapter-api'
 import { FIELD_TYPE_NAME } from '../filters/fields/constants'
 
 
 export const systemFieldsValidator: ChangeValidator = async changes => (
   changes
     .filter(change => change !== undefined)
-    .map(getChangeData)
+    .map(change => (isModificationChange(change) ? change.data.before : getChangeData(change)))
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === FIELD_TYPE_NAME)
     .filter(instance => instance.value.schema)
     .map(instance => ({
       elemID: instance.elemID,
       severity: 'Error',
-      message: 'Cannot deploy a system field',
-      detailedMessage: `The field ${instance.elemID.getFullName()} is a system field and cannot be deployed`,
+      message: 'Can not deploy changes to a Jira system field',
+      detailedMessage: `${instance.elemID.getFullName()} is a built-in Jira system field, and can not be edited or deleted. Changes to this field will be not deployed`,
     }))
 )

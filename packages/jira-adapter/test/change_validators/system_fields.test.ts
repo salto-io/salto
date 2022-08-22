@@ -30,8 +30,8 @@ describe('systemFieldsValidator', () => {
       {
         elemID: systemFieldInstance.elemID,
         severity: 'Error',
-        message: 'Cannot deploy a system field',
-        detailedMessage: 'The field jira.Field.instance.instance is a system field and cannot be deployed',
+        message: 'Can not deploy changes to a Jira system field',
+        detailedMessage: 'jira.Field.instance.instance is a built-in Jira system field, and can not be edited or deleted. Changes to this field will be not deployed',
       },
     ])
   })

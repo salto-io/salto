@@ -32,6 +32,7 @@ describe('brand logo filter', () => {
   type FilterType = filterUtils.FilterWith<'deploy' | 'onFetch'>
   let filter: FilterType
   let mockGet: jest.SpyInstance
+  let mockBrandGet: jest.SpyInstance
   let mockPut: jest.SpyInstance
   const brandType = new ObjectType({
     elemID: new ElemID(ZENDESK, BRAND_NAME),
@@ -137,6 +138,26 @@ describe('brand logo filter', () => {
     let logoInstance: InstanceElement
     let brandInstance: InstanceElement
     beforeEach(() => {
+      mockGet = jest.spyOn(client, 'getResource')
+      mockGet.mockImplementation(params => {
+        if (params.url === `/brands/${logoId}/test.png`) {
+          return {
+            status: 200,
+            data: content,
+          }
+        }
+        throw new Error('Err')
+      })
+      mockBrandGet = jest.spyOn(client, 'getSinglePage')
+      mockBrandGet.mockImplementation(params => {
+        if (params.url === `/brands/${brandId}`) {
+          return {
+            status: 200,
+            data: { brand: { logo: { id: logoId } } },
+          }
+        }
+        throw new Error('Err')
+      })
       logoInstance = new InstanceElement(
         'brand_logo',
         logoType,
@@ -163,11 +184,15 @@ describe('brand logo filter', () => {
         [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brandInstance.elemID, brandInstance)],
       })
     })
-    it('should add logo instances', async () => {
+    it('should add logo instances (multiple retries)', async () => {
       const clonedBrand = brandInstance.clone()
       const clonedLogo = logoInstance.clone()
       mockPut = jest.spyOn(client, 'put')
-      mockPut.mockResolvedValueOnce({ status: 201 })
+      mockPut.mockResolvedValueOnce({ data: { brand: { logo: { id: 666, file_name: 'wrongFile.png' } } }, status: 201 })
+      mockPut.mockResolvedValueOnce({ data: { brand: { logo: { id: 666, file_name: 'wrongFile.png' } } }, status: 201 })
+      mockPut.mockResolvedValueOnce({ data: { brand: { logo: { id: 666, file_name: 'wrongFile.png' } } }, status: 201 })
+      mockPut.mockResolvedValueOnce({ data: { brand: { logo: { id: 666, file_name: 'wrongFile.png' } } }, status: 201 })
+      mockPut.mockResolvedValueOnce({ data: { brand: { logo: { id: logoId, file_name: 'test.png' } } }, status: 201 })
       const res = await filter.deploy([
         { action: 'add', data: { after: clonedBrand } },
         { action: 'add', data: { after: clonedLogo } },
@@ -176,12 +201,13 @@ describe('brand logo filter', () => {
       resolvedClonedBrand.value[LOGO_FIELD] = [logoId]
       resolvedClonedBrand.value.id = brandId
 
-      expect(mockPut).toHaveBeenCalledTimes(1)
+      expect(mockPut).toHaveBeenCalledTimes(5)
       expect(mockPut).toHaveBeenCalledWith({
         url: `/brands/${brandId}`,
         data: expect.any(FormData),
         headers: expect.anything(),
       })
+      expect(mockBrandGet).toHaveBeenCalledTimes(5)
 
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.leftoverChanges).toHaveLength(1)
@@ -202,7 +228,7 @@ describe('brand logo filter', () => {
         content: Buffer.from('changes!'),
       })
       mockPut = jest.spyOn(client, 'put')
-      mockPut.mockResolvedValueOnce({ status: 201 })
+      mockPut.mockResolvedValueOnce({ data: { brand: { logo: { id: logoId, file_name: 'test.png' } } }, status: 201 })
       const res = await filter.deploy([
         { action: 'modify', data: { before: beforeLogo, after: afterLogo } },
       ])
@@ -226,7 +252,7 @@ describe('brand logo filter', () => {
       const clonedBrand = brandInstance.clone()
       const clonedLogo = logoInstance.clone()
       mockPut = jest.spyOn(client, 'put')
-      mockPut.mockResolvedValueOnce({ status: 201 })
+      mockPut.mockResolvedValueOnce({ data: { brand: { logo: { id: logoId, file_name: 'test.png' } } }, status: 201 })
       const res = await filter.deploy([
         { action: 'remove', data: { before: clonedBrand } },
         { action: 'remove', data: { before: clonedLogo } },
@@ -248,6 +274,65 @@ describe('brand logo filter', () => {
       expect(res.deployResult.appliedChanges[0]).toEqual(
         { action: 'remove', data: { before: clonedLogo } }
       )
+    })
+    it('should fail deploy in case of reaching maximum retries limit', async () => {
+      const clonedBrand = brandInstance.clone()
+      const clonedLogo = logoInstance.clone()
+      mockPut = jest.spyOn(client, 'put')
+      mockPut.mockResolvedValueOnce({ data: { brand: { logo: { id: 666, file_name: 'wrongFile.png' } } }, status: 201 })
+      mockPut.mockResolvedValueOnce({ data: { brand: { logo: { id: 666, file_name: 'wrongFile.png' } } }, status: 201 })
+      mockPut.mockResolvedValueOnce({ data: { brand: { logo: { id: 666, file_name: 'wrongFile.png' } } }, status: 201 })
+      mockPut.mockResolvedValueOnce({ data: { brand: { logo: { id: 666, file_name: 'wrongFile.png' } } }, status: 201 })
+      mockPut.mockResolvedValueOnce({ data: { brand: { logo: { id: 666, file_name: 'wrongFile.png' } } }, status: 201 })
+      const res = await filter.deploy([
+        { action: 'add', data: { after: clonedBrand } },
+        { action: 'add', data: { after: clonedLogo } },
+      ])
+
+      expect(mockPut).toHaveBeenCalledTimes(5)
+      expect(mockPut).toHaveBeenCalledWith({
+        url: `/brands/${brandId}`,
+        data: expect.any(FormData),
+        headers: expect.anything(),
+      })
+      expect(mockBrandGet).toHaveBeenCalledTimes(5)
+
+      expect(res.deployResult.errors).toHaveLength(1)
+      expect(res.deployResult.errors[0]).toEqual(Error(`Can't deploy ${logoInstance.elemID.name} of the type brand_logo, due to Zendesk's API limitations. Please upload it manually in Zendesk Admin Center`))
+      expect(res.deployResult.appliedChanges).toHaveLength(0)
+      expect(res.leftoverChanges).toHaveLength(1)
+      expect((getChangeData(res.leftoverChanges[0]) as InstanceElement).value)
+        .toEqual(clonedBrand.value)
+    })
+    it('should fail deploy in case of not abling to re-fetch the brand (reaching maximum retries limit)', async () => {
+      const clonedBrand = brandInstance.clone()
+      const clonedLogo = logoInstance.clone()
+      mockPut = jest.spyOn(client, 'put')
+      mockPut.mockResolvedValue({ data: { brand: { logo: { id: logoId, file_name: 'test.png' } } }, status: 201 })
+      mockBrandGet.mockReturnValueOnce(undefined)
+      mockBrandGet.mockReturnValueOnce(undefined)
+      mockBrandGet.mockReturnValueOnce(undefined)
+      mockBrandGet.mockReturnValueOnce(undefined)
+      mockBrandGet.mockReturnValueOnce(undefined)
+      const res = await filter.deploy([
+        { action: 'add', data: { after: clonedBrand } },
+        { action: 'add', data: { after: clonedLogo } },
+      ])
+
+      expect(mockPut).toHaveBeenCalledTimes(5)
+      expect(mockPut).toHaveBeenCalledWith({
+        url: `/brands/${brandId}`,
+        data: expect.any(FormData),
+        headers: expect.anything(),
+      })
+      expect(mockBrandGet).toHaveBeenCalledTimes(5)
+
+      expect(res.deployResult.errors).toHaveLength(1)
+      expect(res.deployResult.errors[0]).toEqual(Error(`Can't deploy ${logoInstance.elemID.name} of the type brand_logo, due to Zendesk's API limitations. Please upload it manually in Zendesk Admin Center`))
+      expect(res.deployResult.appliedChanges).toHaveLength(0)
+      expect(res.leftoverChanges).toHaveLength(1)
+      expect((getChangeData(res.leftoverChanges[0]) as InstanceElement).value)
+        .toEqual(clonedBrand.value)
     })
     it('should return errors', async () => {
       const clonedBrand = brandInstance.clone()

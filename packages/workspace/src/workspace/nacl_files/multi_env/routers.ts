@@ -481,13 +481,15 @@ const createMergeableChangesForElement = async (
   // this is because we cannot isolate just a part of an array
   const commonFragment = await commonSource.get(topLevelID)
   if (commonFragment === undefined) {
-    // When the top level is not in common, non of the changes are going
+    // When the top level is not in common, none of the changes are going
     // to be in something that exists in common, so we can return all changes as-is
     return changes
   }
   const primaryFragment = await primarySource.get(topLevelID)
   const fragments = [commonFragment, primaryFragment].filter(values.isDefined)
 
+  // Note that there cannot be an overlap between groups here because getMergeableParentID
+  // stops on the first array it encounters
   const changesByMergeableID = _.groupBy(
     changes,
     change => getMergeableParentID(change.id, fragments).mergeableID.getFullName(),

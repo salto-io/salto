@@ -123,14 +123,20 @@ export const createElemIDReplacedElementsSource = (
 ): ReadOnlyElementsSource => (
   account === adapter
     ? elementsSource : ({
-      getAll: async () => awu(await elementsSource.getAll()).map(async element => {
-        await updateElementsWithAlternativeAccount([element], adapter, account, elementsSource)
-        return element
-      }),
+      getAll: async () =>
+        awu(await elementsSource.getAll()).map(async element => {
+          const ret = element.clone()
+          await updateElementsWithAlternativeAccount(
+            [ret], adapter, account, elementsSource
+          )
+          return ret
+        }),
       get: async id => {
-        const element = await elementsSource.get(createAdapterReplacedID(id, account))
+        const element = (await elementsSource.get(createAdapterReplacedID(id, account)))?.clone()
         if (element) {
-          await updateElementsWithAlternativeAccount([element], adapter, account, elementsSource)
+          await updateElementsWithAlternativeAccount(
+            [element], adapter, account, elementsSource
+          )
         }
         return element
       },
@@ -196,7 +202,7 @@ export const getAdaptersCreatorConfigs = async (
           credentials: credentials[account],
           config: await getConfig(account, defaultConfig),
           elementsSource: createElemIDReplacedElementsSource(filterElementsSource(
-            elementsSource, accountToServiceName[account]
+            elementsSource, account
           ), account, accountToServiceName[account]),
           getElemIdFunc: elemIdGetters[account],
         },

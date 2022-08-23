@@ -346,6 +346,7 @@ export const CUSTOM_LABEL_METADATA_TYPE = 'CustomLabel'
 export const CUSTOM_LABELS_METADATA_TYPE = 'CustomLabels'
 export const ROLE_METADATA_TYPE = 'Role'
 export const GROUP_METADATA_TYPE = 'Group'
+export const FLOW_METADATA_TYPE = 'Flow'
 
 // Artifitial Types
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'

@@ -16,7 +16,7 @@
 import { getChangeData, ElemID, Value, DetailedChange, ChangeDataType, Element, isObjectType, isPrimitiveType, isInstanceElement, isField, isAdditionChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { promises, values, collections } from '@salto-io/lowerdash'
-import { resolvePath, filterByID, detailedCompare, applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { resolvePath, filterByID, detailedCompare, applyFunctionToChangeData, applyDetailedChanges } from '@salto-io/adapter-utils'
 import {
   projectChange, projectElementOrValueToEnv, createAddChange, createRemoveChange,
 } from './projections'
@@ -35,11 +35,6 @@ export interface RoutedChangesByRole {
 export type RoutedChanges = {
   commonSource?: DetailedChange[]
   envSources?: Record<string, DetailedChange[]>
-}
-
-type DetailedChangeWithMergeableID<T = Value> = DetailedChange<T> & {
-  mergeableID: ElemID
-  mergeableIDPath: string[]
 }
 
 // Exported for testing
@@ -277,37 +272,6 @@ const createUpdateChanges = async (
   ]
 }
 
-const createMergeableChange = async (
-  changes: DetailedChangeWithMergeableID[],
-  primarySource: NaclFilesSource,
-  commonSource: NaclFilesSource
-): Promise<DetailedChange> => {
-  const refChange = changes[0]
-  const { mergeableID } = refChange
-  // If the mergeableID is a parent of the change id, we need to create
-  // the mergeable change by manualy applying the change to the current
-  // existing element.
-  const base = await commonSource.get(mergeableID) || await primarySource.get(mergeableID)
-  const baseAfter = _.cloneDeep(base)
-  changes.forEach(change => {
-    const changePath = change.mergeableIDPath
-    if (change.action === 'remove') {
-      _.unset(baseAfter, changePath)
-    } else {
-      _.set(baseAfter, changePath, change.data.after)
-    }
-  })
-  return {
-    action: 'modify',
-    id: mergeableID,
-    path: refChange.path,
-    data: {
-      before: base,
-      after: baseAfter,
-    },
-  }
-}
-
 const routeDefaultRemoveOrModify = async (
   change: DetailedChange,
   primarySource: NaclFilesSource,
@@ -480,30 +444,64 @@ export const routeIsolated = async (
   }
 }
 
-const partitionMergeableChanges = async (
+const createMergeableChange = (
+  mergeableID: ElemID,
+  changes: DetailedChange[],
+  baseElement: ChangeDataType,
+): DetailedChange => {
+  if (changes.length === 1 && changes[0].id.isEqual(mergeableID)) {
+    return changes[0]
+  }
+  const afterElement = baseElement.clone()
+  applyDetailedChanges(afterElement, changes)
+  return {
+    id: mergeableID,
+    action: 'modify',
+    path: changes[0].path,
+    data: {
+      before: resolvePath(baseElement, mergeableID),
+      after: resolvePath(afterElement, mergeableID),
+    },
+  }
+}
+
+const createMergeableChangesForElement = async (
+  topLevelID: ElemID,
   changes: DetailedChange[],
   primarySource: NaclFilesSource,
   commonSource: NaclFilesSource
-): Promise<[DetailedChangeWithMergeableID[], DetailedChangeWithMergeableID[]]> => {
-  const changesWithMergeableID = await Promise.all(changes.map(async change => {
-    const topLevelID = change.id.createTopLevelParentID().parent
-    const primaryFragment = await primarySource.get(topLevelID)
-    const commonFragment = await commonSource.get(topLevelID)
-    const { mergeableID, path: mergeableIDPath } = getMergeableParentID(
-      change.id, [primaryFragment, commonFragment].filter(values.isDefined)
-    )
-    return {
-      ...change,
-      mergeableID,
-      mergeableIDPath,
-    }
-  }))
+): Promise<DetailedChange[]> => {
+  if (changes.every(change => change.id.isTopLevel())) {
+    // changes of top level elements are always mergeable (they cannot be in an array)
+    return changes
+  }
+  // for nested changes we need to check, if the change is inside an array
+  // and that array exists in common, we will need to replace the change
+  // with a change that modifies the whole array
+  // this is because we cannot isolate just a part of an array
+  const commonFragment = await commonSource.get(topLevelID)
+  if (commonFragment === undefined) {
+    // When the top level is not in common, none of the changes are going
+    // to be in something that exists in common, so we can return all changes as-is
+    return changes
+  }
+  const primaryFragment = await primarySource.get(topLevelID)
+  const fragments = [commonFragment, primaryFragment].filter(values.isDefined)
 
-  return promises.array.partition(
-    changesWithMergeableID,
-    async change => !_.isEqual(change.id, change.mergeableID)
-        && !_.isUndefined(await commonSource.get(change.mergeableID))
+  // Note that there cannot be an overlap between groups here because getMergeableParentID
+  // stops on the first array it encounters
+  const changesByMergeableID = _.groupBy(
+    changes,
+    change => getMergeableParentID(change.id, fragments).mergeableID.getFullName(),
   )
+  const mergeableChanges = Object.entries(changesByMergeableID)
+    .map(([mergeableID, changeGroup]) => createMergeableChange(
+      ElemID.fromFullName(mergeableID),
+      changeGroup,
+      commonFragment,
+    ))
+
+  return mergeableChanges
 }
 
 const toMergeableChanges = async (
@@ -515,20 +513,18 @@ const toMergeableChanges = async (
   // We need to modify a change iff:
   // 1) It has a common projection
   // 2) It is inside an array
-  const [nonMergeableChanges, mergeableChanges] = await partitionMergeableChanges(
+  const changesByTopLevel = _.groupBy(
     changes,
-    primarySource,
-    commonSource
+    change => change.id.createTopLevelParentID().parent.getFullName(),
   )
-  return [
-    ...mergeableChanges,
-    ...await awu(Object.values(_.groupBy(
-      nonMergeableChanges,
-      c => c.mergeableID.getFullName()
-    )))
-      .map(c => createMergeableChange(c, primarySource, commonSource))
-      .toArray(),
-  ]
+  return awu(Object.values(changesByTopLevel))
+    .flatMap(changeGroup => createMergeableChangesForElement(
+      changeGroup[0].id.createTopLevelParentID().parent,
+      changeGroup,
+      primarySource,
+      commonSource,
+    ))
+    .toArray()
 }
 
 const unpackSources = (

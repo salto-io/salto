@@ -50,7 +50,9 @@ BRACKETS.forEach(([opener, closer]) => {
   typeSearchRegexes.push(new RegExp(`(${opener})([^\\$}]*dc\\.[\\w]+[^}]*)(${closer})`, 'g'))
 })
 const potentialReferenceTypeRegex = new RegExp(`((?:${POTENTIAL_REFERENCE_TYPES.join('|')})_[\\d]+)`, 'g')
-const potentialMacroFields = ['comment_value', 'comment_value_html', 'side_conversation']
+const potentialMacroFields = [
+  'comment_value', 'comment_value_html', 'side_conversation', 'side_conversation_ticket',
+]
 // triggers and automations notify users, webhooks
 // groups or targets with text that can include templates.
 const notificationTypes = ['notification_webhook', 'notification_user', 'notification_group', 'notification_target']

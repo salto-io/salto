@@ -14,17 +14,17 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { isReferenceExpression } from '@salto-io/adapter-api'
+import { isReferenceExpression, isInstanceElement } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
-import { GetLookupNameFunc } from '@salto-io/adapter-utils'
+import { GetLookupNameFunc, resolvePath } from '@salto-io/adapter-utils'
 import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_TYPE,
   BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, AUTOMATION_STATUS,
   AUTOMATION_CONDITION, AUTOMATION_CONDITION_CRITERIA, AUTOMATION_SUBTASK,
   AUTOMATION_ROLE, AUTOMATION_GROUP, AUTOMATION_EMAIL_RECIPENT, PROJECT_TYPE,
-  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME, AUTOMATION_COMPARE_VALUE } from './constants'
+  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME, AUTOMATION_COMPARE_VALUE, AUTOMATION_TYPE } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 
-const { neighborContextGetter } = referenceUtils
+const { neighborContextGetter, findParentPath } = referenceUtils
 
 const neighborContextFunc = (args: {
   contextFieldName: string
@@ -394,6 +394,7 @@ ReferenceContextStrategyName
     serializationStrategy: 'name',
     target: { type: 'Group' },
   },
+  // Overlapping rules, serialization strategy is determined by getAutomationValuesLookupFunc
   {
     src: { field: 'value', parentTypes: [AUTOMATION_FIELD] },
     serializationStrategy: 'id',
@@ -404,6 +405,7 @@ ReferenceContextStrategyName
     serializationStrategy: 'name',
     target: { type: 'Field' },
   },
+  // Overlapping rules, serialization strategy is determined by getAutomationValuesLookupFunc
   {
     src: { field: 'value', parentTypes: [AUTOMATION_STATUS] },
     serializationStrategy: 'id',
@@ -439,14 +441,26 @@ ReferenceContextStrategyName
     serializationStrategy: 'name',
     target: { type: 'ProjectRole' },
   },
+  // Overlapping rules, serialization strategy is determined by getAutomationValuesLookupFunc
   {
     src: { field: 'value', parentTypes: [AUTOMATION_COMPARE_VALUE] },
     serializationStrategy: 'id',
     target: { typeContext: 'parentSelectedFieldType' },
   },
   {
+    src: { field: 'value', parentTypes: [AUTOMATION_COMPARE_VALUE] },
+    serializationStrategy: 'name',
+    target: { typeContext: 'parentSelectedFieldType' },
+  },
+  // Overlapping rules, serialization strategy is determined by getAutomationValuesLookupFunc
+  {
     src: { field: 'values', parentTypes: [AUTOMATION_COMPARE_VALUE] },
     serializationStrategy: 'id',
+    target: { typeContext: 'parentSelectedFieldType' },
+  },
+  {
+    src: { field: 'values', parentTypes: [AUTOMATION_COMPARE_VALUE] },
+    serializationStrategy: 'name',
     target: { typeContext: 'parentSelectedFieldType' },
   },
   {
@@ -456,8 +470,33 @@ ReferenceContextStrategyName
   },
 ]
 
+/**
+ * Determine serialization strategy for references with overlapping serialization rules
+ * in automation instances: relevant fields will be resolved based on the neighbor type field
+ */
+export const getAutomationValuesLookupFunc: GetLookupNameFunc = ({
+  ref, path, element,
+}) => {
+  if (
+    path !== undefined
+    && isInstanceElement(element)
+    && element.elemID.typeName === AUTOMATION_TYPE
+  ) {
+    const parentPath = findParentPath(path)
+    const pathValue = resolvePath(element, parentPath)
+    const serializationType = pathValue?.type
+    switch (serializationType) {
+      case 'NAME': return ref.value.value.name
+      case 'ID': return ref.value.value.id
+      default: return ref
+    }
+  }
+  return ref
+}
+
 const lookupNameFuncs: GetLookupNameFunc[] = [
   getFieldsLookUpName,
+  getAutomationValuesLookupFunc,
   referenceUtils.generateLookupFunc(referencesRules),
 ]
 

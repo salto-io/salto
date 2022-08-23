@@ -20,7 +20,6 @@ import {
   Element,
   toChange,
   CORE_ANNOTATIONS,
-  ModificationChange,
   AdditionChange,
   RemovalChange,
   isAdditionChange,
@@ -38,7 +37,7 @@ import { RemoteMap } from './remote_map'
 const { isDefined } = values
 
 const log = logger(module)
-export const CHANGED_AT_INDEX_VERSION = 3
+export const CHANGED_AT_INDEX_VERSION = 4
 const CHANGED_AT_INDEX_KEY = 'changed_at_index'
 
 const getChangedAtDates = (change: Change<Element>): Record<string, ElemID[]> => {
@@ -86,23 +85,6 @@ const updateRemovalChange = (
   })
 }
 
-const updateModificationChange = (
-  change: ModificationChange<Element>,
-  datesMap: Record<string, Set<string>>,
-): void => {
-  if (change.data.after.annotations[CORE_ANNOTATIONS.CHANGED_AT]
-    !== change.data.before.annotations[CORE_ANNOTATIONS.CHANGED_AT]) {
-    updateRemovalChange(
-      toChange({ before: change.data.before }) as RemovalChange<Element>,
-      datesMap,
-    )
-    updateAdditionChange(
-      toChange({ after: change.data.after }) as AdditionChange<Element>,
-      datesMap,
-    )
-  }
-}
-
 const updateChange = (
   change: Change<Element>,
   datesMap: Record<string, Set<string>>,
@@ -112,7 +94,14 @@ const updateChange = (
   } else if (isRemovalChange(change)) {
     updateRemovalChange(change, datesMap)
   } else {
-    updateModificationChange(change, datesMap)
+    updateRemovalChange(
+      toChange({ before: change.data.before }) as RemovalChange<Element>,
+      datesMap,
+    )
+    updateAdditionChange(
+      toChange({ after: change.data.after }) as AdditionChange<Element>,
+      datesMap,
+    )
   }
 }
 

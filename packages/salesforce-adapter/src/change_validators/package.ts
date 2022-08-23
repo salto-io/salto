@@ -27,7 +27,7 @@ import {
   isObjectType,
   getAllChangeData,
   Change,
-  isAdditionChange,
+  isAdditionOrRemovalChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
@@ -128,7 +128,7 @@ const changeValidator: ChangeValidator = async changes => {
 
   const addRemoveErrors = await awu(installedPackagesChanges)
     .filter(async change => await isCustomObject(getChangeData(change)) || isFieldChange(change))
-    .filter(change => isAdditionChange(change) || isRemovalChange(change))
+    .filter(isAdditionOrRemovalChange)
     .map(change => packageChangeError(change.action, getChangeData(change)))
     .toArray()
 

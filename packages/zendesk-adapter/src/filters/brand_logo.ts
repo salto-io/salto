@@ -140,6 +140,10 @@ const fetchBrand = async (
   const response = await client.getSinglePage({
     url: `/brands/${brandId}`,
   })
+  if (response === undefined) {
+    log.error('Received empty response from Zendesk API. Not adding brand logo')
+    return undefined
+  }
   if (Array.isArray(response.data)) {
     log.error(`Received invalid response from Zendesk API, ${safeJsonStringify(response.data, undefined, 2).slice(0, RESULT_MAXIMUM_OUTPUT_SIZE)}. Not adding brand logo`)
     return undefined

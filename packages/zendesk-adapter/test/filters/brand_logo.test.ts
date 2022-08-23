@@ -207,6 +207,7 @@ describe('brand logo filter', () => {
         data: expect.any(FormData),
         headers: expect.anything(),
       })
+      expect(mockBrandGet).toHaveBeenCalledTimes(5)
 
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.leftoverChanges).toHaveLength(1)
@@ -287,9 +288,6 @@ describe('brand logo filter', () => {
         { action: 'add', data: { after: clonedBrand } },
         { action: 'add', data: { after: clonedLogo } },
       ])
-      const resolvedClonedBrand = clonedBrand.clone()
-      resolvedClonedBrand.value[LOGO_FIELD] = [logoId]
-      resolvedClonedBrand.value.id = brandId
 
       expect(mockPut).toHaveBeenCalledTimes(5)
       expect(mockPut).toHaveBeenCalledWith({
@@ -297,6 +295,37 @@ describe('brand logo filter', () => {
         data: expect.any(FormData),
         headers: expect.anything(),
       })
+      expect(mockBrandGet).toHaveBeenCalledTimes(5)
+
+      expect(res.deployResult.errors).toHaveLength(1)
+      expect(res.deployResult.errors[0]).toEqual(Error(`Can't deploy ${logoInstance.elemID.name} of the type brand_logo, due to Zendesk's API limitations. Please upload it manually in Zendesk Admin Center`))
+      expect(res.deployResult.appliedChanges).toHaveLength(0)
+      expect(res.leftoverChanges).toHaveLength(1)
+      expect((getChangeData(res.leftoverChanges[0]) as InstanceElement).value)
+        .toEqual(clonedBrand.value)
+    })
+    it('should fail deploy in case of not abling to re-fetch the brand (reaching maximum retries limit)', async () => {
+      const clonedBrand = brandInstance.clone()
+      const clonedLogo = logoInstance.clone()
+      mockPut = jest.spyOn(client, 'put')
+      mockPut.mockResolvedValue({ data: { brand: { logo: { id: logoId, file_name: 'test.png' } } }, status: 201 })
+      mockBrandGet.mockReturnValueOnce(undefined)
+      mockBrandGet.mockReturnValueOnce(undefined)
+      mockBrandGet.mockReturnValueOnce(undefined)
+      mockBrandGet.mockReturnValueOnce(undefined)
+      mockBrandGet.mockReturnValueOnce(undefined)
+      const res = await filter.deploy([
+        { action: 'add', data: { after: clonedBrand } },
+        { action: 'add', data: { after: clonedLogo } },
+      ])
+
+      expect(mockPut).toHaveBeenCalledTimes(5)
+      expect(mockPut).toHaveBeenCalledWith({
+        url: `/brands/${brandId}`,
+        data: expect.any(FormData),
+        headers: expect.anything(),
+      })
+      expect(mockBrandGet).toHaveBeenCalledTimes(5)
 
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.errors[0]).toEqual(Error(`Can't deploy ${logoInstance.elemID.name} of the type brand_logo, due to Zendesk's API limitations. Please upload it manually in Zendesk Admin Center`))

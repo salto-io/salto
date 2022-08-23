@@ -25,7 +25,7 @@ import { isConditions } from '../filters/utils'
 export const AUTOMATION_TYPE_NAME = 'automation'
 
 const fieldExist = (field: string): boolean =>
-  ['status', 'type', 'group.id', 'assignee_id', 'requester_id'].includes(field)
+  ['status', 'type', 'group_id', 'assignee_id', 'requester_id'].includes(field)
 
 const isNotValidData = (instance: InstanceElement): boolean => {
   const allConditions = instance.value.conditions?.all ?? []
@@ -46,6 +46,6 @@ export const automationAllConditionsValidator: ChangeValidator = async changes =
       severity: 'Error',
       message: 'Can not change automation ,because the ALL conditions do not contain a necessary field',
       detailedMessage: `Can not change automation ${instance.elemID.getFullName()} ,because none of the ALL conditions 
-      section does not contain the fields: Status, Type, Group, Assignee, Requester `,
+      section do not contain the fields: Status, Type, Group, Assignee, Requester`,
     }])
 }

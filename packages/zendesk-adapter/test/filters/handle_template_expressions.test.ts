@@ -116,12 +116,26 @@ describe('handle templates filter', () => {
 
   const placeholder1 = new InstanceElement('placeholder1', placeholder1Type, { id: 1452 })
   const placeholder2 = new InstanceElement('placeholder2', placeholder2Type, { id: 1453 })
+  const placeholder3 = new InstanceElement('placeholder3', placeholder2Type, { id: 1454 })
   const macro1 = new InstanceElement('macro1', testType, { id: 1001, actions: [{ value: 'non template', field: 'comment_value_html' }] })
   const macro2 = new InstanceElement('macro2', testType, { id: 1002, actions: [{ value: '{{ticket.ticket_field_1452}}', field: 'comment_value' }] })
   const macro3 = new InstanceElement('macro3', testType, { id: 1003, actions: [{ value: 'multiple refs {{ticket.ticket_field_1452}} and {{ticket.ticket_field_option_title_1453}}', field: 'comment_value_html' }] })
   const macroComplicated = new InstanceElement('macroComplicated', testType, { id: 1003, actions: [{ value: '{{some other irrelevancies-ticket.ticket_field_1452 | something irrelevant | dynamic content now: dc.dynamic_content_test | and done}}', field: 'comment_value_html' }] })
   const macroDifferentBracket = new InstanceElement('macroDifferentBracket', testType, { id: 1010, actions: [{ value: '{%some other irrelevancies-ticket.ticket_field_1452 | something irrelevant | dynamic content now: dc.dynamic_content_test | and done%}', field: 'comment_value_html' }] })
-
+  const macroWithSideConversationTicketTemplate = new InstanceElement(
+    'macroSideConvTicket',
+    testType,
+    {
+      id: 1020,
+      actions: [{ value: [
+        'Improved needs for {{ticket.ticket_field_option_title_1454}}',
+        '<p>Improved needs for {{ticket.ticket_field_option_title_1454}} due to something</p>',
+        'hello',
+        'text/html',
+      ],
+      field: 'side_conversation_ticket' }],
+    },
+  )
 
   const macroWithDC = new InstanceElement('macroDynamicContent', testType, { id: 1033, actions: [{ value: 'dynamic content ref {{dc.dynamic_content_test}} and {{ticket.ticket_field_option_title_1453}}', field: 'comment_value_html' }] })
 
@@ -144,7 +158,7 @@ describe('handle templates filter', () => {
     macroAlmostTemplate2, target, trigger, webhook, targetType, triggerType, webhookType,
     automation, automationType, dynamicContent, dynamicContentItemType, appInstallation,
     appInstallationType, macroWithDC, dynamicContentRecord, macroComplicated,
-    macroDifferentBracket])
+    macroDifferentBracket, macroWithSideConversationTicketTemplate, placeholder3])
     .map(element => element.clone())
 
   describe('on fetch', () => {
@@ -244,6 +258,19 @@ describe('handle templates filter', () => {
           '}}',
         ],
       }))
+    })
+
+    it('should resolve side_conversation_ticket correctly', () => {
+      const macroWithSideConv = elements
+        .filter(isInstanceElement)
+        .filter(i => i.elemID.name === 'macroSideConvTicket')[0]
+      expect(macroWithSideConv).toBeDefined()
+      expect(macroWithSideConv.value.actions[0].value).toEqual([
+        new TemplateExpression({ parts: ['Improved needs for {{', new ReferenceExpression(placeholder3.elemID, placeholder3), '}}'] }),
+        new TemplateExpression({ parts: ['<p>Improved needs for {{', new ReferenceExpression(placeholder3.elemID, placeholder3), '}} due to something</p>'] }),
+        'hello',
+        'text/html',
+      ])
     })
   })
   describe('preDeploy', () => {

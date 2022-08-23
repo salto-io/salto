@@ -40,7 +40,7 @@ import {
   IllegalReferenceValidationError,
   UnresolvedReferenceValidationError,
   MissingRequiredFieldValidationError,
-  AdditionalPropertiesValidatorError,
+  AdditionalPropertiesValidationError,
   RegexMismatchValidationError,
   InvalidValueRangeValidationError,
   InvalidValueMaxLengthValidationError,
@@ -100,7 +100,7 @@ const NameToType = {
   IllegalReferenceValidationError: IllegalReferenceValidationError,
   UnresolvedReferenceValidationError: UnresolvedReferenceValidationError,
   MissingRequiredFieldValidationError: MissingRequiredFieldValidationError,
-  AdditionalPropertiesValidatorError: AdditionalPropertiesValidatorError,
+  AdditionalPropertiesValidationError: AdditionalPropertiesValidationError,
   RegexMismatchValidationError: RegexMismatchValidationError,
   InvalidValueRangeValidationError: InvalidValueRangeValidationError,
   InvalidValueMaxLengthValidationError: InvalidValueMaxLengthValidationError,
@@ -410,8 +410,8 @@ const generalDeserialize = async <T>(
           fieldName: v.fieldName,
         })
       ),
-      AdditionalPropertiesValidatorError: v => (
-        new AdditionalPropertiesValidatorError({
+      AdditionalPropertiesValidationError: v => (
+        new AdditionalPropertiesValidationError({
           elemID: reviveElemID(v.elemID),
           fieldName: v.fieldName,
           typeName: v.typeName,

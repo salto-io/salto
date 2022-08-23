@@ -277,48 +277,21 @@ Built-in annotations are available everywhere in Salto. Their names will always 
 Annotations can be of any primitive type, as well as complex types.
 
 Currently the following core annotations are supported:
-- [NaCl Syntax](#nacl-syntax)
-  - [NaCl block types](#nacl-block-types)
-    - [Type blocks](#type-blocks)
-      - [Syntax](#syntax)
-      - [Example](#example)
-    - [Instance blocks](#instance-blocks)
-      - [Syntax](#syntax-1)
-      - [Example](#example-1)
-    - [Settings types and instances](#settings-types-and-instances)
-      - [Syntax](#syntax-2)
-      - [Example](#example-2)
-    - [Variables blocks](#variables-blocks)
-      - [Syntax](#syntax-3)
-      - [Example](#example-3)
-  - [Primitive types and values](#primitive-types-and-values)
-  - [Language features](#language-features)
-    - [References](#references)
-      - [Syntax](#syntax-4)
-      - [Examples](#examples)
-    - [Annotations](#annotations)
-      - [`_required`](#_required)
-      - [`_restriction`](#_restriction)
-      - [_hidden / _hidden_value](#_hidden--_hidden_value)
-      - [_parent](#_parent)
-      - [_generated_dependencies / _depends_on](#_generated_dependencies--_depends_on)
-      - [_service_url](#_service_url)
-      - [_is_service_id](#_is_service_id)
-      - [_created_by](#_created_by)
-      - [_created_at](#_created_at)
-      - [_changed_by](#_changed_by)
-      - [_changed_at](#_changed_at)
-      - [_creatable](#_creatable)
-      - [_updatable](#_updatable)
-      - [_deletable](#_deletable)
-      - [`_additional_properties`](#_additional_properties)
-      - [Adapter-specific annotations example](#adapter-specific-annotations-example)
-    - [Functions](#functions)
-      - [The `file` function](#the-file-function)
-  - [Merge rules](#merge-rules)
-    - [Value merging limitations](#value-merging-limitations)
-    - [Type merging limitations](#type-merging-limitations)
-
+- [_required](#_required)
+- [_restriction](#_restriction)
+- [_hidden / _hidden_value](#_hidden-_hidden_value)
+- [_parent](#_parent)
+- [_generated_dependencies / _depends_on](#_generated_dependencies-_depends_on)
+- [_service_url](#_service_url)
+- [_is_service_id](#_is_service_id)
+- [_created_by](#_created_by)
+- [_created_at](#_created_at)
+- [_changed_by](#_changed_by)
+- [_changed_at](#_changed_at)
+- [_creatable](#_created_at)
+- [_updatable](#_changed_by)
+- [_deletable](#_changed_at)
+- [-additional_properties](#_additional_properties)
 
 #### `_required`
 This annotation is used on field blocks to specify that an instance must contain a value for this field.
@@ -735,7 +708,8 @@ salto.notDeletable instance {
 ```
 
 #### `_additional_properties`
-This annotation is used on types. When it is set as false any instance of that type with a property that does not appear in the type definition will cause a validation warning
+This annotation can be used on types to specify whether the type allows additional properties.
+when it is set to false, values of this type may only contain the fields that this type allows, any additional value would cause a validation warning.
 
 Type: `boolean`
 Default: `true`

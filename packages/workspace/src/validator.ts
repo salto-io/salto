@@ -217,7 +217,7 @@ export class MissingRequiredFieldValidationError extends ValidationError {
     this.fieldName = fieldName
   }
 }
-export class AdditionalPropertiesValidatorError extends ValidationError {
+export class AdditionalPropertiesValidationError extends ValidationError {
   readonly fieldName: string
   readonly typeName: string
 
@@ -226,8 +226,8 @@ export class AdditionalPropertiesValidatorError extends ValidationError {
   ) {
     super({
       elemID,
-      error: `Field ${fieldName} is invalid since it is not defined in ${typeName}`
-      + ': the type does not allow additional properties',
+      error: `Field '${fieldName}' is not defined in the '${typeName}'`
+      + ' which does not allow additional properties.',
       severity: 'Warning',
     })
     this.fieldName = fieldName
@@ -467,7 +467,7 @@ const validateAdditionalPropertiesValue = (
   objType: ObjectType, elemID: ElemID, fieldName: string
 ): ValidationError[] =>
   (objType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] === false
-    ? [new AdditionalPropertiesValidatorError(
+    ? [new AdditionalPropertiesValidationError(
       { elemID, fieldName, typeName: objType.elemID.typeName }
     )] : [])
 

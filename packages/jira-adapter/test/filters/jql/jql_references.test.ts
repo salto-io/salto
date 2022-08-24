@@ -90,6 +90,22 @@ describe('jqlReferencesFilter', () => {
           {
             type: 'jira.jql.condition',
             rawValue: 'status = Done',
+            children: [
+              {
+                type: 'jira.lookup.issues',
+                value: {
+                  name: {
+                    type: 'FREE',
+                    value: 'lookupIssues',
+                  },
+                  type: 'JQL',
+                  query: {
+                    type: 'SMART',
+                    value: 'status IN (Done, "To Do")',
+                  },
+                },
+              },
+            ],
           },
         ],
       }
@@ -109,6 +125,27 @@ describe('jqlReferencesFilter', () => {
                 operator: '=',
                 operand: {
                   value: 'Done',
+                },
+              },
+            },
+          },
+          {
+            query: 'status IN (Done, "To Do")',
+            structure: {
+              where: {
+                field: {
+                  name: 'status',
+                },
+                operator: 'in',
+                operand: {
+                  values: [
+                    {
+                      value: 'Done',
+                    },
+                    {
+                      value: 'To Do',
+                    },
+                  ],
                 },
               },
             },
@@ -148,6 +185,12 @@ describe('jqlReferencesFilter', () => {
           occurrences: [
             {
               location: new ReferenceExpression(
+                automationInstance.elemID.createNestedID('conditions', '0', 'children', '0', 'value', 'query', 'value'),
+                'status IN (Done, "To Do")'
+              ),
+            },
+            {
+              location: new ReferenceExpression(
                 automationInstance.elemID.createNestedID('conditions', '0', 'rawValue'), 'status = Done'
               ),
             },
@@ -158,7 +201,24 @@ describe('jqlReferencesFilter', () => {
           occurrences: [
             {
               location: new ReferenceExpression(
+                automationInstance.elemID.createNestedID('conditions', '0', 'children', '0', 'value', 'query', 'value'),
+                'status IN (Done, "To Do")'
+              ),
+            },
+            {
+              location: new ReferenceExpression(
                 automationInstance.elemID.createNestedID('conditions', '0', 'rawValue'), 'status = Done'
+              ),
+            },
+          ],
+        },
+        {
+          reference: new ReferenceExpression(todoInstance.elemID, todoInstance),
+          occurrences: [
+            {
+              location: new ReferenceExpression(
+                automationInstance.elemID.createNestedID('conditions', '0', 'children', '0', 'value', 'query', 'value'),
+                'status IN (Done, "To Do")'
               ),
             },
           ],
@@ -168,7 +228,10 @@ describe('jqlReferencesFilter', () => {
       expect(connection.post).toHaveBeenCalledWith(
         '/rest/api/3/jql/parse',
         {
-          queries: ['status = Done'],
+          queries: [
+            'status = Done',
+            'status IN (Done, "To Do")',
+          ],
         },
         {
           params: {

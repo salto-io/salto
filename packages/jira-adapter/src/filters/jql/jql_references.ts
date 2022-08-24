@@ -41,49 +41,49 @@ type JqlDetails = {
   path: ElemID
 }
 
-const AUTOMATION_JQL_TYPES = [
-  { type: 'jira.jql.condition', relativePath: ['rawValue'] },
-  { type: 'jira.issue.assign', relativePath: ['value', 'jql'] },
-  { type: 'jira.issue.related', relativePath: ['value', 'jql'] },
-  { type: 'jira.issues.related.condition', relativePath: ['value', 'compareJql'] },
-  { type: 'jira.issues.related.condition', relativePath: ['value', 'relatedJql'] },
-  { type: 'jira.issues.related.condition', relativePath: ['value', 'jql'] },
-  { type: 'jira.jql.scheduled', relativePath: ['value', 'jql'] },
-  { type: 'JQL', relativePath: ['query', 'value'] },
-]
-
 const getAutomationJqls = (instance: InstanceElement): JqlDetails[] => {
+  // maps between the automation component type (which is determined by 'type' field)
+  // and the corresponding jql relative paths
+  const AUTOMATION_JQL_RELATIVE_PATHS_BY_TYPE: Record<string, string[][]> = {
+    'jira.jql.condition': [['rawValue']],
+    'jira.issue.assign': [['value', 'jql']],
+    'jira.issue.related': [['value', 'jql']],
+    'jira.issues.related.condition': [['value', 'compareJql'], ['value', 'relatedJql'], ['value', 'jql']],
+    'jira.jql.scheduled': [['value', 'jql']],
+    JQL: [['query', 'value']],
+  }
+
   const jqlPaths: JqlDetails[] = []
   walkOnElement({
     element: instance,
     func: ({ value, path }) => {
-      AUTOMATION_JQL_TYPES.filter(jqlType => jqlType.type === value.type)
-        .forEach(jqlType => {
-          const jqlValue = _.get(value, jqlType.relativePath)
+      const jqlRelativePaths = AUTOMATION_JQL_RELATIVE_PATHS_BY_TYPE[value.type]
+      if (jqlRelativePaths !== undefined) {
+        jqlRelativePaths.forEach(relativePath => {
+          const jqlValue = _.get(value, relativePath)
           jqlPaths.push({
-            path: path.createNestedID(...jqlType.relativePath),
+            path: path.createNestedID(...relativePath),
             jql: jqlValue,
           })
         })
+      }
       return WALK_NEXT_STEP.RECURSE
     },
   })
-  return jqlPaths
+  return jqlPaths.filter(({ jql }) => _.isString(jql))
 }
 
 const getJqls = async (instance: InstanceElement): Promise<JqlDetails[]> => {
-  let jqls
   if (instance.elemID.typeName === AUTOMATION_TYPE) {
-    jqls = getAutomationJqls(instance)
-  } else {
-    jqls = JQL_FIELDS
-      .filter(({ type }) => type === instance.elemID.typeName)
-      .map(({ path }) => ({
-        path: instance.elemID.createNestedID(...path),
-        jql: _.get(instance.value, path),
-      }))
+    return getAutomationJqls(instance)
   }
-  return jqls.filter(({ jql }) => _.isString(jql))
+  return JQL_FIELDS
+    .filter(({ type }) => type === instance.elemID.typeName)
+    .map(({ path }) => ({
+      path: instance.elemID.createNestedID(...path),
+      jql: _.get(instance.value, path),
+    }))
+    .filter(({ jql }) => _.isString(jql))
 }
 
 const requestJqlsStructure = async (jqls: string[], client: JiraClient)

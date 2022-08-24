@@ -61,16 +61,18 @@ const getAutomationJqls = (instance: InstanceElement): JqlDetails[] => {
       if (jqlRelativePaths !== undefined) {
         jqlRelativePaths.forEach(relativePath => {
           const jqlValue = _.get(value, relativePath)
-          jqlPaths.push({
-            path: path.createNestedID(...relativePath),
-            jql: jqlValue,
-          })
+          if (_.isString(jqlValue)) {
+            jqlPaths.push({
+              path: path.createNestedID(...relativePath),
+              jql: jqlValue,
+            })
+          }
         })
       }
       return WALK_NEXT_STEP.RECURSE
     },
   })
-  return jqlPaths.filter(({ jql }) => _.isString(jql))
+  return jqlPaths
 }
 
 const getJqls = async (instance: InstanceElement): Promise<JqlDetails[]> => {
@@ -133,7 +135,7 @@ const requestJqlsStructure = async (jqls: string[], client: JiraClient)
 }
 
 const filter: FilterCreator = ({ client }) => ({
-  onFetch: async elements => {
+  onFetch: async elements => log.time(async () => {
     const instances = elements.filter(isInstanceElement)
 
     const jqls = await awu(instances)
@@ -163,7 +165,7 @@ const filter: FilterCreator = ({ client }) => ({
           location: new ReferenceExpression(path, jql),
         })))
       })
-  },
+  }, 'jqlReferencesFilter'),
 })
 
 export default filter

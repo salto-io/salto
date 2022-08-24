@@ -20,11 +20,61 @@ import { JIRA } from '../../src/constants'
 
 describe('systemFieldsValidator', () => {
   const type = new ObjectType({ elemID: new ElemID(JIRA, FIELD_TYPE_NAME) })
-  it('should return an error if a field is a system field', async () => {
-    const systemFieldInstance = new InstanceElement('instance', type, { schema: {} })
+  const systemFieldInstance = new InstanceElement('instance', type, { schema: {}, description: 'description' })
+  it('should return an error if the field is a system field', async () => {
     expect(await systemFieldsValidator([
       toChange({
         after: systemFieldInstance,
+      }),
+    ])).toEqual([
+      {
+        elemID: systemFieldInstance.elemID,
+        severity: 'Error',
+        message: 'Can not deploy changes to a Jira system field',
+        detailedMessage: 'jira.Field.instance.instance is a built-in Jira system field, and can not be edited or deleted. Changes to this field will be not deployed',
+      },
+    ])
+  })
+
+  it('should return an error when attempting to modify a system field', async () => {
+    const modifiedSystemFieldInstance = new InstanceElement('instance', type, { schema: {}, description: 'modified description' })
+    expect(await systemFieldsValidator([
+      toChange({
+        before: systemFieldInstance,
+        after: modifiedSystemFieldInstance,
+      }),
+    ])).toEqual([
+      {
+        elemID: systemFieldInstance.elemID,
+        severity: 'Error',
+        message: 'Can not deploy changes to a Jira system field',
+        detailedMessage: 'jira.Field.instance.instance is a built-in Jira system field, and can not be edited or deleted. Changes to this field will be not deployed',
+      },
+    ])
+  })
+
+  it('should return an error when attempting to remove the schema field from a system field', async () => {
+    const modifiedSystemFieldInstance = new InstanceElement('instance', type, { description: 'description' })
+    expect(await systemFieldsValidator([
+      toChange({
+        before: systemFieldInstance,
+        after: modifiedSystemFieldInstance,
+      }),
+    ])).toEqual([
+      {
+        elemID: systemFieldInstance.elemID,
+        severity: 'Error',
+        message: 'Can not deploy changes to a Jira system field',
+        detailedMessage: 'jira.Field.instance.instance is a built-in Jira system field, and can not be edited or deleted. Changes to this field will be not deployed',
+      },
+    ])
+  })
+
+  it('should return an error when attempting to remove a system field', async () => {
+    // const systemFieldInstance = new InstanceElement('instance', type, { schema: {} })
+    expect(await systemFieldsValidator([
+      toChange({
+        before: systemFieldInstance,
       }),
     ])).toEqual([
       {

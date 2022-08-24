@@ -19,11 +19,10 @@ import { FIELD_TYPE_NAME } from '../filters/fields/constants'
 
 export const systemFieldsValidator: ChangeValidator = async changes => (
   changes
-    .filter(change => change !== undefined)
     .map(change => (isModificationChange(change) ? change.data.before : getChangeData(change)))
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === FIELD_TYPE_NAME)
-    .filter(instance => instance.value.schema)
+    .filter(instance => instance.value.schema !== undefined)
     .map(instance => ({
       elemID: instance.elemID,
       severity: 'Error',

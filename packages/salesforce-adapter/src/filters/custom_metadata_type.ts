@@ -15,8 +15,11 @@
 */
 import { isObjectType, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { collections } from '@salto-io/lowerdash'
 import { FilterWith, LocalFilterCreator } from '../filter'
 import { isCustomMetadataType } from './utils'
+
+const { awu } = collections.asynciterable
 
 const NON_DEPLOYABLE_FIELDS = [
   'Language',
@@ -28,7 +31,7 @@ const omitNonDeployableFields = (customMetadataType: ObjectType): void => {
 
 const filterCreator: LocalFilterCreator = () : FilterWith<'onFetch'> => ({
   onFetch: async elements => {
-    elements
+    await awu(elements)
       .filter(isObjectType)
       .filter(isCustomMetadataType)
       .forEach(omitNonDeployableFields)

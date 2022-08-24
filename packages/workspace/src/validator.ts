@@ -227,7 +227,7 @@ export class AdditionalPropertiesValidationError extends ValidationError {
     super({
       elemID,
       error: `Field '${fieldName}' is not defined in the '${typeName}'`
-      + ' which does not allow additional properties.',
+      + ' type which does not allow additional properties.',
       severity: 'Warning',
     })
     this.fieldName = fieldName
@@ -464,24 +464,15 @@ const createReferenceValidationErrors = (elemID: ElemID, value: Value): Validati
 }
 
 const validateAdditionalPropertiesValue = (
-  objType: ObjectType, elemID: ElemID, fieldName: string
-): ValidationError[] =>
-  (objType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] === false
-    ? [new AdditionalPropertiesValidationError(
-      { elemID, fieldName, typeName: objType.elemID.typeName }
-    )] : [])
-
-
-const validateFieldName = (
   elemID: ElemID,
   fieldName: string,
   objType : ObjectType,
-) : ValidationError[] => {
-  if (!(fieldName in objType.fields)) {
-    return validateAdditionalPropertiesValue(objType, elemID, fieldName)
-  }
-  return []
-}
+) : ValidationError[] =>
+  (!(fieldName in objType.fields)
+    ? [new AdditionalPropertiesValidationError(
+      { elemID, fieldName, typeName: objType.elemID.typeName }
+    )]
+    : [])
 
 const validateValue = (
   elemID: ElemID,
@@ -547,23 +538,15 @@ const validateValue = (
     if (!_.isObjectLike(value)) {
       return [new InvalidValueTypeValidationError({ elemID, value, type: type.elemID })]
     }
-    const objType = toObjectType(type, value)
-    const fieldValidationErrors = Object.keys(value).flatMap(
-      key => validateFieldName(
-        elemID,
-        key,
-        objType,
-      )
-    )
     return Object.keys(value).flatMap(
       // eslint-disable-next-line no-use-before-define
-      k => validateFieldValue(
-        elemID.createNestedID(k),
+      k => validateFieldValues(
+        elemID,
         value[k],
-        objType.fields[k]?.refType.type ?? BuiltinTypes.UNKNOWN,
-        objType.fields[k]?.annotations ?? {},
+        k,
+        toObjectType(type, value),
       )
-    ).concat(fieldValidationErrors)
+    )
   }
 
   if (type === BuiltinTypes.UNKNOWN) {
@@ -629,6 +612,23 @@ const validateFieldValue = (
     item.nestedID,
     item.value,
     innerType,
+  ))
+}
+
+const validateFieldValues = (
+  parentElemID: ElemID,
+  value: Value,
+  fieldName: string,
+  objType: ObjectType
+): ValidationError[] => {
+  const errors = objType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] === false
+    ? validateAdditionalPropertiesValue(parentElemID, fieldName, objType)
+    : []
+  return errors.concat(validateFieldValue(
+    parentElemID.createNestedID(fieldName),
+    value,
+    objType.fields[fieldName]?.refType.type ?? BuiltinTypes.UNKNOWN,
+    objType.fields[fieldName]?.annotations ?? {},
   ))
 }
 

@@ -810,10 +810,10 @@ describe('Elements validation', () => {
           )
           expect(errors).toHaveLength(2)
           expect(errors[0].message).toMatch('Error validating "salto.nested.instance.nestedinst":'
-            + ' Field additional is invalid since it is not defined in nested: the type does not allow additional properties')
+            + ' Field \'additional\' is not defined in the \'nested\' type which does not allow additional properties.')
           expect(errors[0].elemID).toEqual(extInst.elemID)
           expect(errors[1].message).toMatch('Error validating "salto.nested.instance.nestedinst":'
-            + ' Field additional2 is invalid since it is not defined in nested: the type does not allow additional properties')
+            + ' Field \'additional2\' is not defined in the \'nested\' type which does not allow additional properties.')
           expect(errors[1].elemID).toEqual(extInst.elemID)
         })
         it('should succeed when additional properties is true and there are additional properties', async () => {
@@ -849,6 +849,93 @@ describe('Elements validation', () => {
             ])
           )
           expect(errors).toHaveLength(0)
+        })
+        const elemIdTop = new ElemID('salto', 'top')
+        const elemIdNotValidating = new ElemID('salto', 'notvalidating')
+        const elemIdValidating = new ElemID('salto', 'validating')
+        const validatingType = new ObjectType({
+          elemID: elemIdValidating,
+          fields: {
+            str: { refType: BuiltinTypes.STRING },
+          },
+          annotations: {
+            [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+          },
+        })
+        const nonValidatingType = new ObjectType({
+          elemID: elemIdNotValidating,
+          fields: {
+            str: { refType: BuiltinTypes.STRING },
+          },
+        })
+        const topType = new ObjectType({
+          elemID: elemIdTop,
+          fields: {
+            mapField: { refType: new MapType(nonValidatingType),
+              annotations: { [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false } },
+            listField: { refType: new ListType(validatingType),
+              annotations: { [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false } },
+          },
+          annotations: {
+            [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+          },
+        })
+        it('should warn on nested fields when they have the additional properties annotation set to false', async () => {
+          const simpleTypeClone = simpleType.clone()
+          const temp = extType.fields.nested.refType.type as ObjectType
+          temp.annotations = {
+            [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+          }
+          extInst.refType = createRefToElmWithValue(extType)
+          extInst.value.reqNested = {
+            str: 'str',
+            num: 1,
+            bool: true,
+            additional: 'should cause warn',
+          }
+          const errors = await validateElements(
+            [extInst],
+            createInMemoryElementSource([
+              extInst,
+              extType,
+              ...await getFieldsAndAnnoTypes(extType),
+            ])
+          )
+          expect(errors).toHaveLength(1)
+          expect(errors[0].message).toMatch('Error validating "salto.nested.instance.nestedinst.reqNested":'
+          + ' Field \'additional\' is not defined in the \'simple\' type which does not allow additional properties.')
+          temp.annotations = simpleTypeClone.annotations
+        })
+        it('should work properly on maps and lists', async () => {
+          const testInstance = new InstanceElement(
+            'testinst',
+            topType,
+            {
+              mapField: {
+                a: { str: 'str' },
+                b: { str: 'str2', additional1: 'do not fail' },
+              },
+              listField: [
+                { str: 'str', additional2: 'should fail' },
+                { str: 'str2' },
+                { str: 'str3', additional3: 'should also fail' },
+              ],
+            },
+          )
+          const errors = await validateElements(
+            [testInstance],
+            createInMemoryElementSource([
+              testInstance,
+              topType,
+              validatingType,
+              nonValidatingType,
+            ])
+          )
+          expect(errors).toHaveLength(2)
+          expect(errors[0].message).toMatch('Error validating "salto.top.instance.testinst.listField.0":'
+            + ' Field \'additional2\' is not defined in the \'validating\' type which does not allow additional properties.')
+          expect(errors[1].message).toMatch('Error validating "salto.top.instance.testinst.listField.2":'
+            + ' Field \'additional3\' is not defined in the \'validating\' type which does not allow additional properties.')
         })
       })
 

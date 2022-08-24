@@ -16,7 +16,7 @@
 import { Element, ElemID, ObjectType, DetailedChange, StaticFile, SaltoError, Value, BuiltinTypes, createRefToElmWithValue, InstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { MockInterface } from '@salto-io/test-utils'
+import { MockInterface, mockFunction } from '@salto-io/test-utils'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
 import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
@@ -64,10 +64,13 @@ jest.mock('../../../src/workspace/nacl_files/nacl_file_update', () => ({
   }),
 }))
 
-jest.mock('../../../src/parser', () => ({
-  ...jest.requireActual<{}>('../../../src/parser'),
-  parse: jest.fn().mockResolvedValue({ elements: [], errors: [] }),
-}))
+jest.mock('../../../src/parser', () => {
+  const actual = jest.requireActual('../../../src/parser')
+  return {
+    ...actual,
+    parse: jest.fn().mockImplementation(actual.parse),
+  }
+})
 
 const validateParsedNaclFile = async (
   parsed: ParsedNaclFile | undefined,
@@ -97,22 +100,31 @@ describe('Nacl Files Source', () => {
   const mockRemoteMapCreator: RemoteMapCreator = async <T, K extends string = string>(
     { namespace }: CreateRemoteMapParams<T>
   ): Promise<RemoteMap<T, K>> => {
-    const mockMap = {
-      keys: jest.fn().mockReturnValue(awu([])),
-      values: jest.fn().mockReturnValue(awu([])),
-      entries: jest.fn().mockReturnValue(awu([])),
-      setAll: jest.fn(),
-      set: jest.fn().mockResolvedValue(undefined),
-      deleteAll: jest.fn(),
-      clear: jest.fn(),
-      flush: jest.fn(),
-      isEmpty: jest.fn().mockResolvedValue(true),
-      get: jest.fn().mockImplementation(
-        async (key: string) => (key.endsWith('hash') ? 'HASH' : undefined)
-      ),
-      getMany: jest.fn().mockImplementation((keys: string[]) => keys.map(_k => undefined)),
+    if (createdMaps[namespace] === undefined) {
+      const realMap = new InMemoryRemoteMap()
+      const getImpl = async (key: string): Promise<Value> => (key.endsWith('hash') ? 'HASH' : realMap.get(key))
+      createdMaps[namespace] = {
+        delete: mockFunction<RemoteMap<Value>['delete']>(),
+        get: mockFunction<RemoteMap<Value>['get']>().mockImplementation(getImpl),
+        getMany: mockFunction<RemoteMap<Value>['getMany']>().mockImplementation(
+          async keys => Promise.all(keys.map(getImpl))
+        ),
+        has: mockFunction<RemoteMap<Value>['has']>().mockImplementation(
+          async key => key.endsWith('hash') || realMap.has(key)
+        ),
+        set: mockFunction<RemoteMap<Value>['set']>().mockImplementation(realMap.set.bind(realMap)),
+        setAll: mockFunction<RemoteMap<Value>['setAll']>().mockImplementation(realMap.setAll.bind(realMap)),
+        deleteAll: mockFunction<RemoteMap<Value>['deleteAll']>().mockImplementation(realMap.deleteAll.bind(realMap)),
+        entries: mockFunction<RemoteMap<Value>['entries']>().mockImplementation(realMap.entries.bind(realMap)),
+        keys: mockFunction<RemoteMap<Value>['keys']>().mockImplementation(realMap.keys.bind(realMap)),
+        values: mockFunction<RemoteMap<Value>['values']>().mockImplementation(realMap.values.bind(realMap)),
+        flush: mockFunction<RemoteMap<Value>['flush']>().mockImplementation(realMap.flush.bind(realMap)),
+        revert: mockFunction<RemoteMap<Value>['revert']>().mockImplementation(realMap.revert.bind(realMap)),
+        clear: mockFunction<RemoteMap<Value>['clear']>().mockImplementation(realMap.clear.bind(realMap)),
+        close: mockFunction<RemoteMap<Value>['close']>().mockImplementation(realMap.close.bind(realMap)),
+        isEmpty: mockFunction<RemoteMap<Value>['isEmpty']>().mockImplementation(realMap.isEmpty.bind(realMap)),
+      }
     }
-    createdMaps[namespace] = mockMap as unknown as RemoteMap<Value>
     return createdMaps[namespace] as RemoteMap<T, K>
   }
 
@@ -126,7 +138,6 @@ describe('Nacl Files Source', () => {
       mockStaticFilesSource(),
       true
     )
-    mockParse.mockResolvedValue({ elements: [], errors: [] })
   })
 
   describe('clear', () => {
@@ -269,6 +280,43 @@ describe('Nacl Files Source', () => {
         true
       )).load({ ignoreFileChanges: true })
       expect(retrievedKeys).toEqual([])
+    })
+    describe('nacl source hash', () => {
+      describe('when hash changes to be empty', () => {
+        it('should remove the current hash from the metadata remote map', async () => {
+          // note - the default implementation returns "hash" as the "previous" hash
+          // using an empty dir store, so the update hash will be empty
+          const naclSource = await naclFilesSource(
+            '',
+            mockDirStore,
+            mockStaticFilesSource(),
+            mockRemoteMapCreator,
+            true,
+          )
+          const res = await naclSource.load({})
+          expect(res.postChangeHash).toBeUndefined()
+          const metadataMap = createdMaps['naclFileSource--metadata']
+          expect(metadataMap.delete).toHaveBeenCalledWith(naclFileSourceModule.HASH_KEY)
+        })
+      })
+      describe('when hash changes to non empty value', () => {
+        it('should set the new value', async () => {
+          const naclSource = await naclFilesSource(
+            '',
+            createMockDirStore(),
+            mockStaticFilesSource(),
+            mockRemoteMapCreator,
+            true,
+          )
+          const res = await naclSource.load({})
+          expect(res.postChangeHash).toBeDefined()
+          const metadataMap = createdMaps['naclFileSource--metadata']
+          expect(metadataMap.set).toHaveBeenCalledWith(
+            naclFileSourceModule.HASH_KEY,
+            res.postChangeHash,
+          )
+        })
+      })
     })
   })
 

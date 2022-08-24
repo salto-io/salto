@@ -57,10 +57,13 @@ export const resolveTemplates = (
   container: TemplateContainer,
   deployTemplateMapping: Record<string, TemplateExpression>
 ): void => {
+  const resolveTemplate = (value: string): TemplateExpression | string =>
+    deployTemplateMapping[value] ?? value
+
   const { fieldName } = container
   container.values.forEach(value => {
     const val = value[fieldName]
-    value[fieldName] = deployTemplateMapping[val] ?? val
+    value[fieldName] = Array.isArray(val) ? val.map(resolveTemplate) : resolveTemplate(val)
   })
 }
 

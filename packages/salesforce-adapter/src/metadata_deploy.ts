@@ -192,8 +192,8 @@ const processDeployResponse = (
       `Failed to deploy ${failure.fullName} with error: ${failure.problem} (${failure.problemType})`
     ))
   const codeCoverageWarningErrors = makeArray(result.details)
-    .map(detail => detail.runTestResult as RunTestsResult)
-    .flatMap(runTestResult => makeArray(runTestResult.codeCoverageWarnings))
+    .map(detail => detail.runTestResult as RunTestsResult | undefined)
+    .flatMap(runTestResult => makeArray(runTestResult?.codeCoverageWarnings))
     .map(codeCoverageWarning => codeCoverageWarning?.message)
     .map(message => new Error(message))
 

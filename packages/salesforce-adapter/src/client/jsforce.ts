@@ -112,7 +112,7 @@ export interface CodeCoverageWarning {
 export interface RunTestsResult {
   apexLogId?: string
   codeCoverage?: ArrayOrSingle<object> // CodeCoverageResult[]
-  codeCoverageWarnings?: ArrayOrSingle<CodeCoverageWarning> // CodeCoverageWarnings[]
+  codeCoverageWarnings?: ArrayOrSingle<CodeCoverageWarning>
   failures?: ArrayOrSingle<RunTestFailure>
   flowCoverage?: ArrayOrSingle<object> // FlowCoverageResult[]
   flowCoverageWarnings?: ArrayOrSingle<object> // FlowCoverageWarning[]

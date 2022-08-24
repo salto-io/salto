@@ -13,9 +13,25 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, getChangeData, InstanceElement, isModificationChange, isRemovalChange, ChangeError, ChangeValidator, ActionName, isInstanceChange, isFieldChange, isObjectType } from '@salto-io/adapter-api'
+import {
+  Element,
+  getChangeData,
+  InstanceElement,
+  isModificationChange,
+  isRemovalChange,
+  ChangeError,
+  ChangeValidator,
+  ActionName,
+  isInstanceChange,
+  isFieldChange,
+  isObjectType,
+  getAllChangeData,
+  Change,
+  isAdditionOrRemovalChange,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
+import { detailedCompare } from '@salto-io/adapter-utils'
 import { apiName, isCustomObject, metadataType } from '../transformers/transformer'
 import { NAMESPACE_SEPARATOR } from '../constants'
 import { INSTANCE_SUFFIXES } from '../types'
@@ -60,6 +76,41 @@ const packageChangeError = async (
   })
 }
 
+const CUSTOM_FIELD_MODIFIABLE_ITEMS = new Set([
+  'inlineHelpText',
+  'businessOwnerUser',
+  'businessOwnerGroup',
+  'businessStatus',
+  'complianceGroup',
+  'securityClassification',
+])
+
+const CUSTOM_OBJECT_MODIFIABLE_ITEMS = new Set([
+  'enableActivities',
+  'enableBulkApi',
+  'enableHistory',
+  'enableReports',
+  'allowInChatterGroups',
+  'deploymentStatus',
+  'allowSharing',
+  'enableStreamingApi',
+])
+
+const getModifiedAnnotationNames = (change: Change): string[] => {
+  const [before, after] = getAllChangeData(change)
+  return detailedCompare(before, after)
+    .map(valueDiff => valueDiff.id.createBaseID().path[0])
+}
+const isForbiddenFieldModification = (change: Change): boolean => (
+  !getModifiedAnnotationNames(change)
+    .every(fieldName => CUSTOM_FIELD_MODIFIABLE_ITEMS.has(fieldName))
+)
+
+const isForbiddenObjectModification = (change: Change): boolean => (
+  !getModifiedAnnotationNames(change)
+    .every(fieldName => CUSTOM_OBJECT_MODIFIABLE_ITEMS.has(fieldName))
+)
+
 const isInstalledPackageVersionChange = async (
   { before, after }: { before: InstanceElement; after: InstanceElement }
 ): Promise<boolean> => (
@@ -68,10 +119,37 @@ const isInstalledPackageVersionChange = async (
 )
 
 const changeValidator: ChangeValidator = async changes => {
-  const addRemoveErrors = await awu(changes)
-    .filter(async change => await isCustomObject(getChangeData(change)) || isFieldChange(change))
+  const installedPackagesChanges = await awu(changes)
     .filter(change => hasNamespace(getChangeData(change)))
+    .toArray()
+  const modificationInstalledPackagesChanges = await awu(installedPackagesChanges)
+    .filter(isModificationChange)
+    .toArray()
+
+  const addRemoveErrors = await awu(installedPackagesChanges)
+    .filter(async change => await isCustomObject(getChangeData(change)) || isFieldChange(change))
+    .filter(isAdditionOrRemovalChange)
     .map(change => packageChangeError(change.action, getChangeData(change)))
+    .toArray()
+
+  const fieldModifyErrors = await awu(modificationInstalledPackagesChanges)
+    .filter(async change => isFieldChange(change))
+    .filter(isForbiddenFieldModification)
+    .map(change => packageChangeError(
+      change.action,
+      getChangeData(change),
+      `Cannot modify managed object: entity=CustomFieldDefinition. Modification only possible for ${Array.from(CUSTOM_FIELD_MODIFIABLE_ITEMS).join(', ')}`,
+    ))
+    .toArray()
+
+  const objectModifyErrors = await awu(modificationInstalledPackagesChanges)
+    .filter(async change => isCustomObject(getChangeData(change)))
+    .filter(isForbiddenObjectModification)
+    .map(change => packageChangeError(
+      change.action,
+      getChangeData(change),
+      `Cannot modify managed object: entity=CustomObjectDefinition. Modification only possible for ${Array.from(CUSTOM_OBJECT_MODIFIABLE_ITEMS).join(', ')}`,
+    ))
     .toArray()
 
   const removeObjectWithPackageFieldsErrors = awu(changes)
@@ -101,6 +179,8 @@ const changeValidator: ChangeValidator = async changes => {
 
   return [
     ...addRemoveErrors,
+    ...fieldModifyErrors,
+    ...objectModifyErrors,
     ...await removeObjectWithPackageFieldsErrors,
     ...packageVersionChangeErrors,
   ]

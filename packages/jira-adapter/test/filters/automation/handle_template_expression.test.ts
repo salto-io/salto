@@ -53,7 +53,7 @@ describe('handle templates filter', () => {
           inner: 'Issue first field is: {{issue.fieldOne}} ending',
         } },
         { value: {
-          inner: 'Issue due date is: {{issue.Due Date}} ending',
+          inner: 'Issue due date is: {{issue.duedate}} ending',
         } },
         { value: {
           inner: 'Issue space field is: {{issue.Field With Spaces}} ending',

@@ -99,7 +99,7 @@ const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promi
 
 const prepRef = (part: ReferenceExpression): TemplatePart =>
   `issue.${(part.value?.value ? (issueTypeNameToFieldMapping[part.value.value.name]
-    ?? part?.value?.value?.name) : '')}`
+    ?? part.value.value.name) : '')}`
 
 /**
  * Process values that can reference other objects and turn them into TemplateExpressions

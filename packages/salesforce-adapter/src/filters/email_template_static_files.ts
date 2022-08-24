@@ -84,7 +84,7 @@ const createFolder = (instance: InstanceElement): string | undefined => {
   if (!_.isUndefined(instance.value.fullName)) {
     const folderName = `${SALESFORCE}/${RECORDS_PATH}/${EMAIL_TEMPLATE_METADATA_TYPE}/${instance.value.fullName}`
     const emailName = `${instance.value.fullName.split('/').slice(1)}.email`
-    instance.value.content = createStaticFile(folderName, emailName, 'bbb')
+    _.set(instance, ['value', 'content', 'filepath'], `${folderName}/${emailName}`)
     return folderName
   }
   return undefined

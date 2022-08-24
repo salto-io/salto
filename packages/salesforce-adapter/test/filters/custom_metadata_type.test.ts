@@ -15,7 +15,7 @@
 */
 
 
-import { BuiltinTypes, Change, ElemID, getChangeData, ObjectType, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, ObjectType } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/custom_metadata_type'
 import { defaultFilterContext } from '../utils'
 import { API_NAME, SALESFORCE } from '../../src/constants'
@@ -46,48 +46,6 @@ describe('customMetadataTypeFilter', () => {
       })
       it('should omit the field from the ObjectType', () => {
         expect(Object.keys(elements[0].fields)).toEqual(['DeployableField'])
-      })
-    })
-  })
-  describe('onDeploy', () => {
-    let changes: Change<ObjectType>[] = []
-    describe('when custom metadata type contains a non deployable field', () => {
-      beforeEach(async () => {
-        const customMetadataTypeWithNonDeployableField = new ObjectType({
-          elemID: new ElemID(SALESFORCE, CUSTOM_METADATA_TYPE_NAME),
-          fields: {
-            Language: { refType: BuiltinTypes.STRING },
-            DeployableField: { refType: BuiltinTypes.NUMBER },
-          },
-          annotations: {
-            [API_NAME]: CUSTOM_METADATA_TYPE_NAME,
-          },
-        })
-        changes = [toChange({ after: customMetadataTypeWithNonDeployableField })]
-        await filter().preDeploy(changes)
-      })
-      it('should omit the field from the ObjectType', () => {
-        expect(Object.keys(getChangeData(changes[0]).fields)).toEqual(['DeployableField'])
-      })
-    })
-
-    describe('when custom metadata type contains a non deployable annotation', () => {
-      beforeEach(async () => {
-        const customMetadataTypeWithNonDeployableField = new ObjectType({
-          elemID: new ElemID(SALESFORCE, CUSTOM_METADATA_TYPE_NAME),
-          fields: {
-            DeployableField: { refType: BuiltinTypes.NUMBER },
-          },
-          annotations: {
-            [API_NAME]: CUSTOM_METADATA_TYPE_NAME,
-            deploymentStatus: 'Deployed',
-          },
-        })
-        changes = [toChange({ after: customMetadataTypeWithNonDeployableField })]
-        await filter().preDeploy(changes)
-      })
-      it('should omit the annotation from the ObjectType', () => {
-        expect(Object.keys(getChangeData(changes[0]).annotations)).toEqual([API_NAME])
       })
     })
   })

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, getAllChangeData, getChangeData, isObjectType, ObjectType } from '@salto-io/adapter-api'
+import { isObjectType, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { FilterWith, LocalFilterCreator } from '../filter'
 import { isCustomMetadataType } from './utils'
@@ -22,42 +22,16 @@ const NON_DEPLOYABLE_FIELDS = [
   'Language',
 ]
 
-const NON_DEPLOYABLE_ANNOTATIONS = [
-  'deploymentStatus',
-  'nameField',
-]
-
 const omitNonDeployableFields = (customMetadataType: ObjectType): void => {
   customMetadataType.fields = _.omit(customMetadataType.fields, NON_DEPLOYABLE_FIELDS)
 }
 
-const omitNonDeployableAnnotations = (customMetadataType: ObjectType): void => {
-  customMetadataType.annotations = _.omit(
-    customMetadataType.annotations,
-    NON_DEPLOYABLE_ANNOTATIONS
-  )
-}
-
-const isCustomMetadataTypeChange = (change: Change): change is Change<ObjectType> => {
-  const changeElement = getChangeData(change)
-  return isObjectType(changeElement) && isCustomMetadataType(changeElement)
-}
-
-const filterCreator: LocalFilterCreator = () : FilterWith<'onFetch'> & FilterWith<'preDeploy'> => ({
+const filterCreator: LocalFilterCreator = () : FilterWith<'onFetch'> => ({
   onFetch: async elements => {
     elements
       .filter(isObjectType)
       .filter(isCustomMetadataType)
       .forEach(omitNonDeployableFields)
-  },
-  preDeploy: async changes => {
-    changes
-      .filter(isCustomMetadataTypeChange)
-      .flatMap(getAllChangeData)
-      .forEach(change => {
-        omitNonDeployableFields(change)
-        omitNonDeployableAnnotations(change)
-      })
   },
 })
 

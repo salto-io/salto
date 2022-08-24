@@ -13,29 +13,33 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, InstanceElement, isInstanceElement, isStaticFile, StaticFile } from '@salto-io/adapter-api'
+import { Element, InstanceElement, isInstanceElement, StaticFile } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { createSchemeGuard, TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import _ from 'lodash'
 import { LocalFilterCreator } from '../filter'
 import { apiName } from '../transformers/transformer'
-import { EMAIL_TEMPLATE_METADATA_TYPE } from '../constants'
+import { EMAIL_TEMPLATE_METADATA_TYPE, RECORDS_PATH, SALESFORCE } from '../constants'
 import { isInstanceOfType } from './utils'
 
 const { awu } = collections.asynciterable
 
 const log = logger(module)
 
+// Attachment content should be a string before the creation of the static file
 type Attachment = {
   name: string
-  content: string
+  content: string | StaticFile
 }
 
-type TransformedAttachment = {
-  name: string
-  content: StaticFile
+type EmailAttachmentsArray = {
+  attachments: Attachment[]
+}
+
+type EmailSingleAttachment = {
+  attachments: Attachment
 }
 
 const ATTACHMENT = Joi.object({
@@ -43,54 +47,64 @@ const ATTACHMENT = Joi.object({
   content: Joi.string().required(),
 }).required()
 
-const isAttachment = createSchemeGuard<Attachment>(ATTACHMENT)
-const createStaticFile = (
-  folderName: string | undefined,
-  name: string,
-  content: string
-): StaticFile => new StaticFile({
-  filepath: `${folderName}/${name}`,
-  content: Buffer.from(content),
-  encoding: 'utf-8',
-})
+const EMAIL_ATTACHMENTS_ARRAY = Joi.object({
+  attachments: Joi.array().items(ATTACHMENT).required(),
+}).required()
 
-const createFolder = (instance: InstanceElement): string => {
-  const oldPath = instance.value.content.filepath.split('/')
-  const emailName = oldPath.pop()
-  const folderName = `${oldPath.join('/')}/${emailName?.split('.')[0]}`
-  _.set(instance, ['value', 'content', 'filepath'], `${folderName}/${emailName}`)
-  return folderName
+const EMAIL_SINGLE_ATTACHMENT = Joi.object({
+  attachments: ATTACHMENT,
+}).required()
+// make array
+
+const isEmailAttachmentsArray = createSchemeGuard<EmailAttachmentsArray>(EMAIL_ATTACHMENTS_ARRAY)
+
+const isEmailSingleAttachment = createSchemeGuard<EmailSingleAttachment>(EMAIL_SINGLE_ATTACHMENT)
+
+
+const createStaticFile = (
+  folderName: string,
+  name: string,
+  content: string | StaticFile
+): StaticFile =>
+  // if (isStaticFile(content)) {
+  //   return new StaticFile({
+  //     filepath: `${folderName}/${name}`,
+  //     content: content.internalContent? ,
+  //     encoding: 'utf-8',
+  //   })
+  // }
+  new StaticFile({
+    filepath: `${folderName}/${name}`,
+    content: Buffer.from(content),
+    encoding: 'utf-8',
+  })
+
+
+const createFolder = (instance: InstanceElement): string | undefined => {
+  if (!_.isUndefined(instance.value.fullName)) {
+    const folderName = `${SALESFORCE}/${RECORDS_PATH}/${EMAIL_TEMPLATE_METADATA_TYPE}/${instance.value.fullName}`
+    const emailName = `${instance.value.fullName.split('/').slice(1)}.email`
+    instance.value.content = createStaticFile(folderName, emailName, 'bbb')
+    return folderName
+  }
+  return undefined
 }
 
 const organizeStaticFiles = async (instance: InstanceElement): Promise<void> => {
-  const folderPath = isStaticFile(instance.value.content) ? createFolder(instance) : undefined
-  const transformFunc: TransformFunc = async ({ value, field }) => {
-    const fieldName = _.isUndefined(field) ? undefined : field.name
-    if (isAttachment(value) && fieldName === 'attachments') {
-      const instApiName = await apiName(instance)
-      if (folderPath === undefined) {
-        log.error(`could not extract the attachment ${value.name} of instance ${instApiName} to static file, instance path is undefined`)
-        return value
-      }
-      const transformedAttachment: TransformedAttachment = {
-        ...value,
-        content: createStaticFile(folderPath, value.name, value.content),
-      }
-      return transformedAttachment
-    }
-    return value
+  const folderPath = createFolder(instance)
+  if (_.isUndefined(folderPath)) {
+    const instApiName = await apiName(instance)
+    log.warn(`could not extract the attachments of instance ${instApiName}, instance path is undefined`)
+  } else if (isEmailSingleAttachment(instance.value)) {
+    instance.value.attachments.content = createStaticFile(
+      folderPath, instance.value.attachments.name,
+      instance.value.attachments.content
+    )
+  } else if (isEmailAttachmentsArray(instance.value)) {
+    instance.value.attachments.forEach(attachment => {
+      attachment.content = createStaticFile(folderPath, attachment.name, attachment.content)
+    })
   }
-
-  const values = instance.value
-  const type = await instance.getType()
-  instance.value = await transformValues(
-    {
-      values,
-      type,
-      transformFunc,
-      strict: false,
-    }
-  ) ?? values
 }
 
 /**
@@ -101,7 +115,7 @@ const filter: LocalFilterCreator = () => ({
     await awu(elements)
       .filter(isInstanceElement)
       .filter(isInstanceOfType(EMAIL_TEMPLATE_METADATA_TYPE))
-      .forEach(inst => organizeStaticFiles(inst))
+      .forEach(organizeStaticFiles)
   },
 })
 

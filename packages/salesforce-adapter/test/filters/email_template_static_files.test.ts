@@ -87,8 +87,7 @@ describe('emailTemplate static files filter', () => {
 
     const emailTemplateNoContent = new InstanceElement('emailTemplateNoContent', emailType, {
       [ATTACHMENTS]: [{ name: ATTACHMENTONENAME, content: ATTACHMENTONEASSTRING }],
-    },
-    ['Objects', 'dir', 'emailTemplateNoContent'])
+    })
 
     elements = [emailNoArrayAttachment, emailArrayAttachment, emailTemplateNoContent, emailType]
   })

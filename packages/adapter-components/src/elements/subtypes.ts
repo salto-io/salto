@@ -14,8 +14,10 @@
 * limitations under the License.
 */
 import { isContainerType, ObjectType, isObjectType } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 
+const log = logger(module)
 const { awu } = collections.asynciterable
 
 export const getSubtypes = async (types: ObjectType[]): Promise<ObjectType[]> => {
@@ -28,8 +30,13 @@ export const getSubtypes = async (types: ObjectType[]): Promise<ObjectType[]> =>
         ? await fieldContainerOrType.getInnerType()
         : fieldContainerOrType
 
+      if (fieldType.elemID.getFullName() in subtypes) {
+        if (subtypes[fieldType.elemID.getFullName()] !== fieldType) {
+          log.warn(`duplicate ElemIDs of subtypes found. the duplicate is ${fieldType.elemID.getFullName()}`)
+        }
+        return
+      }
       if (!isObjectType(fieldType)
-        || fieldType.elemID.getFullName() in subtypes
         || types.includes(fieldType)) {
         return
       }

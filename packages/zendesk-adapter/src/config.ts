@@ -1839,7 +1839,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
 }
 
 const IdLocatorType = createMatchingObjectType<IdLocator>({
-  elemID: new ElemID(ZENDESK, 'recurseIntoContext'),
+  elemID: new ElemID(ZENDESK, 'IdLocatorType'),
   fields: {
     fieldRegex: {
       refType: BuiltinTypes.STRING,

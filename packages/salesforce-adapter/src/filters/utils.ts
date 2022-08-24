@@ -45,7 +45,7 @@ export const id = (elem: Element): string => elem.elemID.getFullName()
 
 export const isCustomMetadataType = async (elem: ObjectType): Promise<boolean> => {
   const elementApiName = await apiName(elem)
-  return elementApiName?.endsWith('__mdt')
+  return elementApiName?.endsWith('__mdt') ?? false
 }
 
 export const boolValue = (val: JSONBool):

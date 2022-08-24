@@ -154,7 +154,7 @@ describe('handle templates filter', () => {
         const undefinedValue: Values | undefined = undefined
         errorInstance.value = (undefinedValue as unknown) as Values
         await filter.onFetch([automationType, errorInstance])
-        expect(logErrorSpy).toHaveBeenCalledWith('Error parsing templates in fetch: Cannot read property \'components\' of undefined')
+        expect(logErrorSpy).toHaveBeenCalledWith('Error parsing templates in fetch: Cannot read property \'components\' of undefined', expect.any(Error))
       })
     })
     describe('preDeploy', () => {
@@ -181,7 +181,7 @@ describe('handle templates filter', () => {
         const undefinedValue: Values | undefined = undefined
         errorInstance.value = (undefinedValue as unknown) as Values
         await filter.preDeploy([toChange({ before: errorInstance, after: errorInstance })])
-        expect(logErrorSpy).toHaveBeenCalledWith('Error parsing templates in deployment: Cannot read property \'components\' of undefined')
+        expect(logErrorSpy).toHaveBeenCalledWith('Error parsing templates in deployment: Cannot read property \'components\' of undefined', expect.any(Error))
       })
     })
 
@@ -202,6 +202,18 @@ describe('handle templates filter', () => {
 
       it('Returns elements to after fetch state (with templates) after onDeploy', () => {
         expect(elementsAfterOnDeploy).toEqual(elementsAfterFetch)
+      })
+    })
+
+
+    describe('on onDeploy failure', () => {
+      it('logs exception without error', async () => {
+        const errorInstance = new InstanceElement('emptyelement', automationType)
+        // Some shenanigans to cause an error that should be impossible
+        const undefinedValue: Values | undefined = undefined
+        errorInstance.value = (undefinedValue as unknown) as Values
+        await filter.onDeploy([toChange({ before: errorInstance, after: errorInstance })])
+        expect(logErrorSpy).toHaveBeenCalledWith('Error restoring templates in deployment: Cannot read property \'components\' of undefined', expect.any(Error))
       })
     })
 })

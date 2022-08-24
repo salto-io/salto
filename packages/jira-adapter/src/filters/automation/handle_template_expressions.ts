@@ -93,7 +93,7 @@ const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promi
       })
     })
   } catch (e) {
-    log.error(`Error parsing templates in deployment: ${e.message}`)
+    log.error(`Error parsing templates in fetch: ${e.message}`)
   }
 }
 
@@ -111,22 +111,24 @@ const filterCreator: FilterCreator = () => {
       replaceFormulasWithTemplates(elements.filter(isInstanceElement)), 'Create template creation filter'),
     preDeploy: (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () => {
       try {
-        (getAutomations(await awu(changes).map(getChangeData).toArray())).forEach(
-          async instance => (instance.value.components ?? []).forEach((component: Component) => {
-            if (component.value) {
-              Object.keys(component.value).forEach(k => {
-                replaceTemplatesWithValues({ fieldName: k, values: [component.value] },
-                  deployTemplateMapping, prepRef)
-              })
-            }
-          })
-        )
+        await (Promise.all(getAutomations(await awu(changes).map(getChangeData).toArray())
+          .filter(isInstanceElement).flatMap(
+            async instance => (instance.value.components ?? []).flatMap((component: Component) => {
+              if (component.value) {
+                Object.keys(component.value).forEach(k => {
+                  replaceTemplatesWithValues({ fieldName: k, values: [component.value] },
+                    deployTemplateMapping, prepRef)
+                })
+              }
+            })
+          )))
       } catch (e) {
         log.error(`Error parsing templates in deployment: ${e.message}`)
       }
     }, 'Create template resolve filter'),
     onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () =>
-      (getAutomations(await awu(changes).map(getChangeData).toArray())).forEach(
+      (getAutomations(await awu(changes).map(getChangeData).toArray())
+        .filter(isInstanceElement)).forEach(
         async instance => (instance.value.components ?? []).forEach((component: Component) => {
           if (component.value) {
             Object.keys(component.value).forEach(k => {

@@ -14,10 +14,15 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression,
-  BuiltinTypes, TemplateExpression, MapType, toChange, isInstanceElement } from '@salto-io/adapter-api'
+  BuiltinTypes, TemplateExpression, MapType, toChange, isInstanceElement, Values } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
+import { logger } from '@salto-io/logging'
 import filterCreator from '../../../src/filters/automation/handle_template_expressions'
 import { getFilterParams } from '../../utils'
+
+const logging = logger('jira-adapter/src/filters/automation/handle_template_expressions')
+const logErrorSpy = jest.spyOn(logging, 'error')
+
 
 describe('handle templates filter', () => {
     type FilterType = filterUtils.FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
@@ -25,6 +30,10 @@ describe('handle templates filter', () => {
 
     beforeAll(() => {
       filter = filterCreator(getFilterParams()) as FilterType
+    })
+
+    beforeEach(() => {
+      logErrorSpy.mockReset()
     })
 
     const automationType = new ObjectType({
@@ -61,14 +70,19 @@ describe('handle templates filter', () => {
         { value: {
           inner: 'Issue no field is: {{issue.notafield}} ending',
         } },
+        { value: {
+          inner: 'Issue should ignore field is: {{issue.duedate.something}} ending',
+        } },
       ] })
+
+    const emptyAutomationInstance = new InstanceElement('emptyAutom', automationType)
 
 
     const generateElements = (): (InstanceElement | ObjectType)[] => ([fieldOne, duedateField,
       fieldWithSpaces, automationInstance, fieldType,
-      automationType]).map(element => element.clone())
+      automationType, emptyAutomationInstance]).map(element => element.clone())
 
-    describe('on fetch', () => {
+    describe('on fetch successful', () => {
       let elements: (InstanceElement | ObjectType)[]
       let automation: InstanceElement
 
@@ -78,6 +92,11 @@ describe('handle templates filter', () => {
         const automationResult = elements.filter(isInstanceElement).find(i => i.elemID.name === 'autom')
         expect(automationResult).toBeDefined()
         automation = automationResult as InstanceElement
+      })
+
+      it('should ignore empty automation', () => {
+        expect(elements.filter(isInstanceElement).find(i => i.elemID.name === 'emptyAutom'))
+          .toEqual(emptyAutomationInstance)
       })
 
       it('should resolve simple template', () => {
@@ -121,6 +140,22 @@ describe('handle templates filter', () => {
           'Issue no field is: {{issue.notafield}} ending',
         )
       })
+
+      it('should ignore template referencing subproperty of handled field', () => {
+        expect(automation.value.components[4].value.inner).toEqual(
+          'Issue should ignore field is: {{issue.duedate.something}} ending',
+        )
+      })
+    })
+    describe('on fetch failure', () => {
+      it('logs exception without error', async () => {
+        const errorInstance = new InstanceElement('emptyelement', automationType)
+        // Some shenanigans to cause an error that should be impossible
+        const undefinedValue: Values | undefined = undefined
+        errorInstance.value = (undefinedValue as unknown) as Values
+        await filter.onFetch([automationType, errorInstance])
+        expect(logErrorSpy).toHaveBeenCalledWith('Error parsing templates in fetch: Cannot read property \'components\' of undefined')
+      })
     })
     describe('preDeploy', () => {
       let elementsBeforeFetch: (InstanceElement | ObjectType)[]
@@ -136,6 +171,17 @@ describe('handle templates filter', () => {
 
       it('Returns elements to origin after predeploy', () => {
         expect(elementsAfterPreDeploy).toEqual(elementsBeforeFetch)
+      })
+    })
+
+    describe('on preDeploy failure', () => {
+      it('logs exception without error', async () => {
+        const errorInstance = new InstanceElement('emptyelement', automationType)
+        // Some shenanigans to cause an error that should be impossible
+        const undefinedValue: Values | undefined = undefined
+        errorInstance.value = (undefinedValue as unknown) as Values
+        await filter.preDeploy([toChange({ before: errorInstance, after: errorInstance })])
+        expect(logErrorSpy).toHaveBeenCalledWith('Error parsing templates in deployment: Cannot read property \'components\' of undefined')
       })
     })
 

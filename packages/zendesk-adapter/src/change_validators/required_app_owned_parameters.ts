@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import {
   ChangeValidator,
   getChangeData,
@@ -21,7 +22,6 @@ import {
   InstanceElement,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import _ from 'lodash'
 import { APP_INSTALLATION_TYPE_NAME } from '../filters/app'
 import { APP_OWNED_TYPE_NAME } from '../constants'
 
@@ -29,17 +29,15 @@ import { APP_OWNED_TYPE_NAME } from '../constants'
 const { awu } = collections.asynciterable
 
 const invalidAppInstallation = (
-  appInstallation: InstanceElement, appOwnedInstances: InstanceElement[]
+  appInstallation: InstanceElement, appOwnedInstances: Map<number, InstanceElement>
 ): boolean => {
-  const appOwned = appOwnedInstances
-    .find(appOwnedInstance => appOwnedInstance.value.id === appInstallation.value.app_id)
+  const appOwned = appOwnedInstances.get(appInstallation.value.app_id)
   if (appOwned?.value.parameters === undefined) {
     return false
   }
   const { parameters } = appOwned.value
-  const settings = appInstallation.value.settings ?? {}
   const requiredParameters = Object.keys(_.pickBy(parameters, val => val.required))
-  const appInstallationSettings = Object.keys(settings)
+  const appInstallationSettings = Object.keys(appInstallation.value.settings ?? {})
   // check if not all requirements in settings
   return !requiredParameters
     .every(key => appInstallationSettings.includes(key))
@@ -61,16 +59,20 @@ export const requiredAppOwnedParametersValidator: ChangeValidator = async (
     .filter(id => id.typeName === APP_OWNED_TYPE_NAME)
     .filter(id => id.idType === 'instance')
     .map(id => elementSource.get(id))
-    .filter(isInstanceElement)
     .toArray()
 
+  const mapAppOwnedInstances = new Map(appOwnedInstances
+    .map(instance => [instance.value.id, instance]))
+
   return appInstallationInstances
-    .filter(appInstallation => invalidAppInstallation(appInstallation, appOwnedInstances))
+    .filter(appInstallation => invalidAppInstallation(appInstallation, mapAppOwnedInstances))
     .flatMap(instance => [{
       elemID: instance.elemID,
       severity: 'Error',
-      message: 'Can not change app installation ,because not all parameters that are defined as required are populated',
+      message: 'Can not change app installation, because not all parameters that are defined as required are populated',
       detailedMessage: `Can not change app installation ${instance.elemID.getFullName()},
-      because not all parameters that are defined as required are populated.`,
+      because the parameters 
+      ${Object.keys(_.pickBy(mapAppOwnedInstances.get(instance.value.app_id).value.parameters, val => val.required))} 
+      are required but not populated.`,
     }])
 }

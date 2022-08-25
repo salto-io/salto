@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { APP_OWNED_TYPE_NAME, ZENDESK } from '../../src/constants'
@@ -126,9 +127,11 @@ describe('requiredAppOwnedParametersValidator', () => {
     expect(errors).toEqual([{
       elemID: appInstallationNoSettings.elemID,
       severity: 'Error',
-      message: 'Can not change app installation ,because not all parameters that are defined as required are populated',
+      message: 'Can not change app installation, because not all parameters that are defined as required are populated',
       detailedMessage: `Can not change app installation ${appInstallationNoSettings.elemID.getFullName()},
-      because not all parameters that are defined as required are populated.`,
+      because the parameters 
+      ${Object.keys(_.pickBy(appOwnedWithParameters.value.parameters, val => val.required))} 
+      are required but not populated.`,
     }])
   })
   it('should not return an error when app installation contains all required parameters', async () => {
@@ -147,9 +150,11 @@ describe('requiredAppOwnedParametersValidator', () => {
     expect(errors).toEqual([{
       elemID: appInstallationInvalidSettings.elemID,
       severity: 'Error',
-      message: 'Can not change app installation ,because not all parameters that are defined as required are populated',
+      message: 'Can not change app installation, because not all parameters that are defined as required are populated',
       detailedMessage: `Can not change app installation ${appInstallationInvalidSettings.elemID.getFullName()},
-      because not all parameters that are defined as required are populated.`,
+      because the parameters 
+      ${Object.keys(_.pickBy(appOwnedWithParameters.value.parameters, val => val.required))} 
+      are required but not populated.`,
     }])
   })
   it('should not return an error when app installation does not have a corresponding app owned', async () => {

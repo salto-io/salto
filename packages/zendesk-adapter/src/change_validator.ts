@@ -36,7 +36,6 @@ import {
   phoneNumbersValidator,
   automationAllConditionsValidator,
   requiredAppOwnedParametersValidator,
-
 } from './change_validators'
 import ZendeskClient from './client/client'
 

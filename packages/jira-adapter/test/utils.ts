@@ -57,7 +57,7 @@ export const mockClient = (): ClientWithMockConnection => {
   const connection = mockConnection()
   const client = new JiraClient({
     credentials: {
-      baseUrl: 'https://ori-salto-test.atlassian.net/',
+      baseUrl: 'https://ori-salto-test.atlassian.net',
       user: 'test',
       token: 'test',
     },

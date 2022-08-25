@@ -13,20 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange, getChangeData } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { getFilterParams, mockClient } from '../utils'
 import priorityFilter from '../../src/filters/priority'
 import { Filter } from '../../src/filter'
 import { getDefaultConfig, JiraConfig } from '../../src/config/config'
 import { JIRA, PRIORITY_TYPE_NAME } from '../../src/constants'
-import { deployWithJspEndpoints } from '../../src/deployment/jsp_deployment'
+// import { deployWithJspEndpoints } from '../../src/deployment/jsp_deployment'
 import JiraClient from '../../src/client/client'
 
-jest.mock('../../src/deployment/jsp_deployment', () => ({
-  ...jest.requireActual<{}>('../../src/deployment/jsp_deployment'),
-  deployWithJspEndpoints: jest.fn(),
-}))
+// jest.mock('../../src/deployment/jsp_deployment', () => ({
+//   ...jest.requireActual<{}>('../../src/deployment/jsp_deployment'),
+//   deployWithJspEndpoints: jest.fn(),
+// }))
 
 describe('priorityFilter', () => {
   let filter: Filter
@@ -103,54 +103,80 @@ describe('priorityFilter', () => {
       expect(type.fields.statusColor.annotations).toEqual({})
     })
   })
-
-  describe('deploy', () => {
-    let deployWithJspEndpointsMock: jest.MockedFunction<typeof deployWithJspEndpoints>
-    beforeEach(() => {
-      deployWithJspEndpointsMock = deployWithJspEndpoints as jest.MockedFunction<
-        typeof deployWithJspEndpoints
-      >
-    })
-
-    it('should call deployWithJspEndpoints', async () => {
+  describe('preDeploy', () => {
+    const iconUrlTruncatePath = '/folder/image.png'
+    it('should concat the client base url to the instance icon url', () => {
       const instance = new InstanceElement(
         'instance',
         type,
+        { iconUrl: iconUrlTruncatePath }
       )
-      await filter.deploy?.([toChange({ after: instance })])
-
-      expect(deployWithJspEndpointsMock).toHaveBeenCalledWith({
-        changes: [toChange({ after: instance })],
-        client,
-        urls: {
-          add: '/secure/admin/AddPriority.jspa',
-          modify: '/secure/admin/EditPriority.jspa',
-          query: '/rest/api/3/priority',
-        },
-        serviceValuesTransformer: expect.toBeFunction(),
-      })
-    })
-
-    it('should throw if there are no jsp urls', async () => {
-      const instance = new InstanceElement(
-        'instance',
-        type,
-      )
-
-      delete config.apiDefinitions.types[PRIORITY_TYPE_NAME].jspRequests
-
-      await expect(filter.deploy?.([toChange({ after: instance })])).rejects.toThrow()
-    })
-
-    it('should throw if there is no type definition', async () => {
-      const instance = new InstanceElement(
-        'instance',
-        type,
-      )
-
-      delete config.apiDefinitions.types[PRIORITY_TYPE_NAME]
-
-      await expect(filter.deploy?.([toChange({ after: instance })])).rejects.toThrow()
+      const changes = [toChange({ after: instance })]
+      filter.preDeploy?.(changes)
+      expect(getChangeData(changes[0]).value.iconUrl)
+        .toEqual(client.baseUrl.concat(iconUrlTruncatePath))
     })
   })
+  describe('onDeploy', () => {
+    it('should remove the domain prefix from the iconUrl field', () => {
+      const iconUrlTruncatePath = '/folder/image.png'
+      const instance = new InstanceElement(
+        'instance',
+        type,
+        { iconUrl: client.baseUrl.concat(iconUrlTruncatePath) }
+      )
+      const changes = [toChange({ after: instance })]
+      filter.onDeploy?.(changes)
+      expect(getChangeData(changes[0]).value.iconUrl).toEqual(iconUrlTruncatePath)
+    })
+  })
+  // describe('deploy', () => {
+  //   let deployWithJspEndpointsMock: jest.MockedFunction<typeof deployWithJspEndpoints>
+  //   beforeEach(() => {
+  //     deployWithJspEndpointsMock = deployWithJspEndpoints as jest.MockedFunction<
+  //       typeof deployWithJspEndpoints
+  //     >
+  //   })
+
+  //   it('should call deployWithJspEndpoints', async () => {
+  //     const instance = new InstanceElement(
+  //       'instance',
+  //       type,
+  //     )
+  //     await filter.deploy?.([toChange({ after: instance })])
+
+  //     expect(deployWithJspEndpointsMock).toHaveBeenCalledWith({
+  //       changes: [toChange({ after: instance })],
+  //       client,
+  //       urls: {
+  //         add: '/secure/admin/AddPriority.jspa',
+  //         modify: '/secure/admin/EditPriority.jspa',
+  //         query: '/rest/api/3/priority',
+  //       },
+  //       serviceValuesTransformer: expect.toBeFunction(),
+  //     })
+  //   })
+
+  //   it('should throw if there are no jsp urls', async () => {
+  //     const instance = new InstanceElement(
+  //       'instance',
+  //       type,
+  //     )
+
+  //     delete config.apiDefinitions.types[PRIORITY_TYPE_NAME].jspRequests
+
+  //     await expect(filter.deploy?.([toChange({ after: instance })])).rejects.toThrow()
+  //   })
+
+  //   it('should throw if there is no type definition', async () => {
+  //     const instance = new InstanceElement(
+  //       'instance',
+  //       type,
+  //     )
+
+  //     delete config.apiDefinitions.types[PRIORITY_TYPE_NAME]
+
+  //     await expect(filter.deploy?.([toChange({ after: instance })])).rejects.toThrow()
+  //   })
+  // })
 })

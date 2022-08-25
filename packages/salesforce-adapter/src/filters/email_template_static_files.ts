@@ -25,6 +25,7 @@ import { EMAIL_TEMPLATE_METADATA_TYPE, RECORDS_PATH, SALESFORCE } from '../const
 import { isInstanceOfType } from './utils'
 
 const { awu } = collections.asynciterable
+const { makeArray } = collections.array
 
 const log = logger(module)
 
@@ -38,9 +39,9 @@ type EmailAttachmentsArray = {
   attachments: Attachment[]
 }
 
-type EmailSingleAttachment = {
-  attachments: Attachment
-}
+// type EmailSingleAttachment = {
+//   attachments: Attachment
+// }
 
 const ATTACHMENT = Joi.object({
   name: Joi.string().required(),
@@ -51,14 +52,13 @@ const EMAIL_ATTACHMENTS_ARRAY = Joi.object({
   attachments: Joi.array().items(ATTACHMENT).required(),
 }).required()
 
-const EMAIL_SINGLE_ATTACHMENT = Joi.object({
-  attachments: ATTACHMENT,
-}).required()
-// make array
+// const EMAIL_SINGLE_ATTACHMENT = Joi.object({
+//   attachments: ATTACHMENT,
+// }).required()
 
 const isEmailAttachmentsArray = createSchemeGuard<EmailAttachmentsArray>(EMAIL_ATTACHMENTS_ARRAY)
 
-const isEmailSingleAttachment = createSchemeGuard<EmailSingleAttachment>(EMAIL_SINGLE_ATTACHMENT)
+// const isEmailSingleAttachment = createSchemeGuard<EmailSingleAttachment>(EMAIL_SINGLE_ATTACHMENT)
 
 
 const createStaticFile = (
@@ -95,15 +95,13 @@ const organizeStaticFiles = async (instance: InstanceElement): Promise<void> => 
   if (_.isUndefined(folderPath)) {
     const instApiName = await apiName(instance)
     log.warn(`could not extract the attachments of instance ${instApiName}, instance path is undefined`)
-  } else if (isEmailSingleAttachment(instance.value)) {
-    instance.value.attachments.content = createStaticFile(
-      folderPath, instance.value.attachments.name,
-      instance.value.attachments.content
-    )
-  } else if (isEmailAttachmentsArray(instance.value)) {
-    instance.value.attachments.forEach(attachment => {
-      attachment.content = createStaticFile(folderPath, attachment.name, attachment.content)
-    })
+  } else {
+    instance.value.attachments = makeArray(instance.value.attachments)
+    if (isEmailAttachmentsArray(instance.value)) {
+      instance.value.attachments.forEach(attachment => {
+        attachment.content = createStaticFile(folderPath, attachment.name, attachment.content)
+      })
+    }
   }
 }
 

@@ -39,10 +39,6 @@ type EmailAttachmentsArray = {
   attachments: Attachment[]
 }
 
-// type EmailSingleAttachment = {
-//   attachments: Attachment
-// }
-
 const ATTACHMENT = Joi.object({
   name: Joi.string().required(),
   content: Joi.string().required(),
@@ -50,42 +46,26 @@ const ATTACHMENT = Joi.object({
 
 const EMAIL_ATTACHMENTS_ARRAY = Joi.object({
   attachments: Joi.array().items(ATTACHMENT).required(),
-}).required()
-
-// const EMAIL_SINGLE_ATTACHMENT = Joi.object({
-//   attachments: ATTACHMENT,
-// }).required()
+}).unknown(true)
 
 const isEmailAttachmentsArray = createSchemeGuard<EmailAttachmentsArray>(EMAIL_ATTACHMENTS_ARRAY)
-
-// const isEmailSingleAttachment = createSchemeGuard<EmailSingleAttachment>(EMAIL_SINGLE_ATTACHMENT)
-
 
 const createStaticFile = (
   folderName: string,
   name: string,
   content: string | StaticFile
 ): StaticFile =>
-  // if (isStaticFile(content)) {
-  //   return new StaticFile({
-  //     filepath: `${folderName}/${name}`,
-  //     content: content.internalContent? ,
-  //     encoding: 'utf-8',
-  //   })
-  // }
   new StaticFile({
     filepath: `${folderName}/${name}`,
     content: Buffer.from(content),
     encoding: 'utf-8',
   })
 
-
 const createFolder = (instance: InstanceElement): string | undefined => {
   if (!_.isUndefined(instance.value.fullName)) {
     const folderName = `${SALESFORCE}/${RECORDS_PATH}/${EMAIL_TEMPLATE_METADATA_TYPE}/${instance.value.fullName}`
     const emailName = `${instance.value.fullName.split('/').slice(1)}.email`
-    instance.value.content = createStaticFile(folderName, emailName, 'bbb')
-    // _.set(instance, ['value', 'content', 'filepath'], `${folderName}/${emailName}`)
+    _.set(instance, ['value', 'content', 'filepath'], `${folderName}/${emailName}`)
     return folderName
   }
   return undefined

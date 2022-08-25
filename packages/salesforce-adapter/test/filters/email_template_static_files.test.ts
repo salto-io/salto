@@ -22,6 +22,7 @@ import { defaultFilterContext } from '../utils'
 describe('emailTemplate static files filter', () => {
   const ATTACHMENTS = 'attachments'
   const CONTENT = 'content'
+  const FULL_NAME = 'fullName'
   const ATTACHMENTONEASSTRING = 'attachment-one'
   const ATTACHMENTTWOASSTRING = 'attachment-two'
   const EMAILCONTENT = 'email-content'
@@ -40,6 +41,7 @@ describe('emailTemplate static files filter', () => {
     fields = {
       [CONTENT]: { refType: BuiltinTypes.STRING },
       [ATTACHMENTS]: { refType: BuiltinTypes.STRING },
+      [FULL_NAME]: { refType: BuiltinTypes.STRING },
     }
 
     const emailType = new ObjectType({
@@ -50,13 +52,13 @@ describe('emailTemplate static files filter', () => {
     })
 
     attachmentOne = new StaticFile({
-      filepath: 'Objects/dir/emailTemplateOne/attachmentOne.txt',
+      filepath: 'salesforce/Records/EmailTemplate/unfiled$public/emailTemplateOne/attachmentOne.txt',
       content: Buffer.from(ATTACHMENTONEASSTRING),
       encoding: 'utf-8',
     })
 
     attachmentTwo = new StaticFile({
-      filepath: 'Objects/dir/emailTemplateTwo/attachmentTwo.txt',
+      filepath: 'salesforce/Records/EmailTemplate/unfiled$public/emailTemplateTwo/attachmentTwo.txt',
       content: Buffer.from(ATTACHMENTTWOASSTRING),
       encoding: 'utf-8',
     })
@@ -76,12 +78,14 @@ describe('emailTemplate static files filter', () => {
     const emailNoArrayAttachment = new InstanceElement('emailTemplateOne', emailType, {
       [ATTACHMENTS]: { name: ATTACHMENTONENAME, content: ATTACHMENTONEASSTRING },
       [CONTENT]: staticContentOne,
+      [FULL_NAME]: 'unfiled$public/emailTemplateOne',
     },
     ['Objects', 'dir', 'emailTemplateOne'])
 
     const emailArrayAttachment = new InstanceElement('emailTemplateTwo', emailType, {
       [ATTACHMENTS]: [{ name: ATTACHMENTTWONAME, content: ATTACHMENTTWOASSTRING }],
       [CONTENT]: staticContentTwo,
+      [FULL_NAME]: 'unfiled$public/emailTemplateTwo',
     },
     ['Objects', 'dir', 'emailTemplateTwo'])
 
@@ -103,10 +107,11 @@ describe('emailTemplate static files filter', () => {
 
     it('should extract attachment content to static file when emailTemplate has has attachment not in array', () => {
       const receivedEmailTemplate = elements[0] as InstanceElement
-      expect(receivedEmailTemplate?.value.attachments)
-        .toEqual({ name: ATTACHMENTONENAME, content: attachmentOne })
+      expect(receivedEmailTemplate?.value.attachments).toIncludeSameMembers(
+        [{ name: ATTACHMENTONENAME, content: attachmentOne }]
+      )
       expect(receivedEmailTemplate?.value.content?.filepath).toEqual(
-        'Objects/dir/emailTemplateOne/emailTemplateOne.email'
+        'salesforce/Records/EmailTemplate/unfiled$public/emailTemplateOne/emailTemplateOne.email'
       )
     })
 
@@ -116,11 +121,11 @@ describe('emailTemplate static files filter', () => {
         [{ name: ATTACHMENTTWONAME, content: attachmentTwo }]
       )
       expect(receivedEmailTemplate?.value.content?.filepath).toEqual(
-        'Objects/dir/emailTemplateTwo/emailTemplateTwo.email'
+        'salesforce/Records/EmailTemplate/unfiled$public/emailTemplateTwo/emailTemplateTwo.email'
       )
     })
 
-    it('should not replace content when emailTemplate instance has no content', () => {
+    it('should not replace content when emailTemplate instance has no full name', () => {
       const instanceUndefinedPath = elements[2] as InstanceElement
       expect(instanceUndefinedPath?.value.attachments)
         .toIncludeSameMembers([{ name: ATTACHMENTONENAME, content: ATTACHMENTONEASSTRING }])

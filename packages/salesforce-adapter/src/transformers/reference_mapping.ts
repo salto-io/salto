@@ -112,7 +112,7 @@ export type ReferenceContextStrategyName = (
   'instanceParent' | 'neighborTypeWorkflow' | 'neighborCPQLookup' | 'neighborCPQRuleLookup'
   | 'neighborLookupValueTypeLookup' | 'neighborObjectLookup' | 'neighborPicklistObjectLookup'
   | 'neighborTypeLookup' | 'neighborActionTypeFlowLookup' | 'neighborActionTypeLookup' | 'parentObjectLookup'
-  | 'parentInputObjectLookup' | 'parentOutputObjectLookup' | 'neighborSharedToTypeLookup'
+  | 'parentInputObjectLookup' | 'parentOutputObjectLookup' | 'neighborSharedToTypeLookup' | 'parentBaseObjectLookup'
 )
 
 type SourceDef = {
@@ -372,6 +372,11 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: { field: 'field', parentTypes: ['ReportGrouping'] },
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: 'field', parentTypes: ['ReportTypeColumn'] },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'parentBaseObjectLookup', type: CUSTOM_FIELD },
   },
   {
     // sometimes has a value that is not a reference - should only convert to reference

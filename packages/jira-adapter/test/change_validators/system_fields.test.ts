@@ -31,7 +31,7 @@ describe('systemFieldsValidator', () => {
         elemID: systemFieldInstance.elemID,
         severity: 'Error',
         message: 'Can not deploy changes to a Jira system field',
-        detailedMessage: 'jira.Field.instance.instance is a built-in Jira system field, and can not be edited or deleted. Changes to this field will be not deployed',
+        detailedMessage: 'jira.Field.instance.instance is a built-in Jira system field, and can not be edited or deleted. Changes to this field will not be deployed',
       },
     ])
   })
@@ -48,7 +48,7 @@ describe('systemFieldsValidator', () => {
         elemID: systemFieldInstance.elemID,
         severity: 'Error',
         message: 'Can not deploy changes to a Jira system field',
-        detailedMessage: 'jira.Field.instance.instance is a built-in Jira system field, and can not be edited or deleted. Changes to this field will be not deployed',
+        detailedMessage: 'jira.Field.instance.instance is a built-in Jira system field, and can not be edited or deleted. Changes to this field will not be deployed',
       },
     ])
   })
@@ -65,13 +65,12 @@ describe('systemFieldsValidator', () => {
         elemID: systemFieldInstance.elemID,
         severity: 'Error',
         message: 'Can not deploy changes to a Jira system field',
-        detailedMessage: 'jira.Field.instance.instance is a built-in Jira system field, and can not be edited or deleted. Changes to this field will be not deployed',
+        detailedMessage: 'jira.Field.instance.instance is a built-in Jira system field, and can not be edited or deleted. Changes to this field will not be deployed',
       },
     ])
   })
 
   it('should return an error when attempting to remove a system field', async () => {
-    // const systemFieldInstance = new InstanceElement('instance', type, { schema: {} })
     expect(await systemFieldsValidator([
       toChange({
         before: systemFieldInstance,
@@ -81,7 +80,7 @@ describe('systemFieldsValidator', () => {
         elemID: systemFieldInstance.elemID,
         severity: 'Error',
         message: 'Can not deploy changes to a Jira system field',
-        detailedMessage: 'jira.Field.instance.instance is a built-in Jira system field, and can not be edited or deleted. Changes to this field will be not deployed',
+        detailedMessage: 'jira.Field.instance.instance is a built-in Jira system field, and can not be edited or deleted. Changes to this field will not be deployed',
       },
     ])
   })

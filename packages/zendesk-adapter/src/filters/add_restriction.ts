@@ -26,19 +26,20 @@ import { FilterCreator } from '../filter'
 type AllRestrictionsToMake = Record<string, RestrictionAnnotationType>
 type RestrictionByType = Record<string, AllRestrictionsToMake>
 
-const TO_ADD_RESTRICTION: RestrictionByType = {
+const TYPE_NAME_TO_FIELD_RESTRICTIONS: RestrictionByType = {
   ticket_field__custom_field_options: {
     value: {
       regex: '^[0-9A-Za-z-_.\\/~:^]+$',
+      enforce_value: true,
     },
   },
 }
 
 
-const addRestriction = (obj:ObjectType) : void => {
-  const typeToChange = TO_ADD_RESTRICTION[obj.elemID.typeName]
+const addRestriction = (obj: ObjectType) : void => {
+  const typeToChange = TYPE_NAME_TO_FIELD_RESTRICTIONS[obj.elemID.typeName]
   Object.keys(typeToChange).forEach(field => {
-    if (obj.fields[field]?.annotations) {
+    if (Object.prototype.hasOwnProperty.call(typeToChange, field)) {
       obj.fields[field].annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction(
         typeToChange[field]
       )
@@ -50,7 +51,7 @@ const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     elements
       .filter(isObjectType)
-      .filter(obj => TO_ADD_RESTRICTION[obj.elemID.typeName] ?? false)
+      .filter(obj => Object.keys(TYPE_NAME_TO_FIELD_RESTRICTIONS).includes(obj.elemID.typeName))
       .forEach(addRestriction)
   },
 })

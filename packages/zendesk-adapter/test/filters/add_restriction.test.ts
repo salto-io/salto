@@ -33,6 +33,17 @@ describe('custom field option restriction filter', () => {
       'value',
       BuiltinTypes.STRING,
     )
+    const objTypeWithTwoFields = new ObjectType({ elemID: new ElemID(ZENDESK, typeName) })
+    objTypeWithTwoFields.fields.value = new Field(
+      objTypeWithTwoFields,
+      'value',
+      BuiltinTypes.STRING,
+    )
+    objTypeWithTwoFields.fields.other = new Field(
+      objTypeWithTwoFields,
+      'other',
+      BuiltinTypes.STRING,
+    )
     beforeEach(async () => {
       client = new ZendeskClient({
         credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
@@ -58,12 +69,21 @@ describe('custom field option restriction filter', () => {
         expect(elements[0].fields.value.annotations[CORE_ANNOTATIONS.RESTRICTION].regex)
           .toEqual('^[0-9A-Za-z-_.\\/~:^]+$')
       })
+      it('should add a regex restriction only to the value field and not to the other field', async () => {
+        const elements = [objTypeWithTwoFields].map(e => e.clone())
+        await filter.onFetch(elements)
+        expect(elements).toHaveLength(1)
+        expect(elements[0].fields.value.annotations[CORE_ANNOTATIONS.RESTRICTION].regex)
+          .toEqual('^[0-9A-Za-z-_.\\/~:^]+$')
+        expect(elements[0]
+          .fields.other.annotations[CORE_ANNOTATIONS.RESTRICTION]).not.toBeDefined()
+      })
       it('should not add a regex restriction to the value field when the field does not exists', async () => {
         const elements = [objTypeNoValue].map(e => e.clone())
         await filter.onFetch(elements)
         expect(elements).toHaveLength(1)
-        // eslint-disable-next-line max-len
-        expect(elements[0].fields.value?.annotations[CORE_ANNOTATIONS.RESTRICTION].regex).not.toBeDefined()
+        expect(elements[0]
+          .fields.value?.annotations[CORE_ANNOTATIONS.RESTRICTION].regex).not.toBeDefined()
       })
     })
 })

@@ -14,13 +14,14 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, ElemID, InstanceElement, isInstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
-import { GetLookupNameFunc, naclCase } from '@salto-io/adapter-utils'
+import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import { BRAND_NAME } from '../constants'
+import { BRAND_TYPE_NAME } from '../constants'
 import { FETCH_CONFIG } from '../config'
+import { ZendeskMissingReferenceStrategyLookup } from './references/missing_references'
 
 const { neighborContextGetter } = referenceUtils
 const log = logger(module)
@@ -34,6 +35,15 @@ const neighborContextFunc = (args: {
   getLookUpName: async ({ ref }) => ref.elemID.name,
   ...args,
 })
+
+// TODO: Support in types with list values
+const NEIGHBOR_FIELD_TO_TYPE_NAMES: Record<string, string> = {
+  brand_id: 'brand',
+  group_id: 'group',
+  schedule_id: 'business_hours_schedule',
+  within_schedule: 'business_hours_schedule',
+  set_schedule: 'business_hours_schedule',
+}
 
 const SPECIAL_CONTEXT_NAMES: Record<string, string> = {
   schedule_id: 'business_hours_schedule',
@@ -197,6 +207,7 @@ const ZendeskReferenceSerializationStrategyLookup: Record<
 }
 
 export type ReferenceContextStrategyName = 'neighborField'
+  | 'allowlistedNeighborField'
   | 'neighborType'
   | 'parentSubject'
   | 'parentTitle'
@@ -211,6 +222,7 @@ export const contextStrategyLookup: Record<
   ReferenceContextStrategyName, referenceUtils.ContextFunc
 > = {
   neighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: getValueLookupType }),
+  allowlistedNeighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: val => NEIGHBOR_FIELD_TO_TYPE_NAMES[val] }),
   neighborReferenceTicketField: neighborContextFunc({ contextFieldName: 'field', getLookUpName: neighborReferenceTicketFieldLookupFunc, contextValueMapper: neighborReferenceTicketFieldLookupType }),
   neighborReferenceTicketFormCondition: neighborContextFunc({ contextFieldName: 'parent_field_id', getLookUpName: neighborReferenceTicketFieldLookupFunc, contextValueMapper: neighborReferenceTicketFieldLookupType }),
   neighborReferenceUserAndOrgField: neighborContextFunc({ contextFieldName: 'field', getLookUpName: neighborReferenceUserAndOrgFieldLookupFunc, contextValueMapper: neighborReferenceUserAndOrgFieldLookupType }),
@@ -221,26 +233,6 @@ export const contextStrategyLookup: Record<
   neighborSubject: neighborContextFunc({ contextFieldName: 'subject', contextValueMapper: getValueLookupType }),
   parentTitle: neighborContextFunc({ contextFieldName: 'title', levelsUp: 1, contextValueMapper: getValueLookupType }),
   parentValue: neighborContextFunc({ contextFieldName: 'value', levelsUp: 2, contextValueMapper: getValueLookupType }),
-}
-
-const MISSING_REF_PREFIX = 'missing_'
-export const ZendeskMissingReferenceStrategyLookup: Record<
-referenceUtils.MissingReferenceStrategyName, referenceUtils.MissingReferenceStrategy
-> = {
-  typeAndValue: {
-    create: ({ value, adapter, typeName }) => {
-      if (!_.isString(typeName) || !value) {
-        return undefined
-      }
-      return new InstanceElement(
-        naclCase(`${MISSING_REF_PREFIX}${value}`),
-        new ObjectType({ elemID: new ElemID(adapter, typeName) }),
-        {},
-        undefined,
-        { [referenceUtils.MISSING_ANNOTATION]: true },
-      )
-    },
-  },
 }
 
 type ZendeskFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<
@@ -271,22 +263,22 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
   {
     src: { field: 'brand_id' },
     serializationStrategy: 'id',
-    target: { type: BRAND_NAME },
+    target: { type: BRAND_TYPE_NAME },
   },
   {
     src: { field: 'brand_ids' },
     serializationStrategy: 'id',
-    target: { type: BRAND_NAME },
+    target: { type: BRAND_TYPE_NAME },
   },
   {
     src: { field: 'default_brand_id' },
     serializationStrategy: 'id',
-    target: { type: BRAND_NAME },
+    target: { type: BRAND_TYPE_NAME },
   },
   {
     src: { field: 'restricted_brand_ids' },
     serializationStrategy: 'id',
-    target: { type: BRAND_NAME },
+    target: { type: BRAND_TYPE_NAME },
   },
   {
     src: { field: 'category_id' },
@@ -729,9 +721,32 @@ const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
     serializationStrategy: 'id',
     target: { typeContext: 'neighborSubject' },
   },
+  {
+    src: {
+      field: 'value',
+      parentTypes: [
+        'trigger__actions',
+        'trigger__conditions__all',
+        'trigger__conditions__any',
+      ],
+    },
+    target: { typeContext: 'allowlistedNeighborField' },
+    zendeskMissingRefStrategy: 'typeAndValue',
+  },
 ]
 
 const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
+  {
+    src: {
+      field: 'value',
+      parentTypes: [
+        'trigger__conditions__all',
+      ],
+    },
+    zendeskSerializationStrategy: 'ticketFieldOption',
+    target: { typeContext: 'neighborReferenceTicketField' },
+    zendeskMissingRefStrategy: 'typeAndValue',
+  },
   {
     src: {
       field: 'value',

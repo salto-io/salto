@@ -305,6 +305,9 @@ describe('References by id filter', () => {
           all: [
             { field: 'custom_fields_6001', operator: 'is', value: 'v15' },
             { field: 'requester.custom_fields.key_uf1', value: 9002 },
+            { field: 'brand_id', operator: 'is', value: 'you_like_crazy' },
+            { field: 'group_id', operator: 'is', value: 'a_thing' },
+            { field: 'schedule_id', operator: 'is', value: 'someone_you_love' },
           ],
         },
       },
@@ -425,6 +428,15 @@ describe('References by id filter', () => {
         expect(brokenTrigger.value.conditions.all[0].value.value).toEqual(undefined)
         expect(brokenTrigger.value.conditions.all[1].value).toBeInstanceOf(ReferenceExpression)
         expect(brokenTrigger.value.conditions.all[1].value.value).toBeInstanceOf(InstanceElement)
+        expect(brokenTrigger.value.conditions.all[2].value).toBeInstanceOf(ReferenceExpression)
+        expect(brokenTrigger.value.conditions.all[2].value.elemID.name)
+          .toEqual('missing_you_like_crazy')
+        expect(brokenTrigger.value.conditions.all[3].value).toBeInstanceOf(ReferenceExpression)
+        expect(brokenTrigger.value.conditions.all[3].value.elemID.name)
+          .toEqual('missing_a_thing')
+        expect(brokenTrigger.value.conditions.all[4].value).toBeInstanceOf(ReferenceExpression)
+        expect(brokenTrigger.value.conditions.all[4].value.elemID.name)
+          .toEqual('missing_someone_you_love')
       })
       it('should not create missing references if enable missing references is false', async () => {
         const newFilter = filterCreator({

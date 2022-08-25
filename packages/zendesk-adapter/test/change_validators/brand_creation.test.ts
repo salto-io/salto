@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { BRAND_NAME, ZENDESK } from '../../src/constants'
+import { BRAND_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { brandCreationValidator } from '../../src/change_validators/brand_creation'
 
 describe('brandCreationValidator', () => {
   const brandType = new ObjectType({
-    elemID: new ElemID(ZENDESK, BRAND_NAME),
+    elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME),
   })
   const brandInstance = new InstanceElement(
     'New Test',

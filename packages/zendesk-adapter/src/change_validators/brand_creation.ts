@@ -15,14 +15,14 @@
 */
 import { ChangeValidator, getChangeData,
   isAdditionChange, isInstanceElement } from '@salto-io/adapter-api'
-import { BRAND_NAME } from '../constants'
+import { BRAND_TYPE_NAME } from '../constants'
 
 export const brandCreationValidator: ChangeValidator = async changes => (
   changes
     .filter(isAdditionChange)
     .map(getChangeData)
     .filter(isInstanceElement)
-    .filter(instance => instance.elemID.typeName === BRAND_NAME)
+    .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
     .flatMap(instance => (
       [{
         elemID: instance.elemID,

@@ -19,7 +19,7 @@ import { MockInterface } from '@salto-io/test-utils'
 import { getFilterParams, mockClient } from '../../utils'
 import jqlReferencesFilter from '../../../src/filters/jql/jql_references'
 import { Filter } from '../../../src/filter'
-import { JIRA, STATUS_TYPE_NAME } from '../../../src/constants'
+import { JIRA, STATUS_TYPE_NAME, AUTOMATION_TYPE } from '../../../src/constants'
 import { FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
 
 describe('jqlReferencesFilter', () => {
@@ -30,6 +30,7 @@ describe('jqlReferencesFilter', () => {
   let fieldInstance: InstanceElement
   let doneInstance: InstanceElement
   let todoInstance: InstanceElement
+  let automationInstance: InstanceElement
 
 
   beforeEach(async () => {
@@ -81,6 +82,35 @@ describe('jqlReferencesFilter', () => {
       }
     )
 
+    automationInstance = new InstanceElement(
+      'automation',
+      new ObjectType({ elemID: new ElemID(JIRA, AUTOMATION_TYPE) }),
+      {
+        conditions: [
+          {
+            type: 'jira.jql.condition',
+            rawValue: 'status = Done',
+            children: [
+              {
+                type: 'jira.lookup.issues',
+                value: {
+                  name: {
+                    type: 'FREE',
+                    value: 'lookupIssues',
+                  },
+                  type: 'JQL',
+                  query: {
+                    type: 'SMART',
+                    value: 'status IN (Done, "To Do")',
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      }
+    )
+
     connection.post.mockResolvedValue({
       status: 200,
       data: {
@@ -99,6 +129,27 @@ describe('jqlReferencesFilter', () => {
               },
             },
           },
+          {
+            query: 'status IN (Done, "To Do")',
+            structure: {
+              where: {
+                field: {
+                  name: 'status',
+                },
+                operator: 'in',
+                operand: {
+                  values: [
+                    {
+                      value: 'Done',
+                    },
+                    {
+                      value: 'To Do',
+                    },
+                  ],
+                },
+              },
+            },
+          },
         ],
       },
     })
@@ -106,7 +157,9 @@ describe('jqlReferencesFilter', () => {
 
   describe('onFetch', () => {
     it('should add the jql dependencies', async () => {
-      await filter.onFetch?.([instance, fieldInstance, doneInstance, todoInstance])
+      await filter.onFetch?.(
+        [instance, fieldInstance, doneInstance, todoInstance, automationInstance]
+      )
       expect(instance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual([
         {
           reference: new ReferenceExpression(fieldInstance.elemID, fieldInstance),
@@ -126,10 +179,59 @@ describe('jqlReferencesFilter', () => {
         },
       ])
 
+      expect(automationInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual([
+        {
+          reference: new ReferenceExpression(fieldInstance.elemID, fieldInstance),
+          occurrences: [
+            {
+              location: new ReferenceExpression(
+                automationInstance.elemID.createNestedID('conditions', '0', 'children', '0', 'value', 'query', 'value'),
+                'status IN (Done, "To Do")'
+              ),
+            },
+            {
+              location: new ReferenceExpression(
+                automationInstance.elemID.createNestedID('conditions', '0', 'rawValue'), 'status = Done'
+              ),
+            },
+          ],
+        },
+        {
+          reference: new ReferenceExpression(doneInstance.elemID, doneInstance),
+          occurrences: [
+            {
+              location: new ReferenceExpression(
+                automationInstance.elemID.createNestedID('conditions', '0', 'children', '0', 'value', 'query', 'value'),
+                'status IN (Done, "To Do")'
+              ),
+            },
+            {
+              location: new ReferenceExpression(
+                automationInstance.elemID.createNestedID('conditions', '0', 'rawValue'), 'status = Done'
+              ),
+            },
+          ],
+        },
+        {
+          reference: new ReferenceExpression(todoInstance.elemID, todoInstance),
+          occurrences: [
+            {
+              location: new ReferenceExpression(
+                automationInstance.elemID.createNestedID('conditions', '0', 'children', '0', 'value', 'query', 'value'),
+                'status IN (Done, "To Do")'
+              ),
+            },
+          ],
+        },
+      ])
+
       expect(connection.post).toHaveBeenCalledWith(
         '/rest/api/3/jql/parse',
         {
-          queries: ['status = Done'],
+          queries: [
+            'status = Done',
+            'status IN (Done, "To Do")',
+          ],
         },
         {
           params: {

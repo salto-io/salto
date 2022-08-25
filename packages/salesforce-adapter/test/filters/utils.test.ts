@@ -200,4 +200,37 @@ describe('addDefaults', () => {
       expect(object.annotations).not.toHaveProperty('deploymentStatus')
     })
   })
+  describe('when called with custom metadata type', () => {
+    const CUSTOM_METADATA_TYPE_NAME = 'TestCustomMetadataType__mdt'
+    const CUSTOM_METADATA_TYPE_LABEL = 'TestMetadataTypeLabel'
+    let object: ObjectType
+    beforeEach(async () => {
+      object = new ObjectType({
+        elemID: new ElemID(SALESFORCE, CUSTOM_METADATA_TYPE_NAME),
+        annotations: {
+          [API_NAME]: CUSTOM_METADATA_TYPE_NAME,
+          [LABEL]: CUSTOM_METADATA_TYPE_LABEL,
+        },
+      })
+      await addDefaults(object)
+    })
+    it('should add annotation values', () => {
+      expect(object.annotations).toMatchObject({
+        [API_NAME]: CUSTOM_METADATA_TYPE_NAME,
+        [METADATA_TYPE]: CUSTOM_OBJECT,
+        [LABEL]: CUSTOM_METADATA_TYPE_LABEL,
+      })
+    })
+    it('should add annotation types', () => {
+      expect(object.annotationRefTypes).toMatchObject({
+        [API_NAME]: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+        [METADATA_TYPE]: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+        [LABEL]: createRefToElmWithValue(BuiltinTypes.STRING),
+      })
+    })
+    it('should not add custom object annotations', () => {
+      expect(object.annotations).not.toHaveProperty('sharingModel')
+      expect(object.annotations).not.toHaveProperty('deploymentStatus')
+    })
+  })
 })

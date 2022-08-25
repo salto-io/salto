@@ -43,6 +43,11 @@ const log = logger(module)
 
 export const id = (elem: Element): string => elem.elemID.getFullName()
 
+export const isCustomMetadataType = async (elem: ObjectType): Promise<boolean> => {
+  const elementApiName = await apiName(elem)
+  return elementApiName?.endsWith('__mdt') ?? false
+}
+
 export const boolValue = (val: JSONBool):
  boolean => val === 'true' || val === true
 
@@ -113,13 +118,12 @@ export const addDefaults = async (element: ChangeDataType): Promise<void> => {
     addApiName(field, undefined, await apiName(field.parent))
     addLabel(field)
   }
-
   const addCustomObjectDefaults = async (elem: ObjectType): Promise<void> => {
     addApiName(elem)
     addMetadataType(elem)
     addLabel(elem)
     await awu(Object.values(elem.fields)).forEach(addFieldDefaults)
-    if (!isCustomSettingsObject(elem)) {
+    if (!isCustomSettingsObject(elem) && !(await isCustomMetadataType(elem))) {
       const defaults: Partial<CustomObject> = {
         deploymentStatus: 'Deployed',
         pluralLabel: `${elem.annotations.label}s`,
@@ -136,7 +140,6 @@ export const addDefaults = async (element: ChangeDataType): Promise<void> => {
       })
     }
   }
-
   if (isInstanceElement(element)) {
     await addInstanceDefaults(element)
   } else if (isObjectType(element)) {

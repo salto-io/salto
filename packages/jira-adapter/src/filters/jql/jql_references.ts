@@ -14,10 +14,11 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
-import { extendGeneratedDependencies } from '@salto-io/adapter-utils'
+import { extendGeneratedDependencies, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { AUTOMATION_TYPE } from '../../constants'
 import JiraClient from '../../client/client'
 import { FilterCreator } from '../../filter'
 import { extractReferences, generateJqlContext } from './references_extractor'
@@ -40,15 +41,52 @@ type JqlDetails = {
   path: ElemID
 }
 
+const getAutomationJqls = (instance: InstanceElement): JqlDetails[] => {
+  // maps between the automation component type (which is determined by 'type' field)
+  // and the corresponding jql relative paths
+  const AUTOMATION_JQL_RELATIVE_PATHS_BY_TYPE: Record<string, string[][]> = {
+    'jira.jql.condition': [['rawValue']],
+    'jira.issue.assign': [['value', 'jql']],
+    'jira.issue.related': [['value', 'jql']],
+    'jira.issues.related.condition': [['value', 'compareJql'], ['value', 'relatedJql'], ['value', 'jql']],
+    'jira.jql.scheduled': [['value', 'jql']],
+    JQL: [['query', 'value']],
+  }
 
-const getJqls = async (instance: InstanceElement): Promise<JqlDetails[]> =>
-  JQL_FIELDS
+  const jqlPaths: JqlDetails[] = []
+  walkOnElement({
+    element: instance,
+    func: ({ value, path }) => {
+      const jqlRelativePaths = AUTOMATION_JQL_RELATIVE_PATHS_BY_TYPE[value.type]
+      if (jqlRelativePaths !== undefined) {
+        jqlRelativePaths.forEach(relativePath => {
+          const jqlValue = _.get(value, relativePath)
+          if (_.isString(jqlValue)) {
+            jqlPaths.push({
+              path: path.createNestedID(...relativePath),
+              jql: jqlValue,
+            })
+          }
+        })
+      }
+      return WALK_NEXT_STEP.RECURSE
+    },
+  })
+  return jqlPaths
+}
+
+const getJqls = async (instance: InstanceElement): Promise<JqlDetails[]> => {
+  if (instance.elemID.typeName === AUTOMATION_TYPE) {
+    return getAutomationJqls(instance)
+  }
+  return JQL_FIELDS
     .filter(({ type }) => type === instance.elemID.typeName)
     .map(({ path }) => ({
       path: instance.elemID.createNestedID(...path),
       jql: _.get(instance.value, path),
     }))
     .filter(({ jql }) => _.isString(jql))
+}
 
 const requestJqlsStructure = async (jqls: string[], client: JiraClient)
 : Promise<Required<ParsedJql>[]> => {
@@ -97,7 +135,7 @@ const requestJqlsStructure = async (jqls: string[], client: JiraClient)
 }
 
 const filter: FilterCreator = ({ client }) => ({
-  onFetch: async elements => {
+  onFetch: async elements => log.time(async () => {
     const instances = elements.filter(isInstanceElement)
 
     const jqls = await awu(instances)
@@ -127,7 +165,7 @@ const filter: FilterCreator = ({ client }) => ({
           location: new ReferenceExpression(path, jql),
         })))
       })
-  },
+  }, 'jqlReferencesFilter'),
 })
 
 export default filter

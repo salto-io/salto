@@ -102,10 +102,17 @@ export interface RunTestFailure {
   time: number
 }
 
+export interface CodeCoverageWarning {
+  id: string
+  message: string
+  name?: string
+  namespace?: string
+}
+
 export interface RunTestsResult {
   apexLogId?: string
   codeCoverage?: ArrayOrSingle<object> // CodeCoverageResult[]
-  codeCoverageWarnings?: ArrayOrSingle<object> // CodeCoverageWarning[]
+  codeCoverageWarnings?: ArrayOrSingle<CodeCoverageWarning>
   failures?: ArrayOrSingle<RunTestFailure>
   flowCoverage?: ArrayOrSingle<object> // FlowCoverageResult[]
   flowCoverageWarnings?: ArrayOrSingle<object> // FlowCoverageWarning[]

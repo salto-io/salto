@@ -1553,20 +1553,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         method: 'post',
       },
       modify: {
-        url: '/rest/api/3/priority/{id}',
+        url: '/rest/api/3/priority/{priorityId}',
         method: 'put',
-      },
-      query: {
-        url: '/rest/api/3/priority/search',
-        method: 'get',
+        urlParamsToFields: {
+          priorityId: 'id',
+        },
       },
     },
-
-    // jspRequests: {
-    //   add: '/secure/admin/AddPriority.jspa',
-    //   modify: '/secure/admin/EditPriority.jspa',
-    //   query: '/rest/api/3/priority',
-    // },
   },
 
   ApplicationRole: {
@@ -1768,7 +1761,7 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
         newName: 'NotificationSchemes',
       },
       {
-        originalName: 'rest__api__3__priority',
+        originalName: 'PageBeanPriority',
         newName: 'Priorities',
       },
       {

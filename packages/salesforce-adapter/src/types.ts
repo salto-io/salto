@@ -115,6 +115,9 @@ const objectIdSettings = new ObjectType({
       },
     },
   } as Record<keyof ObjectIdSettings, FieldDefinition>,
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
 })
 
 const saltoIDSettingsType = new ObjectType({
@@ -130,6 +133,9 @@ const saltoIDSettingsType = new ObjectType({
       refType: new ListType(objectIdSettings),
     },
   } as Record<keyof SaltoIDSettings, FieldDefinition>,
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
 })
 
 export type DataManagementConfig = {
@@ -372,6 +378,9 @@ const dataManagementType = new ObjectType({
       },
     },
   } as Record<keyof DataManagementConfig, FieldDefinition>,
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
 })
 
 const clientPollingConfigType = new ObjectType({
@@ -381,6 +390,9 @@ const clientPollingConfigType = new ObjectType({
     deployTimeout: { refType: BuiltinTypes.NUMBER },
     fetchTimeout: { refType: BuiltinTypes.NUMBER },
   } as Record<keyof ClientPollingConfig, FieldDefinition>,
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
 })
 
 const clientDeployConfigType = new ObjectType({
@@ -401,6 +413,9 @@ const clientDeployConfigType = new ObjectType({
     runTests: { refType: new ListType(BuiltinTypes.STRING) },
     deleteBeforeUpdate: { refType: BuiltinTypes.BOOLEAN },
   } as Record<keyof ClientDeployConfig, FieldDefinition>,
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
 })
 
 const clientRateLimitConfigType = new ObjectType({
@@ -415,6 +430,9 @@ const clientRateLimitConfigType = new ObjectType({
     deploy: { refType: BuiltinTypes.NUMBER },
 
   } as Record<keyof ClientRateLimitConfig, FieldDefinition>,
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
 })
 
 const clientRetryConfigType = new ObjectType({
@@ -432,6 +450,9 @@ const clientRetryConfigType = new ObjectType({
     },
     timeout: { refType: BuiltinTypes.NUMBER },
   } as Record<keyof ClientRetryConfig, FieldDefinition>,
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
 })
 
 const readMetadataChunkSizeConfigType = createMatchingObjectType<ReadMetadataChunkSizeConfig>({
@@ -442,6 +463,9 @@ const readMetadataChunkSizeConfigType = createMatchingObjectType<ReadMetadataChu
       refType: new MapType(BuiltinTypes.NUMBER),
       annotations: { [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ min: 1, max: 10 }) },
     },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
 
@@ -454,6 +478,9 @@ const clientConfigType = new ObjectType({
     maxConcurrentApiRequests: { refType: clientRateLimitConfigType },
     readMetadataChunkSize: { refType: readMetadataChunkSizeConfigType },
   } as Record<keyof SalesforceClientConfig, FieldDefinition>,
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
 })
 
 const metadataQueryType = new ObjectType({
@@ -462,6 +489,9 @@ const metadataQueryType = new ObjectType({
     [METADATA_TYPE]: { refType: BuiltinTypes.STRING },
     [METADATA_NAMESPACE]: { refType: BuiltinTypes.STRING },
     [METADATA_NAME]: { refType: BuiltinTypes.STRING },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
 
@@ -479,6 +509,9 @@ const metadataConfigType = createMatchingObjectType<MetadataParams>({
       },
     },
   },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
 })
 
 const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
@@ -489,6 +522,9 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     profilePaths: { refType: BuiltinTypes.BOOLEAN },
     addMissingIds: { refType: BuiltinTypes.BOOLEAN },
     authorInformation: { refType: BuiltinTypes.BOOLEAN },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
 
@@ -508,6 +544,9 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     cpqValidator: { refType: BuiltinTypes.BOOLEAN },
     sbaaApprovalRulesCustomCondition: { refType: BuiltinTypes.BOOLEAN },
   },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
 })
 
 const fetchConfigType = createMatchingObjectType<FetchParameters>({
@@ -518,6 +557,9 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
     optionalFeatures: { refType: optionalFeaturesType },
     fetchAllCustomSettings: { refType: BuiltinTypes.BOOLEAN },
     target: { refType: new ListType(BuiltinTypes.STRING) },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
 
@@ -591,5 +633,8 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
     validators: {
       refType: changeValidatorConfigType,
     },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })

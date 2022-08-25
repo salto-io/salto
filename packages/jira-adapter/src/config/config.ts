@@ -81,6 +81,9 @@ const jspUrlsType = createMatchingObjectType<Partial<JspUrls>>({
     query: { refType: BuiltinTypes.STRING },
     dataField: { refType: BuiltinTypes.STRING },
   },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
 })
 
 
@@ -116,6 +119,9 @@ const apiDefinitionsType = createMatchingObjectType<Partial<JiraApiConfig>>({
     typesToFallbackToInternalId: {
       refType: new ListType(BuiltinTypes.STRING),
     },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
 
@@ -161,12 +167,18 @@ const jiraDeployConfigType = new ObjectType({
   fields: {
     forceDelete: { refType: BuiltinTypes.BOOLEAN },
   },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
 })
 
 const fetchFiltersType = createMatchingObjectType<JiraFetchFilters>({
   elemID: new ElemID(JIRA, 'FetchFilters'),
   fields: {
     name: { refType: BuiltinTypes.STRING },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
 
@@ -189,6 +201,9 @@ const maskingConfigType = createMatchingObjectType<Partial<MaskingConfig>>({
       refType: new ListType(BuiltinTypes.STRING),
     },
   },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
 })
 
 export const configType = createMatchingObjectType<Partial<JiraConfig>>({
@@ -202,6 +217,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
   },
   annotations: {
     [CORE_ANNOTATIONS.DEFAULT]: _.omit(PARTIAL_DEFAULT_CONFIG, ['client', 'masking']),
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
 

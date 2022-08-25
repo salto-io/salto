@@ -1860,6 +1860,9 @@ const IdLocatorType = createMatchingObjectType<IdLocator>({
       },
     },
   },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
 })
 
 export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
@@ -1892,6 +1895,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       `${FETCH_CONFIG}.enableMissingReferences`,
       `${FETCH_CONFIG}.enableGuide`,
     ),
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
 

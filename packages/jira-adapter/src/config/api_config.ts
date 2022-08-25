@@ -127,11 +127,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
 
   Dashboard: {
-    standaloneFields: [
-      {
-        fieldName: 'gadgets',
-      },
-    ],
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'gadgets', fieldType: 'List<DashboardGadget>' },

@@ -839,6 +839,11 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition
     serializationStrategy: 'id',
     target: { typeContext: 'neighborReferenceUserAndOrgField' },
   },
+  {
+    src: { field: 'group_ids', parentTypes: ['user_segment'] },
+    serializationStrategy: 'id',
+    target: { type: 'group' },
+  },
 ]
 
 export const fieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [

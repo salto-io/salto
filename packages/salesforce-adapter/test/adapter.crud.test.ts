@@ -821,6 +821,34 @@ describe('SalesforceAdapter CRUD', () => {
         })
       })
 
+      describe('when the result from Salesforce contains codeCoverageWarnings', () => {
+        beforeEach(async () => {
+          connection.metadata.deploy.mockReturnValueOnce(mockDeployResult({
+            id: 'DeploymentWithCodeCoverageWarnings',
+            success: true,
+            componentSuccess: [{
+              fullName: mockDefaultValues.Profile.fullName,
+              componentType: constants.PROFILE_METADATA_TYPE,
+            }],
+            runTestResult: {
+              codeCoverageWarnings: [{
+                id: '1',
+                message: 'Code Coverage Went Down',
+              }],
+            },
+          }))
+          result = await adapter.deploy({
+            changeGroup: {
+              groupID: afterInstance.elemID.getFullName(),
+              changes: [{ action: 'modify', data: { before: beforeInstance, after: afterInstance } }],
+            },
+          })
+        })
+        it('should produce a deploy error', () => {
+          expect(result.errors).toHaveLength(1)
+        })
+      })
+
       describe('when the request fails because fullNames are not the same', () => {
         beforeEach(async () => {
           afterInstance = beforeInstance.clone()

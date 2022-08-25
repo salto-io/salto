@@ -39,7 +39,7 @@ const TYPE_NAME_TO_FIELD_RESTRICTIONS: RestrictionByType = {
 const addRestriction = (obj: ObjectType) : void => {
   const typeToChange = TYPE_NAME_TO_FIELD_RESTRICTIONS[obj.elemID.typeName]
   Object.keys(typeToChange).forEach(field => {
-    if (Object.prototype.hasOwnProperty.call(typeToChange, field)) {
+    if (Object.prototype.hasOwnProperty.call(obj.fields, field)) {
       obj.fields[field].annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction(
         typeToChange[field]
       )

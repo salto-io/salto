@@ -207,7 +207,7 @@ const ZendeskReferenceSerializationStrategyLookup: Record<
 }
 
 export type ReferenceContextStrategyName = 'neighborField'
-  | 'whitelistedNeighborField'
+  | 'allowlistedNeighborField'
   | 'neighborType'
   | 'parentSubject'
   | 'parentTitle'
@@ -222,7 +222,7 @@ export const contextStrategyLookup: Record<
   ReferenceContextStrategyName, referenceUtils.ContextFunc
 > = {
   neighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: getValueLookupType }),
-  whitelistedNeighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: val => NEIGHBOR_FIELD_TO_TYPE_NAMES[val] }),
+  allowlistedNeighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: val => NEIGHBOR_FIELD_TO_TYPE_NAMES[val] }),
   neighborReferenceTicketField: neighborContextFunc({ contextFieldName: 'field', getLookUpName: neighborReferenceTicketFieldLookupFunc, contextValueMapper: neighborReferenceTicketFieldLookupType }),
   neighborReferenceTicketFormCondition: neighborContextFunc({ contextFieldName: 'parent_field_id', getLookUpName: neighborReferenceTicketFieldLookupFunc, contextValueMapper: neighborReferenceTicketFieldLookupType }),
   neighborReferenceUserAndOrgField: neighborContextFunc({ contextFieldName: 'field', getLookUpName: neighborReferenceUserAndOrgFieldLookupFunc, contextValueMapper: neighborReferenceUserAndOrgFieldLookupType }),
@@ -730,7 +730,7 @@ const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
         'trigger__conditions__any',
       ],
     },
-    target: { typeContext: 'whitelistedNeighborField' },
+    target: { typeContext: 'allowlistedNeighborField' },
     zendeskMissingRefStrategy: 'typeAndValue',
   },
 ]

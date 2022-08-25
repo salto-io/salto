@@ -38,7 +38,7 @@ import boardSubQueryFilter from './filters/board/board_subquery'
 import boardEstimationFilter from './filters/board/board_estimation'
 import boardDeploymentFilter from './filters/board/board_deployment'
 import automationDeploymentFilter from './filters/automation/automation_deployment'
-import handleTemplateExpressionsFilter from './filters/automation/handle_template_expressions'
+import smartValueReferenceFilter from './filters/automation/smart_value_reference_filter'
 import webhookFilter from './filters/webhook/webhook'
 import screenFilter from './filters/screen/screen'
 import issueTypeScreenSchemeFilter from './filters/issue_type_screen_scheme'
@@ -182,7 +182,7 @@ export const DEFAULT_FILTERS = [
   hiddenValuesInListsFilter,
   queryFilter,
   missingDescriptionsFilter,
-  handleTemplateExpressionsFilter,
+  smartValueReferenceFilter,
   // Must be last
   defaultInstancesDeployFilter,
 ]

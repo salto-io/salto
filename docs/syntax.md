@@ -291,7 +291,7 @@ Currently the following core annotations are supported:
 - [_creatable](#_created_at)
 - [_updatable](#_changed_by)
 - [_deletable](#_changed_at)
-- [-additional_properties](#_additional_properties)
+- [_additional_properties](#_additional_properties)
 
 #### `_required`
 This annotation is used on field blocks to specify that an instance must contain a value for this field.
@@ -709,7 +709,7 @@ salto.notDeletable instance {
 
 #### `_additional_properties`
 This annotation can be used on types to specify whether the type allows additional properties.
-when it is set to false, values of this type may only contain the fields that this type allows, any additional value would cause a validation warning.
+When it is set to false, values of this type may only contain the fields that this type allows, any additional value would cause a validation warning.
 
 Type: `boolean`
 Default: `true`

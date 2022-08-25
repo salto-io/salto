@@ -463,7 +463,7 @@ const createReferenceValidationErrors = (elemID: ElemID, value: Value): Validati
   return []
 }
 
-const validateAdditionalPropertiesValue = (
+const validateNotAdditionalProperty = (
   elemID: ElemID,
   fieldName: string,
   objType : ObjectType,
@@ -540,12 +540,12 @@ const validateValue = (
     }
     return Object.keys(value).flatMap(
       // eslint-disable-next-line no-use-before-define
-      k => validateFieldValues(
-        elemID,
-        value[k],
-        k,
-        toObjectType(type, value),
-      )
+      k => validateFieldValueAndName({
+        parentElemID: elemID,
+        value: value[k],
+        fieldName: k,
+        objType: toObjectType(type, value),
+      })
     )
   }
 
@@ -615,14 +615,14 @@ const validateFieldValue = (
   ))
 }
 
-const validateFieldValues = (
-  parentElemID: ElemID,
-  value: Value,
-  fieldName: string,
+const validateFieldValueAndName = ({ parentElemID, value, fieldName, objType } : {
+  parentElemID: ElemID
+  value: Value
+  fieldName: string
   objType: ObjectType
-): ValidationError[] => {
+ }): ValidationError[] => {
   const errors = objType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] === false
-    ? validateAdditionalPropertiesValue(parentElemID, fieldName, objType)
+    ? validateNotAdditionalProperty(parentElemID, fieldName, objType)
     : []
   return errors.concat(validateFieldValue(
     parentElemID.createNestedID(fieldName),

@@ -871,10 +871,12 @@ describe('Elements validation', () => {
         const topType = new ObjectType({
           elemID: elemIdTop,
           fields: {
-            mapField: { refType: new MapType(nonValidatingType),
+            mapFieldNonValidating: { refType: new MapType(nonValidatingType),
               annotations: { [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false } },
-            listField: { refType: new ListType(validatingType),
+            mapFieldValidating: { refType: new MapType(validatingType) },
+            listFieldNonValidating: { refType: new ListType(nonValidatingType),
               annotations: { [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false } },
+            listFieldValidating: { refType: new ListType(validatingType) },
           },
           annotations: {
             [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -911,14 +913,23 @@ describe('Elements validation', () => {
             'testinst',
             topType,
             {
-              mapField: {
+              mapFieldNonValidating: {
                 a: { str: 'str' },
                 b: { str: 'str2', additional1: 'do not fail' },
               },
-              listField: [
+              mapFieldValidating: {
+                c: { str: 'str3' },
+                d: { str: 'str4', additional4: 'should fail' },
+              },
+              listFieldValidating: [
                 { str: 'str', additional2: 'should fail' },
                 { str: 'str2' },
                 { str: 'str3', additional3: 'should also fail' },
+              ],
+              listFieldNonValidating: [
+                { str: 'str', additional5: 'should mot fail' },
+                { str: 'str2' },
+                { str: 'str3', additional6: 'should also not fail' },
               ],
             },
           )
@@ -931,10 +942,12 @@ describe('Elements validation', () => {
               nonValidatingType,
             ])
           )
-          expect(errors).toHaveLength(2)
-          expect(errors[0].message).toMatch('Error validating "salto.top.instance.testinst.listField.0":'
+          expect(errors).toHaveLength(3)
+          expect(errors[0].message).toMatch('Error validating "salto.top.instance.testinst.mapFieldValidating.d":'
+            + ' Field \'additional4\' is not defined in the \'validating\' type which does not allow additional properties.')
+          expect(errors[1].message).toMatch('Error validating "salto.top.instance.testinst.listFieldValidating.0":'
             + ' Field \'additional2\' is not defined in the \'validating\' type which does not allow additional properties.')
-          expect(errors[1].message).toMatch('Error validating "salto.top.instance.testinst.listField.2":'
+          expect(errors[2].message).toMatch('Error validating "salto.top.instance.testinst.listFieldValidating.2":'
             + ' Field \'additional3\' is not defined in the \'validating\' type which does not allow additional properties.')
         })
       })

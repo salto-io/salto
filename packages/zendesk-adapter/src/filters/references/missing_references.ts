@@ -20,12 +20,17 @@ import { references as referenceUtils } from '@salto-io/adapter-components'
 import { naclCase } from '@salto-io/adapter-utils'
 
 const MISSING_REF_PREFIX = 'missing_'
+
+const TYPE_VALUES_SKIP_LIST: Record<string, string> = {
+  group: 'current_groups',
+}
+
 export const ZendeskMissingReferenceStrategyLookup: Record<
 referenceUtils.MissingReferenceStrategyName, referenceUtils.MissingReferenceStrategy
 > = {
   typeAndValue: {
     create: ({ value, adapter, typeName }) => {
-      if (!_.isString(typeName) || !value) {
+      if (!_.isString(typeName) || !value || TYPE_VALUES_SKIP_LIST[typeName] === value) {
         return undefined
       }
       return new InstanceElement(

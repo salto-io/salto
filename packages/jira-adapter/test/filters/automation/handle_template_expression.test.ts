@@ -183,6 +183,18 @@ describe('handle templates filter', () => {
         await filter.preDeploy([toChange({ before: errorInstance, after: errorInstance })])
         expect(logErrorSpy).toHaveBeenCalledWith('Error parsing templates in deployment: Cannot read property \'components\' of undefined', expect.any(Error))
       })
+      it('handles invalid reference as empty value', async () => {
+        const emptyInstance = new InstanceElement('emptyelement', automationType)
+        const invalidInstance = new InstanceElement('invalidElement', automationType, { components: [{
+          value: {
+            inner: new TemplateExpression({ parts: [
+              new ReferenceExpression(emptyInstance.elemID, emptyInstance),
+            ] }),
+          },
+        }] })
+        await filter.preDeploy([toChange({ before: invalidInstance, after: invalidInstance })])
+        expect(invalidInstance.value.components[0].value.inner).toEqual('')
+      })
     })
 
     describe('onDeploy', () => {

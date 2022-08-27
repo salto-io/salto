@@ -17,7 +17,7 @@ import { InstanceElement, isInstanceElement, isReferenceExpression, Value } from
 import { transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { AUTOMATION_TYPE, NOTIFICATION_EVENT_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../constants'
+import { AUTOMATION_TYPE, NOTIFICATION_EVENT_TYPE_NAME, NOTIFICATION_SCHEME_TYPE_NAME, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
 
 const { awu } = collections.asynciterable
@@ -27,6 +27,12 @@ type ValueToSort = {
   fieldName: string
   sortBy: string[]
 }
+
+const WORKFLOW_CONDITION_SORT_BY = ['type', 'nodeType', 'operator', 'configuration.fieldId', 'configuration.comparator',
+  'configuration.fieldValue', 'configuration.permissionKey', 'configuration.ignoreLoopTransitions',
+  'configuration.includeCurrentStatus', 'configuration.mostRecentStatusOnly', 'configuration.reverseCondition',
+  'configuration.previousStatus.id', 'configuration.value', 'configuration.toStatus.id', 'configuration.fromStatus.id',
+  'configuration.group', 'configuration.allowUserInField', 'configuration.projectRole.id', 'configuration.comparisonType']
 
 const VALUES_TO_SORT: ValueToSort[] = [
   {
@@ -58,6 +64,46 @@ const VALUES_TO_SORT: ValueToSort[] = [
     typeName: NOTIFICATION_EVENT_TYPE_NAME,
     fieldName: 'notifications',
     sortBy: ['type', 'parameter.elemID.name', 'parameter'],
+  },
+  {
+    typeName: 'FieldConfigurationScheme',
+    fieldName: 'items',
+    sortBy: ['issueTypeId', 'fieldConfigurationId'],
+  },
+  {
+    typeName: NOTIFICATION_SCHEME_TYPE_NAME,
+    fieldName: 'notificationSchemeEvents',
+    sortBy: ['eventType'],
+  },
+  {
+    typeName: WORKFLOW_RULES_TYPE_NAME,
+    fieldName: 'postFunctions',
+    sortBy: ['type', 'configuration.event.id', 'configuration.fieldId', 'configuration.sourceFieldId', 'configuration.destinationFieldId',
+      'configuration.copyType', 'configuration.projectRole.id', 'configuration.issueSecurityLevel.id', 'configuration.webhook.id',
+      'configuration.mode', 'configuration.fieldValue', 'configuration.value'],
+  },
+  {
+    typeName: WORKFLOW_RULES_TYPE_NAME,
+    fieldName: 'validators',
+    sortBy: ['type', 'configuration.comparator', 'configuration.date1', 'configuration.date2', 'configuration.expression',
+      'configuration.includeTime', 'configuration.windowsDays', 'configuration.ignoreContext', 'configuration.errorMessage',
+      'configuration.fieldId', 'configuration.excludeSubtasks', 'configuration.permissionKey', 'configuration.mostRecentStatusOnly',
+      'configuration.previousStatus.id', 'configuration.nullAllowed', 'configuration.username'],
+  },
+  {
+    typeName: WORKFLOW_RULES_TYPE_NAME,
+    fieldName: 'conditions',
+    sortBy: WORKFLOW_CONDITION_SORT_BY,
+  },
+  {
+    typeName: WORKFLOW_RULES_TYPE_NAME,
+    fieldName: 'triggers',
+    sortBy: ['key'],
+  },
+  {
+    typeName: 'WorkflowCondition',
+    fieldName: 'conditions',
+    sortBy: WORKFLOW_CONDITION_SORT_BY,
   },
 ]
 

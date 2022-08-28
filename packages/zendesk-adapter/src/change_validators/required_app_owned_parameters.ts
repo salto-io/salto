@@ -28,21 +28,41 @@ import { APP_OWNED_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
 
-const invalidAppInstallation = (
-  appInstallation: InstanceElement, appOwnedInstances: Map<number, InstanceElement>
-): boolean => {
-  const appOwned = appOwnedInstances.get(appInstallation.value.app_id)
+// returns a list of all required parameters which are not populated
+const unpopulatedParameters = (
+  appInstallation: InstanceElement, appOwnedInstances: Record<number, InstanceElement>
+) : string[] => {
+  const appOwned = appOwnedInstances[appInstallation.value.app_id]
   if (appOwned?.value.parameters === undefined) {
-    return false
+    return []
   }
   const { parameters } = appOwned.value
   const requiredParameters = Object.keys(_.pickBy(parameters, val => val.required))
-  const appInstallationSettings = Object.keys(appInstallation.value.settings ?? {})
-  // check if not all requirements in settings
-  return !requiredParameters
-    .every(key => appInstallationSettings.includes(key))
+  const appInstallationSettings = new Set(Object.keys(appInstallation.value.settings ?? {}))
+  return requiredParameters
+    .filter(key => !appInstallationSettings.has(key))
 }
 
+// const invalidAppInstallation = (
+//   appInstallation: InstanceElement, appOwnedInstances: Record<number, InstanceElement>
+// ): boolean => {
+//   const appOwned = appOwnedInstances[appInstallation.value.app_id]
+//   if (appOwned?.value.parameters === undefined) {
+//     return false
+//   }
+//   const { parameters } = appOwned.value
+//   const requiredParameters = Object.keys(_.pickBy(parameters, val => val.required))
+//   const appInstallationSettings = new Set(Object.keys(appInstallation.value.settings ?? {}))
+//   // check if not all requirements in settings
+//   return !requiredParameters
+//     .every(key => appInstallationSettings.has(key))
+// }
+
+/**
+ * This change validator checks if all the required parameters for each app owned are populated in
+ * the corresponding app installation. It raises an error for app installation that don't have the
+ * required parameters in their setting.
+ */
 export const requiredAppOwnedParametersValidator: ChangeValidator = async (
   changes, elementSource
 ) => {
@@ -61,18 +81,18 @@ export const requiredAppOwnedParametersValidator: ChangeValidator = async (
     .map(id => elementSource.get(id))
     .toArray()
 
-  const mapAppOwnedInstances = new Map(appOwnedInstances
-    .map(instance => [instance.value.id, instance]))
+  const recordAppOwnedInstances:
+      Record<number, InstanceElement> = _.keyBy(appOwnedInstances, 'value.id')
 
   return appInstallationInstances
-    .filter(appInstallation => invalidAppInstallation(appInstallation, mapAppOwnedInstances))
+    .filter(appInstallation =>
+      !_.isEmpty(unpopulatedParameters(appInstallation, recordAppOwnedInstances)))
     .flatMap(instance => [{
       elemID: instance.elemID,
       severity: 'Error',
       message: 'Can not change app installation, because not all parameters that are defined as required are populated',
       detailedMessage: `Can not change app installation ${instance.elemID.getFullName()},
-      because the parameters 
-      ${Object.keys(_.pickBy(mapAppOwnedInstances.get(instance.value.app_id).value.parameters, val => val.required))} 
+      because the parameters: ${unpopulatedParameters(instance, recordAppOwnedInstances)}, 
       are required but not populated.`,
     }])
 }

@@ -58,7 +58,6 @@ describe('requiredAppOwnedParametersValidator', () => {
       },
     },
   )
-
   const appInstallationValidSettings = new InstanceElement(
     'Test3',
     AppInstallationType,
@@ -71,47 +70,18 @@ describe('requiredAppOwnedParametersValidator', () => {
     },
   )
 
-  const appInstallationNoSettings = new InstanceElement(
-    'Test4',
-    AppInstallationType,
-    {
-      app_id: 2,
-    },
-  )
-
-  const appInstallationInvalidSettings = new InstanceElement(
-    'Test5',
-    AppInstallationType,
-    {
-      app_id: 2,
-      settings: {
-        name: 'my name',
-        checkNotRequired: 'bla',
-      },
-    },
-  )
-  const appInstallationForInvalidAppOwned = new InstanceElement(
-    'Test6',
-    AppInstallationType,
-    {
-      app_id: 1,
-      settings: {
-        checkNotRequired: 'my name',
-      },
-    },
-  )
-  const appInstallationNoAppOwned = new InstanceElement(
-    'Test7',
-    AppInstallationType,
-    {
-      app_id: 3,
-      settings: {
-        check: 'my name',
-      },
-    },
-  )
 
   it('should not return an error when app owned does not contain parameters', async () => {
+    const appInstallationForInvalidAppOwned = new InstanceElement(
+      'Test6',
+      AppInstallationType,
+      {
+        app_id: 1,
+        settings: {
+          checkNotRequired: 'my name',
+        },
+      },
+    )
     const errors = await requiredAppOwnedParametersValidator(
       [toChange({ after: appInstallationForInvalidAppOwned })],
       buildElementsSourceFromElements([appOwnedNoParameters, appOwnedWithParameters])
@@ -120,6 +90,13 @@ describe('requiredAppOwnedParametersValidator', () => {
     expect(errors).toHaveLength(0)
   })
   it('should return an error when app installation does not contain setting', async () => {
+    const appInstallationNoSettings = new InstanceElement(
+      'Test4',
+      AppInstallationType,
+      {
+        app_id: 2,
+      },
+    )
     const errors = await requiredAppOwnedParametersValidator(
       [toChange({ after: appInstallationNoSettings })],
       buildElementsSourceFromElements([appOwnedNoParameters, appOwnedWithParameters])
@@ -129,8 +106,7 @@ describe('requiredAppOwnedParametersValidator', () => {
       severity: 'Error',
       message: 'Can not change app installation, because not all parameters that are defined as required are populated',
       detailedMessage: `Can not change app installation ${appInstallationNoSettings.elemID.getFullName()},
-      because the parameters 
-      ${Object.keys(_.pickBy(appOwnedWithParameters.value.parameters, val => val.required))} 
+      because the parameters: ${Object.keys(_.pickBy(appOwnedWithParameters.value.parameters, val => val.required))}, 
       are required but not populated.`,
     }])
   })
@@ -142,6 +118,17 @@ describe('requiredAppOwnedParametersValidator', () => {
     expect(errors).toHaveLength(0)
   })
   it('should return an error when app installation does not contain all required parameters', async () => {
+    const appInstallationInvalidSettings = new InstanceElement(
+      'Test5',
+      AppInstallationType,
+      {
+        app_id: 2,
+        settings: {
+          name: 'my name',
+          checkNotRequired: 'bla',
+        },
+      },
+    )
     const errors = await requiredAppOwnedParametersValidator(
       [toChange({ after: appInstallationInvalidSettings })],
       buildElementsSourceFromElements([appOwnedNoParameters, appOwnedWithParameters])
@@ -152,12 +139,21 @@ describe('requiredAppOwnedParametersValidator', () => {
       severity: 'Error',
       message: 'Can not change app installation, because not all parameters that are defined as required are populated',
       detailedMessage: `Can not change app installation ${appInstallationInvalidSettings.elemID.getFullName()},
-      because the parameters 
-      ${Object.keys(_.pickBy(appOwnedWithParameters.value.parameters, val => val.required))} 
+      because the parameters: ${['checkRequired']}, 
       are required but not populated.`,
     }])
   })
   it('should not return an error when app installation does not have a corresponding app owned', async () => {
+    const appInstallationNoAppOwned = new InstanceElement(
+      'Test7',
+      AppInstallationType,
+      {
+        app_id: 3,
+        settings: {
+          check: 'my name',
+        },
+      },
+    )
     const errors = await requiredAppOwnedParametersValidator(
       [toChange({ after: appInstallationNoAppOwned })],
       buildElementsSourceFromElements([appOwnedNoParameters, appOwnedWithParameters])

@@ -103,19 +103,6 @@ const sortLists = async (instance: InstanceElement): Promise<void> => {
       return value
     },
   }) ?? {}
-
-
-  Object.entries(VALUES_TO_SORT[instance.elemID.typeName] ?? {})
-    .forEach(([fieldName, sortBy]) => {
-      if (instance.value[fieldName] === undefined) {
-        return
-      }
-
-      instance.value[fieldName] = _.orderBy(
-        instance.value[fieldName],
-        sortBy.map(fieldPath => item => getValue(_.get(item, fieldPath))),
-      )
-    })
 }
 
 const filter: FilterCreator = () => ({

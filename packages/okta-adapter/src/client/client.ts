@@ -24,7 +24,7 @@ const {
 
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-  get: 10,
+  get: 2,
   deploy: 2,
 }
 

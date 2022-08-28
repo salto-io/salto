@@ -76,6 +76,8 @@ import brandLogoFilter from './filters/brand_logo'
 import removeBrandLogoFieldFilter from './filters/remove_brand_logo_field'
 import { getConfigFromConfigChanges } from './config_change'
 import { dependencyChanger } from './dependency_changers'
+import customFieldOptionsFilter from './filters/add_restriction'
+
 
 const log = logger(module)
 const { createPaginator } = clientUtils
@@ -122,6 +124,7 @@ export const DEFAULT_FILTERS = [
   removeBrandLogoFieldFilter,
   fieldReferencesFilter,
   appsFilter,
+  customFieldOptionsFilter,
   appOwnedConvertListToMapFilter,
   slaPolicyFilter,
   routingAttributeFilter,

@@ -23,7 +23,7 @@ import filterCreator, { BRAND_LOGO_TYPE, LOGO_FIELD } from '../../src/filters/br
 import { DEFAULT_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
-import { BRAND_LOGO_TYPE_NAME, BRAND_NAME, ZENDESK } from '../../src/constants'
+import { BRAND_LOGO_TYPE_NAME, BRAND_TYPE_NAME, ZENDESK } from '../../src/constants'
 
 jest.useFakeTimers()
 
@@ -35,7 +35,7 @@ describe('brand logo filter', () => {
   let mockBrandGet: jest.SpyInstance
   let mockPut: jest.SpyInstance
   const brandType = new ObjectType({
-    elemID: new ElemID(ZENDESK, BRAND_NAME),
+    elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME),
     fields: {
       [LOGO_FIELD]: { refType: new ObjectType(BRAND_LOGO_TYPE) },
     },
@@ -123,7 +123,7 @@ describe('brand logo filter', () => {
       await filter.onFetch(elements)
 
       const instances = elements.filter(isInstanceElement)
-      const brand = instances.find(e => e.elemID.typeName === BRAND_NAME)
+      const brand = instances.find(e => e.elemID.typeName === BRAND_TYPE_NAME)
       const logo = instances.find(
         e => e.elemID.typeName === BRAND_LOGO_TYPE_NAME
       ) as InstanceElement

@@ -21,7 +21,7 @@ import { SCRIPT_ID } from '../../src/constants'
 describe('account specific values validator for sender and recepient fields', () => {
   let instance: InstanceElement
   beforeEach(() => {
-    const origInstance = new InstanceElement(
+    instance = new InstanceElement(
       'instance',
       workflowType().type,
       {
@@ -46,7 +46,6 @@ describe('account specific values validator for sender and recepient fields', ()
         },
       }
     )
-    instance = origInstance.clone()
   })
 
   it('should not have changeError when deploying an instance without ACCOUNT_SPECIFIC_VALUES', async () => {

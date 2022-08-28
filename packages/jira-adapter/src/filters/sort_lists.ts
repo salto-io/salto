@@ -15,51 +15,64 @@
 */
 import { InstanceElement, isInstanceElement, isReferenceExpression, Value } from '@salto-io/adapter-api'
 import { transformValues } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { AUTOMATION_TYPE, NOTIFICATION_EVENT_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../constants'
+import { AUTOMATION_TYPE, NOTIFICATION_EVENT_TYPE_NAME, NOTIFICATION_SCHEME_TYPE_NAME, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
 
 const { awu } = collections.asynciterable
 
-type ValueToSort = {
-  typeName: string
-  fieldName: string
-  sortBy: string[]
-}
+const log = logger(module)
 
-const VALUES_TO_SORT: ValueToSort[] = [
-  {
-    typeName: 'PermissionScheme',
-    fieldName: 'permissions',
-    sortBy: ['permission', 'holder.type', 'holder.parameter'],
+const WORKFLOW_CONDITION_SORT_BY = ['type', 'nodeType', 'operator', 'configuration.fieldId', 'configuration.comparator',
+  'configuration.fieldValue', 'configuration.permissionKey', 'configuration.ignoreLoopTransitions',
+  'configuration.includeCurrentStatus', 'configuration.mostRecentStatusOnly', 'configuration.reverseCondition',
+  'configuration.previousStatus.id', 'configuration.value', 'configuration.toStatus.id', 'configuration.fromStatus.id',
+  'configuration.group', 'configuration.allowUserInField', 'configuration.projectRole.id', 'configuration.comparisonType']
+
+const VALUES_TO_SORT: Record<string, Record<string, string[]>> = {
+  PermissionScheme: {
+    permissions: ['permission', 'holder.type', 'holder.parameter'],
   },
-  {
-    typeName: WORKFLOW_TYPE_NAME,
-    fieldName: 'statuses',
-    sortBy: ['id.elemID.name'],
+  [WORKFLOW_TYPE_NAME]: {
+    statuses: ['id.elemID.name'],
   },
-  {
-    typeName: 'IssueTypeScreenScheme',
-    fieldName: 'issueTypeMappings',
-    sortBy: ['issueTypeId.elemID.name'],
+  IssueTypeScreenScheme: {
+    issueTypeMappings: ['issueTypeId.elemID.name'],
   },
-  {
-    typeName: AUTOMATION_TYPE,
-    fieldName: 'tags',
-    sortBy: ['tagType', 'tagValue'],
+  [AUTOMATION_TYPE]: {
+    tags: ['tagType', 'tagValue'],
   },
-  {
-    typeName: WORKFLOW_TYPE_NAME,
-    fieldName: 'transitions',
-    sortBy: ['name'],
+  [WORKFLOW_TYPE_NAME]: {
+    transitions: ['name'],
   },
-  {
-    typeName: NOTIFICATION_EVENT_TYPE_NAME,
-    fieldName: 'notifications',
-    sortBy: ['type', 'parameter.elemID.name', 'parameter'],
+  [NOTIFICATION_EVENT_TYPE_NAME]: {
+    notifications: ['type', 'parameter.elemID.name', 'parameter'],
   },
-]
+  FieldConfigurationScheme: {
+    items: ['issueTypeId', 'fieldConfigurationId'],
+  },
+  [NOTIFICATION_SCHEME_TYPE_NAME]: {
+    notificationSchemeEvents: ['eventType'],
+  },
+  [WORKFLOW_RULES_TYPE_NAME]: {
+    postFunctions: ['type', 'configuration.event.id', 'configuration.fieldId', 'configuration.sourceFieldId', 'configuration.destinationFieldId',
+      'configuration.copyType', 'configuration.projectRole.id', 'configuration.issueSecurityLevel.id', 'configuration.webhook.id',
+      'configuration.mode', 'configuration.fieldValue', 'configuration.value'],
+
+    validators: ['type', 'configuration.comparator', 'configuration.date1', 'configuration.date2', 'configuration.expression',
+      'configuration.includeTime', 'configuration.windowsDays', 'configuration.ignoreContext', 'configuration.errorMessage',
+      'configuration.fieldId', 'configuration.excludeSubtasks', 'configuration.permissionKey', 'configuration.mostRecentStatusOnly',
+      'configuration.previousStatus.id', 'configuration.nullAllowed', 'configuration.username'],
+
+    conditions: WORKFLOW_CONDITION_SORT_BY,
+    triggers: ['key'],
+  },
+  WorkflowCondition: {
+    conditions: WORKFLOW_CONDITION_SORT_BY,
+  },
+}
 
 const getValue = (value: Value): Value => (
   isReferenceExpression(value) ? value.elemID.getFullName() : value
@@ -72,51 +85,32 @@ const sortLists = async (instance: InstanceElement): Promise<void> => {
     strict: false,
     allowEmpty: true,
     transformFunc: async ({ value, field }) => {
-      if (field === undefined) {
+      if (field === undefined || !Array.isArray(value)) {
         return value
       }
-      VALUES_TO_SORT
-        .filter(
-          ({ typeName, fieldName }) =>
-            field.parent.elemID.typeName === typeName
-              && field.name === fieldName
-            && Array.isArray(value)
-        )
-        .forEach(({ sortBy }) => {
-          _.assign(
+      const sortFields = VALUES_TO_SORT[field.parent.elemID.typeName]?.[field.name]
+
+      if (sortFields !== undefined) {
+        _.assign(
+          value,
+          _.orderBy(
             value,
-            _.orderBy(
-              value,
-              sortBy.map(fieldPath => item => getValue(_.get(item, fieldPath))),
-            )
+            sortFields.map(fieldPath => item => getValue(_.get(item, fieldPath))),
           )
-        })
+        )
+      }
 
       return value
     },
   }) ?? {}
-
-
-  VALUES_TO_SORT
-    .filter(({ typeName }) => instance.elemID.typeName === typeName)
-    .forEach(({ fieldName, sortBy }) => {
-      if (instance.value[fieldName] === undefined) {
-        return
-      }
-
-      instance.value[fieldName] = _.orderBy(
-        instance.value[fieldName],
-        sortBy.map(fieldPath => item => getValue(_.get(item, fieldPath))),
-      )
-    })
 }
 
 const filter: FilterCreator = () => ({
-  onFetch: async elements => {
+  onFetch: async elements => log.time(async () => {
     await awu(elements)
       .filter(isInstanceElement)
       .forEach(sortLists)
-  },
+  }, 'sort_lists filter'),
 })
 
 export default filter

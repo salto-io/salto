@@ -20,13 +20,8 @@ import priorityFilter from '../../src/filters/priority'
 import { Filter } from '../../src/filter'
 import { getDefaultConfig, JiraConfig } from '../../src/config/config'
 import { JIRA, PRIORITY_TYPE_NAME } from '../../src/constants'
-// import { deployWithJspEndpoints } from '../../src/deployment/jsp_deployment'
 import JiraClient from '../../src/client/client'
 
-// jest.mock('../../src/deployment/jsp_deployment', () => ({
-//   ...jest.requireActual<{}>('../../src/deployment/jsp_deployment'),
-//   deployWithJspEndpoints: jest.fn(),
-// }))
 
 describe('priorityFilter', () => {
   let filter: Filter
@@ -130,53 +125,4 @@ describe('priorityFilter', () => {
       expect(getChangeData(changes[0]).value.iconUrl).toEqual(iconUrlTruncatePath)
     })
   })
-  // describe('deploy', () => {
-  //   let deployWithJspEndpointsMock: jest.MockedFunction<typeof deployWithJspEndpoints>
-  //   beforeEach(() => {
-  //     deployWithJspEndpointsMock = deployWithJspEndpoints as jest.MockedFunction<
-  //       typeof deployWithJspEndpoints
-  //     >
-  //   })
-
-  //   it('should call deployWithJspEndpoints', async () => {
-  //     const instance = new InstanceElement(
-  //       'instance',
-  //       type,
-  //     )
-  //     await filter.deploy?.([toChange({ after: instance })])
-
-  //     expect(deployWithJspEndpointsMock).toHaveBeenCalledWith({
-  //       changes: [toChange({ after: instance })],
-  //       client,
-  //       urls: {
-  //         add: '/secure/admin/AddPriority.jspa',
-  //         modify: '/secure/admin/EditPriority.jspa',
-  //         query: '/rest/api/3/priority',
-  //       },
-  //       serviceValuesTransformer: expect.toBeFunction(),
-  //     })
-  //   })
-
-  //   it('should throw if there are no jsp urls', async () => {
-  //     const instance = new InstanceElement(
-  //       'instance',
-  //       type,
-  //     )
-
-  //     delete config.apiDefinitions.types[PRIORITY_TYPE_NAME].jspRequests
-
-  //     await expect(filter.deploy?.([toChange({ after: instance })])).rejects.toThrow()
-  //   })
-
-  //   it('should throw if there is no type definition', async () => {
-  //     const instance = new InstanceElement(
-  //       'instance',
-  //       type,
-  //     )
-
-  //     delete config.apiDefinitions.types[PRIORITY_TYPE_NAME]
-
-  //     await expect(filter.deploy?.([toChange({ after: instance })])).rejects.toThrow()
-  //   })
-  // })
 })

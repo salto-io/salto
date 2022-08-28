@@ -182,19 +182,22 @@ const processDeployResponse = (
 
   const testFailures = makeArray(result.details)
     .flatMap(detail => makeArray((detail.runTestResult as RunTestsResult)?.failures))
-
   const testErrors = testFailures
     .map(failure => new Error(
       `Test failed for class ${failure.name} method ${failure.methodName} with error:\n${failure.message}\n${failure.stackTrace}`
     ))
-
   const componentErrors = allFailureMessages
     .filter(failure => !isUnFoundDelete(failure, deletionsPackageName))
     .map(failure => new Error(
       `Failed to deploy ${failure.fullName} with error: ${failure.problem} (${failure.problemType})`
     ))
+  const codeCoverageWarningErrors = makeArray(result.details)
+    .map(detail => detail.runTestResult as RunTestsResult | undefined)
+    .flatMap(runTestResult => makeArray(runTestResult?.codeCoverageWarnings))
+    .map(codeCoverageWarning => codeCoverageWarning.message)
+    .map(message => new Error(message))
 
-  const errors = [...testErrors, ...componentErrors]
+  const errors = [...testErrors, ...componentErrors, ...codeCoverageWarningErrors]
 
   if (result.checkOnly || (result.rollbackOnError && !result.success)) {
     // In checkOnly none of the changes are actually applied

@@ -109,7 +109,7 @@ describe('priorityFilter', () => {
       const changes = [toChange({ after: instance })]
       filter.preDeploy?.(changes)
       expect(getChangeData(changes[0]).value.iconUrl)
-        .toEqual(client.baseUrl.concat(iconUrlTruncatePath))
+        .toEqual(new URL(iconUrlTruncatePath, client.baseUrl).href)
     })
   })
   describe('onDeploy', () => {
@@ -118,7 +118,7 @@ describe('priorityFilter', () => {
       const instance = new InstanceElement(
         'instance',
         type,
-        { iconUrl: client.baseUrl.concat(iconUrlTruncatePath) }
+        { iconUrl: new URL(iconUrlTruncatePath, client.baseUrl).href }
       )
       const changes = [toChange({ after: instance })]
       filter.onDeploy?.(changes)

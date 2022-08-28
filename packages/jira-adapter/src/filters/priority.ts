@@ -32,7 +32,6 @@ const filter: FilterCreator = ({ client, config }) => ({
     if (priorityType === undefined) {
       return
     }
-
     priorityType.annotations[CORE_ANNOTATIONS.CREATABLE] = true
     priorityType.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
     setFieldDeploymentAnnotations(priorityType, 'id')
@@ -47,9 +46,9 @@ const filter: FilterCreator = ({ client, config }) => ({
       .filter(isAdditionOrModificationChange)
       .filter(change => getChangeData(change).elemID.typeName === PRIORITY_TYPE_NAME)
       .forEach(change => {
-        change.data.after.value.iconUrl = client.baseUrl.concat(
-          getChangeData(change).value.iconUrl.toString()
-        )
+        change.data.after.value.iconUrl = new URL(
+          getChangeData(change).value.iconUrl.toString(), client.baseUrl
+        ).href
       })
   },
 

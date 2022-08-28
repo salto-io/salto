@@ -20,7 +20,10 @@ import { collections } from '@salto-io/lowerdash'
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-export const getSubtypes = async (types: ObjectType[]): Promise<ObjectType[]> => {
+export const getSubtypes = async (
+  types: ObjectType[],
+  validateNoConcealment = false,
+): Promise<ObjectType[]> => {
   const subtypes: Record<string, ObjectType> = {}
 
   const findSubtypes = async (type: ObjectType): Promise<void> => {
@@ -30,14 +33,14 @@ export const getSubtypes = async (types: ObjectType[]): Promise<ObjectType[]> =>
         ? await fieldContainerOrType.getInnerType()
         : fieldContainerOrType
 
-      if (fieldType.elemID.getFullName() in subtypes) {
-        if (subtypes[fieldType.elemID.getFullName()] !== fieldType) {
-          log.warn(`duplicate ElemIDs of subtypes found. the duplicate is ${fieldType.elemID.getFullName()}`)
-        }
-        return
-      }
       if (!isObjectType(fieldType)
         || types.includes(fieldType)) {
+        return
+      }
+      if (fieldType.elemID.getFullName() in subtypes) {
+        if (validateNoConcealment && subtypes[fieldType.elemID.getFullName()].isEqual(fieldType)) {
+          log.warn(`duplicate ElemIDs of subtypes found. the duplicate is ${fieldType.elemID.getFullName()}`)
+        }
         return
       }
 

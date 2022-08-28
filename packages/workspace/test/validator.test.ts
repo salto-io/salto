@@ -871,11 +871,9 @@ describe('Elements validation', () => {
         const topType = new ObjectType({
           elemID: elemIdTop,
           fields: {
-            mapFieldNonValidating: { refType: new MapType(nonValidatingType),
-              annotations: { [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false } },
+            mapFieldNonValidating: { refType: new MapType(nonValidatingType) },
             mapFieldValidating: { refType: new MapType(validatingType) },
-            listFieldNonValidating: { refType: new ListType(nonValidatingType),
-              annotations: { [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false } },
+            listFieldNonValidating: { refType: new ListType(nonValidatingType) },
             listFieldValidating: { refType: new ListType(validatingType) },
           },
           annotations: {

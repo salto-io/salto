@@ -463,17 +463,6 @@ const createReferenceValidationErrors = (elemID: ElemID, value: Value): Validati
   return []
 }
 
-const validateNotAdditionalProperty = (
-  elemID: ElemID,
-  fieldName: string,
-  objType : ObjectType,
-) : ValidationError[] =>
-  (!(fieldName in objType.fields)
-    ? [new AdditionalPropertiesValidationError(
-      { elemID, fieldName, typeName: objType.elemID.typeName }
-    )]
-    : [])
-
 const validateValue = (
   elemID: ElemID,
   value: Value,
@@ -614,6 +603,17 @@ const validateFieldValue = (
     innerType,
   ))
 }
+
+const validateNotAdditionalProperty = (
+  elemID: ElemID,
+  fieldName: string,
+  objType : ObjectType,
+) : ValidationError[] =>
+  (!Object.prototype.hasOwnProperty.call(objType.fields, fieldName)
+    ? [new AdditionalPropertiesValidationError(
+      { elemID, fieldName, typeName: objType.elemID.typeName }
+    )]
+    : [])
 
 const validateFieldValueAndName = ({ parentElemID, value, fieldName, objType } : {
   parentElemID: ElemID

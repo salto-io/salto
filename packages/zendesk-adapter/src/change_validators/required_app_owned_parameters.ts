@@ -43,21 +43,6 @@ const unpopulatedParameters = (
     .filter(key => !appInstallationSettings.has(key))
 }
 
-// const invalidAppInstallation = (
-//   appInstallation: InstanceElement, appOwnedInstances: Record<number, InstanceElement>
-// ): boolean => {
-//   const appOwned = appOwnedInstances[appInstallation.value.app_id]
-//   if (appOwned?.value.parameters === undefined) {
-//     return false
-//   }
-//   const { parameters } = appOwned.value
-//   const requiredParameters = Object.keys(_.pickBy(parameters, val => val.required))
-//   const appInstallationSettings = new Set(Object.keys(appInstallation.value.settings ?? {}))
-//   // check if not all requirements in settings
-//   return !requiredParameters
-//     .every(key => appInstallationSettings.has(key))
-// }
-
 /**
  * This change validator checks if all the required parameters for each app owned are populated in
  * the corresponding app installation. It raises an error for app installation that don't have the

@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { config as configUtils } from '@salto-io/adapter-components'
-// import { query } from '@salto-io/adapter-components/src/elements'
 import { AUTOMATION_TYPE, BOARD_COLUMN_CONFIG_TYPE, BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME } from '../constants'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../filters/fields/constants'
 

@@ -22,6 +22,7 @@ import { objects } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
 import { OktaConfig, API_DEFINITIONS_CONFIG } from './config'
 import { FilterCreator, Filter, filtersRunner } from './filter'
+import replaceObjectWithIdFilter from './filters/replace_object_with_id'
 import fieldReferencesFilter from './filters/field_references'
 import { OKTA } from './constants'
 import fetchCriteria from './fetch_criteria'
@@ -35,6 +36,8 @@ const { createPaginator, getWithOffsetAndLimit } = clientUtils
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
+  // should run before fieldReferencesFilter
+  replaceObjectWithIdFilter,
   fieldReferencesFilter,
 ]
 

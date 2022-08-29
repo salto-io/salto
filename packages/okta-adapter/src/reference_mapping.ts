@@ -19,6 +19,52 @@ import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 
 
 export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] = [
+  {
+    src: { field: 'assignedGroups', parentTypes: ['Application'] },
+    serializationStrategy: 'id',
+    target: { type: 'Group' },
+  },
+  {
+    src: { field: 'appUsers', parentTypes: ['Application'] },
+    serializationStrategy: 'id',
+    target: { type: 'User' },
+  },
+  {
+    src: { field: 'users', parentTypes: ['Group'] },
+    serializationStrategy: 'id',
+    target: { type: 'User' },
+  },
+  {
+    src: { field: 'users', parentTypes: ['IdentityProvider'] },
+    serializationStrategy: 'id',
+    target: { type: 'User' },
+  },
+  {
+    src: { field: 'groupIds', parentTypes: ['GroupRuleGroupAssignment'] },
+    serializationStrategy: 'id',
+    target: { type: 'Group' },
+  },
+  {
+    src: { field: 'createdBy', parentTypes: ['UserType'] },
+    serializationStrategy: 'id',
+    target: { type: 'User' },
+  },
+  {
+    src: { field: 'include', parentTypes: ['GroupCondition'] },
+    serializationStrategy: 'id',
+    target: { type: 'Group' },
+  },
+  {
+    src: { field: 'exclude', parentTypes: ['GroupCondition'] },
+    serializationStrategy: 'id',
+    target: { type: 'Group' },
+  },
+  // TODO after id is in fields to hide
+  // {
+  //   src: { field: 'id', parentTypes: ['UserType'] },
+  //   serializationStrategy: 'id',
+  //   target: { type: 'UserType' },
+  // },
 ]
 
 const lookupNameFuncs: GetLookupNameFunc[] = [

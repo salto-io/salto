@@ -73,7 +73,7 @@ export type JiraConfig = {
 }
 
 const jspUrlsType = createMatchingObjectType<Partial<JspUrls>>({
-  elemID: new ElemID(JIRA, 'apiDefinitions'),
+  elemID: new ElemID(JIRA, 'jspUrlsType'),
   fields: {
     add: { refType: BuiltinTypes.STRING },
     modify: { refType: BuiltinTypes.STRING },
@@ -180,7 +180,7 @@ const fetchConfigType = createUserFetchConfigType(
 )
 
 const maskingConfigType = createMatchingObjectType<Partial<MaskingConfig>>({
-  elemID: new ElemID(JIRA),
+  elemID: new ElemID(JIRA, 'MaskingConfig'),
   fields: {
     automationHeaders: {
       refType: new ListType(BuiltinTypes.STRING),

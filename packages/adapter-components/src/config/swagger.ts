@@ -15,13 +15,13 @@
 */
 import _ from 'lodash'
 import { ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, ListType } from '@salto-io/adapter-api'
-import { types, values as lowerDashValues } from '@salto-io/lowerdash'
+import { types, collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { AdapterApiConfig, createAdapterApiConfigType, TypeConfig, TypeDefaultsConfig, UserFetchConfig, validateSupportedTypes } from './shared'
 import { createRequestConfigs, validateRequestConfig } from './request'
 import { createTransformationConfigTypes, getTransformationConfigByType, validateTransoformationConfig } from './transformation'
-import { findDuplicates } from './validation_utils'
 
 const { isDefined } = lowerDashValues
+const { findDuplicates } = collections.array
 
 export type FieldOverrideConfig = {
   type?: string

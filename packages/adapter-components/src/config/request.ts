@@ -57,6 +57,7 @@ type RecurseIntoConfig = {
   isSingle?: boolean
   context: RecurseIntoContext[]
   conditions?: RecurseIntoCondition[]
+  skipOnError?: boolean
 }
 
 type BaseRequestConfig = {
@@ -187,6 +188,9 @@ export const createRequestConfigs = (
       },
       conditions: {
         refType: new ListType(recurseIntoConditionType),
+      },
+      skipOnError: {
+        refType: BuiltinTypes.BOOLEAN,
       },
     },
   })

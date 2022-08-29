@@ -53,7 +53,7 @@ export const createSecurityLevelValues = (name: string, allElements: Element[]):
     {
       holder: {
         type: 'groupCustomField',
-        parameter: createReference(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Impact__c'), allElements),
+        parameter: createReference(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Impact__select__c'), allElements),
       },
     },
     {

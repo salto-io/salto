@@ -104,14 +104,14 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
           {
             type: 'ClearFieldValuePostFunction',
             configuration: {
-              fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Environment'), allElements),
+              fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Environment__string'), allElements),
             },
           },
           {
             type: 'CopyValueFromOtherFieldPostFunction',
             configuration: {
-              sourceFieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee'), allElements),
-              destinationFieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Creator'), allElements),
+              sourceFieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee__user'), allElements),
+              destinationFieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Creator__user'), allElements),
               copyType: 'parent',
             },
           },
@@ -141,14 +141,14 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
             type: 'UpdateIssueCustomFieldPostFunction',
             configuration: {
               mode: 'replace',
-              fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created'), allElements),
+              fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created__datetime'), allElements),
               fieldValue: 'ww',
             },
           },
           {
             type: 'UpdateIssueFieldFunction',
             configuration: {
-              fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee'), allElements),
+              fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee__user'), allElements),
               fieldValue: '',
             },
           },
@@ -172,22 +172,22 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
             type: 'DateFieldValidator',
             configuration: {
               comparator: '>',
-              date1: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created'), allElements),
-              date2: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created'), allElements),
+              date1: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created__datetime'), allElements),
+              date2: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created__datetime'), allElements),
               includeTime: false,
             },
           },
           {
             type: 'FieldHasSingleValueValidator',
             configuration: {
-              fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Last_Viewed@s'), allElements),
+              fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Last_Viewed__datetime@suu'), allElements),
               excludeSubtasks: false,
             },
           },
           {
             type: 'FieldHasSingleValueValidator',
             configuration: {
-              fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Remaining_Estimate@s'), allElements),
+              fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Remaining_Estimate__number@suu'), allElements),
               excludeSubtasks: true,
             },
           },
@@ -197,7 +197,7 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
               ignoreContext: true,
               errorMessage: 'wwww',
               fieldIds: [
-                createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee'), allElements),
+                createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee__user'), allElements),
               ],
             },
           },
@@ -237,8 +237,8 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
           {
             type: 'WindowsDateValidator',
             configuration: {
-              date1: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created'), allElements),
-              date2: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created'), allElements),
+              date1: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created__datetime'), allElements),
+              date2: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created__datetime'), allElements),
               windowsDays: 2,
             },
           },
@@ -349,13 +349,13 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
               type: 'UserIsInCustomFieldCondition',
               configuration: {
                 allowUserInField: false,
-                fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee'), allElements),
+                fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee__user'), allElements),
               },
             },
             {
               type: 'ValueFieldCondition',
               configuration: {
-                fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Remaining_Estimate@s'), allElements),
+                fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Remaining_Estimate__number@suu'), allElements),
                 fieldValue: 'val',
                 comparisonType: 'STRING',
                 comparator: '>',

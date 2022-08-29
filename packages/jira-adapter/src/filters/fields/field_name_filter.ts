@@ -53,7 +53,7 @@ const getInstanceName = (
   const defaultName = naclCase(
     [
       baseName,
-      config.fetch.addTypeToFieldName ? getFieldType(instance) : undefined,
+      (config.fetch.addTypeToFieldName ?? true) ? getFieldType(instance) : undefined,
       isCustomField(instance) ? CUSTOM_FIELDS_SUFFIX : undefined,
     ].filter(values.isDefined).join('__')
   )

@@ -48,12 +48,12 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
   )
 
   const field = new InstanceElement(
-    `${randomString}__${CUSTOM_FIELDS_SUFFIX}`,
+    `${randomString}__cascadingselect__${CUSTOM_FIELDS_SUFFIX}`,
     findType('Field', fetchedElements),
     createFieldValues(randomString),
   )
 
-  const fieldContextName = naclCase(`${randomString}__${CUSTOM_FIELDS_SUFFIX}_${randomString}`)
+  const fieldContextName = naclCase(`${randomString}__cascadingselect__${CUSTOM_FIELDS_SUFFIX}_${randomString}`)
   const fieldContext = new InstanceElement(
     fieldContextName,
     findType('CustomFieldContext', fetchedElements),
@@ -179,7 +179,7 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
   )
 
   const fieldConfigurationItem = new InstanceElement(
-    `${randomString}_Assignee`,
+    `${randomString}_Assignee__user`,
     findType('FieldConfigurationItem', fetchedElements),
     createFieldConfigurationItemValues(fetchedElements),
     undefined,

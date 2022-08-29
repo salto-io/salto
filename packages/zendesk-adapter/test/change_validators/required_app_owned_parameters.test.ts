@@ -57,6 +57,7 @@ describe('requiredAppOwnedParametersValidator', () => {
           kind: 'text',
         },
       },
+      other: 'bye',
     },
   )
   const appInstallationValidSettings = new InstanceElement(
@@ -70,7 +71,6 @@ describe('requiredAppOwnedParametersValidator', () => {
       },
     },
   )
-
 
   it('should not return an error when app owned does not contain parameters', async () => {
     const appInstallationForInvalidAppOwned = new InstanceElement(

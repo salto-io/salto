@@ -22,18 +22,74 @@ import {
   InstanceElement,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import Joi from 'joi'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { APP_INSTALLATION_TYPE_NAME } from '../filters/app'
 import { APP_OWNED_TYPE_NAME } from '../constants'
 
 
 const { awu } = collections.asynciterable
 
+type AppOwnedParameter = {
+  required: boolean
+}
+
+type AppOwned = {
+  value: {
+    id: number
+    parameters?: {
+      [key: string]: AppOwnedParameter
+    }
+  }
+}
+
+
+type AppInstallation = {
+  value: {
+    // eslint-disable-next-line camelcase
+    app_id: number
+    settings?: {
+      [key: string]: unknown
+    }
+  }
+}
+
+const EXPECTED_APP_INSTALLATION_SCHEMA = Joi.object({
+  value: Joi.object().keys({
+    app_id: Joi.number(),
+    settings: Joi.object().unknown(true),
+  }).unknown(true).required(),
+}).unknown(true).required()
+
+
+const EXPECTED_PARAMETERS_SCHEMA = Joi.object({
+  required: Joi.boolean().required(),
+}).unknown(true).required()
+
+const EXPECTED_APP_OWNED_SCHEMA = Joi.object({
+  value: Joi.object().keys({
+    id: Joi.number(),
+    parameters: Joi.object().keys({}).pattern(/./, EXPECTED_PARAMETERS_SCHEMA).unknown(true),
+  }).unknown(true).required(),
+}).unknown(true).required()
+
+const isAppInstallation = createSchemeGuard<AppInstallation>(
+  EXPECTED_APP_INSTALLATION_SCHEMA, 'Received an invalid value for App installation'
+)
+
+const isAppOwned = createSchemeGuard<AppOwned>(
+  EXPECTED_APP_OWNED_SCHEMA, 'Received an invalid value for App Owned'
+)
+
 // returns a list of all required parameters which are not populated
 const unpopulatedParameters = (
   appInstallation: InstanceElement, appOwnedInstances: Record<number, InstanceElement>
 ) : string[] => {
+  if (!isAppInstallation(appInstallation)) {
+    return []
+  }
   const appOwned = appOwnedInstances[appInstallation.value.app_id]
-  if (appOwned?.value.parameters === undefined) {
+  if (appOwned?.value.parameters === undefined || !isAppOwned(appOwned)) {
     return []
   }
   const { parameters } = appOwned.value
@@ -45,8 +101,8 @@ const unpopulatedParameters = (
 
 /**
  * This change validator checks if all the required parameters for each app owned are populated in
- * the corresponding app installation. It raises an error for app installation that don't have the
- * required parameters in their setting.
+ * the corresponding app installation instances. It raises an error for app installation that don't
+ * have the required parameters in their setting.
  */
 export const requiredAppOwnedParametersValidator: ChangeValidator = async (
   changes, elementSource
@@ -66,18 +122,22 @@ export const requiredAppOwnedParametersValidator: ChangeValidator = async (
     .map(id => elementSource.get(id))
     .toArray()
 
-  const recordAppOwnedInstances:
-      Record<number, InstanceElement> = _.keyBy(appOwnedInstances, 'value.id')
+  const appOwnedInstancesById:
+      Record<number, InstanceElement> = _.keyBy(appOwnedInstances
+        .filter(instance => instance.value.id !== undefined), 'value.id')
 
   return appInstallationInstances
-    .filter(appInstallation =>
-      !_.isEmpty(unpopulatedParameters(appInstallation, recordAppOwnedInstances)))
-    .flatMap(instance => [{
-      elemID: instance.elemID,
+    .map(appInstallation => ({
+      elemID: appInstallation.elemID,
+      missingRequiredParams: unpopulatedParameters(appInstallation, appOwnedInstancesById),
+    }))
+    .filter(appInstallationDetails => !_.isEmpty(appInstallationDetails.missingRequiredParams))
+    .flatMap(({ elemID, missingRequiredParams }) => [{
+      elemID,
       severity: 'Error',
       message: 'Can not change app installation, because not all parameters that are defined as required are populated',
-      detailedMessage: `Can not change app installation ${instance.elemID.getFullName()},
-      because the parameters: ${unpopulatedParameters(instance, recordAppOwnedInstances)}, 
+      detailedMessage: `Can not change app installation ${elemID.getFullName()},
+      because the parameters: ${missingRequiredParams}, 
       are required but not populated.`,
     }])
 }

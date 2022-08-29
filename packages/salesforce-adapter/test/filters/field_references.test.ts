@@ -525,6 +525,71 @@ describe('FieldReferences filter - neighbor context strategy', () => {
     )
   }
 
+  const generateReprtTypeInstance = (
+    InstanceName: string,
+    value: { baseObject: string; sections: { columns: { field: string }[] }[] },
+  ): InstanceElement => {
+    const ReportTypeColumnObjType = new ObjectType({
+      elemID: new ElemID(SALESFORCE, 'ReportTypeColumn'),
+      annotations: {
+        [METADATA_TYPE]: 'ReportTypeColumn',
+      },
+    })
+    ReportTypeColumnObjType.fields = {
+      field: new Field(
+        ReportTypeColumnObjType,
+        'field',
+        BuiltinTypes.STRING,
+        { [API_NAME]: ['ReportTypeColumn', 'field'].join(API_NAME_SEPARATOR) }
+      ),
+    }
+
+    const ReportLayoutSectionObjType = new ObjectType({
+      elemID: new ElemID(SALESFORCE, 'ReportLayoutSection'),
+      annotations: {
+        [METADATA_TYPE]: 'ReportLayoutSection',
+      },
+    })
+    ReportLayoutSectionObjType.fields = {
+      field: new Field(
+        ReportLayoutSectionObjType,
+        'columns',
+        new ListType(ReportTypeColumnObjType),
+        { [API_NAME]: ['ReportLayoutSection', 'columns'].join(API_NAME_SEPARATOR) }
+      ),
+    }
+
+    const ReportTypeObjectType = new ObjectType({
+      elemID: new ElemID(SALESFORCE, 'ReportType'),
+      annotations: {
+        [METADATA_TYPE]: 'ReportType',
+      },
+    })
+    ReportTypeObjectType.fields = {
+      object: new Field(
+        ReportTypeObjectType,
+        'baseObject',
+        BuiltinTypes.STRING,
+        { [API_NAME]: ['ReportType', 'baseObject'].join(API_NAME_SEPARATOR) }
+      ),
+      queriedFields: new Field(
+        ReportTypeObjectType,
+        'sections',
+        new ListType(ReportLayoutSectionObjType),
+        { [API_NAME]: ['ReportType', 'sections'].join(API_NAME_SEPARATOR) }
+      ),
+    }
+    const instanceName = `${parentName}_${InstanceName}`
+    return new InstanceElement(
+      instanceName,
+      ReportTypeObjectType,
+      {
+        [INSTANCE_FULL_NAME_FIELD]: `${parentName}${API_NAME_SEPARATOR}${ReportTypeObjectType}`,
+        ...value,
+      },
+    )
+  }
+
   describe('on fetch', () => {
     let instanceSingleAction: InstanceElement
     let instanceMultiAction: InstanceElement
@@ -535,6 +600,7 @@ describe('FieldReferences filter - neighbor context strategy', () => {
     let actionInstances: InstanceElement[]
 
     let instanceFlowRecordLookup: InstanceElement
+    let instanceReportType: InstanceElement
 
     beforeAll(async () => {
       const actionTypeObjects = ['WorkflowAlert', 'WorkflowFieldUpdate'].map(actionType => (
@@ -580,6 +646,11 @@ describe('FieldReferences filter - neighbor context strategy', () => {
         filters: [{ field: 'name' }, { field: 'unknown' }, { field: 'name' }],
       })
 
+      instanceReportType = generateReprtTypeInstance('single', {
+        baseObject: 'Account',
+        sections: [{ columns: [{ field: 'id' }] }],
+      })
+
       elements = [
         customObjectType,
         ...generateObjectAndInstance({
@@ -591,6 +662,7 @@ describe('FieldReferences filter - neighbor context strategy', () => {
         instanceUnknownActionName, instanceMissingActionForType, instanceInvalidActionType,
         ...actionTypeObjects, ...actionInstances,
         instanceFlowRecordLookup, await instanceFlowRecordLookup.getType(),
+        instanceReportType, await instanceFlowRecordLookup.getType(),
       ]
       await filter.onFetch(elements)
     })
@@ -636,6 +708,14 @@ describe('FieldReferences filter - neighbor context strategy', () => {
       expect(instanceMissingActionForType.value.actions.name).toEqual('foo')
       expect(instanceInvalidActionType.value.actions.name).toEqual('foo')
       expect(instanceFlowRecordLookup.value.filters[1].field).toEqual('unknown')
+    })
+
+    it('should have reference for reportType columns custom fields', async () => {
+      const getFullName = (val: string | ReferenceExpression): string => {
+        expect(val).toBeInstanceOf(ReferenceExpression)
+        return (val as ReferenceExpression).elemID.getFullName()
+      }
+      expect(getFullName(instanceReportType.value.sections[0].columns[0].field)).toEqual('salesforce.Account.field.Id')
     })
   })
 })

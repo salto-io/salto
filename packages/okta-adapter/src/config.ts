@@ -229,6 +229,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       ],
     },
   },
+  Feature: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'featureDependencies', fieldType: 'list<Feature>' },
+        { fieldName: 'featureDependents', fieldType: 'list<Feature>' },
+      ],
+    },
+  },
   AuthenticatorEnrollmentPolicies: {
     request: {
       url: '/api/v1/policies',

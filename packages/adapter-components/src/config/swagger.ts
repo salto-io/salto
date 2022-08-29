@@ -58,27 +58,32 @@ export type RequestableAdapterSwaggerApiConfig = AdapterSwaggerApiConfig & {
   types: Record<string, RequestableTypeSwaggerConfig>
 }
 
+export const createTypeNameOverrideConfigType = (
+  adapter: string,
+): ObjectType => new ObjectType({
+  elemID: new ElemID(adapter, 'typeNameOverrideConfig'),
+  fields: {
+    originalName: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    },
+    newName: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 const createSwaggerDefinitionsBaseConfigType = (
   adapter: string,
 ): ObjectType => {
-  const typeNameOverrideConfig = new ObjectType({
-    elemID: new ElemID(adapter, 'typeNameOverrideConfig'),
-    fields: {
-      originalName: {
-        refType: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: true,
-        },
-      },
-      newName: {
-        refType: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: true,
-        },
-      },
-    },
-  })
-
   const additionalTypeConfig = new ObjectType({
     elemID: new ElemID(adapter, 'additionalTypeConfig'),
     fields: {
@@ -95,6 +100,9 @@ const createSwaggerDefinitionsBaseConfigType = (
         },
       },
     },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+    },
   })
 
   const baseConfigType = new ObjectType({
@@ -104,11 +112,14 @@ const createSwaggerDefinitionsBaseConfigType = (
         refType: BuiltinTypes.STRING,
       },
       typeNameOverrides: {
-        refType: new ListType(typeNameOverrideConfig),
+        refType: new ListType(createTypeNameOverrideConfigType(adapter)),
       },
       additionalTypes: {
         refType: new ListType(additionalTypeConfig),
       },
+    },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
     },
   })
   return baseConfigType

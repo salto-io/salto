@@ -150,6 +150,7 @@ export const configType = createMatchingObjectType<Partial<StripeConfig>>({
   },
   annotations: {
     [CORE_ANNOTATIONS.DEFAULT]: _.omit(DEFAULT_CONFIG, API_DEFINITIONS_CONFIG),
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
 

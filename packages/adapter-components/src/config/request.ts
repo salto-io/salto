@@ -105,6 +105,9 @@ export const createRequestConfigs = (
         },
       },
     },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+    },
   })
   const dependsOnConfigType = createMatchingObjectType<DependsOnConfig>({
     elemID: new ElemID(adapter, 'dependsOnConfig'),
@@ -121,6 +124,9 @@ export const createRequestConfigs = (
           _required: true,
         },
       },
+    },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
     },
   })
 
@@ -139,6 +145,9 @@ export const createRequestConfigs = (
           _required: true,
         },
       },
+    },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
     },
   })
 
@@ -160,6 +169,9 @@ export const createRequestConfigs = (
       fromContext: {
         refType: BuiltinTypes.STRING,
       },
+    },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
     },
   })
   const recurseIntoConfigType = createMatchingObjectType<RecurseIntoConfig>({
@@ -192,6 +204,9 @@ export const createRequestConfigs = (
       skipOnError: {
         refType: BuiltinTypes.BOOLEAN,
       },
+    },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
     },
   })
 
@@ -228,11 +243,17 @@ export const createRequestConfigs = (
   const fetchRequestConfigType = new ObjectType({
     elemID: new ElemID(adapter, 'fetchRequestConfig'),
     fields: fetchEndpointFields,
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+    },
   })
 
   const fetchRequestDefaultConfigType = new ObjectType({
     elemID: new ElemID(adapter, 'fetchRequestDefaultConfig'),
     fields: _.omit(fetchEndpointFields, ['url']),
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+    },
   })
 
 
@@ -252,6 +273,12 @@ export const createRequestConfigs = (
       deployAsField: {
         refType: BuiltinTypes.STRING,
       },
+      fieldsToIgnore: {
+        refType: new ListType(BuiltinTypes.STRING),
+      },
+    },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
     },
   })
 
@@ -267,6 +294,9 @@ export const createRequestConfigs = (
       remove: {
         refType: deployRequestConfigType,
       },
+    },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
     },
   })
 

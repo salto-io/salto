@@ -84,6 +84,9 @@ export const createTransformationConfigTypes = (
       fieldName: { refType: BuiltinTypes.STRING },
       parseJSON: { refType: BuiltinTypes.BOOLEAN },
     },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+    },
   })
 
   const fieldToAdjustConfigType = new ObjectType({

@@ -90,6 +90,9 @@ const clientConfigType = new ObjectType({
       refType: new ListType(BuiltinTypes.STRING),
     },
   },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
 })
 
 const suiteAppClientConfigType = new ObjectType({
@@ -105,6 +108,9 @@ const suiteAppClientConfigType = new ObjectType({
         }),
       },
     },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
 
@@ -125,6 +131,9 @@ const queryConfigType = new ObjectType({
       },
     },
   },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
 })
 
 const fetchTypeQueryParamsConfigType = new ObjectType({
@@ -138,6 +147,9 @@ const fetchTypeQueryParamsConfigType = new ObjectType({
     },
     ids: { refType: new ListType(BuiltinTypes.STRING) },
   },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
 })
 
 const queryParamsConfigType = new ObjectType({
@@ -149,6 +161,9 @@ const queryParamsConfigType = new ObjectType({
     fileCabinet: {
       refType: new ListType(BuiltinTypes.STRING),
     },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
 
@@ -199,6 +214,9 @@ const authorInfoConfig = new ObjectType({
       refType: BuiltinTypes.BOOLEAN,
     },
   },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
 })
 
 const fieldsToOmitConfig = createMatchingObjectType<FieldToOmitParams>({
@@ -213,6 +231,9 @@ const fieldsToOmitConfig = createMatchingObjectType<FieldToOmitParams>({
       annotations: { _required: true },
     },
   },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
 })
 
 const fetchConfigType = createMatchingObjectType<FetchParams>({
@@ -224,6 +245,9 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
     [AUTHOR_INFO_CONFIG]: { refType: authorInfoConfig },
     [STRICT_INSTANCE_STRUCTURE]: { refType: BuiltinTypes.BOOLEAN },
     [FIELDS_TO_OMIT]: { refType: new ListType(fieldsToOmitConfig) },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
 
@@ -245,6 +269,9 @@ Partial<AdditionalSdfDeployDependencies>
     features: { refType: new ListType(BuiltinTypes.STRING) },
     objects: { refType: new ListType(BuiltinTypes.STRING) },
   },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
 })
 
 const additionalDependenciesType = createMatchingObjectType<
@@ -255,6 +282,9 @@ DeployParams['additionalDependencies']
     include: { refType: additionalDependenciesInnerType },
     exclude: { refType: additionalDependenciesInnerType },
   },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
 })
 
 const deployConfigType = createMatchingObjectType<DeployParams>({
@@ -264,6 +294,9 @@ const deployConfigType = createMatchingObjectType<DeployParams>({
     [VALIDATE]: { refType: BuiltinTypes.BOOLEAN },
     [DEPLOY_REFERENCED_ELEMENTS]: { refType: BuiltinTypes.BOOLEAN },
     [ADDITIONAL_DEPS]: { refType: additionalDependenciesType },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
 
@@ -354,6 +387,9 @@ export const configType = new ObjectType({
     [USE_CHANGES_DETECTION]: {
       refType: BuiltinTypes.BOOLEAN,
     },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
 

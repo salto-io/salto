@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  ElemID, ObjectType, BuiltinTypes, FieldDefinition, ListType, MapType, Field,
+  ElemID, ObjectType, BuiltinTypes, FieldDefinition, ListType, MapType, Field, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import type { TransformationConfig, TransformationDefaultConfig } from './transformation'
@@ -82,6 +82,9 @@ export const createAdapterApiConfigType = ({
       },
       ...additionalTypeFields,
     },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+    },
   })
 
   const typesConfigType = createMatchingObjectType<TypeConfig>({
@@ -93,6 +96,9 @@ export const createAdapterApiConfigType = ({
       },
       transformation: { refType: transformationTypes.transformation },
       ...additionalTypeFields,
+    },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
     },
   })
 
@@ -113,6 +119,9 @@ export const createAdapterApiConfigType = ({
       },
       ...additionalFields,
     },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+    },
   })
   return adapterApiConfigType
 }
@@ -127,6 +136,9 @@ export const createUserFetchConfigType = (
     fields: {
       type: { refType: BuiltinTypes.STRING },
     },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+    },
   })
 
   if (fetchCriteriaType !== undefined) {
@@ -139,6 +151,9 @@ export const createUserFetchConfigType = (
       include: { refType: new ListType(fetchEntryType) },
       exclude: { refType: new ListType(fetchEntryType) },
       ...additionalFields,
+    },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
     },
   })
 }

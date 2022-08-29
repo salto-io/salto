@@ -247,6 +247,7 @@ export const configType = new ObjectType({
     [CORE_ANNOTATIONS.DEFAULT]: _.omit(
       DEFAULT_CONFIG, API_DEFINITIONS_CONFIG, `${FETCH_CONFIG}.hideTypes`
     ),
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
 

@@ -21,7 +21,7 @@ import { naclCase } from '@salto-io/adapter-utils'
 
 const MISSING_REF_PREFIX = 'missing_'
 
-const SKIP_TYPES_AND_FIELD_NAMES: Record<string, string> = {
+const VALUES_TO_SKIP_BY_TYPE: Record<string, string> = {
   group: 'current_groups',
 }
 
@@ -30,7 +30,7 @@ referenceUtils.MissingReferenceStrategyName, referenceUtils.MissingReferenceStra
 > = {
   typeAndValue: {
     create: ({ value, adapter, typeName }) => {
-      if (!_.isString(typeName) || !value || SKIP_TYPES_AND_FIELD_NAMES[typeName] === value) {
+      if (!_.isString(typeName) || !value || VALUES_TO_SKIP_BY_TYPE[typeName] === value) {
         return undefined
       }
       return new InstanceElement(

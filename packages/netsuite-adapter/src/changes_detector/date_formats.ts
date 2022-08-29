@@ -21,7 +21,7 @@ const SAVED_SEARCH_DATE_PATTERN = /(?<month>\d+)\/(?<day>\d+)\/(?<year>\d+) (?<h
 
 const log = logger(module)
 
-const formatSuiteQLDate = (date: Date): string => `${date.getUTCMonth() + 1}/${date.getUTCDate()}/${date.getUTCFullYear()}`
+const formatSuiteQLDate = (date: Date): string => `TO_DATE('${date.getUTCMonth() + 1}/${date.getUTCDate()}/${date.getUTCFullYear()}', 'MM/DD/YYYY')`
 
 const formatSavedSearchDate = (date: Date): string => {
   const hour = date.getUTCHours() > 12 ? date.getUTCHours() - 12 : date.getUTCHours()

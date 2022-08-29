@@ -26,9 +26,9 @@ const getChanges = async (type: string, client: NetsuiteClient, dateRange: DateR
   const [startDate, endDate] = dateRange.toSuiteQLRange()
 
   const results = await client.runSuiteQL(`
-      SELECT scriptid, lastmodifieddate
+      SELECT scriptid, TO_CHAR(lastmodifieddate, 'MM-DD-YYYY') AS lastmodifieddate
       FROM ${type}
-      WHERE lastmodifieddate BETWEEN '${startDate}' AND '${endDate}'
+      WHERE lastmodifieddate BETWEEN ${startDate} AND ${endDate}
       ORDER BY scriptid ASC
     `)
 

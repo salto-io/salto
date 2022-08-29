@@ -27,7 +27,7 @@ export const getChangedFiles: FileCabinetChangesDetector = async (client, dateRa
     SELECT mediaitemfolder.appfolder, file.name, file.id
     FROM file
     JOIN mediaitemfolder ON mediaitemfolder.id = file.folder
-    WHERE file.lastmodifieddate BETWEEN '${startDate}' AND '${endDate}'
+    WHERE file.lastmodifieddate BETWEEN ${startDate} AND ${endDate}
     ORDER BY file.id ASC
   `)
 
@@ -56,7 +56,7 @@ export const getChangedFolders: FileCabinetChangesDetector = async (client, date
   const results = await client.runSuiteQL(`
     SELECT appfolder, id
     FROM mediaitemfolder
-    WHERE lastmodifieddate BETWEEN '${startDate}' AND '${endDate}'
+    WHERE lastmodifieddate BETWEEN ${startDate} AND ${endDate}
     ORDER BY id ASC
   `)
 

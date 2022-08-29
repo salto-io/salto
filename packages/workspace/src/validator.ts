@@ -217,6 +217,7 @@ export class MissingRequiredFieldValidationError extends ValidationError {
     this.fieldName = fieldName
   }
 }
+
 export class AdditionalPropertiesValidationError extends ValidationError {
   readonly fieldName: string
   readonly typeName: string
@@ -234,6 +235,7 @@ export class AdditionalPropertiesValidationError extends ValidationError {
     this.typeName = typeName
   }
 }
+
 export class UnresolvedReferenceValidationError extends ValidationError {
   readonly target: ElemID
   constructor(
@@ -250,7 +252,6 @@ export const isUnresolvedRefError = (
 ): err is UnresolvedReferenceValidationError => (
   err instanceof UnresolvedReferenceValidationError
 )
-
 
 export class IllegalReferenceValidationError extends ValidationError {
   readonly reason: string

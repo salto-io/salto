@@ -777,6 +777,41 @@ describe('Elements validation', () => {
         })
       })
       describe('additional properties annotation', () => {
+        let topType: ObjectType
+        let validatingType: ObjectType
+        let nonValidatingType: ObjectType
+        beforeEach(() => {
+          const elemIdTop = new ElemID('salto', 'top')
+          const elemIdNotValidating = new ElemID('salto', 'notvalidating')
+          const elemIdValidating = new ElemID('salto', 'validating')
+          validatingType = new ObjectType({
+            elemID: elemIdValidating,
+            fields: {
+              str: { refType: BuiltinTypes.STRING },
+            },
+            annotations: {
+              [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+            },
+          })
+          nonValidatingType = new ObjectType({
+            elemID: elemIdNotValidating,
+            fields: {
+              str: { refType: BuiltinTypes.STRING },
+            },
+          })
+          topType = new ObjectType({
+            elemID: elemIdTop,
+            fields: {
+              mapFieldNonValidating: { refType: new MapType(nonValidatingType) },
+              mapFieldValidating: { refType: new MapType(validatingType) },
+              listFieldNonValidating: { refType: new ListType(nonValidatingType) },
+              listFieldValidating: { refType: new ListType(validatingType) },
+            },
+            annotations: {
+              [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+            },
+          })
+        })
         it('should succeed when additional properties is false and there are no additional properties', async () => {
           extType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] = false
           extInst.refType = createRefToElmWithValue(extType)
@@ -849,36 +884,6 @@ describe('Elements validation', () => {
             ])
           )
           expect(errors).toHaveLength(0)
-        })
-        const elemIdTop = new ElemID('salto', 'top')
-        const elemIdNotValidating = new ElemID('salto', 'notvalidating')
-        const elemIdValidating = new ElemID('salto', 'validating')
-        const validatingType = new ObjectType({
-          elemID: elemIdValidating,
-          fields: {
-            str: { refType: BuiltinTypes.STRING },
-          },
-          annotations: {
-            [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
-          },
-        })
-        const nonValidatingType = new ObjectType({
-          elemID: elemIdNotValidating,
-          fields: {
-            str: { refType: BuiltinTypes.STRING },
-          },
-        })
-        const topType = new ObjectType({
-          elemID: elemIdTop,
-          fields: {
-            mapFieldNonValidating: { refType: new MapType(nonValidatingType) },
-            mapFieldValidating: { refType: new MapType(validatingType) },
-            listFieldNonValidating: { refType: new ListType(nonValidatingType) },
-            listFieldValidating: { refType: new ListType(validatingType) },
-          },
-          annotations: {
-            [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
-          },
         })
         it('should warn on nested fields when they have the additional properties annotation set to false', async () => {
           const simpleTypeClone = simpleType.clone()

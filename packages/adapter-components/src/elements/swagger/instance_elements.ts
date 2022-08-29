@@ -368,10 +368,9 @@ const getEntriesForType = async (
     return { entries, objType }
   }
 
-  const getExtraFieldValues = (
+  const getExtraFieldValues = async (
     entry: Values
-  ): Promise<([string, Values | Values[]] | undefined
-)[]> => Promise.all(
+  ): Promise<([string, Values | Values[]])[]> => (await Promise.all(
     recurseInto
       .filter(({ conditions }) => shouldRecurseIntoEntry(entry, requestContext, conditions))
       .map(async nested => {
@@ -397,14 +396,15 @@ const getEntriesForType = async (
           }
           return [nested.toField, nestedEntries] as [string, Values[]]
         } catch (error) {
-          log.warn(`Failed getting extra field values for ${typeName} entry: ${safeJsonStringify(entry)}. Error: ${error.message}`)
           if (nested.skipOnError) {
+            log.info(`Failed getting extra field values for field ${nested.toField} in ${typeName} entry: ${safeJsonStringify(entry)}, and the field will be omitted. Error: ${error.message}`)
             return undefined
           }
+          log.warn(`Failed getting extra field values for field ${nested.toField} in ${typeName} entry: ${safeJsonStringify(entry)}, not creating instance. Error: ${error.message}`)
           throw error
         }
       })
-  )
+  )).filter(lowerdashValues.isDefined)
 
   const filledEntries = (await Promise.all(
     entries.map(async entry => {

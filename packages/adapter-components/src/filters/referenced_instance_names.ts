@@ -28,8 +28,8 @@ import { AdapterApiConfig, getTransformationConfigByType,
   TransformationConfig, TransformationDefaultConfig, getConfigWithDefault,
   dereferenceFieldName, isReferencedIdField, NameMappingOptions } from '../config'
 import { joinInstanceNameParts, getInstanceFilePath, getInstanceNaclName } from '../elements/instance_elements'
-import { findDuplicates } from '../config/validation_utils'
 
+const { findDuplicates } = collections.array
 const { awu } = collections.asynciterable
 
 const log = logger(module)

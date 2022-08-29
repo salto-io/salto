@@ -725,9 +725,15 @@ const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
     src: {
       field: 'value',
       parentTypes: [
+        'automation__actions',
+        'automation__conditions__all',
+        'automation__conditions__any',
+        'macro__actions',
         'trigger__actions',
         'trigger__conditions__all',
         'trigger__conditions__any',
+        'view__conditions__all',
+        'view__conditions__any',
       ],
     },
     target: { typeContext: 'allowlistedNeighborField' },

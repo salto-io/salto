@@ -308,6 +308,7 @@ describe('References by id filter', () => {
             { field: 'brand_id', operator: 'is', value: 'you_like_crazy' },
             { field: 'group_id', operator: 'is', value: 'a_thing' },
             { field: 'schedule_id', operator: 'is', value: 'someone_you_love' },
+            { field: 'group_id', operator: 'is', value: 'current_groups' },
           ],
         },
       },
@@ -437,6 +438,8 @@ describe('References by id filter', () => {
         expect(brokenTrigger.value.conditions.all[4].value).toBeInstanceOf(ReferenceExpression)
         expect(brokenTrigger.value.conditions.all[4].value.elemID.name)
           .toEqual('missing_someone_you_love')
+        expect(brokenTrigger.value.conditions.all[5].value).not.toBeInstanceOf(ReferenceExpression)
+        expect(brokenTrigger.value.conditions.all[5].value).toEqual('current_groups')
       })
       it('should not create missing references if enable missing references is false', async () => {
         const newFilter = filterCreator({

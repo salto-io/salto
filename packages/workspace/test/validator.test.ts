@@ -776,6 +776,184 @@ describe('Elements validation', () => {
           )).toHaveLength(0)
         })
       })
+      describe('additional properties annotation', () => {
+        let topType: ObjectType
+        let validatingType: ObjectType
+        let nonValidatingType: ObjectType
+        beforeEach(() => {
+          const elemIdTop = new ElemID('salto', 'top')
+          const elemIdNotValidating = new ElemID('salto', 'notvalidating')
+          const elemIdValidating = new ElemID('salto', 'validating')
+          validatingType = new ObjectType({
+            elemID: elemIdValidating,
+            fields: {
+              str: { refType: BuiltinTypes.STRING },
+            },
+            annotations: {
+              [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+            },
+          })
+          nonValidatingType = new ObjectType({
+            elemID: elemIdNotValidating,
+            fields: {
+              str: { refType: BuiltinTypes.STRING },
+            },
+          })
+          topType = new ObjectType({
+            elemID: elemIdTop,
+            fields: {
+              mapFieldNonValidating: { refType: new MapType(nonValidatingType) },
+              mapFieldValidating: { refType: new MapType(validatingType) },
+              listFieldNonValidating: { refType: new ListType(nonValidatingType) },
+              listFieldValidating: { refType: new ListType(validatingType) },
+            },
+            annotations: {
+              [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+            },
+          })
+        })
+        it('should succeed when additional properties is false and there are no additional properties', async () => {
+          extType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] = false
+          extInst.refType = createRefToElmWithValue(extType)
+          extInst.value.reqNested = {
+            str: 'str',
+            num: 1,
+            bool: true,
+          }
+          const errors = await validateElements(
+            [extInst],
+            createInMemoryElementSource([
+              extInst,
+              extType,
+              ...await getFieldsAndAnnoTypes(extType),
+            ])
+          )
+          expect(errors).toHaveLength(0)
+        })
+        it('should warn when additional properties is false and there are additional properties', async () => {
+          extType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] = false
+          extInst.refType = createRefToElmWithValue(extType)
+          extInst.value.additional = 'fail'
+          extInst.value.additional2 = 'fail2'
+          const errors = await validateElements(
+            [extInst],
+            createInMemoryElementSource([
+              extInst,
+              extType,
+              ...await getFieldsAndAnnoTypes(extType),
+            ])
+          )
+          expect(errors).toHaveLength(2)
+          expect(errors[0].message).toMatch('Error validating "salto.nested.instance.nestedinst":'
+            + ' Field \'additional\' is not defined in the \'nested\' type which does not allow additional properties.')
+          expect(errors[0].elemID).toEqual(extInst.elemID)
+          expect(errors[1].message).toMatch('Error validating "salto.nested.instance.nestedinst":'
+            + ' Field \'additional2\' is not defined in the \'nested\' type which does not allow additional properties.')
+          expect(errors[1].elemID).toEqual(extInst.elemID)
+        })
+        it('should succeed when additional properties is true and there are additional properties', async () => {
+          extType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] = true
+          extInst.refType = createRefToElmWithValue(extType)
+          extInst.value.unexpected = 'fail'
+          extInst.value.unexpected2 = 'fail2'
+          const errors = await validateElements(
+            [extInst],
+            createInMemoryElementSource([
+              extInst,
+              extType,
+              ...await getFieldsAndAnnoTypes(extType),
+            ])
+          )
+          expect(errors).toHaveLength(0)
+        })
+        it('should succeed when additional properties is set to false and there are additional properties in nested fields', async () => {
+          extType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] = false
+          extInst.refType = createRefToElmWithValue(extType)
+          extInst.value.reqNested = {
+            str: 'str',
+            num: 1,
+            bool: true,
+            additional: 'should not cause warn',
+          }
+          const errors = await validateElements(
+            [extInst],
+            createInMemoryElementSource([
+              extInst,
+              extType,
+              ...await getFieldsAndAnnoTypes(extType),
+            ])
+          )
+          expect(errors).toHaveLength(0)
+        })
+        it('should warn on nested fields when they have the additional properties annotation set to false', async () => {
+          const simpleTypeClone = simpleType.clone()
+          const temp = extType.fields.nested.refType.type as ObjectType
+          temp.annotations = {
+            [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+          }
+          extInst.refType = createRefToElmWithValue(extType)
+          extInst.value.reqNested = {
+            str: 'str',
+            num: 1,
+            bool: true,
+            additional: 'should cause warn',
+          }
+          const errors = await validateElements(
+            [extInst],
+            createInMemoryElementSource([
+              extInst,
+              extType,
+              ...await getFieldsAndAnnoTypes(extType),
+            ])
+          )
+          expect(errors).toHaveLength(1)
+          expect(errors[0].message).toMatch('Error validating "salto.nested.instance.nestedinst.reqNested":'
+          + ' Field \'additional\' is not defined in the \'simple\' type which does not allow additional properties.')
+          temp.annotations = simpleTypeClone.annotations
+        })
+        it('should work properly on maps and lists', async () => {
+          const testInstance = new InstanceElement(
+            'testinst',
+            topType,
+            {
+              mapFieldNonValidating: {
+                a: { str: 'str' },
+                b: { str: 'str2', additional1: 'do not fail' },
+              },
+              mapFieldValidating: {
+                c: { str: 'str3' },
+                d: { str: 'str4', additional4: 'should fail' },
+              },
+              listFieldValidating: [
+                { str: 'str', additional2: 'should fail' },
+                { str: 'str2' },
+                { str: 'str3', additional3: 'should also fail' },
+              ],
+              listFieldNonValidating: [
+                { str: 'str', additional5: 'should mot fail' },
+                { str: 'str2' },
+                { str: 'str3', additional6: 'should also not fail' },
+              ],
+            },
+          )
+          const errors = await validateElements(
+            [testInstance],
+            createInMemoryElementSource([
+              testInstance,
+              topType,
+              validatingType,
+              nonValidatingType,
+            ])
+          )
+          expect(errors).toHaveLength(3)
+          expect(errors[0].message).toMatch('Error validating "salto.top.instance.testinst.mapFieldValidating.d":'
+            + ' Field \'additional4\' is not defined in the \'validating\' type which does not allow additional properties.')
+          expect(errors[1].message).toMatch('Error validating "salto.top.instance.testinst.listFieldValidating.0":'
+            + ' Field \'additional2\' is not defined in the \'validating\' type which does not allow additional properties.')
+          expect(errors[2].message).toMatch('Error validating "salto.top.instance.testinst.listFieldValidating.2":'
+            + ' Field \'additional3\' is not defined in the \'validating\' type which does not allow additional properties.')
+        })
+      })
 
       describe('values annotation', () => {
         it('should succeed when all values corresponds to values annotation', async () => {

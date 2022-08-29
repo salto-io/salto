@@ -51,15 +51,12 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = retr
   clientUtils.axiosConnection({
     retryOptions,
     authParamsFunc: async credentials => (
-      credentials.isDataCenter
-        ? {
-          headers: { Authorization: `Bearer ${credentials.token}` },
-        } : {
-          auth: {
-            username: credentials.user,
-            password: credentials.token,
-          },
-        }
+      {
+        auth: {
+          username: credentials.user,
+          password: credentials.token,
+        },
+      }
     ),
     baseURLFunc: ({ baseUrl }) => baseUrl,
     credValidateFunc: async () => '', // There is no login endpoint to call

@@ -127,11 +127,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
 
   Dashboard: {
-    standaloneFields: [
-      {
-        fieldName: 'gadgets',
-      },
-    ],
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'gadgets', fieldType: 'List<DashboardGadget>' },
@@ -199,6 +194,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         {
           type: 'PageBeanCustomFieldContextDefaultValue',
           toField: 'contextDefaults',
+          skipOnError: true,
           context: [{ name: 'fieldId', fromField: 'id' }],
           conditions: [{
             fromField: 'schema.custom',
@@ -476,6 +472,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       ],
       fieldsToOmit: [
         { fieldName: 'expand' },
+        { fieldName: 'subscriptions' },
       ],
       serviceUrl: '/issues/?filter={id}',
     },

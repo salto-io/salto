@@ -1253,6 +1253,67 @@ describe('swagger_instance_elements', () => {
         )
         expect(cat.value).not.toHaveProperty('owners')
       })
+
+      it('should return instances if failed to get their inner values and skipOnError is true', async () => {
+        if (getAllInstancesParams.apiConfig.types.Pet.request?.recurseInto?.[0] !== undefined) {
+          getAllInstancesParams.apiConfig.types.Pet.request.recurseInto[0].skipOnError = true
+        }
+
+        mockPaginator.mockImplementation(({ url }) => {
+          if (url === '/pet') {
+            return toAsyncIterable([[
+              { id: 'dog', name: 'def' },
+              { id: 'cat', name: 'def' },
+              { id: 'fish', name: 'fish' },
+            ]])
+          }
+          if (url === '/pet/fish/owner') {
+            throw new Error('some error')
+          }
+          if (url === '/pet/dog/owner') {
+            return toAsyncIterable([[
+              { name: 'o1' },
+              { name: 'o2' },
+            ]])
+          }
+          if (url === '/pet/dog/owner/o1/nicknames') {
+            return toAsyncIterable([[{ names: ['n1', 'n2'] }]])
+          }
+          if (url === '/pet/dog/owner/o2/nicknames') {
+            return toAsyncIterable([[{ names: ['n3'] }]])
+          }
+          if (url.match(/\/pet\/.*\/owner\/.*\/info/) !== null) {
+            return toAsyncIterable([[{ numOfPets: 2 }]])
+          }
+          return toAsyncIterable([[]])
+        })
+
+        instances = await getAllInstances(getAllInstancesParams)
+
+        expect(instances).toHaveLength(3)
+        const [dog, cat, fish] = instances
+        expect(dog.value).toHaveProperty(
+          'owners',
+          [
+            {
+              name: 'o1',
+              additionalProperties: {
+                nicknames: [{ names: ['n1', 'n2'] }],
+                info: { numOfPets: 2 },
+              },
+            },
+            {
+              name: 'o2',
+              additionalProperties: {
+                nicknames: [{ names: ['n3'] }],
+                info: { numOfPets: 2 },
+              },
+            },
+          ]
+        )
+        expect(cat.value).not.toHaveProperty('owners')
+        expect(fish.value).not.toHaveProperty('owners')
+      })
     })
 
     it('should fail if type is missing from config', async () => {

@@ -27,7 +27,7 @@ export const createFieldConfigurationValues = (
 export const createFieldConfigurationItemValues = (
   allElements: Element[],
 ): Values => ({
-  id: createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee'), allElements),
+  id: createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee__user'), allElements),
   description: 'For example operating system, software platform and/or hardware specifications (include as appropriate for the issue).',
   isHidden: false,
   isRequired: false,

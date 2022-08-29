@@ -13,6 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
+
 export const makeArray = <TIn>(input: TIn | TIn[] | undefined): TIn[] => {
   if (input === undefined) {
     return []
@@ -29,3 +31,10 @@ export function arrayOf<T>(
   const ar = Array.from({ length: n })
   return initializer !== undefined ? ar.map((_v, i) => initializer(i)) : ar
 }
+
+export const findDuplicates = (items: string[]): string[] => (
+  Object.entries(_.countBy(items))
+    .filter(([_str, count]) => count > 1)
+    .map(([str]) => str)
+    .sort()
+)

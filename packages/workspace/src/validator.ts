@@ -218,6 +218,24 @@ export class MissingRequiredFieldValidationError extends ValidationError {
   }
 }
 
+export class AdditionalPropertiesValidationError extends ValidationError {
+  readonly fieldName: string
+  readonly typeName: string
+
+  constructor(
+    { elemID, fieldName, typeName }: { elemID: ElemID; fieldName: string; typeName: string }
+  ) {
+    super({
+      elemID,
+      error: `Field '${fieldName}' is not defined in the '${typeName}'`
+      + ' type which does not allow additional properties.',
+      severity: 'Warning',
+    })
+    this.fieldName = fieldName
+    this.typeName = typeName
+  }
+}
+
 export class UnresolvedReferenceValidationError extends ValidationError {
   readonly target: ElemID
   constructor(
@@ -234,7 +252,6 @@ export const isUnresolvedRefError = (
 ): err is UnresolvedReferenceValidationError => (
   err instanceof UnresolvedReferenceValidationError
 )
-
 
 export class IllegalReferenceValidationError extends ValidationError {
   readonly reason: string
@@ -511,15 +528,14 @@ const validateValue = (
     if (!_.isObjectLike(value)) {
       return [new InvalidValueTypeValidationError({ elemID, value, type: type.elemID })]
     }
-    const objType = toObjectType(type, value)
     return Object.keys(value).flatMap(
       // eslint-disable-next-line no-use-before-define
-      k => validateFieldValue(
-        elemID.createNestedID(k),
-        value[k],
-        objType.fields[k]?.refType.type ?? BuiltinTypes.UNKNOWN,
-        objType.fields[k]?.annotations ?? {},
-      )
+      k => validateFieldValueAndName({
+        parentElemID: elemID,
+        value: value[k],
+        fieldName: k,
+        objType: toObjectType(type, value),
+      })
     )
   }
 
@@ -586,6 +602,34 @@ const validateFieldValue = (
     item.nestedID,
     item.value,
     innerType,
+  ))
+}
+
+const validateNotAdditionalProperty = (
+  elemID: ElemID,
+  fieldName: string,
+  objType : ObjectType,
+) : ValidationError[] =>
+  (!Object.prototype.hasOwnProperty.call(objType.fields, fieldName)
+    ? [new AdditionalPropertiesValidationError(
+      { elemID, fieldName, typeName: objType.elemID.typeName }
+    )]
+    : [])
+
+const validateFieldValueAndName = ({ parentElemID, value, fieldName, objType } : {
+  parentElemID: ElemID
+  value: Value
+  fieldName: string
+  objType: ObjectType
+ }): ValidationError[] => {
+  const errors = objType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] === false
+    ? validateNotAdditionalProperty(parentElemID, fieldName, objType)
+    : []
+  return errors.concat(validateFieldValue(
+    parentElemID.createNestedID(fieldName),
+    value,
+    objType.fields[fieldName]?.refType.type ?? BuiltinTypes.UNKNOWN,
+    objType.fields[fieldName]?.annotations ?? {},
   ))
 }
 

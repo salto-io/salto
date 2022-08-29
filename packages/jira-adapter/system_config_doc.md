@@ -274,11 +274,6 @@ jira {
         }
       }
       Dashboard = {
-        standaloneFields = [
-          {
-            fieldName = "gadgets"
-          },
-        ]
         transformation = {
           fieldTypeOverrides = [
             {

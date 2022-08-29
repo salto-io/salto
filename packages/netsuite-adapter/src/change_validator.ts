@@ -33,12 +33,14 @@ import suiteAppConfigElementsValidator from './change_validators/suiteapp_config
 import undeployableConfigFeaturesValidator from './change_validators/undeployable_config_features'
 import { validateDependsOnInvalidElement } from './change_validators/dependencies'
 import notYetSupportedValuesValidator from './change_validators/not_yet_supported_values'
+import workflowAccountSpecificValuesValidator from './change_validators/workflow_account_specific_values'
 import netsuiteClientValidation from './change_validators/client_validation'
 import NetsuiteClient from './client/client'
 import { AdditionalDependencies } from './client/types'
 
 
 const changeValidators: ChangeValidator[] = [
+  workflowAccountSpecificValuesValidator,
   accountSpecificValuesValidator,
   dataAccountSpecificValuesValidator,
   removeCustomTypesValidator,

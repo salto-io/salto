@@ -31,7 +31,6 @@ describe('account specific value validator', () => {
     }
   )
   let instance: InstanceElement
-
   beforeEach(() => {
     instance = origInstance.clone()
   })

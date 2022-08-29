@@ -476,6 +476,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       ],
       fieldsToOmit: [
         { fieldName: 'expand' },
+        { fieldName: 'subscriptions' },
       ],
       serviceUrl: '/issues/?filter={id}',
     },

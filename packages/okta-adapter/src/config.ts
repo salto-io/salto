@@ -72,9 +72,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
   Group: {
     transformation: {
       fieldTypeOverrides: [
-        { fieldName: 'apps', fieldType: 'api__v1__groups___groupId___apps@uuuuuu_00123_00125uu' },
-        { fieldName: 'users', fieldType: 'api__v1__groups___groupId___users@uuuuuu_00123_00125uu' },
-        { fieldName: 'roles', fieldType: 'api__v1__groups___groupId___roles@uuuuuu_00123_00125uu' },
+        { fieldName: 'apps', fieldType: 'list<Application>' },
+        { fieldName: 'users', fieldType: 'list<User>' },
+        { fieldName: 'roles', fieldType: 'list<Role>' },
       ],
       idFields: ['profile.name'],
     },
@@ -88,6 +88,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
           toField: 'targetGroups',
           context: [{ name: 'roleId', fromField: 'id' }],
         },
+      ],
+    },
+  },
+  Role: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'targetGroups', fieldType: 'list<Group>' },
       ],
     },
   },
@@ -117,11 +124,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         //   toField: 'appFeatures',
         //   context: [{ name: 'appId', fromField: 'id' }],
         // },
-        {
-          type: 'api__v1__apps___appId___credentials__keys@uuuuuu_00123_00125uuuu',
-          toField: 'jsonWebKeys',
-          context: [{ name: 'appId', fromField: 'id' }],
-        },
+        // TODO figure out if we want to indclude JWK
+        // {
+        //   type: 'api__v1__apps___appId___credentials__keys@uuuuuu_00123_00125uuuu',
+        //   toField: 'jsonWebKeys',
+        //   context: [{ name: 'appId', fromField: 'id' }],
+        // },
         // returns for some instances 429 - need to investigate
         // {
         //   type: 'api__v1__apps___appId___grants@uuuuuu_00123_00125uu',
@@ -140,11 +148,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
   Application: {
     transformation: {
       fieldTypeOverrides: [
-        { fieldName: 'appUsers', fieldType: 'api__v1__apps___appId___users@uuuuuu_00123_00125uu' },
-        { fieldName: 'CSRs', fieldType: 'api__v1__apps___appId___credentials__csrs@uuuuuu_00123_00125uuuu' },
-        { fieldName: 'assignedGroups', fieldType: 'api__v1__apps___appId___groups@uuuuuu_00123_00125uu' },
-        { fieldName: 'jsonWebKeys', fieldType: 'api__v1__apps___appId___credentials__keys@uuuuuu_00123_00125uuuu' },
+        { fieldName: 'appUsers', fieldType: 'list<AppUser>' },
+        { fieldName: 'CSRs', fieldType: 'list<Csr>' },
+        { fieldName: 'assignedGroups', fieldType: 'list<ApplicationGroupAssignment>' },
       ],
+      // TODO SALTO-2644
+      idFields: ['name', 'status'],
     },
   },
   'api__v1__apps___appId___credentials__keys@uuuuuu_00123_00125uuuu': {
@@ -184,20 +193,20 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
           toField: 'CSRs',
           context: [{ name: 'idpId', fromField: 'id' }],
         },
-        {
-          type: 'api__v1__idps___idpId___credentials__keys@uuuuuu_00123_00125uuuu',
-          toField: 'jsonWebKeys',
-          context: [{ name: 'idpId', fromField: 'id' }],
-        },
+        // TODO figure out if we want to indclude JWK
+        // {
+        //   type: 'api__v1__idps___idpId___credentials__keys@uuuuuu_00123_00125uuuu',
+        //   toField: 'jsonWebKeys',
+        //   context: [{ name: 'idpId', fromField: 'id' }],
+        // },
       ],
     },
   },
   IdentityProvider: {
     transformation: {
       fieldTypeOverrides: [
-        { fieldName: 'users', fieldType: 'api__v1__idps___idpId___users@uuuuuu_00123_00125uu' },
-        { fieldName: 'CSRs', fieldType: 'api__v1__idps___idpId___credentials__csrs@uuuuuu_00123_00125uuuu' },
-        { fieldName: 'jsonWebKeys', fieldType: 'api__v1__idps___idpId___credentials__keys@uuuuuu_00123_00125uuuu' },
+        { fieldName: 'users', fieldType: 'list<IdentityProviderApplicationUser>' },
+        { fieldName: 'CSRs', fieldType: 'list<Csr>' },
       ],
     },
   },
@@ -333,6 +342,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
   },
   User: {
     transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'roles', fieldType: 'list<Role>' },
+      ],
       idFields: ['profile.firstName', 'profile.lastName'],
       fieldsToOmit: [
         { fieldName: 'lastLogin' },
@@ -342,7 +354,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
   Policy: {
     transformation: {
       fieldTypeOverrides: [
-        { fieldName: 'policyRules', fieldType: 'api__v1__policies___policyId___rules@uuuuuu_00123_00125uu' },
+        { fieldName: 'policyRules', fieldType: 'list<PolicyRule>' },
       ],
       idFields: ['name', 'type'],
     },
@@ -381,11 +393,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
           toField: 'clients',
           context: [{ name: 'authServerId', fromField: 'id' }],
         },
-        {
-          type: 'api__v1__authorizationServers___authServerId___credentials__keys@uuuuuu_00123_00125uuuu',
-          toField: 'jsonWebKeys',
-          context: [{ name: 'authServerId', fromField: 'id' }],
-        },
+        // TODO figure out if we want to indclude JWK
+        /* eslint-disable max-len */
+        // {
+        //   type: 'api__v1__authorizationServers___authServerId___credentials__keys@uuuuuu_00123_00125uuuu',
+        //   toField: 'jsonWebKeys',
+        //   context: [{ name: 'authServerId', fromField: 'id' }],
+        // },
       ],
     },
   },
@@ -401,36 +415,43 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       ],
     },
   },
-  'api__v1__authorizationServers___authServerId___clients@uuuuuu_00123_00125uu': {
-    request: {
-      url: '/api/v1/authorizationServers/{authServerId}/clients',
-      recurseInto: [
-        {
-          type: 'api__v1__authorizationServers___authServerId___clients___clientId___tokens@uuuuuu_00123_00125uuuu_00123_00125uu',
-          toField: 'OAuth2Tokens',
-          context: [{ name: 'clientId', fromField: 'id' }],
-        },
-      ],
-    },
-  },
+  // TODO we need to figure out if we to include tokens
+  /* eslint-disable max-len */
+  // 'api__v1__authorizationServers___authServerId___clients@uuuuuu_00123_00125uu': {
+  //   request: {
+  //     url: '/api/v1/authorizationServers/{authServerId}/clients',
+  //     recurseInto: [
+  //       {
+  //         type: 'api__v1__authorizationServers___authServerId___clients___clientId___tokens@uuuuuu_00123_00125uuuu_00123_00125uu',
+  //         toField: 'OAuth2Tokens',
+  //         context: [{ name: 'clientId', fromField: 'id' }],
+  //       },
+  //     ],
+  //   },
+  // },
   AuthorizationServer: {
     transformation: {
-      // TODO consider turning to standaloneFields
       fieldTypeOverrides: [
-        { fieldName: 'scopes', fieldType: 'api__v1__authorizationServers___authServerId___scopes@uuuuuu_00123_00125uu' },
-        { fieldName: 'claims', fieldType: 'api__v1__authorizationServers___authServerId___claims@uuuuuu_00123_00125uu' },
-        { fieldName: 'policies', fieldType: 'api__v1__authorizationServers___authServerId___policies@uuuuuu_00123_00125uu' },
-        { fieldName: 'clients', fieldType: 'api__v1__authorizationServers___authServerId___clients@uuuuuu_00123_00125uu' },
-        { fieldName: 'jsonWebKeys', fieldType: 'api__v1__authorizationServers___authServerId___credentials__keys@uuuuuu_00123_00125uuuu' },
+        { fieldName: 'scopes', fieldType: 'list<OAuth2Scope>' },
+        { fieldName: 'claims', fieldType: 'list<OAuth2Claim>' },
+        { fieldName: 'policies', fieldType: 'list<AuthorizationServerPolicy>' },
+        { fieldName: 'clients', fieldType: 'list<OAuth2Client>' },
       ],
     },
   },
-  'api__v1__authorizationServers___authServerId___credentials__keys@uuuuuu_00123_00125uuuu': {
+  AuthorizationServerPolicy: {
     transformation: {
-      dataField: '.',
+      fieldTypeOverrides: [
+        { fieldName: 'policyRules', fieldType: 'list<AuthorizationServerPolicyRule>' },
+      ],
     },
   },
-  // TODO: consider deleting for MVP
+  // TODO figure out if we want to indclude JWK
+  // 'api__v1__authorizationServers___authServerId___credentials__keys@uuuuuu_00123_00125uuuu': {
+  //   transformation: {
+  //     dataField: '.',
+  //   },
+  // },
   api__v1__brands: {
     request: {
       url: '/api/v1/brands',

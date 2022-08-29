@@ -18,6 +18,7 @@ import {
   ChangeError,
   ChangeValidator,
   getChangeData,
+  InstanceElement,
   isAdditionOrModificationChange,
   isInstanceElement,
 } from '@salto-io/adapter-api'
@@ -28,6 +29,13 @@ const { isDefined } = values
 const SENDER = 'sender'
 const RECIPIENT = 'recipient'
 const SPECIFIC = 'SPECIFIC'
+
+const toValidationError = (instance: InstanceElement, probField: string): ChangeError => ({
+  elemID: instance.elemID,
+  severity: 'Error',
+  message: 'Workflow contains fields which cannot be deployed',
+  detailedMessage: `The Workflow contains a '${probField}' field with an ACCOUNT_SPECIFIC_VALUE which cannot be deployed due to NetSuite constraints. Please refer to https://docs.salto.io/docs/netsuite#deploy-troubleshooting for more information.`,
+})
 
 
 const changeValidator: ChangeValidator = async changes => (
@@ -45,19 +53,14 @@ const changeValidator: ChangeValidator = async changes => (
             return WALK_NEXT_STEP.SKIP
           }
           if ((path.getFullNameParts().slice(-2)[0] === 'sendemailaction')) {
-            if ((value.sender === ACCOUNT_SPECIFIC_VALUE && value.sendertype === SPECIFIC)
-              || (value?.recipient === ACCOUNT_SPECIFIC_VALUE
-                && value?.recipienttype === SPECIFIC)) {
-              const probField = value?.sender === ACCOUNT_SPECIFIC_VALUE
-              && value?.sendertype === SPECIFIC ? SENDER : RECIPIENT
-              foundError = {
-                elemID: instance.elemID,
-                severity: 'Error',
-                message: 'Workflow contains fields which cannot be deployed',
-                detailedMessage: `The Workflow contains a '${probField}' field with an ACCOUNT_SPECIFIC_VALUE which cannot be deployed due to NetSuite constraints. Please refer to https://docs.salto.io/docs/netsuite#deploy-troubleshooting for more information.`,
-              }
+            if (value?.sender === ACCOUNT_SPECIFIC_VALUE && value?.sendertype === SPECIFIC) {
+              foundError = toValidationError(instance, SENDER)
+              return WALK_NEXT_STEP.EXIT
             }
-            return WALK_NEXT_STEP.EXIT
+            if (value?.recipient === ACCOUNT_SPECIFIC_VALUE && value?.recipienttype === SPECIFIC) {
+              foundError = toValidationError(instance, RECIPIENT)
+              return WALK_NEXT_STEP.EXIT
+            }
           }
           return WALK_NEXT_STEP.RECURSE
         },

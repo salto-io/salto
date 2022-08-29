@@ -410,9 +410,9 @@ const getEntriesForType = async (
     entries.map(async entry => {
       try {
         const extraFields = (await getExtraFieldValues(entry))
-          .filter(lowerdashValues.isDefined)
         return { ...entry, ...Object.fromEntries(extraFields) }
       } catch (err) {
+        // We already write a log in getExtraFieldValues
         return undefined
       }
     })

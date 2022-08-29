@@ -28,15 +28,15 @@ export const createScreenValues = (name: string, allElements: Element[]): Values
     'Field_Tab@s': {
       name: 'Field Tab',
       fields: [
-        createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee'), allElements),
+        createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee__user'), allElements),
       ],
       position: 2,
     },
     tab3: {
       name: 'tab3',
       fields: [
-        createReference(new ElemID(JIRA, 'Field', 'instance', 'Created'), allElements),
-        createReference(new ElemID(JIRA, 'Field', 'instance', 'Creator'), allElements),
+        createReference(new ElemID(JIRA, 'Field', 'instance', 'Created__datetime'), allElements),
+        createReference(new ElemID(JIRA, 'Field', 'instance', 'Creator__user'), allElements),
       ],
       position: 1,
     },

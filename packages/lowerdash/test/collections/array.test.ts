@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { collections } from '../../src'
 
-const { makeArray, arrayOf } = collections.array
+const { makeArray, arrayOf, findDuplicates } = collections.array
 
 describe('array', () => {
   describe('makeArray', () => {
@@ -81,6 +81,16 @@ describe('array', () => {
       it('returns an array whose all items are undefined', () => {
         expect(result).toEqual([undefined, undefined, undefined, undefined, undefined])
       })
+    })
+  })
+  describe('findDuplicates', () => {
+    it('should return empty array when no duplicates are found', () => {
+      expect(findDuplicates([])).toEqual([])
+      expect(findDuplicates(['abc', 'def', 'abd', 'aaabbb'])).toEqual([])
+    })
+
+    it('should return sorted array with each duplicate appearing once when duplicates are found', () => {
+      expect(findDuplicates(['def', 'abc', 'def', 'abd', 'aaa', 'def', 'abc'])).toEqual(['abc', 'def'])
     })
   })
 })

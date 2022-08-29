@@ -14,14 +14,23 @@
 * limitations under the License.
 */
 import { ReadOnlyElementsSource, Element, ElemID } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import _ from 'lodash'
+import { collections } from '@salto-io/lowerdash'
 import { resolveTypeShallow } from './utils'
+
+const { findDuplicates } = collections.array
+const log = logger(module)
 
 export const buildElementsSourceFromElements = (
   elements: ReadonlyArray<Element>,
   fallbackSource?: ReadOnlyElementsSource
 ): ReadOnlyElementsSource => {
   const elementsMap = _.keyBy(elements, e => e.elemID.getFullName())
+  if (Object.keys(elementsMap).length !== elements.length) {
+    const duplicateNames = findDuplicates(elements.map(e => e.elemID.getFullName()))
+    log.warn(`duplicate ElemIDs of elementSource found. the duplicates are ${duplicateNames}`)
+  }
   const isIDInElementsMap = (id: ElemID): boolean => id.getFullName() in elementsMap
 
   let self: ReadOnlyElementsSource

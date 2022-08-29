@@ -14,13 +14,17 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
+import { ElemID, CORE_ANNOTATIONS, InstanceElement, ListType } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
 import { ZUORA_BILLING, CUSTOM_OBJECT_DEFINITION_TYPE, LIST_ALL_SETTINGS_TYPE, SETTINGS_TYPE_PREFIX, TASK_TYPE, WORKFLOW_DETAILED_TYPE, WORKFLOW_EXPORT_TYPE, PRODUCT_RATE_PLAN_TYPE, ACCOUNTING_CODE_ITEM_TYPE } from './constants'
 
 const { createClientConfigType } = clientUtils
-const { createUserFetchConfigType, createSwaggerAdapterApiConfigType } = configUtils
+const {
+  createUserFetchConfigType,
+  createSwaggerAdapterApiConfigType,
+  createTypeNameOverrideConfigType,
+} = configUtils
 
 export const CLIENT_CONFIG = 'client'
 export const FETCH_CONFIG = 'fetch'
@@ -29,10 +33,12 @@ export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 export type ZuoraClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
 
 export type ZuoraFetchConfig = configUtils.UserFetchConfig
+
+type ZuoraSettingsSwaggerConfig = {
+  typeNameOverrides?: configUtils.TypeNameOverrideConfig[]
+}
 export type ZuoraApiConfig = configUtils.AdapterSwaggerApiConfig & {
-  settingsSwagger?: {
-    typeNameOverrides?: configUtils.TypeNameOverrideConfig[]
-  }
+  settingsSwagger?: ZuoraSettingsSwaggerConfig
 }
 
 export type ZuoraConfig = {
@@ -780,6 +786,19 @@ export const DEFAULT_CONFIG: ZuoraConfig = {
   [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
 }
 
+
+const settingsSwaggerConfigType = createMatchingObjectType<Partial<ZuoraSettingsSwaggerConfig>>({
+  elemID: new ElemID(ZUORA_BILLING, 'SettingsSwaggerConfig'),
+  fields: {
+    typeNameOverrides: {
+      refType: new ListType(createTypeNameOverrideConfigType(ZUORA_BILLING)),
+    },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 export const configType = createMatchingObjectType<Partial<ZuoraConfig>>({
   elemID: new ElemID(ZUORA_BILLING),
   fields: {
@@ -794,11 +813,17 @@ export const configType = createMatchingObjectType<Partial<ZuoraConfig>>({
     [API_DEFINITIONS_CONFIG]: {
       refType: createSwaggerAdapterApiConfigType({
         adapter: ZUORA_BILLING,
+        additionalFields: {
+          settingsSwagger: {
+            refType: settingsSwaggerConfigType,
+          },
+        },
       }),
     },
   },
   annotations: {
     [CORE_ANNOTATIONS.DEFAULT]: _.omit(DEFAULT_CONFIG, API_DEFINITIONS_CONFIG),
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
 

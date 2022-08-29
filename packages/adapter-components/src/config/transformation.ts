@@ -16,9 +16,10 @@
 import _ from 'lodash'
 import { ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS,
   FieldDefinition, ListType, RestrictionAnnotationType } from '@salto-io/adapter-api'
-import { types, values } from '@salto-io/lowerdash'
-import { findDuplicates } from './validation_utils'
+import { types, values, collections } from '@salto-io/lowerdash'
 import { getConfigWithDefault, TypeConfig, TypeDefaultsConfig } from './shared'
+
+const { findDuplicates } = collections.array
 
 export const DATA_FIELD_ENTIRE_OBJECT = '.'
 export const FIELD_REFERENCE_PREFIX = '&'
@@ -82,6 +83,9 @@ export const createTransformationConfigTypes = (
     fields: {
       fieldName: { refType: BuiltinTypes.STRING },
       parseJSON: { refType: BuiltinTypes.BOOLEAN },
+    },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
     },
   })
 

@@ -368,9 +368,9 @@ const getEntriesForType = async (
     return { entries, objType }
   }
 
-  const getExtraFieldValues = (
+  const getExtraFieldValues = async (
     entry: Values
-  ): Promise<[string, Values | Values[]][]> => Promise.all(
+  ): Promise<([string, Values | Values[]])[]> => (await Promise.all(
     recurseInto
       .filter(({ conditions }) => shouldRecurseIntoEntry(entry, requestContext, conditions))
       .map(async nested => {
@@ -379,32 +379,40 @@ const getEntriesForType = async (
             contextDef => [contextDef.name, _.get(entry, contextDef.fromField)]
           )
         )
-        const { entries: nestedEntries } = await getEntriesForType({
-          ...params,
-          typeName: nested.type,
-          requestContext: {
-            ...requestContext ?? {},
-            ...nestedRequestContext,
-          },
-        })
-
-        if (nested.isSingle) {
-          if (nestedEntries.length === 1) {
-            return [nested.toField, nestedEntries[0]] as [string, Values]
+        try {
+          const { entries: nestedEntries } = await getEntriesForType({
+            ...params,
+            typeName: nested.type,
+            requestContext: {
+              ...requestContext ?? {},
+              ...nestedRequestContext,
+            },
+          })
+          if (nested.isSingle) {
+            if (nestedEntries.length === 1) {
+              return [nested.toField, nestedEntries[0]] as [string, Values]
+            }
+            log.warn(`Expected a single value in recurseInto result for ${typeName}.${nested.toField} but received: ${nestedEntries.length}, keeping as list`)
           }
-          log.warn(`Expected a single value in recurseInto result for ${typeName}.${nested.toField} but received: ${nestedEntries.length}, keeping as list`)
+          return [nested.toField, nestedEntries] as [string, Values[]]
+        } catch (error) {
+          if (nested.skipOnError) {
+            log.info(`Failed getting extra field values for field ${nested.toField} in ${typeName} entry: ${safeJsonStringify(entry)}, and the field will be omitted. Error: ${error.message}`)
+            return undefined
+          }
+          log.warn(`Failed getting extra field values for field ${nested.toField} in ${typeName} entry: ${safeJsonStringify(entry)}, not creating instance. Error: ${error.message}`)
+          throw error
         }
-        return [nested.toField, nestedEntries] as [string, Values[]]
       })
-  )
+  )).filter(lowerdashValues.isDefined)
 
   const filledEntries = (await Promise.all(
     entries.map(async entry => {
       try {
-        const extraFields = await getExtraFieldValues(entry)
+        const extraFields = (await getExtraFieldValues(entry))
         return { ...entry, ...Object.fromEntries(extraFields) }
       } catch (err) {
-        log.warn(`Failed getting extra field values for ${typeName} entry: ${safeJsonStringify(entry)}. Error: ${err.message}`)
+        // We already write a log in getExtraFieldValues
         return undefined
       }
     })

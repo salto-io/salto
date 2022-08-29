@@ -29,16 +29,16 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
       rules: {
         triggers: [
           {
+            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:branch-created-trigger',
+          },
+          {
             key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:commit-created-trigger',
           },
           {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:review-closed-trigger',
+            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:pull-request-created-trigger',
           },
           {
             key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:pull-request-declined-trigger',
-          },
-          {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:pull-request-created-trigger',
           },
           {
             key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:pull-request-merged-trigger',
@@ -47,19 +47,19 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
             key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:pull-request-reopened-trigger',
           },
           {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:branch-created-trigger',
-          },
-          {
-            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:review-started-trigger',
-          },
-          {
             key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:review-abandoned-trigger',
           },
           {
             key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:review-approval-trigger',
           },
           {
+            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:review-closed-trigger',
+          },
+          {
             key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:review-rejected-trigger',
+          },
+          {
+            key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:review-started-trigger',
           },
           {
             key: 'com.atlassian.jira.plugins.jira-development-integration-plugin:review-summarized-trigger',
@@ -93,19 +93,41 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
         ],
         postFunctions: [
           {
-            type: 'UpdateIssueFieldFunction',
+            type: 'AssignToCurrentUserFunction',
+          },
+          {
+            type: 'AssignToLeadFunction',
+          },
+          {
+            type: 'AssignToReporterFunction',
+          },
+          {
+            type: 'ClearFieldValuePostFunction',
             configuration: {
-              fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee'), allElements),
-              fieldValue: '',
+              fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Environment__string'), allElements),
             },
           },
           {
-            type: 'UpdateIssueCustomFieldPostFunction',
+            type: 'CopyValueFromOtherFieldPostFunction',
             configuration: {
-              mode: 'replace',
-              fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created'), allElements),
-              fieldValue: 'ww',
+              sourceFieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee__user'), allElements),
+              destinationFieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Creator__user'), allElements),
+              copyType: 'parent',
             },
+          },
+          {
+            type: 'CreateCommentFunction',
+          },
+          {
+            type: 'FireIssueEventFunction',
+            configuration: {
+              event: {
+                id: createReference(new ElemID(JIRA, 'IssueEvent', 'instance', 'Issue_Assigned@s'), allElements),
+              },
+            },
+          },
+          {
+            type: 'IssueStoreFunction',
           },
           {
             type: 'SetIssueSecurityFromRoleFunction',
@@ -116,44 +138,22 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
             },
           },
           {
-            type: 'CopyValueFromOtherFieldPostFunction',
+            type: 'UpdateIssueCustomFieldPostFunction',
             configuration: {
-              sourceFieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee'), allElements),
-              destinationFieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Creator'), allElements),
-              copyType: 'parent',
+              mode: 'replace',
+              fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created__datetime'), allElements),
+              fieldValue: 'ww',
             },
           },
           {
-            type: 'ClearFieldValuePostFunction',
+            type: 'UpdateIssueFieldFunction',
             configuration: {
-              fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Environment'), allElements),
+              fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee__user'), allElements),
+              fieldValue: '',
             },
           },
           {
             type: 'UpdateIssueStatusFunction',
-          },
-          {
-            type: 'AssignToCurrentUserFunction',
-          },
-          {
-            type: 'AssignToLeadFunction',
-          },
-          {
-            type: 'AssignToReporterFunction',
-          },
-          {
-            type: 'CreateCommentFunction',
-          },
-          {
-            type: 'IssueStoreFunction',
-          },
-          {
-            type: 'FireIssueEventFunction',
-            configuration: {
-              event: {
-                id: createReference(new ElemID(JIRA, 'IssueEvent', 'instance', 'Issue_Assigned@s'), allElements),
-              },
-            },
           },
         ],
       },
@@ -172,24 +172,33 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
             type: 'DateFieldValidator',
             configuration: {
               comparator: '>',
-              date1: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created'), allElements),
-              date2: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created'), allElements),
+              date1: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created__datetime'), allElements),
+              date2: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created__datetime'), allElements),
               includeTime: false,
-            },
-          },
-          {
-            type: 'WindowsDateValidator',
-            configuration: {
-              date1: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created'), allElements),
-              date2: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created'), allElements),
-              windowsDays: 2,
             },
           },
           {
             type: 'FieldHasSingleValueValidator',
             configuration: {
-              fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Last_Viewed@s'), allElements),
+              fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Last_Viewed__datetime@suu'), allElements),
               excludeSubtasks: false,
+            },
+          },
+          {
+            type: 'FieldHasSingleValueValidator',
+            configuration: {
+              fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Remaining_Estimate__number@suu'), allElements),
+              excludeSubtasks: true,
+            },
+          },
+          {
+            type: 'FieldRequiredValidator',
+            configuration: {
+              ignoreContext: true,
+              errorMessage: 'wwww',
+              fieldIds: [
+                createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee__user'), allElements),
+              ],
             },
           },
           {
@@ -226,20 +235,11 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
             },
           },
           {
-            type: 'FieldRequiredValidator',
+            type: 'WindowsDateValidator',
             configuration: {
-              ignoreContext: true,
-              errorMessage: 'wwww',
-              fieldIds: [
-                createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee'), allElements),
-              ],
-            },
-          },
-          {
-            type: 'FieldHasSingleValueValidator',
-            configuration: {
-              fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Remaining_Estimate@s'), allElements),
-              excludeSubtasks: true,
+              date1: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created__datetime'), allElements),
+              date2: createReference(new ElemID(JIRA, 'Field', 'instance', 'Created__datetime'), allElements),
+              windowsDays: 2,
             },
           },
         ],
@@ -257,6 +257,12 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
           operator: 'AND',
           conditions: [
             {
+              type: 'AllowOnlyAssignee',
+            },
+            {
+              type: 'AllowOnlyReporter',
+            },
+            {
               type: 'AlwaysFalseCondition',
             },
             {
@@ -266,16 +272,25 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
               type: 'BlockInProgressApprovalCondition',
             },
             {
-              type: 'RemoteOnlyCondition',
+              type: 'InAnyProjectRoleCondition',
+              configuration: {
+                projectRoles: [
+                  {
+                    id: createReference(new ElemID(JIRA, 'ProjectRole', 'instance', 'Administrators'), allElements),
+                  },
+                ],
+              },
             },
             {
-              type: 'AllowOnlyAssignee',
+              type: 'InProjectRoleCondition',
+              configuration: {
+                projectRole: {
+                  id: createReference(new ElemID(JIRA, 'ProjectRole', 'instance', 'Administrators'), allElements),
+                },
+              },
             },
             {
               type: 'OnlyBambooNotificationsCondition',
-            },
-            {
-              type: 'AllowOnlyReporter',
             },
             {
               type: 'PermissionCondition',
@@ -294,6 +309,9 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
                   id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
                 },
               },
+            },
+            {
+              type: 'RemoteOnlyCondition',
             },
             {
               type: 'SeparationOfDutiesCondition',
@@ -328,34 +346,16 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
               },
             },
             {
-              type: 'InAnyProjectRoleCondition',
-              configuration: {
-                projectRoles: [
-                  {
-                    id: createReference(new ElemID(JIRA, 'ProjectRole', 'instance', 'Administrators'), allElements),
-                  },
-                ],
-              },
-            },
-            {
               type: 'UserIsInCustomFieldCondition',
               configuration: {
                 allowUserInField: false,
-                fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee'), allElements),
-              },
-            },
-            {
-              type: 'InProjectRoleCondition',
-              configuration: {
-                projectRole: {
-                  id: createReference(new ElemID(JIRA, 'ProjectRole', 'instance', 'Administrators'), allElements),
-                },
+                fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee__user'), allElements),
               },
             },
             {
               type: 'ValueFieldCondition',
               configuration: {
-                fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Remaining_Estimate@s'), allElements),
+                fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Remaining_Estimate__number@suu'), allElements),
                 fieldValue: 'val',
                 comparisonType: 'STRING',
                 comparator: '>',

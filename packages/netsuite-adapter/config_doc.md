@@ -14,7 +14,9 @@ netsuite {
     }
     exclude = {
       types = [
-        { name = "savedsearch", ids = [".*"] }
+        { name = "savedsearch"
+          ids = [".*"]
+        }
       ]
       fileCabinet = [
         "^/Web Site Hosting Files.*",

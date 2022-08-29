@@ -976,7 +976,8 @@ const getCustomFields = (
     .filter(field => !isLocalOnly(field))
     .map(field => toCustomField(field))
     .filter(field => !skipFields.includes(field.fullName))
-    .filter(field => CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES.includes(field.type))
+    .filter(field =>
+      _.isUndefined(field.type) || CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES.includes(field.type))
     .toArray()
 
 export const toCustomProperties = async (

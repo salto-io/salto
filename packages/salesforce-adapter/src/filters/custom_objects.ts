@@ -669,7 +669,7 @@ const getNestedCustomObjectValues = async (
   fields: await awu(getDataFromChanges(
     dataField,
     await awu(changes).filter(shouldIncludeFieldChange(fieldsToSkip)).toArray()
-  )).map(field => toCustomField(field as Field)).toArray(),
+  )).map(async field => _.omit(await toCustomField(field as Field), 'type')).toArray(),
 })
 
 const createCustomObjectInstance = (values: MetadataValues): InstanceElement => {

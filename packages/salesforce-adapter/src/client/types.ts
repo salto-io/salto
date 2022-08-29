@@ -103,7 +103,7 @@ export interface LookupFilter {
 export class CustomField implements MetadataInfo {
   // Common field annotations
   readonly label?: string
-  readonly type: string
+  readonly type?: string
   readonly required?: boolean
   readonly defaultValue?: string
   // For formula fields

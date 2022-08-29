@@ -1099,7 +1099,7 @@ describe('SalesforceAdapter CRUD', () => {
           expect(Array.isArray(updatedObj.fields)).toBeFalsy()
           const newField = updatedObj.fields
           expect(newField.fullName).toEqual('address__c')
-          expect(newField.type).toEqual('Text')
+          expect(newField.type).toBeUndefined()
           expect(newField.label).toEqual('test2 label')
         })
 
@@ -1237,7 +1237,7 @@ describe('SalesforceAdapter CRUD', () => {
               expect(deployedObject.fields).toHaveLength(2)
               const [bananaField, descField] = deployedObject.fields
               expect(descField.fullName).toBe('Description__c')
-              expect(descField.type).toBe('Text')
+              expect(descField.type).toBeUndefined()
               expect(descField.length).toBe(80)
               expect(descField.required).toBe(false)
               // Verify the custom field label change
@@ -1322,7 +1322,7 @@ describe('SalesforceAdapter CRUD', () => {
 
           const field = updatedObject.fields
           expect(field.fullName).toBe('Banana__c')
-          expect(field.type).toBe('Text')
+          expect(field.type).toBeUndefined()
           expect(field.label).toBe('Banana Split')
           expect(field.length).toBe(80)
           expect(field.required).toBe(false)

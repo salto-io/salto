@@ -93,6 +93,7 @@ const contextStrategyLookup: Record<
   parentOutputObjectLookup: neighborContextFunc({ contextFieldName: 'outputObject', levelsUp: 1 }),
   neighborPicklistObjectLookup: neighborContextFunc({ contextFieldName: 'picklistObject' }),
   neighborSharedToTypeLookup: neighborContextFunc({ contextFieldName: 'sharedToType', contextValueMapper: shareToMapper }),
+  neighborTableLookup: neighborContextFunc({ contextFieldName: 'table' }),
 }
 
 

@@ -253,6 +253,16 @@ describe('FieldReferences filter', () => {
       contextFieldName: 'sharedToType',
       contextFieldValue: 'Role',
     }),
+    // field should point to salesforce.Account.field.Id (neighbor context)
+    ...generateObjectAndInstance({
+      type: 'ReportTypeColumn',
+      objType: 'ReportTypeColumn',
+      instanceName: 'reportTypeColumn',
+      fieldName: 'field',
+      fieldValue: 'Id',
+      contextFieldName: 'table',
+      contextFieldValue: 'Account',
+    }),
   ])
 
   describe('on fetch', () => {
@@ -375,6 +385,14 @@ describe('FieldReferences filter', () => {
       ) as InstanceElement
       expect(inst.value.sharedTo).toBeInstanceOf(ReferenceExpression)
       expect(inst.value.sharedTo?.elemID.getFullName()).toEqual('salesforce.Role.instance.CFO')
+    })
+
+    it('should resolve field with neighbor context using table field', async () => {
+      const inst = await awu(elements).find(
+        async e => isInstanceElement(e) && await metadataType(e) === 'ReportTypeColumn'
+      ) as InstanceElement
+      expect(inst.value.field).toBeInstanceOf(ReferenceExpression)
+      expect(inst.value.field.elemID.getFullName()).toEqual('salesforce.Account.field.Id')
     })
   })
 

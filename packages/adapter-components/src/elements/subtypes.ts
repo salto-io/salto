@@ -22,7 +22,7 @@ const { awu } = collections.asynciterable
 
 export const getSubtypes = async (
   types: ObjectType[],
-  validateNoConcealment = false,
+  validateUniqueness = false,
 ): Promise<ObjectType[]> => {
   const subtypes: Record<string, ObjectType> = {}
 
@@ -38,7 +38,7 @@ export const getSubtypes = async (
         return
       }
       if (fieldType.elemID.getFullName() in subtypes) {
-        if (validateNoConcealment && subtypes[fieldType.elemID.getFullName()].isEqual(fieldType)) {
+        if (validateUniqueness && subtypes[fieldType.elemID.getFullName()].isEqual(fieldType)) {
           log.warn(`duplicate ElemIDs of subtypes found. the duplicate is ${fieldType.elemID.getFullName()}`)
         }
         return

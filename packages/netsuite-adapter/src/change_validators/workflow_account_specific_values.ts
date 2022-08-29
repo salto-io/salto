@@ -52,7 +52,7 @@ const changeValidator: ChangeValidator = async changes => (
           if (path.isAttrID()) {
             return WALK_NEXT_STEP.SKIP
           }
-          if ((path.getFullNameParts().slice(-2)[0] === 'sendemailaction')) {
+          if ((path.createParentID().name === 'sendemailaction')) {
             if (value?.sender === ACCOUNT_SPECIFIC_VALUE && value?.sendertype === SPECIFIC) {
               foundError = toValidationError(instance, SENDER)
               return WALK_NEXT_STEP.EXIT

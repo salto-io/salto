@@ -291,7 +291,6 @@ Currently the following core annotations are supported:
 - [_creatable](#_created_at)
 - [_updatable](#_changed_by)
 - [_deletable](#_changed_at)
-- [_additional_properties](#_additional_properties)
 
 #### `_required`
 This annotation is used on field blocks to specify that an instance must contain a value for this field.
@@ -704,27 +703,6 @@ For the deletion of the following instance, an error will be shown to the user a
 ```HCL
 salto.notDeletable instance {
   someField = 2
-}
-```
-
-#### `_additional_properties`
-This annotation can be used on types to specify whether the type allows additional properties.
-When it is set to false, values of this type may only contain the fields that this type allows, any additional value would cause a validation warning.
-
-Type: `boolean`
-Default: `true`
-Applicable to: Types
-Example:
-```HCL
-type salto.example_type {
-  number field {
-  }
-  _additional_properties = false
-}
-
-salto.example_type example_instance {
-  field = 1 // This is valid, as 'field' is a property of the type
-  other_field = 2 // This will cause a warning because 'other_field' does not appear in the type definition
 }
 ```
 

@@ -31,5 +31,4 @@ export const CORE_ANNOTATIONS = {
   CREATABLE: '_creatable',
   UPDATABLE: '_updatable',
   DELETABLE: '_deletable',
-  ADDITIONAL_PROPERTIES: '_additional_properties',
 }

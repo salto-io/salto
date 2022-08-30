@@ -42,16 +42,16 @@ const isProfileRelatedChange = async (change: Change): Promise<boolean> => (
 
 const toMinifiedChange = (change: Change<InstanceElement>): Change<InstanceElement> => {
   const [before, after] = getAllChangeData(change)
-  const minimalBefore = getDiffInstance(toChange({
+  const minifiedBefore = getDiffInstance(toChange({
     before: after,
     after: before,
   }))
-  const minimalAfter = getDiffInstance(change)
-  minimalBefore.value.fullName = before.value.fullName
-  minimalAfter.value.fullName = after.value.fullName
+  const minifiedAfter = getDiffInstance(change)
+  minifiedBefore.value.fullName = before.value.fullName
+  minifiedAfter.value.fullName = after.value.fullName
   return toChange({
-    before: minimalBefore,
-    after: minimalAfter,
+    before: minifiedBefore,
+    after: minifiedAfter,
   })
 }
 

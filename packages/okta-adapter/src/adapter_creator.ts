@@ -24,7 +24,6 @@ import OktaAdapter from './adapter'
 import { Credentials, accessTokenCredentialsType } from './auth'
 import { configType, OktaConfig, API_DEFINITIONS_CONFIG, FETCH_CONFIG, DEFAULT_CONFIG, OktaApiConfig, CLIENT_CONFIG } from './config'
 import { createConnection } from './client/connection'
-import { AUTOMATION_TYPE, WEBHOOK_TYPE } from './constants'
 
 const log = logger(module)
 const { validateClientConfig, validateCredentials } = clientUtils
@@ -63,6 +62,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   return adapterConfig
 }
 
+// TODO ask neta
 export const adapter: Adapter = {
   operations: context => {
     // This can be removed once all the workspaces configs were migrated
@@ -76,8 +76,6 @@ export const adapter: Adapter = {
       DEFAULT_CONFIG,
       [
         'IssueEvent',
-        WEBHOOK_TYPE,
-        AUTOMATION_TYPE,
       ]
     )
 

@@ -21,6 +21,7 @@ import { logger } from '@salto-io/logging'
 import { objects } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
 import { OktaConfig, API_DEFINITIONS_CONFIG } from './config'
+import { paginate } from './client/pagination'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import replaceObjectWithIdFilter from './filters/replace_object_with_id'
 import fieldReferencesFilter from './filters/field_references'
@@ -32,7 +33,7 @@ const {
   getAllInstances,
 } = elementUtils.swagger
 
-const { createPaginator, getWithOffsetAndLimit } = clientUtils
+const { createPaginator } = clientUtils
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
@@ -69,7 +70,7 @@ export default class OktaAdapter implements AdapterOperations {
     this.client = client
     const paginator = createPaginator({
       client: this.client,
-      paginationFuncCreator: getWithOffsetAndLimit,
+      paginationFuncCreator: paginate,
     })
 
     this.fetchQuery = elementUtils.query.createElementQuery(

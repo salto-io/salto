@@ -30,6 +30,24 @@ describe('user filter', () => {
   const triggerType = new ObjectType({ elemID: new ElemID(ZENDESK, 'trigger') })
   const workspaceType = new ObjectType({ elemID: new ElemID(ZENDESK, 'workspace') })
   const routingAttributeValueType = new ObjectType({ elemID: new ElemID(ZENDESK, 'routing_attribute_value') })
+  const userSegmentType = new ObjectType({ elemID: new ElemID(ZENDESK, 'user_segment') })
+  const articleType = new ObjectType({ elemID: new ElemID(ZENDESK, 'article') })
+
+  const userSegmentInstance = new InstanceElement(
+    'test',
+    userSegmentType,
+    {
+      added_user_ids: 1,
+    }
+  )
+
+  const articleInstance = new InstanceElement(
+    'test',
+    articleType,
+    {
+      author_id: 1,
+    }
+  )
 
   const triggerInstance = new InstanceElement(
     'test',

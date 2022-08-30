@@ -52,6 +52,10 @@ type ReplacerCreatorParams = {
   fieldsToReplace: { name: string; valuePath?: string }[]
 }
 
+type Field = {
+  name: string
+}
+
 const replaceConditionsAndActionsCreator = (
   params: ReplacerCreatorParams[],
   isIdNumber = false,
@@ -83,6 +87,22 @@ const replaceConditionsAndActionsCreator = (
         }
       })
   })
+}
+
+const myReplacer = (fields: Field[]): UserReplacer => (instance, mapping) => {
+  fields
+    .forEach(field => {
+      const value = _.get(instance.value, field.name)?.toString()
+      const newValue = ((value !== undefined)
+            && Object.prototype.hasOwnProperty.call(mapping, value))
+        ? mapping[value]
+        : undefined
+      if (newValue !== undefined) {
+        _.set(instance.value, field.name, (Number.isInteger(Number(newValue)))
+          ? Number(newValue)
+          : newValue)
+      }
+    })
 }
 
 const replaceRestrictionImpl = (values: Values, mapping: Record<string, string>): void => {
@@ -147,6 +167,8 @@ const TYPE_NAME_TO_REPLACER: Record<string, UserReplacer> = {
     replaceRestriction,
   ]),
   workspace: workspaceReplacer,
+  user_segment: myReplacer([{ name: 'added_user_ids' }]),
+  article: myReplacer([{ name: 'author_id' }]),
 }
 
 const getUsers = async (paginator: clientUtils.Paginator): Promise<User[]> => {

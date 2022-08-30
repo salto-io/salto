@@ -186,7 +186,7 @@ export abstract class AdapterHTTPClient<
         }
         : undefined
 
-      const { data, status } = isMethodWithData(params)
+      const res = isMethodWithData(params)
         ? await this.apiClient[method](
           url,
           params.data,
@@ -196,13 +196,15 @@ export abstract class AdapterHTTPClient<
           url,
           requestConfig,
         )
-      log.debug('Received response for %s (%s) with status %d', url, safeJsonStringify({ url, queryParams }), status)
+      log.debug('Received response for %s (%s) with status %d', url, safeJsonStringify({ url, queryParams }), res.status)
       log.trace('Full HTTP response for %s: %s', url, safeJsonStringify({
-        url, queryParams, response: data,
+        url, queryParams, response: res.data,
       }))
+      const { data, status, headers: responseHeaders } = res
       return {
         data,
         status,
+        headers: responseHeaders,
       }
     } catch (e) {
       log.warn(`failed to ${method} ${url} ${safeJsonStringify(queryParams)}: ${e}, stack: ${e.stack}, data: ${safeJsonStringify(e?.response?.data)}`)

@@ -142,9 +142,9 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: currencyIsoCodeFilter },
   { creator: splitCustomLabels },
   { creator: customMetadataTypeFilter },
+  { creator: xmlAttributesFilter },
   // The following filters should remain last in order to make sure they fix all elements
   { creator: convertListsFilter },
-  { creator: xmlAttributesFilter },
   { creator: convertTypeFilter },
   // should be after convertTypeFilter & convertMapsFilter and before profileInstanceSplitFilter
   { creator: enumFieldPermissionsFilter },

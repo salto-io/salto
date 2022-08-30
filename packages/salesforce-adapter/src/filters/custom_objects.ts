@@ -61,7 +61,7 @@ import {
 } from './utils'
 import { convertList } from './convert_lists'
 import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../metadata_deploy'
-import { CustomObject } from '../client/types'
+import { CustomField, CustomObject } from '../client/types'
 import { WORKFLOW_FIELD_TO_TYPE, WORKFLOW_TYPE_TO_FIELD, WORKFLOW_DIR_NAME } from './workflow'
 
 const log = logger(module)
@@ -647,6 +647,14 @@ const shouldIncludeFieldChange = (fieldsToSkip: ReadonlyArray<string>) => (
   }
 )
 
+const NON_DEPLOYABLE_TYPES = ['Picklist', 'GlobalPicklist', 'ValueSet']
+
+const omitTypeFieldForNonDeployableTypes = (customField: CustomField): CustomField => (
+  isDefined(customField.type) && NON_DEPLOYABLE_TYPES.includes(customField.type)
+    ? _.omit(customField, 'type')
+    : customField
+)
+
 const getNestedCustomObjectValues = async (
   fullName: string,
   changes: ReadonlyArray<Change>,
@@ -669,7 +677,8 @@ const getNestedCustomObjectValues = async (
   fields: await awu(getDataFromChanges(
     dataField,
     await awu(changes).filter(shouldIncludeFieldChange(fieldsToSkip)).toArray()
-  )).map(async field => _.omit(await toCustomField(field as Field), 'type')).toArray(),
+  )).map(async field =>
+    omitTypeFieldForNonDeployableTypes(await toCustomField(field as Field))).toArray(),
 })
 
 const createCustomObjectInstance = (values: MetadataValues): InstanceElement => {

@@ -1099,7 +1099,7 @@ describe('SalesforceAdapter CRUD', () => {
           expect(Array.isArray(updatedObj.fields)).toBeFalsy()
           const newField = updatedObj.fields
           expect(newField.fullName).toEqual('address__c')
-          expect(newField.type).toBeUndefined()
+          expect(newField.type).toEqual('Text')
           expect(newField.label).toEqual('test2 label')
         })
 
@@ -1237,7 +1237,7 @@ describe('SalesforceAdapter CRUD', () => {
               expect(deployedObject.fields).toHaveLength(2)
               const [bananaField, descField] = deployedObject.fields
               expect(descField.fullName).toBe('Description__c')
-              expect(descField.type).toBeUndefined()
+              expect(descField.type).toEqual('Text')
               expect(descField.length).toBe(80)
               expect(descField.required).toBe(false)
               // Verify the custom field label change
@@ -1322,9 +1322,78 @@ describe('SalesforceAdapter CRUD', () => {
 
           const field = updatedObject.fields
           expect(field.fullName).toBe('Banana__c')
-          expect(field.type).toBeUndefined()
+          expect(field.type).toEqual('Text')
           expect(field.label).toBe('Banana Split')
           expect(field.length).toBe(80)
+          expect(field.required).toBe(false)
+        })
+      })
+      describe('when modifying a field of NonDeployableType', () => {
+        const oldElement = new ObjectType({
+          elemID: mockElemID,
+          fields: {
+            pickListField: {
+              refType: Types.primitiveDataTypes.Picklist,
+              annotations: {
+                [constants.API_NAME]: 'Test__c.PicklistField__c',
+              },
+            },
+          },
+          annotations: {
+            [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+            label: 'test label',
+            [constants.API_NAME]: 'Test__c',
+          },
+        })
+
+        const newElement = new ObjectType({
+          elemID: mockElemID,
+          fields: {
+            pickListField: oldElement.fields.pickListField.clone({
+              [constants.API_NAME]: 'Test__c.PicklistField__c',
+              [constants.LABEL]: 'Picklist Split',
+            }),
+          },
+          annotations: {
+            [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+            label: 'test2 label',
+            [constants.API_NAME]: 'Test__c',
+          },
+        })
+        beforeEach(async () => {
+          connection.metadata.deploy.mockReturnValue(mockDeployResult({
+            success: true,
+            componentSuccess: [{ fullName: 'Test__c', componentType: constants.CUSTOM_OBJECT }],
+          }))
+          result = await adapter.deploy({
+            changeGroup: {
+              groupID: oldElement.elemID.getFullName(),
+              changes: [
+                { action: 'modify', data: { before: oldElement, after: newElement } },
+                { action: 'modify',
+                  data: { before: oldElement.fields.pickListField,
+                    after: newElement.fields.pickListField } },
+              ],
+            },
+          })
+        })
+        it('should omit the "type" field from the deployed CustomField', async () => {
+          expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
+          const deployedPackage = await getDeployedPackage(
+            connection.metadata.deploy.mock.calls[0][0]
+          )
+          expect(deployedPackage.manifest?.types).toEqual(
+            { name: constants.CUSTOM_OBJECT, members: 'Test__c' }
+          )
+          const deployedValues = await deployedPackage.getData('objects/Test__c.object')
+          expect(deployedValues).toBeDefined()
+          const updatedObject = deployedValues.CustomObject
+          expect(updatedObject.label).toBe('test2 label')
+
+          const field = updatedObject.fields
+          expect(field.fullName).toBe('PicklistField__c')
+          expect(field.type).toBeUndefined()
+          expect(field.label).toBe('Picklist Split')
           expect(field.required).toBe(false)
         })
       })

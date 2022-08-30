@@ -37,6 +37,7 @@ import validationRulesAuthorFilter from './filters/author_information/validation
 import profileInstanceSplitFilter from './filters/profile_instance_split'
 import customObjectsInstancesFilter from './filters/custom_objects_instances'
 import profilePermissionsFilter from './filters/profile_permissions'
+import profileDeployFilter from './filters/profile_deploy'
 import convertListsFilter from './filters/convert_lists'
 import convertTypeFilter from './filters/convert_types'
 import removeFieldsAndValuesFilter from './filters/remove_fields_and_values'
@@ -160,6 +161,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: extraDependenciesFilter, addsNewInformation: true },
   { creator: customObjectsSplitFilter },
   { creator: profileInstanceSplitFilter },
+  { creator: profileDeployFilter },
 ]
 
 // By default we run all filters and provide a client

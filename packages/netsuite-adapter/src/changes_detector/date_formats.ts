@@ -18,10 +18,10 @@ import { DateRange } from './types'
 
 const SUITEQL_DATE_PATTERN = /(?<month>\d+)\/(?<day>\d+)\/(?<year>\d+)/
 const SAVED_SEARCH_DATE_PATTERN = /(?<month>\d+)\/(?<day>\d+)\/(?<year>\d+) (?<hour>\d+):(?<minute>\d+) (?<ampm>\w+)/
-
+export const SUITEQL_DATE_FORMAT = 'MM/DD/YYYY'
 const log = logger(module)
 
-const formatSuiteQLDate = (date: Date): string => `TO_DATE('${date.getUTCMonth() + 1}/${date.getUTCDate()}/${date.getUTCFullYear()}', 'MM/DD/YYYY')`
+const formatSuiteQLDate = (date: Date): string => `TO_DATE('${date.getUTCMonth() + 1}/${date.getUTCDate()}/${date.getUTCFullYear()}', '${SUITEQL_DATE_FORMAT}')`
 
 const formatSavedSearchDate = (date: Date): string => {
   const hour = date.getUTCHours() > 12 ? date.getUTCHours() - 12 : date.getUTCHours()

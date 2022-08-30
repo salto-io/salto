@@ -50,7 +50,7 @@ describe('custom_list', () => {
 
     it('should make the right query', () => {
       expect(runSuiteQLMock).toHaveBeenCalledWith(`
-      SELECT scriptid, TO_CHAR(lastmodifieddate, 'MM-DD-YYYY') AS lastmodifieddate
+      SELECT scriptid, TO_CHAR(lastmodifieddate, 'MM/DD/YYYY') AS lastmodifieddate
       FROM customlist
       WHERE lastmodifieddate BETWEEN TO_DATE('1/11/2021', 'MM/DD/YYYY') AND TO_DATE('2/23/2021', 'MM/DD/YYYY')
       ORDER BY scriptid ASC

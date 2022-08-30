@@ -198,7 +198,11 @@ export abstract class AdapterHTTPClient<
         )
       log.debug('Received response for %s (%s) with status %d', url, safeJsonStringify({ url, queryParams }), res.status)
       log.trace('Full HTTP response for %s: %s', url, safeJsonStringify({
+<<<<<<< HEAD
         url, queryParams, response: res.data, headers: res.headers,
+=======
+        url, queryParams, response: res.data,
+>>>>>>> 4b5b3bc9 (dapter components pagination changes)
       }))
       const { data, status, headers: responseHeaders } = res
       return {

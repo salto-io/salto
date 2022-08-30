@@ -71,7 +71,7 @@ describe('profileDeployFilter', () => {
       })
     })
     describe('on onDeploy', () => {
-      it('should have original change', () => {
+      it('should have the original change', () => {
         expect(afterOnDeployChanges).toHaveLength(1)
         expect(afterOnDeployChanges[0]).toEqual(originalChange)
       })

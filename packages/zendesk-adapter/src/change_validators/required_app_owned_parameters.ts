@@ -23,18 +23,19 @@ import {
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { APP_INSTALLATION_TYPE_NAME } from '../filters/app'
 import { APP_OWNED_TYPE_NAME } from '../constants'
 
-
 const { awu } = collections.asynciterable
+const log = logger(module)
 
 type AppOwnedParameter = {
   required: boolean
 }
 
-type AppOwned = {
+type AppOwned = InstanceElement & {
   value: {
     id: number
     parameters?: {
@@ -43,8 +44,7 @@ type AppOwned = {
   }
 }
 
-
-type AppInstallation = {
+type AppInstallation = InstanceElement & {
   value: {
     // eslint-disable-next-line camelcase
     app_id: number
@@ -55,29 +55,38 @@ type AppInstallation = {
 }
 
 const EXPECTED_APP_INSTALLATION_SCHEMA = Joi.object({
-  value: Joi.object().keys({
-    app_id: Joi.number(),
-    settings: Joi.object().unknown(true),
-  }).unknown(true).required(),
+  app_id: Joi.number().required(),
+  settings: Joi.object().unknown(true),
 }).unknown(true).required()
-
 
 const EXPECTED_PARAMETERS_SCHEMA = Joi.object({
   required: Joi.boolean().required(),
 }).unknown(true).required()
 
 const EXPECTED_APP_OWNED_SCHEMA = Joi.object({
-  value: Joi.object().keys({
-    id: Joi.number(),
-    parameters: Joi.object().keys({}).pattern(/./, EXPECTED_PARAMETERS_SCHEMA).unknown(true),
-  }).unknown(true).required(),
+  id: Joi.number().required(),
+  parameters: Joi.object().keys({}).pattern(/./, EXPECTED_PARAMETERS_SCHEMA).unknown(true),
 }).unknown(true).required()
 
-const isAppInstallation = createSchemeGuard<AppInstallation>(
+const createSchemeGuardForInstance = <T extends InstanceElement>(
+  scheme: Joi.AnySchema, errorMessage?: string
+):
+    (instance: InstanceElement) => instance is T => (instance): instance is T => {
+    const { error } = scheme.validate(instance.value)
+    if (error !== undefined) {
+      if (errorMessage !== undefined) {
+        log.error(`${errorMessage}: ${error.message}, ${safeJsonStringify(instance)}`)
+      }
+      return false
+    }
+    return true
+  }
+
+const isAppInstallation = createSchemeGuardForInstance<AppInstallation>(
   EXPECTED_APP_INSTALLATION_SCHEMA, 'Received an invalid value for App installation'
 )
 
-const isAppOwned = createSchemeGuard<AppOwned>(
+const isAppOwned = createSchemeGuardForInstance<AppOwned>(
   EXPECTED_APP_OWNED_SCHEMA, 'Received an invalid value for App Owned'
 )
 

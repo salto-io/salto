@@ -96,6 +96,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'targetGroups', fieldType: 'list<Group>' },
       ],
+      idFields: ['label'],
     },
   },
   api__v1__apps: {
@@ -529,6 +530,17 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       ],
     },
   },
+  RolePage: {
+    request: {
+      url: '/api/v1/iam/roles',
+    },
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'roles', fieldType: 'Role' },
+      ],
+      dataField: 'roles',
+    },
+  },
 }
 
 const DEFAULT_SWAGGER_CONFIG: OktaApiConfig['swagger'] = {
@@ -541,6 +553,8 @@ const DEFAULT_SWAGGER_CONFIG: OktaApiConfig['swagger'] = {
     { typeName: 'IdentityProviderRoutingRules', cloneFrom: 'api__v1__policies' },
     { typeName: 'PasswordPolicies', cloneFrom: 'api__v1__policies' },
     { typeName: 'OAuthAuthorizationPolicies', cloneFrom: 'api__v1__policies' },
+    // TODO this is not the right type to clone from, another solution is needed
+    { typeName: 'RolePage', cloneFrom: 'api__v1__groups___groupId___roles@uuuuuu_00123_00125uu' },
   ],
 }
 
@@ -589,6 +603,7 @@ export const SUPPORTED_TYPES = {
   TrustedOrigin: ['api__v1__trustedOrigins'],
   NetworkZone: ['api__v1__zones'],
   Domain: ['DomainListResponse'],
+  Role: ['RolePage'],
 }
 
 

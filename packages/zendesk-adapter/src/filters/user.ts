@@ -89,7 +89,7 @@ const replaceConditionsAndActionsCreator = (
   })
 }
 
-const myReplacer = (fields: Field[]): UserReplacer => (instance, mapping) => {
+const fieldReplacer = (fields: Field[]): UserReplacer => (instance, mapping) => {
   fields
     .forEach(field => {
       const value = _.get(instance.value, field.name)?.toString()
@@ -167,8 +167,8 @@ const TYPE_NAME_TO_REPLACER: Record<string, UserReplacer> = {
     replaceRestriction,
   ]),
   workspace: workspaceReplacer,
-  user_segment: myReplacer([{ name: 'added_user_ids' }]),
-  article: myReplacer([{ name: 'author_id' }]),
+  user_segment: fieldReplacer([{ name: 'added_user_ids' }]),
+  article: fieldReplacer([{ name: 'author_id' }]),
 }
 
 const getUsers = async (paginator: clientUtils.Paginator): Promise<User[]> => {

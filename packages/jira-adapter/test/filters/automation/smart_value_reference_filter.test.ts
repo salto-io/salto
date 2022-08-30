@@ -71,7 +71,7 @@ describe('handle templates filter', () => {
           inner: 'Issue no field is: {{issue.notafield}} ending',
         } },
         { value: {
-          inner: 'Issue should ignore field is: {{issue.duedate.something}} ending',
+          inner: 'Issue subfield is: {{issue.duedate.something}} ending',
         } },
       ] })
 
@@ -104,7 +104,8 @@ describe('handle templates filter', () => {
           parts: [
             'Issue first field is: ',
             '{{',
-            new ReferenceExpression(fieldOne.elemID, fieldOne),
+            'issue.',
+            new ReferenceExpression(fieldOne.elemID.createNestedID('name'), 'fieldOne'),
             '}}',
             ' ending',
           ],
@@ -116,7 +117,8 @@ describe('handle templates filter', () => {
           parts: [
             'Issue due date is: ',
             '{{',
-            new ReferenceExpression(duedateField.elemID, duedateField),
+            'issue.',
+            new ReferenceExpression(duedateField.elemID.createNestedID('name'), 'Due Date'),
             '}}',
             ' ending',
           ],
@@ -128,7 +130,9 @@ describe('handle templates filter', () => {
           parts: [
             'Issue space field is: ',
             '{{',
-            new ReferenceExpression(fieldWithSpaces.elemID, fieldWithSpaces),
+            'issue.',
+            new ReferenceExpression(fieldWithSpaces.elemID.createNestedID('name'),
+              'Field With Spaces'),
             '}}',
             ' ending',
           ],
@@ -142,9 +146,18 @@ describe('handle templates filter', () => {
       })
 
       it('should ignore template referencing subproperty of handled field', () => {
-        expect(automation.value.components[4].value.inner).toEqual(
-          'Issue should ignore field is: {{issue.duedate.something}} ending',
-        )
+        expect(automation.value.components[4].value.inner).toEqual(new TemplateExpression({
+          parts: [
+            'Issue subfield is: ',
+            '{{',
+            'issue.',
+            new ReferenceExpression(duedateField.elemID.createNestedID('name'), 'Due Date'),
+            '.',
+            'something',
+            '}}',
+            ' ending',
+          ],
+        }))
       })
     })
     describe('on fetch failure', () => {
@@ -180,11 +193,10 @@ describe('handle templates filter', () => {
         expect(logErrorSpy).toHaveBeenCalledWith('Error parsing templates in deployment', expect.any(Error))
       })
       it('handles invalid reference as empty value', async () => {
-        const emptyInstance = new InstanceElement('emptyelement', automationType)
         const invalidInstance = new InstanceElement('invalidElement', automationType, { components: [{
           value: {
             inner: new TemplateExpression({ parts: [
-              new ReferenceExpression(emptyInstance.elemID, emptyInstance),
+              new ReferenceExpression(automationType.elemID),
             ] }),
           },
         }] })

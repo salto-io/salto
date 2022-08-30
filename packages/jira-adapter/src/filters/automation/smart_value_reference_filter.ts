@@ -33,7 +33,7 @@ const REFERENCE_MARKER_REGEX = /(\{\{)(.+?)(}})/
 type Component = Record<string, Values>
 // A simple issue reference looks like issue.FOO, where FOO can contain spaces,
 // like issue.Story Points
-const SIMPLE_ISSUES_REGEX = new RegExp(/issue\.[a-zA-Z ]+(?: |$)/, 'g')
+const SIMPLE_ISSUES_REGEX = new RegExp(/issue\.[a-zA-Z ]+(?: |$|\.)/, 'g')
 // These are known mappings between system fields and their "name" property
 const ISSUE_FIELD_NAME_TO_TYPE_MAPPING: Record<string, string> = {
   key: 'Key',
@@ -60,21 +60,22 @@ const stringToTemplate = (
   referenceStr: string,
   fieldsByName: Record<string, InstanceElement>,
 ): TemplateExpression | string => {
-  const handleJiraReference = (expression: string, ref: RegExpMatchArray): TemplatePart => {
+  const handleJiraReference = (ref: string): TemplatePart => {
     // ref.pop() will return the result of the regex, which should be something like issue.*****
-    // where **** might map onto a field name
-    const referenceArr = (ref.pop() ?? '').split('.')
+    // where **** might map onto a field name. It can also end with "." if the reference continues
+    // to subfields
+    const referenceArr = (ref ?? '').split('.').filter(s => !_.isEmpty(s))
     if (referenceArr.length === 2) {
       // if a field doesn't exist in the mapping, it could be a custom field,
       // so we try to look for that.
       const elem = fieldsByName[ISSUE_FIELD_NAME_TO_TYPE_MAPPING[referenceArr[1]]
         ?? referenceArr[1]]
       if (elem) {
-        return new ReferenceExpression(elem.elemID, elem)
+        return new ReferenceExpression(elem.elemID.createNestedID('name'), elem.value.name)
       }
     }
-    // if no id was detected we return the original expression.
-    return expression
+    // if no name was detected we return the unmatched name.
+    return referenceArr[1]
   }
   return extractTemplate(
     referenceStr,
@@ -82,7 +83,13 @@ const stringToTemplate = (
     expression => {
       const jiraReference = expression.match(SIMPLE_ISSUES_REGEX)
       if (jiraReference) {
-        return handleJiraReference(expression, jiraReference)
+        const innerRef = jiraReference.pop() ?? ''
+        return [
+          'issue.',
+          handleJiraReference(innerRef),
+          innerRef.endsWith('.') ? '.' : '',
+          expression.substring(innerRef.length),
+        ]
       }
       return expression
     },
@@ -111,9 +118,8 @@ const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promi
 }
 
 const prepRef = (part: ReferenceExpression): TemplatePart => {
-  if (part.value?.value?.name) {
-    const { name } = part.value.value
-    return `issue.${ISSUE_TYPE_NAME_TO_FIELD_MAPPING[name] ?? name}`
+  if (part.value) {
+    return `${ISSUE_TYPE_NAME_TO_FIELD_MAPPING[part.value] ?? part.value}`
   }
   return ''
 }

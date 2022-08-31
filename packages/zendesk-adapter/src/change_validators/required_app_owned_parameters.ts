@@ -65,7 +65,7 @@ const EXPECTED_PARAMETERS_SCHEMA = Joi.object({
 
 const EXPECTED_APP_OWNED_SCHEMA = Joi.object({
   id: Joi.number().required(),
-  parameters: Joi.object().keys({}).pattern(/./, EXPECTED_PARAMETERS_SCHEMA).unknown(true),
+  parameters: Joi.object().pattern(Joi.any(), EXPECTED_PARAMETERS_SCHEMA),
 }).unknown(true).required()
 
 const createSchemeGuardForInstance = <T extends InstanceElement>(

@@ -61,22 +61,22 @@ const createStaticFile = (
     encoding: 'utf-8',
   })
 
-const createFolder = (instance: InstanceElement): string | undefined => {
-  if (!_.isUndefined(instance.value.fullName)) {
-    const folderName = `${SALESFORCE}/${RECORDS_PATH}/${EMAIL_TEMPLATE_METADATA_TYPE}/${instance.value.fullName}`
-    const emailName = `${instance.value.fullName.split('/').slice(1)}.email`
-    _.set(instance, ['value', 'content', 'filepath'], `${folderName}/${emailName}`)
-    return folderName
-  }
-  return undefined
+const findFolderPath = (instance: InstanceElement): string | undefined =>
+  (!_.isUndefined(instance.value.fullName)
+    ? `${SALESFORCE}/${RECORDS_PATH}/${EMAIL_TEMPLATE_METADATA_TYPE}/${instance.value.fullName}` : undefined)
+
+const createfolder = (instance: InstanceElement, folderPath: string): void => {
+  const emailName = `${instance.value.fullName.split('/').slice(1)}.email`
+  _.set(instance, ['value', 'content', 'filepath'], `${folderPath}/${emailName}`)
 }
 
 const organizeStaticFiles = async (instance: InstanceElement): Promise<void> => {
-  const folderPath = createFolder(instance)
+  const folderPath = findFolderPath(instance)
   if (_.isUndefined(folderPath)) {
     const instApiName = await apiName(instance)
     log.warn(`could not extract the attachments of instance ${instApiName}, instance path is undefined`)
   } else {
+    createfolder(instance, folderPath)
     instance.value.attachments = makeArray(instance.value.attachments)
     if (isEmailAttachmentsArray(instance.value)) {
       instance.value.attachments.forEach(attachment => {

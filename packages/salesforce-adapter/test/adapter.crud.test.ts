@@ -190,8 +190,8 @@ describe('SalesforceAdapter CRUD', () => {
             },
           })
         })
-        it('should not return any changes as applied', () => {
-          expect(result.appliedChanges).toHaveLength(0)
+        it('should return applied changes', () => {
+          expect(result.appliedChanges).toHaveLength(1)
         })
       })
     })

@@ -187,9 +187,13 @@ export const adapter: Adapter = {
       },
 
       deploy: salesforceAdapter.deploy.bind(salesforceAdapter),
+      validate: salesforceAdapter.validate.bind(salesforceAdapter),
       deployModifiers: {
-        changeValidator: createChangeValidator(config),
+        changeValidator: createChangeValidator(config, false),
         getChangeGroupIds,
+      },
+      validationModifiers: {
+        changeValidator: createChangeValidator(config, true),
       },
     }
   },

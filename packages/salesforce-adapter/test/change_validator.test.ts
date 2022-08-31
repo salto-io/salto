@@ -28,42 +28,59 @@ jest.mock('@salto-io/adapter-utils', () => {
 
 describe('createSalesforceChangeValidator', () => {
   let createChangeValidatorMock: jest.MockedFunction<typeof createChangeValidator>
+  let validator: ChangeValidator
   beforeEach(() => {
     createChangeValidatorMock = createChangeValidator as typeof createChangeValidatorMock
     createChangeValidatorMock.mockClear()
   })
 
-  describe('with no validator config', () => {
-    let validator: ChangeValidator
-    beforeEach(() => {
-      validator = createSalesforceChangeValidator({})
+  describe('when checkOnly is false', () => {
+    describe('with no validator config', () => {
+      beforeEach(() => {
+        validator = createSalesforceChangeValidator({}, false)
+      })
+      it('should create a validator', () => {
+        expect(validator).toBeDefined()
+      })
+      it('should create a validator will all internal validators enabled', () => {
+        expect(createChangeValidator).toHaveBeenCalledTimes(1)
+        expect(
+          createChangeValidatorMock.mock.calls[0][0]
+        ).toHaveLength(Object.values(changeValidators).length)
+      })
     })
-    it('should create a validator', () => {
-      expect(validator).toBeDefined()
-    })
-    it('should create a validator will all internal validators enabled', () => {
-      expect(createChangeValidator).toHaveBeenCalledTimes(1)
-      expect(
-        createChangeValidatorMock.mock.calls[0][0]
-      ).toHaveLength(Object.values(changeValidators).length)
+    describe('with a disabled validator config', () => {
+      beforeEach(() => {
+        validator = createSalesforceChangeValidator(
+          { validators: { customFieldType: false } },
+          false
+        )
+      })
+      it('should create a validator', () => {
+        expect(validator).toBeDefined()
+      })
+      it('should put the disabled validator in the disabled list', () => {
+        const enabledValidatorsCount = Object.values(_.omit(changeValidators, 'customFieldType')).length
+        const disabledValidators = [changeValidators.customFieldType({})]
+        expect(createChangeValidator).toHaveBeenCalledWith(
+          expect.arrayContaining([]), disabledValidators
+        )
+        expect(createChangeValidatorMock.mock.calls[0][0]).toHaveLength(enabledValidatorsCount)
+      })
     })
   })
-
-  describe('with a disabled validator config', () => {
-    let validator: ChangeValidator
+  describe('when checkOnly is true', () => {
     beforeEach(() => {
-      validator = createSalesforceChangeValidator({ validators: { customFieldType: false } })
+      validator = createSalesforceChangeValidator(
+        { },
+        true
+      )
     })
     it('should create a validator', () => {
       expect(validator).toBeDefined()
-    })
-    it('should put the disabled validator in the disabled list', () => {
-      const enabledValidatorsCount = Object.values(_.omit(changeValidators, 'customFieldType')).length
-      const disabledValidators = [changeValidators.customFieldType({})]
       expect(createChangeValidator).toHaveBeenCalledWith(
-        expect.arrayContaining([]), disabledValidators
+        expect.toBeArrayOfSize(1), []
       )
-      expect(createChangeValidatorMock.mock.calls[0][0]).toHaveLength(enabledValidatorsCount)
     })
   })
 })

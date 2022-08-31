@@ -718,7 +718,7 @@ describe('salesforce client', () => {
         testConnection.metadata = connectionMetadataProxy
         testConnection.bulk = connectionBulkProxy
 
-        await testClient.deploy(Buffer.from(''))
+        await testClient.deploy(Buffer.from(''), false)
       })
 
       it('should call deploy with the relevant parameters', () => {

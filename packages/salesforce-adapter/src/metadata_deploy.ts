@@ -199,8 +199,7 @@ const processDeployResponse = (
 
   const errors = [...testErrors, ...componentErrors, ...codeCoverageWarningErrors]
 
-  if (result.checkOnly || (result.rollbackOnError && !result.success)) {
-    // In checkOnly none of the changes are actually applied
+  if (result.rollbackOnError && !result.success) {
     // if rollbackOnError and we did not succeed, nothing was applied as well
     return { successfulFullNames: [], errors }
   }
@@ -284,6 +283,7 @@ export const deployMetadata = async (
   changes: ReadonlyArray<Change>,
   client: SalesforceClient,
   nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>,
+  checkOnly: boolean,
   deleteBeforeUpdate?: boolean,
 ): Promise<DeployResult> => {
   const pkg = createDeployPackage(deleteBeforeUpdate)
@@ -301,7 +301,7 @@ export const deployMetadata = async (
 
   const pkgData = await pkg.getZip()
 
-  const deployRes = await client.deploy(pkgData)
+  const deployRes = await client.deploy(pkgData, checkOnly)
 
   log.debug('deploy result: %s', safeJsonStringify(deployRes, undefined, 2))
 

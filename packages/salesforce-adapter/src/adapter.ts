@@ -401,7 +401,10 @@ export default class SalesforceAdapter implements AdapterOperations {
     }
   }
 
-  async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
+  async deployOrValidate(
+    { changeGroup }: DeployOptions,
+    checkOnly: boolean
+  ): Promise<DeployResult> {
     const resolvedChanges = await awu(changeGroup.changes)
       .map(change => resolveChangeElement(change, getLookUpName))
       .toArray()
@@ -412,12 +415,12 @@ export default class SalesforceAdapter implements AdapterOperations {
 
     const result = await isCustomObjectInstanceChanges(resolvedChanges)
       ? await deployCustomObjectInstancesGroup(
-        resolvedChanges as Change<InstanceElement>[],
-        this.client,
-        this.fetchProfile.dataManagement
+            resolvedChanges as Change<InstanceElement>[],
+            this.client,
+            this.fetchProfile.dataManagement
       )
       : await deployMetadata(resolvedChanges, this.client,
-        this.nestedMetadataTypes, this.userConfig.client?.deploy?.deleteBeforeUpdate)
+        this.nestedMetadataTypes, checkOnly, this.userConfig.client?.deploy?.deleteBeforeUpdate)
     // onDeploy can change the change list in place, so we need to give it a list it can modify
     const appliedChangesBeforeRestore = [...result.appliedChanges]
     await filtersRunner.onDeploy(appliedChangesBeforeRestore)
@@ -435,6 +438,14 @@ export default class SalesforceAdapter implements AdapterOperations {
       errors: result.errors,
       extraProperties: result.extraProperties,
     }
+  }
+
+  async deploy(deployOptions: DeployOptions): Promise<DeployResult> {
+    return this.deployOrValidate(deployOptions, false)
+  }
+
+  async validate(deployOptions: DeployOptions): Promise<DeployResult> {
+    return this.deployOrValidate(deployOptions, true)
   }
 
   private async listMetadataTypes(): Promise<MetadataObject[]> {

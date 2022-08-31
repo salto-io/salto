@@ -408,6 +408,47 @@ describe('getPlan', () => {
     expect(plan.size).toBe(1)
   })
 
+  it('should add a change to plan when a value of a reference to inner property is changed', async () => {
+    // This behavior works for fetch but it is not really the correct behavior for deploy:
+    // If there is no difference in the value to be deployed, it should not be a change in the plan
+    // (because nothing is actually going to change).
+    // We may want to change that in the future.
+    const type = new ObjectType({
+      elemID: new ElemID('adapter', 'type'),
+      fields: {
+        a: { refType: BuiltinTypes.NUMBER },
+        b: { refType: BuiltinTypes.NUMBER },
+        ref: { refType: BuiltinTypes.NUMBER },
+      },
+    })
+
+    const instance = new InstanceElement(
+      'instance',
+      type,
+      {
+        a: 5,
+        b: 5,
+        ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance', 'a'), 1),
+      }
+    )
+
+    const changedInstance = new InstanceElement(
+      'instance',
+      type,
+      {
+        a: 5,
+        b: 5,
+        ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance', 'a'), 2),
+      }
+    )
+
+    const plan = await getPlan({
+      before: createElementSource([instance, type]),
+      after: createElementSource([changedInstance, type]),
+    })
+    expect(plan.size).toBe(1)
+  })
+
   it('when reference in instance points to a whole element should have a change in plan', async () => {
     // Ideally we would want to know if the adapter is going to resolve this element into its ID
     // so we could tell if this is a real difference, but since we can't do that with the current

@@ -174,6 +174,24 @@ describe('Values', () => {
         const s2 = '\na\r\nb\r\n\r\n\r\np'
         expect(isEqualValues(s1, s2)).toBeTruthy()
       })
+
+      it('References to inner properties with different values should not be equal', () => {
+        const ref1 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val'), 1)
+        const ref2 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val'), 2)
+        expect(isEqualValues(ref1, ref2)).toBeFalsy()
+      })
+
+      it('References to different inner properties with the same value should not be equal', () => {
+        const ref1 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 1)
+        const ref2 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val2'), 1)
+        expect(isEqualValues(ref1, ref2)).toBeFalsy()
+      })
+
+      it('References to inner properties with the same should not be equal', () => {
+        const ref1 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 1)
+        const ref2 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 1)
+        expect(isEqualValues(ref1, ref2)).toBeTruthy()
+      })
     })
     it('calculate hash', () => {
       const zOMGBuffer = Buffer.from('ZOMG')

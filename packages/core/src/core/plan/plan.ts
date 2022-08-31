@@ -87,34 +87,41 @@ const areReferencesEqual = async (
   firstVisitedReferences: Set<string>,
   secondVisitedReferences: Set<string>,
 ): Promise<ReferenceCompareReturnValue> => {
-  // if both values are ReferenceExpressions they are compared by their elemID
+  // if both values are ReferenceExpressions and should not be resolved
+  // they are compared by their elemID
   if (isReferenceExpression(first) && isReferenceExpression(second)) {
-    return {
-      returnCode: 'return',
-      returnValue: first.elemID.isEqual(second.elemID),
+    if (!first.elemID.isEqual(second.elemID)) {
+      return {
+        returnCode: 'return',
+        returnValue: false,
+      }
+    }
+    if (!shouldResolve(first)) {
+      return {
+        returnCode: 'return',
+        returnValue: true,
+      }
     }
   }
 
-  // if only first value is a ReferenceExpression and it should be resolved -
-  // its value is compared with the second value
-  if (isReferenceExpression(first) && shouldResolve(first)) {
-    return {
-      returnCode: 'recurse',
-      returnValue: {
-        firstValue: await getReferenceValue(first, firstSrc, firstVisitedReferences),
-        secondValue: second,
-      },
-    }
-  }
+  const shouldResolveFirst = isReferenceExpression(first) && shouldResolve(first)
 
-  // if only second value is a ReferenceExpression and it should be resolved -
-  // its value is compared with the first value
-  if (isReferenceExpression(second) && shouldResolve(second)) {
+  const firstValue = shouldResolveFirst
+    ? await getReferenceValue(first, firstSrc, firstVisitedReferences)
+    : first
+
+  const shouldResolveSecond = isReferenceExpression(second) && shouldResolve(second)
+
+  const secondValue = shouldResolveSecond
+    ? await getReferenceValue(second, secondSrc, secondVisitedReferences)
+    : second
+
+  if (shouldResolveFirst || shouldResolveSecond) {
     return {
       returnCode: 'recurse',
       returnValue: {
-        firstValue: first,
-        secondValue: await getReferenceValue(second, secondSrc, secondVisitedReferences),
+        firstValue,
+        secondValue,
       },
     }
   }

@@ -214,6 +214,10 @@ export const isTypeReference = (value: any): value is TypeReference => (
 const compareStringsIgnoreNewlineDifferences = (s1: string, s2: string): boolean =>
   (s1 === s2) || (s1.replace(/\r\n/g, '\n') === s2.replace(/\r\n/g, '\n'))
 
+const shouldResolve = (ref: ReferenceExpression): boolean => (
+  !ref.elemID.isBaseID() || ref.elemID.idType === 'var'
+)
+
 export const compareSpecialValues = (
   first: Value,
   second: Value
@@ -224,9 +228,16 @@ export const compareSpecialValues = (
   if (isReferenceExpression(first) || isReferenceExpression(second)) {
     const fValue = isReferenceExpression(first) ? first.value : first
     const sValue = isReferenceExpression(second) ? second.value : second
-    return (isReferenceExpression(first) && isReferenceExpression(second))
-      ? first.elemID.isEqual(second.elemID)
-      : _.isEqualWith(fValue, sValue, compareSpecialValues)
+
+    if (isReferenceExpression(first) && isReferenceExpression(second)) {
+      if (!first.elemID.isEqual(second.elemID)) {
+        return false
+      }
+      if (!shouldResolve(first)) {
+        return true
+      }
+    }
+    return _.isEqualWith(fValue, sValue, compareSpecialValues)
   }
   if (typeof first === 'string' && typeof second === 'string') {
     return compareStringsIgnoreNewlineDifferences(first, second)

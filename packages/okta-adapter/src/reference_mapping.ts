@@ -16,7 +16,7 @@
 import { isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
-import { APPLICATION_TYPE_NAME, GROUP_TYPE_NAME, USER_TYPE_NAME, IDENTITY_PROVIDER_TYPE_NAME, USERTYPE_TYPE_NAME } from './constants'
+import { APPLICATION_TYPE_NAME, GROUP_TYPE_NAME, USER_TYPE_NAME, IDENTITY_PROVIDER_TYPE_NAME, USERTYPE_TYPE_NAME, FEATURE_TYPE_NAME } from './constants'
 
 
 export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] = [
@@ -44,6 +44,16 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     src: { field: 'users', parentTypes: [IDENTITY_PROVIDER_TYPE_NAME] },
     serializationStrategy: 'id',
     target: { type: USER_TYPE_NAME },
+  },
+  {
+    src: { field: 'featureDependencies', parentTypes: [FEATURE_TYPE_NAME] },
+    serializationStrategy: 'id',
+    target: { type: FEATURE_TYPE_NAME },
+  },
+  {
+    src: { field: 'featureDependents', parentTypes: [FEATURE_TYPE_NAME] },
+    serializationStrategy: 'id',
+    target: { type: FEATURE_TYPE_NAME },
   },
   {
     src: { field: 'groupIds', parentTypes: ['GroupRuleGroupAssignment'] },

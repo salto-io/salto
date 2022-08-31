@@ -21,6 +21,7 @@ const TYPE_TO_REFERENCES_TYPES: Record<string, string[]> = {
   Application: ['appUsers', 'assignedGroups'],
   Group: ['users', 'apps'],
   IdentityProvider: ['users'],
+  Feature: ['featureDependents', 'featureDependencies'],
 }
 
 const replaceObjectWithId = (instance: InstanceElement): void => {

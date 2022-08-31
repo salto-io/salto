@@ -80,4 +80,26 @@ describe('', () => {
       '0oa68k9spoT0zHGQe5d7',
     ])
   })
+  it('should not replace object with ids if id does not exists', async () => {
+    const group2 = groupInstance.clone()
+    delete group2.value.apps[1].id
+    await filter.onFetch?.([groupType, group2])
+    expect(group2.value.apps).toEqual([
+      '0oa66j371cnRcCeQB5d7',
+      {
+        name: 'zendesk',
+        label: 'Zendesk',
+        status: 'ACTIVE',
+        settings: {
+          notifications: {
+            vpn: {
+              network: {
+                connection: 'DISABLED',
+              },
+            },
+          },
+        },
+      },
+    ])
+  })
 })

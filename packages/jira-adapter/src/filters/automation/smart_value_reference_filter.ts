@@ -33,7 +33,9 @@ const REFERENCE_MARKER_REGEX = /(\{\{)(.+?)(}})/
 type Component = Record<string, Values>
 // A simple issue reference looks like issue.FOO, where FOO can contain spaces,
 // like issue.Story Points
-const SIMPLE_ISSUES_REGEX = new RegExp(/issue\.[a-zA-Z ]+(?: |$|\.)/, 'g')
+const SIMPLE_ISSUES_REGEX = new RegExp(/issue\.[a-zA-Z0-9_ ]+(?: |$|\.)/, 'g')
+const CUSTOM_FIELD_ID_REGEX = new RegExp(/customfield_[0-9]+/, 'g')
+
 // These are known mappings between system fields and their "name" property
 const ISSUE_FIELD_NAME_TO_TYPE_MAPPING: Record<string, string> = {
   key: 'Key',
@@ -59,6 +61,8 @@ const getAutomations = (instances: InstanceElement[]): InstanceElement[] =>
 const stringToTemplate = (
   referenceStr: string,
   fieldsByName: Record<string, InstanceElement>,
+  fieldsById: Record<number, InstanceElement>,
+
 ): TemplateExpression | string => {
   const handleJiraReference = (ref: string): TemplatePart => {
     // ref.pop() will return the result of the regex, which should be something like issue.*****
@@ -72,6 +76,14 @@ const stringToTemplate = (
         ?? referenceArr[1]]
       if (elem) {
         return new ReferenceExpression(elem.elemID.createNestedID('name'), elem.value.name)
+      }
+      const matchReferenceAsId = referenceArr[1].match(CUSTOM_FIELD_ID_REGEX)?.pop()
+      if (matchReferenceAsId) {
+        const fieldFromId = fieldsById[parseInt(matchReferenceAsId.split('_')[1], 10)]
+        if (fieldFromId) {
+          return new ReferenceExpression(fieldFromId.elemID.createNestedID('id'),
+            fieldFromId.value.id)
+        }
       }
     }
     // if no name was detected we return the unmatched name.
@@ -97,17 +109,18 @@ const stringToTemplate = (
 }
 
 const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promise<void> => {
-  const fieldsByName = _.keyBy(instances.filter(instance =>
-    instance.elemID.typeName === FIELD_TYPE_NAME
-      && _.isString(instance.value.name)), (instance: InstanceElement): string =>
-    instance.value.name)
+  const fields = instances.filter(instance => instance.elemID.typeName === FIELD_TYPE_NAME)
+  const fieldsByName = _.keyBy(fields.filter(instance => _.isString(instance.value.name)),
+    (instance: InstanceElement): string => instance.value.name)
+  const fieldsById = _.keyBy(fields.filter(instance => instance.value.id),
+    (instance: InstanceElement): number => instance.value.id)
   getAutomations(instances).forEach(instance => {
     (instance.value.components ?? []).forEach((component: Component) => {
       try {
         const { value } = component
         if (value) {
           Object.keys(value).filter(key => _.isString(value[key])).forEach(key => {
-            value[key] = stringToTemplate(value[key], fieldsByName)
+            value[key] = stringToTemplate(value[key], fieldsByName, fieldsById)
           })
         }
       } catch (e) {
@@ -118,6 +131,9 @@ const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promi
 }
 
 const prepRef = (part: ReferenceExpression): TemplatePart => {
+  if (part.elemID.getFullName().endsWith('.id')) {
+    return `customfield_${part.value}`
+  }
   if (part.value) {
     return `${ISSUE_TYPE_NAME_TO_FIELD_MAPPING[part.value] ?? part.value}`
   }

@@ -53,6 +53,8 @@ describe('handle templates filter', () => {
     })
 
     const fieldOne = new InstanceElement('field_one', fieldType, { name: 'fieldOne' })
+    const fieldById = new InstanceElement('field_by_id', fieldType, { name: 'field_by_id', id: 10000 })
+
     const duedateField = new InstanceElement('duedate', fieldType, { name: 'Due Date' })
     const fieldWithSpaces = new InstanceElement('field_with_spaces', fieldType, { name: 'Field With Spaces' })
 
@@ -73,6 +75,15 @@ describe('handle templates filter', () => {
         { value: {
           inner: 'Issue subfield is: {{issue.duedate.something}} ending',
         } },
+        { value: {
+          inner: 'Issue field by id is: {{issue.customfield_10000.something}} ending',
+        } },
+        { value: {
+          inner: 'Issue field with nonexistant id is: {{issue.customfield_10001.something}} ending',
+        } },
+        { value: {
+          inner: 'Issue field with empty id is: {{issue.customfield_.something}} ending',
+        } },
       ] })
 
     const emptyAutomationInstance = new InstanceElement('emptyAutom', automationType)
@@ -80,7 +91,7 @@ describe('handle templates filter', () => {
 
     const generateElements = (): (InstanceElement | ObjectType)[] => ([fieldOne, duedateField,
       fieldWithSpaces, automationInstance, fieldType,
-      automationType, emptyAutomationInstance]).map(element => element.clone())
+      automationType, emptyAutomationInstance, fieldById]).map(element => element.clone())
 
     describe('on fetch successful', () => {
       let elements: (InstanceElement | ObjectType)[]
@@ -158,6 +169,31 @@ describe('handle templates filter', () => {
             ' ending',
           ],
         }))
+      })
+
+      it('should resolve template by id', () => {
+        expect(automation.value.components[5].value.inner).toEqual(new TemplateExpression({
+          parts: [
+            'Issue field by id is: ',
+            '{{',
+            'issue.',
+            new ReferenceExpression(fieldById.elemID.createNestedID('id'), 10000),
+            '.',
+            'something',
+            '}}',
+            ' ending',
+          ],
+        }))
+      })
+      it('should ignore template referencing nonexistant field id', () => {
+        expect(automation.value.components[6].value.inner).toEqual(
+          'Issue field with nonexistant id is: {{issue.customfield_10001.something}} ending',
+        )
+      })
+      it('should ignore template referencing empty field id', () => {
+        expect(automation.value.components[7].value.inner).toEqual(
+          'Issue field with empty id is: {{issue.customfield_.something}} ending',
+        )
       })
     })
     describe('on fetch failure', () => {

@@ -45,14 +45,12 @@ describe('emailTemplate static files filter', () => {
 
   const attachment = new StaticFile({
     filepath: 'salesforce/Records/EmailTemplate/unfiled$public/emailTemplate/attachment.txt',
-    content: Buffer.from(ATTACHMENT_AS_STRING),
-    encoding: 'utf-8',
+    content: Buffer.from(ATTACHMENT_AS_STRING, 'base64'),
   })
 
   const staticContent = new StaticFile({
     filepath: 'Objects/dir/emailTemplate.email',
     content: Buffer.from(EMAILCONTENT),
-    encoding: 'utf-8',
   })
 
   describe('on fetch', () => {

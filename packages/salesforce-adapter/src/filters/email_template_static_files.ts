@@ -53,12 +53,11 @@ const isEmailAttachmentsArray = createSchemeGuard<EmailAttachmentsArray>(EMAIL_A
 const createStaticFile = (
   folderName: string,
   name: string,
-  content: string | StaticFile
+  content: string
 ): StaticFile =>
   new StaticFile({
     filepath: `${folderName}/${name}`,
-    content: Buffer.from(content),
-    encoding: 'utf-8',
+    content: Buffer.from(content, 'base64'),
   })
 
 const findFolderPath = (instance: InstanceElement): string | undefined =>
@@ -80,7 +79,10 @@ const organizeStaticFiles = async (instance: InstanceElement): Promise<void> => 
     instance.value.attachments = makeArray(instance.value.attachments)
     if (isEmailAttachmentsArray(instance.value)) {
       instance.value.attachments.forEach(attachment => {
-        attachment.content = createStaticFile(folderPath, attachment.name, attachment.content)
+        attachment.content = createStaticFile(
+          // attachmen.content type is a string before the creation of the static file
+          folderPath, attachment.name, attachment.content as string
+        )
       })
     }
   }

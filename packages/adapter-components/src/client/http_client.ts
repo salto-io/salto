@@ -198,7 +198,7 @@ export abstract class AdapterHTTPClient<
         )
       log.debug('Received response for %s (%s) with status %d', url, safeJsonStringify({ url, queryParams }), res.status)
       log.trace('Full HTTP response for %s: %s', url, safeJsonStringify({
-        url, queryParams, response: res.data,
+        url, queryParams, response: res.data, headers: res.headers,
       }))
       const { data, status, headers: responseHeaders } = res
       return {

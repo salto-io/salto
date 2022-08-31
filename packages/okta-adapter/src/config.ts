@@ -170,7 +170,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
   },
   api__v1__users: {
     request: {
-      url: 'api/v1/users',
+      url: '/api/v1/users',
       recurseInto: [
         {
           type: 'api__v1__users___userId___roles@uuuuuu_00123_00125uu',
@@ -182,7 +182,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
   },
   api__v1__idps: {
     request: {
-      url: 'api/v1/idps',
+      url: '/api/v1/idps',
       recurseInto: [
         {
           type: 'api__v1__idps___idpId___users@uuuuuu_00123_00125uu',
@@ -213,7 +213,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
   },
   api__v1__features: {
     request: {
-      url: 'api/v1/features',
+      url: '/api/v1/features',
       recurseInto: [
         {
           // Features that needs to be enabled in order to enable the feature

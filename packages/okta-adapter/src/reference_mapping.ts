@@ -100,6 +100,11 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     serializationStrategy: 'id',
     target: { type: USER_TYPE_NAME },
   },
+  {
+    src: { field: 'id', parentTypes: ['IdpPolicyRuleActionProvider'] },
+    serializationStrategy: 'id',
+    target: { type: IDENTITY_PROVIDER_TYPE_NAME },
+  },
 ]
 
 const lookupNameFuncs: GetLookupNameFunc[] = [

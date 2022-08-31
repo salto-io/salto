@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Field, Value, Element, isInstanceElement } from '@salto-io/adapter-api'
+import { Field, Value, Element, isInstanceElement, ElemID } from '@salto-io/adapter-api'
 import { types } from '@salto-io/lowerdash'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 
@@ -29,9 +29,10 @@ export type ReferenceSerializationStrategy = {
   serialize: GetLookupNameFunc
   lookup: LookupFunc
   lookupIndexName?: string
+  getReferenceId?: (topLevelId: ElemID) => ElemID
 }
 
-export type ReferenceSerializationStrategyName = 'fullValue' | 'id' | 'name'
+export type ReferenceSerializationStrategyName = 'fullValue' | 'id' | 'name' | 'nameWithPath'
 export const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName, ReferenceSerializationStrategy
 > = {
@@ -48,6 +49,12 @@ export const ReferenceSerializationStrategyLookup: Record<
     serialize: ({ ref }) => ref.value.value.name,
     lookup: val => val,
     lookupIndexName: 'name',
+  },
+  nameWithPath: {
+    serialize: ({ ref }) => ref.value.value.name,
+    lookup: val => val,
+    lookupIndexName: 'name',
+    getReferenceId: topLevelId => topLevelId.createNestedID('name'),
   },
 }
 

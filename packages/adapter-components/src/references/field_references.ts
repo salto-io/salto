@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Field, Element, isInstanceElement, Value, Values, ReferenceExpression, InstanceElement, ElemID, cloneDeepWithoutRefs } from '@salto-io/adapter-api'
-import { GetLookupNameFunc, GetLookupNameFuncArgs, TransformFunc, transformValues, safeJsonStringify } from '@salto-io/adapter-utils'
+import { Field, Element, isInstanceElement, Value, Values, ReferenceExpression, InstanceElement, ElemID, cloneDeepWithoutRefs, isElement } from '@salto-io/adapter-api'
+import { GetLookupNameFunc, GetLookupNameFuncArgs, TransformFunc, transformValues, safeJsonStringify, resolvePath } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerDashValues, collections, multiIndex } from '@salto-io/lowerdash'
 import {
@@ -130,8 +130,11 @@ export const replaceReferenceValues = async <
             safeJsonStringify(cloneDeepWithoutRefs(element)),
           )
         }
+
+        const referenceId = serializer.getReferenceId?.(element.elemID) ?? element.elemID
+
         if (checkMissingRef(element)) {
-          return new ReferenceExpression(element.elemID)
+          return new ReferenceExpression(referenceId)
         }
         return (
           isEqualValue(
@@ -140,7 +143,7 @@ export const replaceReferenceValues = async <
               field,
             }),
             val,
-          ) ? new ReferenceExpression(element.elemID, elem)
+          ) ? new ReferenceExpression(referenceId, elem && resolvePath(elem, referenceId))
             : undefined
         )
       }
@@ -290,6 +293,10 @@ export const generateLookupFunc = <
   }
 
   return async ({ ref, path, field }) => {
+    if (!isElement(ref.value)) {
+      return ref.value
+    }
+
     const strategy = await determineLookupStrategy({ ref, path, field })
     if (strategy !== undefined) {
       return strategy.serialize({ ref, field })

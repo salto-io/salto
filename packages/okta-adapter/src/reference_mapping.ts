@@ -16,59 +16,94 @@
 import { isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
+import { APPLICATION_TYPE_NAME, GROUP_TYPE_NAME, USER_TYPE_NAME, IDENTITY_PROVIDER_TYPE_NAME, USERTYPE_TYPE_NAME } from './constants'
 
 
 export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] = [
   {
-    src: { field: 'assignedGroups', parentTypes: ['Application'] },
+    src: { field: 'assignedGroups', parentTypes: [APPLICATION_TYPE_NAME] },
     serializationStrategy: 'id',
-    target: { type: 'Group' },
+    target: { type: GROUP_TYPE_NAME },
   },
   {
-    src: { field: 'appUsers', parentTypes: ['Application'] },
+    src: { field: 'appUsers', parentTypes: [APPLICATION_TYPE_NAME] },
     serializationStrategy: 'id',
-    target: { type: 'User' },
+    target: { type: USER_TYPE_NAME },
   },
   {
-    src: { field: 'users', parentTypes: ['Group'] },
+    src: { field: 'users', parentTypes: [GROUP_TYPE_NAME] },
     serializationStrategy: 'id',
-    target: { type: 'User' },
+    target: { type: USER_TYPE_NAME },
   },
   {
-    src: { field: 'users', parentTypes: ['IdentityProvider'] },
+    src: { field: 'apps', parentTypes: [GROUP_TYPE_NAME] },
     serializationStrategy: 'id',
-    target: { type: 'User' },
+    target: { type: APPLICATION_TYPE_NAME },
+  },
+  {
+    src: { field: 'users', parentTypes: [IDENTITY_PROVIDER_TYPE_NAME] },
+    serializationStrategy: 'id',
+    target: { type: USER_TYPE_NAME },
   },
   {
     src: { field: 'groupIds', parentTypes: ['GroupRuleGroupAssignment'] },
     serializationStrategy: 'id',
-    target: { type: 'Group' },
+    target: { type: GROUP_TYPE_NAME },
   },
   {
-    src: { field: 'createdBy', parentTypes: ['UserType'] },
+    src: { field: 'include', parentTypes: ['GroupRuleUserCondition'] },
     serializationStrategy: 'id',
-    target: { type: 'User' },
+    target: { type: USER_TYPE_NAME },
+  },
+  {
+    src: { field: 'exclude', parentTypes: ['GroupRuleUserCondition'] },
+    serializationStrategy: 'id',
+    target: { type: USER_TYPE_NAME },
+  },
+  {
+    src: { field: 'createdBy', parentTypes: [USERTYPE_TYPE_NAME, 'EventHook', 'TrustedOrigin'] },
+    serializationStrategy: 'id',
+    target: { type: USER_TYPE_NAME },
+  },
+  {
+    src: { field: 'lastUpdatedBy', parentTypes: [USERTYPE_TYPE_NAME, 'EventHook', 'TrustedOrigin'] },
+    serializationStrategy: 'id',
+    target: { type: USER_TYPE_NAME },
   },
   {
     src: { field: 'include', parentTypes: ['GroupCondition'] },
     serializationStrategy: 'id',
-    target: { type: 'Group' },
+    target: { type: GROUP_TYPE_NAME },
   },
   {
     src: { field: 'exclude', parentTypes: ['GroupCondition'] },
     serializationStrategy: 'id',
-    target: { type: 'Group' },
+    target: { type: GROUP_TYPE_NAME },
   },
-  // TODO after id is in fields to hide
-  // {
-  //   src: { field: 'id', parentTypes: ['UserType'] },
-  //   serializationStrategy: 'id',
-  //   target: { type: 'UserType' },
-  // },
+  {
+    src: { field: 'include', parentTypes: ['PolicyNetworkCondition'] },
+    serializationStrategy: 'id',
+    target: { type: 'NetworkZone' },
+  },
+  {
+    src: { field: 'exclude', parentTypes: ['PolicyNetworkCondition'] },
+    serializationStrategy: 'id',
+    target: { type: 'NetworkZone' },
+  },
+  {
+    src: { field: 'include', parentTypes: ['UserCondition'] },
+    serializationStrategy: 'id',
+    target: { type: USER_TYPE_NAME },
+  },
+  {
+    src: { field: 'exclude', parentTypes: ['UserCondition'] },
+    serializationStrategy: 'id',
+    target: { type: USER_TYPE_NAME },
+  },
 ]
 
 const lookupNameFuncs: GetLookupNameFunc[] = [
-  referenceUtils.generateLookupFunc(referencesRules), // TODON...
+  referenceUtils.generateLookupFunc(referencesRules),
 ]
 
 export const getLookUpName: GetLookupNameFunc = async args => (

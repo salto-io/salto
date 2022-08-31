@@ -19,7 +19,7 @@ import { FilterCreator } from '../filter'
 
 const TYPE_TO_REFERENCES_TYPES: Record<string, string[]> = {
   Application: ['appUsers', 'assignedGroups'],
-  Group: ['users'],
+  Group: ['users', 'apps'],
   IdentityProvider: ['users'],
 }
 

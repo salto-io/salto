@@ -14,3 +14,8 @@
 * limitations under the License.
 */
 export const OKTA = 'okta'
+export const APPLICATION_TYPE_NAME = 'Application'
+export const GROUP_TYPE_NAME = 'Group'
+export const USER_TYPE_NAME = 'User'
+export const IDENTITY_PROVIDER_TYPE_NAME = 'IdentityProvider'
+export const USERTYPE_TYPE_NAME = 'UserType'

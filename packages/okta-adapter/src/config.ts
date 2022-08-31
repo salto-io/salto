@@ -152,6 +152,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'appUsers', fieldType: 'list<AppUser>' },
         { fieldName: 'CSRs', fieldType: 'list<Csr>' },
         { fieldName: 'assignedGroups', fieldType: 'list<ApplicationGroupAssignment>' },
+        { fieldName: 'profileEnrollment', fieldType: 'string' },
+        { fieldName: 'accessPolicy', fieldType: 'string' },
       ],
       // TODO SALTO-2644
       idFields: ['name', 'status'],

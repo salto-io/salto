@@ -25,6 +25,7 @@ import { paginate } from './client/pagination'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import replaceObjectWithIdFilter from './filters/replace_object_with_id'
 import fieldReferencesFilter from './filters/field_references'
+import urlReferencesFilter from './filters/url_references'
 import { OKTA } from './constants'
 import fetchCriteria from './fetch_criteria'
 
@@ -37,6 +38,8 @@ const { createPaginator } = clientUtils
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
+  // should run before fieldReferencesFilter
+  urlReferencesFilter,
   // should run before fieldReferencesFilter
   replaceObjectWithIdFilter,
   fieldReferencesFilter,

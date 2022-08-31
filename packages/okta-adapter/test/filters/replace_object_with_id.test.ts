@@ -20,7 +20,7 @@ import { GROUP_TYPE_NAME, OKTA } from '../../src/constants'
 import replaceObjectWithIdFilter from '../../src/filters/replace_object_with_id'
 import { getFilterParams } from '../utils'
 
-describe('', () => {
+describe('replaceObjectWithIdFilter', () => {
   let groupType: ObjectType
   let groupInstance: InstanceElement
   let filter: filterUtils.FilterWith<'onFetch'>

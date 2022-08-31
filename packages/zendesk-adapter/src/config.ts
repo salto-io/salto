@@ -1839,7 +1839,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
 }
 
 const IdLocatorType = createMatchingObjectType<IdLocator>({
-  elemID: new ElemID(ZENDESK, 'recurseIntoContext'),
+  elemID: new ElemID(ZENDESK, 'IdLocatorType'),
   fields: {
     fieldRegex: {
       refType: BuiltinTypes.STRING,
@@ -1859,6 +1859,9 @@ const IdLocatorType = createMatchingObjectType<IdLocator>({
         _required: true,
       },
     },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
 
@@ -1892,6 +1895,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       `${FETCH_CONFIG}.enableMissingReferences`,
       `${FETCH_CONFIG}.enableGuide`,
     ),
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
 

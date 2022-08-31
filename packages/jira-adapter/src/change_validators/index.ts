@@ -32,6 +32,7 @@ import { maskingValidator } from './masking'
 import { automationsValidator } from './automations'
 import { lockedFieldsValidator } from './locked_fields'
 import { globalProjectContextsValidator } from './global_project_contexts'
+import { systemFieldsValidator } from './system_fields'
 
 const {
   deployTypesNotSupportedValidator,
@@ -57,6 +58,7 @@ export default (
     maskingValidator(client),
     lockedFieldsValidator,
     globalProjectContextsValidator,
+    systemFieldsValidator,
   ]
 
   return createChangeValidator(validators)

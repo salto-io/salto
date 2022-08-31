@@ -15,13 +15,13 @@
 */
 import _ from 'lodash'
 import { ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, ListType } from '@salto-io/adapter-api'
-import { types, values as lowerDashValues } from '@salto-io/lowerdash'
+import { types, collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { AdapterApiConfig, createAdapterApiConfigType, TypeConfig, TypeDefaultsConfig, UserFetchConfig, validateSupportedTypes } from './shared'
 import { createRequestConfigs, validateRequestConfig } from './request'
 import { createTransformationConfigTypes, getTransformationConfigByType, validateTransoformationConfig } from './transformation'
-import { findDuplicates } from './validation_utils'
 
 const { isDefined } = lowerDashValues
+const { findDuplicates } = collections.array
 
 export type FieldOverrideConfig = {
   type?: string
@@ -58,27 +58,32 @@ export type RequestableAdapterSwaggerApiConfig = AdapterSwaggerApiConfig & {
   types: Record<string, RequestableTypeSwaggerConfig>
 }
 
+export const createTypeNameOverrideConfigType = (
+  adapter: string,
+): ObjectType => new ObjectType({
+  elemID: new ElemID(adapter, 'typeNameOverrideConfig'),
+  fields: {
+    originalName: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    },
+    newName: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 const createSwaggerDefinitionsBaseConfigType = (
   adapter: string,
 ): ObjectType => {
-  const typeNameOverrideConfig = new ObjectType({
-    elemID: new ElemID(adapter, 'typeNameOverrideConfig'),
-    fields: {
-      originalName: {
-        refType: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: true,
-        },
-      },
-      newName: {
-        refType: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: true,
-        },
-      },
-    },
-  })
-
   const additionalTypeConfig = new ObjectType({
     elemID: new ElemID(adapter, 'additionalTypeConfig'),
     fields: {
@@ -95,6 +100,9 @@ const createSwaggerDefinitionsBaseConfigType = (
         },
       },
     },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+    },
   })
 
   const baseConfigType = new ObjectType({
@@ -104,11 +112,14 @@ const createSwaggerDefinitionsBaseConfigType = (
         refType: BuiltinTypes.STRING,
       },
       typeNameOverrides: {
-        refType: new ListType(typeNameOverrideConfig),
+        refType: new ListType(createTypeNameOverrideConfigType(adapter)),
       },
       additionalTypes: {
         refType: new ListType(additionalTypeConfig),
       },
+    },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
     },
   })
   return baseConfigType

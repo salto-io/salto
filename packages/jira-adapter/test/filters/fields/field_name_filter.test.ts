@@ -33,6 +33,8 @@ describe('field_name_filter', () => {
 
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
+    config.fetch.addTypeToFieldName = false
+
     const { client, paginator } = mockClient()
     filter = fieldNameFilter(getFilterParams({
       client,
@@ -71,7 +73,7 @@ describe('field_name_filter', () => {
   })
 
   it('should add field type if configured to', async () => {
-    config.fetch.addTypeToFieldName = true
+    delete config.fetch.addTypeToFieldName
     const custom = new InstanceElement(
       'custom',
       fieldType,

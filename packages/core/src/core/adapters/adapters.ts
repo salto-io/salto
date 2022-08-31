@@ -80,7 +80,7 @@ export const getAdaptersConfigTypesMap = async (): Promise<Record<string, Object
       async adapterCreator =>
         (adapterCreator.configType ? [
           adapterCreator.configType,
-          ...await elements.subtypes.getSubtypes([adapterCreator.configType]),
+          ...await elements.subtypes.getSubtypes([adapterCreator.configType], true),
         ] : [])
     )).filter(entry => entry[1].length > 0)
   )

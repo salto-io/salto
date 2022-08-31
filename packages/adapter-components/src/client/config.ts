@@ -57,6 +57,9 @@ export const createClientConfigType = <RateLimitConfig extends ClientRateLimitCo
       get: createFieldDefWithMin(-1),
       ...Object.fromEntries((bucketNames ?? []).map(name => [name, createFieldDefWithMin(-1)])),
     },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+    },
   })
 
   const clientPageSizeFields: Record<keyof Required<ClientPageSizeConfig>, FieldDefinition> = {
@@ -66,6 +69,9 @@ export const createClientConfigType = <RateLimitConfig extends ClientRateLimitCo
   const clientPageSizeConfigType = new ObjectType({
     elemID: new ElemID(adapter, 'clientPageSizeConfig'),
     fields: clientPageSizeFields,
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+    },
   })
 
   const clientRetryConfigType = new ObjectType({
@@ -73,6 +79,9 @@ export const createClientConfigType = <RateLimitConfig extends ClientRateLimitCo
     fields: {
       maxAttempts: createFieldDefWithMin(1),
       retryDelay: { refType: BuiltinTypes.NUMBER },
+    },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
     },
   })
 
@@ -82,6 +91,9 @@ export const createClientConfigType = <RateLimitConfig extends ClientRateLimitCo
       retry: { refType: clientRetryConfigType },
       rateLimit: { refType: clientRateLimitConfigType },
       pageSize: { refType: clientPageSizeConfigType },
+    },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
     },
   })
   return clientConfigType

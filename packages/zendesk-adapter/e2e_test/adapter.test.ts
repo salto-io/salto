@@ -14,13 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import path from 'path'
-import fs from 'fs'
 import { v4 as uuidv4 } from 'uuid'
 import { Change, ChangeId, Element, ElemID, InstanceElement, isInstanceElement, ObjectType,
   isObjectType, toChange, Values, ReferenceExpression, CORE_ANNOTATIONS,
-  FieldDefinition, BuiltinTypes, Value, DeployResult, getChangeData, StaticFile } from '@salto-io/adapter-api'
-import { naclCase, getParent } from '@salto-io/adapter-utils'
+  FieldDefinition, BuiltinTypes, Value, DeployResult } from '@salto-io/adapter-api'
+import { naclCase } from '@salto-io/adapter-utils'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
@@ -28,7 +26,6 @@ import { DEFAULT_CONFIG, API_DEFINITIONS_CONFIG, FETCH_CONFIG } from '../src/con
 import { ZENDESK } from '../src/constants'
 import { Credentials } from '../src/auth'
 import { getChangeGroupIds } from '../src/group_change'
-import { BRAND_LOGO_TYPE } from '../src/filters/brand_logo'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
 
@@ -36,8 +33,6 @@ const { awu } = collections.asynciterable
 
 // Set long timeout as we communicate with Zendesk APIs
 jest.setTimeout(600000)
-
-const BRAND_LOGO_EXPECTED_MD5 = '030752527ee496f1a2bfc1ccd3d7e59f'
 
 const createInstanceElement = (
   type: string, valuesOverride: Values, fields?: Record<string, FieldDefinition>
@@ -225,17 +220,6 @@ describe('Zendesk adapter E2E', () => {
       new ReferenceExpression(userFieldOption1.elemID, userFieldOption1),
       new ReferenceExpression(userFieldOption2.elemID, userFieldOption2),
     ]
-    const brandLogoInstanceToAdd = new InstanceElement(
-      'brandLogoToAdd',
-      BRAND_LOGO_TYPE,
-      {
-        filename: 'e2eIcon.png',
-        content: new StaticFile({
-          filepath: `${ZENDESK}/${BRAND_LOGO_TYPE.elemID.name}/e2eIcon.png`,
-          content: fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/assets/e2eIcon.png`)),
-        }),
-      },
-    )
     const brandName = createName('brand')
     const brandInstanceToAdd = createInstanceElement(
       'brand',
@@ -245,7 +229,6 @@ describe('Zendesk adapter E2E', () => {
       },
     )
     let groupIdToInstances: Record<string, InstanceElement[]>
-    let deployedBrandLogo: InstanceElement
 
     beforeAll(async () => {
       credLease = await credsLease()
@@ -295,41 +278,6 @@ describe('Zendesk adapter E2E', () => {
       })
       elements = fetchResult.elements
       expect(fetchResult.errors).toHaveLength(0)
-
-      const deployedBrand = elements
-        .filter(isInstanceElement)
-        .filter(elem => elem.elemID.typeName === 'brand')
-        .filter(elem => elem.elemID.name === brandName)[0]
-      brandLogoInstanceToAdd.annotate({
-        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
-          deployedBrand.elemID,
-          deployedBrand,
-        ),
-      })
-      const modifiedBrandInstance = deployedBrand.clone()
-      modifiedBrandInstance.value.logo = new ReferenceExpression(
-        brandLogoInstanceToAdd.elemID,
-        brandLogoInstanceToAdd,
-      )
-
-      const secondGroupChanges: Record<ChangeId, Change<InstanceElement>[]> = {
-        brand: [{ action: 'modify', data: { before: brandInstanceToAdd, after: modifiedBrandInstance } }],
-        // we relay on brand_logo being deployed second for testing the deploy results
-        brand_logo: [{ action: 'add', data: { after: brandLogoInstanceToAdd } }],
-      }
-      const secondGroupDeployResults = await deployChanges(adapterAttr, secondGroupChanges)
-
-      // eslint-disable-next-line prefer-destructuring
-      deployedBrandLogo = secondGroupDeployResults[1].appliedChanges
-        .map(getChangeData)
-        .filter(isInstanceElement)[0]
-
-      const secondFetchResult = await adapterAttr.adapter.fetch({
-        progressReporter:
-          { reportProgress: () => null },
-      })
-      elements = secondFetchResult.elements
-      expect(secondFetchResult.errors).toHaveLength(0)
     })
 
     afterAll(async () => {
@@ -342,13 +290,7 @@ describe('Zendesk adapter E2E', () => {
             : undefined
         }).filter(values.isDefined)
       )
-      const secondGroupChanges: Record<ChangeId, Change<InstanceElement>[]> = {
-        brand_logo: [{ action: 'remove', data: { before: deployedBrandLogo } }],
-      }
-      await deployChanges(adapterAttr, {
-        ...secondGroupChanges,
-        ...firstGroupChanges,
-      })
+      await deployChanges(adapterAttr, firstGroupChanges)
       if (credLease.return) {
         await credLease.return()
       }
@@ -475,17 +417,6 @@ describe('Zendesk adapter E2E', () => {
             .map((ref: ReferenceExpression) => ref.elemID.getFullName()))
             .toContain(instance.elemID.getFullName())
         })
-    })
-    it('should fetch brand_logo correctly', async () => {
-      const fetchedBrandLogoInstance = elements
-        .filter(inst => inst.elemID.typeName === 'brand_logo')
-        .filter(isInstanceElement)
-        .find(logoInstance => logoInstance.value.filename === 'e2eIcon.png')
-      expect(fetchedBrandLogoInstance).toBeDefined()
-      expect(fetchedBrandLogoInstance?.value.content.hash).toEqual(BRAND_LOGO_EXPECTED_MD5)
-      expect(fetchedBrandLogoInstance?.value.content).toBeInstanceOf(StaticFile)
-      const brandInstance = getParent(fetchedBrandLogoInstance as InstanceElement)
-      expect(brandInstance.value.logo.resValue).toBe(fetchedBrandLogoInstance)
     })
   })
 })

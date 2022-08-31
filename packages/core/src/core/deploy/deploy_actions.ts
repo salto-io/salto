@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   AdapterOperations, getChangeData, Change,
-  isAdditionOrModificationChange, DeployResult, DeployExtraProperties,
+  isAdditionOrModificationChange, DeployResult, DeployExtraProperties, DeployOptions,
 } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { WalkError, NodeSkippedError } from '@salto-io/dag'
@@ -25,9 +25,25 @@ import { Plan, PlanItem, PlanItemId } from '../plan'
 
 const log = logger(module)
 
+const deployOrValidate = (
+  adapter: AdapterOperations,
+  adapterName: string,
+  opts: DeployOptions,
+  checkOnly: boolean
+): Promise<DeployResult> => {
+  if (!checkOnly) {
+    return adapter.deploy(opts)
+  }
+  if (_.isUndefined(adapter.validate)) {
+    throw new Error(`The adapter "${adapterName}" does not support checkOnly deployments.`)
+  }
+  return adapter.validate(opts)
+}
+
 const deployAction = (
   planItem: PlanItem,
-  adapters: Record<string, AdapterOperations>
+  adapters: Record<string, AdapterOperations>,
+  checkOnly: boolean
 ): Promise<DeployResult> => {
   const changes = [...planItem.changes()]
   const adapterName = getChangeData(changes[0]).elemID.adapter
@@ -35,7 +51,8 @@ const deployAction = (
   if (!adapter) {
     throw new Error(`Missing adapter for ${adapterName}`)
   }
-  return adapter.deploy({ changeGroup: { groupID: planItem.groupKey, changes } })
+  const opts = { changeGroup: { groupID: planItem.groupKey, changes } }
+  return deployOrValidate(adapter, adapterName, opts, checkOnly)
 }
 
 export class DeployError extends Error {
@@ -77,7 +94,8 @@ export const deployActions = async (
   deployPlan: Plan,
   adapters: Record<string, AdapterOperations>,
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
-  postDeployAction: (appliedChanges: ReadonlyArray<Change>) => Promise<void>
+  postDeployAction: (appliedChanges: ReadonlyArray<Change>) => Promise<void>,
+  checkOnly: boolean
 ): Promise<DeployActionResult> => {
   const appliedChanges: Change[] = []
   const deploymentUrls: string[] = []
@@ -86,7 +104,7 @@ export const deployActions = async (
       const item = deployPlan.getItem(itemId) as PlanItem
       reportProgress(item, 'started')
       try {
-        const result = await deployAction(item, adapters)
+        const result = await deployAction(item, adapters, checkOnly)
         result.appliedChanges.forEach(appliedChange => appliedChanges.push(appliedChange))
         if (result.extraProperties?.deploymentUrls !== undefined) {
           deploymentUrls.push(...result.extraProperties.deploymentUrls)

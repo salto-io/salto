@@ -27,10 +27,10 @@ const DEFAULT_CHANGE_VALIDATORS = [
   checkDeploymentAnnotationsValidator,
 ]
 
-const getChangeValidators = (adapters: Record<string, AdapterOperations>):
+const getChangeValidators = (adapters: Record<string, AdapterOperations>, checkOnly: boolean):
 Record<string, ChangeValidator> =>
   _.mapValues(
-    getAdapterChangeValidators(adapters),
+    getAdapterChangeValidators(adapters, checkOnly),
     adapterValidator => createChangeValidator([...DEFAULT_CHANGE_VALIDATORS, adapterValidator])
   )
 

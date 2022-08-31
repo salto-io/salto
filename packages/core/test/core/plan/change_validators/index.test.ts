@@ -19,36 +19,67 @@ import { expressions } from '@salto-io/workspace'
 import getChangeValidators from '../../../../src/core/plan/change_validators'
 
 describe('getChangeValidators', () => {
-  it('should call both the adapter change validators and the core change validators', async () => {
-    const adapterChangeValidator = mockFunction<ChangeValidator>().mockResolvedValue([
+  let adapters: Record<string, AdapterOperations>
+  let deployChangeValidator: jest.MockedFunction<ChangeValidator>
+  let validateChangeValidator: jest.MockedFunction<ChangeValidator>
+
+  const type = new ObjectType({
+    elemID: new ElemID('adapter', 'type'),
+    annotations: {
+      value: new ReferenceExpression(new ElemID('adapter', 'someId'), new expressions.UnresolvedReference(new ElemID('adapter', 'someId'))),
+    },
+  })
+  const changes = [toChange({ after: type })]
+
+  beforeEach(() => {
+    deployChangeValidator = mockFunction<ChangeValidator>().mockResolvedValue([
       {
         elemID: new ElemID('adapter'),
         message: 'message',
-        detailedMessage: '',
+        detailedMessage: 'from deployment',
         severity: 'Warning',
       },
     ])
-    const changesValidators = getChangeValidators({
+    validateChangeValidator = mockFunction<ChangeValidator>().mockResolvedValue([
+      {
+        elemID: new ElemID('adapter'),
+        message: 'message',
+        detailedMessage: 'from validation',
+        severity: 'Warning',
+      },
+    ])
+    adapters = {
       adapter: {
         deployModifiers: {
-          changeValidator: adapterChangeValidator,
+          changeValidator: deployChangeValidator,
+        },
+        validationModifiers: {
+          changeValidator: validateChangeValidator,
         },
         fetch: mockFunction<AdapterOperations['fetch']>(),
         deploy: mockFunction<AdapterOperations['deploy']>(),
       },
-    } as Record<string, AdapterOperations>)
-
-    const type = new ObjectType({
-      elemID: new ElemID('adapter', 'type'),
-      annotations: {
-        value: new ReferenceExpression(new ElemID('adapter', 'someId'), new expressions.UnresolvedReference(new ElemID('adapter', 'someId'))),
-      },
+    } as Record<string, AdapterOperations>
+  })
+  describe('when checkOnly is false', () => {
+    it('should call both the adapter change validators and the core change validators and use the deployModifiers', async () => {
+      const changesValidators = getChangeValidators(adapters, false)
+      const errors = await changesValidators.adapter(changes)
+      expect(errors).toHaveLength(2)
+      expect(errors[0].message).toBe('Element has unresolved references')
+      expect(deployChangeValidator).toHaveBeenCalledWith(changes, undefined)
+      expect(errors[1].message).toBe('message')
     })
-    const changes = [toChange({ after: type })]
-    const errors = await changesValidators.adapter(changes)
-    expect(errors).toHaveLength(2)
-    expect(errors[0].message).toBe('Element has unresolved references')
-    expect(adapterChangeValidator).toHaveBeenCalledWith(changes, undefined)
-    expect(errors[1].message).toBe('message')
+  })
+
+  describe('when checkOnly is true', () => {
+    it('should call both the adapter change validators and the core change validators and use the validationModifiers', async () => {
+      const changesValidators = getChangeValidators(adapters, true)
+      const errors = await changesValidators.adapter(changes)
+      expect(errors).toHaveLength(2)
+      expect(errors[0].message).toBe('Element has unresolved references')
+      expect(validateChangeValidator).toHaveBeenCalledWith(changes, undefined)
+      expect(errors[1].message).toBe('message')
+    })
   })
 })

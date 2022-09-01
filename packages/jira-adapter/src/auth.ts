@@ -27,8 +27,14 @@ type BasicAuthCredentials = {
 export const basicAuthCredentialsType = createMatchingObjectType<Omit<BasicAuthCredentials, 'isDataCenter'>>({
   elemID: new ElemID(constants.JIRA),
   fields: {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     baseUrl: { refType: BuiltinTypes.STRING, annotations: { _required: true } },
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     user: { refType: BuiltinTypes.STRING, annotations: { _required: true } },
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     token: { refType: BuiltinTypes.STRING, annotations: { _required: true } },
     // This will be added when the Jira DC Support will be ready
     // isDataCenter: { refType: BuiltinTypes.BOOLEAN },

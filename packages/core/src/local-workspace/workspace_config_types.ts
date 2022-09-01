@@ -43,6 +43,8 @@ const envConfigElemID = new ElemID(ENVS_CONFIG_NAME, 'env')
 const envConfigType = createMatchingObjectType<Omit<EnvConfig, 'services'>>({
   elemID: envConfigElemID,
   fields: {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     name: { refType: BuiltinTypes.STRING, annotations: { _required: true } },
     accountToServiceName: { refType: new MapType(BuiltinTypes.STRING) },
   },

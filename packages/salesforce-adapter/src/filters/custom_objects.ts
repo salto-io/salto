@@ -771,7 +771,7 @@ const createCustomObjectChange = async (
 
   const getAfterInstanceValues = async (): Promise<MetadataValues> => {
     const nestedValues = await getNestedCustomObjectValues(fullName, changes, fieldsToSkip, 'after')
-    const afterParent = objectChange?.data.after
+    const afterParent = 'after' in objectChange?.data ? objectChange?.data.after : undefined
     if (afterParent === undefined) {
       return {
         ...nestedValues,
@@ -816,7 +816,7 @@ const createCustomObjectChange = async (
     return { action: 'add', data: { after } }
   }
 
-  const beforeParent = objectChange?.data.before
+  const beforeParent = 'before' in objectChange?.data ? objectChange?.data.before : undefined
   const before = createCustomObjectInstance({
     ...await getNestedCustomObjectValues(fullName, changes, fieldsToSkip, 'before'),
     ...(beforeParent === undefined ? {} : await toCustomProperties(beforeParent, false)),

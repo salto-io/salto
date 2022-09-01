@@ -1874,18 +1874,24 @@ const IdLocatorType = createMatchingObjectType<IdLocator>({
     fieldRegex: {
       refType: BuiltinTypes.STRING,
       annotations: {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
         _required: true,
       },
     },
     idRegex: {
       refType: BuiltinTypes.STRING,
       annotations: {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
         _required: true,
       },
     },
     type: {
       refType: new ListType(BuiltinTypes.STRING),
       annotations: {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
         _required: true,
       },
     },

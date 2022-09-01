@@ -2,7 +2,7 @@
 [![Knuckles](bnw-face.png)](https://github.com/salto-io/salto/blob/main/docs/faq.md#why-did-we-choose-knuckles-as-our-mascot)
 ---
 
-[![CircleCI](https://circleci.com/gh/salto-io/salto.svg?style=shield&circle-token=e64029d1886e2965a8d51b09597054b5a1e84733)](https://circleci.com/gh/salto-io/salto) &nbsp; &nbsp; [![Coverage Status](https://coveralls.io/repos/github/salto-io/salto/badge.svg?branch=master)](https://coveralls.io/github/salto-io/salto?branch=master)
+[![CircleCI](https://circleci.com/gh/salto-io/salto.svg?style=shield&circle-token=e64029d1886e2965a8d51b09597054b5a1e84733)](https://circleci.com/gh/salto-io/salto) &nbsp; &nbsp; [![Coverage Status](https://coveralls.io/repos/github/salto-io/salto/badge.svg?branch=main)](https://coveralls.io/github/salto-io/salto?branch=main)
 ---
 
 Salto allows you to manage your business applications' configuration in code. By doing so, it enables modern devops style methodologies for development, testing and deployment for these business applications.
@@ -30,7 +30,7 @@ See [the vscode package documentation](packages/vscode/README.md#installation)
 
 ### Building from source
 
-  1. Install Node.js 14. You can download it directly from [here](https://nodejs.org/en/download/releases/), or use [Node Version Manager (NVM)](https://github.com/nvm-sh/nvm) to install it.
+  1. Install Node.js 14. You can download it directly from [here](https://nodejs.org/en/download/releases/), or use [Node Version Manager (NVM)](https://github.com/nvm-sh/nvm) (simply run `nvm use`) to install it.
   2. Install [yarn](https://yarnpkg.com/en/docs/install).
   3. Fetch dependencies and build:
 
@@ -73,14 +73,14 @@ Here is how to do it:
 
 #### TL;DR Quick method
 
-Install [hub](https://github.com/github/hub) and configure it (for example by running `hub ci-status`).
-Make sure you're on `master`, no local changes, CI status is passing, and run:
+Install [GitHub CLI](https://cli.github.com) and configure it (for example by running `gh pr status`).
+Make sure you're on `main`, no local changes, CI status is passing, and run:
 
 ```bash
 yarn lerna-version-pr [BUMP]
 ```
 
-Where BUMP is a [lerna version](https://github.com/lerna/lerna/tree/master/commands/version#usage); default is  `patch`
+Where BUMP is a [lerna version](https://github.com/lerna/lerna/tree/main/commands/version#usage); default is  `patch`
 
 This will create a [PR labeled `VERSION`](https://github.com/salto-io/salto/pulls?q=is%3Apr+label%3AVERSION). Once the PR is merged, the version will be published and a git tag will be created.
 

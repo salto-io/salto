@@ -86,7 +86,11 @@ const filter: RemoteFilterCreator = ({ client, config }) => ({
       log.debug(`Getting missing ids for the following types: ${Object.keys(groupedElements)}`)
       await Promise.all(
         Object.entries(groupedElements)
-          .map(([typeName, typeElements]) => addMissingIds(client, typeName, typeElements))
+          .map(([typeName, typeElements]) => addMissingIds(
+            client,
+            typeName,
+            typeElements as Element[]
+          ))
       )
     },
   }),

@@ -241,5 +241,7 @@ export const runFiltersOnFetch = async (
   elements: Element[],
   filterCreators = allFilters.map(({ creator }) => creator)
 ): Promise<void | FilterResult> =>
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
   filter.filtersRunner({ client, config: { ...defaultFilterContext, ...context } }, filterCreators)
     .onFetch(elements)

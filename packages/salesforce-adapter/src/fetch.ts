@@ -232,7 +232,7 @@ export const retrieveMetadataInstances = async ({
     const folders = await getFolders(type)
     const folderNames = folders.map(folder => (folder === undefined ? folder : folder.fullName))
     const { elements: res, configChanges: listObjectsConfigChanges } = await listMetadataObjects(
-      client, await apiName(type), folderNames.filter(isDefined)
+      client, await apiName(type), folderNames.filter(isDefined).map(x => x.toString())
     )
     configChanges.push(...listObjectsConfigChanges)
     return [

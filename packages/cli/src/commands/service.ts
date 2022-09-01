@@ -156,7 +156,7 @@ const getLoginInputFlow = async (
     : getCredentialsFromUser
   const newConfig = await getLoginConfig(authType, authMethods, output, getLoginInput)
   const result = await verifyCredentials(newConfig)
-  if (!result.success) {
+  if (!result.success && 'error' in result) {
     throw result.error
   }
   await updateCredentials(workspace, newConfig, account)

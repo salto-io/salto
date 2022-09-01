@@ -62,12 +62,16 @@ export const filterInvalidChanges = (
     // ObjectType's fields changes
     const beforeObj = beforeTopLevelElem
     const afterObj = afterTopLevelElem
-    const afterFieldNames = afterObj ? Object.keys(afterObj.fields) : []
-    const beforeFieldNames = beforeObj ? Object.keys(beforeObj.fields) : []
+    const afterFieldNames = afterObj && 'fields' in afterObj ? Object.keys(afterObj.fields) : []
+    const beforeFieldNames = beforeObj && 'fields' in beforeObj ? Object.keys(beforeObj.fields) : []
     const allFieldNames = [...new Set([...beforeFieldNames, ...afterFieldNames])]
     const validFields = allFieldNames
       .map(name => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
         const beforeField = beforeObj?.fields[name]
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
         const afterField = afterObj?.fields[name]
         const { elemID } = afterField ?? beforeField
         const validField = elemIdFullNamesToOmit.has(elemID.getFullName())
@@ -82,7 +86,7 @@ export const filterInvalidChanges = (
       fields: _.keyBy(validFields, field => field.name),
       annotationRefsOrTypes: _.clone(afterObj.annotationRefTypes),
       annotations: _.cloneDeep(afterObj.annotations),
-      isSettings: afterObj.isSettings,
+      isSettings: 'isSettings' in afterObj ? afterObj.isSettings : undefined,
     })
   }
 

@@ -4,6 +4,8 @@
         "outDir": "dist",
         "baseUrl": ".",
         "declaration": true,
+        "strictNullChecks": false,
+        "strictPropertyInitialization": false,
         "paths": {
             "jsforce": [
                 "../../node_modules/jsforce-types"
@@ -18,6 +20,6 @@
     "references": [
         { "path": "../logging" },
         { "path": "../lowerdash" },
-        { "path": "../persistent-pool" },
+        { "path": "../persistent-pool" }
     ]
 }

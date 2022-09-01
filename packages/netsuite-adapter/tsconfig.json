@@ -1,10 +1,13 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "dist",
     "baseUrl": ".",
     "declaration": true,
-    "resolveJsonModule": true
+    "noImplicitAny": false,
+    "outDir": "dist",
+    "resolveJsonModule": true,
+    "strictNullChecks": false,
+    "strictPropertyInitialization": false
   },
   "include": [
     "src/**/*",
@@ -21,6 +24,6 @@
     { "path": "../file" },
     { "path": "../logging" },
     { "path": "../lowerdash" },
-    { "path": "../test-utils" },
+    { "path": "../test-utils" }
   ]
 }

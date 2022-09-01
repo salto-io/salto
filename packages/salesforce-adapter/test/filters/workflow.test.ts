@@ -108,6 +108,8 @@ describe('Workflow filter', () => {
       describe('inner instances', () => {
         let innerInstances: Record<string, InstanceElement[]>
         beforeAll(async () => {
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
           innerInstances = await groupByAsync(
             elements.filter(isInstanceElement),
             metadataType

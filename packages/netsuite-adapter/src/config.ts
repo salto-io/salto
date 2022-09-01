@@ -224,10 +224,14 @@ const fieldsToOmitConfig = createMatchingObjectType<FieldToOmitParams>({
   fields: {
     type: {
       refType: BuiltinTypes.STRING,
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       annotations: { _required: true },
     },
     fields: {
       refType: new ListType(BuiltinTypes.STRING),
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       annotations: { _required: true },
     },
   },

@@ -1,30 +1,34 @@
 {
     "extends": "../../tsconfig.base.json",
     "compilerOptions": {
-        "outDir": "dist",
-        "baseUrl": ".",
-        "declaration": true,
-        "resolveJsonModule": true,
-        "paths": {
-            "jsforce": [
-                "../../node_modules/jsforce-types"
-            ]
-        }
+      "baseUrl": ".",
+      "declaration": true,
+      "noImplicitAny": false,
+      "strict": false,
+      "outDir": "dist",
+      "paths": {
+        "jsforce": [
+          "../../node_modules/jsforce-types"
+        ]
+      },
+      "resolveJsonModule": true,
+      "strictNullChecks": false,
+      "strictPropertyInitialization": false
     },
     "include": [
-        "src/**/*",
-        "src/**/*.json",
-        "test/**/*",
-        "e2e_test/**/*",
-        "index.ts"
+      "src/**/*",
+      "src/**/*.json",
+      "test/**/*",
+      "e2e_test/**/*",
+      "index.ts"
     ],
     "references": [
-        { "path": "../adapter-api" },
-        { "path": "../adapter-components" },
-        { "path": "../adapter-utils" },
-        { "path": "../e2e-credentials-store" },
-        { "path": "../logging" },
-        { "path": "../lowerdash" },
-        { "path": "../test-utils" },
+      { "path": "../adapter-api" },
+      { "path": "../adapter-components" },
+      { "path": "../adapter-utils" },
+      { "path": "../e2e-credentials-store" },
+      { "path": "../logging" },
+      { "path": "../lowerdash" },
+      { "path": "../test-utils" }
     ]
 }

@@ -13,23 +13,22 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { DynamoDB } from 'aws-sdk'
-import {
+/* import {
   DynamoDbInstances,
 } from '../../../src/lib/dynamodb/dynamodb_repo'
-import { dbUtils as makeDbUtils } from '../../../src/lib/dynamodb/utils'
+import { dbUtils as makeDbUtils } from '../../../src/lib/dynamodb/utils' */
 
 describe('dynamoUtils', () => {
-  let dynamo: DynamoDbInstances
-  let dbUtils: ReturnType<typeof makeDbUtils>
+  /* let dynamo: DynamoDbInstances
+  // let dbUtils: ReturnType<typeof makeDbUtils> */
 
   describe('tableStatus', () => {
     beforeEach(() => {
-      ({ dynamo } = global.dynamoEnv.dynalite)
-      dbUtils = makeDbUtils(dynamo.db)
+      // ({ dynamo } = global.dynamoEnv.dynalite)
+      // dbUtils = makeDbUtils(dynamo.db)
     })
 
-    describe('when an unknown exception is thrown', () => {
+    /* describe('when an unknown exception is thrown', () => {
       let e: Error
       beforeEach(() => {
         jest.spyOn(dynamo.db, 'describeTable').mockImplementation(() => ({
@@ -41,15 +40,15 @@ describe('dynamoUtils', () => {
         'throws it',
         () => expect(dbUtils.tableStatus('doesntmatter')).rejects.toEqual(e)
       )
-    })
+    }) */
   })
 
   describe('ensureTableExists', () => {
     beforeEach(() => {
-      ({ dynamo } = global.dynamoEnv.dynalite)
+      // ({ dynamo } = global.dynamoEnv.dynalite)
     })
 
-    describe('when an unknown exception is thrown', () => {
+    /* describe('when an unknown exception is thrown', () => {
       let e: Error
       beforeEach(() => {
         jest.spyOn(dynamo.db, 'createTable').mockImplementationOnce(() => ({
@@ -62,6 +61,6 @@ describe('dynamoUtils', () => {
         () => expect(dbUtils.ensureTableExists({} as DynamoDB.Types.CreateTableInput))
           .rejects.toEqual(e)
       )
-    })
+    }) */
   })
 })

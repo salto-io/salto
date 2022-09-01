@@ -329,6 +329,8 @@ describe('stripe swagger adapter', () => {
         config: DEFAULT_CONFIG_INSTANCE,
         elementsSource: buildElementsSourceFromElements([]),
       })
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       const deployOptions = { changeGroup: { groupID: '', changes: [] } }
       await expect(adapterOperations.deploy(deployOptions)).rejects.toThrow(new Error('Not implemented.'))
     })

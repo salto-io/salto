@@ -5,6 +5,8 @@
         "baseUrl": ".",
         "declaration": true,
         "resolveJsonModule": true,
+        "strictNullChecks": false,
+        "strictPropertyInitialization": false,
         "paths": {
             "jsforce": [
                 "../../node_modules/jsforce-types"

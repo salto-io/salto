@@ -24,6 +24,8 @@ export const triggerType = createMatchingObjectType<Trigger>({
   fields: {
     key: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
     configuration: {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       refType: new MapType(BuiltinTypes.UNKNOWN),
       annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
     },

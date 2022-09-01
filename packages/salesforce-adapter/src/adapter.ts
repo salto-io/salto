@@ -332,6 +332,8 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.fetchProfile = fetchProfile
     this.createFiltersRunner = () => filter.filtersRunner(
       {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
         client,
         config: {
           unsupportedSystemFields,

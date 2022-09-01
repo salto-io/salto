@@ -1,22 +1,22 @@
 {
   "compilerOptions": {
-    "outDir": "dist",
     "baseUrl": ".",
+    "composite": true,
     "declaration": true,
     "declarationMap": true,
-    "module": "commonjs",
     "esModuleInterop": true,
-    "target": "es6",
-    "noImplicitAny": true,
+    "experimentalDecorators": true,
+    "incremental": true,
+    "module": "commonjs",
     "moduleResolution": "node",
+    "noImplicitAny": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "strictNullChecks": true,
-    "strict": true,
+    "outDir": "dist",
     "sourceMap": true,
-    "incremental": true,
-    "experimentalDecorators": true,
-    "composite": true,
+    "strictNullChecks": false,
+    "strictPropertyInitialization": false,
+    "target": "es6"
   },
   "include": [
     "src/**/*",
@@ -25,6 +25,6 @@
   ],
   "references": [
     { "path": "../logging" },
-    { "path": "../lowerdash" },
+    { "path": "../lowerdash" }
   ]
 }

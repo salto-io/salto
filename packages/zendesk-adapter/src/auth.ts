@@ -41,15 +41,21 @@ export const usernamePasswordCredentialsType = createMatchingObjectType<
   fields: {
     username: {
       refType: BuiltinTypes.STRING,
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       annotations: { _required: true },
     },
     password: {
       refType: BuiltinTypes.STRING,
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       annotations: { _required: true },
     },
     subdomain: {
       refType: BuiltinTypes.STRING,
       annotations: {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
         _required: true,
         message: 'subdomain (https://<your subdomain>.zendesk.com)',
       },
@@ -64,11 +70,15 @@ export const oauthAccessTokenCredentialsType = createMatchingObjectType<
   fields: {
     accessToken: {
       refType: BuiltinTypes.STRING,
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       annotations: { _required: true },
     },
     subdomain: {
       refType: BuiltinTypes.STRING,
       annotations: {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
         _required: true,
         message: 'subdomain (https://<your subdomain>.zendesk.com)',
       },
@@ -85,6 +95,8 @@ export const oauthRequestParametersType = createMatchingObjectType<
       refType: BuiltinTypes.STRING,
       annotations: {
         message: 'Client ID',
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
         _required: true,
       },
     },
@@ -92,6 +104,8 @@ export const oauthRequestParametersType = createMatchingObjectType<
       refType: BuiltinTypes.NUMBER,
       annotations: {
         message: 'Port',
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
         _required: true,
       },
     },
@@ -99,6 +113,8 @@ export const oauthRequestParametersType = createMatchingObjectType<
       refType: BuiltinTypes.STRING,
       annotations: {
         message: 'subdomain',
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
         _required: true,
       },
     },

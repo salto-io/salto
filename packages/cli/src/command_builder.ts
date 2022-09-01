@@ -249,7 +249,7 @@ export const createWorkspaceCommand = <T>(
 
   // We need this cast because the compiler cannot validate the generic value with a new type
   const positionalOptions = (
-    properties.positionalOptions as PositionalOption<T & ConfigOverrideArg>[] | undefined
+    properties.positionalOptions as unknown as PositionalOption<T & ConfigOverrideArg>[] | undefined
   )
 
   return createPublicCommandDef({

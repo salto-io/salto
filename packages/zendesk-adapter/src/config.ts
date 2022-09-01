@@ -1747,6 +1747,28 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
     },
+    deployRequests: {
+      add: {
+        url: '/guide/permission_groups',
+        deployAsField: 'permission_group',
+        method: 'post',
+      },
+      modify: {
+        url: '/guide/permission_groups/{permissionGroupId}',
+        method: 'put',
+        deployAsField: 'permission_group',
+        urlParamsToFields: {
+          permissionGroupId: 'id',
+        },
+      },
+      remove: {
+        url: '/guide/permission_groups/{permissionGroupId}',
+        method: 'delete',
+        urlParamsToFields: {
+          permissionGroupId: 'id',
+        },
+      },
+    },
   },
   user_segments: {
     request: {

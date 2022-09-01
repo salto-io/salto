@@ -95,7 +95,7 @@ describe('script', () => {
       SELECT script.scriptid, script.id
       FROM script
       JOIN systemnote ON systemnote.recordid = script.id
-      WHERE systemnote.date BETWEEN '1/11/2021' AND '2/23/2021' AND systemnote.recordtypeid = -417
+      WHERE systemnote.date BETWEEN TO_DATE('1/11/2021', 'MM/DD/YYYY') AND TO_DATE('2/23/2021', 'MM/DD/YYYY') AND systemnote.recordtypeid = -417
       ORDER BY script.id ASC
     `)
 
@@ -104,14 +104,14 @@ describe('script', () => {
       FROM scriptdeployment 
       JOIN systemnote ON systemnote.recordid = scriptdeployment.primarykey
       JOIN script ON scriptdeployment.script = script.id
-      WHERE systemnote.date BETWEEN '1/11/2021' AND '2/23/2021' AND systemnote.recordtypeid = -418
+      WHERE systemnote.date BETWEEN TO_DATE('1/11/2021', 'MM/DD/YYYY') AND TO_DATE('2/23/2021', 'MM/DD/YYYY') AND systemnote.recordtypeid = -418
       ORDER BY scriptdeployment.primarykey ASC
     `)
 
       expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, `
       SELECT internalid
       FROM customfield
-      WHERE fieldtype = 'SCRIPT' AND lastmodifieddate BETWEEN '1/11/2021' AND '2/23/2021'
+      WHERE fieldtype = 'SCRIPT' AND lastmodifieddate BETWEEN TO_DATE('1/11/2021', 'MM/DD/YYYY') AND TO_DATE('2/23/2021', 'MM/DD/YYYY')
       ORDER BY internalid ASC
     `)
     })

@@ -90,7 +90,7 @@ const changesDetector: TypeChangesDetector = {
       SELECT role.scriptid, role.id
       FROM role
       JOIN systemnote ON systemnote.recordid = role.id
-      WHERE systemnote.date BETWEEN '${startDate}' AND '${endDate}' AND systemnote.recordtypeid = -118
+      WHERE systemnote.date BETWEEN ${startDate} AND ${endDate} AND systemnote.recordtypeid = -118
       ORDER BY role.id ASC
     `)
 

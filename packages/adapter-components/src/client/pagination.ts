@@ -44,12 +44,14 @@ export type PaginationFunc = ({
   pageSize,
   getParams,
   currentParams,
+  responseHeaders,
 }: {
   responseData: unknown
   page: ResponseValue[]
   pageSize: number
   getParams: ClientGetWithPaginationParams
   currentParams: Record<string, string>
+  responseHeaders?: unknown
 }) => Record<string, string>[]
 
 export type PaginationFuncCreator<T = {}> = (args: {
@@ -138,6 +140,7 @@ export const traverseRequests: (
       getParams: { ...getParams, paginationField },
       pageSize,
       currentParams: additionalArgs,
+      responseHeaders: response.headers,
     }))
 
     if (recursiveQueryParams !== undefined && Object.keys(recursiveQueryParams).length > 0) {
@@ -194,7 +197,10 @@ export const getWithPageOffsetAndLastPagination = (firstPage: number): Paginatio
  * @return true if the configured endpoint can be used to get the next path, false otherwise.
  */
 export type PathCheckerFunc = (endpointPath: string, nextPath: string) => boolean
-const defaultPathChecker: PathCheckerFunc = (endpointPath, nextPath) => (endpointPath === nextPath)
+export const defaultPathChecker: PathCheckerFunc = (
+  endpointPath,
+  nextPath
+) => (endpointPath === nextPath)
 
 /**
  * Make paginated requests using the specified paginationField, assuming the next page is specified

@@ -52,10 +52,6 @@ type ReplacerCreatorParams = {
   fieldsToReplace: { name: string; valuePath?: string }[]
 }
 
-type Field = {
-  name: string
-}
-
 const replaceConditionsAndActionsCreator = (
   params: ReplacerCreatorParams[],
   isIdNumber = false,
@@ -89,18 +85,22 @@ const replaceConditionsAndActionsCreator = (
   })
 }
 
-const fieldReplacer = (fields: Field[]): UserReplacer => (instance, mapping) => {
+const fieldReplacer = (fields: string[]): UserReplacer => (instance, mapping) => {
   fields
     .forEach(field => {
-      const value = _.get(instance.value, field.name)?.toString()
+      const value = _.get(instance.value, field)?.toString()
       const newValue = ((value !== undefined)
             && Object.prototype.hasOwnProperty.call(mapping, value))
         ? mapping[value]
         : undefined
       if (newValue !== undefined) {
-        _.set(instance.value, field.name, (Number.isInteger(Number(newValue)))
-          ? Number(newValue)
-          : newValue)
+        _.set(
+          instance.value,
+          field,
+          (Number.isInteger(Number(newValue)))
+            ? Number(newValue)
+            : newValue
+        )
       }
     })
 }
@@ -167,8 +167,8 @@ const TYPE_NAME_TO_REPLACER: Record<string, UserReplacer> = {
     replaceRestriction,
   ]),
   workspace: workspaceReplacer,
-  user_segment: fieldReplacer([{ name: 'added_user_ids' }]),
-  article: fieldReplacer([{ name: 'author_id' }]),
+  user_segment: fieldReplacer(['added_user_ids']),
+  article: fieldReplacer(['author_id']),
 }
 
 const getUsers = async (paginator: clientUtils.Paginator): Promise<User[]> => {

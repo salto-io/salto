@@ -29,17 +29,23 @@ type FieldMissingReferenceDefinition = {
 
 const potentiallyMissingListValues: FieldMissingReferenceDefinition[] = [
   {
-    instanceType: 'trigger',
+    instanceType: 'automation',
     instancePath: 'actions',
     fieldNameToValueType: {
-      notification_sms_group: 'group',
       notification_group: 'group',
+      notification_target: 'target',
+      notification_webhook: 'webhook',
     },
   },
   {
     instanceType: 'trigger',
     instancePath: 'actions',
-    fieldNameToValueType: { notification_sms_group: 'group' },
+    fieldNameToValueType: {
+      notification_group: 'group',
+      notification_sms_group: 'group',
+      notification_target: 'target',
+      notification_webhook: 'webhook',
+    },
   },
 ]
 

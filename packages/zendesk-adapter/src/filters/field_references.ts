@@ -239,6 +239,7 @@ type ZendeskFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<
   ReferenceContextStrategyName
 > & {
   zendeskSerializationStrategy?: ZendeskReferenceSerializationStrategyName
+  // Strategy for non-list values. For list values please check listValuesMissingRefereces filter
   zendeskMissingRefStrategy?: referenceUtils.MissingReferenceStrategyName
 }
 
@@ -294,6 +295,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     src: { field: 'group_restrictions' },
     serializationStrategy: 'id',
     target: { type: 'group' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: { field: 'group_id' },
@@ -591,6 +593,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     src: { field: 'ticket_form_id' },
     serializationStrategy: 'id',
     target: { type: 'ticket_form' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: { field: 'ticket_form_ids' },

@@ -36,13 +36,13 @@ const neighborContextFunc = (args: {
   ...args,
 })
 
-// TODO: Support in types with list values
 const NEIGHBOR_FIELD_TO_TYPE_NAMES: Record<string, string> = {
   brand_id: 'brand',
   group_id: 'group',
   schedule_id: 'business_hours_schedule',
   within_schedule: 'business_hours_schedule',
   set_schedule: 'business_hours_schedule',
+  ticket_form_id: 'ticket_form',
 }
 
 const SPECIAL_CONTEXT_NAMES: Record<string, string> = {
@@ -729,11 +729,15 @@ const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
         'automation__conditions__all',
         'automation__conditions__any',
         'macro__actions',
+        'sla_policy__filter__all',
+        'sla_policy__filter__any',
         'trigger__actions',
         'trigger__conditions__all',
         'trigger__conditions__any',
         'view__conditions__all',
         'view__conditions__any',
+        'workspace__conditions__all',
+        'workspace__conditions__any',
       ],
     },
     target: { typeContext: 'allowlistedNeighborField' },

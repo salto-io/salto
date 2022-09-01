@@ -33,6 +33,7 @@ import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
 import { getChangeGroupIds } from './group_change'
 import fieldReferencesFilter, { lookupFunc } from './filters/field_references'
+import listValuesMissingReferencesFilter from './filters/references/list_values_missing_references'
 import unorderedListsFilter from './filters/unordered_lists'
 import viewFilter from './filters/view'
 import workspaceFilter from './filters/workspace'
@@ -123,6 +124,8 @@ export const DEFAULT_FILTERS = [
   // removeBrandLogoFieldFilter should be after brandLogoFilter
   removeBrandLogoFieldFilter,
   fieldReferencesFilter,
+  // listValuesMissingReferencesFilter should be after fieldReferencesFilter
+  listValuesMissingReferencesFilter,
   appsFilter,
   customFieldOptionsFilter,
   appOwnedConvertListToMapFilter,

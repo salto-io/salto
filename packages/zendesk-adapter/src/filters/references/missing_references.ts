@@ -25,6 +25,20 @@ const VALUES_TO_SKIP_BY_TYPE: Record<string, string> = {
   group: 'current_groups',
 }
 
+export const createMissingInstance = (
+  adapter: string,
+  typeName: string,
+  refName: string
+): InstanceElement => (
+  new InstanceElement(
+    naclCase(`${MISSING_REF_PREFIX}${refName}`),
+    new ObjectType({ elemID: new ElemID(adapter, typeName) }),
+    {},
+    undefined,
+    { [referenceUtils.MISSING_ANNOTATION]: true },
+  )
+)
+
 export const ZendeskMissingReferenceStrategyLookup: Record<
 referenceUtils.MissingReferenceStrategyName, referenceUtils.MissingReferenceStrategy
 > = {
@@ -33,13 +47,7 @@ referenceUtils.MissingReferenceStrategyName, referenceUtils.MissingReferenceStra
       if (!_.isString(typeName) || !value || VALUES_TO_SKIP_BY_TYPE[typeName] === value) {
         return undefined
       }
-      return new InstanceElement(
-        naclCase(`${MISSING_REF_PREFIX}${value}`),
-        new ObjectType({ elemID: new ElemID(adapter, typeName) }),
-        {},
-        undefined,
-        { [referenceUtils.MISSING_ANNOTATION]: true },
-      )
+      return createMissingInstance(adapter, typeName, value)
     },
   },
 }

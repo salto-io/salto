@@ -24,24 +24,30 @@ import { isWorkflowInstance, WorkflowInstance } from './types'
 import { JIRA, WORKFLOW_TYPE_NAME } from '../../constants'
 import { getLookUpName } from '../../reference_mapping'
 
-const STATUS_PROPERTY_TYPE_NAME = 'StatusProperty'
+const PROPERTY_TYPE_NAME = 'WorkflowProperty'
 
 const { awu } = collections.asynciterable
 
-const convertStatusesPropertiesToList = (instance: WorkflowInstance): void => {
-  instance.value.statuses?.forEach(status => {
-    if (status.properties !== undefined) {
-      status.properties = Object.entries(status.properties)
+const convertPropertiesToList = (instance: WorkflowInstance): void => {
+  [
+    ...(instance.value.statuses ?? []),
+    ...(instance.value.transitions ?? []),
+  ].forEach(item => {
+    if (item.properties !== undefined) {
+      item.properties = Object.entries(item.properties)
         .map(([key, value]) => ({ key, value }))
     }
   })
 }
 
-const convertStatusesPropertiesToMap = (instance: WorkflowInstance): void => {
-  instance.value.statuses?.forEach(status => {
-    if (status.properties !== undefined) {
-      status.properties = Object.fromEntries(
-        status.properties.map(({ key, value }: Values) => [key, value])
+const convertPropertiesToMap = (instance: WorkflowInstance): void => {
+  [
+    ...(instance.value.statuses ?? []),
+    ...(instance.value.transitions ?? []),
+  ].forEach(item => {
+    if (item.properties !== undefined) {
+      item.properties = Object.fromEntries(
+        item.properties.map(({ key, value }: Values) => [key, value])
       )
     }
   })
@@ -58,32 +64,37 @@ const filter: FilterCreator = () => {
   return {
     onFetch: async (elements: Element[]) => {
       const propertyType = new ObjectType({
-        elemID: new ElemID(JIRA, STATUS_PROPERTY_TYPE_NAME),
+        elemID: new ElemID(JIRA, PROPERTY_TYPE_NAME),
         fields: {
           key: {
             refType: BuiltinTypes.STRING,
             annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
           },
           value: {
-            refType: BuiltinTypes.STRING,
+            refType: BuiltinTypes.UNKNOWN,
             annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
           },
         },
-        path: [JIRA, elementUtils.TYPES_PATH, STATUS_PROPERTY_TYPE_NAME],
+        path: [JIRA, elementUtils.TYPES_PATH, PROPERTY_TYPE_NAME],
       })
 
       elements.push(propertyType)
 
       const workflowStatusType = findObject(elements, 'WorkflowStatus')
       if (workflowStatusType !== undefined) {
-        workflowStatusType.fields.properties = new Field(workflowStatusType, 'properties', new ListType(propertyType), { [CORE_ANNOTATIONS.REQUIRED]: true })
+        workflowStatusType.fields.properties = new Field(workflowStatusType, 'properties', new ListType(propertyType))
+      }
+
+      const workflowTransitionType = findObject(elements, 'Transition')
+      if (workflowTransitionType !== undefined) {
+        workflowTransitionType.fields.properties = new Field(workflowTransitionType, 'properties', new ListType(propertyType))
       }
 
       elements
         .filter(isInstanceElement)
         .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
         .filter(isWorkflowInstance)
-        .forEach(convertStatusesPropertiesToList)
+        .forEach(convertPropertiesToList)
     },
 
     preDeploy: async changes => {
@@ -99,7 +110,7 @@ const filter: FilterCreator = () => {
               // properties structure the getLookUpName won't know how to resolve
               // the references inside correctly
               const resolvedInstance = (await resolveValues(instance, getLookUpName))
-              convertStatusesPropertiesToMap(resolvedInstance)
+              convertPropertiesToMap(resolvedInstance)
               return resolvedInstance
             }
           )
@@ -118,7 +129,7 @@ const filter: FilterCreator = () => {
           await applyFunctionToChangeData<Change<WorkflowInstance>>(
             change,
             instance => {
-              convertStatusesPropertiesToList(instance)
+              convertPropertiesToList(instance)
               return instance
             }
           )

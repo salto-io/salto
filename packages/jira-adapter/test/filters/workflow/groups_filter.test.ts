@@ -82,9 +82,9 @@ describe('workflowGroupsFilter', () => {
       )
       await filter.onFetch([workflow, group])
       expect(workflow.value.transitions[0].rules.conditions.configuration.group.elemID)
-        .toEqual(group.elemID)
+        .toEqual(group.elemID.createNestedID('name'))
       expect(workflow.value.transitions[1].rules.conditions.configuration.groups[0].elemID)
-        .toEqual(group.elemID)
+        .toEqual(group.elemID.createNestedID('name'))
     })
 
     it('should lower case group name if group instance does not exist', async () => {

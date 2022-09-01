@@ -26,11 +26,15 @@ export type CreateMissingRefFunc = (
 export type CheckMissingRefFunc = (element: Element) => boolean
 
 export type ReferenceSerializationStrategy = {
-  serialize: GetLookupNameFunc
   lookup: LookupFunc
   lookupIndexName?: string
-  getReferenceId?: (topLevelId: ElemID) => ElemID
-}
+} & (
+  { serialize: GetLookupNameFunc }
+  // getReferenceId set the path of the value that the reference will be set by.
+  // Note that this path will also be the path of the reference, meaning the if
+  // it won't return a top level id, the reference path won't be a top level id.
+  | { getReferenceId: (topLevelId: ElemID) => ElemID }
+)
 
 export type ReferenceSerializationStrategyName = 'fullValue' | 'id' | 'name' | 'nameWithPath'
 export const ReferenceSerializationStrategyLookup: Record<
@@ -51,7 +55,6 @@ export const ReferenceSerializationStrategyLookup: Record<
     lookupIndexName: 'name',
   },
   nameWithPath: {
-    serialize: ({ ref }) => ref.value.value.name,
     lookup: val => val,
     lookupIndexName: 'name',
     getReferenceId: topLevelId => topLevelId.createNestedID('name'),

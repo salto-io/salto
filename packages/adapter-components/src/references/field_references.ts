@@ -131,19 +131,26 @@ export const replaceReferenceValues = async <
           )
         }
 
-        const referenceId = serializer.getReferenceId?.(element.elemID) ?? element.elemID
+        const referenceId = 'getReferenceId' in serializer ? serializer.getReferenceId(element.elemID) : element.elemID
 
         if (checkMissingRef(element)) {
           return new ReferenceExpression(referenceId)
         }
         return (
           isEqualValue(
-            await serializer.serialize({
-              ref: new ReferenceExpression(element.elemID, elem),
-              field,
-            }),
+            'serialize' in serializer
+              ? await serializer.serialize({
+                ref: new ReferenceExpression(element.elemID, elem),
+                field,
+              })
+              : resolvePath(element, referenceId),
             val,
-          ) ? new ReferenceExpression(referenceId, elem && resolvePath(elem, referenceId))
+          ) ? new ReferenceExpression(
+              referenceId,
+              elem !== undefined && !referenceId.isEqual(elem.elemID)
+                ? resolvePath(elem, referenceId)
+                : elem
+            )
             : undefined
         )
       }
@@ -298,7 +305,7 @@ export const generateLookupFunc = <
     }
 
     const strategy = await determineLookupStrategy({ ref, path, field })
-    if (strategy !== undefined) {
+    if (strategy !== undefined && 'serialize' in strategy) {
       return strategy.serialize({ ref, field })
     }
 

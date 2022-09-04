@@ -1602,7 +1602,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       standaloneFields: [{ fieldName: 'translations' }],
       sourceTypeName: 'articles__articles',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }, { fieldName: 'author_id', fieldType: 'unknown' }],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'vote_sum' },
         { fieldName: 'vote_count' },
@@ -1760,7 +1760,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       sourceTypeName: 'user_segments__user_segments',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }, { fieldName: 'added_user_ids', fieldType: 'unknown' }],
     },
   },
   // not included yet: satisfaction_reason (returns 403), sunshine apis

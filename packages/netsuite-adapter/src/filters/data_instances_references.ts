@@ -61,7 +61,7 @@ const filterCreator: FilterCreator = ({ elementsSourceIndex, isPartial }): Filte
   onFetch: async elements => {
     const instances = elements.filter(isInstanceElement)
     const dataInstancesMap: Record<string, ElemID> = isPartial ? _.clone(
-      (await elementsSourceIndex.getIndexes()).internalIdsIndex
+      (await elementsSourceIndex.getIndexes()).internalIdsIndex ?? {}
     ) : {}
 
     const instancesWithInternalId = instances

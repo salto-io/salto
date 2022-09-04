@@ -13,12 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, ReadOnlyElementsSource, TypeElement, TypeReference, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { isFileCabinetInstance } from '../types'
 import { ElementsSourceIndexes, LazyElementsSourceIndexes, ServiceIdRecords } from './types'
 import { getFieldInstanceTypes } from '../data_elements/custom_fields'
+import { getInstanceServiceIdRecords } from '../filters/instance_references'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -70,9 +72,15 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
     }
   }
 
+  const updateServiceIdRecordsIndex = async (element: InstanceElement): Promise<void> => {
+    const serviceIdRecords = await getInstanceServiceIdRecords(element, elementsSource)
+    _.assign(serviceIdRecordsIndex, serviceIdRecords)
+  }
+
   await awu(await elementsSource.getAll())
     .filter(isInstanceElement)
     .forEach(async element => {
+      await updateServiceIdRecordsIndex(element)
       updateInternalIdsIndex(element)
       updateCustomFieldsIndex(element)
       updatePathToInternalIdsIndex(element)

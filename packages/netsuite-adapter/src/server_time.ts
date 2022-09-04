@@ -69,6 +69,9 @@ const getExistingServerTimeElements = async (
   }
   // Resolve the type of the instance cause it's used inside the adapter that assumes resolved types
   instance.refType = createRefToElmWithValue(serverTimeType)
+  if (instance.value.instancesFetchTime === undefined) {
+    instance.value.instancesFetchTime = {}
+  }
   return { type: serverTimeType, instance }
 }
 

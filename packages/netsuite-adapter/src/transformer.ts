@@ -85,14 +85,9 @@ export const createInstanceElement = async (customizationInfo: CustomizationInfo
 
   const transformPrimitive: TransformFunc = async ({ value, field }) => {
     const fieldType = await field?.getType()
-    if (value === '') {
+    if (value === '' || !isPrimitiveType(fieldType) || !isPrimitiveValue(value)) {
       // We sometimes get empty strings that we want to filter out
-      return undefined
-    }
-    if (!isPrimitiveType(fieldType) || !isPrimitiveValue(value)) {
-      if (value === XML_TRUE_VALUE) return true
-      if (value === XML_FALSE_VALUE) return false
-      return value
+      return value === '' ? undefined : value
     }
 
     switch (fieldType.primitive) {

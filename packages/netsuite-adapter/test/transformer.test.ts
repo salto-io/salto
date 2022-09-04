@@ -59,14 +59,8 @@ describe('Transformer', () => {
     WITH_TRUE_FIELD: '<entitycustomfield scriptid="custentity_my_script_id">\n'
       + '  <checkspelling>T</checkspelling>\n'
       + '</entitycustomfield>\n',
-    WITH_UNKNOWN_TRUE_FIELD: '<entitycustomfield scriptid="custentity_my_script_id">\n'
-      + '  <unknownattr>T</unknownattr>\n'
-      + '</entitycustomfield>\n',
     WITH_FALSE_FIELD: '<entitycustomfield scriptid="custentity_my_script_id">\n'
       + '  <checkspelling>F</checkspelling>\n'
-      + '</entitycustomfield>\n',
-    WITH_UNKNOWN_FALSE_FIELD: '<entitycustomfield scriptid="custentity_my_script_id">\n'
-      + '  <unknownattr>F</unknownattr>\n'
       + '</entitycustomfield>\n',
     WITH_NUMBER_FIELD: '<entitycustomfield scriptid="custentity_my_script_id">\n'
       + '  <displayheight>123</displayheight>\n'
@@ -182,19 +176,9 @@ describe('Transformer', () => {
       expect(result.value.checkspelling).toEqual(true)
     })
 
-    it('should transform boolean primitive field when is true even if field is unknown', async () => {
-      const result = await transformCustomFieldRecord(XML_TEMPLATES.WITH_UNKNOWN_TRUE_FIELD)
-      expect(result.value.unknownattr).toEqual(true)
-    })
-
     it('should transform boolean primitive field when is false', async () => {
       const result = await transformCustomFieldRecord(XML_TEMPLATES.WITH_FALSE_FIELD)
       expect(result.value.checkspelling).toEqual(false)
-    })
-
-    it('should transform boolean primitive field when is false even if field is unknown', async () => {
-      const result = await transformCustomFieldRecord(XML_TEMPLATES.WITH_UNKNOWN_FALSE_FIELD)
-      expect(result.value.unknownattr).toEqual(false)
     })
 
     it('should transform number primitive field', async () => {

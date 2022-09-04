@@ -1609,6 +1609,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'edited_at' },
         { fieldName: 'html_url', fieldType: 'string' },
       ),
+      serviceUrl: '/knowledge/articles/{id}',
     },
   },
   article_translation: {
@@ -1654,6 +1655,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
       ),
+      serviceUrl: '/knowledge/sections/{id}',
     },
   },
   section_translation: {
@@ -1714,6 +1716,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
       ),
+      serviceUrl: '/hc/admin/categories/{id}/edit',
     },
   },
   category_translation: {
@@ -1746,6 +1749,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       sourceTypeName: 'permission_groups__permission_groups',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      serviceUrl: '/knowledge/permissions/{id}',
     },
   },
   user_segments: {
@@ -1761,6 +1765,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       sourceTypeName: 'user_segments__user_segments',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }, { fieldName: 'added_user_ids', fieldType: 'unknown' }],
+      serviceUrl: '/knowledge/user_segments/edit/{id}',
     },
   },
   // not included yet: satisfaction_reason (returns 403), sunshine apis

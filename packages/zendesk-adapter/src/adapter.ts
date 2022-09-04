@@ -65,6 +65,7 @@ import slaPolicyFilter from './filters/sla_policy'
 import macroAttachmentsFilter from './filters/macro_attachments'
 import omitInactiveFilter from './filters/omit_inactive'
 import tagsFilter from './filters/tag'
+import hcLocalesFilter from './filters/help_center_locale'
 import webhookFilter from './filters/webhook'
 import targetFilter from './filters/target'
 import defaultDeployFilter from './filters/default_deploy'
@@ -115,9 +116,11 @@ export const DEFAULT_FILTERS = [
   hardcodedChannelFilter,
   // removeDefinitionInstancesFilter should be after hardcodedChannelFilter
   removeDefinitionInstancesFilter,
-  // fieldReferencesFilter should be after usersFilter, macroAttachmentsFilter and tagsFilter
+  // fieldReferencesFilter should be after usersFilter, macroAttachmentsFilter,
+  // tagsFilter and hcLocalesFilter
   usersFilter,
   tagsFilter,
+  hcLocalesFilter,
   macroAttachmentsFilter,
   brandLogoFilter,
   // removeBrandLogoFieldFilter should be after brandLogoFilter

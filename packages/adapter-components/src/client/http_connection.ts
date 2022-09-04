@@ -34,6 +34,7 @@ export type Response<T> = {
   data: T
   status: number
   statusText?: string
+  headers?: Record<string, string>
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -16,10 +16,17 @@
 import _ from 'lodash'
 import { FileProperties } from 'jsforce-types'
 import {
-  Element, ObjectType, InstanceElement, Field, ReferenceExpression, isObjectType, isInstanceElement,
+  Element,
+  ObjectType,
+  InstanceElement,
+  Field,
+  ReferenceExpression,
+  isObjectType,
+  isInstanceElement,
+  isModificationChange, isFieldChange, getChangeData, Change, getAllChangeData, toChange,
 } from '@salto-io/adapter-api'
 import { resolveTypeShallow } from '@salto-io/adapter-utils'
-import { collections, promises } from '@salto-io/lowerdash'
+import { collections, promises, values as lowerdashValues } from '@salto-io/lowerdash'
 
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import { FIELD_ANNOTATIONS, VALUE_SET_FIELDS } from '../constants'
@@ -31,8 +38,9 @@ import { ConfigChangeSuggestion } from '../types'
 import { fetchMetadataInstances } from '../fetch'
 
 const { mapValuesAsync } = promises.object
-const { awu } = collections.asynciterable
+const { awu, keyByAsync } = collections.asynciterable
 const { makeArray } = collections.array
+const { isDefined } = lowerdashValues
 
 export const STANDARD_VALUE_SET = 'StandardValueSet'
 export const STANDARD_VALUE = 'standardValue'
@@ -188,6 +196,17 @@ const emptyFileProperties = (fullName: string): FileProperties => ({
   type: STANDARD_VALUE_SET,
 })
 
+const toDeployableStandardPicklistFieldChange = (
+  change: Change<Field>
+): Change<Field> => {
+  const [deployableBefore, deployableAfter] = getAllChangeData(change).map(field => field.clone())
+  delete deployableBefore.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
+  delete deployableAfter.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
+  return toChange({
+    before: deployableBefore,
+    after: deployableAfter,
+  })
+}
 
 /**
 * Declare the StandardValueSets filter that
@@ -196,55 +215,88 @@ const emptyFileProperties = (fullName: string): FileProperties => ({
 */
 export const makeFilter = (
   standardValueSetNames: StandardValuesSets
-): RemoteFilterCreator => ({ client, config }) => ({
-  /**
-   * Upon fetch, retrieve standard value sets and
-   * modify references to them in fetched elements
-   *
-   * @param elements the already fetched elements
-   */
-  onFetch: async (elements: Element[]): Promise<FilterResult> => {
-    const svsMetadataType: ObjectType | undefined = await findStandardValueSetType(elements)
-    let configChanges: ConfigChangeSuggestion[] = []
-    let fetchedSVSInstances: InstanceElement[] | undefined
-    if (svsMetadataType !== undefined) {
-      const svsInstances = await fetchMetadataInstances({
-        client,
-        fileProps: [...standardValueSetNames].map(emptyFileProperties),
-        metadataType: svsMetadataType,
-        metadataQuery: config.fetchProfile.metadataQuery,
-      })
-      elements.push(...svsInstances.elements)
+): RemoteFilterCreator => ({ client, config }) => {
+  let originalChanges: Record<string, Change>
+  return {
+    /**
+     * Upon fetch, retrieve standard value sets and
+     * modify references to them in fetched elements
+     *
+     * @param elements the already fetched elements
+     */
+    onFetch: async (elements: Element[]): Promise<FilterResult> => {
+      const svsMetadataType: ObjectType | undefined = await findStandardValueSetType(elements)
+      let configChanges: ConfigChangeSuggestion[] = []
+      let fetchedSVSInstances: InstanceElement[] | undefined
+      if (svsMetadataType !== undefined) {
+        const svsInstances = await fetchMetadataInstances({
+          client,
+          fileProps: [...standardValueSetNames].map(emptyFileProperties),
+          metadataType: svsMetadataType,
+          metadataQuery: config.fetchProfile.metadataQuery,
+        })
+        elements.push(...svsInstances.elements)
 
-      configChanges = svsInstances.configChanges
-      fetchedSVSInstances = svsInstances.elements
-    }
+        configChanges = svsInstances.configChanges
+        fetchedSVSInstances = svsInstances.elements
+      }
 
-    const customObjectTypeElements = await awu(elements)
-      .filter(isObjectType)
-      .filter(isCustomObject)
-      .toArray()
+      const customObjectTypeElements = await awu(elements)
+        .filter(isObjectType)
+        .filter(isCustomObject)
+        .toArray()
 
-    if (customObjectTypeElements.length > 0) {
-      const svsInstances = fetchedSVSInstances !== undefined
-        ? fetchedSVSInstances
-        : await awu(await config.elementsSource.getAll())
-          .filter(isInstanceElement)
-          .map(async inst => {
-            const clone = inst.clone()
-            await resolveTypeShallow(clone, config.elementsSource)
-            return clone
-          })
-          .filter(isInstanceOfType(STANDARD_VALUE_SET))
-          .toArray()
-      await updateSVSReferences(customObjectTypeElements, svsInstances)
-    }
+      if (customObjectTypeElements.length > 0) {
+        const svsInstances = fetchedSVSInstances !== undefined
+          ? fetchedSVSInstances
+          : await awu(await config.elementsSource.getAll())
+            .filter(isInstanceElement)
+            .map(async inst => {
+              const clone = inst.clone()
+              await resolveTypeShallow(clone, config.elementsSource)
+              return clone
+            })
+            .filter(isInstanceOfType(STANDARD_VALUE_SET))
+            .toArray()
+        await updateSVSReferences(customObjectTypeElements, svsInstances)
+      }
 
-    return {
-      configSuggestions: configChanges,
-    }
-  },
-})
+      return {
+        configSuggestions: configChanges,
+      }
+    },
+    preDeploy: async changes => {
+      const standardPicklistFieldChanges = await awu(changes)
+        .filter(isModificationChange)
+        .filter(isFieldChange)
+        .filter(change => isStandardPickList(getChangeData(change)))
+        .toArray()
+      originalChanges = await keyByAsync(
+        standardPicklistFieldChanges,
+        change => apiName(getChangeData(change))
+      )
+      const deployableChanges = standardPicklistFieldChanges
+        .map(toDeployableStandardPicklistFieldChange)
+      _.pullAll(changes, standardPicklistFieldChanges)
+      changes.push(...deployableChanges)
+    },
+    onDeploy: async changes => {
+      const appliedStandardPicklistFieldChanges = await awu(changes)
+        .filter(isModificationChange)
+        .filter(isFieldChange)
+        .filter(change => isStandardPickList(getChangeData(change)))
+        .toArray()
+      const appliedApiNames = await awu(changes)
+        .map(change => apiName(getChangeData(change)))
+        .toArray()
+      const appliedOriginalChanges = appliedApiNames
+        .map(name => originalChanges[name])
+        .filter(isDefined)
+      _.pullAll(changes, appliedStandardPicklistFieldChanges)
+      changes.push(...appliedOriginalChanges)
+    },
+  }
+}
 
 
 export default makeFilter(STANDARD_VALUE_SETS)

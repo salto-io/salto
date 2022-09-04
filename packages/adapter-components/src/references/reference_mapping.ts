@@ -25,15 +25,19 @@ export type CreateMissingRefFunc = (
 ) => Element | undefined
 export type CheckMissingRefFunc = (element: Element) => boolean
 
+export type GetReferenceIdFunc = (topLevelId: ElemID) => ElemID
+
 export type ReferenceSerializationStrategy = {
   lookup: LookupFunc
   lookupIndexName?: string
 } & (
-  { serialize: GetLookupNameFunc }
-  // getReferenceId set the path of the value that the reference will be set by.
-  // Note that this path will also be the path of the reference, meaning the if
-  // it won't return a top level id, the reference path won't be a top level id.
-  | { getReferenceId: (topLevelId: ElemID) => ElemID }
+  types.OneOf<{
+    serialize: GetLookupNameFunc
+    // getReferenceId set the path of the value that the reference will be set by.
+    // Note that this path will also be the path of the reference, meaning the if
+    // it won't return a top level id, the reference path won't be a top level id.
+    getReferenceId: GetReferenceIdFunc
+  }>
 )
 
 export type ReferenceSerializationStrategyName = 'fullValue' | 'id' | 'name' | 'nameWithPath'

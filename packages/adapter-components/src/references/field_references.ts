@@ -22,6 +22,7 @@ import {
   ReferenceSerializationStrategy, ExtendedReferenceTargetDefinition, ReferenceResolverFinder,
   FieldReferenceResolver, generateReferenceResolverFinder, FieldReferenceDefinition,
   CreateMissingRefFunc,
+  GetReferenceIdFunc,
 } from './reference_mapping'
 import { ContextFunc } from './context'
 
@@ -40,6 +41,10 @@ const defaultIsEqualFunc: ValueIsEqualFunc = (lhs, rhs) => lhs === rhs
 export const MISSING_ANNOTATION = 'salto_missing_ref'
 const checkMissingRef = (element: Element): boolean =>
   element.annotations?.[MISSING_ANNOTATION] === true
+
+const isRelativeSerializer = (serializer: ReferenceSerializationStrategy)
+  : serializer is ReferenceSerializationStrategy & { getReferenceId: GetReferenceIdFunc } =>
+  'getReferenceId' in serializer
 
 export const replaceReferenceValues = async <
   T extends string
@@ -131,14 +136,16 @@ export const replaceReferenceValues = async <
           )
         }
 
-        const referenceId = 'getReferenceId' in serializer ? serializer.getReferenceId(element.elemID) : element.elemID
+        const referenceId = isRelativeSerializer(serializer)
+          ? serializer.getReferenceId(element.elemID)
+          : element.elemID
 
         if (checkMissingRef(element)) {
           return new ReferenceExpression(referenceId)
         }
         return (
           isEqualValue(
-            'serialize' in serializer
+            !isRelativeSerializer(serializer)
               ? await serializer.serialize({
                 ref: new ReferenceExpression(element.elemID, elem),
                 field,
@@ -305,7 +312,7 @@ export const generateLookupFunc = <
     }
 
     const strategy = await determineLookupStrategy({ ref, path, field })
-    if (strategy !== undefined && 'serialize' in strategy) {
+    if (strategy !== undefined && !isRelativeSerializer(strategy)) {
       return strategy.serialize({ ref, field })
     }
 

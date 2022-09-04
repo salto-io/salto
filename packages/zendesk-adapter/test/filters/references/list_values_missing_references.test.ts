@@ -70,7 +70,7 @@ describe('list values missing references filter', () => {
         id: 7001,
         actions: [
           { field: 'notification_sms_group', value: ['123456789', '+123456678', 'sms message'] },
-          { field: 'notification_sms_group', value: ['not_missing_due_to_not_numeric', '+123456678', 'sms message'] },
+          { field: 'notification_sms_group', value: ['group_id', '+123456678', 'sms message'] },
         ],
       },
     ),
@@ -104,7 +104,7 @@ describe('list values missing references filter', () => {
         expect(brokenTrigger.value.actions).toHaveLength(2)
         const triggerSecondAction = brokenTrigger.value.actions[1].value
         expect(triggerSecondAction[0]).not.toBeInstanceOf(ReferenceExpression)
-        expect(triggerSecondAction[0]).toEqual('not_missing_due_to_not_numeric')
+        expect(triggerSecondAction[0]).toEqual('group_id')
         expect(triggerSecondAction[1]).not.toBeInstanceOf(ReferenceExpression)
         expect(triggerSecondAction[2]).not.toBeInstanceOf(ReferenceExpression)
       })

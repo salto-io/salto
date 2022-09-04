@@ -18,7 +18,7 @@ import { Element, isInstanceElement, isReferenceExpression, ReferenceExpression 
 import { logger } from '@salto-io/logging'
 import { FETCH_CONFIG } from '../../config'
 import { FilterCreator } from '../../filter'
-import { createMissingInstance } from './missing_references'
+import { createMissingInstance, VALUES_TO_SKIP_BY_TYPE } from './missing_references'
 
 const log = logger(module)
 
@@ -53,10 +53,6 @@ const potentiallyMissingListValues: FieldMissingReferenceDefinition[] = [
   },
 ]
 
-const isNumberStr = (str: string | undefined): boolean => (
-  !_.isEmpty(str) && !Number.isNaN(Number(str))
-)
-
 /**
  * Convert field list values into references, based on predefined configuration.
  */
@@ -77,12 +73,13 @@ const filter: FilterCreator = ({ config }) => ({
         }
         valueObjects.forEach(obj => {
           const valueToRedefine = obj.value[def.valueIndexToRedefine]
+          const valueType = def.fieldNameToValueType[obj.field]
           if (fieldRefTypes.includes(obj.field)
             && !isReferenceExpression(valueToRedefine)
-            && isNumberStr(valueToRedefine)) {
+            && !VALUES_TO_SKIP_BY_TYPE[valueType]?.includes(valueToRedefine)) {
             const missingInstance = createMissingInstance(
               instance.elemID.adapter,
-              def.fieldNameToValueType[obj.field],
+              valueType,
               valueToRedefine
             )
             obj.value[def.valueIndexToRedefine] = new ReferenceExpression(

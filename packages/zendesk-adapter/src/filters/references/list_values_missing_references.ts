@@ -16,9 +16,9 @@
 import _ from 'lodash'
 import { Element, isInstanceElement, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { FETCH_CONFIG } from '../../config'
 import { FilterCreator } from '../../filter'
 import { createMissingInstance } from './missing_references'
-import { FETCH_CONFIG } from 'src/config'
 
 const log = logger(module)
 

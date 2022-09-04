@@ -18,6 +18,7 @@ import { Element, isInstanceElement, isReferenceExpression, ReferenceExpression 
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { createMissingInstance } from './missing_references'
+import { FETCH_CONFIG } from 'src/config'
 
 const log = logger(module)
 
@@ -59,8 +60,11 @@ const isNumberStr = (str: string | undefined): boolean => (
 /**
  * Convert field list values into references, based on predefined configuration.
  */
-const filter: FilterCreator = () => ({
+const filter: FilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]) => log.time(async () => {
+    if (!config[FETCH_CONFIG].enableMissingReferences) {
+      return
+    }
     potentiallyMissingListValues.forEach(def => {
       const fieldRefTypes = Object.keys(def.fieldNameToValueType)
       const instances = elements

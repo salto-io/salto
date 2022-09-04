@@ -14,17 +14,17 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { isReferenceExpression, isInstanceElement } from '@salto-io/adapter-api'
+import { isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
-import { GetLookupNameFunc, resolvePath } from '@salto-io/adapter-utils'
+import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_TYPE,
   BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, AUTOMATION_STATUS,
   AUTOMATION_CONDITION, AUTOMATION_CONDITION_CRITERIA, AUTOMATION_SUBTASK,
   AUTOMATION_ROLE, AUTOMATION_GROUP, AUTOMATION_EMAIL_RECIPENT, PROJECT_TYPE,
-  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME, AUTOMATION_COMPARE_VALUE, AUTOMATION_TYPE } from './constants'
+  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME, AUTOMATION_COMPARE_VALUE } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 
-const { neighborContextGetter, findParentPath } = referenceUtils
+const { neighborContextGetter } = referenceUtils
 
 const neighborContextFunc = (args: {
   contextFieldName: string
@@ -331,12 +331,12 @@ ReferenceContextStrategyName
   },
   {
     src: { field: 'groups', parentTypes: ['ConditionConfiguration'] },
-    serializationStrategy: 'name',
+    serializationStrategy: 'nameWithPath',
     target: { type: 'Group' },
   },
   {
     src: { field: 'group', parentTypes: ['ConditionConfiguration'] },
-    serializationStrategy: 'name',
+    serializationStrategy: 'nameWithPath',
     target: { type: 'Group' },
   },
   {
@@ -351,17 +351,17 @@ ReferenceContextStrategyName
   },
   {
     src: { field: 'groups', parentTypes: ['ApplicationRole'] },
-    serializationStrategy: 'name',
+    serializationStrategy: 'nameWithPath',
     target: { type: 'Group' },
   },
   {
     src: { field: 'defaultGroups', parentTypes: ['ApplicationRole'] },
-    serializationStrategy: 'name',
+    serializationStrategy: 'nameWithPath',
     target: { type: 'Group' },
   },
   {
     src: { field: 'parameter', parentTypes: ['PermissionHolder'] },
-    serializationStrategy: 'name',
+    serializationStrategy: 'nameWithPath',
     target: { type: 'Group' },
   },
   {
@@ -371,7 +371,7 @@ ReferenceContextStrategyName
   },
   {
     src: { field: 'linkTypes', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
-    serializationStrategy: 'name',
+    serializationStrategy: 'nameWithPath',
     target: { type: 'IssueLinkType' },
   },
   {
@@ -391,7 +391,7 @@ ReferenceContextStrategyName
   },
   {
     src: { field: 'groups', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
-    serializationStrategy: 'name',
+    serializationStrategy: 'nameWithPath',
     target: { type: 'Group' },
   },
   // Overlapping rules, serialization strategy is determined by getAutomationValuesLookupFunc
@@ -402,7 +402,7 @@ ReferenceContextStrategyName
   },
   {
     src: { field: 'value', parentTypes: [AUTOMATION_FIELD] },
-    serializationStrategy: 'name',
+    serializationStrategy: 'nameWithPath',
     target: { type: 'Field' },
   },
   // Overlapping rules, serialization strategy is determined by getAutomationValuesLookupFunc
@@ -413,12 +413,12 @@ ReferenceContextStrategyName
   },
   {
     src: { field: 'value', parentTypes: [AUTOMATION_STATUS] },
-    serializationStrategy: 'name',
+    serializationStrategy: 'nameWithPath',
     target: { type: 'Status' },
   },
   {
     src: { field: 'value', parentTypes: [AUTOMATION_EMAIL_RECIPENT, AUTOMATION_CONDITION_CRITERIA, AUTOMATION_GROUP] },
-    serializationStrategy: 'name',
+    serializationStrategy: 'nameWithPath',
     target: { type: 'Group' },
   },
   {
@@ -438,7 +438,7 @@ ReferenceContextStrategyName
   },
   {
     src: { field: 'value', parentTypes: [AUTOMATION_ROLE] },
-    serializationStrategy: 'name',
+    serializationStrategy: 'nameWithPath',
     target: { type: 'ProjectRole' },
   },
   // Overlapping rules, serialization strategy is determined by getAutomationValuesLookupFunc
@@ -449,7 +449,7 @@ ReferenceContextStrategyName
   },
   {
     src: { field: 'value', parentTypes: [AUTOMATION_COMPARE_VALUE] },
-    serializationStrategy: 'name',
+    serializationStrategy: 'nameWithPath',
     target: { typeContext: 'parentSelectedFieldType' },
   },
   // Overlapping rules, serialization strategy is determined by getAutomationValuesLookupFunc
@@ -460,7 +460,7 @@ ReferenceContextStrategyName
   },
   {
     src: { field: 'values', parentTypes: [AUTOMATION_COMPARE_VALUE] },
-    serializationStrategy: 'name',
+    serializationStrategy: 'nameWithPath',
     target: { typeContext: 'parentSelectedFieldType' },
   },
   {
@@ -470,33 +470,8 @@ ReferenceContextStrategyName
   },
 ]
 
-/**
- * Determine serialization strategy for references with overlapping serialization rules
- * in automation instances: relevant fields will be resolved based on the neighbor type field
- */
-export const getAutomationValuesLookupFunc: GetLookupNameFunc = ({
-  ref, path, element,
-}) => {
-  if (
-    path !== undefined
-    && isInstanceElement(element)
-    && element.elemID.typeName === AUTOMATION_TYPE
-  ) {
-    const parentPath = findParentPath(path)
-    const pathValue = resolvePath(element, parentPath)
-    const serializationType = pathValue?.type
-    switch (serializationType) {
-      case 'NAME': return ref.value.value.name
-      case 'ID': return ref.value.value.id
-      default: return ref
-    }
-  }
-  return ref
-}
-
 const lookupNameFuncs: GetLookupNameFunc[] = [
   getFieldsLookUpName,
-  getAutomationValuesLookupFunc,
   referenceUtils.generateLookupFunc(referencesRules),
 ]
 

@@ -62,7 +62,7 @@ const getLocales = async (
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
   onFetch: async elements => {
-    if (config[FETCH_CONFIG].enableGuide !== true) {
+    if (!config[FETCH_CONFIG].enableGuide) {
       return
     }
     const localesRes = await getLocales(client)

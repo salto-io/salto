@@ -14,13 +14,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+
 import {
   ChangeValidator, getChangeData, InstanceElement,
   isAdditionOrModificationChange, isInstanceElement,
 } from '@salto-io/adapter-api'
 
 import { isConditions } from '../filters/utils'
-
 
 export const AUTOMATION_TYPE_NAME = 'automation'
 
@@ -40,12 +40,15 @@ export const automationAllConditionsValidator: ChangeValidator = async changes =
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE_NAME)
     .filter(isNotValidData)
+
   return relevantInstances
     .flatMap(instance => [{
       elemID: instance.elemID,
       severity: 'Error',
-      message: 'Can not change automation ,because the ALL conditions do not contain a necessary field',
-      detailedMessage: `Can not change automation ${instance.elemID.getFullName()} ,because none of the ALL conditions 
-      section do not contain the fields: Status, Type, Group, Assignee, Requester`,
+      message: 'Automation must test for at least one of the following ticket properties in the ALL '
+          + 'conditions section: Status, Type, Group, Assignee, Requester',
+      detailedMessage: `Automation ${instance.elemID.getFullName()} must test for at least one of 
+      the following ticket properties in the ALL conditions section: Status, Type, Group, Assignee, 
+      Requester`,
     }])
 }

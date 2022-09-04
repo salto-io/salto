@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _, { keys } from 'lodash'
+import _ from 'lodash'
 import { Element, isInstanceElement, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
@@ -25,6 +25,7 @@ type FieldMissingReferenceDefinition = {
   instanceType: string
   instancePath: string
   fieldNameToValueType: Record<string, string>
+  valueIndexToRedefine: number
 }
 
 const potentiallyMissingListValues: FieldMissingReferenceDefinition[] = [
@@ -36,6 +37,7 @@ const potentiallyMissingListValues: FieldMissingReferenceDefinition[] = [
       notification_target: 'target',
       notification_webhook: 'webhook',
     },
+    valueIndexToRedefine: 0,
   },
   {
     instanceType: 'trigger',
@@ -46,11 +48,12 @@ const potentiallyMissingListValues: FieldMissingReferenceDefinition[] = [
       notification_target: 'target',
       notification_webhook: 'webhook',
     },
+    valueIndexToRedefine: 0,
   },
 ]
 
 const isNumberStr = (str: string | undefined): boolean => (
-  !_.isEmpty(str) && !Number.isNaN(_.toNumber(str))
+  !_.isEmpty(str) && !Number.isNaN(Number(str))
 )
 
 /**
@@ -59,7 +62,7 @@ const isNumberStr = (str: string | undefined): boolean => (
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => log.time(async () => {
     potentiallyMissingListValues.forEach(def => {
-      const fieldRefTypes = keys(def.fieldNameToValueType)
+      const fieldRefTypes = Object.keys(def.fieldNameToValueType)
       const instances = elements
         .filter(isInstanceElement)
         .filter(instance => instance.elemID.typeName === def.instanceType)
@@ -69,15 +72,19 @@ const filter: FilterCreator = () => ({
           return
         }
         valueObjects.forEach(obj => {
+          const valueToRedefine = obj.value[def.valueIndexToRedefine]
           if (fieldRefTypes.includes(obj.field)
-            && !isReferenceExpression(obj.value[0])
-            && isNumberStr(obj.value[0])) {
+            && !isReferenceExpression(valueToRedefine)
+            && isNumberStr(valueToRedefine)) {
             const missingInstance = createMissingInstance(
               instance.elemID.adapter,
               def.fieldNameToValueType[obj.field],
-              obj.value[0]
+              valueToRedefine
             )
-            obj.value[0] = new ReferenceExpression(missingInstance.elemID, missingInstance)
+            obj.value[def.valueIndexToRedefine] = new ReferenceExpression(
+              missingInstance.elemID,
+              missingInstance
+            )
           }
         })
       })

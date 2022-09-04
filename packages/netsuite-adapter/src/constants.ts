@@ -24,6 +24,7 @@ export const CUSTOM_RECORDS_PATH = 'CustomRecords'
 
 // Type names
 export const ADDRESS_FORM = 'addressForm'
+export const CURRENCY = 'currency'
 export const CUSTOM_LIST = 'customlist'
 export const CUSTOM_RECORD_TYPE = 'customrecordtype'
 export const CUSTOM_SEGMENT = 'customsegment'

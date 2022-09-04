@@ -61,6 +61,13 @@ zendesk {
               fieldType = "number"
             },
           ]
+          serviceUrl = "/admin/people/team/groups"
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
         deployRequests = {
           add = {
@@ -127,6 +134,12 @@ zendesk {
               fieldType = "number"
             },
           ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
           serviceUrl = "/admin/people/team/roles/{id}"
         }
         deployRequests = {
@@ -175,6 +188,10 @@ zendesk {
               fieldName = "organization_fields"
               fieldType = "map<unknown>"
             },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
           ]
           serviceUrl = "/agent/organizations/{id}/tickets"
         }
@@ -220,6 +237,12 @@ zendesk {
               fieldName = "updated_at"
               fieldType = "string"
             },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldTypeOverrides = [
             {
               fieldName = "id"
               fieldType = "number"
@@ -292,6 +315,12 @@ zendesk {
               fieldType = "number"
             },
           ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
           serviceUrl = "/admin/objects-rules/rules/triggers/{id}"
         }
         deployRequests = {
@@ -335,6 +364,13 @@ zendesk {
             },
             {
               fieldName = "id"
+            },
+          ]
+          serviceUrl = "/admin/objects-rules/rules/triggers"
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "string"
             },
           ]
         }
@@ -399,6 +435,12 @@ zendesk {
               fieldType = "number"
             },
           ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
           serviceUrl = "/admin/objects-rules/rules/automations/{id}"
         }
         deployRequests = {
@@ -456,6 +498,13 @@ zendesk {
               fieldType = "number"
             },
           ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          serviceUrl = "/admin/objects-rules/rules/slas"
         }
         deployRequests = {
           add = {
@@ -530,6 +579,13 @@ zendesk {
               fieldType = "number"
             },
           ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          serviceUrl = "/admin/apps-integrations/targets/targets"
         }
         deployRequests = {
           add = {
@@ -598,6 +654,12 @@ zendesk {
               fieldType = "number"
             },
           ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
           serviceUrl = "/admin/workspaces/agent-workspace/macros/{id}"
         }
         deployRequests = {
@@ -638,6 +700,12 @@ zendesk {
               fieldName = "updated_at"
               fieldType = "string"
             },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldTypeOverrides = [
             {
               fieldName = "id"
               fieldType = "number"
@@ -722,9 +790,6 @@ zendesk {
               fieldType = "number"
             },
             {
-              fieldName = "logo"
-            },
-            {
               fieldName = "ticket_form_ids"
             },
           ]
@@ -741,6 +806,10 @@ zendesk {
                 ]
               }
             },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
           ]
           fieldsToHide = [
             {
@@ -756,6 +825,7 @@ zendesk {
               fieldType = "number"
             },
           ]
+          serviceUrl = "/admin/account/brand_management/brands"
         }
         deployRequests = {
           add = {
@@ -799,6 +869,12 @@ zendesk {
               fieldName = "updated_at"
               fieldType = "string"
             },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldTypeOverrides = [
             {
               fieldName = "id"
               fieldType = "number"
@@ -848,6 +924,13 @@ zendesk {
               fieldType = "number"
             },
           ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          serviceUrl = "/admin/objects-rules/rules/schedules"
         }
         deployRequests = {
           add = {
@@ -900,6 +983,10 @@ zendesk {
                   "outbound",
                 ]
               }
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
             },
           ]
           fieldsToHide = [
@@ -1005,6 +1092,10 @@ zendesk {
                 ]
               }
             },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
           ]
           fieldsToHide = [
             {
@@ -1060,6 +1151,12 @@ zendesk {
               fieldName = "updated_at"
               fieldType = "string"
             },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldTypeOverrides = [
             {
               fieldName = "id"
               fieldType = "number"
@@ -1141,6 +1238,12 @@ zendesk {
               fieldType = "number"
             },
           ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
           serviceUrl = "/admin/objects-rules/tickets/ticket-fields/{id}"
         }
         deployRequests = {
@@ -1212,6 +1315,12 @@ zendesk {
               fieldType = "number"
             },
           ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
       }
       user_field = {
@@ -1242,6 +1351,10 @@ zendesk {
                   "textarea",
                 ]
               }
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
             },
           ]
           fieldsToHide = [
@@ -1333,6 +1446,12 @@ zendesk {
               fieldType = "boolean"
             },
           ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
       }
       user_field_order = {
@@ -1371,6 +1490,10 @@ zendesk {
                   "textarea",
                 ]
               }
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
             },
           ]
           fieldsToHide = [
@@ -1432,6 +1555,12 @@ zendesk {
               fieldType = "number"
             },
           ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
       }
       organization_field_order = {
@@ -1480,6 +1609,13 @@ zendesk {
               fieldType = "string"
             },
           ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "string"
+            },
+          ]
+          serviceUrl = "/admin/objects-rules/rules/routing"
         }
         deployRequests = {
           add = {
@@ -1549,6 +1685,13 @@ zendesk {
               fieldType = "number"
             },
           ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          serviceUrl = "/admin/workspaces/agent-workspace/contextual-workspaces"
         }
         deployRequests = {
           add = {
@@ -1649,6 +1792,13 @@ zendesk {
             "settings.name",
             "app_id",
           ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          serviceUrl = "/admin/apps-integrations/apps/support-apps"
         }
         deployRequests = {
           add = {
@@ -1687,26 +1837,38 @@ zendesk {
               fieldType = "number"
             },
           ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+            {
+              fieldName = "parameters"
+              fieldType = "map<app_owned__parameters>"
+            },
+          ]
           sourceTypeName = "apps_owned__apps"
         }
       }
       app_owned__parameters = {
         transformation = {
           fieldsToHide = [
-          ]
-          fieldsToOmit = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
             {
               fieldName = "id"
             },
             {
               fieldName = "app_id"
             },
-            {
-              fieldName = "created_at"
-            },
-            {
-              fieldName = "updated_at"
-            },
+          ]
+          fieldsToOmit = [
           ]
         }
       }
@@ -1738,6 +1900,13 @@ zendesk {
               fieldType = "number"
             },
           ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          serviceUrl = "/admin/apps-integrations/apis/zendesk-api/oauth_clients"
         }
         deployRequests = {
           add = {
@@ -1775,6 +1944,12 @@ zendesk {
               fieldName = "updated_at"
               fieldType = "string"
             },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldTypeOverrides = [
             {
               fieldName = "id"
               fieldType = "number"
@@ -1826,6 +2001,12 @@ zendesk {
               fieldType = "number"
             },
           ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
         }
       }
       monitored_twitter_handle = {
@@ -1840,6 +2021,12 @@ zendesk {
               fieldName = "updated_at"
               fieldType = "string"
             },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldTypeOverrides = [
             {
               fieldName = "id"
               fieldType = "number"
@@ -2067,6 +2254,13 @@ zendesk {
               fieldType = "number"
             },
           ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          serviceUrl = "/admin/workspaces/agent-workspace/dynamic_content"
         }
         deployRequests = {
           add = {
@@ -2095,7 +2289,7 @@ zendesk {
       dynamic_content_item__variants = {
         transformation = {
           idFields = [
-            "locale_id",
+            "&locale_id",
           ]
           fieldsToHide = [
             {
@@ -2106,6 +2300,12 @@ zendesk {
               fieldName = "updated_at"
               fieldType = "string"
             },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldTypeOverrides = [
             {
               fieldName = "id"
               fieldType = "number"
@@ -2191,6 +2391,12 @@ zendesk {
               fieldName = "updated_at"
               fieldType = "string"
             },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldTypeOverrides = [
             {
               fieldName = "id"
               fieldType = "number"
@@ -2311,6 +2517,13 @@ zendesk {
               fieldType = "string"
             },
           ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "string"
+            },
+          ]
+          serviceUrl = "/admin/objects-rules/rules/routing"
         }
       }
       routing_attributes = {
@@ -2434,7 +2647,474 @@ zendesk {
               fieldType = "string"
             },
           ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "string"
+            },
+          ]
           serviceUrl = "/admin/apps-integrations/webhooks/webhooks/{id}/details"
+        }
+        deployRequests = {
+          add = {
+            url = "/webhooks"
+            deployAsField = "webhook"
+            method = "post"
+          }
+          modify = {
+            url = "/webhooks/{webhookId}"
+            method = "patch"
+            deployAsField = "webhook"
+            urlParamsToFields = {
+              webhookId = "id"
+            }
+          }
+          remove = {
+            url = "/webhooks/{webhookId}"
+            method = "delete"
+            urlParamsToFields = {
+              webhookId = "id"
+            }
+          }
+        }
+      }
+      articles = {
+        request = {
+          url = "/help_center/articles"
+        }
+        transformation = {
+          dataField = "articles"
+        }
+      }
+      article = {
+        transformation = {
+          sourceTypeName = "articles__articles"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+            {
+              fieldName = "vote_sum"
+            },
+            {
+              fieldName = "vote_count"
+            },
+            {
+              fieldName = "edited_at"
+            },
+            {
+              fieldName = "html_url"
+              fieldType = "string"
+            },
+          ]
+        }
+      }
+      sections = {
+        request = {
+          url = "/help_center/sections"
+        }
+        transformation = {
+          dataField = "sections"
+        }
+      }
+      section = {
+        transformation = {
+          sourceTypeName = "sections__sections"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+            {
+              fieldName = "html_url"
+              fieldType = "string"
+            },
+          ]
+        }
+      }
+      labels = {
+        request = {
+          url = "/help_center/articles/labels"
+        }
+        transformation = {
+          dataField = "labels"
+        }
+      }
+      label = {
+        transformation = {
+          sourceTypeName = "labels__labels"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+        }
+      }
+      categories = {
+        request = {
+          url = "/help_center/categories"
+        }
+        transformation = {
+          dataField = "categories"
+        }
+      }
+      category = {
+        transformation = {
+          sourceTypeName = "categories__categories"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+            {
+              fieldName = "html_url"
+              fieldType = "string"
+            },
+          ]
+        }
+      }
+      permission_groups = {
+        request = {
+          url = "/guide/permission_groups"
+        }
+        transformation = {
+          dataField = "permission_groups"
+        }
+      }
+      permission_group = {
+        transformation = {
+          sourceTypeName = "permission_groups__permission_groups"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+        }
+      }
+      user_segments = {
+        request = {
+          url = "/help_center/user_segments"
+        }
+        transformation = {
+          dataField = "user_segments"
+        }
+      }
+      user_segment = {
+        transformation = {
+          sourceTypeName = "user_segments__user_segments"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+        }
+      }
+      badges = {
+        request = {
+          url = "/gather/badges"
+        }
+        transformation = {
+          dataField = "badges"
+        }
+      }
+      badge = {
+        transformation = {
+          sourceTypeName = "badges__badges"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "string"
+            },
+          ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "string"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+            {
+              fieldName = "icon_url"
+              fieldType = "string"
+            },
+          ]
+        }
+      }
+      badge_categories = {
+        request = {
+          url = "/gather/badge_categories"
+        }
+        transformation = {
+          dataField = "badge_categories"
+        }
+      }
+      badge_category = {
+        transformation = {
+          sourceTypeName = "badge_categories__badge_categories"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "string"
+            },
+          ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "string"
+            },
+          ]
+        }
+      }
+      themes = {
+        request = {
+          url = "/guide/theming/themes"
+        }
+        transformation = {
+          dataField = "themes"
+        }
+      }
+      theme = {
+        transformation = {
+          sourceTypeName = "themes__themes"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "string"
+            },
+          ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "string"
+            },
+          ]
+        }
+      }
+      topics = {
+        request = {
+          url = "/community/topics"
+        }
+        transformation = {
+          dataField = "topics"
+        }
+      }
+      topic = {
+        transformation = {
+          sourceTypeName = "topics__topics"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+            {
+              fieldName = "html_url"
+              fieldType = "string"
+            },
+          ]
         }
       }
     }
@@ -2475,12 +3155,6 @@ zendesk {
       macro = [
         "macros",
       ]
-      macro_action = [
-        "macros_actions",
-      ]
-      macro_definition = [
-        "macros_definitions",
-      ]
       monitored_twitter_handle = [
         "monitored_twitter_handles",
       ]
@@ -2499,9 +3173,6 @@ zendesk {
       resource_collection = [
         "resource_collections",
       ]
-      routing_attribute_definition = [
-        "routing_attribute_definitions",
-      ]
       routing_attribute = [
         "routing_attributes",
       ]
@@ -2510,9 +3181,6 @@ zendesk {
       ]
       sla_policy = [
         "sla_policies",
-      ]
-      sla_policy_definition = [
-        "sla_policies_definitions",
       ]
       support_address = [
         "support_addresses",

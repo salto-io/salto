@@ -29,6 +29,12 @@ type FieldMissingReferenceDefinition = {
   valueIndexToRedefine: number
 }
 
+const isNumberStr = (str: string | undefined): boolean => (
+  !_.isEmpty(str) && !Number.isNaN(Number(str))
+)
+
+const NON_NUMERIC_MISSING_VALUES_TYPES = ['webhook']
+
 const potentiallyMissingListValues: FieldMissingReferenceDefinition[] = [
   {
     instanceType: 'automation',
@@ -76,7 +82,10 @@ const filter: FilterCreator = ({ config }) => ({
           const valueType = def.fieldNameToValueType[obj.field]
           if (fieldRefTypes.includes(obj.field)
             && !isReferenceExpression(valueToRedefine)
-            && !VALUES_TO_SKIP_BY_TYPE[valueType]?.includes(valueToRedefine)) {
+            && !VALUES_TO_SKIP_BY_TYPE[valueType]?.includes(valueToRedefine)
+            && (isNumberStr(valueToRedefine)
+              || NON_NUMERIC_MISSING_VALUES_TYPES.includes(valueType)
+            )) {
             const missingInstance = createMissingInstance(
               instance.elemID.adapter,
               valueType,

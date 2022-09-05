@@ -19,6 +19,7 @@ import { collections } from '@salto-io/lowerdash'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import _ from 'lodash'
+import path from 'path'
 import { LocalFilterCreator } from '../filter'
 import { apiName } from '../transformers/transformer'
 import { EMAIL_TEMPLATE_METADATA_TYPE, RECORDS_PATH, SALESFORCE } from '../constants'
@@ -64,18 +65,17 @@ const findFolderPath = (instance: InstanceElement): string | undefined =>
   (!_.isUndefined(instance.value.fullName)
     ? `${SALESFORCE}/${RECORDS_PATH}/${EMAIL_TEMPLATE_METADATA_TYPE}/${instance.value.fullName}` : undefined)
 
-const createfolder = (instance: InstanceElement, folderPath: string): void => {
-  const emailName = `${instance.value.fullName.split('/').slice(1)}.email`
-  _.set(instance, ['value', 'content', 'filepath'], `${folderPath}/${emailName}`)
-}
-
 const organizeStaticFiles = async (instance: InstanceElement): Promise<void> => {
   const folderPath = findFolderPath(instance)
   if (_.isUndefined(folderPath)) {
     const instApiName = await apiName(instance)
     log.warn(`could not extract the attachments of instance ${instApiName}, instance path is undefined`)
   } else {
-    createfolder(instance, folderPath)
+    const emailName = `${folderPath.split('/').pop()}.${instance.refType.type?.annotations.suffix}`
+    instance.value.content = new StaticFile({
+      filepath: path.join(folderPath, emailName),
+      content: await instance.value.content.getContent(),
+    })
     instance.value.attachments = makeArray(instance.value.attachments)
     if (isEmailAttachmentsArray(instance.value)) {
       instance.value.attachments.forEach(attachment => {

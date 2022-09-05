@@ -22,7 +22,7 @@ const { awu } = collections.asynciterable
 
 const log = logger(module)
 
-const getAllowedPermissionTypes = async (
+export const getAllowedPermissionTypes = async (
   elementSource: ReadOnlyElementsSource,
 ): Promise<string[]> => {
   const permissionListElementId = await awu(await elementSource.list())

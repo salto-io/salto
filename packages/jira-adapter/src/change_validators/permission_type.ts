@@ -74,7 +74,7 @@ export const permissionTypeValidator: ChangeValidator = async (changes, elements
     .filter(instance => hasInvalidPermissions(instance, allowedPermissionTypes))
     .map(async instance => ({
       elemID: instance.elemID,
-      severity: 'Error' as SeverityLevel,
+      severity: 'Warning' as SeverityLevel,
       message: 'Invalid permission type in permission scheme',
       detailedMessage: getInvalidPermissionErrorMessage(instance, allowedPermissionTypes),
     }))
